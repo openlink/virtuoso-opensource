@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,13 +27,15 @@
 
 #include "Dk.h"
 
-#if defined(linux) || defined (__APPLE__)
+#if defined(HAVE_EXECINFO_H)
+
 #include <execinfo.h>
+
+#define N_FRAMES 100
 
 void
 print_trace (void)
 {
-#define N_FRAMES 100 
   void *array[N_FRAMES];
   size_t size, i;
   char **strings;
@@ -48,7 +50,7 @@ print_trace (void)
 }
 #else
 void print_trace (void) { }
-#endif 
+#endif
 
 int
 gpf_notice (const char *file, int line, const char *text)
@@ -84,8 +86,10 @@ gpf_notice (const char *file, int line, const char *text)
 #endif
 #endif
   *(long *) -1 = -1;
+
   call_exit (1);
-  return 0;
+
+  exit(1);
 }
 
 
@@ -126,7 +130,7 @@ get_real_time (timeout_t * to)
 static timeout_t boot_time;
 uint32 last_approx_msec_real_time;
 
-long
+uint32
 approx_msec_real_time (void)
 {
 /*  return (time_now.to_sec * 1000 + time_now.to_usec / 1000); */
@@ -151,7 +155,7 @@ approx_msec_real_time (void)
 }
 
 
-long
+uint32
 get_msec_real_time (void)
 {
 #if 0
@@ -162,8 +166,7 @@ get_msec_real_time (void)
 #endif
 
   get_real_time (&time_now);
-  time_now_msec = time_now.to_sec * 1000 + time_now.to_usec / 1000;
-  return approx_msec_real_time ();
+  return time_now_msec = approx_msec_real_time ();
 }
 
 
@@ -191,4 +194,43 @@ time_gt (timeout_t * time1, timeout_t * time2)
     return time1->to_usec > time2->to_usec;
   else
     return 0;
+}
+
+
+char * dk_strdup (char * s)
+{
+  return s ? box_dv_short_string (s) : NULL;
+}
+
+#include "util/strfuns.h"
+
+
+char *
+dk_cslentry (const char *list, int idx)
+{
+  char *start;
+  size_t length;
+
+  if (!list || !list[0] || !idx)
+    return NULL;
+
+  for (--idx; idx && *list; idx--)
+    {
+      if ((list = strchr (list, ',')) == NULL)
+	return NULL;
+      list++;
+    }
+  start = (char *) ltrim (list);
+  if ((list = strchr (start, ',')) == NULL)
+    length = strlen (start);
+  else
+    length = (u_int) (list - start);
+
+  if ((start = dk_strdup (start)) != NULL)
+    {
+      start[length] = 0;
+      rtrim (start);
+    }
+
+  return start;
 }

@@ -1,0 +1,322 @@
+# Czech translation of PO debconf template for package virtuoso-opensource.
+# Copyright (C) 2010 Michal Simunek
+# This file is distributed under the same license as the virtuoso-opensource package.
+# Michal Simunek <michal.simunek@gmail.com>, 2010.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: virtuoso-opensource 7.0.0+dfsg2-2\n"
+"Report-Msgid-Bugs-To: virtuoso-opensource@packages.debian.org\n"
+"POT-Creation-Date: 2014-08-11 06:30+0100\n"
+"PO-Revision-Date: 2010-03-13 18:08+0100\n"
+"Last-Translator: Michal Simunek <michal.simunek@gmail.com>\n"
+"Language-Team: Czech <debian-l10n-czech@lists.debian.org>\n"
+"Language: cs\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid "Password for DBA and DAV users:"
+msgstr "Heslo pro uživatelé DBA a DAV:"
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Following installation, users and passwords in Virtuoso can be managed using "
+"the command line tools (see the full documentation) or via the Conductor web "
+"application which is installed by default at http://localhost:8890/conductor."
+msgstr ""
+"Následující instalaci, uživatelé a hesla ve Virtuoso, můžete spravovat "
+"pomocí nástrojů příkazové řádky (podívejte se do kompletní dokumentace), "
+"nebo pomocí webové aplikace Conductor, která je ve výchozí instalaci "
+"přístupná na http://localhost:8890/conductor."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"Two users (\"dba\" and \"dav\") are created by default, with administrative "
+"access to Virtuoso. Secure passwords must be chosen for these users in order "
+"to complete the installation."
+msgstr ""
+"Ve výchozím nastavení se vytvoří dva uživatelé (\"dba\" and \"dav\") se "
+"správcovským přístupem do Virtuoso. Pro dokončení instalace musíte pro tyto "
+"uživatele zvolit zabezpečovací hesla."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:2001
+msgid ""
+"If you leave this blank, the daemon will be disabled unless a non-default "
+"password already exists."
+msgstr ""
+"Pokud jej ponecháte prázdné, daemon bude zakázán, dokud nenastavíte jiné, "
+"než výchozí heslo."
+
+#. Type: password
+#. Description
+#: ../virtuoso-opensource-7.templates:3001
+msgid "Administrative users password confirmation:"
+msgstr "Potvrzení hesla správcovských uživatelů:"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid "Password mismatch"
+msgstr "Hesla neodpovídají"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:4001
+msgid ""
+"The two passwords you entered were not the same. Please enter a password "
+"again."
+msgstr "Hesla, která jste zadali, nebyla stejná. Zadejte prosím heslo znovu."
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid "No initial password set, daemon disabled"
+msgstr "Nebylo zadáno žádné heslo, daemon je zakázán"
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+msgid ""
+"For security reasons, the default Virtuoso instance is disabled because no "
+"administration password was provided."
+msgstr ""
+"Výchozí instance Virtuoso je z bezpečnostních důvodů zakázána, protože "
+"nebylo zadáno správcovské heslo."
+
+#. Type: note
+#. Description
+#: ../virtuoso-opensource-7.templates:5001
+#, fuzzy
+#| msgid ""
+#| "You can enable the daemon manually by setting RUN to \"yes\" in /etc/"
+#| "default/virtuoso-opensource-7. The default DBA user password will then be "
+#| "\"dba\"."
+msgid ""
+"You can enable the daemon manually by setting RUN to \"yes\" in /etc/default/"
+"virtuoso-opensource-7. The default DBA user password will then be \"dba\"."
+msgstr ""
+"Daemona můžete povolit ručně nastavením RUN na \"yes\" v /etc/default/"
+"virtuoso-opensource-7. Výchozí heslo uživatele DBA pak bude \"dba\"."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid "Unable to set password for the Virtuoso DBA user"
+msgstr "Nelze nastavit heslo uživatele DBA pro Virtuoso"
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"An error occurred while setting the password for the Virtuoso administrative "
+"user. This may have happened because the account already has a password, or "
+"because of a communication problem with the Virtuoso server."
+msgstr ""
+"Při nastavování hesla správcovského uživatele Virtuoso se nastala chyba. To "
+"může být zapříčiněno tím, že účet již má heslo, nebo protože nastal problém "
+"při komunikaci se serverem Virtuoso."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"If the database already existed then it will have retained the original "
+"password. If there was some other problem then the default password (\"dba"
+"\") is used."
+msgstr ""
+"Pokud již databáze existuje, pak jí zůstane její původní heslo. Jestliže s "
+"ní byl jiný problém, pak se použije výchozí heslo (\"dba\")."
+
+#. Type: error
+#. Description
+#: ../virtuoso-opensource-7.templates:6001
+msgid ""
+"It is recommended to check the passwords for the users \"dba\" and \"dav\" "
+"immediately after installation."
+msgstr ""
+"Doporučujeme, abyste si ihned po instalaci zkontrolovali hesla uživatelů "
+"\"dba\" and \"dav\"."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid "Remove all Virtuoso databases?"
+msgstr "Odstranit všechny databáze Virtuoso?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+#, fuzzy
+#| msgid ""
+#| "The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+#| "databases is about to be removed."
+msgid ""
+"The /var/lib/virtuoso-opensource-7 directory which contains the Virtuoso "
+"databases is about to be removed."
+msgstr ""
+"Adresář /var/lib/virtuoso-opensource-7, který obsahuje databáze Virtuoso by "
+"měl být odstraněn."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:7001
+msgid ""
+"If you're removing the Virtuoso package in order to later install a more "
+"recent version, or if a different Virtuoso package is already using it, you "
+"can choose to keep databases."
+msgstr ""
+"Pokud odstraňujete balíček Virtuoso, protože budete chtít později "
+"nainstalovat novější verzi, nebo protože je již používá jiný balíček "
+"Virtuoso, můžete zvolit ponechat databáze."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid "HTTP server port:"
+msgstr "Port HTTP serveru:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+msgid ""
+"Virtuoso provides a web server capable of hosting HTML and VSP pages (with "
+"optional support for other languages). If you are installing this instance "
+"as a public web server directly on the Internet, you probably want to choose "
+"80 as web server port."
+msgstr ""
+"Virtuoso poskytuje webový server schopný hostit HTML a VSP stránky (s "
+"volitelnou podporou pro další jazyky). Instalujete-li tuto instanci, jako "
+"veřejný webový server přímo na Internetu, pravděpodobně budete chtít zvolit "
+"port 80, což je port webového serveru."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:8001
+#, fuzzy
+#| msgid ""
+#| "Please note that the default web server root directory is /var/lib/"
+#| "virtuoso-opensource-7/vsp and will be empty unless you also install the "
+#| "package containing the standard Virtuoso start page."
+msgid ""
+"Please note that the default web server root directory is /var/lib/virtuoso-"
+"opensource-7/vsp and will be empty unless you also install the package "
+"containing the standard Virtuoso start page."
+msgstr ""
+"Berte prosím na vědomí, že výchozí kořenový adresář webového serveru je /var/"
+"lib/virtuoso-opensource-7/vsp a bude prázdný dokud nenainstalujete také "
+"balíček obsahující standardní úvodní stránku pro Virtuoso."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid "Database server port:"
+msgstr "Port databázového serveru:"
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"You may change here the port on which the Virtuoso database server will "
+"listen for connections."
+msgstr ""
+"Zde můžete změnit port, na kterém bude naslouchat databázový server Virtuoso."
+
+#. Type: string
+#. Description
+#: ../virtuoso-opensource-7.templates:9001
+msgid ""
+"Modifying this default value can improve security on servers that might be "
+"targets for unauthorized intrusion."
+msgstr ""
+"Úprava této výchozí hodnoty může zlepšit zabezpečení na serverech, které se "
+"mohou stát cílem pro neautorizované instrukce."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid "Register an ODBC system DSN for Virtuoso?"
+msgstr "Zaregistrovat pro Virtuoso DSN v systému ODBC?"
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"An ODBC manager (unixodbc or iODBC) is already installed on this system, and "
+"the Virtuoso ODBC driver is installed."
+msgstr ""
+"Správce ODBC (unixodbc nebo iODBC) je již na tomto systému nainstalován a "
+"ovladač Virtuoso ODBC driver je nainstalován."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"The default Virtuoso instance can be automatically added to the list of "
+"available System Data Sources (and automatically deleted from the list when "
+"this package is removed)."
+msgstr ""
+"Výchozí instance Virtuoso může být automaticky přidána na seznam dostupných "
+"systémových datových zdrojů (a automaticky z něj smazána, je-li tento "
+"balíček odstraněn)."
+
+#. Type: boolean
+#. Description
+#: ../virtuoso-opensource-7.templates:10001
+msgid ""
+"If you choose this option, the DSN will be named \"VOS\". User and password "
+"details are omitted from the DSN for security reasons."
+msgstr ""
+"Zvolíte-li tuto možnost, DSN bude nazvané \"VOS\". Uživatel a heslo jsou z "
+"bezpečnostních důvodů z DSN vynechány."
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid "Default Virtuoso server package:"
+msgstr "Výchozí balíček serveru Virtuoso:"
+
+#. Type: select
+#. Description
+#: ../virtuoso-opensource-7.templates:11001
+msgid ""
+"Please choose the version of virtuoso-server that will be linked to by the "
+"default (unversioned) names, for init scripts and client tools."
+msgstr ""
+"Zvolte prosím verzi virtuoso-server, která bude propojena s tím s výchozími "
+"názvy (bez uvedené verze)."
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid "Register the Virtuoso ODBC driver?"
+msgstr "Zaregistrovat ovladač Virtuoso ODBC driver?"
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"An ODBC manager (unixodbc or iODBC)  is already installed on this system."
+msgstr ""
+"Správce ODBC (unixodbc nebo iODBC) je již na tomto systému nainstalován."
+
+#. Type: boolean
+#. Description
+#: ../libvirtodbc0.templates:2001
+msgid ""
+"The Virtuoso ODBC driver can be automatically added to the list of available "
+"ODBC drivers (and automatically deleted from the list when this package is "
+"removed)."
+msgstr ""
+"Ovladač Virtuoso ODBC driver může být automaticky přidán na seznam "
+"dostupných systémových datových zdrojů (a automaticky z něj smazán, je-li "
+"tento balíček odstraněn)."

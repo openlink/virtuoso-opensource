@@ -1,5 +1,5 @@
 /*
- *  Dkmarshal.h
+ *  Dkmarsh.h
  *
  *  $Id$
  *
@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,7 +29,7 @@
 #define _DKMARSHAL_H
 
 typedef void *(*macro_char_func) (dk_session_t * session, dtp_t macro);
-typedef int (*ses_write_func) (void *obj, dk_session_t * session);
+typedef int (*ses_write_func) (const void *obj, dk_session_t * session);
 
 /* Rename */
 #define print_object(OBJ,SES,I1,I2)	print_object2 (OBJ, SES)
@@ -46,6 +46,7 @@ void *read_object_boxing (dk_session_t * session);
 void init_readtable (void);
 void *PrpcReadObject (dk_session_t * session);
 macro_char_func *get_readtable (void);
+macro_char_func *get_rpcreadtable (void);
 void *scan_session (dk_session_t * session);
 void *scan_session_boxing (dk_session_t * session);
 void print_long (long l, dk_session_t * session);
@@ -57,18 +58,19 @@ void print_double (double v, dk_session_t * session);
 void print_raw_float (float f, dk_session_t * session);
 void print_raw_double (double f, dk_session_t * session);
 void dks_array_head (dk_session_t * session, long n_elements, dtp_t type);
-void print_string (char *string, dk_session_t * session);
-void print_ref_box (char *string, dk_session_t * session);
-void print_object2 (void *object, dk_session_t * session);
+void print_string (const char *string, dk_session_t * session);
+void print_uname (const char *string, dk_session_t * session);
+void print_ref_box (const char *string, dk_session_t * session);
+void print_object2 (const void *object, dk_session_t * session);
 int srv_write_in_session (void *object, dk_session_t * session, int flush);
 int PrpcWriteObject (dk_session_t * session, void *object);
 void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 int64 read_int (dk_session_t *session);
 extern ses_write_func int64_serialize_client_f;
 
-void *box_read_error (dk_session_t * session, dtp_t dtp);
+NORETURN void box_read_error (dk_session_t * session, dtp_t dtp);
 
-#define MAX_READ_STRING 10000000
+#define MAX_READ_STRING 0xfffffe /*3 byte len - 1 for the final 0, box_length returns correct len */
 #define MARSH_CHECK_LENGTH(length) \
   if ((length) > MAX_READ_STRING || (length) < 0) \
     { \
@@ -95,6 +97,13 @@ void *box_read_error (dk_session_t * session, dtp_t dtp);
       return 0; /* dummy */ \
     }
 
+#define MARSH_KEEP_OBJ(s, obj) do { \
+  dk_set_push(&(s)->dks_pending_obj, obj); \
+  if (!(s)->dks_top_obj) (s)->dks_top_obj = (caddr_t)obj;	\
+} while (0)
+#define MARSH_POP_OBJ(s, obj) do { \
+  dk_set_pop(&(s)->dks_pending_obj); \
+} while (0)
 
 extern int (*box_flags_serial_test_hook) (dk_session_t * ses);
 

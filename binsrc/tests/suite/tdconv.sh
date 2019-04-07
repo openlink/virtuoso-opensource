@@ -1,13 +1,13 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tdconv.sh,v 1.10.10.3 2013/01/02 16:15:04 source Exp $
 #
 #  VAD tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
 LOGFILE=tdconv.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 #OLD_DBPUMP="/usr/export/zzeng/virtdev/binsrc/dbdump/dbpump"
 #NEW_DBPUMP="dbpump"
@@ -182,13 +182,13 @@ echo "http_port: ${HTTPPORT}" >> ${CFGFILE}
 
 
 gunzip -c pdd_txt.gz >pdd.txt
-RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < pddin.sql
+RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/pddin.sql
 
-RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 
-RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tdavmigr1.sql
+RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tdavmigr1.sql
 
-RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder1.sql
+RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder1.sql
 
 DoCommandOLD  $OLD_DSN "select *from \"pdd\";" "Checkong PDD"
 
@@ -197,7 +197,7 @@ DoCommandOLD  $OLD_DSN "select *from \"pdd\";" "Checkong PDD"
 #exit
 
 
-RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tmulgrp1.sql
+RUN $OLD_ISQL $OLD_DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tmulgrp1.sql
 
 rm -r data.dbk
 GenPUMP1 t1.args
@@ -221,21 +221,21 @@ ${NEW_DBPUMP} @t2.args
 
 DoCommand  $DSN "select *from \"pdd\";" "Checkong PDD"
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunder2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunder2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdconv.sh: tables inheritance "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwxml.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwxml.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdconv.sh: nwxml.sql functions "
     exit 3
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tmulgrp2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tmulgrp2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdconv.sh: tmulgrp2.sql functions "
@@ -244,7 +244,7 @@ fi
 
 DoCommand  $DSN "select U_NAME, U_PASSWORD, U_GROUP, U_ID, U_DATA, U_IS_ROLE, U_SQL_ENABLE from DB.DBA.SYS_USERS;" "Getting users"
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tdavmigr2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tdavmigr2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tdconv.sh: tdavmigr2.sql functions "

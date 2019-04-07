@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1201,7 +1201,7 @@ numeric_init (void)
 {
   _numeric_rc = resource_allocate (200,
       _numeric_rc_allocate, _numeric_rc_free, _numeric_rc_clear, 0);
-  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp);
+  dk_dtp_register_hash (DV_NUMERIC, (box_hash_func_t) numeric_hash, numeric_hash_cmp, numeric_hash_cmp);
   return NUMERIC_STS_SUCCESS;
 }
 
@@ -1524,7 +1524,7 @@ numeric_from_string (numeric_t n, const char *s)
   /* handles cases for numeric_from_double */
   if (!isdigit (cp[0]))
     {
-      if (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity"))
+      if (!stricmp (cp, "INF") || !stricmp (cp, "Infinity"))
 	{
 	  _numeric_inf (n, neg);
 	  return NUMERIC_STS_SUCCESS;
@@ -1677,7 +1677,7 @@ numeric_from_string_is_ok (const char *s)
   while (isspace (cp[0]))
     cp++;
   /* handles cases for numeric_from_double */
-  if (!isdigit (cp[0]) && (!strcmp (cp, "Inf") || !strcmp (cp, "Infinity") || !strcmp (cp, "NaN")))
+  if (!isdigit (cp[0]) && (!stricmp (cp, "INF") || !stricmp (cp, "Infinity") || !stricmp (cp, "NaN")))
     return first_significant_char;
   while (isdigit (cp[0])) { plain_digits++; cp++; }
   if (cp[0] == '.')
@@ -1945,12 +1945,12 @@ _numeric_to_string (numeric_t n, char *str, size_t max_str, int new_prec, int ne
 	}
       else if (num_is_plus_inf (n))
 	{
-	  strcpy_size_ck (str, "Inf", max_str);
+	  strcpy_size_ck (str, "INF", max_str);
 	  return NUMERIC_STS_OVERFLOW;
 	}
       else
 	{
-	  strcpy_size_ck (str, "-Inf", max_str);
+	  strcpy_size_ck (str, "-INF", max_str);
 	  return NUMERIC_STS_UNDERFLOW;
 	}
     }
@@ -2104,14 +2104,22 @@ numeric_to_double (numeric_t n, double *pvalue)
 {
   char res[NUMERIC_MAX_STRING_BYTES];
   int rc;
-
+  res[0] = 0;
   rc = _numeric_to_string (n, res, sizeof (res), NUMERIC_MAX_PRECISION, 15);
 
   if (rc == NUMERIC_STS_SUCCESS)
     *pvalue = strtod (res, NULL);
   else
-    *pvalue = 0.0;
-
+    {
+      if ('I' == res[0])
+        *pvalue = DBL_POS_INF;
+      else if ('-' == res[0] && 'I' == res[1])
+        *pvalue = DBL_NEG_INF;
+      else if ('N' == res[0])
+        *pvalue = DBL_NAN;
+      else
+        *pvalue = 0.0;
+    }
   return rc;
 }
 
@@ -2119,6 +2127,16 @@ numeric_to_double (numeric_t n, double *pvalue)
 /*
  *  Convert a number to a marshalled value
  */
+
+int
+numeric_dv_len (numeric_t n)
+{
+  dtp_t res[255];
+  numeric_to_dv (n, res, sizeof (res));
+  return 2 + res[1];
+}
+
+
 int
 numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength)
 {
@@ -2646,10 +2664,13 @@ numeric_print (FILE *fd, char *name, numeric_t n)
 {
   char res[NUMERIC_MAX_STRING_BYTES];
 
+  if (!fd)
+    fd = stderr;
+
   if (name)
     fprintf (fd, "%s: ", name);
 
-  numeric_to_string (n, res);
+  numeric_to_string (n, res, NUMERIC_MAX_STRING_BYTES);
   fprintf (fd, "%s\n", res);
 }
 
@@ -2665,7 +2686,7 @@ numeric_debug (FILE *fd, char *name, numeric_t n)
   if (name)
     fprintf (fd, "%s: ", name);
 
-  _numeric_to_string (n, res, 0, 0);
+  _numeric_to_string (n, res, NUMERIC_MAX_STRING_BYTES, 0, 0);
   fprintf (fd, "%s {%d.%d} %s\n", res, n->n_len, n->n_scale,
       num_is_invalid (n) ? "NaN" : "");
 }

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1055,7 +1055,7 @@ create function "calendar_DAV_RES_CONTENT" (in id any, inout content any, out ty
 	declare tz integer;
     type := 'text/calendar';
 	whenever not found goto endline;
-	tz := timezone(now());
+	tz := timezone(curdatetime_tz());
 	if (id[7] is not null)
 	{
         content := CAL.WA.det_export_vcal (id[4], tz, id[7]);

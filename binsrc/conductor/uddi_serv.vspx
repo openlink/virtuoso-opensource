@@ -1,0 +1,275 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="uddi_serve_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+				vm:owner="yacutia_uddi_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>UDDI</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="UDDI Service Servers"/>
+      <vm:menuitem name="roles_url" value="UDDI Service Browse"/>
+      <vm:menuitem name="caps_url" value="UDDI Service Find"/> <!--  url="uddi_serv_find.vspx"   url="uddi_serv_browse.vspx" -->
+    </vm:menu>
+    <vm:header caption="UDDI Businesses"/>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                    <v:template name="tabTemplate1" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                      <td class="page_tab_selected" align="center">
+                        <nobr>&nbsp;&nbsp;Businesses&nbsp;&nbsp;</nobr>
+                      </td>
+                      <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url12" value="--'Bindings'" format="%s" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td -->
+                      <td class="page_tab" align="center">
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </v:template>
+                    <v:template name="tabTemplate2" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2' ) then 1 else 0 end">
+                      <td class="page_tab" align="center">
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url21" value="--'Businesses'" format="%s" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                      </td>
+                      <td class="page_tab_selected" align="center">
+                        <nobr>&nbsp;&nbsp;Bindings&nbsp;&nbsp;</nobr>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </v:template>
+                    <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
+                      <td class="page_tab" align="center">
+                        <nobr>&nbsp;&nbsp;<v:url name="b_url31" value="--'Businesses'" format="%s" url="--'uddi_serv.vspx?page=1'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
+                      </td>
+                      <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url32" value="--'Bindings'" format="%s" url="--'uddi_serv.vspx?page=2'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td-->
+                      <td class="page_tab_selected" align="center">
+                        <nobr>&nbsp;&nbsp;tModels&nbsp;&nbsp;</nobr>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </v:template>
+                  </tr>
+                </table>
+                <table class="tab_page">
+                  <tr>
+                    <td valign="top">
+                      <v:template name="ent_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1'  or  get_keyword('page', control.vc_page.vc_event.ve_params) is null ) then 1 else 0 end">
+                        <table>
+                          <tr>
+                            <td class="uddi_info">
+                              A business provider is a party, such as a person, group, or business, that offers and supports a web service.
+                              This information can only be modified by the owner (publisher) listed.
+                            </td>
+                          </tr>
+                        </table>
+                        <br/>
+                        <table class="page_main_listing" rules="groups">
+                          <tr>
+                            <th>Business Name</th>
+                            <th>Authorized name</th>
+                            <th>Operator</th>
+                            <th colspan="2"></th>
+                            <th class="HeaderButton">
+                              <v:url name="n_ent_url" value="--'New business'" format="%s" url="--'uddi_serv_create.vspx?page=entity&mode=create'" xhtml_class="uddi"/>
+                            </th>
+                          </tr>
+                            <?vsp
+                              declare cnt integer;
+                              cnt := 0;
+                              for select BE_AUTHORIZED_NAME,  BE_OPERATOR,  BE_NAME, BE_BUSINESS_KEY   from UDDI..BUSINESS_ENTITY do
+                              {
+                                if (mod (cnt,2))
+                                  http('<tr class="listing_row_even">');
+                                else
+                                  http('<tr class="listing_row_odd">');
+                                http('<td class="listing_col">');
+                                http(BE_NAME);
+                                http('</td>');
+                                http('<td class="listing_col">');
+                                http(BE_AUTHORIZED_NAME);
+                                http('</td>');
+                                http('<td class="listing_col">');
+                                http(BE_OPERATOR);
+                                http('</td>');
+                                http('<td class="listing_col_action"><a   class="uddi"');
+                                http(sprintf(' href="uddi_remove.vspx?page=entity&business_key=%s&sid=%s&realm=%s"', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http('>Delete</a></td>');
+                                http('<td class="listing_col"><a   class="uddi" href="');
+                                http(sprintf('uddi_serv_create.vspx?page=entity&mode=edit&business_key=%s&sid=%s&realm=%s\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http('">Edit</a></td>');
+                                http('<td class="listing_col"><a class="uddi" href="');
+                                http(sprintf('uddi_serv_browse.vspx?page=1&business_key=%s&sid=%s&realm=%s\r\n', BE_BUSINESS_KEY, self.sid ,self.realm ));
+                                http('">Details</a></td>');
+                                http('</tr>');
+                                cnt := cnt +1;
+                              }
+                              http('<tr><td class="listing_col">&nbsp;</td></tr>');
+                              if (cnt > 0)
+                              {
+                                http('<tr><td class="listing_count">');
+                                http(sprintf('%d Business(es) found</td></tr>',cnt));
+                              }
+                              else
+                                http('<tr><td class="listing_count">No Businesses found</td></tr>');
+                            ?>
+                          </table>
+                        </v:template>
+                        <!--Binding -->
+                        <v:template name="binding_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2'  ) then 1 else 0 end">
+                        </v:template>
+                        <!--TModel -->
+                        <v:template name="tmodel_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3'  ) then 1 else 0 end">
+                          <table border="0"  width="100%" cellpadding='2' cellspacing='4'>
+                            <tr>
+                              <td class="SubInfo" width="100%">
+                                Technical Model is the method to classify the service providing.
+                              </td>
+                            </tr>
+                          </table>
+                          <br/>
+                          <table class="page_main_listing" rules="groups">
+                            <thead>
+                              <tr>
+                                <th>Model_name</th>
+                                <th>Operator</th>
+                                <th>Authorized name</th>
+                                <th/>
+                                <th>
+                                  <v:url name="n_model_url" value="--'New model'" format="%s" url="--'uddi_serv_create.vspx?page=tmodel&mode=create'" xhtml_class="uddi"/>
+                                </th>
+        </tr></thead>
+        <tbody>
+        <?vsp
+          declare cnt integer;
+          cnt := 0;
+          for select TM_AUTHORIZED_NAME,  TM_OPERATOR,  TM_NAME, TM_TMODEL_KEY    from UDDI..TMODEL  do {
+	    if (mod (cnt,2))
+              http('<tr class="listing_row_even">');
+            else
+              http('<tr class="listing_row_odd">');
+            http('<td class="listing_col">');
+            http(TM_NAME);
+            http('</td>');
+
+            http('<td class="listing_col">');
+            http(TM_OPERATOR);
+            http('</td>');
+
+            http('<td class="listing_col">');
+            http(TM_AUTHORIZED_NAME);
+            http('</td>');
+
+            http('<td class="listing_col"><a class="uddi"');
+            http(sprintf(' href="uddi_remove.vspx?page=tmodel&page_back=3&model_key=%s&sid=%s&realm=%s"', TM_TMODEL_KEY , self.sid ,self.realm ));
+            http('>Delete</a></td>');
+
+            http('<td class="listing_col_action"><a class="uddi" href="');
+            http(sprintf('uddi_serv_create.vspx?page=tmodel&mode=edit&tmodel_key=%s&sid=%s&realm=%s\r\n', TM_TMODEL_KEY , self.sid ,self.realm ));
+            http('">Edit</a></td>');
+
+            http('</tr>');
+            cnt := cnt +1;
+          }
+          http('<tr><td class="listing_col">&nbsp;</td></tr>');
+
+            if  (cnt > 0) {
+                http('<tr><td class="listing_count">');
+                http(sprintf('%d model(s) found</td></tr>',cnt));
+            } else
+              http('<tr><td class="listing_count">No models found</td></tr>');
+
+
+        ?>
+        </tbody>
+       </table>
+      </v:template>
+
+
+
+                          </td>
+                        </tr>
+                  </table>
+              </td>
+          </tr>
+        </table>
+  </td>
+    </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+
+<!--
+'businessEntity - this  refers to BUSINESS_ENTITY table
+'contacts'        - - this  refers to UDDI..CONTACTS  table
+'businessService' - - this  refers to BUSINESS_SERVICE  table
+'tModelInstanceInfo' -- I cannot figure out to which table this refers
+'instanceDetails'  - - this  refers to INSTANCE_DETAIL table
+'bindingTemplate  - - this  refers to  BINDING_TEMPLATE table
+'overviewDoc' - - this  refers to BUSINESS_SERVICE  table
+'tModel' - - - this  refers to TMODEL table
+
+   imitko: yep.
+Vlad: thanks, but  what about this:
+'tModelInstanceInfo' -- I cannot figure out onto which table this refers
+   imitko: INSTANCE_DETAIL
+-->

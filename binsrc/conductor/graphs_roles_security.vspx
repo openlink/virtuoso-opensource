@@ -1,0 +1,188 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="graphs_roles_security"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:variable name="vr_roles_by_subrole" type="varchar" default="''" param-name="roles_by_subrole" />
+  <v:variable name="vr_roles_by_like" type="varchar" default="''" param-name="roles_by_like" />
+  <v:variable name="vr_graphs_by_group" type="varchar" default="''" param-name="graphs_by_group" />
+  <v:variable name="vr_graphs_by_like" type="varchar" default="''" param-name="graphs_by_like" />
+
+  <h2>Permissions of Roles</h2>
+  <vm:if test="USER = 'dba'">
+    <i>Your own security is not shown because you are the DBA almighty</i>
+  </vm:if>
+
+  <v:form name="r_page_form" type="simple" method="POST" action="graphs_page.vspx?page=3">
+    <div class="fm">
+      <i>Empty string or single % means no filter</i>
+      <br />
+      <h2>Filter columns of roles</h2>
+
+      <label style="width: 300px;">Show only roles with subrole</label>
+      <input id="roles_by_subrole" name="roles_by_subrole" value="<?V self.vr_roles_by_subrole ?>" style="width: 300px;" />
+      <br />
+      <vm:if test="(self.vr_roles_by_subrole <> '') and (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vr_roles_by_subrole and U_IS_ROLE) is null">
+        <i style="padding-left: 310px;">Note that the role name "<?V self.roles_by_subrole.ufl_value ?> specified last time does not exist. It is ignored by current filtering.</i>
+        <br />
+      </vm:if>
+
+      <label style="width: 300px;">Show only users with names LIKE</label>
+      <input id="roles_by_like" name="roles_by_like" value="<?V self.vr_roles_by_like ?>" style="width: 300px;" />
+      <br />
+
+      <h2>Filter rows of graphs</h2>
+
+      <label style="width: 300px;">Show only graphs belonging to graph group</label>
+      <input id="graphs_by_group" name="graphs_by_group" value="<?V self.vr_graphs_by_group ?>" style="width: 300px;" />
+      <br />
+
+      <label style="width: 300px;">Show only graphs with names LIKE</label>
+      <input id="graphs_by_like" name="graphs_by_like" value="<?V self.vr_graphs_by_like ?>" style="width: 300px;" />
+      <br />
+      <input type="submit" id="filter" name="filter" value="Filter" style="margin-left: 310px;" />
+      <v:button name="r_clear" action="simple" value="Clear">
+        <v:on-post>
+          <![CDATA[
+            self.vc_redirect ('graphs_page.vspx?page=3');
+          ]]>
+        </v:on-post>
+      </v:button>
+    </div>
+  </v:form>
+
+  <?vsp
+    declare selected_roles, selected_graphs, meta any;
+    declare qry, stat, msg varchar;
+    declare roles_by_subrole_gid integer;
+    declare params any;
+
+    params := self.vc_page.vc_event.ve_params;
+
+    -- Querying (optionally filtered) roles
+    qry :=
+      'select u.U_ID, u.U_NAME      \n' ||
+      '  from DB.DBA.SYS_USERS as u \n' ||
+      ' where U_IS_ROLE ';
+    if (self.vr_roles_by_subrole <> '')
+    {
+      roles_by_subrole_gid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vr_roles_by_subrole and U_IS_ROLE);
+      if (roles_by_subrole_gid is not null)
+        qry := qry || sprintf (' and (u.U_ID = %d or exists (select 1 from DB.DBA.SYS_ROLE_GRANTS ug where ug.GI_SUPER = u.U_ID and ug.GI_SUB = %d))', roles_by_subrole_gid, roles_by_subrole_gid);
+    }
+    if (not (self.vr_roles_by_like in ('', '%')))
+    {
+      qry := qry || sprintf (' and (u.U_NAME like ''%S'')', self.vr_roles_by_like);
+    }
+    qry := qry || ' order by U_ID';
+    stat := '00000';
+    msg := '';
+    exec (qry, stat, msg, vector(), 1000, meta, selected_roles );
+    if (stat <> '00000')
+    {
+      http ('<xmp>' || qry || '\nresults in\n' || stat || ': ' || msg || '</xmp>');
+      return;
+    }
+    -- Querying (optionally filtered) graphs
+    self.rgs_query_graphs (params, stat, msg, selected_graphs);
+    if (stat <> '00000')
+    {
+      http ('<xmp>' || qry || '\nresults in\n' || stat || ': ' || msg || '</xmp>');
+      return;
+    }
+
+    -- Rendering the table
+    self.rgs_pagination_for_users_or_roles (params, selected_roles, 'role', 5);
+    self.rgs_pagination_for_graphs (params, selected_graphs, 10);
+    http ('<table class="listing">\n');
+    http ('<thead>\n');
+    http ('<tr style="background-color: #99B3C5;">\n');
+    http ('<th colspan="2" rowspan="2" style="text-align: center;">Graphs</th>\n');
+    http (sprintf ('<th colspan="%d" style="text-align: center;">Roles</th>\n', length (selected_roles)));
+    http ('</tr>\n');
+    http ('<tr style="background-color: #99B3C5;">\n');
+    foreach (any sel_u in selected_roles) do
+    {
+      declare link_params any;
+      declare sel_uid integer;
+      declare sel_name varchar;
+
+      sel_uid := sel_u[0];
+      sel_name := sel_u[1];
+      link_params := tweak_by_keywords (params, 'set', 'roles_by_subrole', sel_name, 'delete', 'roles_by_like', '', 'delete', 'uors_page', '');
+      http (sprintf ('<th valign="top" style="text-align: center;"><a href = "%s">%s</a>', self.rgs_uri (link_params), sel_name));
+      http ('<div style="padding-left: 1em; text-align: left;">');
+      for (select ug.GI_DIRECT as gdirect, u.U_NAME as gname from DB.DBA.SYS_ROLE_GRANTS ug join DB.DBA.SYS_USERS u on (ug.GI_SUB = u.U_ID) where ug.GI_SUPER = sel_uid order by 2) do
+      {
+        link_params := tweak_by_keywords (params, 'set', 'roles_by_subrole', gname, 'delete', 'roles_by_like', '', 'delete', 'uors_page', '');
+        http (sprintf ('<br /><font size="1">has <a href="%s">%s</a> %s</font>', self.rgs_uri (link_params), gname, case (gdirect) when 0 then '' else ' directly' end));
+      }
+      http ('</div>');
+      http ('</th>\n');
+    }
+    http ('</tr>\n');
+    http ('</thead>\n');
+    http ('<tbody>\n');
+    foreach (any sel_g in selected_graphs) do
+    {
+      declare sel_iid IRI_ID;
+      declare sel_iri varchar;
+
+      sel_iid := sel_g[1];
+      sel_iri := sel_g[2];
+      http ('<tr>\n');
+      self.rgs_row_of_graph_begin (params, sel_g[0], sel_iid, sel_iri);
+      foreach (any sel_r in selected_roles) do
+      {
+        declare sel_gid integer;
+        declare min_perms, max_perms, n_users integer;
+
+        sel_gid := sel_r[0];
+        select DB.DBA.BIT_OR_AGG (DB.DBA.RDF_GRAPH_USER_PERMS_GET (sel_iid, GI_SUPER)),
+               bit_xor (0hexFFFF, __max_notnull (DB.DBA.BIT_OR_AGG (bit_xor (0hexFFFF, DB.DBA.RDF_GRAPH_USER_PERMS_GET (sel_iid, GI_SUPER))), 0)),
+               count (1)
+          into max_perms,
+               min_perms,
+               n_users
+          from DB.DBA.SYS_ROLE_GRANTS ug join DB.DBA.SYS_USERS u on (ug.GI_SUPER = u.U_ID)
+         where ug.GI_SUB=sel_gid and not u.U_IS_ROLE;
+
+        if (0 = n_users)
+          http ('<td valign="top">Role has no users</td>\n');
+        else if (max_perms = min_perms)
+          http (sprintf ('<td valign="top">All %d users has<br/>%s</td>\n', n_users, self.rgs_pexplain (min_perms)));
+        else
+          http (sprintf ('<td valign="top">%d users with perms<br/>from %s<br/>to %s</td>\n', n_users, self.rgs_pexplain (min_perms), self.rgs_pexplain (max_perms)));
+      }
+      http ('</tr>\n');
+    }
+    http ('</tbody>\n');
+    http ('</table>\n');
+  ?>
+</v:page>

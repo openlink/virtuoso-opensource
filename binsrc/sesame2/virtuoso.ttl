@@ -17,6 +17,8 @@
       vr:defGraph "{%Default graph name|sesame:nil%}" ;
       vr:useLazyAdd {%Enable using batch optimization|false|true%} ;
       vr:roundRobin {%Use RoundRobin for connection|false|true%} ;
-      vr:fetchSize {%Buffer fetch size|200%} ;
-      vr:ruleSet "{%Inference RuleSet name|null%}"
+      vr:insertBNodeAsVirtuosoIRI {%Insert BNode as Virtuoso IRI|false|true%} ;
+      vr:fetchSize {%Buffer fetch size|100%} ;
+      vr:ruleSet "{%Inference RuleSet name|null%}";
+      vr:useDefGraphForQueries {%Use defGraph with SPARQL queries, if query default graph wasn't set|true|false%} 
    ].

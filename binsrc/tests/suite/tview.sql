@@ -1,29 +1,29 @@
 --
 --  tview.sql
 --
---  $Id$
+--  $Id: tview.sql,v 1.14.10.2 2013/01/02 16:15:33 source Exp $
 --
 --  UNION and VIEW tests
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 select ROW_NO from T1 union select ROW_NO + 5 from T1 union all select ROW_NO from T1;
 ECHO BOTH $IF $EQU $ROWCNT 45 "PASSED" "***FAILED";
@@ -48,6 +48,11 @@ ECHO BOTH ": UNION ALL derived table ORDER BY " $ROWCNT " rows\n";
 select V1.R, V2.R from T1_LOW V1 left outer join T1_LOW V2 on (V2.R = V1.R + 5);
 ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
 ECHO BOTH ": Outer join of view " $ROWCNT " rows\n";
+
+select a.r,  b.r from t1_low a left join (select distinct c.r from t1_low c table option (hash)) b on b.r = a.r + 5 option (hash, order);
+ECHO BOTH $IF $EQU $ROWCNT 20 "PASSED" "***FAILED";
+ECHO BOTH ": Outer join of view in distinct dt " $ROWCNT " rows\n";
+
 
 select V1.R, V2.R from T1_LOW V1 left outer join T1_LOW V2 on (V2.R = V1.R + 5) where V2.R is NULL;
 ECHO BOTH $IF $EQU $ROWCNT 5 "PASSED" "***FAILED";
@@ -114,7 +119,7 @@ ECHO BOTH ": " $LAST[1] " words in words_v with len = 6\n";
 
 select *, 1 from T1 union all select *, 2 from T1 order by ROW_NO;
 ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
-ECHO BOTH ": sorted union all " $ROWCNT "  rows\n";
+ECHO BOTH ": sorted union all " $rowcnt "  rows\n";
 
 drop table TVUPDATE;
 create table TVUPDATE (ROW_NO integer not null primary key, STRING1 varchar, STRING2 varchar);
@@ -137,7 +142,7 @@ ECHO BOTH ": inserted into view  " $ROWCNT "  rows\n";
 delete from TVUPDATE_LOW_10 where R >= 200;
 select * from TVUPDATE_LOW_10;
 ECHO BOTH $IF $EQU $ROWCNT 1  "PASSED" "***FAILED";
-ECHO BOTH ": deld from inserted view, now " $ROWCNT "  rows\n";
+ECHO BOTH ": deld from inserted view, now " $rowcnt "  rows\n";
 
 drop view TVUPDATE;
 select * from TVUPDATE_LOW_10;

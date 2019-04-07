@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -23,24 +23,6 @@
 
 -- Upgrade code for NNTP using a view
 
---#IF VER=5
-create procedure NEWS_MSG_UPGRADE ()
-{
-  if (exists (select 1 from SYS_KEYS where KEY_TABLE = 'DB.DBA.NEWS_MSG')
-      and not exists (select 1 from SYS_VIEWS where V_NAME = 'DB.DBA.NEWS_MSG'))
-    {
-      exec ('drop table  DB.DBA.NEWS_MSG_NM_BODY_WORDS');
-      exec ('alter table DB.DBA.NEWS_MULTI_MSG drop FOREIGN KEY (NM_KEY_ID) REFERENCES DB.DBA.NEWS_MSG');
-      exec ('alter table DB.DBA.NEWS_MSG rename DB.DBA.NEWS_MSG_NNTP');
-      exec ('alter table DB.DBA.NEWS_MULTI_MSG modify primary key (NM_GROUP, NM_KEY_ID)');
-    }
-  return;
-}
-;
-
-NEWS_MSG_UPGRADE ()
-;
---#ENDIF
 
 create table NEWS_MSG_NNTP (
 	NM_ID		varchar not null,	-- Message-ID (unique)
@@ -170,22 +152,6 @@ create trigger NEWS_MSG_D instead of delete on NEWS_MSG referencing old as O
 ;
 
 
---#IF VER=5
-create procedure DB.DBA.UPGRADE_NEWS_MSG ()
-{
-  declare id integer;
-  id := sequence_set ('DB.DBA.DB.DBA.NEWS_MSG_NNTP.NM_BODY_ID',0,2);
-  if (id = 0)
-    sequence_set ('DB.DBA.DB.DBA.NEWS_MSG_NNTP.NM_BODY_ID',1,1);
-  registry_set ('NNTP_SERVER_ID', uuid ());
-}
-;
-
-
---!AFTER
-DB.DBA.UPGRADE_NEWS_MSG ()
-;
---#ENDIF
 
 create procedure
 NN_FEED_PART (inout vb any, inout mb any, inout body varchar, inout id integer)
@@ -294,15 +260,9 @@ err_exit:
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index ('DB.DBA.NEWS_MSG_NNTP', 'NM_BODY', 'NM_BODY_ID', 2, 0, null, 1, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 DB.DBA.vt_create_ftt ('DB.DBA.NEWS_MSG_NNTP', null, null, 2)
 ;
 
@@ -331,15 +291,6 @@ create table NEWS_GROUPS (
 	PRIMARY KEY (NG_GROUP))
 ;
 
---#IF VER=5
---!AFTER
-alter table NEWS_GROUPS add NG_NEXT_NUM integer
-;
-
---!AFTER
-alter table NEWS_GROUPS add NG_TYPE varchar default 'NNTP'
-;
---#ENDIF
 
 create table NEWS_SERVERS (
 	NS_ID		integer identity,	-- News server ID
@@ -365,10 +316,6 @@ create view NEWS_MESSAGES as select * from DB.DBA.NEWS_MSG, DB.DBA.NEWS_MULTI_MS
   where NM_ID = NM_KEY_ID
 ;
 
---#IF VER=5
-update DB.DBA.NEWS_GROUPS set NG_AUTO = 1 where NG_UP_INT > 0
-;
---#ENDIF
 
 -- NNTP server start
 
@@ -567,9 +514,6 @@ create procedure ns_add_msg (in _in_art any, in _group integer, inout my_last in
 ;
 
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure ns_mirror_news
   (in _server varchar, in _out_name varchar, in _group integer, inout my_last integer,
 	in _end integer, in _begin integer, in _user varchar, in _pass varchar)
@@ -705,9 +649,6 @@ create procedure ns_mirror_news
 ;
 
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure
 new_news (in _group_in any, in _scheduler_grop integer := 0)
 {
@@ -809,9 +750,6 @@ new_news (in _group_in any, in _scheduler_grop integer := 0)
 ;
 
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure
 ns_up_num (in gr_n integer)
 {
@@ -1365,9 +1303,6 @@ ns_post_write_out (in _text varchar)
 ;
 
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure
 ns_post (in _message any)
 {
@@ -1948,9 +1883,6 @@ create trigger scheduled_event_delete_new_newsgroup after delete on DB.DBA.NEWS_
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create procedure
 news_acl_insert (in ng_group integer, in mask varchar, in allow integer, in _mode integer, in _rate double precision := 0)
 {
@@ -1992,28 +1924,6 @@ nntp_update_org_path_header ()
 ;
 
 
---#IF VER=5
---!AFTER
-create procedure
-ns_update_ng_next_num ()
-{
-  declare max_num integer;
-
-  if (exists (select 1 from DB.DBA.NEWS_GROUPS where NG_NEXT_NUM is NULL))
-    {
-       for (select NG_GROUP as NG_LOOP from DB.DBA.NEWS_GROUPS) do
-	 {
-	    select max (NM_NUM_GROUP) into max_num from DB.DBA.NEWS_MULTI_MSG where NM_GROUP = NG_LOOP;
-	    update DB.DBA.NEWS_GROUPS set NG_NEXT_NUM = max_num where NG_GROUP = NG_LOOP;
-	 }
-    }
-}
-;
-
---!AFTER
-ns_update_ng_next_num ()
-;
---#ENDIF
 
 
 create procedure

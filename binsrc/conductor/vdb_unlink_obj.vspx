@@ -1,0 +1,265 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="to_unlink_objects" persist="1" type="any" default="null" />
+      <v:variable persist="1" name="vdb_object_errs" type="any" default="null"/>
+      <v:variable name="param_mode" param-name="mode" type="varchar" default="null" />
+    </vm:variables>
+
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+
+    <vm:header caption="External Data Sources">
+    </vm:header>
+
+    <vm:pagebody vdb_check="1">
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab_selected" align="center">External Linked Objects</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%">
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- MAIN AREA -->
+                        <div class="confirm_dialog">
+                          <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+                          <div class="confirm_text">
+                            You have requested unlinking of external resources listed below.
+                            This means that they will no longer be available for virtual database
+                            operations.<br/>The data stored in external data source will remain unchanged.
+                          </div>
+                        </div>
+
+                        <table class="listing">
+                          <tr class="listing_header_row">
+                            <th>DSN</th>
+                            <th>Type</th>
+                            <th>Local Name</th>
+                            <th>>Remote Name</th>
+                          </tr>
+                          <?vsp
+                            declare i, n, j, k integer;
+                            declare objects any;
+                            declare ds_name varchar;
+
+                            n := length(self.to_unlink_objects);
+                            i := 0;
+                            while (i < n)
+                            {
+                              ds_name := aref(self.to_unlink_objects, i);
+                              objects := aref(self.to_unlink_objects, i + 1); -- tables
+                              k := length(objects);
+                              for (j := 0; j < k; j := j + 2)
+                              {
+                                http('<tr>');
+                                http('<td>');
+                                http(ds_name);
+                                http('</td>');
+                                http('<td>Table</td>');
+                                http('<td>');
+                                http(aref(objects, j));
+                                http('</td>');
+                                http('<td>');
+                                http(aref(objects, j + 1));
+                                http('</td>');
+                                http('</tr>');
+                              }
+                              objects := aref(self.to_unlink_objects, i + 3); -- procedures
+                              k := length(objects);
+                              for (j := 0; j < k; j := j + 2)
+                              {
+                                http('<tr>');
+                                http('<td>');
+                                http(ds_name);
+                                http('</td>');
+                                http('<td>Procedure</td>');
+                                http('<td>');
+                                http(aref(objects, j));
+                                http('</td>');
+                                http('<td>');
+                                http(aref(objects, j + 1));
+                                http('</td>');
+                                http('</tr>');
+                              }
+                              i := i + 4;
+                            }
+                          ?>
+                        </table>
+
+                        <v:form name="unlink_form" type="simple" method="POST" action="">
+                          <v:after-data-bind>
+                            declare params any;
+
+                            params := e.ve_params;
+                            if (self.param_mode = 'unlink_table')
+                            {
+                              self.to_unlink_objects := vector (
+                                get_keyword ('dsn', params),
+                                vector (get_keyword ('lname', params), get_keyword ('rname', params)),
+                                vector (),
+                                vector ()
+                              );
+                              self.param_mode := null;
+                            }
+                            else if (self.param_mode = 'unlink_view')
+                            {
+                              self.to_unlink_objects := vector (
+                                get_keyword ('dsn', params),
+                                vector (),
+                                vector (get_keyword ('lname', params), get_keyword ('rname', params)),
+                                vector ()
+                              );
+                              self.param_mode := null;
+                            }
+                            else if (self.param_mode = 'unlink_proc')
+                            {
+                              self.to_unlink_objects := vector (
+                                get_keyword ('dsn', params),
+                                vector (),
+                                vector (),
+                                vector (get_keyword ('lname', params), get_keyword ('rname', params)));
+                              self.param_mode := null;
+                            }
+                          </v:after-data-bind>
+                          <table>
+                            <tr>
+                              <td align="left">
+                                <v:button action="simple" name="unlink_apply" value="Unlink">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      declare state, msg, m_dta, res, state1, msg1 varchar;
+                                      declare i, n, j, k integer;
+                                      declare objects any;
+
+                                      n := length (self.to_unlink_objects);
+                                      i := 0;
+
+                                      while (i < n)
+                                      {
+                                        -- tables
+                                        objects := aref (self.to_unlink_objects, i + 1);
+                                        k := length (objects);
+                                        for (j := 0; j < k; j := j + 2)
+                                        {
+                                          state := '00000';
+                                          exec (sprintf ('drop table "%s"."%s"."%s"',
+                                                         name_part (aref (objects, j), 0, 'DB'),
+                                                         name_part (aref (objects, j), 1, 'DBA'),
+                                                         name_part (aref (objects, j), 2, null)),
+                                                state, msg, vector(), m_dta, res);
+                                          exec ('commit work', state1, msg1);
+                                        }
+
+                                        -- views
+                                        objects := aref (self.to_unlink_objects, i + 2);
+                                        k := length (objects);
+                                        for (j := 0; j < k; j := j + 2)
+                                        {
+                                          state := '00000';
+                                          exec (sprintf ('drop view "%s"."%s"."%s"',
+                                                         name_part (aref (objects, j), 0, 'DB'),
+                                                         name_part (aref (objects, j), 1, 'DBA'),
+                                                         name_part (aref (objects, j), 2, null)),
+                                                state, msg, vector (), m_dta, res);
+
+                                          exec ('commit work', state1, msg1);
+                                        }
+
+                                        -- procs
+                                        objects := aref (self.to_unlink_objects, i + 3);
+                                        k := length(objects);
+                                        for (j := 0; j < k; j := j + 2)
+                                        {
+                                          state := '00000';
+                                          exec (sprintf ('drop procedure "%s"."%s"."%s"',
+                                                         name_part (aref (objects, j), 0, 'DB'),
+                                                         name_part (aref (objects, j), 1, 'DBA'),
+                                                         name_part (aref (objects, j), 2, null)),
+                                                state, msg, vector(), m_dta, res);
+
+                                          exec('commit work', state1, msg1);
+                                        }
+                                        i := i + 4;
+                                      }
+                                      self.to_unlink_objects := null;
+                                      self.vc_redirect ('vdb_linked_obj.vspx');
+
+                                      return;
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+
+                                <v:button action="simple" name="unlink_cancel" value="Cancel">
+                                  <v:on-post>
+                                    self.vc_redirect ('vdb_linked_obj.vspx');
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:form>
+                      <!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

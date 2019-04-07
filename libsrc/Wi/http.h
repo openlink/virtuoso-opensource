@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -84,7 +84,7 @@ typedef struct ws_http_map_s
   } ws_http_map_t;
 #endif
 
-#define HTTP_MAX_METHOD 20
+#define HTTP_MAX_METHOD 21
 
 typedef struct ws_connection_s
   {
@@ -110,6 +110,7 @@ typedef struct ws_connection_s
     caddr_t		ws_path_string;
     caddr_t 		ws_resource;
     caddr_t		ws_status_line;
+    caddr_t 		ws_redirect_from;
     int			ws_status_code;
     int			ws_try_pipeline;
 #ifdef VIRTUAL_DIR
@@ -137,6 +138,8 @@ typedef struct ws_connection_s
 #endif
     char  		ws_options[HTTP_MAX_METHOD];
     char		ws_limited;
+    char 		ws_thr_cache_clear;
+    char		ws_in_error_handler;
   } ws_connection_t;
 
 #define WS_CHARSET(ws, qst) \
@@ -193,7 +196,7 @@ extern long  tws_bad_request;
 
 #define WM_IS_URIQA(opcode) ((WM_URIQA_FIRST <= (opcode)) && (WM_URIQA_LAST >= (opcode)))
 
-#define PATH_ELT_MAX_CHARS 255
+#define PATH_ELT_MAX_CHARS 512
 
 long ws_content_length (caddr_t * head);
 char * ws_header_field (caddr_t * head, const char * f, char * deflt);
@@ -224,10 +227,15 @@ extern char * https_port;
 extern char * https_cert;
 extern char * https_key;
 extern char * https_extra;
+extern char * https_dhparam;
+extern char * https_ecdh_curve;
+extern int32 https_hsts_max_age;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
 extern char * https_client_verify_crl_file;
+extern char * https_cipher_list;
+extern char * https_protocols;
 extern int32 http_threads;
 extern int32 ini_http_threads;
 extern int32 http_keep_alive_timeout;
@@ -311,22 +319,28 @@ extern dk_session_t *http_session_no_catch_arg (caddr_t * qst, state_slot_t ** a
 
 /* The order of the values in this enumeration should match
 the order of columns in dks_charclasses, file dks_esc.c */
-#define DKS_ESC_NONE		0x00
-#define DKS_ESC_PTEXT		0x01
-#define DKS_ESC_SQATTR		0x02
-#define DKS_ESC_DQATTR		0x03
-#define DKS_ESC_COMMENT		0x04
-#define DKS_ESC_CDATA		0x05
-#define DKS_ESC_URI		0x06
-#define DKS_ESC_DAV		0x07
-#define DKS_ESC_URI_RES		0x08
-#define DKS_ESC_URI_NRES	0x09
-#define DKS_ESC_TTL_SQ		0x0A
-#define DKS_ESC_TTL_DQ		0x0B
-#define DKS_ESC_TTL_IRI		0x0C
-#define DKS_ESC_JSWRITE_SQ	0x0D
-#define DKS_ESC_JSWRITE_DQ	0x0E
-#define COUNTOF__DKS_ESC	0x0F
+#define DKS_ESC_NONE		0x00	/*!  0 */
+#define DKS_ESC_PTEXT		0x01	/*!  1 */
+#define DKS_ESC_SQATTR		0x02	/*!  2 */
+#define DKS_ESC_DQATTR		0x03	/*!  3 */
+#define DKS_ESC_COMMENT		0x04	/*!  4 */
+#define DKS_ESC_CDATA		0x05	/*!  5 */
+#define DKS_ESC_URI		0x06	/*!  6 */
+#define DKS_ESC_DAV		0x07	/*!  7 */
+#define DKS_ESC_URI_RES		0x08	/*!  8 */
+#define DKS_ESC_URI_NRES	0x09	/*!  9 */
+#define DKS_ESC_TTL_SQ		0x0A	/*! 10 */
+#define DKS_ESC_TTL_DQ		0x0B	/*! 11 */
+#define DKS_ESC_TTL_IRI		0x0C	/*! 12 */
+#define DKS_ESC_JSWRITE_SQ	0x0D	/*! 13 */
+#define DKS_ESC_JSWRITE_DQ	0x0E	/*! 14 */
+#define DKS_ESC_HTML_TTL_SQ	0x0F	/*! 15 */
+#define DKS_ESC_HTML_TTL_DQ	0x10	/*! 16 */
+#define DKS_ESC_HTML_TTL_IRI	0x11	/*! 17 */
+#define DKS_ESC_JAVA_SQ		0x12	/*! 18 */
+#define DKS_ESC_JAVA_DQ		0x13	/*! 19 */
+#define DKS_ESC_QNAME_11	0x14	/*! 20 */
+#define COUNTOF__DKS_ESC	0x15	/*! 21 */
 
 #define DKS_ESC_COMPAT_HTML	0x100
 #define DKS_ESC_COMPAT_SOAP	0x200

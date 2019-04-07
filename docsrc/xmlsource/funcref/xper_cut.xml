@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -125,33 +125,9 @@ also points to the root, not to its top-level node.
     <refsect2><title>source_xper</title>
       <para>XML Entity</para></refsect2>
   </refsect1>
-<!--
-  <refsect1 id="ret"><title>Return Types</title><para></para></refsect1>
-  <refsect1 id="errors"><title>Errors</title>
-    <table><title>Errors signalled by</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
-  <refsect1 id="examples"><title>Examples</title>
-    <example id="ex_"><title></title>
-      <para></para>
-      <screen></screen>
-    </example>
-  </refsect1>
--->
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_cut">xml_doc</link></para>
-    <para><link linkend="fn_xper_doc">xper_doc</link></para>
+    <para><link linkend="fn_xml_cut">xml_doc()</link></para>
+    <para><link linkend="fn_xper_doc">xper_doc()</link></para>
     <para><link linkend="fn_xper_right_sibling">xper_right_sibling(), xper_left_sibling(), xper_parent(), xper_root_entity(), xper_tell(), xper_length()</link></para>
   </refsect1>
 </refentry>

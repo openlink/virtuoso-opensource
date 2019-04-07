@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -306,15 +306,9 @@ done:
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), fix_identifier_case ('RESC_DATA'), fix_identifier_case ('RESC_ID'), 2, 0, NULL, 1, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_batch_update (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), 'ON', 5)
 ;
 

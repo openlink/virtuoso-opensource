@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="http_edit_paths_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="../vspx/vspx.xsd" >
+  <vm:pagetitle>Virtuoso Backup Database</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Backup Database"/>
+    </vm:menu>
+    <vm:variables>
+      <v:variable name="prefix" type="varchar" default="null" param-name="pref" />
+      <v:variable name="cl_op" type="int" default="0" persist="1" />
+    </vm:variables>
+    <vm:header caption="Database Backup" />
+    <vm:pagebody>
+        <v:form name="frm_confirm" action="" method="POST" type="simple">
+          <div class="confirm_dialog">
+            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+            <div class="confirm_text">
+	      <p>This will reset the backup flag on all pages and delete the files in backup directories. <br />
+		Are you sure you want to continue ?</p>
+            </div>
+            <div class="dialog_buttons">
+              <v:button name="conf_cancel" action="simple" value="No">
+		<v:on-post><![CDATA[
+		   self.vc_redirect ('db_backup.vspx');
+		  ]]></v:on-post>
+              </v:button>
+              <v:button name="conf_proceed" action="simple" value="Yes">
+                <v:on-post>
+                  <v:script>
+		    <![CDATA[
+		    declare prefix any;
+		    declare patha any;
+
+		    prefix := self.prefix;
+		    patha := null;
+		    for select bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id
+		    do
+		      {
+		        if (patha is null)
+		          patha := vector (bd_dir);
+		        else
+		          patha := vector_concat (patha, vector (bd_dir));
+		    }
+		    if (patha is null)
+		      patha := vector ('.');
+
+		      if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+		        {
+		           cl_exec ('backup_context_clear(0)');
+			   cl_exec ('backup_dirs_clear (?, ?)', vector (prefix, patha));
+		        }
+		      else
+	                {
+			  backup_context_clear(0);
+			  backup_dirs_clear (prefix, patha);
+	                }
+		    commit work;
+		    self.vc_redirect ('db_backup.vspx');
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </div>
+          </div>
+        </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

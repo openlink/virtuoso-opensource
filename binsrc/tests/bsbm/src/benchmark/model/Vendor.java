@@ -8,7 +8,7 @@ public class Vendor extends BSBMResource {
 	private String comment;
 	private String homepage;
 	private String countryCode;
-	
+
 	public Vendor(int nr, String label, String comment, String homepage, String countryCode)
 	{
 		this.nr 	 = nr;
@@ -57,12 +57,12 @@ public class Vendor extends BSBMResource {
 	public void setCountryCode(String countryCode) {
 		this.countryCode = countryCode;
 	}
-	
+
 	public String toString()
 	{
 		return getURIref(nr);
 	}
-	
+
 	public static String getURIref(int vendorNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -73,7 +73,7 @@ public class Vendor extends BSBMResource {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public static String getVendorNS(int vendorNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -83,7 +83,7 @@ public class Vendor extends BSBMResource {
 		s.append("/");
 		return s.toString();
 	}
-	
+
 	public static String getVendorNSprefixed(int vendorNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -92,7 +92,7 @@ public class Vendor extends BSBMResource {
 		s.append(":");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int vendorNr)
 	{
 		StringBuffer s = new StringBuffer();

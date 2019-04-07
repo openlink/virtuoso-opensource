@@ -1,11 +1,28 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+-- Test for async queue
 
 
-
-
---  Test for async queue 
-
-
-ECHO BOTH "Async Queue Tests\n";
+echo both "Async Queue Tests\n";
 
 
 drop table aqi;
@@ -19,11 +36,11 @@ create procedure INS1 (in n int)
   return '22';
 }
 
-create procedure taq1 (in x int, in thrs int := 1)
+create procedure taq1 (in x int, in thrs int := 1, in flags int := 0)
 {
   declare aq, res, err  any;
   declare n int;
-  aq := async_queue (thrs);
+  aq := async_queue (thrs, flags);
   for (n:= 0; n < x; n:=n+1)
     {
       res := aq_request (aq, 'DB.DBA.INS1', vector (n));
@@ -35,22 +52,22 @@ taq1 (1000, 1);
 
 
 
-create procedure taq1t (in x int, in thrs int := 1)
+create procedure taq1t (in x int, in thrs int := 1, in flags int := 0)
 {
   declare aq, res, err  any;
   declare n int;
-  aq := async_queue (thrs);
+  aq := async_queue (thrs, flags);
   for (n:= 0; n < x; n:=n+1)
     {
       ins1 (n);
     }
 }
 
-create procedure taq_drop (in x int, in thrs int := 1)
+create procedure taq_drop (in x int, in thrs int := 1, in flags int := 0)
 {
   declare aq, res, err  any;
   declare n int;
-  aq := async_queue (thrs);
+  aq := async_queue (thrs, flags);
   for (n:= 0; n < x; n:=n+1)
     {
       res := aq_request (aq, 'DB.DBA.INS1', vector (n));
@@ -60,11 +77,11 @@ create procedure taq_drop (in x int, in thrs int := 1)
 taq_drop (2000, 5);
 
 
-create procedure taq_all (in x int, in thrs int := 1)
+create procedure taq_all (in x int, in thrs int := 1, in flags int := 0)
 {
   declare aq, res, err  any;
   declare n int;
-  aq := async_queue (thrs);
+  aq := async_queue (thrs, flags);
   for (n:= 0; n < x; n:=n+1)
     {
       res := aq_request (aq, 'DB.DBA.INS1', vector (n));
@@ -118,5 +135,79 @@ create procedure FIAQ (in i int)
 }
 
 select fiaq (29);
-ECHO BOTH $IF $EQU $LAST[1] 514229 "PASSED" "***FAILED";
-ECHO BOTH ": aq fi\n";
+echo both $if $equ $last[1] 514229 "PASSED" "***FAILED";
+echo both ": aq fi\n";
+
+create procedure taq_atomic ()
+{
+  __atomic (1);
+  taq1 (1000, 10, 1);
+  taq_drop (2000, 5, 1);
+  taq_all (1000, 0, 1);
+  __atomic (0);
+}
+;
+
+taq_atomic ();
+
+
+create procedure AQ_TEST (in i int)
+{
+  return i;
+}
+
+create procedure aql (in n int, in qo int)
+{
+  declare ctr int;
+  declare aq any;
+ aq := async_queue (16, 1);
+  for (ctr := 0; ctr <n; ctr := ctr + 1)
+    {
+      if (qo) aq_queue_only (aq);
+      aq_request (aq, 'DB.DBA.AQ_TEST', vector (1));
+      aq_wait_all (aq);
+    }
+}
+
+create procedure aql_no (in n int)
+{
+  declare ctr int;
+  declare aq any;
+ aq := async_queue (16);
+  for (ctr := 0; ctr <n; ctr := ctr + 1)
+    {
+      aq_test (1);
+    }
+}
+
+
+
+
+create procedure AQ_RT (in i int)
+{
+  return rdtsc ();
+}
+
+
+create procedure aq_rdtsc (in n int)
+{
+  declare ctr, mint, maxt, tm int;
+  declare aq, arr any;
+ aq := async_queue (16);
+ arr := make_array (n, 'any');
+  for (ctr := 0; ctr <n; ctr := ctr + 1)
+    {
+      arr[ctr] := aq_request (aq, 'DB.DBA.AQ_RT', vector (1));
+    }
+  for (ctr := 0; ctr < n; ctr := ctr + 1)
+    {
+    tm := aq_wait (aq, arr[ctr], 1);
+      if (0 = ctr)
+      mint := maxt := tm;
+      else if (tm > maxt)
+      maxt := tm;
+      else if (tm < mint)
+      mint := tm;
+    }
+  return maxt - mint;
+}

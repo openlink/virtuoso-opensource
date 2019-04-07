@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -209,7 +209,6 @@ public class OPLHeapBlob implements Blob, Serializable {
   }
 
     // -------------------------- JDBC 3.0 -----------------------------------
-#if JDK_VER >= 14
 
     /**
      * Writes the given array of bytes to the <code>BLOB</code> value that
@@ -309,7 +308,6 @@ public class OPLHeapBlob implements Blob, Serializable {
     }
   }
 
-#if JDK_VER >= 16
     /**
      * This method frees the <code>Blob</code> object and releases the resources that
      * it holds. The object is invalid once the <code>free</code>
@@ -358,8 +356,6 @@ public class OPLHeapBlob implements Blob, Serializable {
   }
 
 
-#endif
-#endif
   private void ensureOpen() throws SQLException
   {
     if (blobData == null)
@@ -443,7 +439,6 @@ public class OPLHeapBlob implements Blob, Serializable {
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed ));
     }
   }
-/*DROP_FOR_JDBC2*/
   // === Inner class ===========================================
   protected class BlobOutputStream extends OutputStream {
 
@@ -503,6 +498,5 @@ public class OPLHeapBlob implements Blob, Serializable {
           throw new IOException(OPLMessage_u.getMessage(OPLMessage_u.erru_Stream_is_closed ));
     }
   }
-/*_DROP_FOR_JDBC2*/
 
 }

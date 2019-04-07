@@ -1,0 +1,67 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+    <sect1 id="soap_services_edit">
+	<title>Setting Options to the SOAP Endpoint</title>
+	<para>The "Virtual Directory Information" allows:</para>
+	<simplelist>
+	    <member>To enter path of the endpoint (if new is created) upon edit this field is read only</member>
+	    <member>To enable XML-RPC to SOAP filter</member>
+	    <member>Select appropriate user account (having SQL access) to execute the
+		SOAP calls.</member>
+	</simplelist>
+	<para>Note that if new user is leaved as 'none', and there are stored procedures exposed on the
+	    endpoint, a new user account will be created. This automatically generated account has no
+	    login access, it can be used only to execute SOAP calls.</para>
+	<para>The "Authentication Options" allows to specify HTTP athentication options:
+	</para>
+	<simplelist>
+	    <member>Realm value - string which is used as a parameter for 'Authentication function'.</member>
+	    <member>Authentication function - stored procedure to perform authentication.</member>
+	    <member>Post-processing function - stored procedure to perform post processing.</member>
+	    <member>Authentiction options - name value pairs presented as 'name=value;' in the text area.</member>
+	</simplelist>
+	<para>The "SOAP Options" allows to setup:</para>
+	<simplelist>
+	    <member>ServiceName - Name of the service.</member>
+	    <member>Namespace - value of the service namespace URL.</member>
+	    <member>HeaderNS - value of the default namespace for messages in SOAP Header.</member>
+	    <member>FaultNS -  value of the default namespace for messages in SOAP Fault.</member>
+	    <member>MethodInSoapAction - required format of the SOAPAction HTTP header value.</member>
+	    <member>CR-escape - to preserve or not the CR character.</member>
+	    <member>elementFormDefault - default form of literal messages.</member>
+	    <member>DIME-ENC - to present or not DIME encapsulation extensions in WSDL.</member>
+	    <member>WS-RP - enable WS-Routing Protocol filter.</member>
+	    <member>wsrp-from - mail address of the Endpoint administrator for WS-Routing Protocol messages.</member>
+	</simplelist>
+	<para>The "WS-Security options" allows to:</para>
+	<simplelist>
+	    <member>Enable or disable WS-Security filters.</member>
+	    <member>To set a stored procedure for key instance generation and XML Signature template generation.</member>
+	    <member>To set validation restrictions for incoming messages.</member>
+	</simplelist>
+	<para>The "Exposed Procedures" allows to publish and unpublish
+	    stored procedures as a SOAP methods.</para>
+    </sect1>
+</HelpTopic>

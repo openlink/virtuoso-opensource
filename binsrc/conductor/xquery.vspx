@@ -1,0 +1,359 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="xquery_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_xquery_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+ <vm:pagetitle>XQuery Execution</vm:pagetitle>
+ <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="1" name="table_def" type="varchar" default="'no'"/>
+      <v:variable persist="1" name="table_name" type="varchar" default="null"/>
+      <v:variable persist="1" name="key_name" type="varchar" default="null"/>
+      <v:variable persist="1" name="val_name" type="varchar" default="''"/>
+      <v:variable persist="1" name="key_val" type="varchar" default="''"/>
+      <v:variable name="query_text" default="''" type="varchar" persist="1"/>
+      <v:variable name="store_path" default="null" type="varchar" persist="1"/>
+      <v:variable persist="1" name="browse_cat" type="varchar" default="'DB'"/>
+    </vm:variables>
+  <vm:menu>
+   <vm:menuitem value="XQuery"/>
+  </vm:menu>
+  <vm:header caption="XQuery Execution"/>
+  <vm:pagebody>
+    <v:after-data-bind>
+      self.table_def := 'no';
+      self.table_name := null;
+      self.key_name := null;
+      self.val_name := '';
+      self.key_val := '';
+      self.query_text := '';
+      self.store_path := null;
+    </v:after-data-bind>
+    <vm:help id="xquery" sect=""/>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab_selected" align="center">XQuery Basic</td>
+                        <td class="page_tab" align="center">
+			  <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center">
+			  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN AREA -->
+   <v:form name="edit_form" type="simple" method="POST" action="">
+     <v:after-data-bind>
+        declare ctx any;
+        declare i, l int;
+	declare chil any;
+	declare btn vspx_radio_button;
+	ctx := get_keyword ('context', e.ve_params);
+	if (ctx is null)
+	  return;
+
+	chil := control.vc_children;
+        foreach (vspx_control ch in chil) do
+	  {
+	    if (ch is not null and udt_instance_of (ch, 'vspx_radio_button'))
+	      {
+	        btn := ch;
+	        if (btn.ufl_value = ctx)
+	          btn.ufl_selected := 1;
+		else
+		  btn.ufl_selected := 0;
+	      }
+	  }
+      </v:after-data-bind>
+     <table border="0" cellspacing="0" class="ctl_grp" cellpadding="5" align="center">
+     <tr>
+       <td>
+    <!--
+    <vm:row>
+     <vm:control name="context_value" type="radiobox" dir="vert">
+      <vm:attrs align="center"/>
+      <vm:caption value="Query context node" pos="top"/>
+      <vm:items left-margin="12" right-margin="12">
+       <vm:group>
+        <vm:item value="1" label="DAV Resource" initial-checked="1"/>
+	<vm:item value="4" label="DAV Collection"/>
+        <vm:item value="2" label="Database Table"/>
+        <vm:item value="3" label="External URL"/>
+        <vm:item value="0" label="No Context"/>
+       </vm:group>
+      </vm:items>
+     </vm:control>
+    </vm:row>
+    <vm:row>
+     <vm:bgroup colspan="1" align="center">
+      <!-#- v:button action="submit" name="cancel" value="Cancel"/ -#->
+      <v:button action="submit" name="next" value="Next>>"/>
+     </vm:bgroup>
+   </vm:row>
+   -->
+   <table border="0">
+     <tr><th colspan="2" style="text-align: center;">Query context node</th></tr>
+     <tr>
+       <td colspan="2"><v:radio-button name="rb1" group-name="context_value" value="0" initial-checked="1" xhtml_id="rb1"/><label for="rb1">No Context</label></td>
+     </tr>
+     <tr><td colspan="2"><br /></td></tr>
+     <tr>
+       <td><v:radio-button name="rb2" group-name="context_value" value="1" xhtml_id="rb2"/><label for="rb2">DAV Resource</label></td>
+       <td rowspan="4">
+	  <table>
+	    <tr>
+	      <td>
+                <v:text name="dav_path" xhtml_size="40" />
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="both" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="dav_path"/>
+
+	      </td>
+		  <td>
+		    <v:check-box name="skip_malf1" xhtml_id="skip_malf1" value="1"/>
+		    <label for="skip_malf1">Skip Malformed Resources</label>
+		  </td>
+		  <td>
+		    <v:check-box name="parse_html1" xhtml_id="parse_html1" value="1"/>
+		    <label for="parse_html1">Parse as HTML</label>
+		  </td>
+	        </tr>
+	  </table>
+       </td>
+     </tr>
+     <tr>
+       <td><v:radio-button name="rb3" group-name="context_value" value="4" xhtml_id="rb3"/><label for="rb3">DAV Collection</label></td>
+     </tr>
+     <tr>
+       <td><v:radio-button name="rb4" group-name="context_value" value="3" xhtml_id="rb4"/><label for="rb4">External Document URL</label></td>
+     </tr>
+     <tr>
+       <td><v:radio-button name="rb5" group-name="context_value" value="5" xhtml_id="rb5"/><label for="rb5">External Collection URL</label></td>
+     </tr>
+     <tr><td colspan="2"><br /></td></tr>
+     <tr>
+       <td valign="top"><v:radio-button name="rb6" group-name="context_value" value="2" xhtml_id="rb6"/><label for="rb6">Database Table</label></td>
+       <td>
+	 <table valign="top">
+                <tr>
+		  <td valign="top">Catalog Name <br />
+                    <v:select-list name="catalog_name" xhtml_style="width:400" xhtml_onchange="javascript: doPost(\'edit_form\', \'reload\'); return false">
+                      <v:after-data-bind>
+                        <v:script>
+                          <![CDATA[
+                            declare cidx integer;
+                            (control as vspx_select_list).vsl_items := vector();
+                            (control as vspx_select_list).vsl_item_values := vector();
+                            cidx :=0;
+                            for select distinct name_part (KEY_TABLE, 0) as cat_name  from DB.DBA.SYS_KEYS do
+                            {
+                              if (cat_name = self.browse_cat)
+                                (control as vspx_select_list).vsl_selected_inx := cidx;
+                              (control as vspx_select_list).vsl_items :=  vector_concat ((control as vspx_select_list).vsl_items, vector(cat_name));
+                              (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector(cat_name));
+                              cidx := cidx + 1;
+                            }
+                          ]]>
+                        </v:script>
+                      </v:after-data-bind>
+                    </v:select-list>
+                  </td>
+		  <td valign="top">
+		    <br/>
+		    <v:button action="submit" name="reload" value="Reload">
+		      <v:on-post>
+			self.browse_cat := self.catalog_name.ufl_value;
+			self.l_table_name.vc_data_bind (e);
+		      </v:on-post>
+		    </v:button>
+                    </td>
+		  <td valign="top">Table Name <br/>
+                    <v:select-list name="l_table_name" xhtml_style="width:400" xhtml_size="10">
+                      <v:before-data-bind>
+                        <v:script><![CDATA[
+                        (control as vspx_select_list).vsl_items:= vector();
+			(control as vspx_select_list).vsl_item_values:= vector();
+			for select distinct \TABLE as TBL, COL_CHECK from SYS_COLS where COL_CHECK like '% U %'
+			and self.browse_cat = name_part (\TABLE, 0)
+			do
+			   {
+                            (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector(TBL));
+			   }
+			 (control as vspx_select_list).vsl_item_values := (control as vspx_select_list).vsl_items;
+                         (control as vspx_select_list).vsl_selected_inx :=0;
+                       ]]></v:script>
+                      </v:before-data-bind>
+                    </v:select-list>
+            </td>
+          </tr>
+	 </table>
+       </td>
+     </tr>
+   </table>
+ </td>
+ </tr>
+ <tr>
+   <td colspan="2">
+      <v:button action="submit" name="next" value="Next>>">
+     <v:on-post>
+      <![CDATA[
+        declare  cntx, ctx, is_html, skip_bad, dav_path, ctxt, colp, folders_message varchar;
+	cntx := get_keyword('context_value', params);
+	is_html := get_keyword ('parse_html1', params, '0');
+	skip_bad := get_keyword ('skip_malf1', params, '0');
+	ctx := atoi (cntx);
+	if (ctx = 0)
+	  {
+            self.vc_redirect ('xquery3.vspx?mode=query&entry=1&context=0');
+            return;
+          }
+        else
+	 {
+	    -- input verification
+	    -- 1 dav res
+	    -- 4 dav col
+	    -- 3 ext doc
+	    -- 5 ext col
+	    -- 2 tbl
+	    if (ctx in (1,3,4,5))
+	      {
+	        if (not length (self.dav_path.ufl_value))
+	          {
+		    self.vc_is_valid := 0;
+		    self.vc_error_message := 'The URL is empty';
+		    return;
+		  }
+		dav_path := self.dav_path.ufl_value;
+		if (ctx = 1)
+		  {
+		    if (not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = dav_path))
+		      {
+			self.vc_is_valid := 0;
+			self.vc_error_message := 'Incorrect PATH for a WebDAV resource';
+			return;
+		      }
+		   else if (check_dav_file_permissions (dav_path, connection_get('vspx_user'), '100', folders_message) <> 1  )
+		     {
+		       self.vc_error_message  := sprintf('Path on  DAV resource is invalid:  "%s".',folders_message);
+		       self.vc_is_valid := 0;
+                       return;
+		     }
+
+		    self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=1&url=%s&sbad=%s&ishtml=%s',
+		    dav_path, skip_bad, is_html));
+		    return;
+		  }
+		else if (ctx = 3)
+		  {
+		    self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=3&url=%s&sbad=%s&ishtml=%s',
+		    dav_path, skip_bad ,is_html));
+		    return;
+		  }
+		else if (ctx = 4)
+		  {
+		    if (not exists(SELECT 1 FROM WS..SYS_DAV_COL WHERE WS.WS.COL_PATH (COL_ID) = dav_path))
+		      {
+			self.vc_is_valid := 0;
+			self.vc_error_message := 'Incorrect PATH for a WebDAV collection';
+			return;
+		      }
+		    colp := 'http://local.virt' || dav_path;
+		    self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%s&sbad=%s&ishtml=%s',
+		    colp, skip_bad, is_html));
+		    return;
+		  }
+		else if (ctx = 5)
+		  {
+		    self.vc_redirect (sprintf('xquery3.vspx?mode=query&entry=1&context=4&url=%s&sbad=%s&ishtml=%s',
+		    dav_path, skip_bad ,is_html));
+		    return;
+		  }
+	      }
+	    else if (ctx = 2)
+              {
+	        if (not length (self.l_table_name.ufl_value))
+	          {
+		    self.vc_is_valid := 0;
+		    self.vc_error_message := 'Table is not selected';
+		    return;
+		  }
+		  self.table_def := 'yes';
+		  self.vc_redirect (sprintf('xquery2.vspx?mode=query&entry=1&context=2&l_table_name=%s',
+		  self.l_table_name.ufl_value));
+		  return;
+              }
+
+	    self.vc_is_valid := 0;
+	    self.vc_error_message :=
+	    'The context node type is invalid, must be one of the DAV URL, ExternalURL, Database Table or none';
+            return;
+         }
+    ]]>
+  </v:on-post>
+</v:button>
+</td>
+</tr>
+ </table>
+   </v:form>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+  </vm:pagebody>
+ </vm:pagewrapper>
+</v:page>

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,28 +48,16 @@
       <para>The name of the key.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xenc_key_remove"><title>Return Types</title>
-    <para>None.</para>
-  </refsect1>
-  <!-- 
-  <refsect1 id="errors_xenc_key_remove">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
-  -->
   <refsect1 id="examples_xenc_key_remove">
     <title>Example</title>
-    <example id="ex_xenc_key_remove"><title></title>
+    <example id="ex_xenc_key_remove"><title>Simple Use</title>
       <screen><![CDATA[
 xenc_key_remove ('file:dsa.der');]]>
 </screen>
     </example>
   </refsect1>
-  <!--
   <refsect1 id="seealso_xenc_key_remove">
     <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
+    <para><link linkend="fn_xenc_key_exists"><function>xenc_key_exists()</function></link></para>
   </refsect1>
-  -->
 </refentry>

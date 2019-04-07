@@ -1,0 +1,280 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="repl_bi_error_str" type="varchar" persist="1" default="null"/>
+      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="publ" value="Bidirectional Snapshot Replication"/>
+    </vm:menu>
+    <vm:header caption="Bidirectional Snapshot Publications"/>
+    <vm:pagebody vdb_check="1">
+      <v:form name="event_form3" type="simple" method="POST" action="">
+        <div class="listing_top_ctl_grp clear">
+          <v:button action="simple" value="Add table" name="data_set1_cr">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  self.vc_redirect('db_repl_bi_create.vspx');
+                ]]>
+              </v:script>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Add DAV collection" name="data_set1_cr1">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  self.vc_redirect('db_repl_bi_create.vspx?mode=create2');
+                ]]>
+              </v:script>
+            </v:on-post>
+          </v:button>
+        </div>
+      </v:form>
+      <v:data-set name="data_set1" sql="select SP_ITEM, SP_TYPE, SP_LAST_TS from DB.DBA.SYS_SNAPSHOT_PUB order by SP_TYPE, SP_ITEM" nrows="10" scrollable="1" cursor-type="keyset" edit="1">
+        <v:column name="SP_ITEM" />
+        <v:column name="SP_LAST_TS" />
+        <v:column name="SP_TYPE" />
+        <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
+          <div><b>Published Items</b></div>
+    <?vsp http('<div class="scroll_area">'); ?>
+          <table class="listing" rules="groups">
+            <thead>
+              <tr class="listing_header_row">
+                <th class="checkbox">
+                  <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)"/>
+                </th>
+                <th width="16px"/>
+                <th>Item Name</th>
+                <th>Item Type</th>
+                <th>Last Synchronization</th>
+                <th>Sync Interval</th>
+                <th class="action">Action</th>
+              </tr>
+            </thead>
+          </table>
+        </v:template>
+        <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
+          <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
+            <table>
+              <tr>
+                <td colspan="7" class="Attention">
+                  No rows selected
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
+            <table>
+              <?vsp
+                self.r_count := self.r_count + 1;
+                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+              ?>
+              <td class="listing_col">
+                <input type="checkbox" name="TB_<?V ((control as vspx_row_template).te_rowset[0]) ?>" />
+                <input type="hidden" name="TBT_<?V ((control as vspx_row_template).te_rowset[0]) ?>"
+                                     value="<?V ((control as vspx_row_template).te_rowset[1]) ?>"/>
+              </td>
+              <td class="listing_col">
+                <v:template type="simple" name="data_set1_table_icon" enabled="--neq((control.vc_parent as vspx_row_template).te_rowset[1],1)">
+                  <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                </v:template>
+                <v:template type="simple" name="data_set1_col_icon" enabled="--equ((control.vc_parent as vspx_row_template).te_rowset[1],1)">
+                  <img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>
+                </v:template>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])"/>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_4" value="">
+                  <v:after-data-bind>
+                    control.ufl_value := 'table';
+                    if ((control.vc_parent as vspx_row_template).te_rowset[1] = 1)
+                      control.ufl_value := 'collection';
+                  </v:after-data-bind>
+                </v:label>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt"/>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_3" value="--'REPL_UPDATE_SNAPSHOT ' || ((control.vc_parent as vspx_row_template).te_rowset[0])" fmt-function="interval_fmt"/>
+              </td>
+              <td class="listing_col_action">
+                <!--
+                <v:button action="simple" name="sync" value="Sync" style="url">
+                  <v:on-post>
+                    <![CDATA[
+                      declare ds vspx_data_set;
+                      ds := self.vc_find_control('data_set1');
+                      declare cname varchar;
+                      cname := (control.vc_parent as vspx_row_template).te_rowset[0];
+                      if ((control.vc_parent as vspx_row_template).te_rowset[1] = 1)
+                        REPL_UPDATE_SNAPSHOT(cname, 1);
+                      else
+                        REPL_UPDATE_SNAPSHOT(cname, 2);
+                      ds.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                -->
+                <v:url name="url1" value="--'Subscriptions'" format="%s" url="--concat('db_repl_bi_edit.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                <v:url name="url3" value="--'Conflict Resolvers'" format="%s" url="--concat('db_repl_bi_cr.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+                <v:url name="url2" value="--'Delete'" format="%s" url="--concat('db_repl_bi_remove.vspx?item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
+              </td>
+              <?vsp
+                http('</tr>');
+              ?>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
+          <table>
+            <tr>
+              <td colspan="7" align="center"  class="listing_col_action">
+                <vm:ds-navigation data-set="data_set1"/>
+              </td>
+            </tr>
+          </table>
+          <?vsp http ('</div>'); ?>
+          <div class="listing_bot_ctl_grp">
+            <label for="interval">Schedule Sync Interval</label>
+            <input type="text" name="interval" value="10" size="5" id="interval"/>
+            <v:button action="simple" value="Schedule" name="sch_but">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    declare _int integer;
+                    declare idx,item_type integer;
+                    declare item varchar;
+                    _int := atoi(get_keyword('interval', params, '10'));
+                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                    {
+                      if (_int > 0)
+                      {
+                        item_type := cast(get_keyword('TBT_' || item, self.vc_page.vc_event.ve_params,'0') as integer);
+                        insert replacing SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values ('REPL_UPDATE_SNAPSHOT ' || item, now (), _int, sprintf('REPL_UPDATE_SNAPSHOT(''%s'', %d)', item, item_type));
+                      }
+                      else
+                        delete from SYS_SCHEDULED_EVENT where SE_NAME = 'REPL_UPDATE_SNAPSHOT ' || item;
+                    }
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <br/>
+            <v:button action="simple" value="Synchronize" name="synch_but">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    declare idx, _cnt integer;
+                    declare item_type integer;
+                    declare item, m_dta, _stat, _msg varchar;
+                    declare n_done int;
+                    n_done := 0;
+
+                    while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                    {
+                      _stat := '00000';
+                      item_type := cast(get_keyword('TBT_' || item, self.vc_page.vc_event.ve_params,'0') as integer);
+                      exec ('REPL_UPDATE_SNAPSHOT(?,?)', _stat, _msg,vector(item,item_type));
+                      if (_stat <> '00000')
+                      {
+                        self.repl_bi_error_str := concat(self.repl_bi_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                      };
+                      n_done := 1;
+                    }
+                    if (n_done = 0)
+                    {
+                      self.vc_is_valid := 0;
+                      self.vc_error_message := 'There are no tables publications to perform synchronization.';
+                    }
+                    else
+                      self.data_set1.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:template>
+      </v:data-set>
+      <v:template name="error_template" type="simple">
+      <?vsp
+        if (length(self.repl_bi_error_str) > 1)
+        {
+      ?>
+      <table class="warning">
+        <tr>
+          <th colspan="2">
+            Error during last changes
+          </th>
+        </tr>
+        <tr>
+          <th>
+            SQL State
+          </th>
+          <th>
+            Error Message
+          </th>
+        </tr>
+        <?vsp
+          http(self.repl_bi_error_str);
+        ?>
+      </table>
+      <?vsp
+        }
+        self.repl_bi_error_str := '';
+      ?>
+    </v:template>
+    <!--
+    <span class="listing_hdr_qual">
+        Notes:
+        <ul>
+          <li>To add new relational table or WebDAV collection to the publication,<br/>
+              use the 'Add Table' or 'Add DAV Collection' buttons. </li>
+          <li>The "Last Synchronization" column shows time when the last<br/>
+              synchronization has been performed for given item.
+          </li>
+          <li>The "Sync Interval" designated in minutes is the frequency a<br/>
+            synchronization is performed.  This synchronization will be made<br/>
+            automatically using by creating a scheduled event task for this setting.<br/>
+            Note that this interval have a resolution dependant of "Scheduler Interval"<br/>
+            INI setting.
+          </li>
+          <li>To immediately synchronize a published item press the "Sync" link<br/>
+            button.
+          </li>
+          <li>Note that synchronization can only be issued from the publisher side.<br/>
+            Subscribers do not have control over the synchronization process!
+          </li>
+          <li>To UN-publish an item press "Delete" link button.</li>
+          <li>To edit properties or to define the subscribers press "Edit".</li>
+        </ul>
+      </span>-->
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

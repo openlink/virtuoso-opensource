@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1982,9 +1982,9 @@ xmls_proc (query_instance_t * qi, caddr_t name)
 
   ddl_commit (qi);
 
-  semaphore_enter (parse_sem);
+  parse_enter ();
   sqlc_target_rds (local_rds);
-  semaphore_leave (parse_sem);
+  parse_leave ();
 
   {
     static query_t *xml_view_drop_proc_qr = NULL;
@@ -3136,6 +3136,8 @@ xre_col_from_ssl (state_slot_t * ssl, int no, long directives)
   xre_col_t * col = (xre_col_t *) dk_alloc_box_zero (sizeof (xre_col_t), DV_ARRAY_OF_POINTER);
   col->xrc_xsdtype = (xv_schema_xsdtype_t *) dk_alloc_box (sizeof (xv_schema_xsdtype_t), DV_ARRAY_OF_LONG);
   xv_schema_xsdtype_default (directives, col->xrc_xsdtype);
+  if (ssl->ssl_type == SSL_REF)
+    ssl = ((state_slot_ref_t *) ssl)->sslr_ssl;
   if (NULL != ssl->ssl_name)
     col->xrc_name = cd_strip_col_name (ssl->ssl_name);
   else
@@ -4368,7 +4370,7 @@ xs_idnval (id_hash_t * idn, id_hash_t * var, caddr_t val)
       res = (parm ? *parm : val);
 
       if (DV_STRINGP (res) && box_length (res) > 0)
-	return box_utf8_as_wide_char (res, NULL, box_length (res), 0, DV_WIDE);
+	return box_utf8_as_wide_char (res, NULL, box_length (res), 0);
       else
 	return box_copy (res);
     }
@@ -4874,13 +4876,7 @@ xml_template_get_sqlx_parms (client_connection_t * cli, const caddr_t text, id_h
       if (place)
 	{
 	  ret [inx+named_params] = box_cast_to (NULL, *place, DV_TYPE_OF (*place), ssl->ssl_dtp,
-	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, err);
-	  if (*err)
-	    {
-	      dk_free_tree (ret);
-	      ret = NULL;
-	      goto err_end;
-	    }
+	      NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, NULL);
 	}
       else
 	ret [inx+named_params] = NEW_DB_NULL;
@@ -4966,7 +4962,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	    }
 	  END_QR_RESET;
 	  dk_free_box (tsql);
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5005,7 +5001,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.XQ_TEMPLATE defined");
 	    }
 
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5067,7 +5063,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      err = srv_make_new_error ("42001", "HT004", "No DB.DBA.SQLX_OR_SPARQL_TEMPLATE defined");
 	    }
 
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: "); SES_PRINT (ses, ERR_STATE(err));
 	      SES_PRINT (ses, " SQLMessage: "); SES_PRINT (ses, ERR_MESSAGE(err));
@@ -5108,7 +5104,7 @@ xml_template_node_serialize (caddr_t * current, dk_session_t * ses, void * xsst1
 	      xs = xs_reverse (xs);
 	      xs_stmts_exec (qi, &err, xs, NULL, NULL, pars, 0 /*TODO: add debug support here */);
 	    }
-	  if (err && ARRAYP (err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<!-- ERROR SQLState: ");
 	      SES_PRINT (ses, ERR_STATE(err));
@@ -5135,7 +5131,7 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t *ses = http_session_no_catch_arg (qst, args, 2, "xml_auto");
   id_hash_t * pars = id_str_hash_create (128);
   char *char_out_method;
-  caddr_t old_enc;
+  caddr_t old_enc, to_free = NULL;
   xte_serialize_state_t xsst;
   xml_template_state_t xts;
 
@@ -5184,7 +5180,10 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   old_enc = xte->xe_doc.xd->xout_encoding;
   if (!xte->xe_doc.xd->xout_encoding && qi->qi_client->cli_ws)
-    xte->xe_doc.xd->xout_encoding = CHARSET_NAME (WS_CHARSET (qi->qi_client->cli_ws, NULL), NULL);
+    {
+      caddr_t wenc = CHARSET_NAME (WS_CHARSET (qi->qi_client->cli_ws, NULL), NULL);
+      to_free = xte->xe_doc.xd->xout_encoding = wenc ? box_dv_short_string (wenc) : NULL;
+    }
   xsst.xsst_charset = wcharset_by_name_or_dflt (xte->xe_doc.xd->xout_encoding, xte->xe_doc.xd->xd_qi);
   xsst.xsst_charset_meta = xte->xe_doc.xd->xout_encoding_meta;
   if (!xte->xe_doc.xd->xout_omit_xml_declaration)
@@ -5198,6 +5197,7 @@ bif_xml_template (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   xte_serialize_1 (xte->xte_current, ses, &xsst);
   xte->xe_doc.xd->xout_encoding = old_enc;
+  dk_free_box (to_free);
   id_hash_free (pars);
   return (caddr_t) (xts.xts_xsl_template ? box_copy_tree (xts.xts_xsl_template) : NEW_DB_NULL);
 }

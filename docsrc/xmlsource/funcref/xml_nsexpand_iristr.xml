@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -55,7 +55,6 @@
   </refsect1>
  <refsect1 id="examples__xml_nsexpand_iristr"><title>Examples</title>
     <example id="ex_xml_nsexpand_iristr_1"><title>Example with FOAF namespace prefix</title>
-      <para></para>
 <programlisting><![CDATA[
 SQL> SELECT __xml_nsexpand_iristr ('foaf:knows');
 __xml_nsexpand_iristr
@@ -68,7 +67,6 @@ http://xmlns.com/foaf/0.1/knows
 ]]></programlisting>
     </example>
     <example id="ex_xml_nsexpand_iristr_2"><title>Example with no namespace prefix</title>
-      <para></para>
 <programlisting><![CDATA[
 SQL> SELECT __xml_nsexpand_iristr ('no-namespace-prefix-iri');
 
@@ -83,7 +81,6 @@ SELECT __xml_nsexpand_iristr ('no-namespace-prefix-iri')
 ]]></programlisting>
     </example>  
     <example id="ex_xml_nsexpand_iristr_3"><title>Example with namespace prefix "local"</title>
-      <para></para>
 <programlisting><![CDATA[
 SQL> SELECT __xml_nsexpand_iristr ('no-such-prefix:local');
 
@@ -98,7 +95,6 @@ SELECT __xml_nsexpand_iristr ('no-such-prefix:local')
 ]]></programlisting>
     </example> 
     <example id="ex_xml_nsexpand_iristr_4"><title>Example with namespace prefix ""no-such-prefix""</title>
-      <para></para>
 <programlisting><![CDATA[
 SQL> SELECT __xml_ns_iristr ('no-such-prefix', 'knows');
 
@@ -114,9 +110,9 @@ SELECT __xml_ns_iristr ('no-such-prefix', 'knows')
     </example>            
   </refsect1>
   <refsect1 id="seealso__xml_nsexpand_iristr"><title>See Also</title>
-    <para><link linkend="fn_xml_ns_uname"><function>xml_ns_uname</function></link></para>                  
-    <para><link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr</function></link></para>      
-    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix</function></link></para>
-    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri</function></link></para>
+    <para><link linkend="fn_xml_ns_uname"><function>xml_ns_uname()</function></link></para>
+    <para><link linkend="fn_xml_ns_iristr"><function>xml_ns_iristr()</function></link></para>
+    <para><link linkend="fn_xml_get_ns_prefix"><function>xml_get_ns_prefix()</function></link></para>
+    <para><link linkend="fn_xml_get_ns_uri"><function>xml_get_ns_uri()</function></link></para>
   </refsect1>
 </refentry>

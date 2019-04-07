@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -47,19 +47,6 @@ create table SYS_SNAPSHOT_LOG (
 create unique index SNL_RLOG on DB.DBA.SYS_SNAPSHOT_LOG (SNL_RLOG)
 create unique index SNL_RPLOG on DB.DBA.SYS_SNAPSHOT_LOG (SNL_RPLOG)
 ;
-
-
-create procedure repl_undot_name (in id varchar)
-{
-  declare last_dot_inx integer;
-  last_dot_inx := strrchr(id, '.');
-  if (last_dot_inx > 0)
-    return subseq(sprintf('%s', id), last_dot_inx + 1);
-  else
-    return id;
-}
-;
-
 
 create procedure REPL_OFFSET_TIME (
     in _last_ts datetime, in _reg_var varchar, in _default_offset integer)

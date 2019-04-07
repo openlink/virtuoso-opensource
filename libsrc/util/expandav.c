@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -110,7 +110,7 @@ handle_response (char *response)
   if ((response_fd = fopen (response, "r")) == NULL)
     {
       log (L_ERR, N_("unable to open response file %s"), response);
-      terminate (1);
+      terminate_program (1);
     }
 
   while ((token = get_token (response_fd)) != NULL)

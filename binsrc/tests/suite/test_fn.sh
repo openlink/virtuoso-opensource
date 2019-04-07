@@ -1,16 +1,12 @@
 #!/bin/sh
 #
-#  test_fn.sh
-#
-#  $Id$
-#
 #  Generic test functions which should be read at the beginning of the
 #  shell script.
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -34,6 +30,7 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
+
 #===========================================================================
 #  Set global environment variables for test suite
 #===========================================================================
@@ -55,7 +52,7 @@ SQLOPTIMIZE=${SQLOPTIMIZE-0}
 PLDBG=${PLDBG-0}
 LITEMODE=${LITEMODE-0}
 CASE_MODE=${CASE_MODE-1}
-
+TIMEZONELESS=${TIMEZONELESS-2}
 DELETEMASK=${DELETEMASK-'wi.* witemp.*'}
 SRVMSGLOGFILE=${SRVMSGLOGFILE-'wi.err'}
 TESTCFGFILE=${TESTCFGFILE-witest.cfg}
@@ -246,7 +243,7 @@ START_SERVER()
 	nowh=`expr $nowh - $starth`
 	nows=`expr $nows - $starts`
 
-	nows=`expr $nows + $nowh \*  60`
+	nows=`expr 1 + $nows + $nowh \*  60`
 	if test $nows -ge $timeout
 	then
 	    LOG "***FAILED: The Listener on port $port didn't stop within $timeout seconds"
@@ -398,9 +395,10 @@ CHECKPOINT_SERVER()
 
 CHECK_LOG()
 {
+#   I've modified these grep patterns to ignore ':' which may be forgoten easily.
     passed=`grep "^PASSED" $LOGFILE | wc -l`
-    failed=`grep "^\*\*\*.*FAILED:" $LOGFILE | wc -l`
-    aborted=`grep "^\*\*\*.*ABORTED:" $LOGFILE | wc -l`
+    failed=`grep "^\*\*\*.*FAILED" $LOGFILE | wc -l`
+    aborted=`grep "^\*\*\*.*ABORTED" $LOGFILE | wc -l`
 
     ECHO ""
     LINE
@@ -491,7 +489,13 @@ MAKECFG_FILE ()
   _testcfgfile=$1
   _port=$2
   _cfgfile=$3
-  cat $_testcfgfile | sed -e "s/PORT/$_port/g" -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" -e "s/PLDBG/$PLDBG/g" -e "s/CASE_MODE/$CASE_MODE/g" -e "s/LITEMODE/$LITEMODE/g" > $_cfgfile
+  cat $_testcfgfile | sed -e \
+    "s/PORT/$_port/g" \
+    -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" \
+    -e "s/PLDBG/$PLDBG/g" \
+    -e "s/CASE_MODE/$CASE_MODE/g" \
+    -e "s/LITEMODE/$LITEMODE/g" \
+    -e "s/TIMEZONELESS/$TIMEZONELESS/g" > $_cfgfile
 }
 
 MAKECFG_FILE_WITH_HTTP()

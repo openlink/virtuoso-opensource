@@ -1,75 +1,53 @@
-/*
- *  $Id$
- *
- *  ilstack.c - inline stack for compatibility with Mosaic
- *
- *  Copyright (c) 1998-2000 World Wide Web Consortium
- *  (Massachusetts Institute of Technology, Institut National de
- *  Recherche en Informatique et en Automatique, Keio University).
- *  All Rights Reserved.
- *
- *  Contributing Author(s):
- *
- *  Dave Raggett <dsr@w3.org>
- *
- *  The contributing author(s) would like to thank all those who
- *  helped with testing, bug fixes, and patience.  This wouldn't
- *  have been possible without all of you.
- *
- *  COPYRIGHT NOTICE:
- *
- *  This software and documentation is provided "as is," and
- *  the copyright holders and contributing author(s) make no
- *  representations or warranties, express or implied, including
- *  but not limited to, warranties of merchantability or fitness
- *  for any particular purpose or that the use of the software or
- *  documentation will not infringe any third party patents,
- *  copyrights, trademarks or other rights.
- *
- *  The copyright holders and contributing author(s) will not be
- *  liable for any direct, indirect, special or consequential damages
- *  arising out of any use of the software or documentation, even if
- *  advised of the possibility of such damage.
- *
- *  Permission is hereby granted to use, copy, modify, and distribute
- *  this source code, or portions hereof, documentation and executables,
- *  for any purpose, without fee, subject to the following restrictions:
- *
- *  1. The origin of this source code must not be misrepresented.
- *  2. Altered versions must be plainly marked as such and must
- *     not be misrepresented as being the original source.
- *  3. This Copyright notice may not be removed or altered from any
- *     source or altered source distribution.
- *
- *  The copyright holders and contributing author(s) specifically
- *  permit, without fee, and encourage the use of this source code
- *  as a component for supporting the Hypertext Markup Language in
- *  commercial products. If you use this source code in a product,
- *  acknowledgment is not required but would be appreciated.
- */
+/* istack.c -- inline stack for compatibility with Mosaic
 
-#include "platform.h"
-#include "html.h"
+  (c) 1998-2006 (W3C) MIT, ERCIM, Keio University
+  See tidy.h for the copyright notice.
+  
+*/
 
-extern Bool   debug_flag;
-extern Node  *debug_element;
-extern Lexer *debug_lexer;
+#include "tidy-int.h"
+#include "lexer.h"
+#include "attrs.h"
+#include "streamio.h"
+#include "tmbstr.h"
 
 /* duplicate attributes */
-AttVal *DupAttrs(AttVal *attrs)
+AttVal *TY_(DupAttrs)( TidyDocImpl* doc, AttVal *attrs)
 {
     AttVal *newattrs;
 
-    if (attrs == null)
+    if (attrs == NULL)
         return attrs;
 
-    newattrs = NewAttribute();
+    newattrs = TY_(NewAttribute)(doc);
     *newattrs = *attrs;
-    newattrs->next = DupAttrs(attrs->next);
-    newattrs->attribute = wstrdup(attrs->attribute);
-    newattrs->value = wstrdup(attrs->value);
-    newattrs->dict = FindAttribute(newattrs);
+    newattrs->next = TY_(DupAttrs)( doc, attrs->next );
+    newattrs->attribute = TY_(tmbstrdup)(doc->allocator, attrs->attribute);
+    newattrs->value = TY_(tmbstrdup)(doc->allocator, attrs->value);
+    newattrs->dict = TY_(FindAttribute)(doc, newattrs);
+    newattrs->asp = attrs->asp ? TY_(CloneNode)(doc, attrs->asp) : NULL;
+    newattrs->php = attrs->php ? TY_(CloneNode)(doc, attrs->php) : NULL;
     return newattrs;
+}
+
+static Bool IsNodePushable( Node *node )
+{
+    if (node->tag == NULL)
+        return no;
+
+    if (!(node->tag->model & CM_INLINE))
+        return no;
+
+    if (node->tag->model & CM_OBJECT)
+        return no;
+
+    /*\ Issue #92: OLD problem of ins and del which are marked as both
+     *  inline and block, thus should NOT ever be 'inserted'
+    \*/
+    if (nodeIsINS(node) || nodeIsDEL(node))
+        return no;
+
+    return yes;
 }
 
 /*
@@ -88,23 +66,18 @@ AttVal *DupAttrs(AttVal *attrs)
       <p><em>text</em></p>
       <p><em><em>more text</em></em>
 */
-void PushInline(Lexer *lexer, Node *node)
+void TY_(PushInline)( TidyDocImpl* doc, Node *node )
 {
+    Lexer* lexer = doc->lexer;
     IStack *istack;
 
     if (node->implicit)
         return;
 
-    if (node->tag == null)
+    if ( !IsNodePushable(node) )
         return;
 
-    if (!(node->tag->model & CM_INLINE))
-        return;
-
-    if (node->tag->model & CM_OBJECT)
-        return;
-
-    if (node->tag != tag_font && IsPushed(lexer, node))
+    if ( !nodeIsFONT(node) && TY_(IsPushed)(doc, node) )
         return;
 
     /* make sure there is enough space for the stack */
@@ -114,99 +87,106 @@ void PushInline(Lexer *lexer, Node *node)
             lexer->istacklength = 6;   /* this is perhaps excessive */
 
         lexer->istacklength = lexer->istacklength * 2;
-        lexer->istack = (IStack *)MemRealloc(lexer->istack,
+        lexer->istack = (IStack *)TidyDocRealloc(doc, lexer->istack,
                             sizeof(IStack)*(lexer->istacklength));
     }
 
     istack = &(lexer->istack[lexer->istacksize]);
     istack->tag = node->tag;
 
-    istack->element = wstrdup(node->element);
-    istack->attributes = DupAttrs(node->attributes);
+    istack->element = TY_(tmbstrdup)(doc->allocator, node->element);
+    istack->attributes = TY_(DupAttrs)( doc, node->attributes );
     ++(lexer->istacksize);
 }
 
-/* pop inline stack */
-void PopInline(Lexer *lexer, Node *node)
+static void PopIStack( TidyDocImpl* doc )
 {
-    AttVal *av;
+    Lexer* lexer = doc->lexer;
     IStack *istack;
+    AttVal *av;
+
+    --(lexer->istacksize);
+    istack = &(lexer->istack[lexer->istacksize]);
+
+    while (istack->attributes)
+    {
+        av = istack->attributes;
+        istack->attributes = av->next;
+        TY_(FreeAttribute)( doc, av );
+    }
+    TidyDocFree(doc, istack->element);
+}
+
+static void PopIStackUntil( TidyDocImpl* doc, TidyTagId tid )
+{
+    Lexer* lexer = doc->lexer;
+    IStack *istack;
+
+    while (lexer->istacksize > 0)
+    {
+        PopIStack( doc );
+        istack = &(lexer->istack[lexer->istacksize]);
+        if ( istack->tag->id == tid )
+            break;
+    }
+}
+
+/* pop inline stack */
+void TY_(PopInline)( TidyDocImpl* doc, Node *node )
+{
+    Lexer* lexer = doc->lexer;
 
     if (node)
     {
-        if (node->tag == null)
-            return;
-
-        if (!(node->tag->model & CM_INLINE))
-            return;
-
-        if (node->tag->model & CM_OBJECT)
+        if ( !IsNodePushable(node) )
             return;
 
         /* if node is </a> then pop until we find an <a> */
-        if (node->tag == tag_a)
+        if ( nodeIsA(node) )
         {
-            while (lexer->istacksize > 0)
-            {
-                --(lexer->istacksize);
-                istack = &(lexer->istack[lexer->istacksize]);
-
-                while (istack->attributes)
-                {
-                    av = istack->attributes;
-
-                    if (av->attribute)
-                        MemFree(av->attribute);
-                    if (av->value)
-                        MemFree(av->value);
-
-                    istack->attributes = av->next;
-                    MemFree(av);
-                }
-
-                if (istack->tag == tag_a)
-                {
-                    MemFree(istack->element);
-                    break;
-                }
-
-                MemFree(istack->element);
-            }
-
+            PopIStackUntil( doc, TidyTag_A );
             return;
         }
     }
 
     if (lexer->istacksize > 0)
     {
-        --(lexer->istacksize);
-        istack = &(lexer->istack[lexer->istacksize]);
+        PopIStack( doc );
 
-        while (istack->attributes)
-        {
-            av = istack->attributes;
-
-            if (av->attribute)
-                MemFree(av->attribute);
-            if (av->value)
-                MemFree(av->value);
-
-            istack->attributes = av->next;
-            MemFree(av);
-        }
-
-        MemFree(istack->element);
+        /* #427822 - fix by Randy Waki 7 Aug 00 */
+        if (lexer->insert >= lexer->istack + lexer->istacksize)
+            lexer->insert = NULL;
     }
 }
 
-Bool IsPushed(Lexer *lexer, Node *node)
+Bool TY_(IsPushed)( TidyDocImpl* doc, Node *node )
 {
+    Lexer* lexer = doc->lexer;
     int i;
 
     for (i = lexer->istacksize - 1; i >= 0; --i)
     {
         if (lexer->istack[i].tag == node->tag)
             return yes;
+    }
+
+    return no;
+}
+
+/*
+   Test whether the last element on the stack has the same type than "node".
+*/
+Bool TY_(IsPushedLast)( TidyDocImpl* doc, Node *element, Node *node )
+{
+    Lexer* lexer = doc->lexer;
+
+    if ( element && !IsNodePushable(element) )
+        return no;
+
+    if (lexer->istacksize > 0) {
+        if (lexer->istack[lexer->istacksize - 1].tag == node->tag) {
+            return yes;
+        }
     }
 
     return no;
@@ -229,8 +209,9 @@ Bool IsPushed(Lexer *lexer, Node *node)
   where it gets tokens from the inline stack rather than
   from the input stream.
 */
-int InlineDup(Lexer *lexer, Node *node)
+int TY_(InlineDup)( TidyDocImpl* doc, Node* node )
 {
+    Lexer* lexer = doc->lexer;
     int n;
 
     if ((n = lexer->istacksize - lexer->istackbase) > 0)
@@ -246,60 +227,147 @@ int InlineDup(Lexer *lexer, Node *node)
  defer duplicates when entering a table or other
  element where the inlines shouldn't be duplicated
 */
-void DeferDup(Lexer *lexer)
+void TY_(DeferDup)( TidyDocImpl* doc )
 {
-    lexer->insert = null;
-    lexer->inode = null;
+    doc->lexer->insert = NULL;
+    doc->lexer->inode = NULL;
 }
 
-Node *InsertedToken(Lexer *lexer)
+Node *TY_(InsertedToken)( TidyDocImpl* doc )
 {
+    Lexer* lexer = doc->lexer;
     Node *node;
     IStack *istack;
     uint n;
 
-    /* this will only be null if inode != null */
-    if (lexer->insert == null)
+    /* this will only be NULL if inode != NULL */
+    if (lexer->insert == NULL)
     {
         node = lexer->inode;
-        lexer->inode = null;
+        lexer->inode = NULL;
         return node;
     }
 
     /*
-
-      is this is the "latest" node then update
+      If this is the "latest" node then update
       the position, otherwise use current values
     */
 
-    if (lexer->inode == null)
+    if (lexer->inode == NULL)
     {
-        lexer->lines = lexer->in->curline;
-        lexer->columns = lexer->in->curcol;
+        lexer->lines = doc->docIn->curline;
+        lexer->columns = doc->docIn->curcol;
     }
 
-    node = NewNode();
+    node = TY_(NewNode)(doc->allocator, lexer);
     node->type = StartTag;
     node->implicit = yes;
     node->start = lexer->txtstart;
-    node->end = lexer->txtstart;
+    /* #431734 [JTidy bug #226261 (was 126261)] - fix by Gary Peskin 20 Dec 00 */ 
+    node->end = lexer->txtend; /* was : lexer->txtstart; */
     istack = lexer->insert;
-    node->element = wstrdup(istack->element);
+
+#if 0 && defined(_DEBUG)
+    if ( lexer->istacksize == 0 )
+        fprintf( stderr, "0-size istack!\n" );
+#endif
+
+    node->element = TY_(tmbstrdup)(doc->allocator, istack->element);
     node->tag = istack->tag;
-    node->attributes = DupAttrs(istack->attributes);
+    node->attributes = TY_(DupAttrs)( doc, istack->attributes );
 
     /* advance lexer to next item on the stack */
-    n = lexer->insert - &(lexer->istack[0]);
+    n = (uint)(lexer->insert - &(lexer->istack[0]));
 
     /* and recover state if we have reached the end */
     if (++n < lexer->istacksize)
         lexer->insert = &(lexer->istack[n]);
     else
-        lexer->insert = null;
+        lexer->insert = NULL;
 
     return node;
 }
 
 
+/*
+   We have two CM_INLINE elements pushed ... the first is closing,
+   but, like the browser, the second should be retained ...
+   Like <b>bold <i>bold and italics</b> italics only</i>
+   This function switches the tag positions on the stack,
+   returning 'yes' if both were found in the expected order.
+*/
+Bool TY_(SwitchInline)( TidyDocImpl* doc, Node* element, Node* node )
+{
+    Lexer* lexer = doc->lexer;
+    if ( lexer
+         && element && element->tag
+         && node && node->tag
+         && TY_(IsPushed)( doc, element )
+         && TY_(IsPushed)( doc, node ) 
+         && ((lexer->istacksize - lexer->istackbase) >= 2) )
+    {
+        /* we have a chance of succeeding ... */
+        int i;
+        for (i = (lexer->istacksize - lexer->istackbase - 1); i >= 0; --i)
+        {
+            if (lexer->istack[i].tag == element->tag) {
+                /* found the element tag - phew */
+                IStack *istack1 = &lexer->istack[i];
+                IStack *istack2 = NULL;
+                --i; /* back one more, and continue */
+                for ( ; i >= 0; --i)
+                {
+                    if (lexer->istack[i].tag == node->tag)
+                    {
+                        /* found the element tag - phew */
+                        istack2 = &lexer->istack[i];
+                        break;
+                    }
+                }
+                if ( istack2 )
+                {
+                    /* perform the swap */
+                    IStack tmp_istack = *istack2;
+                    *istack2 = *istack1;
+                    *istack1 = tmp_istack;
+                    return yes;
+                }
+            }
+        }
+    }
+    return no;
+}
 
+/*
+  We want to push a specific a specific element on the stack,
+  but it may not be the last element, which InlineDup()
+  would handle. Return yes, if found and inserted.
+*/
+Bool TY_(InlineDup1)( TidyDocImpl* doc, Node* node, Node* element )
+{
+    Lexer* lexer = doc->lexer;
+    int n, i;
+    if ( element
+         && (element->tag != NULL)
+         && ((n = lexer->istacksize - lexer->istackbase) > 0) )
+    {
+        for ( i = n - 1; i >=0; --i ) {
+            if (lexer->istack[i].tag == element->tag) {
+                /* found our element tag - insert it */
+                lexer->insert = &(lexer->istack[i]);
+                lexer->inode = node;
+                return yes;
+            }
+        }
+    }
+    return no;
+}
 
+/*
+ * local variables:
+ * mode: c
+ * indent-tabs-mode: nil
+ * c-basic-offset: 4
+ * eval: (c-set-offset 'substatement-open 0)
+ * end:
+ */

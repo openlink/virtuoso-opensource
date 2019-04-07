@@ -1,0 +1,157 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="xml_sql_query_check_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_sql_xml_page" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+ <vm:pagetitle>FOR XML Query execution</vm:pagetitle>
+ <vm:pagewrapper>
+  <vm:header caption="Check FOR XML Query"/>
+  <vm:pagebody/>
+ </vm:pagewrapper>
+</v:page>
+
+<![CDATA[
+<?vsp
+   declare query_text long varchar;
+
+   declare  r_node, lex_text  varchar;
+   declare i, len, flag, pos, nrow, rows, cols, ncol integer;
+
+   declare st, lexems, sqlx_result, row_data any;
+
+   declare err_sqlstate, err_msg  varchar;
+   declare m_dta any;
+
+   query_text:= trim(get_keyword('query_text',params));
+	 len := length(query_text);
+
+	 if (len > 1 and  chr(aref (query_text, len - 1)) = ';' ) {
+	    query_text := substring(query_text, 1, len -1);
+		}
+
+   r_node := get_keyword('t_root_node', params);
+   if (query_text = '' or query_text is null) {
+     http_rewrite();
+		 http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
+		     http('<table width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');
+     http('<tr><td align="center" valign="center"><table width="100%" height="90%"><tr><td align="center" valign="center">');
+		 http('<p class="error_explanation">Statement is empty.</p> ');
+		 http('</td></tr></table></td></tr>');
+     http('<tr><td align="center" valign="center"><form name="check_dismiss" method="post" action=""><table><tr><td align="center" valign="center"> <input name="admin_logout_button" value="Dismiss" type="submit" onclick="javascript:window.close()"> </td></tr></table></form></td></tr>');
+		 http('</table></body></html>');
+     return;
+   }
+   if (r_node is null or r_node = '' )
+     r_node := 'root';
+
+     flag := y_check_query_type (query_text);
+
+      http_rewrite();
+
+     if (flag <> 0 and flag <> 2)
+       {
+		 http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
+		     http('<table width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');
+     http('<tr><td align="center" valign="center"><table width="100%" height="90%"><tr><td align="center" valign="center">');
+	       http('<p class="error_explanation">Statement is not a SQL-XML nor SQLX.</p> ');
+		 http('</td></tr></table></td></tr>');
+     http('<tr><td align="center" valign="center"><form name="check_dismiss" method="post" action=""><table><tr><td align="center" valign="center"> <input name="admin_logout_button" value="Dismiss" type="submit" onclick="javascript:window.close()"> </td></tr></table></form></td></tr>');
+         http('</table></body></html>');
+         return;
+       }
+
+
+     st := string_output ();
+
+      http(sprintf ('<?xml version="1.0" encoding="%s" ?>\n', current_charset ()) );
+      http(sprintf('<%s>',r_node));
+
+     if (flag = 2) {
+       {
+        declare exit handler for sqlstate '*'
+        {
+	        http_rewrite();
+		      http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
+			  http('<table  width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');
+		      http('<tr><td align="center" valign="center"><table width="100%" height="90%"><tr><td align="center" valign="center">');
+					http('<h1>Parse error</h1><p class="error_explanation">Statement contained errors preventing it to be parsed properly. Please correct the query text and try again.</p>');
+          http( sprintf('<p class="error_msg">Error message received: %s.</p>',__SQL_MESSAGE) );
+					http('</td></tr></table></td></tr>');
+          http('<tr><td align="center" valign="center"><form name="check_dismiss" method="post" action=""><table><tr><td align="center" valign="center"> <input name="admin_logout_button" value="Dismiss" type="submit" onclick="javascript:window.close()"> </td></tr></table></form></td></tr>');
+		      http('</table></body></html>');
+					return;
+         };
+         xml_auto (query_text, vector (), st);
+        }
+        http(string_output_string(st));
+      } else if (flag =0) {
+       {
+        declare exit handler for sqlstate '*'
+        {
+	        http_rewrite();
+		      http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
+			  http('<table  width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');
+		      http('<tr><td align="center" valign="center"><table width="100%" height="90%"><tr><td align="center" valign="center">');
+					http('<h1>Parse error</h1><p class="error_explanation">Statement contained errors preventing it to be parsed properly. Please correct the query text and try again.</p>');
+          http( sprintf('<p class="error_msg">Error message received: %s.</p>',__SQL_MESSAGE) );
+					http('</td></tr></table></td></tr>');
+					http('<tr><td align="center" valign="center"><form name="check_dismiss" method="post" action=""><table><tr><td align="center" valign="center"> <input name="admin_logout_button" value="Dismiss" type="submit" onclick="javascript:window.close()"> </td></tr></table></form></td></tr>');
+					http('</table></body></html>');
+          return;
+         };
+	 exec (query_text, err_sqlstate, err_msg, vector(),100, m_dta, sqlx_result);
+	}
+
+	if (err_sqlstate <> 0) {
+	  http_rewrite();
+		http('<html><body><head><link rel="stylesheet" href="yacutia_style.css" type="text/css" /><title>Error of FOR XML Query execution</title></head>');
+		    http('<table  width="100%"><tr><td><div id="MB2" style="text-align: left;"><img src="images/con_banner.gif" /></div></td></tr>');
+	  http('<tr><td align="center" valign="center"><table width="100%" height="90%"><tr><td align="center" valign="center">');
+		http('<h1>Parse error</h1><p class="error_explanation">Statement contained errors preventing it to be parsed properly. Please correct the query text and try again.</p>');
+    http( sprintf('<p class="error_msg">Error message received: %s.</p>',err_msg) );
+		http('</td></tr></table></td></tr>');
+		http('<tr><td align="center" valign="center"><form name="check_dismiss" method="post" action=""><table><tr><td align="center" valign="center"> <input name="admin_logout_button" value="Dismiss" type="submit" onclick="javascript:window.close()"> </td></tr></table></form></td></tr>');
+		http('</table></body></html>');
+	  return;
+	}
+	rows :=  length (sqlx_result);
+	nrow := 0;
+	while ( nrow < rows) {
+          row_data := aref(sqlx_result,nrow);
+	  cols :=  length(row_data);
+	  ncol := 0;
+	  while (ncol < cols) {
+	     http_value(aref(row_data, ncol),st);
+	     http(string_output_string(st));
+	     ncol := ncol + 1;
+	  }
+	  nrow := nrow + 1;
+	}
+      }
+
+      http(sprintf('</%s>',r_node));
+
+      http_header (sprintf('Content-Type: %s\r\n', 'text/xml'));
+?>
+]]>

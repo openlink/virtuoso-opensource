@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -54,3 +54,9 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  Result from Q3 \n";
 
+#if $NEQ $LAST[1] 1
+    ECHOLN BOTH " Q3 should be:";
+    select * from MS_OUT_Q3;
+    ECHOLN BOTH " Q3 IS:";
+    select * from OUT_Q3;
+#endif

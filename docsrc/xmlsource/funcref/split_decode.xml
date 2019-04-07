@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -73,10 +73,10 @@ does only the decoding (but no splitting) and returns back a string.</para>
 <example id="ex_split_and_decode"><title>Using split_and_decode</title>
 <programlisting>
    split_and_decode("Tulipas=Taloon+kumi=kala&amp;Joka=haisi
-		+pahalle&amp;kuin&amp;%E4lymyst&ouml;porkkana=ilman ruuvausta",1)
+		+pahalle&amp;kuin&amp;%E4lymyst&#246;porkkana=ilman ruuvausta",1)
    produces a vector:
    ("TULIPAS" "Taloon kumi=kala" "JOKA" "haisi pahalle" "KUIN" NULL
-   "&Auml;LYMYST&Ouml;PORKKANA" "ilman ruuvausta")
+   "&#xC4;LYMYST&#xD6;PORKKANA" "ilman ruuvausta")
 </programlisting>
   <programlisting>
    split_and_decode(NULL)   =&gt; NULL
@@ -119,7 +119,7 @@ does only the decoding (but no splitting) and returns back a string.</para>
 	</para>
 			<programlisting>
    split_and_decode('=?ISO-8859-1?Q?Tiira_lent=E4=E4_taas?=',0,'=_')
-   =&gt;  "=?ISO-8859-1?Q?Tiira lent&auml;&auml; taas?="
+   =&gt;  "=?ISO-8859-1?Q?Tiira lent&#xE4;&#xE4; taas?="
 
    split_and_decode('Message-Id: &lt;199511141036.LAA06462@correo.unet.ar&gt;\n
 		From: "=?ISO-8859-1?Q?Jorge_Mo=F1as?=" &lt;jorgem@unet.ar&gt;\n
@@ -131,7 +131,7 @@ does only the decoding (but no splitting) and returns back a string.</para>
 		Content-Transfer-Encoding: 8bit\nX-Mozilla-Status: 0011',
    1,'=_\n:');
    =&gt; ('MESSAGE-ID' ' &lt;199511141036.LAA06462@correo.unet.ar&gt;'
-   'FROM' ' "=?ISO-8859-1?Q?Jorge Mo&ntilde;as?=" &lt;jorgem@unet.ar&gt;'
+   'FROM' ' "=?ISO-8859-1?Q?Jorge Mo&#241;as?=" &lt;jorgem@unet.ar&gt;'
    'TO' ' "Jore Carvajal" &lt;carvajal@wanabee.fr&gt;'
    'SUBJECT' ' RE: Um-pah-pah'
    'DATE' ' Wed, 12 Nov 1997 11:28:51 +0100'
@@ -157,7 +157,7 @@ does only the decoding (but no splitting) and returns back a string.</para>
 		Content-Transfer-Encoding: 8bit\nX-Mozilla-Status: 0011',
    1,'=_\n ')
    =&gt; ('MESSAGE-ID:' '&lt;199511141036.LAA06462@correo.unet.ar&gt;'
-   'FROM:' '"=?ISO-8859-1?Q?Jorge Mo&ntilde;as?=" &lt;jorgem@unet.ar&gt;'
+   'FROM:' '"=?ISO-8859-1?Q?Jorge Mo&#241;as?=" &lt;jorgem@unet.ar&gt;'
    'TO:' '"Jore Carvajal" &lt;carvajal@wanabee.fr&gt;'
    'SUBJECT:' 'RE: Um-pah-pah'
    'DATE:' 'Wed, 12 Nov 1997 11:28:51 +0100'

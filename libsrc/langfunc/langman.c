@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -297,11 +297,13 @@ unit_version_t langfunc_version = {
 
 unit_version_t *langfunc_plugin_load (const char *plugin_dll_name, const char *plugin_load_path)
 {
+  size_t filename_buflen = strlen (plugin_load_path) + 1 + strlen (plugin_dll_name) + 1;
+  size_t funname_buflen = strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1;
   char *filename, *funname;
-  filename = (char *) dk_alloc (strlen (plugin_load_path) + 1 + strlen (plugin_dll_name) + 1);
-  snprintf (filename, sizeof (filename), "%s/%s", plugin_load_path, plugin_dll_name);
-  funname = (char *) dk_alloc (strlen (plugin_dll_name) + 6 /* == strlen ("_check") */ + 1);
-  snprintf (funname, sizeof (funname), "%s_check", plugin_dll_name);
+  filename = (char *) dk_alloc (filename_buflen);
+  snprintf (filename, filename_buflen, "%s/%s", plugin_load_path, plugin_dll_name);
+  funname = (char *) dk_alloc (funname_buflen);
+  snprintf (funname, funname_buflen, "%s_check", plugin_dll_name);
   return uv_load_and_check_plugin (filename, funname, &langfunc_version, NULL);
 }
 

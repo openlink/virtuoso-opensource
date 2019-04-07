@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -352,7 +352,7 @@ SQL>vhost_define(lpath=>'/DAV/xmlt',
     <para>Once our query has been saved in an XML template we can test it by
     pointing a web browser at the URL for the file as we configured our
     virtual directory for, which will be similar to:
-    <computeroutput>http://localhost:8890/DAV/xmlt/xpath-template.xml</computeroutput>:</para>
+    <computeroutput>http://example.com/DAV/xmlt/xpath-template.xml</computeroutput>:</para>
 
     <figure id="xmltemplate011" float="1"><title></title>
     <graphic fileref="xmltemplate011.png"/></figure>

@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 use PUMP
 ;
 
@@ -73,20 +73,20 @@ create procedure "PUMP"."DBA"."HTML_RETRIEVE_TABLES_VIA_PLSQL" ( in arr any, in 
 --  dbg_obj_print(qual, qm, om, tm, custom_flag);
 whenever not found goto fin;
   if (equ(custom_flag,'1'))
-  for (select 
+  for (select
 	name_part("KEY_TABLE",0) as t_qualifier,
 	name_part("KEY_TABLE",1) as t_owner,
 	name_part("KEY_TABLE",2) as t_name,
 	table_type("KEY_TABLE")  as t_type
-	  from DB.DBA.SYS_KEYS 
+	  from DB.DBA.SYS_KEYS
 	where
-	  __any_grants ("KEY_TABLE") and 
+	  __any_grants ("KEY_TABLE") and
 	  name_part("KEY_TABLE",0) like qm and
 	  name_part("KEY_TABLE",1) like om and
 	  name_part("KEY_TABLE",2) like tm and
 	  table_type("KEY_TABLE") = 'TABLE' and
 	  KEY_IS_MAIN = 1 and
-	  KEY_MIGRATE_TO is NULL 
+	  KEY_MIGRATE_TO is NULL
 	  order by "KEY_TABLE")
         do
 	{
@@ -105,18 +105,18 @@ whenever not found goto fin;
 	  first := 0;
 	}
   else
-  for (select 
+  for (select
 	name_part("KEY_TABLE",0) as t_qualifier,
 	name_part("KEY_TABLE",1) as t_owner,
 	name_part("KEY_TABLE",2) as t_name,
 	table_type("KEY_TABLE")  as t_type
-	  from DB.DBA.SYS_KEYS 
+	  from DB.DBA.SYS_KEYS
 	where
-	  __any_grants ("KEY_TABLE") and 
+	  __any_grants ("KEY_TABLE") and
 	  name_part("KEY_TABLE",0) like qual and
 	  table_type("KEY_TABLE") = 'TABLE' and
 	  KEY_IS_MAIN = 1 and
-	  KEY_MIGRATE_TO is NULL 
+	  KEY_MIGRATE_TO is NULL
 	  order by "KEY_TABLE")
         do
 	{
@@ -143,7 +143,7 @@ create procedure "PUMP"."DBA"."HTML_SELECT_LOCAL_TABLES_OUT" (  in arr any )
 {
   http('<table CLASS="statdata" border=0 rules=none><tr>');
   http('<td align=center>');
-  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'st', 'Available Tables', "PUMP"."DBA"."HTML_RETRIEVE_TABLES_VIA_PLSQL" (arr), NULL, 'size=10 multiple', NULL); 
+  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'st', 'Available Tables', "PUMP"."DBA"."HTML_RETRIEVE_TABLES_VIA_PLSQL" (arr), NULL, 'size=10 multiple', NULL);
   http('</td></tr>');
   http('<tr><td align=center CLASS="statlist">');
   "PUMP"."DBA"."HTML_BUTTON_OUT" (arr, '', 'Select All', 'select_all_local_tables();'
@@ -160,9 +160,9 @@ create procedure "PUMP"."DBA"."HTML_SELECT_LOCAL_TABLES_OUT" (  in arr any )
   http ('</td>');
   http ('</tr>');
   http ('</table>\n');
-  http ('<script> 
+  http ('<script>
 	function pack_tables()
-	{ 
+	{
 		var out=\'\', j=0;
 		for (i=0;;i++)
 		{
@@ -201,7 +201,7 @@ create procedure "PUMP"."DBA"."HTML_SELECT_QUALIFIER_FILTER_OUT" (  in arr any )
   http('<table class="genlist" border="0" cellpadding="0">');
   http('<tr><td class="genhead">');
   http('<table width=100% border=0><tr><td align=left  class="genhead">');
-  "PUMP"."DBA"."__CHECK_HELP" ('qualifier_mask', sprintf('&nbsp;%s&nbsp;', 'Filter')); 
+  "PUMP"."DBA"."__CHECK_HELP" ('qualifier_mask', sprintf('&nbsp;%s&nbsp;', 'Filter'));
   http('</td><td align=right>');
   "PUMP"."DBA"."HTML_BUTTON_OUT" (arr, '', 'Advanced', '
 	this.form.action=\'dump_advanced.vsp\';this.form.submit();
@@ -211,7 +211,7 @@ create procedure "PUMP"."DBA"."HTML_SELECT_QUALIFIER_FILTER_OUT" (  in arr any )
   http('<tr><td CLASS="statdata">');
 
 
-  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'qualifier_mask', NULL, "PUMP"."DBA"."HTML_RETRIEVE_QUALIFIERS_VIA_PLSQL" (arr), NULL, NULL, NULL, 20, 'this.form.submit();'); 
+  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'qualifier_mask', NULL, "PUMP"."DBA"."HTML_RETRIEVE_QUALIFIERS_VIA_PLSQL" (arr), NULL, NULL, NULL, 20, 'this.form.submit();');
   http('</td><td align=center>');
   http('</td>');
   http('</tr>');
@@ -224,10 +224,10 @@ create procedure "PUMP"."DBA"."HTML_SELECT_DUMP_TYPE_OUT" (  in arr any )
 {
   http('<table class="genlist" border="0" cellpadding="0">');
   http('<tr><td class="genhead">');
-  "PUMP"."DBA"."__CHECK_HELP" ('text_flag', sprintf('&nbsp;%s&nbsp;', 'Dump Format')); 
+  "PUMP"."DBA"."__CHECK_HELP" ('text_flag', sprintf('&nbsp;%s&nbsp;', 'Dump Format'));
   http('</td></tr>');
   http('<tr><td CLASS="statdata">');
-  "PUMP"."DBA"."HTML_RADIO_OUT" (arr, 'text_flag', 'SQL=SQL&Binary=Binary', NULL, NULL, NULL); 
+  "PUMP"."DBA"."HTML_RADIO_OUT" (arr, 'text_flag', 'SQL=SQL&Binary=Binary', NULL, NULL, NULL);
   http('</td></tr></table>');
 }
 ;
@@ -254,7 +254,7 @@ create procedure "PUMP"."DBA"."HTML_SELECT_TABLES_OUT" (  in arr any )
   http('<td rowspan=4  align=center>');
   declare exstr varchar;
   exstr := "PUMP"."DBA"."HTML_CHOICE_TABLES" (arr);
-  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'at', 'Available Tables', "PUMP"."DBA"."HTML_RETRIEVE_TABLES_VIA_PLSQL" (arr), NULL, 'size=10 multiple' ,exstr); 
+  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'at', 'Available Tables', "PUMP"."DBA"."HTML_RETRIEVE_TABLES_VIA_PLSQL" (arr), NULL, 'size=10 multiple' ,exstr);
   http('</td>');
   http('<td align=center><br>');
   "PUMP"."DBA"."HTML_BUTTON_OUT" (arr, '', ' > ', '
@@ -279,7 +279,7 @@ create procedure "PUMP"."DBA"."HTML_SELECT_TABLES_OUT" (  in arr any )
 		  ', NULL, NULL);
   http('</td>');
   http('<td rowspan=4  align=center>');
-  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'choice_tables', 'Selected Tables', exstr, NULL, 'size=10  multiple ',NULL ); 
+  "PUMP"."DBA"."HTML_SELECT_OUT" (arr, 'choice_tables', 'Selected Tables', exstr, NULL, 'size=10  multiple ',NULL );
   http('<script language=JavaScript>
 		function ChoiceTablesSelect()
 		{
@@ -288,9 +288,9 @@ create procedure "PUMP"."DBA"."HTML_SELECT_TABLES_OUT" (  in arr any )
 				if (document.forms[0].choice_tables.options[i]==null)
 					break;
 				document.forms[0].choice_tables.options[i].selected=true;
-			}	
+			}
 		}
-		ChoiceTablesSelect();	
+		ChoiceTablesSelect();
 	</script>');
   http('</td>');
   http('</tr>');
@@ -444,7 +444,7 @@ create procedure "PUMP"."DBA"."CHK_ST_VALUE" ( inout arr any, in pars any )
 }
 ;
 
-create procedure "DB"."DBA"."BACKUP_ALL_VIA_DBPUMP" (	
+create procedure "DB"."DBA"."BACKUP_ALL_VIA_DBPUMP" (
 												in username varchar,
 												in passwd varchar,
 												in datasource varchar,

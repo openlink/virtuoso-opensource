@@ -1,25 +1,25 @@
---  
+--
 --  $Id$
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 use PUMP
 ;
@@ -223,7 +223,7 @@ create procedure "PUMP"."DBA"."HTML_FOOTER_OUT" ( inout arr any )
   http ('<TR><TD CLASS="CopyrightBorder" COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http ('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Server ');
   http (sys_stat('st_dbms_ver'));
-  http (' DBPUMP Interface - Copyright&copy; 1998-2013 OpenLink Software.</P></TD></TR>');
+  http (' DBPUMP Interface - Copyright&copy; 1998-2019 OpenLink Software.</P></TD></TR>');
   http ('</TABLE>\n</BODY>');
 }
 ;

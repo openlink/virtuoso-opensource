@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 create table load_list (
   ll_file varchar,
   ll_graph varchar,
@@ -55,10 +75,10 @@ ld_file (in path varchar, in f varchar, in graph varchar, in del_after int)
     update load_list
       set ll_state = 2,
           ll_done = curdatetime (),
-          ll_error = __sql_state || ' ' || __sql_message
+          ll_error = __SQL_STATE || ' ' || __SQL_MESSAGE
       where ll_file = f;
     commit work;
-    log_message (sprintf (' File %s error %s %s', f, __sql_state, __sql_message));
+    log_message (sprintf (' File %s error %s %s', f, __SQL_STATE, __SQL_MESSAGE));
     return;
   };
   ttlp (file_to_string_output (path || '/' || f), '', graph);
@@ -94,7 +114,7 @@ rdf_load_dir (in path varchar,
 
   br := 0;
 
-  declare exit handler for sqlstate '40001' { 
+  declare exit handler for sqlstate '40001' {
     rollback work;
 
 
@@ -194,3 +214,4 @@ create procedure gogo (in coff any)
   dbg_obj_print ('Finish gogo.');
 }
 ;
+

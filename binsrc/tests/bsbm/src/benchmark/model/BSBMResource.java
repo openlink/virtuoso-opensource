@@ -4,7 +4,7 @@ package benchmark.model;
 public abstract class BSBMResource {
 	Integer publisher=null;//Nr. of publisher
 	Long publishDate=null;
-	
+
 	public Integer getPublisher() {
 		return publisher;
 	}

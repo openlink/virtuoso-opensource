@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 -->
 
 <sect2 id="rdfadm"><title>Conductor Linked Data Administration</title>
-  <para>From Conductor the Linked Data tab allows you to execute/save/load SPARQL queries, 
+  <para>From Conductor the "Linked Data" tab allows you to execute/save/load SPARQL queries,
 	to add/edit RDF Mapping, to perform statistics and manage graphs, 
 	to import schemas and define namespaces, to generated Linked Data Views and to upload to the Quad Store.
 	</para>

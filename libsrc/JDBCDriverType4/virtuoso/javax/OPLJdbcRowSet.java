@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -918,7 +918,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -1171,7 +1171,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -1900,11 +1900,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    * @param map the mapping from SQL type names to Java classes
    * @return an object representing the SQL value
    */
-#if JDK_VER >= 16
   public synchronized Object getObject(int colIndex, Map<String,Class<?>> map)
-#else
-  public synchronized Object getObject(int colIndex, Map map)
-#endif
    throws SQLException
   {
     check_close();
@@ -1964,11 +1960,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
    * @param map the mapping from SQL type names to Java classes
    * @return an object representing the SQL value
    */
-#if JDK_VER >= 16
   public synchronized Object getObject(String colName, Map<String,Class<?>> map)
-#else
-  public synchronized Object getObject(String colName, Map map)
-#endif
      throws SQLException
   {
     check_close();
@@ -2022,7 +2014,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object.  Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -2038,7 +2030,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -2054,7 +2046,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -2070,7 +2062,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -2086,7 +2078,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -2102,7 +2094,7 @@ public class OPLJdbcRowSet extends BaseRowSet {
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -2115,7 +2107,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
     return rs.getTimestamp(columnName, cal);
   }
 
-#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
     /**
      * Retrieves the value of the designated column in the current row
@@ -2293,7 +2284,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
     rs.updateArray(columnName, x);
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -3693,9 +3683,9 @@ public class OPLJdbcRowSet extends BaseRowSet {
   public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
   {
     if (type == null) {
-      throw new SQLException("Type parameter can not be null", "S1009");
+      throw new SQLException("Type parameter cannot be null", "S1009");
     }
-		
+
     if (type.equals(String.class)) {
       return (T) getString(columnIndex);
     } else if (type.equals(BigDecimal.class)) {
@@ -3729,19 +3719,19 @@ public class OPLJdbcRowSet extends BaseRowSet {
     } else if (type.equals(java.net.URL.class)) {
       return (T) getURL(columnIndex);
 //		} else if (type.equals(Struct.class)) {
-//				
-//			} 
+//
+//			}
 //		} else if (type.equals(RowId.class)) {
-//			
+//
 //		} else if (type.equals(NClob.class)) {
-//			
+//
 //		} else if (type.equals(SQLXML.class)) {
-			
+
     } else {
       try {
         return (T) getObject(columnIndex);
       } catch (ClassCastException cce) {
-         throw new SQLException ("Conversion not supported for type " + type.getName(), 
+         throw new SQLException ("Conversion not supported for type " + type.getName(),
                     "S1009");
       }
     }
@@ -3782,8 +3772,6 @@ public class OPLJdbcRowSet extends BaseRowSet {
 #endif
 
 
-#endif
-#endif
 
   private void check_close()  throws SQLException
   {

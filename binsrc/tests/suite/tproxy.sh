@@ -1,25 +1,25 @@
 #!/bin/sh
-#
+#  
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 #PAGES FOR HTTP/1.0
 H1=2 
@@ -30,7 +30,7 @@ H3=4
 
 LOGFILE=`pwd`/tproxy.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 
@@ -61,26 +61,15 @@ DoCommand()
 
 
 #URI files 
-GenURI10 () 
+GenURI () 
 {
     ECHO "Creating uri file for PROXY HTTP/1.0 test"
-    file=http10.uri
+    file=$1
+    xx=$2
     cat > $file <<END_URI
 $THOST $TPORT
-$CLICKS GET http://$THOST:$TPORT/test.html HTTP/1.0
-$CLICKS GET http://$THOST:$TPORT/test.vsp HTTP/1.0
-END_URI
-    chmod 644 $file
-}
-
-GenURI11 () 
-{
-    ECHO "Creating uri file for PROXY HTTP/1.1 test"
-    file=http11.uri
-    cat > $file <<END_URI
-$THOST $TPORT
-$CLICKS GET http://$THOST:$TPORT/test.html HTTP/1.1
-$CLICKS GET http://$THOST:$TPORT/test.vsp HTTP/1.1
+$CLICKS GET http://$THOST:$TPORT/test.html HTTP/$xx
+$CLICKS GET http://$THOST:$TPORT/test.vsp HTTP/$xx
 END_URI
     chmod 644 $file
 }
@@ -164,7 +153,7 @@ httpGet ()
     fi
   user=${3-dba}
   pass=${4-dba}
-  ../urlsimu $file $pipeline -u $user -p $pass 
+  $VIRTUOSO_TEST/../urlsimu $file $pipeline -u $user -p $pass 
 }
 
 waitAll ()
@@ -173,14 +162,14 @@ waitAll ()
    while [ "$clients" -gt "0" ]
      do
        sleep 1
-       clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
+       clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
 }
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -195,7 +184,7 @@ http_proxy_enabled: 1
 END_HTTP
    ;;
    *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
    cat >> $CFGFILE <<END_HTTP1
 [HTTPServer]
 HTTPLogFile = http.log
@@ -229,15 +218,9 @@ NOLITE
 ECHO "HTTP Proxy Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"
 
-case $1 in 
-   *) #run test
-
    #CLEANUP
-   rm -rf tproxy 
-   mkdir tproxy 
-   cd tproxy
-   GenURI11
-   GenURI10
+   GenURI http11.uri 1.1
+   GenURI http10.uri 1.0
    GenURI1011
    MakeIni
    GenHTML
@@ -245,7 +228,6 @@ case $1 in
    STOP_SERVER
    START_SERVER $DSN 1000
    sleep 1
-   cd ..
 
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/test.vsp', '/test.vsp', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"   
    DoCommand $DSN "insert into HTTP_ACL (HA_LIST,HA_ORDER,HA_CLIENT_IP,HA_FLAG,HA_DEST_IP) values ('PROXY',1,'*',0,'*');"   
@@ -256,33 +238,33 @@ case $1 in
    count=1
    while [ "$count" -le "$USERS" ]
      do
-       httpGet tproxy/http10.uri 0 > tproxy/result1.$count &
+       httpGet http10.uri 0 > result1.$count &
        count=`expr $count + 1`   
      done
    waitAll 
-   checkRes 'tproxy/result1.*' `expr $CLICKS \* $H1 \* $USERS` 'HTTP/1.0 test'
+   checkRes 'result1.*' `expr $CLICKS \* $H1 \* $USERS` 'HTTP/1.0 test'
    
    # HTTP/1.1  
    ECHO "STARTED: test with $USERS HTTP/1.1 clients" "`date +%H:%M:%S`" 
    count=1
    while [ "$count" -le "$USERS" ]
      do
-       httpGet tproxy/http11.uri $nreq > tproxy/result2.$count &
+       httpGet http11.uri $nreq > result2.$count &
        count=`expr $count + 1`   
      done
    waitAll 
-   checkRes 'tproxy/result2.*'  `expr $CLICKS \* $H2 \* $USERS` 'HTTP/1.1 test'
+   checkRes 'result2.*'  `expr $CLICKS \* $H2 \* $USERS` 'HTTP/1.1 test'
    
    # HTTP/1.0 & HTTP/1.1 
    ECHO "STARTED: test with $USERS HTTP/1.0/1.1 clients" "`date +%H:%M:%S`"
    count=1
    while [ "$count" -le "$USERS" ]
      do
-       httpGet tproxy/http1011.uri $nreq > tproxy/result3.$count &
+       httpGet http1011.uri $nreq > result3.$count &
        count=`expr $count + 1`   
      done
    waitAll
-   checkRes 'tproxy/result3.*' `expr $CLICKS \* $H3 \* $USERS` 'HTTP/1.0 & HTTP/1.1 test'
+   checkRes 'result3.*' `expr $CLICKS \* $H3 \* $USERS` 'HTTP/1.0 & HTTP/1.1 test'
   fi 
    ECHO "END OF SERIES:" "`date +%H:%M:%S`"
    SHUTDOWN_SERVER
@@ -290,9 +272,7 @@ case $1 in
    # 
    #  CLEANUP
    #
-#rm -rf tproxy 
    ;;
 
-esac
 CHECK_LOG
 BANNER "COMPLETED SERIES OF HTTP PROXY SERVER TESTS"

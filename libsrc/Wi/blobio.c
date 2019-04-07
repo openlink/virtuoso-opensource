@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -181,7 +181,7 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
   print_int (bh->bh_length, ses);
   print_int (bh->bh_diskbytes, ses);
   print_int (bh->bh_key_id, ses);
-  print_int (bh->bh_frag_no, ses);
+  print_int (bh->bh_frag_no + ((uint32)bh->bh_slice << 16), ses);
   print_int (bh->bh_dir_page, ses);
   print_int (bh->bh_timestamp, ses);
   print_object  (bh->bh_pages, ses, NULL, NULL);
@@ -191,6 +191,7 @@ bh_serialize (blob_handle_t * bh, dk_session_t * ses)
 caddr_t
 bh_deserialize (dk_session_t * session)
 {
+  uint32 frsl;
   blob_handle_t *bh;
   client_connection_t *cli = DKS_DB_DATA (session);
   if (cli && cli->cli_version < 3104)
@@ -214,7 +215,9 @@ bh_deserialize (dk_session_t * session)
   bh->bh_length = read_int (session);
   bh->bh_diskbytes = read_int (session);
   bh->bh_key_id = (unsigned short) read_int (session);
-  bh->bh_frag_no = (short) read_int (session);
+  frsl = read_int (session);
+  bh->bh_frag_no = frsl & 0xffff;
+  bh->bh_slice = frsl >> 16;
   bh->bh_dir_page = read_int (session);
   bh->bh_timestamp = read_int (session);
   bh->bh_pages = (dp_addr_t *) scan_session (session);
@@ -699,36 +702,37 @@ int blobio_inited = 0;
 void
 blobio_init (void)
 {
-  macro_char_func *rt;
+  macro_char_func *rt, *rrt;
   if (blobio_inited)
     return;
   blobio_inited = 1;
 
   rt = get_readtable ();
+  rrt = get_rpcreadtable ();
   PrpcSetWriter (DV_BLOB_HANDLE, (ses_write_func) bh_serialize);
-  rt[DV_BLOB_HANDLE] = (macro_char_func) bh_deserialize;
+  rrt[DV_BLOB_HANDLE] = rt[DV_BLOB_HANDLE] = (macro_char_func) bh_deserialize;
   PrpcSetWriter (DV_BLOB_XPER_HANDLE, (ses_write_func) bh_serialize_xper);
   rt[DV_BLOB_XPER_HANDLE] = (macro_char_func) bh_deserialize_xper;
   PrpcSetWriter (DV_BLOB_WIDE_HANDLE, (ses_write_func) bh_serialize_wide);
-  rt[DV_BLOB_WIDE_HANDLE] = (macro_char_func) bh_deserialize_wide;
+  rrt[DV_BLOB_WIDE_HANDLE] = rt[DV_BLOB_WIDE_HANDLE] = (macro_char_func) bh_deserialize_wide;
   PrpcSetWriter (DV_DATETIME, (ses_write_func) datetime_serialize);
-  rt[DV_DATETIME] = (macro_char_func) datetime_deserialize;
+  rrt[DV_DATETIME] = rt[DV_DATETIME] = (macro_char_func) datetime_deserialize;
   dt_init ();
 
   PrpcSetWriter (DV_NUMERIC, (ses_write_func) numeric_serialize);
-  rt[DV_NUMERIC] = (macro_char_func) numeric_deserialize;
+  rrt[DV_NUMERIC] = rt[DV_NUMERIC] = (macro_char_func) numeric_deserialize;
   PrpcSetWriter (DV_IGNORE, (ses_write_func) ign_serialize);
-  rt[DV_IGNORE] = (macro_char_func) ign_deserialize;
+  rrt[DV_IGNORE] = rt[DV_IGNORE] = (macro_char_func) ign_deserialize;
   numeric_init ();
 
   PrpcSetWriter (DV_BIN, (ses_write_func) print_bin_string);
-  rt[DV_BIN] = (macro_char_func) box_read_bin_string;
-  rt[DV_LONG_BIN] = (macro_char_func) box_read_long_bin_string;
+  rrt[DV_BIN] = rt[DV_BIN] = (macro_char_func) box_read_bin_string;
+  rrt[DV_LONG_BIN] = rt[DV_LONG_BIN] = (macro_char_func) box_read_long_bin_string;
 
   PrpcSetWriter (DV_WIDE, (ses_write_func) wide_serialize);
   PrpcSetWriter (DV_LONG_WIDE, (ses_write_func) wide_serialize);
-  rt[DV_WIDE] = (macro_char_func) box_read_wide_string;
-  rt[DV_LONG_WIDE] = (macro_char_func) box_read_long_wide_string;
+  rrt[DV_WIDE] = rt[DV_WIDE] = (macro_char_func) box_read_wide_string;
+  rrt[DV_LONG_WIDE] = rt[DV_LONG_WIDE] = (macro_char_func) box_read_long_wide_string;
   rt[DV_COMPOSITE] = (macro_char_func) box_read_composite;
   PrpcSetWriter (DV_COMPOSITE, (ses_write_func) print_composite);
   dk_mem_hooks (DV_COMPOSITE, comp_copy, comp_destroy, 0);
@@ -738,11 +742,11 @@ blobio_init (void)
   dk_mem_hooks_2 (DV_BLOB_WIDE_HANDLE, bh_copy, bh_destroy, 0, bh_mp_copy);
 
   PrpcSetWriter (DV_SYMBOL, (ses_write_func) symbol_write);
-  rt[DV_SYMBOL] = box_read_symbol;
+  rrt[DV_SYMBOL] = rt[DV_SYMBOL] = box_read_symbol;
 
   PrpcSetWriter (DV_IRI_ID, (ses_write_func) iri_id_write);
-  rt[DV_IRI_ID] = box_read_iri_id;
-  rt[DV_IRI_ID_8] = box_read_iri_id;
+  rrt[DV_IRI_ID] = rt[DV_IRI_ID] = box_read_iri_id;
+  rrt[DV_IRI_ID_8] = rt[DV_IRI_ID_8] = box_read_iri_id;
 
 
   rt[DV_OBJECT] = udt_client_deserialize;

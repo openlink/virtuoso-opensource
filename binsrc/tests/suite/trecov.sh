@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: trecov.sh,v 1.22.6.8.4.8 2013/01/02 16:15:19 source Exp $
 #
 #  Database recovery tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,9 +26,17 @@
 
 LOGFILE=trecov.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
+cp $VIRTUOSO_TEST/words.esp .
+cp $VIRTUOSO_TEST/spanish.coll .
+cp $VIRTUOSO_TEST/tst.nq .
+cp $VIRTUOSO_TEST/tst2.nq .
 
 BANNER "STARTED RECOVERY TEST (trecov.sh)"
+if [ "$CURRENT_VIRTUOSO_CAPACITY" != "single" ]
+then
+    exit 0
+fi
 
 rm -f $DBLOGFILE
 rm -f $DBFILE
@@ -37,17 +45,29 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < treg1.sql
+LOG + running sql script treg1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/treg1.sql
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tblob.sql
+LOG + running sql script tblob
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tblob.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Inline Blobs "
     exit 3
 fi
 
+LOG + running sql script trdfld
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfld.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: trecov.sh: rdf ld "
+    exit 3
+fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tconcur2.sql
+
+
+LOG + running sql script tconcur2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tconcur2.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Concurrent inserts with timestamp key"
@@ -65,7 +85,8 @@ RUN $ISQL $DSN '"EXEC=status();"' ERRORS=STDOUT
 #    exit 3
 #fi
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+#LOG + running sql script blobs
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 #if test $STATUS -eq 0
 #then
 #    LOG "PASSED: trecov.sh: blobs 1st round"
@@ -75,7 +96,8 @@ RUN $ISQL $DSN '"EXEC=status();"' ERRORS=STDOUT
 #fi
 
 #RUN $BLOBS $DSN
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < blobs.sql
+#LOG + running sql script blobs
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/blobs.sql
 #if test $STATUS -eq 0
 #then
 #    LOG "PASSED: trecov.sh: blobs 2nd round"
@@ -85,18 +107,16 @@ RUN $ISQL $DSN '"EXEC=status();"' ERRORS=STDOUT
 #fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tschema1.sql
+LOG + running sql script tschema1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tschema1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Schema test"
     exit 3
 fi
 
-#exit
 STOP_SERVER
 
-
-#sleep 5
 rm -f $DBFILE.r1 $DBLOGFILE.r1 $SRVMSGLOGFILE.r1
 cp $DBFILE $DBFILE.r1
 cp $DBLOGFILE $DBLOGFILE.r1
@@ -104,7 +124,8 @@ cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r1
 START_SERVER $PORT 2000
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+LOG + running sql script recovck1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed after log roll forward"
@@ -128,17 +149,16 @@ LOG "Next we do a checkpoint and kill the database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
 CHECKPOINT_SERVER
 STOP_SERVER
-#RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
-#sleep 5
 
 # The following might need a change later if the implementation changes:
 if test -r "$DBLOGFILE"
 then
     if test -s "$DBLOGFILE"
     then
-	#LOG "***FAILED: The file $DBLOGFILE is longer than zero bytes after checkpoint"
 	ECHO "The file $DBLOGFILE is longer than zero bytes after checkpoint"
 	ls -la $DBLOGFILE | tee -a $LOGFILE
+	ECHO "Log file $DBLOGFILE is removed manually"
+	rm $DBLOGFILE
     else
 	LOG "PASSED: The file $DBLOGFILE is empty after checkpoint"
     fi
@@ -146,12 +166,12 @@ else
     LOG "***FAILED: No $DBLOGFILE file exists after checkpoint."
 fi
 
-
 if test -f "$LOCKFILE"
 then
   echo Removing $LOCKFILE >> $LOGFILE
   rm $LOCKFILE
 fi
+
 START_SERVER $PORT 0 $FOREGROUND_OPTION $BACKUP_DUMP_OPTION
 if test $STATUS -eq 0
 then
@@ -166,6 +186,8 @@ cp $DBFILE $DBFILE.r2
 cp $DBLOGFILE $DBLOGFILE.r2
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r2
 rm -f $DBFILE
+
+LOG "restoring the database 1st time with -R option..."
 START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
@@ -177,7 +199,8 @@ fi
 
 START_SERVER $PORT 3000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+LOG + running sql script recovck1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed after -d roll forward"
@@ -190,8 +213,8 @@ then
     exit 3
 fi
 
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < backup.sql
+LOG + running sql script backup
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/backup.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed for backup"
@@ -202,8 +225,6 @@ fi
 LOG "Next, we kill database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
 STOP_SERVER
-#RUN $ISQL $DSN '"EXEC=raw_exit();"' VERBOSE=OFF ERRORS=STDOUT
-#sleep 5
 
 rm -f $DBLOGFILE
 mv backup.log $DBLOGFILE
@@ -213,7 +234,7 @@ cp $DBLOGFILE $DBLOGFILE.r3
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r3
 rm -f $DBFILE
 
-if [ "x$CLUSTER" != "x" ]
+if [ "$CURRENT_VIRTUOSO_CAPACITY" != "single" ]
 then
    rm -f cl?/$DBFILE
    mv cl2/backup.log cl2/$DBLOGFILE
@@ -221,6 +242,7 @@ then
    mv cl4/backup.log cl4/$DBLOGFILE
 fi
 
+LOG "restoring the database 2nd time with -R option..."
 START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
@@ -231,7 +253,8 @@ else
 fi
 
 START_SERVER $PORT 3000
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+LOG + running sql script recovck1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed after backup restore 1"
@@ -248,8 +271,6 @@ LOG "Again we do a checkpoint and then kill database server with raw_exit()"
 LOG "after which we should get Lost Connection to Server -error."
 CHECKPOINT_SERVER
 STOP_SERVER
-#RUN $ISQL $DSN ERRORS=STDOUT '"EXEC=checkpoint; raw_exit();"'
-#sleep 5
 
 if test -f "$LOCKFILE"
 then
@@ -272,6 +293,8 @@ cp $DBFILE $DBFILE.r4
 cp $DBLOGFILE $DBLOGFILE.r4
 cp $SRVMSGLOGFILE $SRVMSGLOGFILE.r4
 rm -f $DBFILE
+
+LOG "restoring the database 3rd time with -R option..."
 START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 if test $STATUS -eq 0
 then
@@ -283,7 +306,8 @@ fi
 
 START_SERVER $PORT 3000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1.sql
+LOG + running sql script recovck1
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: Connect failed after backup restore 2"
@@ -296,7 +320,8 @@ then
     exit 3
 fi
 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tbfree.sql
+#LOG + running sql script tbfree
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tbfree.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov.sh: doing tbfree.sql"
@@ -307,8 +332,6 @@ LOG "Next we do a checkpoint third time and then kill database server with"
 LOG "raw_exit() after which we should get Lost Connection to Server -error."
 CHECKPOINT_SERVER
 STOP_SERVER
-#RUN $ISQL $DSN '"EXEC=checkpoint; raw_exit();"' ERRORS=STDOUT
-#sleep 5
 
 if [ "x$ENABLE_TRECOV_SCH" != "x" ]
 then # GK: disabled for now : fails blobs check
@@ -346,7 +369,8 @@ START_SERVER $PORT 0 $FOREGROUND_OPTION -R
 RUN ls -la virtuoso.*
 START_SERVER $PORT 3000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < recovck1_noreg.sql
+LOG + running sql script recovck1_noreg
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/recovck1_noreg.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: trecov_schema.sh: Connect failed after -d roll forward"

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,12 +40,13 @@ pldbg_connect (char * addr, char * usr, char * pwd1)
 {
   char pwd[17];
   caddr_t result;
-  dk_session_t *ses;
+  dk_session_t *ses = NULL;
   if (!usr || !pwd1)
     return NULL;
   ses = PrpcConnect (addr, SESCLASS_TCPIP);
   if (!DKSESSTAT_ISSET (ses, SST_OK))
     {
+      if (ses)
       PrpcSessionFree (ses);
       return NULL;
     }

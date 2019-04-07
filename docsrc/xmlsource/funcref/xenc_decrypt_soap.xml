@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -87,18 +87,16 @@
   <refsect1 id="ret_xenc_decrypt_soap"><title>Return Types</title>
       <para>On success the function returns decrypted SOAP message.</para>
   </refsect1>
-  <refsect1 id="errors_xenc_decrypt_soap">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_decrypt_soap">
     <title>Examples</title>
     <example id="ex_xenc_decrypt_soap"><title>Decrypting SOAP message</title>
       <screen><![CDATA[
 	  declare ekeys, opts, decoded any;
-	  opts := vector ('UsernameToken', vector ('label', 'Application-Label',
-	  'keyAlgorithm', 'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'));
+opts := vector ('UsernameToken',
+                vector ('label',
+                        'Application-Label',
+	                      'keyAlgorithm',
+	                      'http://www.w3.org/2001/04/xmlenc#tripledes-cbc'));
 	  decoded := xenc_decrypt_soap (body_str, 11, 6, 'UTF-8', 'x-any', opts, ekeys);
 ]]>
 </screen>

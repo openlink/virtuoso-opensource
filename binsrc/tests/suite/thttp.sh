@@ -1,28 +1,28 @@
 #!/bin/sh
-#
+#  
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 # 
 DSN=$PORT
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 #PARAMETERS FOR HTTP TEST
 USERS=6
@@ -33,7 +33,7 @@ TPORT=$HTTPPORT
 HTTPPORT1=`expr $HTTPPORT + 1`
 HTTPPORT2=`expr $HTTPPORT + 2`
 #SERVER=M2		# OVERRIDE
-BLOG_TEST=1
+BLOG_TEST=0 ### XXX: disabled as under not working
 SYNCML_TEST=1
 
 
@@ -49,7 +49,7 @@ MAKE_VAD=yes
 
 LOGFILE=`pwd`/thttp.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 do_mappers_only=0
 if [ $# -ge 1 ]
@@ -633,7 +633,7 @@ httpGet ()
     fi
   user=${3-dba}
   pass=${4-dba}
-  ../urlsimu $file $pipeline -u $user -p $pass 
+  $VIRTUOSO_TEST/../urlsimu $file $pipeline -u $user -p $pass 
 }
 
 waitAll ()
@@ -642,7 +642,7 @@ waitAll ()
    while [ "$clients" -gt "0" ]
      do
        sleep 1
-       clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
+       clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
 }
@@ -705,7 +705,7 @@ DoCommand()
 
 MakeIni ()
 {
-   MAKECFG_FILE_WITH_HTTP ../$TESTCFGFILE $PORT $HTTPPORT $CFGFILE
+   MAKECFG_FILE_WITH_HTTP $TESTCFGFILE $PORT $HTTPPORT $CFGFILE
 }
 
 BANNER "STARTED SERIES OF HTTP SERVER TESTS"
@@ -718,22 +718,23 @@ case $1 in
 
    #CLEANUP
    STOP_SERVER
+   MakeIni
    rm -f $DBLOGFILE $DBFILE
    rm -rf http
    mkdir http
+   cp virtuoso.ini http
    cd http
    GenURI11
    GenURI10
    GenURI1011
    XSD_GENERATE
    rm -f vspsoap.vsp vspsoap_mod.vsp
-   cp ../vspsoap.vsp vspsoap.vsp
-   cp ../vspsoap_mod.vsp vspsoap_mod.vsp
-   MakeIni
-   cp ../etalon_ouput_gz etalon_ouput_gz
-   cp ../syncml.dtd syncml.dtd
+   cp $VIRTUOSO_TEST/vspsoap.vsp vspsoap.vsp
+   cp $VIRTUOSO_TEST/vspsoap_mod.vsp vspsoap_mod.vsp
+   cp $VIRTUOSO_TEST/etalon_ouput_gz etalon_ouput_gz
+   cp $VIRTUOSO_TEST/syncml.dtd syncml.dtd
    mkdir r4
-   cp -f ../r4/* r4 
+   cp -f $VIRTUOSO_TEST/r4/* r4 
    GenHTML
    GenVSP
    mkdir test_404
@@ -741,61 +742,74 @@ case $1 in
    Gen404VSP
    cd ..
    CHECK_PORT $TPORT
-   if [ "$MAKE_VAD" = "yes" ] ; then
-       if [ $do_mappers_only -eq 1 ]
-       then
-	   LOG "Create RDF mappers Package"
-	   (cd ../../../../binsrc/rdf_mappers && $MAKE rdf_mappers_dav.vad)
-	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
-       elif [ -f ../../../../autogen.sh ]
-       then
-	   LOG "Create RDF mappers Package"
-	   (cd ../../../../binsrc/rdf_mappers && $MAKE rdf_mappers_dav.vad)
-	   cp ../../../../binsrc/rdf_mappers/rdf_mappers_dav.vad .
 
-	   LOG "Create ODS Framework VAD Package"
-	   (cd ../../../../appsrc/ODS-Framework && $MAKE ods_framework_dav.vad)
-	   cp ../../../../appsrc/ODS-Framework/ods_framework_dav.vad .
+  LOG 'Starting graph CRUD tests before tightening the security by ODS...'
+   START_SERVER $PORT 1000
+   sleep 5
+  cd ..
+    rm http/_virtrdf_log*.ttl
+    rm http/graphcrud*.log
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
+    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log1.ttl contains data (old IRI syntax)'
+    else
+      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should (old IRI syntax)'
+    fi
 
-	   LOG "Create ODS Blog VAD Package"
-	   (cd ../../../../appsrc/ODS-Blog && $MAKE ods_blog_dav.vad)
-	   cp ../../../../appsrc/ODS-Blog/ods_blog_dav.vad .
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
+    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log1.ttl contains data (new IRI syntax)'
+    else
+      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should (new IRI syntax)'
+    fi
 
-	   LOG "Create SyncML VAD Package"
-	   (cd ../../../../binsrc/sync && $MAKE syncml_dav.vad)
-	   cp ../../../../binsrc/sync/syncml_dav.vad .
-       elif [ "x$HOST_OS" = "x" ]
-       then
-	   LOG "Create ODS VAD Package"
-	   (cd ../../../samples/wa/; $MAKE)
-	   cp ../../../samples/wa/ods_framework_dav.vad ./
-	   LOG "Create BLOG VAD Package"
-	   (cd ../../../weblog2/; $MAKE)
-	   cp ../../../weblog2/ods_blog_dav.vad ./
-	   LOG "Create SyncML VAD Package"
-	   (cd ../../../sync/; $MAKE)
-	   cp ../../../sync/syncml_dav.vad ./
-	   (cd ../../../rdf_mappers; $MAKE)
-	   cp ../../../rdf_mappers/rdf_mappers_dav.vad ./
-       elif [ "x$SRC" != "x" ]
-       then
-	   LOG "Create ODS VAD Package"
-	   (cd "$SRC/binsrc/samples/wa/" ; $MAKE)
-	   cp "$SRC/binsrc/samples/wa/ods_framework_dav.vad" .
-	   LOG "Create BLOG VAD Package"
-	   (cd "$SRC/binsrc/weblog2/" ; $MAKE)
-	   cp "$SRC/binsrc/weblog2/ods_blog_dav.vad" .
-	   (cd "$SRC/binsrc/rdf_mappers"; $MAKE)
-	   cp "$SRC/binsrc/rdf_mappers/rdf_mappers_dav.vad" .
-       elif [ ! -f ../../../../autogen.sh ]
-       then
-	   LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
-	   exit 1
-       fi
-   fi
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_1.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_1.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_1.log contains 404 error for missing graph'
+    else
+      LOG '***FAILED: http/graphcrud_1.log does not contains 404 error for missing graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 201' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 201 for newly created graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contain 201 for newly created graph, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/_virtrdf_log2.ttl 2> http/graphcrud_get2.log
+    if grep 'virtrdf:' http/_virtrdf_log2.ttl > /dev/null ; then
+      LOG 'PASSED: http/_virtrdf_log2.ttl contains data'
+    else
+      LOG '***FAILED: http/_virtrdf_log2.ttl does not contains virtrdf: string, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
+    if grep  'HTTP/1.1 200' http/graphcrud_2.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_2.log contains 200 for recreated graph'
+    else
+      LOG '***FAILED: http/graphcrud_2.log does not contains 200 for newly created graph, but it should'
+    fi
+
+    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_3.log 2>&1
+    if grep 'HTTP/1.1 200' http/graphcrud_3.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_3.log contains 200 for successful graph removal'
+    else
+      LOG '***FAILED: http/graphcrud_3.log does not contain 200 for successful graph removal, but it should'
+    fi
+
+    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/graphcrud_4.log 2>&1
+    if grep 'HTTP/1.1 404' http/graphcrud_4.log > /dev/null ; then
+      LOG 'PASSED: http/graphcrud_4.log contains 404 for deleted graph'
+    else
+      LOG '***FAILED: http/graphcrud_4.log does not contain 404 for deleted graph, but it should'
+    fi
+  cd http
+  SHUTDOWN_SERVER
+
    # Prepare GRDDL tests to run locally
-   gzip -c -d ../grddl-tests.tar.gz | tar xf -
-   if grep ":14300" grddl-tests/* > /dev/null
+   gzip -c -d $VIRTUOSO_TEST/grddl-tests.tar.gz | tar xf -
+   if grep ":14300" grddl-tests/*.* > /dev/null
    then
        echo "The port number to replace is correct."
    else
@@ -808,28 +822,8 @@ case $1 in
        cp -f tmp.tmp $f
        rm -f tmp.tmp
    done
-   if [ ! -f rdf_mappers_dav.vad -a -f ../../../rdf_mappers/rdf_mappers_dav.vad ]
-   then
-     cp ../../../rdf_mappers/rdf_mappers_dav.vad .
-   fi
-   if [ ! -f ods_framework_dav.vad -o ! -f ods_blog_dav.vad ]
-   then
-     BLOG_TEST=0  
-     LOG "ODS & Blog2 VAD packages are not built"
-   fi
    START_SERVER $PORT 1000
    sleep 1
-   if [ $BLOG_TEST -eq 1 ]
-   then
-       DoCommand $DSN "registry_set ('__blog_api_tests__', '1');" 
-       DoCommand $DSN "checkpoint;" 
-       DoCommand $DSN "VAD_INSTALL ('ods_framework_dav.vad', 0);" 
-       DoCommand $DSN "VAD_INSTALL ('ods_blog_dav.vad', 0);" 
-   fi
-   if [ -f $PLUGINDIR/wbxml2.so -a $SYNCML_TEST -eq 1 ]
-   then
-       DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
-   fi
    cd ..
 
 if [ $do_mappers_only -ne 1 ]
@@ -874,21 +868,21 @@ then
    checkHTTPLog
 
   fi 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_rpc.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_rpc.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_rpc.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_r3.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_r3.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_r3.sql"
@@ -896,14 +890,14 @@ then
    fi
 
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < wsdl_suite.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/wsdl_suite.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: wsdl_suite.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < twsrp.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/twsrp.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: twsrp.sql"
@@ -911,7 +905,7 @@ then
    fi
 
 # XXX: VJ   
-#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapudt.sql
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoapudt.sql
 #   if test $STATUS -ne 0
 #   then
 #      LOG "***ABORTED: tsoapudt.sql"
@@ -920,7 +914,7 @@ then
 
    ECHO "Started: Testing new SOAP client"
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_new.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_new.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_new.sql"
@@ -929,11 +923,11 @@ then
    
    ECHO "Started: New SOAP client with digest authentication"
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < soapauth.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/soapauth.sql
    DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/SOAP', 0);"
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, 'DB.DBA.AUTH_HOOK_SOAP_TEST', 'soaptest', NULL, 'dba', 'SOAP', 'DIGEST', 1);"   
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoap_new.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoap_new.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_new.sql"
@@ -945,7 +939,7 @@ then
    DoCommand $DSN "DB.DBA.VHOST_REMOVE ('*ini*', '*ini*', '/SOAP', 0);"
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/SOAP', '/SOAP/', 0, 0, NULL, NULL, NULL, NULL, 'dba', 'SOAP', NULL, 1);"   
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< thttp.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/thttp.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: thttp.sql"
@@ -955,7 +949,7 @@ then
    if [ "z$SSL" != "z" -a "z$NO_SSL" = "z" ]
    then 
    ECHO "SSL dependant tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< twss.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT1=$HTTPPORT1" "HTTPPORT2=$HTTPPORT2"  "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twss.sql 
    fi
 
    ECHO "Interop round 4 endpoints"
@@ -969,57 +963,50 @@ then
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < http/r4/xsd.sql
    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < http/r4/load_xsd.sql
    ECHO "Interop round 4 tests"
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsoap_r4.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tsoap_r4.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoap_r4.sql"
       exit 1
    fi
    
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< txmla.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/txmla.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: txmla.sql"
       exit 1
    fi
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< txmla3.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/txmla3.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: txmla3.sql"
       exit 1
    fi
-  RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tacl.sql 
+  RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tacl.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tacl.sql"
       exit 1
    fi
-#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< twsrm.sql 
+#   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twsrm.sql 
 #   if test $STATUS -ne 0
 #   then
 #      LOG "***ABORTED: twsrm.sql"
 #      exit 1
 #   fi
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< twstr.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/twstr.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: twsrm.sql"
       exit 1
    fi
-   if [ $BLOG_TEST -eq 1 ]
-   then
-       RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tblog.sql 
-       if test $STATUS -ne 0
-       then
-	   LOG "***ABORTED: tblog.sql"
-	   exit 1
-       fi
-   fi
 
 
-if [ -f $PLUGINDIR/wbxml2.so ]
+if [ -f $PLUGINDIR/wbxml2.so -a -f $HOME/vad/syncml_dav.vad ]
 then
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< tsyncml.sql 
+   cp $HOME/vad/syncml_dav.vad http
+   DoCommand $DSN "VAD_INSTALL ('syncml_dav.vad', 0);"
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT"< $VIRTUOSO_TEST/tsyncml.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsyncml.sql"
@@ -1029,94 +1016,39 @@ then
       LOG "SKIP      : tsyncml.sql"
 fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsoapcpl.sql 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsoapcpl.sql 
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsoapcpl.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < url_rewrite_test.sql
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/url_rewrite_test.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: url_rewrite_test.sql"
       exit 1
    fi
 fi
+if [ -f $HOME/vad/cartridges_dav.vad ]
+then  
+   cp $HOME/vad/cartridges_dav.vad http/ 
    DoCommand $DSN "registry_set ('__rdf_cartridges_original_doc_uri__', '1');" 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < tsponge.sql
+   # XXX 
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tsponge.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: tsponge.sql"
       exit 1
    fi
 
-   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < xhtml1-testcases.sql
+   # XXX
+   #RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/xhtml1-testcases.sql
    if test $STATUS -ne 0
    then
       LOG "***ABORTED: xhtml1-testcases.sql"
       exit 1
    fi
-
-  LOG 'Now starting graph CRUD tests...'
-rm http/_virtrdf_log*.ttl
-rm http/graphcrud*.log
-
-#
-#  Make sure curl is installed
-#
-RUN curl --version
-
-if test $STATUS -eq 0
-then
-    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
-    if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
-      LOG 'PASSED: http/_virtrdf_log1.ttl contains data'
-    else
-      LOG '***FAILED: http/_virtrdf_log1.ttl does not contains virtrdf: string, but it should'
-    fi
-
-    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_1.log 2>&1
-    if grep 'HTTP/1.1 404' http/graphcrud_1.log > /dev/null ; then
-      LOG 'PASSED: http/graphcrud_1.log contains 404 error for missing graph'
-    else
-      LOG '***FAILED: http/graphcrud_1.log does not contains 404 error for missing graph, but it should'
-    fi
-
-    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
-    if grep  'HTTP/1.1 201' http/graphcrud_2.log > /dev/null ; then
-      LOG 'PASSED: http/graphcrud_2.log contains 201 for newly created graph'
-    else
-      LOG '***FAILED: http/graphcrud_2.log does not contain 201 for newly created graph, but it should'
-    fi
-
-    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/_virtrdf_log2.ttl 2> http/graphcrud_get2.log
-    if grep 'virtrdf:' http/_virtrdf_log2.ttl > /dev/null ; then
-      LOG 'PASSED: http/_virtrdf_log2.ttl contains data'
-    else
-      LOG '***FAILED: http/_virtrdf_log2.ttl does not contains virtrdf: string, but it should'
-    fi
-
-    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -T http/_virtrdf_log1.ttl > http/graphcrud_2.log 2>&1
-    if grep  'HTTP/1.1 200' http/graphcrud_2.log > /dev/null ; then
-      LOG 'PASSED: http/graphcrud_2.log contains 200 for recreated graph'
-    else
-      LOG '***FAILED: http/graphcrud_2.log does not contains 200 for newly created graph, but it should'
-    fi
-
-    curl --digest --user dba:dba --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud-auth?graph-uri=http://example.com/crud1" -X DELETE > http/graphcrud_3.log 2>&1
-    if grep 'HTTP/1.1 200' http/graphcrud_3.log > /dev/null ; then
-      LOG 'PASSED: http/graphcrud_3.log contains 200 for successful graph removal'
-    else
-      LOG '***FAILED: http/graphcrud_3.log does not contain 200 for successful graph removal, but it should'
-    fi
-
-    curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://example.com/crud1" > http/graphcrud_4.log 2>&1
-    if grep 'HTTP/1.1 404' http/graphcrud_4.log > /dev/null ; then
-      LOG 'PASSED: http/graphcrud_4.log contains 404 for deleted graph'
-    else
-      LOG '***FAILED: http/graphcrud_4.log does not contain 404 for deleted graph, but it should'
-    fi
 fi
 
 

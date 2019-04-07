@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -54,6 +54,7 @@
 #include "../Wi/datesupp.h"
 #include "../Wi/multibyte.h"
 #include "../Wi/srvmultibyte.h"
+#include "../Wi/srvstat.h"
 #include "../Wi/bif_xper.h"
 #include <math.h>
 #include "../libutil.h"
@@ -75,6 +76,7 @@
 #include "../Wi/sqlfn.h"
 #include "../Wi/ltrx.h"
 #include "../Wi/2pc.h"
+#include "../Wi/geo.h"
 #include "../Wi/rdf_core.h"
 
 

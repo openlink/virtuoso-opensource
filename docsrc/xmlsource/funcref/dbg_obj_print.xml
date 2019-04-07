@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -68,8 +68,7 @@
     </table>
   </refsect1>
   <refsect1 id="examples_dbg_obj_print"><title>Examples</title>
-    <example id="ex_dbg_obj_print_1"><title></title>
-      <para></para>
+    <example id="ex_dbg_obj_print_1"><title>Simple Use</title>
       <screen>...
 declare vec any;
 vec := vector ('a', 'b', 'c');

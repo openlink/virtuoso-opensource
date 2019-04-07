@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,6 +40,11 @@ char * https_port;
 char * https_cert;
 char * https_key;
 char * https_extra;
+char * https_dhparam;
+char * https_ecdh_curve;
+int32  https_hsts_max_age = -1;
+char * https_cipher_list;
+char * https_protocols;
 int32 https_client_verify = 0;
 int32 https_client_verify_depth = 0;
 char * https_client_verify_file = NULL;
@@ -71,8 +76,9 @@ char * pl_debug_cov_file = NULL;
 int lite_mode = 0;
 extern int it_n_maps;
 extern int rdf_obj_ft_rules_size;
-
-int cp_unremap_quota;
+int wi_is_cl_listener_affinity;
+int32 cp_unremap_quota;
+int32 cp_unremap_quota_is_set;
 int correct_parent_links;
 int main_bufs;
 int n_fds_per_file = 1;
@@ -87,7 +93,9 @@ int null_bad_dtp;
 int atomic_dive = 0;
 int dive_pa_mode = PA_READ;
 int32 c_compress_mode = 0;
-int default_txn_isolation = ISO_REPEATABLE;
+int default_txn_isolation = ISO_COMMITTED;
+int c_col_by_default = 0;
+int c_query_log = 0;
 int prefix_in_result_col_names;
 int disk_no_mt_write;
 char *db_name;
@@ -139,6 +147,21 @@ void (*cfg_set_checkpoint_interval)(int32) = _cfg_set_checkpoint_interval;
 void (*db_read_cfg) (caddr_t *it, char *mode) = (void (*) (caddr_t *it, char *mode))_db_read_cfg;
 void (*dbs_read_cfg) (caddr_t *it, char *mode) = (void (*) (caddr_t *it, char *mode)) _dbs_read_cfg;
 dk_set_t (*dbs_read_storages) (caddr_t **temp_file) = _cfg_read_storages;
+
+
+int
+cfg2_getstring (PCONFIG pconfig,  char * sect, char * item, char ** ret)
+{
+  return cfg_getstring (pconfig, sect, item, ret);
+}
+
+
+int
+cfg2_getlong (PCONFIG pconfig, char * sect, char * item, int32 * ret)
+{
+  return cfg_getlong (pconfig, sect, item, ret);
+}
+
 
 void
 srv_set_cfg(
@@ -303,7 +326,7 @@ int32 cli_utf8_execs;
 int32 cli_binary_timestamp = 1;
 int32 cli_no_system_tables = 0;
 
-caddr_t client_defaults;
+caddr_t client_defaults = NULL;
 
 caddr_t
 srv_client_defaults (void)
@@ -317,25 +340,19 @@ srv_client_defaults_init (void)
 {
   caddr_t old = client_defaults;
   client_defaults = (caddr_t)
-    list (16,
-	  box_string ("SQL_TXN_ISOLATION"),
-	  box_num (default_txn_isolation),
-	  box_string ("SQL_PREFETCH_ROWS"),
-	  box_num (cli_prefetch),
-	  box_string ("SQL_PREFETCH_BYTES"),
-	  box_num (cli_prefetch_bytes),
-	  box_string ("SQL_QUERY_TIMEOUT"),
-	  box_num (cli_query_timeout),
-	  box_string ("SQL_TXN_TIMEOUT"),
-	  box_num (cli_txn_timeout),
-	  box_string ("SQL_NO_CHAR_C_ESCAPE"),
-	  box_num (cli_not_c_char_escape ? 1 : 0),
-	  box_string ("SQL_UTF8_EXECS"),
-	  box_num (cli_utf8_execs),
-	  box_string ("SQL_BINARY_TIMESTAMP"),
-	  box_num (cli_binary_timestamp)
-	  );
-  dk_free_tree (old);
+    list (18,
+  box_string ("SQL_TXN_ISOLATION")		, box_num (default_txn_isolation)		,
+  box_string ("SQL_PREFETCH_ROWS")		, box_num (cli_prefetch)			,
+  box_string ("SQL_PREFETCH_BYTES")		, box_num (cli_prefetch_bytes)			,
+  box_string ("SQL_QUERY_TIMEOUT")		, box_num (cli_query_timeout)			,
+  box_string ("SQL_TXN_TIMEOUT")		, box_num (cli_txn_timeout)			,
+  box_string ("SQL_NO_CHAR_C_ESCAPE")		, box_num (cli_not_c_char_escape ? 1 : 0)	,
+  box_string ("SQL_UTF8_EXECS")			, box_num (cli_utf8_execs)			,
+  box_string ("SQL_BINARY_TIMESTAMP")		, box_num (cli_binary_timestamp)		,
+  box_string ("SQL_TIMEZONELESS_DATETIMES")	, box_num (timezoneless_datetimes)		);
+  
+  if (old)
+    dk_free_tree (old);
 }
 
 
@@ -492,8 +509,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
     file_extend = DP_INSERT_RESERVE + 5;
 
   main_bufs = (int) (ptrlong) cfg_get_parm (wholefile, "\nnumber_of_buffers:", 0);
-  if (main_bufs < 256)
-    main_bufs = 256;
+  if (main_bufs < 25600)
+    main_bufs = 25600;
   cf_lock_in_mem = (int) (ptrlong) cfg_get_parm (wholefile, "\nlock_in_mem:", 0);
   atomic_dive = (int) (ptrlong) cfg_get_parm (wholefile, "\natomic_dive:", 0);
   if (2 == atomic_dive)
@@ -577,6 +594,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   COND_PARAM("\nmax_static_cursor_rows:", max_static_cursor_rows);
   COND_PARAM("\ncheckpoint_audit_trail:", log_audit_trail);
   COND_PARAM_WITH_DEFAULT("\nmin_autocheckpoint_size:", min_checkpoint_size, MIN_CHECKPOINT_SIZE);
+  COND_PARAM_WITH_DEFAULT("\nthreads_per_query:", enable_qp, 8);
+  COND_PARAM_WITH_DEFAULT("\naq_threads:", aq_max_threads, 20);
   COND_PARAM("\nautocheckpoint_log_size:", autocheckpoint_log_size);
   COND_PARAM("\nuse_daylight_saving:", isdts_mode);
   isdts_mode = (int) (ptrlong) cfg_get_parm (wholefile, "\nuse_daylight_saving:", 1);
@@ -608,6 +627,9 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   c_ssl_server_port = cfg_get_parm (wholefile, "\nssl_server_port:", 1);
   c_ssl_server_cert = cfg_get_parm (wholefile, "\nssl_server_certificate:", 1);
   c_ssl_server_key = cfg_get_parm (wholefile, "\nssl_server_private_key:", 1);
+
+  https_cipher_list = cfg_get_parm (wholefile, "\nssl_cipher_list:", 1);
+  https_protocols = cfg_get_parm (wholefile, "\nssl_protocols:", 1);
 #endif
 
 #ifdef _IMSG
@@ -673,8 +695,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   vt_batch_size_limit = (int) (ptrlong) cfg_get_parm (wholefile, "\nfree_text_batch:", 0);
   if (!vt_batch_size_limit )
     vt_batch_size_limit  = 1000000;
-  vd_opt_arrayparams = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_array_params:", 0);;
-  vd_param_batch = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_param_batch:", 0);;
+  vd_opt_arrayparams = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_array_params:", 0);
+  vd_param_batch = (int) (ptrlong) cfg_get_parm (wholefile, "\nvd_param_batch:", 0);
   n_fds_per_file = (int) (ptrlong) cfg_get_parm (wholefile, "\nfds_per_file:", 0);
   if (!n_fds_per_file)
     n_fds_per_file = 1;
@@ -692,7 +714,8 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
   else if (wi_inst.wi_temp_allocation_pct < 0)
     wi_inst.wi_temp_allocation_pct = 30;
 
-  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_REPEATABLE);
+  COND_PARAM_WITH_DEFAULT("\ndefault_txn_isolation:", default_txn_isolation, ISO_COMMITTED);
+  COND_PARAM_WITH_DEFAULT("\ncolumn_store:", c_col_by_default, 0);
   COND_PARAM_WITH_DEFAULT("\nsql_compile_on_startup:", sql_proc_use_recompile, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_ft_usage:", recursive_ft_usage, 1);
   COND_PARAM_WITH_DEFAULT("\nreqursive_trigger_calls:", recursive_trigger_calls, 1);

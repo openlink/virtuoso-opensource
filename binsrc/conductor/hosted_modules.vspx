@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_pub"
+  fast-render="1"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    <v:variable name="file_name" persist="0" type="varchar" default="''" />
+    <v:variable name="file_load" persist="0" type="varchar" default="''" />
+    <v:variable name="view_state" persist="0" type="varchar" default="1" />
+      <?vsp
+      if (not adm_is_hosted ())
+      {
+      ?>
+          <div class="">
+            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+            <div class="confirm_text">
+	      <h4>This service requires MONO/CLR or Java extension servers</h4>
+	    </div>
+	  </div>
+      <?vsp
+          return;
+        }
+      ?>
+	<v:template name="main_tml" type="simple" enabled="-- case when(get_keyword('load', control.vc_page.vc_event.ve_params, '') <> '') then 0 else 1 end">
+      <v:data-grid name="dg" nrows="15" sql="select _type, _class from defined_types where _in = mask" scrollable="1" cursor-type="static" edit="1">
+        <v:column name="_type" />
+        <v:column name="_class" />
+        <v:param name="mask" value="--'clr or java'" />
+        <v:template name="dg_frame" type="frame">
+          <table border="0" cellspacing="0" cellpadding="5" class="listing">
+            <tr class="listing_header_row">
+              <th> </th>
+              <th>Type </th>
+              <th>Name </th>
+            </tr>
+            <v:rowset />
+            <v:form name='fa' type="add"/>
+            <tr>
+	      <td colspan="2" align="center"  class="listing_col_action">
+		<vm:ds-navigation data-set="dg" type="grid"/>
+	      </td>
+            </tr>
+            <tr>
+              <td colspan="3" align="center">
+                <v:button name="unload" action="simple" value="Unload Selected">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        {
+                          declare idx, fl integer;
+                          declare stmt varchar;
+                          declare params any;
+                          params := control.vc_page.vc_event.ve_params;
+                          idx := 0;
+                          fl := 0;
+                          while (idx < (length (params) - 2))
+                          {
+                            if (params[idx] like 'dg_rows%:cb%')
+                            {
+                              fl := 1;
+                              stmt := concat ('drop type ', params[idx + 1]);
+                              exec (stmt);
+			      commit work;
+                            }
+                            idx := idx + 2;
+                          }
+                          if (fl)
+                          {
+                            declare grid vspx_data_grid;
+                            grid := control.vc_find_parent (control, 'vspx_data_grid');
+                            grid.vc_data_bind (e);
+                          }
+                        }
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="dg_rows" type="row">
+            <tr>
+	      <td nowrap="nowrap" width="16px">
+                <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[1])" initial-checked="0" />
+              </td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
+              <td nowrap="nowrap"><v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+            </tr>
+        </v:template>
+	<v:template name="dg_empty" type="if-not-exists">
+          <table class="listing" border="0" cellpadding="3" cellspacing="0">
+            <tr>
+	      <td colspan="2" class="emphasize">No modules loaded</td>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-grid>
+      </v:template>
+      <v:template name="file_box" type="simple" enabled="-- case when(get_keyword('load', control.vc_page.vc_event.ve_params) = '') then 0 else 1 end">
+      <v:form name="load_modules_form" action="" method="POST" type="simple" xmlns:v="http://www.openlinksw.com/vspx/">
+        <table border="0" cellpadding="3" cellspacing="0">
+          <tr>
+            <td>Module file</td>
+            <td>
+              <v:text name="fd" xhtml_id="fd"/>
+              <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="__hosted_modules_list" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="fd"/>
+            </td>
+            <td>
+              <v:button action="simple" value="Examine" name="add">
+                <v:on-post>
+                  <![CDATA[
+                    declare _file_name varchar;
+                    _file_name := get_keyword('fd', control.vc_page.vc_event.ve_params, '');
+                    if (_file_name is not null and _file_name <> '')
+                      self.file_name := concat(server_root (), _file_name);
+                    self.dg1.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+		<v:after-data-bind>
+                  <![CDATA[
+                    self.dg1.vc_data_bind(e);
+                  ]]>
+                </v:after-data-bind>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      </v:template>
+      <v:template name="result" type="simple" enabled="-- case when(get_keyword('load', control.vc_page.vc_event.ve_params) <> '') then 1 else 0 end">
+        <?vsp
+        declare idx, fl, grants, proxy, restricted integer;
+        declare mtd_name, file_name varchar;
+--      file_name := self.file_name;
+        file_name := self.file_load;
+        idx := 0;
+        fl := 0;
+        http('<table border="0" width="100%" class="listing">');
+        http('<tr class="listing_header_row">');
+	  http('<th>Class</th><th>from Module</th>' || '<th>Status</th></tr>');
+        while (idx < (length (self.vc_page.vc_event.ve_params) - 2))
+        {
+          if (self.vc_page.vc_event.ve_params[idx] like 'dg%:cb%')
+          {
+            fl := 1;
+            mtd_name := self.vc_page.vc_event.ve_params[idx + 1];
+            restricted := adm_import_get_selection_checkbox ('dg%:cr%', mtd_name, self.vc_page.vc_event.ve_params, idx);
+            grants := adm_import_get_selection_checkbox ('dg%:cg%', mtd_name, self.vc_page.vc_event.ve_params, idx);
+            proxy := adm_import_get_selection_checkbox ('dg%:cp%', mtd_name, self.vc_page.vc_event.ve_params, idx);
+            http ('<tr>');
+            http (sprintf ('<td>%s</td><td>%s</td>', mtd_name, subseq (file_name, length (server_root()))));
+            http ('<td> ');
+            set_qualifier ('DB');
+            http (DB.DBA.import_file (mtd_name, file_name, grants=>grants, restriction=>restricted));
+            set_qualifier ('DB');
+            if (proxy)
+              http (sprintf (' <a class="tablelistaction" ' ||
+              'href="hosted_modules_show_sql.vsp?fn=' ||
+              '%V&mn=%V&rest=%i" target="_blank">Show proxy</a>',
+              encode_base64 (file_name), encode_base64 (mtd_name), restricted));
+            http (' </td></tr>');
+          }
+          idx := idx + 2;
+        }
+        http('</table>');
+        ?>
+      <v:form name="form_ready" action="" method="POST" type="simple">
+                <v:button name="ready" action="simple" value="OK">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.file_name := '';
+                        self.dg.vc_data_bind(e);
+                        self.dg1.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+	      </v:form>
+        </v:template>
+	<v:template name="sel_tml" type="simple" enabled="-- case when(get_keyword('add', control.vc_page.vc_event.ve_params) <> '') then 1 else 0 end">
+      <v:data-grid name="dg1" nrows="15" sql="select _class from class_list where _in = mask" scrollable="1" cursor-type="static" edit="1" initial-enable="--self.view_state">
+        <v:column name="_class" />
+        <v:param name="mask" value="--self.file_name" />
+        <v:before-data-bind>
+          <v:script>
+            <![CDATA[
+              declare file_name integer;
+              file_name := self.file_name;
+              if (self.file_name is NULL)
+              {
+                self.file_name := file_name;
+                self.view_state := '1';
+              }
+            ]]>
+          </v:script>
+        </v:before-data-bind>
+        <v:template name="dg1_frame" type="frame">
+          <table border="0" cellspacing="0" cellpadding="3" class="listing">
+            <tr class="listing_header_row">
+              <th/>
+              <th>Name</th>
+              <th>Unrestricted</th>
+              <th>Public</th>
+              <th>Show sql proxy statement</th>
+            </tr>
+            <v:rowset />
+            <v:form type="add"/>
+            <tr>
+              <td colspan="2" align="center"  class="listing_col_action">
+		<vm:ds-navigation data-set="dg1" type="grid"/>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="5">
+                <v:button name="cancel" action="simple" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.file_name := '';
+                        self.dg.vc_data_bind(e);
+                        self.dg1.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button name="load" action="simple" value="Load Selected">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        if (self.view_state = '1')
+                        {
+                          self.dg1.vc_enabled := 0;
+                          self.dg1.vc_data_bind(e);
+                        }
+			self.view_state := 0;
+                        self.file_load := self.file_name;
+                        self.file_name := '';
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="dg1_rows" type="row">
+          <tr>
+            <td nowrap="nowrap">
+              <v:check-box name="cb1" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="1" width="184" height="24" />
+            </td>
+            <td nowrap="nowrap">
+              <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+            </td>
+            <td nowrap="nowrap" ALIGN="right">
+              <v:check-box name="cr" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />
+            </td>
+            <td nowrap="nowrap" ALIGN="center">
+              <v:check-box name="cg" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />
+            </td>
+            <td nowrap="nowrap">
+              <v:check-box name="cp" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />
+            </td>
+          </tr>
+        </v:template>
+      </v:data-grid>
+      </v:template>
+</v:page>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,25 +58,41 @@ extern void dt_audit_fields (char *dt);
  * DV_DATE_OBJ layout:
  *
  *  1. day - 0-3.950.000 - 22 bit
- *  2. hour - 0-23          5 bit
- *  3. minute 0-59          6 bit
- *  4. second 0-59          6 bit
- *  5. fraction 0-999.999  20 bit (i.e., whole thousands of nanoseconds are stored)
- *  6. type of value 0-4 (could be more later)
- *  7. timezone for printing minus 840 to plus 840	sign bit and 10 bits
+ *  2. timezoneless bit (1 if timezone is missing but T presents in original xsd data)
+ *  3. hour - 0-23          5 bit
+ *  4. minute 0-59          6 bit
+ *  5. second 0-59          6 bit
+ *  6. fraction 0-999.999  20 bit (i.e., whole thousands of nanoseconds are stored)
+ *  7. type of value 0-4 (could be more later)
+ *  8. timezone for printing minus 840 to plus 840	sign bit and 10 bits
  *
  * ...:...0...:...1...:...2...:...3...:...4...:...5...:...6...:...7...:...8...:...9
- * <<dddddddddddddddddddddd<<<hhhhh<mmmmmssssssffffffffffffffffffff<<TTT-zzzzzzzzzz
+ * --ddddddddddddddddddddddL<<hhhhhmmmmmmssssssffffffffffffffffffffTTT<<-zzzzzzzzzz
  *
  */
+
+#define DT_CONTAINS_GARBAGE(dt) \
+  ((CUC (dt, 3) & 0x60) | \
+    (CUC (dt, 8) & 0x18) )
+
+#define DT_ZAP(dt) memset ((dt), 0, 10)
 
 #define DT_DAY(dt) \
   ((int32)((CUC (dt, 0) << 16) | \
     (CUC (dt, 1) << 8) | \
     CUC (dt, 2) | ((CUC (dt, 0) & 0x80) ? 0xff000000 : 0)))
 
+/* unsigned day, dt sorts as unsigned binary string for index, so when using numeric offset it is also unsigned for dates that have the high bit set */
+#define DT_UDAY(dt) \
+  ((int32)((CUC (dt, 0) << 16) | \
+    (CUC (dt, 1) << 8) | \
+	   CUC (dt, 2)))
+
+#define DT_TZL(dt) \
+  (CUC(dt, 3) >> 7)
+
 #define DT_HOUR(dt) \
-  CUC(dt, 3)
+  (CUC(dt, 3) & 0x1f)
 
 #define DT_MINUTE(dt) \
   (CUC (dt, 4) >> 2)
@@ -114,8 +130,13 @@ extern void dt_audit_fields (char *dt);
     UC (dt, 1) = _UC (((y) >> 8) & 0xFF), \
     UC (dt, 2) = _UC ((y) & 0xFF)))
 
+#define DT_SET_TZL(dt, l) \
+  (UC(dt, 3) &= 0x7F, \
+   UC(dt, 3) |= ((l) ? 0x80 : 0) )
+
 #define DT_SET_HOUR(dt, h) \
-  UC(dt, 3) = _UC (h)
+  (UC(dt, 3) &= 0x80, \
+   UC(dt, 3) |= ((h) & 0x1f) )
 
 #define DT_SET_MINUTE(dt, m) \
   (UC (dt, 4) &= 0x3, \
@@ -184,5 +205,20 @@ extern void dt_audit_fields (char *dt);
 
 #define SPERDAY (24*60*60)
 #define DT_CAST_TO_TOTAL_SECONDS(dt) ((boxint)DT_DAY (dt) * 24 * 60 * 60 + (boxint)DT_HOUR (dt) * 60 * 60 + (boxint)DT_MINUTE (dt) * 60 + DT_SECOND (dt))
+
+#ifdef WORDS_BIGENDIAN
+#define memcpy_dt(tgt, src) memcpy (tgt, src, DT_LENGTH)
+#define memcmp_dt(dt1, dt2) \
+  { if (memcmp (dt1, dt2, DT_CMP_LENGTH)) goto neq;}
+#else
+#define memcpy_dt(tgt1, src1) \
+  { db_buf_t __tgt = (db_buf_t)tgt1, __src = (db_buf_t)src1; 	\
+  *(int64*)(__tgt) = *(int64*)(__src); \
+  *(short*)(__tgt + 8) = *(short*)((__src) + 8); \
+}
+
+#define memcmp_dt(dt1, dt2, neq)				\
+  {if (*(int64*)(dt1) != *(int64*)(dt2)) goto neq;}
+#endif
 
 #endif /* _DATE_H */

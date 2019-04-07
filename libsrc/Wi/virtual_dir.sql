@@ -1,14 +1,10 @@
 --
---  virtual_dir.sql
---
---  $Id$
---
 --  Virtual Web directories support.
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,7 +18,6 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
 --
 
 -- XXX: no longer needed, obsoleted
@@ -58,6 +53,27 @@ primary key (HP_LISTEN_HOST, HP_HOST, HP_LPATH)
 )
 ;
 
+-- Default mappings to be created on all existing listeners
+create table DB.DBA.HTTP_PATH_DEFAULT (
+HPD_LPATH        varchar not null, -- logical path
+HPD_PPATH    varchar not null, -- physical path
+HPD_STORE_AS_DAV   integer not null, -- flag for webDAV storage
+HPD_DIR_BROWSEABLE   integer not null, -- directory listing allowed
+HPD_DEFAULT    varchar,    -- default page
+HPD_REALM          varchar,          -- authentication realm
+HPD_AUTH_FUNC      varchar,          -- witch function authenticate this directory
+HPD_POSTPROCESS_FUNC varchar,          -- function call after request
+HPD_RUN_VSP_AS     varchar,          -- uid for VSPs REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HPD_RUN_SOAP_AS    varchar,          -- uid for SOAP REFERENCES SYS_USERS (U_NAME) ON DELETE SET NULL
+HPD_PERSIST_SES_VARS integer not null, -- have a persistent session variables
+HPD_SOAP_OPTIONS long varchar,   -- SOAP options
+HPD_AUTH_OPTIONS varchar,    -- Authentication options
+HPD_OPTIONS    any,      -- Global options
+HPD_IS_DEFAULT_HOST  integer,    -- default host mapping
+primary key (HPD_LPATH)
+)
+;
+
 create table HTTP_ACL (
 HA_LIST   varchar not null,   -- ACL name (group)
 HA_ORDER  integer not null,   -- Order in the list
@@ -71,28 +87,10 @@ HA_LIMIT  integer default 0,
 PRIMARY KEY (HA_LIST, HA_ORDER, HA_CLIENT_IP, HA_FLAG))
 ;
 
---#IF VER=5
--- HTTP_ACL table upgrade
---!AFTER
-alter table HTTP_ACL add HA_LIST varchar not null
-;
-
---!AFTER
-alter table HTTP_ACL add HA_ORDER integer not null
-;
-
---!AFTER
-alter table HTTP_ACL add HA_RATE double precision	   -- Rate (hits/second).
-;
-
---#ENDIF
 alter table HTTP_ACL add HA_LIMIT integer default 0
 ;
 
 -- triggers to keep in sync in-memory representation
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
---#ENDIF
 create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 {
   declare def_rate int;
@@ -105,9 +103,6 @@ create trigger HTTP_ACL_I after insert on DB.DBA.HTTP_ACL
 ;
 
 -- triggers to keep in sync in-memory representation
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_ACL HA_RATE !
---#ENDIF
 create trigger HTTP_ACL_U after update on DB.DBA.HTTP_ACL referencing old as O, new as N
 {
   http_acl_remove (O.HA_LIST, O.HA_ORDER, O.HA_CLIENT_IP, O.HA_FLAG);
@@ -273,33 +268,9 @@ values ( '*sslini*', '*sslini*', '/vsmx', '/vsmx/', 0, 0, 'vsmx.vspx', NULL, NUL
 )
 ;
 
---#IF VER=5
-create procedure HTTP_PATH_UPGRADE ()
-{
-declare arr, new_vhost any;
-if (registry_get ('__http_vd_upgrade') = 'done')
-return;
-for select HP_HOST vhost, HP_LISTEN_HOST lhost, HP_LPATH lpath from DB.DBA.HTTP_PATH where HP_HOST not in ('*ini*', '*sslini*') do
-{
-  arr := split_and_decode (vhost, 0, ':=:');
-  if (length (arr) > 1)
-    {
-      new_vhost := arr[0];
-      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = new_vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath))
-	log_message (sprintf ('The virtual directory at host=[%s] path=[%s] conflict with an existing, and cannot be upgraded.', vhost, lpath));
-      else
-	update DB.DBA.HTTP_PATH set HP_HOST = new_vhost where HP_HOST = vhost and HP_LISTEN_HOST = lhost and HP_LPATH = lpath;
-    }
-}
-registry_set ('__http_vd_upgrade', 'done');
-}
-;
 
-HTTP_PATH_UPGRADE ()
-;
---#ENDIF
-
-create procedure HTTP_SET_DBA_ADMIN (in realm varchar)
+create procedure DB.DBA.HTTP_SET_DBA_ADMIN (
+  in realm varchar)
 {
 declare auth, _user varchar;
 auth := vsp_auth_vec (http_request_header());
@@ -317,9 +288,8 @@ return 1;
 }
 ;
 
-
-create procedure
-DB.DBA.IS_EMPTY_OR_NULL (in x any)
+create procedure DB.DBA.IS_EMPTY_OR_NULL (
+  in x any)
 {
 if (x is null or '' = x or 0 = x)
 return 1;
@@ -327,9 +297,10 @@ return 0;
 }
 ;
 
-
 -- Inserts new entry in map table
-create procedure INS_VIRTUAL_DIR (in lpath varchar, in ppath varchar)
+create procedure DB.DBA.INS_VIRTUAL_DIR (
+  in lpath varchar,
+  in ppath varchar)
 {
 declare is_dav integer;
 if (DB.DBA.IS_EMPTY_OR_NULL (lpath) or DB.DBA.IS_EMPTY_OR_NULL (ppath))
@@ -349,7 +320,8 @@ return http_map_table (lpath, ppath, '*ini*', '*ini*', is_dav);
 ;
 
 -- Remove entry from map table
-create procedure DEL_VIRTUAL_DIR (in lpath varchar)
+create procedure DB.DBA.DEL_VIRTUAL_DIR (
+  in lpath varchar)
 {
 if (DB.DBA.IS_EMPTY_OR_NULL (lpath))
 return NULL;
@@ -359,27 +331,25 @@ return http_map_del (lpath, '*ini*', '*ini*');
 ;
 
 -- Add new virtual host / directory
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.HTTP_PATH HP_IS_DEFAULT_HOST !
---#ENDIF
-create procedure VHOST_DEFINE (in vhost varchar := '*ini*',
-			   in lhost varchar := '*ini*',
-			   in lpath varchar,
-	 in ppath varchar,
-	 in is_dav integer := 0,
-	 in is_brws integer := 0,
-	 in def_page varchar := null,
-	 in auth_fn varchar := null,
-	 in realm varchar := null,
-	 in ppr_fn varchar := null,
-	 in vsp_user varchar := null,
-	 in soap_user varchar := null,
-	 in sec varchar := null,
-	 in ses_vars integer := 0,
-	 in soap_opts any := null,
-	 in auth_opts any := null,
-	 in opts any := null,
-	 in is_default_host integer := 0)
+create procedure DB.DBA.VHOST_DEFINE (
+  in vhost varchar := '*ini*',
+	in lhost varchar := '*ini*',
+	in lpath varchar,
+	in ppath varchar,
+	in is_dav integer := 0,
+	in is_brws integer := 0,
+	in def_page varchar := null,
+	in auth_fn varchar := null,
+	in realm varchar := null,
+	in ppr_fn varchar := null,
+	in vsp_user varchar := null,
+	in soap_user varchar := null,
+	in sec varchar := null,
+	in ses_vars integer := 0,
+	in soap_opts any := null,
+	in auth_opts any := null,
+	in opts any := null,
+	in is_default_host integer := 0)
 {
 declare ssl_port varchar;
 declare ssl_opts any;
@@ -496,7 +466,10 @@ sec, realm, auth_fn, ppr_fn, vsp_user, soap_user, ses_vars, soap_opts, auth_opts
 }
 ;
 
-create procedure VHOST_MAP_RELOAD (in vhost varchar := '*ini*', in lhost varchar := '*ini*', in lpath varchar)
+create procedure DB.DBA.VHOST_MAP_RELOAD (
+  in vhost varchar := '*ini*',
+  in lhost varchar := '*ini*',
+  in lpath varchar)
 {
 declare ssl_port, varr varchar;
 declare ret int;
@@ -554,10 +527,11 @@ return ret;
 ;
 
 -- Remove entry from virtual hosts / directories
-create procedure VHOST_REMOVE (in vhost varchar := '*ini*',
-	 in lhost varchar := '*ini*',
-	 in lpath varchar,
-	 in del_vsps integer := 0)
+create procedure DB.DBA.VHOST_REMOVE (
+  in vhost varchar := '*ini*',
+	in lhost varchar := '*ini*',
+	in lpath varchar,
+	in del_vsps integer := 0)
 {
 declare ssl_port, varr, lport varchar;
 declare ppath, vsp_user, stat, msg varchar;
@@ -641,9 +615,8 @@ WS.WS.SPARQL_VHOST_RESET()
 ;
 
 -- This is called internally via WS..DEFAULT, to check ACL on proxy service
-create procedure
-HTTP_PROXY_ACCESS (in dst varchar)
-returns integer
+create procedure DB.DBA.HTTP_PROXY_ACCESS (
+  in dst varchar) returns integer
 {
 declare client varchar;
 declare host, ppath any;
@@ -822,7 +795,7 @@ if (row_count ())
 ;
 
 -- /* extended http proxy service */
-create procedure virt_proxy_init ()
+create procedure DB.DBA.virt_proxy_init ()
 {
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'PROXY'))
     DB.DBA.USER_CREATE ('PROXY', uuid(), vector ('DISABLED', 1));
@@ -833,14 +806,16 @@ create procedure virt_proxy_init ()
       '/proxy?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1'));
   DB.DBA.VHOST_REMOVE (lpath=>'/proxy');
-  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/ext_http_proxy', soap_user=>'PROXY',
+  DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
   registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
 ;
 
-create procedure
-proxy_sp_html_error_page (in title varchar, in hd varchar, in message varchar)
+create procedure DB.DBA.proxy_sp_html_error_page (
+  in title varchar,
+  in hd varchar,
+  in message varchar)
 {
   http ('<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">');
   http ('<html>');
@@ -863,8 +838,9 @@ proxy_sp_html_error_page (in title varchar, in hd varchar, in message varchar)
 -- It''s handier for templating, etc.
 --
 
-create procedure
-str_fmt (in fmt_str varchar, in parm_arr any)
+create procedure DB.DBA.str_fmt (
+  in fmt_str varchar,
+  in parm_arr any)
 {
   declare f_l,l,p,st,cnt integer;
   declare s varchar;
@@ -917,8 +893,9 @@ create table DB.DBA.PROXY_SP_QRY (
 )
 ;
 
-create procedure
-ext_http_proxy_exec_qry (in exec varchar, in params any)
+create procedure DB.DBA.ext_http_proxy_exec_qry (
+  in exec varchar,
+  in params any)
 {
   declare qt, stat, msg, accept varchar;
   declare metas, rset, triples, ses any;
@@ -990,13 +967,14 @@ ext_http_proxy_exec_qry (in exec varchar, in params any)
 -- XXX now REALLY check for that SQL injection!
 
 create procedure
-ext_http_proxy (in url varchar := null,
-                in exec varchar := null,
-                in header varchar := null,
-                in force varchar := null,
-                in "output-format" varchar := null,
-                in get varchar := 'add',
-                in login varchar := '') __SOAP_HTTP 'text/html'
+DB.DBA.EXT_HTTP_PROXY (
+  in url varchar := null,
+  in exec varchar := null,
+  in header varchar := null,
+  in force varchar := null,
+  in "output-format" varchar := null,
+  in get varchar := 'add',
+  in login varchar := '') __SOAP_HTTP 'text/html'
 {
   declare hdr, content, req_hdr any;
   declare ct, in_hdr, new_hdr varchar;
@@ -1086,7 +1064,7 @@ end_loop:;
 		accept := 'text/turtle';
 	      else if ("output-format" = 'n3')
 		accept := 'text/rdf+n3';
-              else if ("output-format" = 'nt' or "output-format" = 'txt')
+              else if ("output-format" = 'nt' or "output-format" = 'txt' or "output-format" = 'text')
                 accept := 'text/n3';
               else if ("output-format" = 'json')
                 accept := 'application/json';
@@ -1225,8 +1203,10 @@ end_loop:;
 }
 ;
 
-create procedure
-DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost varchar := '*ini*')
+create procedure DB.DBA.VHOST_DUMP_SQL (
+  in lpath varchar,
+  in vhost varchar := '*ini*',
+  in lhost varchar := '*ini*')
 {
   declare ses any;
   ses := string_output ();
@@ -1262,6 +1242,7 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
         http (concat ('\t lpath=>', SYS_SQL_VAL_PRINT (lpath), ',\n'), ses);
         http (concat ('\t ppath=>', SYS_SQL_VAL_PRINT (HP_PPATH), ',\n'), ses);
         http (concat ('\t is_dav=>', SYS_SQL_VAL_PRINT (HP_STORE_AS_DAV), ',\n'), ses);
+        http (concat ('\t is_brws=>', SYS_SQL_VAL_PRINT (HP_DIR_BROWSEABLE), ',\n'), ses);
 	if (HP_DEFAULT is not null)
         http (concat ('\t def_page=>', SYS_SQL_VAL_PRINT (HP_DEFAULT), ',\n'), ses);
 	if (HP_SECURITY is not null)
@@ -1291,43 +1272,63 @@ DB.DBA.VHOST_DUMP_SQL (in lpath varchar, in vhost varchar := '*ini*', in lhost v
 ;
 
 -- /* get a header field based on max of quality value */
-create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar)
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (
+  in accept varchar,
+  in mask any := null)
 {
-  declare format, itm varchar;
-  declare arr any;
-  declare i, l int;
-  declare best_q, q double precision;
+  declare format, item varchar;
+  declare arr, arr2, arr3 any;
+  declare i, l, j, k integer;
+  declare q, q_best double precision;
 
-  arr := split_and_decode (accept, 0, '\0\0,;');
-  best_q := 0;
-  l := length (arr);
+  q := 0;
+  q_best := 0;
   format := null;
-  for (i := 0; i < l; i := i + 2)
+  arr := split_and_decode (accept, 0, '\0\0,');
+  l := length (arr);
+  for (i := 0; i < l; i := i + 1)
+  {
+    arr2 := split_and_decode (trim (arr[i]), 0, '\0\0;');
+    k := length (arr2);
+    if (k > 0)
     {
-      declare tmp any;
-      itm := trim(arr[i]);
-      q := arr[i+1];
-      if (q is null)
-	q := 1.0;
-      else
-	{
-	  tmp := split_and_decode (q, 0, '\0\0=');
-	  if (length (tmp) = 2)
-	    q := atof (tmp[1]);
-	  else
+      item := trim (arr2[0]);
 	    q := 1.0;
-        }
-      if (best_q < q)
-        {
-	  best_q := q;
-	  format := itm;
-	}
+      for (j := 1; j < k; j := j + 1)
+      {
+        arr3 := split_and_decode (trim (arr2[j]), 0, '\0\0=');
+	      if (length (arr3) = 2)
+	      {
+	        if (trim (arr3[0]) = 'q')
+	        {
+	          q := atof (arr3[1]);
+	          goto _break;
+	        }
+	        else if (trim (arr3[0]) = 'level')
+	        {
+	          q := atof (arr3[1]);
+	        }
+	      }
+      }
+    _break:;
+      if (q_best < q)
+      {
+    	  q_best := q;
+  	    format := item;
+  	  }
     }
+    if (q = q_best and mask is not null and item like mask)
+	    format := item;
+  }
   return format;
 }
 ;
 
-create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar, in lines any, in graph_mode int)
+create procedure DB.DBA.HTTP_RDF_ACCEPT (
+  in path varchar,
+  in virtual_dir varchar,
+  in lines any,
+  in graph_mode int)
 {
   declare host, stat, msg, qry, data, meta, accept, format, graph, url, ssl varchar;
   declare ses any;
@@ -1375,7 +1376,10 @@ create procedure DB.DBA.HTTP_RDF_ACCEPT (in path varchar, in virtual_dir varchar
 }
 ;
 
-create procedure WS.WS.DIR_INDEX_MAKE_XML (inout _sheet varchar, in curdir varchar := null, in start_from varchar := null)
+create procedure WS.WS.DIR_INDEX_MAKE_XML (
+  inout _sheet varchar,
+  in curdir varchar := null,
+  in start_from varchar := null)
 {
    declare dirarr, filearr, fsize, xte_path, xte_list, xte_entry any;
    declare dirname, root, modt varchar;
@@ -1500,7 +1504,10 @@ xslt_sheet ('http://local.virt/dir_output', xml_tree_doc ('
 ;
 
 
-create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
+create procedure WS.WS.DIR_INDEX_XML (
+  in path any,
+  in params any,
+  in lines any)
 {
   declare _html, _xml, _sheet varchar;
   declare _b_opt any;
@@ -1539,7 +1546,10 @@ create procedure WS.WS.DIR_INDEX_XML (in path any, in params any, in lines any)
 }
 ;
 
-create procedure DB.DBA.SERVICES_WSIL (in path any, in params any, in lines any)
+create procedure DB.DBA.SERVICES_WSIL (
+  in path any,
+  in params any,
+  in lines any)
 {
   declare host, intf, requrl, proto, rhost varchar;
   declare arr any;
@@ -1582,7 +1592,9 @@ create table WS.WS.HTTP_HOST_META (
     )
 ;
 
-create procedure WS.WS.host_meta_add (in app varchar, in meta varchar)
+create procedure WS.WS.host_meta_add (
+  in app varchar,
+  in meta varchar)
 {
   -- check if it is valid xml
   xtree_doc (meta);
@@ -1591,14 +1603,16 @@ create procedure WS.WS.host_meta_add (in app varchar, in meta varchar)
 }
 ;
 
-create procedure WS.WS.host_meta_del (in app varchar)
+create procedure WS.WS.host_meta_del (
+  in app varchar)
 {
   delete from WS.WS.HTTP_HOST_META where HM_APP = app;
 }
 ;
 
 
-create procedure WS.WS."host-meta" (in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
+create procedure WS.WS."host-meta" (
+  in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
 {
   declare ses, lines any;
   declare ret, accept varchar;
@@ -1677,4 +1691,159 @@ create procedure WS.WS.host_meta_dss ()
   http ('</Signature>\n', ses);
   return string_output_string (ses);
 }
+;
+
+--!
+-- (Re-)Creates all default virtual dirs on the given listener.
+--/
+create procedure DB.DBA.CREATE_DEFAULT_VHOSTS (
+  in vhost varchar := '*ini*',
+  in lhost varchar := '*ini*')
+{
+  declare auth any;
+  declare sec, cert, sslKey varchar;
+  declare httpsVerify, httpsCvD int;
+
+  -- Get security from the listener (needs to be the same for all vdirs)
+  sec := (select top 1 HP_SECURITY from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  cert := (select top 1 get_keyword('https_cert', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  sslKey := (select top 1 get_keyword('https_key', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  httpsVerify := (select top 1 get_keyword('https_verify', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  httpsCvD := (select top 1 get_keyword('https_cv_depth', deserialize(HP_AUTH_OPTIONS)) from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = lhost and HP_HOST = vhost);
+  auth := vector ();
+  if (sslKey is not null)
+    {
+      auth := vector ('https_key', sslKey, 'https_cert', cert, 'https_verify', httpsVerify, 'https_cv_depth', httpsCvD);
+    }
+
+  for (select
+        HPD_LPATH,
+        HPD_PPATH,
+        HPD_STORE_AS_DAV,
+        HPD_DIR_BROWSEABLE,
+        HPD_DEFAULT,
+        HPD_REALM,
+        HPD_AUTH_FUNC,
+        HPD_POSTPROCESS_FUNC,
+        HPD_RUN_VSP_AS,
+        HPD_RUN_SOAP_AS,
+        HPD_PERSIST_SES_VARS,
+        HPD_SOAP_OPTIONS,
+        HPD_AUTH_OPTIONS,
+        HPD_OPTIONS,
+        HPD_IS_DEFAULT_HOST
+      from DB.DBA.HTTP_PATH_DEFAULT) do
+    {
+      DB.DBA.VHOST_REMOVE (
+        vhost=>vhost,
+        lhost=>lhost,
+        lpath=>HPD_LPATH);
+
+      DB.DBA.VHOST_DEFINE (
+        vhost=>vhost,
+        lhost=>lhost,
+        lpath=>HPD_LPATH,
+        ppath=>HPD_PPATH,
+        is_dav=>HPD_STORE_AS_DAV,
+        is_brws=>HPD_DIR_BROWSEABLE,
+        def_page=>HPD_DEFAULT,
+        auth_fn=>HPD_AUTH_FUNC,
+        realm=>HPD_REALM,
+        ppr_fn=>HPD_POSTPROCESS_FUNC,
+        vsp_user=>HPD_RUN_VSP_AS,
+        soap_user=>HPD_RUN_SOAP_AS,
+        sec=>sec,
+        ses_vars=>HPD_PERSIST_SES_VARS,
+        soap_opts=>deserialize (HPD_SOAP_OPTIONS),
+        auth_opts=>vector_concat (deserialize (HPD_AUTH_OPTIONS), auth),
+        opts=>deserialize (HPD_OPTIONS),
+        is_default_host=>HPD_IS_DEFAULT_HOST);
+    }
+}
+;
+
+--!
+-- Add a default host to be created for each new listener.
+--/
+create procedure DB.DBA.ADD_DEFAULT_VHOST (
+  in lpath varchar,
+  in ppath varchar,
+  in is_dav integer := 0,
+  in is_brws integer := 0,
+  in def_page varchar := null,
+  in auth_fn varchar := null,
+  in realm varchar := null,
+  in ppr_fn varchar := null,
+  in vsp_user varchar := null,
+  in soap_user varchar := null,
+  in ses_vars integer := 0,
+  in soap_opts any := null,
+  in auth_opts any := null,
+  in opts any := null,
+  in is_default_host integer := 0,
+  in overwrite int := 0)
+{
+  if (overwrite)
+    {
+      delete from DB.DBA.HTTP_PATH_DEFAULT where HPD_LPATH = lpath;
+    }
+
+  insert into
+    DB.DBA.HTTP_PATH_DEFAULT (
+      HPD_LPATH,
+      HPD_PPATH,
+      HPD_STORE_AS_DAV,
+      HPD_DIR_BROWSEABLE,
+      HPD_DEFAULT,
+      HPD_REALM,
+      HPD_AUTH_FUNC,
+      HPD_POSTPROCESS_FUNC,
+      HPD_RUN_VSP_AS,
+      HPD_RUN_SOAP_AS,
+      HPD_PERSIST_SES_VARS,
+      HPD_SOAP_OPTIONS,
+      HPD_AUTH_OPTIONS,
+      HPD_OPTIONS,
+      HPD_IS_DEFAULT_HOST)
+    values (
+      lpath,
+      ppath,
+      is_dav,
+      is_brws,
+      def_page,
+      realm,
+      auth_fn,
+      ppr_fn,
+      vsp_user,
+      soap_user,
+      ses_vars,
+      serialize (soap_opts),
+      serialize (auth_opts),
+      serialize (opts),
+      is_default_host);
+}
+;
+
+-- Trigger to create default vdirs on new listener
+create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH referencing new as N
+{
+  -- Check if this is the first entry for the listener
+  if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = N.HP_HOST and HP_LISTEN_HOST = N.HP_LISTEN_HOST and HP_LPATH <> N.HP_LPATH))
+    {
+      declare exit handler for sqlstate '*'
+        {
+          log_message (sprintf ('Failed to create default virtual hosts for %s %s (%s). Please fix the configuration.', N.HP_HOST, N.HP_LISTEN_HOST, __SQL_MESSAGE));
+        };
+      CREATE_DEFAULT_VHOSTS (vhost=>N.HP_HOST, lhost=>N.HP_LISTEN_HOST);
+    }
+}
+;
+
+-- Default WebDAV mapping for all future http listeners
+insert soft DB.DBA.HTTP_PATH_DEFAULT
+(
+HPD_LPATH, HPD_PPATH, HPD_STORE_AS_DAV, HPD_DIR_BROWSEABLE, HPD_DEFAULT,
+HPD_REALM, HPD_AUTH_FUNC, HPD_POSTPROCESS_FUNC, HPD_RUN_VSP_AS, HPD_RUN_SOAP_AS, HPD_PERSIST_SES_VARS)
+values ( '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, 'dba', NULL, 0
+)
 ;

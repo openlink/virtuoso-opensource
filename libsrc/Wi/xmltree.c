@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -123,7 +123,7 @@ xqi_check_slots (xp_instance_t * xqi)
 #ifdef XTREE_DEBUG
 
 void
-xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
+xte_tree_check_iter (box_t box, box_t parent, dk_hash_t **known_ptr)
 {
   dtp_t tag;
   if (!IS_BOX_POINTER (box))
@@ -178,7 +178,7 @@ xte_tree_check_iter (box_t box, box_t parent, dk_hash_t *known)
 	      if ((DV_STRING == expected_type) &&
 	        ((DV_XPATH_QUERY == strg_type) || (DV_UNAME == strg_type) || (' ' == head[idx-1][0])) )
 	        {
-	          dk_check_tree_iter (strg, parent, known);
+	          dk_check_tree_iter (strg, parent, known_ptr);
 	          continue;
 	        }
 	      GPF_T1 ("XML Tree head contains an item of wrong type");
@@ -401,13 +401,13 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
 	{
 	  xte_string_value_from_tree ((caddr_t*) val, XQI_ADDRESS (xqi, slot), DV_LONG_STRING);
 	  val = XQI_GET (xqi, slot);
-	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
 	}
       else if (DV_XML_ENTITY == val_dtp)
 	{
 	  xe_string_value_1 ((xml_entity_t *)val, XQI_ADDRESS (xqi, slot), DV_LONG_STRING);
 	  val = XQI_GET (xqi, slot);
-	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	  XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
 	}
       else if (DV_NUMERIC == val_dtp)
 	{
@@ -421,7 +421,7 @@ xqi_cast (xp_instance_t * xqi, int slot, dtp_t dtp)
 	    XQI_SET (xqi, slot, box_narrow_string_as_wide ((unsigned char *) tmp, NULL, -1, NULL, NULL, 0));
 	}
       else
-	XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0, dtp));
+	XQI_SET (xqi, slot, box_utf8_as_wide_char (val, NULL, strlen (val), 0));
       return (XQI_GET (xqi, slot));
     }
   GPF_T1 ("Bad target type in xqi_cast");
@@ -1189,8 +1189,7 @@ xslt_format_number (numeric_t value, caddr_t format,
   int currency_format = 0;
 
   wchar_t *pattern =
-      (wchar_t *) box_utf8_as_wide_char (format, NULL, strlen (format), 0,
-      DV_WIDE);
+      (wchar_t *) box_utf8_as_wide_char (format, NULL, strlen (format), 0);
 
   caddr_t res = NULL, res1;
   caddr_t res_prefix, res_suffix;
@@ -1232,7 +1231,7 @@ xslt_format_number (numeric_t value, caddr_t format,
 
 #define LOAD_FROM_XSNF(varname,field_name) \
   memset (&c_state, 0, sizeof (c_state)); \
-  virt_mbrtowc (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
+  virt_mbrtowc_z (&varname, (utf8char *)nf->field_name, strlen (nf->field_name), &c_state);
 
   LOAD_FROM_XSNF(digit, xsnf_digit);
   LOAD_FROM_XSNF(zero_digit, xsnf_zero_digit);
@@ -2058,10 +2057,10 @@ div_by_int:
 		dtp_t left_dtp = DV_TYPE_OF (left);
 		numeric_t n = numeric_allocate();
 		numeric_from_string (n,
-		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-Inf" : "Inf")) :
-		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-Inf" : "Inf") :
-		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-Inf" : "Inf") : "Inf"))));
+		    left_dtp == DV_LONG_INT ? ((unbox (left) < 0 ? "-INF" : "INF")) :
+		    (left_dtp == DV_SINGLE_FLOAT ? (unbox_float (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_DOUBLE_FLOAT ? (unbox_double (left) < 0.0 ? "-INF" : "INF") :
+		    (left_dtp == DV_NUMERIC ? (numeric_sign ((numeric_t)left) ? "-INF" : "INF") : "INF"))));
 		XQI_SET (xqi, tree->_.bin_exp.res, (caddr_t) n);
 		dk_free_tree (err);
 	      }
@@ -3554,7 +3553,10 @@ xqr_serialize (xp_query_t * xqr, dk_session_t * ses)
   caddr_t text = xqr->xqr_key;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (text)) /* If key is not a plain text but text plus namespace decls */
     text = ((caddr_t *)text)[0];
-  print_string (text, ses);
+  if (text)
+    print_string (text, ses);
+  else
+    print_int (0, ses);
 }
 
 
@@ -3854,7 +3856,7 @@ params_ready:
 	    {
 	      if (DV_STRINGP (val))
 	        {
-		  val = box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE);
+		  val = box_utf8_as_wide_char (val, NULL, box_length (val), 0);
 		  if (NULL == val)
 		    sqlr_new_error ("22003", "SR476", "Out of memory allocation limits: %s() tries to return an abnormally long NVARCHAR", funname);
 		}
@@ -4890,7 +4892,9 @@ xte_reference (query_instance_t * qi, caddr_t base, caddr_t ref,
   caddr_t tree;
   caddr_t err = NULL;
   xml_doc_t * top_doc = from_doc->xd_top_doc;
-  caddr_t path_utf8 = xml_uri_resolve (qi, &err, base, ref, "UTF-8");
+  caddr_t path_utf8;
+  lt_check_error (qi->qi_trx);
+  path_utf8 = xml_uri_resolve (qi, &err, base, ref, "UTF-8");
 /*  dbg_printf (("Resolving %s (base %s)\n", ref, base); */
   if (NULL != err)
     {
@@ -5908,6 +5912,11 @@ DBG_NAME (xte_string_value_from_tree) (DBG_PARAMS caddr_t * current, caddr_t * r
     }
   if (ses)
     {
+      if (strses_length (ses) >= MAX_BOX_LENGTH)
+	{
+	  strses_free (ses);
+	  sqlr_new_error ("HT002", "XI038", "Text entity too long");
+	}
       str = strses_string (ses);
       strses_free (ses);
     }
@@ -6118,7 +6127,7 @@ doctype_may_not_be_printed:
       if (SESSION_IS_STRING (ses))
 	{
 	  strses_flush (ses);
-	  if (ARRAYP(err))
+	  if (ERROR_REPORT_P (err))
 	    {
 	      SES_PRINT (ses, "<error>");
 	      SES_PRINT (ses, "<code>");
@@ -6554,6 +6563,25 @@ complete: /* We come here from reduce if the top level element is complete or fr
   ret_tree[0] = elt;
 }
 
+
+int
+xte_serialization_len (db_buf_t str)
+{
+  scheduler_io_data_t iod;
+  dk_session_t ses;
+  caddr_t x;
+  memset (&ses, 0, sizeof (ses));
+  memset (&iod, 0, sizeof (iod));
+  ses.dks_in_buffer = (char *) str;
+  ses.dks_in_fill = INT32_MAX;
+  SESSION_SCH_DATA ((&ses)) = &iod;
+  ses.dks_cluster_flags = DKS_LEN_ONLY;
+  x = (caddr_t) read_object (&ses);
+  dk_free_tree (x);
+  return ses.dks_in_read;
+}
+
+
 #if 0
 void
 xe_box_serialize (caddr_t xe, dk_session_t * ses)
@@ -6652,7 +6680,7 @@ and the document will stay locked in that time */
 	}
       dk_free_tree (xtd->xout_media_type);
       xml_ns_2dict_clean (&(xtd->xd_ns_2dict));
-      dk_free ((caddr_t) xtd, -1 /* not sizeof (xml_tree_doc_t) because it may be doc made by lazy loader */);
+      dk_free_box ((caddr_t) xtd);
     }
 }
 
@@ -6660,7 +6688,7 @@ and the document will stay locked in that time */
 query_instance_t *
 qi_top_qi (query_instance_t * qi)
 {
-  if (-1 == (ptrlong)qi)
+  if ((-1 == (ptrlong)qi) || (NULL == qi))
     return NULL;
   while (IS_POINTER (qi->qi_caller))
     qi = qi->qi_caller;
@@ -6675,7 +6703,7 @@ DBG_NAME(xte_from_tree) (DBG_PARAMS caddr_t tree, query_instance_t * qi)
   size_t stack_sz = stack_elems * sizeof (xte_bmk_t);
   xte_bmk_t * newstack = (xte_bmk_t *) dk_alloc (stack_sz);
   xml_tree_ent_t * xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
-  NEW_VARZ (xml_tree_doc_t, xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, xtd);
   xte->_ = &xec_tree_xe;
 #ifdef MALLOC_DEBUG
   xtd->xd_dbg_file = (char *) file;
@@ -7114,7 +7142,7 @@ DBG_NAME(xte_cut) (DBG_PARAMS xml_entity_t * xe, query_instance_t *qi)
   xml_tree_ent_t * tgt_xte = (xml_tree_ent_t*) dk_alloc_box_zero (sizeof (xml_entity_un_t), DV_XML_ENTITY);
   caddr_t *tree_copy;
   int add_new_root;
-  NEW_VARZ (xml_tree_doc_t, tgt_xtd);
+  NEW_BOX_VARZ (xml_tree_doc_t, tgt_xtd);
   tree_copy = (caddr_t *) (box_copy_tree ((caddr_t)(src_xte->xte_current)));
   add_new_root = ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (tree_copy)) ||
     (uname__root != ((caddr_t *)(tree_copy[0]))[0]) );
@@ -7547,7 +7575,7 @@ bif_xml_tree_doc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (!IS_STRING_DTP (dtp) && DV_BLOB_HANDLE != dtp && DV_ARRAY_OF_POINTER != dtp)
     sqlr_new_error ("37000", "XI020", "Argument of xml_tree_doc must be an array not arg of type %.300s (%d)", dv_type_title (dtp), dtp);
-  if (!IS_STRING_DTP (dtp) && DV_BLOB_HANDLE != dtp && ssl_type != SSL_VARIABLE && ssl_type != SSL_PARAMETER)
+  if (!IS_STRING_DTP (dtp) && DV_BLOB_HANDLE != dtp && ssl_type != SSL_VARIABLE && ssl_type != SSL_PARAMETER && ssl_type != SSL_VEC)
     sqlr_new_error ("37000", "XI021", "Argument of xml_tree_doc must be a variable or function call");
   if (dtp == DV_ARRAY_OF_POINTER && (
 	BOX_ELEMENTS (tree) < 1 ||
@@ -7556,7 +7584,7 @@ bif_xml_tree_doc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("37000", "XI027", "Argument of xml_tree_doc must be valid xml entity. There is no root tag");
   if (DV_ARRAY_OF_POINTER == dtp)
     {
-      if (args[0]->ssl_is_callret)
+      if (args[0]->ssl_is_callret && ssl_type != SSL_VEC)
 	qst[args[0]->ssl_index] = NULL;
       else
 	tree = box_copy_tree (tree);
@@ -7873,7 +7901,7 @@ caddr_t
 xe_mp_copy (mem_pool_t * mp, caddr_t box)
 {
   caddr_t cp = xe_make_copy (box);
-  dk_set_push (&mp->mp_trash, (void*)cp);
+  mp_trash (mp, cp);
   return cp;
 }
 
@@ -7969,7 +7997,7 @@ xe_deserialize (dk_session_t * ses)
   long len = read_long (ses);
   query_instance_t * qi = DKS_QI_DATA (ses);
 
-  if (!qi && !ses->dks_cluster_data)
+  if (!qi && !ses->dks_cluster_data && !(DKS_LEN_ONLY & ses->dks_cluster_flags))
     return NEW_DB_NULL;
 
   SAVE_READ_FAIL(ses)
@@ -8084,7 +8112,7 @@ xn_xe_from_text (xpath_node_t * xn, query_instance_t * qi)
 	}
       /* No break. If we're not sure that this is a serialized vector that this is a text */
     case XE_PLAIN_TEXT:
-      if (DV_STRINGP (val))
+      if (DV_STRING == dtp || DV_UNAME == dtp || DV_BIN == dtp)
 	str = val;
       else if (DV_WIDESTRINGP (val))
 	{
@@ -8169,7 +8197,7 @@ val_is_xpack_serialization:
 	return NULL;
       else if (IS_BLOB_HANDLE (val))
 	{
-	  if (DV_BLOB_WIDE_HANDLE == dtp)
+	  if (1 || DV_BLOB_WIDE_HANDLE == dtp)
 	    ses = blob_to_string_output (qi->qi_trx, val);
 	}
       else
@@ -8195,6 +8223,19 @@ val_is_xpack_serialization:
   return  (xe);
 }
 
+#define XN_QST_SET(xn, qst, ssl, v) \
+   do { \
+      if ((xn)->src_gen.src_sets) \
+	{ \
+	  caddr_t __v = (v); \
+	  data_col_t * dc = QST_BOX (data_col_t *, qst, (ssl)->ssl_index); \
+	  dc_append_box (dc, __v); \
+	  if (DCT_BOXES & dc->dc_type) \
+	    dk_free_tree (__v); \
+	} \
+      else \
+	qst_set ((qst), (ssl), (v)); \
+   } while (0)
 
 caddr_t
 xn_init (xpath_node_t * xn, query_instance_t * qi)
@@ -8295,7 +8336,7 @@ xn_init (xpath_node_t * xn, query_instance_t * qi)
       if (XPDV_BOOL == predicted)
 	{
 	  int has_hit = xqi_truth_value (xqi, xqr->xqr_tree);
-	  qst_set (qst, xn->xn_output_val, box_num (has_hit ? 1 : 0));
+	  XN_QST_SET (xn, qst, xn->xn_output_val, box_num (has_hit ? 1 : 0));
 	  xqi_free (xqi);
 	  POP_QR_RESET;
 	  return ((caddr_t) SQL_SUCCESS);
@@ -8333,16 +8374,16 @@ try_next_val:
       rc = SQL_SUCCESS;
       if (XPDV_NODESET == predicted)
 	{
-	  qst_set (qst, xn->xn_output_val, DV_STRINGP (val) ?
-	    box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	  XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
+	    box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	    box_copy_tree (val) );
 	  save_xqi = 1;
 	}
       else
 	{
 	  rc = SQL_SUCCESS;
-	  qst_set (qst, xn->xn_output_val, DV_STRINGP (val) ?
-	    box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	  XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
+	    box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	    box_copy_tree (val));
 	}
       if (save_xqi)
@@ -8420,8 +8461,8 @@ try_next_val:
 	    }
 	}
       if (NULL != xn->xn_output_val)
-	qst_set (qst, xn->xn_output_val, DV_STRINGP (val) ?
-	  box_utf8_as_wide_char (val, NULL, box_length (val), 0, DV_WIDE) :
+	XN_QST_SET (xn, qst, xn->xn_output_val, DV_STRINGP (val) ?
+	  box_utf8_as_wide_char (val, NULL, box_length (val), 0) :
 	  box_copy_tree (val));
     }
   QR_RESET_CODE
@@ -8444,11 +8485,84 @@ xn_free (xpath_node_t * xn)
 {
 }
 
+void
+xn_vec_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state)
+{
+  int n_sets = QST_INT (inst, xn->src_gen.src_prev->src_out_fill);
+  int nth_set, first_time = 0, batch_sz;
+  QNCAST (data_source_t, qn, xn);
+  caddr_t err = NULL;
+
+  if (state)
+    nth_set = QST_INT (inst, xn->clb.clb_nth_set) = 0;
+  else /* continue */
+    {
+      nth_set = QST_INT (inst, xn->clb.clb_nth_set);
+      if (!xn->xn_output_val || !qst_get (inst, xn->xn_xqi))
+	state = SRC_IN_STATE (qn, inst);
+    }
+
+again:
+  batch_sz = QST_INT (inst, xn->src_gen.src_batch_size);
+  QST_INT (inst, qn->src_out_fill) = 0;
+  dc_reset_array (inst, qn, qn->src_continue_reset, -1);
+  for (; nth_set < n_sets; nth_set ++)
+    {
+      QNCAST (query_instance_t, qi, inst);
+      qi->qi_set = nth_set;
+      for (;;)
+	{
+	  if (!state)
+	    {
+	      state = SRC_IN_STATE (qn, inst);
+	      err = xn_next (xn, state);
+	    }
+	  else
+	    {
+	      err = xn_init (xn, (query_instance_t *) state);
+	    }
+	  first_time = 0;
+	  if (err != SQL_SUCCESS)
+	    {
+	      SRC_IN_STATE (qn, inst) = NULL;
+	      if (err != (caddr_t) SQL_NO_DATA_FOUND)
+		sqlr_resignal (err);
+	      break;
+	    }
+	  qn_result (qn, inst, nth_set);
+	  SRC_IN_STATE (qn, inst) = state;
+	  if (!xn->xn_output_val || !qst_get (inst, xn->xn_xqi))
+	    {
+	      nth_set ++;
+	      QST_INT (inst, xn->clb.clb_nth_set) = nth_set;
+	      qn_send_output (qn, inst);
+	      goto again;
+	    }
+	  state = NULL;
+	  if (QST_INT (inst, qn->src_out_fill) >= batch_sz)
+	    {
+	      nth_set ++;
+	      QST_INT (inst, xn->clb.clb_nth_set) = nth_set;
+	      qn_send_output (qn, inst);
+	      goto again;
+	    }
+	}
+    }
+
+  SRC_IN_STATE (qn, inst) = NULL;
+  if (QST_INT (inst, qn->src_out_fill))
+    qn_send_output (qn, inst);
+}
 
 void
 xn_input (xpath_node_t * xn, caddr_t * inst, caddr_t *state)
 {
   caddr_t err;
+  if (xn->src_gen.src_sets)
+    {
+      xn_vec_input (xn, inst, state);
+      return;
+    }
   for (;;)
     {
       if (!state)
@@ -9717,15 +9831,11 @@ caddr_t bif_XMLAddAttribute (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       attr_value = attr_xe->_->xe_currattrvalue (attr_xe);
       break;
     default:
-	{
-	  caddr_t box = box_cast_to_UTF8 (qst, raw_attr_name);
-	  attr_name = box_dv_uname_string (box);
-	  dk_free_box (box);
+      attr_name = box_dv_uname_string (box_cast_to_UTF8 (qst, raw_attr_name));
 	  attr_value = bif_arg (qst, args, 3, "XMLAddAttribute");
 	  if (DV_DB_NULL == DV_TYPE_OF (attr_value))
 	    return box_num (0);
 	  attr_value = box_cast_to_UTF8 (qst, attr_value);
-	}
       break;
     }
   if (('\0' == attr_name[0]) || (' ' == attr_name[0]) || !strncmp (attr_name, "xmlns", 5))
@@ -10074,6 +10184,8 @@ again:
       }
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
+    case DV_GEO:
+      return uname_virtrdf_ns_uri_Geometry;
     default:
       return (caddr_t)((ptrlong)1);
     }
@@ -10219,7 +10331,7 @@ xml_ns_2dict_t *
 xml_global_ns_2dict_get (caddr_t *qst, const char *fname)
 {
   if ((NULL != fname) && !sec_bif_caller_is_dba ((query_instance_t *)qst))
-    sqlr_new_error ("42000", "SR585", "Function %.300s() is restricted to dba group when it tries to access to the global namespace dictionary.", fname);
+    sqlr_new_error ("42000", "SR585:SECURITY", "Function %.300s() is restricted to DBA group when it tries to access to the global namespace dictionary.", fname);
   if (NULL == xml_global_ns_2dict)
     {
       xml_global_ns_2dict_mutex = mutex_allocate ();
@@ -10568,7 +10680,7 @@ void
 xml_tree_init (void)
 {
   macro_char_func *rt;
-  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp);
+  dk_dtp_register_hash (DV_XML_ENTITY, xml_ent_hash, xml_ent_hash_cmp, xml_ent_hash_cmp);
 #ifdef MALLOC_DEBUG
   xec_tree_xe.dbg_xe_copy = dbg_xte_copy;
   xec_tree_xe.dbg_xe_cut = dbg_xte_cut;
@@ -10628,7 +10740,7 @@ xml_tree_init (void)
   xquery_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
   xpath_eval_cache = shuric_cache__LRU.shuric_cache_alloc (XP_EVAL_CACHE_SIZE, NULL);
 
-  bif_define_typed ("xml_tree_doc", bif_xml_tree_doc, &bt_xml_entity);
+  bif_define_ex ("xml_tree_doc", bif_xml_tree_doc, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_define ("xml_doc_get_base_uri", bif_xml_doc_get_base_uri);
   bif_define ("xml_doc_assign_base_uri", bif_xml_doc_assign_base_uri);
   bif_define ("xml_doc_output_option", bif_xml_doc_output_option);
@@ -10638,7 +10750,7 @@ xml_tree_init (void)
   bif_define ("xml_tree_doc_set_ns_output", bif_xml_tree_doc_set_ns_output);
   bif_define ("xml_namespace_scope", bif_xml_namespace_scope);
   bif_define ("xtree_doc_get_dtd", bif_xtree_doc_get_dtd);
-  bif_define ("xpath_eval", bif_xpath_eval);
+  bif_define ("xpath_eval", bif_xpath_eval); /* not bif_define_ex ("xpath_eval", bif_xpath_eval, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE); */
   bif_set_uses_index (bif_xpath_eval);
   bif_define ("xquery_eval", bif_xquery_eval);
   bif_set_uses_index (bif_xquery_eval);
@@ -10662,11 +10774,9 @@ xml_tree_init (void)
 #ifdef XPATHP_DEBUG
   bif_define ("xpathp_test", bif_xpathp_test);
 #endif
-  bif_define_typed ("xslt_format_number", bif_xslt_format_number, &bt_varchar);
-  bif_define ("updateXML", bif_updateXML);
-  bif_define ("updateXML_ent", bif_updateXML_ent);
-  bif_define ("XMLUpdate", bif_updateXML);
-  bif_define ("XMLUpdate_ent", bif_updateXML_ent);
+  bif_define_ex ("xslt_format_number", bif_xslt_format_number, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("updateXML", bif_updateXML, BMD_ALIAS, "XMLUpdate", BMD_DONE);
+  bif_define_ex ("updateXML_ent", bif_updateXML_ent, BMD_ALIAS, "XMLUpdate_ent", BMD_DONE);
   bif_define ("XMLReplace", bif_XMLReplace);
   bif_define ("XMLInsertBefore", bif_XMLInsertBefore);
   bif_define ("XMLInsertAfter", bif_XMLInsertAfter);

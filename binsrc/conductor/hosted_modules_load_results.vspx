@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="hosted_modules_import_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Hosted Modules</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="selected_file" type="any" default="null" />
+      <v:variable name="error_list_vec" type="any" default="null" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Loaded Modules" url="hosted_modules.vspx"/>
+      <vm:menuitem value="Import Files" url="hosted_import.vspx"/>
+      <vm:menuitem value="Modules Grant" url="hosted_grant.vspx"/>
+    </vm:menu>
+    <vm:header caption="Import Files"/>
+    <vm:pagebody>
+      <?vsp
+        if (not adm_is_hosted ())
+        {
+          http('<br/><table cellpadding="3" cellspacing="0" border="1" class="Warning"><tr><td>This service requires mono/clr or java extension servers</td></tr></table><br/>');
+          return;
+        }
+      ?>
+      <table border="0" cellspacing="0" cellpadding="3">
+        <tr>
+          <td align="center" valign="top">
+            <table border="0" cellspacing="0" cellpadding="3" class="listing">
+              <tr class="listing_header_row">
+                <th>Class</th>
+                <th>Module Name</th>
+                <th>Status</th>
+              </tr>
+              <?vsp
+                declare idx integer;
+                declare mtd_name, file_name, tmp_str varchar;
+                idx := 0;
+                tmp_str := 'sample.dll';
+                while (1)
+                {
+                  tmp_str := sprintf('mtd_%i', idx);
+                  mtd_name := get_keyword(tmp_str, params, NULL);
+                  tmp_str := sprintf('file_%i', idx);
+                  file_name := get_keyword(tmp_str, params, NULL);
+                  if (mtd_name is NULL)
+                    goto end_loop;
+              ?>
+              <tr>
+                <td>
+                  <?V mtd_name ?>
+                </td>
+                <td>
+                  <?V subseq (file_name, length (server_root())) ?>
+                </td>
+                <td>
+                  <?V import_file(mtd_name, file_name) ?>
+                </td>
+              </tr>
+              <?vsp
+                  idx := idx + 1;
+                }
+                end_loop:;
+              ?>
+            </table>
+          </td>
+        </tr>
+        <tr>
+          <td lign="center" valign="top">
+            <v:form name="import_form2" type="simple" method="POST" action="hosted_page.vspx">
+              <v:button name="return" action="simple" value="OK" />
+	      <input type="hidden" name="page" value="1"/>
+            </v:form>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

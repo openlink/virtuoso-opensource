@@ -6,7 +6,7 @@ public class ProductFeature extends BSBMResource {
 	private int nr;
 	private String label;
 	private String comment;
-	
+
 	public ProductFeature(int nr, String label, String comment)
 	{
 		this.nr 		= nr;
@@ -42,7 +42,7 @@ public class ProductFeature extends BSBMResource {
 	{
 		return getURIref(nr);
 	}
-	
+
 	public static String getURIref(int featureNr)
 	{
 		StringBuffer s = new StringBuffer();
@@ -53,7 +53,7 @@ public class ProductFeature extends BSBMResource {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public static String getPrefixed(int featureNr) {
 		StringBuffer s = new StringBuffer();
 		s.append(BSBM.INST_PREFIX);

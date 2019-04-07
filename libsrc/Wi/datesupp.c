@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,7 @@
  */
 
 #include "datesupp.h"
+#include "wi.h"
 #include "CLI.h"
 #include "util/strfuns.h"
 #include "sqlfn.h"
@@ -45,17 +46,6 @@
 #define  MONTH_MAX   12		/* Maximum month of year */
 #define  YEAR_MIN    1		/* Minimum year able to compute */
 #define  YEAR_MAX    9999	/* Maximum year able to compute */
-
-
-/*
- *  The Gregorian Reformation date
- */
-#define GREG_YEAR	1582
-#define GREG_MONTH	10
-#define GREG_FIRST_DAY	5
-#define GREG_LAST_DAY	14
-#define GREG_JDAYS	577737L	/* date2num (GREG_YEAR, GREG_MONTH,
-				   GREG_FIRST_DAY - 1) */
 
 
 /* Number of days in months */
@@ -84,7 +74,7 @@ days_in_february (const int year)
       || ((year == GREG_YEAR)
 	  && (GREG_MONTH == 1
 	      || ((GREG_MONTH == 2)
-		  && (GREG_LAST_DAY >= 28)))))
+		  && (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG >= 28)))))
     {
       day = (year & 3) ? 28 : ((!(year % 100) && (year % 400)) ? 28 : 29);
     }
@@ -129,6 +119,7 @@ dt_day_ck (int day, int month, int year, int *err, const char **err_str)
 #endif
 
 
+#ifdef DATE2NUM_DEBUG
 /*
  *  Converts a given number of days of a year to a standard date
  *
@@ -164,7 +155,7 @@ yearday2date (int yday, const int is_leap_year, int *month, int *day)
 
   return 1;
 }
-
+#endif
 
 /*
  *  Computes the absolute number of days of the given date since 0001/01/01,
@@ -182,9 +173,9 @@ date2num_old (const int year, const int month, const int day)
       || ((year == GREG_YEAR)
 	  && (month > GREG_MONTH
 	      || ((month == GREG_MONTH)
-		  && (day > GREG_LAST_DAY)))))
+		  && (day > GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG)))))
     {
-      julian_days -= (uint32) (GREG_LAST_DAY - GREG_FIRST_DAY + 1);
+      julian_days -= (uint32) (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG - GREG_LAST_JULIAN_DAY);
     }
   if (year > GREG_YEAR)
     {
@@ -209,7 +200,7 @@ date2num (const int year, const int month, const int day)
   a = (14-month)/12;
   y = ((year < 0) ? year + 1 : year) + 4800 - a;
   m = month + 12 * a - 3;
-  if (year < GREG_YEAR || ((year == GREG_YEAR) && (month < GREG_MONTH || ((month == GREG_MONTH) && (day < GREG_LAST_DAY)))))
+  if (GREG_YMD_IS_PROLEPTIC_GREG(year,month,day))
     {
       jdn = day + (153*m + 2)/5 + 365*y + y/4 - 32083;
       if ((1722885 == jdn) && (1 == day))
@@ -242,7 +233,7 @@ num2date_old (int32 julian_days, int *year, int *month, int *day)
   int i;
 
   if (julian_days > GREG_JDAYS)
-    julian_days += (uint32) (GREG_LAST_DAY - GREG_FIRST_DAY + 1);
+    julian_days += (uint32) (GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG - GREG_LAST_JULIAN_DAY);
   x = (double) julian_days / (DAY_LAST + 0.25);
   i = (int) x;
   if ((double) i != x)
@@ -374,62 +365,136 @@ date2weekday (const int year, const int month, const int day)
   return ((julian_days > 2) ? (int) julian_days - 2 : (int) julian_days + 5);
 }
 
+#ifdef WIN32
+struct timezone
+{
+  int  tz_minuteswest;
+  int  tz_dsttime;
+};
 
-int dt_local_tz;		/* minutes from GMT */
+static int
+gettimeofday (struct timeval *tv, struct timezone *tz)
+{
+  FILETIME ft;
+  uint64 res = 0;
+  static int tzflag;
+
+  if (NULL != tv)
+    {
+      GetSystemTimeAsFileTime(&ft);
+
+      res |= ft.dwHighDateTime;
+      res <<= 32;
+      res |= ft.dwLowDateTime;
+
+      /* converting file time to Unix epoch 1970/1/1 */
+      res -= 116444736000000000ULL;
+      res /= 10;  /* convert into microseconds */
+      tv->tv_sec = (long) (res / 1000000ULL);
+      tv->tv_usec = (long) (res % 1000000ULL);
+    }
+  if (NULL != tz)
+    {
+      struct tm ltm;
+      time_t tim;
+      tim = time (NULL);
+      ltm = *localtime (&tim);
+      tz->tz_minuteswest = dt_local_tz_for_logs;
+      tz->tz_dsttime = ltm.tm_isdst;
+    }
+
+  return 0;
+}
+#endif
+
+int timezoneless_datetimes = DT_TZL_NEVER_COMPAT;
+int dt_local_tz_for_logs = 0;		/* minutes from GMT */
+int dt_local_tz_for_weird_dates = 0;	/* minutes from GMT */
 
 void
-dt_now (caddr_t dt)
+dt_now_GMT (caddr_t dt)
 {
   static time_t last_time;
   static long last_frac;
+  time_t tim;
   long day;
-  time_t tim = time (NULL);
+  struct timeval tv;
   struct tm tm;
 #if defined(HAVE_GMTIME_R)
   struct tm result;
-
+#endif
+  gettimeofday (&tv, NULL);
+  tim = (time_t)tv.tv_sec;
+#if defined(HAVE_GMTIME_R)
   tm = *(struct tm *)gmtime_r (&tim, &result);
 #else
   tm = *(struct tm *)gmtime (&tim);
 #endif
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+  DT_ZAP (dt);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
   DT_SET_MINUTE (dt, tm.tm_min);
   DT_SET_SECOND (dt, tm.tm_sec);
-  if (tim == last_time)
+  if (tim == last_time && last_frac == tv.tv_usec)
     {
       last_frac++;
       DT_SET_FRACTION (dt, (last_frac * 1000));
     }
   else
     {
-      last_frac = 0;
+      last_frac = tv.tv_usec;
       last_time = tim;
-      DT_SET_FRACTION (dt, 0);
+      DT_SET_FRACTION (dt, (tv.tv_usec * 1000));
     }
-  DT_SET_TZ (dt, dt_local_tz);
   DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }
 
+void
+dt_now (caddr_t dt)
+{
+  dt_now_GMT (dt);
+  if (DT_TZL_NEVER_COMPAT == timezoneless_datetimes)
+    DT_SET_TZ (dt, dt_local_tz_for_logs);
+  else
+    {
+      TIMESTAMP_STRUCT ts;
+      dt_to_GMTimestamp_struct (dt, &ts);
+      ts_add (&ts, dt_local_tz_for_logs, "minute");
+      GMTimestamp_struct_to_dt (&ts, dt);
+      DT_SET_TZL (dt, 1);
+    }
+}
+
+
+void
+dt_now_tz (caddr_t dt)
+{
+  dt_now_GMT (dt);
+  DT_SET_TZL (dt, 0);
+  DT_SET_TZ (dt, dt_local_tz_for_logs);
+}
 
 void
 time_t_to_dt (time_t tim, long fraction, char *dt)
 {
   long day;
+  int local_tzmin;
 #if defined(HAVE_GMTIME_R)
   struct tm result;
   struct tm tm = *(struct tm *)gmtime_r (&tim, &result);
 #else
   struct tm tm = *(struct tm *)gmtime (&tim);
 #endif
+  local_tzmin = dt_local_tzmin_for_parts (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday, tm.tm_hour, tm.tm_min, tm.tm_sec);
   day = date2num (tm.tm_year + 1900, tm.tm_mon + 1, tm.tm_mday);
+  DT_ZAP (dt);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, tm.tm_hour);
   DT_SET_MINUTE (dt, tm.tm_min);
   DT_SET_SECOND (dt, tm.tm_sec);
   DT_SET_FRACTION (dt, fraction);
-  DT_SET_TZ (dt, dt_local_tz);
+  DT_SET_TZ (dt, local_tzmin);
   DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 }
 
@@ -449,12 +514,13 @@ file_mtime_to_dt (const char *name, char *dt)
 	{
 	  long day;
 	  day = date2num (stUTC.wYear, stUTC.wMonth, stUTC.wDay);
+	  DT_ZAP (dt);
 	  DT_SET_DAY (dt, day);
 	  DT_SET_HOUR (dt, stUTC.wHour);
 	  DT_SET_MINUTE (dt, stUTC.wMinute);
 	  DT_SET_SECOND (dt, stUTC.wSecond);
 	  DT_SET_FRACTION (dt, stUTC.wMilliseconds * 1000);
-	  DT_SET_TZ (dt, dt_local_tz);
+	  DT_SET_TZ (dt, dt_local_tz_for_logs);
 	  DT_SET_DT_TYPE (dt, DT_TYPE_DATETIME);
 	  time_set = 1;
 	}
@@ -463,6 +529,8 @@ file_mtime_to_dt (const char *name, char *dt)
   return time_set;
 }
 #endif
+
+#define SPERDAY (24*60*60)
 
 void
 sec2time (int sec, int *day, int *hour, int *min, int *tsec)
@@ -567,11 +635,52 @@ ts_add (TIMESTAMP_STRUCT * ts, boxint n, const char *unit)
   ts->fraction = frac;
 }
 
+int
+dt_compare (caddr_t dt1, caddr_t dt2, int cmp_is_safe)
+{
+  int day1, day2;
+  int minm1, maxm1, minm2, maxm2;
+  DT_AUDIT_FIELDS (dt1);
+  DT_AUDIT_FIELDS (dt2);
+  if (DT_TZL (dt1) == DT_TZL (dt2))
+    {
+      int cmp = memcmp (dt1, dt2, DT_COMPARE_LENGTH);
+      if (cmp > 0)
+        return DVC_GREATER;
+      if (cmp < 0)
+        return DVC_LESS;
+      return DVC_MATCH;
+    }
+  day1 = DT_DAY (dt1);
+  day2 = DT_DAY (dt2);
+  if (day1 > day2+2)
+    return DVC_GREATER;
+  if (day1 < day2+2)
+    return DVC_LESS;
+  minm1 = maxm1 = DT_HOUR (dt1) * 60 + DT_MINUTE (dt1);
+  if (DT_TZL (dt1))
+    {
+      minm1 += -14*60;
+      maxm1 -= 14*60;
+    }
+  minm2 = maxm2 = DT_HOUR (dt2) * 60 + DT_MINUTE (dt2) + (day2-day1) * 60 * 24;
+  if (DT_TZL (dt2))
+    {
+      minm2 += -14*60 + (day2-day1) * 60 * 24;
+      maxm2 += 14*60 + (day2-day1) * 60 * 24;
+    }
+  if (minm1 > maxm2)
+    return DVC_GREATER;
+  if (maxm1 < minm2)
+    return DVC_LESS;
+  return cmp_is_safe ? DVC_NOORDER : DVC_LESS;
+}
 
 void
 dt_to_GMTimestamp_struct (ccaddr_t dt, GMTIMESTAMP_STRUCT * ts)
 {
   int year, month, day;
+  DT_AUDIT_FIELDS (dt);
   num2date (DT_DAY (dt), &year, &month, &day);
   ts->year = year;
   ts->month = month;
@@ -604,6 +713,7 @@ void
 GMTimestamp_struct_to_dt (GMTIMESTAMP_STRUCT * ts, char *dt)
 {
   uint32 day;
+  DT_ZAP (dt);
   day = date2num (ts->year, ts->month, ts->day);
   DT_SET_DAY (dt, day);
   DT_SET_HOUR (dt, ts->hour);
@@ -619,10 +729,11 @@ timestamp_struct_to_dt (TIMESTAMP_STRUCT * ts_in, char *dt)
 {
   TIMESTAMP_STRUCT ts_tmp;
   TIMESTAMP_STRUCT *ts = &ts_tmp;
-  ts_tmp = *ts_in;
-  ts_add (ts, -dt_local_tz, "minute");
+  int local_tz = dt_local_tzmin_for_parts (ts_in->year, ts_in->month, ts_in->day, ts_in->hour, ts_in->minute, ts_in->second);
+  memcpy (&ts_tmp, ts_in, sizeof (TIMESTAMP_STRUCT));
+  ts_add (ts, -local_tz, "minute");
   GMTimestamp_struct_to_dt (ts, dt);
-  DT_SET_TZ (dt, dt_local_tz);
+  DT_SET_TZ (dt, local_tz);
 }
 
 void
@@ -678,13 +789,27 @@ time_struct_to_dt (TIME_STRUCT * ts, char *dt)
 void
 dt_date_round (char *dt)
 {
-  TIMESTAMP_STRUCT ts;
-  dt_to_timestamp_struct (dt, &ts);
-  ts.hour = 0;
-  ts.minute = 0;
-  ts.second = 0;
-  ts.fraction = 0;
-  timestamp_struct_to_dt (&ts, dt);
+  int tz = DT_TZ (dt);
+  if (0 == tz || DT_TZL (dt))
+    {
+      DT_SET_HOUR (dt, 0);
+      DT_SET_MINUTE (dt, 0);
+      DT_SET_SECOND (dt, 0);
+      DT_SET_FRACTION (dt, 0);
+    }
+  else
+    {
+      TIMESTAMP_STRUCT ts;
+      dt_to_GMTimestamp_struct (dt, &ts);
+      ts_add (&ts, tz, "minute");
+      ts.hour = 0;
+      ts.minute = 0;
+      ts.second = 0;
+      ts.fraction = 0;
+      ts_add (&ts, -tz, "minute");
+      GMTimestamp_struct_to_dt (&ts, dt); /**/
+      DT_SET_TZ (dt, tz);
+    }
   DT_SET_DT_TYPE (dt, DT_TYPE_DATE);
 }
 
@@ -710,9 +835,13 @@ dt_init ()
 #endif
   lt = mktime (&ltm);
   gt = mktime (&gtm);
-  dt_local_tz = (int) (lt - gt) / 60;
+  dt_local_tz_for_logs = (int) (lt - gt) / 60;
   if (ltm.tm_isdst && isdts_mode)  /* Check daylight saving */
-    dt_local_tz = dt_local_tz + 60;
+    dt_local_tz_for_logs = dt_local_tz_for_logs + 60;
+  ltm.tm_isdst = 0;
+  lt = mktime (&ltm);
+  dt_local_tz_for_weird_dates = (int) (lt - gt) / 60;
+  
 }
 
 long
@@ -767,33 +896,53 @@ dt_to_string (const char *dt, char *str, int len)
   dt_to_timestamp_struct (dt, &ts);
   dt_type = DT_DT_TYPE (dt);
   len_before_fra = len - (ts.fraction ? 10 : 0);
+  if ((DT_TZL_NEVER_COMPAT != timezoneless_datetimes) && (!DT_TZL (dt)))
+    {
+      if (0 != DT_TZ (dt))
+        len_before_fra -= 6; /* +99:00 */
+      else
+        len_before_fra -= 1; /* Z */
+    }
   switch (dt_type)
     {
-      case DT_TYPE_DATE:
-        snprintf (str, len, "%04d-%02d-%02d",
+      case DT_TYPE_DATE:		/*  012345678901 */
+        if (len_before_fra < 11)	/* "-YYYY-MM-DD" */
+          goto short_buf; /* see below */
+        tail += snprintf (str, len, "%04d-%02d-%02d",
           ts.year, ts.month, ts.day);
-        return;
+        goto add_tz; /* see below */
       case DT_TYPE_TIME:		/*  012345678 */
         if (len_before_fra < 8)		/* "hh:mm:ss" */
           goto short_buf; /* see below */
         tail += snprintf (str, len_before_fra, "%02d:%02d:%02d",
           ts.hour, ts.minute, ts.second );
-	break;
-      default:				/*  01234567890123456789 */
-        if (len_before_fra < 19)	/* "yyyy-mm-dd hh:mm:ss" */
+        goto add_fra_and_tz; /* see below */
+      default:				/*  012345678901234567890 */
+        if (len_before_fra < 20)	/* "-yyyy-mm-dd hh:mm:ss" */
           goto short_buf; /* see below */
-	tail += snprintf (str, len_before_fra, "%04d-%02d-%02d %02d:%02d:%02d",
-	  ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
-	break;
+        tail += snprintf (str, len_before_fra, "%04d-%02d-%02d %02d:%02d:%02d",
+          ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
+        goto add_fra_and_tz; /* see below */
     }
+add_fra_and_tz:
   if (ts.fraction)
     {
       if (ts.fraction % 1000)
-	tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
+        tail += snprintf (tail, (str + len) - tail, ".%09d", (int)ts.fraction);
       else if (ts.fraction % 1000000)
-	tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+        tail += snprintf (tail, (str + len) - tail, ".%06d", (int)(ts.fraction / 1000));
       else
-	tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+        tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+    }
+add_tz:
+  if ((DT_TZL_NEVER_COMPAT != timezoneless_datetimes) && (!DT_TZL (dt)))
+    {
+      int tz = DT_TZ (dt);
+      int atz = abs (tz);
+      if (0 != tz)
+        tail += snprintf (tail, (str + len) - tail, "%c%02d:%02d", ((tz >= 0) ? '+' : '-'), atz / 60, atz % 60);
+      else if (((str + len) - tail) > 2)
+        strcpy (tail, "Z");
     }
   return;
 
@@ -805,10 +954,11 @@ void
 dbg_dt_to_string (const char *dt, char *str, int len)
 {
   TIMESTAMP_STRUCT ts;
-  int dt_type, tz;
+  int dt_type, tz, atz;
   char *tail = str;
   dt_to_GMTimestamp_struct (dt, &ts);
   tz = DT_TZ (dt);
+  atz = abs (tz);
   dt_type = DT_DT_TYPE (dt);
   if (len < 50)
     {
@@ -822,7 +972,7 @@ dbg_dt_to_string (const char *dt, char *str, int len)
       case DT_TYPE_DATETIME:	tail += snprintf (str, len, "{datetime "); break;
       default:	tail += snprintf (str, len, "{BAD(%d) ", dt_type); break;
     }
-  tail += snprintf (tail, (str + len) - tail, "%04d-%02d-%02d %02d:%02d:%02d",
+  tail += snprintf (tail, (str + len) - tail, "%04d-%02d-%02dT%02d:%02d:%02d",
     ts.year, ts.month, ts.day, ts.hour, ts.minute, ts.second );
   if (ts.fraction)
     {
@@ -833,10 +983,20 @@ dbg_dt_to_string (const char *dt, char *str, int len)
       else
         tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
     }
-  if (tz)
-    tail += snprintf (tail, (str + len) - tail, "Z in %+02d:%02d}", tz/60, tz%60);
+  if (DT_TZL (dt))
+    {
+      if (tz)
+        tail += snprintf (tail, (str + len) - tail, "tzl in %c%02d:%02d}", ((tz >= 0) ? '+' : '-'), atz / 60, atz % 60);
+      else
+        tail += snprintf (tail, (str + len) - tail, "tzl}");
+    }
   else
-    tail += snprintf (tail, (str + len) - tail, "Z}");
+    {
+      if (tz)
+        tail += snprintf (tail, (str + len) - tail, "Z in %c%02d:%02d}", ((tz >= 0) ? '+' : '-'), atz / 60, atz % 60);
+      else
+        tail += snprintf (tail, (str + len) - tail, "Z}");
+    }
   return;
 }
 
@@ -849,14 +1009,16 @@ dt_to_iso8601_string (const char *dt, char *str, int len)
   char *tail = str;
   dt_to_timestamp_struct (dt, &ts);
   dt_type = DT_DT_TYPE (dt);
-  len_before_tz = len - (tz ? 6 : 1);
+  len_before_tz = len - (DT_TZL (dt) ? 0 : (tz ? 6 : 1));
   len_before_fra = len_before_tz - (ts.fraction ? 10 : 0);
   switch (dt_type)
     {
-      case DT_TYPE_DATE:
-        snprintf (str, len, "%04d-%02d-%02d",
+      case DT_TYPE_DATE:		/*  012345678901 */
+        if (len_before_fra < 11)	/* "-YYYY-MM-DD" */
+          goto short_buf; /* see below */
+        tail += snprintf (str, len, "%04d-%02d-%02d",
           ts.year, ts.month, ts.day);
-        return;
+	break;
       case DT_TYPE_TIME:		/*  012345678 */
         if (len_before_fra < 8)		/* "hh:mm:ss" */
           goto short_buf; /* see below */
@@ -879,15 +1041,102 @@ dt_to_iso8601_string (const char *dt, char *str, int len)
       else
 	tail += snprintf (tail, (str + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
     }
-  if (tz)
-    snprintf (tail, (str + len) - tail, "%+03d:%02d", tz / 60, abs (tz) % 60);
-  else if (((str + len) - tail) > 2)
-    strcpy (tail, "Z");
+  if (!DT_TZL (dt))
+    {
+      if (tz)
+        {
+          int atz = abs (tz);
+          snprintf (tail, (str + len) - tail, "%c%02d:%02d", ((tz >= 0) ? '+' : '-'), atz / 60, atz % 60);
+        }
+      else if (((str + len) - tail) > 2)
+        strcpy (tail, "Z");
+    }
   return;
 
 short_buf:
   snprintf (str, len, "??? short output buffer for dt_to_iso8601_string()");
 }
+
+void
+dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode)
+{
+  char *tail = buf;
+  int arg_dt_type = DT_DT_TYPE (dt);
+  TIMESTAMP_STRUCT ts;
+  int tz = DT_TZ (dt);
+  if (0 == ((DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS) & mode))
+    mode |= ((DT_TYPE_TIME == arg_dt_type) ? DT_PRINT_MODE_HMS :
+      ((DT_TYPE_DATE == arg_dt_type) ? DT_PRINT_MODE_YMD : (DT_PRINT_MODE_YMD | DT_PRINT_MODE_HMS)) );
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_TYPE_TIME == arg_dt_type))
+    {
+      snprintf (buf, len, "??? Bit 4 in print mode requires DATE or DATETIME argument, not TIME");
+      return;
+    }
+  if ((DT_PRINT_MODE_HMS & mode) && (DT_TYPE_DATE == arg_dt_type))
+    {
+      snprintf (buf, len, "??? Bit 2 in print mode requires TIME or DATETIME argument, not DATE");
+      return;
+    }
+  dt_to_timestamp_struct (dt, &ts);
+  if (DT_PRINT_MODE_YMD & mode)
+    {
+      if (DT_PRINT_MODE_NO_D & mode)
+        {
+          if (DT_PRINT_MODE_NO_Y & mode)
+            tail += snprintf (tail, (buf + len) - tail, "--%02d", ts.month + ((15 <= ts.day) ? 1 : 0));
+          else if (DT_PRINT_MODE_NO_M & mode)
+            tail += snprintf (tail, (buf + len) - tail, "%04d", ts.year + ((6 <= ts.month) ? 1 : 0));
+          else if (15 <= ts.day)
+            tail += snprintf (tail, (buf + len) - tail, "%02d-%02d", ts.year + ((12 == ts.month) ? 1 : 0), (ts.month % 12) + 1);
+          else
+            tail += snprintf (tail, (buf + len) - tail, "%04d-%02d", ts.year, ts.month);
+        }
+      else if (DT_PRINT_MODE_NO_Y & mode)
+        {
+          if (DT_PRINT_MODE_NO_M & mode)
+            tail += snprintf (tail, (buf + len) - tail, "---%02d", ts.day);
+          else
+            tail += snprintf (tail, (buf + len) - tail, "--%02d-%02d", ts.month, ts.day);
+        }
+      else
+        tail += snprintf (tail, (buf + len) - tail, "%04d-%02d-%02d", ts.year, ts.month, ts.day);
+    }
+  if ((DT_PRINT_MODE_YMD & mode) && (DT_PRINT_MODE_HMS & mode))
+    (tail++)[0] = ((DT_PRINT_MODE_XML & mode) ? 'T' : ' ');
+  if (DT_PRINT_MODE_HMS & mode)
+    {
+      tail += snprintf (tail, (buf + len) - tail, "%02d:%02d:%02d", ts.hour, ts.minute, ts.second);
+      if (ts.fraction)
+        {
+          if (ts.fraction % 1000)
+            tail += snprintf (tail, (buf + len) - tail, ".%09d", (int)ts.fraction);
+          else if (ts.fraction % 1000000)
+            tail += snprintf (tail, (buf + len) - tail, ".%06d", (int)(ts.fraction / 1000));
+          else
+            tail += snprintf (tail, (buf + len) - tail, ".%03d", (int)(ts.fraction / 1000000));
+        }
+    }
+  if (!DT_TZL (dt))
+    {
+      if (tz)
+        {
+          int atz = abs (tz);
+          snprintf (tail, (buf + len) - tail, "%c%02d:%02d", ((tz >= 0) ? '+' : '-'), atz / 60, atz % 60);
+        }
+      else if (DT_PRINT_MODE_XML & mode)
+        {
+          if (((buf + len) - tail) > 2)
+            strcpy (tail, "Z");
+        }
+      else
+        {
+          if (((buf + len) - tail) > 4)
+            strcpy (tail, " GMT");
+          return;
+        }
+    }
+}
+
 
 void
 dt_to_rfc1123_string (const char *dt, char *str, int len)
@@ -946,12 +1195,14 @@ void
 iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_type, caddr_t *err_msg_ret)
 #endif
 {
-  int tzsign = 0, res_flags = 0, tzmin = dt_local_tz;
+  int tz_is_set = 0, tzsign = 0, res_flags = 0, tzmin = 0, tzl_set = 0;
+  int t_before_hh = 0;
   int new_dtflags, new_dt_type = 0;
   int us_mdy_format = 0;
   int leading_minus = 0;
   const char *tail, *group_end;
   int fld_values[9];
+/*					| 0	| 1	| 2	| 3	| 4	| 5	| 6		| 7	| 8	*/
   static int fld_min_values[9] =	{ 1	, 1	, 1	, 0	, 0	, 0	, 0		, 0	, 0	};
   static int fld_max_values[9] =	{ 9999	, 12	, 31	, 23	, 59	, 61	, 999999999	, 14	, 59	};
   static int fld_max_lengths[9] =	{ 4	, 2	, 2	, 2	, 2	, 2	, -1		, 2	, 2	};
@@ -1009,11 +1260,17 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
       leading_minus = 1;
       tail++;
     }
-  for (fld_idx = 0; fld_idx < 9; fld_idx++)
+  fld_idx = 0;
+  while (('-' == tail[0]) && (2 > fld_idx) && !(dtflags & (1 << fld_idx)))
+    {
+      tail++;
+      fld_idx++;
+    }
+  for (; fld_idx < 9; fld_idx++)
     {
       int fld_flag = (1 << fld_idx);
       int fldlen, fld_maxlen, fld_value;
-      int expected_delimiter;
+      char expected_delimiter;
       if ('\0' == tail[0])
         break;
       if ((DTFLAG_ALLOW_ODBC_SYNTAX & dtflags) && ('\'' == tail[0]))
@@ -1032,6 +1289,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
         continue;
       if ((DTFLAG_YY == fld_flag) && !(DTFLAG_ALLOW_ODBC_SYNTAX & dtflags))
         while ('0' == tail[0]) tail++;
+      if (((DTFLAG_SS | DTFLAG_SF) & fld_flag) && (('-' == tail[-1]) || ('+' == tail[-1]) || ('Z' == tail[-1])) && (DTFLAG_ZH & dtflags))
+        {
+          fld_idx = 7;
+          fld_flag = DTFLAG_ZH;
+        }
       if (DTFLAG_ZH == fld_flag)
         {
           if ('-' == tail[-1])
@@ -1089,13 +1351,47 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           fld_idx += 2;
           tail += 4;
           res_flags |= DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS;
+          t_before_hh = 1;
           if (('Z' == group_end[0]) && ('\0' == group_end[1]))
             {
               tzmin = 0;
+              tz_is_set = 1;
               group_end++;
               break;
             }
           continue;
+        }
+      if ((DTFLAG_ALLOW_JAVA_SYNTAX & dtflags) && (DTFLAG_ZH == fld_flag))
+        {
+          switch (fldlen)
+            {
+            case 1: /* Java format +h */
+              fld_values[fld_idx] = (tail[0]-'0');
+              fld_values[fld_idx+1] = 0;
+              tzmin = 0;
+              res_flags |= DTFLAG_ZH | DTFLAG_ZM;
+              tail = group_end;
+              fld_idx++;
+              continue;
+            case 2: /* Format +hh is handled as usual, it also may have ':mm' tail to read in next field iteration */
+              goto field_length_checked; /* see below */
+            case 3: /* Java format +hmm */
+              fld_values[fld_idx] = (tail[0]-'0');
+              fld_values[fld_idx+1] = ((tail[1]-'0') * 10) + (tail[2]-'0');
+              tzmin = 0;
+              res_flags |= DTFLAG_ZH | DTFLAG_ZM;
+              tail = group_end;
+              fld_idx++;
+              continue;
+            case 4: /* Java format +hhmm */
+              fld_values[fld_idx] = ((tail[0]-'0') * 10) + (tail[1]-'0');
+              fld_values[fld_idx+1] = ((tail[2]-'0') * 10) + (tail[3]-'0');
+              tzmin = 0;
+              res_flags |= DTFLAG_ZH | DTFLAG_ZM;
+              tail = group_end;
+              fld_idx++;
+              continue;
+            }
         }
       err_msg_ret[0] = box_sprintf (500, "Incorrect %s field length", names[fld_idx]);
       return;
@@ -1116,15 +1412,18 @@ field_length_checked:
         fld_value = atoi (tail);
       fld_values[fld_idx] = fld_value;
       res_flags |= fld_flag;
-
-      expected_delimiter = delms[fld_idx];
-      if (expected_delimiter == group_end[0])
-        goto field_delim_checked; /* see below */
+      if (dtflags & (fld_flag << 1))
+        {
+          expected_delimiter = delms[fld_idx];
+          if (expected_delimiter == group_end[0])
+            goto field_delim_checked; /* see below */
+        }
       if ('\0' == group_end[0])
         goto field_delim_checked; /* see below */
-      if (NULL != strchr ("+-Z",group_end[0]))
+      if ((dtflags & DTFLAG_ZH) && ( 7 > fld_idx) && (NULL != strchr ("+-Z",group_end[0])))
         {
           tzmin = 0; /* Default timezone is dropped because an explicit one is in place */
+          tz_is_set = 1;
           if ('Z' == group_end[0])
             {
               if ('\0' != group_end[1])
@@ -1133,10 +1432,8 @@ field_length_checked:
                   return;
                 }
             }
-          if (DTFLAG_SS == fld_flag)
-            fld_idx++;
-          else if ((DTFLAG_DD == fld_flag) && (!(dtflags & (DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF))))
-            fld_idx += 4;
+          if ((DTFLAG_SS == fld_flag) || (DTFLAG_DD == fld_flag) || !((0x7f << (fld_idx + 1)) & dtflags & 0x7f))
+            fld_idx = 6;
           goto field_delim_checked; /* see below */
         }
       if ((DTFLAG_SS == fld_flag) && ('.' == group_end[0]))
@@ -1162,8 +1459,12 @@ field_delim_checked:
       tail = group_end;
       if ('\0' == tail[0])
         continue;
-      if (('T' == tail[0]) && ('X' == tail[1]))
-        tail++;
+      if ('T' == tail[0])
+        {
+          t_before_hh = 1;
+          if ('X' == tail[1])
+            tail++;
+        }
       tail++;
     }
   if ('\0' != tail[0])
@@ -1192,31 +1493,65 @@ field_delim_checked:
           err_msg_ret[0] = box_sprintf (500, "Incorrect %s value", names[fld_idx]);
           return;
         }
-      if (DTFLAG_DD == fld_flag)
+      if ((DTFLAG_DD == fld_flag) && (DTFLAG_DATE == (DTFLAG_DATE & dtflags)))
         {
           int month = fld_values[1];
           int days_in_this_month = days_in_months[month-1];
-	  if (2 == month) /* February */
-	    days_in_this_month = days_in_february (fld_values[0]);
-	  if (fld_value > days_in_this_month)
+          if (2 == month) /* February */
+            days_in_this_month = days_in_february (fld_values[0]);
+          if (fld_value > days_in_this_month)
             {
               err_msg_ret[0] = box_sprintf (500, "Too many days (%d, the month has only %d)", fld_value, days_in_this_month);
+              return;
+            }
+          if (GREG_YMD_IS_POST_JULIAN_PROLEPTIC_GREG (fld_values[0], fld_values[1], fld_values[2]))
+            {
+              err_msg_ret[0] = box_sprintf (500, "The notation %04d-%02d-%02d refers to day that does not exist due to Gregorian reform, valid dates of that month are Julian 1 to %d and Gregorean %d to %d",
+                fld_values[0], fld_values[1], fld_values[2], GREG_LAST_JULIAN_DAY, GREG_LAST_JULIAN_DAY_AS_PROLEPTIC_GREG+1, days_in_this_month );
               return;
             }
         }
     }
   if (leading_minus)
     {
-      if (DTFLAG_DATE & dtflags)
+      if (DTFLAG_YY & dtflags)
         fld_values[0] = -(fld_values[0]);
       else
         {
           err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
+          return;
         }
     }
   tzmin += (60 * fld_values[7]) + fld_values[8];
-  if (tzsign)
-    tzmin *= -1;
+  if (tz_is_set)
+    {
+      if (tzsign && (0 == tzmin)) /* This is for RFC 3339 trick: "-00:00" timezone means timezoneless, unconditionally */
+        tzl_set = 1;
+    }
+  else
+    {
+      if (t_before_hh && (dtflags & DTFLAG_T_FORMAT_SETS_TZL))
+        tzl_set = 1;
+      else if (DT_TZL_PREFER == timezoneless_datetimes)
+        tzl_set = 1;
+      else if (((DT_TYPE_TIME == dt_type) || (DT_TYPE_DATE == dt_type))
+        && (DT_TZL_BY_ISO == timezoneless_datetimes)
+        && (dtflags & DTFLAG_DATES_AND_TIMES_ARE_ISO) )
+        tzl_set = 1;
+    }
+  if (tzl_set)
+    tzmin = 0;
+  else if (tz_is_set)
+    {
+      if (tzsign)
+        tzmin *= -1;
+    }
+  else if (DT_TZL_AS_GMT == timezoneless_datetimes)
+    tzmin = 0;
+  else    
+    tzmin = dt_local_tzmin_for_parts (
+      fld_values[0], fld_values[1], fld_values[2],
+      fld_values[3], fld_values[4], fld_values[5] );
   dt_from_parts (dt,
     fld_values[0], fld_values[1], fld_values[2],
     fld_values[3], fld_values[4], fld_values[5],
@@ -1225,8 +1560,10 @@ field_delim_checked:
     DT_SET_DAY (dt, DAY_ZERO);
   if (0 <= dt_type)
     DT_SET_DT_TYPE (dt, dt_type);
+  if (tzl_set)
+    DT_SET_TZL (dt, 1);
+  DT_AUDIT_FIELDS (dt);
   err_msg_ret[0] = NULL;
-  return;
 }
 
 void
@@ -1360,6 +1697,11 @@ and MUST be assumed when reading the asctime format. */
       GMTimestamp_struct_to_dt (ts, dt);
       DT_SET_TZ (dt, tz_min);
     }
+  if (timezoneless_datetimes == DT_TZL_PREFER)
+    {
+      DT_SET_TZ (dt, 0);
+      DT_SET_TZL (dt, 1);
+    }
   DT_AUDIT_FIELDS (dt);
   return 1;
 }
@@ -1408,6 +1750,42 @@ dt_to_parts (char *dt, int *year, int *month, int *day, int *hour, int *minute, 
     *fraction = ts.fraction;
 }
 
+int
+dt_local_tzmin_for_parts (int year, int month, int day, int hour, int minute, int second)
+{
+  time_t tt;
+  struct tm tm, gmtm, temp;
+  int daydiff;
+  if ((1900 >= year) || (2100 < year))
+    return dt_local_tz_for_weird_dates;
+  memset (&tm, 0, sizeof (tm));
+  tm.tm_year = year - 1900;
+  tm.tm_mon = month - 1;
+  tm.tm_mday = day;
+  tm.tm_hour = hour;
+  tm.tm_min = minute;
+  tm.tm_sec = second;
+  tm.tm_isdst = -1;
+  tt = mktime (&tm);
+  if ((time_t)-1 == tt)
+    return dt_local_tz_for_weird_dates; /* fallback for weird dates --- better than nothing */
+#if defined(HAVE_GMTIME_R)
+  gmtm = *(struct tm *)gmtime_r (&tt, &temp);
+#else
+  gmtm = *(struct tm *)gmtime (&tt);
+#endif
+  if (gmtm.tm_yday != tm.tm_yday)
+    {
+      if ((gmtm.tm_year < tm.tm_year) || ((gmtm.tm_year == tm.tm_year) && (gmtm.tm_yday < tm.tm_yday)))
+        daydiff = 1;
+      else
+        daydiff = -1;
+    }
+  else
+    daydiff = 0;
+  return (tm.tm_min - gmtm.tm_min) + 60 * (tm.tm_hour - gmtm.tm_hour) + 24 * 60 * daydiff;
+}
+
 void
 dt_from_parts (char *dt, int year, int month, int day, int hour, int minute, int second, int fraction, int tz)
 {
@@ -1434,6 +1812,23 @@ dt_make_day_zero (char *dt)
   DT_SET_DT_TYPE (dt, DT_TYPE_TIME);
 }
 
+
+unsigned int64
+dt_seconds (caddr_t dt1)
+{
+  return ((unsigned int64)DT_DAY (dt1)) * 24 * 60 * 60 + DT_HOUR (dt1) * 60 * 60 + DT_MINUTE (dt1) * 60 + DT_SECOND (dt1);
+}
+
+
+void
+dt_print (caddr_t dt)
+{
+  char str[100];
+  dt_to_string (dt, str, sizeof (str));
+		printf ("%s\n", str);
+}
+
+
 #ifdef DEBUG
 void
 dt_audit_fields (char *dt)
@@ -1441,9 +1836,12 @@ dt_audit_fields (char *dt)
   int arg_dt_type = DT_DT_TYPE (dt);
   int d = DT_DAY(dt);
   int h = DT_HOUR(dt);
+  int tzdiff = DT_TZ(dt);
   int m,s,f;
+  if (DT_CONTAINS_GARBAGE (dt)) GPF_T1 ("Garbage bits in dt_audit_fields()");
   if (0 == d) GPF_T1 ("Zero day in dt_audit_fields()");
   if (h >= 24) GPF_T1 ("bad hour in DT_TYPE_DATE dt_audit_fields()");
+  if (tzdiff % 15) GPF_T1 ("Bad timezone diff in dt_audit_fields()");
   switch (arg_dt_type)
     {
     case DT_TYPE_DATETIME:

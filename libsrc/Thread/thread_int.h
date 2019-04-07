@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -131,6 +131,8 @@ struct thread_s
     semaphore_t	*	thr_schedule_sem;
     void *		thr_client_data;
     void *		thr_alloc_cache;
+  struct TLSF_struct *	thr_tlsf;
+  struct TLSF_struct *	thr_own_tlsf;
   /* preallocated thread attributes */
   jmp_buf_splice *	thr_reset_ctx;
   caddr_t		thr_reset_code;
@@ -142,7 +144,7 @@ struct thread_s
   struct lock_trx_s *	thr_lt; /* use to access lt during checkpoint wait */
 #ifndef NDEBUG
   void *		thr_pg_dbg;
-#endif  
+#endif
 };
 
 
@@ -227,10 +229,10 @@ struct mutex_s
 
 #ifdef MTX_DEBUG
     thread_t *		mtx_owner;
-    char *	mtx_entry_file;
-    int		mtx_entry_line;
-    char *	mtx_leave_file;
-    int		mtx_leave_line;
+    const char *	mtx_entry_file;
+    int			mtx_entry_line;
+    const char *	mtx_leave_file;
+    int			mtx_leave_line;
     mtx_entry_check_t	mtx_entry_check;
     void *		mtx_entry_check_cd;
 #endif
@@ -279,5 +281,5 @@ extern thread_queue_t _waitq;		/* simulated threads only */
 extern timer_queue_t *_timerq;		/* simulated threads only */
 extern int _num_runnables;		/* simulated threads only */
 
-extern char *build_thread_model;
+extern const char *build_thread_model;
 #endif

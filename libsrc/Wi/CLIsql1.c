@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -219,6 +219,16 @@ SQLBindCol (
 {
   STMT (stmt, hstmt);
   col_binding_t *col = stmt_nth_col (stmt, icol);
+
+  if (cbValueMax == 0 && icol > 0 && fCType != SQL_C_DEFAULT)
+  {
+    /*
+     * If fCType == SQL_C_DEFAULT, we need to know the SQL type of the data to
+     * determine which ODBC C type to use. Depending on when SQLBindCol
+     * is called, we may not be able to determine the SQL type now
+     */
+    cbValueMax = sqlc_sizeof (fCType, cbValueMax);
+  }
 
   col->cb_c_type = fCType;
   col->cb_place = (caddr_t) rgbValue;
@@ -552,20 +562,17 @@ con_set_defaults (cli_connection_t * con, caddr_t * login_res)
   if (BOX_ELEMENTS (login_res) > LG_DEFAULTS)
     {
       caddr_t *cdefs = (caddr_t *) login_res[LG_DEFAULTS];
-      con->con_isolation = cdef_param (cdefs, "SQL_TXN_ISOLATION", SQL_TXN_REPEATABLE_READ);
-      con->con_defs.cdef_prefetch = cdef_param (cdefs, "SQL_PREFETCH_ROWS", SELECT_PREFETCH_QUOTA);
+      con->con_isolation				= cdef_param (cdefs, "SQL_TXN_ISOLATION", SQL_TXN_REPEATABLE_READ);
+      con->con_defs.cdef_prefetch		= cdef_param (cdefs, "SQL_PREFETCH_ROWS", SELECT_PREFETCH_QUOTA);
+      con->con_defs.cdef_prefetch_bytes		= cdef_param (cdefs, "SQL_PREFETCH_BYTES", 0);
+      con->con_defs.cdef_txn_timeout		= cdef_param (cdefs, "SQL_TXN_TIMEOUT", 0);
+      con->con_defs.cdef_query_timeout		= cdef_param (cdefs, "SQL_QUERY_TIMEOUT", 0);
+      con->con_defs.cdef_no_char_c_escape	= cdef_param (cdefs, "SQL_NO_CHAR_C_ESCAPE", 0);
+      con->con_defs.cdef_utf8_execs		= cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
+      con->con_defs.cdef_binary_timestamp	= cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
+      con->con_defs.cdef_timezoneless_datetimes	= cdef_param (cdefs, "SQL_TIMEZONELESS_DATETIMES", 0);
 
-      con->con_defs.cdef_prefetch_bytes = cdef_param (cdefs, "SQL_PREFETCH_BYTES", 0);
-
-      con->con_defs.cdef_txn_timeout = cdef_param (cdefs, "SQL_TXN_TIMEOUT", 0);
-
-      con->con_defs.cdef_query_timeout = cdef_param (cdefs, "SQL_QUERY_TIMEOUT", 0);
-
-      con->con_defs.cdef_no_char_c_escape = cdef_param (cdefs, "SQL_NO_CHAR_C_ESCAPE", 0);
-
-      con->con_defs.cdef_utf8_execs = cdef_param (cdefs, "SQL_UTF8_EXECS", 0);
-
-      con->con_defs.cdef_binary_timestamp = cdef_param (cdefs, "SQL_BINARY_TIMESTAMP", 1);
+      timezoneless_datetimes = con->con_defs.cdef_timezoneless_datetimes;
 
       dk_free_tree ((box_t) cdefs);
     }
@@ -807,7 +814,9 @@ internal_sql_connect (
 
   if (con->con_charset)
     {
-      wide_charset_free (con->con_charset);
+      if (con->con_charset != CHARSET_UTF8)
+        wide_charset_free (con->con_charset);
+
       con->con_charset = NULL;
     }
   strncpy (addr_lst, dsn, (sizeof (addr_lst) - 1));
@@ -1050,31 +1059,38 @@ internal_sql_connect (
 
       con_set_defaults (con, login_res);
 
-      if (BOX_ELEMENTS (login_res) > LG_CHARSET)
-	{
-	  caddr_t *cs_info = (caddr_t *) login_res[LG_CHARSET];
-	  if (cs_info && DV_TYPE_OF (cs_info) == DV_ARRAY_OF_POINTER && BOX_ELEMENTS (cs_info) > 1)
-	    con->con_charset =
-		wide_charset_create (cs_info[0], (wchar_t *) cs_info[1], box_length (cs_info[1]) / sizeof (wchar_t) - 1, NULL);
-	}
-
-      if (con->con_charset_name && (!con->con_charset || strcmp (con->con_charset->chrs_name, con->con_charset_name)))
-	{
-	  if (strcmp ("ISO-8859-1", con->con_charset_name))
+      if (con->con_string_is_utf8)
+        {
+          con->con_charset = CHARSET_UTF8;
+        }
+      else
+        {
+          if (BOX_ELEMENTS (login_res) > LG_CHARSET)
 	    {
-	      snprintf (err, sizeof (err),
-		  "Charset %s not available. Server default %s will be used.",
-		  con->con_charset_name, con->con_charset ? con->con_charset->chrs_name : "ISO-8859-1");
-	      set_success_info (&con->con_error, "2C000", "CL035", err, 0);
+	      caddr_t *cs_info = (caddr_t *) login_res[LG_CHARSET];
+	      if (cs_info && DV_TYPE_OF (cs_info) == DV_ARRAY_OF_POINTER && BOX_ELEMENTS (cs_info) > 1)
+	        con->con_charset =
+		    wide_charset_create (cs_info[0], (wchar_t *) cs_info[1], box_length (cs_info[1]) / sizeof (wchar_t) - 1, NULL);
+	    }
+
+          if (con->con_charset_name && (!con->con_charset || strcmp (con->con_charset->chrs_name, con->con_charset_name)))
+	    {
+	      if (strcmp ("ISO-8859-1", con->con_charset_name))
+	        {
+	          snprintf (err, sizeof (err),
+		      "Charset %s not available. Server default %s will be used.",
+		      con->con_charset_name, con->con_charset ? con->con_charset->chrs_name : "ISO-8859-1");
+	          set_success_info (&con->con_error, "2C000", "CL035", err, 0);
+	          rc = SQL_SUCCESS_WITH_INFO;
+	        }
+	    }
+          else if (!con->con_charset_name && con->con_charset && strcmp ("ISO-8859-1", con->con_charset->chrs_name))
+	    {
+	      snprintf (err, sizeof (err), "Switching to the server default charset %s.", con->con_charset->chrs_name);
+	      set_success_info (&con->con_error, "01S02", "CL036", err, 0);
 	      rc = SQL_SUCCESS_WITH_INFO;
 	    }
-	}
-      else if (!con->con_charset_name && con->con_charset && strcmp ("ISO-8859-1", con->con_charset->chrs_name))
-	{
-	  snprintf (err, sizeof (err), "Switching to the server default charset %s.", con->con_charset->chrs_name);
-	  set_success_info (&con->con_error, "01S02", "CL036", err, 0);
-	  rc = SQL_SUCCESS_WITH_INFO;
-	}
+        }
 
       if (con->con_charset_name)
 	dk_free_box (con->con_charset_name);
@@ -1302,6 +1318,7 @@ virtodbc__SQLError (
   if (!rec)
     {
       V_SET_ODBC_STR ("00000", szSqlState, 6, pcbSqlState, NULL);
+      V_SET_ODBC_STR (NULL, szErrorMsg, cbErrorMsgMax, pcbErrorMsg, NULL);
       return SQL_NO_DATA_FOUND;
     }
 
@@ -1694,7 +1711,7 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
   if (con->con_bookmarks)
     hash_table_free (con->con_bookmarks);
 
-  if (con->con_charset)
+  if (con->con_charset && con->con_charset != CHARSET_UTF8)
     wide_charset_free (con->con_charset);
 
   if (con->con_user)
@@ -2177,9 +2194,6 @@ virtodbc__SQLBindParameter (
 
   if (fCType == SQL_C_DEFAULT)
     fCType = sql_type_to_sqlc_default (fSqlType);
-
-  if (fCType == SQL_C_WCHAR && cbValueMax % sizeof (wchar_t))
-    cbValueMax = ((SQLLEN) (cbValueMax / sizeof (wchar_t))) * sizeof (wchar_t);
 
   pb->pb_c_type = fCType;
   pb->pb_sql_type = fSqlType;

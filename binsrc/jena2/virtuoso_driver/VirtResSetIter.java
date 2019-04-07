@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,6 +25,7 @@ package virtuoso.jena.driver;
 
 import java.sql.*;
 import java.util.*;
+
 import virtuoso.sql.*;
 import com.hp.hpl.jena.util.iterator.*;
 import com.hp.hpl.jena.shared.*;
@@ -33,52 +34,41 @@ import com.hp.hpl.jena.datatypes.*;
 import com.hp.hpl.jena.rdf.model.*;
 
 
-public class VirtResSetIter extends NiceIterator<Triple>
-{
-    protected ResultSet 	v_resultSet;
-    protected Triple 		v_row;
-    protected TripleMatch 	v_in;
-    protected boolean 		v_finished = false;
-    protected boolean 		v_prefetched = false;
-    protected VirtGraph         v_graph = null;
+public class VirtResSetIter extends NiceIterator<Triple> {
+    protected java.sql.Statement v_stmt;
+    protected ResultSet v_resultSet;
+    protected Triple v_row;
+    protected TripleMatch v_in;
+    protected boolean v_finished = false;
+    protected boolean v_prefetched = false;
+    protected VirtGraph v_graph = null;
 
-    public VirtResSetIter()
-    {
+    public VirtResSetIter() {
         v_finished = true;
     }
 
-    public VirtResSetIter(VirtGraph graph, ResultSet resultSet, TripleMatch in)
-    {
+    public VirtResSetIter(VirtGraph graph, java.sql.Statement stmt, ResultSet resultSet, TripleMatch in) {
+        v_stmt = stmt;
         v_resultSet = resultSet;
-	v_in = in;
-	v_graph = graph;
+        v_in = in;
+        v_graph = graph;
     }
 
-    public void reset(ResultSet resultSet, PreparedStatement sourceStatement)
-    {
-        v_resultSet = resultSet;
-        v_finished = false;
-        v_prefetched = false;
-        v_row = null;
-    }
 
-    public boolean hasNext()
-    {
+    public boolean hasNext() {
         if (!v_finished && !v_prefetched) moveForward();
         return !v_finished;
     }
 
-    public Triple removeNext()
-        {
-            Triple ret = next();
-            remove();
-	    return ret;
-	}
+    public Triple removeNext() {
+        Triple ret = next();
+        remove();
+        return ret;
+    }
 
-    public Triple next()
-    {
+    public Triple next() {
         if (!v_finished && !v_prefetched)
-	    moveForward();
+            moveForward();
 
         v_prefetched = false;
 
@@ -88,85 +78,75 @@ public class VirtResSetIter extends NiceIterator<Triple>
         return getRow();
     }
 
-    public void remove()
-    {
-        if (v_row != null && v_graph != null)
-          {
+    public void remove() {
+        if (v_row != null && v_graph != null) {
             v_graph.delete(v_row);
             v_row = null;
-          }
+        }
     }
 
-    protected void moveForward()
-    {
-	try
-	{
-	    if (!v_finished && v_resultSet.next())
-	    {
-		extractRow();
-		v_prefetched = true;
-	    }
-	    else
-		close();
-	}
-	catch (Exception e)
-	{
-	    throw new JenaException(e);
-	}
+    protected void moveForward() {
+        try {
+            if (!v_finished && v_resultSet.next()) {
+                extractRow();
+                v_prefetched = true;
+            } else
+                close();
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
     }
 
 
-    protected void extractRow() throws Exception
-    {
-       Node NodeS, NodeP, NodeO;
+    protected void extractRow() throws Exception {
+        Node NodeS, NodeP, NodeO;
 
-       if (v_in.getMatchSubject() != null)
-	   NodeS = v_in.getMatchSubject();
-       else
-           NodeS = VirtGraph.Object2Node(v_resultSet.getObject("s"));
+        if (v_in.getMatchSubject() != null)
+            NodeS = v_in.getMatchSubject();
+        else
+            NodeS = VirtGraph.Object2Node(v_resultSet.getObject("s"));
 
-       if (v_in.getMatchPredicate() != null)
-	   NodeP = v_in.getMatchPredicate();
-       else
-           NodeP = VirtGraph.Object2Node(v_resultSet.getObject("p"));
+        if (v_in.getMatchPredicate() != null)
+            NodeP = v_in.getMatchPredicate();
+        else
+            NodeP = VirtGraph.Object2Node(v_resultSet.getObject("p"));
 
-       if (v_in.getMatchObject() != null)
-	   NodeO = v_in.getMatchObject();
-       else
-           NodeO = VirtGraph.Object2Node(v_resultSet.getObject("o"));
+        if (v_in.getMatchObject() != null)
+            NodeO = v_in.getMatchObject();
+        else
+            NodeO = VirtGraph.Object2Node(v_resultSet.getObject("o"));
 
-       v_row = new Triple(NodeS, NodeP, NodeO);
+        v_row = new Triple(NodeS, NodeP, NodeO);
     }
 
-    protected Triple getRow()
-    {
+    protected Triple getRow() {
         return v_row;
     }
 
-    public void close()
-    {
-	if (!v_finished)
-	{
-	    if (v_resultSet != null)
-	    {
-		try
-		{
-		    v_resultSet.close();
-		    v_resultSet = null;
-		}
-		catch (SQLException e)
-		{
-		    throw new JenaException(e);
-		}
-	    }
-	}
-	v_finished = true;
+    public void close() {
+        if (!v_finished) {
+            if (v_resultSet != null) {
+                try {
+                    v_resultSet.close();
+                    v_resultSet = null;
+                } catch (SQLException e) {
+                    throw new JenaException(e);
+                }
+            }
+            if (v_stmt != null) {
+                try {
+                    v_stmt.close();
+                    v_stmt = null;
+                } catch (SQLException e) {
+                }
+            }
+        }
+        v_finished = true;
     }
 
 
-    protected void finalize() throws SQLException
-    {
-	if (!v_finished && v_resultSet != null) close();
+    protected void finalize() throws SQLException {
+        if (!v_finished && v_resultSet != null) close();
     }
 
 }

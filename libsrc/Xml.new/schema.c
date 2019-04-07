@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -563,47 +563,6 @@ xs_get_major_id (char * comp_name, int tag_dict_id)
   return XS_TAG_UNKNOWN;
 }
 
-#if 0
-/* XMLSchema Declaration */
-xs_tag_t * xs_get_tag (vxml_parser_t* parser)
-{
-  xs_tag_t * ret_tag;
-  long len;
-  if (parser->tmp.tag_index)
-    len = box_length (parser->tmp.tag_index)/sizeof(ptrlong);
-  else
-    {
-      parser->tmp.tag_index = dk_alloc_box (10*sizeof(ptrlong), DV_ARRAY_OF_POINTER);
-      memset (parser->tmp.tag_index, 0, 10*sizeof (ptrlong));
-      len = 10;
-    }
-
-  if (len <= parser->validator.dv_depth)
-    {
-      ptrlong * new_tag_index = dk_alloc_box (len*2*sizeof(ptrlong), DV_ARRAY_OF_POINTER);
-      memcpy (new_tag_index, parser->tmp.tag_index, len*sizeof(ptrlong));
-      memset(new_tag_index + len, 0, len*sizeof(ptrlong));
-      len *=2;
-      dk_free_box (parser->tmp.tag_index);
-      parser->tmp.tag_index = new_tag_index;
-    }
-  ret_tag = *((xs_tag_t**)(parser->tmp.tag_index) + parser->validator.dv_depth);
-  if (!ret_tag)
-    {
-      ret_tag = dk_alloc (sizeof (xs_tag_t));
-      memset (ret_tag, 0, sizeof (xs_tag_t));
-      *((xs_tag_t**)(parser->tmp.tag_index) + parser->validator.dv_depth) = ret_tag;
-    }
-  else
-    {
-      xs_clear_tag ((ptrlong)ret_tag, 0);
-      memset(ret_tag, 0, sizeof (xs_tag_t));
-    }
-  return ret_tag;
-}
-#endif
-
-
 #define MEMBERPOINTER(structure_t,member_path) \
 ( \
   ((char *)(&(((structure_t*)(NULL))->member_path))) - \
@@ -828,6 +787,10 @@ xsd_start_element_handler (void *parser_v,
           if (NULL == pool)
 	    {
 	      parser->processor.sp_schema->pool = pool = mem_pool_alloc();
+#ifdef MP_MAP_CHECK
+              mp_comment (pool, "xsd ", ((NULL != schema->sp_target_ns_uri) ? schema->sp_target_ns_uri : " NULL sp_target_ns_uri"));
+#endif
+
 #ifdef XS_POOL_DEBUG
 	      xs_pool_allocs++;
 #endif
@@ -2591,14 +2554,15 @@ xs_set_error (vxml_parser_t * parser, ptrlong errlevel, size_t buflen_eval,
   dtd_astate_t *state =
       parser->validator.dv_stack + parser->validator.dv_depth;
   int ret = 0;
+  size_t buflen_used;
   char *buf = dk_alloc (buflen_eval);
   va_list va_tail;
   va_start (va_tail, format);
   /* see Dk/Dkstub.c */
-  buflen_eval = vsnprintf (buf, buflen_eval, format, va_tail);
+  buflen_used = vsnprintf (buf, buflen_eval, format, va_tail);
   va_end (va_tail);
-  ret = xmlparser_logprintf (parser, errlevel, buflen_eval, "%s", buf);
-  dk_free (buf, -1);
+  ret = xmlparser_logprintf (parser, errlevel, buflen_used, "%s", buf);
+  dk_free (buf, buflen_eval);
   if (XCFG_ERROR >= errlevel)	/* Not '<=' ! zero errlevel is XCFG_FATAL ! */
     state->da_sstate = TAG_ST_ERROR;
   return ret;
@@ -3000,17 +2964,6 @@ caddr_t xml_iter_syspath_hitnext(struct xml_iter_syspath_s* iter)
 ptrlong xml_iter_syspath_length(struct xml_iter_syspath_s* iter)
 {
   return dk_set_length(iter->isp_list);
-}
-
-void xs_clear_tag(ptrlong _tag, int is_free)
-{
-  xs_tag_t * tag = (xs_tag_t*) _tag;
-  char** att_names = tag->tag_atts;
-  while (att_names[0])
-    dk_free_box(*(att_names++));
-  dk_free(tag->tag_atts,-1);
-  if (is_free)
-  dk_free(tag,sizeof(xs_tag_t));
 }
 
 void xs_clear_states (xs_component_t * component)

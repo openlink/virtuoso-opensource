@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -274,7 +274,7 @@ caddr_t udo_dbg_find_object_by_ref (query_instance_t *qi, caddr_t ref);
    ((int) ((inst) ? (BOX_ELEMENTS (inst) - 1): 0))
 
 extern caddr_t xmltype_class_name;
-#define XMLTYPE_CLASS (sch_name_to_type (isp_schema(NULL), xmltype_class_name))
+#define XMLTYPE_CLASS (xmltype_class_name ? sch_name_to_type (isp_schema(NULL), xmltype_class_name) : NULL)
 #define XMLTYPE_TO_ENTITY(obj) \
   ((xml_entity_t *) \
     ((UDT_I_CLASS(obj) == XMLTYPE_CLASS) ? \

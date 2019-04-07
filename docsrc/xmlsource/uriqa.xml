@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@ process the request. The default configuration of Virtuoso server will try three
 <simplelist>
 <member>If the URI points to a resource located at the server then the first handler returns DAV metadata of the resource.</member>
 <member>If the URI points to a resource that is outside the server, and URI is of sort 'http://...' then Virtuoso will send a URIQA web service
-request to the remote server specified in URI in hope that it will return at least something, the response is passed to the client unchange.</member>
+request to the remote server specified in URI in hope that it will return at least something, the response is passed to the client unchanged.</member>
 <member>Any other URI results in an error.</member>
 </simplelist>
 <note>
@@ -106,7 +106,7 @@ In many cases, the returned graph is a Concise Bounded Description of the resour
 </para>
 <para>
 There are  no integrity rules. E.g., if a response for request about subject A contains some data about B
-then the request about B may return same or different data, or even report that B does not exists.
+then the request about B may return same or different data, or even report that B does not exist.
 If URI refers to non-existing resource or even to a non-existing server or protocol then the response can be an 'not found' error or
 an empty graph or even a non-empty graph, depending on the handler that processed the request.
 </para>
@@ -132,7 +132,7 @@ will update only 'http://local.virt/DAV-RDF' DAV property of the subject resourc
 </para>
 <para>
 A client application can not use MPUT with subject URI that refers to a non-DAV Virtuoso resource, because disk-resident resources do not have
-DAV properties, including DAV metadata properties. MPUT can refer to nonexisting Virtuoso DAV resource only if the name
+DAV properties, including DAV metadata properties. MPUT can refer to nonexistent Virtuoso DAV resource only if the name
 of this resource has been already locked for uploading of the resource. The most reliable way, however, is to
 upload the resource first and update metadata only after the uploading. There are two reasons to do operations in this sequence.
 First of all, Virtuoso can automatically extract some metadata from the content of uploaded resource and if MPUT happens after the upload then

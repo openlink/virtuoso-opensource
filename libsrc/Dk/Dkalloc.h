@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,22 +39,42 @@
 #define ALIGN_STR(len)		ALIGN_16(len)
 #define ALIGN_VOIDP(len)	_RNDUP_PWR2((len), sizeof (void *))
 
-
+#define AV_FREE_MARK 0x00deadbeeffeedba00LL	 /* in 2nd word of free of over 8 b */
 
 #define NEW_VAR(type,var) \
 	type *var = (type *) dk_alloc (sizeof (type))
+
+#define B_NEW_VAR(type,var) \
+	type *var = (type *) tlsf_base_alloc (sizeof (type))
 
 #define DBG_NEW_VAR(file, line, type,var) \
 	type *var = (type *) dbg_malloc (file, line, sizeof (type))
 
 #define NEW_VARZ(type, var) \
 	NEW_VAR(type,var); \
+	memzero (var, sizeof (type))
+
+
+#define B_NEW_VARZ(type, var) \
+	B_NEW_VAR(type,var); \
+	memzero (var, sizeof (type))
+
+#define NEW_BOX_VAR(type,var) \
+	type *var = (type *) dk_alloc_box (sizeof (type), DV_BIN)
+
+#define NEW_BOX_VARZ(type, var) \
+	NEW_BOX_VAR(type,var); \
 	memset (var, 0, sizeof (type))
 
 
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);
+extern void dk_memory_finalize (void);
+
 int dk_is_alloc_cache (size_t sz);
+void dk_alloc_cache_status (void *cache);
+size_t dk_alloc_cache_total (void *cache);
+size_t dk_alloc_global_cache_total (void);
 void dk_cache_allocs (size_t sz, size_t cache_sz);
 EXE_EXPORT (void *, dk_alloc, (size_t c));
 EXE_EXPORT (void *, dk_try_alloc, (size_t c));
@@ -64,29 +84,43 @@ void dk_check_end_marks (void);
 void dk_mem_stat (char *out, int max);
 void thr_free_alloc_cache (thread_t * thr);
 void malloc_cache_clear (void);
+void thr_alloc_cache_clear (thread_t * thr);
+
 
 #ifdef MALLOC_DEBUG
 # include <util/dbgmal.h>
+
+
+
 #ifndef _USRDLL
 #ifndef EXPORT_GATE
 # define dk_alloc(sz)		dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_try_alloc(sz)	dbg_malloc (__FILE__, __LINE__, (sz))
 # define dk_free(ptr, sz)	dbg_free_sized (__FILE__, __LINE__, (ptr), (sz))
+# define dk_freep(b,n)			dbg_freep(__FILE__, __LINE__, b, n)
+# define dk_find_alloc_error(p, mp)	dbg_find_allocation_error(p, mp)
 #endif
 #endif
-void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert (void *ptr);
+extern void dk_alloc_assert_mp_or_plain (void *ptr);
 #else
 # define dk_alloc_assert(ptr) ;
+# define dk_alloc_assert_mp_or_plain(ptr) 	;
+# define dk_find_alloc_error(p, mp)		NULL
+# define dk_freep(b,n)				free(b)
 #endif
 
 #ifdef MALLOC_DEBUG
+
 #define DBG_NAME(nm) 		dbg_##nm
 #define DBG_PARAMS 		const char *file, int line,
 #define DBG_PARAMS_0 		const char *file, int line
 #define DBG_ARGS 		file, line,
 #define DBG_ARGS_0 		file, line
+
 #define DK_ALLOC(SIZE) 		dbg_malloc(DBG_ARGS (SIZE))
 #define DK_FREE(BOX,SIZE) 	dbg_free_sized(DBG_ARGS (BOX), (SIZE))
+
 #else
 #define DBG_NAME(nm) 		nm
 #define DBG_PARAMS
@@ -101,5 +135,17 @@ void dk_alloc_assert (void *ptr);
 void *dbg_dk_alloc (DBG_PARAMS size_t c);
 void *dbg_dk_try_alloc (DBG_PARAMS size_t c);
 #endif
+
+void dk_set_initial_mem (size_t);
+
+#define tlsf_base_alloc dk_alloc
+
+
+#define WITH_TLSF(n) {
+
+
+#define END_WITH_TLSF }
+
+
 
 #endif

@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tdrop.sql,v 1.5.10.1 2013/01/02 16:15:05 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 create procedure atomic_drop (in tbl varchar)
 {
   declare n1, n2, n3 varchar;
@@ -29,14 +29,14 @@ create procedure atomic_drop (in tbl varchar)
   n1 := name_part (tbl, 0);
   n2 := name_part (tbl, 1);
   n3 := name_part (tbl, 2);
-  if (not exists (select 1 from SYS_KEYS where name_part (KEY_TABLE, 0) = n1 
+  if (not exists (select 1 from SYS_KEYS where name_part (KEY_TABLE, 0) = n1
 	                                 and name_part (KEY_TABLE, 1) = n2
-	                                 and name_part (KEY_TABLE, 2) = n3 ))     
+	                                 and name_part (KEY_TABLE, 2) = n3 ))
     signal ('.....', sprintf ('The table ''%s'' not exist', tbl));
   stat := '00000';
   msg := '';
-  -- Fresh transaction       
-  commit work;     
+  -- Fresh transaction
+  commit work;
   __atomic (1);
   exec (sprintf ('drop table "%s"."%s"."%s"', n1, n2, n3), stat, msg);
   __atomic (0);
@@ -171,7 +171,7 @@ ECHO BOTH ": CHECK STOCK TABLE : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO "ALTER PRIMARY KEY TESTS"
 
-drop table PK_TEST; 
+drop table PK_TEST;
 
 create table PK_TEST (id integer, dt varchar);
 
@@ -185,19 +185,19 @@ select count(*) from PK_TEST;
 ECHO BOTH $IF $EQU $LAST[1] 5  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY TEST TABLE : COUNT=" $LAST[1] "\n";
 
-select count(sc."COLUMN") 
-	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc 
-	    where  
-	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and 
-	      __any_grants(k.KEY_TABLE) and 
-	      k.KEY_IS_MAIN = 1 and 
-	      k.KEY_MIGRATE_TO is NULL and 
-	      kp.KP_KEY_ID = k.KEY_ID and 
-	      kp.KP_NTH < k.KEY_DECL_PARTS and 
-	      sc.COL_ID = kp.KP_COL and 
-	      sc."COLUMN" <> '_IDN' 
-	    order by sc.COL_ID; 
-	    
+select count(sc."COLUMN")
+	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc
+	    where
+	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and
+	      __any_grants(k.KEY_TABLE) and
+	      k.KEY_IS_MAIN = 1 and
+	      k.KEY_MIGRATE_TO is NULL and
+	      kp.KP_KEY_ID = k.KEY_ID and
+	      kp.KP_NTH < k.KEY_DECL_PARTS and
+	      sc.COL_ID = kp.KP_COL and
+	      sc."COLUMN" <> '_IDN'
+	    order by sc.COL_ID;
+
 ECHO BOTH $IF $EQU $LAST[1] NULL  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY DOES NOT EXIST : COUNT=" $LAST[1] "\n";
 
@@ -211,18 +211,18 @@ ECHO BOTH $IF $EQU $LAST[1] 5  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY TEST TABLE : COUNT=" $LAST[1] "\n";
 
 
-select count(sc."COLUMN") 
-	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc 
-	    where  
-	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and 
-	      __any_grants(k.KEY_TABLE) and 
-	      k.KEY_IS_MAIN = 1 and 
-	      k.KEY_MIGRATE_TO is NULL and 
-	      kp.KP_KEY_ID = k.KEY_ID and 
-	      kp.KP_NTH < k.KEY_DECL_PARTS and 
-	      sc.COL_ID = kp.KP_COL and 
-	      sc."COLUMN" <> '_IDN' 
-	    order by sc.COL_ID; 
+select count(sc."COLUMN")
+	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc
+	    where
+	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and
+	      __any_grants(k.KEY_TABLE) and
+	      k.KEY_IS_MAIN = 1 and
+	      k.KEY_MIGRATE_TO is NULL and
+	      kp.KP_KEY_ID = k.KEY_ID and
+	      kp.KP_NTH < k.KEY_DECL_PARTS and
+	      sc.COL_ID = kp.KP_COL and
+	      sc."COLUMN" <> '_IDN'
+	    order by sc.COL_ID;
 ECHO BOTH $IF $EQU $LAST[1] 1  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY ALTERED : COUNT=" $LAST[1] "\n";
 
@@ -231,21 +231,22 @@ alter table PK_TEST modify primary key (id, dt);
 ECHO BOTH $IF $EQU $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": MODIFICATION OF PRIMARY KEY : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-select count(sc."COLUMN") 
-	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc 
-	    where  
-	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and 
-	      __any_grants(k.KEY_TABLE) and 
-	      k.KEY_IS_MAIN = 1 and 
-	      k.KEY_MIGRATE_TO is NULL and 
-	      kp.KP_KEY_ID = k.KEY_ID and 
-	      kp.KP_NTH < k.KEY_DECL_PARTS and 
-	      sc.COL_ID = kp.KP_COL and 
-	      sc."COLUMN" <> '_IDN' 
-	    order by sc.COL_ID; 
+select count(sc."COLUMN")
+	    from  DB.DBA.SYS_KEYS k,  DB.DBA.SYS_KEY_PARTS kp, DB.DBA.SYS_COLS sc
+	    where
+	      upper(k.KEY_TABLE) = upper('DB.DBA.PK_TEST') and
+	      __any_grants(k.KEY_TABLE) and
+	      k.KEY_IS_MAIN = 1 and
+	      k.KEY_MIGRATE_TO is NULL and
+	      kp.KP_KEY_ID = k.KEY_ID and
+	      kp.KP_NTH < k.KEY_DECL_PARTS and
+	      sc.COL_ID = kp.KP_COL and
+	      sc."COLUMN" <> '_IDN'
+	    order by sc.COL_ID;
 ECHO BOTH $IF $EQU $LAST[1] 2  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY ALTERED : COUNT=" $LAST[1] "\n";
 
 select count(id) from PK_TEST;
 ECHO BOTH $IF $EQU $LAST[1] 5  "PASSED" "***FAILED";
 ECHO BOTH ": PRIMARY KEY TEST TABLE : COUNT=" $LAST[1] "\n";
+

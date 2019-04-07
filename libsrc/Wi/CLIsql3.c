@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -139,6 +139,11 @@ static SQLRETURN SQL_API virtodbc__SQLDriverConnect (SQLHDBC hdbc, HWND hwnd, SQ
 
 #define DEFAULT_DATABASE_PER_USER _T("<Server Default>")
 
+#ifndef UNICODE
+int virt_wide_as_utf16 = 0;
+#else
+extern int virt_wide_as_utf16;
+#endif
 
 typedef struct
 {
@@ -548,6 +553,72 @@ StrCopyInW (TCHAR ** poutStr, TCHAR * inStr, short size)
 
   return 0;
 }
+
+
+static int
+StrCopyInUTF16 (TCHAR ** poutStr, TCHAR * inStr, short size)
+{
+  TCHAR *outStr;
+  uint16 *cp = (uint16 *) inStr;
+  int i;
+
+  if (inStr == NULL)
+    inStr = _T ("");
+
+  if (size == SQL_NTS) 
+    {
+      size = 0;
+
+      while(*cp++ != 0)
+        size++;
+    }
+
+  if ((outStr = (TCHAR *) malloc ((size + 1) * sizeof (TCHAR))) != NULL)
+    {
+      cp = (uint16 *) inStr;
+
+      for(i = 0; i < size; i++)
+        outStr[i] = (TCHAR) cp[i];
+
+      outStr[size] = (TCHAR) '\0';
+    }
+  
+  *poutStr = outStr;
+  
+  return 0;
+}
+
+
+static int 
+confirm_UTF16(TCHAR * inStr, short size)
+{
+  uint16 *s = (uint16 *) inStr;
+  uint16 *cp;
+  int i;
+
+  if (inStr == NULL)
+    return 0;
+
+  if (size == SQL_NTS)
+    {
+      for (cp = s; *cp; cp++)
+        {
+          if (*cp == '=')
+            return 1;
+        }
+    }
+  else
+    {
+      for(i = 0; i < size; i++)
+        {
+          if (s[i] == '=')
+            return 1;
+        }
+    }
+  return 0;
+}
+
+
 #else
 #define StrCopyInW StrCopyIn
 #endif
@@ -607,7 +678,33 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
       connStr = _tcsdup (_T (""));
     }
   else
-    StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+    {
+#ifdef UNICODE
+      if (sizeof(TCHAR) == 4)
+        {
+          char *ch = (char *) szConnStrIn;
+          int wsize = 4;
+          // try detect charset in connection string
+#ifdef WORDS_BIGENDIAN
+          if (ch[0]==0 && ch[1]!=0 && ch[2]==0)
+            wsize = 2;
+#else
+          if (ch[0]!=0 && ch[1]==0 && ch[2]!=0)
+            wsize = 2;
+#endif
+          if (wsize == 2
+              && confirm_UTF16((TCHAR *)szConnStrIn, cbConnStrIn) == 1
+             )
+            {
+              StrCopyInUTF16 (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+            }
+          else
+            StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+        }
+      else
+#endif
+        StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+    }
 
   ParseOptions (cfgdata, NULL, 1);
   PutConnectionOptions (cfgdata, con);
@@ -654,6 +751,15 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   con->con_pwd_cleartext = PWDCLEARW ? _ttoi (PWDCLEARW) : 0;
   SERVERCERTW = cfgdata[oSERVERCERT].data && _tcslen (cfgdata[oSERVERCERT].data) ? (cfgdata[oSERVERCERT].data) : NULL;
   con->con_ca_list = virt_wide_to_ansi (SERVERCERTW);
+
+  /*
+   * When using public authentication protocol, identity is provided by the certificate and cannot be overruled by the application
+   */
+  if (con->con_pwd_cleartext == 3)
+    {
+	free (cfgdata[oUID].data);
+	cfgdata[oUID].data = NULL;
+    }
 #else
   con->con_encrypt = NULL;
   ENCRYPTW = NULL;
@@ -679,6 +785,7 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
       nst = virt_wide_to_ansi (cfgdata[oWideUTF16].data);
       nst1 = toupper (*nst);
       con->con_wide_as_utf16 = OPTION_TRUE (nst1) ? 1 : 0;
+      virt_wide_as_utf16 = con->con_wide_as_utf16;
       free_wide_buffer (nst);
     }
 
@@ -710,13 +817,14 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   if (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data))
     {
       char * cs = virt_wide_to_ansi (cfgdata[oCHARSET].data);
-      if (!strcmp (cs, "UTF-8"))
+      if (cs && !strcmp (cs, "UTF-8"))
 	{
 	  free (cfgdata[oCHARSET].data);
 	  cfgdata[oCHARSET].data = NULL;
 	  cfgdata[oCHARSET].supplied = FALSE;
 	  con->con_string_is_utf8 = 1;
 	}
+      free_wide_buffer(cs);
     }
 
   CHARSETW = (cfgdata[oCHARSET].data && _tcslen (cfgdata[oCHARSET].data)) ? cfgdata[oCHARSET].data : NULL;
@@ -915,9 +1023,54 @@ SQLConnect (SQLHDBC hdbc,
   TCHAR *pwd;
   TCHAR *pcmd = &(cmd[0]);
 
-  StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
-  StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
-  StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+#ifdef UNICODE
+  if (sizeof(TCHAR) == 4)
+    {
+      int wsize = 4;
+      char *ch;
+
+       // try detect charset in szDSN string
+      ch = (char *) szDSN;
+#ifdef WORDS_BIGENDIAN
+      if (ch && ch[0]==0 && ch[1]!=0 && ch[2]==0)
+        wsize = 2;
+#else
+      if (ch && ch[0]!=0 && ch[1]==0 && ch[2]!=0)
+        wsize = 2;
+#endif
+      if (wsize == 4)
+        {
+          // try recheck charset in szUID string
+          ch = (char *) szUID;
+#ifdef WORDS_BIGENDIAN
+          if (ch && ch[0]==0 && ch[1]!=0 && ch[2]==0)
+            wsize = 2;
+#else
+          if (ch && ch[0]!=0 && ch[1]==0 && ch[2]!=0)
+            wsize = 2;
+#endif
+        }
+
+      if (wsize == 2)
+        {
+          StrCopyInUTF16 (&dsn, (TCHAR *) szDSN, cbDSN);
+          StrCopyInUTF16 (&uid, (TCHAR *) szUID, cbUID);
+          StrCopyInUTF16 (&pwd, (TCHAR *) szPWD, cbPWD);
+        }
+      else
+        {
+          StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
+          StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
+          StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+        }
+    }
+  else
+#endif
+    {
+      StrCopyInW (&dsn, (TCHAR *) szDSN, cbDSN);
+      StrCopyInW (&uid, (TCHAR *) szUID, cbUID);
+      StrCopyInW (&pwd, (TCHAR *) szPWD, cbPWD);
+    }
 
   if ((cbDSN < 0 && cbDSN != SQL_NTS) || (cbUID < 0 && cbUID != SQL_NTS) || (cbPWD < 0 && cbPWD != SQL_NTS))
     {

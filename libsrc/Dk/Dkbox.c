@@ -18,7 +18,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -151,18 +151,56 @@ box_dv_uname_audit_table (void)
 #define box_dv_uname_audit_table()
 #endif
 
+#ifdef MALLOC_DEBUG
+#define dk_alloc_mmap(sz) dk_alloc (sz)
+#define dk_free_munmap(ptr, sz) dk_free (ptr, sz)
+#else
 
+void *
+dk_mmap_brk (size_t sz)
+{
+  return mm_large_alloc (sz);
+}
+
+#define dk_alloc_mmap(sz) \
+  ((sz) >= box_min_mmap && (sz) < 0xffffff ? (caddr_t) dk_mmap_brk (sz) : dk_alloc (sz))
+#define dk_free_munmap(ptr, sz)						\
+  ((sz) >= box_min_mmap && (sz) < 0xffffff ? mm_free_sized (ptr, sz) : dk_free (ptr, sz))
+#endif
+
+#ifndef NDEBUG
+#define dk_alloc_box_check_length(bytes,tag) do { \
+  if ((bytes) & ~0xffffff) \
+    GPF_T1 ("box to allocate is too large"); \
+  switch ((tag)) { \
+    case DV_SHORT_STRING_SERIAL: case DV_LONG_WIDE: \
+      GPF_T1 ("misused tag of box to allocate"); \
+      break; \
+    case DV_WIDE: \
+      if ((bytes) % sizeof (wchar_t)) \
+        GPF_T1 ("DV_WIDE of length that is not divisible on sizeof (wchar_t)"); \
+      if (0 == (bytes)) \
+        GPF_T1 ("DV_WIDE with no room for trailing zero"); \
+      break; \
+    case DV_STRING: case DV_C_STRING: \
+      if (0 == (bytes)) \
+        GPF_T1 ("String with no room for trailing zero"); \
+      break; \
+    } \
+} while (0)
+#else
+#define dk_alloc_box_check_length(bytes,tag) do { ; } while (0)
+#endif
+
+
+size_t box_min_mmap = (1024 * 100 ) - 8;
 #undef dk_alloc_box
 box_t
 dk_alloc_box (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -170,7 +208,7 @@ dk_alloc_box (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -192,9 +230,10 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
+
 #ifdef MALLOC_DEBUG
-  if (bytes > 100000000)
-    GPF_T1 ("malloc debug only check for large boxes, over 100M");
+  if (bytes > 1000000000)
+    GPF_T1 ("Box over 1G, suspect, assertion in malloc debug mode only");
 #endif
 
   /* This assumes dk_alloc aligns at least at 4 */
@@ -204,7 +243,7 @@ dk_alloc_box_long (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -229,11 +268,7 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   unsigned char *ptr = NULL;
   size_t align_bytes;
 
-#ifdef MALLOC_DEBUG
-  if (bytes & ~0xffffff)
-    GPF_T1 ("box to allocate is too large");
-#endif
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -241,6 +276,9 @@ dk_try_alloc_box (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
+  if (align_bytes >= box_min_mmap)
+    ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
+  else
   ptr = (unsigned char *) dk_try_alloc (align_bytes);
   if (!ptr)
     return (box_t) ptr;
@@ -265,7 +303,7 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   size_t align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -273,7 +311,7 @@ dk_alloc_box_zero (size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dk_alloc (align_bytes);
+  ptr = (unsigned char *) dk_alloc_mmap (align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -298,7 +336,7 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -306,7 +344,7 @@ dbg_dk_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -330,7 +368,7 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -338,7 +376,7 @@ dbg_dk_alloc_box_long (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -364,7 +402,7 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -372,7 +410,7 @@ dbg_dk_try_alloc_box (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -396,7 +434,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
 {
   unsigned char *ptr;
   uint32 align_bytes;
-
+  dk_alloc_box_check_length (bytes, tag);
   /* This assumes dk_alloc aligns at least at 4 */
 #ifdef DOUBLE_ALIGN
   align_bytes = 8 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_8 (bytes));
@@ -404,7 +442,7 @@ dbg_dk_alloc_box_zero (DBG_PARAMS size_t bytes, dtp_t tag)
   align_bytes = 4 + (IS_STRING_ALIGN_DTP (tag) ? ALIGN_STR (bytes) : ALIGN_4 (bytes));
 #endif
 
-  ptr = (unsigned char *) dbg_malloc (DBG_ARGS align_bytes);
+  ptr = (unsigned char *) dbg_malloc (file, line, align_bytes);
   if (!ptr)
     return (box_t) ptr;
 
@@ -456,6 +494,7 @@ box_mp_copy_non_box (mem_pool_t * mp, caddr_t b)
 void
 dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 {
+  if (box_destr[tag] && d && d != box_destr[tag]) GPF_T1 ("redefining mem hooks");
   box_destr[tag] = d;
   box_copier[tag] = c;
   box_tmp_copier[tag] = NULL;
@@ -466,6 +505,7 @@ dk_mem_hooks (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit)
 void
 dk_mem_hooks_2 (dtp_t tag, box_copy_f c, box_destr_f d, int bcatit, box_tmp_copy_f t_c)
 {
+  if (box_destr[tag] && d && d != box_destr[tag]) GPF_T1 ("redefining mem hooks");
   box_destr[tag] = d;
   box_copier[tag] = c;
   box_can_appear_twice_in_tree[tag] = bcatit;
@@ -490,21 +530,22 @@ dk_free_box (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
     case DV_SYMBOL:
+    case DV_BIN:
       len = ALIGN_STR (len);
       break;
 
@@ -615,16 +656,16 @@ dk_free_box (box_t box)
 #endif
 
 #ifdef DOUBLE_ALIGN
-#ifdef MALLOC_DEBUG 
+#ifdef MALLOC_DEBUG
   if (len >= 0xffffff)
     {
-      dbg_free (__FILE__, __LINE__, ptr - 8);
+      dbg_free_sized (__FILE__, __LINE__, ptr - 8, len);
       return 0;
     }
 #endif
-  dk_free (ptr - 8, len + 8);
+  dk_free_munmap (ptr - 8, len + 8);
 #else
-  dk_free (ptr - 4, len + 4);
+  dk_free_munmap (ptr - 4, len + 4);
 #endif
 #ifdef _DEBUG
   box_types_free[tag]++;
@@ -660,6 +701,9 @@ dkbox_terminate_module (void)
     }
 }
 
+#if defined (WIN32) || defined (SOLARIS)
+#define __builtin_prefetch(m)
+#endif
 
 int
 dk_free_tree (box_t box)
@@ -678,33 +722,48 @@ dk_free_tree (box_t box)
 
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Free of a tree with a damaged wide string");
+#endif
 #ifdef DOUBLE_ALIGN
       len = ALIGN_8 (len);
 #else
       len = ALIGN_4 (len);
 #endif
       break;
-#endif
     case DV_STRING:
     case DV_C_STRING:
     case DV_SHORT_STRING_SERIAL:
     case DV_SYMBOL:
+    case DV_BIN:
       len = ALIGN_STR (len);
       break;
 
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+      log_error_report_event (box, 0, "FREE");
+#endif
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
       {
-	uint32 count = len / sizeof (box_t), inx;
+	uint32 count = len / sizeof (box_t), inx = 0;
 	box_t *obj = (box_t *) box;
-	for (inx = 0; inx < count; inx++)
+	if (count > 3)
+	  {
+	    for (inx = 0; inx < count - 3; inx += 2)
+	      {
+		__builtin_prefetch (obj[inx + 2]);
+		__builtin_prefetch (obj[inx + 3]);
+		dk_free_tree (obj[inx]);
+		dk_free_tree (obj[inx + 1]);
+	      }
+	  }
+	for (inx = inx; inx < count; inx++)
 	  dk_free_tree (obj[inx]);
 #ifdef MALLOC_DEBUG
 	if (len != ALIGN_4 (len))
@@ -744,9 +803,9 @@ dk_free_tree (box_t box)
 #endif
 
 #ifdef DOUBLE_ALIGN
-  dk_free (ptr - 8, len + 8);
+  dk_free_munmap (ptr - 8, len + 8);
 #else
-  dk_free (ptr - 4, len + 4);
+  dk_free_munmap (ptr - 4, len + 4);
 #endif
 #ifdef _DEBUG
   box_types_free[tag]++;
@@ -761,17 +820,30 @@ void
 box_reuse (caddr_t box, ccaddr_t data, size_t len, dtp_t dtp)
 {
   dk_alloc_box_assert (box);
+#ifndef NDEBUG
+  if (DV_WIDE == DV_TYPE_OF (box))
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a damaged wide string");
+    }
+  if (DV_WIDE == dtp)
+    {
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)data)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Reuse of a box for a damaged wide string");
+    }
+#endif
   box_tag_modify (box, dtp);
   ((dtp_t *) box)[-4] = (dtp_t) (len & 0xff);
   ((dtp_t *) box)[-3] = (dtp_t) (len >> 8);
   ((dtp_t *) box)[-2] = (dtp_t) (len >> 16);
+  if (DV_STRING == dtp) len --; /* the length of string box is always +1 but actual data is one char less */
+  if (box != data)
   memcpy (box, data, len);
 }
 
-
 #ifdef DK_ALLOC_BOX_DEBUG
 void
-dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
+dk_check_tree_iter (box_t box, box_t parent, dk_hash_t **known_ptr)
 {
   uint32 count;
   dtp_t tag;
@@ -785,29 +857,102 @@ dk_check_tree_iter (box_t box, box_t parent, dk_hash_t * known)
     GPF_T1 ("Tree contains a pointer to a freed box");
   if (TAG_BAD == tag)
     GPF_T1 ("Tree contains a pointer to a box marked bad");
-  if (!box_can_appear_twice_in_tree[tag])
+  if (known_ptr && !box_can_appear_twice_in_tree[tag])
     {
-      box_t other_parent = gethash (box, known);
+      box_t other_parent;
+      if (NULL == known_ptr[0])
+        known_ptr[0] = hash_table_allocate (4096);
+      other_parent = (box_t) gethash (box, known_ptr[0]);
       if (NULL != other_parent)
 	GPF_T;
-      sethash (box, known, parent);
+      sethash (box, known_ptr[0], parent);
     }
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
-      for (count = box_length (box) / sizeof (box_t); count; count--)
-	dk_check_tree_iter (*obj++, box, known);
+      int len = box_length (box) / sizeof (box_t);
+      for (count = 0; count < len; count++)
+        dk_check_tree_iter (obj[count], box, known_ptr);
     }
   return;
 }
 
-
 void
 dk_check_tree (box_t box)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
-  dk_check_tree_iter (box, BADBEEF_BOX, known);
-  hash_table_free (known);
+  dk_hash_t *known = NULL;
+  dk_check_tree_iter (box, BADBEEF_BOX, &known);
+  if (NULL != known)
+    hash_table_free (known);
+}
+
+void
+dk_check_tree_mp_or_plain_iter (box_t box, box_t parent, dk_hash_t ** known_ptr, int *fuel_ptr)
+{
+  uint32 count;
+  dtp_t tag;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_alloc_box_assert_mp_or_plain (box);
+  tag = box_tag (box);
+  if ((DV_UNAME == tag) || (DV_REFERENCE == tag))
+    return;
+  if (TAG_FREE == tag)
+    GPF_T1 ("Tree contains a pointer to a freed box");
+  if (TAG_BAD == tag)
+    GPF_T1 ("Tree contains a pointer to a box marked bad");
+  if (known_ptr && !box_can_appear_twice_in_tree[tag] && !(box_flags (box) & BF_VALID_JSO))
+    {
+      box_t other_parent;
+      if (NULL == known_ptr[0])
+        known_ptr[0] = hash_table_allocate (MIN(fuel_ptr[0], 4096));
+      other_parent = (box_t)gethash (box, known_ptr[0]);
+      if (NULL != other_parent)
+        GPF_T;
+      sethash (box, known_ptr[0], parent);
+    }
+  if (IS_NONLEAF_DTP (tag))
+    {
+      box_t *obj = (box_t *) box;
+      int len = box_length_inline (box) / sizeof (box_t);
+      dk_hash_t ** sub_known_ptr = ((box_flags (box) & BF_VALID_JSO) ? NULL : known_ptr);
+      for (count = 0; count < len; count++)
+        {
+          fuel_ptr[0]--;
+          if (0 >= fuel_ptr[0])
+            return;
+          dk_check_tree_mp_or_plain_iter (obj[count], box, sub_known_ptr, fuel_ptr);
+        }
+    }
+#ifdef VALGRIND
+  else
+    {
+      int badbeefcount = 0;
+      box_t *obj = (box_t *) box;
+      int len = box_length_inline (box) / sizeof (box_t);
+      dk_hash_t ** sub_known_ptr = ((box_flags (box) & BF_VALID_JSO) ? NULL : known_ptr);
+      for (count = 0; count < len; count++)
+        {
+          if (obj[count] == BADBEEF_BOX)
+            badbeefcount++;
+        }
+      if (badbeefcount)
+        GPF_T1 ("BADBEEF in data");
+    }
+#endif
+  return;
+}
+
+void
+dk_check_tree_mp_or_plain (box_t box, int max_fuel)
+{
+  dk_hash_t *known = NULL;
+  int fuel = max_fuel;
+  if (!IS_BOX_POINTER (box))
+    return;
+  dk_check_tree_mp_or_plain_iter (box, BADBEEF_BOX, &known, &fuel);
+  if (NULL != known)
+    hash_table_free (known);
 }
 
 void
@@ -829,7 +974,7 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
     GPF_T1 ("Tree contains a pointer to a Box with weird tag");
   if (!box_can_appear_twice_in_tree[tag])
     {
-      box_t other_parent = gethash (box, known);
+      box_t other_parent = (box_t)gethash (box, known);
       if (NULL != other_parent)
 	GPF_T;
       sethash (box, known, parent);
@@ -848,13 +993,16 @@ dk_check_tree_heads_iter (box_t box, box_t parent, dk_hash_t * known, int count_
 
 void dk_check_tree_heads (box_t box, int count_of_sample_children)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
+  dk_hash_t *known;
+  if (!IS_BOX_POINTER (box))
+    return;
+  known = hash_table_allocate (4096);
   dk_check_tree_heads_iter (box, BADBEEF_BOX, known, count_of_sample_children);
   hash_table_free (known);
 }
 
 void
-dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known)
+dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t ** known_ptr)
 {
   uint32 count;
   dtp_t tag;
@@ -872,22 +1020,24 @@ dk_check_domain_of_connectivity_iter (box_t box, box_t parent, dk_hash_t * known
   if (IS_NONLEAF_DTP (tag))
     {
       box_t *obj = (box_t *) box;
-      for (count = box_length (box) / sizeof (box_t); count; count--)
-	dk_check_domain_of_connectivity_iter (*obj++, box, known);
+      for (count = box_length_inline (box) / sizeof (box_t); count; count--)
+	dk_check_domain_of_connectivity_iter (*obj++, box, known_ptr);
     }
-  other_parent = gethash (box, known);
+  if (NULL == known_ptr[0])
+    known_ptr[0] = hash_table_allocate (4096);
+  other_parent = (box_t)gethash (box, known_ptr[0]);
   if (NULL != other_parent)
     return;
-  sethash (box, known, parent);
+  sethash (box, known_ptr[0], parent);
   return;
 }
-
 
 void
 dk_check_domain_of_connectivity (box_t box)
 {
-  dk_hash_t *known = hash_table_allocate (4096);
-  dk_check_domain_of_connectivity_iter (box, BADBEEF_BOX, known);
+  dk_hash_t *known = NULL;
+  dk_check_domain_of_connectivity_iter (box, BADBEEF_BOX, &known);
+  if (NULL != known)
   hash_table_free (known);
 }
 #endif
@@ -1005,6 +1155,21 @@ unbox_int64 (ccaddr_t box)
   return (ptrlong) box;
 }
 
+box_t
+DBG_NAME (dk_realloc_list) (DBG_PARAMS caddr_t ptr, int new_elements)
+{
+  int old_elements;
+  caddr_t res;
+  if (NULL == ptr)
+    return DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  old_elements = BOX_ELEMENTS (ptr);
+  if (old_elements == new_elements)
+    return ptr;
+  res = DBG_NAME (dk_alloc_box_zero) (DBG_ARGS new_elements * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  memcpy (res, ptr, ((new_elements < old_elements) ? new_elements : old_elements) * sizeof (caddr_t));
+  dk_free_box (ptr);
+  return (box_t) res;
+}
 
 box_t
 DBG_NAME (box_num) (DBG_PARAMS boxint n)
@@ -1078,12 +1243,12 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
   switch (tag)
     {
     case DV_WIDE:
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a damaged wide string");
-      break;
 #endif
+      break;
     case DV_STRING:
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
@@ -1108,7 +1273,7 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	    if (blk->unb_data_ptr == box)
 	      {
 		mutex_leave (uname_mutex);
-		return box;
+		return (box_t) box;
 	      }
 	  }
 #ifdef DV_UNAME_UNIT_DEBUG
@@ -1127,7 +1292,7 @@ DBG_NAME (box_copy) (DBG_PARAMS cbox_t box)
 	      }
 	    box_dv_uname_audit_one (hash);
 	    mutex_leave (uname_mutex);
-	    return box;
+	    return (box_t) box;
 	  }
 	GPF_T1 ("Can't copy broken UNAME");
 #else
@@ -1209,23 +1374,37 @@ box_t DBG_NAME (box_copy_tree) (DBG_PARAMS cbox_t box)
   tag = box_tag (box);
   switch (tag)
     {
-#ifdef MALLOC_DEBUG
     case DV_WIDE:
+#ifndef NDEBUG
       len = box_length (box);
       if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
         GPF_T1 ("Copy of a tree with a damaged wide string");
-      break;
 #endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
     case DV_XTREE_HEAD:
     case DV_XTREE_NODE:
+#ifdef SIGNAL_DEBUG
+    case DV_ERROR_REPORT:
+#endif
       len = box_length (box);
       copy = (box_t *) DBG_NAME (dk_alloc_box) (DBG_ARGS len, tag);
       len /= sizeof (box_t);
-      for (inx = 0; inx < len; inx++)
+      if (len > 1)
+	{
+	  for (inx = 0; inx < len - 1; inx++)
+	    {
+	      __builtin_prefetch (((box_t*)box)[inx + 1]);
+	      copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
+	    }
 	copy[inx] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[inx]);
+	}
+      else if (len)
+        {
+          copy[0] = DBG_NAME (box_copy_tree) (DBG_ARGS ((box_t *) box)[0]);
+        }
       return (box_t) copy;
 
     case DV_UNAME:
@@ -1293,6 +1472,13 @@ DBG_NAME (box_try_copy_tree) (DBG_PARAMS box_t box, box_t stub)
   tag = box_tag (box);
   switch (tag)
     {
+    case DV_WIDE:
+#ifndef NDEBUG
+      len = box_length (box);
+      if ((len % sizeof (wchar_t)) || (0 != ((wchar_t *)box)[len/sizeof (wchar_t) - 1]))
+        GPF_T1 ("Copy of a tree with a damaged wide string");
+#endif
+      break;
     case DV_ARRAY_OF_POINTER:
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_XQVAL:
@@ -1384,7 +1570,7 @@ DBG_NAME (box_dv_short_string) (DBG_PARAMS const char *string)
 rdf_box_t *
 rb_allocate (void)
 {
-  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_box_t), DV_RDF);
+  rdf_box_t *rb = (rdf_box_t *) dk_alloc_box_zero (sizeof (rdf_bigbox_t), DV_RDF);
   rb->rb_ref_count = 1;
   return rb;
 }
@@ -1399,7 +1585,7 @@ rbb_allocate (void)
 }
 
 
-caddr_t 
+caddr_t
 rbb_from_id (int64 n)
 {
   rdf_bigbox_t * rbb = rbb_allocate ();
@@ -1421,11 +1607,13 @@ void
 rdf_box_audit_impl (rdf_box_t * rb)
 {
   if (0 >= rb->rb_ref_count)
-    GPF_T1 ("RDF box has nonpositive reference count");
+    GPF_T1 ("RDF box has non-positive reference count");
 #ifdef RDF_DEBUG
   if ((0 == rb->rb_ro_id) && (0 == rb->rb_is_complete))
     GPF_T1 ("RDF box is too incomplete");
 #endif
+  if ((rb->rb_type < RDF_BOX_MIN_TYPE) || (rb->rb_type > RDF_BOX_MAX_TYPE)) GPF_T1 ("rb type out of range");
+  if ((rb->rb_lang < RDF_BOX_DEFAULT_LANG) || (rb->rb_lang > RDF_BOX_MAX_LANG)) GPF_T1 ("rb lang out of range");
   if (rb->rb_is_complete)
     rb_dt_lang_check(rb);
 }
@@ -1589,6 +1777,7 @@ DBG_NAME (box_float) (DBG_PARAMS float d)
 
 
 box_hash_cmp_func_t dtp_cmp_func[256];
+box_hash_cmp_func_t dtp_strong_cmp_func[256];
 
 void
 dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f)
@@ -1596,12 +1785,17 @@ dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f)
   dtp_cmp_func[dtp] = f;
 }
 
+void
+dtp_set_strong_cmp (dtp_t dtp, box_hash_cmp_func_t f)
+{
+  dtp_strong_cmp_func[dtp] = f;
+}
 
 int
 box_equal (cbox_t b1, cbox_t b2)
 {
-  uint32 l1, l2;
-  dtp_t b1_tag, b2_tag;
+  uint32 l1, l2, bf1, bf2;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
   boxint b1_long_val = 0, b2_long_val = 0;
 
   if (b1 == b2)
@@ -1644,14 +1838,16 @@ box_equal (cbox_t b1, cbox_t b2)
   l2 = box_length (b2);
   if (l1 != l2)
     return 0;
-
-  if (IS_NONLEAF_DTP (b1_tag) && IS_NONLEAF_DTP (b2_tag))
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
     {
       uint32 inx;
-      l1 = BOX_ELEMENTS (b1);
-      l2 = BOX_ELEMENTS (b2);
-      if (l1 != l2)
-	return 0;
+      l1 /= sizeof (caddr_t);
       for (inx = 0; inx < l1; inx++)
 	{
 	  if (!box_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
@@ -1659,7 +1855,124 @@ box_equal (cbox_t b1, cbox_t b2)
 	}
       return 1;
     }
-  return (memcmp (b1, b2, l1) ? 0 : 1);
+  if (nl1 || nl2)
+    return 0;
+  memcmp_8 (b1, b2, l1, neq);
+  bf1 = box_flags (b1);
+  bf2 = box_flags (b2);
+  if (bf1 != bf2)
+    {
+      if (DV_UNAME == b1_tag)
+        {
+          b1_tag = DV_STRING;
+          bf1 = BF_IRI;
+        }
+      if (DV_UNAME == b2_tag)
+        {
+          b2_tag = DV_STRING;
+          bf2 = BF_IRI;
+        }
+      if ((b1_tag != b2_tag) || (bf1 != bf2))
+        return 0;
+    }
+  return 1;
+ neq:
+  return 0;
+  /*return (memcmp (b1, b2, l1) ? 0 : 1); */
+}
+
+
+int
+box_strong_equal (cbox_t b1, cbox_t b2)
+{
+  uint32 l1, l2, bf1, bf2;
+  dtp_t b1_tag, b2_tag, nl1, nl2;
+  boxint b1_long_val = 0, b2_long_val = 0;
+
+  if (b1 == b2)
+    return 1;
+
+  if (!IS_BOX_POINTER (b1))
+    {
+      b1_tag = DV_LONG_INT;
+      b1_long_val = (boxint) (ptrlong) b1;
+    }
+  else
+    {
+      b1_tag = box_tag (b1);
+      if (b1_tag == DV_LONG_INT)
+	b1_long_val = *(boxint *) b1;
+    }
+
+  if (!IS_BOX_POINTER (b2))
+    {
+      b2_tag = DV_LONG_INT;
+      b2_long_val = (boxint) (ptrlong) b2;
+    }
+  else
+    {
+      b2_tag = box_tag (b2);
+      if (b2_tag == DV_LONG_INT)
+	b2_long_val = *(boxint *) b2;
+    }
+  if (b1_tag == DV_RDF || b2_tag == DV_RDF)
+    {
+      if (b1_tag != DV_RDF || b2_tag != DV_RDF)
+        return 0;
+    }
+  if (b1_tag == DV_LONG_INT || b2_tag == DV_LONG_INT)
+    {
+      if (b1_tag != b2_tag)
+	return 0;
+      return b1_long_val == b2_long_val;
+    }
+  if (b1_tag == b2_tag && dtp_strong_cmp_func[b1_tag])
+    return dtp_strong_cmp_func[b1_tag] (b1, b2);
+  l1 = box_length (b1);
+  l2 = box_length (b2);
+  if (l1 != l2)
+    return 0;
+  if (DV_DB_NULL == b1_tag && DV_DB_NULL == b2_tag)
+    return 1;
+  if (DV_DB_NULL == b1_tag || DV_DB_NULL == b2_tag)
+    return 0;
+  nl1 = IS_NONLEAF_DTP (b1_tag);
+  nl2 = IS_NONLEAF_DTP (b2_tag);
+  if (nl1 && nl2)
+    {
+      uint32 inx;
+      l1 /= sizeof (caddr_t);
+      for (inx = 0; inx < l1; inx++)
+	{
+	  if (!box_strong_equal (((box_t *) b1)[inx], ((box_t *) b2)[inx]))
+	    return 0;
+	}
+      return 1;
+    }
+  if (nl1 || nl2)
+    return 0;
+  memcmp_8 (b1, b2, l1, neq);
+  bf1 = box_flags (b1);
+  bf2 = box_flags (b2);
+  if (bf1 != bf2)
+    {
+      if (DV_UNAME == b1_tag)
+        {
+          b1_tag = DV_STRING;
+          bf1 = BF_IRI;
+        }
+      if (DV_UNAME == b2_tag)
+        {
+          b2_tag = DV_STRING;
+          bf2 = BF_IRI;
+        }
+      if ((b1_tag != b2_tag) || (bf1 != bf2))
+        return 0;
+    }
+  return 1;
+  return 1;
+ neq:
+  return 0;
 }
 
 
@@ -1817,6 +2130,20 @@ dk_alloc_box_assert (box_t box)
 #endif
 }
 
+#ifdef dk_alloc_box_assert_mp_or_plain
+#undef dk_alloc_box_assert_mp_or_plain
+#endif
+void
+dk_alloc_box_assert_mp_or_plain (box_t box)
+{
+  if (TAG_FREE == box_tag (box))
+    GPF_T1 ("Tree contains a pointer to a freed box");
+#ifdef DOUBLE_ALIGN
+  dk_alloc_assert_mp_or_plain (((char *) (box)) - 8);
+#else
+  dk_alloc_assert_mp_or_plain (((char *) (box)) - 4);
+#endif
+}
 
 char *
 DBG_NAME (box_dv_ubuf) (DBG_PARAMS size_t buf_strlen)
@@ -1833,6 +2160,33 @@ DBG_NAME (box_dv_ubuf) (DBG_PARAMS size_t buf_strlen)
   caddr_t hd;
   buf_strlen++;
   blk = (uname_blk_t *) DK_ALLOC (sizeof (uname_blk_t) + (buf_strlen - sizeof (ptrlong)));
+  uname = blk->unb_data;
+  hd = uname - 4;
+  WRITE_BOX_HEADER (hd, buf_strlen, DV_UNAME);
+  return uname;
+#endif
+}
+
+
+char *
+DBG_NAME (box_dv_ubuf_or_null) (DBG_PARAMS size_t buf_strlen)
+{
+#ifdef MALLOC_DEBUG
+  caddr_t uname;
+  buf_strlen++;
+  uname = DBG_NAME (dk_try_alloc_box) (DBG_ARGS buf_strlen, DV_NULL);
+  if (NULL == uname)
+    return NULL;
+  box_tag_modify_impl (uname, DV_UNAME);
+  return uname;
+#else
+  uname_blk_t *blk;
+  caddr_t uname;
+  caddr_t hd;
+  buf_strlen++;
+  blk = (uname_blk_t *) dk_try_alloc (sizeof (uname_blk_t) + (buf_strlen - sizeof (ptrlong)));
+  if (NULL == blk)
+    return NULL;
   uname = blk->unb_data;
   hd = uname - 4;
   WRITE_BOX_HEADER (hd, buf_strlen, DV_UNAME);
@@ -2270,15 +2624,97 @@ box_mem_wrapper_destr_hook (caddr_t mw_arg)
   return 0;
 }
 
+#ifdef SIGNAL_DEBUG
+FILE *error_report_log = NULL;
+dk_mutex_t *error_report_log_mutex = NULL;
+void
+log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  int ctx_cycle = 0;
+  mutex_enter (error_report_log_mutex);
+  fprintf (error_report_log, "\n{{{ERR %p ", box);
+  if (!ERROR_REPORT_P (box))
+    fprintf (error_report_log, "TAG %d ", DV_TYPE_OF (box));
+  vfprintf (error_report_log, fmt, ap);
+  if (print_full_content)
+    fprintf (error_report_log, " {{%p} {%s} {%s}}", ((caddr_t *)box)[0], ((caddr_t *)box)[1], ((caddr_t *)box)[2]);
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    {
+    fprintf (error_report_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+      if (ctx->j_parent == ctx)
+        {
+          fprintf (error_report_log, "{CYCLE!}");
+          ctx_cycle = 1;
+          break;
+        }
+    }
+  fprintf (error_report_log, " }}}");
+  fflush (error_report_log);
+  if (ctx_cycle)
+    {
+      fclose (error_report_log);
+      GPF_T1 ("Cycle in stack of jmp_buf_splices (missing POP_QR_RESET?); see the tail of error_report_events_NNN.log");
+}
+  mutex_leave (error_report_log_mutex);
+}
+#endif
+
+#ifdef QUERY_DEBUG
+FILE *query_log = NULL;
+dk_mutex_t *query_log_mutex;
+#endif
 
 caddr_t uname___empty;
+
+#ifdef MALLOC_DEBUG
+extern dk_mutex_t *spare_rbufs_mtx;
+#endif
 
 void
 dk_box_initialize (void)
 {
+#ifdef SIGNAL_DEBUG
+#ifdef QUERY_DEBUG
+  char query_and_error_log_fname[50];
+#else
+  char error_report_log_fname[50];
+#endif
+#else
+#ifdef QUERY_DEBUG
+  char query_log_fname[50];
+#endif
+#endif
+  static int dk_box_is_initialized = 0;
+  if (dk_box_is_initialized)
+    return;
+  dk_box_is_initialized = 1;
+#ifdef SIGNAL_DEBUG
+#ifdef QUERY_DEBUG
+  sprintf (query_and_error_log_fname, "query_and_error_events_%d.log", getpid());
+  error_report_log = query_log = fopen (query_and_error_log_fname, "w");
+  error_report_log_mutex = query_log_mutex = mutex_allocate ();
+#else
+  sprintf (error_report_log_fname, "error_report_events_%d.log", getpid());
+  error_report_log = fopen (error_report_log_fname, "w");
+  error_report_log_mutex = mutex_allocate ();
+#endif
+#else
+#ifdef QUERY_DEBUG
+  sprintf (query_log_fname, "query_events_%d.log", getpid());
+  query_log = fopen (query_log_fname, "w");
+  query_log_mutex = mutex_allocate ();
+#endif
+#endif
   dk_mem_hooks (DV_MEM_WRAPPER, box_mem_wrapper_copy_hook, box_mem_wrapper_destr_hook, 0);
 #ifdef MALLOC_DEBUG
   dk_mem_hooks_2 (DV_NON_BOX, box_copy_non_box, NULL, 0, box_mp_copy_non_box);
+#endif
+  dk_mem_hooks (DV_RBUF,  box_non_copiable, (box_destr_f)rbuf_free_cb, 0);
+#ifdef MALLOC_DEBUG
+  spare_rbufs_mtx = mutex_allocate ();
 #endif
   uname_mutex = mutex_allocate ();
   if (NULL == uname_mutex)
@@ -2382,6 +2818,24 @@ dk_box_initialize (void)
 #endif
 }
 
+void
+dk_box_finalize (void)
+{
+  static int dk_box_is_finalized = 0;
+  if (dk_box_is_finalized)
+    GPF_T;
+  dk_box_is_finalized = 1;
+#ifdef SIGNAL_DEBUG
+  fclose (error_report_log);
+  error_report_log = NULL;
+#endif
+#ifdef QUERY_DEBUG
+#ifndef SIGNAL_DEBUG
+  fclose (query_log);
+#endif
+  query_log = NULL;
+#endif
+}
 
 /* Original signatures should exist for EXE-EXPORTed functions */
 #ifdef MALLOC_DEBUG
@@ -2464,6 +2918,12 @@ box_copy_tree (cbox_t box)
   return dbg_box_copy_tree (__FILE__, __LINE__, box);
 }
 
+#undef dk_realloc_list
+box_t
+dk_realloc_list (caddr_t ptr, int new_elements)
+{
+  return dbg_dk_realloc_list (__FILE__, __LINE__, ptr, new_elements);
+}
 
 #undef box_num
 box_t
@@ -2494,6 +2954,14 @@ char *
 box_dv_ubuf (size_t buf_strlen)
 {
   return dbg_box_dv_ubuf (__FILE__, __LINE__, buf_strlen);
+}
+
+
+#undef box_dv_ubuf_or_null
+char *
+box_dv_ubuf_or_null (size_t buf_strlen)
+{
+  return dbg_box_dv_ubuf_or_null (__FILE__, __LINE__, buf_strlen);
 }
 
 

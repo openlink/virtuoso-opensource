@@ -1,29 +1,29 @@
 --
 --  tnwords.sql
 --
---  $Id$
+--  $Id: tnwords.sql,v 1.9.8.2 2013/01/02 16:15:14 source Exp $
 --
 --  Word tests
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 echo BOTH "STARTED: NVARCHAR Wordtest (about 7 minutes with Pentium 166Mhz)\n";
 
@@ -53,6 +53,17 @@ select sum(len) from nwords;
 ECHO BOTH $IF $EQU $LAST[1] 749045 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Total sum of lengths of nwords, sum(len)=" $LAST[1] "\n";
+
+
+
+select  top 10 *  from nwords a table option (index nwords) where  not exists (select 1 from nwords b table option (hash, index nwords) where a.word = b.word and a.len = b.len);
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": nwords consistent by hash\n";
+
+select  top 10 *  from nwords a table option (index nwords) where  not exists (select 1 from nwords b table option (loop, index nwords) where a.word = b.word and a.len = b.len);
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";;
+echo both ": nwords consistent by index\n";
+
 
 --
 -- Note that 749045 + 86061 (count of lines, for newlines) = 835106

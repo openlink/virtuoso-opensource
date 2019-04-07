@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -35,10 +35,10 @@ im_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin 
 im_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc 
 im_la_CFLAGS  += @ZLIB_INC@
-im_la_CFLAGS  += $(IM_CPPFLAGS)
+im_la_CFLAGS  += $(IM_CFLAGS)
 im_la_CFLAGS  += -D_GNU_SOURCE -DGLOBALREF=extern -D_USRDLL
 im_la_LDFLAGS = -module -avoid-version -export-dynamic -export-symbols im.exp -no-undefined
-im_la_LIBADD  = $(IM_LDFLAGS) $(IM_LIBS)
+im_la_LIBADD  = $(IM_LIBS)
 
 # ----------------------------------------------------------------------
 #

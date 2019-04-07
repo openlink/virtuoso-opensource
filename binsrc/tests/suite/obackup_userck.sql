@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -52,13 +52,11 @@ succ:
 ;
 
 SELECT CHECK_UNAUTH_BACKUP_SEC();
-ECHO BOTH $LAST[1];
-ECHO BOTH ": Invoking BACKUP_ONLINE procedure from unauthtorized user test\n";
+ECHO BOTH "Invoking BACKUP_ONLINE procedure from unauthtorized user test is " $LAST[1] "\n";
 
 RECONNECT dba;
 SELECT CHECK_AUTH_BACKUP_SEC();
-ECHO BOTH $LAST[1];
-ECHO BOTH ": Invoking BACKUP_ONLINE procedure from authtorized user test\n";
+ECHO BOTH "Invoking BACKUP_ONLINE procedure from authtorized user test is " $LAST[1] "\n";
 
 
 ADD USER GROUP IMPOSTER "DBA";
@@ -67,8 +65,7 @@ ADD USER GROUP IMPOSTER "DBA";
 RECONNECT "IMPOSTER";
 
 SELECT CHECK_AUTH_BACKUP_SEC();
-ECHO BOTH $LAST[1];
-ECHO BOTH ": Invoking BACKUP_ONLINE procedure from authtorized user test\n";
+ECHO BOTH "Invoking BACKUP_ONLINE procedure from authtorized user test is " $LAST[1] "\n";
 
 BACKUP_ONLINE ('/usr/aaa_#', 150, 200);
 ECHO BOTH $IF $EQU $STATE 42000 "PASSED" "***FAILED";
@@ -125,12 +122,14 @@ create procedure check_seqs (in pr varchar, in imax integer, in val integer)
 
 create_seqs ('h', 10000);
 
- 
+
 checkpoint;
- 
+
 
 create_seqs ('ax', 10000);
 create_seqs ('bx', 10000);
 create_seqs ('x', 10000);
 
 backup_online ('vvv', 150);
+
+

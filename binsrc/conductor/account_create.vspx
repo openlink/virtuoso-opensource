@@ -1,0 +1,1178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="account_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>User Accounts</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="0" name="_errmsg" type="varchar" default="''" />
+      <v:variable persist="0" name="mode" type="varchar" default="''"/>
+      <v:variable persist="0" name="user_name" type="varchar" default="''"/>
+      <v:variable persist="0" name="user_group" type="varchar" default="''"/>
+      <v:variable persist="0" name="e_mail" type="varchar" default="''"/>
+      <v:variable persist="0" name="default_group_name" type="varchar" default="''"/>
+      <v:variable persist="0" name="full_name" type="varchar" default="''"/>
+      <v:variable persist="0" name="enc_password" type="varchar" default="''"/>
+      <v:variable persist="0" name="account_disabled" type="integer" default="0"/>
+      <v:variable persist="0" name="dav_enable" type="integer" default="0"/>
+      <v:variable persist="0" name="sql_enable" type="integer" default="0"/>
+      <v:variable persist="0" name="def_perms" type="varchar" default="'110100000R'"/>
+      <v:variable persist="0" name="homedir" type="varchar" default="''"/>
+      <v:variable persist="0" name="def_qual" type="varchar" default="''"/>
+      <v:variable persist="0" name="os_name" type="varchar" default="''"/>
+      <v:variable persist="0" name="os_password" type="varchar" default="''"/>
+      <v:variable persist="0" name="roles_grant_list" type="any" default="''"/>
+      <v:variable persist="0" name="dav_quota" type="integer" default="0"/>
+      <v:variable persist="0" name="_webid" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Virtuoso Account Management"/>
+    </vm:menu>
+    <vm:rawheader>
+      <h1 class="page_title">
+        <?vsp
+          if (self.mode = 'edit')
+            http(sprintf('Editing Account ''%s''', self.user_name));
+          else
+            http('New Account');
+        ?>
+      </h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <vm:help id="account_create" sect="" />
+      <script tyep="text/javascript">
+        <![CDATA[
+          function onExitAccountName()
+          {
+            var f = document.account_form;
+            f.t_login_name.value = f.t_full_name.value;
+          }
+          function swHomeDir (cb)
+          {
+            var f = document.account_form;
+            var l = f.t_login_name.value;
+            var h = f.t_repository_path.value;
+            if (cb.checked === true && h.length === 0 && l.length > 0)
+            {
+              f.t_repository_path.value = "/DAV/home/" + l + "/";
+            }
+            else if (cb.checked === false)
+            {
+              f.t_repository_path.value = "";
+            }
+          }
+        ]]>
+      </script>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab_selected" align="center">
+                        <v:url name="b_url31" value="Users" format="%s" url="--'accounts_page.vspx?page=1'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="Roles" format="%s" url="--'accounts_page.vspx?page=2'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url14" value="Grants" url="-- case when self.mode = 'edit' then sprintf ('caps_browser.vspx?mode=edit&user_name=%U', self.user_name) else 'accounts_page.vspx?page=3' end" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url15" value="LDAP Import" format="%s" url="--'accounts_page.vspx?page=4'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &nbsp;
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
+                          <v:before-data-bind>
+                            <![CDATA[
+                              declare params any;
+
+                              params := self.vc_event.ve_params;
+                              self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
+                              self.mode := get_keyword ('mode', params, self.mode);
+                              self.user_name := get_keyword ('user_name', params, '');
+                              if (self.mode = 'edit')
+                              {
+                                declare _u_id, _u_group integer;
+                                declare _all_opts, ldapo varchar;
+
+                                whenever not found goto nf_user;
+
+                                select u_id, u_full_name, u_e_mail,
+                                       encode_base64 (u_password), u_group, u_account_disabled,
+                                       u_dav_enable, u_sql_enable, u_def_perms, u_home,
+                                       u_def_qual, deserialize (blob_to_string (u_opts))
+                                  into _u_id, self.full_name, self.e_mail,
+                                       self.enc_password, _u_group, self.account_disabled,
+                                       self.dav_enable, self.sql_enable, self.def_perms, self.homedir,
+                                       self.def_qual, _all_opts
+                                  from DB.DBA.SYS_USERS
+                                 where U_NAME = self.user_name;
+
+                                self.dav_quota := coalesce (DB.DBA.USER_GET_OPTION (self.user_name, 'DAVQuota'), 5242880);
+                                self._webid := (select top 1 UW_WEBID from DB.DBA.SYS_USER_WEBID where UW_U_NAME = self.user_name);
+                                if (self._webid is null)
+                                  self._webid := '';
+
+                                ldapo := USER_GET_OPTION (self.user_name, 'LDAPServer');
+                                if (isarray (ldapo) and length (ldapo) > 1)
+                                {
+                                  self.ldap_auth.ufl_value := ldapo[1];
+                                  self.ldap_auth_s.ufl_value := ldapo[0];
+                                }
+
+                                if (_u_id = _u_group)
+                                  self.user_group := 'none';
+                                else
+                                  select U_NAME into self.user_group from SYS_USERS where U_ID = _u_group;
+
+                                if (_all_opts is not NULL)
+                                {
+                                  self.os_password := get_keyword ('SYSTEM_UPASS', _all_opts, '');
+                                  self.os_name := get_keyword ('SYSTEM_UNAME', _all_opts, '');
+                                  self.os_password := pwd_magic_calc (self.user_name, self.os_password, 1);
+                                  self.os_name := pwd_magic_calc (self.user_name, self.os_name, 1);
+                                }
+                                else
+                                {
+                                  self.os_name := '';
+                                  self.os_password := '';
+                                }
+
+                                self.default_group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _u_group), '');
+
+                                self.roles_grant_list := vector ();
+                                for (select U_NAME from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS where U_ID = GI_GRANT and GI_SUPER = _u_id and GI_DIRECT = '1') do
+                                {
+                                  self.roles_grant_list := vector_concat (self.roles_grant_list, vector (U_NAME));
+                                }
+                              nf_user:;
+                              }
+                              else if (self.mode = 'create')
+                              {
+                                self.roles_grant_list := vector ();
+                                self.user_name := '';
+                                self.default_group_name := '';
+                                self.full_name := '';
+                                self.enc_password := '';
+                                self.account_disabled := 0;
+                                self.dav_enable := 0;
+                                self.sql_enable := 0;
+                                self.def_perms := '110100000R';
+                                self.homedir := '';
+                                self.def_qual := '';
+                                self.os_name := '';
+                                self.os_password := '';
+                                self.e_mail := '';
+                              }
+                            ]]>
+                          </v:before-data-bind>
+                          <table class="main_page_area" style="valign: top">
+                            <tr valign="top">
+                              <td>
+                                <table> <!-- left side -->
+                                  <tr>
+                                    <th><label for="u_full_name">Account Name</label></th>
+                                    <td>
+                                      <v:text name="t_full_name"
+                                              value="--y_utf2wide (self.full_name)"
+                                              format="%s"
+                                              xhtml_onblur="--case when self.mode='edit' then '' else 'onExitAccountName()' end"
+                                              xhtml_tabindex="1"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="u_login" class="req">User Login</label></th>
+                                    <td>
+                                      <v:text name="t_login_name"
+                                              value="--y_utf2wide (self.user_name)"
+                                              xhtml_readonly="--case when self.mode='edit' then 'readonly' else '@@hidden@@' end"
+                                              xhtml_id="u_login"
+                                              xhtml_tabindex="2"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="u_passwd" class="req">Password</label></th>
+                                    <td>
+                                      <v:text name="t_user_password"
+                                              value="--self.enc_password"
+                                              type="password"
+                                              xhtml_id="u_passwd"
+                                              xhtml_tabindex="4">
+                                      </v:text>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="u_passwd_conf" class="req">Confirm Password</label></th>
+                                    <td>
+                                      <v:text name="t_user_password_conf"
+                                              value="--self.enc_password"
+                                              type="password"
+                                              xhtml_id="u_passwd_conf"
+                                              xhtml_tabindex="5">
+                                      </v:text>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                    if (sys_stat ('st_build_opsys_id') = 'Win32')
+                                    {
+                                  ?>
+                                  <tr>
+                                    <th><label for="u_os_name">OS user name</label></th>
+                                    <td>
+                                      <v:text name="t_os_name"
+                                              value="--self.os_name"
+                                              xhtml_id="u_os_name"
+                                              xhtml_tabindex="7"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="u_os_password">OS Password</label></th>
+                                    <td>
+                                      <v:text name="t_os_password"
+                                              value="--self.os_password"
+                                              type="password"
+                                              xhtml_id="u_os_password"
+                                              xhtml_tabindex="8"/>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                    }
+                                  ?>
+                                  <v:template type="simple" enabled="--neq ('dba', self.user_name)" name="immut_props">
+                                    <tr>
+                                      <td/>
+                                      <td>
+                                        <v:check-box name="cb_user_enable"
+                                                     value="1"
+                                                     initial-checked="--case when self.account_disabled &lt;&gt; 0 then 0 else 1 end"
+                                                     xhtml_disabled="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') &lt;&gt; 1 then 'disabled' else '@@hidden@@' end"
+                                                     xhtml_id="cb_user_enable"
+                                                     xhtml_tabindex="6"/>
+                                        <label for="cb_user_enable">User Enabled</label>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th>
+                                        <label for="sel_user_type">User type</label>
+                                      </th>
+                                      <td>
+                                        <v:select-list xhtml_id="sel_user_type"
+                                                       name="sel_user_type"
+                                                       value=""
+                                                       xhtml_disabled="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'disabled' else '@@hidden@@' end">
+                                          <v:item name="SQL/ODBC" value="0" />
+                                          <v:item name="WebDAV" value="1" />
+                                          <v:item name="SQL/ODBC and WebDAV" value="2" />
+                                          <v:before-render>
+                                            <![CDATA[
+                                              if (self.sql_enable and self.dav_enable)
+                                                (control as vspx_select_list).vsl_selected_inx := 2;
+                                              else if (self.sql_enable)
+                                                (control as vspx_select_list).vsl_selected_inx := 0;
+                                              else if (self.dav_enable)
+                                                (control as vspx_select_list).vsl_selected_inx := 1;
+                                            ]]>
+                                          </v:before-render>
+                                        </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="u_dl_default_qualifier">Default Qual/Catalog</label></th>
+                                      <td>
+                                        <v:data-list xhtml_id="u_dl_default_qualifier"
+                                                     name="dl_default_qualifier"
+                                                     sql="select ' __none' as QNAME, 'none' as QFNAME from sys_keys union select distinct name_part (key_table, 0), name_part (key_table, 0) from sys_keys order by QNAME"
+                                                     key-column="QNAME"
+                                                     value-column="QFNAME"
+                                                     defvalue="--case when self.def_qual='' then ' __none' else self.def_qual end"
+                                                     xhtml_style="width:216"
+                                                     xhtml_tabindex="3"/>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="u_p_role" class="req">Primary Role</label></th>
+                                      <td>
+                                        <v:data-list xhtml_id="u_p_role" name="dl_default_group"
+                                                     sql="select ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_ID = 0 union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 order by UNAME" key-column="UNAME" value-column="UFNAME"
+                                                     defvalue="--case when self.default_group_name='' then ' __none' else self.default_group_name end"
+                                                     xhtml_onchange="javascript:doPost(\'account_form\', \'reload2\');"
+                                                     width="235"
+                                                     height="24"
+                                                     xhtml_tabindex="10">
+                                          <v:before-render>
+                                            <![CDATA[
+                                              if (check_grants (connection_get ('vspx_user'), '') <> 1)
+                                                control.vc_enabled := 0;
+                                            ]]>
+                                          </v:before-render>
+                                        </v:data-list>
+                                        <v:button action="simple" name="reload2" value="Reset" xhtml_tabindex="11">
+                                          <v:before-render>
+                                            <![CDATA[
+                                              if (check_grants (connection_get ('vspx_user'), '') <> 1)
+                                                control.vc_enabled := 0;
+                                            ]]>
+                                          </v:before-render>
+                                        </v:button>
+                                        <?vsp
+                                          if (check_grants (connection_get ('vspx_user'), '') <> 1)
+                                          {
+                                            http ('<table border=1 cellspacing="0" cellpadding="4">');
+                                            http ('<tr><td><span style="width:216;"><b>');
+                                            http (self.user_group);
+                                            http ('</b></span></td></tr></table>');
+                                          }
+                                        ?>
+                                      </td>
+                                    </tr>
+                                  </v:template>
+                                </table> <!-- left side -->
+                              </td>
+                              <td>
+                                <table> <!-- right side -->
+                                  <tr>
+                                    <th><label for="u_email">E-mail</label></th>
+                                    <td>
+                                      <v:text name="t_e_mail"
+                                              value="--self.e_mail"
+                                              xhtml_id="u_email"
+                                              xhtml_tabindex="17"/>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th>DAV Home Path</th>
+                                    <td>
+                                      <v:text name="t_repository_path"
+                                              value="--self.homedir"
+                                              xhtml_style="width:216"
+                                              xhtml_readonly="--case when self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1 then 'readonly' else '@@hidden@@' end"
+                                              xhtml_tabindex="18"/>
+                                      <v:check-box name="cb_create_dav_home" xhtml_id="cb_create_dav_home" xhtml_onclick="javascript:swHomeDir (this)" xhtml_tabindex="19"/> <label for="cb_create_dav_home">create</label>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="u_def_perms">Default Permissions</label></th>
+                                    <td>
+                                      <table class="ctl_grp">
+                                        <tr align="center">
+                                          <td colspan="3">Owner</td>
+                                          <td colspan="3">Group</td>
+                                          <td colspan="3">Users</td>
+                                          <td>Idx</td>
+                                        </tr>
+                                        <tr align="center">
+                                          <td>r</td><td>w</td><td>x</td><td>r</td><td>w</td><td>x</td><td>r</td><td>w</td><td>x</td><td>t</td>
+                                        </tr>
+                                        <tr align="center">
+                                          <td><v:check-box name="cb_user_perms_owner_r"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [0] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_owner_w"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [1] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_owner_x"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [2] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_group_r"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [3] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_group_w"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [4] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_group_x"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [5] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_other_r"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [6] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_other_w"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [7] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_other_x"
+                                                           value="1"
+                                                           initial-checked="--case when (self.def_perms [8] = ascii ('1')) then 1 else 0 end"/></td>
+                                          <td><v:check-box name="cb_user_perms_index"
+                                                           value="R"
+                                                           initial-checked="--case when (self.def_perms [9] = ascii ('R')) then 1 else 0 end"/></td>
+                                        </tr>
+                                      </table> <!-- ctl_grp -->
+                                    </td>
+                                    <td colspan="2" />
+                                  </tr>
+                                  <tr>
+                                    <th><label for="t_dav_quota">Quota</label></th>
+                                    <td>
+                                      <v:text name="u_dav_quota" xhtml_tabindex="20" value="" xhtml_size="8" xhtml_id="t_dav_quota">
+                                        <v:after-data-bind>
+                                          if (self.dav_quota = -1 or self.user_name in ('dav', 'dba'))
+                                            control.ufl_value := 'unlimited';
+                                          else if (self.dav_quota is not null)
+                                            control.ufl_value := self.dav_quota/(1024*1024);
+                                          else
+                                            control.ufl_value := 5;
+                                        </v:after-data-bind>
+                                      </v:text> MB
+                                    </td>
+                                  </tr>
+                                  <v:template type="simple" condition="atoi (coalesce (cfg_item_value (virtuoso_ini_path (), 'HTTPServer', 'DAVQuotaEnabled'), '0')) = 0">
+                                    <tr><td/><td><span class="note">DAV quota not enforced due to virtuoso ini setting</span></td></tr>
+                                  </v:template>
+                                  <tr>
+                                    <th><label for="t_ldap">LDAP Authentication</label></th>
+                                    <td>
+                                      <v:select-list name="ldap_auth" value="">
+                                        <v:item name="disabled" value="-1" />
+                                        <v:item name="enabled" value="0" />
+                                        <v:item name="account check" value="1" />
+                                      </v:select-list>
+                                    </td>
+                                  </tr>
+                                  <tr>
+                                    <th><label for="t_ldap_s">LDAP Server</label></th>
+                                    <td>
+                                      <v:data-list name="ldap_auth_s"
+                                                   value=""
+                                                   key-column="LS_ADDRESS"
+                                                   value-column="LS_ADDRESS"
+                                                   sql="select 'none' as LS_ADDRESS from SYS_USERS where U_ID = 0 union all select LS_ADDRESS from SYS_LDAP_SERVERS" error-glyph="*">
+                                      </v:data-list>
+                                    </td>
+                                  </tr>
+                                </table> <!-- right side -->
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colspan="2">
+                                <label for="webid"><strong>WebID for ODBC/SQL authentication</strong></label>
+                                <!--v:text name="webid" value="-#-self._webid" xhtml_size="80" /-->
+                                <div id="cmb1">
+                                  <![CDATA[
+                                    <script type="text/javascript">
+                                      function init () {
+                                        var sel1 = new OAT.Combolist([],"<?V self._webid ?>");
+                                        sel1.input.name = "webid";
+                                        sel1.input.id = "webid";
+                                        sel1.input.size = 80;
+                                        $("cmb1").appendChild(sel1.div);
+                                        <?vsp
+                                          declare arr any;
+                                          arr := y_list_webids (self.user_name);
+                                          foreach (any elm in arr) do
+                                          {
+                                            http (sprintf ('sel1.addOption("%s");', elm));
+                                          }
+                                          if (not position (self._webid, arr))
+                                            http (sprintf ('sel1.addOption("%s");', self._webid));
+                                        ?>
+                                      }
+                                    </script>
+                                  ]]>
+                                </div>
+                              </td>
+                            </tr>
+                            <tr>
+                              <td colspan="2">
+                                <table class="complex_selector">
+                                  <caption style="text-align:left;"><strong>Account Roles</strong></caption>
+                                  <tr>
+                                    <td style="width:216" align="left" valign="bottom">Available</td>
+                                    <td/>
+                                    <td style="width:216" align="left" valign="bottom">Selected</td>
+                                  </tr>
+                                  <tr>
+                                    <td>
+                                      <v:data-list name="sl_roles_available"
+                                                   xhtml_size="5"
+                                                   xhtml_style="width:216px"
+                                                   xhtml_multiple="TRUE"
+                                                   sql="select U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_NAME <> self.default_group_name and 0 = position (U_NAME, self.roles_grant_list) order by upper (U_NAME)"
+                                                   key-column="u_name"
+                                                   value-column="u_name"
+                                                   xhtml_tabindex="12">
+                                        <v:before-render>
+                                          <![CDATA[
+                                            if (check_grants (connection_get ('vspx_user'), '') <> 1)
+                                            {
+                                              (control as vspx_select_list).vsl_items := vector ();
+                                              (control as vspx_select_list).vsl_item_values := vector ();
+                                              (control as vspx_select_list).vsl_selected_inx := 0;
+                                            }
+                                          ]]>
+                                        </v:before-render>
+                                      </v:data-list>
+                                    </td>
+                                    <td>
+                                      <table border="0" align="center" width="100%"> <!-- buttons container -->
+                                        <tr>
+                                          <td class="complex_selector_buttons">
+                                            <v:button action="simple"
+                                                      name="b_add_role"
+                                                      value="&gt;&gt;"
+                                                      xhtml_tabindex="13">
+                                              <v:on-post>
+                                                <![CDATA[
+                                                  declare cnt, i integer;
+
+                                                  cnt := length (params);
+                                                  i := 0;
+                                                  while (i < cnt)
+                                                  {
+                                                    if (aref (params, i) = 'sl_roles_available' and position (params [i + 1], self.roles_grant_list) = 0)
+                                                      self.roles_grant_list := vector_concat (self.roles_grant_list, vector (params [i + 1]));
+
+                                                    i := i + 2;
+                                                  }
+                                                  self.sl_roles_available.vc_data_bind (e);
+                                                  self.sl_roles_assigned.vc_data_bind (e);
+                                                ]]>
+                                              </v:on-post>
+                                              <v:before-render>
+                                                <![CDATA[
+                                                  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
+                                                    control.vc_enabled := 0;
+                                                ]]>
+                                              </v:before-render>
+                                            </v:button>
+                                          </td>
+                                        </tr>
+                                        <tr>
+                                          <td align="center">
+                                            <v:button action="simple"
+                                                      name="b_rem_role"
+                                                      value="&lt;&lt;"
+                                                      xhtml_tabindex="14">
+                                              <v:on-post>
+                                                <![CDATA[
+                                                  declare cnt, i, indx integer;
+                                                  declare roles any;
+
+                                                  roles := vector ();
+                                                  cnt := length (self.roles_grant_list);
+                                                  i := 0;
+                                                  while (i < cnt)
+                                                  {
+                                                    indx := position (self.roles_grant_list [i], params);
+                                                    if (indx <= 1 or params [indx - 2] <> 'sl_roles_assigned')
+                                                      roles := vector_concat (roles, vector (self.roles_grant_list [i]));
+
+                                                    i := i + 1;
+                                                  }
+                                                  self.roles_grant_list := roles;
+                                                  self.sl_roles_available.vc_data_bind (e);
+                                                  self.sl_roles_assigned.vc_data_bind (e);
+                                                ]]>
+                                              </v:on-post>
+                                              <v:before-render>
+                                                <![CDATA[
+                                                  if (self.mode='edit' and check_grants (connection_get ('vspx_user'), '') <> 1)
+                                                    control.vc_enabled := 0;
+                                                ]]>
+                                              </v:before-render>
+                                            </v:button>
+                                          </td>
+                                        </tr>
+                                      </table> <!-- buttons container -->
+                                    </td>
+                                    <td>
+                                      <v:select-list name="sl_roles_assigned"
+                                                   xhtml_id="u_sl_roles_assigned"
+                                                   xhtml_size="5"
+                                                   xhtml_style="width:216px"
+                                                   xhtml_multiple="TRUE"
+                                                   xhtml_tabindex="15">
+                                        <v:before-data-bind>
+                                          <![CDATA[
+                                           (control as vspx_select_list).vsl_items := self.roles_grant_list;
+                                           (control as vspx_select_list).vsl_item_values := self.roles_grant_list;
+                                           (control as vspx_select_list).vsl_selected_inx := 0;
+                                          ]]>
+                                        </v:before-data-bind>
+                                      </v:select-list>
+                                    </td>
+                                  </tr>
+                                </table> <!-- complex_selector -->
+                              </td>
+                            </tr> <!-- account roles row -->
+                            <?vsp if (self.mode = 'edit') { ?>
+                            <tr>
+                              <td valign="top">
+                                <table class="complex_selector" width="90%">
+                                  <caption style="text-align:left;"><strong>Cryptographic Keys</strong></caption>
+                                  <?vsp
+                                    declare i int;
+
+                                    i := 0;
+                                    for select xenc_key, xenc_type from yac_list_keys (username) (xenc_key varchar, xenc_type varchar) x where username = self.user_name do
+                                    {
+                                  ?>
+                                  <tr>
+                                    <td>
+                                      <input type="checkbox" name="cb_key" value="<?V xenc_key ?>" />
+                                      <?V xenc_key ?> (<?V xenc_type ?>)
+                                    </td>
+                                    <td>
+                                      <?vsp if ((xenc_type = 'X.509') or (xenc_type = 'RSA')) { ?>
+                                      <v:url name="dwn1" value="Download" render-only="1" url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
+                                      <?vsp } ?>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                      i := i + 1;
+                                    }
+                                    if (i = 0)
+                                    {
+                                      http ('<tr><td colspan="2">~ no keys available ~</td></tr>');
+                                    }
+                                  ?>
+                                </table>
+                                <br />
+                                <?vsp if (i > 0) { ?>
+                                  <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username any;
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        username := self.t_login_name.ufl_value;
+                                        set_user_id (username);
+                                        set_qualifier ('DB');
+                                        for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
+                                        {
+                                          if (params[i] = 'cb_key')
+                                            xenc_key_remove (params[i+1]);
+                                        }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <?vsp } ?>
+                                </td>
+                                <td>
+                                  <table> <!-- right side -->
+                                    <tr>
+                                      <th width="130px"><label for="k_name">Key Name</label></th>
+                                      <td><v:text name="k_name" id="k_name" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_pwd">Password</label></th>
+                                      <td><v:text name="k_pwd" id="k_pwd" type="password" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_type">File Format</label></th>
+                                      <td>
+				  <v:select-list xhtml_id="k_type" name="k_type">
+				      <v:item name="PKCS12" value="PKCS12" />
+				      <v:item name="PEM" value="PEM" />
+				      <v:item name="DER" value="DER" />
+				  </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="k_value">Import File</label></th>
+                                      <td><input type="file" name="k_value" id="k_value" /></td>
+                                    </tr>
+                                  </table>
+                                  <v:button action="simple" name="imp_key" value="Import Key">
+                                    <v:on-post>
+                                      <![CDATA[
+				        declare username any;
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        declare exit handler for sqlstate '*', not found
+                                        {
+                                          self.vc_error_message := __SQL_MESSAGE;
+                                          self.vc_is_valid := 0;
+                                          return;
+                                        };
+                                        username := self.t_login_name.ufl_value;
+                                        set_user_id (username);
+                                        USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, self.k_pwd.ufl_value, null, 1);
+                                        EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            <?vsp } ?>
+                            <?vsp if (self.mode = 'edit') { ?>
+                            <tr>
+                              <td valign="top">
+                                <table class="complex_selector" width="90%">
+                                  <caption style="text-align:left;"><strong>Certificates</strong></caption>
+                                  <?vsp
+                                    declare i integer;
+                                    declare username, certs, cert_subjects any;
+
+                                    username := y_wide2utf (self.t_login_name.ufl_value);
+                                    certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                    cert_subjects := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+                                    for (i := 0; i < length (certs); i := i + 1)
+                                    {
+                                  ?>
+                                  <tr>
+                                    <td nowrap="nowrap">
+                                      <input type="checkbox" name="cb_ca" value="<?V i ?>" />
+                                      <?vsp
+                                        declare subject varchar;
+
+                                        subject := get_keyword (certs[i], cert_subjects);
+                                        http_value (coalesce (subject, certs[i]), 'b');
+                                      ?>
+                                    </td>
+                                  </tr>
+                                  <?vsp
+                                    }
+                                    if (length (certs) = 0)
+                                    {
+                                      http ('<tr><td colspan="2">~ no certificates available ~</td></tr>');
+                                    }
+                                  ?>
+                                </table>
+                                <br />
+                                <?vsp if (i > 0) { ?>
+                                  <v:button action="simple" name="del_ca" value="Remove Selected Keys" xhtml_tabindex="21">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username, cert, certs any;
+
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+                                        set_user_id (username);
+                                        set_qualifier ('DB');
+                                        for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
+                                        {
+                                          if (params[i] = 'cb_ca')
+                                          {
+                                            cert := certs[atoi(params[i+1])];
+                                            USER_CERT_UNREGISTER (username, cert);
+                                          }
+                                        }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <?vsp } ?>
+                                </td>
+                                <td>
+                                  <table> <!-- right side -->
+                                    <tr>
+                                      <th width="130px"><label for="ca_pwd">Password</label></th>
+                                      <td><v:text name="ca_pwd" id="ca_pwd" type="password" value="" /></td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_type">File Format</label></th>
+                                      <td>
+                                        <v:select-list xhtml_id="ca_type" name="ca_type">
+                                          <v:item name="PKCS12" value="PKCS12" />
+                                          <v:item name="PEM" value="PEM" />
+                                          <v:item name="DER" value="DER" />
+                                        </v:select-list>
+                                      </td>
+                                    </tr>
+                                    <tr>
+                                      <th><label for="ca_value">Import File</label></th>
+                                      <td><input type="file" name="ca_value" id="ca_value" /></td>
+                                    </tr>
+                                  </table>
+                                  <v:button action="simple" name="imp_ca" value="Import Certificate">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare username any;
+                                        if (self.vc_is_valid = 0)
+                                          return;
+
+                                        declare exit handler for sqlstate '*', not found
+                                        {
+                                          self.vc_error_message := __SQL_MESSAGE;
+                                          self.vc_is_valid := 0;
+                                          return;
+                                        };
+                                        username := y_wide2utf (self.t_login_name.ufl_value);
+                                        set_user_id (username);
+                                        USER_CERT_REGISTER (username, get_keyword ('ca_value', params), self.ca_pwd.ufl_value, self.ca_type.ufl_value);
+
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                </td>
+                              </tr>
+                            <?vsp } ?>
+                            <tr>
+                              <td colspan="4">
+                                <v:button action="simple" name="cancel" value="Cancel" xhtml_tabindex="21">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      http_request_status ('HTTP/1.1 302 Found');
+                                      http_header (sprintf ('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                                      return;
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+                                <?vsp
+                                  if (self.mode is NULL or self.mode <> 'edit')
+                                  {
+                                ?>
+                                <input type="reset" name="Submit2" value="Reset"/>
+                                <?vsp
+                                  }
+                                ?>
+                                <v:button action="simple" name="save" value="Save" xhtml_tabindex="22">
+                                  <v:on-post>
+                                    <![CDATA[
+  declare i, cnt, exist, u_ident, g_name  integer;
+  declare tmp, val, user_name, user_pwd, user_pwd2, e_mail, os_name, os_password, user_perm, user_home varchar;
+  declare attr any;
+  declare st, msg varchar;
+  declare webid varchar;
+
+  st := '00000';
+  msg := '';
+
+  if (self.vc_is_valid = 0)
+    return;
+
+  declare exit handler for sqlstate '*', not found
+    {
+      st := __SQL_STATE;
+      msg := __SQL_MESSAGE;
+      goto catch;
+    };
+
+  attr := vector();
+  user_name:= self.t_login_name.ufl_value;
+  user_pwd := y_utf2wide (self.t_user_password.ufl_value);
+  user_pwd2 := y_utf2wide (self.t_user_password_conf.ufl_value);
+  os_name :=  self.t_os_name.ufl_value;
+  e_mail := self.t_e_mail.ufl_value;
+
+  os_password :=  self.t_os_password.ufl_value;
+
+  if (user_pwd <> user_pwd2)
+    {
+      control.vc_parent.vc_error_message := 'Passwords mismatch';
+      self.vc_is_valid := 0;
+      return;
+    }
+
+  webid := get_keyword ('webid', params, null);  
+
+  if (exists (select 1 from SYS_USER_WEBID where UW_U_NAME <> user_name and UW_WEBID = webid))  
+    {
+      control.vc_parent.vc_error_message := 'This WebID is already registered for another account.';
+      self.vc_is_valid := 0;
+      return;
+    }
+
+  user_home := self.t_repository_path.ufl_value;
+
+  if (strcasestr (user_home, '/DAV/home/') is not null)
+    user_home := subseq(user_home, length('/DAV/home/'));
+
+  if (strcasestr(user_home, '/DAV/') is null)
+    {
+      user_home := replace(trim(user_home, '/ '), '/', '_');
+      user_home := replace(user_home, ' ', '_');
+      user_home := replace(user_home, '*', '_');
+      user_home := replace(user_home, '%', '_');
+      user_home := '/DAV/home/' || user_home || '/';
+    }
+  user_perm := '';
+  user_perm := concat (user_perm, chr (self.cb_user_perms_owner_r.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_owner_w.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_owner_x.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_group_r.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_group_w.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_group_x.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_other_r.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_other_w.ufl_selected + 48));
+  user_perm := concat (user_perm, chr (self.cb_user_perms_other_x.ufl_selected + 48));
+
+  user_perm := user_perm || case when self.cb_user_perms_index.ufl_selected <> 0 then 'R' else '' end;
+
+  select count (*) into exist from DB.DBA.SYS_USERS where U_NAME = user_name;
+
+    if (self.mode = 'create' and check_grants (connection_get ('vspx_user'), '') = 1)
+      {
+        if (exist > 0)
+          {
+            control.vc_parent.vc_error_message := sprintf ('Login %s already exists.', user_name);
+            self.vc_is_valid := 0;
+            return;
+          }
+	
+        attr := vector_concat (attr, vector ('PASSWORD_MODE', ''));
+        attr := vector_concat (attr, vector ('PASSWORD_MODE_DATA', ''));
+        attr := vector_concat (attr, vector ('GET_PASSWORD', ''));
+        attr := vector_concat (attr,
+                               vector ('LOGIN_QUALIFIER',
+                                       case when self.dl_default_qualifier.ufl_value=' __none'
+                                            then NULL
+                                            else self.dl_default_qualifier.ufl_value end));
+        attr := vector_concat (attr,
+                               vector ('PRIMARY_GROUP',
+                                       case when self.dl_default_group.ufl_value=' __none'
+                                            then NULL
+                                            else self.dl_default_group.ufl_value end));
+        attr := vector_concat (attr, vector ('E-MAIL', self.t_e_mail.ufl_value));
+        attr := vector_concat (attr, vector ('FULL_NAME', self.t_full_name.ufl_value));
+        attr := vector_concat (attr, vector ('HOME', user_home));
+        attr := vector_concat (attr, vector ('PERMISSIONS', user_perm));
+        attr := vector_concat (attr, vector ('DISABLED', case when self.cb_user_enable.ufl_selected = 0 then 1 else 0 end ));
+        attr := vector_concat (attr, vector ('SQL_ENABLE', case when self.sel_user_type.ufl_value = '0' or self.sel_user_type.ufl_value = '2' then 1 else 0 end ));
+        attr := vector_concat (attr, vector ('DAV_ENABLE', case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end ));
+
+        if (os_name <> '' and os_password <> '')
+            DB.DBA.SET_USER_OS_ACOUNT (user_name, os_name, os_password, 1);
+
+        USER_CREATE (user_name, user_pwd, attr);
+
+        if (os_name <> '' and os_password <> '')
+          DB.DBA.SET_USER_OS_ACOUNT (user_name, os_name, os_password);
+      }
+    else if (self.mode = 'edit')
+      {
+        if (exist = 0)
+          {
+            control.vc_parent.vc_error_message := 'No user "' || user_name || '" found!';
+            self.vc_is_valid := 0;
+            return;
+          }
+
+        if (user_pwd <> self.enc_password)
+          DB.DBA.USER_PASSWORD_SET (user_name, user_pwd );
+
+        if (os_name <> '' and os_password <> '')
+          DB.DBA.SET_USER_OS_ACOUNT (user_name, os_name, os_password);
+
+        USER_SET_OPTION (user_name, 'FULL_NAME', self.t_full_name.ufl_value );
+        USER_SET_OPTION (user_name, 'E-MAIL', self.t_e_mail.ufl_value );
+        USER_SET_OPTION (user_name, 'PERMISSIONS', user_perm);
+        USER_SET_OPTION (user_name, 'ConductorEdit', now ());
+
+  if (user_name <> 'dba')
+    {
+            USER_SET_OPTION (user_name,
+                         'LOGIN_QUALIFIER',
+                         case when self.dl_default_qualifier.ufl_value=' __none'
+                              then NULL
+                                                                else self.dl_default_qualifier.ufl_value
+                                                           end );
+            USER_SET_OPTION (user_name,
+                         'PRIMARY_GROUP',
+                         case when self.dl_default_group.ufl_value=' __none'
+                              then NULL
+                                                                else self.dl_default_group.ufl_value
+                                                           end );
+          }
+        if (check_grants (connection_get ('vspx_user'), '') = 1)
+          {
+      if (user_name <> 'dba')
+        {
+                USER_SET_OPTION (user_name, 'DISABLED', case when self.cb_user_enable.ufl_selected=0 then 1 else 0 end );
+          USER_SET_OPTION (user_name, 'SQL_ENABLE', case when self.sel_user_type.ufl_value = '0' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
+    USER_SET_OPTION (user_name, 'DAV_ENABLE',  case when self.sel_user_type.ufl_value = '1' or self.sel_user_type.ufl_value = '2' then 1 else 0 end);
+        }
+      USER_SET_OPTION (user_name, 'HOME', user_home);
+      if (lower (self.u_dav_quota.ufl_value) = 'unlimited' or atoi (self.u_dav_quota.ufl_value) < 0)
+        USER_SET_OPTION (user_name, 'DAVQuota', -1);
+      else
+        USER_SET_OPTION (user_name, 'DAVQuota', atoi (self.u_dav_quota.ufl_value)*(1024*1024));
+
+        if (self.ldap_auth.ufl_value = '-1')
+        {
+          USER_SET_OPTION (user_name, 'LDAPServer', null);
+        }
+        else
+        {
+          if (self.ldap_auth_s.ufl_value = 'none')
+      {
+        self.vc_is_valid := 0;
+        self.ldap_auth_s.ufl_failed := 1;
+        self.ldap_auth_s.vc_error_message := 'LDAP authentication is selected but no server is choosen.';
+        self.ldap_auth_s.ufl_error := self.ldap_auth_s.vc_error_message;
+        return;
+      }
+          USER_SET_OPTION (user_name, 'LDAPServer', vector (self.ldap_auth_s.ufl_value, atoi(self.ldap_auth.ufl_value)));
+        }
+          }
+      }
+    commit work;
+
+    if (check_grants (connection_get ('vspx_user'), '') = 1)
+      {
+        select distinct U_ID into u_ident
+                                          from DB.DBA.SYS_USERS
+          where U_NAME= user_name and
+                U_IS_ROLE = 0;
+
+        for select UG_UID, UG_GID
+                                              from DB.DBA.SYS_USER_GROUP
+              where UG_UID = u_ident do
+          {
+            select distinct U_NAME into g_name
+                                            from DB.DBA.SYS_USERS
+              where U_ID = UG_GID and U_IS_ROLE = 1;
+
+            if (g_name <> '' and g_name <> coalesce (self.dl_default_group.ufl_value, ''))
+              {
+                declare st, msg any;
+                exec ('USER_REVOKE_ROLE(?,?)', st, msg, vector (user_name, g_name));
+              }
+          }
+
+        cnt := length(self.roles_grant_list);
+        i := 0;
+        while (i < cnt)
+          {
+            if (self.roles_grant_list[i] <> self.dl_default_group.ufl_value or self.dl_default_group.ufl_value is null)
+        {
+                                            if (not exists (select 1
+                                                              from DB.DBA.SYS_ROLE_GRANTS, DB.DBA.SYS_USERS g, DB.DBA.SYS_USERS u
+      where g.U_NAME = self.roles_grant_list[i] and gi_super = u.u_id and u.u_name = user_name and gi_grant = g.u_id))
+                  USER_GRANT_ROLE(user_name, self.roles_grant_list[i]);
+        }
+            i := i + 1;
+          }
+
+  delete from SYS_USER_WEBID where UW_U_NAME = user_name;
+        if (length (webid) and length (user_name))
+    insert into SYS_USER_WEBID (UW_U_NAME, UW_WEBID) values (user_name, webid);
+
+        commit work;
+
+        if (self.cb_create_dav_home.ufl_selected and length(user_home) > 0)
+          {
+            declare davpass varchar;
+
+            select pwd_magic_calc ('dav', u_password, 1) into davpass
+                                            from DB.DBA.SYS_USERS
+                                           where u_name='dav' and u_is_role = 0;
+            {
+              declare home_vec any;
+              declare cur_path varchar;
+
+              user_home := trim (user_home, '/');
+              home_vec := split_and_decode (user_home, 0, '\0\0/');
+              i := 1;
+              cur_path := '/DAV/';
+              while (i < length (home_vec))
+                {
+                  cur_path := concat(cur_path, home_vec[i], '/');
+
+                  if (cast (DB.DBA.DAV_SEARCH_ID (cur_path, 'c') as int) < 0)
+                    {
+                      if (i < length (home_vec) - 1)
+                        {
+                          if (cast (DB.DBA.DAV_COL_CREATE (cur_path,
+                                                           '110100100R',
+                                                           'dav',
+                                                           'administrators',
+                                                           'dav',
+                                                           davpass) as int) < 0)
+                            {
+                                  control.vc_parent.vc_error_message := 'Cannot create directory' || cur_path;
+                                  self.vc_is_valid := 0;
+                                  return;
+                            }
+                        }
+                      else
+                        {
+                          if (cast (DB.DBA.DAV_COL_CREATE (cur_path,
+                                                           user_perm,
+                                                           user_name,
+                                                           self.dl_default_group.ufl_value,
+                                                           'dav',
+                                                           davpass) as int) < 0)
+                            {
+                              control.vc_parent.vc_error_message := 'Cannot create user home directory ' || cur_path;
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                        }
+                    }
+                  i := i + 1;
+                }
+            }
+            DAV_HOME_DIR_CREATE (user_name);
+        }
+      commit work;
+    }
+   catch:
+    if (msg <> '')
+      {
+        control.vc_parent.vc_error_message := msg;
+        self.vc_is_valid := 0;
+      }
+    else if (check_grants(connection_get ('vspx_user'), '') = 1)
+      {
+        http_request_status ('HTTP/1.1 302 Found');
+        http_header (sprintf('Location: accounts_page.vspx?page=1&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+      }
+                                    ]]>
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                            </tr>
+                          </table> <!-- main_page_area -->
+                        </v:form>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

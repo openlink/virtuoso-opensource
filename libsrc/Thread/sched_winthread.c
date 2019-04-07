@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,9 +31,9 @@
 #if !defined (WIN95COMPAT)
 #define _WIN32_WINNT 0x400
 #endif
-#include "thread_int.h"
+#include "Dk.h"
 
-char *build_thread_model = "-threads";
+const char *build_thread_model = "-threads";
 
 /* Indicate preemptive scheduling for this model */
 int _thread_sched_preempt = 1;
@@ -819,7 +819,7 @@ mutex_enter (dk_mutex_t *mtx)
   _thread_num_wait++;
 
 #ifdef MTX_DEBUG
-  assert (mtx->mtx_owner !=  mtx || !mtx);
+  assert (mtx->mtx_owner != self || !self);
   if (mtx->mtx_entry_check
       && !mtx->mtx_entry_check (mtx, thr, mtx->mtx_entry_check_cd))
     GPF_T1 ("Mtx entry check fail");
@@ -868,7 +868,7 @@ mutex_try_enter (dk_mutex_t *mtx)
 
 
 #ifdef MTX_DEBUG
-void mutex_leave_dbg (int line, char * file, dk_mutex_t *self)
+void mutex_leave_dbg (int line, const char * file, dk_mutex_t *self)
 #else
 void mutex_leave (dk_mutex_t *self)
 #endif

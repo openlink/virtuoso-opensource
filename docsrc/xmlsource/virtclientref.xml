@@ -5,7 +5,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -234,7 +234,7 @@ to the remote database schema objects.</para>
                 <graphic fileref="ui/adow13.png"/>
               </figure>
             </listitem>
-            <listitem>Once the Virtuoso service has successfully started, it is *recommended* that the default "dba" and "dav" passwords be changed to secure values by loading the URL "http://localhost:8890/install" in a Web Browser which loads the following page for making these changes.
+            <listitem>Once the Virtuoso service has successfully started, it is *recommended* that the default "dba" and "dav" passwords be changed to secure values by loading the URL "http://example.com/install" in a Web Browser which loads the following page for making these changes.
               <figure id="adow15" float="1">
                 <title>Defaults</title>
                 <graphic fileref="ui/adow15.png"/>

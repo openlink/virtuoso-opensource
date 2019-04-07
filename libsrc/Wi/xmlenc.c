@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,6 +69,8 @@ extern "C" {
 #include "http.h"
 #include "libutil.h"
 #include "bif_text.h"
+#include "date.h"
+#include "security.h"
 
 #define XML_ELEMENT_NAME(x) \
   ((char *)( ((x) && DV_TYPE_OF (x) == DV_ARRAY_OF_POINTER && ((caddr_t *)(x))[0]) ? ((caddr_t **)(x))[0][0] : NULL))
@@ -79,12 +81,19 @@ extern "C" {
 	sqlr_new_error ("42000", "XENC14", "Could not create %s key, possible reason - key with such name already exists", \
 	name ? name : "temporary");
 
+static X509_STORE * CA_certs = NULL;
 
 static char WSSE_BASE64_ENCODING_TYPE[] = "wsse:Base64Binary";
 
 #define XENC_BUF_SZ 80
 
 #define xenc_id_free(id) dk_free_box(id)
+
+#ifdef SHA256_ENABLE
+#define	DEFAULT_SHA_DIGEST	"sha256"
+#else
+#define	DEFAULT_SHA_DIGEST	"sha1"
+#endif
 
 char * wsse_uris[] = { WSS_WSS_URI, WSS_WSS_URI_0204, WSS_WSS_URI_0207, WSS_WSS_URI_OASIS, NULL };
 char * wsu_uris[] = { WSS_WSU_URI, WSS_WSU_URI_OASIS, NULL };
@@ -1189,6 +1198,10 @@ void xenc_key_remove (xenc_key_t * key, int lock)
       dk_free (key->ki.aes.k, key->ki.aes.bits / 8 /* number of bits in byte */);
     }
 #endif
+  if (key->xek_type == DSIG_KEY_RAW)
+    {
+      dk_free_box (key->ki.raw.k);
+    }
   if (key->xek_utok)
     {
       dk_free_box (key->xek_utok->uname);
@@ -1343,7 +1356,7 @@ xenc_get_password (char * name, char *tpass)
 
 /* certificate MUST be non zero */
 xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, char * private_key_str,
-					     const char * private_key_passwd, int is_digest, long type, long ask_pwd)
+					     const char * private_key_passwd, int is_digest, long type, long ask_pwd, int import_chain)
 {
   xenc_key_t * k = 0;
   X509 *x509 = 0;
@@ -1387,7 +1400,19 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
       PKCS12 *pk12 = NULL;
       STACK_OF(X509) *ca_list = NULL;
       pk12 = d2i_PKCS12_bio (b, NULL);
-      PKCS12_parse (pk12, private_key_passwd, &private_key, &x509, &ca_list);
+      PKCS12_parse (pk12, private_key_passwd, &private_key, &x509, import_chain ? &ca_list : NULL);
+      if (ca_list && import_chain)
+	{
+	  int i;
+	  mutex_enter (xenc_keys_mtx);
+	  for (i = 0; i < sk_X509_num (ca_list) ; i++)
+	    {
+	      X509 * x = sk_X509_value (ca_list, i);
+	      X509_STORE_add_cert (CA_certs, x);
+	    }
+	  mutex_leave (xenc_keys_mtx);
+	  sk_free (ca_list);
+	}
     }
   else if (type == CERT_DER_FORMAT)
     {
@@ -1770,7 +1795,7 @@ xenc_key_len_get (const char * algo)
   if (!algo)
     len = 0;
   else if (!strcmp (algo, XENC_TRIPLEDES_ALGO))
-    len = 3 * sizeof (des_cblock);
+    len = 3 * sizeof (DES_cblock);
   else if (!strcmp (algo, XENC_AES128_ALGO))
     len = 128;
   else if (!strcmp (algo, XENC_AES256_ALGO))
@@ -1821,7 +1846,7 @@ xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
 {
   xenc_key_t * key;
   P_SHA1_CTX * psha1;
-  des_cblock _key[5];
+  DES_cblock _key[5];
   int key_len = 0;
   caddr_t * utok_opts = (caddr_t *) xenc_get_option (ctx->wc_opts, "UsernameToken", NULL);
   caddr_t key_algo = xenc_get_option (utok_opts, "keyAlgorithm", XENC_TRIPLEDES_ALGO);
@@ -1850,13 +1875,13 @@ xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
 	      memset (&key->ki.triple_des.ks3, 0, sizeof (key->ki.triple_des.ks3));
 	      memset (&key->ki.triple_des.iv,  0, sizeof (key->ki.triple_des.iv));
 
-	      des_set_key_unchecked(&_key[0], key->ki.triple_des.ks1);
-	      des_set_key_unchecked(&_key[1], key->ki.triple_des.ks2);
-	      des_set_key_unchecked(&_key[2], key->ki.triple_des.ks3);
+	      DES_set_key_unchecked(&_key[0], &key->ki.triple_des.ks1);
+	      DES_set_key_unchecked(&_key[1], &key->ki.triple_des.ks2);
+	      DES_set_key_unchecked(&_key[2], &key->ki.triple_des.ks3);
 
-	      memcpy (key->ki.triple_des.k1, &_key[0], sizeof (des_cblock));
-	      memcpy (key->ki.triple_des.k2, &_key[1], sizeof (des_cblock));
-	      memcpy (key->ki.triple_des.k3, &_key[2], sizeof (des_cblock));
+	      memcpy (key->ki.triple_des.k1, &_key[0], sizeof (DES_cblock));
+	      memcpy (key->ki.triple_des.k2, &_key[1], sizeof (DES_cblock));
+	      memcpy (key->ki.triple_des.k3, &_key[2], sizeof (DES_cblock));
 	      break;
 	    }
 #ifdef AES_ENC_ENABLE
@@ -1950,6 +1975,7 @@ caddr_t bif_xenc_key_create_cert (caddr_t * qst, caddr_t * err_r, state_slot_t *
   const char * private_key_passwd = BOX_ELEMENTS(args) > 5 ?
     bif_string_or_null_arg (qst, args, 5,"xenc_key_create_cert") : "password";
   long ask_pwd = cli == bootstrap_cli ?  1 : 0;
+  long import_chain = BOX_ELEMENTS(args) > 6 ?  bif_long_arg (qst, args, 6,"xenc_key_create_cert") : 0;
 
   ptrlong cert_type_idx = ecm_find_name (cert_type, (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));
@@ -1960,7 +1986,7 @@ caddr_t bif_xenc_key_create_cert (caddr_t * qst, caddr_t * err_r, state_slot_t *
     sqlr_new_error ("42000", "XENC34", "%s certificates are still not supported",
 		    xenc_cert_types[cert_type_idx].xcert_name);
 
-  if (NULL == (k = xenc_key_create_from_x509_cert (name, cert, private_key, private_key_passwd, 0, type, ask_pwd)))
+  if (NULL == (k = xenc_key_create_from_x509_cert (name, cert, private_key, private_key_passwd, 0, type, ask_pwd, import_chain)))
     sqlr_new_error ("42000", "XENC10", "Could not create key %s with certificate", name);
 
   /* store a key nfo in U_OPTS as "KEYS" option */
@@ -2003,7 +2029,6 @@ caddr_t bif_xenc_key_exists (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
 int __xenc_key_dsa_init (char *name, int lock, int num)
 {
   DSA *dsa;
-  /*int num=512;*/
   xenc_key_t * pkey = xenc_get_key_by_name (name, lock);
   if (NULL == pkey)
     SQLR_NEW_KEY_ERROR (name);
@@ -2080,7 +2105,7 @@ static
 int __xenc_key_3des_init (char *name, char *pwd, int lock)
 {
   char _key[KEYSIZB+1];
-  des_cblock key[3];
+  DES_cblock key[3];
 
   xenc_key_t * pkey = xenc_get_key_by_name (name, lock);
   if (NULL == pkey)
@@ -2100,13 +2125,13 @@ int __xenc_key_3des_init (char *name, char *pwd, int lock)
 	(unsigned char *)_key,
 	strlen(_key), 1, (unsigned char*) &key[0], pkey->ki.triple_des.iv);
 
-  des_set_key_unchecked(&key[0], pkey->ki.triple_des.ks1);
-  des_set_key_unchecked(&key[1], pkey->ki.triple_des.ks2);
-  des_set_key_unchecked(&key[2], pkey->ki.triple_des.ks3);
+  DES_set_key_unchecked(&key[0], &pkey->ki.triple_des.ks1);
+  DES_set_key_unchecked(&key[1], &pkey->ki.triple_des.ks2);
+  DES_set_key_unchecked(&key[2], &pkey->ki.triple_des.ks3);
 
-  memcpy (pkey->ki.triple_des.k1, &key[0], sizeof (des_cblock));
-  memcpy (pkey->ki.triple_des.k2, &key[1], sizeof (des_cblock));
-  memcpy (pkey->ki.triple_des.k3, &key[2], sizeof (des_cblock));
+  memcpy (pkey->ki.triple_des.k1, &key[0], sizeof (DES_cblock));
+  memcpy (pkey->ki.triple_des.k2, &key[1], sizeof (DES_cblock));
+  memcpy (pkey->ki.triple_des.k3, &key[2], sizeof (DES_cblock));
 
   xenc_store_key (pkey, lock);
   return 0;
@@ -2114,13 +2139,13 @@ int __xenc_key_3des_init (char *name, char *pwd, int lock)
 
 void xenc_key_3des_init (xenc_key_t * pkey, unsigned char * k1, unsigned char * k2, unsigned char * k3)
 {
-  memcpy (pkey->ki.triple_des.k1, k1, sizeof (des_cblock));
-  memcpy (pkey->ki.triple_des.k2, k2, sizeof (des_cblock));
-  memcpy (pkey->ki.triple_des.k3, k3, sizeof (des_cblock));
+  memcpy (pkey->ki.triple_des.k1, k1, sizeof (DES_cblock));
+  memcpy (pkey->ki.triple_des.k2, k2, sizeof (DES_cblock));
+  memcpy (pkey->ki.triple_des.k3, k3, sizeof (DES_cblock));
 
-  des_set_key_unchecked((const_des_cblock*) k1, pkey->ki.triple_des.ks1);
-  des_set_key_unchecked((const_des_cblock*) k2, pkey->ki.triple_des.ks2);
-  des_set_key_unchecked((const_des_cblock*) k3, pkey->ki.triple_des.ks3);
+  DES_set_key_unchecked((const_DES_cblock*) k1, &pkey->ki.triple_des.ks1);
+  DES_set_key_unchecked((const_DES_cblock*) k2, &pkey->ki.triple_des.ks2);
+  DES_set_key_unchecked((const_DES_cblock*) k3, &pkey->ki.triple_des.ks3);
 }
 
 
@@ -2152,20 +2177,20 @@ caddr_t bif_xenc_key_3des_rand_create (caddr_t * qst, caddr_t * err_r, state_slo
 {
   caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_3DES_rand_create");
   xenc_key_t * k = 0;
-  des_cblock k1;
-  des_cblock k2;
-  des_cblock k3;
-  des_key_schedule ks1;
-  des_key_schedule ks2;
-  des_key_schedule ks3;
+  DES_cblock k1;
+  DES_cblock k2;
+  DES_cblock k3;
+  DES_key_schedule ks1;
+  DES_key_schedule ks2;
+  DES_key_schedule ks3;
 
-  des_random_key (&k1);
-  des_random_key (&k2);
-  des_random_key (&k3);
+  DES_random_key (&k1);
+  DES_random_key (&k2);
+  DES_random_key (&k3);
 
-  if ( (des_set_key_checked (&k1, ks1) < 0) ||
-       (des_set_key_checked (&k2, ks2) < 0) ||
-       (des_set_key_checked (&k3, ks3) < 0) )
+  if ( (DES_set_key_checked (&k1, &ks1) < 0) ||
+       (DES_set_key_checked (&k2, &ks2) < 0) ||
+       (DES_set_key_checked (&k3, &ks3) < 0) )
     GPF_T; /* parity check failed, library error - could not check result of it's own work */
 
   mutex_enter (xenc_keys_mtx);
@@ -2176,13 +2201,13 @@ caddr_t bif_xenc_key_3des_rand_create (caddr_t * qst, caddr_t * err_r, state_slo
       mutex_leave (xenc_keys_mtx);
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
-  memcpy (&k->ki.triple_des.k1, &k1, sizeof (des_cblock));
-  memcpy (&k->ki.triple_des.k2, &k2, sizeof (des_cblock));
-  memcpy (&k->ki.triple_des.k3, &k3, sizeof (des_cblock));
+  memcpy (&k->ki.triple_des.k1, &k1, sizeof (DES_cblock));
+  memcpy (&k->ki.triple_des.k2, &k2, sizeof (DES_cblock));
+  memcpy (&k->ki.triple_des.k3, &k3, sizeof (DES_cblock));
 
-  memcpy (&k->ki.triple_des.ks1, &ks1, sizeof (des_key_schedule));
-  memcpy (&k->ki.triple_des.ks2, &ks2, sizeof (des_key_schedule));
-  memcpy (&k->ki.triple_des.ks3, &ks3, sizeof (des_key_schedule));
+  memcpy (&k->ki.triple_des.ks1, &ks1, sizeof (DES_key_schedule));
+  memcpy (&k->ki.triple_des.ks2, &ks2, sizeof (DES_key_schedule));
+  memcpy (&k->ki.triple_des.ks3, &ks3, sizeof (DES_key_schedule));
 
   mutex_leave (xenc_keys_mtx);
 
@@ -2203,7 +2228,7 @@ caddr_t bif_xenc_key_3des_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
 #endif
   len = xenc_decode_base64 ((char *)key_base64, (char *)(key_base64 + box_length (key_base64)));
   if (len != 8 * 3)
-    sqlr_new_error ("42000", "XENC15", "3des key must 192 bits length, not %d", len * 8);
+    sqlr_new_error ("42000", "XENC15", "3DES key must 192 bits length, not %d", len * 8);
 
   mutex_enter (xenc_keys_mtx);
   k = xenc_key_create (name, XENC_DES3_ALGO, XENC_DES3_ALGO,  0);
@@ -2242,17 +2267,37 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
   caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_key_RSA_read");
   caddr_t key_data = bif_string_arg (qst, args, 1, "xenc_key_RSA_read");
+  long fmt = BOX_ELEMENTS (args) > 2 ? bif_long_arg (qst, args, 2, "xenc_key_RSA_read") : 0;
   xenc_key_t * k;
   int len;
   caddr_t key_base64 = box_copy (key_data);
-  RSA *r, *p;
+  RSA *r = NULL, *p = NULL;
+  BIO * in;
+  EVP_PKEY * pkey = NULL, * pkkey = NULL;
 
   len = xenc_decode_base64 (key_base64, key_base64 + box_length (key_base64));
-  r = d2i_RSAPrivateKey (NULL, (const unsigned char **) &key_base64, len);
-  p = d2i_RSAPublicKey (NULL, (const unsigned char **) &key_base64, len);
+  if (fmt)
+    {
+      in = BIO_new_mem_buf (key_base64, len);
+      pkey = d2i_PUBKEY_bio (in, NULL);
+      if (pkey && pkey->type == EVP_PKEY_RSA)
+	p = pkey->pkey.rsa;
+      BIO_reset (in);
+      pkkey = d2i_PrivateKey_bio (in, NULL);
+      if (pkkey && pkkey->type == EVP_PKEY_RSA)
+	r = pkkey->pkey.rsa;
+      BIO_free (in);
+    }
+  else
+    {
+      r = d2i_RSAPrivateKey (NULL, (const unsigned char **) &key_base64, len);
+      p = d2i_RSAPublicKey (NULL, (const unsigned char **) &key_base64, len);
+    }
 
   if (!r && !p)
     {
+      if (pkey) EVP_PKEY_free (pkey);
+      if (pkkey) EVP_PKEY_free (pkkey);
       dk_free_box (key_base64);
       sqlr_new_error ("42000", "XENC05", "Cannot import the supplied RSA key");
     }
@@ -2276,11 +2321,21 @@ bif_xenc_key_rsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
   if (r)
     {
-      k->xek_evp_private_key = EVP_PKEY_new();
-      if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+      if (pkkey)
+	k->xek_evp_private_key = pkkey;
+      else
+	{
+	  k->xek_evp_private_key = EVP_PKEY_new();
+	  if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+	}
     }
-  k->xek_evp_key = EVP_PKEY_new();
-  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+  if (pkey)
+    k->xek_evp_key = pkey;
+  else
+    {
+      k->xek_evp_key = EVP_PKEY_new();
+      if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+    }
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
@@ -2510,7 +2565,7 @@ caddr_t bif_xenc_key_3des_test_create (caddr_t * qst, caddr_t * err_r, state_slo
   xenc_key_t * k;
   int len = xenc_decode_base64 (key_base64, key_base64 + box_length (key_base64));
   if (len != 8 * 3)
-    sqlr_new_error ("....", "....", "3des key must 192 bits length, not %d", len * 8);
+    sqlr_new_error ("....", "....", "3DES key must 192 bits length, not %d", len * 8);
 
   if (DV_TYPE_OF (name) == DV_STRING)
     {
@@ -2590,9 +2645,9 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
 
   if (k->xek_type == DSIG_KEY_3DES)
     {
-      memcpy (in_buf, k->ki.triple_des.k1, sizeof (des_cblock));
-      memcpy (in_buf + sizeof (des_cblock), k->ki.triple_des.k2, sizeof (des_cblock));
-      memcpy (in_buf + 2*sizeof (des_cblock), k->ki.triple_des.k3, sizeof (des_cblock));
+      memcpy (in_buf, k->ki.triple_des.k1, sizeof (DES_cblock));
+      memcpy (in_buf + sizeof (DES_cblock), k->ki.triple_des.k2, sizeof (DES_cblock));
+      memcpy (in_buf + 2*sizeof (DES_cblock), k->ki.triple_des.k3, sizeof (DES_cblock));
     }
   else if (k->xek_type == DSIG_KEY_RSA)
     {
@@ -3098,7 +3153,7 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   xml_tree_ent_t ** origs_ents = 0;
   caddr_t * copies = 0;
   caddr_t ret_text = 0;
-  local_cursor_t * lc = 0;
+  local_cursor_t * lc = NULL;
   dk_set_t lcl = 0;
   query_instance_t * qi = (query_instance_t*) qst;
   caddr_t * err = 0;
@@ -3191,62 +3246,60 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if ((caddr_t*) SQL_SUCCESS != err)
 	{
 #ifdef DEBUG
-	    log_error ("XPATH error %s %s", err[1], err[2]);
+          log_error ("XPATH error %s %s", err[1], err[2]);
 #endif
-	    qr_free (qr);
-	    dk_free_tree ((box_t) err);
-	    goto finish;
-	  }
+          LC_FREE (lc);
+          qr_free (qr);
+          dk_free_tree ((box_t) err);
+        }
+      else if (lc && lc_next (lc))
+        {
+          ret = (xml_tree_ent_t **) (lc_nth_col (lc, 0));
+          dk_set_push (&lcl, lc);
+          lc = NULL;
+          ents =  ret;
+        }
 
-	if (lc && lc_next (lc))
-	  {
-	    ret = (xml_tree_ent_t **) (lc_nth_col (lc, 0));
-	    dk_set_push (&lcl, lc);
-	    ents =  ret;
-	  }
-	lc = 0;
-      finish:
-
-	type_idx = ecm_find_name (type, xenc_types, xenc_types_len, sizeof (xenc_type_t));
-	if (type_idx == -1)
-	  type_idx = XENCTypeElementIdx;
-
-	if (!ents || !xenc_check_ents_encryptability (ents, type_idx))
-	  {
-	    DO_SET (local_cursor_t*, lc, &lcl)
-	      {
-		lc_free (lc);
-	      }
-	    END_DO_SET();
-
-	    DO_SET (xpath_keyinst_t*, xpath_kei, &xp_keys)
-	      {
-		xpath_keyinst_free (xpath_kei);
-	      }
-	    END_DO_SET();
-
-	    if (!lcl)
-	      dk_free_box ((box_t) doc);
-
-	    dk_set_free (lcl);
-
-	    nss_free (_nss);
-
-	    if (err && err[0] == (caddr_t)3)
-	      sqlr_new_error ("42000", "XENC20", "XENC internal error %s %s", err[1], err[2]);
-	    else
-	      sqlr_new_error ("42000", "XENC20", "XENC internal error");
-	  }
-
-	xpath_key = (xpath_keyinst_t *) dk_alloc_box ( sizeof (xpath_keyinst_t), DV_ARRAY_OF_POINTER);
-	memset (xpath_key, 0, sizeof (xpath_keyinst_t));
-	xpath_key->ents = ents;
-	xpath_key->keyinst = (xenc_key_inst_t *) box_copy_tree ((box_t) keyinst);
-	xpath_key->index = xpath_arg_pointer + 1;
-	xpath_key->type_idx = type_idx;
-
-	dk_set_push (&xp_keys, xpath_key);
-	xpath_arg_pointer+=3;
+      type_idx = ecm_find_name (type, xenc_types, xenc_types_len, sizeof (xenc_type_t));
+      if (type_idx == -1)
+        type_idx = XENCTypeElementIdx;
+      
+      if (!ents || !xenc_check_ents_encryptability (ents, type_idx))
+        {
+          DO_SET (local_cursor_t*, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
+      
+          DO_SET (xpath_keyinst_t*, xpath_kei, &xp_keys)
+            {
+              xpath_keyinst_free (xpath_kei);
+            }
+          END_DO_SET();
+      
+          if (!lcl)
+            dk_free_box ((box_t) doc);
+      
+          dk_set_free (lcl);
+      
+          nss_free (_nss);
+      
+          if (err && err[0] == (caddr_t)3)
+            sqlr_new_error ("42000", "XENC20", "XENC internal error %s %s", err[1], err[2]);
+          else
+            sqlr_new_error ("42000", "XENC20", "XENC internal error");
+        }
+      
+      xpath_key = (xpath_keyinst_t *) dk_alloc_box ( sizeof (xpath_keyinst_t), DV_ARRAY_OF_POINTER);
+      memset (xpath_key, 0, sizeof (xpath_keyinst_t));
+      xpath_key->ents = ents;
+      xpath_key->keyinst = (xenc_key_inst_t *) box_copy_tree ((box_t) keyinst);
+      xpath_key->index = xpath_arg_pointer + 1;
+      xpath_key->type_idx = type_idx;
+      
+      dk_set_push (&xp_keys, xpath_key);
+      xpath_arg_pointer+=3;
     }
 
   xp_keys = dk_set_nreverse (xp_keys);
@@ -3305,6 +3358,11 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  char buf [1024];
 	  xenc_make_error (buf, sizeof (buf), t.xtb_err_code, t.xtb_err_buffer);
 	  dk_free_box (t.xtb_err_buffer);
+          DO_SET (local_cursor_t *, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
 	  if (!lcl)
 	    dk_free_box ((box_t) doc);
 	  dk_set_free (lcl);
@@ -3358,6 +3416,11 @@ bif_xmlenc_encrypt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (dsig_initialize (qi, doc_ses, strses_length (doc_ses), dsig, &c, &c_err))
 	{
 	  char buf [1024];
+          DO_SET (local_cursor_t *, lc, &lcl)
+            {
+              lc_free (lc);
+            }
+          END_DO_SET();
 	  if (!lcl)
 	    dk_free_box ((box_t) doc);
 	  dk_set_free (lcl);
@@ -4338,7 +4401,7 @@ certificate_decode (caddr_t encoded_cert, const char * value_type,
       caddr_t decoded_cert = decode_box (encoded_cert, encoding_type);
       if (decoded_cert)
 	{
-	  xenc_key_t * key = xenc_key_create_from_x509_cert (NULL, decoded_cert, NULL, NULL, 1, CERT_DER_FORMAT,0);
+	  xenc_key_t * key = xenc_key_create_from_x509_cert (NULL, decoded_cert, NULL, NULL, 1, CERT_DER_FORMAT,0,0);
 	  dk_free_box (decoded_cert);
 	  return key;
 	}
@@ -5975,7 +6038,7 @@ caddr_t bif_xenc_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
-/* encrypts 3des key by himself, and decrypt it. */
+/* encrypts 3DES key by itself, and decrypt it. */
 void xenc_kt_test ()
 {
   xenc_key_t * key = xenc_key_create ("virtdev_test@localhost", XENC_TRIPLEDES_ALGO, XENC_TRIPLEDES_ALGO, 1);
@@ -6014,7 +6077,7 @@ void xenc_kt_test ()
       xenc_des3_decryptor (out, strses_length (out), in, key, &t);
       key_data_2 = strses_string (in);
 
-      if (memcmp (key_data, key_data_2, 3 * sizeof (des_cblock)))
+      if (memcmp (key_data, key_data_2, 3 * sizeof (DES_cblock)))
 	xenc_assert (0);
       dk_free_box (key_data_2);
       dk_free_box (key_data);
@@ -6022,13 +6085,13 @@ void xenc_kt_test ()
       new_key = xenc_build_encrypted_key ("virtdev_test_rest", in, XENC_TRIPLEDES_ALGO, &t);
 
       if (memcmp (new_key->ki.triple_des.k1,
-		  key->ki.triple_des.k1, sizeof (des_cblock)))
+		  key->ki.triple_des.k1, sizeof (DES_cblock)))
 	xenc_assert (0);
       if (memcmp (new_key->ki.triple_des.k2,
-		  key->ki.triple_des.k2, sizeof (des_cblock)))
+		  key->ki.triple_des.k2, sizeof (DES_cblock)))
 	xenc_assert (0);
       if (memcmp (new_key->ki.triple_des.k3,
-		  key->ki.triple_des.k3, sizeof (des_cblock)))
+		  key->ki.triple_des.k3, sizeof (DES_cblock)))
 	xenc_assert (0);
 
       strses_flush (in);
@@ -6056,7 +6119,7 @@ void xenc_kt_test ()
     {
       xenc_assert (0);
       dk_free_box (t.xtb_err_buffer);
-      goto end;;
+      goto end;
     }
   XENC_TRY_END (&t);
 
@@ -6342,7 +6405,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 5, "xenc_x509_generate");
   float hours = BOX_ELEMENTS (args) > 6 ? (float) bif_float_arg (qst, args, 6, "xenc_x509_generate") : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 7 ? bif_string_arg (qst, args, 7, "xenc_x509_generate") : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 7 ? bif_string_arg (qst, args, 7, "xenc_x509_generate") : DEFAULT_SHA_DIGEST;
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1);
   xenc_key_t * cli_key = xenc_get_key_by_name (cli_pub_key, 1);
   X509 *x = NULL;
@@ -6488,7 +6551,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 3, "xenc_x509_ss_generate");
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 4, "xenc_x509_ss_generate");
   float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, "xenc_x509_ss_generate") : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, "xenc_x509_ss_generate") : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, "xenc_x509_ss_generate") : DEFAULT_SHA_DIGEST;
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x = NULL;
   EVP_PKEY *pk = NULL;
@@ -6780,7 +6843,7 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long serial = bif_long_arg (qst, args, 3, me);
   long days = bif_long_arg (qst, args, 4, me);
   float hours = BOX_ELEMENTS (args) > 5 ? (float) bif_float_arg (qst, args, 5, me) : 0;
-  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, me) : "sha1";
+  caddr_t digest_name = BOX_ELEMENTS (args) > 6 ? bif_string_arg (qst, args, 6, me) : DEFAULT_SHA_DIGEST;
   xenc_key_t * ca_key = xenc_get_key_by_name (key_name, 1), * k = xenc_get_key_by_name (cli_name, 1);
   X509 *x = NULL;
   X509_REQ *req = NULL;
@@ -6939,6 +7002,8 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pkcs12_export");
   caddr_t name  = bif_string_arg (qst, args, 1, "xenc_pkcs12_export");
   caddr_t pass  = bif_string_arg (qst, args, 2, "xenc_pkcs12_export");
+  int export_chain = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "xenc_pkcs12_export") : 0;
+  caddr_t acerts = BOX_ELEMENTS (args) > 4 ? bif_string_arg (qst, args, 4, "xenc_pkcs12_export") : NULL;
 
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x;
@@ -6948,14 +7013,56 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *data_ptr;
   int len;
   caddr_t ret = NULL;
+  STACK_OF (X509) * chain = NULL, *certs = NULL;
+  STACK_OF (X509_INFO) * inf = NULL;
 
   if (!key || !key->xek_evp_private_key || !key->xek_x509)
     goto err;
 
+  if (acerts)
+    {
+      BIO *in = BIO_new_mem_buf (acerts, box_length (acerts) - 1);
+      inf = PEM_X509_INFO_read_bio (in, NULL, NULL, NULL);
+      BIO_free (in);
+    }
+
   pk = key->xek_evp_private_key;
   x = key->xek_x509;
 
-  p12 = PKCS12_create(pass, name, pk, x, NULL, 0,0,0,0,0);
+  if (export_chain)
+    {
+      int i;
+      X509_STORE_CTX store_ctx;
+      X509_STORE_CTX_init (&store_ctx, CA_certs, x, NULL);
+      if (X509_verify_cert (&store_ctx) > 0)
+	chain = X509_STORE_CTX_get1_chain (&store_ctx);
+      else
+	{
+	  const char *err_str;
+	  err_str = X509_verify_cert_error_string (store_ctx.error);
+	  *err_ret = srv_make_new_error ("22023", "XENCX", "X509 error: %s", err_str);
+	  X509_STORE_CTX_cleanup (&store_ctx);
+	  goto err;
+	}
+      X509_STORE_CTX_cleanup (&store_ctx);
+      if (chain)
+	{
+	  certs = sk_X509_new_null ();
+	  for (i = 1; i < sk_X509_num (chain) ; i++)
+	    sk_X509_push (certs, sk_X509_value (chain, i));
+	  sk_free (chain);
+	}
+      if (inf)
+	{
+	  for (i = 0; i < sk_X509_INFO_num (inf); i++)
+	    {
+	      X509_INFO *itmp = sk_X509_INFO_value (inf, i);
+	      if (itmp->x509)
+		sk_X509_push (certs, itmp->x509);
+	    }
+	}
+    }
+  p12 = PKCS12_create(pass, name, pk, x, certs, 0,0,0,0,0);
   b = BIO_new (BIO_s_mem());
   i2d_PKCS12_bio (b, p12);
   len = BIO_get_mem_data (b, &data_ptr);
@@ -6966,8 +7073,13 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   BIO_free (b);
   PKCS12_free (p12);
+  sk_free (certs);
+  if (inf)
+    sk_X509_INFO_pop_free (inf, X509_INFO_free);
   return ret;
 err:
+  if (inf)
+    sk_X509_INFO_pop_free (inf, X509_INFO_free);
   return NULL;
 }
 
@@ -7351,12 +7463,170 @@ bif_xenc_x509_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (rc);
 }
 
+static X509 *
+x509_from_pem (caddr_t pem)
+{
+  BIO *buf;
+  X509 *ret;
+  buf = BIO_new_mem_buf (pem, box_length (pem) - 1);
+  ret = PEM_read_bio_X509 (buf, NULL, NULL, NULL);
+  BIO_free (buf);
+  return ret;
+}
+
+static caddr_t
+bif_xenc_x509_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_verify_array";
+  caddr_t cert_name = bif_string_arg (qst, args, 0, me);
+  caddr_t * ca_certs  = bif_arg (qst, args, 1, me);
+  xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
+  int rc = 0, inx;
+  BIO *buf;
+  X509 *ca_cert;
+
+  if (!cert)
+    SQLR_NEW_KEY_ERROR (cert_name);
+  if (!cert->xek_x509)
+    sqlr_new_error ("22023", ".....", "The certificate key does not have x509 assigned.");
+  if (!ARRAYP (ca_certs))
+    sqlr_new_error ("22023", ".....", "The x509_verify_array needs and array of PEM encoded CA certificates.");
+  DO_BOX (caddr_t, ca, inx, ca_certs)
+    {
+      EVP_PKEY * pubkey;
+      if (!DV_STRINGP (ca))
+	sqlr_new_error ("22023", ".....", "The CA certificates array must be array of strings.");
+      ca_cert = x509_from_pem (ca);
+      if (ca_cert)
+	{
+	  pubkey = X509_get_pubkey (ca_cert);
+	  rc = X509_verify (cert->xek_x509, pubkey);
+	  EVP_PKEY_free (pubkey);
+	  X509_free (ca_cert);
+	}
+      if (rc)
+	break;
+    }
+  END_DO_BOX;
+  return box_num (rc);
+}
+
+static caddr_t
+bif_xenc_x509_cert_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_cert_verify_array";
+  caddr_t cert_text = bif_string_arg (qst, args, 0, me);
+  caddr_t * ca_certs  = bif_arg (qst, args, 1, me);
+  X509 * cert = x509_from_pem (cert_text);
+  int rc = 0, inx;
+  BIO *buf;
+  X509 *ca_cert;
+
+  if (!cert)
+    sqlr_new_error ("22023", ".....", "The certificate cannot be loaded.");
+  if (!ARRAYP (ca_certs))
+    sqlr_new_error ("22023", ".....", "The x509_verify_array needs and array of PEM encoded CA certificates.");
+  DO_BOX (caddr_t, ca, inx, ca_certs)
+    {
+      EVP_PKEY * pubkey;
+      if (!DV_STRINGP (ca))
+	sqlr_new_error ("22023", ".....", "The CA certificates array must be array of strings.");
+      ca_cert = x509_from_pem (ca);
+      if (ca_cert)
+	{
+	  pubkey = X509_get_pubkey (ca_cert);
+	  rc = X509_verify (cert, pubkey);
+	  EVP_PKEY_free (pubkey);
+	  X509_free (ca_cert);
+	}
+      if (rc)
+	break;
+    }
+  END_DO_BOX;
+  X509_free (cert);
+  return box_num (rc);
+}
+
+
+static caddr_t
+bif_xenc_x509_ca_cert_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_cert_add";
+  caddr_t cert_text = bif_string_arg (qst, args, 0, me);
+  char err_buf[512];
+  sec_check_dba ((QI*)qst, me);
+  mutex_enter (xenc_keys_mtx);
+  if (CA_certs)
+    {
+      X509 * cacert = x509_from_pem (cert_text);
+      if (cacert)
+	X509_STORE_add_cert (CA_certs, cacert);
+      else
+	*err_ret = srv_make_new_error ("42000", ".....", "%s", get_ssl_error_text (err_buf, sizeof (err_buf)));
+    }
+  mutex_leave (xenc_keys_mtx);
+  return NULL;
+}
+
+static caddr_t
+bif_xenc_x509_ca_certs_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_certs_remove";
+
+  sec_check_dba ((QI*)qst, me);
+  mutex_enter (xenc_keys_mtx);
+  X509_STORE_free (CA_certs);
+  CA_certs = X509_STORE_new ();
+  mutex_leave (xenc_keys_mtx);
+  return NULL;
+}
+
+static caddr_t
+bif_xenc_x509_ca_certs_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "x509_ca_certs_list";
+  STACK_OF (X509_OBJECT) * certs;
+  BIO *in;
+  caddr_t ret;
+  int i, len;
+  char * ptr;
+  dk_set_t set = NULL;
+
+  sec_check_dba ((QI*)qst, me);
+  in = BIO_new (BIO_s_mem ());
+  mutex_enter (xenc_keys_mtx);
+  certs = CA_certs->objs;
+  len = sk_X509_OBJECT_num (certs);
+  for (i = 0; i < len; i++)
+    {
+      X509_OBJECT * obj = sk_X509_OBJECT_value (certs, i);
+      if (obj->type == X509_LU_X509)
+	{
+	  X509 *x = obj->data.x509;
+	  caddr_t itm;
+	  int blen;
+	  BIO_reset (in);
+	  PEM_write_bio_X509 (in, x);
+	  blen = BIO_get_mem_data (in, &ptr);
+	  itm = dk_alloc_box (blen + 1, DV_SHORT_STRING);
+	  memcpy (itm, ptr, blen);
+          itm [blen] = 0;
+	  dk_set_push (&set, itm);
+	}
+    }
+  mutex_leave (xenc_keys_mtx);
+  BIO_free (in);
+  ret = list_to_array (dk_set_nreverse (set));
+  return ret;
+}
+
 void bif_xmlenc_init ()
 {
 #ifdef DEBUG
   log_info ("xmlenc_init()");
 #endif
 
+  CA_certs = X509_STORE_new ();
   xenc_keys_mtx = mutex_allocate ();
   __xenc_keys = id_hash_allocate (231, sizeof (caddr_t), sizeof (caddr_t), strhash,
 				strhashcmp);
@@ -7503,6 +7773,11 @@ void bif_xmlenc_init ()
   bif_define ("xenc_dsig_sign", bif_xenc_dsig_signature);
   bif_define ("xenc_dsig_verify", bif_xenc_dsig_verify);
   bif_define ("x509_verify", bif_xenc_x509_verify);
+  bif_define ("x509_verify_array", bif_xenc_x509_verify_array);
+  bif_define ("x509_cert_verify_array", bif_xenc_x509_cert_verify_array);
+  bif_define ("x509_ca_cert_add", bif_xenc_x509_ca_cert_add);
+  bif_define ("x509_ca_certs_remove", bif_xenc_x509_ca_certs_remove);
+  bif_define ("xenc_x509_ca_certs_list", bif_xenc_x509_ca_certs_list);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));

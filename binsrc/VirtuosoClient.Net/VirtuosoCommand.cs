@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2013 OpenLink Software
+//  Copyright (C) 1998-2019 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -61,6 +61,7 @@ namespace OpenLink.Data.Virtuoso
 		private UpdateRowSource updatedRowSource = UpdateRowSource.None;
 		private VirtuosoParameterCollection parameters;
 		private int timeout = 30;
+		private CommandConcurrency concurrency = CommandConcurrency.CONCUR_DEFAULT;
 		private bool isPrepared = false;
 		private bool isExecuted = false;
 		private bool isFetching = false;
@@ -113,6 +114,18 @@ namespace OpenLink.Data.Virtuoso
 			GC.SuppressFinalize (this);
 		}
 		*/
+
+		public CommandConcurrency Concurrency
+		{
+			get
+			{
+				return concurrency;
+			}
+			set
+			{
+				concurrency = value;
+			}
+		}
 
 #if ADONET2
 		public override string CommandText
@@ -456,6 +469,7 @@ namespace OpenLink.Data.Virtuoso
 				innerCommand = connection.innerConnection.CreateInnerCommand (this);
 			innerCommand.SetTimeout (timeout);
 			innerCommand.SetCommandBehavior (behavior);
+			innerCommand.SetConcurrencyMode(concurrency);
 
 			bool schemaOnly = SchemaOnlyDataReader (behavior);
 			string text = GetCommandText ();
@@ -633,8 +647,7 @@ namespace OpenLink.Data.Virtuoso
 		{
 			if (isExecuted)
             {
-			  if (keepResults && commandType == CommandType.StoredProcedure &&
-innerCommand != null)
+			  if (keepResults && commandType == CommandType.StoredProcedure && innerCommand != null)
 				  innerCommand.GetParameters ();
             }
             if (innerCommand != null)
@@ -696,7 +709,8 @@ innerCommand != null)
 
 			return commandText;
 		}
-                private bool m_design_time_visible = false;
+        
+		private bool m_design_time_visible = false;
 
 #if (!MONO || ADONET2)
                 [Browsable(false)]

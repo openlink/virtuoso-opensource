@@ -1,11 +1,11 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tvspxex.sh,v 1.16.4.2.4.4 2013/01/02 16:15:34 source Exp $
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 
@@ -34,7 +34,7 @@ ISQL=$HOME/binsrc/tests/isql
 LOGFILE=`pwd`/tvspxex.output
 TESTDIR=`pwd`
 export LOGFILE ISQL
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 DSN=$PORT
 AWK=${AWK-gawk}
 
@@ -158,7 +158,7 @@ esac
 
 MakeIni ()
 {
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    case $SERVER in
    *[Mm]2*)
    cat >> $CFGFILE <<END_HTTP
@@ -173,7 +173,7 @@ http_proxy_connection_cache_timeout: 15
 END_HTTP
    ;;
    *virtuoso*)
-   MAKECFG_FILE ../$TESTCFGFILE $PORT $CFGFILE
+   MAKECFG_FILE $VIRTUOSO_TEST/../$TESTCFGFILE $PORT $CFGFILE
    cat >> $CFGFILE <<END_HTTP1
 [HTTPServer]
 HTTPLogFile = http.log
@@ -1373,7 +1373,7 @@ end_file
 
 cat > vspx_examples_000046_sql_exec <<end_file
 SET TRIGGERS OFF;
-insert replacing DB.DBA.VSPX_SESSION values('vspx', '4cd9774ebffce1cb0ad4680ee3c441be', 'dba', NULL, now());
+insert replacing DB.DBA.VSPX_SESSION values('vspx', '4cd9774ebffce1cb0ad4680ee3c441be', 'dba', NULL, now(), '127.0.0.1');
 ECHO BOTH \$IF \$EQU \$STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": VSPX session registration : STATE=" \$STATE " MESSAGE=" \$MESSAGE "\n";
 update DB.DBA.VSPX_SESSION set VS_STATE = (select top 1 VS_STATE from DB.DBA.VSPX_SESSION where VS_STATE is not NULL) where VS_STATE is NULL;
@@ -1892,7 +1892,7 @@ end_file
 cat > blogtests_000003_sql_exec <<end_file
 SET TRIGGERS OFF;
 delete from VSPX_SESSION;
-insert replacing DB.DBA.VSPX_SESSION values('blog', 'c5744fd5311ed088900f7078c1a4aaf1', 'user', serialize (vector('blogid','103','nuid',103,'uid','user','vspx_user','user')), now());
+insert replacing DB.DBA.VSPX_SESSION values('blog', 'c5744fd5311ed088900f7078c1a4aaf1', 'user', serialize (vector('blogid','103','nuid',103,'uid','user','vspx_user','user')), now(), '127.0.0.1');
 ECHO BOTH \$IF \$EQU \$STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": VSPX session registration : STATE=" \$STATE " MESSAGE=" \$MESSAGE "\n";
 
@@ -2593,7 +2593,7 @@ echo "" >> vspx_demo_init.sql
 echo "" >> vspx_demo_init.sql
 GenURIall
 GenBlogReq
-cp -f ../tvspxex.awk .
+cp -f $VIRTUOSO_TEST/tvspxex.awk .
 #MakeIni
 MakeConfig 
 CHECK_PORT $TPORT
@@ -2604,7 +2604,7 @@ sleep 1
 cd $TESTDIR
 DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/', '/', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < nwdemo.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/nwdemo.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading northwind data"
@@ -2628,7 +2628,7 @@ process_commands blogtests.list
 
 cd $TESTDIR
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tblogq.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tblogq.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tvspx.sh: loading tblogq.sql"

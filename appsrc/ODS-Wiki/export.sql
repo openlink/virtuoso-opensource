@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -117,7 +117,7 @@ create procedure WV.WIKI.EXPORT_TOPIC (
   if (__proc_exists (_proc))
 	_xhtml := call (_proc)(_topic, header, footer);
   else
-    signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exists');
+    signal ('XXXXX', 'Formatter for [' || _type || ']{' || _proc || '} does not exist');
 
   _xhtml := WV.WIKI.VSPXSLT (WV.WIKI.PROP(_type, 'xslt'), _xhtml, _params);
   --dbg_obj_princ (_xhtml);

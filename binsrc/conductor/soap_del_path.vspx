@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="soap_del_path"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="../vspx/vspx.xsd" >
+  <vm:pagetitle>Virtuoso HTTP Server Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Server management"/>
+    </vm:menu>
+    <vm:variables>
+      <v:variable name="lhost" persist="0" type="varchar" default="null"  param-name="lhost"/>
+      <v:variable name="vhost" persist="0" type="varchar" default="null" param-name="vhost" />
+      <v:variable name="lpath" persist="0" type="varchar" default="null" param-name="lpath" />
+      <v:variable name="caller" persist="0" type="varchar" default="'http_serv_mgmt.vspx'" param-name="caller" />
+    </vm:variables>
+    <vm:rawheader>
+      <h1 class="page_title">
+        <?vsp
+          declare caption varchar;
+          caption := 'URL mappings for Web site "';
+          if( self.lhost = '*ini*' )
+            caption := concat (caption, '{Default Web Site}"');
+          else if( self.lhost = '*sslini*' )
+            caption := concat (caption, '{Default SSL Web Site}"');
+          else
+            caption := concat (caption, self.lhost, '"');
+          http(caption);
+        ?>
+      </h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <v:form name="frm_confirm" method="POST" type="simple">
+        <div class="confirm_dialog">
+          <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+          <div class="confirm_text">
+            <p>You have requested deletion of virtual directory <?V self.lpath ?>.<br/>
+            This operation cannot be undone. Choose Delete to proceed or Cancel to go back.</p>
+          </div>
+          <div class="dialog_buttons">
+            <v:button name="conf_cancel" action="simple" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button name="conf_proceed" action="simple" value="Delete">
+              <v:on-post>
+                <![CDATA[
+                  VHOST_REMOVE (self.vhost, self.lhost, self.lpath);
+                  self.vc_redirect (sprintf ('%s?openat=%s', self.caller, self.lhost));
+                ]]>
+              </v:on-post>
+            </v:button>
+          </div>
+        </div>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

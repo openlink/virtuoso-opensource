@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sparql2sql.h"
 #include "arith.h"
 #include "sqlparext.h"
@@ -58,6 +59,9 @@ quad_map_t *qm_default;
 triple_case_t *tc_default;
 quad_storage_t *rdf_sys_storage;
 
+int rdf_create_graph_keywords = 0;
+int rdf_query_graph_keywords = 0;
+
 void rdf_ds_load_all (void)
 {
   int colctr;
@@ -71,12 +75,14 @@ void rdf_ds_load_all (void)
       qmcol = dk_alloc_box_zero (sizeof (qm_column_t), DV_ARRAY_OF_POINTER);
       qmcol->qmvcColumnName = box_dv_short_string (colnames[colctr]);
       qmval = qm_default_values[colctr] = (qm_value_t *)dk_alloc_box_zero (sizeof (qm_value_t), DV_ARRAY_OF_POINTER);
+      box_flags (qmval) |= BF_VALID_JSO;
       qmval->qmvTableName = box_dv_short_string ("DB.DBA.RDF_QUAD");
       qmval->qmvColumns = (qm_column_array_t)list (1, qmcol);
     }
 
 /* field for graph, subject and predicate */
   qmf = qm_format_default_iri_ref = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  box_flags (qmf) |= BF_VALID_JSO;
   qmf->qmfName = box_dv_short_string ("default-iid-nonblank");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" /* LONG: */ ^{alias-dot}^^{column}^");
@@ -113,6 +119,7 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrDatatype = NULL;
   qmf->qmfValRange.rvrLanguage = NULL;
   qmf->qmfValRange.rvrFixedValue = NULL;
+  qmf->qmfValRange.rvrFixedOrigText = NULL;
   qmf->qmfValRange.rvrSprintffs = NULL;
   qmf->qmfValRange.rvrSprintffCount = 0;
   qmf->qmfValRange.rvrIriClasses = NULL;
@@ -122,11 +129,13 @@ void rdf_ds_load_all (void)
   qmf->qmfUriIdOffset = 0;
 
   qmf = qm_format_default = (qm_format_t *)dk_alloc_box_zero (sizeof (qm_format_t), DV_ARRAY_OF_POINTER);
+  box_flags (qmf) |= BF_VALID_JSO;
   qmf->qmfName = box_dv_short_string ("default");
   qmf->qmfShortTmpl = box_dv_short_string (" ^{alias-dot}^^{column}^");
   qmf->qmfLongTmpl = box_dv_short_string (" __rdf_long_of_obj /*o*/ (^{alias-dot}^^{column}^)");
   qmf->qmfSqlvalTmpl = box_dv_short_string (" __rdf_sqlval_of_obj /*o*/ (^{alias-dot}^^{column}^)");
-  qmf->qmfBoolTmpl = box_dv_short_string (" DB.DBA.RQ_BOOL_OF_O (^{alias-dot}^^{column}^)");
+  qmf->qmfBoolTmpl = box_dv_short_string (" sparql_ebv_int_of_sqlval (__ro2sq (^{alias-dot}^^{column}^))");
+  qmf->qmfSparqlEbvTmpl = box_dv_short_string (" sparql_ebv_of_sqlval (__ro2sq (^{alias-dot}^^{column}^))");
   qmf->qmfIsrefOfShortTmpl = box_dv_short_string (" isiri_id (^{tree}^)");
   qmf->qmfIsuriOfShortTmpl = box_dv_short_string (" is_named_iri_id (^{tree}^)");
   qmf->qmfIsblankOfShortTmpl = box_dv_short_string (" is_bnode_iri_id (^{tree}^)");
@@ -136,7 +145,8 @@ void rdf_ds_load_all (void)
   qmf->qmfDatatypeOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_DATATYPE_OF_OBJ (__ro2sq (^{tree}^))");
   qmf->qmfLanguageOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_LANGUAGE_OF_OBJ (__ro2sq (^{tree}^))");
   qmf->qmfSqlvalOfShortTmpl = box_dv_short_string (" __ro2sq (^{tree}^)");
-  qmf->qmfBoolOfShortTmpl = box_dv_short_string (" DB.DBA.RDF_BOOL_OF_OBJ (__ro2sq (^{tree}^))");
+  qmf->qmfBoolOfShortTmpl = box_dv_short_string (" sparql_ebv_int_of_obj (__ro2sq (^{tree}^))");
+  qmf->qmfSparqlEbvOfShortTmpl = box_dv_short_string (" sparql_ebv_of_obj (__ro2sq (^{tree}^))");
   qmf->qmfIidOfShortTmpl = box_dv_short_string (" __i2idn (^{tree}^)");
   qmf->qmfUriOfShortTmpl = box_dv_short_string (" id_to_iri_nosignal (^{tree}^)");
   qmf->qmfStrsqlvalOfShortTmpl = box_dv_short_string (" __rdf_strsqlval (^{tree}^, 0)");
@@ -157,6 +167,7 @@ void rdf_ds_load_all (void)
   qmf->qmfValRange.rvrDatatype = NULL;
   qmf->qmfValRange.rvrLanguage = NULL;
   qmf->qmfValRange.rvrFixedValue = NULL;
+  qmf->qmfValRange.rvrFixedOrigText = NULL;
   qmf->qmfValRange.rvrSprintffs = NULL;
   qmf->qmfValRange.rvrSprintffCount = 0;
   qmf->qmfValRange.rvrIriClasses = NULL;
@@ -193,6 +204,7 @@ void rdf_ds_load_all (void)
   qm_default_values[SPART_TRIPLE_OBJECT_IDX]->qmvFormat = qm_format_default;
 
   qm_default = (quad_map_t *)dk_alloc_box_zero (sizeof (quad_map_t), DV_ARRAY_OF_POINTER);
+  box_flags (qm_default) |= BF_VALID_JSO;
   qm_default->qmGraphMap = qm_default_values[SPART_TRIPLE_GRAPH_IDX];
   qm_default->qmSubjectMap = qm_default_values[SPART_TRIPLE_SUBJECT_IDX];
   qm_default->qmPredicateMap = qm_default_values[SPART_TRIPLE_PREDICATE_IDX];
@@ -200,9 +212,11 @@ void rdf_ds_load_all (void)
   qm_default->qmTableName = box_dv_short_string ("DB.DBA.RDF_QUAD");
 
   tc_default = (triple_case_t *)dk_alloc_box_zero (sizeof (triple_case_t), DV_ARRAY_OF_POINTER);
+  box_flags (tc_default) |= BF_VALID_JSO;
   tc_default->tc_qm = qm_default;
 
   rdf_sys_storage = (quad_storage_t *)dk_alloc_box_zero (sizeof (quad_storage_t), DV_ARRAY_OF_POINTER);
+  box_flags (rdf_sys_storage) |= BF_VALID_JSO;
   rdf_sys_storage->qsDefaultMap = qm_default;
 
 #if 0
@@ -377,6 +391,32 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA"; return;
       default: return;
       }
+  if (!strcmp (name, "HTML;NICE_MICRODATA"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA"; return;
+      default: return;
+      }
+  if (!strcmp (name, "HTML;NICE_TTL"))
+    switch (subtype)
+      {
+      case SELECT_L: case COUNT_DISTINCT_L: case DISTINCT_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_RESULT_SET_AS_HTML_NICE_TTL"; return;
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL"; return;
+      case ASK_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_HTML_NICE_TTL"; return;
+      default: return;
+      }
+  if (!strcmp (name, "HTML;SCRIPT_LD_JSON"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON"; return;
+      default: return;
+      }
+  if (!strcmp (name, "HTML;SCRIPT_TTL"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL"; return;
+      default: return;
+      }
   if (!strcmp (name, "JSON;MICRODATA"))
     switch (subtype)
       {
@@ -403,6 +443,18 @@ ssg_find_formatter_by_name_and_subtype (ccaddr_t name, ptrlong subtype,
     switch (subtype)
       {
       case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON"; return;
+      default: return;
+      }
+  if (!strcmp (name, "JSON;LD"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD"; return;
+      default: return;
+      }
+  if (!strcmp (name, "JSON;LD_CTX"))
+    switch (subtype)
+      {
+      case CONSTRUCT_L: case DESCRIBE_L: ret_formatter[0] = "DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX"; return;
       default: return;
       }
   if (!strcmp (name, "CXML"))
@@ -732,11 +784,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name}^ inside a loop, should be ^{as-name-N}^", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name");
+              ssg_putchar (' ');  
               ssg_prin_id (ssg, asname);
             }
           asname_printed = 1;
@@ -749,11 +798,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, 0);
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name-0*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name-0");
+              ssg_putchar (' ');  
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
             }
@@ -766,11 +812,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, 1);
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name-0*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name-1");
+              ssg_putchar (' ');  
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
             }
@@ -783,11 +826,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-dt}^ inside a loop", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name-dt*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name-dt");
+              ssg_putchar (' ');  
               ssg_prin_id_with_suffix (ssg, asname, "_dt");
             }
           asname_printed = 1;
@@ -800,11 +840,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             spar_sqlprint_error2 ("ssg_" "print_tmpl(): can't use ^{as-name-lang}^ inside a loop", asname_printed);
           if (IS_BOX_POINTER (asname))
             {
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name-lang*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name-lang");
+              ssg_putchar (' ');  
               ssg_prin_id_with_suffix (ssg, asname, "_lang");
             }
           asname_printed = 1;
@@ -819,11 +856,8 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
             {
               char buf[60];
               snprintf (buf, sizeof (buf), "%s~%d", asname, col_idx);
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*as-name-N*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "as-name-N");
+              ssg_putchar (' ');  
               ssg_prin_id (ssg, buf);
               asname_printed = 1;
             }
@@ -1083,9 +1117,7 @@ ssg_print_tmpl_phrase (struct spar_sqlgen_s *ssg, qm_format_t *qm_fmt, const cha
           res = (caddr_t *)sprintf_inverse_ex ((caddr_t *) ssg->ssg_sparp->sparp_sparqre->sparqre_qi, &err, str, qm_fmt->qmfCustomString1, 2, (unsigned char *) qm_fmt->qmfArgDtps);
           dk_free_tree (err);
           if ((DV_ARRAY_OF_POINTER != DV_TYPE_OF (res)) || (col_idx > BOX_ELEMENTS (res)))
-            {
-              ssg_puts (" NULL /* failed spfinv */ ");
-            }
+            ssg_puts_with_comment (" NULL", "failed spfinv");
           ssg_print_box_as_sql_atom (ssg, res[col_idx], SQL_ATOM_NARROW_OR_WIDE);
           dk_free_tree (res);
         }
@@ -1174,11 +1206,8 @@ print_cut:
   asname_printed = ssg_print_tmpl_phrase (ssg, qm_fmt, tmpl, tmpl_end, alias, qm_val, tree, -1, asname);
   if (IS_BOX_POINTER (asname) && !asname_printed)
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*tmpl*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "tmpl");
+      ssg_putchar (' ');  
       ssg_prin_id (ssg, asname);
     }
 }
@@ -1502,38 +1531,41 @@ sparp_lit_native_valmode (SPART *tree)
       dtp = DV_TYPE_OF (tree->_.lit.val);
       if (NULL != tree->_.lit.datatype)
         {
+	caddr_t dt = tree->_.lit.datatype;
         switch (dtp)
           {
           case DV_DOUBLE_FLOAT:
-            if (uname_xmlschema_ns_uri_hash_double == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_double == dt)
               return SSG_VALMODE_NUM;
             /* no break */
           case DV_SINGLE_FLOAT:
           case DV_NUMERIC:
-            if (uname_xmlschema_ns_uri_hash_decimal == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_decimal == dt)
               return SSG_VALMODE_NUM;
             /* no break */
           case DV_LONG_INT:
-            if (uname_xmlschema_ns_uri_hash_integer == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_integer == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_boolean == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_boolean == dt)
               return SSG_VALMODE_BOOL;
             break;
           case DV_DATETIME:
-            if (uname_xmlschema_ns_uri_hash_dateTime == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_dateTime == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_date == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_date == dt)
               return SSG_VALMODE_NUM;
-            if (uname_xmlschema_ns_uri_hash_time == tree->_.lit.datatype)
+            if (uname_xmlschema_ns_uri_hash_time == dt)
               return SSG_VALMODE_NUM;
             break;
-#if 0
           case DV_STRING:
-            if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
-              sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
+#if 0
+            if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == dt) &&
+              sparp_literal_is_xsd_valid (sparp, tree->_.lit.val, dt, tree->_.lit.language) )
               return SSG_VALMODE_NUM;
-            break;
 #endif
+            if ((uname_xmlschema_ns_uri_hash_string != dt) && rb_uname_to_flags_of_parseable_datatype (dt) & RDF_TYPE_PARSEABLE)
+              return SSG_VALMODE_LONG; /* String literal value of parseable datatype means ill formed weak-known datatype, such as some numeric. */
+            break;
           }
         }
       return SSG_VALMODE_SQLVAL;
@@ -1557,7 +1589,11 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   if (eq->e_rvr.rvrRestrictions & (SPART_VARR_CONFLICT | SPART_VARR_ALWAYS_NULL))
     return SSG_VALMODE_BOOL; /* A smallest possible type because the equiv is in conflict and no binding exists */
   if (SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions)
+    {
+      if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE))
+	return SSG_VALMODE_LONG;	/* String literal value of parseable datatype means ill formed weak-known datatype, such as some numeric; Garbage should be handled with caution, not with speed in mind */
     return SSG_VALMODE_SQLVAL;
+    }
   if (SELECT_L == gp->_.gp.subtype)
     {
       caddr_t varname = eq->e_varnames[0];
@@ -1593,19 +1629,28 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
   if (VALUES_L == gp->_.gp.subtype)
     {
       if (SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions)
-        { 
-          caddr_t qmf_name = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
-          jso_rtti_t *qmf_rtti = (jso_rtti_t *)gethash (qmf_name, jso_rttis_of_names);
-          if ((NULL != qmf_rtti) && JSO_STATUS_LOADED == qmf_rtti->jrtti_status)
+        {
+          int eq_not_null = (SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions);
+          caddr_t qmf_name = eq_not_null ? uname_rdfdf_ns_uri_default_iid : uname_rdfdf_ns_uri_default_iid_nullable;
+          jso_class_descr_t *qmf_cd = NULL;
+          jso_rtti_t *qmf_rtti = NULL;
+          if (JSO_GET_OK != jso_get_pinned_cd_and_rtti (uname_virtrdf_ns_uri_QuadMapFormat, qmf_name, &qmf_cd, &qmf_rtti))
+            return (ssg_valmode_t)(eq_not_null ? qm_format_default : qm_format_default_nullable);
             return (ssg_valmode_t)(qmf_rtti->jrtti_self);
         }
+      if (SPART_VARR_IS_BOOL & eq->e_rvr.rvrRestrictions)
+        return SSG_VALMODE_BOOL;
+      if (SPART_VARR_LONG_EQ_SQL & eq->e_rvr.rvrRestrictions)
+        return SSG_VALMODE_NUM;
       return SSG_VALMODE_LONG;
     }
   if ((UNION_L == gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == gp->_.gp.subtype))
     {
       ssg_valmode_t smallest_union = SSG_VALMODE_AUTO;
       int var_miss_in_some_members = 0;
+      int var_is_fixed_ref_in_some_members = 0;
       int all_cases_make_only_refs = 1;
+      int sqlval_is_ok_and_cheap = 0x2;
       DO_BOX_FAST (SPART *, gp_member, gp_member_idx, gp->_.gp.members)
         {
           sparp_equiv_t *member_eq;
@@ -1622,20 +1667,15 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
             (SPART_VARR_NOT_NULL & member_eq->e_rvr.rvrRestrictions) &&
             (SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions) )
             {
-              quad_map_t *dflt_qm = sparp->sparp_storage ? sparp->sparp_storage->qsDefaultMap : NULL;
-              member_valmode = qm_format_default_iri_ref;
-              if ((NULL != dflt_qm) && (NULL != dflt_qm->qmSubjectMap))
-                member_valmode = dflt_qm->qmSubjectMap->qmvFormat;
+              var_is_fixed_ref_in_some_members = 1;
+              continue;
             }
-          else
-            {
-              member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
-              if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions))
-                all_cases_make_only_refs = 0;
-            }
+          member_valmode = sparp_equiv_native_valmode (sparp, gp_member, member_eq);
+          if (all_cases_make_only_refs && !(SPART_VARR_IS_REF & member_eq->e_rvr.rvrRestrictions))
+            all_cases_make_only_refs = 0;
           if (NULL == member_valmode)
             continue;
-          smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode);
+          smallest_union = ssg_smallest_union_valmode (smallest_union, member_valmode, &sqlval_is_ok_and_cheap);
         }
       END_DO_BOX_FAST;
 #ifdef DEBUG
@@ -1650,8 +1690,16 @@ sparp_equiv_native_valmode (sparp_t *sparp, SPART *gp, sparp_equiv_t *eq)
           else if (SPART_VARR_NOT_NULL & smallest_union->qmfValRange.rvrRestrictions)
             smallest_union = ssg_find_nullable_superformat (smallest_union); /* ... format that does not support NULLs is not appropriate, too */
         }
-      if (all_cases_make_only_refs && (SSG_VALMODE_LONG == smallest_union))
-        smallest_union = SSG_VALMODE_SQLVAL;
+      if ((sqlval_is_ok_and_cheap || all_cases_make_only_refs) && (SSG_VALMODE_LONG == smallest_union))
+        return SSG_VALMODE_SQLVAL;
+      if (var_is_fixed_ref_in_some_members)
+        {
+          quad_map_t *dflt_qm = sparp->sparp_storage ? sparp->sparp_storage->qsDefaultMap : NULL;
+          ssg_valmode_t fixed_ref_member_valmode = qm_format_default_iri_ref;
+          if ((NULL != dflt_qm) && (NULL != dflt_qm->qmSubjectMap))
+            fixed_ref_member_valmode = dflt_qm->qmSubjectMap->qmvFormat;
+          smallest_union = ssg_smallest_union_valmode (smallest_union, fixed_ref_member_valmode, &sqlval_is_ok_and_cheap);
+        }
       return smallest_union;
     }
   largest_intersect = SSG_VALMODE_AUTO;
@@ -1734,22 +1782,45 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
       switch (tree->_.builtin.btype)
         {
         case IN_L: case LIKE_L: return SSG_VALMODE_BOOL;
-        case SPAR_BIF_COALESCE:
+        case SPAR_BIF_CASEWHEN: case SPAR_BIF_CASEX:
           {
-            ssg_valmode_t union_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[0]);
-            int argctr;
-            for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+            ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;
+            int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            int sqlval_is_ok_and_cheap = 0x2;
+            for (argctr = argcount-1; argctr > 1; argctr -= 2)
               {
                 ssg_valmode_t arg_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[argctr]);
-                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode);
+                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode, &sqlval_is_ok_and_cheap);
               }
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == union_valmode))
+              union_valmode = SSG_VALMODE_SQLVAL;
+            return union_valmode;
+          }
+        case SPAR_BIF_COALESCE:
+          {
+            ssg_valmode_t union_valmode = SSG_VALMODE_AUTO;
+            int sqlval_is_ok_and_cheap = 0x2;
+            int argctr, argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
+            if (0 == argcount)
+              return SSG_VALMODE_BOOL;
+            for (argctr = argcount; argctr--; /* no step */)
+              {
+                ssg_valmode_t arg_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[argctr]);
+                union_valmode = ssg_smallest_union_valmode (union_valmode, arg_valmode, &sqlval_is_ok_and_cheap);
+              }
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == union_valmode))
+              union_valmode = SSG_VALMODE_SQLVAL;
             return union_valmode;
           }
         case SPAR_BIF_IF:
           {
             ssg_valmode_t t_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[1]);
             ssg_valmode_t f_branch_valmode = sparp_expn_native_valmode (sparp, tree->_.builtin.args[2]);
-            return ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode);
+            int sqlval_is_ok_and_cheap = 1;
+            ssg_valmode_t union_valmode = ssg_smallest_union_valmode (t_branch_valmode, f_branch_valmode, &sqlval_is_ok_and_cheap);
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == union_valmode))
+              union_valmode = SSG_VALMODE_SQLVAL;
+            return union_valmode;
           }
         default:
           {
@@ -1853,6 +1924,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
           if (SSG_VALMODE_AUTO == tr_valmode)
             {
               ptrlong rvr = sparp_restr_bits_of_expn (sparp, triple->_.triple.tr_fields[tr_idx]);
+              if (rvr & SPART_VARR_IS_BOOL)
+                return SSG_VALMODE_BOOL;
               if ((rvr & SPART_VARR_IS_REF) || ((rvr & (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL)) == (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL)))
                 return SSG_VALMODE_SQLVAL;
               return SSG_VALMODE_LONG;
@@ -1908,6 +1981,8 @@ sparp_expn_native_valmode (sparp_t *sparp, SPART *tree)
         return SSG_VALMODE_LONG;
 #endif
       }
+    case ORDER_L:
+      return sparp_expn_native_valmode (sparp, tree->_.oby.expn);
     default: break;
     }
   spar_internal_error (sparp, "sparp_" "expn_native_valmode(): unsupported case");
@@ -1929,27 +2004,29 @@ sparp_set_valmodes_of_t_inouts (sparp_t *sparp, sparp_t *sub_sparp, SPART *wrapp
       caddr_t in_vname, out_vname;
       SPART *in_alias, *out_alias;
       ssg_valmode_t in_vmode, out_vmode, mixed_vmode;
+      int sqlval_is_ok_and_cheap;
       in_vname = t_in_vars [v_ctr]->_.var.vname;
       out_vname = t_out_vars [v_ctr]->_.var.vname;
       in_alias = sparp_find_subexpn_in_retlist (sparp, in_vname, retvals, 1);
       out_alias = sparp_find_subexpn_in_retlist (sparp, out_vname, retvals, 1);
       in_vmode = sparp_expn_native_valmode (sub_sparp, in_alias);
       out_vmode = sparp_expn_native_valmode (sub_sparp, out_alias);
+      sqlval_is_ok_and_cheap = 0x1;
       if (!IS_BOX_POINTER (in_vmode))
         spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", in_vname);
       if (!in_vmode->qmfIsBijection)
         spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", in_vname);
       if (1 != in_vmode->qmfColumnCount)
-        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", in_vname);
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", in_vname, (int)(in_vmode->qmfColumnCount));
       if (!IS_BOX_POINTER (out_vmode))
         spar_error (sparp, "Variable ?%.100s in T_IN list is not a value from some triple", out_vname);
       if (!out_vmode->qmfIsBijection)
         spar_error (sparp, "Variable ?%.100s in T_IN list is not made by bijection", out_vname);
       if (1 != out_vmode->qmfColumnCount)
-        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname);
-      mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode);
-      if (!IS_BOX_POINTER (mixed_vmode))
-        spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vmode, out_vname);
+        spar_error (sparp, "Variable ?%.100s in T_IN list is made from %d database columns, should be made from exactly one", out_vname, (int)(out_vmode->qmfColumnCount));
+      mixed_vmode = ssg_smallest_union_valmode (in_vmode, out_vmode, &sqlval_is_ok_and_cheap);
+      if (!IS_BOX_POINTER (mixed_vmode)) /*!!! TBD better decision making, at least for SSG_VALMODE_LONG with and without sqlval_is_ok_and_cheap set and for SSG_VALMODE_SQLVAL */
+        spar_error (sparp, "Variable ?%.100s in T_IN list and corresponding variable ?%.100s in T_OUT get values from columns that are too different", in_vname, out_vname);
       in_alias->_.alias.native = out_alias->_.alias.native = mixed_vmode;
     }
 }
@@ -1978,13 +2055,18 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     {
     case BOP_NOT:
       return
-        (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+        (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
           (sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.left) &
            SPART_VARR_NOT_NULL ) );
      case BOP_EQ: case SPAR_BOP_EQNAMES: case SPAR_BOP_EQ_NONOPT: case BOP_NEQ: case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
     case BOP_AND: case BOP_OR:
+      return
+        (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
+          (sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.left) &
+           sparp_restr_bits_of_expn (sparp, tree->_.bin_exp.right) &
+           SPART_VARR_NOT_NULL ) );
     case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
       return
         (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
@@ -2041,7 +2123,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
                 return (SPART_VARR_ALWAYS_NULL);
               if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
                 return (SPART_VARR_IS_REF | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
-              return SPART_VARR_IS_REF ;
+              return SPART_VARR_IS_REF;
             }
           case DATATYPE_L:
             {
@@ -2050,9 +2132,9 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
                 return (SPART_VARR_ALWAYS_NULL);
               if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
                 return (SPART_VARR_IS_REF | SPART_VARR_IS_IRI | SPART_VARR_FIXED);
-              return SPART_VARR_IS_REF | SPART_VARR_IS_IRI ;
+              return SPART_VARR_IS_REF | SPART_VARR_IS_IRI;
             }
-          case SPAR_BIF_STR:
+          case SPAR_BIF_STR: case SPAR_BIF_EBV:
             {
               ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
               if (SPART_VARR_ALWAYS_NULL & arg_bits)
@@ -2061,13 +2143,51 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
                 return (SPART_VARR_IS_LIT | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
               if (SPART_VARR_NOT_NULL & arg_bits)
                 return (SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL);
-              return SPART_VARR_IS_LIT ;
+              return SPART_VARR_IS_LIT;
+            }
+          case SPAR_BIF_EBV_INT:
+            {
+              ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              if (SPART_VARR_ALWAYS_NULL & arg_bits)
+                return (SPART_VARR_ALWAYS_NULL);
+              if ((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (arg_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL)))
+                return (SPART_VARR_IS_LIT | SPART_VARR_IS_BOOL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_FIXED | SPART_VARR_NOT_NULL);
+              if (SPART_VARR_NOT_NULL & arg_bits)
+                return (SPART_VARR_IS_LIT | SPART_VARR_IS_BOOL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_NOT_NULL);
+              return SPART_VARR_IS_LIT | SPART_VARR_IS_BOOL | SPART_VARR_LONG_EQ_SQL;
+            }
+          case SPAR_BIF_CASEWHEN: case SPAR_BIF_CASEX:
+            {
+              int argcount = BOX_ELEMENTS (tree->_.builtin.args);
+              ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              int argctr;
+              for (argctr = argcount-1; argctr > 1; argctr -= 2)
+                {
+                  ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
+                  union_bits &= arg_bits;
+                }
+              if (union_bits & SPART_VARR_FIXED)
+                {
+                  ptrlong cond_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+                  for (argctr = argcount-2; argctr > 0; argctr -= 2)
+                    {
+                      ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
+                      cond_bits &= arg_bits;
+                    }
+                  if (!((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) == (cond_bits & (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))))
+                    res_bits &= ~SPART_VARR_FIXED;
+                }
+              return union_bits;
             }
           case SPAR_BIF_COALESCE:
             {
-              ptrlong union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              ptrlong union_bits;
+              int argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
               int argctr;
-              for (argctr = BOX_ELEMENTS (tree->_.builtin.args); --argctr /* not argctr-- */; /* no step */)
+              if (0 == argcount)
+                return SPART_VARR_ALWAYS_NULL;
+              union_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]);
+              for (argctr = argcount; --argctr /* not argctr-- */; /* no step */)
                 {
                   ptrlong arg_bits = sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[argctr]);
                   if (!(arg_bits & (SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT)))
@@ -2090,7 +2210,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
             }
           case SPAR_BIF__ITEM_IN_VECTOR:
             return
-              (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL |
+              (SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL |
                 (sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[0]) &
                  sparp_restr_bits_of_expn (sparp, tree->_.builtin.args[1]) &
                  SPART_VARR_NOT_NULL ) );
@@ -2101,7 +2221,7 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
     case SPAR_FUNCALL:
       {
         caddr_t qname = tree->_.funcall.qname;
-        if ((uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname) &&
+        if ((uname_SPECIAL_cc_bif_c_MAX == qname || uname_SPECIAL_cc_bif_c_MIN == qname || uname_SPECIAL_cc_bif_c_GROUPING == qname) &&
           (1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) )
           return sparp_restr_bits_of_expn (sparp, tree->_.funcall.argtrees[0]) & ~SPART_VARR_NOT_NULL;
         if (uname_SPECIAL_cc_bif_c_AVG == qname &&
@@ -2155,6 +2275,11 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
             return tr_valmode->qmfValRange.rvrRestrictions;
           return 0;
         }
+      else if (SPART_BAD_EQUIV_IDX != tree->_.retval.equiv_idx)
+        {
+          sparp_equiv_t *eq = SPARP_EQUIV (sparp, tree->_.retval.equiv_idx);
+          return eq->e_rvr.rvrRestrictions;
+        }
       else
         {
           SPART *gp = tree->_.retval.gp;
@@ -2165,9 +2290,17 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
           return eq->e_rvr.rvrRestrictions;
         }
     case SPAR_GP:
-      if (tree->_.gp.subtype != SELECT_L)
-        spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
-      return sparp_restr_bits_of_expn (sparp, tree->_.gp.subquery->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
+      {
+        SPART *sub_req;
+        if (tree->_.gp.subtype != SELECT_L)
+          spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported subtype of GP tree");
+        sub_req = tree->_.gp.subquery;
+        if (ASK_L == sub_req->_.req_top.subtype)
+          return SPART_VARR_NOT_NULL | SPART_VARR_IS_LIT | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL;
+        return sparp_restr_bits_of_expn (sparp, sub_req->_.req_top.retvals[0]) & ~SPART_VARR_NOT_NULL;
+      }
+    case ORDER_L:
+      return sparp_restr_bits_of_expn (sparp, tree->_.oby.expn);
     default: spar_internal_error (sparp, "sparp_" "restr_bits_of_expn(): unsupported case");
     }
   return 0; /* Never reached, to keep compiler happy */
@@ -2247,7 +2380,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
           if (DV_UNAME == dtp)
             ssg_puts ("UNAME");
           /* no break */
-        case SQL_ATOM_UTF8_ONLY:
+        case SQL_ATOM_UTF8_ONLY: case SQL_ATOM_SPARQL_INTEROP:
           sqlc_string_virtuoso_literal (tmpbuf, buflen, &buffill, box);
           break;
         default: spar_internal_error (ssg->ssg_sparp, "ssg_" "print_box_as_sql_atom (): bad mode");
@@ -2262,47 +2395,62 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
         double boxdbl = (double)(unbox_float (box));
         if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
           spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not support literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
-        buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
-        if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
+        if (mode != SQL_ATOM_SPARQL_INTEROP)
           {
-            if (isalpha(tmpbuf[6+1]))
+            float f = unbox_float (box);
+            buffill = sprintf (tmpbuf, "0realhex%08x /* %lg */", ((uint32 *)(&f))[0], boxdbl);
+          }
+        else
+          {
+            buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
+            if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
               {
-		double myZERO = 0.0;
-		double myPOSINF_d = 1.0/myZERO;
-		double myNEGINF_d = -1.0/myZERO;
-                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
-                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
-                else buffill = sprintf (tmpbuf, "cast ('nan'");
-              }
-            else
-              {
-                strcpy (tmpbuf+buffill, ".0");
-                buffill += 2;
-              }
-          }                   /* 01234567890 */
-        strcpy (tmpbuf+buffill, " as float)");
-        buffill += 10;
+                if (isalpha(tmpbuf[6+1]))
+                  {
+                    double myZERO = 0.0;
+                    double myPOSINF_d = 1.0/myZERO;
+                    double myNEGINF_d = -1.0/myZERO;
+                    if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
+                    else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
+                    else buffill = sprintf (tmpbuf, "cast ('NaN'");
+                  }
+                else
+                  {
+                    strcpy (tmpbuf+buffill, ".0e0");
+                    buffill += 2;
+                  }
+              }                   /* 01234567890 */
+            strcpy (tmpbuf+buffill, " as float)");
+            buffill += 10;
+          }
         break;
       }
     case DV_DOUBLE_FLOAT:
       {
         double boxdbl = unbox_double (box);
-        buffill = sprintf (tmpbuf, "%lg", boxdbl);
-        if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+        if (mode != SQL_ATOM_SPARQL_INTEROP)
           {
-            if (isalpha(tmpbuf[1]))
+            buffill = sprintf (tmpbuf, "0dblhex%016Lx /* %lg */", ((uint64 *)(&boxdbl))[0], boxdbl);
+          }
+        else
+          {
+            buffill = sprintf (tmpbuf, "%lg", boxdbl);
+            if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
               {
-		double myZERO = 0.0;
-		double myPOSINF_d = 1.0/myZERO;
-		double myNEGINF_d = -1.0/myZERO;
-                if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf' as double precision)");
-                else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf' as double precision)");
-                else buffill = sprintf (tmpbuf, "cast ('NaN' as double precision)");
-              }
-            else
-              {
-                strcpy (tmpbuf+buffill, ".0");
-                buffill += 2;
+                if (isalpha(tmpbuf[1]))
+                  {
+                    double myZERO = 0.0;
+                    double myPOSINF_d = 1.0/myZERO;
+                    double myNEGINF_d = -1.0/myZERO;
+                    if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf' as double precision)");
+                    else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf' as double precision)");
+                    else buffill = sprintf (tmpbuf, "cast ('NaN' as double precision)");
+                  }
+                else
+                  {
+                    strcpy (tmpbuf+buffill, ".0e0");
+                    buffill += 2;
+                  }
               }
           }
         break;
@@ -2337,14 +2485,35 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
 #endif
     case DV_DATETIME:
       {
+        const char *cast_strg;
         const char *as_strg;
         switch (DT_DT_TYPE (box))
           {
-          case DT_TYPE_DATE: as_strg = "' AS DATE)"; break;
-          case DT_TYPE_TIME: as_strg = "' AS TIME)"; break;
-          default: as_strg = "' AS DATETIME)"; break;
+#ifdef DT_TZL
+	  case DT_TYPE_DATE:
+	    cast_strg = "CAST ('";
+	    as_strg = (DT_TZL (box) ? "T' AS DATE)" : "' AS DATE)");
+	    break;
+	  case DT_TYPE_TIME:
+	    cast_strg = (DT_TZL (box) ? "CAST ('T" : "CAST ('");
+	    as_strg = "' AS TIME)";
+	    break;
+#else
+	  case DT_TYPE_DATE:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS DATE)";
+	    break;
+	  case DT_TYPE_TIME:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS TIME)";
+	    break;
+#endif
+	  default:
+	    cast_strg = "CAST ('";
+	    as_strg = "' AS DATETIME)";
+	    break;
           }
-        ssg_puts ("CAST ('");
+        ssg_puts (cast_strg);
         dt_to_iso8601_string (box, tmpbuf, buflen);
         ssg_puts (tmpbuf);
         ssg_puts (as_strg);
@@ -2355,6 +2524,28 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       }
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
+}
+
+int
+ssg_try_print_float_literal_as_original (spar_sqlgen_t *ssg, SPART *lit)
+{
+  char modif = '\0';
+  if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (lit))
+    return 0;
+  if (NULL == lit->_.lit.original_text)
+    return 0;
+  switch (DV_TYPE_OF (lit->_.lit.val))
+    {
+    case DV_DOUBLE_FLOAT: if (!isfinite (unbox_double (lit->_.lit.val))) return 0; modif = 'D'; break;
+    case DV_SINGLE_FLOAT: if (!isfinite (unbox_float (lit->_.lit.val))) return 0; modif = 'R'; break;
+    case DV_NUMERIC: break;
+    default: return 0;
+    }
+  ssg_putchar (' ');
+  ssg_puts (lit->_.lit.original_text);
+  if ('\0' != modif)
+    ssg_putchar (modif);
+  return 1;
 }
 
 void
@@ -2368,6 +2559,8 @@ ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           /* lang = lit->_.lit.language; */
         }
@@ -2416,6 +2609,8 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           dt = lit->_.lit.datatype;
           lang = lit->_.lit.language;
         }
@@ -2467,22 +2662,41 @@ ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit)
   if ((NULL != type) && (NULL == lang))
     {
       caddr_t dflt_xsd_type_of_box = xsd_type_of_box (value);
+      int dt_twobytes_for_bif = 0;
       int box_is_plain_num = ((type == dflt_xsd_type_of_box)
         || ((uname_xmlschema_ns_uri_hash_decimal == type) && (uname_xmlschema_ns_uri_hash_double == dflt_xsd_type_of_box))
         || ((uname_xmlschema_ns_uri_hash_boolean == type) && (DV_LONG_INT == DV_TYPE_OF (value)) && ((0 == unbox(value)) || (1 == unbox(value)))) );
       dk_free_box (dflt_xsd_type_of_box);
       if (box_is_plain_num)
         {
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
           return;
         }
+      dt_twobytes_for_bif = rb_uname_to_wellknown_datatype_twobyte (type);
+      if (dt_twobytes_for_bif)
+	{
+	  char buf[50];
+	  ssg_puts_with_comment (" rdf_box (", "sqlval of typed literal");
+	  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+	  sprintf (buf, ", %d, 257, 0, 1)", dt_twobytes_for_bif);
+	  ssg_puts (buf);
+	  return;
+	}
     }
-#ifdef NDEBUG
-  ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-#else
-  ssg_puts (" /* sqlval of typed literal */ DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-#endif
-  ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+  ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "sqlval of typed literal");
+  if (DV_DATETIME == DV_TYPE_OF (value))
+    {
+      char temp[100];
+      int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (type);
+      dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
+      ssg_putchar ('\'');
+      ssg_puts (temp);
+      ssg_putchar ('\'');
+    }
+  else
+    ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
   ssg_putchar (',');
   if (NULL != type)
     ssg_print_box_as_sql_atom (ssg, type, SQL_ATOM_UNAME_ALLOWED);
@@ -2508,6 +2722,8 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
       if (SPAR_LIT == lit->type)
         {
           value = lit->_.lit.val;
+          if (ssg_try_print_float_literal_as_original (ssg, lit))
+            return;
           datatype = lit->_.lit.datatype;
           language = lit->_.lit.language;
         }
@@ -2526,19 +2742,48 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
   value_dtp = DV_TYPE_OF (value);
   if ((NULL != datatype) || (NULL != language))
     {
-      ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (");
-      ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
-      ssg_putchar (',');
-      if (NULL != datatype)
-        ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
+      int dt_twobytes_for_bif = 0;
+      if ((NULL == language) && (datatype == xsd_type_of_box (value)))
+        {
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_ABORT_ON_CAST);
+          return;
+        }
+      if (NULL == language)
+        dt_twobytes_for_bif = rb_uname_to_wellknown_datatype_twobyte (datatype);
+      if (dt_twobytes_for_bif)
+        {
+          char buf[50];
+          ssg_puts_with_comment (" rdf_box (", "lit as long");
+          ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+          sprintf (buf, ", %d, 257, 0, 1)", dt_twobytes_for_bif);
+          ssg_puts (buf);
+        }
       else
-        ssg_puts (" NULL");
-      ssg_putchar (',');
-      if (NULL != language)
-        ssg_print_box_as_sql_atom (ssg, language, SQL_ATOM_ASCII_ONLY);
-      else
-        ssg_puts (" NULL");
-      ssg_putchar (')');
+        {
+          ssg_puts_with_comment (" DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (", "lit as long");
+          if (DV_DATETIME == value_dtp)
+            {
+              char temp[100];
+              int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (datatype);
+              dt_to_iso8601_string_ext (value, temp, sizeof (temp), mode);
+              ssg_putchar ('\'');
+              ssg_puts (temp);
+              ssg_putchar ('\'');
+            }
+          else
+            ssg_print_box_as_sql_atom (ssg, value, SQL_ATOM_NARROW_OR_WIDE);
+          ssg_putchar (',');
+          if (NULL != datatype)
+            ssg_print_box_as_sql_atom (ssg, datatype, SQL_ATOM_UNAME_ALLOWED);
+          else
+            ssg_puts (" NULL");
+          ssg_putchar (',');
+          if (NULL != language)
+            ssg_print_box_as_sql_atom (ssg, language, SQL_ATOM_ASCII_ONLY);
+          else
+            ssg_puts (" NULL");
+          ssg_putchar (')');
+        }
       return;
     }
   if ((DV_STRING == value_dtp) || (DV_WIDE == value_dtp) ||
@@ -2580,11 +2825,8 @@ ssg_print_equiv (spar_sqlgen_t *ssg, caddr_t selectid, sparp_equiv_t *eq, ccaddr
   if (IS_BOX_POINTER (asname) &&
     ((NULL == name_as_expn) || strcmp (asname, name_as_expn)) )
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*equiv*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "equiv");
+      ssg_putchar (' ');  
       ssg_prin_id (ssg, asname);
     }
 }
@@ -2640,7 +2882,11 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
   quad_map_t *qm;
   qm_value_t *qmv;
   if (NULL == tabid)
-    spar_sqlprint_error ("ssg_print_tr_var_expn(): no tabid");
+    {
+      ssg_puts_with_comment ("", "non-triple var as a scalar");
+      ssg_print_scalar_expn (ssg, var, needed, asname);
+      return;
+    }
   if (SPAR_RETVAL == var->type)
     {
       rv = var;
@@ -2711,11 +2957,8 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
             {
               char buf[210];
               snprintf (buf, sizeof (buf), "%.100s~%d", asname, col_ctr);
-#ifdef NDEBUG
-              ssg_puts (" AS ");
-#else
-              ssg_puts (" AS /*tr_var_expn*/ ");
-#endif
+              ssg_puts_with_comment (" AS", "tr_var_expn");
+              ssg_putchar (' ');  
               ssg_prin_id (ssg, buf);
             }
         }
@@ -2726,23 +2969,41 @@ ssg_print_tr_var_expn (spar_sqlgen_t *ssg, SPART *var, ssg_valmode_t needed, con
 }
 
 ssg_valmode_t
-ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
+ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2, int *cheap_ret)
 {
   ssg_valmode_t best;
   int ctr1, ctr2, largest_weight;
+  if (((SSG_VALMODE_LONG == m1) && !(cheap_ret[0] & 0x2))
+    || ((SSG_VALMODE_LONG == m2) && !(cheap_ret[0] & 0x4))
+    || (SSG_VALMODE_SHORT_OR_LONG == m1)
+    || (SSG_VALMODE_SHORT_OR_LONG == m2) )
+    cheap_ret[0] = 0;
   if (m2 == m1)
     return m1;
   if (m2 < m1)
-    return ssg_smallest_union_valmode (m2, m1);
+    {
+      int sub_cheap = (cheap_ret[0] & 0x4 >> 1) | (cheap_ret[0] & 0x2 << 1);
+      ssg_valmode_t res = ssg_smallest_union_valmode (m2, m1, &sub_cheap);
+      if (!sub_cheap)
+        cheap_ret[0] = 0;
+      return res;
+    }
   /* Now m1 is less than m2 */
-  if (SSG_VALMODE_BOOL == m2)
-    return SSG_VALMODE_BOOL;
   if (!IS_BOX_POINTER (m2))
     {
       if (SSG_VALMODE_AUTO == m2)
         return m1;
+      if (SSG_VALMODE_BOOL == m2)
+        return m1;
+      if ((SSG_VALMODE_SHORT_OR_LONG == m1) && (SSG_VALMODE_NUM == m2))
+        return m2;
+      if ((SSG_VALMODE_NUM == m1) && (SSG_VALMODE_SQLVAL == m2))
+        return m2;
+      cheap_ret[0] = 0;
       return SSG_VALMODE_LONG;
     }
+  if (! m2->qmfHasCheapSqlval)
+    cheap_ret[0] = 0;
   if (!IS_BOX_POINTER (m1))
     {
       if (SSG_VALMODE_SQLVAL == m1)
@@ -2752,11 +3013,12 @@ ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
           else
             return SSG_VALMODE_LONG;
         }
-      else if (SSG_VALMODE_AUTO == m1)
+      if (SSG_VALMODE_AUTO == m1)
         return m2;
-      else
-        return SSG_VALMODE_LONG;
+      return SSG_VALMODE_LONG;
     }
+  if (! m1->qmfHasCheapSqlval)
+    cheap_ret[0] = 0;
   DO_BOX_FAST (qm_format_t *, sup1, ctr1, m1->qmfSuperFormats)
     {
       if (sup1 == m2)
@@ -2877,8 +3139,8 @@ ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
 ssg_valmode_t
 ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
 {
-/*  ssg_valmode_t best;*/
-  int ctr1, ctr2/*, largest_weight*/;
+  ssg_valmode_t best_common_super;
+  int ctr1, ctr2, largest_weight;
   if (m2 == m1)
     {
       if (!IS_BOX_POINTER (m1))
@@ -2891,7 +3153,7 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
             return SSG_VALMODE_SQLVAL;
           return SSG_VALMODE_LONG;
         }
-      return SSG_VALMODE_AUTO;
+      return m1 /* There was SSG_VALMODE_AUTO, but now we have plenty of flags like qmfIsSubformatOfLongWhenEqToSql and the like, as well as SSG_VALMODE_NUM */;
     }
   if (m2 < m1)
     return ssg_largest_eq_valmode (m2, m1);
@@ -2937,8 +3199,7 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
         return m1;
     }
   END_DO_BOX_FAST;
-/* Ups...
-  best = NULL;
+  best_common_super = NULL;
   largest_weight = -1;
   DO_BOX_FAST (qm_format_t *, sup1, ctr1, m1->qmfSuperFormats)
     {
@@ -2946,23 +3207,22 @@ ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2)
       if (NULL == sup1)
         continue;
       sup1_weight = BOX_ELEMENTS_0 (sup1->qmfSuperFormats);
-      if (sup1_weight >= smallest_weight)
+      if (sup1_weight <= largest_weight)
         continue;
       DO_BOX_FAST (qm_format_t *, sup2, ctr2, m2->qmfSuperFormats)
         {
           if (sup1 == sup2)
             {
-              best = sup1;
-              smallest_weight = sup1_weight;
+              best_common_super = sup1;
+              largest_weight = sup1_weight;
               break;
             }
         }
       END_DO_BOX_FAST;
     }
   END_DO_BOX_FAST;
-  if (NULL != best)
-    return best;
-*/
+  if (NULL != best_common_super)
+    return best_common_super;
   return SSG_VALMODE_LONG;
 }
 
@@ -3476,22 +3736,46 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
 {
   int argctr;
   ssg_valmode_t op_fmt;
+  int sqlval_is_ok_and_cheap = 0x1;
   if (SSG_VALMODE_LONG == arg1_native)
     return arg1_native;
   if (IS_BOX_POINTER (arg1_native) && !(arg1_native->qmfIsBijection))
-    return arg1_native;
-  op_fmt = sparp_expn_native_valmode (sparp, args[1]);
-  for (argctr = BOX_ELEMENTS (args); argctr-- > 2; /* no step */)
+    return arg1_native; /* Let the expression work in native or results in compilation error but not produce wrong "true" after collision of listed and not listed native value into common converted value */
+  op_fmt = SSG_VALMODE_AUTO;
+  for (argctr = BOX_ELEMENTS (args); argctr-- > 1; /* no step */)
     {
       SPART * argN = args[argctr];
-      ssg_valmode_t argN_native = sparp_expn_native_valmode (sparp, argN);
-      if (argN_native != op_fmt)
+      ssg_valmode_t argN_native;
+      if (IS_BOX_POINTER (arg1_native) /* && (arg1_native->qmfIsBijection) -- no need to check, see case above */)
         {
-          op_fmt = ssg_smallest_union_valmode (op_fmt, argN_native);
-          if (SSG_VALMODE_LONG == op_fmt)
+          switch (SPART_TYPE (argN))
+            {
+              case SPAR_QNAME: case SPAR_LIT:
+                continue;
+              case SPAR_VARIABLE: case SPAR_BLANK_NODE_LABEL:
+                if ((SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT) & argN->_.var.rvr.rvrRestrictions)
+                  continue;
+                if (((SPART_VARR_FIXED | SPART_VARR_NOT_NULL) & argN->_.var.rvr.rvrRestrictions) == (SPART_VARR_FIXED | SPART_VARR_NOT_NULL))
+                  continue;
+            }
+        }
+      argN_native = sparp_expn_native_valmode (sparp, argN);
+      if (SSG_VALMODE_AUTO == op_fmt)
+        op_fmt = argN_native;
+      else if (argN_native != op_fmt)
+        {
+          op_fmt = ssg_smallest_union_valmode (op_fmt, argN_native, &sqlval_is_ok_and_cheap);
+          if ((SSG_VALMODE_LONG == op_fmt) && !sqlval_is_ok_and_cheap)
             break;
+          if (sqlval_is_ok_and_cheap)
+            sqlval_is_ok_and_cheap = 0x2;
         }
     }
+  if (SSG_VALMODE_AUTO == op_fmt)
+    op_fmt = arg1_native;
+  if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == op_fmt)
+    && ((SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_NUM == arg1_native) || (IS_BOX_POINTER (arg1_native) && arg1_native->qmfHasCheapSqlval)) )
+    op_fmt = SSG_VALMODE_SQLVAL;
   op_fmt = ssg_largest_eq_valmode (op_fmt, arg1_native);
   if (SSG_VALMODE_LONG == op_fmt)
     {
@@ -3514,11 +3798,12 @@ ssg_safe_op_valmode_for_bif_IN (sparp_t *sparp, SPART **args, ssg_valmode_t arg1
               if (SPART_VARR_LONG_EQ_SQL & rbits)
                 continue;
             }
-          return op_fmt;
+          goto cannot_replace_long_with_sqlval; /* see below */
         }
       END_DO_BOX_FAST;
       return SSG_VALMODE_SQLVAL;
    }
+cannot_replace_long_with_sqlval:
   return op_fmt;
 }
 
@@ -3532,12 +3817,17 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
   int argctr;
   ssg_valmode_t op_fmt = NULL;
   int arg1_restr_bits;
-  if ((SSG_VALMODE_BOOL == sbd->sbd_ret_valmode) && (
-      (SSG_VALMODE_LONG != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_NUM != needed)
-      && (SSG_VALMODE_SHORT_OR_LONG != needed) && (SSG_VALMODE_AUTO != needed) && (SSG_VALMODE_BOOL != needed) ) )
+  if (SSG_VALMODE_BOOL == sbd->sbd_ret_valmode)
     {
-      ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
-      return;
+      int needed_is_like_bool = ((SSG_VALMODE_AUTO == needed) || (SSG_VALMODE_BOOL == needed) ||
+        ((0 == ssg->ssg_sparp->sparp_ebv_mode) &&
+          ((SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SQLVAL == needed) ||
+           (SSG_VALMODE_NUM == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed) ) ) );
+      if (!needed_is_like_bool)
+        {
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
+          return;
+        }
     }
   switch (tree->_.builtin.btype)
     {
@@ -3565,7 +3855,7 @@ ssg_print_builtin_expn (spar_sqlgen_t *ssg, SPART *tree, int top_filter_op, ssg_
             switch (arg1_native->qmfColumnCount)
               {
               case 0:
-                ssg_puts ("1 /* zero cols */");
+                ssg_puts_with_comment (" 1", "zero cols");
                 break;
               case 1:
                 ssg_print_scalar_expn (ssg, arg1, arg1_native, NULL_ASNAME);
@@ -3679,38 +3969,126 @@ expanded_sameterm_ready:
           }
         goto print_asname;
       }
-    case SPAR_BIF_COALESCE:
+    case SPAR_BIF_CASEWHEN:
       {
         ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
         if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
           union_valmode = SSG_VALMODE_LONG;
         if (union_valmode != needed)
-          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, NULL_ASNAME);
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
         else
           {
-            int argctr, argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
+            int argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            ssg_puts (" case "); ssg->ssg_indent++;
+            for (argctr = 0; argctr < argcount-1; argctr += 2)
+              {
+                SPART *argwhen = tree->_.builtin.args[argctr];
+                SPART *argthen = tree->_.builtin.args[argctr+1];
+                ssg_puts (" when (");
+                ssg_print_scalar_expn (ssg, argwhen, SSG_VALMODE_BOOL, NULL_ASNAME);
+                ssg_puts (") then (");
+                ssg_print_scalar_expn (ssg, argthen, union_valmode, nested_asname);
+                ssg_puts (")");
+              }
+            ssg_puts ("else (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[argcount-1], union_valmode, nested_asname);
+            ssg_puts (") end"); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
+          }
+        return;
+      }
+    case SPAR_BIF_CASEX:
+      {
+        ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
+          union_valmode = SSG_VALMODE_LONG;
+        if (union_valmode != needed)
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
+        else
+          {
+            ssg_valmode_t arg_cmp_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, arg1);
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
+            int argcount = BOX_ELEMENTS (tree->_.builtin.args);
+            int sqlval_is_ok_and_cheap = 0x2;
+            for (argctr = 1; argctr < argcount-1; argctr += 2)
+              {
+                SPART *argwhen = tree->_.builtin.args[argctr];
+                arg_cmp_valmode = ssg_smallest_union_valmode (arg_cmp_valmode, sparp_expn_native_valmode (ssg->ssg_sparp, argwhen), &sqlval_is_ok_and_cheap);
+              }
+            if (IS_BOX_POINTER (arg_cmp_valmode) && (1 != arg_cmp_valmode->qmfColumnCount))
+              arg_cmp_valmode = SSG_VALMODE_LONG;
+            if (sqlval_is_ok_and_cheap && (SSG_VALMODE_LONG == arg_cmp_valmode))
+              arg_cmp_valmode = SSG_VALMODE_SQLVAL;
+            ssg_puts (" case ("); ssg->ssg_indent++;
+            ssg_print_scalar_expn (ssg, arg1, arg_cmp_valmode, NULL_ASNAME);
+            for (argctr = 1; argctr < argcount-1; argctr += 2)
+              {
+                SPART *argwhen = tree->_.builtin.args[argctr];
+                SPART *argthen = tree->_.builtin.args[argctr+1];
+                ssg_puts (") when (");
+                ssg_print_scalar_expn (ssg, argwhen, arg_cmp_valmode, NULL_ASNAME);
+                ssg_puts (") then (");
+                ssg_print_scalar_expn (ssg, argthen, union_valmode, nested_asname);
+              }
+            ssg_puts (") else (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[argcount-1], union_valmode, nested_asname);
+            ssg_puts (") end"); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
+          }
+        return;
+      }
+    case SPAR_BIF_COALESCE:
+      {
+        int argctr, argcount = BOX_ELEMENTS_0 (tree->_.builtin.args);
+        ssg_valmode_t union_valmode;
+        if (0 == argcount)
+          {
+            ssg_puts_with_comment (" NULL", "coalesce() with 0 args");
+            goto print_asname;
+          }
+        union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
+          union_valmode = SSG_VALMODE_LONG;
+        if (union_valmode != needed)
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
+        else
+          {
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
             ssg_puts (" coalesce ("); ssg->ssg_indent++;
             for (argctr = 0; argctr < argcount; argctr++)
               {
                 if (argctr) ssg_putchar (',');
-                ssg_print_scalar_expn (ssg, tree->_.builtin.args[argctr], union_valmode, NULL_ASNAME);
+                ssg_print_scalar_expn (ssg, tree->_.builtin.args[argctr], union_valmode, nested_asname);
               }
             ssg_putchar (')'); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
           }
-        goto print_asname;
+        return;
       }
     case SPAR_BIF_IF:
       {
-        const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
-        ssg_puts (" case ("); ssg->ssg_indent++;
-        ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
-        ssg_puts (") when 0 then (");
-        ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], needed, nested_asname);
-        ssg_puts (") else (");
-        ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], needed, nested_asname);
-        ssg_puts (") end"); ssg->ssg_indent--;
-        if (nested_asname != asname)
-          goto print_asname;
+        ssg_valmode_t union_valmode = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
+        if (IS_BOX_POINTER (union_valmode) && (1 != union_valmode->qmfColumnCount))
+          union_valmode = SSG_VALMODE_LONG;
+        if (union_valmode != needed)
+          ssg_print_valmoded_scalar_expn (ssg, tree, needed, union_valmode, asname);
+        else
+          {
+            const char *nested_asname = (IS_BOX_POINTER (asname) ? NULL_ASNAME : asname);
+            ssg_puts (" case when ("); ssg->ssg_indent++;
+            ssg_print_valmoded_scalar_expn (ssg, arg1, SSG_VALMODE_BOOL, arg1_native, NULL_ASNAME);
+            ssg_puts (") then (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], needed, nested_asname);
+            ssg_puts (") else (");
+            ssg_print_scalar_expn (ssg, tree->_.builtin.args[2], needed, nested_asname);
+            ssg_puts (") end"); ssg->ssg_indent--;
+            if (nested_asname != asname)
+              goto print_asname;
+          }
         return;
       }
     case IN_L:
@@ -3748,13 +4126,17 @@ expanded_sameterm_ready:
       ssg_puts ("))");
       goto print_asname;
     case SPAR_BIF_ISBLANK:
-      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_SQLVAL != needed) && (SSG_VALMODE_LONG != needed))
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
+	  && (SSG_VALMODE_LONG != needed))
         {
           ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
           return;
         }
-      else
+      if ((SSG_VALMODE_NUM == arg1_native) || (SSG_VALMODE_BOOL == arg1_native))
         {
+	  ssg_puts_with_comment (" 0", "optimized isBLANK of num or bool");
+	  goto print_asname;
+	}
           arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
           if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
             {
@@ -3781,8 +4163,6 @@ expanded_sameterm_ready:
           else
             spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isBLANK()");
           goto print_asname;
-        }
-      goto print_asname;
     case LANG_L:
       if (SSG_VALMODE_SQLVAL != needed)
         {
@@ -3799,6 +4179,17 @@ expanded_sameterm_ready:
       return;
     case SPAR_BIF_ISURI:
     case SPAR_BIF_ISIRI:
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
+	  && (SSG_VALMODE_LONG != needed))
+	{
+	  ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
+	  return;
+	}
+      if ((SSG_VALMODE_NUM == arg1_native) || (SSG_VALMODE_BOOL == arg1_native))
+	{
+	  ssg_puts_with_comment (" 0", "optimized isIRI of num or bool");
+	  goto print_asname;
+	}
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3831,6 +4222,17 @@ expanded_sameterm_ready:
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isURI()");
       goto print_asname;
     case SPAR_BIF_ISREF:
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
+	  && (SSG_VALMODE_LONG != needed))
+	{
+	  ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
+	  return;
+	}
+      if ((SSG_VALMODE_NUM == arg1_native) || (SSG_VALMODE_BOOL == arg1_native))
+	{
+	  ssg_puts_with_comment (" 0", "optimized isREF of num or bool");
+	  goto print_asname;
+	}
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_LIT | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3858,6 +4260,12 @@ expanded_sameterm_ready:
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isREF()");
       goto print_asname;
     case SPAR_BIF_ISLITERAL:
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
+	  && (SSG_VALMODE_LONG != needed))
+	{
+	  ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
+	  return;
+	}
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3869,6 +4277,14 @@ expanded_sameterm_ready:
           ssg_puts_with_comment (" 1", "optimized isLITERAL");
           goto print_asname;
         }
+      if ((SSG_VALMODE_NUM == arg1_native) || (SSG_VALMODE_BOOL == arg1_native))
+	{
+	  if (arg1_restr_bits & SPART_VARR_NOT_NULL)
+	    ssg_print_tmpl (ssg, arg1_native, " isnotnull (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
+	  else
+	    ssg_puts_with_comment (" 1", "optimized isLITERAL of num or bool");
+	  goto print_asname;
+	}
       if (IS_BOX_POINTER (arg1_native))
         {
           const char *tmpl = arg1_native->qmfIslitOfShortTmpl;
@@ -3888,6 +4304,12 @@ expanded_sameterm_ready:
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isLITERAL()");
       goto print_asname;
     case SPAR_BIF_ISNUMERIC:
+      if ((SSG_VALMODE_BOOL != needed) && (SSG_VALMODE_NUM != needed) && (SSG_VALMODE_SQLVAL != needed)
+	  && (SSG_VALMODE_LONG != needed))
+	{
+	  ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_BOOL, asname);
+	  return;
+	}
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL | SPART_VARR_CONFLICT))
         {
@@ -3911,8 +4333,10 @@ expanded_sameterm_ready:
               ssg_putchar (')');
             }
         }
-      else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native))
+      else if ((SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_NUM == arg1_native) || (SSG_VALMODE_BOOL == arg1_native))
         ssg_print_tmpl (ssg, arg1_native, " isnumeric (^{tree}^)", NULL, NULL, arg1, NULL_ASNAME);
+      else if (SSG_VALMODE_LONG == arg1_native)
+	ssg_print_tmpl (ssg, arg1_native, " isnumeric (rdf_box_data (__ro2sq (^{tree}^)))", NULL, NULL, arg1, NULL_ASNAME);
       else
         spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for isNUMERIC()");
       goto print_asname;
@@ -4001,6 +4425,84 @@ expanded_sameterm_ready:
           }
         goto print_asname;
       }
+    case SPAR_BIF_EBV:
+      {
+        const char *tmpl = NULL;
+        if (SSG_VALMODE_SQLVAL == needed)
+          {
+            if (IS_BOX_POINTER (arg1_native))
+              tmpl = arg1_native->qmfSparqlEbvOfShortTmpl;
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native))
+	      tmpl = " sparql_ebv_of_sqlval (__ro2sq (^{tree}^))";	/* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
+            else if (SSG_VALMODE_NUM == arg1_native)
+	      tmpl = " case (^{tree}^) when null then null when 0 then sparql_ebv_pure (0) else sparql_ebv_pure (1) end";
+            else if (SSG_VALMODE_BOOL == arg1_native)
+              tmpl = " ^{tree}^";
+            else
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for EBV()");
+          }
+        else if (SSG_VALMODE_DATATYPE == needed)
+          {
+            arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
+            if (arg1_restr_bits & SPART_VARR_NOT_NULL)
+              {
+                ssg_puts (" UNAME'" XMLSCHEMA_NS_URI "#boolean" "'");
+                goto print_asname;
+              }
+            tmpl = "case (^{tree}^) when null then null else UNAME'" XMLSCHEMA_NS_URI "#boolean" "' end";
+          }
+        else if (SSG_VALMODE_LANGUAGE == needed)
+          {
+            ssg_puts (" NULL");
+            goto print_asname;
+          }
+        else
+          {
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
+            return;
+          }
+        ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+        goto print_asname;
+      }
+    case SPAR_BIF_EBV_INT:
+      {
+        const char *tmpl = NULL;
+        if (SSG_VALMODE_SQLVAL == needed)
+          {
+            if (IS_BOX_POINTER (arg1_native))
+              tmpl = arg1_native->qmfSparqlEbvOfShortTmpl;
+            else if ((SSG_VALMODE_LONG == arg1_native) || (SSG_VALMODE_SQLVAL == arg1_native) || (SSG_VALMODE_AUTO == arg1_native))
+	      tmpl = " sparql_ebv_int_of_sqlval (__ro2sq (^{tree}^))";	/* SSG_VALMODE_AUTO is here as a fallback for a query optimized down to an empty select */
+            else if (SSG_VALMODE_NUM == arg1_native)
+	      tmpl = " case (^{tree}^) when null then null when 0 then 0 else 1 end";
+            else if (SSG_VALMODE_BOOL == arg1_native)
+              tmpl = " ^{tree}^";
+            else
+              spar_sqlprint_error ("ssg_" "print_builtin_expn(): bad native type for EBV()");
+          }
+        else if (SSG_VALMODE_DATATYPE == needed)
+          {
+            arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
+            if (arg1_restr_bits & SPART_VARR_NOT_NULL)
+              {
+                ssg_puts (" UNAME'" XMLSCHEMA_NS_URI "#integer" "'");
+                goto print_asname;
+              }
+            tmpl = "case (^{tree}^) when null then null else UNAME'" XMLSCHEMA_NS_URI "#integer" "' end";
+          }
+        else if (SSG_VALMODE_LANGUAGE == needed)
+          {
+            ssg_puts (" NULL");
+            goto print_asname;
+          }
+        else
+          {
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, SSG_VALMODE_SQLVAL, asname);
+            return;
+          }
+        ssg_print_tmpl (ssg, arg1_native, tmpl, NULL, NULL, arg1, NULL_ASNAME);
+        goto print_asname;
+      }
     case SPAR_BIF_LANGMATCHES:
       arg1_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, arg1);
       if (arg1_restr_bits & (SPART_VARR_IS_REF | SPART_VARR_ALWAYS_NULL))
@@ -4043,12 +4545,88 @@ expanded_sameterm_ready:
       goto print_asname;
     default:
       {
+        ssg_valmode_t native = sbd->sbd_ret_valmode;
         ssg_valmode_t prev_arg_valmode = SSG_VALMODE_AUTO, arg_valmode;
         int argctr;
+        if (native != needed)
+          {
+            ssg_print_valmoded_scalar_expn (ssg, tree, needed, native, asname);
+            return;
+          }
         switch (sbd->sbd_implementation)
           {
           case 'B': ssg_puts (" rdf_"); break;
           case 'S': ssg_puts (" DB.DBA.rdf_"); break;
+          case '-':
+            switch (sbd->sbd_subtype)
+              {
+              case SPAR_BIF__CUBE: case SPAR_BIF__GROUPING_LIST:case SPAR_BIF__GROUPING_SETS: case SPAR_BIF__ROLLUP:
+                {
+                  switch (sbd->sbd_subtype)
+                    {
+                      case SPAR_BIF__CUBE:		ssg_puts (" CUBE (");		break;
+                      case SPAR_BIF__GROUPING_LIST:	ssg_puts (" (");		break;
+                      case SPAR_BIF__GROUPING_SETS:	ssg_puts (" GROUPING SETS (");	break;
+                      case SPAR_BIF__ROLLUP:		ssg_puts (" ROLLUP (");		break;
+                    }
+                  ssg->ssg_indent++;
+                  DO_BOX_FAST (SPART *, arg, argctr, tree->_.builtin.args)
+                    {
+                      if (argctr)
+                        ssg_puts (", ");
+                      ssg_print_scalar_expn (ssg, arg, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                    }
+                  END_DO_BOX_FAST;
+                  ssg->ssg_indent--;
+                  ssg_putchar (')');
+                  goto cant_have_asname; /* see below */
+                }
+              case SPAR_BIF__GROUPING_SET:
+                {
+                  if (NULL != tree->_.builtin.args[0])
+                    {
+                      ssg_puts (" ORDER BY ");
+                      ssg_print_scalar_expn (ssg, tree->_.builtin.args[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                    }
+                  ssg_print_scalar_expn (ssg, tree->_.builtin.args[1], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                  goto cant_have_asname; /* see below */
+                }
+              case TOP_L:
+                {
+                  ptrlong all_or_distinct = (ptrlong)(tree->_.builtin.args[0]);
+                  SPART *from_n = tree->_.builtin.args[1];
+                  SPART *to_n = tree->_.builtin.args[2];
+                  ptrlong with_ties = (ptrlong)(tree->_.builtin.args[3]);
+                  switch (all_or_distinct)
+                    {
+                    case ALL_L: ssg_puts (" ALL"); break;
+                    case DISTINCT_L: ssg_puts (" DISTINCT"); break;
+                    case 0: break;
+                    default: spar_internal_error (ssg->ssg_sparp, "ssg_print_builtin_expn(): neither ALL nor DISTINCT in TOP");
+                    }
+                  if (NULL != from_n)
+                    {
+                      ssg_puts (" TOP (");
+                      ssg->ssg_indent++;
+                      ssg_print_scalar_expn (ssg, from_n, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                      if (NULL != to_n)
+                        {
+                          ssg_puts (", ");
+                          ssg_print_scalar_expn (ssg, to_n, SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                        }
+                      ssg->ssg_indent--;
+                      ssg_putchar (')');
+                    }
+                  switch (with_ties)
+                    {
+                    case TIES_L: ssg_puts (" WITH_TIES"); break;
+                    case 0: break;
+                    default: spar_internal_error (ssg->ssg_sparp, "ssg_print_builtin_expn(): something other than WITH TIES in TOP");
+                    }
+                  goto cant_have_asname; /* see below */
+                }
+              /* no break */
+              }
           default:
             if (!strcmp ("BIND", sbd->sbd_name))
               spar_error (ssg->ssg_sparp, "Built-in function BIND is not implemented");
@@ -4078,13 +4656,15 @@ expanded_sameterm_ready:
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*builtin*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "builtin");
+      ssg_putchar (' ');  
       ssg_prin_id (ssg, asname);
     }
+  return;
+cant_have_asname:
+  if (NULL_ASNAME != asname)
+    spar_internal_error (ssg->ssg_sparp, "Weird use of asname with special built-in");
+  return;
 }
 
 
@@ -4128,6 +4708,7 @@ sparp_find_valmode_by_name_prefix (sparp_t *sparp, caddr_t name, ssg_valmode_t d
   if (!strncmp (name_begin, "BOOL::"		, 6))	return SSG_VALMODE_BOOL;
   if (!strncmp (name_begin, "NUM::"		, 5))	return SSG_VALMODE_NUM;
   if (!strncmp (name_begin, "SHORT::"		, 7))	return qm_format_default;
+  if (!strncmp (name_begin, "SHORT_REF::"	, 11))	return qm_format_default_iri_ref;
   if (!strncmp (name_begin, "SPECIAL::"		, 9))	return SSG_VALMODE_SPECIAL;
   if (!strncmp (name_begin, "SHORT_OR_LONG::"	, 15))	return SSG_VALMODE_SHORT_OR_LONG;
 /*                           0123456789012345 */
@@ -4154,13 +4735,26 @@ sparp_rettype_of_global_param (sparp_t *sparp, caddr_t name)
   return res;
 }
 
-
 ssg_valmode_t
 sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
 {
-  ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+  ssg_valmode_t res;
   const char *xsd_name = NULL;
   long /* not dtp_t */ ret_dtp;
+  if ('(' == name[0])
+    {
+      char *coloncolon = strstr (name, "::");
+      char *rpar = strchr (name, ')');
+      if ((NULL != rpar) && (NULL != coloncolon) && (rpar < coloncolon))
+        {
+          res = sparp_find_valmode_by_name_prefix (sparp, rpar+1, SSG_VALMODE_SQLVAL);
+          if (SSG_VALMODE_SPECIAL != res)
+            return res;
+          goto valmode_is_found; /* see below */
+        }
+    }
+  res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+valmode_is_found:
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
@@ -4177,7 +4771,7 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
         return SSG_VALMODE_LONG;
       if (uname_SPECIAL_cc_bif_c_COUNT == name)
         return SSG_VALMODE_SQLVAL;
-      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name)
+      if (uname_SPECIAL_cc_bif_c_MIN == name || uname_SPECIAL_cc_bif_c_MAX == name || uname_SPECIAL_cc_bif_c_GROUPING == name)
         {
           SPART **args = tree->_.funcall.argtrees;
           SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
@@ -4196,10 +4790,12 @@ sparp_rettype_of_function (sparp_t *sparp, caddr_t name, SPART *tree)
         return SSG_VALMODE_NUM;
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
-        !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
+        !strcmp (name, "SPECIAL::bif:__rgs_assert") )
+        return SSG_VALMODE_SQLVAL;
+      if (
         !strcmp (name, "SPECIAL::bif:__rgs_ack_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_ack") )
-        return SSG_VALMODE_SQLVAL;
+        return SSG_VALMODE_NUM;
       spar_internal_error (sparp, "sparp_" "rettype_of_function(): unsupported SPECIAL");
     }
   if (!strncmp (name, "bif:", 4))
@@ -4260,7 +4856,43 @@ ret_dtp_found:
 ssg_valmode_t
 sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_idx)
 {
-  ssg_valmode_t res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
+  ssg_valmode_t res;
+  if ('(' == name[0])
+    {
+      char *coloncolon = strstr (name, "::");
+      char *rpar = strchr (name, ')');
+      if ((NULL != rpar) && (NULL != coloncolon) && (rpar < coloncolon))
+        {
+          int comma_ctr = 0;
+          char *prev_delim = name;
+          char *next_delim = rpar;
+          char buf[100];
+          for (;;)
+            {
+              next_delim = strchr (prev_delim + 1, ',');
+              if ((NULL == next_delim) || (next_delim > rpar))
+                {
+                  next_delim = rpar;
+                  break;
+                }
+              if (comma_ctr >= arg_idx)
+                break;
+              prev_delim = next_delim;
+              comma_ctr++;
+            }
+          if (comma_ctr < arg_idx)
+            spar_error (sparp, "The (...)...:: modifier describes too few (only %d) arguments in <%.300s>", 1+comma_ctr, name);
+          if ((next_delim - prev_delim) >= sizeof (buf) - 3)
+            spar_error (sparp, "Abnormally long valmode name in the (...)...:: modifier of <%.300s>", name);
+          memcpy (buf, prev_delim + 1, next_delim - (prev_delim + 1));
+          strcpy (buf + (next_delim - (prev_delim + 1)), "::");
+          res = sparp_find_valmode_by_name_prefix (sparp, buf, SSG_VALMODE_SQLVAL);
+          if (SSG_VALMODE_SPECIAL == res)
+            spar_error (sparp, "SPECIAL can not be used as argument valmode name in the (...)...:: modifier of <%.300s>", name);
+          return res;
+        }
+    }
+  res = sparp_find_valmode_by_name_prefix (sparp, name, SSG_VALMODE_SQLVAL);
   if (SSG_VALMODE_SPECIAL == res)
     {
       if (!strcmp (name, "SPECIAL::sql:RDF_MAKE_GRAPH_IIDS_OF_QNAMES"))
@@ -4296,6 +4928,13 @@ sparp_argtype_of_function (sparp_t *sparp, caddr_t name, SPART *tree, int arg_id
         }
       if (uname_SPECIAL_cc_bif_c_AVG == name || uname_SPECIAL_cc_bif_c_SUM == name)
         return SSG_VALMODE_NUM;
+      if (uname_SPECIAL_cc_bif_c_GROUPING == name)
+        {
+          SPART **args = tree->_.funcall.argtrees;
+          SPART *arg1 = ((0 < BOX_ELEMENTS (args)) ? args[0] : NULL);
+          ssg_valmode_t arg1_native = sparp_expn_native_valmode (sparp, arg1);
+          return arg1_native;
+        }
       if (
         !strcmp (name, "SPECIAL::bif:__rgs_assert_cbk") ||
         !strcmp (name, "SPECIAL::bif:__rgs_assert") ||
@@ -4315,7 +4954,7 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
   delim = strstr (name, "::");
   if (NULL != delim)
     name = delim + 2;
-  if (name == strstr (name, "bif:"))
+  if (!strncmp (name, "bif:", 4))
     {
       name = name + 4;
       if ('_' == name[0])
@@ -4332,14 +4971,20 @@ ssg_prin_function_name (spar_sqlgen_t *ssg, ccaddr_t name)
         ssg_puts ("\"RIGHT\"");
       else if (!strcasecmp(name, "log"))
         ssg_puts ("\"LOG\"");
+      else if (strchr (name, ' ') || strchr (name, ':') || strchr (name, '-'))
+        ssg_prin_id (ssg, name);
       else
         ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
     }
-  else if (name == strstr (name, "sql:"))
+  else if (!strncmp (name, "sql:", 4))
     {
       name = name + 4;
       ssg_puts ("DB.DBA.");
       ssg_puts(name); /*not ssg_prin_id (ssg, name);*/
+    }
+  else if (!strcmp (name, "_STAR"))
+    {
+      ssg_puts_comment ("expansion of '*' argument:");
     }
   else if ('\0' != name[0])
     {
@@ -4441,7 +5086,7 @@ ssg_print_global_param_name (spar_sqlgen_t *ssg, caddr_t vname)
 
 
 const char *
-ssg_tmpl_X_of_short (ssg_valmode_t needed, qm_format_t *qm_fmt)
+ssg_tmpl_X_of_short (spar_sqlgen_t *ssg, ssg_valmode_t needed, qm_format_t *qm_fmt)
 {
   if (SSG_VALMODE_LONG == needed)
     return qm_fmt->qmfLongOfShortTmpl;
@@ -4457,7 +5102,7 @@ ssg_tmpl_X_of_short (ssg_valmode_t needed, qm_format_t *qm_fmt)
     return qm_fmt->qmfLongOfShortTmpl;
   if (SSG_VALMODE_NUM == needed)
     return ((qm_fmt->qmfIsSubformatOfLong || qm_fmt->qmfIsSubformatOfLongWhenEqToSql) ? " ^{tree}^" : qm_fmt->qmfLongOfShortTmpl);
-  spar_internal_error (NULL, "ssg_" "tmpl_X_of_short(): bad mode needed");
+  spar_internal_error (ssg->ssg_sparp, "ssg_" "tmpl_X_of_short(): bad mode needed");
   return NULL; /* Never reached, to keep compiler happy */
 }
 
@@ -4480,25 +5125,28 @@ const char *ssg_tmpl_ref_short_of_X (qm_format_t *qm_fmt, ssg_valmode_t native)
 
 #define SSG_IDENTITY_VALMODED_TMPL ((const char *)1)
 
-const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
+const char *ssg_tmpl_X_of_Y (spar_sqlgen_t *ssg, ssg_valmode_t needed, ssg_valmode_t native)
 {
   if (SSG_VALMODE_LONG == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_SQLVAL	== native)	return " DB.DBA.RDF_LONG_OF_SQLVAL (^{tree}^)";
       if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_BOOL	== native)	return ssg->ssg_sparp->sparp_ebv_mode ? " sparql_ebv_of_sqlval (^{tree}^)" : SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_SQLVAL == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return " __rdf_sqlval_of_obj /*l*/ (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_BOOL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_DATATYPE == needed)
     {
       if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_DATATYPE_OF_LONG (^{tree}^)";
       if (SSG_VALMODE_SQLVAL	== native)	return " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{tree}^)";
       if (SSG_VALMODE_NUM	== native)	return " DB.DBA.RDF_DATATYPE_OF_SQLVAL (^{tree}^)";
+      if (SSG_VALMODE_BOOL	== native)	return " UNAME" XMLSCHEMA_NS_URI "#boolean";
     }
   else if (SSG_VALMODE_LANGUAGE == needed)
     {
@@ -4509,14 +5157,15 @@ const char *ssg_tmpl_X_of_Y (ssg_valmode_t needed, ssg_valmode_t native)
     }
   else if (SSG_VALMODE_BOOL == needed)
     {
+      if (SSG_VALMODE_LONG	== native)	return " sparql_ebv_int_of_sqlval (__ro2sq (^{tree}^))";
+      if (SSG_VALMODE_SQLVAL	== native)	return " sparql_ebv_int_of_sqlval (^{tree}^)";
       if (SSG_VALMODE_NUM	== native)	return SSG_IDENTITY_VALMODED_TMPL;
-      if (SSG_VALMODE_LONG	== native)	return " DB.DBA.RDF_BOOL_OF_LONG (^{tree}^)";
-      if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
     }
   else if (SSG_VALMODE_NUM == needed)
     {
       if (SSG_VALMODE_SQLVAL	== native)	return SSG_IDENTITY_VALMODED_TMPL;
       if (SSG_VALMODE_LONG	== native)	return SSG_IDENTITY_VALMODED_TMPL;
+      if (SSG_VALMODE_BOOL	== native)	return " sparql_ebv_int_of_sqlval (^{tree}^)";
       return ((native->qmfIsSubformatOfLong || native->qmfIsSubformatOfLongWhenEqToSql) ? SSG_IDENTITY_VALMODED_TMPL : native->qmfLongOfShortTmpl);
     }
   spar_internal_error (NULL, "ssg_tmpl_X_of_Y(): bad mode needed");
@@ -4552,20 +5201,37 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
     native = sparp_expn_native_valmode (ssg->ssg_sparp, tree);
   if (SSG_VALMODE_BOOL == native)
     {
-      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed) || (SSG_VALMODE_NUM == needed))
+      if ((SSG_VALMODE_SQLVAL == needed) || (SSG_VALMODE_LONG == needed) || (SSG_VALMODE_SHORT_OR_LONG == needed))
+        {
+          if (ssg->ssg_sparp->sparp_ebv_mode)
+            goto use_standard_template; /* see below */
+          ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
+          return;
+        }
+      if (SSG_VALMODE_NUM == needed)
         {
           ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_BOOL, asname);
           return;
         }
       if (SSG_VALMODE_DATATYPE == needed)
         {
+          ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
+          int need_check_for_null = !(tree_restr_bits & SPART_VARR_NOT_NULL);
+          if (need_check_for_null)
+            {
+              ssg_puts (" CASE WHEN (");
+              ssg_print_scalar_expn (ssg, tree, native, NULL_ASNAME);
+              ssg_puts (" IS NULL) THEN NULL ELSE");
+            }
           ssg_print_box_as_sql_atom (ssg, uname_xmlschema_ns_uri_hash_boolean, SQL_ATOM_UNAME_ALLOWED);
-          return;
+          if (need_check_for_null)
+            ssg_puts (" END");
+          goto print_asname; /* see below */
         }
       if (SSG_VALMODE_LANGUAGE == needed)
         {
-          ssg_puts (" NULL /* lang of bool */");
-          return;
+          ssg_puts_with_comment (" NULL", "lang of bool");
+          goto print_asname; /* see below */
         }
       native = SSG_VALMODE_LONG;
     }
@@ -4587,7 +5253,7 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
         }
     }
   if (IS_BOX_POINTER (needed) && needed->qmfIsSubformatOfLongWhenRef &&
-      ((SSG_VALMODE_SQLVAL == native) || (SSG_VALMODE_LONG == native)) )
+      (/*(SSG_VALMODE_SQLVAL == native) ||*/ (SSG_VALMODE_LONG == native)) )
     {
       ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
       if (tree_restr_bits & SPART_VARR_IS_REF)
@@ -4631,7 +5297,10 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
           SPART *fromshort;
           if (ssg_valmode_is_subformat_of (native, needed))
             {
-              ssg_print_retval (ssg, tree, native, asname);
+	      if (SPAR_RETVAL == SPART_TYPE (tree))
+                ssg_print_retval (ssg, tree, native, asname);
+	      else
+		ssg_print_scalar_expn (ssg, tree, native, asname);
               return;
             }
           SPART_AUTO(fromshort,fromshort_buf,SPAR_CONV);
@@ -4648,13 +5317,14 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
               ssg_print_scalar_expn (ssg, tree, SSG_VALMODE_AUTO, asname);
               return;
             }
-      ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_short (needed, native), NULL, NULL, tree, asname);
+      ssg_print_tmpl (ssg, native, ssg_tmpl_X_of_short (ssg, needed, native), NULL, NULL, tree, asname);
       return;
     }
   if (IS_BOX_POINTER (needed))
     {
+      ptrlong tree_restr_bits = sparp_restr_bits_of_expn (ssg->ssg_sparp, tree);
       const char *tmpl;
-      if (sparp_tree_returns_ref (ssg->ssg_sparp, tree))
+      if (tree_restr_bits & SPART_VARR_IS_REF)
         tmpl = ssg_tmpl_ref_short_of_X (needed, native);
       else
         tmpl = ssg_tmpl_literal_short_of_X (needed, native);
@@ -4682,12 +5352,21 @@ ssg_print_valmoded_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t n
       ssg_print_valmoded_scalar_expn (ssg, tree, SSG_VALMODE_LONG, native, asname);
       return;
     }
-  tmpl = ssg_tmpl_X_of_Y (needed, native);
+use_standard_template:
+  tmpl = ssg_tmpl_X_of_Y (ssg, needed, native);
   if (SSG_IDENTITY_VALMODED_TMPL == tmpl)
     ssg_print_scalar_expn (ssg, tree, native, asname);
   else
     ssg_print_tmpl (ssg, native, tmpl, NULL, NULL, tree, asname);
   return;
+
+print_asname:
+  if (IS_BOX_POINTER (asname))
+    {
+      ssg_puts_with_comment (" AS", "valmoded scalar");
+      ssg_putchar (' ');  
+      ssg_prin_id (ssg, asname);
+    }
 }
 
 caddr_t
@@ -4713,12 +5392,12 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
               while ((0 < ctr--) && (v < t) && (isalnum ((unsigned char) (t[-1])))) t--;
               tail = t;
             }
-          full_vname = t_box_sprintf (210, "%lx~%.100s", box_hash_cut (v, 1), tail);
+          full_vname = t_box_sprintf (210, "%lx~%.100s", (long)box_hash_cut ((caddr_t)v, 1), tail);
         }
       else
         {
           if (NULL == qmv->qmvHash)
-            qmv->qmvHash = /* not t_*/box_sprintf (210, "%lx", box_hash_cut ((caddr_t)qmv, 3));
+            qmv->qmvHash = /* not t_*/box_sprintf (210, "%lx", (long)box_hash_cut ((caddr_t)qmv, 3));
           if (col_idx >= BOX_ELEMENTS_0 (qmv->qmvColumns))
             {
               if (col_idx > 0)
@@ -4731,12 +5410,52 @@ ssg_triple_retval_alias (spar_sqlgen_t *ssg, SPART *triple, int field_idx, int c
               if ('\"' != colname[0])
                 full_vname = t_box_sprintf (210, "%.100s~%.100s", qmv->qmvHash, colname);
               else
-                full_vname = t_box_sprintf (210, "%.100s%lx", qmv->qmvHash, box_hash ((caddr_t)colname));
+                full_vname = t_box_sprintf (210, "%.100s%lx", qmv->qmvHash, (long)box_hash ((caddr_t)colname));
             }
         }
       return full_vname;
     }
   return t_box_dv_short_string (simple_vname);
+}
+
+void
+ssg_print_bool_of_plain_box (spar_sqlgen_t *ssg, caddr_t val)
+{
+  switch (DV_TYPE_OF (val))
+    {
+    case DV_LONG_INT: ssg_puts (unbox (val) ? " 1" : " 0"); ssg_puts_comment ("int as bool"); break;
+    case DV_SINGLE_FLOAT:  ssg_puts (unbox_float (val) ? " 1" : " 0"); ssg_puts_comment ("real as bool"); break;
+    case DV_DOUBLE_FLOAT:  ssg_puts (unbox_double (val) ? " 1" : " 0"); ssg_puts_comment ("double as bool"); break;
+    case DV_NUMERIC:  ssg_puts (num_is_zero ((numeric_t)(val)) ? " 0" /* not 1! */ : " 1" /* not 0! */); ssg_puts_comment ("decimal as bool"); break;
+    case DV_DATETIME: case DV_XML_ENTITY: case DV_GEO: ssg_puts (" 1"); ssg_puts_comment ("atom as bool"); break;
+    case DV_STRING: case DV_BIN: ssg_puts ((1 < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("string as bool"); break;
+    case DV_WIDE:  ssg_puts ((sizeof(wchar_t) < box_length (val)) ? " 1" : " 0"); ssg_puts_comment ("wide as bool"); break;
+    default: /* case DV_IRI_ID: case DV_UNAME: case DV_DB_NULL: */  ssg_puts (" NULL"); ssg_puts_comment ("unusual atom as bool"); break;
+    }
+}
+
+void
+ssg_print_star_retvals_by_selid (spar_sqlgen_t *ssg, caddr_t selid)
+{
+  int needs_comma, eq_ctr, eq_count;
+  ssg_puts (" (");
+  ssg->ssg_indent++;
+  eq_count = SPARP_EQUIV_COUNT (ssg->ssg_sparp);
+  for (eq_ctr = 0; eq_ctr < eq_count; eq_ctr++)
+    {
+      sparp_equiv_t *eq = SPARP_EQUIV (ssg->ssg_sparp, eq_ctr);
+      if ((NULL == eq) || eq->e_deprecated || strcmp (eq->e_gp->_.gp.selid, selid))
+        continue;
+      if (needs_comma)
+        ssg_putchar (',');
+      else
+        needs_comma = 1;
+      ssg_print_equiv (ssg, selid, eq, NULL_ASNAME);
+    }
+  if (!needs_comma)
+    ssg_puts ("1");
+  ssg->ssg_indent--;
+  ssg_puts (")");
 }
 
 void
@@ -4845,7 +5564,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
       }
     case SPAR_FUNCALL:
       {
-        int curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        int bigtext, curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         if (NULL == native)
           native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
@@ -4865,7 +5584,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
                 ssg->ssg_indent++;
                 ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                 ssg->ssg_indent--;
-                ssg_puts (" AS ");
+                ssg_puts_with_comment (" AS ", "xqf parser funcall");
                 ssg_puts (parser_desc->p_sql_cast_type);
                 ssg_puts (")");
                 goto print_asname;
@@ -4873,6 +5592,15 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             cvtname = parser_desc->p_typed_bif_name;
             if (NULL == cvtname)
               cvtname = "__xqf_str_parse";
+            else if (ssg->ssg_sparp->sparp_ebv_mode && !strcmp (cvtname, "__xqf_str_parse_boolean"))
+              {
+                ssg_puts (" sparql_ebv_of_sqlval (");
+                ssg->ssg_indent++;
+                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg->ssg_indent--;
+                ssg_putchar (')');
+                goto print_asname;
+              }
             ssg_puts (cvtname);
             ssg_puts (" ('");
             ssg_puts (parser_desc->p_name);
@@ -4905,24 +5633,37 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             goto print_asname;
           }
         ssg_putchar (' ');
+        bigtext =
+          ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
+           (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
+           (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
-            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
-              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
+            if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
+              {
+                ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
+                goto args_are_printed; /* see below */
+              }
           }
-        ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
-            curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
-            if (curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
+            if (!bigtext)
+              curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
+            if (bigtext || curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
             if (SSG_VALMODE_AUTO == argtype)
               {
                 ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
@@ -4935,6 +5676,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
           }
         if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
           ssg_puts (" + 0.0");
+args_are_printed:
         ssg->ssg_indent--;
         ssg_putchar (')');
         goto print_asname;
@@ -4957,7 +5699,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
             else if (SSG_VALMODE_SQLVAL == needed)
               ssg_print_literal_as_sqlval (ssg, NULL, tree);
             else if (SSG_VALMODE_BOOL == needed)
-              ssg_puts_with_comment (" 1", "UNAME as bool");
+              ssg_puts_with_comment (" NULL", "UNAME as bool");
             else if (SSG_VALMODE_NUM == needed)
               ssg_puts_with_comment (" NULL", "UNAME as num");
             else if (IS_BOX_POINTER (needed))
@@ -5020,7 +5762,7 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
               native = sparp_lit_native_valmode (tree);
             if (SSG_VALMODE_NUM == native)
               ssg_print_literal_as_sqlval (ssg, NULL, tree);
-            else if ((uname_xmlschema_ns_uri_hash_dayTimeDuration == tree->_.lit.datatype) &&
+            else if (((RDF_TYPE_PARSEABLE_TO_NUMERIC | RDF_TYPE_PARSEABLE_TO_DTDURATION) & rb_uname_to_flags_of_parseable_datatype (tree->_.lit.datatype)) &&
               sparp_literal_is_xsd_valid (ssg->ssg_sparp, tree->_.lit.val, tree->_.lit.datatype, tree->_.lit.language) )
               {
                 const char *p_name;
@@ -5059,27 +5801,26 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         if (SSG_VALMODE_BOOL == needed)
           {
             caddr_t litvalue = SPAR_LIT_VAL (tree);
-            switch (DV_TYPE_OF (litvalue))
+            caddr_t littype = (DV_ARRAY_OF_POINTER == SPART_TYPE (tree)) ? tree->_.lit.datatype : NULL;
+            if (uname_xmlschema_ns_uri_hash_boolean == littype)
               {
-              case DV_LONG_INT:
-                if (0 == unbox (litvalue))
+                if (!strcasecmp (litvalue, "true") || !strcmp (litvalue, "1"))
                   {
-                    ssg_puts_with_comment (" 0", "int false");
+                    ssg_puts_with_comment (" 1", "bool true");
                     goto print_asname;
                   }
-                break;
-              case DV_NUMERIC:
-              case DV_SINGLE_FLOAT:
-              case DV_DOUBLE_FLOAT:
-                if (DVC_MATCH == cmp_boxes (litvalue, NULL, NULL, NULL))
+                if (!strcasecmp (litvalue, "false") || !strcmp (litvalue, "0"))
                   {
-                    ssg_puts_with_comment (" 0", "float false");
+                    ssg_puts_with_comment (" 0", "bool false");
                     goto print_asname;
                   }
-                break;
-              default: break;
+                ssg_puts_with_comment (" NULL", "wrong bool");
+                goto print_asname;
               }
-            ssg_puts_with_comment (" 1", "bool");
+            if ((DV_STRING == DV_TYPE_OF (litvalue)) && (NULL != littype) && (rb_uname_to_flags_of_parseable_datatype (littype) & RDF_TYPE_PARSEABLE))
+              ssg_puts_with_comment (" NULL", "wrong parseable");
+            else
+              ssg_print_bool_of_plain_box (ssg, litvalue);
             goto print_asname;
           }
         if (IS_BOX_POINTER (needed))
@@ -5165,16 +5906,16 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         (!IS_BOX_POINTER (needed) || needed->qmfIsSubformatOfLongWhenEqToSql) )
         {
           if (SSG_VALMODE_BOOL == needed)
-            {
-              ssg_puts (" EXISTS (");
-              ssg->ssg_indent++;
-            }
+            ssg_puts (" EXISTS (");
+          else
+            ssg_puts (" COALESCE (");
+          ssg->ssg_indent++;
           ssg_print_scalar_subquery_exp (ssg, tree->_.gp.subquery, tree, SSG_VALMODE_LONG);
           if (SSG_VALMODE_BOOL == needed)
-            {
-              ssg_putchar (')');
-              ssg->ssg_indent--;
-            }
+            ssg_putchar (')');
+          else
+            ssg_puts (", 0)");
+          ssg->ssg_indent--;
           goto print_asname;
         }
       /*if (NULL == native)
@@ -5200,6 +5941,17 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
         END_DO_BOX_FAST;
         return;
       }
+    case ORDER_L:
+      {
+      ssg_print_scalar_expn (ssg, tree->_.oby.expn, needed, NULL_ASNAME);
+      switch (tree->_.oby.direction)
+        {
+        case 0: break;
+        case ASC_L: ssg_puts (" ASC"); break;
+        case DESC_L: ssg_puts (" DESC"); break;
+        }
+      goto print_asname;
+      }
     default:
       spar_sqlprint_error ("ssg_" "print_scalar_expn(): unsupported scalar expression type");
       goto print_asname;
@@ -5208,35 +5960,27 @@ ssg_print_scalar_expn (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t needed, co
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*scalar*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "scalar");
+      ssg_putchar (' ');  
       ssg_prin_id (ssg, asname);
     }
 }
 
 void
-ssg_print_procview_rset_item (spar_sqlgen_t *ssg, caddr_t selid, int pos, const char *colname, caddr_t e_varname)
+ssg_print_procview_rset_item (spar_sqlgen_t *ssg, caddr_t selid, int pos, const char *colname, int view_cn_trick, caddr_t e_varname)
 {
   char buf[50];
-#ifdef NDEBUG
+  ssg_puts_comment ("procview[");
   ssg_putchar (' ');
-#else
-  ssg_puts (" /*procview[*/ ");
-#endif
   if (-1 == pos)
-    ssg_puts (" NULL ");
+    ssg_puts ("NULL");
   else
     {
       ssg_prin_id (ssg, selid);
-      sprintf (buf, ".%s[%d] ", colname, pos);
+      sprintf (buf, view_cn_trick ? ".%s%d " : ".%s[%d] ", colname, pos);
       ssg_puts (buf);
     }
-#ifndef NDEBUG
-  ssg_puts ("/*]procview*/ ");
-#endif
+  ssg_puts_comment ("]procview");
 }
 
 void
@@ -5273,24 +6017,30 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
       if (SERVICE_L == tree->_.retval.gp->_.gp.subtype)
         {
           int pos = sparp_find_sinv_rset_or_param_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, e_varname, 0 /* search in result-set */);
-          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "rset", e_varname);
+          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "rset", 0, e_varname);
           goto print_asname; /* see below */
         }
       if (VALUES_L == tree->_.retval.gp->_.gp.subtype)
         {
-          int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, tree->_.retval.gp->_.gp.subquery, e_varname);
-          ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", e_varname);
+          SPART *binv = tree->_.retval.gp->_.gp.subquery;
+          if (0 == binv->_.binv.rows_in_use)
+            {
+              ssg_puts (" NULL");
+              ssg_puts_comment ("value from empty binv");
+            }
+          else
+            {
+              int pos = sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, tree->_.retval.gp, binv, e_varname);
+              ssg_print_procview_rset_item (ssg, tree->_.retval.selid, pos, "BND", (SPAR_MAX_BINDINGS_VIEW_CN >= BOX_ELEMENTS (binv->_.binv.vars)), e_varname);
+            }
           goto print_asname; /* see below */
         }
     }
   if (IS_BOX_POINTER (vmode) && (1 < vmode->qmfColumnCount) && (IS_BOX_POINTER (asname) || (NULL == asname)))
     {
       int colctr;
-#ifdef NDEBUG
+      ssg_puts_comment ("retval-list[");
       ssg_putchar (' ');
-#else
-      ssg_puts (" /*retval-list[*/ ");
-#endif
       for (colctr = 0; colctr < vmode->qmfColumnCount; colctr++)
         {
           char buf[210];
@@ -5315,19 +6065,13 @@ ssg_print_retval (spar_sqlgen_t *ssg, SPART *tree, ssg_valmode_t vmode, const ch
               ssg_prin_id (ssg, buf);
             }
         }
-#ifdef NDEBUG
+      ssg_puts_comment ("]retval-list");
       ssg_putchar (' ');
-#else
-      ssg_puts (" /*]retval-list*/ ");
-#endif
       return;
     }
 retval_without_var:
-#ifdef NDEBUG
-      ssg_putchar (' ');
-#else
-  ssg_puts (" /*retval[*/ ");
-#endif
+  ssg_puts_comment ("retval[");
+  ssg_putchar (' ');
   if (NULL != tree->_.retval.tabid)
     {
       if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_tabids, tree->_.retval.tabid))
@@ -5347,9 +6091,7 @@ retval_without_var:
   if ((NULL == asname) || IS_BOX_POINTER (asname))
     {
       ssg_prin_id (ssg, full_vname);
-#ifndef NDEBUG
-      ssg_puts (" /* "); ssg_puts (e_varname); ssg_puts (" */");
-#endif
+      ssg_puts_comment3 ("", e_varname, "");
     }
   else
     {
@@ -5357,26 +6099,15 @@ retval_without_var:
       char buf[210];
       snprintf (buf, sizeof (buf), "%.100s~%d", full_vname, col_idx);
       ssg_prin_id (ssg, buf);
-#ifndef NDEBUG
       if (0 == col_idx)
-        {
-          ssg_puts (" /* "); ssg_puts (e_varname); ssg_puts (" */");
-        }
-#endif
+        ssg_puts_comment3 ("", e_varname, "");
     }
-#ifdef NDEBUG
-      ssg_putchar (' ');
-#else
-  ssg_puts (" /*]retval*/ ");
-#endif
+  ssg_puts_comment ("]retval");
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*retval*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "retval");
+      ssg_putchar (' ');
       ssg_prin_id (ssg, asname);
     }
 }
@@ -5440,15 +6171,11 @@ ssg_print_where_or_and (spar_sqlgen_t *ssg, const char *location)
         }
     }
   ssg->ssg_where_l_printed = 1;
-#ifndef NDEBUG
   if (NULL != location)
     {
-      ssg_puts (" /* ");
-      ssg_puts (location);
-      ssg_puts (" */ ");
+      ssg_puts_comment3 ("", location, "");
       ssg_newline (1);
     }
-#endif
 }
 
 void
@@ -5558,6 +6285,8 @@ ssg_print_rvr_fixed_val (spar_sqlgen_t *ssg, rdf_val_range_t *rvr, ssg_valmode_t
     goto use_temporary_literal;
   if (!(rvr->rvrRestrictions & SPART_VARR_TYPED))
     goto use_sql_box;
+  if ((NULL != rvr->rvrFixedOrigText) && ((DV_DOUBLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue)) || DV_SINGLE_FLOAT == DV_TYPE_OF (rvr->rvrFixedValue) || DV_NUMERIC == DV_TYPE_OF (rvr->rvrFixedValue)))
+    goto use_temporary_literal;
   if ((rvr->rvrDatatype == uname_xmlschema_ns_uri_hash_string) || (rvr->rvrDatatype != xsd_type_of_box ((caddr_t)(rvr->rvrFixedValue))))
     goto use_temporary_literal;
 
@@ -5569,9 +6298,10 @@ use_temporary_literal:
       SPART_buf lit_buf;
       SPART *lit = NULL;
       SPART_AUTO (lit, lit_buf, SPAR_LIT);
-      lit->_.lit.val = rvr->rvrFixedValue;
-      lit->_.lit.datatype = rvr->rvrDatatype;
-      lit->_.lit.language = rvr->rvrLanguage;
+      lit->_.lit.val = (caddr_t)(rvr->rvrFixedValue);
+      lit->_.lit.datatype = (caddr_t)(rvr->rvrDatatype);
+      lit->_.lit.language = (caddr_t)(rvr->rvrLanguage);
+      lit->_.lit.original_text = (caddr_t)(rvr->rvrFixedOrigText);
       ssg_print_scalar_expn (ssg, lit, needed, asname);
     }
 }
@@ -5921,20 +6651,12 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
     }
   if (SPART_VARR_CONFLICT & eq->e_rvr.rvrRestrictions)
     {
-#ifdef NDEBUG
-      ssg_puts (" NULL");
-#else
-      ssg_puts (" NULL /* due to conflict on ");
-      ssg_puts (eq->e_varnames[0]);
-      ssg_puts (" */");
-#endif
+      ssg_puts (" NULL /* due to conflict on "); ssg_puts (eq->e_varnames[0]); ssg_puts (" */");
       goto write_assuffix;
     }
 #if 0 /* no longer needed */
   if (SSG_VALMODE_LONG == needed)
-    {
-      ssg_puts (" /* LONG retval */");
-    }
+    ssg_puts_comment ("LONG retval");
 #endif
   if (SPARP_EQ_IS_FIXED_AND_NOT_NULL (eq) && (!(flags & SSG_RETVAL_OPTIONAL_MAKES_NULLABLE)))
     {
@@ -6016,6 +6738,9 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
     }
   if (flags & SSG_RETVAL_FROM_GOOD_SELECTED)
     {
+      int try_front_varname = (NULL != eq->e_front_varname);
+
+retry_good_ignoring_front_varname:
       for (var_ctr = 0; var_ctr < var_count; var_ctr++)
         {
           SPART_buf rv_buf;
@@ -6024,6 +6749,8 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
           SPART *var = eq->e_vars[var_ctr];
           caddr_t selid = var->_.var.selid;
           if (NULL == selid)
+            continue;
+          if (try_front_varname && strcmp (eq->e_front_varname, var->_.var.vname))
             continue;
           if (0 > dk_set_position_of_string (ssg->ssg_valid_ret_selids, selid))
             continue;
@@ -6053,6 +6780,11 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
 #endif
           ssg_print_valmoded_scalar_expn (ssg, rv, needed, native, asname);/*#1*/
           return 1;
+        }
+      if (try_front_varname)
+        {
+          try_front_varname = 0;
+          goto retry_good_ignoring_front_varname; /* see above */
         }
       if ((0 == eq->e_var_count) &&
         ((flags & SSG_RETVAL_FROM_ANY_SELECTED) ||
@@ -6184,6 +6916,73 @@ ssg_print_equiv_retval_expn (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, i
         if (!(flags & SSG_RETVAL_FROM_JOIN_MEMBER))
           goto try_write_null; /* see below */
         memb_len = BOX_ELEMENTS_INT (gp->_.gp.members);
+	if (!(SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && (1 < BOX_ELEMENTS (eq->e_subvalue_idxs)))
+	  {			/* Special case for coalesce as a result of full outer join like two VALUES with UNBOUNDs for same variable in bug 16670 */
+	    int sub_is_first_coalesce_arg = 1;
+	    sub_flags = (SSG_RETVAL_FROM_GOOD_SELECTED |
+              (flags & (SSG_RETVAL_OPTIONAL_MAKES_NULLABLE | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL) ) );
+	    ssg_puts (" COALESCE (");
+	    ssg->ssg_indent++;
+	    ssg_newline (0);
+	    for (memb_ctr = 0; memb_ctr < memb_len; memb_ctr++)
+	      {
+		int final_sub_flags = sub_flags;
+		gp_member = gp->_.gp.members[memb_ctr];
+		if (SPAR_GP != gp_member->type)
+		  continue;
+		subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
+		if (NULL == subval)
+		  continue;
+		if (OPTIONAL_L == gp_member->_.gp.subtype)
+		  final_sub_flags |= SSG_RETVAL_OPTIONAL_MAKES_NULLABLE;
+		if (sub_is_first_coalesce_arg)
+		  sub_is_first_coalesce_arg = 0;
+		else
+		  {
+		    ssg_putchar (',');
+		    ssg_newline (0);
+		  }
+		printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, final_sub_flags, needed, asname);	/*#2 */
+	      }
+	    ssg_putchar (')');
+	    ssg->ssg_indent--;
+	    goto write_assuffix;	/* see below */
+	  }
+        do { /* Special case for coalesce as a result of value that may come from more than one optional, bug 16064 */
+	    SPART *gp_first_member;
+            sparp_equiv_t *first_subval;
+	    if (2 != memb_len)
+	      break;
+	    gp_first_member = gp->_.gp.members[0];
+            if (SPAR_GP != gp_first_member->type)
+	      break;
+            gp_member = gp->_.gp.members[1];
+            if (SPAR_GP != gp_member->type)
+	      break;
+            if (OPTIONAL_L != gp_member->_.gp.subtype)
+	      break;
+            subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_member, eq);
+            if (NULL == subval)
+	      break;
+            first_subval = sparp_equiv_get_subvalue_ro (ssg->ssg_equivs, ssg->ssg_equiv_count, gp_first_member, eq);
+            if (NULL == first_subval)
+	      break;
+            if (first_subval->e_rvr.rvrRestrictions & SPART_VARR_NOT_NULL)
+	      break;
+            ssg_puts (" COALESCE (");
+            ssg->ssg_indent++;
+            ssg_newline (0);
+            sub_flags |= SSG_RETVAL_FROM_GOOD_SELECTED |
+              (flags & (SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_FROM_ANY_SELECTED | SSG_RETVAL_CAN_PRINT_NULL));
+            printed = ssg_print_equiv_retval_expn (ssg, gp_first_member, first_subval, sub_flags, needed, NULL);
+            ssg_putchar (',');
+            ssg_newline (0);
+            sub_flags |= SSG_RETVAL_OPTIONAL_MAKES_NULLABLE;
+            printed = ssg_print_equiv_retval_expn (ssg, gp_member, subval, sub_flags, needed, NULL);
+            ssg_putchar (')');
+            ssg->ssg_indent--;
+            goto write_assuffix; /* see below */
+          } while (0);
         for (memb_ctr = 0; memb_ctr < memb_len; memb_ctr++)
           {
             gp_member = gp->_.gp.members[memb_ctr];
@@ -6222,11 +7021,8 @@ write_assuffix:
   if (IS_BOX_POINTER (asname) &&
     ((NULL == name_as_expn) || strcmp (asname, name_as_expn)) )
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*eqretval*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "eqretval");
+      ssg_putchar (' ');
       ssg_prin_id (ssg, asname);
     }
   return 1;
@@ -6360,213 +7156,17 @@ ssg_sample_of_global_rv (spar_sqlgen_t *ssg, sparp_equiv_t *eq, int mixed_restri
   return glob_rv;
 }
 
-
 void
-ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set_t jleft_aliases,
-  ccaddr_t jright_alias, int print_cross_join_conds, int print_inner_filter_conds )
+ssg_print_equalities_of_vars_with_globals_and_constants (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, SPART *sample_var, dk_set_t ghost_varnames, int print_nice_eq_to_fixed_val)
 {
-  int var_ctr, var2_ctr, varname_ctr;
-  int sub_ctr, sub2_ctr;
-  int good_eq_found = 0;
-  int retry_count = 0;
-  int weak_eq_skipped = 0;
-  int restrs_not_filtered_in_subqs = eq->e_replaces_filter;
-  int inner_filters_need_explicit_print;
-  dk_set_t ghost_varnames = NULL;
-  SPART *sample_var = NULL;
   SPART *sample_global_rv = NULL;
-  caddr_t sample_nonlocal_varname_from_subv = NULL; /* last resort to get a sample var, like for ?a in SparqlDawgR2 algebra/join-combo-1.rq */
-  if (!print_inner_filter_conds)
-    goto print_cross_equs; /* see below */;
-  inner_filters_need_explicit_print = (0 == eq->e_gspo_uses) && ((0 != eq->e_nested_bindings) || (OPTIONAL_L != eq->e_gp->_.gp.subtype));
-  if (restrs_not_filtered_in_subqs && inner_filters_need_explicit_print)
-    {
-      int sub_ctr;
-      if (eq->e_replaces_filter & ~(eq->e_rvr.rvrRestrictions) & ~SPART_VARR_EQ_VAR)
-        spar_internal_error (ssg->ssg_sparp, "lost filters in equivs");
-      if ((UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
-        {
-          DO_BOX_FAST (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
-            {
-              sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_idx);
-              if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
-                continue;
-              if (!(SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions) && (0 == sub_eq->e_gspo_uses))
-                continue;
-              restrs_not_filtered_in_subqs &= (~(sub_eq->e_rvr.rvrRestrictions) |
-                ~(SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL ) );
-              if ((SPART_VARR_FIXED & restrs_not_filtered_in_subqs) &&
-                (SPART_VARR_FIXED & sub_eq->e_rvr.rvrRestrictions) &&
-                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrFixedValue, (caddr_t) sub_eq->e_rvr.rvrFixedValue, NULL, NULL)) )
-                restrs_not_filtered_in_subqs &= ~SPART_VARR_FIXED;
-              if ((SPART_VARR_TYPED & restrs_not_filtered_in_subqs) &&
-                (SPART_VARR_TYPED & sub_eq->e_rvr.rvrRestrictions) &&
-                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrDatatype, (caddr_t) sub_eq->e_rvr.rvrDatatype, NULL, NULL)) )
-                restrs_not_filtered_in_subqs &= ~SPART_VARR_TYPED;
-            }
-          END_DO_BOX_FAST;
-        }
-    }
-  /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
-  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
-    {
-      int sub_ctr;
-      if (0 != eq->e_gspo_uses)
-        {
-          int varctr;
-          for (varctr = eq->e_var_count; varctr--; /* no step */)
-            {
-              SPART *var = eq->e_vars[varctr];
-              SPART *triple;
-              if (NULL == var->_.var.tabid)
-                continue;
-              triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, eq->e_gp, var, 1);
-              if (OPTIONAL_L != triple->_.triple.subtype)
-                goto eq_has_join_with_nonoptional_triple; /* see below */
-            }
-        }
-      DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
-        {
-          sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_eq_idx);
-          SPART *sub_gp = sub_eq->e_gp;
-          ssg_valmode_t sub_native;
-          int col_count;
-          if ((OPTIONAL_L != sub_gp->_.gp.subtype) && (SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions))
-            continue;
-          sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
-          col_count = ((IS_BOX_POINTER (sub_native)) ? sub_native->qmfColumnCount : 1);
-          if (0 < col_count)
-            {
-              const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + 0));
-              ssg_print_where_or_and (ssg, "an optional from subq is forced to be not null");
-              ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_OPTIONAL_MAKES_NULLABLE, sub_native, eq_asname);
-              ssg_puts (" IS NOT NULL");
-            }
-        }
-      END_DO_BOX_FAST;
-eq_has_join_with_nonoptional_triple:
-      ;
-    }
-/* After all plain variables we should print equalities of "ghost" variable names with globals and constants.
-"ghost" variable names do not correspond to any true variables that survived all optimizations.
-ghost variable can be used as a sample variable only in absence of plain vars */
-  DO_BOX_FAST_REV (caddr_t, varname, varname_ctr, eq->e_varnames)
-    {
-      int subv_idx_ctr;
-      for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
-        {
-          SPART *var = eq->e_vars[var_ctr];
-          caddr_t tabid = var->_.var.tabid;
-          if (NULL == tabid)
-            continue;
-          if (varname == eq->e_vars[var_ctr]->_.var.vname)
-            goto name_is_non_ghost; /* see below */
-        }
-      DO_BOX_FAST_REV (ptrlong, subv_idx, subv_idx_ctr, eq->e_subvalue_idxs)
-        {
-          sparp_equiv_t *sub_eq = ssg->ssg_equivs[subv_idx];
-          int sub_vname_ctr;
-          DO_BOX_FAST_REV (caddr_t, sub_vname, sub_vname_ctr, sub_eq->e_varnames)
-            {
-              if (varname == sub_vname)
-                {
-                  sample_nonlocal_varname_from_subv = varname;
-                  goto name_is_non_ghost; /* see below */
-                }
-            }
-          END_DO_BOX_FAST_REV;
-        }
-      END_DO_BOX_FAST_REV;
-      t_set_push (&ghost_varnames, varname);
-name_is_non_ghost: ;
-    }
-  END_DO_BOX_FAST_REV;
-  if (restrs_not_filtered_in_subqs && ((NULL != ghost_varnames) || inner_filters_need_explicit_print)) /* This is tested again because restrs_not_filtered_in_subqs could become zero */
-    {
-      for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
-        {
-          SPART *var = eq->e_vars[var_ctr];
-          caddr_t tabid = var->_.var.tabid;
-          if (NULL == tabid)
-            continue;
-          sample_var = var;
-          break;
-        }
-      if (NULL == sample_var)
-        {
-          if (NULL != ghost_varnames)
-            {
-              caddr_t name = (caddr_t)t_set_pop (&ghost_varnames);
-              sample_var = ssg_sample_of_ghost_variable (ssg, eq, name);
-            }
-          else if (NULL != sample_nonlocal_varname_from_subv)
-            sample_var = ssg_sample_of_ghost_variable (ssg, eq, sample_nonlocal_varname_from_subv);
-          else
-            spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
-        }
-    }
-  if (restrs_not_filtered_in_subqs && inner_filters_need_explicit_print) /* This is tested again because restrs_not_filtered_in_subqs could become zero */
-    {
-      ptrlong saved_var_restr, saved_eq_restr;
-      /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
-      saved_var_restr = sample_var->_.var.rvr.rvrRestrictions;
-      saved_eq_restr = eq->e_rvr.rvrRestrictions;
-      eq->e_rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
-      sample_var->_.var.rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
-      if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
-        {
-          SPART *bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, eq->e_rvr.rvrFixedValue);
-          ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
-          ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
-        }
-      else if (SPART_VARR_IS_IRI & restrs_not_filtered_in_subqs)
-        {
-          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISIRI, (SPART **)t_list (1, sample_var));
-          ssg_print_where_or_and (ssg, "value of equiv class, isIRI check by replaced filter");
-          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      else if (SPART_VARR_IS_BLANK & restrs_not_filtered_in_subqs)
-        {
-          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISBLANK, (SPART **)t_list (1, sample_var));
-          ssg_print_where_or_and (ssg, "value of equiv class, isBLANK check by replaced filter");
-          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      else if (SPART_VARR_IS_REF & restrs_not_filtered_in_subqs)
-        {
-          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISREF, (SPART **)t_list (1, sample_var));
-          ssg_print_where_or_and (ssg, "value of equiv class, isREF check by replaced filter");
-          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      else if (SPART_VARR_IS_LIT & restrs_not_filtered_in_subqs)
-        {
-          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISLITERAL, (SPART **)t_list (1, sample_var));
-          ssg_print_where_or_and (ssg, "value of equiv class, isLITERAL check by replaced filter");
-          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      else if (SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs)
-        {
-          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var));
-          ssg_print_where_or_and (ssg, "value of equiv class, BOUND check by replaced filter");
-          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      else if (SPART_VARR_ALWAYS_NULL & restrs_not_filtered_in_subqs)
-        {
-          SPART *not_builtin = spartlist (ssg->ssg_sparp, 3, BOP_NOT,
-            sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var)),
-            NULL );
-          ssg_print_where_or_and (ssg, "value of equiv class, !BOUND check by replaced filter");
-          ssg_print_scalar_expn (ssg, not_builtin, SSG_VALMODE_BOOL, NULL_ASNAME);
-        }
-      sample_var->_.var.rvr.rvrRestrictions = saved_var_restr;
-      eq->e_rvr.rvrRestrictions = saved_eq_restr;
-    }
-  /* Printing equalities of variables with globals and constants */
+  int var_ctr;
   for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
     {
       SPART *var = eq->e_vars[var_ctr];
-      caddr_t tabid = var->_.var.tabid;
+      caddr_t tabid = ((VALUES_L == gp->_.gp.subtype) ? uname___empty : var->_.var.tabid);
       int mixed_restrictions = (eq->e_rvr.rvrRestrictions | var->_.var.rvr.rvrRestrictions);
-      if ((SPART_VARR_FIXED & mixed_restrictions) && (NULL != tabid))
+      if (print_nice_eq_to_fixed_val && (SPART_VARR_FIXED & mixed_restrictions) && (NULL != tabid))
         {
           SPART *var_triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, NULL, var, 1);
           ssg_print_nice_equality_for_var_and_eq_fixed_val (ssg, &(eq->e_rvr), var, var_triple);
@@ -6588,8 +7188,8 @@ name_is_non_ghost: ;
             sample_global_rv = ssg_sample_of_global_rv (ssg, eq, mixed_restrictions, var);
           if (IS_BOX_POINTER (vmode))
             {
-              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, var_rv->_.retval.triple, eq->e_gp, var_rv);
-              col_count = BOX_ELEMENTS (qmv->qmvColumns);
+              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, var_rv->_.retval.triple, eq->e_gp, var_rv, 1);
+              col_count = ((NULL == qmv) ? 1 : BOX_ELEMENTS (qmv->qmvColumns));
             }
           else
             col_count = 1;
@@ -6678,14 +7278,12 @@ name_is_non_ghost: ;
           sample_global_rv_native = sparp_expn_native_valmode (ssg->ssg_sparp, sample_global_rv);
           sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
           common_native = ssg_largest_eq_valmode (sample_global_rv_native, sub_native);
-#ifdef DEBUG
-	  if (SSG_VALMODE_LONG == common_native)
-            ssg_puts (" /* note SSG_VALMODE_LONG: */");
-#endif
+          if (SSG_VALMODE_LONG == common_native)
+            ssg_puts_comment ("note SSG_VALMODE_LONG:");
           if (( IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native)) && !SPART_VARNAME_IS_GLOB(sample_global_rv->_.retval.vname))
             { /* Note special zeropart case below */
-              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, sample_global_rv_gp, sample_global_rv);
-              col_count = BOX_ELEMENTS (qmv->qmvColumns);
+              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, sample_global_rv_gp, sample_global_rv, 1);
+              col_count = ((NULL == qmv) ? 1 : BOX_ELEMENTS (qmv->qmvColumns));
             }
           else
             col_count = 1;
@@ -6713,6 +7311,230 @@ name_is_non_ghost: ;
         }
       END_DO_BOX_FAST_REV;
     }
+}
+
+void
+ssg_print_equivalences (spar_sqlgen_t *ssg, SPART *gp, sparp_equiv_t *eq, dk_set_t jleft_aliases,
+  ccaddr_t jright_alias, int print_cross_join_conds, int print_inner_filter_conds )
+{
+  int var_ctr, var2_ctr, varname_ctr;
+  int sub_ctr, sub2_ctr;
+  int good_eq_found = 0;
+  int retry_count = 0;
+  int weak_eq_skipped = 0;
+  int restrs_not_filtered_in_subqs = eq->e_replaces_filter;
+  int inner_filters_need_explicit_print;
+  dk_set_t ghost_varnames = NULL;
+  SPART *sample_var = NULL;
+  caddr_t sample_nonlocal_varname_from_subv = NULL; /* last resort to get a sample var, like for ?a in SparqlDawgR2 algebra/join-combo-1.rq */
+  if (!print_inner_filter_conds)
+    goto print_cross_equs; /* see below */;
+  inner_filters_need_explicit_print = (0 == eq->e_gspo_uses) && ((0 != eq->e_nested_bindings) || (OPTIONAL_L != eq->e_gp->_.gp.subtype));
+  if (restrs_not_filtered_in_subqs && inner_filters_need_explicit_print)
+    {
+      int sub_ctr;
+      if (eq->e_replaces_filter & ~(eq->e_rvr.rvrRestrictions) & ~SPART_VARR_EQ_VAR)
+        spar_internal_error (ssg->ssg_sparp, "lost filters in equivs");
+      if ((UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
+        {
+          DO_BOX_FAST (ptrlong, sub_idx, sub_ctr, eq->e_subvalue_idxs)
+            {
+              sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_idx);
+              if (OPTIONAL_L == sub_eq->e_gp->_.gp.subtype)
+                continue;
+              if (!(SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions) && (0 == sub_eq->e_gspo_uses))
+                continue;
+              restrs_not_filtered_in_subqs &= (~(sub_eq->e_rvr.rvrRestrictions) |
+                ~(SPART_VARR_IS_BLANK | SPART_VARR_IS_IRI | SPART_VARR_IS_LIT | SPART_VARR_IS_REF | SPART_VARR_NOT_NULL ) );
+              if ((SPART_VARR_FIXED & restrs_not_filtered_in_subqs) &&
+                (SPART_VARR_FIXED & sub_eq->e_rvr.rvrRestrictions) &&
+                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrFixedValue, (caddr_t) sub_eq->e_rvr.rvrFixedValue, NULL, NULL)) )
+                restrs_not_filtered_in_subqs &= ~SPART_VARR_FIXED;
+              if ((SPART_VARR_TYPED & restrs_not_filtered_in_subqs) &&
+                (SPART_VARR_TYPED & sub_eq->e_rvr.rvrRestrictions) &&
+                (DVC_MATCH == cmp_boxes_safe ((caddr_t) eq->e_rvr.rvrDatatype, (caddr_t) sub_eq->e_rvr.rvrDatatype, NULL, NULL)) )
+                restrs_not_filtered_in_subqs &= ~SPART_VARR_TYPED;
+            }
+          END_DO_BOX_FAST;
+        }
+    }
+  /* A special case exists: if the equiv replaces NOT NULL filter then it should be checked for the output of every OPTIONAL subq. */
+  if ((SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs) && (UNION_L != eq->e_gp->_.gp.subtype) && (SPAR_UNION_WO_ALL != eq->e_gp->_.gp.subtype))
+    {
+      int sub_ctr;
+      int forced_notnull_opt_count = 0;
+      if (0 != eq->e_gspo_uses)
+        {
+          int varctr;
+          for (varctr = eq->e_var_count; varctr--; /* no step */)
+            {
+              SPART *var = eq->e_vars[varctr];
+              SPART *triple;
+              if (NULL == var->_.var.tabid)
+                continue;
+              triple = sparp_find_triple_of_var_or_retval (ssg->ssg_sparp, eq->e_gp, var, 1);
+              if (OPTIONAL_L != triple->_.triple.subtype)
+                goto eq_has_join_with_nonoptional_triple; /* see below */
+            }
+        }
+      DO_BOX_FAST (ptrlong, sub_eq_idx, sub_ctr, eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = SPARP_EQUIV (ssg->ssg_sparp, sub_eq_idx);
+          SPART *sub_gp = sub_eq->e_gp;
+          ssg_valmode_t sub_native;
+          int col_count;
+          if ((OPTIONAL_L != sub_gp->_.gp.subtype) && (SPART_VARR_NOT_NULL & sub_eq->e_rvr.rvrRestrictions))
+            continue;
+          sub_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub_gp, sub_eq);
+          col_count = ((IS_BOX_POINTER (sub_native)) ? sub_native->qmfColumnCount : 1);
+          if (0 < col_count)
+            {
+              const char *eq_asname = ((1 == col_count) ? NULL_ASNAME : (COL_IDX_ASNAME + 0));
+              if (0 == forced_notnull_opt_count)
+                {
+                  ssg_print_where_or_and (ssg, "an optional from subq is forced to be not null");
+                  ssg_putchar ('(');
+                  ssg->ssg_indent++;
+                }
+              else
+                {
+                  ssg_newline (0);
+                  ssg_puts (" OR ");
+                }
+              ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING | SSG_RETVAL_OPTIONAL_MAKES_NULLABLE, sub_native, eq_asname);
+              ssg_puts (" IS NOT NULL");
+              forced_notnull_opt_count++;
+            }
+        }
+      END_DO_BOX_FAST;
+      if (forced_notnull_opt_count)
+        {
+          ssg_putchar (')');
+          ssg->ssg_indent--;
+        }
+eq_has_join_with_nonoptional_triple:
+      ;
+    }
+/* After all plain variables we should print equalities of "ghost" variable names with globals and constants.
+"ghost" variable names do not correspond to any true variables that survived all optimizations.
+ghost variable can be used as a sample variable only in absence of plain vars */
+  DO_BOX_FAST_REV (caddr_t, varname, varname_ctr, eq->e_varnames)
+    {
+      int subv_idx_ctr;
+      for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
+        {
+          SPART *var = eq->e_vars[var_ctr];
+          caddr_t tabid = var->_.var.tabid;
+          if (NULL == tabid)
+            continue;
+          if (varname == eq->e_vars[var_ctr]->_.var.vname)
+            goto name_is_non_ghost; /* see below */
+        }
+      DO_BOX_FAST_REV (ptrlong, subv_idx, subv_idx_ctr, eq->e_subvalue_idxs)
+        {
+          sparp_equiv_t *sub_eq = ssg->ssg_equivs[subv_idx];
+          int sub_vname_ctr;
+          DO_BOX_FAST_REV (caddr_t, sub_vname, sub_vname_ctr, sub_eq->e_varnames)
+            {
+              if (varname == sub_vname)
+                {
+                  sample_nonlocal_varname_from_subv = varname;
+                  goto name_is_non_ghost; /* see below */
+                }
+            }
+          END_DO_BOX_FAST_REV;
+        }
+      END_DO_BOX_FAST_REV;
+      t_set_push (&ghost_varnames, varname);
+name_is_non_ghost: ;
+    }
+  END_DO_BOX_FAST_REV;
+  if (restrs_not_filtered_in_subqs && ((NULL != ghost_varnames) || inner_filters_need_explicit_print)) /* This is tested again because restrs_not_filtered_in_subqs could become zero */
+    {
+      for (var_ctr = 0; var_ctr < eq->e_var_count; var_ctr++)
+        {
+          SPART *var = eq->e_vars[var_ctr];
+          caddr_t tabid = var->_.var.tabid;
+          if (NULL == tabid)
+            continue;
+          sample_var = var;
+          break;
+        }
+      if (NULL == sample_var)
+        {
+          if (NULL != ghost_varnames)
+            {
+              caddr_t name = (caddr_t)t_set_pop (&ghost_varnames);
+              sample_var = ssg_sample_of_ghost_variable (ssg, eq, name);
+            }
+          else if (NULL != sample_nonlocal_varname_from_subv)
+            sample_var = ssg_sample_of_ghost_variable (ssg, eq, sample_nonlocal_varname_from_subv);
+          else
+            spar_internal_error (ssg->ssg_sparp, "ssg_" "print_equivalences(): bad equiv for sample var");
+        }
+    }
+  if (restrs_not_filtered_in_subqs && inner_filters_need_explicit_print) /* This is tested again because restrs_not_filtered_in_subqs could become zero */
+    {
+      ptrlong saved_var_restr, saved_eq_restr;
+      /* Dirty hack: we force code generator to "forget" about the constant to print some subvalue */
+      saved_var_restr = sample_var->_.var.rvr.rvrRestrictions;
+      saved_eq_restr = eq->e_rvr.rvrRestrictions;
+      eq->e_rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
+      sample_var->_.var.rvr.rvrRestrictions &= ~restrs_not_filtered_in_subqs;
+      if (SPART_VARR_FIXED & restrs_not_filtered_in_subqs)
+        {
+	  SPART *rval, *bop;
+	  if (((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype) && (rb_uname_to_flags_of_parseable_datatype (eq->e_rvr.rvrDatatype) & RDF_TYPE_PARSEABLE)) || (NULL != eq->e_rvr.rvrFixedOrigText))
+	    rval = spartlist (ssg->ssg_sparp, 5, SPAR_LIT, eq->e_rvr.rvrFixedValue, eq->e_rvr.rvrDatatype, eq->e_rvr.rvrLanguage, eq->e_rvr.rvrFixedOrigText);
+	  else
+	    rval = (SPART *) (eq->e_rvr.rvrFixedValue);
+	  bop = spartlist (ssg->ssg_sparp, 3, BOP_EQ, sample_var, rval);
+          ssg_print_where_or_and (ssg, "value of equiv class, fixed by replaced filter");
+          ssg_print_bop_bool_expn (ssg, bop, " = "	, " equ ("	, 1, SSG_VALMODE_BOOL);
+        }
+      else if (SPART_VARR_IS_IRI & restrs_not_filtered_in_subqs)
+        {
+          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISIRI, (SPART **)t_list (1, sample_var));
+          ssg_print_where_or_and (ssg, "value of equiv class, isIRI check by replaced filter");
+          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      else if (SPART_VARR_IS_BLANK & restrs_not_filtered_in_subqs)
+        {
+          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISBLANK, (SPART **)t_list (1, sample_var));
+          ssg_print_where_or_and (ssg, "value of equiv class, isBLANK check by replaced filter");
+          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      else if (SPART_VARR_IS_REF & restrs_not_filtered_in_subqs)
+        {
+          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISREF, (SPART **)t_list (1, sample_var));
+          ssg_print_where_or_and (ssg, "value of equiv class, isREF check by replaced filter");
+          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      else if (SPART_VARR_IS_LIT & restrs_not_filtered_in_subqs)
+        {
+          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, SPAR_BIF_ISLITERAL, (SPART **)t_list (1, sample_var));
+          ssg_print_where_or_and (ssg, "value of equiv class, isLITERAL check by replaced filter");
+          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      else if (SPART_VARR_NOT_NULL & restrs_not_filtered_in_subqs)
+        {
+          SPART *builtin = sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var));
+          ssg_print_where_or_and (ssg, "value of equiv class, BOUND check by replaced filter");
+          ssg_print_builtin_expn (ssg, builtin, 1, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      else if (SPART_VARR_ALWAYS_NULL & restrs_not_filtered_in_subqs)
+        {
+          SPART *not_builtin = spartlist (ssg->ssg_sparp, 3, BOP_NOT,
+            sparp_make_builtin_call (ssg->ssg_sparp, BOUND_L, (SPART **)t_list (1, sample_var)),
+            NULL );
+          ssg_print_where_or_and (ssg, "value of equiv class, !BOUND check by replaced filter");
+          ssg_print_scalar_expn (ssg, not_builtin, SSG_VALMODE_BOOL, NULL_ASNAME);
+        }
+      sample_var->_.var.rvr.rvrRestrictions = saved_var_restr;
+      eq->e_rvr.rvrRestrictions = saved_eq_restr;
+    }
+  /* Printing equalities of variables with globals and constants */
+  ssg_print_equalities_of_vars_with_globals_and_constants (ssg, gp, eq, sample_var, ghost_varnames, 1 /* print nice equalities with constants */);
 
 print_cross_equs:
   /* Printing cross-equalities, i.e. join conditions (what can be placed in ON (...) after join */
@@ -6794,14 +7616,12 @@ or when only one source of eq is fixed and not null but the join with other sour
           var_native = sparp_expn_native_valmode (ssg->ssg_sparp, var);
           var2_native = sparp_expn_native_valmode (ssg->ssg_sparp, var2);
           common_native = ssg_largest_eq_valmode (var_native, var2_native);
-#ifdef DEBUG
-	  if (SSG_VALMODE_LONG == common_native)
-            ssg_puts (" /* note SSG_VALMODE_LONG: */");
-#endif
+          if (SSG_VALMODE_LONG == common_native)
+            ssg_puts_comment ("note SSG_VALMODE_LONG:");
           if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))
             { /* Note special zeropart case below */
-              qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var);
-              col_count = BOX_ELEMENTS (qmv->qmvColumns);
+              qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var, 1);
+              col_count = ((NULL == qmv) ? 1 : BOX_ELEMENTS (qmv->qmvColumns));
             }
           else
             col_count = 1;
@@ -6812,7 +7632,7 @@ or when only one source of eq is fixed and not null but the join with other sour
                 (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native)) )
                 {
                   if (NULL == qmv2)
-                    qmv2 = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var2);
+                    qmv2 = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var2, 0);
                   if (!strcmp (qmv->qmvColumns[col_ctr]->qmvcColumnName, qmv2->qmvColumns[col_ctr]->qmvcColumnName))
                     continue;
                 }
@@ -6903,14 +7723,12 @@ or when only one source of eq is fixed and not null but the join with other sour
           var_native = sparp_expn_native_valmode (ssg->ssg_sparp, var);
           sub2_native = sparp_equiv_native_valmode (ssg->ssg_sparp, sub2_gp, sub2_eq);
           common_native = ssg_largest_eq_valmode (var_native, sub2_native);
-#ifdef DEBUG
 	  if (SSG_VALMODE_LONG == common_native)
-            ssg_puts (" /* note SSG_VALMODE_LONG: */");
-#endif
+            ssg_puts_comment ("note SSG_VALMODE_LONG:");
           if (IS_BOX_POINTER (common_native) || (SSG_VALMODE_AUTO == common_native))
             { /* Note special zeropart case below */
-              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var);
-              col_count = BOX_ELEMENTS (qmv->qmvColumns);
+              qm_value_t *qmv = sparp_find_qmv_of_var_or_retval (ssg->ssg_sparp, NULL, eq->e_gp, var, 1);
+              col_count = ((NULL == qmv) ? 1 : BOX_ELEMENTS (qmv->qmvColumns));
             }
           else
             col_count = 1;
@@ -6963,7 +7781,8 @@ print_sub_eq_sub:
           caddr_t sub2_selid = sub2_gp->_.gp.selid;
           ssg_valmode_t sub_native, sub2_native, common_native;
           SPART *left_sub_gp = NULL;
-          int col_ctr, col_count, is_good, sub_is_nullable_inline, sub2_is_nullable_inline;
+          int col_ctr, col_count, is_good;
+          const char *sub_is_nullable_inline, *sub2_is_nullable_inline;
           if (!print_inner_filter_conds && (sub_gp == sub2_gp))
             continue;
           if (!print_cross_join_conds && (sub_gp != sub2_gp))
@@ -7014,36 +7833,38 @@ print_sub_eq_sub:
             common_native = sub_native; /* Note that sub_native == sub2_native in this case */
           else if (IS_BOX_POINTER (common_native) && !(common_native->qmfIsBijection))
             common_native = SSG_VALMODE_SQLVAL;
-
-#ifdef DEBUG
-	  if (SSG_VALMODE_LONG == common_native)
-            ssg_puts (" /* note SSG_VALMODE_LONG: */");
-#endif
+          if (SSG_VALMODE_LONG == common_native)
+            ssg_puts_comment ("note SSG_VALMODE_LONG:");
           col_count = ((IS_BOX_POINTER (common_native)) ? common_native->qmfColumnCount : 1);
           ssg_print_where_or_and (ssg, "two retvals belong to same equiv");
-          sub_is_nullable_inline = (
-            (VALUES_L == sub_gp->_.gp.subtype) &&
+          sub_is_nullable_inline = NULL;
+          if ((VALUES_L == sub_gp->_.gp.subtype) &&
             (sub_gp->_.gp.subquery->_.binv.counters_of_unbound [
-                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) );
-          sub2_is_nullable_inline = (
-            (VALUES_L == sub2_gp->_.gp.subtype) &&
+                  sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub_gp, sub_gp->_.gp.subquery, sub_eq->e_varnames[0]) ] ) )
+            sub_is_nullable_inline = "nullable in left hand VALUES";
+          else if ((OPTIONAL_L == sub2_gp->_.gp.subtype) && (sub_eq->e_nested_bindings == sub_eq->e_nested_optionals) &&
+            (0 == sub_eq->e_gspo_uses) && (0 == sub_eq->e_subquery_uses) ) /* This case is for Bug16064 */
+            sub_is_nullable_inline = "same nullable in both left hand and right hand OPTIONALs";
+          sub2_is_nullable_inline = NULL;
+          if ((VALUES_L == sub2_gp->_.gp.subtype) &&
             (sub2_gp->_.gp.subquery->_.binv.counters_of_unbound [
-                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub2_gp, sub2_gp->_.gp.subquery, sub2_eq->e_varnames[0]) ] ) );
+                sparp_find_binv_rset_pos_of_varname (ssg->ssg_sparp, sub2_gp, sub2_gp->_.gp.subquery, sub2_eq->e_varnames[0]) ] ) )
+            sub2_is_nullable_inline = "nullable in right hand VALUES";
           if (sub_is_nullable_inline || sub2_is_nullable_inline)
             {
               ssg_puts (" (");
               ssg->ssg_indent ++;
               if (sub_is_nullable_inline)
                 {
-                  ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
-                  ssg_puts (" IS NULL ");
+                  ssg_print_equiv_retval_expn (ssg, sub_gp, sub_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_AUTO, NULL_ASNAME);
+                  ssg_puts_with_comment3 (" IS NULL ", "", sub_is_nullable_inline, "");
                 }
               if (sub_is_nullable_inline && sub2_is_nullable_inline)
                 ssg_puts (" OR ");
               if (sub2_is_nullable_inline)
                 {
-                  ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_LONG, NULL_ASNAME);
-                  ssg_puts (" IS NULL ");
+                  ssg_print_equiv_retval_expn (ssg, sub2_gp, sub2_eq, SSG_RETVAL_FROM_GOOD_SELECTED | SSG_RETVAL_MUST_PRINT_SOMETHING, SSG_VALMODE_AUTO, NULL_ASNAME);
+                  ssg_puts_with_comment3 (" IS NULL ", "", sub2_is_nullable_inline, "");
                 }
               ssg_puts (" OR (");
               ssg->ssg_indent ++;
@@ -7079,8 +7900,8 @@ void ssg_print_retval_bop_calc_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree,
   SPART *left = tree->_.bin_exp.left;
   SPART *right = tree->_.bin_exp.right;
   ssg_valmode_t op_arg_valmode;
-  if ((needed == SSG_VALMODE_LONG) || (needed == SSG_VALMODE_NUM))
-    needed = SSG_VALMODE_SQLVAL; /* Trick! This uses the fact that integers 0 and 1 are stored identically in SQLVAL and LONG valmodes */
+  if ((needed == SSG_VALMODE_LONG) || (needed == SSG_VALMODE_NUM) || (needed == SSG_VALMODE_BOOL))
+    needed = SSG_VALMODE_SQLVAL; /* Trick! This uses the fact that integers 0 and 1 are stored identically in SQLVAL, LONG, NUM and BOOL valmodes */
   else if (needed != SSG_VALMODE_SQLVAL)
     spar_sqlprint_error ("ssg_print_retval_bop_calc_expn(): unsupported valmode");
   if (cmp_op)
@@ -7150,13 +7971,7 @@ ssg_print_sparul_run_call (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, int compo
     }
   ssg_puts (")");
   if (compose_report)
-    {
-#ifdef NDEBUG
-      ssg_puts (", 1");
-#else
-      ssg_puts (", 1 /* to compose report */");
-#endif
-    }
+    ssg_puts_with_comment (", 1 ", "to compose report");
   ssg_puts (")");
   ssg->ssg_indent -= 2;
 
@@ -7211,7 +8026,7 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
       }
     case SPAR_FUNCALL:
       {
-        int bigtext, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
+        int bigtext, curr_arg_is_long, prev_arg_is_long = 0, arg_ctr, arg_count = BOX_ELEMENTS (tree->_.funcall.argtrees);
         xqf_str_parser_desc_t *parser_desc;
         ssg_valmode_t native = sparp_rettype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree);
         if (((SSG_VALMODE_SHORT_OR_LONG == needed) && ((SSG_VALMODE_LONG == native) || (SSG_VALMODE_NUM == native) || (SSG_VALMODE_BOOL == native))) ||
@@ -7245,14 +8060,14 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
         parser_desc = function_is_xqf_str_parser (tree->_.funcall.qname);
         if (NULL != parser_desc)
           {
-	    const char *cvtname;
+            const char *cvtname;
             if ((NULL != parser_desc->p_sql_cast_type) && (1 == arg_count))
               {
                 ssg_puts (" CAST (");
                 ssg->ssg_indent++;
                 ssg_print_retval_simple_expn (ssg, gp, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
                 ssg->ssg_indent--;
-                ssg_puts (" AS ");
+                ssg_puts_with_comment (" AS ", "xqf parser simple retval");
                 ssg_puts (parser_desc->p_sql_cast_type);
                 ssg_puts (")");
                 goto print_asname;
@@ -7260,6 +8075,15 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             cvtname = parser_desc->p_typed_bif_name;
             if (NULL == cvtname)
               cvtname = "__xqf_str_parse";
+            else if (ssg->ssg_sparp->sparp_ebv_mode && !strcmp (cvtname, "__xqf_str_parse_boolean"))
+              {
+                ssg_puts (" sparql_ebv_of_sqlval (");
+                ssg->ssg_indent++;
+                ssg_print_scalar_expn (ssg, tree->_.funcall.argtrees[0], SSG_VALMODE_SQLVAL, NULL_ASNAME);
+                ssg->ssg_indent--;
+                ssg_putchar (')');
+                goto print_asname;
+              }
             ssg_puts (cvtname);
             ssg_puts (" ('");
             ssg_puts (parser_desc->p_name);
@@ -7296,27 +8120,38 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
             ssg_print_sparul_run_call (ssg, gp, tree, 1);
             goto print_asname;
           }
+        ssg_putchar (' ');
         bigtext =
           ((NULL != strstr (tree->_.funcall.qname, "bif:")) ||
            (NULL != strstr (tree->_.funcall.qname, "sql:")) ||
            (arg_count > 3) );
         ssg_prin_function_name (ssg, tree->_.funcall.qname);
         ssg_puts (" (");
+        ssg->ssg_indent++;
         if (tree->_.funcall.agg_mode)
           {
-            if ((uname_SPECIAL_cc_bif_c_COUNT == tree->_.funcall.qname) && ((SPART *)((ptrlong)1) == tree->_.funcall.argtrees[0]))
-              arg_count = 1; /* Trick to handle SELECT COUNT FROM ... that is translated to SELECT COUNT (1, all vars) */
+            SPART *arg0 = BOX_ELEMENTS_0 (tree->_.funcall.argtrees) ? tree->_.funcall.argtrees[0] : NULL;
             if (DISTINCT_L == tree->_.funcall.agg_mode)
-              ssg_puts (" DISTINCT");
+              {
+                ssg_puts (" DISTINCT");
+                if ((SPAR_FUNCALL == SPART_TYPE (arg0)) && !strcmp (arg0->_.funcall.qname, "SQLVAL::_STAR") && !strcmp (tree->_.funcall.qname, "SPECIAL::bif:COUNT"))
+                  arg0->_.funcall.qname = t_box_dv_uname_string ("bif:box_hash");
+              }
+            if ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0])
+              {
+                ssg_print_star_retvals_by_selid (ssg, ssg->ssg_tree->_.req_top.retselid);
+                goto args_are_printed; /* see below */
+              }
           }
-        ssg->ssg_indent++;
         for (arg_ctr = 0; arg_ctr < arg_count; arg_ctr++)
           {
             SPART *arg = tree->_.funcall.argtrees[arg_ctr];
             ssg_valmode_t argtype = sparp_argtype_of_function (ssg->ssg_sparp, tree->_.funcall.qname, tree, arg_ctr);
             if (arg_ctr > 0)
               ssg_putchar (',');
-            if (bigtext) ssg_newline (0); else ssg_putchar (' ');
+            if (!bigtext)
+              curr_arg_is_long = SPAR_FUNCALL_ARG_IS_LONG (arg);
+            if (bigtext || curr_arg_is_long || prev_arg_is_long) ssg_newline (0); else ssg_putchar (' ');
             if (SSG_VALMODE_AUTO == argtype)
               {
                 ssg_valmode_t arg_native = sparp_expn_native_valmode (ssg->ssg_sparp, arg);
@@ -7325,10 +8160,12 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
               }
             else
               ssg_print_retval_simple_expn (ssg, gp, arg, argtype, NULL_ASNAME);
+            prev_arg_is_long = curr_arg_is_long;
           }
         if (tree->_.funcall.agg_mode && (uname_SPECIAL_cc_bif_c_AVG == tree->_.funcall.qname))
           ssg_puts (" + 0.0");
         ssg->ssg_indent--;
+args_are_printed:
         ssg_putchar (')');
         goto print_asname;
       }
@@ -7345,11 +8182,8 @@ ssg_print_retval_simple_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, ssg_va
 print_asname:
   if (IS_BOX_POINTER (asname))
     {
-#ifdef NDEBUG
-      ssg_puts (" AS ");
-#else
-      ssg_puts (" AS /*retsimple*/ ");
-#endif
+      ssg_puts_with_comment (" AS", "retsimple");
+      ssg_putchar (' ');
       ssg_prin_id (ssg, asname);
     }
 }
@@ -7478,10 +8312,10 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
         sqltype = ssg_sqltype_of_restr (ssg, sparp_restr_bits_of_expn (ssg->ssg_sparp, ret_column));
       if ((NULL == sqltype) || (' ' == sqltype[0]))
         {
-          ssg_puts (" CAST (");
+          ssg_puts (" CAST (__RO2SQ(");
           ssg->ssg_indent++;
           ssg_print_retval_simple_expn (ssg, gp, ret_column, needed, NULL);
-          ssg_puts (" AS VARCHAR)");
+          ssg_puts_with_comment (") AS VARCHAR)", "retval strict type");
           ssg->ssg_indent--;
           ssg_print_asname_tail ("typed retexpn", asname);
         }
@@ -7514,11 +8348,7 @@ ssg_print_retval_expn (spar_sqlgen_t *ssg, SPART *gp, SPART *ret_column, int col
     }
   if (IS_BOX_POINTER (needed) && (0 == needed->qmfColumnCount))
     {
-#ifdef NDEBUG
-      ssg_puts (" 1");
-#else
-      ssg_puts (" 1 /*fake*/");
-#endif
+      ssg_puts_with_comment (" 1", "fake");
       ssg_print_asname_tail ("retexpn", asname);
       return;
     }
@@ -7682,7 +8512,7 @@ ssg_print_filter (spar_sqlgen_t *ssg, SPART *tree)
 {
   if (tree == (SPART *)(1)) /* The filter has been disabled because it's printed already */
     return;
-  if (NULL != spar_filter_is_freetext (ssg->ssg_sparp, tree, NULL))
+  if (NULL != spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, tree, NULL))
     {
       return;
       /* spar_error (ssg->ssg_sparp, "Unable to generate SQL code for %.100s() special predicate for variable '%.100s', try to rephrase the query",
@@ -7739,20 +8569,22 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
   ccaddr_t g_iri;
   int g_spart_type;
   if (!contains_in_rdf_quad)
-    goto default_modification_only;
+    goto default_modification_only; /* see below */
+  if (!rdf_query_graph_keywords)
+    goto default_modification_only; /* see below */
   g_iri = NULL;
   g_spart_type = spar_plain_const_value_of_tree (g, &g_iri);
   if ((SPAR_QNAME == g_spart_type) && (SPAR_LIT == ft_arg1_spart_type) &&
     (DV_STRING == DV_TYPE_OF (ft_arg1_str)) )
     {
-      ccaddr_t boxed_id;
+      caddr_t boxed_id;
       boxed_id = sparp_graph_sec_iri_to_id_nosignal (ssg->ssg_sparp, g_iri); /* try very fast method first */
       if (NULL == boxed_id)
         boxed_id = sparp_iri_to_id_nosignal (ssg->ssg_sparp, g_iri);
       if (NULL != boxed_id)
         {
           char tmp[30], *tail;
-	  iri_id_t iid = unbox_iri_id (boxed_id);
+          iri_id_t iid = unbox_iri_id (boxed_id);
           int ft_arg1_strlen, idlen, len;
           rdf_graph_keyword (iid, tmp);
           idlen = strlen (tmp);
@@ -7765,6 +8597,7 @@ ssg_patch_ft_arg1 (spar_sqlgen_t *ssg, SPART *ft_arg1, SPART *g, int contains_in
           memcpy (tail, "\' AND ([ __enc \"UTF-8\" ] ", 25); tail += 25;
           memcpy (tail, ft_arg1_str, ft_arg1_strlen); tail += ft_arg1_strlen;
           strcpy (tail, ")");
+          dk_free_tree (boxed_id);
           return patched_ft_arg1;
         }
     }
@@ -7831,6 +8664,71 @@ default_modification_only:
     (SPART **)t_list (2, t_box_dv_short_string ("[ __enc \"UTF-8\" ] "), ft_arg1) );
   return patched_ft_arg1;
 }
+
+
+void
+ssg_print_ft_predicate (spar_sqlgen_t *ssg, SPART *gp, SPART *tree, SPART *ft_pred, caddr_t var_name, quad_map_t *qm, qm_ftext_t *qmft, caddr_t ft_type, caddr_t ft_alias, ccaddr_t long_tmpl_or_null)
+{
+  SPART **args, *ft_arg1;
+  int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+  int argctr, argcount, contains_in_rdf_quad;
+  args = ft_pred->_.funcall.argtrees;
+  ft_arg1 = args[1];
+  argcount = BOX_ELEMENTS (args);
+  contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
+    !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
+  if (!ft_type_is_geo)
+    {
+      SPART *g = tree->_.triple.tr_graph;
+      ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
+    }
+  ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
+  ssg_puts ("(");
+  if (NULL != long_tmpl_or_null)
+    ssg_print_tmpl (ssg, qm->qmObjectMap->qmvFormat, long_tmpl_or_null, ft_alias, qm->qmObjectMap, tree->_.triple.tr_object, NULL_ASNAME);
+  else
+    {
+      ssg_prin_id (ssg, ft_alias);
+      ssg_puts (".");
+      ssg_prin_id (ssg, qmft->qmvftColumnName);
+    }
+  ssg_puts (", ");
+  if (DV_STRING == DV_TYPE_OF (ft_arg1))
+    ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
+  else
+    ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
+  for (argctr = 2; argctr < argcount; argctr += 2)
+    {
+      switch ((ptrlong)(args[argctr]))
+        {
+        case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
+        case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
+        case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
+        case GEO_L:		ssg_puts (", GEO, ");		goto contains_print_scalar; /* see below */
+        case PRECISION_L:	ssg_puts (", PRECISION, ");	goto contains_print_scalar; /* see below */
+        default:
+          if (SPAR_FT_TYPE_IS_GEO (ft_type))
+            {
+              while (argctr < argcount)
+                {
+                  ssg_puts (", ");
+                  ssg_print_scalar_expn (ssg, args[argctr++], SSG_VALMODE_SQLVAL, NULL);
+                }
+              goto args_done; /* see below */
+            }
+          spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+        }
+contains_prin_id:
+      ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
+      continue;
+contains_print_scalar:
+      ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
+      continue;
+    }
+args_done:
+  ssg_puts (")");
+}
+
 
 static void
 ssg_print_fake_self_join_subexp (spar_sqlgen_t *ssg, SPART *gp, SPART ***tree_sets, int tree_set_count, int tree_count, int inside_breakup, int fld_restrictions_bitmask)
@@ -8023,24 +8921,23 @@ from_printed:
       caddr_t ft_type = tree->_.triple.ft_type;
       if (IS_BOX_POINTER (ft_type))
         {
+          SPART *ft_pred = NULL;
           caddr_t var_name = tree->_.triple.tr_object->_.var.vname;
-          SPART *ft_pred = NULL, **args, *ft_arg1;
           int ft_type_is_geo = SPAR_FT_TYPE_IS_GEO(ft_type);
+          int filter_ctr, filter_idx_to_zap;
           qm_ftext_t *qmft = (ft_type_is_geo ? qm->qmObjectMap->qmvGeo : qm->qmObjectMap->qmvFText);
           caddr_t ft_alias;
-          int ctr, argctr, argcount, contains_in_rdf_quad;
           if (NULL == qmft)
             spar_error (ssg->ssg_sparp, "Special predicate %.100s() for variable %.100s is always false for this specific query on this specific quad storage",
               ft_type, var_name );
-          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
-          DO_BOX_FAST (SPART *, filt, ctr, gp->_.gp.filters)
+          DO_BOX_FAST (SPART *, filt, filter_ctr, gp->_.gp.filters)
             {
-              if (NULL == spar_filter_is_freetext (ssg->ssg_sparp, filt, tree))
+              if (NULL == spar_filter_is_freetext_or_rtree (ssg->ssg_sparp, filt, tree))
                 continue;
               if (NULL == ft_pred)
                 {
                   ft_pred = filt;
-                  gp->_.gp.filters[ctr] = (SPART *)((void *)(1));
+                  filter_idx_to_zap = filter_ctr;
                 }
               else
                 spar_error (ssg->ssg_sparp, "Too many %.100s() special predicates for variable %.100s, can not build an SQL query",
@@ -8049,45 +8946,21 @@ from_printed:
           END_DO_BOX_FAST;
           if (NULL == ft_pred)
             spar_sqlprint_error ("ssg_" "print_fake_self_join_subexp(): NULL == ft_predicate");
-          args = ft_pred->_.funcall.argtrees;
-          ft_arg1 = args[1];
-          argcount = BOX_ELEMENTS (args);
-          contains_in_rdf_quad = (uname_bif_c_contains == tree->_.triple.ft_type) &&
-            !strcmp ("DB.DBA.RDF_QUAD", tree->_.triple.tc_list[0]->tc_qm->qmTableName);
-          if (!ft_type_is_geo)
-            {
-              SPART *g = tree->_.triple.tr_graph;
-              ft_arg1 = ssg_patch_ft_arg1 (ssg, ft_arg1, g, contains_in_rdf_quad);
-            }
+          ft_alias = (NULL == qmft->qmvftAlias) ? sub_tabid : t_box_sprintf_uname (210, "%.100s~%.100s", sub_tabid, qmft->qmvftAlias);
           ssg_print_where_or_and (ssg, (ft_type_is_geo ? "spatial predicate" : "freetext predicate"));
           ssg_putchar (' ');
-          ssg_puts (((uname_bif_c_spatial_contains == ft_type) ? "contains" : (ft_pred->_.funcall.qname + 4)));
-          ssg_puts ("(");
-          ssg_prin_id (ssg, ft_alias);
-          ssg_puts (".");
-          ssg_prin_id (ssg, qmft->qmvftColumnName);
-          ssg_puts (", ");
-          if (DV_STRING == DV_TYPE_OF (ft_arg1))
-            ssg_print_box_as_sql_atom (ssg, (ccaddr_t)ft_arg1, SQL_ATOM_UTF8_ONLY);
-          else
-            ssg_print_scalar_expn (ssg, ft_arg1, SSG_VALMODE_SQLVAL, NULL);
-          for (argctr = 2; argctr < argcount; argctr += 2)
-            {
-              switch ((ptrlong)(args[argctr]))
-                {
-                case OFFBAND_L:		ssg_puts (", OFFBAND, ");	goto contains_prin_id; /* see below */
-                case SCORE_L:		ssg_puts (", SCORE, ");		goto contains_prin_id; /* see below */
-                case SCORE_LIMIT_L:	ssg_puts (", SCORE_LIMIT, ");	goto contains_print_scalar; /* see below */
-                default: spar_internal_error (ssg->ssg_sparp, "Unsupported option in printing freetext predicate"); break;
+          ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, NULL);
+          if (ft_type_is_geo)
+                    {
+              qm_format_t *obj_fmt = qm->qmObjectMap->qmvFormat;
+              if (!obj_fmt->qmfIsSubformatOfLong)
+                        {
+                  ssg_print_where_or_and (ssg, "spatial predicate, long");
+                  ssg_putchar (' ');
+                  ssg_print_ft_predicate (ssg, gp, tree, ft_pred, var_name, qm, qmft, ft_type, ft_alias, obj_fmt->qmfLongTmpl);
                 }
-contains_prin_id:
-              ssg_prin_id (ssg, args[argctr+1]->_.var.vname);
-              continue;
-contains_print_scalar:
-              ssg_print_scalar_expn (ssg, args[argctr+1], SSG_VALMODE_SQLVAL, NULL);
-              continue;
             }
-          ssg_puts (")");
+          gp->_.gp.filters[filter_idx_to_zap] = (SPART *)((void *)(1));
         }
       else if (NULL != ft_type)
         {
@@ -8230,11 +9103,7 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
   sql_comp_t subq_sc;
   caddr_t wrapping_selid = wrapping_gp->_.gp.selid;
   t_NEW_VARZ (spar_sqlgen_t, subq_ssg);
-#ifdef NDEBUG
-  ssg_puts (" (");
-#else
-  ssg_puts (" ( /* subq begin */ ");
-#endif
+  ssg_puts_with_comment (" (", "subq begin");
   ssg->ssg_indent++;
   ssg_newline (1);
   ssg->ssg_nested_ssg = subq_ssg;
@@ -8259,21 +9128,19 @@ ssg_print_subquery_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp)
     }
   if ((NULL != wrapping_gp) && (NULL != wrapping_gp->_.gp.options))
     sparp_set_valmodes_of_t_inouts (ssg->ssg_sparp, sub_sparp, wrapping_gp);
+  subq_ssg->ssg_comment_sql = ssg->ssg_comment_sql;
   ssg_make_sql_query_text (subq_ssg, 0);
   ssg_free_internals (subq_ssg);
   ssg_newline (1);
-#ifdef NDEBUG
-  ssg_puts (" ) AS ");
-#else
-  ssg_puts (" /* subq end */ ) AS ");
-#endif
+  ssg_puts_with_comment (" ) AS", "subq end");
+  ssg_putchar (' ');  
   ssg->ssg_indent--;
   ssg_prin_id (ssg, wrapping_selid);
   t_set_push (&(ssg->ssg_valid_ret_selids), wrapping_selid);
 }
 
 void
-ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret)
+ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, caddr_t *qtext_template_ret, caddr_t *qtext_posmap_ret, caddr_t **final_rset_varnames_ret)
 {
   wchar_t *qtext_posmap;
   int posmap_itm_ctr;
@@ -8293,6 +9160,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
   ssg->ssg_param_pos_set = NULL;
   ssg->ssg_out = strses_allocate();
   ssg->ssg_sd_flags = unbox (sinv->_.sinv.syntax);
+  ssg->ssg_sd_no = unbox (sinv->_.sinv.syntax_exceptions);
   /* Query text composing starts here */
   define_count = BOX_ELEMENTS_0 (sinv->_.sinv.defines);
   for (define_ctr = 0; define_ctr < define_count; define_ctr += 2)
@@ -8301,6 +9169,8 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
       SPART ***vals = (SPART ***)(sinv->_.sinv.defines[define_ctr+1]);
       int valctr;
       if (!strcmp (name, "lang:dialect"))
+        continue;
+      if (!strcmp (name, "lang:exceptions"))
         continue;
       ssg_puts (" DEFINE ");
       ssg_puts (name);
@@ -8352,6 +9222,7 @@ ssg_prepare_sinv_template (spar_sqlgen_t *parent_ssg, SPART *sinv, SPART *gp, ca
         }
       if ((NULL != limit_expn) && (DV_LONG_INT == DV_TYPE_OF (limit_expn)) && (0 == sparp_req_top_has_limofs (single_subq)))
         single_subq->_.req_top.limit = limit_expn;
+      final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
       ssg_sdprint_tree (ssg, single_subq);
       goto query_text_is_composed; /* see below */
 failed_single_subq_optimization: ;
@@ -8372,7 +9243,10 @@ failed_single_subq_optimization: ;
         {
           ssg_puts (" ?"); ssg_puts (stub_varname);
         }
+      final_rset_varnames_ret[0] = t_list (1, stub_varname);
     }
+  else
+    final_rset_varnames_ret[0] = sinv->_.sinv.rset_varnames;
 /*!!!TBD FROM clauses */
   gp->_.gp.subtype = WHERE_L;
   ssg_sdprint_tree (ssg, gp);
@@ -8423,14 +9297,16 @@ sparp_equiv_sort_subvalue_idxs_by_child_order (sparp_t *sparp, sparp_equiv_t *eq
 }
 
 void
-ssg_print_bindings (spar_sqlgen_t *ssg, SPART *binv, SPART ***rowset, ssg_valmode_t needed)
+ssg_print_bindings (spar_sqlgen_t *ssg, SPART *binv, ssg_valmode_t needed)
 {
+  SPART ***rowset = binv->_.binv.data_rows;
+  char *mask = binv->_.binv.data_rows_mask;
   int rowctr, row_needs_comma = 0, colctr;
   ssg_puts ("vector (");
   ssg->ssg_indent += 1;
   DO_BOX_FAST (SPART **, single_row, rowctr, rowset)
     {
-      if ((NULL != binv) && ('/' != binv->_.binv.data_rows_mask[rowctr]))
+      if ('/' != mask[rowctr])
         continue;
       if (row_needs_comma) ssg_putchar (',');
       else row_needs_comma = 1;
@@ -8462,14 +9338,24 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
     {
       if (0 == binv->_.binv.rows_in_use)
         {
-          ssg_puts (" DB.DBA.SYS_IDONLY_EMPTY as ");
+          ssg_puts (" DB.DBA.SYS_IDONLY_EMPTY AS ");
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
         }
       else
         {
+          char buf[100];
+          int width = BOX_ELEMENTS (binv->_.binv.vars);
           ssg_newline (0);
-          ssg_puts (" DB.DBA.SPARQL_BINDINGS_VIEW as ");
+          if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
+            {
+              snprintf (buf, sizeof (buf), " DB.DBA.SPARQL_BINDINGS_VIEW_C_%d AS ", width);
+              ssg_puts (buf);
+            }
+          else
+            ssg_puts (" DB.DBA.SPARQL_BINDINGS_VIEW AS ");
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
+          snprintf (buf, sizeof (buf), " TABLE OPTION (EST_SIZE %ld, EST_TIME %ld)", (long)(binv->_.binv.rows_in_use), (long)(binv->_.binv.rows_in_use * 5));
+          ssg_puts (buf);
         }
     }
   else if (SSG_TABLE_WHERE_PASS == pass)
@@ -8481,12 +9367,18 @@ ssg_print_binv_table_exp (spar_sqlgen_t *ssg, SPART *wrapping_gp, int pass)
         }
       else
         {
+          int equiv_ctr;
           ssg_print_where_or_and (ssg, "binv");
           ssg_newline (0);
           ssg_prin_id (ssg, wrapping_gp->_.gp.selid);
           ssg_puts (".DTA = ");
-          ssg_print_bindings (ssg, binv, binv->_.binv.data_rows, SSG_VALMODE_LONG);
+          ssg_print_bindings (ssg, binv, SSG_VALMODE_LONG);
           ssg_newline (0);
+          SPARP_FOREACH_GP_EQUIV (ssg->ssg_sparp, wrapping_gp, equiv_ctr, eq)
+            {
+              ssg_print_equalities_of_vars_with_globals_and_constants (ssg, wrapping_gp, eq, NULL, NULL, 0 /* print_nice_eq_to_fixed_val */);
+            }
+          END_SPARP_FOREACH_GP_EQUIV;
         }
     }
 }
@@ -8511,6 +9403,15 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
       int ctr, len;
       caddr_t qtext_template = NULL;
       caddr_t qtext_posmap = NULL;
+      caddr_t *final_rset_varnames = NULL;
+      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
+      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap, &final_rset_varnames);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
+      ssg_print_where_or_and (ssg, "sinv");
+      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
+      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".ws_endpoint = ");
       ssg_print_scalar_expn (ssg, sinv->_.sinv.endpoint, SSG_VALMODE_SQLVAL, NULL_ASNAME);
@@ -8526,9 +9427,12 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
           ssg_print_scalar_expn (ssg, sinv->_.sinv.iri_params[ctr+1], SSG_VALMODE_LONG, NULL_ASNAME);
         }
       ssg_putchar (')');
+/* The order of printing parameters here is important because ssg_prepare_sinv_template() has a side effect:
+if sinv->_.sinv.rset_varnames is empty then it uses ?stubvarXX in the printed result set in irder to provide compatibility with obsolete SPARQL endpoints.
+So the function provides \c final_rset_varnames that should be used instead of sinv->_.sinv.rset_varnames for expected_vars procedure call param */
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".expected_vars = vector (");
-      DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.rset_varnames)
+      DO_BOX_FAST (caddr_t, varname, ctr, final_rset_varnames)
         {
           if (ctr)
             ssg_putchar (',');
@@ -8536,14 +9440,6 @@ ssg_print_sinv_table_exp (spar_sqlgen_t *ssg, SPART *gp, int pass)
         }
       END_DO_BOX_FAST;
       ssg_putchar (')');
-      sinv->_.sinv.syntax = t_box_num (unbox (sinv->_.sinv.syntax) & ~SSG_SD_GLOBALS);
-      ssg_prepare_sinv_template (ssg, sinv, gp, &qtext_template, &qtext_posmap);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_template = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_template, SQL_ATOM_UTF8_ONLY);
-      ssg_print_where_or_and (ssg, "sinv");
-      ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".qtext_posmap = ");
-      ssg_print_box_as_sql_atom (ssg, qtext_posmap, SQL_ATOM_NARROW_OR_WIDE);
       ssg_print_where_or_and (ssg, "sinv");
       ssg_prin_id (ssg, gp->_.gp.selid); ssg_puts (".param_row = vector (");
       DO_BOX_FAST (caddr_t, varname, ctr, sinv->_.sinv.param_varnames)
@@ -8650,11 +9546,7 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
   sparp_t *sub_sparp = (sparp_t *)t_box_copy ((caddr_t)(ssg->ssg_sparp));
   sql_comp_t subq_sc;
   t_NEW_VARZ (spar_sqlgen_t, subq_ssg);
-#ifdef NDEBUG
-  ssg_puts (" ( ");
-#else
-  ssg_puts (" ( /* scalar subq begin */ ");
-#endif
+  ssg_puts_with_comment (" (", "scalar subq begin");
   ssg->ssg_indent++;
   ssg_newline (1);
   ssg->ssg_nested_ssg = subq_ssg;
@@ -8682,6 +9574,7 @@ ssg_print_scalar_subquery_exp (spar_sqlgen_t *ssg, SPART *sub_req_top, SPART *wr
       subq_sc.sc_client = sub_sparp->sparp_sparqre->sparqre_cli;
       subq_ssg->ssg_sc = &subq_sc;
     }
+  subq_ssg->ssg_comment_sql = ssg->ssg_comment_sql;
   ssg_make_sql_query_text (subq_ssg, 0);
   ssg_free_internals (subq_ssg);
   ssg_newline (1);
@@ -8775,6 +9668,7 @@ ssg_print_breakup_in_union (spar_sqlgen_t *ssg, SPART *gp, SPART **retlist, int 
   int *leftmost_tc_of_tabid_reuses = (int *)t_alloc (triples_count * sizeof(int));
   int save_where_l_printed;
   const char *save_where_l_text;
+  dk_set_t saved_valid_ret_tabids;
 #ifdef DEBUG
   if (SPAR_GP != SPART_TYPE (first_mcase))
     spar_internal_error (ssg->ssg_sparp, "ssg_" "print_breakup(): the member is not a SPAR_GP");
@@ -8864,6 +9758,13 @@ fld_restrictions_may_vary:
         }
     }
   ssg_puts (" * FROM (SELECT BREAKUP");
+  saved_valid_ret_tabids = ssg->ssg_valid_ret_tabids;
+  for (tc = triples_count; tc--; /* no step */)
+    {
+      SPART *mcase = gp->_.gp.members [first_mcase_idx];
+      SPART *mcase_triple = mcase->_.gp.members [tc];
+      t_set_push (&(ssg->ssg_valid_ret_tabids), mcase_triple->_.triple.tabid);
+    }
   for (breakup_ctr = 0; breakup_ctr <= /* not '<' */ breakup_shift; breakup_ctr++)
     {
       SPART *mcase = gp->_.gp.members [first_mcase_idx + breakup_ctr];
@@ -8903,6 +9804,7 @@ fld_restrictions_may_vary:
       ssg->ssg_indent--;
       ssg_puts (")");
     }
+  ssg->ssg_valid_ret_tabids = saved_valid_ret_tabids;
   ssg_newline (0);
   ssg_puts ("FROM");
   ssg->ssg_indent++;
@@ -8912,11 +9814,7 @@ fld_restrictions_may_vary:
         continue;
       if (0 != left_tc)
         {
-#ifdef NDEBUG
-          ssg_putchar (',');
-#else
-          ssg_puts (", /* table list of next triple starts here */ ");
-#endif
+          ssg_puts_with_comment (",", "table list of next triple starts here");
           ssg_newline (0);
         }
       selected_triples_count = 0;
@@ -9350,7 +10248,7 @@ ssg_print_orderby_item (spar_sqlgen_t *ssg, SPART *gp, SPART *oby_itm)
   ssg_print_retval_simple_expn (ssg, gp, oby_itm->_.oby.expn, SSG_VALMODE_SQLVAL, NULL_ASNAME);
   switch (oby_itm->_.oby.direction)
     {
-    case ASC_L: ssg_puts (" ASC"); break;
+    case 0: case ASC_L: ssg_puts (" ASC"); break;
     case DESC_L: ssg_puts (" DESC"); break;
     }
 }
@@ -9585,7 +10483,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
   caddr_t limofs_alias = NULL;
   SPART	*tree = ssg->ssg_tree;
   ptrlong subtype = tree->_.req_top.subtype;
-  SPART **bindings_vars = ssg->ssg_sparp->sparp_env->spare_bindings_vars;
+  SPART *final_binv = tree->_.req_top.binv;
   SPART **retvals;
   const char *formatter, *agg_formatter, *agg_meta;
   ssg_valmode_t retvalmode;
@@ -9693,7 +10591,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
         }
       if ((NULL != tree->_.req_top.formatmode_name) && !strcmp ("_MSACCESS_", tree->_.req_top.formatmode_name))
         top_retval_flags |= SSG_RETVAL_STRICT_TYPES;
-      if (NULL != bindings_vars)
+      if (NULL != final_binv)
         {
           ssg_puts ("SELECT ");
           ssg_print_retval_cols (ssg, tree, retvals, t_box_dv_short_string ("bnd1"), NULL, 0);
@@ -9782,7 +10680,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
           ssg->ssg_indent -= 1;
           ssg_newline (0);
         }
-      if (NULL != bindings_vars)
+      if (NULL != final_binv)
         spar_sqlprint_error ("BINDINGS is not supported at top level for queries other than SELECT");
       if (has_limofs || has_ctor_over_groups)
         {
@@ -9801,18 +10699,18 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
           const char *fmname = tree->_.req_top.formatmode_name;
           ssg_puts ("SELECT "); ssg_puts (formatter); ssg_puts (" (");
           ssg_prin_id (ssg, top_selid);
-	  if ((NULL == fmname && ssg_is_odbc_cli ()) ||
-	      ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname) || !strcmp ("_MSACCESS_", fmname))))
-	    {
-	      ssg_puts (".__ask_retval) AS __ask_retval INTEGER");
-	    }
-	  else
-	    {
-	      ssg_puts (".__ask_retval) AS \"fmtaggret-");
-	      if (NULL != fmname)
-		ssg_puts (fmname);
-	      ssg_puts ("\"");
-	    }
+          if ((NULL == fmname && ssg_is_odbc_cli ()) ||
+              ((NULL != fmname) && (!strcmp ("_JAVA_", fmname) || !strcmp ("_UDBC_", fmname) || !strcmp ("_MSACCESS_", fmname))))
+            {
+              ssg_puts (".__ask_retval) AS __ask_retval INTEGER");
+            }
+          else
+            {
+              ssg_puts (".__ask_retval) AS \"fmtaggret-");
+              if (NULL != fmname)
+                ssg_puts (fmname);
+              ssg_puts ("\"");
+            }
           ssg_puts (" LONG VARCHAR \nFROM (");
           ssg->ssg_indent += 1;
         }
@@ -9821,7 +10719,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
     default: spar_sqlprint_error ("ssg_make_sql_query_text(): unsupported type of tree");
     }
 #if 0 /*!!! TBD */
-  if (NULL != bindings_vars)
+  if (NULL != final_binv)
     {
       dk_session_t *curr_ssg_out = ssg->ssg_out;
       ssg->ssg_out = strses_allocate ();
@@ -9853,7 +10751,7 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
             }
           if (grouping_is_weird)
             {
-              ssg_puts (" 0.0 /* fake, instead of grouping by other const */");
+              ssg_puts_with_comment (" 0.0", "fake, instead of grouping by other const");
               fake_gby_expn_printed = 1;
               continue;
             }
@@ -9919,28 +10817,36 @@ The fix is to avoid printing constant expressions at all, with only exception fo
       ssg->ssg_indent -= 1;
     }
   ssg_print_tail_query_options (ssg);
-  if (NULL != bindings_vars)
+  if (NULL != final_binv)
     {
       int bndctr;
-      SPART ***bindings_rowset = ssg->ssg_sparp->sparp_env->spare_bindings_rowset;
       ssg_puts (" ) AS ");
       ssg_prin_id (ssg, t_box_dv_short_string ("bnd1"));
       ssg->ssg_indent -= 1;
-      if (0 == BOX_ELEMENTS (bindings_rowset))
+      if (0 == final_binv->_.binv.rows_in_use)
         ssg_puts (" WHERE (1=0)");
       else
         {
+          int width = BOX_ELEMENTS (final_binv->_.binv.vars);
           ssg_newline (0);
-          ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
+          if (SPAR_MAX_BINDINGS_VIEW_CN >= width)
+            ssg_puts (t_box_sprintf (100, " JOIN DB.DBA.SPARQL_BINDINGS_VIEW_C_%d as \"bnd2\" ON (", width));
+          else
+            ssg_puts (" JOIN DB.DBA.SPARQL_BINDINGS_VIEW as \"bnd2\" ON (");
           ssg->ssg_indent += 1;
           ssg_newline (0);
           ssg_puts (" \"bnd2\".DTA = ");
-          ssg_print_bindings (ssg, NULL, bindings_rowset, retvalmode);
+          ssg_print_bindings (ssg, final_binv, retvalmode);
           ssg_newline (0);
-          DO_BOX_FAST (SPART *, bndvar, bndctr, bindings_vars)
+          DO_BOX_FAST (SPART *, bndvar, bndctr, final_binv->_.binv.vars)
             {
+              char colname_buf[40];
               char buf[200];
-              snprintf (buf, sizeof (buf), " AND (\"bnd2\".BND[%d] IS NULL OR (\"bnd2\".BND[%d] = \"%.100s\"))", bndctr, bndctr, bndvar->_.var.vname);
+              snprintf (colname_buf, sizeof (colname_buf), (SPAR_MAX_BINDINGS_VIEW_CN >= width) ? "\"bnd2\".BND%d" : "\"bnd2\".BND[%d]", bndctr);
+              if (final_binv->_.binv.counters_of_unbound[bndctr])
+                snprintf (buf, sizeof (buf), " AND (%s IS NULL OR (%s = \"%.100s\"))", colname_buf, colname_buf, bndvar->_.var.vname);
+              else
+                snprintf (buf, sizeof (buf), " AND (%s = \"%.100s\")", colname_buf, bndvar->_.var.vname);
               ssg_puts (buf);
             }
           END_DO_BOX_FAST;

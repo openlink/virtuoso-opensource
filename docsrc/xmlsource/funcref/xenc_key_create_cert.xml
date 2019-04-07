@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,23 +78,9 @@
 	    to indicate no password is needed.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xenc_key_create_cert"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_xenc_key_create_cert">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_key_create_cert">
     <title>Examples</title>
     <example id="ex_xenc_key_create_cert"><title>Importing a key from X.509 certificate</title>
-      <para></para>
       <screen><![CDATA[
 	  ...
 	  xenc_key_create_cert ('myRSA', file_to_string ('keys/mycert.pfx'), 'X.509', 2, NULL, 'secret');
@@ -108,14 +94,14 @@
   <refsect1 id="seealso_xenc_key_create_cert">
     <title>See Also</title>
     <para><link linkend="fn_xenc_set_primary_key"><function>xenc_set_primary_key()</function></link></para>
-    <para><link linkend="fn_xenc_key_3DES_create"><function>xenc_key_3DES_create</function></link></para>
-    <para><link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3des_rand_create</function></link></para>
-    <para><link linkend="fn_xenc_key_AES_create"><function>xenc_key_aes_create</function></link></para>
-    <para><link linkend="fn_xenc_key_3DES_read"><function>xenc_key_3DES_read</function></link></para>
-    <para><link linkend="fn_xenc_key_DSA_read"><function>xenc_key_DSA_read</function></link></para>
-    <para><link linkend="fn_xenc_key_DSA_create"><function>xenc_key_dsa_create</function></link></para>
-    <para><link linkend="fn_xenc_key_RSA_read"><function>xenc_key_RSA_read</function></link></para>
-    <para><link linkend="fn_xenc_key_serialize"><function>xenc_key_serialize</function></link></para>
-    <para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_create"><function>xenc_key_3DES_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_rand_create"><function>xenc_key_3des_rand_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_AES_create"><function>xenc_key_aes_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_3DES_read"><function>xenc_key_3DES_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_DSA_read"><function>xenc_key_DSA_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_DSA_create"><function>xenc_key_dsa_create()</function></link></para>
+    <para><link linkend="fn_xenc_key_RSA_read"><function>xenc_key_RSA_read()</function></link></para>
+    <para><link linkend="fn_xenc_key_serialize"><function>xenc_key_serialize()</function></link></para>
+    <para><link linkend="fn_xenc_key_remove"><function>xenc_key_remove()</function></link></para>
   </refsect1>
 </refentry>

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -36,19 +36,19 @@
     <funcsynopsis id="fsyn_curdate">
       <funcprototype id="fproto_curdate">
         <funcdef>datetime <function>curdate</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_curdatetime">
       <funcprototype id="fproto_curdatetime">
         <funcdef>datetime <function>curdatetime</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
     <funcsynopsis id="fsyn_curtime">
       <funcprototype id="fproto_curtime">
         <funcdef>time <function>curtime</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

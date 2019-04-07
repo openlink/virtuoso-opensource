@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -64,8 +64,6 @@ this function is needed to force a reload.
     <refsect2><title>uri</title>
       <para>The location of the style sheet to force a reload.</para></refsect2>
   </refsect1>
-  <refsect1 id="ret_xslt_stale"><title>Return Types</title><para></para></refsect1>
-
   <refsect1 id="errors_xslt_stale"><title>Errors</title>
 	    <para>The function never signals any errors.
 E.g. it is not an error if the specified stylesheet does not exist
@@ -76,7 +74,6 @@ the <function>xslt_stale()</function> is called.
 
   <refsect1 id="examples_xslt_stale"><title>Examples</title>
     <example id="ex_xslt_stale"><title>Simple Use</title>
-      <para></para>
       <programlisting>
 sheet := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:/DAV/stylesheets/document.xsl';
 xslt_stale (sheet);

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -76,18 +76,9 @@
     </table>
 -->
   </refsect1>
-  <refsect1 id="examples_xslt_profile_enable">
-    <title>Examples</title>
-    <example id="ex_xslt_profile_enable"><title></title>
-      <para></para>
-      <screen><![CDATA[
-]]>
-</screen>
-    </example>
-  </refsect1>
   <refsect1 id="seealso_xslt_profile_enable">
     <title>See Also</title>
-    <para><link linkend="fn_xslt_profile_disable"><function>xslt_profile_disable</function></link></para>
-    <para><link linkend="fn_xslt_profile_list"><function>xslt_profile_list</function></link></para>
+    <para><link linkend="fn_xslt_profile_disable"><function>xslt_profile_disable()</function></link></para>
+    <para><link linkend="fn_xslt_profile_list"><function>xslt_profile_list()</function></link></para>
   </refsect1>
 </refentry>

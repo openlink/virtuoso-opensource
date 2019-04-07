@@ -1,29 +1,29 @@
 --
 --  tbin.sql
 --
---  $Id$
+--  $Id: tbin.sql,v 1.7.10.2 2013/01/02 16:14:59 source Exp $
 --
 --  Test distinct varbinary and varchar
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 drop table tbin;
 
@@ -69,15 +69,18 @@ create procedure tbin_fill (in n integer)
 tbin_fill (1000);
 
 select count (distinct kb) from tbin;
-ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " distinct bin\n";
+echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
+echo both ": " $last[1] " distinct bin\n";
 
-insert into tbin (id, kb) select id + 1000, kc from tbin where id < 1000;
+insert into tbin (id, kb) select id + 1000, cast(kc as varbinary(20)) from tbin where id < 1000;
+
+--select id, bin2hex(kb) from tbin order by bin2hex(kb);
+--select id, kc from tbin order by kc;
 
 select count (distinct kb) from tbin;
-ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " distinct bin + varchar\n";
+echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
+echo both ": " $last[1] " distinct bin + varchar\n";
 
 select count (distinct cast (kb as varchar)) from tbin;
-ECHO BOTH $IF $EQU $LAST[1] 1000 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " distinct cast to varchar\n";
+echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
+echo both ": " $last[1] " distinct cast to varchar\n";

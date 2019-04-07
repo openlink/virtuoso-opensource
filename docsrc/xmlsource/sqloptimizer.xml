@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -428,6 +428,65 @@ select row_no from t1 where row_no in (select row_no from t1 where fi2 = 2 optio
   <para>The same logic applies to IN predicates in searched update or delete statements.</para>
   </example>
 
+  </sect2>
+
+  <sect2 id="queryoptdiagn"><title>Query Optimization Diagnostics</title>
+    <para>Queries involving a large number of possible plans may run out of memory during optimization. There are a number of settings
+    	that influence query optimization memory utilization.</para>
+    <para>These are set in the virtuoso.ini file or can be altered on a running system with <link linkend="fn_dbf_set"><function>__dbf_set</function></link> function:</para>
+    <table>
+      <tgroup cols="4">
+        <thead>
+          <row>
+            <entry>INI section</entry><entry>INI parameter name</entry><entry>__dbf_set function name</entry><entry>__dbf_set function description</entry>
+          </row>
+        </thead>
+        <tbody>
+          <row>
+            <entry>Parameters</entry>
+            <entry>MaxMemPoolSize</entry>
+            <entry><emphasis>sqlo_max_mp_size</emphasis></entry>
+            <entry>Controlls the size limit in bytes for transient memory consumption. Increasing this may help. The given value should be over 10M,
+            	increasing this over 100M is seldom useful but can be tried.</entry>
+          </row>
+          <row>
+            <entry>Parameters</entry>
+            <entry>MaxOptimizeLayouts</entry>
+            <entry><emphasis>sqlo_max_layouts</emphasis></entry>
+            <entry>Decreasing will reduce the number of plans tried, hence save memory. Reasonable values are 0 for no limit or somewhere
+            	in excess of 500 for a limit.</entry>
+          </row>
+          <row>
+            <entry>Parameters</entry>
+            <entry>StopCompilerWhenXOverRunTime</entry>
+            <entry><emphasis>sqlo_compiler_exceeds_run_factor</emphasis></entry>
+            <entry>Setting to 1 will stop optimization once the best plan is expected to take less time and the amount of time spent
+            	optimizing so far.</entry>
+          </row>
+          <row>
+            <entry>Flag</entry>
+            <entry>enable_joins_only</entry>
+            <entry><emphasis>enable_joins_only</emphasis></entry>
+            <entry>When set, will cause the optimizer to only consider next plan candidates that are connected by a join to the existing
+            	partial plan. In other words, no cartesian products will be considered. This may save some space and time.</entry>
+          </row>
+        </tbody>
+      </tgroup>
+    </table>
+    <para>When reporting issues with query optimization it will be useful to include statistics from the database in order to
+    	facilitate reproducing the effect. The function <link linkend="fn_stat_export"><function>stat_export()</function></link>
+    	produces a statistics summary that can be read back into another database with the
+    	<link linkend="fn_stat_import"><function>stat_import()</function></link> function.</para>
+    <para>To export statistics:</para>
+<programlisting><![CDATA[
+string_to_file('stat.dv', serialize(stat_export()), -2);
+]]></programlisting>
+    <para>To load exported statistics into a database:</para>
+<programlisting><![CDATA[
+stat_import (deserialize (file_to_string ('stat.dv')));
+]]></programlisting>
+    <para>When exporting statistics as part of bug reporting, make sure to first run the queries exhibiting the problem then only
+    	export the stats. The queries drive statistics gathering.</para>
   </sect2>
 <!-- Uncommented for Virtuoso 6 Release-->
 <sect2 id="opttechanyorder"><title>ANY ORDER</title>

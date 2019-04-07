@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,7 +24,11 @@
 %option 8bit
 %option case-sensitive
 %option never-interactive
+%option noyyalloc
+%option noyyrealloc
+%option noyyfree
 %option noyywrap
+%option nounput
 %option reentrant
 %option bison-bridge
 %option stack
@@ -129,6 +133,7 @@ int ttl_yy_null = YY_NULL;
 
 struct yyguts_t;
 
+/*! Signals an error (or return TTL_RECOVERABLE_ERROR) if \c box is too long. In case of troubles the box is freed. */
 extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg);
 
 #define TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) \
@@ -138,6 +143,10 @@ extern int ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box,
 
 #define TTL_TOKBOX_Q(n,lexcode,lex_type_descr) { \
     ttlyylval.box = box_dv_short_string (yytext+(n)); \
+    TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
+
+#define TTL_TOKBOX_Q_SAVE(n,lexcode,lex_type_descr) { \
+    ttlp_arg->ttlp_last_q_save = ttlyylval.box = box_dv_short_string (yytext+(n)); \
     TTL_TOKBOX_Q_FINAL(lexcode,lex_type_descr) }
 
 #define TTL_TOKBOX_BNODE(n,lexcode,lex_type_descr) { \
@@ -172,6 +181,27 @@ extern int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner
 #define YY_DECL int ttlyylex (YYSTYPE *yylval_param, ttlp_t *ttlp_arg, yyscan_t yyscanner)
 
 extern int ttlyydebug;
+
+void *
+ttlyyalloc (yy_size_t  size, yyscan_t yyscanner)
+{
+  return (void *) malloc( size );
+}
+
+void *
+ttlyyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)
+{
+  if (NULL == ptr)
+    return ttlyyalloc (size, yyscanner);
+  return (void *) realloc( (char *) ptr, size );
+}
+
+void
+ttlyyfree (void * ptr , yyscan_t yyscanner)
+{
+  if (NULL != ptr)
+    free( (char *) ptr );
+}
 
 %}
 
@@ -233,6 +263,20 @@ S_NL		((\r\n)|(\n\r)|\n|\r)
 S_NLNL		((\r\n([ \t]*)\r\n)|(\n\r([ \t]*)\n\r)|(\n([ \t]*)\n)|(\r([ \t]*)\r))
 HEX		([0-9A-Fa-f])
 
+PN_CHARS_BASE	([A-Za-z\x7f-\xfe])
+PN_CHARS_U	([A-Za-z\x7f-\xfe]_)
+PN_CHARS_UC	([A-Za-z\x7f-\xfe]_:)
+PN_CHARS_U_09	([A-Za-z\x7f-\xfe0-9_])
+PN_CHARS_UC_09	([A-Za-z\x7f-\xfe0-9_:])
+PN_CHARS_UM_09	([A-Za-z\x7f-\xfe0-9_-])
+PN_CHARS_UMC_09	([A-Za-z\x7f-\xfe0-9_:-])
+PN_PREFIX	({PN_CHARS_BASE}(([.]*{PN_CHARS_UM_09})*))
+PN_LOCAL_NQ	(({PN_CHARS_UMC_09})(([.]*({PN_CHARS_UMC_09}))*))
+PN_LOCAL_TTL	(({PN_CHARS_UMC_09}|{PLX})(([.]*({PN_CHARS_UMC_09}|{PLX}))*))
+PLX		({PERCENT}|{TTL_CR_PLX})
+PERCENT		([%]{HEX}{HEX})
+
+
 SPAR_NCCHAR1p	([A-Za-z\x7f-\xfe])
 SPAR_NCCHAR1	([A-Za-z\x7f-\xfe_])
 SPAR_VARNAME	([A-Za-z0-9\x7f-\xfe_]+)
@@ -243,6 +287,14 @@ SPAR_NCNAME		({SPAR_NCCHAR1}([A-Za-z0-9_.\x7f-\xfe-]*{SPAR_NCCHAR})?)
 SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xfe-]+)|([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[./#%+?&=@*:][A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[.]))
 
 %%
+
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xef][\xbb][\xbf]			{ }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>(([\xfe][\xff])|([\xff][\xfe]))	{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-16 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xf7][\x64][\x4c]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xdd][\x73][\x66][\x73]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the UTF-EBCDIC encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x0e][\xfe][\xff]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the SCSU encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\xfb][\xee][\x28]			{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the BOCU-1 encoding but it is supposed to be UTF-8"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>[\x84][\x31][\x95][\x33]		{ TTLYYERROR_OR_REPORT ("The document contains the BOM (Byte Order Mark) of the GB-18030 encoding but it is supposed to be UTF-8"); }
 
 <INITIAL>"^"[ \t]		{		return _CARET_WS; }
 <INITIAL>"^"{S_NLNL}		{ TTL_TWO_CRS;	return _CARET_WS; }
@@ -363,7 +415,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Invalid characters in local part of QName");
     TTL_TOKBOX_Q(0,QNAME,"qualified URI"); }
 
-<INITIAL>{SPAR_NCNAME_PREFIX}":"					{ TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); }
+<INITIAL>{PN_PREFIX}":"							{ TTL_TOKBOX_Q_SAVE(0,QNAME_NS,"namespace"); }
 
 <GARBAGE_BOL,GARBAGE,TWO_CRS>{SPAR_NCNAME_PREFIX}":"			{ if (ttlp_qname_prefix_is_explicit_and_valid (ttlp_arg, yytext)) { TTLYYBEGIN(INITIAL); TTL_TOKBOX_Q(0,QNAME_NS,"namespace"); } }
 
@@ -372,13 +424,14 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       TTLYYBEGIN (GARBAGE);
     else
       TTL_TOKBOX_Q(0,QNAME,"name without prefix"); }
-<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"{SPAR_NCNAME}			{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_LOCAL_NQ})	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_NQ,"NQuads-compatible blank node label"); }
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"_:"({PN_LOCAL_TTL})	{ TTLYYBEGIN(INITIAL); TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_TTL,"Turtle-specific blank node label"); }
 
 <INITIAL>"_:"{SPAR_NCCHAR_X}+	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Ill formed blank node label; this error can be suppressed by parser flags");
     tf_report (ttlp_arg[0].ttlp_tf, 'W', NULL, NULL, "Ill formed blank node label");
-    TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL,"blank node label"); }
+    TTL_TOKBOX_BNODE(0,BLANK_NODE_LABEL_TTL,"ill formed blank node label"); }
 
 <INITIAL>"?"{SPAR_NCNAME}	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_VARIABLES))
@@ -450,8 +503,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DDDQ>[\\]		{ ttlyyerror ("Bad escape sequence in a long double-quoted string"); }
 <TURTLE_SSSQ>.			{ ttlyyerror ("Bad character in a long single-quoted string"); }
 <TURTLE_DDDQ>.			{ ttlyyerror ("Bad character in a long double-quoted string"); }
-<TURTLE_SSSQ><<EOF>>		{ ttlyyerror ("Unterminated long single-quoted string"); }
-<TURTLE_DDDQ><<EOF>>		{ ttlyyerror ("Unterminated long double-quoted string"); }
+<TURTLE_SSSQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long single-quoted string"); }
+<TURTLE_DDDQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated long double-quoted string"); }
 
 <INITIAL>['']		{ yymore(); TTLYYBEGIN (TURTLE_SQ); }
 <INITIAL>[""]		{ yymore(); TTLYYBEGIN (TURTLE_DQ); }
@@ -508,8 +561,8 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_BAD_SQ>['']("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 <TURTLE_BAD_DQ>[""]("@"{SPAR_LANGTAG})? { TTLYYBEGIN (INITIAL); return TTL_RECOVERABLE_ERROR; }
 
-<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlyyerror ("Unterminated short single-quoted string"); }
-<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlyyerror ("Unterminated short double-quoted string"); }
+<TURTLE_SQ,TURTLE_BAD_SQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short single-quoted string"); }
+<TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
@@ -519,7 +572,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>("#"(.*))?{S_NL}		{ TTL_ONE_CR; }
 <INITIAL,TWO_CRS>"#"(.*)		{ }
 <INITIAL,TWO_CRS>[ \t]+			{ }
-<INITIAL>.		{
+<INITIAL,TWO_CRS>.		{
     char buf[100]; sprintf (buf, "Unexpected character '%c'", yytext[yyleng-1]);
     TTLYYERROR_OR_REPORT (buf);
     TTLYYBEGIN (TURTLE_SKIP_TO_DOT_WS); yymore(); }
@@ -530,6 +583,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
       { char buf[100]; sprintf (buf, "Failed to recover syntax error at \"%.50s...\"", yytext); ttlyyerror (buf); }
     yymore(); }
 
+<GARBAGE,GARBAGE_BOL><<EOF>>				{ return 0; }
 <GARBAGE>([^_<@# \t\:\r\n][^: \t\r\n]*[ \t]+)+		{ ttlyy_dbg_printf(("{Garbage 1 %s}", yytext)); }
 <GARBAGE>[^ \t\r\n]+					{ ttlyy_dbg_printf(("{Garbage 2 %s}", yytext)); }
 <GARBAGE>[ \t]+	{ }
@@ -537,20 +591,15 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE_BOL>[^ \t\r\n]+				{ ttlyy_dbg_printf(("{Garbage_BOL 2 %s}", yytext)); TTLYYBEGIN(GARBAGE); }
 <GARBAGE,GARBAGE_BOL>{S_NL}[ \t]*			{ TTLYYBEGIN(GARBAGE_BOL); TTL_ONE_CR; }
 <TWO_CRS>("#"(.*))?{S_NL}[ \t]*		{ TTL_ONE_CR; }
+<GARBAGE,GARBAGE_BOL>.					{ }
 
 %%
-
-/*void ttlyy_reset (yyscan_t scanner)
-{
-  ttlyyrestart (NULL, scanner);
-  TTLYYBEGIN (INITIAL);
-}*/
 
 int
 ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
 {
   size_t boxlen = box_length (box);
-  char buf[100];
+  char buf[150];
   char *colon;
   if (boxlen > MAX_XML_QNAME_LENGTH)
     {
@@ -580,6 +629,9 @@ ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char
   return lexcode;
 
 err:
+  if (box == ttlp_arg->ttlp_last_q_save)
+    ttlp_arg->ttlp_last_q_save = NULL;
+  dk_free_box (box);
   TTLYYERROR_OR_RECOVER (buf);
   return 0; /* Never reached */
 }
@@ -655,38 +707,35 @@ ttl_lex_analyze (caddr_t str, int flags, wcharset_t *query_charset)
 #endif
   ttlp = ttlp_alloc ();
   ttlp->ttlp_flags = flags;
+  ttlp->ttlp_text = str;
+  ttlp->ttlp_text_len = strlen (str);
+  ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
+  if (NULL == query_charset)
+    query_charset = default_charset;
+  if (NULL == query_charset)
+    ttlp->ttlp_enc = &eh__ISO8859_1;
+  else
+    {
+      ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
+      if (NULL == ttlp->ttlp_enc)
+        ttlp->ttlp_enc = &eh__ISO8859_1;
+    }
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
 
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlp->ttlp_text = str;
-          ttlp->ttlp_text_len = strlen (str);
-          ttlp->ttlp_err_hdr = ((flags & TTLP_ALLOW_NQUAD) ? "NQuads lexical analyzer" : ((flags & TTLP_ALLOW_TRIG) ? "TriG lexical analyzer" : "TURTLE lexical analyzer"));
-          if (NULL == query_charset)
-            query_charset = default_charset;
-          if (NULL == query_charset)
-            ttlp->ttlp_enc = &eh__ISO8859_1;
-          else
-            {
-              ttlp->ttlp_enc = eh_get_handler (CHARSET_NAME (query_charset, NULL));
-              if (NULL == ttlp->ttlp_enc)
-                ttlp->ttlp_enc = &eh__ISO8859_1;
-            }
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-        }
       for (;;)
         {
           caddr_t lex_value = NULL;
@@ -720,7 +769,7 @@ resume_sniffing:
           else if (DV_UNAME == DV_TYPE_OF (lex_value))
             ttlyy_dbg_printf (("{Tuname %d %s %s} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), lex_value));
           else if (DV_LONG_INT == DV_TYPE_OF (lex_value))
-            ttlyy_dbg_printf (("{Tint %d %s %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
+            ttlyy_dbg_printf (("{Tint %d %s " BOXINT_FMT "} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt), unbox (lex_value)));
           else
             ttlyy_dbg_printf (("{Tint %d %s ???} ", lexem, ((NULL == ld_txt) ? "?" : ld_txt)));
 #endif
@@ -737,23 +786,23 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-#ifdef TTLYYDEBUG
       caddr_t *err = (caddr_t *)thr_get_error_code (self);
+#ifdef TTLYYDEBUG
       ttlyy_dbg_printf (("{ERROR %s %s}", ERR_STATE(err), ERR_MESSAGE(err)));
 #endif
-      if (flags & TTLP_SNIFFER)
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
-          dk_free_tree (thr_get_error_code (self));
-          thr_set_error_code (self, NULL);
+          dk_free_tree (err);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
-          sniffer_recovery = 2;
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
+            sniffer_recovery = 2;
         }
       else
         {
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
-          thr_set_error_code (self, NULL);
+          ttlp->ttlp_catched_error = err;
         }
       /*no POP_QR_RESET*/;
     }
@@ -802,7 +851,20 @@ rdf_load_turtle (
   tf = ttlp->ttlp_tf;
   tf->tf_qi = qi;
   tf->tf_app_env = app_env;
-
+  QR_RESET_CTX
+    {
+      tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
+    }
+  QR_RESET_CODE
+    {
+      du_thread_t *self = THREAD_CURRENT_THREAD;
+      err_ret[0] = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      POP_QR_RESET;
+      ttlp_free (ttlp);
+      return NULL;
+    }
+  END_QR_RESET
   if (arg1_is_filename)
     {
       sec_check_dba (qi, "<read XML from URL of type file://...>");
@@ -879,29 +941,25 @@ iter_is_set:
   if (box_length (base_uri) > 1)
     tf->tf_base_uri = box_copy (base_uri);
   tf->tf_line_no_ptr = &(ttlp->ttlp_lexlineno);
+  ttlyylex_init (&scanner);
+  ttlyyset_extra (ttlp, scanner);
+  if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
+    ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
+  if (flags & TTLP_SNIFFER)
+    yy_push_state (GARBAGE_BOL, scanner);
+  else
+    {
+#ifdef MALLOC_DEBUG
+      yy_push_state (INITIAL, scanner);
+#endif
+    }
+  TF_CHANGE_GRAPH_TO_DEFAULT (tf);
+  /* ttlyydebug = 1; */
 resume_sniffing:
   QR_RESET_CTX
     {
       if (sniffer_recovery)
         yy_push_state (GARBAGE, scanner);
-      else
-        {
-          ttlyylex_init (&scanner);
-          ttlyyset_extra (ttlp, scanner);
-          if ((ttlp->ttlp_iter == file_read) && !lite_mode && (YY_BUF_SIZE < 0x10000))
-            ttlyypush_buffer_state (ttlyy_create_buffer (NULL, (YY_BUF_SIZE > 0x2000) ? (YY_BUF_SIZE * 8) : 0x10000, scanner), scanner);
-          if (flags & TTLP_SNIFFER)
-            yy_push_state (GARBAGE_BOL, scanner);
-          else
-            {
-#ifdef MALLOC_DEBUG
-              yy_push_state (INITIAL, scanner);
-#endif
-            }
-          tf_set_cbk_names (tf, (ccaddr_t *)cbk_names);
-          TF_CHANGE_GRAPH_TO_DEFAULT (tf);
-          /* ttlyydebug = 1; */
-        }
       if (flags & TTLP_SNIFFER)
         ttlyyparse (ttlp, scanner);
       if (flags & TTLP_ALLOW_NQUAD)
@@ -914,19 +972,38 @@ resume_sniffing:
   QR_RESET_CODE
     {
       du_thread_t *self = THREAD_CURRENT_THREAD;
-      if (flags & TTLP_SNIFFER)
+      caddr_t err = thr_get_error_code (self);
+      thr_set_error_code (self, NULL);
+      if ((flags & TTLP_SNIFFER) && (NULL == strstr (ERR_MESSAGE (err), "nternal error")))
         {
-          dk_free_tree (thr_get_error_code (self));
-          thr_set_error_code (self, NULL);
+          dk_free_tree (err);
           yy_pop_state (scanner);
           ttlp_reset_stacks (ttlp);
+          if (!(ttlp->ttlp_flags & TTLP_SNIFFER_COMPLETE)) /* Note that \c ttlp->ttlp_flags might differ from \c flags in this bit. */
           sniffer_recovery = 2;
         }
       else
         {
+          caddr_t msg = ERR_MESSAGE(err);
+          caddr_t longer_msg;
           /* ttlyydebug = 0; */
-          ttlp->ttlp_catched_error = thr_get_error_code (self);
-          thr_set_error_code (self, NULL);
+          if ((strncmp (msg, "RDF29", 5) && strncmp (msg, "RDF30", 5)) && !THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &msg, 2000+2000))
+            { /* non-syntax error is not aware of file name and line, they should be imprinted */
+              char temp[2000];
+              int lineno = ttlp->ttlp_lexlineno;
+              const char *raw_text = ttlp->ttlp_raw_text;
+              snprintf (temp, sizeof (temp), "%.400s, line %d%.6s%.1000s%.6s: ",
+                ttlp->ttlp_err_hdr,
+                lineno,
+                ((NULL == raw_text) ? "" : " (at "),
+                ((NULL == raw_text) ? "" : raw_text),
+                ((NULL == raw_text) ? "" : ")" ) );
+              temp[sizeof(temp)-1] = '\0';
+              longer_msg = box_dv_short_strconcat (temp, msg);
+              ERR_MESSAGE(err) = longer_msg;
+              dk_free_box (msg);
+            }
+          ttlp->ttlp_catched_error = err;
           if (NULL != ttlp->ttlp_iter_abend)
             {
               ttlp->ttlp_iter_abend (ttlp->ttlp_iter_data);
@@ -1011,7 +1088,7 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       dk_set_push (&report, box_dv_short_string (""));
       dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
+        box_sprintf (0x100, "#define %25s %d /* '%s' (%c) */",
 	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
       for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
 	{

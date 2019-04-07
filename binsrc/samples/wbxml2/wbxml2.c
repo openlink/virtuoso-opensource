@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,21 +27,9 @@
 #include <time.h>
 
 #include "wbxml.h"
-
-#ifdef _USRDLL
-#include "plugin.h"
-#ifdef CALLBACK
-#undef CALLBACK
-#endif
 #include "import_gate_virtuoso.h"
+
 #define wi_inst (wi_instance_get()[0])
-#else
-#include <libutil.h>
-#include "sqlnode.h"
-#include "sqlbif.h"
-#include "wi.h"
-#include "Dk.h"
-#endif
 
 #define WBMXL2_VERSION "0.9"
 
@@ -147,7 +135,7 @@ wbxml2_version = {
 ;
 
 unit_version_t *
-CALLBACK wbxml2_check (unit_version_t *in, void *appdata)
+wbxml2_check (unit_version_t *in, void *appdata)
 {
   return &wbxml2_version;
 }

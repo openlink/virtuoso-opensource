@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ the SYS_XPF_EXTENSIONS system table.
 	  <row>
 	    <entry><errorcode>42001</errorcode></entry>
 	    <entry><errorcode>XPE01</errorcode></entry>
-	    <entry><errorname>The function &lt;procedure_name&gt; does not exists</errorname></entry>
+	    <entry><errorname>The function &lt;procedure_name&gt; does not exist</errorname></entry>
 	    <entry>if procedure to define as a XPATH extension function is not existing one.</entry>
 	  </row>
 	  <row>
@@ -109,7 +109,7 @@ SQL> create procedure DB.DBA.str_concat (in a varchar, in b varchar)
        return concat (a, ':', b);
      };
 
-SQL> xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:concat_strings', 'DB.DBA.str_concat');
+SQL> xpf_extension ('http://example.com/virtuoso/xslt:concat_strings', 'DB.DBA.str_concat');
 ]]>
 </programlisting>
 
@@ -119,7 +119,7 @@ SQL> xpf_extension ('http://www.openlinksw.com/virtuoso/xslt:concat_strings', 'D
 <![CDATA[
 <?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/TR/WD-xsl" 
-  xmlns:virt="http://www.openlinksw.com/virtuoso/xslt">
+  xmlns:virt="http://example.com/virtuoso/xslt">
   <xsl:template match="/doc">
     <HTML>
      <BODY>
@@ -162,7 +162,7 @@ include it in XPath expressions.</para>
 <programlisting>
 SQL> select p from ws..sys_dav_res
 where xpath_contains (RES_CONTENT,
-'[xmlns:virt=''http://www.openlinksw.com/virtuoso/xslt'']
+'[xmlns:virt=''http://example.com/virtuoso/xslt'']
 virt:concat_strings (''Title '', string(/chapter/title))', p);
 </programlisting>
 

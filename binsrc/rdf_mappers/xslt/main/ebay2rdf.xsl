@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -35,7 +35,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY pto "http://www.productontology.org/id/">
 <!ENTITY xsd "http://www.w3.org/2001/XMLSchema#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY ebay "urn:ebay:apis:eBLBaseComponents">
 <!ENTITY oplebay "http://www.openlinksw.com/schemas/ebay#">
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">

@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2013 OpenLink Software
+  Copyright (C) 1998-2019 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -52,26 +52,17 @@
       <para>A flag : 1 or 0, by default 0. It denotes to export or to skip exporting private key.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xenc_pem_export"><title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_xenc_pem_export">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_pem_export">
     <title>Examples</title>
     <example id="ex_xenc_pem_export_1"><title>Creating a certificate and exporting it in PEM format</title>
       <para>The example below imports a client public key, then it creates a certificate and sign it with CA's private key and finally it exports the generated certificate in PEM format.</para>
       <screen><![CDATA[
        kname := xenc_SPKI_read (null, replace (get_keyword ('key', params), '\r\n', ''));
-       xenc_x509_generate ('id_rsa', kname, sequence_next ('ca_id_rsa'), 365, 
+xenc_x509_generate (
+    'id_rsa',
+    kname,
+    sequence_next ('ca_id_rsa'),
+    365,
 		vector (
 			'CN', get_keyword ('name', params, name),
 			'C',  get_keyword ('c', params, name),
@@ -79,8 +70,13 @@
 			'OU', get_keyword ('ou', params, name),
 			'emailAddress', get_keyword ('email', params)
 			), 
-		vector ('subjectAltName', 'URI:'||webid, 'nsComment', 'Virtuoso Generated Certificate', 
-			'authorityKeyIdentifier', 'keyid,issuer:always'));
+		vector (
+		  'subjectAltName',
+		  'URI:'||webid,
+		  'nsComment',
+		  'Virtuoso Generated Certificate',
+			'authorityKeyIdentifier',
+			'keyid,issuer:always'));
        cvalue := xenc_pem_export (kname);
 ]]>
 </screen>

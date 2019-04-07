@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -465,6 +465,7 @@ set_pos_param_row (cli_stmt_t * stmt, int nth)
 
 	  place += btype == 0 ? nth * sqlc_sizeof (c_type, cb->cb_max_length) : nth * btype;
 	  place += rebind_offset;
+
 	  if (length)
 	    {
 	      *((char **) &length) += btype == 0 ? nth * sizeof (SDWORD) : btype * nth;
@@ -474,7 +475,7 @@ set_pos_param_row (cli_stmt_t * stmt, int nth)
 	    row[iparam] = (dk_alloc_box (0, DV_IGNORE));
 	  else
 	    {
-	      caddr_t v = buffer_to_dv (place, length, c_type, c_type, BHID (nth, iparam + 1), NULL, CON_IS_INPROCESS (stmt->stmt_connection));
+	      caddr_t v = buffer_to_dv (place, length, c_type, c_type, BHID (nth, iparam + 1), stmt, CON_IS_INPROCESS (stmt->stmt_connection));
 	      row[iparam] = v;
 
 	      if (IS_BOX_POINTER (v) && DV_DAE == box_tag (v))

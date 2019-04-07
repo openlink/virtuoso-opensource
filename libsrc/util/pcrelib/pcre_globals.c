@@ -52,6 +52,26 @@ differently, and global variables are not used (see pcre.in). */
 
 #include "pcre_internal.h"
 
+#ifdef MALLOC_DEBUG
+extern void * dbg_malloc (const char *file, u_int line, size_t size);
+extern void dbg_free (const char *file, u_int line, void *data);
+
+static void *
+dbg_pcre_malloc(size_t size)
+{
+    return dbg_malloc (__FILE__, __LINE__, size);
+}
+
+static void
+dbg_pcre_free(void *data)
+{
+    return dbg_free (__FILE__, __LINE__, data);
+}
+
+#define malloc		dbg_pcre_malloc
+#define free		dbg_pcre_free
+#endif
+
 #ifndef VPCOMPAT
 PCRE_EXP_DATA_DEFN void *(*pcre_malloc)(size_t) = malloc;
 PCRE_EXP_DATA_DEFN void  (*pcre_free)(void *) = free;

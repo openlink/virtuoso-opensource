@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -51,6 +51,7 @@ typedef struct remote_ds_s
     dk_mutex_t *	rds_pass_through_funcs_mtx;
     dk_hash_t *	        rds_rexec_grants;
     id_hash_t *		rds_connections_hash;
+    int 		rds_timezoneless_datetimes;
   } remote_ds_t;
 
 
@@ -164,5 +165,6 @@ extern void dbev_dsn_login (remote_ds_t * rds, client_connection_t * cli, caddr_
 #define RTS_ERROR_QI(rts, qi) \
   (rts->src_gen.src_query->qr_is_bunion_term ? NULL : (query_instance_t *) qi)
 
+void rts_vec_run_single (remote_table_source_t * rts, query_instance_t * qi, caddr_t * state);
 
 #endif /* _REMOTE_H */

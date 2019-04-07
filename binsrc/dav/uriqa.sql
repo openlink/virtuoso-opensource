@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -33,13 +33,6 @@ create table WS.WS.URIQA_HANDLER
 create index URIQA_HANDLER_ORDER_NAME on WS.WS.URIQA_HANDLER (UH_ORDER, UH_NAME)
 ;
 
---#IF VER=5
-alter table WS.WS.URIQA_HANDLER add UH_MATCH_ENV any
-;
-
-alter table WS.WS.URIQA_HANDLER add UH_HANDLER_ENV any
-;
---#ENDIF
 
 create function WS.WS.URIQA_CFG_ITEM_VALUE (in param_name varchar, in is_list integer, in dflt_value varchar)
 {

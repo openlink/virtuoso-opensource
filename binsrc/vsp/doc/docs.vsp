@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -137,7 +137,7 @@ else
 <TABLE BORDER="0" WIDTH="100%">
 <TR><TD WIDTH="50"></TD>
 <TD WIDTH="80%">
-<DIV CLASS="copyright">Copyright&copy; 1998-2013 OpenLink Software</DIV>
+<DIV CLASS="copyright">Copyright&copy; 1998-2019 OpenLink Software</DIV>
 </TD>
 <TD WIDTH="50"/>
 </TR>

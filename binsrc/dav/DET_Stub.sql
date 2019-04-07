@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -222,7 +222,20 @@ create function "Stub_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "Stub_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "Stub_DAV_RES_UPLOAD_COPY" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('Stub_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite, permissions, uid, gid, auth_uid, ')');
   return -20;
@@ -230,7 +243,17 @@ create function "Stub_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any,
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "Stub_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in auth_uid integer) returns any
+create function "Stub_DAV_RES_UPLOAD_MOVE" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('Stub_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite, auth_uid, ')');
   return -20;

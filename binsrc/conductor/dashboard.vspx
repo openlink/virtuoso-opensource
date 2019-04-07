@@ -1,0 +1,311 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="main_tabs_props" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+				vm:owner=""
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Conductor</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable name="sav1" type="varchar" default="'General'" />
+    <v:variable name="sav2" type="varchar" default="'HTTPServer'" />
+    <v:variable name="sav3" type="varchar" default="'Diagnostics'" />
+    <v:variable name="sav4" type="varchar" default="'DatabaseServer'" />
+    <v:variable name="sav5" type="varchar" default="'SpaceAllocation'" />
+    <v:variable name="sav6" type="varchar" default="'License'" />
+    <v:variable name="sav7" type="varchar" default="'Disk'" />
+    <v:variable name="sav8" type="varchar" default="'Locks'" />
+    <v:variable name="sav9" type="varchar" default="'Clients'" />
+
+    <v:variable name="bits1" type="varchar" default="'11111111111'" />
+    <v:variable name="bits2" type="varchar" default="'11111111111'" />
+    <v:variable name="bits3" type="varchar" default="'11111111111'" />
+    <v:variable name="bits4" type="varchar" default="'11111111111'" />
+    <v:variable name="bits5" type="varchar" default="'11111111111'" />
+    <v:variable name="bits6" type="varchar" default="'11111111111'" />
+    <v:variable name="bits7" type="varchar" default="'11111111111'" />
+    <v:variable name="bits8" type="varchar" default="'11111111111'" />
+    <v:variable name="bits9" type="varchar" default="'11111111111'" />
+  </vm:variables>
+  <vm:menu>
+    <vm:menuitem value="Virtuoso Conductor"/>
+  </vm:menu>
+  <vm:header caption="Virtuoso Conductor"/>
+  <vm:pagebody>
+    <div class="splash">
+<?vsp
+      declare _state, _msg, _refr any;
+      exec ('status (''c'')', _state, _msg);
+  ?>
+   <v:form type="simple" method="POST" name="fprefs">
+     <v:on-post>
+       if (e.ve_button = control)
+         {
+	   if (e.ve_initiator = self.sel1)
+	     {
+	       self.bits1 := '11111111111';
+	       self.sa1.vc_data_bind (e);
+	     }
+	   else if (e.ve_initiator = self.sel2)
+	     {
+	       self.bits2 := '11111111111';
+	       self.sa2.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel3)
+	     {
+	       self.bits3 := '11111111111';
+	       self.sa3.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel4)
+	     {
+	       self.bits4 := '11111111111';
+	       self.sa4.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel5)
+	     {
+	       self.bits5 := '11111111111';
+	       self.sa5.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel6)
+	     {
+	       self.bits6 := '11111111111';
+	       self.sa6.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel7)
+	     {
+	       self.bits7 := '11111111111';
+	       self.sa7.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel8)
+	     {
+	       self.bits8 := '11111111111';
+	       self.sa8.vc_data_bind (e);
+	     }
+           else if (e.ve_initiator = self.sel9)
+	     {
+	       self.bits9 := '11111111111';
+	       self.sa9.vc_data_bind (e);
+	     }
+	 }
+     </v:on-post>
+    <v:local-variable name="lv1">
+      <v:after-data-bind><![CDATA[
+	if (connection_get ('vspx_user') is not null)
+	  {
+	    declare tmp any;
+	    tmp := USER_GET_OPTION (connection_get ('vspx_user'), 'ConductorDashboard');
+	    if (tmp is not null and isarray (tmp) and length (tmp) >= 18)
+	      {
+	        self.sav1 := tmp[0];
+	        self.sav2 := tmp[2];
+	        self.sav3 := tmp[4];
+	        self.sav4 := tmp[6];
+	        self.sav5 := tmp[8];
+	        self.sav6 := tmp[10];
+	        self.sav7 := tmp[12];
+	        self.sav8 := tmp[14];
+		      self.sav9 := tmp[16];
+
+	        self.bits1 := tmp[1];
+	        self.bits2 := tmp[3];
+	        self.bits3 := tmp[5];
+	        self.bits4 := tmp[7];
+	        self.bits5 := tmp[9];
+	        self.bits6 := tmp[11];
+	        self.bits7 := tmp[13];
+	        self.bits8 := tmp[15];
+	        self.bits9 := tmp[17];
+	      }
+	  }
+	  ]]></v:after-data-bind>
+    </v:local-variable>
+   <table class="stat_table" width="100%">
+    <tr>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel1" value="--coalesce (control.ufl_value, self.sav1)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa1" url="dashboard_item.vspx" tp="--self.sel1.ufl_value" bits="--self.bits1"/>
+	</table>
+      </td>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel2" value="--coalesce (control.ufl_value, self.sav2)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa2" url="dashboard_item.vspx" tp="--self.sel2.ufl_value" bits="--self.bits2"/>
+	</table>
+      </td>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel3" value="--coalesce (control.ufl_value, self.sav3)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa3" url="dashboard_item.vspx" tp="--self.sel3.ufl_value" bits="--self.bits3"/>
+	</table>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel4" value="--coalesce (control.ufl_value, self.sav4)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa4" url="dashboard_item.vspx" tp="--self.sel4.ufl_value" bits="--self.bits4"/>
+	</table>
+      </td>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel5" value="--coalesce (control.ufl_value, self.sav5)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa5" url="dashboard_item.vspx" tp="--self.sel5.ufl_value" bits="--self.bits5"/>
+	</table>
+      </td>
+      <td valign="top" class="stat_table">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel6" value="--coalesce (control.ufl_value, self.sav6)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa6" url="dashboard_item.vspx" tp="--self.sel6.ufl_value" bits="--self.bits6"/>
+	</table>
+      </td>
+    </tr>
+    <tr>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel7" value="--coalesce (control.ufl_value, self.sav7)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa7" url="dashboard_item.vspx" tp="--self.sel7.ufl_value" bits="--self.bits7"/>
+	</table>
+      </td>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel8" value="--coalesce (control.ufl_value, self.sav8)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa8" url="dashboard_item.vspx" tp="--self.sel8.ufl_value" bits="--self.bits8"/>
+	</table>
+      </td>
+      <td valign="top">
+	<table class="stat_table">
+	  <tr class="stat_header_line"><th colspan="3">
+	      <v:select-list name="sel9" value="--coalesce (control.ufl_value, self.sav9)" auto-submit="1">
+		<vm:dash-groups/>
+	      </v:select-list>
+	  </th></tr>
+	  <v:vscx name="sa9" url="dashboard_item.vspx" tp="--self.sel9.ufl_value" bits="--self.bits9"/>
+	</table>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="3" valign="top">
+	<v:button action="simple" name="dash_sav" value="Save">
+	  <v:on-post>
+	    if (connection_get ('vspx_user') is not null)
+	      {
+	        declare tmp, m1, m2, m3, m4, m5, m6, m7, m8, m9 any;
+	        declare page vspx_page;
+
+		page := self.sa1.vc_children[0];
+		m1 := udt_get (page, 'bits');
+
+		page := self.sa2.vc_children[0];
+		m2 := udt_get (page, 'bits');
+
+		page := self.sa3.vc_children[0];
+		m3 := udt_get (page, 'bits');
+
+		page := self.sa4.vc_children[0];
+		m4 := udt_get (page, 'bits');
+
+		page := self.sa5.vc_children[0];
+		m5 := udt_get (page, 'bits');
+
+		page := self.sa6.vc_children[0];
+		m6 := udt_get (page, 'bits');
+
+		page := self.sa7.vc_children[0];
+		m7 := udt_get (page, 'bits');
+
+		page := self.sa8.vc_children[0];
+		m8 := udt_get (page, 'bits');
+
+		page := self.sa9.vc_children[0];
+		m9 := udt_get (page, 'bits');
+
+		tmp := vector (
+		self.sel1.ufl_value, m1,
+		self.sel2.ufl_value, m2,
+		self.sel3.ufl_value, m3,
+		self.sel4.ufl_value, m4,
+		self.sel5.ufl_value, m5,
+		self.sel6.ufl_value, m6,
+		self.sel7.ufl_value, m7,
+		self.sel8.ufl_value, m8,
+		self.sel9.ufl_value, m9
+		);
+		USER_SET_OPTION (connection_get ('vspx_user'), 'ConductorDashboard', tmp);
+	      }
+	    self.vc_redirect ('sys_info.vspx');
+	  </v:on-post>
+	</v:button>
+	<v:button action="simple" name="res" value="Reset">
+	  <v:on-post>
+	    if (connection_get ('vspx_user') is not null)
+	      {
+	        USER_SET_OPTION (connection_get ('vspx_user'), 'ConductorDashboard', null);
+	        self.vc_redirect ('dashboard.vspx');
+	      }
+	  </v:on-post>
+	</v:button>
+      </td>
+    </tr>
+  </table>
+</v:form>
+    </div>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

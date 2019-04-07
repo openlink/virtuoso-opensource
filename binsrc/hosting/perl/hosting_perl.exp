@@ -1,0 +1,6 @@
+hosting_perl_check
+virtm_client_attach
+virtm_client_detach
+virtm_client_free
+virtm_client_clone
+virtm_http_handler

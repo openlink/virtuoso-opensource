@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,8 @@ create table WS.WS.DYNA_RES (
   DR_EXEC_UNAME varchar,
   DR_LAST_LENGTH integer,
   DR_CONTENT long varchar,
-  DR_ACL long varchar            -- ACL
+  DR_ACL long varchar,            -- ACL
+  DR_ACI long varchar             -- ACI
 )
 create unique index DYNA_RES_DETCOL_NAME on WS.WS.DYNA_RES (DR_DETCOL_ID, DR_NAME)
 create index DYNA_RES_REFRESH_DT on WS.WS.DYNA_RES (DR_REFRESH_DT)
@@ -50,44 +51,46 @@ create index DYNA_RES_DELETE_DT on WS.WS.DYNA_RES (DR_DELETE_DT)
 
 alter table WS.WS.DYNA_RES add DR_ACL long varchar
 ;
+alter table WS.WS.DYNA_RES add DR_ACI long varchar
+;
 
 create trigger DYNA_RES_WAC_I after insert on WS.WS.DYNA_RES order 100 referencing new as N
 {
-  if (DB.DBA.is_empty_or_null (N.DR_ACL))
+  if (DB.DBA.is_empty_or_null (N.DR_ACI))
     return;
 
-  WS.WS.WAC_INSERT ("DynaRes__path" (N.DR_DETCOL_ID, N.DR_NAME), N.DR_ACL, N.DR_OWNER_UID, N.DR_OWNER_GID, 0);
+  WS.WS.WAC_INSERT (DB.DBA.DynaRes__path (N.DR_DETCOL_ID, N.DR_NAME), N.DR_ACI, N.DR_OWNER_UID, N.DR_OWNER_GID, 0);
 }
 ;
 
 create trigger DYNA_RES_WAC_U after update on WS.WS.DYNA_RES order 100 referencing new as N, old as O
 {
-  if (not DB.DBA.is_empty_or_null (O.DR_ACL))
-    WS.WS.WAC_DELETE ("DynaRes__path" (O.DR_DETCOL_ID, O.DR_NAME), 0);
+  if (not DB.DBA.is_empty_or_null (O.DR_ACI))
+    WS.WS.WAC_DELETE (DB.DBA.DynaRes__path (O.DR_DETCOL_ID, O.DR_NAME), 0);
 
-  if (DB.DBA.is_empty_or_null (N.DR_ACL))
+  if (DB.DBA.is_empty_or_null (N.DR_ACI))
     return;
 
-  WS.WS.WAC_INSERT ("DynaRes__path" (N.DR_DETCOL_ID, N.DR_NAME), N.DR_ACL, N.DR_OWNER_UID, N.DR_OWNER_GID, 0);
+  WS.WS.WAC_INSERT (DB.DBA.DynaRes__path (N.DR_DETCOL_ID, N.DR_NAME), N.DR_ACI, N.DR_OWNER_UID, N.DR_OWNER_GID, 0);
 }
 ;
 
 create trigger DYNA_RES_WAC_D after delete on WS.WS.DYNA_RES order 100 referencing old as O
 {
-  if (DB.DBA.is_empty_or_null (O.DR_ACL))
+  if (DB.DBA.is_empty_or_null (O.DR_ACI))
     return;
 
-  WS.WS.WAC_DELETE ("DynaRes__path" (O.DR_DETCOL_ID, O.DR_NAME), 0);
+  WS.WS.WAC_DELETE (DB.DBA.DynaRes__path (O.DR_DETCOL_ID, O.DR_NAME), 0);
 }
 ;
 
-create function "DynaRes__detName" ()
+create procedure DB.DBA.DynaRes__detName ()
 {
   return UNAME'DynaRes';
 }
 ;
 
-create function "DynaRes__path" (
+create procedure DB.DBA.DynaRes__path (
   in detcol_id any,
   in name varchar)
 {
@@ -95,14 +98,17 @@ create function "DynaRes__path" (
 }
 ;
 
-create function "DynaRes__acl" (
-  in detcol_id any)
+create procedure DB.DBA.DynaRes__acl (
+  in detcol_id any,
+  in acl any)
 {
-  declare acl any;
+  declare detcol_acl any;
 
-  acl := (select WS.WS.ACL_PARSE (COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL where COL_ID = detcol_id);
-  if (not isnull (acl))
-    acl := WS.WS.ACL_COMPOSE (WS.WS.ACL_MAKE_INHERITED (acl));
+  detcol_acl := (select WS.WS.ACL_PARSE (COL_ACL, '123', 0) from WS.WS.SYS_DAV_COL where COL_ID = detcol_id);
+  if (not isnull (detcol_acl))
+  {
+    acl := WS.WS.ACL_COMPOSE (vector_concat (WS.WS.ACL_PARSE (acl, '0', 0), WS.WS.ACL_MAKE_INHERITED (detcol_acl)));
+  }
 
   return acl;
 }
@@ -110,7 +116,7 @@ create function "DynaRes__acl" (
 
 --| This matches DAV_AUTHENTICATE (in id any, in what char(1), in req varchar, in a_uname varchar, in a_pwd varchar, in a_uid integer := null)
 --| The difference is that the DET function should not check whether the pair of name and password is valid; the auth_uid is not a null already.
-create function "DynaRes_DAV_AUTHENTICATE" (
+create procedure "DynaRes_DAV_AUTHENTICATE" (
   in id any,
   in what char(1),
   in req varchar,
@@ -122,9 +128,12 @@ create function "DynaRes_DAV_AUTHENTICATE" (
   declare pgid, puid integer;
   declare pperms varchar;
   declare pacl any;
+  declare _perms, a_gid any;
+  declare webid, serviceId varchar;
+  declare a_cert any;
   whenever not found goto _exit;
 
-  select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID into pperms, puid, pgid from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
+  select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_ACL into pperms, puid, pgid, pacl from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
 
   set isolation='committed';
   if (puid <> http_nobody_uid() and exists (select top 1 1 from SYS_USERS where U_ID = puid and U_ACCOUNT_DISABLED = 1))
@@ -132,36 +141,27 @@ create function "DynaRes_DAV_AUTHENTICATE" (
 
   set isolation='serializable';
 
+  pacl := DB.DBA.DynaRes__acl (id[1], pacl);
   if (a_uid >= 0)
   {
-  if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
-    return a_uid;
-
-  pacl := "DynaRes__acl" (id[1]);
-  if (not isnull (pacl) and WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-    return a_uid;
-  }
-
-    declare _perms, a_gid any;
-  declare webid, serviceId varchar;
-
-  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+    if (DAV_CHECK_PERM (pperms, req, a_uid, http_nogroup_gid(), pgid, puid))
       return a_uid;
 
-  if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
+    if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+      return a_uid;
+  }
+
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
     return a_uid;
 
-  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_SESSION_ID only check IRI ACLs
+
+  -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
   a_uid := -1;
 
-  -- A session ID might be connected to a normal user account, that is what we check first
-  for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
-    a_uid := U_ID;
-
   if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
   {
-    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+    if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid, a_uname, _perms))
       a_uid := -1;
   }
 
@@ -169,13 +169,11 @@ create function "DynaRes_DAV_AUTHENTICATE" (
   if (a_uid > 0)
   {
     if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
-    {
       return a_uid;
-    }
+
     if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-    {
       return a_uid;
-    }
+
   }
 
   return -13;
@@ -190,7 +188,7 @@ _exit:
 --| Unlike DAV_AUTHENTICATE, user name passed to DAV_AUTHENTICATE_HTTP header may not match real DAV user.
 --| If DET call is successful, DAV_AUTHENTICATE_HTTP checks whether the user have read permission on mount point collection.
 --| Thus even if DET function allows anonymous access, the whole request may fail if mountpoint is not readable by public.
-create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
+create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
   in id any,
   in what char(1),
   in req varchar,
@@ -208,21 +206,23 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
   declare pacl any;
   declare u_password, pperms varchar;
   declare allow_anon integer;
+  declare a_cert any;
 
   -- used for error reporting in case of NetID or OAuth login
   declare webid, serviceId varchar;
   whenever not found goto _exit;
 
-  webid := null;
-  serviceId := null;
-
   what := upper (what);
   if ((what <> 'R') and (what <> 'C'))
     return -14;
 
-  select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID into pperms, puid, pgid from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
+  select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_ACL into pperms, puid, pgid, pacl from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
   if (pperms is null)
     return -1;
+
+  pacl := DB.DBA.DynaRes__acl (id[1], pacl);
+  webid := null;
+  serviceId := null;
 
   allow_anon := WS.WS.PERM_COMP (substring (cast (pperms as varchar), 7, 3), req);
   if (a_uid is null)
@@ -232,14 +232,9 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (rc < 0)
     {
-      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
         return a_uid;
 
-      if (DAV_AUTHENTICATE_WITH_SESSION_ID (id, what, null, req, a_uid, a_gid, _perms, serviceId))
-      {
-        http_rewrite ();
-        return a_uid;
-      }
 
       -- Normalize the service variables for error handling in VAL
       if (not webid is null and serviceId is null)
@@ -249,13 +244,9 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
       a_uid := -1;
 
-      -- A session ID might be connected to a normal user account, that is what we check first
-      for (select top 1 U_ID from DB.DBA.SYS_USERS where U_NAME=serviceId and U_ACCOUNT_DISABLED=0) do
-        a_uid := U_ID;
-
       if (a_uid = -1 and exists (select 1 from DB.DBA.SYS_KEYS where KEY_NAME='DB.DBA.WA_USER_OL_ACCOUNTS')) -- this check is only valid if table is accessed in a separate SP which is not precompiled
       {
-        if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid))
+        if (not DAV_GET_UID_BY_SERVICE_ID (serviceId, a_uid, a_gid, a_uname, _perms))
           a_uid := -1;
       }
 
@@ -263,13 +254,10 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
       if (a_uid > 0)
       {
         if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
-        {
           return a_uid;
-        }
+
         if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
-        {
-        return a_uid;
-        }
+          return a_uid;
       }
 
       -- If the user already provided some kind of credentials we return a 403 code
@@ -299,15 +287,35 @@ create function "DynaRes_DAV_AUTHENTICATE_HTTP" (
   }
   else
   {
-    a_uid := http_nobody_uid ();
-    a_gid := http_nogroup_gid ();
+    if (isnull (id))
+    {
+      a_uid := http_nobody_uid ();
+      a_gid := http_nogroup_gid ();
+    }
+    else
+    {
+      a_uid := puid;
+      a_gid := pgid;
+    }
     _perms := '110110110--';
   }
-  if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
-    return a_uid;
 
-  pacl := "DynaRes__acl" (id[1]);
-  if (not isnull (pacl) and WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
+  set isolation='committed';
+  if ('R' = what and
+      puid <> http_nobody_uid() and
+      exists (select top 1 1 from SYS_USERS where U_ID = puid and U_ACCOUNT_DISABLED = 1 ))
+  {
+    return -42;
+  }
+  set isolation='serializable';
+
+  if (DAV_CHECK_PERM (pperms, req, a_uid, a_gid, pgid, puid))
+  {
+    _perms := pperms;
+    return a_uid;
+  }
+
+  if (WS.WS.ACL_IS_GRANTED (pacl, a_uid, DAV_REQ_CHARS_TO_BITMASK (req)))
     return a_uid;
 
   return -13;
@@ -318,7 +326,7 @@ _exit:
 ;
 
 --| This matches DAV_GET_PARENT (in id any, in st char(1), in path varchar) returns any
-create function "DynaRes_DAV_GET_PARENT" (
+create procedure "DynaRes_DAV_GET_PARENT" (
   in id any,
   in what char(1),
   in path varchar) returns any
@@ -333,7 +341,7 @@ create function "DynaRes_DAV_GET_PARENT" (
 
 --| When DAV_COL_CREATE_INT calls DET function, authentication, check for lock and check for overwrite are passed, uid and gid are translated from strings to IDs.
 --| Check for overwrite, but the deletion of previously existing collection should be made by DET function.
-create function "DynaRes_DAV_COL_CREATE" (
+create procedure "DynaRes_DAV_COL_CREATE" (
   in detcol_id any,
   in path_parts any,
   in permissions varchar,
@@ -347,7 +355,7 @@ create function "DynaRes_DAV_COL_CREATE" (
 ;
 
 --| It looks like that this is redundant and should be removed at all.
-create function "DynaRes_DAV_COL_MOUNT" (
+create procedure "DynaRes_DAV_COL_MOUNT" (
   in detcol_id any,
   in path_parts any,
   in full_mount_path varchar,
@@ -363,7 +371,7 @@ create function "DynaRes_DAV_COL_MOUNT" (
 ;
 
 --| It looks like that this is redundant and should be removed at all.
-create function "DynaRes_DAV_COL_MOUNT_HERE" (
+create procedure "DynaRes_DAV_COL_MOUNT_HERE" (
   in parent_id any,
   in full_mount_path varchar,
   in permissions varchar,
@@ -377,7 +385,7 @@ create function "DynaRes_DAV_COL_MOUNT_HERE" (
 ;
 
 --| When DAV_DELETE_INT calls DET function, authentication and check for lock are passed.
-create function "DynaRes_DAV_DELETE" (
+create procedure "DynaRes_DAV_DELETE" (
   in detcol_id any,
   in path_parts any,
   in what char(1),
@@ -402,7 +410,7 @@ create function "DynaRes_DAV_DELETE" (
 --| There's a special problem, known as 'Transaction deadlock after reading from HTTP session'.
 --| The DET function should do only one INSERT of the 'content' into the table and do it as late as possible.
 --| The function should return -29 if deadlocked or otherwise broken after reading blob from HTTP.
-create function "DynaRes_DAV_RES_UPLOAD" (
+create procedure "DynaRes_DAV_RES_UPLOAD" (
   in detcol_id any,
   in path_parts any,
   inout content any,
@@ -419,7 +427,7 @@ create function "DynaRes_DAV_RES_UPLOAD" (
 
 --| When DAV_PROP_REMOVE_INT calls DET function, authentication and check for locks are performed before the call.
 --| The check whether it's a system name or not is _not_ permitted.
-create function "DynaRes_DAV_PROP_REMOVE" (
+create procedure "DynaRes_DAV_PROP_REMOVE" (
   in id any,
   in what char(0),
   in propname varchar,
@@ -427,24 +435,33 @@ create function "DynaRes_DAV_PROP_REMOVE" (
   in auth_uid integer) returns integer
 {
   -- dbg_obj_princ ('DynaRes_DAV_PROP_REMOVE (', id, what, propname, silent, auth_uid, ')');
-  if (propname = 'virt:aci_meta')
+  if ('R' = what)
   {
-    if (length (id) = 5)
+    if (':virtacl' = propname)
+    {
+      if (length (id) <> 5)
+        update WS.WS.DYNA_RES set DR_ACL = null where DR_RES_ID = id[3];
+
       return 1;
+    }
+    if (propname = 'virt:aci_meta_n3')
+    {
+      if (length (id) <> 5)
+        update WS.WS.DYNA_RES set DR_ACI = null where DR_RES_ID = id[3];
 
-    update WS.WS.DYNA_RES
-       set DR_ACL = null
-     where DR_RES_ID = id[3];
-
-    return 1;
+      return 1;
+    }
+    if (propname[0] = 58)
+      return -16;
   }
+
   return -20;
 }
 ;
 
 --| When DAV_PROP_SET_INT calls DET function, authentication and check for locks are performed before the call.
 --| The check whether it's a system property or not is _not_ permitted and the function should return -16 for live system properties.
-create function "DynaRes_DAV_PROP_SET" (
+create procedure "DynaRes_DAV_PROP_SET" (
   in id any,
   in what char(0),
   in propname varchar,
@@ -458,7 +475,7 @@ create function "DynaRes_DAV_PROP_SET" (
     if (':getcontenttype' = propname)
     {
       update WS.WS.DYNA_RES set DR_MIME = propvalue where DR_RES_ID = id[3];
-      return 0;
+      return 1;
     }
     if (':virtowneruid' = propname)
     {
@@ -466,7 +483,7 @@ create function "DynaRes_DAV_PROP_SET" (
         propvalue := 0;
 
       update WS.WS.DYNA_RES set DR_OWNER_UID = propvalue where DR_RES_ID = id[3];
-      return 0;
+      return 1;
     }
     if (':virtownergid' = propname)
     {
@@ -474,7 +491,7 @@ create function "DynaRes_DAV_PROP_SET" (
         propvalue := 0;
 
       update WS.WS.DYNA_RES set DR_OWNER_GID = propvalue where DR_RES_ID = id[3];
-      return 0;
+      return 1;
     }
     if (':virtpermissions' = propname)
     {
@@ -482,26 +499,32 @@ create function "DynaRes_DAV_PROP_SET" (
         return -17;
 
       update WS.WS.DYNA_RES set DR_PERMS = propvalue where DR_RES_ID = id[3];
-      return 0;
+      return 1;
+    }
+    if (':virtacl' = propname)
+    {
+      if (length (id) <> 5)
+        update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
+
+      return 1;
     }
     if (propname = 'virt:aci_meta_n3')
     {
-      if (length (id) = 5)
-        return 0;
+      if (length (id) <> 5)
+        update WS.WS.DYNA_RES set DR_ACI = propvalue where DR_RES_ID = id[3];
 
-      update WS.WS.DYNA_RES set DR_ACL = propvalue where DR_RES_ID = id[3];
-      return 0;
+      return 1;
     }
+    if (propname[0] = 58)
+      return -16;
   }
-  if (propname[0] = 58)
-    return -16;
 
   return -20;
 }
 ;
 
 --| When DAV_PROP_GET_INT calls DET function, authentication and check whether it's a system property are performed before the call.
-create function "DynaRes_DAV_PROP_GET" (
+create procedure "DynaRes_DAV_PROP_GET" (
   in id any,
   in what char(0),
   in propname varchar,
@@ -526,10 +549,19 @@ create function "DynaRes_DAV_PROP_GET" (
     {
       return (select DR_PERMS from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
     }
-    if ('virt:aci_meta_n3' = propname)
-  {
-    return (select DR_ACL from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
-  }
+    if (':virtacl' = propname)
+    {
+      declare acl any;
+
+      acl := coalesce ((select DR_ACL from WS.WS.DYNA_RES where DR_RES_ID = id[3]), WS.WS.ACL_CREATE());
+      acl := DB.DBA.DynaRes__acl (id[1], acl);
+
+      return acl;
+    }
+    if (propname = 'virt:aci_meta_n3')
+    {
+      return (select DR_ACI from WS.WS.DYNA_RES where DR_RES_ID = id[3]);
+    }
   }
   return -11;
 }
@@ -537,7 +569,7 @@ create function "DynaRes_DAV_PROP_GET" (
 
 --| When DAV_PROP_LIST_INT calls DET function, authentication is performed before the call.
 --| The returned list should contain only user properties.
-create function "DynaRes_DAV_PROP_LIST" (
+create procedure "DynaRes_DAV_PROP_LIST" (
   in id any,
   in what char(0),
   in propmask varchar,
@@ -549,7 +581,7 @@ create function "DynaRes_DAV_PROP_LIST" (
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "DynaRes_DAV_DIR_SINGLE" (
+create procedure "DynaRes_DAV_DIR_SINGLE" (
   in id any,
   in what char(0),
   in path any,
@@ -559,14 +591,14 @@ create function "DynaRes_DAV_DIR_SINGLE" (
 
   if ('R' = what)
   {
-    for (select DR_NAME, DR_LAST_LENGTH, DR_CREATED_DT, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_MODIFIED_DT, DR_MIME, DR_ACL
+    for (select DR_NAME, DR_LAST_LENGTH, DR_CREATED_DT, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_MODIFIED_DT, DR_MIME, DR_ACI
            from WS.WS.DYNA_RES
           where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] and DR_NAME is not null) do
     {
       if (length (id) = 4)
         return vector (DAV_SEARCH_PATH (id[1], 'C') || DR_NAME, 'R', coalesce (DR_LAST_LENGTH, 1024), DR_CREATED_DT, id, DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, DR_MIME, DR_NAME);
 
-      if ((length (id) = 5) and not DB.DBA.is_empty_or_null (DR_ACL))
+      if ((length (id) = 5) and not DB.DBA.is_empty_or_null (DR_ACI))
         return vector (DAV_SEARCH_PATH (id[1], 'C') || DR_NAME || ',acl', 'R', coalesce (DR_LAST_LENGTH, 1024), DR_CREATED_DT, id, DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, 'text/n3', DR_NAME || ',acl');
     }
   }
@@ -575,7 +607,7 @@ create function "DynaRes_DAV_DIR_SINGLE" (
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "DynaRes_DAV_DIR_LIST" (
+create procedure "DynaRes_DAV_DIR_LIST" (
   in detcol_id any,
   in path_parts any,
   in detcol_path varchar,
@@ -595,30 +627,32 @@ create function "DynaRes_DAV_DIR_LIST" (
     what := 'R';
 
   if ('C' = what and 1 = length(path_parts))
-    top_id := vector (DynaRes__detName (), detcol_id, null);
+  {
+    top_id := vector (DB.DBA.DynaRes__detName (), detcol_id, null, null);
+  }
   else
-    top_id := "DynaRes_DAV_SEARCH_ID" (detcol_id, path_parts, what);
-
-  if (DAV_HIDE_ERROR (top_id) is null)
-    return vector();
-
-  top_davpath := DAV_CONCAT_PATH (detcol_path, path_parts);
+  {
+    top_id := DB.DBA.DynaRes_DAV_SEARCH_ID (detcol_id, path_parts, what);
+    if (DB.DBA.DAV_HIDE_ERROR (top_id) is null)
+      return vector();
+  }
+  top_davpath := DB.DBA.DAV_CONCAT_PATH (detcol_path, path_parts);
   if ('R' = what)
     return vector ("DynaRes_DAV_DIR_SINGLE" (top_id, what, top_davpath, auth_uid));
 
   vectorbld_init (res);
   if (top_id[2] is null)
   {
-    for (select DR_RES_ID, DR_NAME, DR_LAST_LENGTH, DR_CREATED_DT, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_MODIFIED_DT, DR_MIME, DR_ACL
+    for (select DR_RES_ID, DR_NAME, DR_LAST_LENGTH, DR_CREATED_DT, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_MODIFIED_DT, DR_MIME, DR_ACI
            from WS.WS.DYNA_RES
           where DR_DETCOL_ID = detcol_id) do
     {
       vectorbld_acc (res, vector (top_davpath || DR_NAME, 'R', coalesce (DR_LAST_LENGTH, 1024), DR_CREATED_DT,
-        vector (DynaRes__detName (), detcol_id, null, DR_RES_ID), DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, DR_MIME, DR_NAME ) );
+        vector (DB.DBA.DynaRes__detName (), detcol_id, null, DR_RES_ID), DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, DR_MIME, DR_NAME ) );
 
-      if (not DB.DBA.is_empty_or_null (DR_ACL))
-        vectorbld_acc (res, vector (top_davpath || DR_NAME || ',acl', 'R', length (DR_ACL), DR_CREATED_DT,
-          vector (DynaRes__detName (), detcol_id, null, DR_RES_ID), DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, 'text/n3', DR_NAME || ',acl') );
+      if (not DB.DBA.is_empty_or_null (DR_ACI))
+        vectorbld_acc (res, vector (top_davpath || DR_NAME || ',acl', 'R', length (DR_ACI), DR_CREATED_DT,
+          vector (DB.DBA.DynaRes__detName (), detcol_id, null, DR_RES_ID), DR_PERMS, DR_OWNER_GID, DR_OWNER_UID, DR_MODIFIED_DT, 'text/n3', DR_NAME || ',acl') );
     }
   }
   vectorbld_final (res);
@@ -669,7 +703,7 @@ create procedure "DynaRes_DAV_FC_TABLE_METAS" (
 ;
 
 -- This prints the fragment that starts after 'FROM WS.WS.DYNA_RES' and contains the rest of FROM and whole 'WHERE'
-create function "DynaRes_DAV_FC_PRINT_WHERE" (
+create procedure "DynaRes_DAV_FC_PRINT_WHERE" (
   inout filter any,
   in param_uid integer) returns varchar
 {
@@ -677,18 +711,18 @@ create function "DynaRes_DAV_FC_PRINT_WHERE" (
   declare pred_metas, cmp_metas, table_metas any;
   declare used_tables any;
 
-  "DynaRes_DAV_FC_PRED_METAS" (pred_metas);
-  DAV_FC_CMP_METAS (cmp_metas);
-  "DynaRes_DAV_FC_TABLE_METAS" (table_metas);
+  DB.DBA.DynaRes_DAV_FC_PRED_METAS (pred_metas);
+  DB.DBA.DAV_FC_CMP_METAS (cmp_metas);
+  DB.DBA.DynaRes_DAV_FC_TABLE_METAS (table_metas);
   used_tables := vector (
     'DYNA_RES', vector ('DYNA_RES', '_top', null, vector (), vector (), vector ())
-    );
-  return DAV_FC_PRINT_WHERE_INT (filter, pred_metas, cmp_metas, table_metas, used_tables, param_uid);
+  );
+  return DB.DBA.DAV_FC_PRINT_WHERE_INT (filter, pred_metas, cmp_metas, table_metas, used_tables, param_uid);
 }
 ;
 
 --| When DAV_DIR_FILTER_INT calls DET function, authentication is performed before the call and compilation is initialized.
-create function "DynaRes_DAV_DIR_FILTER" (
+create procedure "DynaRes_DAV_DIR_FILTER" (
   in detcol_id any,
   in path_parts any,
   in detcol_path any,
@@ -736,7 +770,7 @@ finalize:
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "DynaRes_DAV_SEARCH_ID" (
+create procedure "DynaRes_DAV_SEARCH_ID" (
   in detcol_id any,
   in path_parts any,
   in what char(1)) returns any
@@ -754,7 +788,7 @@ create function "DynaRes_DAV_SEARCH_ID" (
     if ('C' <> what)
       return -1;
 
-    return vector (DynaRes__detName (), detcol_id, null, null);
+    return vector (DB.DBA.DynaRes__detName (), detcol_id, null, null);
   }
   _name := path_parts[_length - 1];
   if ('' = _name)
@@ -772,20 +806,20 @@ create function "DynaRes_DAV_SEARCH_ID" (
     _name := subseq (_name, 0, length (_name)-4);
     _res_id := (select DR_RES_ID from WS.WS.DYNA_RES where DR_DETCOL_ID = detcol_id and DR_NAME = _name);
     if (_res_id is not null)
-      return vector (DynaRes__detName (), detcol_id, null, _res_id, 1);
+      return vector (DB.DBA.DynaRes__detName (), detcol_id, null, _res_id, 1);
   }
   else
   {
     _res_id := (select DR_RES_ID from WS.WS.DYNA_RES where DR_DETCOL_ID = detcol_id and DR_NAME = _name);
     if (_res_id is not null)
-      return vector (DynaRes__detName (), detcol_id, null, _res_id);
+      return vector (DB.DBA.DynaRes__detName (), detcol_id, null, _res_id);
   }
   return -1;
 }
 ;
 
 --| When DAV_SEARCH_PATH_INT calls DET function, authentication is performed before the call.
-create function "DynaRes_DAV_SEARCH_PATH" (
+create procedure "DynaRes_DAV_SEARCH_PATH" (
   in id any,
   in what char(1)) returns any
 {
@@ -793,7 +827,7 @@ create function "DynaRes_DAV_SEARCH_PATH" (
   if (what <> 'R')
     return null;
 
-  for select DR_NAME from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] do
+  for (select DR_NAME from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1]) do
   {
     if (length (id) = 4)
       return concat (DAV_SEARCH_PATH (id[1], 'C'), DR_NAME);
@@ -806,7 +840,7 @@ create function "DynaRes_DAV_SEARCH_PATH" (
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "DynaRes_DAV_RES_UPLOAD_COPY" (
+create procedure "DynaRes_DAV_RES_UPLOAD_COPY" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
@@ -815,7 +849,11 @@ create function "DynaRes_DAV_RES_UPLOAD_COPY" (
   in permissions varchar,
   in uid integer,
   in gid integer,
-  in auth_uid integer) returns any
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite_flags, permissions, uid, gid, auth_uid, ')');
   return -20;
@@ -823,32 +861,74 @@ create function "DynaRes_DAV_RES_UPLOAD_COPY" (
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "DynaRes_DAV_RES_UPLOAD_MOVE" (
+create procedure "DynaRes_DAV_RES_UPLOAD_MOVE" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
   in what char(1),
   in overwrite_flags integer,
-  in auth_uid integer) returns any
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
-  return -20;
+  declare source_pid, source_path, source_type any;
+  declare target_pid, target_path, target_name any;
+  declare retValue, overwrite_id any;
+
+  retValue := -20;
+  if (what <> 'R')
+    goto _exit;
+
+  -- source parent ID
+  source_path := DB.DBA.DAV_SEARCH_PATH (source_id, what);
+  source_pid := DB.DBA.DAV_SEARCH_ID (source_path, 'P');
+
+  -- targer parent ID
+  target_path := DB.DBA.DAV_DET_PATH (detcol_id, path_parts);
+  target_pid := DB.DBA.DAV_SEARCH_ID (target_path, 'P');
+  if (DB.DBA.DAV_DET_DAV_ID (source_pid) <> DB.DBA.DAV_DET_DAV_ID (target_pid))
+    goto _exit;
+
+  target_name := DB.DBA.DAV_DET_PATH_NAME (target_path);
+  overwrite_id := (select top 1 DR_RES_ID from WS.WS.DYNA_RES where DR_NAME = target_name and DR_DETCOL_ID = detcol_id);
+  if (not isnull (overwrite_id) and not overwrite_flags)
+  {
+    retValue := -3;
+    goto _exit;
+  }
+
+  if (not isnull (overwrite_id))
+    delete from WS.WS.DYNA_RES where DR_RES_ID = overwrite_id;
+
+  update WS.WS.DYNA_RES
+     set DR_NAME = target_name
+   where DR_RES_ID = source_id[3];
+  retValue := source_id;
+
+_exit:;
+  return retValue;
 }
 ;
 
 --| When DAV_RES_CONTENT or DAV_RES_COPY_INT or DAV_RES_MOVE_INT calls DET function, authentication is made.
 --| If content_mode is 1 then content is a valid output stream before the call.
-create function "DynaRes_DAV_RES_CONTENT" (
+create procedure "DynaRes_DAV_RES_CONTENT" (
   in id any,
   inout content any,
   out type varchar,
   in content_mode integer) returns integer
 {
   -- dbg_obj_princ ('DynaRes_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
-  declare c cursor for select
-    DR_NAME, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_CREATED_DT, DR_MODIFIED_DT, DR_REFRESH_DT, DR_DELETE_DT,
-    DR_REFRESH_SECONDS, DR_MIME, DR_EXEC_STMT, deserialize (DR_EXEC_PARAMS), DR_EXEC_UNAME, DR_CONTENT
-    from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] for update;
+  declare c cursor for
+    select
+      DR_NAME, DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_CREATED_DT, DR_MODIFIED_DT, DR_REFRESH_DT, DR_DELETE_DT,
+      DR_REFRESH_SECONDS, DR_MIME, DR_EXEC_STMT, deserialize (DR_EXEC_PARAMS), DR_EXEC_UNAME, DR_CONTENT
+    from
+      WS.WS.DYNA_RES
+    where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1] for update;
   declare c_name, c_perms varchar;
   declare c_owner_uid, c_owner_gid integer;
   declare c_created_dt, c_modified_dt, c_refresh_dt, c_delete_dt datetime;
@@ -893,50 +973,50 @@ create function "DynaRes_DAV_RES_CONTENT" (
     if (c_modified_dt is not null
       and (c_refresh_dt is null or c_refresh_dt > now())
       and (c_delete_dt is null or c_delete_dt > now()) )
-      {
-        -- dbg_obj_princ ('content is fresh');
-        type := c_mime;
-        close c;
-        goto content_ready;
-      }
+    {
+      type := c_mime;
+      close c;
+      goto content_ready;
+    }
     if (c_delete_dt is not null and c_delete_dt <= now())
-      {
-        -- dbg_obj_princ ('should be deleted');
-        delete from WS.WS.DYNA_RES where current of c;
-        return -1;
-      }
+    {
+      delete from WS.WS.DYNA_RES where current of c;
+      return -1;
+    }
     update WS.WS.DYNA_RES set DR_MODIFIED_DT = null where current of c;
     set_user_id (c_exec_uname, 1);
     stat := '00000';
-    -- dbg_obj_princ ('About to exec (', c_exec_stmt, stat, msg, c_exec_params, 1, '[mdta], [rset])');
     exec (c_exec_stmt, stat, msg, c_exec_params, 1, mdta, rset);
     if (stat <> '00000')
-      {
-        update WS.WS.DYNA_RES set DR_MODIFIED_DT = c_modified_dt where current of c;
-        commit work;
-        signal (stat, msg);
-      }
+    {
+      update WS.WS.DYNA_RES set DR_MODIFIED_DT = c_modified_dt where current of c;
+      commit work;
+      signal (stat, msg);
+    }
     c_content := rset[0][0];
-    update WS.WS.DYNA_RES set DR_MODIFIED_DT = now(), DR_REFRESH_DT = dateadd ('second', c_refresh_seconds, now()),
-      DR_LAST_LENGTH=length (c_content), DR_CONTENT=c_content
-    where current of c;
+    update WS.WS.DYNA_RES
+       set DR_MODIFIED_DT = now(), DR_REFRESH_DT = dateadd ('second', c_refresh_seconds, now()), DR_LAST_LENGTH = length (c_content), DR_CONTENT = c_content
+     where current of c;
     commit work;
     type := c_mime;
     close c;
   }
   else
   {
-    select DR_ACL into c_content from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1];
+    select DR_ACI into c_content from WS.WS.DYNA_RES where DR_RES_ID = id[3] and DR_DETCOL_ID = id[1];
     type := 'text/n3';
   }
 
 content_ready:
   if ((content_mode = 0) or (content_mode = 2))
     content := c_content;
+
   else if (content_mode = 1)
     http (c_content, content);
+
   else if (content_mode = 3)
     http (c_content);
+
   return 0;
 
 nf:
@@ -945,7 +1025,7 @@ nf:
 ;
 
 --| This adds an extra access path to the existing resource or collection.
-create function "DynaRes_DAV_SYMLINK" (
+create procedure "DynaRes_DAV_SYMLINK" (
   in detcol_id any,
   in path_parts any,
   in source_id any,
@@ -961,7 +1041,7 @@ create function "DynaRes_DAV_SYMLINK" (
 ;
 
 --| This gets a list of resources and/or collections as it is returned by DAV_DIR_LIST and and writes the list of quads (old_id, 'what', old_full_path, dereferenced_id, dereferenced_full_path).
-create function "DynaRes_DAV_DEREFERENCE_LIST" (
+create procedure "DynaRes_DAV_DEREFERENCE_LIST" (
   in detcol_id any,
   inout report_array any) returns any
 {
@@ -971,7 +1051,7 @@ create function "DynaRes_DAV_DEREFERENCE_LIST" (
 ;
 
 --| This gets one of reference quads returned by ..._DAV_REREFERENCE_LIST() and returns a record (new_full_path, new_dereferenced_full_path, name_may_vary).
-create function "DynaRes_DAV_RESOLVE_PATH" (
+create procedure "DynaRes_DAV_RESOLVE_PATH" (
   in detcol_id any,
   inout reference_item any,
   inout old_base varchar,
@@ -983,7 +1063,7 @@ create function "DynaRes_DAV_RESOLVE_PATH" (
 ;
 
 --| There's no API function to lock for a while (do we need such?) The "LOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "DynaRes_DAV_LOCK" (
+create procedure "DynaRes_DAV_LOCK" (
   in path any,
   in id any,
   in type char(1),
@@ -1002,7 +1082,7 @@ create function "DynaRes_DAV_LOCK" (
 ;
 
 --| There's no API function to unlock for a while (do we need such?) The "UNLOCK" DAV method checks that all parameters are valid but does not check for existing locks.
-create function "DynaRes_DAV_UNLOCK" (
+create procedure "DynaRes_DAV_UNLOCK" (
   in id any,
   in type char(1),
   in token varchar,
@@ -1015,7 +1095,7 @@ create function "DynaRes_DAV_UNLOCK" (
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, 0 if all existing locks are listed in owned_tokens whitespace-delimited list, 1 for soft 2 for hard lock.
-create function "DynaRes_DAV_IS_LOCKED" (
+create procedure "DynaRes_DAV_IS_LOCKED" (
   inout id any,
   inout type char(1),
   in owned_tokens varchar) returns integer
@@ -1027,7 +1107,7 @@ create function "DynaRes_DAV_IS_LOCKED" (
 
 --| The caller does not check if id is valid.
 --| This returns -1 if id is not valid, list of tuples (LOCK_TYPE, LOCK_SCOPE, LOCK_TOKEN, LOCK_TIMEOUT, LOCK_OWNER, LOCK_OWNER_INFO) otherwise.
-create function "DynaRes_DAV_LIST_LOCKS" (
+create procedure "DynaRes_DAV_LIST_LOCKS" (
   in id any,
   in type char(1),
   in recursive integer) returns any
@@ -1071,16 +1151,17 @@ create procedure "DynaRes_CF_FEED_FROM_AND_WHERE" (
     cmp_col := "DynaRes_CF_PROPNAME_TO_COLNAME" (filter_data [filter_idx]);
     cmp_val := filter_data [filter_idx + 2];
     if (cmp_col is null)
+    {
+      if ('' <> cmp_val)
       {
-        if ('' <> cmp_val)
-          {
-            where_clause := '1 = 2';
-            goto where_clause_complete;
-          }
-        goto where_oper_complete;
+        where_clause := '1 = 2';
+        goto where_clause_complete;
       }
+      goto where_oper_complete;
+    }
     if (where_clause <> '')
       where_clause := where_clause || ' and ';
+
     mode := filter_data [filter_idx + 3];
     if (mode = 0)
       where_clause := where_clause || sprintf ('(%s = %s)', cmp_col, WS.WS.STR_SQL_APOS (cmp_val));
@@ -1088,8 +1169,8 @@ create procedure "DynaRes_CF_FEED_FROM_AND_WHERE" (
       where_clause := where_clause || sprintf ('(%s is null)', cmp_col);
     else -- truncation
       where_clause := where_clause || sprintf ('(%s between %s and %s)', cmp_col, WS.WS.STR_SQL_APOS (cmp_val), WS.WS.STR_SQL_APOS (cmp_val || '\377\377\377\377'));
-where_oper_complete:
-      ;
+
+where_oper_complete:;
   }
 
 where_clause_complete:
@@ -1132,15 +1213,17 @@ create procedure "DynaRes_CF_LIST_PROP_DISTVALS" (
     execmessage := 'OK';
     exec (qry_text, execstate, execmessage, vector (), 100000000, execmeta, execrows );
     if (isarray (execrows))
+    {
       foreach (any execrow in execrows) do
       {
         dict_put (distval_dict, "CatFilter_ENCODE_CATVALUE" (execrow[0]), 1);
       }
+    }
   }
 }
 ;
 
-create function "DynaRes_CF_GET_RDF_HITS" (
+create procedure "DynaRes_CF_GET_RDF_HITS" (
   in detcol_id integer,
   in cfc_id integer,
   in rfc_spath varchar,
@@ -1178,7 +1261,7 @@ create function "DynaRes_CF_GET_RDF_HITS" (
       declare full_id, diritm any;
 
       r_id := acc[acc_ctr][0];
-      full_id := vector (DynaRes__detName (), detcol_id, r_id, owner_uid, null, null);
+      full_id := vector (DB.DBA.DynaRes__detName (), detcol_id, r_id, owner_uid, null, null);
       if (make_diritems = 1)
       {
         diritm := "DynaRes_DAV_DIR_SINGLE" (full_id, 'R', '(fake path)', auth_uid);
@@ -1211,7 +1294,7 @@ create function "DynaRes_CF_GET_RDF_HITS" (
 }
 ;
 
-create function "DynaRes_INSERT_RESOURCE" (
+create procedure "DynaRes_INSERT_RESOURCE" (
   in detcol_id integer,
   inout content any,
   in fname varchar := null,
@@ -1223,22 +1306,41 @@ create function "DynaRes_INSERT_RESOURCE" (
   in mime varchar := null,
   in exec_stmt varchar := null,
   in exec_params any := null,
-  in exec_uname varchar := 'nobody')
+  in exec_uname varchar := 'nobody',
+  in overwrite integer := 0)
 {
+  declare pid, puid, pgid, pperms any;
+  declare action varchar;
+
   if (refresh_seconds is not null and exec_stmt is null)
     signal ('DR001', 'Can not refresh a resource without some statement specified to execute');
+
   if ((exec_uname <> USER) and (USER <> 'dba'))
     signal ('DR002', 'Only dba can set UID of other user for refreshing statement of a dynamic resource');
+
   if (refresh_seconds is not null and refresh_seconds < 5)
     signal ('DR003', 'The refresh interfal should be not less than 5 seconds');
+
   if (ttl_seconds is not null and ttl_seconds < 180)
     signal ('DR004', 'The time to live interfal should be not less than 180 seconds');
+
   if (exec_stmt is null and content is null)
     signal ('DR005', 'No content and no statement to execute, so nothing to create');
-  if (not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = detcol_id and COL_DET='DynaRes'))
+
+  if (not exists (select top 1 1 from WS.WS.SYS_DAV_COL where COL_ID = detcol_id and COL_DET = 'DynaRes'))
     signal ('DR006', 'The DET collection ID is not valid');
-  if (fname is not null and exists (select top 1 1 from WS.WS.DYNA_RES where DR_NAME = fname and DR_DETCOL_ID = detcol_id))
-    signal ('DR007', sprintf ('The dynamic resource "%.500s" already exists', fname));
+
+  action := 'insert';
+  if (fname is not null)
+  {
+    pid := (select top 1 DR_RES_ID from WS.WS.DYNA_RES where DR_NAME = fname and DR_DETCOL_ID = detcol_id);
+    if (not isnull (pid) and not overwrite)
+      signal ('DR007', sprintf ('The dynamic resource "%.500s" already exists', fname));
+
+    if (not isnull (pid))
+      action := 'update';
+  }
+
   if (content is null)
   {
     declare stat, msg varchar;
@@ -1252,6 +1354,15 @@ create function "DynaRes_INSERT_RESOURCE" (
     content := rset[0][0];
     if (content is null)
       signal ('DR007', 'No content and the statement returns NULL, so nothing to create');
+  }
+  if (action = 'insert')
+  {
+    select COL_OWNER, COL_GROUP, COL_PERMS into puid, pgid, pperms from WS.WS.SYS_DAV_COL where COL_ID = detcol_id;
+    pid := sequence_next ('WS.WS.DYNA_RES_ID');
+  }
+  else
+  {
+    select DR_OWNER_UID, DR_OWNER_GID, DR_PERMS into puid, pgid, pperms from WS.WS.DYNA_RES where DR_RES_ID = pid;
   }
   insert replacing WS.WS.DYNA_RES (
     DR_RES_ID,
@@ -1270,24 +1381,26 @@ create function "DynaRes_INSERT_RESOURCE" (
     DR_EXEC_PARAMS,
     DR_EXEC_UNAME,
     DR_LAST_LENGTH,
-    DR_CONTENT)
+    DR_CONTENT
+  )
   values (
-    sequence_next ('WS.WS.DYNA_RES_ID'),
+    pid,
     detcol_id,
-    coalesce (fname, sprintf ('%.100s - untitled resource - made by %.100s', cast (now() as varchar), USER)),
-    coalesce (perms, '110000000N'),
-    coalesce (owner_uid, http_dav_uid()),
-    coalesce (owner_gid, http_nogroup_gid()),
-    now(),
-    now(),
-    case when (refresh_seconds is null) then null else dateadd ('second', refresh_seconds, now()) end,
-    case when (ttl_seconds is null) then null else dateadd ('second', ttl_seconds, now()) end,
+    coalesce (fname, sprintf ('%.100s - untitled resource - made by %.100s', cast (now () as varchar), USER)),
+    coalesce (perms, pperms),
+    coalesce (owner_uid, puid),
+    coalesce (owner_gid, pgid),
+    now (),
+    now (),
+    case when (refresh_seconds is null) then null else dateadd ('second', refresh_seconds, now ()) end,
+    case when (ttl_seconds is null) then null else dateadd ('second', ttl_seconds, now ()) end,
     refresh_seconds,
     coalesce (mime, 'text/plain'),
     exec_stmt,
     serialize (exec_params),
     exec_uname,
     length (content),
-    content );
+    content
+  );
 }
 ;

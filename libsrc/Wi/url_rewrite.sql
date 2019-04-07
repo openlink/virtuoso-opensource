@@ -1,10 +1,8 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -18,7 +16,6 @@
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
 --
 
 create table DB.DBA.URL_REWRITE_RULE_LIST (
@@ -44,23 +41,6 @@ create table DB.DBA.URL_REWRITE_RULE (
   primary key (URR_RULE) )
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_ACCEPT_PATTERN varchar
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_NO_CONTINUATION int
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_REDIRECT int
-;
-
---!AFTER
-alter table DB.DBA.URL_REWRITE_RULE add URR_HTTP_HEADERS varchar
-;
---#ENDIF
 
 create table DB.DBA.HTTP_VARIANT_MAP (
     VM_ID		integer identity,
@@ -78,11 +58,6 @@ create table DB.DBA.HTTP_VARIANT_MAP (
 create unique index HTTP_VARIANT_MAP_ID on DB.DBA.HTTP_VARIANT_MAP (VM_ID)
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.HTTP_VARIANT_MAP add VM_CONTENT_LOCATION_HOOK  varchar
-;
---#ENDIF
 
 create procedure DB.DBA.URLREWRITE_CREATE_RULE (
   in rule_type int,
@@ -423,11 +398,19 @@ end_scan:
   if (isstring (host))
     {
       long_path := replace (long_path, '^{URIQADefaultHost}^', host);
+      long_path := replace (long_path, '^{uURIQADefaultHost}^', sprintf ('%U', host));
       if (strstr (long_path, '^{DynamicLocalFormat}^') is not null)
         {
-	  long_path := replace (long_path, '^{DynamicLocalFormat}^', 
+	  long_path := replace (long_path, '^{DynamicLocalFormat}^',
 	  	sprintf ('%s://%{WSHost}s', case when is_https_ctx () then 'https' else 'http' end));
         }
+    }
+  if (http_host () <> 0)
+    {
+      long_path := replace (long_path, '^{Host}^', http_host ());
+      long_path := replace (long_path, '^{uHost}^', sprintf ('%U', http_host ()));
+      long_path := replace (long_path, '^{FullHost}^', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ()));
+      long_path := replace (long_path, '^{uFullHost}^', sprintf ('%U', sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host ())));
     }
   return long_path;
 }
@@ -1072,20 +1055,20 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
   algo := http_request_header_full (lines, 'Negotiate', '*');
   do_cn := 1;
   vlist := trans := guess := 0;
-  if (algo = 'trans');
+  if (algo = 'trans')
     {
       trans := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
-  if (algo = 'vlist');
+  if (algo = 'vlist')
     {
       trans := vlist := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
-  if (algo = 'guess-small');
+  if (algo = 'guess-small')
     {
       trans := vlist := 1;
-      do_cn := 0;
+      do_cn := 1;
     }
   if (atof (algo) >= 1)
     do_cn := 1;
@@ -1102,10 +1085,10 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
     {
        declare alang, aenc, variant, path_str varchar;
 
-       if (VM_URI not like '/%' and path like '%/') -- directory and non-absolute variant pattern
+       if (ltrim (VM_URI, '^') not like '/%' and path like '%/') -- directory and non-absolute variant pattern
 	 goto next_variant;
 
-       if (VM_URI like '/%')
+       if (ltrim (VM_URI, '^') like '/%')
 	 path_str := path;
        else
          path_str := rel_uri;
@@ -1121,7 +1104,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
        qs2 := DB.DBA.URLREWRITE_CALC_QS (lang, VM_LANG);
        qs3 := DB.DBA.URLREWRITE_CALC_QS (cset, VM_ENC);
 --       dbg_obj_print (VM_VARIANT_URI, ' ', qs1, ' ', qs2, ' ', qs3);
-       curr := VM_QS * qs1 * qs2 * qs3;
+       curr := qs1 * qs2 * qs3;
        if (registry_get ('__debug_url_rewrite') in ('1', '2'))
 	 dbg_printf ('tcn trying: %s qs1=%f qs2=%f qs3=%f qs=%f', VM_VARIANT_URI, qs1, qs2, qs3, curr);
        if (curr > best_q)
@@ -1142,7 +1125,7 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
 	   best_id := VM_ID;
 	   hook := VM_CONTENT_LOCATION_HOOK;
 	 }
-       if (not do_cn)
+       if (vlist)
          {
 	   alang := '';
 	   aenc := '';
@@ -1177,6 +1160,8 @@ create procedure DB.DBA.URLREWRITE_APPLY_TCN (in rulelist_uri varchar, inout pat
       if (hook is not null and __proc_exists (hook) is not null)
 	cl := call (hook) (best_id, best_variant);
       http_headers := sprintf ('TCN: choice\r\nVary: negotiate,accept\r\nContent-Location: %s\r\n%s', cl, ct);
+      if (list <> '')
+	http_headers := http_headers || sprintf ('Alternates: %s\r\n', rtrim (list, ', '));
       -- since best_variant is a relative path, we ignore semicolon, otherwise it will not expand thinking it's absolute
       path := WS.WS.EXPAND_URL (path, replace (best_variant, ':', '\x1'));
       path := replace (path, '\x1', ':');
@@ -1365,12 +1350,11 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
   http (sprintf ('DB.DBA.URLREWRITE_CREATE_RULELIST ( \n\'%s\', 1, \n  vector (', rulelist_iri), ses);
   rules := (select DB.DBA.VECTOR_AGG (URRL_MEMBER) from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX);
   http (SYS_SQL_VECTOR_PRINT (rules), ses);
-  http ('));\n\n', ses);
+  http (')\n);\n\n', ses);
 
   for select URRL_MEMBER from DB.DBA.URL_REWRITE_RULE_LIST where URRL_LIST = rulelist_iri order by URRL_INX do
     {
-      for select
-	URR_RULE_TYPE,
+    for (select URR_RULE_TYPE,
 	URR_NICE_FORMAT,
 	URR_NICE_PARAMS,
 	URR_NICE_MIN_PARAMS,
@@ -1380,10 +1364,9 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	URR_ACCEPT_PATTERN,
 	URR_NO_CONTINUATION,
 	URR_HTTP_REDIRECT,
-	URR_HTTP_HEADERS from
-	    DB.DBA.URL_REWRITE_RULE
-	    where URR_RULE = URRL_MEMBER
-	do
+                URR_HTTP_HEADERS
+           from DB.DBA.URL_REWRITE_RULE
+          where URR_RULE = URRL_MEMBER) do
 	  {
 	    if (URR_RULE_TYPE = 1)
 	      {
@@ -1393,11 +1376,10 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	      {
 		http (sprintf ('DB.DBA.URLREWRITE_CREATE_SPRINTF_RULE ( \n\'%s\', 1, \n  ', URRL_MEMBER), ses);
 	      }
-
-	      http (sprintf ('\'%S\', \n', URR_NICE_FORMAT), ses);
+      http (sprintf ('  %s,\n', SYS_SQL_VAL_PRINT (URR_NICE_FORMAT)), ses);
 	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_NICE_PARAMS))), ses);
 	      http (sprintf ('%d, \n', URR_NICE_MIN_PARAMS), ses);
-	      http (sprintf ('\'%S\', \n', URR_TARGET_FORMAT), ses);
+      http (sprintf ('  %s,\n', SYS_SQL_VAL_PRINT (URR_TARGET_FORMAT)), ses);
 	      http (sprintf ('vector (%s), \n', SYS_SQL_VECTOR_PRINT (deserialize (URR_TARGET_PARAMS))), ses);
 	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_TARGET_EXPR)), ses);
 	      http (sprintf ('%s, \n', SYS_SQL_VAL_PRINT (URR_ACCEPT_PATTERN)), ses);
@@ -1409,8 +1391,9 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 	  }
     }
 
-  for select VM_RULELIST, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
-    from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = rulelist_iri do
+  for (select VM_RULELIST, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION, VM_ALGO
+         from DB.DBA.HTTP_VARIANT_MAP
+        where VM_RULELIST = rulelist_iri) do
    {
       http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\n%s,\n', SYS_SQL_VAL_PRINT (VM_RULELIST)), ses);
       http (sprintf ('%s,\n', SYS_SQL_VAL_PRINT (VM_URI)), ses);
@@ -1428,16 +1411,10 @@ create procedure DB.DBA.URLREWRITE_DUMP_RULELIST_SQL (in rulelist_iri varchar)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
-virt_proxy_init ()
+DB.DBA.virt_proxy_init ()
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
-grant execute on ext_http_proxy to PROXY
+grant execute on DB.DBA.ext_http_proxy to PROXY
 ;
 
 -- /* Example for 'denote' and 'entity' IRI patterns */
@@ -1446,8 +1423,7 @@ grant execute on ext_http_proxy to PROXY
 
 
 -- supported mime types
-create procedure
-url_rewrite_mime_types ()
+create procedure DB.DBA.url_rewrite_mime_types ()
 {
   return vector (
       vector ('html',  	'text/html', 		1.0),
@@ -1467,11 +1443,10 @@ url_rewrite_mime_types ()
 }
 ;
 
-create procedure
-url_rewrite_mime_pattern ()
+create procedure DB.DBA.url_rewrite_mime_pattern ()
 {
   declare x, res any;
-  x := url_rewrite_mime_types ();
+  x := DB.DBA.url_rewrite_mime_types ();
   res := '';
   foreach (varchar p in x) do
     {
@@ -1481,8 +1456,9 @@ url_rewrite_mime_pattern ()
 }
 ;
 
-create procedure
-url_rewrite_gen_describe (in graph varchar, in iri_spf varchar)
+create procedure DB.DBA.url_rewrite_gen_describe (
+  in graph varchar,
+  in iri_spf varchar)
 {
   declare ret, qr any;
   qr := sprintf ('DESCRIBE <%s>', iri_spf);
@@ -1493,17 +1469,22 @@ url_rewrite_gen_describe (in graph varchar, in iri_spf varchar)
 }
 ;
 
-create procedure
-url_rewrite_gen_vsp (in graph varchar, in iri_spf varchar)
+create procedure DB.DBA.url_rewrite_gen_vsp (
+  in graph varchar,
+  in iri_spf varchar)
 {
-  declare ret, qr any;
+  declare ret any;
   ret := sprintf ('/describe/?url=%s', iri_spf);
   return ret;
 }
 ;
 
-create procedure
-url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern varchar, in url_pattern varchar, in flags int := 0)
+create procedure DB.DBA.url_rewrite_from_template (
+  in prefix varchar,
+  in graph varchar,
+  in iri_pattern varchar,
+  in url_pattern varchar,
+  in flags int := 0)
 {
   declare arr, h, iri_path, iri_regex, iri_spf, iri_tcn, url_spf, url_regex, url_tcn, iri_param, url_param, iri_vd, url_vd any;
   declare pos, nth, fct int;
@@ -1601,19 +1582,19 @@ url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern v
 		sys_sql_val_print (iri_param),
 		rtrim (replace (replace (url_spf, '{Extension}', ''), '//', '/'), '.'),
 		sys_sql_val_print (url_param),
-		url_rewrite_mime_pattern ()
+		DB.DBA.url_rewrite_mime_pattern ()
 		), ses);
 
   http ('\n', ses);
   http (sprintf ('delete from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = \'%s_iri_rule_list\';\n', prefix), ses);
   if (flags and exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
     fct := 1;
-  mime_types := url_rewrite_mime_types ();
+  mime_types := DB.DBA.url_rewrite_mime_types ();
   foreach (any x in mime_types) do
     {
       declare redir varchar;
       if (fct and x[0] = 'html')
-	redir := url_rewrite_gen_vsp (graph, iri_tcn);
+	redir := DB.DBA.url_rewrite_gen_vsp (graph, iri_tcn);
       else
 	redir := replace (url_tcn, '{Extension}', x[0]);
       http (sprintf ('DB.DBA.HTTP_VARIANT_ADD (\'%s_iri_rule_list\', \'%s\', \'%s\', \'%s\', %.2f);\n',
@@ -1640,7 +1621,7 @@ url_rewrite_from_template (in prefix varchar, in graph varchar, in iri_pattern v
   foreach (any x in mime_types) do
     {
       declare redir any;
-      redir := url_rewrite_gen_describe (graph, iri_spf) || replace (sprintf ('&format=%U', x[1]), '%', '%%');
+      redir := DB.DBA.url_rewrite_gen_describe (graph, iri_spf) || replace (sprintf ('&format=%U', x[1]), '%', '%%');
       http (sprintf ('DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( \'%s_url_rule_%d\', 1, \'%s\', %s, 1, \'%s\', %s, null, null, 2, null, \'Content-Type: %s\'); \n',
 		prefix, nth,
 		replace (url_regex, '{Extension}', x[0]),

@@ -1,3 +1,23 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
 -- check and stats statements for rdf
@@ -12,7 +32,7 @@ select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not ex
 select count (*) from rdf_quad a table option (index rdf_quad_pogs) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs) where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s);
 
 
--- 
+--
 select count (s), count (p), count (o), count (g) from rdf_quad table option (index rdf_quad);
 
 
@@ -216,7 +236,7 @@ create procedure dups ()
     {
       fetch cr into g1, s1, p1, o1;
       if (pg <> g1 or p1 <> pp or o1 <> po)
-	{ 
+	{
 	di := dict_new ();
 	pg := g1; ps := s1; pp := p1; po := o1;
 	}
@@ -299,9 +319,9 @@ create procedure  ckpogs ()
   o1 := null;
   g1 := null;
   s1 := null;
-  for select p, o, g, s from rdf_quad table option (index rdf_quad_pogs) do 
+  for select p, o, g, s from rdf_quad table option (index rdf_quad_pogs) do
     {
-      
+
       if (p < p1) goto oow;
       if (p = p1 and o < o1) goto oow;
       if (p = p1 and o = o1 and g < g1) goto oow;
@@ -325,9 +345,9 @@ create procedure  ckop ()
   g1 := null;
   s1 := null;
   cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD_OP', 31);
-  for select o, p from rdf_quad table option (index rdf_quad_op, index_only, no cluster) do 
+  for select o, p from rdf_quad table option (index rdf_quad_op, index_only, no cluster) do
     {
-      
+
       if (o < o1) goto oow;
       if (o = o1 and p < p1) goto oow;
     p1 := p; o1 := o;
@@ -342,7 +362,7 @@ create procedure  ckop ()
 
 
 
-create procedure slice_ck_slice (in slid int)
+create procedure SLICE_CK_SLICE (in slid int)
 {
 	declare cnt int;
 	cl_detach_thread ();
@@ -352,32 +372,22 @@ create procedure slice_ck_slice (in slid int)
 	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
 	cnt := (select count (*) from rdf_quad a table option (index rdf_quad, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad, no cluster)  where a.g = b.g and a.p = b.p and a.o = b.o and a.s = b.s));
 	if (0 <> cnt)
-	log_message (sprintf ('psog Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster)  where a.p = b.p and a.o = b.o));
-	if (0 <> cnt)
-	log_message (sprintf ('op Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_sp, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp, index_only, no cluster)  where  a.p = b.p and a.s = b.s));
-	if (0 <> cnt)
-	log_message (sprintf ('sp Slice %d out of whack by %d', slid, cnt));
-	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster)  where  a.s = b.s and a.g = b.g));
-	if (0 <> cnt)
-	log_message (sprintf ('gs Slice %d out of whack by %d', slid, cnt));
-}
-
-create procedure slice_ck_slice_op (in slid int)
-{
-	declare cnt int;
-	cl_detach_thread ();
-	cl_set_slice ('DB.DBA.RDF_QUAD',  'RDF_QUAD', slid);
+	log_message (sprintf ('pk Slice %d out of whack by %d', slid, cnt));
 	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_op, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_op, index_only, no cluster)  where  a.p = b.p and a.o = b.o ));
 	if (0 <> cnt)
-	log_message (sprintf ('Slice %d out of whack by %d', slid, cnt));
+	log_message (sprintf ('op Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_sp, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_sp, index_only, no cluster)  where  a.p = b.p  and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('sp Slice %d out of whack by %d', slid, cnt));
+	cnt := (select count (*) from rdf_quad a table option (index rdf_quad_gs, index_only, no cluster) where not exists (select 1 from rdf_quad b table option (loop, index rdf_quad_gs, index_only, no cluster)  where a.g = b.g and a.s = b.s));
+	if (0 <> cnt)
+	log_message (sprintf ('pogs Slice %d out of whack by %d', slid, cnt));
 }
 
-create procedure slice_ck (in exits int := 0)
+create procedure slice_ck ()
 {
   cl_detach_thread ();
-  cl_exec ('cl_call_local_slices (''DB.DBA.RDF_QUAD'',  ''RDF_QUAD'', ''slice_ck_slice'',  vector (exits))');
+  cl_exec ('cl_call_local_slices (''DB.DBA.RDF_QUAD'',  ''RDF_QUAD'', ''slice_ck_slice'',  vector ())');
 }
 
 
@@ -397,8 +407,14 @@ sequence_set ('__NEXT__RDF_URL_IID_NAMED', 2147483648 - 500000, 0);
 sequence_set ('__NEXT__RDF_RO_ID', 2147483648 - 500000, 0);
 
 sequence_set ('__NEXT__RDF_URL_IID_NAMED', bit_shift (1, 32) - 300000, 0);
-sequence_set ('__NEXT__RDF_RO_ID', bit_shift (1, 32) - 100000, 0);
+sequence_set ('__NEXT__RDF_RO_ID', bit_shift (1, 32) + 100, 0);
 
 select top 1 iri_id_num (ri_id) - bit_shift (1, 32) from rdf_iri order by ri_id desc;
 
 select top 1 ro_id - bit_shift (1, 32) from rdf_obj order by ro_id desc;
+
+
+--- reset iri ranges:
+
+cl_exec ('rdf_seq_init_srv ()');
+sequence_set ('RDF_URL_IID_NAMED', 4200000000, 0);

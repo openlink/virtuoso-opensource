@@ -1,0 +1,409 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_pub"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable name="group_sel" type="integer" default="1"/>
+  <v:variable name="user_sel" type="integer" default="1"/>
+  <v:variable name="roles_read_flag" type="integer" default="0"/>
+  <v:variable name="roles_grant_list" type="any" default="null"/>
+
+  <table class="listing">
+    <?vsp
+      if ((get_keyword('mode', control.vc_page.vc_event.ve_params) = 'create') or (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit'))
+      {
+    ?>
+    <tr>
+      <td>
+        <table border="0" class="Action">
+          <v:form name="edit_roles_form" type="simple" method="POST" action="accounts_page.vspx?page=2">
+            <input type="hidden" name="role_name" value="<?= get_keyword ('role_name', self.vc_page.vc_event.ve_params, '') ?>"/>
+            <input type="hidden" name="mode" value="<?= get_keyword ('mode', self.vc_page.vc_event.ve_params, '') ?>"/>
+
+            <v:on-post>
+              <![CDATA[
+                declare mode, val, role_name, g_name  varchar;
+                declare comp vspx_field;
+                declare params any;
+
+                params := control.vc_page.vc_event.ve_params;
+                if (get_keyword ('cancel_update', params, '') <> '')
+                {
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+
+                  return;
+                }
+                if (get_keyword('update', params, '') <> '')
+                {
+                  declare inx, len, r_ident integer;
+
+                  if (get_keyword('mode', params, '') = 'create')
+                  {
+                    comp := control.vc_find_control('name');
+                    role_name:= trim (comp.ufl_value);
+                    USER_ROLE_CREATE(role_name);
+                  }
+                  else if (get_keyword('mode', params, '') = 'edit')
+                  {
+                    role_name := get_keyword ('role_name', params);
+                  }
+                  comp := control.vc_find_control ('desc_update');
+                  val := comp.ufl_value;
+                  update sys_users set U_FULL_NAME = val where U_NAME = role_name;
+                  select distinct U_ID into r_ident from SYS_USERS where U_NAME= role_name and U_IS_ROLE =1;
+                  if (exists (select GI_SUPER from SYS_ROLE_GRANTS where GI_GRANT = r_ident and GI_DIRECT = 1))
+                  {
+                    for select GI_SUPER  from SYS_ROLE_GRANTS  where  GI_GRANT = r_ident and GI_DIRECT =1 do
+                    {
+                      select distinct U_NAME into g_name from SYS_USERS where U_ID = GI_SUPER;
+                      if (g_name <> '')
+                      {
+                        declare exit handler for sqlstate '*'
+                        {
+                          dbg_obj_print (__SQL_MESSAGE);
+                        };
+                        USER_REVOKE_ROLE (g_name, role_name);
+                      }
+                    }
+                  }
+
+                  inx := 0;
+                  len := length (self.roles_grant_list);
+                  while (inx < len)
+                  {
+                    USER_GRANT_ROLE (self.roles_grant_list [inx], role_name);
+                    inx := inx + 1;
+                  }
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf ('Location: accounts_page.vspx?page=2&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                }
+                else if (get_keyword ('load_update', params) <> '')
+                {
+                  comp := control.vc_find_control('gp_update');
+                  self.group_sel := comp.ufl_selected;
+                  comp := control.vc_find_control('us_update');
+                  self.user_sel := comp.ufl_selected;
+                }
+                else if (get_keyword ('grant_update', params) <> '')
+                {
+                  declare cnt, i integer;
+
+                  cnt := length (params);
+                  for (i := 0; i < cnt; i := i + 2)
+                  {
+                    if (params[i] = 'roles_users_update')
+                    {
+                      self.roles_grant_list := vector_concat (self.roles_grant_list, vector (params[i + 1]));
+                    }
+                  }
+                }
+                else if (get_keyword('revoke_update', params) <> '')
+                {
+                  declare cnt, i, size, indx , flag_  integer;
+                  declare roles any;
+
+                  roles := vector ();
+                  cnt := length (self.roles_grant_list);
+                  size := length (params);
+                  for (i := 0; i < cnt; i := i + 1)
+                  {
+                    indx := 0;
+                    flag_ := 0;
+                    while (indx < size)
+                    {
+                      if (params[indx] = 'sel_list_update' and self.roles_grant_list[i] = params[indx+1])
+                        flag_:= 1;
+
+                      indx := indx + 2;
+                    }
+                    if (flag_ = 0)
+                      roles := vector_concat (roles, vector (self.roles_grant_list [i]));
+                  }
+                  self.roles_grant_list := vector();
+                  cnt := length (roles);
+                  for (i := 0; i < cnt; i := i + 1)
+                  {
+                    self.roles_grant_list := vector_concat (self.roles_grant_list, vector (roles [i]));
+                  }
+                }
+                declare inx, len integer;
+
+                comp := control.vc_find_control ('sel_list_update');
+                (comp as vspx_select_list).vsl_items := vector();
+                (comp as vspx_select_list).vsl_item_values := vector();
+                inx := 0;
+                len := length (self.roles_grant_list);
+                while (inx < len)
+                {
+                  (comp as vspx_select_list).vsl_items := vector_concat ((comp as vspx_select_list).vsl_items, vector (self.roles_grant_list [inx]));
+                  (comp as vspx_select_list).vsl_item_values := vector_concat ((comp as vspx_select_list).vsl_item_values, vector (self.roles_grant_list [inx]));
+                  inx := inx + 1;
+                }
+                (comp as vspx_select_list).vsl_selected_inx := 0;
+              ]]>
+            </v:on-post>
+            <?vsp
+              if (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'create')
+              {
+            ?>
+            <tr>
+              <th colspan="3">Name</th>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <v:text name="name" xhtml_style="width: 100%;" />
+              </td>
+            </tr>
+            <?vsp
+              }
+              else if (get_keyword('mode', control.vc_page.vc_event.ve_params, '') = 'edit')
+              {
+            ?>
+            <tr>
+              <th colspan="3"><?V get_keyword('role_name', control.vc_page.vc_event.ve_params) ?></th>
+            </tr>
+            <?vsp
+              }
+            ?>
+            <tr>
+              <td colspan="3">Description</td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <v:textarea class="widget_full_width" name="desc_update" xhtml_id="desc_update" xhtml_style="width: 99%; height: 100px;">
+                  <v:before-data-bind>
+                    <![CDATA[
+                      if (get_keyword('update', params, '') = '')
+                      {
+                        if (isnull (get_keyword ('desc_update', control.vc_page.vc_event.ve_params)))
+                        {
+                          control.ufl_value := coalesce ((select U_FULL_NAME from DB.DBA.SYS_USERS where U_NAME = get_keyword ('role_name', control.vc_page.vc_event.ve_params)), '');
+                        }
+                        else
+                        {
+                          control.ufl_value := get_keyword ('desc_update', control.vc_page.vc_event.ve_params);
+                        }
+                        control.vc_data_bound := 1;
+                      }
+                    ]]>
+                  </v:before-data-bind>
+                </v:textarea>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                Show:
+                <label>
+                  <v:check-box name="us_update" value="1" initial-checked="1" /> Users
+                </label>
+                <label>
+                  <v:check-box name="gp_update" value="1" initial-checked="1" /> Roles
+                </label>
+                <v:button name="load_update" action="submit" value="Reload"/>
+              </td>
+            </tr>
+            <tr>
+              <td>
+                <table class="complex_selector">
+                  <tr class="complex_selector_header">
+                    <th>Available users/groups</th>
+                    <th/>
+                    <th>Selected users/groups</th>
+                  </tr>
+                  <tr>
+                    <td> <!-- select box for available-->
+                      <?vsp
+                        http ('<select class="complex_selector" name="roles_users_update" size="10" style="width:216px" multiple="TRUE">');
+                        for (select U_NAME, U_IS_ROLE from DB.DBA.SYS_USERS where U_NAME <> get_keyword ('role_name', self.vc_page.vc_event.ve_params, '')) do
+                        {
+                          if ((self.group_sel = 1 and U_IS_ROLE = 1) or (self.user_sel = 1 and U_IS_ROLE = 0))
+                          {
+                            if (isnull (self.roles_grant_list) or (position (U_NAME, self.roles_grant_list) = 0))
+                            {
+                              http (sprintf ('<option>%s</option>', U_NAME));
+                            }
+                          }
+                        }
+                        http('</select>');
+                      ?>
+                    </td>
+                    <td> <!-- move buttons -->
+                      <v:button class="complex_selector" name="grant_update" action="submit" value=">>"/>
+                      <br/>
+                      <v:button class="complex_selector" name="revoke_update" action="submit" value="<<"/>
+                    </td>
+                    <td> <!-- select box for chosen -->
+                      <v:select-list xhtml_class="complex_selector" name="sel_list_update" xhtml_size="10" xhtml_style="width:216px" xhtml_multiple="TRUE" >
+                        <v:before-data-bind>
+                          <![CDATA[
+                            if ((self.roles_read_flag = 0) and (get_keyword('update', control.vc_page.vc_event.ve_params, '') = ''))
+                            {
+                              declare u_ident integer;
+                              declare g_name varchar;
+
+                              g_name := get_keyword('role_name', control.vc_page.vc_event.ve_params, '');
+                              self.roles_grant_list := vector();
+                              u_ident := (select distinct U_ID from SYS_USERS where U_NAME= g_name and U_IS_ROLE = 1);
+                              for (select GI_SUPER from SYS_ROLE_GRANTS where GI_GRANT = u_ident and GI_DIRECT = 1) do
+                              {
+                                if (exists (select distinct U_NAME from SYS_USERS where U_ID = GI_SUPER ))
+                                {
+                                  select distinct U_NAME  into g_name from SYS_USERS where U_ID = GI_SUPER;
+                                  if (g_name is not null and g_name <> '')
+                                    self.roles_grant_list := vector_concat (self.roles_grant_list, vector(g_name));
+                                }
+                              }
+                              declare inx, len integer;
+
+                              control.vsl_items := vector();
+                              control.vsl_item_values:= vector();
+                              len := length (self.roles_grant_list);
+                              for (inx := 0; inx < len; inx := inx + 1)
+                              {
+                                control.vsl_items := vector_concat (control.vsl_items, vector (self.roles_grant_list[inx]));
+                                control.vsl_item_values := vector_concat (control.vsl_item_values, vector (self.roles_grant_list[inx]));
+                              }
+                              control.vsl_selected_inx := 0;
+                            }
+                            self.roles_read_flag := 1;
+                            control.vc_data_bound := 1;
+                          ]]>
+                        </v:before-data-bind>
+                      </v:select-list>
+                    </td> <!-- end select box for chosen -->
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="3">
+                <v:button action="submit" name="cancel_update" value="Cancel"/>
+                <v:button action="submit" name="update" value="-- case when get_keyword ('mode', self.vc_page.vc_event.ve_params, '') = 'edit' then 'Update' else 'Create' end"/>
+              </td>
+            </tr>
+          </v:form>
+        </table>
+      </td>
+    </tr>
+    <?vsp
+      }
+      else
+      {
+    ?>
+    <tr>
+      <td>
+        <v:variable name="ordr" type="varchar" default="''" />
+        <v:variable name="ordseqr" type="varchar" default="'asc'" />
+
+        <v:method name="set_ordr" arglist="in x any, inout e vspx_event, inout ds vspx_control">
+          <![CDATA[
+            if (self.ordr = x)
+            {
+              self.ordseqr := case when (self.ordseqr = 'asc') then 'desc' else 'asc' end;
+            }
+            else
+            {
+              self.ordr := x;
+              self.ordseqr := 'asc';
+            }
+          ]]>
+        </v:method>
+
+        <v:form name="f_role_list" type="simple" method="POST" action="accounts_page.vspx?page=2">
+          <div class="scroll_area">
+            <table class="listing">
+              <thead>
+                <tr class="listing_header_row">
+                  <th>
+                    <v:button action="simple" name="name_ord5" value="Account Name" style="url">
+                      <v:on-post>
+                        <![CDATA[
+                          self.set_ordr ('1', e, self);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="name_ord6" value="Description" style="url">
+                      <v:on-post>
+                        <![CDATA[
+                          self.set_ordr ('2', e, self);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </th>
+
+                  <th width="1%" nowrap="nowrap" class="new_item">
+                    <v:url name="new_role_u" url="accounts_page.vspx?page=2&mode=create" value="Create New Role" />
+                  </th>
+                </tr>
+              </thead>
+              <?vsp
+                declare r_c integer;
+                declare sql, h, dta any;
+
+                r_c := 0;
+                sql := 'select U_NAME, U_FULL_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1';
+                if (self.ordr <> '')
+                  sql := sql || ' order by ' || self.ordr || ' ' || self.ordseqr;
+
+                exec (sql, null, null, vector (), 0, null, null, h);
+                while (0 = exec_next (h, null, null, dta))
+                {
+                  declare U_NAME, U_FULL_NAME varchar;
+
+                  U_NAME := dta[0];
+                  U_FULL_NAME := dta[1];
+                  http(sprintf ('<tr id="%s">', coalesce (U_NAME, '')));
+                  http('<td class="listing_col"><img src="images/icons/group_16.png" alt="Role" title="Role"/> ');
+                    http(U_NAME);
+                  http('</td>');
+                  http('<td class="listing_col">');
+                    http(coalesce (U_FULL_NAME, ''));
+                  http('</td>');
+                  http('<td class="listing_col_action">');
+                  if (not (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit' and get_keyword('role_name', control.vc_page.vc_event.ve_params) =U_NAME ) or get_keyword('mode', control.vc_page.vc_event.ve_params) is null or get_keyword('role_name', control.vc_page.vc_event.ve_params) is null)
+                    http(sprintf('<a href="accounts_page.vspx?page=2&sid=%s&realm=%s&mode=edit&role_name=%s#%s"><img src="images/icons/edit_16.png" border="0" alt="Edit" title="Edit"/>&nbsp;Edit</a>&nbsp;', self.sid, self.realm, U_NAME, U_NAME));
+
+                  if (not (get_keyword('mode', control.vc_page.vc_event.ve_params) = 'edit' and get_keyword('role_name', control.vc_page.vc_event.ve_params) =U_NAME ) or get_keyword('mode', control.vc_page.vc_event.ve_params) is null or get_keyword('role_name', control.vc_page.vc_event.ve_params) is null)
+                    http(sprintf('<a href="role_remove.vspx?sid=%s&realm=%s&mode=delete&role_name=%s"><img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/>&nbsp;Delete</a>', self.sid, self.realm, U_NAME));
+
+                  http('</td>');
+                  http('</tr>');
+                }
+                exec_close (h);
+              ?>
+            </table>
+          </div>
+        </v:form>
+      </td>
+    </tr>
+    <?vsp
+      }
+    ?>
+  </table>
+</v:page>

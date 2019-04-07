@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -696,7 +696,7 @@ create aggregate DB.DBA.REGR_SXY (in e1 numeric, in e2 numeric) returns numeric 
 ;
 
 --!AWK PUBLIC
-create procedure xte_nodebld_final_root (in acc any) returns any
+create procedure xte_nodebld_final_root (in acc any) returns any array
 {
   return xte_nodebld_xmlagg_final (acc, xte_head (UNAME' root'));
 }
@@ -708,6 +708,10 @@ create aggregate DB.DBA.XMLAGG (in _child any) returns any
 
 create aggregate DB.DBA.VECTOR_AGG (in _child any) returns any
   from vectorbld_init, vectorbld_agg_acc, vectorbld_agg_final
+order
+;
+create aggregate DB.DBA.INT_VECTOR_AGG (in _child any) returns any
+  from int_vectorbld_init, int_vectorbld_acc, int_vectorbld_final
 order
 ;
 
@@ -768,17 +772,18 @@ create procedure DB.DBA.GROUP_CONCAT_INIT (inout _env any)
 --!AWK PUBLIC
 create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in delim varchar)
 {
---  if (185 <> __tag (_env))
---    _env := string_output();
---  else if (delim is not null)
---    http (cast (delim as varchar), _env);
---  http (cast (token as varchar), _env);
+  if (__tag of varchar <> __tag (token))
+    {
+      token := cast (token as varchar);
+      if (token is null)
+        return;
+    }
   if (__tag of varchar <> __tag (_env))
-    _env := cast (token as varchar);
+    _env := token;
   else if (delim is not null)
-    _env := concat (_env, cast (delim as varchar), cast (token as varchar));
+    _env := concat (_env, cast (delim as varchar), token);
   else
-    _env := concat (_env, cast (token as varchar));
+    _env := concat (_env, token);
 }
 ;
 
@@ -1007,4 +1012,36 @@ create function DB.DBA.BIT_OR_AGG_FINAL (inout _env integer) returns integer { r
 
 create aggregate DB.DBA.BIT_OR_AGG (in mask integer) returns any
   from DB.DBA.BIT_OR_AGG_INIT, DB.DBA.BIT_OR_AGG_ACC, DB.DBA.BIT_OR_AGG_FINAL
+;
+
+
+
+
+create procedure DB.DBA.chks_init (inout env any)
+{
+  env := 0;
+}
+;
+
+create procedure DB.DBA.chks_acc (inout env any, in s any array)
+{
+  env := env + box_hash (s);
+}
+;
+
+create procedure DB.DBA.chks_fin (inout env any) returns int
+{
+  return env;
+}
+;
+
+
+create procedure DB.DBA.chks_merge (inout e1 any, inout e2 any)
+{
+  e1 := e1 * e2;
+}
+;
+
+create aggregate DB.DBA.CHECKSUM (in n any) returns varchar
+  from chks_init, chks_acc, chks_fin, chks_merge order
 ;

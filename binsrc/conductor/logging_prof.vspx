@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_pub"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <div id="monitor_tab">
+    <v:form name="profiling_form" type="simple" method="POST" action="logging_page.vspx?page=8" xhtml_showme="1">
+      <table border="0" cellspacing="0" cellpadding="5" class="ctl_ctr">
+        <vm:attrs border="0" class="ctl_ctr" width="70%" cellspacing="0" cellpadding="5" align="center"/>
+        <?vsp
+          if (sys_stat ('prof_on') = 0)
+          {
+            declare profiling_info, _stat, _msg varchar;
+            exec('select file_to_string (''virtprof.out'')', _stat, _msg, NULL, 1, NULL, profiling_info);
+            if (__tag (profiling_info) = 193)
+            {
+              profiling_info := aref (profiling_info, 0);
+              if (__tag(profiling_info) = 193)
+                profiling_info := aref (profiling_info, 0);
+              else
+                profiling_info := NULL;
+            }
+            else
+              profiling_info := NULL;
+          ?>
+          <tr>
+            <td>Profiling is <span class="emphasize">OFF</span></td>
+	    <td align="left">
+              <v:button action="simple" value="Start profiling" name="start1">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      prof_enable(1, 1);
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+	    </td>
+          </tr>
+          <?vsp
+            if (profiling_info is NULL)
+            {
+          ?>
+          <tr>
+            <td colspan="2">
+              <p>No profiling info collected</p>
+            </td>
+          </tr>
+          <?vsp
+            }
+            else
+            {
+          ?>
+              <tr><td colspan="2"><hr/></td></tr>
+	      <tr><th>Profiling information:</th></tr>
+
+              <tr><td colspan="2">
+	      <?vsp http(profiling_info); ?>
+              </td></tr>
+              <tr><td colspan="2"><hr/></td></tr>
+           <?vsp
+            }
+	  }
+        else
+          {
+              declare time_on integer;
+              declare units varchar;
+              time_on := (msec_time () - sys_stat('prof_start_time'))/1000;
+              units := 'secs';
+              if (time_on > 60)
+              {
+                time_on := time_on / 60;
+                units := 'mins';
+                if (time_on > 60)
+                {
+                  time_on := time_on / 60;
+                  units := 'hours';
+                  if (time_on > 24)
+                  {
+                    time_on := time_on / 24;
+                    units := 'days';
+                  }
+                }
+              }
+          ?>
+          <tr>
+            <td>Profiling is ON for <?V time_on ?> <?V units ?></td>
+            <td align="left">
+              <v:button action="simple" value="Stop profiling" name="Stop">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      prof_enable (0, 1);
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+        </table>
+      </v:form>
+    </div>
+</v:page>

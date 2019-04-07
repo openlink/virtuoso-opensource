@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@ create procedure ODS.ODS_API.photo_image_new (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
 
   if (__tag (image) = 185)
@@ -107,7 +107,7 @@ create procedure ODS.ODS_API."photo.album.new" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   if (startDate is null)
@@ -151,7 +151,7 @@ create procedure ODS.ODS_API."photo.album.edit" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   if (new_name is null)
@@ -188,7 +188,7 @@ create procedure ODS.ODS_API."photo.album.delete" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || name || '/';
@@ -220,7 +220,7 @@ create procedure ODS.ODS_API."photo.image.get" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || album || '/' || name;
@@ -299,7 +299,7 @@ create procedure ODS.ODS_API."photo.image.edit" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || album || '/';
@@ -336,7 +336,7 @@ create procedure ODS.ODS_API."photo.image.delete" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || album || '/' || name;
@@ -406,7 +406,7 @@ create procedure ODS.ODS_API."photo.comment.new" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH into path from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   path := path || album || '/' || image;
@@ -481,7 +481,7 @@ create procedure ODS.ODS_API."photo.options.set" (
 
   declare exit handler for not found
   {
-    return ods_serialize_int_res (-1, 'The home folder does not exists');
+    return ods_serialize_int_res (-1, 'The home folder does not exist');
   };
   select p.HOME_PATH, p.GALLERY_ID into path, g_id from PHOTO.WA.SYS_INFO p, DB.DBA.WA_INSTANCE i where i.WAI_NAME = p.WAI_NAME and i.WAI_ID = inst_id;
   sid := get_ses (uname);

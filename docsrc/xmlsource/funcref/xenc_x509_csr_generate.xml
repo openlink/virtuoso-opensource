@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,29 +21,29 @@
  -  
  -  
 -->
-<refentry id="fn_x509_csr_generate">
+<refentry id="fn_xenc_x509_csr_generate">
   <refmeta>
-    <refentrytitle>x509_csr_generate</refentrytitle>
+    <refentrytitle>xenc_x509_csr_generate</refentrytitle>
     <refmiscinfo>hash</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>x509_csr_generate</refname>
+    <refname>xenc_x509_csr_generate</refname>
     <refpurpose>Generate Certificate Signing Request (CSR)</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
-    <funcsynopsis id="fsyn_x509_csr_generate">
-      <funcprototype id="fproto_x509_csr_generate">
-        <funcdef>varchar <function>x509_csr_generate</function></funcdef>
+    <funcsynopsis id="fsyn_xenc_x509_csr_generate">
+      <funcprototype id="fproto_xenc_x509_csr_generate">
+        <funcdef>varchar <function>xenc_x509_csr_generate</function></funcdef>
 	        <paramdef>in <parameter>cli_pk_name</parameter> varchar</paramdef>
           <paramdef>in <parameter>subject</parameter> array</paramdef>
           <paramdef>in <parameter>extensions</parameter> array</paramdef>
      </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
-  <refsect1 id="desc_x509_csr_generate"><title>Description</title>
+  <refsect1 id="desc_xenc_x509_csr_generate"><title>Description</title>
       <para>This function generates Certificate Signing Request (CSR)</para>
   </refsect1>
-  <refsect1 id="params_x509_csr_generate"><title>Parameters</title>
+  <refsect1 id="params_xenc_x509_csr_generate"><title>Parameters</title>
     <refsect2>
     	<title>cli_pk_name</title>
       <para>The user's private key name.</para>
@@ -60,11 +60,11 @@
   	  <para>An array of name/value pairs to add as X.509v3 extensions to certificate.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_x509_csr_generate"><title>Return Types</title>
+  <refsect1 id="ret_xenc_x509_csr_generate"><title>Return Types</title>
       <para>String</para>
   </refsect1>
-  <refsect1 id="errors_x509_csr_generate"><title>Errors</title>
-    <table><title>Errors signalled by <function>x509_csr_generate</function></title>
+  <refsect1 id="errors_xenc_x509_csr_generate"><title>Errors</title>
+    <table><title>Errors signalled by <function>xenc_x509_csr_generate</function></title>
       <tgroup cols="4">
         <thead>
           <row>
@@ -139,8 +139,8 @@
       </tgroup>
     </table>
   </refsect1>
-  <refsect1 id="examples_x509_csr_generate"><title>Examples</title>
-    <example id="ex_x509_csr_generate">
+  <refsect1 id="examples_xenc_x509_csr_generate"><title>Examples</title>
+    <example id="ex_xenc_x509_csr_generate">
 <programlisting><![CDATA[
 SQL> create procedure csr_gen_demo()
 {
@@ -183,9 +183,9 @@ T9OIp5FNOec13jXqVesymd+Kl+Vb9sRBaC1Xb1OSryU=
 ]]></programlisting>
     </example>
   </refsect1>
-  <refsect1 id="seealso_x509_csr_generate"><title>See Also</title>
+  <refsect1 id="seealso_xenc_x509_csr_generate"><title>See Also</title>
     <para><link linkend="fn_get_certificate_info">get_certificate_info()</link></para>
-    <para><link linkend="fn_x509_from_csr">x509_from_csr()</link></para>
+    <para><link linkend="fn_xenc_x509_from_csr">xenc_x509_from_csr()</link></para>
     <para><link linkend="fn_xenc_x509_generate">xenc_x509_generate()</link></para>    
  </refsect1>
 </refentry>

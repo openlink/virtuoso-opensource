@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2013 OpenLink Software
+//  Copyright (C) 1998-2019 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -49,30 +49,42 @@ namespace OpenLink.Data.Virtuoso
 		, IComparable<VirtuosoDateTimeOffset>, IEquatable <VirtuosoDateTimeOffset>
 	{
 		private DateTimeOffset value;
+		private int tz;
+		private Era era;
 
 		private VirtuosoDateTimeOffset (DateTimeOffset dt)
 		{
 			this.value = dt;
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (long ticks, TimeSpan offset)
 		{
 			this.value = new DateTimeOffset(ticks, offset);
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (DateTime dt)
 		{
 			this.value = new DateTimeOffset(dt);
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (DateTime dt, TimeSpan offset)
 		{
 			this.value = new DateTimeOffset(dt, offset);
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, TimeSpan offset)
 		{
 			this.value = new DateTimeOffset(year, month, day, hour, minute, second, offset);
+			this.tz = 0;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, long microsecond, TimeSpan offset)
@@ -84,11 +96,15 @@ namespace OpenLink.Data.Virtuoso
 			
 			long dateTick = (long) (t.Ticks + microsecond * 10L);
 			this.value = new DateTimeOffset (dateTick, offset);
+			this.tz = offset.Minutes;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, int millisecond, Calendar calendar, TimeSpan offset)
 		{
 			this.value = new DateTimeOffset(year, month, day, hour, minute, second, millisecond, calendar, offset);
+			this.tz = offset.Minutes;
+			this.era = Era.AD;
 		}
 
 		public VirtuosoDateTimeOffset (int year, int month, int day, int hour, int minute, int second, long microsecond, Calendar calendar, TimeSpan offset)
@@ -100,6 +116,22 @@ namespace OpenLink.Data.Virtuoso
 			
 			long dateTick = (long) (t.Ticks + microsecond * 10);
 			this.value = new DateTimeOffset (dateTick, offset);
+			this.tz = offset.Minutes;
+			this.era = Era.AD;
+		}
+
+		internal VirtuosoDateTimeOffset(Era era, int year, int month, int day, int hour, int minute, int second, long microsecond, int tz)
+		{
+			if (microsecond < 0 || microsecond > 999999)
+				throw new ArgumentOutOfRangeException("Microsecond parameters describe an " +
+									"unrepresentable VirtuosoDateTime.");
+			DateTime t = new DateTime(year, month, day, hour, minute, second);
+			t = t.Add(new TimeSpan(0, tz, 0));
+
+			long dateTick = (long)(t.Ticks + microsecond * 10);
+			this.value = new DateTimeOffset(dateTick, new TimeSpan(0, tz, 0));
+			this.tz = tz;
+			this.era = era;
 		}
 
 
@@ -258,6 +290,14 @@ namespace OpenLink.Data.Virtuoso
 			}
 		}
 
+		public Era Era
+		{
+			get
+			{
+				return this.era;
+			}
+		}
+
 
 		public VirtuosoDateTimeOffset Add (TimeSpan ts)
 		{
@@ -304,63 +344,90 @@ namespace OpenLink.Data.Virtuoso
 			return new VirtuosoDateTimeOffset(value.AddYears(years));
 		}
 
+//??TODO
 		public int CompareTo (object v)
 		{
+			int rc;
+			Era v_era = Era.AD;
+
 			if ( v == null)
 				return 1;
 
-			if (!(v is System.DateTimeOffset) || !(v is VirtuosoDateTimeOffset))
+			if (!(v is System.DateTimeOffset) && !(v is VirtuosoDateTimeOffset))
 				throw new ArgumentException ("Value is not a System.DateTimeOffset or VirtuosoDateTimeOffset");
 
 			if (v is VirtuosoDateTimeOffset)
-			  return DateTimeOffset.Compare (value, ((VirtuosoDateTimeOffset) v).value);
+			{
+				rc = DateTimeOffset.Compare(value, ((VirtuosoDateTimeOffset)v).value);
+				v_era = ((VirtuosoDateTime)v).Era;
+			}
 			else
-			  return DateTimeOffset.Compare (value, (DateTimeOffset) v);
+				rc = DateTimeOffset.Compare(value, (DateTimeOffset)v);
+
+			if (this.Era == Era.BC && v_era == Era.AD)
+				return -1;
+			else if (this.Era == Era.AD && v_era == Era.BC)
+				return 1;
+			else //this.Era == v_era
+				return rc;
 		}
 
 		public int CompareTo (VirtuosoDateTimeOffset v)
 		{
-			if (!(v is VirtuosoDateTimeOffset))
-				throw new ArgumentException ("Value is not a VirtuosoDateTimeOffset");
-
-			return DateTimeOffset.Compare (value, (DateTimeOffset) v.value);
+			return this.CompareTo((object)v);
 		}
 
-		public int CompareTo (DateTimeOffset val)
+		public int CompareTo (DateTimeOffset v)
 		{
-			return value.CompareTo (val);
+			return this.CompareTo((object)v);
 		}
 
 		public bool Equals (DateTimeOffset val)
 		{
-			return value.Equals(val);
+			return this.Equals((object)val);
 		}
 
 		public bool Equals (VirtuosoDateTimeOffset val)
 		{
-			return value.Equals(val.value);
+			return this.Equals((object)val);
 		}
 
 		public override bool Equals (object o)
 		{
+			Era v_era = Era.AD;
+
 			if (!(o is System.DateTimeOffset) && !(o is VirtuosoDateTimeOffset))
 				return false;
 
-                        if (o is VirtuosoDateTimeOffset)
-			   return ((VirtuosoDateTimeOffset) o).Ticks == Ticks;
+			if (o is VirtuosoDateTimeOffset)
+				v_era = ((VirtuosoDateTimeOffset)o).Era;
+
+			if (this.Era == v_era)
+			{
+				if (o is VirtuosoDateTimeOffset)
+					return ((VirtuosoDateTimeOffset)o).Ticks == Ticks;
+				else
+					return ((DateTimeOffset)o).Ticks == Ticks;
+			}
 			else
-			   return ((DateTimeOffset) o).Ticks == Ticks;
+				return false;
 		}
 
 
 		public bool EqualsExact (DateTimeOffset val)
 		{
-			return value.EqualsExact(val);
+			if (this.Era == Era.BC)
+				return false;
+			else
+			    return value.EqualsExact(val);
 		}
 
 		public bool EqualsExact (VirtuosoDateTimeOffset val)
 		{
-			return value.EqualsExact(val.value);
+			if (this.Era == val.Era)
+				return value.EqualsExact(val.value);
+			else
+				return false;
 		}
 
 		public override int GetHashCode ()
@@ -419,6 +486,48 @@ namespace OpenLink.Data.Virtuoso
 			return new VirtuosoDateTimeOffset(value.ToUniversalTime());
 		}
 
+
+		public string ToXSD_String()
+		{
+			String timeZoneString = null;
+			StringBuilder sb = new StringBuilder();
+
+			if (era == Era.BC)
+				sb.Append(value.ToString("-yyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
+			else
+			    sb.Append(value.ToString("yyyy\\-MM\\-dd\\THH\\:mm\\:ss\\.FFF"));
+
+			if (tz == 0)
+			{
+				timeZoneString = "Z";
+			}
+			else
+			{
+				StringBuilder s = new StringBuilder();
+				s.Append(tz > 0 ? '+' : '-');
+
+				int _tz = Math.Abs(tz);
+				int _tzh = _tz / 60;
+				int _tzm = _tz % 60;
+
+				if (_tzh < 10)
+					s.Append('0');
+
+				s.Append(_tzh);
+				s.Append(':');
+
+				if (_tzm < 10)
+					s.Append('0');
+
+				s.Append(_tzm);
+				timeZoneString = s.ToString();
+			}
+
+			if (timeZoneString != null)
+				sb.Append(timeZoneString);
+
+			return sb.ToString();
+		}
 
 
     }

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -85,12 +85,10 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http_debug_log"><title>Examples</title>
     <example id="ex_http_debug_log_1"><title>Logging DAV HTTP Requests</title>
-      <screen>
-<![CDATA[
+      <screen><![CDATA[
 -- start the log session
 SQL> http_debug_log ('dav.log');
 ... do some operations in WebDAV repository via WebFolders or other client ...
@@ -103,8 +101,7 @@ Produces in the server working directory a file 'dav.log' with lines looking lik
 <<< [127.0.0.1] [02/Oct/2001 13:49:37 +0300] [40896] HTTP/1.1 207 Multi-Status
 ...
 
-]]>
-</screen>
+]]></screen>
     </example>
   </refsect1>
 </refentry>

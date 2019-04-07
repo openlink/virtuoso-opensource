@@ -1,0 +1,160 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="0" name="ename" type="varchar" default="''"/>
+      <v:variable persist="0" name="_item" type="varchar" default="''"/>
+      <v:variable persist="0" name="_item_type" type="integer" default="0"/>
+      <v:variable persist="1" name="error_str198" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Bidirectional Snapshot Replication"/>
+    </vm:menu>
+    <vm:header caption="Create Bidirectional Snapshot"/>
+    <vm:pagebody vdb_check="1">
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+          declare _type varchar;
+          _type := get_keyword('mode', self.vc_page.vc_event.ve_params, 'collection');
+          if (self._item_type <> 1 and self._item_type <> 2)
+            if (_type = 'create2')
+              self._item_type := 1;
+            else
+              self._item_type := 2;
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+      <v:form name="event_form1" type="simple" method="POST" action="">
+        <v:template name="template001" type="simple" enabled="-- equ(self._item_type, 2)">
+          <table class="ctl_grp">
+            <tr>
+              <td class="ctl_lbl_ctr">
+                <label for="t_auth_func1">Table name</label>
+              </td>
+              <td class="ctl_ctr">
+                <v:text name="t_auth_func1" xhtml_size="20" xhtml_id="t_auth_func1"/>
+                <v:browse-button name="br_authook1" value="Browse..." selector="vdir_browser.vspx" child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=600" browser-options="caption=Choose+table+for+replication&amp;dir-separator=.&amp;quote-char=&amp;filter-char=%25&amp;content-proc=db.dba.vdir_browse_proc&amp;content-meta-proc=db.dba.vdir_browse_proc_meta&amp;multi-sel=0&amp;dir-sel=0&amp;&amp;retname=t_auth_func1">
+                  <v:field name="t_auth_func1" />
+                </v:browse-button>
+              </td>
+            </tr>
+            <tr class="form_cmd_row">
+              <td colspan="3">
+                <v:button action="simple" name="cancel1" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.vc_redirect('db_repl_bi.vspx');
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="add1" value="Add">
+                  <v:on-post>
+                    <![CDATA[
+                      declare table_name varchar;
+                      table_name := get_keyword('t_auth_func1', self.vc_event.ve_params, '');
+                      if (table_name is null or table_name = '')
+                      {
+                        self.error_str198 := 'Table name is empty';
+                        return;
+                      }
+                      declare state, msg, m_dta, res varchar;
+                      state := '00000';
+                      exec('REPL_CREATE_SNAPSHOT_PUB(?, ?)', state, msg, vector(table_name, 2), m_dta, res);
+                      if (state <> '00000')
+                      {
+                        self.error_str198 := msg;
+                        return;
+                      }
+                      self.vc_redirect('db_repl_bi.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template name="template002" type="simple" enabled="-- equ(self._item_type, 1)">
+          <table class="ctl_grp">
+            <tr>
+              <td class="ctl_lbl_ctr">
+                <label for="t_auth_func">DAV collection name</label>
+              </td>
+              <td class="ctl_ctr">
+                <v:text name="t_auth_func" xhtml_size="20" xhtml_id="t_auth_func"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="t_auth_func"/>
+              </td>
+            </tr>
+            <tr class="form_cmd_row">
+              <td colspan="3">
+                <v:button action="simple" name="cancel2" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.vc_redirect('db_repl_bi.vspx');
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="add2" value="Add">
+                  <v:on-post>
+                    <![CDATA[
+                      declare table_name varchar;
+                      table_name := get_keyword('t_auth_func', self.vc_event.ve_params, '');
+                      if (table_name is null or table_name = '')
+                      {
+                        self.error_str198 := 'DAV collection name is empty';
+                        return;
+                      }
+                      declare state, msg, m_dta, res varchar;
+                      state := '00000';
+                      exec('REPL_CREATE_SNAPSHOT_PUB(?, ?)', state, msg, vector(table_name, 1), m_dta, res);
+                      if (state <> '00000')
+                      {
+                        self.error_str198 := msg;
+                        return;
+                      }
+                      self.vc_redirect('db_repl_bi.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:form>
+      <?vsp
+        if (self.error_str198 <> '' and self.error_str198 is not null)
+          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+        self.error_str198 := '';
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

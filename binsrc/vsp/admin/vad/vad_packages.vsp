@@ -1,26 +1,26 @@
-<?vsp 
+<?vsp
 --
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
   if (not adm_check_auth(lines))
     {
@@ -44,7 +44,7 @@
   <HEAD>
     <LINK REL="stylesheet" TYPE="text/css" HREF="<?=adm_what_css()?>">
     <title>OpenLink Interactive SQL (Virtuoso), VAD version <?= "VAD"."DBA"."VAD_VERSION" () ?>.: VAD Packages</title>
-    <meta name="AUTHOR" content="OpenLink Software"> 
+    <meta name="AUTHOR" content="OpenLink Software">
     <META NAME="DESCRIPTION" CONTENT="Virtuoso VAD">
   </HEAD>
 <?vsp "PUMP"."DBA"."HTML_HEADER_OUT" (oper_vector, 'VAD Packages',''); ?>
@@ -56,10 +56,10 @@
   declare dirname integer;
   if (equ (act, 'makepkg_result'))
     {
-      declare _err_code, _err_message varchar; 
+      declare _err_code, _err_message varchar;
       _err_code := '';
       _err_message := '';
-      
+
       declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_makepkg; };
       declare tmp integer;
       dirname := "PUMP"."DBA"."__GET_KEYWORD"('new_pkg_name', oper_vector, '');
@@ -82,7 +82,7 @@
 	  dirname := 'New package was successfully created';
 	}
       else
-	{ 
+	{
 error_makepkg:
 	  dirname := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 	}
@@ -90,10 +90,10 @@ error_makepkg:
     }
   else if (equ (act, 'instpkg_result'))
     {
-      declare _err_code, _err_message varchar; 
+      declare _err_code, _err_message varchar;
       _err_code := '';
       _err_message := '';
-      
+
       declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_instpkg; };
       declare pkg_name, pkg_vers varchar;
       dirname := "PUMP"."DBA"."__GET_KEYWORD"('new_pkg_name', oper_vector, '');
@@ -104,7 +104,7 @@ error_makepkg:
 	  dirname := 'New package was successfully installed';
 	}
       else
-	{ 
+	{
 error_instpkg:;
 	  declare exit handler for sqlstate '*' { goto error_instpkg2; };
 	  "VAD"."DBA"."VAD_TEST_PACKAGE_AND_REMOVE" (oper_vector, pkg_name, pkg_vers);
@@ -115,10 +115,10 @@ error_instpkg2:
     }
   else if (equ (act, 'delpkg_result'))
     {
-      declare _err_code, _err_message varchar; 
+      declare _err_code, _err_message varchar;
       _err_code := '';
       _err_message := '';
-      
+
       declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_delpkg; };
       declare dir integer;
       dir := "PUMP"."DBA"."__GET_KEYWORD"('packages_list', oper_vector, '');
@@ -129,7 +129,7 @@ error_instpkg2:
 	  dirname := 'Package was successfully uninstalled';
 	}
       else
-	{ 
+	{
 error_delpkg:
 	  dirname := sprintf ('Error occurred, STATE:%s :%s', _err_code, _err_message);
 	}
@@ -138,7 +138,7 @@ error_delpkg:
 ?>
 
 <br>
-<table class="statdata" border="0" cellpadding="0">           
+<table class="statdata" border="0" cellpadding="0">
 
 <tr>
 
@@ -175,10 +175,10 @@ error_delpkg:
 	    http ('<tr><td CLASS="statlisthead">');
 	    "PUMP"."DBA"."__CHECK_HELP" ('new_pkg_name', 'Package Path');
 	    http ('</td><td width=70%>');
-	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');	
+	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');
 	    http ('</td></tr><tr><td align="center" colspan=2>');
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Install', 'this.form.reg_action.value=\'instpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Install', 'this.form.reg_action.value=\'instpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"');
 	    http ('</td></table>');
 	  }
 	else if (equ (act, 'infopkg'))
@@ -192,10 +192,10 @@ error_delpkg:
 	    http ('<tr><td CLASS="statlisthead">');
 	    "PUMP"."DBA"."__CHECK_HELP" ('new_pkg_name', 'Package Path');
 	    http ('</td><td width=70%>');
-	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');	
+	    "PUMP"."DBA"."HTML_EDIT_OUT" (oper_vector, 'new_pkg_name', NULL, '', NULL, ' size=40 style="{width: 100%}"');
 	    http ('</td></tr><tr><td align="center" colspan=2>');
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create', 'this.form.reg_action.value=\'makepkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Create', 'this.form.reg_action.value=\'makepkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"');
 	    http ('</td></table>');
 	  }
 	else if (equ (act, 'cfgpkg'))
@@ -204,7 +204,7 @@ error_delpkg:
 	  }
 	else if (equ (act, 'delpkg'))
 	  {
-	    declare _err_code, _err_message varchar; 
+	    declare _err_code, _err_message varchar;
 	    _err_code := '';
 	    _err_message := '';
 	    declare exit handler for sqlstate '*' { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error_rmval2; };
@@ -218,8 +218,8 @@ error_delpkg:
 	    http ('<tr><td CLASS="statlist">');
 	    http (s);
 	    http ('</td></tr><tr><td align="center">');
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Uninstall', 'this.form.reg_action.value=\'delpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"'); 
-	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"'); 
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Uninstall', 'this.form.reg_action.value=\'delpkg_result\';this.form.submit();', NULL, ' style=\"width: 1in\"');
+	    "PUMP"."DBA"."HTML_BUTTON_OUT" (oper_vector, '', 'Cancel', 'this.form.submit();', NULL, ' style=\"width: 1in\"');
 	    http ('</td></table>');
 error_rmval2:
 	    if (_err_code is not null and length (_err_code))

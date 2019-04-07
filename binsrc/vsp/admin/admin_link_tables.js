@@ -1,24 +1,24 @@
 /*
- *  
+ *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
- *  
- *  Copyright (C) 1998-2013 OpenLink Software
- *  
+ *
+ *  Copyright (C) 1998-2019 OpenLink Software
+ *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
  *  Free Software Foundation; only version 2 of the License, dated June 1991.
- *  
+ *
  *  This program is distributed in the hope that it will be useful, but
  *  WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU General Public License along
  *  with this program; if not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- *  
- *  
+ *
+ *
 */
 function rtbls_chg()
 {
@@ -29,8 +29,8 @@ function rtbls_chg()
 function dsns_chg(sel)
 {
 
-  //  Document.DSN.value = 
-  // TODO: turn multiple into a single selection in unix-netscape, 
+  //  Document.DSN.value =
+  // TODO: turn multiple into a single selection in unix-netscape,
   // set DSN input value according to selection
 
   var i, _new, old;
@@ -72,7 +72,7 @@ function tbls_chg(sel)
   len = sel.options[i].text.length;
   document.link_form.dbtbl.value = sel.options[i].text.substring(j+1, len, len-j-1);
   return (0);
-  
+
 }
 
 function def_keys_add(sel)
@@ -80,7 +80,7 @@ function def_keys_add(sel)
   var i;
 
   i = sel.selectedIndex;
-  document.creat_key.colname_add.value = sel.options[i].text; 
+  document.creat_key.colname_add.value = sel.options[i].text;
   document.creat_key.submit();
 }
 
@@ -89,6 +89,6 @@ function def_keys_rmv(sel)
   var i;
 
   i = sel.selectedIndex;
-  document.creat_key.colname_rmv.value = sel.options[i].text; 
+  document.creat_key.colname_rmv.value = sel.options[i].text;
   document.creat_key.submit();
 }

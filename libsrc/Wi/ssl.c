@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,18 +208,15 @@ stssl_qnode (comp_context_t * cc, table_source_t * node)
   else if (IS_RTS (node))
     {
       remote_table_source_t * rts = (remote_table_source_t *) node;
-      stssl_list (rts->rts_out_slots);
+      stssl_arr (rts->rts_out_slots);
       stssl_list (rts->rts_params);
       STSSL (rts->rts_remote_stmt);
       stssl_arr (rts->rts_trigger_args);
       STSSL (rts->rts_af_state);
-      stssl_arr (rts->rts_save_env);
       STSSL (rts->rts_param_rows);
-      STSSL (rts->rts_environments);
       STSSL (rts->rts_param_fill);
       STSSL (rts->rts_i_param);
       STSSL (rts->rts_single_pending);
-      STSSL (rts->rts_single_env);
       stssl_cv (cc, rts->rts_after_join_test);
     }
   else if (IS_NODE (union_node_input, node))

@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -102,11 +102,6 @@ create table UDDI..DESCRIPTION (
 create index DESC_PARENT on DESCRIPTION (UD_TYPE, UD_PARENT_ID)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..DESCRIPTION add UD_DESCRIPTION_KEY varchar
-;
---#ENDIF
 
 --=====================================================================================
 -- Discovery URL table: contains structure - holds a URL addressable discovery documents
@@ -121,11 +116,6 @@ create table UDDI..DISCOVERY_URL (
 create index DISCOVERY_URLS_PARENT on DISCOVERY_URL (DU_PARENT_TYPE, DU_PARENT_ID)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..DISCOVERY_URL add DU_DISCOVERY_KEY varchar
-;
---#ENDIF
 
 
 --===================
@@ -142,11 +132,6 @@ create table UDDI..ADDRESS_LINE (
 create index ADDR_LINE_PARENT on ADDRESS_LINE (AL_PARENT_TYPE, AL_PARENT_ID)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..ADDRESS_LINE add AL_ADDRESS_KEY varchar
-;
---#ENDIF
 
 
 ---================
@@ -176,11 +161,6 @@ create table UDDI..EMAIL (
 create index IN_EMPARENT on EMAIL (EM_CONTACT_KEY)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..EMAIL add EM_EMAIL_KEY varchar
-;
---#ENDIF
 
 --============
 -- phone table
@@ -194,11 +174,6 @@ create table UDDI..PHONE (
 create index IN_PHPARENT on PHONE (PH_CONTACT_KEY)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..PHONE add PH_PHONE_KEY varchar
-;
---#ENDIF
 
 ---=====================
 --- Identifier Bag Table
@@ -214,11 +189,6 @@ create table UDDI..IDENTIFIER_BAG (
 create index IB_PARENT on IDENTIFIER_BAG (IB_PARENT_ID,IB_PARENT_TYPE)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..IDENTIFIER_BAG add IB_IDENTIFIER_KEY varchar
-;
---#ENDIF
 
 ---===================
 --- Category Bag Table
@@ -234,11 +204,6 @@ create table UDDI..CATEGORY_BAG (
 create index CB_PARENT on CATEGORY_BAG (CB_PARENT_ID, CB_PARENT_TYPE)
 ;
 
---#IF VER=5
---!AFTER
-alter table UDDI..CATEGORY_BAG add CB_CATEGORY_KEY varchar
-;
---#ENDIF
 
 
 ---===================

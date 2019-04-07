@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,8 +74,8 @@ extern int dtd_release (dtd_t *dtd);
 #define LENMEM_T_DEFINED
 typedef struct struct lenmem_s
 {
-  size_t lm_length;
-  char *lm_memblock;
+  size_t		lm_length;
+  char *		lm_memblock;
 } lenmem_t;
 #endif
 
@@ -223,7 +223,7 @@ typedef void (*VXmlProcessingInstructionHandler)
 
   typedef char *(*VXmlUriResolver) (void *uri_appdata, char **err_ret, ccaddr_t base_uri, ccaddr_t rel_uri, const char *output_charset);
   typedef char *(*VXmlUriReader) (void *uri_appdata, char **err_ret, char **options, ccaddr_t base_uri, ccaddr_t rel_uri, int cast_blob_to_varchar);
-  typedef void (*VXmlErrorReporter) (const char *state, const char *format, ...);
+  typedef void (*VXmlErrorReporter) (DBG_PARAMS  const char *state, const char *format, ...);
 
   typedef void *(*VXmlAttrParser) (void *userData, const char *elname, const char *attrname, const char *attrvalue);
   

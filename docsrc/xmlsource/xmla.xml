@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -324,7 +324,7 @@ sources and response from server.</para>
           <row xmlns="urn:schemas-microsoft-com:xml-analysis:rowset">
             <DataSourceName>Local Server</DataSourceName>
             <DataSourceDescription>Virtuoso Server</DataSourceDescription>
-            <URL>http://localhost:8890/XMLA</URL>
+            <URL>http://example.com/XMLA</URL>
             <DataSourceInfo>DSN=__local</DataSourceInfo>
             <ProviderName>Virtuoso XML for Analysis</ProviderName>
             <ProviderType>

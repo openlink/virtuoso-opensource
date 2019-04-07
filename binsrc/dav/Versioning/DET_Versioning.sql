@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -20,25 +20,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
---#IF VER=5
-ALTER TABLE WS.WS.SYS_DAV_COL ADD COL_AUTO_VERSIONING char(1)
-;
-
-ALTER TABLE WS.WS.SYS_DAV_COL ADD COL_FORK INTEGER DEFAULT 0
-;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_STATUS VARCHAR
-;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_ID INTEGER
-;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_CO_VERSION INTEGER
-;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_STATE INTEGER -- 0 CIN, -- 1 COUT
-;
---#ENDIF
 
 CREATE TABLE WS.WS.SYS_DAV_RES_VERSION (
   RV_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID
@@ -57,10 +38,6 @@ alter index SYS_DAV_RES_VERSION on WS.WS.SYS_DAV_RES_VERSION partition (RV_RES_I
 ;
 
 
---#IF VER=5
-ALTER TABLE WS.WS.SYS_DAV_RES_VERSION ADD RV_WHO VARCHAR
-;
---#ENDIF
 
 CREATE TABLE WS.WS.SYS_DAV_RES_DIFF (
   RD_RES_ID       INTEGER NOT NULL, -- referenced by WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID),
@@ -136,13 +113,6 @@ CREATE TABLE WS.WS.SYS_DAV_BASELINE_RES (
 alter index SYS_DAV_BASELINE_RES on WS.WS.SYS_DAV_BASELINE_RES partition (BR_RES_ID int)
 ;
 
---#IF VER=5
-ALTER TABLE WS.WS.SYS_DAV_RES_VERSION ADD RV_SIZE INTEGER NOT NULL
-;
-
-UPDATE WS.WS.SYS_DAV_RES_VERSION SET RV_SIZE = 0 WHERE RV_SIZE IS NULL
-;
---#ENDIF
 
 --| When DAV_DELETE_INT calls DET function, authentication and check for lock are passed.
 CREATE TRIGGER "Versioning_DAV_DELETE" BEFORE DELETE ON WS.WS.SYS_DAV_RES REFERENCING OLD AS O
@@ -1106,7 +1076,20 @@ create function "Versioning_DAV_SEARCH_PATH" (in id any, in what char(1)) return
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "Versioning_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "Versioning_DAV_RES_UPLOAD_COPY" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
    -- dbg_obj_princ ('Versioning_DAV_RES_UPLOAD_COPY (', detcol_id, path_parts, source_id, what, overwrite_flags, permissions, uid, gid, auth_uid, ')');
   return -20;
@@ -1114,7 +1097,17 @@ create function "Versioning_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_part
 ;
 
 --| When DAV_COPY_INT calls DET function, authentication and check for locks are performed before the call, but no check for existing/overwrite.
-create function "Versioning_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in auth_uid integer) returns any
+create function "Versioning_DAV_RES_UPLOAD_MOVE" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   -- dbg_obj_princ ('Versioning_DAV_RES_UPLOAD_MOVE (', detcol_id, path_parts, source_id, what, overwrite_flags, auth_uid, ')');
   if (not isarray (source_id))
@@ -1686,14 +1679,17 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
 {
   -- dbg_obj_princ ('DAV_VERSION_CONTROL ', path, ', ', auth, ', ', pwd);
   declare _id int;
+
   _id := DAV_SEARCH_ID (path, 'R');
   if (DAV_HIDE_ERROR (_id) is null)
     return _id;
+
   if (not isinteger (_id))
     return -37; -- not supported for DET controlled resources
 
   declare _attic_id, _vvc_id, _main_id, _rc, ouid, guid int;
   declare _attic, _vvc, _main, oname, gname, resource varchar;
+
   select RES_NAME, RES_COL, RES_OWNER, RES_GROUP into resource, _main_id, ouid, guid from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path;
   _main := DAV_SEARCH_PATH (_main_id, 'C');
   _vvc := _main || 'VVC/';
@@ -1715,7 +1711,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     {
       _rc := DAV_PROP_SET (_vvc, 'virt:Versioning-Collection', _main, auth, pwd );
       if (DAV_HIDE_ERROR(_rc) is null)
-      return _rc;
+        return _rc;
     }
 
     _rc := DAV_PROP_GET_INT (_main_id, 'C', 'virt:Versioning-History', 0);
@@ -1726,9 +1722,9 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     {
       _rc := DAV_PROP_SET (_main, 'virt:Versioning-History', _vvc, auth, pwd );
       if (DAV_HIDE_ERROR(_rc) is null)
-      return _rc;
+        return _rc;
     }
-       update WS.WS.SYS_DAV_COL set COL_DET = 'Versioning' where COL_ID = _vvc_id;
+    update WS.WS.SYS_DAV_COL set COL_DET = 'Versioning' where COL_ID = _vvc_id;
   }
   _attic := _main || 'Attic/';
   _attic_id := DAV_SEARCH_ID (_attic, 'C');
@@ -1741,7 +1737,7 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
     _rc := DAV_PROP_SET (_vvc, 'virt:Versioning-Attic', _attic, auth, pwd);
     if (DAV_HIDE_ERROR (_rc) is null)
       return _rc;
-    }
+  }
   if (DAV_HIDE_ERROR(DAV_PROP_GET_INT (_id, 'R', 'DAV:checked-in', 0)) or (DAV_HIDE_ERROR(DAV_PROP_GET_INT(_id, 'R', 'DAV:checked-out', 0)))) -- already under version control
     return _id;
 
@@ -1758,15 +1754,15 @@ create function DAV_VERSION_CONTROL (in path varchar, in auth varchar, in pwd va
   dt := now();
   select RES_TYPE, RES_CONTENT into _type, _content from WS.WS.SYS_DAV_RES where RES_ID = _id;
   insert into WS.WS.SYS_DAV_RES_VERSION (RV_RES_ID , -- This is equal to either existing resource ID or to an attic ID
-      RV_ID, -- Version ID
-      RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
-      RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
-      RV_ACT_ID, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
-      RV_RES_TYPE, -- MIME content type as it was in WS.WS.SYS_DAV_RES.RES_TYPE, NULL if deleted in this version.
-      RV_CR_TIME, -- Old creation time as it was in WS.WS.SYS_DAV_RES.RES_CR_TIME
-      RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
-      RV_WHO,
-      RV_SIZE)
+    RV_ID, -- Version ID
+    RV_NODE_NAME, -- Version number string as it can be used for data export. NULL to generate automatically.
+    RV_PREV_ID, -- referenced by WS.WS.SYS_DAV_VERSION (RV_ID) when NOT NULL
+    RV_ACT_ID, -- referenced by WS.WS.SYS_DAV_ACTIVITY (ACT_ID) when NOT NULL
+    RV_RES_TYPE, -- MIME content type as it was in WS.WS.SYS_DAV_RES.RES_TYPE, NULL if deleted in this version.
+    RV_CR_TIME, -- Old creation time as it was in WS.WS.SYS_DAV_RES.RES_CR_TIME
+    RV_MOD_TIME, -- Old modification time as it was in WS.WS.SYS_DAV_RES.RES_MOD_TIME
+    RV_WHO,
+    RV_SIZE)
   values (
     _id,
     1,

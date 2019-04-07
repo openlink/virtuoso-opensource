@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,7 +122,13 @@ service_write (dk_session_t * ses, char *buffer, int bytes)
 		freeze_thread_write (ses);
 	      else
 		{
+#ifdef MTX_DEBUG
+		  timeout_t tv = { 10000, 0 };
+#else
 		  timeout_t tv = { 100, 0 };
+#endif
+		  if (ses->dks_write_block_timeout.to_sec > 0)
+		    tv.to_sec = ses->dks_write_block_timeout.to_sec;
 		retry:
 		  tcpses_is_write_ready (ses->dks_session, &tv);
 		  if (SESSTAT_W_ISSET (ses->dks_session, SST_TIMED_OUT))
@@ -181,7 +187,10 @@ session_flush_1 (dk_session_t * ses)
     return (SER_SUCC);
   if (ses->dks_out_fill)
     {
-      int rc = service_write (ses, ses->dks_out_buffer, ses->dks_out_fill);
+      int rc;
+      if (ses->dks_session->ses_device->dev_funs->dfp_flush)
+	return ses->dks_session->ses_device->dev_funs->dfp_flush (ses->dks_session, ses->dks_out_buffer, ses->dks_out_fill);
+      rc = service_write (ses, ses->dks_out_buffer, ses->dks_out_fill);
       ses->dks_out_fill = 0;
       return (rc);
     }
@@ -232,16 +241,23 @@ session_flush (dk_session_t * session)
  *
  * Globals used :    default controls
  */
+
+void s_bing () {}
+
+int64 write_trap;
+
+
 int
 session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
 {
   int length = (int) _length;
+  if (write_trap && ses->dks_bytes_sent + ses->dks_out_fill + length > write_trap) s_bing();
   DBG_CHECK_WRITE_FAIL (ses);
 
   /* will the string fit ? */
   if (length <= ses->dks_out_length - ses->dks_out_fill)
     {
-      memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer, length);
+      memcpy_16 (&ses->dks_out_buffer[ses->dks_out_fill], buffer, length);
       ses->dks_out_fill = ses->dks_out_fill + length;
     }
   else
@@ -268,7 +284,7 @@ session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
 	}
       else
 	{
-	  memcpy (&ses->dks_out_buffer[ses->dks_out_fill], buffer,
+	  memcpy_16 (&ses->dks_out_buffer[ses->dks_out_fill], buffer,
 		written = ses->dks_out_length - ses->dks_out_fill);
 	  service_write (ses, ses->dks_out_buffer, ses->dks_out_length);
 	}
@@ -279,7 +295,7 @@ session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
 	}
       else
 	{
-	  memcpy (ses->dks_out_buffer, &buffer[written], length - written);
+	  memcpy_16 (ses->dks_out_buffer, &buffer[written], length - written);
 	  ses->dks_out_fill = length - written;
 	}
     }
@@ -373,7 +389,7 @@ service_read (dk_session_t * ses, char *buffer, int req_bytes, int need_all)
 	  if (DKSESSTAT_ISSET (ses, SST_TIMED_OUT))
 	    rc = -1;
 	  else
-	    rc = session_read (ses->dks_session, &(buffer[last_read]), bytes);
+	    rc = session_read (ses->dks_session, &(buffer[last_read]), MIN (bytes, 32 * 1024));
 	}
       else
 	{
@@ -480,7 +496,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
 {
   if (ses->dks_in_fill - ses->dks_in_read >= req_bytes)
     {
-      memcpy (buffer, &ses->dks_in_buffer[ses->dks_in_read], req_bytes);
+      memcpy_16 (buffer, &ses->dks_in_buffer[ses->dks_in_read], req_bytes);
       ses->dks_in_read = ses->dks_in_read + req_bytes;
       return (req_bytes);
     }
@@ -492,7 +508,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
       /* Move the stuff in the buffer to target.
          If there's more than a buffer full needed, read into the target
          if less, fill the buffer. */
-      memcpy (buffer, &ses->dks_in_buffer[ses->dks_in_read],
+      memcpy_16 (buffer, &ses->dks_in_buffer[ses->dks_in_read],
 	    bytes_from_previous = bytes_read = ses->dks_in_fill - ses->dks_in_read);
       ses->dks_in_read = ses->dks_in_fill;
       if (req_bytes > ses->dks_in_length)
@@ -522,7 +538,7 @@ session_buffered_read (dk_session_t * ses, char *buffer, int req_bytes)
 		    {
 		      ses->dks_in_fill = bytes_filled;
 		      ses->dks_in_read = req_bytes - bytes_from_previous;
-		      memcpy (&buffer[bytes_from_previous], ses->dks_in_buffer, ses->dks_in_read);
+		      memcpy_16 (&buffer[bytes_from_previous], ses->dks_in_buffer, ses->dks_in_read);
 		      return (req_bytes);
 		    }
 		}

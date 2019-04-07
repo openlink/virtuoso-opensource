@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -134,8 +134,8 @@ correctly to this point.
 The following example URLs will show the System Manager for the default, and the demo Virtuoso databases:
       </para>
 <programlisting>
-http://localhost:8889/
-http://localhost:8890/
+http://example.com:8889/
+http://example.com:8890/
 http://a_virtuoso_server.org:8890/
 </programlisting>
       <para>On a Windows Client there is a shortcut to the <emphasis>OpenLink Virtuoso Conductor</emphasis>
@@ -183,7 +183,7 @@ IP address of the machine where Virtuoso was installed. The URL that you will wa
 may be:
     </para>
 <programlisting>
-http://localhost:8890/
+http://example.com:8890/
 </programlisting>
     <para>Note that that trailing / is important and may be required for older browsers</para>
   <figure id="qsinst021" float="1">
@@ -347,7 +347,7 @@ the tab "Interactive SQL". Enter a SQL statement and click the button "Execute".
 		<sect2 id="lnktabvirt">
 			<title>Linking Remote Tables Into Virtuoso</title>
     <para>A table on a remote datasource may be linked into the Virtuoso database so that it appears
-as a local table. Start a browser and point to Conductor, for ex. http://localhost:8890/conductor/.
+as a local table. Start a browser and point to Conductor, for ex. http://example.com:8890/conductor/.
 Go to tab "Database", then select "External Data Sources" and then "Sata Sources". Specify the remote datasource
 that you wish to link to Virtuoso. For example, click the link "connect" for DSN "VirtuosoDemoTest".
     </para>
@@ -448,8 +448,8 @@ Click finally the button "Save Changes".
         <listitem>
 	  <para>The following URLs will then be equivalent:</para>
 	  <simplelist>
-	    <member>http://localhost:8890/help</member>
-	    <member>http://localhost:8890/departments/support/index.html</member>
+	    <member>http://example.com:8890/help</member>
+	    <member>http://example.com:8890/departments/support/index.html</member>
 	  </simplelist>
 	</listitem>
       </orderedlist>
@@ -567,7 +567,7 @@ connecting to a Virtuoso DAV you will need to know the server location and port 
 If you installed Virtuoso on to your local machine taking default options then you
 would probably be typing:
         </para>
-	<programlisting>http://localhost:8889/DAV/</programlisting>
+	<programlisting>http://example.com:8889/DAV/</programlisting>
          <figure id="qs-dav003" float="1"><title>WebDAV location</title>
           <graphic fileref="ui/qs-dav003.png"/>
         </figure>
@@ -800,12 +800,12 @@ you can either click the "Publish Selected" button, or before this to click the 
   <sect3 id="qstexpsvsmxtest"><title>Testing SOAP Services Using VSMX</title>
       <para>Virtual directory definitions have a <emphasis>Logical Path</emphasis> field, which is
 reference in URL to find the correct SOAP services. If you connect to Virtuoso on
-<emphasis>http://localhost:8890/</emphasis>, and defined your virtual directory with
+<emphasis>http://example.com:8890/</emphasis>, and defined your virtual directory with
 the logical path of <emphasis>/mysoap</emphasis> then you will be able to test the following URLs:
       </para>
     <simplelist>
-      <member>http://localhost:8890/mysoap/services.wsdl</member>
-      <member>http://localhost:8890/mysoap/services.vsmx</member>
+        <member>http://example.com:8890/mysoap/services.wsdl</member>
+        <member>http://example.com:8890/mysoap/services.vsmx</member>
     </simplelist>
 
     <figure float="1"><title>Services.wsdl</title>

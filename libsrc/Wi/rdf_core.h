@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,15 +34,27 @@
 #define IRI_TO_ID_IF_KNOWN	0 /*!< Return IRI_ID if known, integer zero (NULL) if not known or error is not NULL */
 #define IRI_TO_ID_WITH_CREATE	1 /*!< Return IRI_ID if known or created on the fly, integer zero (NULL) if error is not NULL */
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
+#define IRI_TO_ID_GPF		3 /*!< The conversion must be avoided at all, GPF is signalled if the value is tried */
 
+/*!< Parses tail of "nodeID://..." IRI and returns the numeric value of IRI_ID. In case of error, 0 is returned and \c error_fmt_ret is set to printf format string for reporting an error */
+extern int64 iri_nodeid_to_iid (unsigned char *nodeid_tail, const char **error_fmt_ret);
 /*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
-extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
-extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
+EXE_EXPORT (void, rdf_handle_invalid_iri_id, (caddr_t * qst, const char *msg, iri_id_t iid));
+EXE_EXPORT (caddr_t, iri_to_id, (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri_if_cached, (iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (int, key_id_to_namespace_and_local, (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret));
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
+#define RDF_TYPE_PARSEABLE 0x1
+#define RDF_TYPE_PARSEABLE_TO_NUMERIC 0x2
+#define RDF_TYPE_PARSEABLE_TO_DTDURATION	0x4
+#define RDF_TYPE_PARSEABLE_TO_DATETIME		0x8
+extern int rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname);
+extern int rb_uname_to_flags_of_parseable_datatype (ccaddr_t dt_uname);
+extern int rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte);
 /*! \returns NULL for string, (ccaddr_t)((ptrlong)1) for unsupported, 2 for NULL, UNAME for others */
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
@@ -68,6 +80,9 @@ extern iri_id_t bnode_t_treshold;
 #define BNODE_IID_TO_TALIS_JSON_LABEL(iid) BNODE_FMT_IMPL(box_sprintf,30,"_:v",iid)
 
 /* Set of callback to accept the stream of RDF quads that are grouped by graph and share blank node IDs */
+
+EXE_EXPORT (void, sqlr_set_cbk_name_and_proc, (client_connection_t *cli, const char *cbk_name, const char* cbk_param_types, const char *funname,
+  char **full_name_ret, query_t **proc_ret, caddr_t *err_ret ));
 
 #define TRIPLE_FEED_NEW_GRAPH	0
 #define TRIPLE_FEED_NEW_BLANK	1
@@ -98,11 +113,15 @@ typedef struct triple_feed_s {
   int *tf_line_no_ptr;		/*!< Pointer to some line number counter somewhere outside, may be NULL */
 } triple_feed_t;
 
+/*! Allocates a do-nothing triple feed. It will become useful when \c tf_cbk_names and corresponding \c tf_cbk_qrs callback queries are set by tf_set_cbk_names() . */
 extern triple_feed_t *tf_alloc (void);
+/*! Frees \c tf . It will not perform final commit. */
 extern void tf_free (triple_feed_t *tf);
 extern void tf_set_cbk_names (triple_feed_t *tf, ccaddr_t *cbk_names);
+/*! Indicates the beginning of a new graph. */
 extern void tf_new_graph (triple_feed_t *tf, caddr_t uri);
 extern caddr_t tf_get_iid (triple_feed_t *tf, caddr_t uri);
+/*! Calls the TRIPLE_FEED_COMMIT callback. */
 extern void tf_commit (triple_feed_t *tf);
 extern void tf_triple (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t o_uri);
 extern void tf_triple_l (triple_feed_t *tf, caddr_t s_uri, caddr_t p_uri, caddr_t obj_sqlval, caddr_t obj_datatype, caddr_t obj_language);
@@ -162,6 +181,7 @@ extern void tf_new_base (triple_feed_t *tf, caddr_t new_base);
 #define TTLP_ALLOW_NQUAD		0x0200	/*!< Enables NQuads syntax but disables TURTLE and TriG */
 #define TTLP_DEBUG_BNODES		0x1000	/*!< Add virtrdf:bnode-base, virtrdf:bnode-row and virtrdf:bnode-label triples for every created blank node. */
 #define TTLP_SNIFFER			0x2000	/*!< Sniffer mode: scan for Turtle fragments in non-Turtle texts. */
+#define TTLP_SNIFFER_COMPLETE		0x8000	/*!< Sniffer mode has ended with an error at the end of text and must be stopped, no more retries. */
 
 #define TTLP_ALLOW_QNAME_A		0x01
 #define TTLP_ALLOW_QNAME_HAS		0x02
@@ -193,12 +213,14 @@ typedef struct ttlp_s
   dk_set_t ttlp_saved_uris;	/*!< Stack that keeps URIs. YACC stack is not used to let us free memory on error */
   dk_set_t ttlp_unused_seq_bnodes;	/*!< A list of bnodes that were allocated for use in lists but not used because lists are terminated before use */
   caddr_t ttlp_base_uri;		/*!< Base URI used to resolve relative URIs of the document and optionally to resolve the relative URI of the graph in "graph CRUD" endpoint */
+  caddr_t ttlp_last_q_save;	/*!< Last \c QNAME_NS, to avoid memory leak */
   caddr_t ttlp_last_complete_uri;	/*!< Last \c QNAME or \c Q_IRI_REF that is expanded and resolved if needed */
   caddr_t ttlp_subj_uri;	/*!< Current subject URI, but it become object URI if ttlp_pred_is_reverse */
   caddr_t ttlp_pred_uri;	/*!< Current predicate URI */
   caddr_t ttlp_obj;		/*!< Current object URI or value */
   caddr_t ttlp_obj_type;	/*!< Current object type URI */
   caddr_t ttlp_obj_lang;	/*!< Current object language mark */
+  char ttlp_triple_is_prepared;	/*!< Flags if some triple is prepared but not fed to ttlp_tf. */
   int ttlp_pred_is_reverse;	/*!< Flag if ttlp_pred_uri is used as reverse, e.g. in 'O is P of S' syntax */
   caddr_t ttlp_formula_iid;	/*!< IRI ID of the blank node of the formula ( '{ ... }' notation of N3 */
   int ttlp_in_trig_graph;	/*!< The parser is inside TriG graph so \c ttlp_inner_namespaces_prefix2iri is in use etc. */
@@ -257,9 +279,14 @@ extern caddr_t ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname);
 extern caddr_t ttlp_strliteral (ttlp_t *ttlp_arg, const char *sparyytext, int mode, char delimiter);
 extern caddr_t ttl_lex_analyze (caddr_t str, int mode_bits, wcharset_t *query_charset);
 
-extern void ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri);
-extern void ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri);
+extern void ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang);
+extern void ttlp_triple_process_prepared (ttlp_t *ttlp_arg);
+#define ttlp_triple_forget_prepared(ttlp_arg) do { (ttlp_arg)->ttlp_triple_is_prepared = 0; } while (0)
+extern void ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int is_reverse);
+extern void ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse);
 extern void ttlp_triples_for_bnodes_debug (ttlp_t *ttlp_arg, caddr_t bnode_iid, int lineno, caddr_t label);
+extern void ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno);
 
 #define RDFXML_COMPLETE		0
 #define RDFXML_OMIT_TOP_RDF	1
@@ -317,8 +344,31 @@ extern caddr_t uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connect
 #define uriqa_dynamic_local_replace(name, cli) \
   (strncmp ((name), "local:", 6) ? (name) : uriqa_dynamic_local_replace_nocheck ((name), (cli)))
 
+extern int utf8_is_pn_chars_base (const char *head, const char *pasttail);
+
 /* if rb content longer than this, use md5 in rdf_obj table key */
 #define RB_BOX_HASH_MIN_LEN 50
+caddr_t mdigest5 (caddr_t str);
+boxint rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_t * qi);
+int rdf_graph_is_in_enabled_repl (caddr_t * qst, iri_id_t q_iid, int *answer_is_one_for_all_ret);
+
+#define SPLIT_MODE_TTL 0
+#define SPLIT_MODE_XML 1
+
+extern dk_mutex_t *rdf_obj_ft_rules_mtx;
+extern id_hash_t *rdf_obj_ft_rules_by_iids;
+
+typedef struct rdf_obj_ft_rule_iid_hkey_s
+{
+   iri_id_t hkey_g;
+   iri_id_t hkey_iid_p;
+} rdf_obj_ft_rule_iid_hkey_t;
+
+typedef struct rdf_obj_ft_rule_iri_hkey_s
+{
+   iri_id_t hkey_g;
+   caddr_t hkey_iri_p;
+} rdf_obj_ft_rule_iri_hkey_t;
 
 
 #endif

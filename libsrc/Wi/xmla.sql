@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -50,13 +50,6 @@ method xmla_get_property (pname varchar, deflt any) returns any,
 method xmla_command () returns any
 ;
 
---#IF VER=5
-call exec_quiet ('alter type xmla_discover add method xmla_dbschema_foreign_keys () returns any')
-;
-
-call exec_quiet ('alter type xmla_discover add method xmla_dbschema_primary_keys () returns any')
-;
---#ENDIF
 
 create constructor method
 xmla_discover (in request_type varchar, in restrictions any, in properties any) for xmla_discover
@@ -262,6 +255,31 @@ create procedure
 }
 ;
 
+
+create procedure xmla_check_user (inout uname varchar, inout passwd varchar)
+{
+  declare ret int;
+
+  ret := 1;
+
+  if (uname is null and is_https_ctx ())
+    {
+      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
+      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
+    }
+  
+  if (uname is null or passwd is null) 
+    {
+      if (ret = 1)
+        signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      else
+        signal ('00009', 'Unable to process the request, because the UserName property is not mapped to any SQL UserName');
+    }
+  return ret;
+}
+;
+
+
 create procedure
 "Execute"  (in  "Command" varchar
             --__soap_type 'http://openlinksw.com/virtuoso/xmla/types:Execute.Command'
@@ -304,18 +322,11 @@ create procedure
   uname := xmla_get_property ("Properties", 'UserName', null);
   passwd := xmla_get_property ("Properties", 'Password', null);
 
-  if (uname is null and is_https_ctx ())
-    {
-      uname := connection_get ('SPARQLUserId'); -- if WebID ACL is checked
-      passwd := (select pwd_magic_calc (U_NAME, U_PASSWORD, 1) from DB.DBA.SYS_USERS where U_NAME = uname);
-    }
-
   -- XMLA command, no statement
   if (stmt is null and ("BeginSession" is not null or "EndSession" is not null))
     return xml_tree_doc ('<root xmlns="urn:schemas-microsoft-com:xml-analysis:empty" />');
 
-  if (uname is null or passwd is null)
-    signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+  xmla_check_user (uname, passwd);
 
   state := '00000';
   stmt := get_keyword ('Statement', "Command");
@@ -750,6 +761,20 @@ xmla_make_xsd (inout mdta any)
       declare _type, _type_name, nill int;
       _name := mdta[i][0];
       _type := mdta[i][1];
+
+      -- TIMESTAMP
+      if (isinteger(_type) and _type = 128)
+        {
+          _type := 211;
+          mdta[i][1] := 211;
+        }
+      -- IRI_ID
+      else if (isinteger(_type) and _type = 243)
+        {
+          _type := 182;
+          mdta[i][1] := 182;
+        }
+
       if (length (mdta[i]) > 4)
         nill := mdta[i][4];
       else
@@ -760,6 +785,7 @@ xmla_make_xsd (inout mdta any)
 	    _type_name := _type;
 	  else
             _type_name := dv_to_soap_type (_type);
+
           http (sprintf ('<element name="%V" type="%s" sql:field="%s" nillable="%d" />\n', _name, _type_name, _name, nill), ses);
 	}
       else
@@ -812,7 +838,11 @@ xmla_make_element (in mdta any, in dta any)
   while (i < l)
     {
       aset (res, i1, mdta[i][0]);
-      if (mdta[i][1] = 131 and not isblob(dta[i]))
+      if (mdta[i][1] = 243)
+	 aset (res, i2, cast (dta[i] as varchar));
+      else if (mdta[i][1] = 125 and isentity(dta[i]))
+	 aset (res, i2, serialize_to_UTF8_xml(dta[i]));
+      else if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
       else if (mdta[i][1] = 219 and 219 <> __tag (dta[i]))
 	 aset (res, i2, cast (dta[i] as decimal));
@@ -852,8 +882,7 @@ create method xmla_dbschema_columns () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
 	 name_part(KEY_TABLE, 0) as TABLE_CATALOG,
@@ -895,7 +924,7 @@ create method xmla_dbschema_columns () for xmla_discover
 	 KEY_IS_MAIN = 1 and
 	 KEY_MIGRATE_TO is null and
 	 KP_KEY_ID = KEY_ID and
-	 COL_ID = KP_COL order by KEY_TABLE, 7'
+	 COL_ID = KP_COL order by KEY_TABLE, 7 option (order)'
        , null, null,
       vector (cat, sch, tb, col), 0, mdta, dta);
     }
@@ -938,7 +967,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
   f_sch := self.xmla_get_restriction ('FK_TABLE_SCHEMA', '%');
   f_tbl := self.xmla_get_restriction ('FK_TABLE_NAME', '%');
 
-  if (p_cat is null) 
+  if (p_cat is null)
   {
     if (f_cat is not null)
       p_cat := f_cat;
@@ -947,7 +976,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
   }
 
   if (f_cat is null)
-  { 
+  {
     if (p_cat is not null)
       f_cat := p_cat;
     else
@@ -977,8 +1006,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
     	 name_part (PK_TABLE, 0) as PK_TABLE_CATALOG varchar (128),
@@ -996,7 +1024,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
     	 (KEY_SEQ + 1) as ORDINAL INTEGER,
     	 (case UPDATE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as UPDATE_RULE varchar(20),
     	 (case DELETE_RULE when 0 then ''NO ACTION'' when 1 then ''CASCADE'' when 2 then ''SET NULL'' when 3 then ''SET DEFAULT'' else NULL end) as DELETE_RULE varchar(20),
-	 PK_NAME, 
+	 PK_NAME,
 	 FK_NAME,
     	 3 as DEFERRABILITY SMALLINT
     	from DB.DBA.SYS_FOREIGN_KEYS SYS_FOREIGN_KEYS
@@ -1013,7 +1041,7 @@ create method xmla_dbschema_foreign_keys () for xmla_discover
   else
     {
        dsn := xmla_get_dsn_name (dsn);
-       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = ''' 
+       stmt := 'SELECT * FROM DB.DBA.SYS_FOREIGN_KEYS_VIEW WHERE PK_TABLE = '''
        		|| _ptbl || ''' AND FK_TABLE = ''' || _ftbl
 	       	|| ''' AND DSN = ''' || dsn || '''';
        exec (stmt, state, msg, vector (), 0, mdta, dta);
@@ -1044,7 +1072,7 @@ create method xmla_dbschema_primary_keys () for xmla_discover
     sch := '%';
   if (tb is null)
     tb := '%';
-  
+
   cat := trim (cat, '"');
   sch := trim (sch, '"');
   tb := trim (tb, '"');
@@ -1055,8 +1083,7 @@ create method xmla_dbschema_primary_keys () for xmla_discover
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec('select
     	 name_part(KEY_TABLE, 0) AS TABLE_CATALOG NVARCHAR(128),
@@ -1195,14 +1222,13 @@ create method xmla_dbschema_tables () for xmla_discover
     sch := '%';
   if (tb is null)
     tb := '%';
-  
+
   if (not xmla_not_local_dsn (dsn))
     {
       declare uname, passwd varchar;
       uname := self.xmla_get_property ('UserName', null);
       passwd := self.xmla_get_property ('Password', null);
-      if (uname is null or passwd is null)
-	signal ('00002', 'Unable to process the request, because the UserName property is not set or incorrect');
+      xmla_check_user (uname, passwd);
       set_user_id (uname, 1, passwd);
       exec ('select name_part(KEY_TABLE, 0) as TABLE_CATALOG,
 	            name_part(KEY_TABLE, 1) as TABLE_SCHEMA,
@@ -1215,10 +1241,10 @@ create method xmla_dbschema_tables () for xmla_discover
 		    NULL as DATE_MODIFIED DATE
 		    from DB.DBA.SYS_KEYS where
 		    __any_grants(KEY_TABLE) and
-		    name_part(KEY_TABLE, 0) like ? and 
+		    name_part(KEY_TABLE, 0) like ? and
 		    name_part(KEY_TABLE, 1) like ? and
 		    name_part(KEY_TABLE, 2) like ?
-		    and KEY_IS_MAIN = 1 and 
+		    and KEY_IS_MAIN = 1 and
 		    KEY_MIGRATE_TO is null', null, null,
 	  vector (cat, sch, tb), 0, mdta, dta);
     }
@@ -2083,10 +2109,11 @@ xmla_sparql_result (inout mdta any, inout dta any, in stmt any)
 {
   declare idx, idx2, tmdta any;
 
-  stmt := ucase (trim (stmt));
-
-  if ("LEFT" (stmt, 6) <> 'SPARQL')
-     return;
+  -- XXX: we always must check data in columns mentioned as DV_ANY
+  -- because sparql query can be executed from inside a SQL view
+  -- stmt := ucase (trim (stmt));
+  -- if ("LEFT" (stmt, 6) <> 'SPARQL')
+  --   return;
 
   tmdta := mdta[0];
 

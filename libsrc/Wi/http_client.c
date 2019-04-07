@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -914,10 +914,35 @@ http_cli_connect (http_cli_ctx * ctx)
 	  int dst = tcpses_get_fd (ctx->hcctx_http_out->dks_session);
 	  char * pkcs12_file = ctx->hcctx_pkcs12_file;
 	  char * pass = ctx->hcctx_cert_pass;
+	  timeout_t to = {100, 0};
 
 	  ctx->hcctx_ssl_method = SSLv23_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
+	  if (ctx->hcctx_timeout > 0)
+	    to.to_sec = ctx->hcctx_timeout;
+
+#ifndef OPENSSL_NO_TLSEXT
+	  {
+	    char sni_host[1024];
+	    char *p;
+
+	    /* Remove :PORT from host */
+	    strncpy (sni_host, ctx->hcctx_host, sizeof (sni_host));
+	    sni_host[1023] = '\0';
+	    if ((p = strrchr (sni_host, ':')) != NULL)
+	      *p = '\0';
+
+	    /* Set hostname in TLSext SNI */
+	    if ((ssl_err = SSL_set_tlsext_host_name (ctx->hcctx_ssl, sni_host)) != 1)
+	      {
+		ctx->hcctx_err = srv_make_new_error ("22023", "HTS04", "Unable to set TLSext Server Name Indication");
+		goto error_in_ssl;
+	      }
+	  }
+#endif
+
+	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
 	  if (pkcs12_file && 0 == atoi(pkcs12_file))
@@ -985,33 +1010,52 @@ http_cli_get_method_string (http_cli_ctx * ctx)
   return (http_get_method_string (ctx->hcctx_method));
 }
 
-char*
+/*
+ *  This function should return the original URL of the request(long) , or just the path (short) depending on proxy and protocol
+ *  e.g.
+ *
+ *   long  = http://host:port/sparql
+ *   short = /sparql
+ *
+ *   URL pattern	No proxy	HTTP proxy	socks4		socks5
+ *   http://		short		long		short		short
+ *   https://		short		short		short		short
+ *   other		long		long		long		long
+ */
+char *
 http_cli_get_doc_str (http_cli_ctx * ctx)
 {
-  char* s = NULL;
+  char *s = NULL;
 
-  if (NULL != ctx->hcctx_proxy.hcp_proxy && 0 == ctx->hcctx_proxy.hcp_socks_ver)
-    return ctx->hcctx_url;
-
+  /*
+   *  Check protocol
+   */
   if (!strnicmp (ctx->hcctx_url, "http://", 7))
-    s = ctx->hcctx_url + 7;
-  else if (!strnicmp (ctx->hcctx_url, "https://", 8))
-    s = ctx->hcctx_url + 8;
+    {
+      if (NULL != ctx->hcctx_proxy.hcp_proxy && 0 == ctx->hcctx_proxy.hcp_socks_ver)
+	goto ret_long_url;
 
+      s = ctx->hcctx_url + 7;
+    }
+  else if (!strnicmp (ctx->hcctx_url, "https://", 8))
+    {
+      s = ctx->hcctx_url + 8;	/* HTTPS proxy always uses the short url form */
+    }
+
+  /*  Try to short URL by looking for the first / after the hostname */
   if (s)
     {
       s = strchr (s, '/');
       if (!s)
-	{
-	  return ("/");
-	}
+	return ("/");
       else
-	{
-	  return (s);
-	}
+	return (s);
     }
+
+ret_long_url:
   return (ctx->hcctx_url);
 }
+
 
 HC_RET
 http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
@@ -1030,6 +1074,20 @@ http_cli_add_req_hdr (http_cli_ctx * ctx, char* hdrin)
   return (HC_RET_OK);
 }
 
+void
+http_cli_print_patched_url (dk_session_t * ses, caddr_t url)
+{
+  int i;
+  for (i = 0; i < strlen (url); i++)
+    {
+      if (url[i] == ' ')
+	SES_PRINT (ses, "%20");
+      else if (url[i] == '#')
+	break;
+      else
+	session_buffered_write_char (url[i], ses);
+    }
+}
 
 HC_RET
 http_cli_send_req (http_cli_ctx * ctx)
@@ -1042,7 +1100,7 @@ http_cli_send_req (http_cli_ctx * ctx)
     {
       SES_PRINT (ctx->hcctx_http_out, http_cli_get_method_string (ctx));
       SES_PRINT (ctx->hcctx_http_out, " ");
-      SES_PRINT (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
+      http_cli_print_patched_url (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
       snprintf (req_tmp, sizeof (req_tmp),
 	       " HTTP/%d.%d\r\n", ctx->hcctx_http_maj, ctx->hcctx_http_min);
       SES_PRINT (ctx->hcctx_http_out, req_tmp);
@@ -1179,8 +1237,8 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
 HC_RET
 http_cli_read_resp_hdrs (http_cli_ctx * ctx)
 {
-  char read_buf[4096];
-  char resp_hdr_tmp[4096];
+  char read_buf[DKSES_IN_BUFFER_LENGTH];
+  char resp_hdr_tmp[DKSES_IN_BUFFER_LENGTH];
   int resp_hdr_tmp_fill;
   int num_chars;
 
@@ -1778,6 +1836,7 @@ if (e - s < sizeof (b)) \
   { \
     strncpy (b, s, e - s); \
     *(b + (e - s)) = 0; \
+    if (p) dk_free_box (p); \
     p = box_string (b); \
   } \
 else \
@@ -2318,6 +2377,8 @@ http_cli_init_std_redir (http_cli_ctx* ctx, int r)
    13. insecure option
    14. ret argument index in args ssls
    15. how many redirects to follow
+In bif_http_client_impl, arguments qst, err_ret, args and me are traditional
+All arguments except the URL can be db NULLs in bif call, NULL pointers in _impl call.
 */
 
 caddr_t
@@ -2454,7 +2515,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
       to_free_head = 0;
     }
 
-  if (ctx->hcctx_is_gzip && DV_STRINGP (ret))
+  if (ctx->hcctx_is_gzip && DV_STRINGP (ret) && box_length (ret) > 2)
     {
       dk_session_t *out = strses_allocate ();
       strses_enable_paging (out, http_ses_size);
@@ -2786,7 +2847,7 @@ void
 bif_http_client_init (void)
 {
   init_acl_set (http_cli_proxy_except, &http_cli_proxy_except_set);
-  bif_define_typed ("http_client_internal", bif_http_client, &bt_varchar);
-  bif_define_typed ("http_pipeline", bif_http_pipeline, &bt_any);
-  bif_define_typed ("http_get", bif_http_get, &bt_varchar);
+  bif_define_ex ("http_client_internal", bif_http_client, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_pipeline", bif_http_pipeline, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

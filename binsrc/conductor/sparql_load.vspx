@@ -1,0 +1,210 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="sparql_load_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_sparql_page" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>SPARQL interface</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="res_to_delete" default="null" type="varchar" param-name="delete"/>
+      <v:variable name="pg" default="'sparql_input.vspx'" type="varchar" param-name="ret"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="SPARQL Templates"/>
+    </vm:menu>
+    <vm:header caption="Saved Queries"/>
+    <vm:pagebody>
+      <vm:help id="xquery" sect=""/>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+			<td class="page_tab" align="center">
+			  <v:url name="b_url32" value="Query" url="sparql_input.vspx" xhtml_class="uddi"/>
+                        </td>
+			<td class="page_tab_selected" align="center">Saved Queries</td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN AREA -->
+			<v:template name="for_xml_query_remove_template"
+			  type="simple" enabled="--equ (isnull (self.res_to_delete), 0)">
+			  <div class="confirm_dialog">
+			    <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+			    <div class="confirm_text">
+			      The XML Query template
+			      <?vsp
+			      http(' <span style="{color:blue}">');
+				http(self.res_to_delete);
+				http(' </span>');
+			      ?> will be removed permanently.
+			    </div>
+			    <div class="dialog_buttons">
+			      <v:form name="query_remove_form" type="simple" method="POST" action="">
+				<v:button action="submit" name="xml_view_delete" value="Delete" xhtml_style="size:64;">
+				  <v:on-post>
+				    <![CDATA[
+				    if (self.res_to_delete is not null)
+				    {
+				      DAV_DELETE_INT (self.res_to_delete, 0, null, null, 0);
+				    }
+				    self.vc_redirect ('sparql_load.vspx');
+				    ]]>
+				  </v:on-post>
+				</v:button>
+				<v:button action="submit" name="xml_view_cancel" value="Cancel" xhtml_style="size:64;">
+				  <v:on-post>
+				    <![CDATA[
+				    self.vc_redirect ('sparql_load.vspx');
+				    ]]>
+				  </v:on-post>
+				</v:button>
+			      </v:form>
+			    </div>
+			  </div>
+			</v:template>
+			<v:template type="simple" name='xtlisting' enabled="--isnull (self.res_to_delete)">
+			  <div class="scroll_area">
+                                 <table class="listing">
+                                   <tr class="listing_header_row">
+				     <th>
+				       <v:button name="refresh1" style="image" action="simple"
+					 value="images/icons/ref_16.png"
+					 xhtml_alt="Refresh page"
+					 xhtml_title="Refresh page"
+					 url="sparql_load.vspx">
+				       </v:button>
+				     </th>
+                                     <th>XML File</th>
+                                     <th>Description</th>
+                                     <th>Action</th>
+                                   </tr>
+                                   <?vsp
+                                     declare rintl, fnd integer;
+                                     declare rupd, descr varchar;
+                                     declare row_cnt integer;
+
+                                     row_cnt := 0; fnd := 0;
+                                     for select PROP_PARENT_ID as PARENT_ID, PROP_NAME
+                                         from WS.WS.SYS_DAV_PROP
+                                         where PROP_NAME in ('xml-template') and PROP_TYPE = 'R' do
+                                       {
+                                         for select RES_ID, RES_FULL_PATH, length (RES_CONTENT) as rlen, RES_CONTENT
+                                               from WS.WS.SYS_DAV_RES
+                                               where RES_ID = PARENT_ID do
+                                           {
+					     declare xt any;
+
+					     if (rlen = 0)
+					       goto nextxt;
+
+					     {
+					       declare exit handler for sqlstate '*'
+					       {
+					         goto nextxt;
+					       };
+					       xt := xtree_doc (RES_CONTENT);
+					     }
+
+					     if (xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//sql:sparql', xt)
+					     		is null)
+					       goto nextxt;
+
+					     fnd := 1;
+  					     descr := coalesce ((select PROP_VALUE from WS.WS.SYS_DAV_PROP
+					     	where PROP_NAME = 'xml-sql-description' and PROP_TYPE = 'R'
+					     	and PROP_PARENT_ID = PARENT_ID), '');
+
+                                             if (mod (row_cnt, 2))
+                                               http ('<tr class="listing_row_even">');
+                                             else
+                                               http ('<tr class="listing_row_odd">');
+                                           ?>
+                                               <td class="listing_col">
+                                                 <img src="images/icons/apps_16.png" alt="Persisted SPARQL" title="Persisted SPARQL"/>
+                                               </td>
+                                               <td class="listing_col">
+                                                 <a href="<?= WS.WS.STR_TO_URI (RES_FULL_PATH)?>" target="_blank">
+                                                   <?vsp http (RES_FULL_PATH); ?>
+                                                 </a>
+                                               </td>
+                                               <td class="listing_col">
+                                                 <?vsp http(descr); ?>
+                                               </td>
+                                               <td  class="listing_col_action">
+                                               <?vsp
+					       http (sprintf ('<a class="" href="sparql_input.vspx?mode=query&edit=%U&sid=%s&realm=%s"><img src="images/icons/edit_16.png" border="0" />&nbsp;Edit</a>', RES_FULL_PATH, self.sid ,self.realm));
+					       ?>
+
+					       <?vsp
+						 http (sprintf ('<a class="" href="sparql_load.vspx?delete=%U&sid=%s&realm=%s"><img src="images/icons/trash_16.png" border="0" />&nbsp;Delete</a>', RES_FULL_PATH, self.sid ,self.realm ));
+                                               ?>
+                                             </td>
+                                         <?vsp
+                                         http ('</tr>');
+				         row_cnt := row_cnt + 1;
+				         nextxt:;
+                                       }
+                                   }
+
+                                 if (fnd = 0)
+                                   http ('<tr><td colspan=4 align=center><b>*** No queries defined ***</b></td></tr>');
+                               ?>
+			     </table>
+			   </div>
+    </v:template>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

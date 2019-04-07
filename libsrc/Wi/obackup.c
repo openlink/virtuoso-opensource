@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,6 +59,8 @@
 
 #undef DBG_BREAKPOINTS
 #undef INC_DEBUG
+
+//#define OBACKUP_TRACE
 
 typedef struct ob_err_ctx_s
 {
@@ -311,7 +313,8 @@ int ol_buf_disk_read (buffer_desc_t* buf)
     GPF_T1 ("ol_buf_disk_read (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
     {
-      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off);
+      ext_ref_t er;
+      disk_stripe_t *dst = dp_disk_locate (dbs, buf->bd_physical_page, &off, 0, &er);
       int fd = dst_fd (dst);
 
       rc = LSEEK (fd, off, SEEK_SET);
@@ -322,7 +325,7 @@ int ol_buf_disk_read (buffer_desc_t* buf)
 	  GPF_T;
 	}
       rc = read (fd, buf->bd_buffer, PAGE_SZ);
-      dst_fd_done (dst, fd);
+      dst_fd_done (dst, fd, &er);
 
       if (rc != PAGE_SZ)
 	{
@@ -447,6 +450,7 @@ ol_write_sets (ol_backup_context_t * ctx, dbe_storage_t * storage)
       if (!DV_STRINGP (name) || !DV_STRINGP (val))
 	continue;
       if (0 == strncmp (name, "__EM:", 5)
+	  || 0 == strncmp (name, "__EMC:", 6)
 	  || 0 == strcmp (name, "__sys_ext_map"))
 	{
 	  dp_addr_t dp = atoi (val);
@@ -636,7 +640,7 @@ db_backup_pages (ol_backup_context_t * backup_ctx, dp_addr_t start_dp, dp_addr_t
     start_dp = 1;
   end_page = backup_ctx->octx_last_page;
 
-  log_info("Starting online backup from page %ld to %ld", start_dp, end_page);
+  log_info("Starting online backup from page %ld to %ld, current log is: %s", start_dp, end_page, storage->dbs_log_name);
 
   for (page_no = start_dp; page_no < end_page; page_no++)
     {
@@ -1025,6 +1029,10 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   char * log_name;
   caddr_t err = NULL;
 
+#ifdef OBACKUP_TRACE
+  obackup_trace = fopen ("obackup.out", "a");
+#endif
+
   OB_IN_CPT (need_mtx,qi);
   log_name = sf_make_new_log_name (wi_inst.wi_master);
   IN_TXN;
@@ -1047,14 +1055,17 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   ctx->octx_dbs = wi_inst.wi_master;
   _pages = ctx->octx_page_count;
 
+  IN_DBS (dbs);
   ctx->octx_free_set = dbs_read_page_set (dbs, db.db_free_set, DPF_FREE_SET);
   ctx->octx_ext_set = dbs_read_page_set (dbs, db.db_extent_set, DPF_EXTENT_SET);
   if (db.db_checkpoint_map)
     ctx->octx_cpt_set = dbs_read_page_set (dbs, db.db_checkpoint_map, DPF_CP_REMAP);
-#if 0
-  obackup_trace = fopen ("obackup.out", "a");
-  fprintf (obackup_trace, "\n\n\Bakup file %s\n", "xx");
+  LEAVE_DBS (dbs);
+
+#ifdef OBACKUP_TRACE
+  fprintf (obackup_trace, "\n\n\Bakup file prefix %s\n", prefix);
 #endif
+
   ses = dbs_read_registry (ctx->octx_dbs, qi->qi_client);
   ctx->octx_registry = (caddr_t *) read_object (ses);
   dk_free_box ((caddr_t)ses);
@@ -1090,6 +1101,19 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   IN_DBS (dbs);
   dbs_write_page_set (dbs, dbs->dbs_incbackup_set);
   LEAVE_DBS (dbs);
+
+#if 0
+  DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
+  {
+    if (dbs->dbs_slices)
+      {
+#ifdef OBACKUP_TRACE
+	fprintf (obackup_trace, "\n\n\DBS: %s\n", dbs->dbs_name);
+#endif
+      }
+  }
+  END_DO_SET ();
+#endif
 
   if (obackup_trace)
     {
@@ -1410,6 +1434,7 @@ bif_backup_online_header_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 
   memcpy (ctx->octx_file_prefix, fileprefix, strlen (fileprefix));
   ctx->octx_num = num;
+  ctx->octx_backup_patha = backup_patha;
 
   fd = backup_context_increment (ctx,1);
   if (fd < 0)
@@ -1482,6 +1507,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
   dp_addr_t dest = buf->bd_physical_page;
   OFF_T off;
   OFF_T rc;
+  ext_ref_t er;
   if (!IS_IO_ALIGN (buf->bd_buffer))
     GPF_T1 ("buf_disk_raw_write (): The buffer is not io-aligned");
   if (dbs->dbs_disks)
@@ -1499,10 +1525,11 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	      log_error ("Cannot extend database, please free disk space and try again.");
 	      call_exit (-1);
 	    }
+	  dbs_extend_ext_cache (dbs);
 	}
       LEAVE_DBS (dbs);
 
-      dst = dp_disk_locate (dbs, dest, &off);
+      dst = dp_disk_locate (dbs, dest, &off, 1, &er);
       fd = dst_fd (dst);
 
       rc = LSEEK (fd, off, SEEK_SET);
@@ -1517,7 +1544,7 @@ buf_disk_raw_write (buffer_desc_t* buf)
 	  log_error ("Write failure on stripe %s", dst->dst_file);
 	  GPF_T;
 	}
-      dst_fd_done (dst, fd);
+      dst_fd_done (dst, fd, &er);
     }
   else
     {

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -159,7 +159,7 @@ create procedure  DB.DBA.WS_TRUST_TOKEN_GEN (
         <wsse:RequestType>wsse:ReqIssue</wsse:RequestType>
         <wsp:AppliesTo xmlns:wsp="http://schemas.xmlsoap.org/ws/2002/12/policy">
           <wsa:EndpointReference>
-            <wsa:Address>http://localhost/SecureConvPolicyService/SecureConvService.asmx</wsa:Address>
+            <wsa:Address>http://example.com/SecureConvPolicyService/SecureConvService.asmx</wsa:Address>
           </wsa:EndpointReference>
         </wsp:AppliesTo>
       </wsse:RequestSecurityToken>

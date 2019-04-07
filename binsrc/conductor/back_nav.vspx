@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="download" fast-render="1"  xmlns:v="http://www.openlinksw.com/vspx/">
+  <v:variable name="path" persist="0" type="varchar" default="''" />
+  <v:variable name="title" persist="0" type="varchar" default="''" />
+  <v:on-init>
+    <v:script>
+      <![CDATA[
+        self.sid := get_keyword('sid', params);
+        self.realm := get_keyword('realm', params);
+        self.path := get_keyword('path', params);
+        self.title := get_keyword('title', params);
+      ]]>
+    </v:script>
+  </v:on-init>
+  <table>
+    <tr>
+      <td align="right">
+        <v:form name="form_back" type="simple" method="POST" action="">
+          <v:url name="back_submit" format="%s" value="--'Back'" url="--sprintf('popup_browser.vspx?sid=%s&realm=%s&dir=%s&title=%s\r\n', self.sid , self.realm, self.path, self.title)" xhtml_target="_parent"/>
+        </v:form>
+      </td>
+    </tr>
+  </table>
+</v:page>

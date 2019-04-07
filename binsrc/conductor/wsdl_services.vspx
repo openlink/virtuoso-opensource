@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases" decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso WSDL Services</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="WSDL Import / Export"/>
+    </vm:menu>
+    <vm:header caption="WSDL Import / Export">
+    </vm:header>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <v:template name="tabTemplate1" type="simple" enabled="--case  when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                        <td class="page_tab_selected" align="center">
+                          Import
+                        </td>
+                        <td class="page_tab" align="center">
+                          <v:url name="b_url13" value="--'Export'" format="%s" url="--'wsdl_services.vspx?page=3'" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          &npsp;
+                        </td>
+                      </v:template>
+                      <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
+                        <td class="page_tab" align="center">
+                          <v:url name="b_url31" value="--'Import'" format="%s" url="--'wsdl_services.vspx?page=1'" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center">
+                          Export
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          &npsp;
+                        </td>
+                      </v:template>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <v:template name="ent_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1'  or  get_keyword('page', control.vc_page.vc_event.ve_params) is null ) then 1 else 0 end">
+                          <v:include url="wsdltree.vspx"/>
+                        </v:template>
+                        <v:template name="tmodel_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3'  ) then 1 else 0 end">
+                          <v:include url="wsdl_service_create.vspx"/>
+                        </v:template>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

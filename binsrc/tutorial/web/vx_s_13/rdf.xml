@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@
 	    XMLELEMENT('title', Name),
 	    XMLELEMENT('guid', 'http://'||HTTP_GET_HOST ()||http_path ()||'#'||Code),
 	    XMLELEMENT('link', sprintf ('http://%s/tutorial/web/vx_s_13/c_disp.vspx?c=%U', HTTP_GET_HOST (), Name)),
-	    XMLELEMENT('pubDate', date_rfc1123 (now ())),
+	    XMLELEMENT('pubDate', date_rfc1123 (curutcdatetime ())),
 	    XMLELEMENT('description', vx_s_13_make_desc (Name, Code, SmallFlagDAVResourceURI)),
 	    XMLELEMENT('enclosure', XMLATTRIBUTES (
 	    	'image/gif' as 'type', 

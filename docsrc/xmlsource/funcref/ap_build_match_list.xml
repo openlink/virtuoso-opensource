@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_ap_build_match_list">
   <refmeta>
     <refentrytitle>AP_BUILD_MATCH_LIST</refentrytitle>
@@ -53,12 +74,12 @@ silently ignored.</para>
       <para>0 for plain text, 1 for standard-compliant HTML or 2 for "dirty" HTML</para>
     </refsect2>
     <refsect2><title>report_flags</title>
-      <para></para>
+      <para>Report flag</para>
     </refsect2>
   </refsect1>
   <refsect1 id="examples_ap_build_match_list">
     <title>Examples</title>
-    <example id="ex_ap_build_match_list"><title></title>
+    <example id="ex_ap_build_match_list"><title>Simple Use</title>
       <para>Usage example can be found <link linkend="sqlreffastphraseexample">here</link>.</para>
     </example>
   </refsect1>

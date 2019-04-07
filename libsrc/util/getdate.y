@@ -110,9 +110,6 @@
 #define _CONTEXT OPL_gd__CONTEXT
 #define CONTEXT  OPL_gd_CONTEXT
 
-static int yylex (void *yylval, void *cookie);
-static int yyerror (char *s);
-
 #define EPOCH		1970
 #define HOUR(x)		((x) * 60)
 
@@ -164,9 +161,10 @@ typedef struct _CONTEXT {
 /* enable use of extra argument to yyparse and yylex which can be used to pass
 **  in a user defined value (CONTEXT struct in our case)
 */
-#define YYPARSE_PARAM cookie
-#define YYLEX_PARAM cookie
-#define context ((CONTEXT *) cookie)
+
+static int yylex (void *yylval, CONTEXT *pc);
+static int yyerror (CONTEXT *pc, char *s);
+
 %}
 
 /* This grammar has 13 shift/reduce conflicts. */
@@ -176,6 +174,8 @@ typedef struct _CONTEXT {
 ** for yylex (pointer to yylval and user defined value)
 */
 %pure_parser
+%parse-param	{ CONTEXT *pc }
+%lex-param	{ CONTEXT *pc }
 
 %union {
     int			Number;
@@ -198,91 +198,91 @@ spec	: /* NULL */
 	;
 
 item	: time {
-	    context->yyHaveTime++;
+	    pc->yyHaveTime++;
 	}
 	| zone {
-	    context->yyHaveZone++;
+	    pc->yyHaveZone++;
 	}
 	| date {
-	    context->yyHaveDate++;
+	    pc->yyHaveDate++;
 	}
 	| day {
-	    context->yyHaveDay++;
+	    pc->yyHaveDay++;
 	}
 	| rel {
-	    context->yyHaveRel++;
+	    pc->yyHaveRel++;
 	}
 	| number
 	;
 
 time	: tUNUMBER tMERIDIAN {
-	    context->yyHour = $1;
-	    context->yyMinutes = 0;
-	    context->yySeconds = 0;
-	    context->yyMeridian = $2;
+	    pc->yyHour = $1;
+	    pc->yyMinutes = 0;
+	    pc->yySeconds = 0;
+	    pc->yyMeridian = $2;
 	}
 	| tUNUMBER ':' tUNUMBER o_merid {
-	    context->yyHour = $1;
-	    context->yyMinutes = $3;
-	    context->yySeconds = 0;
-	    context->yyMeridian = $4;
+	    pc->yyHour = $1;
+	    pc->yyMinutes = $3;
+	    pc->yySeconds = 0;
+	    pc->yyMeridian = $4;
 	}
 	| tUNUMBER ':' tUNUMBER tSNUMBER {
-	    context->yyHour = $1;
-	    context->yyMinutes = $3;
-	    context->yyMeridian = MER24;
-	    context->yyHaveZone++;
-	    context->yyTimezone = ($4 < 0
+	    pc->yyHour = $1;
+	    pc->yyMinutes = $3;
+	    pc->yyMeridian = MER24;
+	    pc->yyHaveZone++;
+	    pc->yyTimezone = ($4 < 0
 				   ? -$4 % 100 + (-$4 / 100) * 60
 				   : - ($4 % 100 + ($4 / 100) * 60));
 	}
 	| tUNUMBER ':' tUNUMBER ':' tUNUMBER o_merid {
-	    context->yyHour = $1;
-	    context->yyMinutes = $3;
-	    context->yySeconds = $5;
-	    context->yyMeridian = $6;
+	    pc->yyHour = $1;
+	    pc->yyMinutes = $3;
+	    pc->yySeconds = $5;
+	    pc->yyMeridian = $6;
 	}
 	| tUNUMBER ':' tUNUMBER ':' tUNUMBER tSNUMBER {
-	    context->yyHour = $1;
-	    context->yyMinutes = $3;
-	    context->yySeconds = $5;
-	    context->yyMeridian = MER24;
-	    context->yyHaveZone++;
-	    context->yyTimezone = ($6 < 0
+	    pc->yyHour = $1;
+	    pc->yyMinutes = $3;
+	    pc->yySeconds = $5;
+	    pc->yyMeridian = MER24;
+	    pc->yyHaveZone++;
+	    pc->yyTimezone = ($6 < 0
 				   ? -$6 % 100 + (-$6 / 100) * 60
 				   : - ($6 % 100 + ($6 / 100) * 60));
 	}
 	;
 
 zone	: tZONE {
-	    context->yyTimezone = $1;
+	    pc->yyTimezone = $1;
 	}
 	| tDAYZONE {
-	    context->yyTimezone = $1 - 60;
+	    pc->yyTimezone = $1 - 60;
 	}
 	|
 	  tZONE tDST {
-	    context->yyTimezone = $1 - 60;
+	    pc->yyTimezone = $1 - 60;
 	}
 	;
 
 day	: tDAY {
-	    context->yyDayOrdinal = 1;
-	    context->yyDayNumber = $1;
+	    pc->yyDayOrdinal = 1;
+	    pc->yyDayNumber = $1;
 	}
 	| tDAY ',' {
-	    context->yyDayOrdinal = 1;
-	    context->yyDayNumber = $1;
+	    pc->yyDayOrdinal = 1;
+	    pc->yyDayNumber = $1;
 	}
 	| tUNUMBER tDAY {
-	    context->yyDayOrdinal = $1;
-	    context->yyDayNumber = $2;
+	    pc->yyDayOrdinal = $1;
+	    pc->yyDayNumber = $2;
 	}
 	;
 
 date	: tUNUMBER '/' tUNUMBER {
-	    context->yyMonth = $1;
-	    context->yyDay = $3;
+	    pc->yyMonth = $1;
+	    pc->yyDay = $3;
 	}
 	| tUNUMBER '/' tUNUMBER '/' tUNUMBER {
 	  /* Interpret as YYYY/MM/DD if $1 >= 1000, otherwise as MM/DD/YY.
@@ -291,145 +291,145 @@ date	: tUNUMBER '/' tUNUMBER {
 	     you want portability, use the ISO 8601 format.  */
 	  if ($1 >= 1000)
 	    {
-	      context->yyYear = $1;
-	      context->yyMonth = $3;
-	      context->yyDay = $5;
+	      pc->yyYear = $1;
+	      pc->yyMonth = $3;
+	      pc->yyDay = $5;
 	    }
 	  else
 	    {
-	      context->yyMonth = $1;
-	      context->yyDay = $3;
-	      context->yyYear = $5;
+	      pc->yyMonth = $1;
+	      pc->yyDay = $3;
+	      pc->yyYear = $5;
 	    }
 	}
 	| tUNUMBER tSNUMBER tSNUMBER {
 	    /* ISO 8601 format.  yyyy-mm-dd.  */
-	    context->yyYear = $1;
-	    context->yyMonth = -$2;
-	    context->yyDay = -$3;
+	    pc->yyYear = $1;
+	    pc->yyMonth = -$2;
+	    pc->yyDay = -$3;
 	}
 	| tUNUMBER tMONTH tSNUMBER {
 	    /* e.g. 17-JUN-1992.  */
-	    context->yyDay = $1;
-	    context->yyMonth = $2;
-	    context->yyYear = -$3;
+	    pc->yyDay = $1;
+	    pc->yyMonth = $2;
+	    pc->yyYear = -$3;
 	}
 	| tMONTH tUNUMBER {
-	    context->yyMonth = $1;
-	    context->yyDay = $2;
+	    pc->yyMonth = $1;
+	    pc->yyDay = $2;
 	}
 	| tMONTH tUNUMBER ',' tUNUMBER {
-	    context->yyMonth = $1;
-	    context->yyDay = $2;
-	    context->yyYear = $4;
+	    pc->yyMonth = $1;
+	    pc->yyDay = $2;
+	    pc->yyYear = $4;
 	}
 	| tUNUMBER tMONTH {
-	    context->yyMonth = $2;
-	    context->yyDay = $1;
+	    pc->yyMonth = $2;
+	    pc->yyDay = $1;
 	}
 	| tUNUMBER tMONTH tUNUMBER {
-	    context->yyMonth = $2;
-	    context->yyDay = $1;
-	    context->yyYear = $3;
+	    pc->yyMonth = $2;
+	    pc->yyDay = $1;
+	    pc->yyYear = $3;
 	}
 	;
 
 rel	: relunit tAGO {
-	    context->yyRelSeconds = -context->yyRelSeconds;
-	    context->yyRelMinutes = -context->yyRelMinutes;
-	    context->yyRelHour = -context->yyRelHour;
-	    context->yyRelDay = -context->yyRelDay;
-	    context->yyRelMonth = -context->yyRelMonth;
-	    context->yyRelYear = -context->yyRelYear;
+	    pc->yyRelSeconds = -pc->yyRelSeconds;
+	    pc->yyRelMinutes = -pc->yyRelMinutes;
+	    pc->yyRelHour = -pc->yyRelHour;
+	    pc->yyRelDay = -pc->yyRelDay;
+	    pc->yyRelMonth = -pc->yyRelMonth;
+	    pc->yyRelYear = -pc->yyRelYear;
 	}
 	| relunit
 	;
 
 relunit	: tUNUMBER tYEAR_UNIT {
-	    context->yyRelYear += $1 * $2;
+	    pc->yyRelYear += $1 * $2;
 	}
 	| tSNUMBER tYEAR_UNIT {
-	    context->yyRelYear += $1 * $2;
+	    pc->yyRelYear += $1 * $2;
 	}
 	| tYEAR_UNIT {
-	    context->yyRelYear += $1;
+	    pc->yyRelYear += $1;
 	}
 	| tUNUMBER tMONTH_UNIT {
-	    context->yyRelMonth += $1 * $2;
+	    pc->yyRelMonth += $1 * $2;
 	}
 	| tSNUMBER tMONTH_UNIT {
-	    context->yyRelMonth += $1 * $2;
+	    pc->yyRelMonth += $1 * $2;
 	}
 	| tMONTH_UNIT {
-	    context->yyRelMonth += $1;
+	    pc->yyRelMonth += $1;
 	}
 	| tUNUMBER tDAY_UNIT {
-	    context->yyRelDay += $1 * $2;
+	    pc->yyRelDay += $1 * $2;
 	}
 	| tSNUMBER tDAY_UNIT {
-	    context->yyRelDay += $1 * $2;
+	    pc->yyRelDay += $1 * $2;
 	}
 	| tDAY_UNIT {
-	    context->yyRelDay += $1;
+	    pc->yyRelDay += $1;
 	}
 	| tUNUMBER tHOUR_UNIT {
-	    context->yyRelHour += $1 * $2;
+	    pc->yyRelHour += $1 * $2;
 	}
 	| tSNUMBER tHOUR_UNIT {
-	    context->yyRelHour += $1 * $2;
+	    pc->yyRelHour += $1 * $2;
 	}
 	| tHOUR_UNIT {
-	    context->yyRelHour += $1;
+	    pc->yyRelHour += $1;
 	}
 	| tUNUMBER tMINUTE_UNIT {
-	    context->yyRelMinutes += $1 * $2;
+	    pc->yyRelMinutes += $1 * $2;
 	}
 	| tSNUMBER tMINUTE_UNIT {
-	    context->yyRelMinutes += $1 * $2;
+	    pc->yyRelMinutes += $1 * $2;
 	}
 	| tMINUTE_UNIT {
-	    context->yyRelMinutes += $1;
+	    pc->yyRelMinutes += $1;
 	}
 	| tUNUMBER tSEC_UNIT {
-	    context->yyRelSeconds += $1 * $2;
+	    pc->yyRelSeconds += $1 * $2;
 	}
 	| tSNUMBER tSEC_UNIT {
-	    context->yyRelSeconds += $1 * $2;
+	    pc->yyRelSeconds += $1 * $2;
 	}
 	| tSEC_UNIT {
-	    context->yyRelSeconds += $1;
+	    pc->yyRelSeconds += $1;
 	}
 	;
 
 number	: tUNUMBER
           {
-	    if (context->yyHaveTime && context->yyHaveDate &&
-		!context->yyHaveRel)
-	      context->yyYear = $1;
+	    if (pc->yyHaveTime && pc->yyHaveDate &&
+		!pc->yyHaveRel)
+	      pc->yyYear = $1;
 	    else
 	      {
 		if ($1>10000)
 		  {
-		    context->yyHaveDate++;
-		    context->yyDay= ($1)%100;
-		    context->yyMonth= ($1/100)%100;
-		    context->yyYear = $1/10000;
+		    pc->yyHaveDate++;
+		    pc->yyDay= ($1)%100;
+		    pc->yyMonth= ($1/100)%100;
+		    pc->yyYear = $1/10000;
 		  }
 		else
 		  {
-		    context->yyHaveTime++;
+		    pc->yyHaveTime++;
 		    if ($1 < 100)
 		      {
-			context->yyHour = $1;
-			context->yyMinutes = 0;
+			pc->yyHour = $1;
+			pc->yyMinutes = 0;
 		      }
 		    else
 		      {
-		    	context->yyHour = $1 / 100;
-		    	context->yyMinutes = $1 % 100;
+		    	pc->yyHour = $1 / 100;
+		    	pc->yyMinutes = $1 % 100;
 		      }
-		    context->yySeconds = 0;
-		    context->yyMeridian = MER24;
+		    pc->yySeconds = 0;
+		    pc->yyMeridian = MER24;
 		  }
 	      }
 	  }
@@ -647,7 +647,7 @@ static TABLE const MilitaryTable[] = {
 
 /* ARGSUSED */
 static int
-yyerror (char *s)
+yyerror (CONTEXT *pc, char *s)
 {
   return 0;
 }
@@ -816,7 +816,7 @@ LookupWord (YYSTYPE *yylval, char *buff)
 }
 
 static int
-yylex (void *lval, void *cookie)
+yylex (void *lval, CONTEXT *pc)
 {
   register unsigned char c;
   register char *p;
@@ -827,42 +827,42 @@ yylex (void *lval, void *cookie)
 
   for (;;)
     {
-      while (ISSPACE ((unsigned char) *context->yyInput))
-	context->yyInput++;
+      while (ISSPACE ((unsigned char) *pc->yyInput))
+	pc->yyInput++;
 
-      if (ISDIGIT (c = *context->yyInput) || c == '-' || c == '+')
+      if (ISDIGIT (c = *pc->yyInput) || c == '-' || c == '+')
 	{
 	  if (c == '-' || c == '+')
 	    {
 	      sign = c == '-' ? -1 : 1;
-	      if (!ISDIGIT (*++context->yyInput))
+	      if (!ISDIGIT (*++pc->yyInput))
 		/* skip the '-' sign */
 		continue;
 	    }
 	  else
 	    sign = 0;
-	  for (yylval->Number = 0; ISDIGIT (c = *context->yyInput++);)
+	  for (yylval->Number = 0; ISDIGIT (c = *pc->yyInput++);)
 	    yylval->Number = 10 * yylval->Number + c - '0';
-	  context->yyInput--;
+	  pc->yyInput--;
 	  if (sign < 0)
 	    yylval->Number = -yylval->Number;
 	  return sign ? tSNUMBER : tUNUMBER;
 	}
       if (ISALPHA (c))
 	{
-	  for (p = buff; (c = *context->yyInput++, ISALPHA (c)) || c == '.';)
+	  for (p = buff; (c = *pc->yyInput++, ISALPHA (c)) || c == '.';)
 	    if (p < &buff[sizeof buff - 1])
 	      *p++ = c;
 	  *p = '\0';
-	  context->yyInput--;
+	  pc->yyInput--;
 	  return LookupWord (yylval, buff);
 	}
       if (c != '(')
-	return *context->yyInput++;
+	return *pc->yyInput++;
       Count = 0;
       do
 	{
-	  c = *context->yyInput++;
+	  c = *pc->yyInput++;
 	  if (c == '\0')
 	    return c;
 	  if (c == '(')
@@ -902,11 +902,11 @@ get_date (const char *p, const time_t *now)
 {
   struct tm tm, tm0, *tmp;
   time_t Start;
-  CONTEXT cookie;
+  CONTEXT context;
 #ifdef HAVE_LOCALTIME_R
   struct tm keeptime;
 #endif
-  cookie.yyInput = p;
+  context.yyInput = p;
   Start = now ? *now : time ((time_t *) NULL);
 #ifdef HAVE_LOCALTIME_R
   tmp = (struct tm *)localtime_r(&Start, &keeptime);
@@ -915,55 +915,55 @@ get_date (const char *p, const time_t *now)
 #endif
   if (!tmp)
     return -1;
-  cookie.yyYear = tmp->tm_year + TM_YEAR_ORIGIN;
-  cookie.yyMonth = tmp->tm_mon + 1;
-  cookie.yyDay = tmp->tm_mday;
-  cookie.yyHour = tmp->tm_hour;
-  cookie.yyMinutes = tmp->tm_min;
-  cookie.yySeconds = tmp->tm_sec;
+  context.yyYear = tmp->tm_year + TM_YEAR_ORIGIN;
+  context.yyMonth = tmp->tm_mon + 1;
+  context.yyDay = tmp->tm_mday;
+  context.yyHour = tmp->tm_hour;
+  context.yyMinutes = tmp->tm_min;
+  context.yySeconds = tmp->tm_sec;
   tm.tm_isdst = tmp->tm_isdst;
-  cookie.yyMeridian = MER24;
-  cookie.yyRelSeconds = 0;
-  cookie.yyRelMinutes = 0;
-  cookie.yyRelHour = 0;
-  cookie.yyRelDay = 0;
-  cookie.yyRelMonth = 0;
-  cookie.yyRelYear = 0;
-  cookie.yyHaveDate = 0;
-  cookie.yyHaveDay = 0;
-  cookie.yyHaveRel = 0;
-  cookie.yyHaveTime = 0;
-  cookie.yyHaveZone = 0;
+  context.yyMeridian = MER24;
+  context.yyRelSeconds = 0;
+  context.yyRelMinutes = 0;
+  context.yyRelHour = 0;
+  context.yyRelDay = 0;
+  context.yyRelMonth = 0;
+  context.yyRelYear = 0;
+  context.yyHaveDate = 0;
+  context.yyHaveDay = 0;
+  context.yyHaveRel = 0;
+  context.yyHaveTime = 0;
+  context.yyHaveZone = 0;
 
-  if (yyparse (&cookie)
-      || cookie.yyHaveTime > 1 || cookie.yyHaveZone > 1 ||
-      cookie.yyHaveDate > 1 || cookie.yyHaveDay > 1)
+  if (yyparse (&context)
+      || context.yyHaveTime > 1 || context.yyHaveZone > 1 ||
+      context.yyHaveDate > 1 || context.yyHaveDay > 1)
     return -1;
 
-  tm.tm_year = ToYear (cookie.yyYear) - TM_YEAR_ORIGIN + cookie.yyRelYear;
-  tm.tm_mon = cookie.yyMonth - 1 + cookie.yyRelMonth;
-  tm.tm_mday = cookie.yyDay + cookie.yyRelDay;
-  if (cookie.yyHaveTime ||
-      (cookie.yyHaveRel && !cookie.yyHaveDate && !cookie.yyHaveDay))
+  tm.tm_year = ToYear (context.yyYear) - TM_YEAR_ORIGIN + context.yyRelYear;
+  tm.tm_mon = context.yyMonth - 1 + context.yyRelMonth;
+  tm.tm_mday = context.yyDay + context.yyRelDay;
+  if (context.yyHaveTime ||
+      (context.yyHaveRel && !context.yyHaveDate && !context.yyHaveDay))
     {
-      tm.tm_hour = ToHour (cookie.yyHour, cookie.yyMeridian);
+      tm.tm_hour = ToHour (context.yyHour, context.yyMeridian);
       if (tm.tm_hour < 0)
 	return -1;
-      tm.tm_min = cookie.yyMinutes;
-      tm.tm_sec = cookie.yySeconds;
+      tm.tm_min = context.yyMinutes;
+      tm.tm_sec = context.yySeconds;
     }
   else
     {
       tm.tm_hour = tm.tm_min = tm.tm_sec = 0;
     }
-  tm.tm_hour += cookie.yyRelHour;
-  tm.tm_min += cookie.yyRelMinutes;
-  tm.tm_sec += cookie.yyRelSeconds;
+  tm.tm_hour += context.yyRelHour;
+  tm.tm_min += context.yyRelMinutes;
+  tm.tm_sec += context.yyRelSeconds;
 
   /* Let mktime deduce tm_isdst if we have an absolute timestamp,
      or if the relative timestamp mentions days, months, or years.  */
-  if (cookie.yyHaveDate | cookie.yyHaveDay | cookie.yyHaveTime |
-      cookie.yyRelDay | cookie.yyRelMonth | cookie.yyRelYear)
+  if (context.yyHaveDate | context.yyHaveDay | context.yyHaveTime |
+      context.yyRelDay | context.yyRelMonth | context.yyRelYear)
     tm.tm_isdst = -1;
 
   tm0 = tm;
@@ -981,18 +981,18 @@ get_date (const char *p, const time_t *now)
          we apply mktime to 1970-01-02 08:00:00 instead and adjust the time
          zone by 24 hours to compensate.  This algorithm assumes that
          there is no DST transition within a day of the time_t boundaries.  */
-      if (cookie.yyHaveZone)
+      if (context.yyHaveZone)
 	{
 	  tm = tm0;
 	  if (tm.tm_year <= EPOCH - TM_YEAR_ORIGIN)
 	    {
 	      tm.tm_mday++;
-	      cookie.yyTimezone -= 24 * 60;
+	      context.yyTimezone -= 24 * 60;
 	    }
 	  else
 	    {
 	      tm.tm_mday--;
-	      cookie.yyTimezone += 24 * 60;
+	      context.yyTimezone += 24 * 60;
 	    }
 	  Start = mktime (&tm);
 	}
@@ -1001,16 +1001,16 @@ get_date (const char *p, const time_t *now)
 	return Start;
     }
 
-  if (cookie.yyHaveDay && !cookie.yyHaveDate)
+  if (context.yyHaveDay && !context.yyHaveDate)
     {
-      tm.tm_mday += ((cookie.yyDayNumber - tm.tm_wday + 7) % 7
-		     + 7 * (cookie.yyDayOrdinal - (0 < cookie.yyDayOrdinal)));
+      tm.tm_mday += ((context.yyDayNumber - tm.tm_wday + 7) % 7
+		     + 7 * (context.yyDayOrdinal - (0 < context.yyDayOrdinal)));
       Start = mktime (&tm);
       if (Start == (time_t) -1)
 	return Start;
     }
 
-  if (cookie.yyHaveZone)
+  if (context.yyHaveZone)
     {
       long delta;
       struct tm *gmt;
@@ -1023,7 +1023,7 @@ get_date (const char *p, const time_t *now)
 #endif
       if (!gmt)
 	return -1;
-      delta = cookie.yyTimezone * 60L + difftm (&tm, gmt);
+      delta = context.yyTimezone * 60L + difftm (&tm, gmt);
       if ((Start + delta < Start) != (delta < 0))
 	return -1;		/* time_t overflow */
       Start += delta;
@@ -1044,7 +1044,7 @@ main (int ac, char *av[])
   (void) printf ("Enter date, or blank line to exit.\n\t> ");
   (void) fflush (stdout);
 
-  buff[MAX_BUFF_LEN] = 0;
+  buff[MAX_BUFF_LEN] = '\0';
   while (fgets (buff, MAX_BUFF_LEN, stdin) && buff[0])
     {
       d = get_date (buff, (time_t *) NULL);

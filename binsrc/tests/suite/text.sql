@@ -1,28 +1,28 @@
---  
---  $Id$
---  
+--
+--  $Id: text.sql,v 1.4.10.1 2013/01/02 16:15:08 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
-create table VT_WORDS (VT_WORD varchar, VT_D_ID integer, VT_D_ID_2 integer, VT_DATA varchar, 
+create table VT_WORDS (VT_WORD varchar, VT_D_ID integer, VT_D_ID_2 integer, VT_DATA varchar,
 		      VT_LONG_DATA long varchar,
 		       primary key (VT_WORD, VT_D_ID));
 
@@ -64,7 +64,7 @@ create procedure invd_words (in invd any)
 	c8 := c8 + 1;
       else if (aref (v, vinx) - pos < 65500)
 	c16 := c16 + 1;
-      else 
+      else
 	c32 := c32 + 1;
       pos := aref (v, vinx);
       vinx := vinx + 1;
@@ -101,7 +101,7 @@ create procedure invd_words_2 (in invd any)
 	c8 := c8 + 1;
       else if (aref (v, vinx) - pos < 55 * 256)
 	c16 := c16 + 1;
-      else 
+      else
 	c32 := c32 + 1;
       pos := aref (v, vinx);
       vinx := vinx + 1;
@@ -161,10 +161,10 @@ create procedure vt_insert (inout invd any, in d_id integer)
       declare id1, id2 integer;
       declare org_str, wst, str1, str2, str3, blob varchar;
       word := aref (invd, inx);
-      declare cr cursor for 
-	select VT_DATA, VT_LONG_DATA  from VT_WORDS where VT_WORD = word and VT_D_ID <= d_id 
+      declare cr cursor for
+	select VT_DATA, VT_LONG_DATA  from VT_WORDS where VT_WORD = word and VT_D_ID <= d_id
 		 order by VT_WORD desc, VT_D_ID desc;
-      
+
       wst := vt_word_string (invd, inx, d_id);
       whenever not found goto first;
       open cr;
@@ -188,9 +188,9 @@ create procedure vt_insert (inout invd any, in d_id integer)
 	vt_insert_1 (word, str2);
       if (str3 <> 0)
 	vt_insert_1 (word, str3);
-      
+
       goto next;
-      
+
     first:
       vt_insert_1 (word, wst);
     next:
@@ -213,7 +213,7 @@ create procedure wb_all_done (inout wb any, out d_id integer, inout several_left
 	  vt_word_string_ends (wst, d_id, d_id_2);
 	  if (inx < length (wb) - 1)
 	    several_left := 1;
-	  else 
+	  else
 	    several_left := 0;
 	  return 0;
 	}
@@ -248,10 +248,10 @@ create procedure vt_process_word_batch (inout word varchar, inout wb any,
 {
   declare d_id, next_id, id1, id2, several_left, inx, chunk_d_id  integer;
   declare org_str, str1, strs, blob varchar;
-  declare cr cursor for 
-    select VT_D_ID, VT_DATA, VT_LONG_DATA  from VT_WORDS where VT_WORD = word and VT_D_ID <= d_id 
+  declare cr cursor for
+    select VT_D_ID, VT_DATA, VT_LONG_DATA  from VT_WORDS where VT_WORD = word and VT_D_ID <= d_id
 	     order by VT_WORD desc, VT_D_ID desc;
-  
+
   n_w := n_w + length (wb);
   -- dbg_obj_print ('word ', word);
   -- wb_details (wb);
@@ -264,7 +264,7 @@ create procedure vt_process_word_batch (inout word varchar, inout wb any,
       if (org_str is null)
 	org_str := blob_to_string (blob);
       goto ins;
-    first: 
+    first:
       org_str := '';
     ins:
       if (several_left)
@@ -413,3 +413,7 @@ create procedure index_batch_test (in start integer, in id2 integer, in flag int
   vt_batch_process (vtb);
   return;
 }
+
+
+
+

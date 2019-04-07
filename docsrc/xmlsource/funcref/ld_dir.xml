@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_ld_dir">
   <refmeta>
     <refentrytitle>ld_dir</refentrytitle>
@@ -45,7 +66,7 @@
 -->
   <refsect1 id="examples_ld_dir">
     <title>Examples</title>
-    <example id="ex_ld_dir"><title></title>
+    <example id="ex_ld_dir"><title>Simple Use</title>
 <programlisting><![CDATA[
 ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
 ]]></programlisting>    
@@ -58,13 +79,13 @@ ld_dir ('/data8/2848260', '%.gz', 'http://bsbm.org');
   </refsect1>
   <refsect1 id="seealso_ld_dir">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp_mt"><function>DB.DBA.TTLP_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_mt_local_file"><function>DB.DBA.TTLP_MT_LOCAL_FILE()</function></link></para>
     <para><link linkend="rdfperfloadingutility">RDF Bulk Load Utility</link></para>
   </refsect1>
 </refentry>

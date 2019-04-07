@@ -1,29 +1,29 @@
 --
 --  rproc2.sql
 --
---  $Id$
+--  $Id: rproc2.sql,v 1.8.10.2 2013/01/02 16:14:53 source Exp $
 --
 --  procedure attachment testsuite destination part
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --
 --  Start the test
@@ -88,6 +88,10 @@ ECHO BOTH $IF $EQU $LAST[1] 11 "PASSED" $IF $EQU $U{DO_RPROC} "NO" "SKIPPED" "**
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": retcode test procedure with 1 param return 11 : RETURN=" $LAST[1] "\n";
 
+
+select sum (rproc_retcode (row_no) - 10) from t1;
+echo both $if $equ $last[1] 599500  "PASSED" "***FAILED";
+echo both ":  rproc_retcode on vector\n";
 
 
 select RPROC_INOUT_WRAP (NULL);

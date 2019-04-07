@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -111,6 +111,7 @@ typedef struct
     long		bt_dtp;
     long		bt_prec;
     long		bt_scale;
+    const char *	bt_sql_dml_name;
   } bif_type_t;
 
 VIRTVARCLASS bif_type_t bt_varchar;
@@ -161,20 +162,34 @@ caddr_t bif_strict_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int n
 caddr_t bif_array_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func);
 void bif_result_inside_bif (int n, ...);
 
-#ifndef srv_make_new_error
-extern caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
-#endif
-void sqlr_error (const char *code, const char *msg,...);
-void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...);
-void sqlr_resignal (caddr_t err);
 
-query_t * sql_compile (char *string2, client_connection_t * cli, caddr_t * err,
-    int store_procs);
-void qr_free (query_t * qr);
+#ifdef MALLOC_DEBUG
+#ifndef sqlr_error
+caddr_t dbg_srv_make_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...);
+void dbg_sqlr_error (const char *file, int line, const char *code, const char *msg, ...) NORETURN;
+void dbg_sqlr_new_error (const char *file, int line, const char *code, const char *virt_code, const char *msg, ...) NORETURN;
+#define srv_make_new_error(code,virt_code,msg,...) dbg_srv_make_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#define sqlr_error(code,msg,...) dbg_sqlr_error (__FILE__, __LINE__, (code), (msg), ##__VA_ARGS__)
+#define sqlr_new_error(code,virt_code,msg,...) dbg_sqlr_new_error (__FILE__, __LINE__, (code), (virt_code), (msg), ##__VA_ARGS__)
+#endif
+#else
+caddr_t srv_make_new_error (const char *code, const char *virt_code, const char *msg,...);
+void sqlr_error (const char *code, const char *msg, ...) NORETURN;
+void sqlr_new_error (const char *code, const char *virt_code, const char *msg,...) NORETURN;
+#endif
+void sqlr_resignal (caddr_t err) NORETURN;
+
+query_t *sql_compile (char *string2, client_connection_t * cli, caddr_t * err, int store_procs);
+void qr_free_1 (query_t * qr);
+#ifdef MALLOC_DEBUG
+extern void dbg_qr_free (DBG_PARAMS query_t * qr);
+#define qr_free(qr) dbg_qr_free (__FILE__, __LINE__, (qr))
+#else
+extern void qr_free (query_t * qr);
+#endif
 
 caddr_t qr_rec_exec (query_t * qr, client_connection_t * cli,
-    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts,
-    long n_pars, ...);
+    local_cursor_t ** lc_ret, query_instance_t * caller, stmt_options_t * opts, long n_pars, ...);
 
 long lc_next (local_cursor_t * lc);
 caddr_t lc_nth_col (local_cursor_t * lc, int n);
@@ -382,9 +397,6 @@ struct thread_s
   void *		thr_tmp_pool;
   int                   thr_attached;
   caddr_t		thr_dbg;
-#ifndef NDEBUG
-  void *		thr_pg_dbg;
-#endif
 };
 
 #define MAX_NESTED_FUTURES      20
@@ -398,8 +410,6 @@ struct dk_thread_s
   int                 dkt_request_count;
   future_request_t *  dkt_requests[MAX_NESTED_FUTURES];
 };
-
-typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
 struct mutex_s
   {
@@ -425,10 +435,10 @@ struct mutex_s
 
 #ifdef MTX_DEBUG
     thread_t *		mtx_owner;
-    char *	mtx_entry_file;
-    int		mtx_entry_line;
-    char *	mtx_leave_file;
-    int		mtx_leave_line;
+    const char *	mtx_entry_file;
+    int			mtx_entry_line;
+    const char *	mtx_leave_file;
+    int			mtx_leave_line;
     mtx_entry_check_t	mtx_entry_check;
     void *		mtx_entry_check_cd;
 #endif
@@ -451,8 +461,8 @@ caddr_t box_wide_as_utf8_char (caddr_t _wide, long wide_len, dtp_t dtp);
 caddr_t box_utf8_string_as_narrow (ccaddr_t _str, caddr_t narrow, long max_len,
     caddr_t _charset);
 extern caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest,
-    long utf8_len, long max_wide_len, dtp_t dtp);
-caddr_t box_wide_char_string (caddr_t data, size_t len, dtp_t dtp);
+    long utf8_len, long max_wide_len);
+caddr_t box_wide_char_string (caddr_t data, size_t len);
 caddr_t box_varchar_string (db_buf_t place, int len, dtp_t dtp);
 caddr_t box_cast_to (caddr_t * qst, caddr_t data, dtp_t data_dtp,
     dtp_t to_dtp, ptrlong prec, ptrlong scale, caddr_t * err_ret);
@@ -551,7 +561,7 @@ struct dk_session_s
     caddr_t *		dks_caller_id_opts;
 
     void *		dks_dbs_data;
-    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol versions and cluster is all the same version */
+    void *		dks_cluster_data; /* cluster interconnect state.  Not the same as dks_dbs_data because dks_dbs_data when present determines protocol vrsions and cluster is all the same version */
     void *		dks_write_temp;	/* Used by Distributed Objects */
 
         /*! max msecs to block on a read */
@@ -629,16 +639,12 @@ struct s_node_s
    s_node_t *          next;
 };
 
-EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
+
 #ifdef MALLOC_DEBUG
 caddr_t dbg_strses_string (DBG_PARAMS dk_session_t * ses);
 caddr_t dbg_list_to_array (char *file, int line, dk_set_t l);
 #define strses_string(S) dbg_strses_string (__FILE__, __LINE__, (S))
-#ifndef _USRDLL
-#ifndef EXPORT_GATE
 #define list_to_array(S)	dbg_list_to_array (__FILE__, __LINE__, (S))
-#endif
-#endif
 #else
 caddr_t strses_string (dk_session_t * ses);
 caddr_t list_to_array (dk_set_t l);
@@ -647,7 +653,7 @@ caddr_t list_to_array (dk_set_t l);
 void dk_set_push (dk_set_t *ret, void *item);
 dk_set_t dk_set_nreverse (dk_set_t set);
 
-#define DV_EXTENSION_OBJ 255
+#define DV_EXTENSION_OBJ 251
 
 #define DO_SET(type, var, set) \
 	{ \

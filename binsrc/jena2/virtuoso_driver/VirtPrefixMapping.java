@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,92 +39,93 @@ import com.hp.hpl.jena.shared.impl.PrefixMappingImpl;
 
 public class VirtPrefixMapping extends PrefixMappingImpl {
 
-	protected VirtGraph m_graph = null;
-	
-	/**
-	 * Constructor for a persistent prefix mapping.
-	 * 
-	 */
-	public VirtPrefixMapping( VirtGraph graph) 
-	{
-	  super();
-	  m_graph = graph;
-		
-	  // Populate the prefix map using data from the 
-	  // persistent graph properties
-	  String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
-	  try {
-	    Statement stmt = m_graph.createStatement();
-	    ResultSet rs = stmt.executeQuery(query);
+    protected VirtGraph m_graph = null;
 
-  	    while (rs.next()) {
-	      String prefix = rs.getString(1);
-	      String uri = rs.getString(2);
-	      if (uri != null && uri != null)
-	        super.setNsPrefix(prefix, uri);
-	    }
-	    rs.close();
-	  } catch (Exception e) {
-	     throw new JenaException(e);
-	  } 
-	}
+    /**
+     * Constructor for a persistent prefix mapping.
+     */
+    public VirtPrefixMapping(VirtGraph graph) {
+        super();
+        m_graph = graph;
 
-        public PrefixMapping removeNsPrefix( String prefix )
-        {
-	  String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 1)";
-          super.removeNsPrefix( prefix );
+        // Populate the prefix map using data from the
+        // persistent graph properties
+        String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
+        Statement stmt = null;
+        try {
+            stmt = m_graph.createStatement();
+            ResultSet rs = stmt.executeQuery(query);
 
-	  try {
-	    PreparedStatement ps = m_graph.prepareStatement(query);
-	    ps.setString(1, prefix);
-	    ps.execute();
-	    ps.close();
-	  } catch (Exception e) {
-	     throw new JenaException(e);
-	  } 
-
-          return this;
+            while (rs.next()) {
+                String prefix = rs.getString(1);
+                String uri = rs.getString(2);
+                if (uri != null && uri != null)
+                    super.setNsPrefix(prefix, uri);
+            }
+            rs.close();
+        } catch (Exception e) {
+            throw new JenaException(e);
+        } finally {
+            if (stmt != null)
+                try {
+                    stmt.close();
+                } catch (Exception e) {
+                }
         }
-    
-	/* (non-Javadoc)
-	 * Override the default implementation so we can catch the write operation
-	 * and update the persistent store.
-	 * @see com.hp.hpl.jena.shared.PrefixMapping#setNsPrefix(java.lang.String, java.lang.String)
-	 */
-	public PrefixMapping setNsPrefix(String prefix, String uri) 
-	{
-	  super.setNsPrefix(prefix, uri);
+    }
 
-	  String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
-		
-	  // All went well, so persist the prefix by adding it to the graph properties
-	  // (the addPrefix call will overwrite any existing mapping with the same prefix
-	  // so it matches the behaviour of the prefixMappingImpl).
-	  try {
-	    PreparedStatement ps = m_graph.prepareStatement(query);
-	    ps.setString(1, prefix);
-	    ps.setString(2, uri);
-	    ps.execute();
-	    ps.close();
-	  } catch (Exception e) {
-	     throw new JenaException(e.toString());
-	  } 
-          return this;
-	}
+    public PrefixMapping removeNsPrefix(String prefix) {
+        String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 2)";
+        super.removeNsPrefix(prefix);
 
-	public PrefixMapping setNsPrefixes(PrefixMapping other) 
-	{
-	  return setNsPrefixes(other.getNsPrefixMap());
-	}
+        try {
+            PreparedStatement ps = m_graph.prepareStatement(query);
+            ps.setString(1, prefix);
+            ps.execute();
+            ps.close();
+        } catch (Exception e) {
+            throw new JenaException(e);
+        }
 
-	public PrefixMapping setNsPrefixes(Map other) 
-	{
-          checkUnlocked();
-	  Iterator it = other.entrySet().iterator();
-	  while (it.hasNext()) {
-	 	Map.Entry e = (Map.Entry) it.next();
-		setNsPrefix((String) e.getKey(), (String) e.getValue());
-	  }
-          return this;
-	}
+        return this;
+    }
+
+    /* (non-Javadoc)
+     * Override the default implementation so we can catch the write operation
+     * and update the persistent store.
+     * @see com.hp.hpl.jena.shared.PrefixMapping#setNsPrefix(java.lang.String, java.lang.String)
+     */
+    public PrefixMapping setNsPrefix(String prefix, String uri) {
+        super.setNsPrefix(prefix, uri);
+
+        String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 2)";
+
+        // All went well, so persist the prefix by adding it to the graph properties
+        // (the addPrefix call will overwrite any existing mapping with the same prefix
+        // so it matches the behaviour of the prefixMappingImpl).
+        try {
+            PreparedStatement ps = m_graph.prepareStatement(query);
+            ps.setString(1, prefix);
+            ps.setString(2, uri);
+            ps.execute();
+            ps.close();
+        } catch (Exception e) {
+            throw new JenaException(e.toString());
+        }
+        return this;
+    }
+
+    public PrefixMapping setNsPrefixes(PrefixMapping other) {
+        return setNsPrefixes(other.getNsPrefixMap());
+    }
+
+    public PrefixMapping setNsPrefixes(Map other) {
+        checkUnlocked();
+        Iterator it = other.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry e = (Map.Entry) it.next();
+            setNsPrefix((String) e.getKey(), (String) e.getValue());
+        }
+        return this;
+    }
 }

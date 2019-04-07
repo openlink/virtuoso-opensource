@@ -1,25 +1,25 @@
 #!/bin/sh
-#  
+#
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
-#  
-#  Copyright (C) 1998-2013 OpenLink Software
-#  
+#
+#  Copyright (C) 1998-2019 OpenLink Software
+#
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#  
+#
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#  
+#
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#  
+#
 
 # ----------------------------------------------------------------------
 #  Fix issues with LOCALE
@@ -38,7 +38,7 @@ SUITE_LISTFILE=${SUITE_LISTFILE-$1}
 
 HOST_OS=`uname -s | grep WIN`
 if [ "x$HOST_OS" != "x" ]
-then 
+then
 TEMPFILE="`cygpath -m $TMP/isql.$$`"
 if [ "x$SRC" != "x" ]
 then
@@ -70,14 +70,14 @@ fi
 
 
 if [ -f /usr/xpg4/bin/awk ]
-then 
+then
   myawk=/usr/xpg4/bin/awk
 else
   myawk=awk
 fi
 
 if [ "x$HOST_OS" != "x" ]
-then  
+then
   URLSIMU=../urlsimu.exe
   . ../suite/test_fn.sh
 else
@@ -86,25 +86,25 @@ fi
 
 http_get() {
   file=$1
-  if [ "$2" -gt "0" ] 
+  if [ "$2" -gt "0" ]
   then
     pipeline="-P -c $2"
   else
-    pipeline=""      
+    pipeline=""
   fi
   user=${3-dba}
   pass=${4-dba}
-  $URLSIMU $file $pipeline -u $user -p $pass 
+  $URLSIMU $file $pipeline -u $user -p $pass
 }
 
 do_command() {
   _dsn=$1
   command=$2
-  shift 
   shift
-  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE	
+  shift
+  echo "+ " $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*		>> $LOGFILE
   $ISQL $_dsn dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
-  if test $? -ne 0 
+  if test $? -ne 0
   then
     LOG "***FAILED: $command"
   else
@@ -127,7 +127,7 @@ process_commands() {
 '
   for line in `cat $list_file`
   do
-   
+
     if echo "$line" | $mygrep -e "^#" >/dev/null
     then
       # Comment

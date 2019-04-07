@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -64,37 +64,8 @@ be the base URI modified by the relative reference.
       <para>The reference name of the resource, relative to the base.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_xml_uri_merge"><title>Return Types</title><para></para></refsect1>
-  <refsect1 id="errors_xml_uri_merge"><title>Errors</title>
-<!--    <table><title>Errors signalled by </title>
-      <tgroup cols="4">
-      <thead>
-	<row>
-          <entry>SQL State</entry>
-          <entry>Error Code</entry>
-          <entry>Error Text</entry>
-          <entry>Description</entry>
-        </row>
-      </thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table> -->
-  </refsect1>
-  <refsect1 id="examples_xml_uri_merge"><title>Examples</title>
-    <example id="ex_xml_uri_merge"><title></title>
-      <para></para>
-      <screen></screen>
-    </example>
-  </refsect1>
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xml_uri_get">xml_uri_get</link></para>
+    <para><link linkend="fn_xml_uri_get">xml_uri_get()</link></para>
   </refsect1>
 </refentry>
 

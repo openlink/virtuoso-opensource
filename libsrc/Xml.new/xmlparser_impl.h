@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -132,7 +132,7 @@ struct brick_s {
   utf8char *		beg;		/*<! Pointer to the first byte of visible part of data */
   struct brick_s *	next;		/*<! Pointer to the next brick in the chain. */
   struct brick_s *	prev;		/*<! Pointer to previous brick in the chain. */
-  char *		data_begin;	/*<! Pointer to the first byte of data, owned by this brick */
+  caddr_t		data_begin;	/*<! Pointer to data, owned by this brick, if brick owns some data at all */
   int			data_refctr;	/*<! Counter of external references to buffer under data_begin */
   struct brick_s *	data_owner;	/*<! Owner of data which are in memory from \c beg to \c end */
   xml_pos_t		beg_pos;	/*<! Position of beg[0] char in the source */
@@ -417,8 +417,6 @@ extern const char *concat_full_name (const char *ns, const char *name);
 
 extern int check_entity_recursiveness (vxml_parser_t* parser, const char* entityname, int level, const char* currentname);
 
-void xs_clear_tag (ptrlong tag, int is_free);
-
 int insert_external_xmlschema_dtd (struct vxml_parser_s * parser);
 
 #define LM_EQUAL(a,b) \
@@ -453,7 +451,10 @@ extern int xmlparser_log_box (vxml_parser_t *parser, int errlevel, caddr_t msg);
 /* Adds a message of \errlevel importance into log of \c dv, allocating
 at least \c buflen_eval bytes for internal buffer.
 \returns zero if message is not dumped e.g. due to limitation on number of messages. */
-extern int xmlparser_logprintf (vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
+extern int DBG_NAME(xmlparser_logprintf) (DBG_PARAMS  vxml_parser_t *parser, ptrlong errlevel, size_t buflen_eval, const char *format, ...);
+#ifdef MALLOC_DEBUG
+#define xmlparser_logprintf(parser,errlevel,buflen_eval,format,...) dbg_xmlparser_logprintf (__FILE__, __LINE__, (parser), (errlevel), (buflen_eval), (format), ##__VA_ARGS__)
+#endif
 
 extern int xmlparser_log_place (struct vxml_parser_s *parser);
 

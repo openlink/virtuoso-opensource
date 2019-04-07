@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tsoap_new.sql,v 1.3.10.1 2013/01/02 16:15:26 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ECHO BOTH "STARTED: SOAP tests\n";
 
 SET ARGV[0] 0;
@@ -118,7 +118,7 @@ create procedure SOAP (in port varchar, in the_null_is integer, in soap_ver inte
 				'_numeric',	_numeric,
 				'_datetime',	_datetime,
 				'_vector',	_vector,
-				'_integer',	_integer), 
+				'_integer',	_integer),
 			soap_ver, null, null, null, dime, 'soaptest', 'soaptest');
   if (ret is null)
     signal ('.....', 'return from soap call is empty');
@@ -363,8 +363,6 @@ create procedure DB.DBA.SOAPTEST ()
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": creating VSP SOAP server procedure STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-grant execute on DB.DBA.SOAPTEST to SOAP_SRV;
-
 soap_call_new ('localhost:$U{HTTPPORT}', '/vspsoap.vsp', 'fake', 'test', vector(), 11);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";
 ECHO BOTH ": calling the VSP SOAP server with fake#test STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -382,7 +380,6 @@ create module DB.DBA.SOAPMOD {
   procedure SOAPMOD2(inout par2 int) { return par2 + 1; };
   procedure SOAPMOD3() { return 14; };
 };
-GRANT EXECUTE ON DB.DBA.SOAPMOD TO SOAP_SRV;
 
 select xml_tree_doc (soap_sdl ('DB.DBA.SOAPMOD', 'URL'));
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "*** FAILED";

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,7 @@ extern "C" {
 
 
 caddr_t
-box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp)
+box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len)
 {
   unsigned char *utf8 = (unsigned char *) _utf8;
   unsigned char *utf8work;
@@ -59,7 +59,7 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
 
   utf8work = utf8;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  wide_len = virt_mbsnrtowcs (NULL, &utf8work, utf8_len, 0, &state);
+  wide_len = virt_mbsnrtowcs (NULL, (const unsigned char **)&utf8work, utf8_len, 0, &state);
   if (((long) wide_len) < 0)
     return _wide_dest ? ((caddr_t) wide_len) : NULL;
   if (max_wide_len && max_wide_len < wide_len)
@@ -71,11 +71,11 @@ box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size
       wide_boxsize = (int) (wide_len + 1) * sizeof (wchar_t);
       if (wide_boxsize > MAX_READ_STRING)
         return NULL; /* Prohibitively long UTF-8 string as a source */
-      dest = dk_alloc_box (wide_boxsize, dtp);
+      dest = dk_alloc_box (wide_boxsize, DV_WIDE);
     }
   utf8work = utf8;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  if (wide_len != virt_mbsnrtowcs ((wchar_t *) dest, &utf8work, utf8_len, wide_len, &state))
+  if (wide_len != virt_mbsnrtowcs ((wchar_t *) dest, (const unsigned char **)&utf8work, utf8_len, wide_len, &state))
     GPF_T1("non consistent multi-byte to wide char translation of a buffer");
 
   ((wchar_t *)dest)[wide_len] = L'\0';
@@ -100,17 +100,82 @@ DBG_NAME(box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp
 #endif
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+  utf8_len = virt_wcsnrtombs (NULL, (const wchar_t **)&wide_work, wide_len, 0, &state);
   if (((long) utf8_len) < 0)
     return NULL;
   dest = DBG_NAME (dk_alloc_box) (DBG_ARGS utf8_len + 1, dtp);
 
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  if (utf8_len != virt_wcsnrtombs ((unsigned char *) dest, &wide_work, wide_len, utf8_len + 1, &state))
+  if (utf8_len != virt_wcsnrtombs ((unsigned char *) dest, (const wchar_t **)&wide_work, wide_len, utf8_len + 1, &state))
     GPF_T1("non consistent wide char to multi-byte translation of a buffer");
 
   dest[utf8_len] = '\0';
+  return dest;
+}
+
+caddr_t
+DBG_NAME(box_utf16_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp)
+{
+  char *dest, *utf8;
+  size_t utf8_len, rc, dest_len;
+  virt_mbstate_t state;
+  char *us;
+  char *us_end;
+  wchar_t wc;
+  unsigned char mbs[VIRT_MB_CUR_MAX];
+
+
+#ifdef DEBUG
+  if (wide_len & ~0xFFFFFF)
+    GPF_T1 ("bad wide_len in cast wide as UTF8");
+#endif
+  us = (char *) _wide;
+  us_end = (char *) (_wide + (wide_len * sizeof(uint16)));
+  memset (&state, 0, sizeof (virt_mbstate_t));
+  utf8_len = 0;
+  while (1)
+    {
+#ifdef WORDS_BIGENDIAN
+      wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+      wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+      if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+        break;
+
+      rc = virt_wcrtomb (mbs, wc, &state);
+      if (((long) rc) < 0)
+        return NULL; 
+      utf8_len += rc;
+    }
+
+  utf8 = dest = DBG_NAME (dk_alloc_box) (DBG_ARGS utf8_len + 1, dtp);
+
+  us = (char *) _wide;
+  us_end = (char *) (_wide + (wide_len * sizeof(uint16)));
+  memset (&state, 0, sizeof (virt_mbstate_t));
+  dest_len = utf8_len;
+  while (utf8_len > 0)
+    {
+#ifdef WORDS_BIGENDIAN
+      wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+      wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+      if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+        break;
+
+      rc = virt_wcrtomb ((unsigned char *)utf8, wc, &state);
+      if (((long) rc) < 0)
+        {
+          dk_free_box (dest);
+          return NULL; 
+        }
+      utf8_len -= rc;
+      utf8 += rc;
+    }
+  dest[dest_len] = '\0';
   return dest;
 }
 
@@ -128,14 +193,14 @@ mp_box_wide_as_utf8_char (mem_pool_t * mp, ccaddr_t _wide, size_t wide_len, dtp_
 #endif
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+  utf8_len = virt_wcsnrtombs (NULL, (const wchar_t **)&wide_work, wide_len, 0, &state);
   if (((long) utf8_len) < 0)
     return NULL;
   dest = mp_alloc_box (mp, utf8_len + 1, dtp);
 
   wide_work = wide;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  if (utf8_len != virt_wcsnrtombs ((unsigned char *) dest, &wide_work, wide_len, utf8_len + 1, &state))
+  if (utf8_len != virt_wcsnrtombs ((unsigned char *) dest, (const wchar_t **)&wide_work, wide_len, utf8_len + 1, &state))
     GPF_T1("non consistent wide char to multi-byte translation of a buffer");
 
   dest[utf8_len] = '\0';
@@ -153,7 +218,7 @@ wide_serialize (caddr_t wide_data, dk_session_t *ses)
 
    wide_work = wstr;
    memset (&state, 0, sizeof (virt_mbstate_t));
-   utf8_len = virt_wcsnrtombs (NULL, &wide_work, wide_len, 0, &state);
+   utf8_len = virt_wcsnrtombs (NULL, (const wchar_t **)&wide_work, wide_len, 0, &state);
    if (((long) utf8_len) < 0)
      GPF_T1("non consistent wide char to multi-byte translation of a buffer");
 
@@ -191,7 +256,7 @@ box_read_wide_string (dk_session_t *ses, dtp_t macro)
   utf8_len = session_buffered_read_char (ses);
   memset (string, 0, 2048);
   session_buffered_read (ses, (char *) string, utf8_len);
-  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0, DV_WIDE);
+  return box_utf8_as_wide_char ((caddr_t) string, NULL, utf8_len, 0);
 }
 
 #define CHUNK_SIZE	2048
@@ -212,7 +277,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
   while (utf8_len-- > 0)
     {
       read = session_buffered_read_char (session);
-      rc = (int) virt_mbrtowc (tmp, (unsigned char *) &read, 1, &state);
+      rc = (int) virt_mbrtowc_z (tmp, (unsigned char *) &read, 1, &state);
       if (rc > 0)
 	{
 	  if (ptr - w_array == CHUNK_SIZE)
@@ -229,7 +294,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
 	  caddr_t chunk_ptr;
 	  while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
             {
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
               ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
 #endif
 	      dk_free_box (chunk_ptr);
@@ -246,7 +311,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       while (NULL != (chunk_ptr = (caddr_t) dk_set_pop (&string_set)))
 	{
 	  memcpy (box_ptr, chunk_ptr, CHUNK_SIZE * sizeof (wchar_t));
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
           ((wchar_t *)chunk_ptr)[CHUNK_SIZE - 1] = 0;
 #endif
 	  dk_free_box (chunk_ptr);
@@ -255,7 +320,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
       if (ptr - w_array > 0)
 	{
 	  memcpy (box_ptr, w_array, (ptr - w_array) * sizeof (wchar_t));
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
           w_array[CHUNK_SIZE - 1] = 0;
 #endif
 	  dk_free_box ((box_t) w_array);
@@ -265,7 +330,7 @@ box_read_long_wide_string (dk_session_t *session, dtp_t macro)
     }
   else
     { /* no wide chars at all */
-#ifdef MALLOC_DEBUG
+#ifndef NDEBUG
       w_array[CHUNK_SIZE - 1] = 0;
 #endif
       dk_free_box ((box_t) w_array);
@@ -283,7 +348,7 @@ wide_char_length_of_utf8_string (const unsigned char *str, size_t utf8_length)
 }
 
 
-wchar_t *
+const wchar_t *
 virt_wcschr (const wchar_t *wcs, wchar_t wc)
 {
   if (wcs)
@@ -297,24 +362,22 @@ virt_wcschr (const wchar_t *wcs, wchar_t wc)
 }
 
 
-wchar_t *
-virt_wcsrchr (const wchar_t *wcs, wchar_t wc)
+const wchar_t *
+virt_wcsrchr (const wchar_t * wcs, wchar_t wc)
 {
-  wchar_t *wcs_end = (wchar_t *)wcs;
-  if (wcs && *wcs)
+  const wchar_t *best_hit = NULL;
+  if (NULL == wcs)
+    return NULL;
+  for (;;)
     {
-      while (*wcs_end)
-	wcs_end++;
-      wcs_end -= 1;
-      while (wcs_end >= wcs)
-	{
-	  if (*wcs == wc)
-	    return ((wchar_t *)wcs);
-	  wcs--;
-	}
+      if (wc == wcs[0])
+	best_hit = wcs;
+      if ('\0' == wcs[0])
+	return best_hit;
+      wcs++;
     }
-  return NULL;
 }
+
 
 size_t
 virt_wcslen (const wchar_t *wcs)
@@ -329,58 +392,92 @@ virt_wcslen (const wchar_t *wcs)
 }
 
 
+size_t
+virt_ucs2len (const uint16 *wcs)
+{
+  size_t len = 0;
+  while (wcs && *wcs)
+    {
+      wcs++;
+      len++;
+    }
+  return len;
+}
+
+
 int
 virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len)
 {
-  while (from && *from && to && *to)
+  static wchar_t zero = 0;
+  if (!from)
+    from = &zero;
+  if (!to)
+    to = &zero;
+  while (*from && *to && (0 < len))
     {
       if (*from > *to)
-	return 1;
+        return 1;
       if (*from < *to)
-	return -1;
+        return -1;
       from++;
       to++;
+      len--;
     }
-  if (!from || !*from)
-    {
-      if (!to || !*to)
-	return 0;
-      else
-	return -1;
-    }
-  else
-    return 1;
+  return 0;
 }
 
-
-wchar_t *
+const wchar_t *
 virt_wcsstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
-  wchar_t *cp;
-  wchar_t *ep;
-
+  const wchar_t *cp;
+  const wchar_t *ep;
   len = virt_wcslen (wc);
-  ep = (wchar_t *) wcs + virt_wcslen (wcs) - len;
-  for (cp = (wchar_t *) wcs; cp <= ep; cp++)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
-
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+    return NULL;
+  for (cp = wcs; cp <= ep; cp++)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
   return NULL;
 }
 
-wchar_t *
+const wchar_t *
 virt_wcsrstr (const wchar_t *wcs, const wchar_t *wc)
 {
   size_t len;
   const wchar_t *cp;
   const wchar_t *ep;
-
   len = virt_wcslen (wc);
-  for (cp = wcs + virt_wcslen (wcs) - len; cp >= wcs; --cp)
-    if (*cp == *wc && !virt_wcsncmp (cp, wc, len))
-      return (wchar_t *) cp;
+  if (0 == len)
+    return wcs;
+  ep = wcs + virt_wcslen (wcs) - len;
+  if (ep < wcs)
+  for (cp = ep; cp >= wcs; --cp)
+    if (*cp == *wc && !virt_wmemcmp (cp, wc, len))
+      return cp;
+  return NULL;
+}
 
+const wchar_t *
+virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen)
+{
+  const wchar_t *stop;
+  size_t cmplen;
+  if (needlelen > haystacklen)
+    return NULL;
+  if (0 == needlelen)
+    return haystack;
+  stop = haystack + haystacklen - needlelen;
+  cmplen = (needlelen - 1) * sizeof (wchar_t);
+  while (haystack <= stop)
+    {
+      if (haystack[0] == needle[0] && !memcmp (haystack+1, needle+1, cmplen))
+        return haystack;
+      haystack++;
+    }
   return NULL;
 }
 
@@ -452,6 +549,121 @@ cli_wide_to_narrow (wcharset_t * charset, int flags, const wchar_t *src, size_t 
 }
 
 
+size_t
+cli_utf16_to_narrow (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used)
+{
+  size_t n = 0;
+  char *us = (char *) src;
+  char *us_end = (((char *)src) + max_wides * sizeof(uint16));
+  wchar_t wc;
+
+  if (!*src)
+    return 0;
+
+  while (n < max_len)
+    {
+#ifdef WORDS_BIGENDIAN
+      wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+      wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+      if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+        break;
+
+      if (charset)
+	{
+	  if (charset == CHARSET_UTF8)
+	    {
+	      char temp[VIRT_MB_CUR_MAX];
+	      virt_mbstate_t st;
+	      size_t len, len_written = 0;
+	      memset (&st, 0, sizeof (st));
+	      len = virt_wcrtomb ((unsigned char *) temp, wc, &st);
+	      if (((long) len) > 0)
+		{
+		  len_written = MIN (len, max_len - n);
+		  memcpy (dest, temp, len_written);
+		  n += len_written - 1;
+		  dest += len_written - 1;
+		}
+	      else
+		*dest = '?';
+	    }
+	  else
+	    {
+	      *dest = (unsigned char) ((ptrlong) gethash ((void *)((ptrlong)wc), charset->chrs_ht));
+	      if (!*dest)
+		*dest = '?';
+	    }
+	}
+      else if (((unsigned long) wc) < 0x100L)
+	*dest = (unsigned char) wc;
+      else
+	*dest = '?';
+      n++;
+      dest++;
+    }
+  return n;
+}
+
+
+size_t
+cli_wide_to_utf16 (int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len)
+{
+  size_t n = 0;
+  char *rc;
+  char *us = (char*) dest;
+  char *us_end = (char*) (dest + max_len);
+
+  while (n < max_len && us < us_end)
+    {
+#ifdef WORDS_BIGENDIAN
+      rc = eh_encode_char__UTF16BE (*src, us, us_end);
+#else
+      rc = eh_encode_char__UTF16LE (*src, us, us_end);
+#endif
+      if ((char *)UNICHAR_NO_ROOM == rc)
+        break;
+
+      us = rc;
+      n++;
+      if (!*src)
+	break;
+      src++;
+    }
+  return (us - (char *)dest) / sizeof(uint16);
+}
+
+
+size_t
+cli_utf16_to_wide (int flags, const char *src, size_t max_len,
+    wchar_t *dest, size_t max_wides)
+{
+  size_t n = 0;
+  char *us = (char *) src;
+  char *us_end = (char *)(src + max_len);
+  wchar_t wc;
+
+  while(n < max_wides)
+    {
+#ifdef WORDS_BIGENDIAN
+      wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+      wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+      if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+        break;
+      
+      *dest = wc;
+      n++;
+      dest++;
+    }
+  return n;
+}
+
+
 char *
 cli_box_wide_to_narrow (const wchar_t * in)
 {
@@ -502,6 +714,53 @@ cli_narrow_to_wide (wcharset_t * charset, int flags, const unsigned char *src, s
 }
 
 
+size_t
+cli_narrow_to_utf16 (wcharset_t * charset, int flags, const unsigned char *src, size_t max_len,
+    uint16 *dest, size_t max_wides)
+{
+  size_t n = 0;
+  wchar_t wc;
+  char *rc;
+  char *us = (char*) dest;
+  char *us_end = (((char *)dest) + max_wides * sizeof(uint16));
+
+  while (n < max_len && us < us_end)
+    {
+      if (charset == CHARSET_UTF8)
+	{
+	  virt_mbstate_t st;
+	  size_t len;
+	  memset (&st, 0, sizeof (st));
+	  len = virt_mbrtowc (&wc, src, max_len - n, &st);
+	  if (((long) len) > 0)
+	    {
+	      n += len - 1;
+	      src += len - 1;
+	    }
+	}
+      else
+        {
+	  wc = charset ? charset->chrs_table[*src] : (wchar_t) *src;
+	}
+
+#ifdef WORDS_BIGENDIAN
+      rc = eh_encode_char__UTF16BE (wc, us, us_end);
+#else
+      rc = eh_encode_char__UTF16LE (wc, us, us_end);
+#endif
+      if ((char *)UNICHAR_NO_ROOM == rc)
+        break;
+
+      us = rc;
+      n++;
+      if (!*src)
+	break;
+      src++;
+    }
+  return (us - (char *)dest) / sizeof(uint16);
+}
+
+
 wchar_t *
 cli_box_narrow_to_wide (const char * in)
 {
@@ -528,7 +787,7 @@ cli_utf8_to_narrow (wcharset_t * charset, const unsigned char *_str, size_t max_
   unsigned char *str = (unsigned char *) _str, *src = (unsigned char *) _str;
   caddr_t box;
   memset (&state, 0, sizeof (virt_mbstate_t));
-  len = virt_mbsnrtowcs (NULL, &src, max_len, 0, &state);
+  len = virt_mbsnrtowcs (NULL, (const unsigned char **)&src, max_len, 0, &state);
   if (max_narrows > 0 && len > max_narrows)
     len = max_narrows;
   if (((long) len) <= 0)
@@ -642,6 +901,69 @@ cli_wide_to_escaped (wcharset_t * charset, int flags, const wchar_t *src, size_t
 }
 
 
+size_t
+cli_utf16_to_escaped (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used)
+{
+  size_t n = 0;
+  unsigned char *initial_dest = dest;
+  char *us = (char *) src;
+  char *us_end = (((char *)src) + max_wides * sizeof(uint16));
+  wchar_t wc;
+
+  while (n < max_len)
+    {
+#ifdef WORDS_BIGENDIAN
+      wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+      wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+      if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+        break;
+
+      if (charset && charset != CHARSET_UTF8 && *src)
+	{
+	  *dest = (unsigned char) ((ptrlong) gethash ((void *)((ptrlong)wc), charset->chrs_ht));
+	  if (!*dest)
+	    {
+	      char buf[15];
+	      int len;
+	      snprintf (buf, sizeof (buf), "\\x%lX", (unsigned long)wc);
+	      len = (int) strlen (buf);
+	      if (len + n < max_len)
+		{
+		  strcpy_size_ck ((char *) dest, buf, max_len - (dest - initial_dest));
+		  n += len - 1;
+		  dest += len - 1;
+		}
+	      else
+		*dest = '?';
+	    }
+	}
+      else if (((unsigned long)wc) < 0x100L)
+	*dest = (unsigned char) wc;
+      else
+	{
+	  char buf[15];
+	  int len;
+	  snprintf (buf, sizeof (buf), "\\x%lX", (unsigned long)wc);
+	  len = (int) strlen (buf);
+	  if (len + n < max_len)
+	    {
+	      strcpy_size_ck ((char *) dest, buf, max_len - (dest - initial_dest));
+	      n += len - 1;
+	      dest += len - 1;
+	    }
+	  else
+	    *dest = '?';
+	}
+      n++;
+      dest++;
+    }
+  return n;
+}
+
+
 wcharset_t *
 wide_charset_create (char *name, wchar_t *ltable, int table_len, caddr_t *aliases)
 {
@@ -682,7 +1004,7 @@ wide_as_utf8_len (caddr_t _wide)
   virt_mbstate_t state;
   memset (&state, 0, sizeof (virt_mbstate_t));
 
-  _utf8_len = virt_wcsnrtombs (NULL, ((wchar_t **)(&_wide)), _n / sizeof (wchar_t) - 1, 0, &state);
+  _utf8_len = virt_wcsnrtombs (NULL, ((const wchar_t **)(&_wide)), _n / sizeof (wchar_t) - 1, 0, &state);
   if (((long) _utf8_len) < 0)
     GPF_T1 ("Obscure wide string in wide_as_utf8_len");
   return _utf8_len;

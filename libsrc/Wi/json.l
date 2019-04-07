@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -23,6 +23,7 @@
 
 %option 8bit
 %option never-interactive
+%option noyywrap
 %option nounput
 %{
 #include <ctype.h>
@@ -39,58 +40,55 @@ int jsonyy_string_input (char *buf, int max);
 #define jsonyyerror(str) jsonyyerror_impl(str)
 
 struct sparp_s; /* forward */
-extern caddr_t spar_strliteral (struct sparp_s *sparp, const char *strg, int strg_is_long, int is_json);
+#define SPAR_STRLITERAL_SPARQL_STRING	0
+#define SPAR_STRLITERAL_JSON_STRING	1
+#define SPAR_STRLITERAL_SPARQL_QNAME	2
+extern caddr_t spar_unescape_strliteral (struct sparp_s *sparp, const char *strg, int count_of_quotes, int mode);
 extern int json_line;
 %}
 
-%x JSON_SQ
-%x JSON_DQ
+%x STRLIT
 
-JSON_SQ_PLAIN	([^\\''\r\n\t])
-JSON_DQ_PLAIN	([^\\""\r\n\t])
-JSON_ECHAR	([\\]([bfnrt\\""''/]|("u"{HEX}{HEX}{HEX}{HEX})))
-S_NL		((\r\n)|(\n\r)|\n|\r)
 HEX             ([0-9A-Fa-f])
 
 %%
 
-<INITIAL>"{"	{ return JSON_OBJ_BEGIN; }
-<INITIAL>"}"	{ return JSON_OBJ_END; }
-<INITIAL>"["	{ return JSON_ARR_BEGIN; }
-<INITIAL>"]"	{ return JSON_ARR_END; }
-<INITIAL>":"	{ return JSON_COLON; }
-<INITIAL>","	{ return JSON_COMMA; }
+<INITIAL>[\xef][\xbb][\xbf]			{ }
+<INITIAL>(([\xfe][\xff])|([\xff][\xfe]))	{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-16 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xf7][\x64][\x4c]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-1 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xdd][\x73][\x66][\x73]		{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the UTF-EBCDIC encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\x0e][\xfe][\xff]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the SCSU encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\xfb][\xee][\x28]			{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the BOCU-1 encoding but only UTF-8 is supported by this parser"); }
+<INITIAL>[\x84][\x31][\x95][\x33]		{ jsonyyerror ("The document contains the BOM (Byte Order Mark) of the GB-18030 encoding but only UTF-8 is supported by this parser"); }
 
-<INITIAL>['']({JSON_SQ_PLAIN}*)[''] 	{ jsonyylval.box = t_box_dv_short_nchars (jsonyytext + 1, jsonyyleng - 2); return JSON_SQSTRING; }
-<INITIAL>[""]({JSON_DQ_PLAIN}*)[""] 	{ jsonyylval.box = t_box_dv_short_nchars (jsonyytext + 1, jsonyyleng - 2); return JSON_DQSTRING; }
+<INITIAL>"{"	{ return OBJ_BEGIN; }
+<INITIAL>"}"	{ return OBJ_END; }
+<INITIAL>"["	{ return ARR_BEGIN; }
+<INITIAL>"]"	{ return ARR_END; }
+<INITIAL>":"	{ return COLON; }
+<INITIAL>","	{ return COMMA; }
+<INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
-<INITIAL>['']({JSON_SQ_PLAIN}*)	{ yymore(); BEGIN(JSON_SQ); }
-<INITIAL>[""]({JSON_DQ_PLAIN}*)	{ yymore(); BEGIN(JSON_DQ); }
-
-<JSON_SQ>({JSON_SQ_PLAIN}*)[''] 	{
-		   BEGIN(INITIAL);
-                   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
-		   return JSON_SQSTRING;
-		}
-<JSON_DQ>({JSON_DQ_PLAIN}*)[""] 	{
-		   BEGIN(INITIAL);
-		   jsonyylval.box = spar_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 0, 1);
-		   return JSON_DQSTRING;
+<INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
+                   jsonyylval.box = t_box_dv_short_nchars (jsonyytext+1, strlen (jsonyytext)-2);
+		   return STRING;
 		}
 
-<JSON_SQ>{JSON_SQ_PLAIN}+ { yymore (); }
-<JSON_DQ>{JSON_DQ_PLAIN}+ { yymore (); }
+<STRLIT>[^\\\"\n\r\t]*"\"" 	{
+		   BEGIN(INITIAL);
+                   jsonyylval.box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, jsonyytext, 1, SPAR_STRLITERAL_JSON_STRING);
+		   return STRING;
+		}
 
-<JSON_SQ,JSON_DQ>{JSON_ECHAR} { yymore (); }
-<JSON_SQ,JSON_DQ>[\n\r]	{ jsonyyerror ("line break is not allowed in JSON strings"); }
-<JSON_SQ,JSON_DQ>"\t"	{ jsonyyerror ("tab character is not allowed in JSON strings"); }
-<JSON_SQ,JSON_DQ>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
+<STRLIT>"\\"([\\\"bfnrt/]|(u{HEX}{HEX}{HEX}{HEX})) { yymore (); }
+<STRLIT>[^\\\"\n\r\t]* { yymore (); }
+<STRLIT>[\n\r]	{ jsonyyerror ("line break is not allowed in JSON strings"); }
+<STRLIT>"\t"	{ jsonyyerror ("tab character is not allowed in JSON strings"); }
+<STRLIT>"\\"	{ jsonyyerror ("invalid escaping sequence in a string"); }
 
-<INITIAL>true	{ return JSON_TRUE_L; }
-<INITIAL>false	{ return JSON_FALSE_L; }
-<INITIAL>null	{ return JSON_NULL_L; }
-<INITIAL>[A-Za-z_]([A-Za-z0-9_]*) { jsonyylval.box = t_box_dv_short_nchars (jsonyytext, jsonyyleng);
-		   return JSON_NAME; }
+<INITIAL>true	{ return TRUE_L; }
+<INITIAL>false	{ return FALSE_L; }
+<INITIAL>null	{ return NULL_L; }
 
 <INITIAL>"-"?(([1-9][0-9]*)|"0")	{
 		  caddr_t err = NULL;
@@ -101,7 +99,7 @@ HEX             ([0-9A-Fa-f])
                       jsonyyerror ("bad integer constant");
 		    }
                   jsonyylval.box = t_box_num_and_zero (n);
-		  return JSON_NUMBER;
+		  return NUMBER;
 		}
 <INITIAL>"-"?[0-9]+"."[0-9]* |
 <INITIAL>"-"?"."[0-9]+ {
@@ -110,25 +108,25 @@ HEX             ([0-9A-Fa-f])
   if (NUMERIC_STS_SUCCESS == rc)
     {
       jsonyylval.box = (caddr_t) num;
-      return JSON_NUMBER;
+      return NUMBER;
     }
   jsonyylval.box = t_box_double (atof (jsonyytext));
-  return JSON_NUMBER;
+  return NUMBER;
 }
 
 <INITIAL>"-"?[0-9]+[eE][+-]?[0-9]+	|
 <INITIAL>"-"?[0-9]+"."[0-9]+[eE][+-]?[0-9]+ |
 <INITIAL>"-"?"."[0-9]+[eE][+-]?[0-9]+	{
   jsonyylval.box = t_box_double (atof (jsonyytext));
-  return JSON_NUMBER;
+  return NUMBER;
 }
 
 <INITIAL>[+-]?[0-9.eE+-]+ { jsonyyerror ("syntax error in number"); }
 
-<INITIAL>[ \t]+
-<INITIAL>"#"([^\r\n]*){S_NL}   { json_line++; }
-<INITIAL>{S_NL}   { json_line++; }
-<INITIAL>.	{ jsonyyerror ("invalid character"); }
+<INITIAL>[ \r\t]+
+<INITIAL>"#"([^\n]*)[\n]   { json_line++; }
+<INITIAL>[\n]   { json_line++; }
+<INITIAL>.	{ jsonyyerror ("character outside string"); }
 
 
 %%

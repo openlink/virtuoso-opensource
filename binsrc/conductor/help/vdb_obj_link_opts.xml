@@ -1,0 +1,46 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="vdb_obj_link_opts">
+    <title>External Object Linking Options</title>
+    <para>On this page can be specified the
+	names for local objects to be created as a result of linking
+	of the selected external ones.
+    </para>
+    <para>
+	In addition to the names for remote stored procedures
+	following can be specified:
+    </para>
+    <simplelist>
+	<member>PL Wrapper type - 'none' to use attach procedure SQL statement, 'SOAP execution' to return an array of result set suitable for publishing on SOAP endpoints, 'SQL execution' to return result set suitable for usage in the PL.</member>
+	<member>Paramater type - IN/OUT/INOUT this could be changed to appropriate value if driver does not report it properly.</member>
+	<member>Parameter Data Type - a SQL type for the parameter.</member>
+	<member>SOAP Data Type - an XML Schema type used to describe
+	    the parameter in the WSDL file if procedure is goining to be used as a SOAP method.</member>
+    </simplelist>
+    <para>
+	To link the objects listed press the 'Link' button.
+    </para>
+  </sect1>
+</HelpTopic>

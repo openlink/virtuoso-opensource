@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_pub"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:variable name="ordg" type="varchar" default="null" />
+  <v:variable name="ordseqg" type="varchar" default="'asc'" />
+  <v:method name="set_ordg" arglist="in x any, inout e vspx_event, inout ds vspx_control">
+    <![CDATA[
+		if (self.ordg = x)
+		  {
+		    if (self.ordseqg = 'asc')
+		      self.ordseqg := 'desc';
+		    else
+		      self.ordseqg := 'asc';
+		  }
+		else
+		  {
+		    self.ordg := x;
+		    self.ordseqg := 'asc';
+		  }
+		if (ds is not null)
+		  ds.vc_data_bind (e);
+    ]]>
+  </v:method>
+
+      <table class="listing_ctr">
+        <tr>
+          <td>
+            <v:form name="cap_form" type="simple" action="accounts_page.vspx?page=3" method="POST">
+              <table class="ctl_grp">
+                <tr>
+                  <td><img src="images/icons/filter_32.png"/></td>
+                  <td>Only names
+                     <v:select-list name="howto1">
+                       <v:item name="starting with" value="1" />
+                       <v:item name="containing" value="2" />
+                       <v:item name="ending with" value="3" />
+                     </v:select-list>
+                  </td>
+                  <td>
+                    <v:text name="pattern_text1" default="%" width="105" height="24">
+                      <v:after-data-bind>
+                    <![CDATA[
+                         control.ufl_value:= self.pattern_value;
+                         control.vc_data_bound := 1;
+                    ]]>
+                    </v:after-data-bind>
+                    </v:text>
+                  </td>
+                  <td valign="center">
+                    <v:button name="filter_submit" action="simple" value="Filter" width="90" height="24">
+                  <v:on-post>
+                    <![CDATA[
+                          declare str varchar;
+
+                          str := get_keyword('pattern_text1', e.ve_params, '%');
+                          self.pattern_value := str;
+                          self.search_mask := '%';
+                          if (get_keyword('howto1', e.ve_params, '%') = '1')
+                            self.search_mask :=concat(str,'%');
+                          else if (get_keyword('howto1', e.ve_params, '%') = '2')
+                            self.search_mask :=concat('%', str,'%');
+                          else if (get_keyword('howto1', e.ve_params, '%') = '3')
+                            self.search_mask :=concat('%', str);
+
+                      self.ds1.vc_reset ();
+                          self.ds1.vc_enabled := 1;
+                          self.ds1.vc_data_bind(e);
+                          self.pattern_text1.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                    </v:button>
+                  </td>
+                  <td valign="center">
+                    <v:button name="filter_reset" action="simple" value="Reset" width="90" height="24">
+                  <v:on-post>
+                    <![CDATA[
+                          self.pattern_value := '';
+                          self.search_mask := '%';
+                          self.pattern_text1.ufl_value :='';
+                          self.pattern_text1.vc_data_bound := 1;
+                      self.ds1.vc_reset ();
+                          self.ds1.vc_enabled := 1;
+                          self.ds1.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </v:form>
+          </td>
+        </tr>
+        <tr>
+	  <td>
+	    <div class="scroll_area">
+	    <v:data-set name="ds1" sql="select U_NAME, coalesce (U_FULL_NAME, '') as U_FULL_NAME, U_IS_ROLE  from Y_SYS_USERS where mask = filt_mask and ord = :self.ordg and seq = :self.ordseqg " nrows="1000" scrollable="1" cursor-type="static" edit="0" width="80" initial-enable="1">
+        <input type="hidden" name="page" value="<?= get_keyword('page', control.vc_page.vc_event.ve_params)?>" />
+        <v:column name="U_FULL_NAME"/>
+        <v:column name="U_NAME"/>
+        <v:column name="U_IS_ROLE"/>
+        <v:param name="filt_mask" value="self.search_mask"/>
+        <v:template name="template1244" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <table class="listing">
+                <thead>
+            <tr class="listing_header_row">
+	      <th>
+			      <v:button action="simple" name="name_ord9" value="Account Type" style="url">
+                        <v:on-post>
+                          <![CDATA[
+				      self.set_ordg ('type', e, self.ds1);
+                          ]]>
+                        </v:on-post>
+			      </v:button>
+	      </th>
+	      <th>
+			      <v:button action="simple" name="name_ord10" value="Login" style="url">
+                        <v:on-post>
+                          <![CDATA[
+				      self.set_ordg ('name', e, self.ds1);
+                          ]]>
+                        </v:on-post>
+			      </v:button>
+	      </th>
+	      <th>
+			      <v:button action="simple" name="name_ord11" value="Description" style="url">
+                        <v:on-post>
+                          <![CDATA[
+				      self.set_ordg ('fullname', e, self.ds1);
+                          ]]>
+                        </v:on-post>
+			      </v:button>
+	      </th>
+                    <th class="action">Action</th>
+            </tr>
+                </thead>
+          </table>
+        </v:template>
+
+        <v:template name="template2224" type="repeat" name-to-remove="" set-to-remove="">
+
+          <v:template name="template7224" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+            <table width="100%" border="2" cellspacing="0" cellpadding="0">
+              <tr>
+                    <td align="center" colspan="4">
+                  <font color="red"><b>No user/group names match given pattern</b></font>
+                </td>
+              </tr>
+            </table>
+          </v:template>
+
+          <v:template name="template4224" type="browse" name-to-remove="table" set-to-remove="both">
+            <table border="1" cellspacing="0" cellpadding="3">
+                  <tr>
+                <td class="listing_col">
+                  <v:template type="simple" name="tpl_cowntype_1" condition="(control.vc_parent as vspx_row_template).te_rowset[2] = 1">
+                    <img src="images/icons/group_16.png" alt="group" title="group"/>
+                  </v:template>
+                  <v:template type="simple" name="tpl_cowntype_2" condition="(control.vc_parent as vspx_row_template).te_rowset[2] <> 1">
+                    <img src="images/icons/user_16.png" alt="user" title="user"/>
+                  </v:template>
+                  <v:label name="label_utype" value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] = 1 then 'Group' else 'User' end" format="%s" width="80"/>
+                </td>
+                <td class="listing_col">
+                  <v:label name="label61" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"  />
+                </td>
+                <td class="listing_col" nowrap="1">
+                  <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                </td>
+                <td class="listing_col_action">
+                      <v:button action="simple"
+                                style="image"
+                                name="edit1"
+                                value="images/icons/edit_16.png"
+		    xhtml_alt="Edit Grants"
+		    xhtml_title="Edit Grants"
+		    text="&nbsp;Edit"
+                    url="--concat('caps_browser.vspx?mode=edit&user_name=',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                </td>
+                  </tr>
+            </table>
+          </v:template>
+        </v:template>
+        <v:template name="template3224" type="simple" name-to-remove="table" set-to-remove="top">
+          <table width="100%" border="1" cellspacing="2" cellpadding="0">
+            <tr class="browse_button_row">
+              <td colspan="4" align="center" class="listing_col_action">
+		<vm:ds-navigation data-set="ds1"/>
+              </td>
+              <td/>
+            </tr>
+          </table>
+        </v:template>
+      </v:data-set>
+    </div>
+        </td>
+      </tr>
+    </table>
+</v:page>

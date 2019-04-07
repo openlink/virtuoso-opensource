@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -50,7 +50,7 @@ null if any of the arguments except the first one is null.</para>
 </refsect1>
  <refsect1 id="examples_sprintf_iri_or_null">
    <title>Examples</title>
-    <example id="ex_sprintf_iri_or_null"><title></title>
+    <example id="ex_sprintf_iri_or_null"><title>Simple Use</title>
       <screen><![CDATA[
 create function job_history(
   in EMPLOYEE_ID integer,

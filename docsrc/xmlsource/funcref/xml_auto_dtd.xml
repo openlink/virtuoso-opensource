@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@ by xml_auto with the query in question after wrapping it into the specified root
   </refsect1>
 
   <refsect1 id="examples_xml_auto_dtd"><title>Examples</title>
-    <example id="ex_xml_auto_dtd"><title></title>
+    <example id="ex_xml_auto_dtd"><title>Simple Use</title>
 <programlisting>
 SQL&gt; select xml_auto_dtd ('  select &quot;category&quot;.&quot;CategoryID&quot;, &quot;CategoryName&quot;,
     &quot;ProductName&quot;, &quot;ProductID&quot;
@@ -98,8 +98,8 @@ _______________________________________________________________________________
     </example>
   </refsect1>
   <refsect1 id="seealso_xml_auto_dtd"><title>See Also</title>
-    <para><link linkend="fn_xml_auto">xml_auto</link></para>
-    <para><link linkend="fn_xml_auto_schema">xml_auto_schema</link></para>
+    <para><link linkend="fn_xml_auto"><function>xml_auto()</function></link></para>
+    <para><link linkend="fn_xml_auto_schema"><function>xml_auto_schema()</function></link></para>
   </refsect1>
 </refentry>
 

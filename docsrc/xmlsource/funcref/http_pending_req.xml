@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_http_pending_req">
       <funcprototype id="fproto_http_pending_req">
         <funcdef><function>http_pending_req</function></funcdef>
-        <paramdef />
+        <paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -75,7 +75,6 @@ The request ID's can be used to terminate requests with http_kill.
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="examples_http_pending_req"><title>Examples</title>
   <example id="ex_http_pending_req"><title>Retrieving a list of VSP processes</title>

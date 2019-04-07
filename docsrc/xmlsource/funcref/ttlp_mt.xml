@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_ttlp_mt">
   <refmeta>
     <refentrytitle>DB.DBA.TTLP_MT</refentrytitle>
@@ -18,6 +39,7 @@
         <paramdef><optional>in <parameter>flags</parameter> integer</optional></paramdef>
         <paramdef><optional>in <parameter>log_mode</parameter> integer</optional></paramdef>
         <paramdef><optional>in <parameter>threads</parameter> integer</optional></paramdef>
+         <paramdef><optional>in <parameter>transactional </parameter> integer</optional></paramdef>         
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
@@ -59,6 +81,9 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
     <refsect2><title>threads</title>
       <para>number of threads that insert quads into the database. It should not be less than 1, obviously; it is better to not set it greater than <emphasis>((N-2)/k)-1</emphasis> where <emphasis>N</emphasis> is the number of available CPU cores and <emphasis>k</emphasis> is the number of loadings that happen at the same time.</para>
     </refsect2>
+    <refsect2><title>transactional</title>
+      <para>controls the transaction mode which is "0" by default i.e. off and can be turned on by setting it to "1".</para>
+    </refsect2>
   </refsect1>
   <refsect1 id="ret_ttlp_mt"><title>Return Types</title>
     <para>The return value is not specified and may be changed in future versions.</para>
@@ -75,12 +100,12 @@ Default is 0, meaning no permitted deviations from the spec. Other supported bit
 <para><emphasis>Example 1</emphasis></para>
 <para>Load ttl from local file:</para>
 <screen><![CDATA[
-SQL> DB.DBA.TTLP_MT (file_to_string_output ('tmp/users.ttl'), '', 'http://mytest.com');
+SQL> DB.DBA.TTLP_MT (file_to_string_output ('tmp/users.ttl'), '', 'http://example.com');
 
 Done. -- 381 msec.
 SQL>sparql
 select *
-from <http://mytest.com>
+from <http://example.com>
 where {?s ?p ?o}
 limit 10;
 s             p                   o
@@ -96,7 +121,7 @@ http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format           
 http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#qmfSuperFormats  nodeID://1000272019
 http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#inheritFrom      http://www.openlinksw.com/virtrdf-data-formats#sql-integer-uri
 http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#noInherit        http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1
-http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1 http://localhost/sys/user?id=%d
+http://www.openlinksw.com/virtrdf-data-formats#SysUsers-UserId-format             http://www.openlinksw.com/schemas/virtrdf#qmfCustomString1 http://example.com/sys/user?id=%d
 
 10 Rows. -- 30 msec.
 
@@ -161,7 +186,7 @@ the document, no matter what is the destination graph. Suppose the following sce
 ]]></programlisting>
     <para>Load the file:</para>
 <programlisting><![CDATA[
-SQL>DB.DBA.TTLP_MT (file_to_string_output ('./nquad.nq'), '', 'http://localhost:8890/DAV/test', 512);
+SQL>DB.DBA.TTLP_MT (file_to_string_output ('./nquad.nq'), '', 'http://example.com/DAV/test', 512);
 Done. -- 48 msec.
 ]]></programlisting>
     <para>Select all triples from the graph with URI the fourth provenance URI from the NQuad file i.e.: &lt;http://www.w3.org/People/Berners-Lee/card&gt;:</para>
@@ -184,14 +209,95 @@ Done. -- 48 msec.
 
  10 Rows. -- 7 msec.
 ]]></programlisting>
+<para><emphasis>Example 4</emphasis></para>
+<para>Usage of the ttlp_mt function with transactional param set to 1</para>
+<screen><![CDATA[
+-- Setting the "isql" tool into "manual" commit mode with the command: 
+SQL> set AUTOCOMMIT MANUAL; 
+
+SQL> sparql drop silent graph <data.nt>; 
+Done. -- 1 msec. 
+
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+0 
+
+1 Rows. -- 1 msec.  
+
+-- Perform data load with TTLP_MT() 
+SQL> DB.DBA.TTLP_MT (file_to_string_output ('./data.nt'), '', 'data.nt', 512, 1, 1, 1); 
+
+Done. -- 3 msec. 
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+100 
+
+1 Rows. -- 1 msec. 
+
+
+-- Commit or Rollback the transaction/work as required with the commit work or rollback work commands
+SQL> rollback work; 
+
+Done. -- 0 msec. 
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+0 
+
+1 Rows. -- 1 msec. 
+SQL> DB.DBA.TTLP_MT (file_to_string_output ('./data.nt'), '', 'data.nt', 512, 1, 1, 1); 
+
+Done. -- 3 msec. 
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+100 
+
+1 Rows. -- 0 msec. 
+SQL> commit work; 
+
+Done. -- 1 msec. 
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+100 
+
+1 Rows. -- 0 msec. 
+SQL> rollback work; 
+
+Done. -- 0 msec. 
+SQL> sparql select count(*) from <data.nt> where {?s ?p ?o}; 
+callret-0 
+INTEGER 
+_______________________________________________________________________________ 
+
+100 
+
+1 Rows. -- 0 msec. 
+SQL> 
+]]></screen>
+
     </example>
+    
   </refsect1>
   <refsect1 id="seealso_ttlp_mt">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml"><function>DB.DBA.RDF_LOAD_RDFXML()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
   </refsect1>
 </refentry>

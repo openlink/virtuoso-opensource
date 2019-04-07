@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -717,7 +717,19 @@ xp_rdfxml_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
           continue;
         }
       else if (!stricmp (tmp_nsuri, "xml"))
+        {
+/*
+   	  XXX: moved above
+          if (!strcmp (tmp_local, "lang"))
+            XRL_SET_INHERITABLE (inner, xrl_language, box_dv_short_string (avalue), "Attribute 'xml:lang' is used twice");
+          else if (!strcmp (tmp_local, "base"))
+            XRL_SET_INHERITABLE (inner, xrl_base, box_dv_short_string (avalue), "Attribute 'xml:base' is used twice");
+          else if (0 != strcmp (tmp_local, "space"))
+            xmlparser_logprintf (xp->xp_parser, XCFG_WARNING, 200,
+              "Unsupported 'xml:...' attribute, only 'xml:lang', 'xml:base' and 'xml:space' are supported" );
+*/
           continue;
+        }
 push_inner_attr_prop:
       dk_set_push (&inner_attr_props, avalue);
       dk_set_push (&inner_attr_props, tmp_local);
@@ -904,6 +916,7 @@ xp_rdfxml_element_end (void *userdata, const char * name)
           children = CONS (literal_head, children);
           literal_tree = list_to_array (children);
           literal_xte = xte_from_tree (literal_tree, xp->xp_qi);
+	  literal_xte->xe_doc.xd->xout_encoding = box_dv_short_string ("UTF-8");
           obj = (caddr_t) literal_xte;
           lang_in_effect = NULL;
         }
@@ -1541,8 +1554,8 @@ void
 xp_rdfa_parse_profile (xparse_ctx_t *xp, caddr_t *parsed_attrvalue, caddr_t **ns_dict_ret, caddr_t **term_dict_ret, caddr_t *vocab_ret, caddr_t *err_ret)
 {
   client_connection_t *cli = xp->xp_qi->qi_client;
-static caddr_t full_profile_proc_name = NULL;
-static query_t *fetch_profile_qr = NULL;
+  caddr_t full_profile_proc_name = NULL;
+  query_t *fetch_profile_qr = NULL;
   caddr_t err = NULL;
   char  params_buf [BOX_AUTO_OVERHEAD + sizeof (caddr_t) * 4];
   caddr_t * params;
@@ -3531,7 +3544,7 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = ((NULL == base_uri) ? uname___empty : base_uri);
   if (NULL == default_rdf_dtd_config)
     default_rdf_dtd_config = box_dv_short_string ("Validation=DISABLE SchemaDecl=DISABLE IdCache=DISABLE");

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 #include "libutil.h"
 #include "odbcinc.h"
 #include "timeacct.h"
+#include "Wi/sqlver.h"
 
 #ifdef WIN32
 #include <windows.h>
@@ -47,12 +48,12 @@
 #endif
 
 
-#if defined(WITH_READLINE)
+#if defined (WITH_READLINE)
 #include <readline/readline.h>
 #include <readline/history.h>
 #endif
 
-#if defined(WITH_EDITLINE)
+#if defined (WITH_EDITLINE)
 #include <editline/readline.h>
 #endif
 
@@ -60,7 +61,7 @@
 /* Changed from 0.9846b at 26-JAN-1998 */
 /* Changed from 0.9847b at 12-FEB-1998 */
 /* Changed from 0.9848b at 18-MAR-1998 */
-#define ISQL_VERSION _T("0.9849b")
+#define ISQL_VERSION _T("" DBMS_SRV_VER "")
 
 
 TCHAR *isql_version = ISQL_VERSION;
@@ -492,7 +493,7 @@ option /t or /s is present with /b).
 Have to be global as a few functions need these.
 */
 #if defined(ODBC_ONLY)
-TCHAR *datasource = _T("Virtuoso");
+TCHAR *datasource = _T("Local Virtuoso");
 TCHAR *username = NULL;
 TCHAR *password = NULL;
 
@@ -517,7 +518,7 @@ int pwd_cleartext = 0;
 #define empty_stringp(X) (!*(X))
 
 
-#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
+#if defined (WITH_READLINE) || defined (WITH_EDITLINE)
 /* The following declaration should be located before loading Dk.h */
 static void readline_free(void *ptr) { free(ptr); }
 
@@ -645,7 +646,17 @@ TCHAR *web_query_string = NULL;	/* from environment variable QUERY_STRING */
 int web_mode = 0;		/* Is set to 1 in the beginning of main if used
 			       as a cgi-script */
 int kubl_mode = 1;		/* Currently affects only how MAXROWS are handled. */
-int print_banner_flag = 1, print_types_also = 1, verbose_mode = 1, echo_mode = 0, explain_mode = 0, sparql_translate_mode = 0;
+int print_banner_flag = 1;
+int print_types_also = 1;
+int verbose_mode = 1;
+int echo_mode = 0;
+int explain_mode = 0;
+int sparql_translate_mode = 0;
+int vert_row_out_mode = 0;
+int csv_mode = 0;
+int csv_rfc4180_mode = 0;
+int profile_mode = 0;
+int json_mode = 0;
 int flag_newlines_at_eor = 1;	/* By default print one nl at the end of row */
 long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
@@ -691,6 +702,13 @@ int fully_connected = 0;
 TCHAR *form_action = _T("");
 TCHAR *get_list_of_datasources (int for_html, TCHAR *dest_buf, int dest_size);
 int output_html_file (TCHAR *templatename);
+void print_csv_banner ();
+void print_csv_rfc4180_banner ();
+int print_csv_row();
+int print_csv_rfc4180_row();
+void print_json_banner (void);
+void print_json_footer (void);
+int print_json_row(int row_nr);
 
 /* Only after fully_connected has been set to non-zero (i.e. after
 full connection to data source and statement allocation)
@@ -702,7 +720,7 @@ TCHAR *delayed_settings[MAX_DELAYED_SETTINGS + 2] =
 {NULL};
 int n_delayed_settings = 0;	/* A zero-based index to previous. */
 
-#define MIN_INPUT_SIZE 250000
+#define MIN_INPUT_SIZE (10*1024*1024)
 TCHAR input1[MIN_INPUT_SIZE + 20];
 int input_size = MIN_INPUT_SIZE;
 TCHAR *input = input1;
@@ -713,7 +731,7 @@ TCHAR *input = input1;
 
 
 #ifndef TMPBUF_SIZE
-#define TMPBUF_SIZE 560
+#define TMPBUF_SIZE  1024
 #endif
 
 #define RETVALBUFSIZE 3003
@@ -784,6 +802,12 @@ TCHAR *oo_de = _T("</TD>");		/*  and normal Cell End */
 
 TCHAR *oo_ob = _T("<PRE>");		/* Other text, Begin. */
 TCHAR *oo_oe = _T("</PRE>");		/* Other text, End. */
+
+/* CSV output mode */
+TCHAR *csv_field_separator = _T(";");
+TCHAR *csv_rfc4180_field_separator = _T(",");
+TCHAR *csv_row_separator = _T("\n");
+TCHAR *csv_rfc4180_row_separator = _T("\r\n");
 
 int oo_esc = 1;			/* Normally escape <, > and & */
 
@@ -922,7 +946,7 @@ void
 isql_exit (int status)
 {
 
-#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
+#if defined (WITH_READLINE) || defined (WITH_EDITLINE)
   if (isqlhist[0])
     {
       write_history (isqlhist);
@@ -2603,7 +2627,7 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("FORM_FILENAME"), (&form_filename), CHARPTR_VAR, NULL),
   add_var_def (_T("FORM_FILEFIELDNAME"), (&form_filefieldname), CHARPTR_VAR, NULL),
   add_var_def (_T("FORM_LAST_CONTENT_TYPE"), (&form_last_content_type), CHARPTR_VAR, NULL),
-add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL),
+  add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL),
   add_var_def (_T("FORM_BOUNDARY"), (&form_boundary), CHARPTR_VAR, NULL),
 
   add_var_def (_T("LWE"), (&isql_echo_lwe), CHARPTR_VAR, NULL),	/* Shhh... */
@@ -2627,6 +2651,15 @@ add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL)
   add_var_def (_T("ECHO"), (&echo_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("EXPLAIN"), (&explain_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("SPARQL_TRANSLATE"), (&sparql_translate_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("VERT_ROW_OUTPUT"), (&vert_row_out_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("CSV"), (&csv_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("CSV_RFC4180"), (&csv_rfc4180_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("PROFILE"), (&profile_mode), INT_FLAG, OFF_ON),
+  add_var_def (_T("CSV_FIELD_SEPARATOR"), (&csv_field_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_RFC4180_FIELD_SEPARATOR"), (&csv_rfc4180_field_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_ROW_SEPARATOR"), (&csv_row_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("CSV_RFC4180_ROW_SEPARATOR"), (&csv_rfc4180_row_separator), CHARPTR_VAR, NULL),
+  add_var_def (_T("JSON"), (&json_mode), INT_FLAG, OFF_ON),
   add_var_def (_T("HIDDEN_CRS"), (&clear_hidden_crs_flag), INT_FLAG, PRESERVED_CLEARED),
   add_var_def (_T("BINARY_OUTPUT"), (&flag_binary_output), INT_FLAG, OFF_ON),
   add_var_def (_T("BANNER"), (&print_banner_flag), INT_FLAG, OFF_ON),
@@ -2651,7 +2684,7 @@ add_var_def (_T("FORM_LAST_ENCODING"), (&form_last_encoding), CHARPTR_VAR, NULL)
 /* The following are mainly for debugging purposes. */
   add_sam_def (_T("CURRENT_QUALIFIER"), (SQL_CURRENT_QUALIFIER), SAM_CONNECT_OPTION, STRING_VALUED),
   add_sam_def (_T("INFO_DATABASE_NAME"), (SQL_DATABASE_NAME), SAM_GET_INFO, STRING_VALUED),
-add_sam_def (_T("INFO_USER_NAME"), (SQL_USER_NAME), SAM_GET_INFO, STRING_VALUED),
+  add_sam_def (_T("INFO_USER_NAME"), (SQL_USER_NAME), SAM_GET_INFO, STRING_VALUED),
   add_sam_def (_T("INFO_GETDATA_EXTENSIONS"), (SQL_GETDATA_EXTENSIONS), SAM_GET_INFO, INT_VALUED),
 
 /* After this point only things that cannot be set. If you want to
@@ -3353,25 +3386,33 @@ dump_all_settable_variables (TCHAR *varname_to_match)
 					 tmp1buf, TMPBUF_SIZE,
 					 NULL, 0, 1);
 	  if (NULL == value)
-	    {
 	      value = _T("NULL");
-	    }
-	  isql_fputs (structptr->name, stdout);
-	  isql_fputs (_T("\tis "), stdout);
+	  else if (!isqlt_tcscmp (value, _T("\r\n")))
+	      value = _T("\\r\\n");
+	  else if (!isqlt_tcscmp (value, _T("\r")))
+	      value = _T("\\r");
+	  else if (!isqlt_tcscmp (value, _T("\n")))
+	      value = _T("\\n");
+	  else if (!isqlt_tcscmp (value, _T("\t")))
+	      value = _T("\\t");
+
+
 	  if (in_HTML_mode () && oo_esc)
 	    {
+	      isql_fputs (structptr->name, stdout);
+	      isql_fputs (_T(" is "), stdout);
 	      html_print_escaped (value, stdout);
+	      isql_fputs (_T("\n"), stdout);
 	    }
 	  else
 	    {
-	      isql_fputs (value, stdout);
+	      isql_printf (_T("%-40") PCT_S _T(" is %") PCT_S _T("\n"), structptr->name, value);
 	    }
-	  isql_fputs (_T("\n"), stdout);
-	  fflush (stdout);
 	}
       structptr++;
     }
 
+  fflush (stdout);
   return (1);
 }
 
@@ -3503,9 +3544,13 @@ de_nuevo:
 	      return (get_list_of_datasources (1, result, maxsize));
 	    }
 
-	  else if (word_follows (text + 1, _T("+")))
-	    {			/* Add together the next two elements. */
-	      long int leftval = 0, rightval = 0;
+	  else if (word_follows (text + 1, _T("+"))
+	        || word_follows (text + 1, _T("-"))
+	        || word_follows (text + 1, _T("*"))
+	        || word_follows (text + 1, _T("/")))
+	    {			/* Add/substract/multiply/divide the next two elements. */
+	      long int leftval = 0, rightval = 0, res = 0;
+	      TCHAR op = *(text + 1);
 	      TCHAR *left, *right;
 	      TCHAR tmp1buf[TMPBUF_SIZE + 2], tmp2buf[TMPBUF_SIZE + 2];
 
@@ -3525,40 +3570,21 @@ de_nuevo:
 
 	      leftval = isqlt_tstol (left);
 	      rightval = isqlt_tstol (right);
-	      isqlt_stprintf (tmpnumbuf, _T("%ld"), (leftval + rightval));
+
+	      if (op == (TCHAR)('+'))
+	        res = leftval + rightval;
+	      else if (op == (TCHAR)('-'))
+                res = leftval - rightval;
+              else if (op == (TCHAR)('*'))
+                res = leftval * rightval;
+              else if (op == (TCHAR)('/') && rightval )
+                res = leftval / rightval;
+
+	      isqlt_stprintf (tmpnumbuf, _T("%ld"), res);
 	      isqlt_tcsncpy (result, tmpnumbuf, maxsize);
 
 	      return (result);
 	    }
-
-	  else if (word_follows (text + 1, _T("-")))
-	    {			/* Subtract the next two elements (the second from the first). */
-	      long int leftval = 0, rightval = 0;
-	      TCHAR *left, *right;
-	      TCHAR tmp1buf[TMPBUF_SIZE + 2], tmp2buf[TMPBUF_SIZE + 2];
-
-	      *str_ptr = (text + sizeof (_T("-")));
-
-	      /* First get the things to be subtracted. */
-	      if (NO (left = get_next_token (str_ptr, tmp1buf, TMPBUF_SIZE,
-					     input_buffer, input_size)))
-		{
-		  return (TOKEN_PREMATURE_END);
-		}
-	      if (NO (right = get_next_token (str_ptr, tmp2buf, TMPBUF_SIZE,
-					      input_buffer, input_size)))
-		{
-		  return (TOKEN_PREMATURE_END);
-		}
-
-	      leftval = isqlt_tstol (left);
-	      rightval = isqlt_tstol (right);
-	      isqlt_stprintf (tmpnumbuf, _T("%ld"), (leftval - rightval));
-	      isqlt_tcsncpy (result, tmpnumbuf, maxsize);
-
-	      return (result);
-	    }
-
 
 	  else if (word_follows (text + 1, _T("IF")))
 	    {			/* Syntax: $IF $EQU STR1 STR2 THEN_RESULT ELSE_RESULT */
@@ -4798,6 +4824,40 @@ field_print_HTML (TCHAR *str, SQLULEN w, int rightp, int inx)
     }				/* The Row End */
 }
 
+void
+field_print_csv (TCHAR *str, SQLULEN w, int unused, int inx)
+{
+  TCHAR *ch;
+  for (ch = str; *ch; ++ch)
+    {
+      if (!isprint(*ch) || *ch == (TCHAR)('%') || *ch == (TCHAR)('\n') || *ch == (TCHAR)('\r') || *ch == *csv_field_separator)
+        isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+      else
+        isqlt_puttchar (*ch);
+    }
+
+  if (inx < n_out_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_field_separator, stdout);
+}
+
+void
+field_print_csv_rfc4180 (TCHAR *str, SQLULEN w, int unused, int inx)
+{
+  TCHAR *ch;
+  isqlt_puttchar ('"');
+  for (ch = str; *ch; ++ch)
+    {
+      if (!isprint(*ch))
+        isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+      else if (*ch == (TCHAR)('"'))
+	isqlt_tprintf (_T("\"\""));
+      else
+        isqlt_puttchar (*ch);
+    }
+  isqlt_puttchar ('"');
+  if (inx < n_out_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
+}
 
 void
 field_print (TCHAR *str, SQLULEN w, int rightp, int inx)
@@ -4866,6 +4926,29 @@ print_banner ()
   oo_db = save_oo_db;
   oo_de = save_oo_de;
 
+}
+
+void
+print_banner_vert ()
+{
+  int inx;
+  unsigned int len;
+
+  if (!print_types_also)
+    return;
+
+  isql_fputs (_T("\nresult set\n"), stdout);
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      coltypetitles[inx] = get_sql_col_type_def (&out_cols[inx]);
+      isql_printf (_T("%i %") PCT_S _T(" : ") _T("%") PCT_S _T("\n"),
+                   inx,
+                   (out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T("??")),
+                   coltypetitles[inx]);
+    }
+
+  isql_fputs (_T("\n================================================================\n\n"), stdout);
+  fflush (stdout);
 }
 
 #define BLOB_BUFFER_SIZE 4001
@@ -4966,6 +5049,158 @@ print_blob_col (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
 
 }
 
+/* Returns return code from the last SQLGetData done. */
+int
+print_blob_col_csv (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
+{
+  static TCHAR blob_buffer[BLOB_BUFFER_SIZE + 1];
+  TCHAR *ch;
+  int got_n_bytes;
+  SQLULEN total = 0;
+  int rc;
+
+  for (;;)
+    {
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col,
+                       SQL_C_TCHAR,
+                       blob_buffer, BLOB_BUFFER_SIZE, &n_recv);
+      /* Here we got either SQL_NO_DATA or an error. */
+      if ((rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+          || n_recv == SQL_NULL_DATA)
+        { /* This ^ means really a blob of length 0, not real NULL ??? */
+          /* Tell calling function that everything is still all right, no panic: */
+          if (SQL_NO_DATA_FOUND == rc)
+            rc = SQL_SUCCESS;
+          break;
+        }
+
+      /* If we get SQL_NO_TOTAL, then we have to use isqlt_tcslen. This doesn't
+         work with true binary data with null bytes in the last part. */
+      got_n_bytes = (int)
+        ((rc == SQL_SUCCESS) ? ((n_recv != SQL_NO_TOTAL) ? n_recv
+                                : isqlt_tcslen (blob_buffer))
+         : BLOB_BUFFER_SIZE - 1);       /* Not the last part. */
+      total += got_n_bytes;
+
+      for (ch = blob_buffer; *ch; ++ch)
+        {
+          if (!isprint(*ch) || *ch == (TCHAR)('%') || *ch == (TCHAR)('\n') || *ch == (TCHAR)('\r') || *ch == *csv_field_separator)
+            isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+          else
+            isqlt_puttchar (*ch);
+        }
+
+      if (rc == SQL_SUCCESS)    /* No more data after this one. */
+          break;
+    }
+
+  if (n_col < n_out_cols)  /* not the rightmost column? */
+    isqlt_fputts (csv_field_separator, stdout);
+
+  return rc;
+}
+
+int
+print_blob_col_csv_rfc4180 (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
+{
+  static TCHAR blob_buffer[BLOB_BUFFER_SIZE + 1];
+  TCHAR *ch;
+  int got_n_bytes;
+  SQLULEN total = 0;
+  int rc;
+
+  for (;;)
+    {
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col,
+                       SQL_C_TCHAR,
+                       blob_buffer, BLOB_BUFFER_SIZE, &n_recv);
+      /* Here we got either SQL_NO_DATA or an error. */
+      if ((rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
+          || n_recv == SQL_NULL_DATA)
+        { /* This ^ means really a blob of length 0, not real NULL ??? */
+          /* Tell calling function that everything is still all right, no panic: */
+          if (SQL_NO_DATA_FOUND == rc)
+            rc = SQL_SUCCESS;
+          break;
+        }
+
+      /* If we get SQL_NO_TOTAL, then we have to use isqlt_tcslen. This doesn't
+         work with true binary data with null bytes in the last part. */
+      got_n_bytes = (int)
+        ((rc == SQL_SUCCESS) ? ((n_recv != SQL_NO_TOTAL) ? n_recv
+                                : isqlt_tcslen (blob_buffer))
+         : BLOB_BUFFER_SIZE - 1);       /* Not the last part. */
+      total += got_n_bytes;
+
+      isqlt_puttchar ('"');
+      for (ch = blob_buffer; *ch; ++ch)
+        {
+          if (!isprint(*ch))
+            isqlt_tprintf (_T("%%%2.2hX"), (short)*ch);
+	  else if (*ch == (TCHAR)('"'))
+	    isqlt_tprintf (_T("\"\""));
+          else
+            isqlt_puttchar (*ch);
+        }
+      isqlt_puttchar ('"');
+
+      if (rc == SQL_SUCCESS)    /* No more data after this one. */
+          break;
+    }
+
+  if (n_col < n_out_cols)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
+
+  return rc;
+}
+
+int
+print_blob_col_json (HSTMT stmt, UWORD n_col, SQLULEN width, SWORD sql_type)
+{
+  static TCHAR blob_buffer[BLOB_BUFFER_SIZE + 1];
+  TCHAR *ch;
+  int got_n_bytes;
+  SQLULEN total = 0;
+  int rc;
+
+  for (;;)
+    {
+      SQLLEN n_recv;
+      rc = SQLGetData (stmt, n_col, SQL_C_TCHAR, blob_buffer, BLOB_BUFFER_SIZE, &n_recv);
+      /* Here we got either SQL_NO_DATA or an error. */
+      if ((rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO) || n_recv == SQL_NULL_DATA)
+	{			/* This ^ means really a blob of length 0, not real NULL ??? */
+	  /* Tell calling function that everything is still all right, no panic: */
+	  if (SQL_NO_DATA_FOUND == rc)
+	    rc = SQL_SUCCESS;
+	  break;
+	}
+
+      /* If we get SQL_NO_TOTAL, then we have to use isqlt_tcslen. This doesn't
+         work with true binary data with null bytes in the last part. */
+      got_n_bytes = (int) ((rc == SQL_SUCCESS) ? ((n_recv != SQL_NO_TOTAL) ? n_recv : isqlt_tcslen (blob_buffer)) : BLOB_BUFFER_SIZE - 1);	/* Not the last part. */
+      total += got_n_bytes;
+
+      isqlt_puttchar ('"');
+      for (ch = blob_buffer; *ch; ++ch)
+	{
+	  if (!isprint (*ch))
+	    isqlt_tprintf (_T ("%%%2.2hX"), (short) *ch);
+	  else if (*ch == (TCHAR) ('"'))
+	    isqlt_tprintf (_T ("\"\""));
+	  else
+	    isqlt_puttchar (*ch);
+	}
+      isqlt_puttchar ('"');
+
+      if (rc == SQL_SUCCESS)	/* No more data after this one. */
+	break;
+    }
+
+  return rc;
+}
 
 void
 print_datetime_col (TCHAR *timebinstr, SQLULEN width, int rightp,
@@ -5108,6 +5343,367 @@ print_row ()
 
   return (rc);
 }
+
+int
+print_row_vert ()
+{
+  TCHAR temp[30];
+  int inx, i;
+  int rc = SQL_SUCCESS;
+  unsigned max_col_name_width;
+
+  max_col_name_width = 0;
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      max_col_name_width = MAX( max_col_name_width, (unsigned)isqlt_tcslen (out_cols[inx].o_title));
+    }
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      int rightp = 0;
+      int tp = out_cols[inx].o_type;
+      if (tp == SQL_NUMERIC || tp == SQL_FLOAT || tp == SQL_DOUBLE || tp == SQL_REAL)
+        rightp = 1;
+
+      isql_printf (_T("%*") PCT_S _T(" : "), (int)max_col_name_width , (out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T("?")));
+
+      //if (print_types_also)
+      //  field_print (coltypetitles[inx], out_cols[inx].o_width, 0, inx);
+
+      // ***************************************************************
+      if (out_cols[inx].o_col_len == SQL_NULL_DATA)
+        field_print (_T("NULL"), out_cols[inx].o_width, rightp, inx);
+      else if ((out_cols[inx].o_type == SQL_TIMESTAMP) ||
+               (out_cols[inx].o_type == SQL_DATE) ||
+               (out_cols[inx].o_type == SQL_TIME))
+        {
+          print_datetime_col ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, 0,
+                        out_cols[inx].o_col_len, out_cols[inx].o_type, inx);
+        }
+      else if (out_cols[inx].o_type == SQL_LONGVARCHAR ||
+               out_cols[inx].o_type == SQL_LONGVARBINARY ||
+               out_cols[inx].o_type == SQL_WLONGVARCHAR)
+        {
+          if (print_blobs_flag)
+            {
+              /* Note zero-based indexing here. print_blob_col needs one+ */
+              rc = print_blob_col (stmt, ((UWORD) (inx + 1)), out_cols[inx].o_width, out_cols[inx].o_type);
+              if (rc != SQL_SUCCESS)
+                {
+                  return (rc);
+                }
+            }
+          else
+            {
+              if (out_cols[inx].o_col_len == SQL_NO_TOTAL)
+                {
+                  field_print (_T("BLOB SQL_NO_TOTAL"), (out_cols[inx].o_width), 0, inx);
+                }
+              else if (out_cols[inx].o_col_len > 0 && out_cols[inx].o_col_len < 1024 &&
+                  (out_cols[inx].o_type == SQL_LONGVARCHAR || out_cols[inx].o_type == SQL_WLONGVARCHAR))
+                {
+                  field_print ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width,
+                      rightp, inx);
+                }
+              else
+                {
+                  if (out_cols[inx].o_type == SQL_WLONGVARCHAR)
+                    isqlt_stprintf (temp, _T("NLOB %ld chars"), (long) (out_cols[inx].o_col_len / sizeof (TCHAR)));
+                  else
+                    isqlt_stprintf (temp, _T("BLOB %ld chars"), (long) (out_cols[inx].o_col_len / sizeof (TCHAR)));
+                  field_print (temp, (out_cols[inx].o_width), 0, inx);
+                }
+            }
+        }
+      else
+        field_print ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, rightp, inx);
+
+      isql_printf (_T("\n"));
+    }
+
+  if (flag_newlines_at_eor)
+    {
+      isql_printf (_T("\n====\n"));
+    }
+
+  return (rc);
+}
+
+void
+print_csv_banner ()
+{
+  int inx;
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      isqlt_tprintf (_T("%") PCT_S _T("%") PCT_S,
+                   out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T(""),
+                   (inx < n_out_cols -1) ? csv_field_separator : csv_row_separator );
+    }
+}
+
+void
+print_csv_rfc4180_banner ()
+{
+  int inx;
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      isqlt_tprintf (_T("\"%") PCT_S _T("\"%") PCT_S,
+                   out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T(""),
+                   (inx < n_out_cols -1) ? csv_rfc4180_field_separator : csv_rfc4180_row_separator );
+    }
+}
+
+
+void
+print_json_banner (void)
+{
+  isqlt_fputts (_T ("[ {\n"), stdout);
+}
+
+
+void
+print_json_footer (void)
+{
+  isqlt_fputts (_T ("\n} ]\n"), stdout);
+}
+
+
+void
+print_datetime_col_csv ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
+{
+  if (type == SQL_DATE)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      DATE_STRUCT *ts = (DATE_STRUCT *) data;
+      isqlt_tprintf (_T("%d.%d.%d"), ts->year, ts->month, ts->day);
+    }
+  else if (type == SQL_TIME)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIME_STRUCT *ts = (TIME_STRUCT *) data;
+
+      isqlt_tprintf (_T("%d:%d.%d"), ts->hour, ts->minute, ts->second);
+    }
+  else if (type == SQL_TIMESTAMP)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIMESTAMP_STRUCT *ts = (TIMESTAMP_STRUCT *) data;
+      isqlt_tprintf (_T("%d.%d.%d %d:%d:%d.%ld"), ts->year, ts->month, ts->day, ts->hour, ts->minute, ts->second, (long) ts->fraction);
+    }
+  if (inx < n_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_field_separator, stdout);
+}
+
+void
+print_datetime_col_csv_rfc4180 ( TCHAR *data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
+{
+  if (type == SQL_DATE)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      DATE_STRUCT *ts = (DATE_STRUCT *) data;
+      isqlt_tprintf (_T("\"%d.%d.%d\""), ts->year, ts->month, ts->day);
+    }
+  else if (type == SQL_TIME)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIME_STRUCT *ts = (TIME_STRUCT *) data;
+
+      isqlt_tprintf (_T("\"%d:%d.%d\""), ts->hour, ts->minute, ts->second);
+    }
+  else if (type == SQL_TIMESTAMP)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIMESTAMP_STRUCT *ts = (TIMESTAMP_STRUCT *) data;
+      isqlt_tprintf (_T("\"%d.%d.%d %d:%d:%d.%ld\""), ts->year, ts->month, ts->day, ts->hour, ts->minute, ts->second, (long) ts->fraction);
+    }
+  if (inx < n_cols - 1)  /* not the rightmost column? */
+    isqlt_fputts (csv_rfc4180_field_separator, stdout);
+}
+
+
+void
+print_datetime_col_json (TCHAR * data, SQLULEN width, SQLLEN collen, int type, int inx, int n_cols)
+{
+  if (type == SQL_DATE)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      DATE_STRUCT *ts = (DATE_STRUCT *) data;
+      isqlt_tprintf (_T ("\"%04d-%02d-%02d\""), ts->year, ts->month, ts->day);
+    }
+  else if (type == SQL_TIME)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIME_STRUCT *ts = (TIME_STRUCT *) data;
+
+      isqlt_tprintf (_T ("\"%02d:%02d.%02d\""), ts->hour, ts->minute, ts->second);
+    }
+  else if (type == SQL_TIMESTAMP)
+    {
+      /* Defined in /odbcsdk/include/sqlext.h */
+      TIMESTAMP_STRUCT *ts = (TIMESTAMP_STRUCT *) data;
+      isqlt_tprintf (_T ("\"%04d-%02d-%02dT%02d:%02d:%02d.%ldZ\""), ts->year, ts->month, ts->day, ts->hour, ts->minute, ts->second,
+	  (long) ts->fraction);
+    }
+}
+
+
+/* Returns either SQL_SUCCESS or the last return code returned by
+   print_blob_col (which calls SQLGetData in the loop.) */
+int
+print_csv_row()
+{
+  int inx;
+  int rc = SQL_SUCCESS;
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      if (out_cols[inx].o_col_len == SQL_NULL_DATA)
+        field_print_csv (_T(""), out_cols[inx].o_width, 0, inx);
+      else if ((out_cols[inx].o_type == SQL_TIMESTAMP) ||
+               (out_cols[inx].o_type == SQL_DATE) ||
+               (out_cols[inx].o_type == SQL_TIME))
+        {
+          print_datetime_col_csv ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, out_cols[inx].o_col_len, out_cols[inx].o_type, inx, n_out_cols);
+        }
+      else if (out_cols[inx].o_type == SQL_LONGVARCHAR ||
+               out_cols[inx].o_type == SQL_LONGVARBINARY ||
+               out_cols[inx].o_type == SQL_WLONGVARCHAR)
+        {
+          /* Note zero-based indexing here. print_blob_col needs one+ */
+          if ((rc = print_blob_col_csv (stmt, ((UWORD) (inx + 1)),
+                                    out_cols[inx].o_width, out_cols[inx].o_type))
+              != SQL_SUCCESS)
+            {
+              return (rc);
+            }
+        }
+      else
+        field_print_csv ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, 0, inx);
+    }
+
+  isqlt_fputts (csv_row_separator, stdout);
+
+  return (rc);
+}
+
+int
+print_csv_rfc4180_row()
+{
+  int inx;
+  int rc = SQL_SUCCESS;
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      if (out_cols[inx].o_col_len == SQL_NULL_DATA)
+        field_print_csv_rfc4180 (_T(""), out_cols[inx].o_width, 0, inx);
+      else if ((out_cols[inx].o_type == SQL_TIMESTAMP) ||
+               (out_cols[inx].o_type == SQL_DATE) ||
+               (out_cols[inx].o_type == SQL_TIME))
+        {
+          print_datetime_col_csv_rfc4180 ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, out_cols[inx].o_col_len, out_cols[inx].o_type, inx, n_out_cols);
+        }
+      else if (out_cols[inx].o_type == SQL_LONGVARCHAR ||
+               out_cols[inx].o_type == SQL_LONGVARBINARY ||
+               out_cols[inx].o_type == SQL_WLONGVARCHAR)
+        {
+          /* Note zero-based indexing here. print_blob_col needs one+ */
+          if ((rc = print_blob_col_csv_rfc4180 (stmt, ((UWORD) (inx + 1)),
+                                    out_cols[inx].o_width, out_cols[inx].o_type))
+              != SQL_SUCCESS)
+            {
+              return (rc);
+            }
+        }
+      else
+        field_print_csv_rfc4180 ((TCHAR *) out_cols[inx].o_buffer, out_cols[inx].o_width, 0, inx);
+    }
+
+  isqlt_fputts (csv_rfc4180_row_separator, stdout);
+
+  return (rc);
+}
+
+
+/* Returns either SQL_SUCCESS or the last return code returned by
+   print_blob_col (which calls SQLGetData in the loop.) */
+int
+print_json_row (int row_nr)
+{
+  int inx;
+  int rc = SQL_SUCCESS;
+
+  if (row_nr)
+    isqlt_fputts (_T ("\n},{\n"), stdout);
+
+  for (inx = 0; inx < n_out_cols; inx++)
+    {
+      TCHAR *o_buffer = (TCHAR *) out_cols[inx].o_buffer;
+      SQLULEN o_width = out_cols[inx].o_width;
+      SQLLEN o_col_len = out_cols[inx].o_col_len;
+      int o_type = out_cols[inx].o_type;
+      int use_quote = 1;
+
+      isqlt_tprintf (_T ("    \"%") PCT_S _T ("\" : "), out_cols[inx].o_title ? out_cols[inx].o_title : (TCHAR *) _T (""));
+
+      if (o_col_len == SQL_NULL_DATA)
+	isqlt_fputts (_T ("null"), stdout);
+      else
+	switch (o_type)
+	  {
+	  case SQL_DATE:
+	  case SQL_TIME:
+	  case SQL_TIMESTAMP:
+	    print_datetime_col_json (o_buffer, o_width, o_col_len, o_type, inx, n_out_cols);
+	    break;
+
+	  case SQL_LONGVARBINARY:
+	  case SQL_LONGVARCHAR:
+	  case SQL_WLONGVARCHAR:
+	    /* Note zero-based indexing here. print_blob_col needs one+ */
+	    if ((rc = print_blob_col_json (stmt, ((UWORD) (inx + 1)), o_width, o_type)) != SQL_SUCCESS)
+	      return (rc);
+	    break;
+
+	  case SQL_DECIMAL:
+	  case SQL_DOUBLE:
+	  case SQL_FLOAT:
+	  case SQL_INTEGER:
+	  case SQL_NUMERIC:
+	  case SQL_REAL:
+	  case SQL_SMALLINT:
+	    use_quote = 0;
+	    /* FALLTRHOUGH */
+
+	  default:
+	    {
+	      TCHAR *ch;
+
+	      if (use_quote)
+		isqlt_puttchar ('"');
+
+	      for (ch = o_buffer; *ch; ++ch)
+		{
+		  if (!isprint (*ch))
+		    isqlt_tprintf (_T ("%%%2.2hX"), (short) *ch);
+		  else if (*ch == (TCHAR) ('"'))
+		    isqlt_tprintf (_T ("\"\""));
+		  else
+		    isqlt_puttchar (*ch);
+		}
+
+	      if (use_quote)
+		isqlt_puttchar ('"');
+	    }
+	    break;
+	  }
+
+      if (inx < n_out_cols - 1)
+	isqlt_fputts (_T (",\n"), stdout);
+    }
+
+  return (rc);
+}
+
 
 /* If this is set to non-zero value, it will override the width values
    got with SQLDescribeCol. */
@@ -5350,9 +5946,9 @@ do_string_argument_sql_api_command (TCHAR *text,
 }
 
 
-#define GETTYPEINFO_COMMAND _T("GetTypeInfo")
-#define STATS_COMMAND       _T("Statistics")
-#define SPECCOL_COMMAND     _T("SpecialColumns")
+#define GETTYPEINFO_COMMAND	_T("GetTypeInfo")
+#define STATS_COMMAND		_T("Statistics")
+#define SPECCOL_COMMAND		_T("SpecialColumns")
 #define QUALIFIERS_COMMAND	_T("TableQualifiers")
 #define OWNERS_COMMAND		_T("TableOwners")
 #define TYPES_COMMAND		_T("TableTypes")
@@ -5773,11 +6369,13 @@ debug_command (TCHAR *text)
 }
 #endif
 
-int show_results (long start, int rc, int nth_set,
-		  int loc_print_banner_flag, int loc_verbose_mode);
-
+int show_results (long start, int rc, int nth_set, int loc_print_banner_flag, int loc_verbose_mode);
 int is_isql_command (TCHAR *text, integer_list * pidlist);
 int connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password);
+
+typedef int (*_func_t) (long start, int rc, int nth_set, int loc_print_banner_flag, int loc_verbose_mode);
+
+
 
 void
 exec_one (TCHAR *text, integer_list * pidlist)
@@ -5912,10 +6510,11 @@ again_exec:;
 	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
 	  IF_ERR_GO (stmt, error, rc);
 	  rc = SQLExecute (stmt);
-	}
+        }
       else if (sparql_translate_mode)
         {
           const TCHAR* q = text;
+	  print_blobs_flag = 1;
           if (!strncasecmp (text, _T("SPARQL"), isqlt_tcslen(_T("SPARQL"))))
             q = text + isqlt_tcslen(_T("SPARQL"));
 
@@ -5925,10 +6524,20 @@ again_exec:;
           IF_ERR_GO (stmt, error, rc);
           rc = SQLExecute (stmt);
         }
+      else if (profile_mode)
+        {
+	  print_blobs_flag = 1;
+	  rc = SQLPrepare (stmt, _T("PROFILE(?)"), SQL_NTS);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLBindParameter (stmt, 1, SQL_PARAM_INPUT, SQL_C_CHAR, SQL_CHAR, isqlt_tcslen(text), 0, UCP(text), isqlt_tcslen(text), NULL);
+	  IF_ERR_GO (stmt, error, rc);
+	  rc = SQLExecute (stmt);
+        }
       else
         {
-	  rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
+          rc = SQLExecDirect (stmt, UCP (text), SQL_NTS);
 	}
+
     }
   else if (rc == DO_SQL_API_COMMAND_IS_NOT_AVAILABLE)
     {				/* Should we free something? */
@@ -5950,8 +6559,9 @@ again_exec:;
  */
 
   IF_ERR_OR_DEADLOCK_GO (stmt, error, deadlock_exec, rc);
-  rc = show_results (start, rc, is_call_statement,
-		     print_banner_flag, verbose_mode);
+
+  rc = show_results (start, rc, is_call_statement, print_banner_flag, verbose_mode);
+
   IF_ERR_OR_DEADLOCK_GO (stmt, error, deadlock_exec, rc);
 
 /* It's important to call the following SQLFreeStmt's in all cases,
@@ -6209,7 +6819,18 @@ next_set:
 	    }
 	  if (loc_print_banner_flag)
 	    {
-	      print_banner ();
+	      if (in_HTML_mode ())
+	        print_banner ();
+	      else if (vert_row_out_mode)
+                print_banner_vert ();
+	      else if (csv_rfc4180_mode)
+		print_csv_rfc4180_banner ();
+	      else if (csv_mode)
+                print_csv_banner ();
+	      else if (json_mode)
+                print_json_banner ();
+	      else
+	        print_banner ();
 	    }
 
 	  for (;;)
@@ -6218,7 +6839,18 @@ next_set:
 	      if (rc == SQL_NO_DATA_FOUND)
 		break;
 	      IF_ERR_GO (stmt, error, rc);
-	      rc = print_row ();
+	      if (in_HTML_mode ())
+	        rc = print_row();
+	      else if(vert_row_out_mode)
+	        rc = print_row_vert();
+	      else if(csv_rfc4180_mode)
+	        rc = print_csv_rfc4180_row();
+	      else if(csv_mode)
+	        rc = print_csv_row();
+	      else if (json_mode)
+	        rc = print_json_row(n_rows);
+	      else
+	        rc = print_row();
 	      IF_ERR_GO (stmt, error, rc);
 	      n_rows++;		/* Rows fetched and printed this far. */
 	      if (select_max_rows && (n_rows >= select_max_rows))
@@ -6226,6 +6858,10 @@ next_set:
 		  break;
 		}
 	    }			/* for fetch loop */
+
+	  if (json_mode)
+	    print_json_footer();
+
 	  if (in_HTML_mode ())
 	    {
 	      HTML_sets_open--;
@@ -6322,7 +6958,6 @@ error:;
 }
 
 
-
 /* ================================================================ */
 /*            STUFF FOR FOREACH PROCEDURE DEFINITIONS, ETC.         */
 /*                                                                  */
@@ -6332,7 +6967,7 @@ error:;
 TCHAR *
 isql_fgets (TCHAR *inbuf, int maxbytes, FILE * fp, TCHAR *prompt)
 {
-#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
+#if defined (WITH_READLINE) || defined (WITH_EDITLINE)
 
   static TCHAR *previous_inbuf = NULL;
 
@@ -6397,6 +7032,80 @@ isql_fgets (TCHAR *inbuf, int maxbytes, FILE * fp, TCHAR *prompt)
    buffer.
  */
 #define using_readline(PTR) not_pointing_to_input_buf(PTR)
+#define IFDEF_COND_MAX 200
+
+typedef
+struct ifdef_cond_s
+{
+  const TCHAR *ifc_expression;
+  unsigned ifc_line;
+  char ifc_effective_val;
+  char ifc_reversed;
+} ifdef_cond_t;
+
+ifdef_cond_t ifdef_cond[IFDEF_COND_MAX] = { { NULL, 0, 1, 0 } };
+unsigned ifdef_cond_current = 0;
+
+void ifdef_push (const TCHAR *expr, unsigned line);
+void ifdef_current_complement ();
+char ifdef_current_is_true ();
+void ifdef_pop();
+
+void ifdef_push (const TCHAR *expr, unsigned line)
+{
+  TCHAR *token, *nextptr;
+  TCHAR tmp2buf[TMPBUF_SIZE + 1];
+  if (ifdef_cond_current < IFDEF_COND_MAX-1)
+    {
+      ++ifdef_cond_current;
+      ifdef_cond[ifdef_cond_current].ifc_expression = expr;
+      ifdef_cond[ifdef_cond_current].ifc_reversed = 0;
+      ifdef_cond[ifdef_cond_current].ifc_line = line;
+      nextptr = expr;
+      token = get_next_token (&nextptr, tmp2buf, TMPBUF_SIZE, expr, 0);
+      ifdef_cond[ifdef_cond_current].ifc_effective_val = *token=='1' ? 1 : 0;
+    }
+  else
+    {
+      isql_fprintf (error_stream, _T("ERROR: Too many nested #if instructions, maximum %d.\n"), IFDEF_COND_MAX);
+      exit (1);
+    }
+}
+
+void ifdef_current_complement ()
+{
+  // don't redefine 0-th bottom element, should be always TRUE
+  if (ifdef_cond_current)
+    {
+      if (ifdef_cond[ifdef_cond_current].ifc_reversed == 0)
+        ifdef_cond[ifdef_cond_current].ifc_reversed = 1;
+      else
+        isql_fprintf (error_stream, _T("ERROR: unexpected #else instruction. Ignored.\n"));
+    }
+  else
+      isql_fprintf (error_stream, _T("ERROR: unexpected #else instruction. Ignored.\n"));
+}
+
+char ifdef_current_is_true ()
+{
+  return (char)( ifdef_cond[ifdef_cond_current].ifc_effective_val ^ ifdef_cond[ifdef_cond_current].ifc_reversed );
+}
+
+void ifdef_pop()
+{
+  if (ifdef_cond_current)
+    {
+      ifdef_cond[ifdef_cond_current].ifc_expression = NULL;
+      ifdef_cond[ifdef_cond_current].ifc_reversed = 0;
+      ifdef_cond[ifdef_cond_current].ifc_line = 0;
+      ifdef_cond[ifdef_cond_current].ifc_effective_val = 1;
+      --ifdef_cond_current;
+    }
+  else
+    {
+      isql_fprintf (error_stream, _T("ERROR: unexpected #endif instruction. Ignored.\n"));
+    }
+}
 
 
 /* rep_loop: Read-Eval-Print loop. Called by main & load_file */
@@ -6430,7 +7139,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
       unsigned int edel = 0;	/* End delimiter either semicolon or ampersand */
       TCHAR *tmp_pt;
       TCHAR *inpt = &input[0];
-/* When no readline is used inpiece and inpt should always be equal. */
+      /* When no readline is used inpiece and inpt should always be equal. */
       TCHAR *inpiece = inpt;
       TCHAR promptbuf[256], *promptptr = print_prompt;
       int empty_lines_so_far = 1;
@@ -6438,8 +7147,9 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
       input[0] = 0;		/* Clear the input buffer first. */
 
       /* if(print_prompt) isql_printf ("%s", print_prompt); fflush (stdout); */
-/* This inner loop collects one whole SQL-statement
-   (upto the next semicolon terminated line). */
+
+      /* This inner loop collects one whole SQL-statement
+         (upto the next semicolon terminated line). */
       for (nth_line_of_statement = 0;; nth_line_of_statement++)
 	{
 	  promptptr = print_prompt;
@@ -6465,7 +7175,9 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	    {
 	      goto over;
 	    }
+
 	  current_linecount ()++;
+
 	  if (!declared_name && !virtuoso_debug && !inside_string)
 	    {
 	      TCHAR *inpiece_tail = inpiece;
@@ -6479,6 +7191,8 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 		      nth_line_of_statement--;	/* Because of ++ in the for end */
 		      continue;		/* The inpt pointer is NOT incremented */
 		    }
+		  else if (*inpiece_tail=='#')
+		    break;
 		}
 	    }
 	  if (!inside_string)
@@ -6498,26 +7212,26 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 		  old_bracelevel = bracelevel = 0;
 		}
 	    }
-/*      if(declared_name) */
+	  /* if(declared_name) */
 	  {
 	    old_bracelevel = bracelevel;
 	    bracelevel = count_bracelevel (inpiece, bracelevel, NULL, 0, 1, &inside_string);
 	  }
 
-/* Check statement for execution,
-   IF the bracelevel is zero, (i.e. we are not inside procedure definition.)
-   or less than zero (in which case it is syntax error),
-   AND
-   the last non-blank character of the line is semicolon (;) or ampersand (&)
-   OR
-   there has been a procedure definition (declared_name is not NULL)
-   (and bracelevel has just now returned back to zero or less, i.e. there
-   really is a closing brace on the line)
-   This means that user doesn't have to finish the procedure definitions
-   with semicolon, allowing us also to load with load (not just load -r)
-   old-fashioned procedure definition files which have no separating
-   semicolons.
- */
+          /* Check statement for execution,
+             IF the bracelevel is zero, (i.e. we are not inside procedure definition.)
+             or less than zero (in which case it is syntax error),
+             AND
+             the last non-blank character of the line is semicolon (;) or ampersand (&)
+             OR
+             there has been a procedure definition (declared_name is not NULL)
+             (and bracelevel has just now returned back to zero or less, i.e. there
+             really is a closing brace on the line)
+             This means that user doesn't have to finish the procedure definitions
+             with semicolon, allowing us also to load with load (not just load -r)
+             old-fashioned procedure definition files which have no separating
+             semicolons.
+           */
 
 	  if ((bracelevel <= 0 && !inside_string) &&
 	      ((edel = get_rid_of_trailing_semicolon_or_ampersand (inpiece))
@@ -6550,10 +7264,10 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	      isql_exit (1);
 	    }
 
-/* With readline we have to copy inpiece to the point of input buffer
-   (pointed by inpt) because inpiece is wholly separate buffer allocated
-   by readline itself.
- */
+          /* With readline we have to copy inpiece to the point of input buffer
+             (pointed by inpt) because inpiece is wholly separate buffer allocated
+             by readline itself.
+           */
 	  if (using_readline (inpiece))
 	    {
 	      if (inpt > &input[0])	/* Add blank between if there */
@@ -6563,20 +7277,19 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	      isqlt_tcscpy (inpt, inpiece);
 	      inpt += inlen;
 	    }
-/* Without readline inpiece and inpt should point to the same point in
-   input buffer, where isqlt_fgetts will write its stuff. No need to add
-   blanks between lines because isqlt_fgetts will keep the newline in the end
-   of buffer, and get_rid_of_trailing_semicolon_if_there_is_one(inpiece)
-   won't nuke it either if there is no semicolon (as we are here there
-   is not one). This is getting UGLY, sorry.
- */
+          /* Without readline inpiece and inpt should point to the same point in
+             input buffer, where isqlt_fgetts will write its stuff. No need to add
+             blanks between lines because isqlt_fgetts will keep the newline in the end
+             of buffer, and get_rid_of_trailing_semicolon_if_there_is_one(inpiece)
+             won't nuke it either if there is no semicolon (as we are here there
+             is not one). This is getting UGLY, sorry.
+           */
 	  else
 	    {
 	      inpiece = inpt += inlen;
 	    }
-
-
 	}			/* End of the inner for loop, collected one statement */
+
       if (echo_mode)
 	{
 	  isql_fprintf (stdout, _T("\n-- Line %ld:%c%") PCT_S _T("\n"),
@@ -6584,8 +7297,10 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	    ((latest_statement_begins_at () == current_linecount ()) ? ' ' : '\n'),
 	    input );
 	}
+
       fflush (stdout);
-#if defined(WITH_READLINE) || defined(WITH_EDITLINE)
+
+#if defined (WITH_READLINE) || defined (WITH_EDITLINE)
       if (using_readline (inpiece) && (input[0]))	/* Something read in really? */
 	{			/* Then add it to history. */
 	  int len = isqlt_tcslen (input);
@@ -6596,50 +7311,66 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
 	}
 #endif
 
-      if ('!' == *(tmp_pt = skip_blankos (input)))
-	{			/* Spawn a command to shell and wait for it if doesn't end with & */
-	  spawn_shell_command ((tmp_pt + 1), pidlist, (edel != '&'));
+      /* processing the input line */
+      tmp_pt = skip_blankos (input);
+
+      if (!isqlt_tcsncmp(tmp_pt,_T("#if "), 4)) /* begin of conditional expression. */
+        {
+          ifdef_push (tmp_pt + 4, current_linecount ());
+        }
+      else if (!isqlt_tcsncmp(tmp_pt,_T("#else"),5)) /* else brunch of conditional expression. */
+        {
+          ifdef_current_complement ();
+        }
+      else if (!isqlt_tcsncmp(tmp_pt,_T("#endif"),6)) /* end of conditional expression. */
+        {
+          ifdef_pop (tmp_pt);
+        }
+      else if (*tmp_pt == '!')
+	{ /* Spawn a command to shell and wait for it if doesn't end with & */
+          if (ifdef_current_is_true ())
+	    spawn_shell_command ((tmp_pt + 1), pidlist, (edel != '&'));
 	}
-      else
-	{
-	  if ('&' == edel)	/* Run in background a statement or group of stmts */
-	    {
-	      if (load_n_files)
-		{
-		  isql_fprintf (error_stream,
-		      _T("ERROR: Can't spawn a child process because there are ")
-		      _T("files on the command line, which may cause infinite ")
-		      _T("recursion %") PCT_S _T(" of %") PCT_S _T(":\n%") PCT_S _T("\n"),
-		      current_lines_range(),
-		      current_loadexpr (), input);
-		  exit (1);
-		}
-	      spawn_to_background (input, pidlist);
-	    }
-	  else
-	    /* A normal semicolon terminated statement */
-	    {
-	      if (virtext &&
-		(
-	        (latest_statement_begins_at () != current_linecount()) ||
-	        is_declaration (input) ) )
-		{
-		  TCHAR pragma[1024];
-		  int pragma_len;
-		  isqlt_stprintf (pragma,
-		    _T("#line %ld \"%") PCT_S _T("\"\n"),
-		    latest_statement_begins_at (),
-		    current_file ? current_file : _T("(console)") );
-		  pragma_len = (int) isqlt_tcslen (pragma);
-		  memmove (input + pragma_len, input, (isqlt_tcslen(input) + 1) * sizeof (TCHAR));
-		  memcpy (input, pragma, pragma_len * sizeof (TCHAR));
-		}
-	      exec_one (input, pidlist);
-	    }
-	}
+      else if (edel == '&')	/* Run in background a statement or group of stmts */
+        {
+          if (ifdef_current_is_true ())
+            {
+              if (load_n_files)
+                {
+                  isql_fprintf (error_stream,
+                      _T("ERROR: Can't spawn a child process because there are ")
+                      _T("files on the command line, which may cause infinite ")
+                      _T("recursion %") PCT_S _T(" of %") PCT_S _T(":\n%") PCT_S _T("\n"),
+                      current_lines_range(),
+                      current_loadexpr (), input);
+                  exit (1);
+                }
+              spawn_to_background (input, pidlist);
+            }
+        }
+      else if (ifdef_current_is_true ())
+        /* A normal semicolon terminated statement */
+        {
+          if (virtext && !sparql_translate_mode &&
+              ( latest_statement_begins_at () != current_linecount() ||
+                is_declaration (input) ) )
+            {
+              TCHAR pragma[1024];
+              int pragma_len;
+              isqlt_stprintf (pragma,
+                _T("#line %ld \"%") PCT_S _T("\"\n"),
+                latest_statement_begins_at (),
+                current_file ? current_file : _T("(console)") );
+              pragma_len = (int) isqlt_tcslen (pragma);
+              memmove (input + pragma_len, input, (isqlt_tcslen(input) + 1) * sizeof (TCHAR));
+              memcpy (input, pragma, pragma_len * sizeof (TCHAR));
+            }
+          exec_one (input, pidlist);
+        }
 
       latest_statement_begins_at () = current_linecount () + 1;
-    }				/* The outer for loop */
+    }	/* The outer for loop */
+
 over:;
   if (bracelevel > 0)
     isql_fprintf (error_stream,
@@ -6715,10 +7446,26 @@ load_raw (FILE * f)
 int
 load_file (TCHAR *name, int raw_load, TCHAR *loadexpr)
 {
-  FILE *f;
+  FILE *f = NULL;
+  TCHAR *sql_path = NULL;
+  size_t sql_path_size;
+  TCHAR *sql_path_element = NULL;
+  TCHAR filename_buf[4096];
+  TCHAR *sql_path_delimiters =
+#if defined (WIN32)
+          _T(";");
+#else
+          _T(":");
+#endif
+  TCHAR *os_path_delimiter =
+#if defined (WIN32)
+          _T("\\");
+#else
+          _T("/");
+#endif
 
   if (((NULL == name) && (name = _T("NULL")))
-      || (!*name) || !(f = isqlt_tfopen (name, _T("r"))))
+      || (!*name))
     {
       isqlt_tperror (progname);
       isql_fprintf (error_stream,
@@ -6727,6 +7474,49 @@ load_file (TCHAR *name, int raw_load, TCHAR *loadexpr)
 		    current_loadexpr ());
       return (0);
     }
+
+  f = isqlt_tfopen (name, _T("r"));
+
+  if (!f)
+    {
+      sql_path = isqlt_tgetenv (_T("SQLPATH"));
+
+      if (sql_path)
+        {
+	  TCHAR *tok_state;
+
+          sql_path_size = (isqlt_tcslen (sql_path) + 1 ) * sizeof (TCHAR);
+          sql_path = chemalloc (sql_path_size, _T("load_file"));
+          isqlt_tcscpy (sql_path, isqlt_tgetenv (_T("SQLPATH")));
+
+          sql_path_element = isqlt_tcstok (sql_path, sql_path_delimiters, &tok_state);
+
+          while (sql_path_element)
+            {
+              isqlt_tcscpy (filename_buf, sql_path_element);
+              isqlt_tcscat (filename_buf, os_path_delimiter);
+              isqlt_tcscat (filename_buf, name);
+              if ((f = isqlt_tfopen (filename_buf, _T("r"))))
+                {
+                  name = filename_buf;
+                  break;
+                }
+              sql_path_element = isqlt_tcstok (NULL, sql_path_delimiters, &tok_state);
+            }
+          free (sql_path);
+        }
+
+      if (!f)
+        {
+          isqlt_tperror (progname);
+          isql_fprintf (error_stream,
+                 _T("%") PCT_S _T(": Cannot open file \"%") PCT_S _T("\" for loading, at line %ld of %") PCT_S _T("\n"),
+                        progname, name, latest_statement_begins_at (),
+                        current_loadexpr ());
+          return (0);
+        }
+    }
+
   current_file = name;
   push_to_loadexpr_stack (loadexpr, f);
   if (raw_load)
@@ -6982,6 +7772,10 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
       rc = SQLParamData (stmt, ((PTR *) & param_num));
       if (SQL_NEED_DATA == rc)
 	{
+          /* rewinding input stream to the start, there can be many parameters */
+          if (!user_input_p (in_fp))
+            rewind (in_fp);
+
 	  for (;;)
 	    {
 	      if (line_by_line_input)
@@ -7066,22 +7860,15 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
 		  inbuf_len = got_anything + previous_crlfs;
 
 		}
-	      else
-		/* Reading in binary format from the file specified */
+	      else /* Reading in binary format from the file specified */
 		{
-		  got_anything = (int) fread (inbuf, 1, inbuf_size, in_fp);
-		  /*
-		     isql_fprintf(error_stream,
+		  inbuf_len = got_anything = (int) fread (inbuf, 1, inbuf_size, in_fp);
+		  /* isql_fprintf(error_stream,
 		     "read_blob_from_input: fread got %d bytes, feof(in_fp)=%d, ferror(in_fp)=%d\n"
-		     "inbuf[0-15]='%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c%c'\n",
-		     got_anything,feof(in_fp),ferror(in_fp),
-		     inbuf[0],inbuf[1],inbuf[2],inbuf[3],
-		     inbuf[4],inbuf[5],inbuf[6],inbuf[7],
-		     inbuf[8],inbuf[9],inbuf[10],inbuf[11],
-		     inbuf[12],inbuf[13],inbuf[14],inbuf[15]
+		     "inbuf[0-15]='%.16s'\n",
+		     got_anything,feof(in_fp),ferror(in_fp), inbuf
 		     ); fflush(error_stream);
 		   */
-		  inbuf_len = got_anything;
 		  if (!got_anything)
 		    {
 		      *end_found = 1;
@@ -7089,31 +7876,29 @@ read_blob_from_input (TCHAR *statement, int has_output, FILE * in_fp,
 		    }
 		}
 
-	      {
-		rc2 = SQLPutData (stmt, inbuf, ((SQLLEN) inbuf_len));
-		if (SQL_ERROR == rc2)
-		  {
-		    return (rc2);
-		  }
-		if (0 != (previous_crlfs = crlfs))	/* Assignment on purpose */
-		  {		/* Copy the (CR+)LF in the end of this line to the
-				   beginning of next batch to be written to database,
-				   unless the next line happens to be the mime boundary. */
-		    isqlt_tcsncpy (inbuf, (inbuf + ind_to_crlfs), crlfs);
-/*                    inbuf[0] = inbuf[inbuf_len];
-   if(crlfs > 1) { inbuf[1] = inbuf[inbuf_len+1]; } */
-		  }
+              rc2 = SQLPutData (stmt, inbuf, ((SQLLEN) inbuf_len));
+              if (SQL_ERROR == rc2)
+                {
+                  return (rc2);
+                }
+              if (0 != (previous_crlfs = crlfs))	/* Assignment on purpose */
+                {		/* Copy the (CR+)LF in the end of this line to the
+                                 beginning of next batch to be written to database,
+                                 unless the next line happens to be the mime boundary. */
+                  isqlt_tcsncpy (inbuf, (inbuf + ind_to_crlfs), crlfs);
+                  /* inbuf[0] = inbuf[inbuf_len];
+                     if(crlfs > 1) { inbuf[1] = inbuf[inbuf_len+1]; }
+                     */
+                }
 
-		/* Was:   IF_SEVERE_ERR_GO(stmt, error, rc2); */
-	      }
-	    }			/* for loop */
+              /* Was:   IF_SEVERE_ERR_GO(stmt, error, rc2); */
+	    } /* for loop over blob chunks */
 	}
       else
 	{
 	  if (SQL_ERROR == rc)
 	    return (rc);
 	}
-      /* Was: { IF_SEVERE_ERR_GO(stmt,error,rc); } */
     }
   while (SQL_NEED_DATA == rc);
 /* Parameter was a blob? */
@@ -9085,19 +9870,15 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
 				  &conn_str_length,
 				  SQL_DRIVER_COMPLETE)))
 	{
+	  isql_fprintf (error_stream, _T("Connection: %") PCT_S _T("\n"),
+		rc == SQL_SUCCESS_WITH_INFO ? _T("Established (with info)") : _T("Failed"));
 	  print_error (((HENV) 0), hdbc, ((HSTMT) 0), rc);
-	  isql_fprintf (error_stream,
-			_T("%") PCT_S _T("connect with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d\n"),
-			((SQL_ERROR == rc) ? _T("could not ") : _T("")),
-			datasource, completed_conn_string, conn_str_length);
 	  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	    isql_exit (3);
 	}
       else if (verbose_mode)	/* A success */
 	{
-	  isql_fprintf (error_stream,
-			_T("connected with connection string \"%") PCT_S _T("\". Completed as: \"%") PCT_S _T("\", length=%d.\n"),
-			datasource, completed_conn_string, conn_str_length);
+	  isql_fprintf (error_stream, _T("Connection: Established\n"));
 	}
 #endif
     }
@@ -9294,11 +10075,11 @@ bin_fgets (TCHAR *buffer, int max_size, FILE * infp)
    HTML-constructs like this, which at least Netscape version 2.02E
    will send without any escaping...
 
-   <INPUT TYPE=HIDDEN NAME="LUMIKÄÄRME&#34;Lismake&LT;=&GT;kima&#59;ra&AMP;lahna" VALUE="Suikkaboksi ääliömäisesti huikkaa!">
+   <INPUT TYPE=HIDDEN NAME="LUMIKï¿½ï¿½RME&#34;Lismake&LT;=&GT;kima&#59;ra&AMP;lahna" VALUE="Suikkaboksi ï¿½ï¿½liï¿½mï¿½isesti huikkaa!">
    <INPUT TYPE=CHECKBOX NAME="sikaniska-NAME=lumiukko filename=pena" VALUE=RASTITTU>
 
    like these:
-   Content-Disposition: form-data; name="LUMIKÄÄRME"Lismake<=>kima;ra&lahna"
+   Content-Disposition: form-data; name="LUMIKï¿½ï¿½RME"Lismake<=>kima;ra&lahna"
    Content-Disposition: form-data; name="sikaniska-NAME=lumiukko filename=pena"
 
    A line with real filename= parameter should look like this:
@@ -9668,16 +10449,20 @@ isql_main (int argc,
     /* Normal usage from shell. */
     /* Parse command line arguments in this little loop. */
     {				/* This part taken from dbdump.c. Web-interface implemented above */
-      int i, u_encountered = 0;
+      int u_encountered = 0;
       for (i = 1, nth_non_option = 0; i < argc; i++)
 	{
 	  if (!isqlt_tcsncmp (argv[i], _T("-?"), 2) || !isqlt_tcsncmp (argv[i], _T("/?"), 2) || !isqlt_tcsncmp (argv[i], _T("--help"), 6))
 	    {
+	      isqlt_ftprintf (stdout, _T("%") PCT_S _T(" Interactive SQL ") ISQL_TYPE _T("\n"), PRODUCT_NAME);
+	      isqlt_ftprintf (stdout, _T("Version %")  PCT_S  _T(" as of %s\n"), ISQL_VERSION, __DATE__);
+#ifndef ODBC_ONLY
+	      isqlt_ftprintf (stdout, _T("Compiled for %")  PCT_S _T(" (%")  PCT_S _T(")\n"), build_opsys_id, build_host_id);
+#endif
+ 	      isqlt_ftprintf (stdout, _T("%s\n"), PRODUCT_COPYRIGHT);
 	      isqlt_ftprintf (stdout,
-		  _T("OpenLink Interactive SQL ") ISQL_TYPE _T(", version %") PCT_S _T(".\n"),
-		  ISQL_VERSION);
-	      isqlt_ftprintf (stdout,
-		_T("\n   Usage :\n")
+		_T("\n")
+	        _T("Usage:\n")
 #ifndef ODBC_ONLY
 		_T("isql <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...\n")
 		_T("\n")
@@ -9685,15 +10470,14 @@ isql_main (int argc,
 		_T("     [-E] [-X <pkcs12_file>] [-K] [-C <num>] [-b <num>]\n")
 		_T("     [-u <name>=<val>]* [-i <param1> <param2>]\n")
 #else
-		_T("isql <DSN> <UID> <PWD> file1 file2 ...\n\n")
+		_T("  isql <DSN> <UID> <PWD> file1 file2 ...\n")
 		_T("\n")
 		_T("isql -H datasource [-U <UID>] [-P <PWD>] [-u <name>=<val>]* [-i <param1> <param2>]\n")
-		_T("\n")
 #endif
-		_T("     isql -?")
+		_T("\n")
+		_T("  isql -?\n")
 		_T("\n")
 		_T("Connection options:\n")
-		_T("\n")
 		_T("  -?                  - This help message\n")
 		_T("  -U username         - Specifies the login user ID\n")
 		_T("  -P password         - Specifies the login password\n")
@@ -9704,16 +10488,16 @@ isql_main (int argc,
                 _T("  -C                  - Specifies that password will be sent in cleartext\n")
 		_T("  -X pkcs12_file      - Specifies that encryption & X509 certificates will\n")
 		_T("                        be used\n")
-		_T("  -T server_cert      - Specifies that CA certificate file to be used\n")
-                _T("  -b size             - Specifies that large command buffer to be used\n")
+		_T("  -T server_cert      - Specifies that CA certificate file will be used\n")
+		_T("  -W webid_delegate   - Specifies WebID delegate IRI\n")
+                _T("  -b size             - Specifies that large command buffer will be used\n")
 		_T("                        (in KBytes)\n")
-		_T("  -K                  - Shuts down the virtuoso on connecting to it\n")
+		_T("  -K                  - Shuts down the virtuoso engine after connecting to it\n")
 #else
 		_T("  -H datasource       - Specifies the data source name (DSN)\n")
 #endif
 		_T("\n")
 		_T("Parameter passing options:\n")
-		_T("\n")
 		_T("  -u name1=val1... - Everything after -u is stored to associative array U,\n")
 		_T("                        until -i is encountered. If no equal sign then value\n")
 		_T("                        is NULL\n")
@@ -9721,8 +10505,10 @@ isql_main (int argc,
 		_T("                        comes arbitrary input parameter(s) for isql procedure,\n")
 		_T("                        which can be referenced with $ARGV[$I] by the\n")
 		_T("                        ISQL-commands.\n")
-		_T("  <OPT>=<value>       - Sets the ISQL options\n\n")
-		_T("  Note that if none of the above matches then the non-options go as \n")
+		_T("  <OPT>=<value>       - Sets the ISQL options\n")
+		_T("\n")
+		_T("Note: Arguments that do not match one of the above options will be assigned\n")
+                _T("      in order to the following fields:\n")
 #ifndef ODBC_ONLY
 		_T("  <HOST>[:<PORT>] <UID> <PWD> file1 file2 ...\n\n")
 #else
@@ -9960,6 +10746,14 @@ isql_main (int argc,
       return 0;
     }
 #endif
+
+  if (verbose_mode && (NOT web_mode))
+    {
+      isql_printf (_T("%") PCT_S _T(" Interactive SQL ") ISQL_TYPE _T("\n"), PRODUCT_NAME);
+      isql_printf (_T("Version %")  PCT_S  _T(" as of %s\n"), ISQL_VERSION, __DATE__);
+      isql_printf ("Type HELP; for help and EXIT; to exit.\n");
+    }
+
   if (nth_non_option || shortcuts_used)		/* Used in the traditional way, with datasource,
 				   and possibly username and password given from
 				   the command line? */
@@ -10016,14 +10810,6 @@ isql_main (int argc,
 	{
 	  goto done;
 	}
-    }
-
-  if (verbose_mode && (NOT web_mode))
-    {
-      isql_printf (
-	  _T("OpenLink Interactive SQL ") ISQL_TYPE
-	  _T(", version %") PCT_S _T(".\nType HELP; for help and EXIT; to exit.\n"),
-	  ISQL_VERSION);
     }
 
 /* Check if the user has given one or more statements to be executed

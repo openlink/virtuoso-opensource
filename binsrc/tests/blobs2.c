@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -328,7 +328,7 @@ check_blob_col (HSTMT stmt, int n_col, long expect_bytes, int ctype)
       rc = SQLGetData (stmt, n_col, ctype, res, get_batch, &rec_len);
       if (rc == SQL_ERROR)
 	{
-	  IF_ERR_GO (stmt, err, rc)
+	  IF_ERR_GO (stmt, err, rc);
 	err: return 0;
 	}
       if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -54,7 +54,7 @@ If such function is not defined, function-available returns false.
   <refsect1 id="xpf_examples_function_available"><title>Examples</title>
     <example id="xpf_ex_function_available"><title></title>
       <para>This expression should return false.</para>
-      <screen>function-available('http://www.openlinksw.com/Virtuoso/nosuchfunction')</screen>
+      <screen>function-available('http://example.com/Virtuoso/nosuchfunction')</screen>
     </example>
   </refsect1>
   <refsect1 id="xpf_seealso_function_available"><title>See Also</title>

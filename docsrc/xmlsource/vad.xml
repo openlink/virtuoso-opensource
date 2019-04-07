@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -459,7 +459,7 @@ aid maintenance and development.</para>
 <sect2 id="vadstickerdtd"><title>VAD Sticker DTD</title>
 
 <para>The namespace vad, used below, represents the URI 
-<computeroutput>http://www.openlinksw.com/urn/vad</computeroutput>. </para>
+<computeroutput>http://example.com/urn/vad</computeroutput>.</para>
 <para>The top level element of a VAD Sticker is &lt;sticker&gt;.  It must contain a 
 &lt;caption&gt; element and may contain &lt;dependencies&gt;, 
 &lt;procedures&gt;, &lt;ddls&gt; and &lt;resources&gt; elements.</para>
@@ -712,9 +712,8 @@ set of documentation files. </para>
   <name package="rdf_lib">
    <prop name="Title" value="RDF Support Library" />
    <prop name="Developer" value="OpenLink Software" />
-   <prop name="Copyright" value="(C) 2013 OpenLink Software" />
-   <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdf_lib/download" />
-   <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdf_lib/download" />
+   <prop name="Copyright" value="(C) 1998-2019 OpenLink Software" />
+   <prop name="Download" value="http://example.com/virtuoso/rdf_lib/download" />
   </name>
   <version package="3.14">
    <prop name="Release+Date" value="2003-05-05" />

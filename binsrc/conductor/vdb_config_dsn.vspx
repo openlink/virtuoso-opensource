@@ -1,0 +1,240 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="dsn_list" type="any" default="null" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+    <vm:header caption="External Data Sources">
+    </vm:header>
+    <vm:pagebody vdb_check="1">
+      <v:method name="get_dsn_list" arglist="">
+        declare u_dsn, s_dsn, f_dsn, dsn_list any;
+        declare i int;
+
+        u_dsn := sql_data_sources (1, 'user');
+        s_dsn := sql_data_sources (1, 'system');
+        f_dsn := y_get_file_dsns ();
+        dsn_list := make_array (length (u_dsn) + length (s_dsn) + length (f_dsn), 'any');
+
+        i := 0;
+        foreach (any elm in u_dsn) do
+        {
+          elm := vector_concat (elm, vector ('user'));
+          dsn_list[i] := elm;
+          i := i + 1;
+        }
+        foreach (any elm in s_dsn) do
+        {
+          elm := vector_concat (elm, vector ('system'));
+          dsn_list[i] := elm;
+          i := i + 1;
+        }
+        foreach (any elm in f_dsn) do
+        {
+          elm := vector_concat (elm, vector ('file'));
+          dsn_list[i] := elm;
+          i := i + 1;
+        }
+        return dsn_list;
+      </v:method>
+
+      <v:on-init>
+        if (self.dsn_list is null)
+          self.dsn_list := self.get_dsn_list ();
+      </v:on-init>
+
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Configure Data Sources</td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &nbsp;
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- MAIN -->
+                        <div class="scroll_area">
+                          <table class="listing">
+                            <v:data-set name="ds"
+                                        data="--self.dsn_list"
+                                        meta="--vector (vector ('callret',182,0,256,1,0,1,0,0,0,0,0))"
+                                        nrows="1000"
+                                        scrollable="1"
+                                        edit="0"
+                                        width="80">
+                              <v:template name="dsn_lst_h_tmpl" type="simple">
+                                <thead>
+                                  <tr class="listing_header_row">
+                                    <th class="checkbox">
+                                      <v:button name="refresh1"
+                                                style="image"
+                                                action="simple"
+                                                value="images/icons/ref_16.png"
+                                                xhtml_alt="Refresh page"
+                                                xhtml_title="Refresh page"
+                                                url="vdb_config_dsn.vspx"/>
+                                    </th>
+                                    <th width="40%">DSN</th>
+                                    <th width="20%">Type</th>
+                                    <th width="40%">Driver</th>
+                                    <th class="action">Action</th>
+                                  </tr>
+                                </thead>
+                              </v:template>
+
+                              <v:template name="template2" type="repeat">
+
+                                <v:template name="template7" type="if-not-exists">
+                                  <tr>
+                                    <td align="center" colspan="5">
+                                      <b>No data sources are configured</b>
+                                    </td>
+                                  </tr>
+                                </v:template>
+
+                                <v:template name="dsn_list_tmpl" type="browse">
+                                  <tr class="<?V case when mod (control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                    <td class="checkbox">
+                                      <img class="icon" src="images/icons/database_16.png" alt="database"/>
+                                    </td>
+                                    <td>
+                                      <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+                                    </td>
+                                    <td>
+                                      <v:label name="dsn_l" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                                    </td>
+                                    <td>
+                                      <v:label name="descr_l" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+                                    </td>
+                                    <td class="action">
+                                      <v:button action="simple"
+                                        style="image"
+                                        name="acc_cred_cmd_l"
+                                        xhtml_alt="Edit"
+                                        xhtml_title="Edit"
+                                        text="&nbsp;Edit"
+                                        value="images/icons/edit_16.png"
+                                        url="--sprintf ('vdb_conf_dsn_edit.vspx?dsn=%U&driver=%U&type=%U',
+                                          (control.vc_parent as vspx_row_template).te_rowset[0],
+                                          (control.vc_parent as vspx_row_template).te_rowset[1],
+                                          (control.vc_parent as vspx_row_template).te_rowset[2]
+                                        )"/>
+
+                                      <v:button name="label6D"
+                                        action="simple"
+                                        style="image"
+                                        xhtml_alt="Remove"
+                                        xhtml_title="Remove"
+                                        text="&nbsp;Delete"
+                                        value="images/icons/trash_16.png"
+                                        url="--sprintf ('vdb_conf_dsn_remove.vspx?dsn=%U&driver=%U&type=%U',
+                                          (control.vc_parent as vspx_row_template).te_rowset[0],
+                                          (control.vc_parent as vspx_row_template).te_rowset[1],
+                                          (control.vc_parent as vspx_row_template).te_rowset[2]
+                                        )"
+                                        enabled="--(case when (control.vc_parent as vspx_row_template).te_rowset[2] = 'file' then 0 else 1 end)" />
+                                    </td>
+                                  </tr>
+                                </v:template>
+
+                              </v:template>
+
+                              <v:template name="dsn_list_ftr_tmpl" type="simple">
+                                <tr>
+                                  <td align="center" colspan="5" class="listing_col_action">
+                                    <vm:ds-navigation data-set="ds"/>
+                                  </td>
+                                </tr>
+                              </v:template>
+                            </v:data-set>
+                          </table>
+                        </div>
+
+                        <v:form name="add_dsn" type="simple" method="POST" action="vdb_conf_dsn_new.vspx">
+                          <!-- XXX: DO NOT MAKE button name changes, they are tested in vdb_conf_dsn_new.vspx -->
+                          <v:button name="add_user_dsn" value="Add DSN" action="simple">
+                            <v:after-data-bind>
+                              if ((sys_stat('st_build_opsys_id') = 'Win32'))
+                                control.vc_enabled := 0;
+                            </v:after-data-bind>
+                          </v:button>
+
+                          <v:button name="add_system" value="Add System DSN" action="simple">
+                            <v:after-data-bind>
+                              if (not (sys_stat('st_build_opsys_id') = 'Win32'))
+                                control.vc_enabled := 0;
+                            </v:after-data-bind>
+                          </v:button>
+
+                          <v:button name="add_user" value="Add User DSN" action="simple">
+                            <v:after-data-bind>
+                              if (not (sys_stat('st_build_opsys_id') = 'Win32'))
+                                control.vc_enabled := 0;
+                            </v:after-data-bind>
+                          </v:button>
+
+                          <v:button name="add_file" value="Add File DSN" action="simple" enabled="1">
+                            <v:after-data-bind>
+                              if (not (sys_stat('st_build_opsys_id') = 'Win32'))
+                                control.vc_enabled := 0;
+                            </v:after-data-bind>
+                          </v:button>
+                        </v:form>
+                        <!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

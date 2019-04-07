@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,7 @@ extern BOOL virtodbc_LoginDlg (TKVList &props, HWND hWnd);
 extern TZCBrowser _zcbrowser;
 extern "C" int isdts_mode;
 
+extern "C" int virt_wide_as_utf16 = 0;
 
 static LPWSTR
 StrCopyInW (SQLCHAR *inStr, int size)
@@ -246,7 +247,8 @@ virtodbc_connect (
     TKVList& props,
     int completion)
 {
-  TCHAR szValue[64];
+  TCHAR szValue[256];
+  TCHAR szEncrypt[MAX_PATH];
   TCHAR szUID[MAX_PATH]; /* could be certificate */
   TCHAR szPWD[MAX_PWD_LEN + 1];
   TCHAR szHost[MAX_SERVER_LEN + 1];
@@ -282,6 +284,7 @@ virtodbc_connect (
 
   /* UID */
   props.Get (_T("UID"), szUID, NUMCHARS (szUID));
+  props.Get (_T("Encrypt"), szEncrypt, NUMCHARS (szEncrypt));
 
   /* PWD */
   props.Get (_T("PWD"), szPWD, NUMCHARS (szPWD));
@@ -320,6 +323,17 @@ virtodbc_connect (
     }
 #endif
 
+  if ((szStr = props.Value (_T("Charset"))) != NULL)
+    {
+      char *cs = virt_wide_to_ansi (szStr);
+      if (!strcmp (cs, "UTF-8"))
+	{
+	  props.Undefine(_T("Charset"));
+	  con->con_string_is_utf8 = 1;
+	}
+      dk_free_box (cs);
+    }
+
   mutex_enter (con->con_environment->env_mtx);
 
   /* Daylight */
@@ -344,7 +358,7 @@ virtodbc_connect (
   if (con->con_pwd_cleartext == 3)
     {
       /* UID should hold the certificate filename the user selected at login */
-      con->con_encrypt = virt_wide_to_ansi (szUID);
+      con->con_encrypt = virt_wide_to_ansi (szEncrypt);
       szUID[0] = 0;
     }
   else if ((szStr = props.Value (_T("Encrypt"))) != NULL &&

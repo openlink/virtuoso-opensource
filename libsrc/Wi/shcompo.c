@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,8 @@
 static void shcompo_release_int (shcompo_t *shc);
 long shc_waits = 0;
 long shc_recompiled = 0;
+
+int32 shcompo_max_cache_sz = 1000;
 
 /* PART 1. Generic functionality */
 
@@ -217,6 +219,9 @@ shcompo_stale_if_needed (shcompo_t *shc)
   vt = shc->_;
   if (NULL == vt->shcompo_check_if_stale)
     return;
+  /* Removed by Mitko in v6:
+  if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
+    return; */
   mutex_enter (vt->shcompo_cache_mutex);
   if (shc->shcompo_is_stale || (NULL == shc->shcompo_data))
     {
@@ -395,6 +400,7 @@ shcompo_destroy_data__qr (shcompo_t *shc)
 
 /* Part 2.2. shcompo_vtable__test and its members */
 
+#ifdef DEBUG
 shcompo_vtable_t shcompo_vtable__test;
 
 void
@@ -464,6 +470,7 @@ bif_exec_shcompo_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_resignal (box_copy_tree (shc->shcompo_error));
   return box_copy_tree (shc->shcompo_data);
 }
+#endif
 
 caddr_t
 bif_shcompo_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -490,31 +497,42 @@ bif_shcompo_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 /* Part 3. Init/final */
 
-void shcompo_init (void)
+
+void
+shcompo_init (void)
 {
+  if (shcompo_max_cache_sz < 100)
+    shcompo_max_cache_sz = 100;
+
     shcompo_vtable__qr.shcompo_type_title = "precompiled SQL query";
-    shcompo_vtable__qr.shcompo_cache = id_hash_allocate (4096, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  shcompo_vtable__qr.shcompo_cache = id_hash_allocate (1024, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  id_hash_set_rehash_pct (shcompo_vtable__qr.shcompo_cache, 200);
+
     shcompo_vtable__qr.shcompo_cache_mutex = mutex_allocate ();
     shcompo_vtable__qr.shcompo_spare_mutexes = NULL;
     shcompo_vtable__qr.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__qr.shcompo_alloc_copy = shcompo_alloc__default;
+    shcompo_vtable__qr.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
     shcompo_vtable__qr.shcompo_compile = shcompo_compile__qr;
     shcompo_vtable__qr.shcompo_check_if_stale = shcompo_check_if_stale__qr;
     shcompo_vtable__qr.shcompo_recompile = shcompo_recompile__qr;
     shcompo_vtable__qr.shcompo_destroy_data = shcompo_destroy_data__qr;
-    shcompo_vtable__qr.shcompo_cache_size_limit = 1000;
+  shcompo_vtable__qr.shcompo_cache_size_limit = shcompo_max_cache_sz;
+
+#ifdef DEBUG
     shcompo_vtable__test.shcompo_type_title = "test emulator of compilation";
-    shcompo_vtable__test.shcompo_cache = id_hash_allocate (4096, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+  shcompo_vtable__test.shcompo_cache = id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
+
     shcompo_vtable__test.shcompo_cache_mutex = mutex_allocate ();
     shcompo_vtable__test.shcompo_spare_mutexes = NULL;
     shcompo_vtable__test.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__test.shcompo_alloc_copy = shcompo_alloc__default;
+    shcompo_vtable__test.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
     shcompo_vtable__test.shcompo_compile = shcompo_compile__test;
     shcompo_vtable__test.shcompo_check_if_stale = shcompo_check_if_stale__test;
     shcompo_vtable__test.shcompo_recompile = shcompo_recompile__test;
     shcompo_vtable__test.shcompo_destroy_data = shcompo_destroy_data__test;
     shcompo_vtable__test.shcompo_cache_size_limit = 10;
     bif_define ("exec_shcompo_test", bif_exec_shcompo_test);
+#endif
     bif_define ("shcompo_clear", bif_shcompo_clear);
 }
 

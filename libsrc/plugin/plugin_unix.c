@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,8 +29,6 @@
 #include "Dk.h"
 #include "plugin.h"
 #include "dlf.h"
-
-extern int _gate_export (void *tgt);
 
 const char * so_extensions[] =
   { ".so", ".a" };
@@ -63,7 +61,7 @@ unit_version_t *uv_load_and_check_plugin(
     }
   if (NULL == test)
     {
-      res = calloc (1, sizeof (unit_version_t));
+      res = (unit_version_t *)calloc (1, sizeof (unit_version_t));
       res->uv_filename = (char *) strdup (fname);
       res->uv_load_error = "Unable to locate file";
       return res;
@@ -73,14 +71,14 @@ unit_version_t *uv_load_and_check_plugin(
   dll = DLL_OPEN_GLOBAL (fname);
   if (NULL == dll)
     {
-      res = calloc (1, sizeof (unit_version_t));
+      res = (unit_version_t *)calloc (1, sizeof (unit_version_t));
       res->uv_filename = strdup (fname);
       res->uv_load_error = strdup (DLL_ERROR());
       return res;
     }
   if (NULL == function_name)
     {
-      res = calloc (1, sizeof (unit_version_t));
+      res = (unit_version_t *)calloc (1, sizeof (unit_version_t));
       res->uv_filename = strdup (fname);
       res->uv_load_error = NULL;
       return res;
@@ -90,7 +88,7 @@ unit_version_t *uv_load_and_check_plugin(
     {
       char * err = strdup (DLL_ERROR());
       DLL_CLOSE (dll);
-      res = calloc (1, sizeof (unit_version_t));
+      res = (unit_version_t *)calloc (1, sizeof (unit_version_t));
       res->uv_filename = strdup (fname);
       res->uv_load_error = err;
       return res;
@@ -108,7 +106,7 @@ unit_version_t *uv_load_and_check_plugin(
       res->uv_load_error = "Loaded plugin is not compatible with your version of OS";
       return res;
     }
-  if (0 != _gate_export (res->uv_gate))
+  if (0 != _gate_export ((_gate_export_item_t *)(res->uv_gate)))
     {
       /* FreeLibrary (dll); -- result we will return now is in dll's address space */
       res->uv_load_error = "Loaded plugin requires core functionality not provided by main application";

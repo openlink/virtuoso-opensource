@@ -1,14 +1,10 @@
 --
---  users.sql
---
---  $Id$
---
 --  Unified user model
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -166,6 +162,8 @@ GET_SEC_OBJECT_ID (in _name varchar, out id integer, out is_sql integer, out opt
   if (not isarray(opts))
     opts := vector ();
 
+  if (_login_qual like 'Q %')
+    _login_qual := subseq (_login_qual, 2);
   inl_opts := vector (
 		'PASSWORD_MODE', _pwd_mode,
 		'PASSWORD_MODE_DATA', _pwd_mode_data,
@@ -369,7 +367,7 @@ create procedure USER_PASSWORD_SET (in name varchar, in passwd varchar)
     }
   select U_ID, U_GROUP into _u_id, _u_group from DB.DBA.SYS_USERS where U_NAME = USER;
   if (not (_u_id = 0 or _u_group = 0))
-    signal ('42000', 'Function DB.DBA.USER_PASSWORD_SET is restricted to dba group', 'SR285');
+    signal ('42000', 'Function DB.DBA.USER_PASSWORD_SET() is restricted to DBA group', 'SR285:SECURITY');
   if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = name and U_DAV_ENABLE = 1 and U_IS_ROLE = 0))
     signal ('42000', concat ('The user ''', name, ''' does not exist'), 'SR286');
   if (not isstring (passwd) or length (passwd) < 1)
@@ -445,11 +443,11 @@ USER_GRANT_ROLE (in _name varchar, in _role varchar, in grant_opt integer := 0)
     }
   if (_g_id = http_nobody_uid () or _g_id = http_nogroup_gid ())
     {
-	signal ('37000', sprintf ('System role "%s" can not be granted to "%s"', _role, _name), 'U0013');
+	signal ('37000', sprintf ('System role "%s" cannot be granted to "%s"', _role, _name), 'U0013');
     }
   if (_u_id = http_nobody_uid () or _u_id = http_nogroup_gid ())
     {
-	signal ('37000', sprintf ('Role "%s" can not be granted to special account "%s"', _role, _name), 'U0014');
+	signal ('37000', sprintf ('Role "%s" cannot be granted to special account "%s"', _role, _name), 'U0014');
     }
 
     {
@@ -497,7 +495,7 @@ USER_REVOKE_ROLE (in _name varchar, in _role varchar)
   GET_SEC_OBJECT_ID (_role, _g_id, _g_is_sql, opts);
   if ((_g_id = http_nogroup_gid () and _u_id = http_nobody_uid ()) or (_g_id = http_admin_gid() and _u_id = http_dav_uid()))
     {
-      signal ('37000', sprintf ('Built-in role "%s" can not be revoked from built-in user "%s"', _role, _name), 'U0015');
+      signal ('37000', sprintf ('Built-in role "%s" cannot be revoked from built-in user "%s"', _role, _name), 'U0015');
     }
   for select distinct GI_SUB as sub from SYS_ROLE_GRANTS where
     GI_SUPER = _u_id and GI_GRANT = _g_id
@@ -637,7 +635,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
     opts := ret;
   }
 
-
+  _login_qual := case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end;
   update SYS_USERS set U_OPTS = serialize (opts),
       U_PASSWORD_HOOK = _pwd_mode,
       U_PASSWORD_HOOK_DATA = _pwd_mode_data,
@@ -645,7 +643,7 @@ USER_SET_OPTION (in _name varchar, in opt varchar, in value any)
       U_SQL_ENABLE = _sql_enable,
       U_DAV_ENABLE = _dav_enable,
       U_DEF_QUAL = _login_qual,
-      U_DATA = case when length (_login_qual) then concat ('Q ', _login_qual) else NULL end,
+      U_DATA = _login_qual,
       U_GROUP = _u_group_id,
       U_E_MAIL = _u_e_mail,
       U_FULL_NAME = _u_full_name,
@@ -765,7 +763,7 @@ USER_KEY_STORE (in username varchar, in key_name varchar, in key_type varchar, i
       if (key_value is null)
 	key_value := xenc_key_serialize (key_name, 1);
       if (key_value is null)
-	signal ('22023', 'Can not serialize the key');
+	signal ('22023', 'Cannot serialize the key');
     }
 
   keys := coalesce (USER_GET_OPTION (username, 'KEYS'), vector ());
@@ -785,7 +783,7 @@ USER_KEY_DELETE (in username varchar, in key_name varchar)
   declare keys any;
   declare inx int;
   if (lower(user) <> 'dba' and username <> user)
-    signal ('42000', 'Can\'t delete non own keys');
+    signal ('42000', 'Cannot delete non own keys');
   keys := coalesce (USER_GET_OPTION (username, 'KEYS'), vector ());
   inx := position (key_name, keys);
   if (inx > 0)
@@ -806,7 +804,7 @@ USER_KEYS_INIT (in username varchar, in opts any)
   declare keys, path, key_value, key_type, key_passwd, key_pkey, os_u_name, os_u_pass any;
   declare certs any;
 
-  debug := 1;
+  debug := 0;
 
   opts := deserialize (blob_to_string (opts));
 
@@ -860,7 +858,7 @@ USER_KEYS_INIT (in username varchar, in opts any)
  	    key_value := file_to_string (path);
 	  else
 	    {
-	      log_message (sprintf ('XENC: Can\'t open key file: %s', path));
+	      log_message (sprintf ('XENC: Cannot open key file: %s', path));
 	      goto next;
 	    }
 	}
@@ -951,78 +949,105 @@ USER_KEY_LOAD (
 create procedure
 USER_CERT_REGISTER (in username varchar, in cert varchar, in pwd varchar := '', in coding varchar := 'PKCS12')
 {
-  declare certs, path, cfp, cont any;
+  declare certs, path, cfp, cfp_subject, cont any;
   declare inx, enc int;
 
   if (cert like '__:__:__:__:__:__:__:__:__:__:__:__:__:__:__:__%')
-    {
-      cfp := cert;
-      goto process;
-    }
-
-  if (USER_KEY_IS_FILE (cert, path))
-    cont := file_to_string (path);
+  {
+    cfp := cert;
+    cfp_subject := null;
+  }
   else
-    cont := cert;
+  {
+    if (USER_KEY_IS_FILE (cert, path))
+    {
+      cont := file_to_string (path);
+    }
+    else
+    {
+      cont := cert;
+    }
+    enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
+    cfp := get_certificate_info (6, cont, enc, pwd);
+    cfp_subject := get_certificate_info (2, cont, enc, pwd);
+    if (cfp is null)
+      signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
+  }
 
-  enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
-
-  cfp := get_certificate_info (6, cont, enc, pwd);
-
-  if (cfp is null)
-    signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
-process:
+  -- add certificate
   certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
   inx := position (cfp, certs);
   if (inx > 0)
     return;
+
   certs := vector_concat (certs, vector (cfp));
   USER_SET_OPTION (username, 'LOGIN_CERTIFICATES', certs);
   sec_set_user_cert (username, cfp);
+
+  -- add certificate label
+  if (isnull (cfp_subject))
+    return;
+
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+  if (get_keyword (cfp, certs) is not null)
+    return;
+
+  certs := vector_concat (certs, vector (cfp, cfp_subject));
+  USER_SET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS', certs);
 }
 ;
 
 create procedure
 USER_CERT_UNREGISTER (in username varchar, in cert varchar, in pwd varchar := '', in coding varchar := 'PKCS12')
 {
-  declare certs, new_certs any;
-  declare path, cfp, cont any;
-  declare inx, len, enc int;
+  declare certs, new_certs, path, cfp, cont any;
+  declare i, len, enc integer;
 
   if (cert like '__:__:__:__:__:__:__:__:__:__:__:__:__:__:__:__%')
-    {
-      cfp := cert;
-      goto process;
-    }
-
-  if (USER_KEY_IS_FILE (cert, path))
-    cont := file_to_string (path);
+  {
+    cfp := cert;
+  }
   else
-    cont := cert;
-
-  enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
-
-  cfp := get_certificate_info (6, cont, enc, pwd);
-
-  if (cfp is null)
-    signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
-
-process:
-  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
-  inx := position (cfp, certs);
-  if (inx = 0)
-    return;
-  aset (certs, inx-1, NULL);
-  len := length (certs); inx := 0; new_certs := vector ();
-  while (inx < len)
+  {
+    if (USER_KEY_IS_FILE (cert, path))
     {
-      if (certs[inx] is not null)
-        new_certs := vector_concat (new_certs, vector (certs[inx]));
-      inx := inx + 1;
+      cont := file_to_string (path);
     }
+    else
+    {
+      cont := cert;
+    }
+    enc := case upper (coding) when 'PKCS12' then 2 when 'DER' then 1 when 'PEM' then 0 else 0 end;
+    cfp := get_certificate_info (6, cont, enc, pwd);
+    if (cfp is null)
+      signal ('22023', 'The certificate have been supplied is not valid or corrupted', 'U....');
+  }
 
+  -- delete certificate
+  new_certs := vector ();
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATES'), vector ());
+  len := length (certs);
+  for (i := 0; i < len; i := i + 1)
+  {
+    if (cfp <> certs[i])
+      new_certs := vector_concat (new_certs, vector (certs[i]));
+  }
   USER_SET_OPTION (username, 'LOGIN_CERTIFICATES', new_certs);
   sec_remove_user_cert (username, cfp);
+
+  -- delete certificate label
+  certs := coalesce (USER_GET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS'), vector ());
+  if (get_keyword (cfp, certs) is null)
+    return;
+
+  new_certs := vector ();
+  len := length (certs);
+  for (i := 0; i < len; i := i + 2)
+  {
+    if (cfp <> certs[i])
+      new_certs := vector_concat (new_certs, vector (certs[i], certs[i+1]));
+  }
+  USER_SET_OPTION (username, 'LOGIN_CERTIFICATE_SUBJECTS', new_certs);
 }
 ;
 
@@ -1041,8 +1066,10 @@ create procedure
     {
       declare ext_oid varchar;
       declare exit handler for sqlstate '*' {
-        goto normal_auth;
+        goto cert_auth;
       };
+
+      user_name := null;
 
 	-- subject
 	cn := get_certificate_info (2);
@@ -1050,7 +1077,7 @@ create procedure
 	fp := get_certificate_info (6);
 
 	if (fp is null)
-	  goto normal_auth;
+	  goto cert_auth;
 
         ext_oid := virtuoso_ini_item_value ('Parameters', 'X509ExtensionOID');
 
@@ -1062,6 +1089,7 @@ create procedure
         if (new_user is null)
 	  new_user := sec_get_user_by_cert (fp);
 
+	if (new_user is not null)
         certs := coalesce (USER_GET_OPTION (new_user, 'LOGIN_CERTIFICATES'), vector ());
 
 	if (new_user is not null and position (fp, certs) > 0)
@@ -1073,18 +1101,27 @@ create procedure
 	    rc := 1;
 	  }
     }
-  -- normal verification
+
+  cert_auth:;
+
+
+  -- normal verification (only if rc != 0 which means "no access")
 normal_auth:
-  if (__proc_exists ('DB.DBA.DBEV_LOGIN'))
+  if (rc <> 0)
     {
-      rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
+      if (__proc_exists ('DB.DBA.DBEV_LOGIN'))
+	{
+	  rc := "DB"."DBA"."DBEV_LOGIN" (user_name, digest, session_random);
+	}
+      else if (rc <= 0) -- only if not authenticated 
+	{
+	  rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
+	  if (rc = 0)
+	    rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
+	}
     }
-  else if (rc <= 0) -- only if not authenticated
-    {
-      rc := DB.DBA.FOAF_SSL_LOGIN (user_name, digest, session_random);
-      if (rc = 0)
-        rc := DB.DBA.LDAP_LOGIN (user_name, digest, session_random);
-    }
+  if (user_name is null)
+    user_name := '';
   return rc;
 }
 ;
@@ -1102,7 +1139,7 @@ SET_USER_OS_ACOUNT (in username varchar, in os_u_name varchar,
 	return 1;
     }
   signal ('42000',
-      concat ('Can''t login system user ', os_u_name, '. Logon failure: unknown user name or bad password.'),
+      concat ('Cannot login system user ', os_u_name, '. Logon failure: unknown user name or bad password.'),
       'SR359');
 }
 ;
@@ -1257,6 +1294,8 @@ DB.DBA.LDAP_LOGIN (inout user_name varchar, in digest varchar, in session_random
       whenever not found goto LDAP_SERVER_REMOVED;
       select LS_BASE, LS_BIND_DN, LS_ACCOUNT, LS_PASSWORD, LS_UID_FLD, LS_TRY_SSL, LS_LDAP_VERSION
 	  into base, bind, lacc, lpwd, luid, ltry, lver from SYS_LDAP_SERVERS where LS_ADDRESS = lserv;
+
+      lpwd := pwd_magic_calc (lacc, lpwd, 1);
 
       if (is_http_ctx())
 	{

@@ -7,7 +7,7 @@
  *
  *  The iODBC driver manager.
  *
- *  Copyright (C) 1996-2013 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1996-2019 OpenLink Software <iodbc@openlinksw.com>
  *
  *  This library is free software; you can redistribute it and/or
  *  modify it under the terms of the GNU Library General Public
@@ -32,7 +32,9 @@
 /*
  *  Trigger odbccat.c to add DSN handling bif functions
  */
+#ifndef HAVE_ODBCINST_H
 #define HAVE_ODBCINST_H
+#endif
 
 /*
  *  Set default specification to ODBC 3.00

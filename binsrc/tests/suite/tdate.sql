@@ -1,29 +1,29 @@
 --
 --  tdate.sql
 --
---  $Id$
+--  $Id: tdate.sql,v 1.15.10.2 2013/01/02 16:15:01 source Exp $
 --
 --  Some simple date checking functions
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --
 --  Start the test
@@ -37,7 +37,7 @@ echo BOTH "STARTED: Date tests (tdate.sql)\n";
 --  Create the test table
 --
 drop table tdate;
-create table tdate (id integer not null primary key, val date);
+create table tdate (id integer not null primary key, val datetime);
 create index tdateix1 on tdate (val);
 
 --
@@ -201,12 +201,12 @@ insert into tdate values (13, null);
 insert into tdate values (14, cast ('1999/1/2 3:4:5' as datetime));
 
 ECHO BOTH "Checking 2 january 1999\n";
-select * from tdate where val = {d '1999-01-02'};
-ECHO BOTH $IF $EQU $LAST[1] 14 "PASSED" "***FAILED";
+select id from tdate where val = {d '1999-01-02'};
+ECHO BOTH $IF $EQU $rowcnt 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select using date escape\n";
 
-select * from tdate where val = {ts '1999-01-02 03:04:05.0000'};
+select id from tdate where val = {ts '1999-01-02 03:04:05.0000'};
 ECHO BOTH $IF $EQU $LAST[1] 14 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select using timestamp escape at 03:04:05\n";

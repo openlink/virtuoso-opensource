@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -203,7 +203,7 @@ static caddr_t java_vm_detach (void);
 #endif
 static caddr_t java_exception_text (JNIEnv * env);
 
-#define DV_EXTENSION_OBJ 255
+#define DV_EXTENSION_OBJ 251
 typedef struct extension_obj_s
 {
   ptrlong exo_type;
@@ -1456,14 +1456,13 @@ array_done:;
       utf8_chars_len = (*env)->GetStringUTFLength (env, jret->l);
       utf8_chars = (char *) (*env)->GetStringUTFChars (env, jret->l, NULL);
       if (0 == utf8_chars_len)
-	ret = box_wide_char_string (utf8_chars, 0, DV_WIDE);
+	ret = box_wide_char_string (utf8_chars, 0);
       else
 	{
 	  caddr_t temp = box_varchar_string (utf8_chars, utf8_chars_len,
 	      DV_SHORT_STRING);
 	  ret =
-	      box_utf8_as_wide_char (utf8_chars, NULL, utf8_chars_len, 0,
-	      DV_WIDE);
+	      box_utf8_as_wide_char (utf8_chars, NULL, utf8_chars_len, 0);
 	  dk_free_box (temp);
 	}
       (*env)->ReleaseStringUTFChars (env, jret->l, utf8_chars);
@@ -3310,8 +3309,10 @@ bif_init_func_javavm (void)
   bif_define ("java_vm_attach", bif_java_vm_attach);
   bif_define ("java_vm_detach", bif_java_vm_detach);
 
+#if 0
   bif_define_typed ("bit_and", bif_bit_and, &bt_integer);
   bif_define_typed ("bit_or", bif_bit_or, &bt_integer);
+#endif
 
   bif_define ("java_bpel_adaptor_class", bif_java_bpel_adaptor_class);
 

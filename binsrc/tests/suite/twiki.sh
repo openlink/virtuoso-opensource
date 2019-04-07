@@ -1,27 +1,27 @@
 #!/bin/sh
-#
+#  
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DSN=$PORT
 PLUGINDIR=${PLUGINDIR-$HOME/lib/}
@@ -30,7 +30,7 @@ THOST=localhost
 TPORT=$HTTPPORT
 LOGFILE=`pwd`/twiki.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 DSN=$PORT
 
 
@@ -92,12 +92,12 @@ case $SERVER in
 	mkdir wiki
 
 	if [ "x$HOST_OS" = "x" ]; then
-	    cp -r ../../samples/wikiv/initial wiki
-	    cp -r ../../samples/wikiv/test wiki
+	    cp -r $VIRTUOSO_TEST/../../samples/wikiv/initial wiki
+	    cp -r $VIRTUOSO_TEST/../../samples/wikiv/test wiki
 	elif [ "x$SRC" != "x" ] ;  then
 	    cp -r $SRC/binsrc/samples/wikiv/initial wiki
 	    cp -r $SRC/binsrc/samples/wikiv/test wiki
-	elif [ ! -f ../../../autogen.sh ];    then
+	elif [ ! -f $VIRTUOSO_TEST/../../../autogen.sh ];    then
 	    LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
 	    exit 1
 	fi
@@ -108,11 +108,11 @@ case $SERVER in
 	if [ "x$HOST_OS" = "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
-	    (cd ../../samples/wa/; $MAKE)
-	    cp ../../samples/wa/ods_framework_dav.vad ./
+	    (cd $VIRTUOSO_TEST/../../samples/wa/; $MAKE)
+	    cp $VIRTUOSO_TEST/../../samples/wa/ods_framework_dav.vad ./
 	    LOG "Create WIKI VAD Package"
-	    (cd ../../samples/wikiv/; $MAKE)
-	    cp ../../samples/wikiv/ods_wiki_dav.vad ./
+	    (cd $VIRTUOSO_TEST/../../samples/wikiv/; $MAKE)
+	    cp $VIRTUOSO_TEST/../../samples/wikiv/ods_wiki_dav.vad ./
 	elif [ "x$SRC" != "x" ]
 	    then
 	    LOG "Create ODS VAD Package"
@@ -121,7 +121,7 @@ case $SERVER in
 	    LOG "Create WIKI VAD Package"
 	    (cd "$SRC/binsrc/samples/wikiv/" ; $MAKE)
 	    cp "$SRC/binsrc/samples/wikiv/ods_wiki_dav.vad" .
-	elif [ ! -f ../../../autogen.sh ]
+	elif [ ! -f $VIRTUOSO_TEST/../../../autogen.sh ]
 	    then
 	    LOG "***ABORTED: Cannot build ODS & Blog2 VAD packages"
 	    exit 1
@@ -136,7 +136,7 @@ case $SERVER in
 	sleep 1
 
 
-	RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < twiki.sql
+	RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/twiki.sql
 	if test $STATUS -ne 0;   then
 	    LOG "***ABORTED: twiki.sql"
 	    exit 1

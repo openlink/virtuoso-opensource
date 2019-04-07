@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -210,7 +210,7 @@ This can be arbitrary content.
 			    
 			<html>
 			<body>
-			<v:page name="login_page_01" xmlns:v="http://www.openlinksw.com/vspx/" >
+			<v:page name="login_page_01" xmlns:v="http://example.com/vspx/" >
 			   <v:login name="login01" realm="vspx" mode="url" 
 				    user-password="sql_user_password" 
 				    user-password-check="sql_user_password_check" >

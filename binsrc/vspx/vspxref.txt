@@ -1,6 +1,6 @@
 
 
-H1 Summary of Classes 
+H1 Summary of Classes
 
 
 VSPX Control Classes and XML
@@ -8,29 +8,29 @@ VSPX Control Classes and XML
 
 
 vspx:page - A page, subclassed for each page in the application.
-vspx:form - form, scriptable, no implied database data  
+vspx:form - form, scriptable, no implied database data
 vspx:text - Text input, with scripts and validation options but no implied database binding.
 vspx:update-form - single row database updateable form.
 vspx:data-field - A field representing an updateable column of some SQL type.  Subclasses for check boxes and radio buttons for enumerated types.
 vspx:template - Wrapper class for any optional or repeated content.
 vspx:data-grid - Multi row , scrollable window of n lines on a cursor.  Rows can be specified as templates.
 vspx:data-list - select box initialized from a SQL select.
-vspx:select-list - Fixed initialized single select list 
+vspx:select-list - Fixed initialized single select list
 vspx:check-box - check box, can be data bound, input, automatic submit etc.
-vspx:button - Scriptable button 
-vspx:validator - Occures under a field or form to represent a test.  Will be subclassed for different situations and data types. 
+vspx:button - Scriptable button
+vspx:validator - Occures under a field or form to represent a test.  Will be subclassed for different situations and data types.
 
-H1 General Options and Format 
-The namespace is xmlns:vspx="http://openlinksw.com/uri/vspx". 
+H1 General Options and Format
+The namespace is xmlns:vspx="http://openlinksw.com/uri/vspx".
 
 
 
-H2 Attribute Sets 
+H2 Attribute Sets
 
 The items have the following attribute sets.
 
 
-H3 General 
+H3 General
 
 name - This is the control name and should be a valid SQL identifier.  It should be unique within the page.
 
@@ -44,16 +44,16 @@ class - A css class to be used for the control.
 Any HTML attributes for the control in question.  The underlying control will depend on the vspx one.
 
 
-H3 Child Elements 
+H3 Child Elements
 
 <validation> v1 ... </validation >
 
 These are the validator objects that will be invoked when the element's control gets the vc_validate method call.  The validator elements only make sense inside field or form types of controls.  The validators are invoked in the order given, and the first one to fail will stop the invocation chain, so that no later ones are attempted.
 
 
-H3 Customizing Processing Steps 
+H3 Customizing Processing Steps
 
-The code is executed in addition to the default action 
+The code is executed in addition to the default action
 Various other elements may occur under diverse controls, depending on the control's type.  The post, pre_render, data_bind and after_data_bind are supported for all vspx controls.  Other handlers may occur under other controls, depemding on the type of each.
 
 
@@ -61,10 +61,10 @@ Various other elements may occur under diverse controls, depending on the contro
 <?vsp SQL statemet ?>
 <?= SQL expression ?>
 
-These can occur inside a page, a form subtype and generally any control that is a container for other controls.  These will be evaluated at the pass represented by vc_render.  The stream to render into is implicit, just as in the case of vsp. 
+These can occur inside a page, a form subtype and generally any control that is a container for other controls.  These will be evaluated at the pass represented by vc_render.  The stream to render into is implicit, just as in the case of vsp.
 
 
-<vspx:on_post><script><--[cdata]  SQL compound stmt body ]]> </script></vspx:on_post> 
+<vspx:on_post><script><--[cdata]  SQL compound stmt body ]]> </script></vspx:on_post>
 
 For fields and forms, this is a context for a SQL compound statement that will be executed when the element gets a post.  The statement should end with a return 1 or 0.  The implicit return is 0.  A return of 1 means that the post is fully handled here and not to be passed on to the parent chain.  A 0 means that the post was not handled amd yje next up the chain will try.
 
@@ -111,19 +111,19 @@ the control, it is the post which should then call vc_data_bind for
 the control that was enabled to get the data fetched.
 
 
-H1 Control Summaries 
+H1 Control Summaries
 
-H2 Page 
+H2 Page
 
 The page or a subclass of it will be the outermost element  on any vspx page.
 
 
 
-H3 Attributes 
+H3 Attributes
 
 
 
-H3 Children 
+H3 Children
 
 The page can have any html or vsp markup as children, plus any vspx elememts.
 
@@ -134,9 +134,9 @@ The following children have special meaning when appearing immediately under the
 This declares a data member  for the page subclass corresponding to the containing page.  The value will be persisted between consecutive postbacks.  The value will be initialized to the default when the page is accessed from some other page.
 
 
-H2 label 
+H2 label
 
-This is a simple piece of text with formatting.  
+This is a simple piece of text with formatting.
 
 H3 Attributes
 
@@ -145,9 +145,9 @@ value - A data bound attribute giving the value.
 format - A sprintf control string applied to the value.
 H2 URL
 
-vspx:url 
+vspx:url
 
-H3 Attributes 
+H3 Attributes
 
 value - A possibly data bound expression giving the value.
 
@@ -155,17 +155,17 @@ format - A sprintf expression giving applied to the value.
 
 url - A data bound expression for the URL.
 
-This emits the URL as a link with the text given by value and format.  Depending on the session management in effect on the page, a URL poisoning extra may be transparently added to the URL. 
+This emits the URL as a link with the text given by value and format.  Depending on the session management in effect on the page, a URL poisoning extra may be transparently added to the URL.
 
 
-H2 Form 
+H2 Form
 
 This is the superclass of all forms.  The basic functionality is to be a grouping element.
-This allows handling post data and validating etc. 
+This allows handling post data and validating etc.
 
 H2  update-form
 
-This is a single row update control for a database table. 
+This is a single row update control for a database table.
 This retrieves the data from the row identified by the keys and shows the data in the column bound fields enclosed.  If responding to a post for a submit inside this form, the form updates/inserts the data and shows the resulting state at the render pass.
 
 
@@ -175,23 +175,23 @@ table="SQL table"
 
 The table to be updated.
 
-mode=..." 
+mode=..."
 
 if-not-exists="flag"
 
 If true and the keys do not select any row, the update form will show the data form with defaults filled in and will do an insert into the table when the form is submitted.   In this case of course the keys will have to be defaulted after the post or will have to be supplied in the post as fields.   Any defaulting should take place in the on_post handler which is before the insert or update in the event of the post.
 
 
-check-update 
+check-update
 
 If true and a previous value was shown in the form before the post being processed, this causes the system to check whether any of the data has been updated between getting it and the post at hand.
 This is a sort of optimistic concurrency control at the row level.  If an update is detected, the updated_meanwhile message is set as the error message of the form and no update is made.  The render pass may choose to process this message as it will, the default is to show it as any other error message for form level validation failure.
 
 
 
-H3 Children 
+H3 Children
 
-<vspx:key column="SQL col name" value="SQL data bind exp" /> 
+<vspx:key column="SQL col name" value="SQL data bind exp" />
 
 Defines a  key value of the form.  All the vspx:key children together should select one or zero rows from the table.
 
@@ -213,10 +213,10 @@ If any of these returns false, the form is considered to have failed
 and the error message of the first validatorr to fail is associated
 with the form and shown according to form options on the render pass.
 
-The code runs with control set to the enclosing control, i.e. the form and self set to the validator object.  Thus the code can set the error message of the vv_output_error_message of the validator.  This overrides the message attribute and is used as the message of failure if the validation fails. 
+The code runs with control set to the enclosing control, i.e. the form and self set to the validator object.  Thus the code can set the error message of the vv_output_error_message of the validator.  This overrides the message attribute and is used as the message of failure if the validation fails.
 
 
-H3 Comments 
+H3 Comments
 
 The vspx:update-field is used to bind to individual columns of the
 table.  This will appear inside the template.  Validators can appear
@@ -227,12 +227,12 @@ form, first all validators are evaluated and if successful the post
 processing of the form continues.
 
 
-H2 update-field 
+H2 update-field
 
 This is a field control for use inside vspx:update-form.
 
 
-Attributes 
+Attributes
 
 column="column name"
 
@@ -241,24 +241,24 @@ This binds the field to a specific column.  If nothing else is specified, the co
 
 error_glyph - See Validation Error Messages.
 
-title 
+title
 
 The field title.  Optional.
 
 Any HTML formatting attributes for <input type=text >.
 
 
-H3 Children 
+H3 Children
 
 Validation children are supported.
 
 
 
-H2 vspx:button 
+H2 vspx:button
 
 This is the vspx version of a submit button.
 
-H3 Attributes 
+H3 Attributes
 
 Anything that goes for <input type=submit > will pass through.
 
@@ -268,7 +268,7 @@ H2 data-grid
 
 This is the generic multi-row database view control.
 
-Attributes 
+Attributes
 
 nrows="n"
 
@@ -288,12 +288,12 @@ The cursor-type can be static, keyset or dynamic.  This will control how bookmar
 
 
 
-H3 Children 
+H3 Children
 
-<vspx:param value="data binding SQL expression" /> 
+<vspx:param value="data binding SQL expression" />
 
 
-vspx:row-template 
+vspx:row-template
 
 Will be repeated for each row in the window.  Will be instantiated,
 data bound, rendered.  If these contains forms and submits, the forms
@@ -304,7 +304,7 @@ the method vc_get_field can be used on the data_grid to get a named
 column value for the current row for data binding a child of the
 template when instantiating the template.
 
-The row template may contain buttons for edit and delete.  The edit button will have a post event of vc_data_grid_edit (grid), where grid is the data grid parent.  This will change the row template into the edit template and redo the data bind for this, thus showing the update form in the middle of the rows.  
+The row template may contain buttons for edit and delete.  The edit button will have a post event of vc_data_grid_edit (grid), where grid is the data grid parent.  This will change the row template into the edit template and redo the data bind for this, thus showing the update form in the middle of the rows.
 
 A delete button may be implemented with the on post code of:
 
@@ -317,7 +317,7 @@ vspx:edit-template>
 
 If a row is in the editable state, this template is instantiated for it instead of the row_template.  This may be a vspx:update_form for example, which will have a data vinding via the vspx:key element which references the current row of the enclosing data grid.
 
-vspx:empty-template 
+vspx:empty-template
 
 Content template if no rows are selected.
 
@@ -327,7 +327,7 @@ For a data grid with at least one row, this template is rendered inside the grid
 
 
 
-H1 Validation Error Messages 
+H1 Validation Error Messages
 
 
 There is a vc_error_message data member in the vspx controls.  The vc_is_valid data member of each control which has validators and where one or more fails is set to 0. Also the vc_is_valid member of the page is set to 0 if any validator inside runs.
@@ -339,19 +339,19 @@ By default the error message is shown below the field if a field is in question 
 
 
 
-H1 Editor Features 
+H1 Editor Features
 
 To be specified, wizards for various common form types.
 
-H1 General VSPX Editor Guidelines 
+H1 General VSPX Editor Guidelines
 
-This section lists various edit views for controls. 
+This section lists various edit views for controls.
 
-H2 Architecture 
+H2 Architecture
 
 Many of the forms in the vspx editor will be for editing simmple, scalar valued attributes of XML elements.
 The forms of the editor can consequently be generated from an XML schema of the element in question.
-If the editor is scripted in Java script or such, then code for handling the forms can be readily generated using xslt from the xml schema describing the elements being edited. 
+If the editor is scripted in Java script or such, then code for handling the forms can be readily generated using xslt from the xml schema describing the elements being edited.
 
 The vspx controls will all have an XML schema representation.  Generally, the developer making the control will produice the schema.  Initially, the schema can be written by the immplementor of the editor if it is not yet written.
 The key point is generating forms automatically.
@@ -359,7 +359,7 @@ The key point is generating forms automatically.
 This document does not give layouts for the forms but lists the main controls and logic.
 
 
-H2 Templates 
+H2 Templates
 
 Many controls have a template for repeating or conditional parts.  The template is essentially a separate page for purposes of editing.  For example, a data grid can have a row template, a row edit template and a 'no rows' template.  Each of these can be opened for editing from the dialog of the data grid control.
 
@@ -367,27 +367,27 @@ A template can be open in a particular scope.  This scope is given by the enclos
 
 Thus the editor element in terms of the editor which is used to make templates is similar to a page editor control, but also knows inside which control the template is, so as to access attributes of the  enclosing control.
 
-H2 Database Information 
+H2 Database Information
 
-When the user opens the editor, the edittor will ask for a login to a Virtuoso database. 
-The table selection lists will be filled with the tables from the default qualifier of the user in question.   if the application needs tables from different qualifiers, the current qualifier of the session can be set using a global, editor wide setting. 
+When the user opens the editor, the edittor will ask for a login to a Virtuoso database.
+The table selection lists will be filled with the tables from the default qualifier of the user in question.   if the application needs tables from different qualifiers, the current qualifier of the session can be set using a global, editor wide setting.
 
 The control for selecting a table will allow entering the table name or picking it from a list.  The list will be the alphabetic list of tables in the current qualifier, as owner.name, alphabetically sorted.
 
 The control for selecting a column will show the columns of a previously selected table.  The selection is finite, thus the list is a single selection control.  if no table is known for the context, all column selection controls are disabled.
 
 
-H2 Data Bind Expressions 
+H2 Data Bind Expressions
 
 Most attributes of controls can have data bound expressions as values.  These are plain SQL expressions, but some automation can be offered for entering some common ones.  To differentiate from constants, these begin with '-- ' or '--after '.  Possibilities for autocomplete include selecting from a list of declared page level session variables, URL parameters attributes of other controls etc.  Initially these will be just text fields where the -- or --after followed by the SQL is to be entered..
 
 
 
-H2 Update Form 
+H2 Update Form
 
 This control selects:
 
-1. a table 
+1. a table
 2. a list of key columns of this table.  To each column corresponds a data bind expression.
 3. A list of columns to update or show in the form.
 
@@ -406,16 +406,16 @@ H3 Form Styles
 
 There is a list of edit form styles.  The default style is a table of 2 columns, one line per field, where the left column is the titles and the right the edit controls.
 For each style, the columns will be laid out in the order in which they are selected.
-For each style, the field titles will initially be the column names. 
+For each style, the field titles will initially be the column names.
 
 
-H3 Defaulting an Edit Form 
+H3 Defaulting an Edit Form
 
 
 Given a table and a set of columns, the edit fields can be defaulted according to some rules.
-It is possible in some cases to have different edit widgets for one type.  For example, a date can be a text field or a combination of month, day and year selection boxes.  
+It is possible in some cases to have different edit widgets for one type.  For example, a date can be a text field or a combination of month, day and year selection boxes.
 
-The update form wizard has a button called generate for making the draft update form, making all the defaulted edit controls as explained below.  These can be later opened and edited in detail. 
+The update form wizard has a button called generate for making the draft update form, making all the defaulted edit controls as explained below.  These can be later opened and edited in detail.
 
 All field edit widgets, regardless of appearance, will be subclasses of vc_update_field.  The dialog for an update field will have multiple tabs.  The tab will select the appearance, e.g. text input, radio buttons etc.
 
@@ -440,12 +440,12 @@ H2 Update Field General Settings
 
 - Form specific settings - depending on the type, these will vary, see specific update fields.
 
-H2 Specific Update Fields 
+H2 Specific Update Fields
 
 One control per documented attribute.
 
 
-H2 Selecting A Foreign Key 
+H2 Selecting A Foreign Key
 
 One or more fields in a form may refer to a foreign key.  This means that there must exist a row in a given table where values of given columns match the values of a given set of fields.  Usually this is just one field whose value is picked from some column of another table.
 
@@ -470,14 +470,14 @@ If the value of the field is 3 and the c_name of the country with id 3 is France
 Only values which exist in the country table are possible.
 
 
-This is good if there are relatively few fixed selections.  If there are very many selections, then a search page plus possible edit form can be needed.  
+This is good if there are relatively few fixed selections.  If there are very many selections, then a search page plus possible edit form can be needed.
 
 Now suppose new countries could be added on the fly and that there were a country name search.
 
 
 
 
-<v:update-field name="c_country" column="c_country" /><label value="-- (select c_name from country where c_id = find_parent ('update_form')...." /> 
+<v:update-field name="c_country" column="c_country" /><label value="-- (select c_name from country where c_id = find_parent ('update_form')...." />
 <v:browse-button url="/select_country.vspx" >
 <v:field name="c_country" />
 </v:browse-button>
@@ -495,11 +495,11 @@ were identified by the v:field element inside the v:browse-button.
 This works with client side scripting.
 
 
-Pages for searching and selecting values from tables can be semi-automatically generated.  Instead   of a url one can specify a table.  The v:field elements will link fields ni the form being filled to columns of the table in question.  
+Pages for searching and selecting values from tables can be semi-automatically generated.  Instead   of a url one can specify a table.  The v:field elements will link fields ni the form being filled to columns of the table in question.
 
 
 <v:browse-button table="country" order="c_name asc" >
-<v:field name="c_country" column="cty_id" show="no" />  -- link the field of enclosing form called c_country to the cty_id of table country 
+<v:field name="c_country" column="cty_id" show="no" />  -- link the field of enclosing form called c_country to the cty_id of table country
 <v:field column="c_name" show="yes" />
 </v:browse-button>
 
@@ -509,7 +509,7 @@ Pages for searching and selecting values from tables can be semi-automatically g
 The page thus generated has a name composed of the page name with the browse button plus browse plus the name of the first field to set.  The page can be further edited with the editor.
 
 
-H2 User Interface for FK Fields 
+H2 User Interface for FK Fields
 
 When editing a form, select the fields which will be the foreign key reference, name the table and columns and choose between the single column select list and the complete scrollable browse page.
 press generate, which will make one of the above XMKL representations, which wil then be expanded into the defaulted browse page.  This page can then be opened, as it will be the url property of the browse button.  This will look like a top level page to edit.
@@ -526,19 +526,19 @@ The below types of single or composite controls can be used in vspx forms to rep
 
 
 
-- Enumeration - specify value - title pairs 
-- Enumeration as radio buttons - specify value - title pairs 
-- Enumeration as check box - specify value - title pairs 
-- Enumaration in table - specify title and value columns 
-- foreign key with search - search forms - list fields 
-- date with selection - specify year range 
-- date in text 
-- datetime selection - 5 list boxes - specify year range 
-- number field - text input with validation 
-- text field - text, application supplies validation 
+- Enumeration - specify value - title pairs
+- Enumeration as radio buttons - specify value - title pairs
+- Enumeration as check box - specify value - title pairs
+- Enumaration in table - specify title and value columns
+- foreign key with search - search forms - list fields
+- date with selection - specify year range
+- date in text
+- datetime selection - 5 list boxes - specify year range
+- number field - text input with validation
+- text field - text, application supplies validation
 - multiline text field - long text column, defaults to 60x5 chars.  There can be a function mapping between the displayed text and the contents of the column if there is a column.
 - image - can be bound to a column in a form.  This generates a page which is accessed by the img src link, which gets evaluated in the session scope.  The table is the one given in the enclosng update form.
-- file upload -  This is input only, will be assigned to the column in question, vut does not show anything. 
+- file upload -  This is input only, will be assigned to the column in question, vut does not show anything.
 - download link - Clicking this will download the resource in the attached column.  Takes the title as a possibly data bound attribute.  Can be used as the output side of a file upload.
 
 These are all update fields, which may or may not have a column given to them in the context of an update-form.

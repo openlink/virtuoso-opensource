@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -79,10 +79,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_head"><title>Examples</title>
-    <example id="ex_xte_head"><title></title>
+    <example id="ex_xte_head"><title>Simple Use</title>
       <para>The xte_head() call below takes three strings </para>
       <screen>xte_head ('supplier', 'CompanyName', 'Seller' )</screen>
       <para>and produces the result vector which 

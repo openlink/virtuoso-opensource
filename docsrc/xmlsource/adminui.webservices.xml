@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -759,7 +759,7 @@ omepage+%3Furl+%7D%0D%0A&format=sparql"
 </sparql>	
 ]]></programlisting>      	
       </listitem>
-      <listitem>Go to Conductor UI. For ex. http://localhost:8890/conductor :
+      <listitem>Go to Conductor UI. For ex. http://example.com/conductor :
         <figure id="scp1" float="1">
           <title>Crawling SPARQL Endpoints</title>
           <graphic fileref="ui/scp1.png"/>

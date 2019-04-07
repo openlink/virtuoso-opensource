@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -76,7 +76,7 @@ files size limitations, supported types, etc...</para>
     <example id="ex_XMLStorageSystem.getServerCapabilities"><title>Retrieving the XML Storage System Capabilities</title>
       <para>Simple example of fetching the server capabilities.</para>
       <screen>
-    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://localhost:6666/xmlStorageSystem&#39;,
+    SQL&gt; SOAP_CLIENT (url=&gt;&#39;http://example.com/xmlStorageSystem&#39;,
 	operation=&gt;&#39;getServerCapabilities&#39;, parameters=&gt;vector
 	(&#39;email&#39;,&#39;user@example.domain&#39;, &#39;password&#39;, md5(&#39;xxx&#39;));
 
@@ -94,7 +94,7 @@ files size limitations, supported types, etc...</para>
 	 &lt;maxBytesPerUser&gt;41943040&lt;/maxBytesPerUser&gt;
 	 &lt;maxFileSize&gt;1048576&lt;/maxFileSize&gt;
 	 &lt;message /&gt;
-	 &lt;yourUpstreamFolderUrl&gt;http://localhost:6666/DAV/user@example.domain/blog/&lt;/yourUpstreamFolderUrl&gt;
+	 &lt;yourUpstreamFolderUrl&gt;http://example.com/DAV/user@example.domain/blog/&lt;/yourUpstreamFolderUrl&gt;
        &lt;/Result&gt;
     &lt;/getServerCapabilitiesResponse&gt;
 </screen>

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -18,10 +18,12 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -35,8 +37,8 @@
     <Import Project="$(VCTargetsPath)Microsoft.CPP.UpgradeFromVC71.props" />
   </ImportGroup>
   <PropertyGroup Label="UserMacros">
-      <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
-      <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'Win32'">x86</ShortPlatform>
+    <ShortPlatform Condition="'$(Platform)' == 'x64'">x64</ShortPlatform>
   </PropertyGroup>
   <PropertyGroup>
     <_ProjectFileVersion>10.0.30319.1</_ProjectFileVersion>
@@ -124,6 +126,7 @@
     <ClCompile Include="..\libsrc\Dk\Dkhash.c" />
     <ClCompile Include="..\libsrc\Dk\Dkhashext.c" />
     <ClCompile Include="..\libsrc\Dk\Dkmarshal.c" />
+    <ClCompile Include="..\libsrc\Dk\Dkmem.c" />
     <ClCompile Include="..\libsrc\Dk\Dkpool.c" />
     <ClCompile Include="..\libsrc\Dk\Dkresource.c" />
     <ClCompile Include="..\libsrc\Dk\Dkrusage.c" />
@@ -135,6 +138,7 @@
     <ClCompile Include="..\libsrc\Dk\Dksets.c" />
     <ClCompile Include="..\libsrc\Dk\Dkstubs.c" />
     <ClCompile Include="..\libsrc\Dk\Dkutil.c" />
+    <ClCompile Include="..\libsrc\Dk\tlsf.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\libsrc\Dk\Dkalloc.h" />

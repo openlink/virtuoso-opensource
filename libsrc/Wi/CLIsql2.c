@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,7 @@
 #include "CLI.h"
 #include "sqlver.h"
 #include "multibyte.h"
+#include "langfunc.h"
 #include "libutil.h"
 
 
@@ -1069,14 +1070,17 @@ virtodbc__SQLGetConnectOption (
 
     case SQL_CHARSET:
       {
-	char *chrs_name = "";
-	if (CON_CONNECTED (con))
+	char *chrs_name = "UTF-8";
+	if (!con->con_string_is_utf8)
 	  {
-	    if (con->con_charset->chrs_name)
-	      chrs_name = con->con_charset->chrs_name;
+	    if (CON_CONNECTED (con))
+	      {
+	        if (con->con_charset->chrs_name)
+	          chrs_name = con->con_charset->chrs_name;
+	      }
+	    else
+	      chrs_name = (char *) con->con_charset;
 	  }
-	else
-	  chrs_name = (char *) con->con_charset;
 	V_SET_ODBC_STR (chrs_name, pvParam, StringLength, StringLengthPtr, &con->con_error);
       }
       break;
@@ -1228,59 +1232,62 @@ virtodbc__SQLSetConnectOption (
       break;
 
     case SQL_CHARSET:
-      if (CON_CONNECTED (con))
-	{
-	  SQLHSTMT stmt;
-	  SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
-	  wchar_t charset_table[256];
-	  char szCharsetName[50];
-	  SQLLEN nCharsetLen;
-
-	  if (SQL_SUCCESS != rc)
-	    return rc;
-
-	  if (vParam)
+      if (!con->con_string_is_utf8)
+        {
+          if (CON_CONNECTED (con))
 	    {
-	      int i;
+	      SQLHSTMT stmt;
+	      SQLRETURN rc = virtodbc__SQLAllocStmt (hdbc, &stmt);
+	      wchar_t charset_table[256];
+	      char szCharsetName[50];
+	      SQLLEN nCharsetLen;
 
-	      for (i = 0; i < 49 && ((char *) vParam)[i]; i++)
-		((char *) charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
+	      if (SQL_SUCCESS != rc)
+	        return rc;
 
-	      ((char *) charset_table)[i] = szCharsetName[i] = 0;
-	      nCharsetLen = i;
+	      if (vParam)
+	        {
+	          int i;
+
+	          for (i = 0; i < 49 && ((char *) vParam)[i]; i++)
+		    ((char *) charset_table)[i] = szCharsetName[i] = toupper (((char *) vParam)[i]);
+
+	          ((char *) charset_table)[i] = szCharsetName[i] = 0;
+	          nCharsetLen = i;
+	        }
+	      else
+	        {
+	          szCharsetName[0] = 0;
+	          charset_table[0] = 0;
+	          nCharsetLen = SQL_NULL_DATA;
+	        }
+
+	      rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT_OUTPUT,
+	          SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) charset_table, sizeof (charset_table), &nCharsetLen);
+
+	      if (rc == SQL_SUCCESS)
+	        rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
+
+	      if (rc == SQL_SUCCESS && nCharsetLen > 0)
+	        {
+	          if (con->con_charset)
+		    wide_charset_free (con->con_charset);
+
+	          con->con_charset = wide_charset_create (szCharsetName,
+		      (wchar_t *) charset_table, (int) (nCharsetLen - 1 / sizeof (wchar_t)), NULL);
+	        }
+
+	      virtodbc__SQLFreeStmt (stmt, SQL_DROP);
+
+	      return rc;
 	    }
-	  else
-	    {
-	      szCharsetName[0] = 0;
-	      charset_table[0] = 0;
-	      nCharsetLen = SQL_NULL_DATA;
-	    }
-
-	  rc = virtodbc__SQLBindParameter (stmt, 1, SQL_PARAM_INPUT_OUTPUT,
-	      SQL_C_CHAR, SQL_CHAR, 0, 0, (char *) charset_table, sizeof (charset_table), &nCharsetLen);
-
-	  if (rc == SQL_SUCCESS)
-	    rc = virtodbc__SQLExecDirect (stmt, (SQLCHAR *) "__set ('CHARSET', ?)", SQL_NTS);
-
-	  if (rc == SQL_SUCCESS && nCharsetLen > 0)
+          else
 	    {
 	      if (con->con_charset)
-		wide_charset_free (con->con_charset);
+	        dk_free_box ((box_t) con->con_charset);
 
-	      con->con_charset = wide_charset_create (szCharsetName,
-		  (wchar_t *) charset_table, (int) (nCharsetLen - 1 / sizeof (wchar_t)), NULL);
+	      con->con_charset = vParam ? (wcharset_t *) box_string ((char *) vParam) : NULL;
 	    }
-
-	  virtodbc__SQLFreeStmt (stmt, SQL_DROP);
-
-	  return rc;
-	}
-      else
-	{
-	  if (con->con_charset)
-	    dk_free_box ((box_t) con->con_charset);
-
-	  con->con_charset = vParam ? (wcharset_t *) box_string ((char *) vParam) : NULL;
 	}
       break;
 
@@ -1824,7 +1831,7 @@ virtodbc__SQLSetStmtOption (
 
     case SQL_ASYNC_ENABLE:
 #ifndef WIN32
-      so->so_is_async = vParam;
+/*    so->so_is_async = vParam; */ /* SQLExecDirect doesn't support Async mode*/
 #endif
       break;
 
@@ -2076,7 +2083,7 @@ virtodbc__SQLGetInfo (
 
     case SQL_DRIVER_NAME:
 #ifdef WIN32
-      strres = "virtodbc40.dll";
+      strres = "virtodbc.dll";
 #else
       strres = "virtodbc.so";
 #endif
@@ -4674,18 +4681,18 @@ SQLNumParams (
 void *
 stmt_bhid_place (cli_stmt_t * stmt, long bhid)
 {
+  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
+
   if (SQL_API_SQLEXECDIRECT == stmt->stmt_pending.p_api)
     {
       parm_binding_t *pb = stmt_nth_parm (stmt, BHID_COL (bhid));
-      size_t len = sqlc_sizeof (pb->pb_c_type, pb->pb_max_length);
+      size_t len = sqlc_sizeof_1 (pb->pb_c_type, pb->pb_max_length, pb->pb_max, wide_as_utf16);
       int btype = stmt->stmt_param_bind_type;
       size_t off = btype == 0 ? BHID_ROW (bhid) * len : BHID_ROW (bhid) * btype;
       int c_type = pb->pb_c_type;
-
       if (c_type == SQL_C_DEFAULT)
 	c_type = sql_type_to_sqlc_default (pb->pb_sql_type);
-
-      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
+      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_WIDE : DV_STRING);
 
 #ifndef MAP_DIRECT_BIN_CHAR
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR &&
@@ -4713,7 +4720,7 @@ stmt_bhid_place (cli_stmt_t * stmt, long bhid)
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR && col_dtp == DV_BLOB_BIN);
 #endif
 
-      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_LONG_WIDE : DV_LONG_STRING);
+      stmt->stmt_next_putdata_dtp = (c_type == SQL_C_WCHAR ? DV_WIDE : DV_STRING);
 
       return (cb->cb_place + (btype == 0 ? cb->cb_max_length * BHID_ROW (bhid) : btype * BHID_ROW (bhid)));
     }
@@ -4931,9 +4938,25 @@ SQLPutData (
   STMT (stmt, hstmt);
   SQLRETURN rc = SQL_SUCCESS;
   dk_session_t *ses = stmt->stmt_connection->con_session;
-  volatile SQLLEN newValue = (cbValue == SQL_NTS ?
-      (stmt->stmt_next_putdata_dtp == DV_LONG_STRING ?
-	  strlen ((const char *) rgbValue) : wcslen ((wchar_t *) rgbValue) * sizeof (wchar_t)) : cbValue);
+  volatile SQLLEN newValue = cbValue;
+  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
+  int wchar_size = wide_as_utf16 ? sizeof(uint16) : sizeof(wchar_t);
+
+  if (stmt->stmt_next_putdata_dtp == DV_WIDE) /* Wides are serialized with 4 byte length no matter whether they're shorter than 256 or not */
+    stmt->stmt_next_putdata_dtp = DV_LONG_WIDE;
+
+  if (cbValue == SQL_NTS)
+    {
+      if (stmt->stmt_next_putdata_dtp == DV_LONG_STRING)
+        {
+          newValue = strlen ((const char *) rgbValue);
+        }
+      else
+        {
+          newValue = wide_as_utf16 ? virt_ucs2len((uint16 *) rgbValue) : wcslen ((wchar_t *) rgbValue);
+          newValue *= wchar_size;
+        }
+    }
 
   if (STS_LOCAL_DAE == stmt->stmt_status)
     {
@@ -4960,43 +4983,101 @@ SQLPutData (
 	}
       else if (stmt->stmt_next_putdata_dtp == DV_LONG_WIDE && rgbValue != NULL && cbValue != 0)
 	{			/* put a session for wides */
-	  size_t wlen;
-	  wchar_t *wValue = (wchar_t *) rgbValue, *wptr;
-	  virt_mbstate_t ps;
 	  dk_session_t *ses;
 	  char *nbuffer;
+	  size_t wlen;
 
-	  if (cbValue != SQL_NTS && cbValue % sizeof (wchar_t))
+	  if (cbValue != SQL_NTS && cbValue % wchar_size)
 	    {
 	      set_error (&stmt->stmt_error, "22023", "CLXXX",
 		  "Length argument passed to SQLPutData must be a multiple of the size of the wide char.");
 
 	      return SQL_ERROR;
 	    }
-	  wptr = wValue;
-	  memset (&ps, 0, sizeof (ps));
-	  wlen = cbValue == SQL_NTS ? wcslen (wValue) : (cbValue / sizeof (wchar_t));
 
-	  ses = strses_allocate ();
-	  strses_set_utf8 (ses, 1);
-	  nbuffer = (char *) dk_alloc (65000);
-
-	  wptr = wValue;
-	  while (wptr - wValue < wlen)
+	  if (wide_as_utf16) 
 	    {
-	      size_t res;
+	      virt_mbstate_t ps;
+              char *us = (char *) rgbValue;
+              char *us_end = (char *)(((char *)rgbValue) + newValue);
+              wchar_t wc;
+	      unsigned char mbs[VIRT_MB_CUR_MAX];
+	      size_t n = 0, buf_size = 65000;
 
-	      res = virt_wcsnrtombs ((unsigned char *) nbuffer, &wptr, wlen - (wptr - wValue), 65000, &ps);
-	      if (res == (size_t) - 1)
-		{
-		  set_error (&stmt->stmt_error, "22023", "CLXXX", "Invalid wide data passed to SQLPutData");
-		  dk_free (nbuffer, 65000);
-		  strses_free (ses);
-		  return SQL_ERROR;
-		}
+	      memset (&ps, 0, sizeof (ps));
+	      ses = strses_allocate ();
+	      strses_set_utf8 (ses, 1);
+	      nbuffer = (char *) dk_alloc (65000);
+	      n = 0;
 
-	      if (res != 0)
-		session_buffered_write (ses, nbuffer, res);
+	      while(us < us_end)
+	        {
+#ifdef WORDS_BIGENDIAN
+                  wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+                  wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+                  if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+                    break;
+
+	          len = virt_wcrtomb (mbs, wc, &ps);
+	          if (((long) len) < 0)
+	            {
+		      set_error (&stmt->stmt_error, "22023", "CLXXX", "Invalid wide data passed to SQLPutData");
+		      dk_free (nbuffer, 65000);
+		      strses_free (ses);
+		      return SQL_ERROR;
+	            }
+	          else if (((long) len) > 0)
+		    {
+		      if ((n + len) >= buf_size)
+		        {
+		          session_buffered_write (ses, nbuffer, n);
+		          memcpy(nbuffer, mbs, len);
+		          n = len;
+		        }
+		      else
+		        {
+		          memcpy(nbuffer + n, mbs, len);
+		          n += len;
+		        }
+		    }
+	        }
+	      if (n != 0)
+	        {
+		  session_buffered_write (ses, nbuffer, n);
+	        }
+	    }
+	  else
+	    {
+	      wchar_t *wValue = (wchar_t *) rgbValue, *wptr;
+	      virt_mbstate_t ps;
+	
+	      wptr = wValue;
+	      memset (&ps, 0, sizeof (ps));
+	      wlen = cbValue == SQL_NTS ? wcslen (wValue) : (cbValue / sizeof (wchar_t));
+
+	      ses = strses_allocate ();
+	      strses_set_utf8 (ses, 1);
+	      nbuffer = (char *) dk_alloc (65000);
+
+	      wptr = wValue;
+	      while (wptr - wValue < wlen)
+	        {
+	          size_t res;
+
+	          res = virt_wcsnrtombs ((unsigned char *) nbuffer, (const wchar_t**)&wptr, wlen - (wptr - wValue), 65000, &ps);
+	          if (res == (size_t) - 1)
+		    {
+		      set_error (&stmt->stmt_error, "22023", "CLXXX", "Invalid wide data passed to SQLPutData");
+		      dk_free (nbuffer, 65000);
+		      strses_free (ses);
+		      return SQL_ERROR;
+		    }
+
+	          if (res != 0)
+		    session_buffered_write (ses, nbuffer, res);
+	        }
 	    }
 
 	  dae = (caddr_t) ses;
@@ -5029,7 +5110,7 @@ SQLPutData (
       if (newValue % 2)
 	{
 	  set_error (&stmt->stmt_error, "S1010", "CL054",
-	      "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
+	      "Invalid buffer length (odd) in passing character data to binary column in SQLPutData" );
 
 	  return SQL_ERROR;
 	}
@@ -5040,8 +5121,7 @@ SQLPutData (
 	  if ((chr < '0' || chr > '9') && (chr < 'A' || chr > 'F'))
 	    {
 	      set_error (&stmt->stmt_error, "S1010", "CL055",
-		  "Invalid buffer length (even) in passing character data to binary column in SQLPutData");
-
+		  "Characters should be hexadecimal digits, 0 to 9 and A to F in passing data to binary column in SQLPutData" );
 	      return SQL_ERROR;
 	    }
 	}
@@ -5071,7 +5151,7 @@ SQLPutData (
 		  {
 		    _lo = toupper (src[1]);
 		    _hi = toupper (src[0]);
-		    _res = ((_hi - (_hi <= '9' ? '0' : 'A' + 10)) << 4) | (_lo - (_lo <= '9' ? '0' : 'A' + 10));
+		    _res = ((_hi - (_hi <= '9' ? '0' : ('A' - 10))) << 4) | (_lo - (_lo <= '9' ? '0' : ('A' - 10)));
 		    session_buffered_write_char (_res, ses);
 		  }
 	      }
@@ -5081,6 +5161,75 @@ SQLPutData (
 		print_long ((long) newValue, ses);
 		session_buffered_write (ses, (const char *) rgbValue, newValue);
 	      }
+	  }
+	else if (wide_as_utf16)
+	  {
+            size_t utf8_len, len;
+            virt_mbstate_t state;
+            char *us;
+            char *us_end;
+            wchar_t wc;
+	    unsigned char mbs[VIRT_MB_CUR_MAX];
+
+            us = (char *) rgbValue;
+            us_end = (char *) (((char *)rgbValue) + newValue);
+            memset (&state, 0, sizeof (virt_mbstate_t));
+            utf8_len = 0;
+            while (us < us_end)
+              {
+#ifdef WORDS_BIGENDIAN
+                wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+                wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+                if (wc == UNICHAR_BAD_ENCODING)
+                  {
+		    print_long ((long) 0, ses);
+		    set_error (&stmt->stmt_error, "S1010", "CL093", "Invalid wide data supplied to SQLPutData");
+		    rc = SQL_ERROR;
+		    break;
+                  }
+                if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA)
+                  break;
+
+                len = virt_wcrtomb (mbs, wc, &state);
+                if (((long) len) < 0)
+                  {
+		    print_long ((long) 0, ses);
+		    set_error (&stmt->stmt_error, "S1010", "CL093", "Invalid wide data supplied to SQLPutData");
+		    rc = SQL_ERROR;
+		    break;
+                  }
+                utf8_len += len;
+              }
+
+            if (rc == SQL_SUCCESS)
+              {
+                us = (char *) rgbValue;
+                us_end = (char *) (((char *)rgbValue) + newValue);
+                memset (&state, 0, sizeof (virt_mbstate_t));
+
+		print_long ((long) utf8_len, ses);
+
+		while(utf8_len > 0)
+		  {
+#ifdef WORDS_BIGENDIAN
+                    wc = eh_decode_char__UTF16BE((__constcharptr *) &us, us_end);
+#else
+                    wc = eh_decode_char__UTF16LE((__constcharptr *) &us, us_end);
+#endif
+                    if (wc == UNICHAR_EOD || wc == UNICHAR_NO_DATA || wc == UNICHAR_BAD_ENCODING)
+                      break;
+
+                    len = virt_wcrtomb (mbs, wc, &state);
+                    if (len > 0)
+                      {
+		        session_buffered_write (ses, (char *) mbs, len);
+                        utf8_len -= len;
+                      }
+		  }
+
+              }
 	  }
 	else
 	  {
@@ -5092,7 +5241,7 @@ SQLPutData (
 
 	    wstr = (wchar_t *) rgbValue;
 	    memset (&state, 0, sizeof (virt_mbstate_t));
-	    utf8_len = virt_wcsnrtombs (NULL, &wstr, newValue / sizeof (wchar_t), 0, &state);
+	    utf8_len = virt_wcsnrtombs (NULL, (const wchar_t **)&wstr, newValue / sizeof (wchar_t), 0, &state);
 
 	    if (utf8_len != (size_t) - 1)
 	      {
@@ -5191,6 +5340,8 @@ virtodbc__SQLGetData (
   int is_blob_to_char = 0;
 #endif
   int rlen;
+  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
+  size_t wchar_size = wide_as_utf16 ? sizeof(uint16) : sizeof(wchar_t);
 
   cli_dbg_printf (("SQLGetData (%lx, %d, %d, --, %d, --)\n", hstmt, icol, fCType, cbValueMax));
 
@@ -5252,14 +5403,14 @@ virtodbc__SQLGetData (
 
       cb->cb_not_first_getdata = 1;
 
-      if (!cbValueMax || (is_nts && cbValueMax == 1) || (is_wnts && cbValueMax == sizeof (wchar_t)))
+      if (!cbValueMax || (is_nts && cbValueMax == 1) || (is_wnts && cbValueMax == wchar_size))
 	{
 	  if (pcbValue)
 	    {
 #ifndef MAP_DIRECT_BIN_CHAR
-	      *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char)) * (is_blob_to_char ? 2 : 1);
+	      *pcbValue = length * (is_wnts ? wchar_size : sizeof (char)) * (is_blob_to_char ? 2 : 1);
 #else
-	      *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char));
+	      *pcbValue = length * (is_wnts ? wchar_size : sizeof (char));
 #endif
 	    }
 
@@ -5278,13 +5429,13 @@ virtodbc__SQLGetData (
 
       if (is_wnts)
 	{
-	  if (cbValueMax % sizeof (wchar_t))
-	    cbValueMax = ((int) (cbValueMax / sizeof (wchar_t))) * sizeof (wchar_t);
+	  if (cbValueMax % wchar_size)
+	    cbValueMax = ((int) (cbValueMax / wchar_size)) * wchar_size;
 
 #ifdef SAFE_SQLGETDATA
 	  rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
 #endif
-	  cbValueMax = cbValueMax / sizeof (wchar_t) - 1;
+	  cbValueMax = cbValueMax / wchar_size - 1;
 	}
 #ifdef SAFE_SQLGETDATA
       else
@@ -5321,13 +5472,21 @@ virtodbc__SQLGetData (
 		  cbValueMax / (is_blob_to_char ? 2 : 1),
 		  bh->bh_position,
 		  bh->bh_key_id,
-						  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), (ptrlong)bh->bh_timestamp
+		  bh->bh_frag_no, 
+		  bh->bh_dir_page, 
+		  bh->bh_pages, 
+		  (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), 
+		  (ptrlong)bh->bh_timestamp
 #else
 		  bh->bh_current_page,
 		  cbValueMax,
 		  bh->bh_position,
 		  bh->bh_key_id,
-						  bh->bh_frag_no, bh->bh_dir_page, bh->bh_pages, (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), (ptrlong)bh->bh_timestamp
+		  bh->bh_frag_no, 
+		  bh->bh_dir_page, 
+		  bh->bh_pages, 
+		  (ptrlong)(DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE), 
+		  (ptrlong)bh->bh_timestamp
 #endif
 	      ));
 	}
@@ -5363,7 +5522,7 @@ virtodbc__SQLGetData (
 	  for (inx = 0; inx < strings; inx++)
 	    {
 	      /* take 1 off for the terminating 0 added by reader: */
-	      long len = box_length (val[inx]) - (IS_WIDE_STRING_DTP (box_tag (val[inx])) ? sizeof (wchar_t) : 1);
+	      long len = box_length (val[inx]) - (IS_WIDE_STRING_DTP (box_tag (val[inx])) ? sizeof(wchar_t) : 1);
 	      switch (box_tag (val[inx]))
 		{
 		case DV_ARRAY_OF_LONG:
@@ -5381,13 +5540,25 @@ virtodbc__SQLGetData (
 #ifdef SAFE_SQLGETDATA
 		    if (is_nts)
 		      {
+		        /* Wide => Char */
 			int added = cli_wide_to_narrow (stmt->stmt_connection->con_charset,
 			    0, (wchar_t *) val[inx], len / sizeof (wchar_t),
-			    rgbValue_tail, rgbValue_end - rgbValue_tail, NULL, NULL);
+			    rgbValue_tail, 
+			    rgbValue_end - rgbValue_tail, NULL, NULL);
 			rgbValue_tail += added;
+		      }
+		    else if (is_wnts && wide_as_utf16) 
+		      {
+		        /* Wide => UTF16 */
+			int added = cli_wide_to_utf16 (
+			    0, (wchar_t *) val[inx], len / sizeof (wchar_t),
+			    rgbValue_tail, 
+			    rgbValue_end - rgbValue_tail);
+			rgbValue_tail += (added * sizeof(uint16));
 		      }
 		    else
 		      {
+		        /* Wide => Wide */
 			int added = rgbValue_end - rgbValue_tail;
 
 			if (added > len)
@@ -5398,13 +5569,31 @@ virtodbc__SQLGetData (
 		      }
 #else
 		    if (is_nts)
-		      cli_wide_to_narrow (stmt->stmt_connection->con_charset,
+		      {
+		        /* Wide => Char */
+		        cli_wide_to_narrow (stmt->stmt_connection->con_charset,
 			  0, (wchar_t *) val[inx], len / sizeof (wchar_t),
-			  ((unsigned char *) rgbValue) + fill, len / sizeof (wchar_t), NULL, NULL);
-		    else
-		      memcpy (((wchar_t *) rgbValue) + fill, val[inx], len);
+			  ((unsigned char *) rgbValue) + fill, 
+			  len / sizeof(wchar_t), NULL, NULL);
 
-		    fill += len / sizeof (wchar_t);
+		        fill += len;
+	              }
+		    else if (is_wnts && wide_as_utf16) 
+		      {
+		        /* Wide => UTF16 */
+		        int added = cli_wide_to_utf16 (
+			  0, (wchar_t *) val[inx], len / sizeof (wchar_t),
+			  ((unsigned char *) rgbValue) + fill, 
+			  len / sizeof(wchar_t) * sizeof(uint16));
+
+       		        fill += added * sizeof(uint16);
+		      }
+		    else
+		      {
+		        /* Wide => Wide */
+		        memcpy (((wchar_t *) rgbValue) + fill, val[inx], len);
+		        fill += len / sizeof (wchar_t);
+		      }
 #endif
 		    break;
 		  }
@@ -5416,12 +5605,16 @@ virtodbc__SQLGetData (
 # ifdef SAFE_SQLGETDATA
 		      if (is_wnts)
 			{
-			  int nbytes = (rgbValue_end - rgbValue_tail) / (2 * sizeof (wchar_t));
+			  int nbytes = (rgbValue_end - rgbValue_tail) / (2 * wchar_size);
 			  if (nbytes > len)
-			    nbytes = len;
+			     nbytes = len;
 
-			  bin_dv_to_wstr_place ((unsigned char *) val[inx], (wchar_t *) rgbValue_tail, nbytes);
-			  rgbValue_tail += nbyte * 2 * sizeof (wchar_t);
+			  if (wide_as_utf16)
+		            bin_dv_to_utf16_place ((unsigned char *) val[inx], (uint16 *) rgbValue_tail, nbytes);
+			  else
+			    bin_dv_to_wstr_place ((unsigned char *) val[inx], (wchar_t *) rgbValue_tail, nbytes);
+
+			  rgbValue_tail += nbyte * 2 * wchar_size;
 			}
 		      else
 			{
@@ -5435,7 +5628,12 @@ virtodbc__SQLGetData (
 			}
 # else
 		      if (is_wnts)
-			bin_dv_to_wstr_place ((unsigned char *) val[inx], ((wchar_t *) rgbValue) + fill, len);
+		        {
+			  if (wide_as_utf16)
+			    bin_dv_to_utf16_place ((unsigned char *) val[inx], ((uint16 *) rgbValue) + fill, len);
+			  else
+			    bin_dv_to_wstr_place ((unsigned char *) val[inx], ((wchar_t *) rgbValue) + fill, len);
+			}
 		      else
 			bin_dv_to_str_place ((unsigned char *) val[inx], ((char *) rgbValue) + fill, len);
 		      fill += len * 2;
@@ -5447,11 +5645,19 @@ virtodbc__SQLGetData (
 #ifdef SAFE_SQLGETDATA
 		      if (is_wnts)
 			{
-			  int added = cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
-			      (unsigned char *) val[inx], len,
-			      ((wchar_t *) rgbValue_tail),
-			      ((wchar_t *) rgbValue_end) - ((wchar_t *) rgbValue_tail));
-			  rgbValue_tail += added * sizeof (wchar_t);
+                          int added;
+			  if (wide_as_utf16)
+			      added = cli_narrow_to_utf16 (stmt->stmt_connection->con_charset, 0,
+			          (unsigned char *) val[inx], len,
+			          ((uint16 *) rgbValue_tail),
+			          ((uint16 *) rgbValue_end) - ((uint16 *) rgbValue_tail));
+			  else
+			      added = cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
+			          (unsigned char *) val[inx], len,
+			          ((wchar_t *) rgbValue_tail),
+			          ((wchar_t *) rgbValue_end) - ((wchar_t *) rgbValue_tail));
+
+			  rgbValue_tail += added * wchar_size;
 			}
 		      else
 			{
@@ -5465,8 +5671,14 @@ virtodbc__SQLGetData (
 			}
 #else
 		      if (is_wnts)
-			cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
-			    (unsigned char *) val[inx], len, ((wchar_t *) rgbValue) + fill, len);
+		        {
+			  if (wide_as_utf16)
+			    cli_narrow_to_utf16 (stmt->stmt_connection->con_charset, 0,
+			      (unsigned char *) val[inx], len, ((uint16 *) rgbValue) + fill, len);
+			  else
+			    cli_narrow_to_wide (stmt->stmt_connection->con_charset, 0,
+			      (unsigned char *) val[inx], len, ((wchar_t *) rgbValue) + fill, len);
+			}
 		      else
 			memcpy (((char *) rgbValue) + fill, val[inx], len);
 
@@ -5499,29 +5711,40 @@ virtodbc__SQLGetData (
 	    ((char *) rgbValue_tail)[0] = '\x0';
 
 	  if (is_wnts)
-	    ((wchar_t *) rgbValue_tail)[0] = L'\x0';
+	    {
+	      if (wide_as_utf16)
+	        ((uint16 *) rgbValue_tail)[0] = L'\x0';
+	      else
+	        ((wchar_t *) rgbValue_tail)[0] = L'\x0';
+	    }
 #else
 	  if (is_nts)
 	    ((char *) rgbValue)[fill] = 0;
 
 	  if (is_wnts)
-	    ((wchar_t *) rgbValue)[fill] = L'\x0';
+	    {
+	      if (wide_as_utf16)
+	        ((uint16 *) rgbValue)[fill] = L'\x0';
+	      else
+	        ((wchar_t *) rgbValue)[fill] = L'\x0';
+	    }
 #endif
 
 	  if (pcbValue)
 #ifndef MAP_DIRECT_BIN_CHAR
-	    *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char)) * (is_blob_to_char ? 2 : 1);
+	    *pcbValue = length * (is_wnts ? wchar_size : sizeof (char)) * (is_blob_to_char ? 2 : 1);
 #ifdef SAFE_SQLGETDATA
-	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue)) / (is_blob_to_char ? 2 : 1);
+	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue)) / (is_blob_to_char ? 2 : 1) / (is_wnts && wide_as_utf16 ? sizeof(wchar_t)/sizeof(uint16) : 1);
 #else
-	  cb->cb_read_up_to += fill / (is_blob_to_char ? 2 : 1);
+	  cb->cb_read_up_to += fill / (is_blob_to_char ? 2 : 1) / (is_wnts && wide_as_utf16 ? sizeof(wchar_t)/sizeof(uint16) : 1);
 #endif
 #else
-	    *pcbValue = length * (is_wnts ? sizeof (wchar_t) : sizeof (char));
+	    *pcbValue = length * (is_wnts ? wchar_size : sizeof (char));
+
 #ifdef SAFE_SQLGETDATA
-	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue));
+	  cb->cb_read_up_to += (rgbValue_tail - ((unsigned char *) rgbValue)) / (is_wnts && wide_as_utf16 ? sizeof(wchar_t)/sizeof(uint16) : 1);
 #else
-	  cb->cb_read_up_to += fill;
+	  cb->cb_read_up_to += fill / (is_wnts && wide_as_utf16 ? sizeof(wchar_t)/sizeof(uint16) : 1);
 #endif
 #endif
 

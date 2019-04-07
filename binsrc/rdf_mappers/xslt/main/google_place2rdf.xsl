@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">
 <!ENTITY geo "http://www.w3.org/2003/01/geo/wgs84_pos#"> 
 <!ENTITY gn "http://www.geonames.org/ontology#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 ]>
 <xsl:stylesheet version="1.0"
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"

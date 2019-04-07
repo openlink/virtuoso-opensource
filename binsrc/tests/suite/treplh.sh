@@ -1,27 +1,27 @@
 #!/bin/sh
-#
+#  
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 # TEST PARAMETERS
 DS1=$PORT
@@ -43,7 +43,6 @@ TESTFILE=treplh-test-odbc.cfg
 
 LOGFILE=./treplh.output
 export LOGFILE
-. ./test_fn.sh
 
 # Configuration file creation
 MakeConfig ()
@@ -202,12 +201,12 @@ for DBNAME2 in `cat treplh-test-odbc.cfg | sed '/^#/d'`; do
   GET_DSN_DATA $DBNAME2
 
   # initialize
-  RUN $ISQL $DS1 dba dba $ISQL_ARGS -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < "$testdir/publish.sql"
-  RUN $ISQL $dsn_name $dsn_uid $dsn_pwd $ISQL_ARGS -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$dsn_name" "TARGET_UID=$dsn_uid" "TARGET_PWD=$dsn_pwd" < "$testdir/subscribe.sql"
-  RUN $ISQL $DS3 dba dba $ISQL_ARGS -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" "TARGET_UID=dba" "TARGET_PWD=dba" < "$testdir/subscribe.sql"
+  RUN $ISQL $DS1 dba dba $ISQL_ARGS -u "DBNAME1=$DBNAME1" "DBNAME2=$DBNAME2" "DS2=$DS2" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/"$testdir/publish.sql"
+  RUN $ISQL $dsn_name $dsn_uid $dsn_pwd $ISQL_ARGS -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME2" "TARGET_DS=$dsn_name" "TARGET_UID=$dsn_uid" "TARGET_PWD=$dsn_pwd" < $VIRTUOSO_TEST/"$testdir/subscribe.sql"
+  RUN $ISQL $DS3 dba dba $ISQL_ARGS -u "DBNAME=$DBNAME1" "DS=$DS1" "TARGET_DBNAME=$DBNAME3" "TARGET_DS=$DS3" "TARGET_UID=dba" "TARGET_PWD=dba" < $VIRTUOSO_TEST/"$testdir/subscribe.sql"
 
   # run
-  RUN $ISQL $DS1 dba dba $ISQL_ARGS -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$dsn_name" "DBNAME3=$DBNAME3" "DS3=$DS3" < "$testdir/regress.sql"
+  RUN $ISQL $DS1 dba dba $ISQL_ARGS -u "DBNAME1=$DBNAME1" "DS1=$DS1" "DBNAME2=$DBNAME2" "DS2=$dsn_name" "DBNAME3=$DBNAME3" "DS3=$DS3" < $VIRTUOSO_TEST/"$testdir/regress.sql"
 done
 
 # shutdown
@@ -223,6 +222,6 @@ BANNER "STARTED SERIES OF HETEROGENEOUS REPLICATION TESTS"
 REPLHETER
 CHECK_LOG
 
-echo ""
-echo "============ HETEROGENEOUS REPLICATION TEST FINISHED ============="
-echo ""
+LOG ""
+LOG "============ HETEROGENEOUS REPLICATION TEST FINISHED ============="
+LOG ""

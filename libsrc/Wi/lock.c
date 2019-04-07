@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,6 +37,7 @@
 #include "statuslog.h"
 #include "security.h"
 #include "srvstat.h"
+#include "monitor.h"
 #ifdef DEBUG
 #include "shuric.h"
 #endif
@@ -50,6 +51,7 @@ long lock_killed_by_force = 0;
 long lock_deadlocks = 0;
 long lock_2r1w_deadlocks;
 long lock_waits = 0;
+long lock_wait_msec = 0;
 long lock_enters = 0;
 long lock_leaves = 0;
 
@@ -60,6 +62,31 @@ uint32 lt_w_counter = 0; /* 32 bits exact, lower half lt_w_id no 64 bit id, must
 void
 lt_new_w_id (lock_trx_t * lt)
 {
+  ptrlong plt = 0;
+  int64 id;
+  ASSERT_IN_TXN;
+  do {
+    lt_w_counter++;
+    id = ((int64)local_cll.cll_this_host << 32) + lt_w_counter;
+    gethash_64 (plt, id, local_cll.cll_w_id_to_trx);
+    if (!plt)
+      {
+	gethash_64 (plt, id, local_cll.cll_dead_w_id);
+	if (plt)
+	  {
+	    log_info ("dead w id at lt w counter %d", lt_w_counter);
+	  }
+      }
+    else 
+      {
+	log_info ("occupied w id at lt w counter %d", lt_w_counter);
+      }	    
+  } while (!lt_w_counter || plt);
+  if (lt->lt_w_id)
+    remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
+  lt->lt_w_id = (((int64)local_cll.cll_this_host) << 32) + lt_w_counter;
+  sethash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx, (ptrlong)lt);
+  memcpy (lt->lt_approx_dt, srv_approx_dt, DT_LENGTH);
 }
 
 
@@ -78,7 +105,7 @@ void remove_old_xmlview ();
 page_lock_t *
 pl_allocate (void)
 {
-  NEW_VARZ (page_lock_t, pl);
+  B_NEW_VARZ (page_lock_t, pl);
   return pl;
 }
 
@@ -92,7 +119,7 @@ pl_free (page_lock_t * pl)
 row_lock_t *
 rl_allocate (void)
 {
-  NEW_VARZ (row_lock_t, rl);
+  B_NEW_VARZ (row_lock_t, rl);
   return rl;
 }
 
@@ -100,6 +127,8 @@ rl_allocate (void)
 void
 rl_free (row_lock_t * rl)
 {
+  if (rl->rl_cols)
+    dk_free_box ((caddr_t)rl->rl_cols);
   dk_free ((caddr_t) rl, sizeof (row_lock_t));
 }
 
@@ -115,7 +144,7 @@ lt_new_trx_no (lock_trx_t * lt)
 lock_trx_t *
 lt_allocate (void)
 {
-  NEW_VARZ (lock_trx_t, lt);
+  B_NEW_VARZ (lock_trx_t, lt);
 
   lt->lt_log = strses_allocate ();
   lt->lt_log_mtx = mutex_allocate ();
@@ -128,6 +157,7 @@ lt_allocate (void)
   lt->lt_lock.ht_required_mtx = &lt->lt_locks_mtx;
 #endif
   lt->lt_rb_hash = hash_table_allocate (101);
+  lt->lt_rb_hash->ht_rehash_threshold = 2;
   ASSERT_IN_TXN;
   dk_set_push (&all_trxs, (void *) lt);
   lt_new_trx_no (lt);
@@ -135,6 +165,21 @@ lt_allocate (void)
   LT_ENTER_SAVE (lt);
 
   return lt;
+}
+
+
+void
+lt_free_merge (dk_set_t merges)
+{
+  DO_SET (log_merge_t *, lm, &merges)
+    {
+      strses_flush (lm->lm_log);
+      resource_store (cl_strses_rc, (void*)lm->lm_log);
+      blob_log_set_free (lm->lm_blob_log);
+      dk_free ((caddr_t)lm, sizeof (log_merge_t));
+    }
+  END_DO_SET();
+  dk_set_free (merges);
 }
 
 
@@ -150,6 +195,8 @@ lt_free (lock_trx_t * lt)
     GPF_T1 ("Freeing txn that's in MTS");
 #endif
   LT_THREADS_REPORT (lt, "LT_FREE");
+  lt_free_merge (lt->lt_log_merge);
+  lt->lt_log_merge = NULL;
   lt_free_rb (lt, 0);
   dk_set_free (lt->lt_waits_for);
   dk_set_free (lt->lt_waiting_for_this);
@@ -186,6 +233,13 @@ lt_clear (lock_trx_t * lt)
 #endif
   if (lt->lt_client && lt->lt_client->cli_row_autocommit)
     lt->lt_client->cli_n_to_autocommit = 0;
+  lt_free_merge (lt->lt_log_merge);
+  lt->lt_log_merge = NULL;
+  if (lt->lt_w_id)
+    {
+      ASSERT_IN_TXN;
+      remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
+    }
   if (lt->lt_lock.ht_count)
     GPF_T1 ("lt not supposed to have locks in lt_clear");
   strses_flush (lt->lt_log);
@@ -317,8 +371,10 @@ lt_is_deadlock_1 (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
 }
 
 
+#if 0
+#error no mt txn support
 int
-lt_is_deadlock (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
+lt_is_deadlock_old (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
     lock_trx_t ** deadlocked)
 {
   int rc;
@@ -327,26 +383,32 @@ lt_is_deadlock (lock_trx_t * before, lock_trx_t * after, int *n_deadlocks,
     lt_waits_for (before, after);
   return rc;
 }
-
+#endif
 
 lock_trx_t *
-lt_start_outside_map ()
+DBG_NAME(lt_start_outside_map) (DBG_PARAMS_0)
 {
   lock_trx_t *lt;
   IN_TXN;
-  lt = lt_start ();
+  lt = DBG_NAME(lt_start_inner) (DBG_ARGS  1);
   LEAVE_TXN;
   return lt;
 }
 
+lock_trx_t *
+DBG_NAME(lt_start) (DBG_PARAMS_0)
+{
+  return DBG_NAME(lt_start_inner) (DBG_ARGS  1);
+}
 
 lock_trx_t *
-lt_start ()
+DBG_NAME(lt_start_inner) (DBG_PARAMS  int cpt_wait)
 {
-  lock_trx_t *lt = (lock_trx_t *) resource_get (trx_rc);
+  lock_trx_t *lt = (lock_trx_t *) DBG_NAME(resource_get) (DBG_ARGS  trx_rc);
   ASSERT_IN_TXN;
   LT_THREADS_REPORT(lt, "LT_START");
-  lt_wait_checkpoint ();
+  if (cpt_wait)
+    lt_wait_checkpoint ();
   lt->lt_status = LT_PENDING;
   CHECK_DK_MEM_RESERVE (lt);
   lt->lt_started = 0;
@@ -373,18 +435,21 @@ lt_restart (lock_trx_t * lt, int leave_flag)
       lt_wait_checkpoint_lt (lt);
       lt_threads_set_inner (lt, 1);
     }
+  if (lt->lt_w_id)
+    remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
   lt->lt_w_id = 0;
   LEAVE_TXN;
   {
     int excl = lt->lt_is_excl;
     client_connection_t * cli = lt->lt_client;
+    int64 main_trx = lt->lt_main_trx_no;
 #ifdef CHECK_LT_THREADS
     const char *file_save = lt->lt_enter_file;
     int line_save = lt->lt_enter_line;
     const char *	lt_last_increase_file[2];
     int		lt_last_increase_line[2];
 #endif
-    caddr_t repl = (excl || cli->cli_row_autocommit) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
+    caddr_t repl = (excl || (cli && cli->cli_row_autocommit)) ? box_copy_tree ((box_t) lt->lt_replicate) : NULL;
     /* we we'll save the state of replication flag
        when  we're in atomic mode */
 #ifdef VIRTTP
@@ -398,11 +463,12 @@ lt_restart (lock_trx_t * lt, int leave_flag)
     lt_clear (lt);
 
     lt->lt_started = approx_msec_real_time ();
-    if (excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
+    if (!cli || excl || cli->cli_row_autocommit) /* therefore we'll set the saved one */
       lt->lt_replicate = (caddr_t*) repl;
     else
       lt->lt_replicate = (caddr_t*) box_copy_tree ((caddr_t) cli->cli_replicate);
-
+    if (server_lock.sl_owner || (cli && cli->cli_row_autocommit))
+      lt->lt_main_trx_no = main_trx; /* a row ac commit preserves main trx so that mt ops in atomic mode proceed */
     LT_THREADS_REPORT(lt, "LT_RESTART");
 #ifdef CHECK_LT_THREADS
     lt->lt_enter_file = file_save;
@@ -436,6 +502,94 @@ lt_restart (lock_trx_t * lt, int leave_flag)
 }
 
 
+
+lock_trx_t *
+itc_main_lt_in_txn (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  /* get the main lt for lock ownership or wait graph */
+  lock_trx_t * lt = itc->itc_ltrx;
+  ASSERT_IN_TXN;
+  if (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
+    {
+      ptrlong plt;
+      lock_trx_t * main_lt;
+      gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+      main_lt = (lock_trx_t *)plt;
+      if (!main_lt || LT_PENDING != main_lt->lt_status)
+	{
+	  LEAVE_TXN;
+	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+	}
+      return main_lt;
+    }
+  return lt;
+}
+
+
+lock_trx_t *
+itc_main_lt (it_cursor_t * itc, buffer_desc_t * buf)
+{
+  /* get the main lt for lock ownership or wait graph */
+  lock_trx_t * lt = itc->itc_ltrx;
+  ASSERT_OUTSIDE_TXN;
+  if (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
+    {
+      ptrlong plt;
+      lock_trx_t * main_lt;
+      IN_TXN;
+      gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+      main_lt = (lock_trx_t *)plt;
+      if (!main_lt || LT_PENDING != main_lt->lt_status)
+	{
+	  LEAVE_TXN;
+	  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
+	  return lt;
+	}
+      return main_lt;
+    }
+  return lt;
+}
+
+lock_trx_t *
+lt_main_lt (lock_trx_t * lt)
+{
+  /* if branch aborts the whole txn, use this to see if the main must be killed */
+  if (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id)
+    {
+      ptrlong plt;
+      lock_trx_t * main_lt;
+      gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+      main_lt = (lock_trx_t *)plt;
+      if (!main_lt || LT_PENDING != main_lt->lt_status)
+	return NULL;
+      return main_lt;
+    }
+  return NULL;
+}
+
+
+int
+lt_has_delta (lock_trx_t * lt)
+{
+  int flag;
+  lock_trx_t * main_lt;
+  if (!lt->lt_rc_w_id || lt->lt_rc_w_id == lt->lt_w_id)
+    return LT_HAS_DELTA (lt);
+  IN_TXN;
+  main_lt = lt_main_lt (lt);
+  if (!main_lt)
+    {
+      LEAVE_TXN;
+      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_error = LTE_CANCEL;
+      sqlr_new_error ("4000X", "MTXNA",  "Main transaction branch has aborted.");
+    }
+  flag = LT_HAS_DELTA (main_lt);
+  LEAVE_TXN;
+  return flag;
+}
+
+
 int
 lt_set_checkpoint (lock_trx_t * lt)
 {
@@ -465,8 +619,12 @@ lt_done (lock_trx_t * lt)
   ASSERT_IN_TXN;
   if (lt->lt_waits_for || lt->lt_waiting_for_this || lt->lt_lock.ht_count)
     GPF_T1 ("lt done called with waiting, waits for or locks in lt");
-  if (wi_inst.wi_checkpoint_atomic) lt_weird ();
-#if defined (VALGRIND) || defined (MALLOC_DEBUG)
+  if (wi_inst.wi_checkpoint_atomic)
+    lt_weird ();
+  remhash_64 (lt->lt_w_id, local_cll.cll_w_id_to_trx);
+
+   /* This is obsolete due to new debugging of resource_get() / resource_store() */
+#if 0	/* defined (VALGRIND) || defined (MALLOC_DEBUG) */
   lt_free (lt);
 #else
   lt->lt_threads = 0;
@@ -479,7 +637,8 @@ lt_done (lock_trx_t * lt)
     if (plt)
       GPF_T1 ("lt in id to trx  at lt_done");
     for (inx = 0; inx < trx_rc->rc_fill; inx++)
-      if (trx_rc->rc_items[inx] == (void*)lt) GPF_T1 ("double lt_done");
+      if (trx_rc->rc_items[inx] == (void *) lt)
+	GPF_T1 ("double lt_done");
   }
 #endif
   lt->lt_trx_no = lt->lt_w_id = LT_ID_FREE;
@@ -497,8 +656,9 @@ lt_commit (lock_trx_t * lt, int free_trx)
 {
   ASSERT_IN_TXN;
   CHECK_DK_MEM_RESERVE (lt);
-  if (lt->lt_status == LT_BLOWN_OFF
-      || lt->lt_status == LT_DELTA_ROLLED_BACK)
+  if (lt->lt_status == LT_BLOWN_OFF_C
+      || lt->lt_status == LT_DELTA_ROLLED_BACK
+      || (lt->lt_rc_w_id && lt->lt_rc_w_id != lt->lt_w_id))
     {
       int err = lt->lt_error;
       lt_rollback_1 (lt, free_trx);
@@ -514,7 +674,11 @@ lt_commit (lock_trx_t * lt, int free_trx)
       }
 #endif
 
+  if (lt->lt_log->dks_out_fill || lt->lt_log->dks_bytes_sent || lt->lt_log_merge)
+    {
   LEAVE_TXN;
+      log_merge_commit (lt, lt->lt_log_merge);
+      lt->lt_log_merge = NULL;
   mutex_enter (log_write_mtx);
   if (LTE_OK != log_commit (lt))
     {
@@ -527,6 +691,7 @@ lt_commit (lock_trx_t * lt, int free_trx)
     }
   mutex_leave (log_write_mtx);
   IN_TXN;
+    }
   DBG_PT_COMMIT (lt);
       ASSERT_IN_TXN;
       LT_CLOSE_ACK_THREADS(lt);
@@ -593,9 +758,9 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (lt->lt_client->cli_icc_lock)
     {
       icc_lock_t *cli_lock = lt->lt_client->cli_icc_lock;
-      if (cli_lock->iccl_waits_for_commit)
+      if (cli_lock->iccl_flags & ICCL_SHEDULED_ON_COMMIT)
 	{
-	  cli_lock->iccl_waits_for_commit = 0;
+	  cli_lock->iccl_flags &= ~ICCL_SHEDULED_ON_COMMIT;
 	  lt->lt_client->cli_icc_lock = NULL;
 	  if (NULL != cli_lock->iccl_qi)
 	    cli_lock->iccl_qi->qi_icc_lock = NULL;
@@ -619,7 +784,7 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
     log_final_transact(lt,0);
 #endif
 
-  lt->lt_status = LT_BLOWN_OFF;
+  lt->lt_status = LT_BLOWN_OFF_C;
   LEAVE_TXN;
   log_cl_final (lt, SQL_ROLLBACK);
   IN_TXN;
@@ -627,7 +792,7 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
   if (lt->lt_status != LT_DELTA_ROLLED_BACK)
     {
       ASSERT_IN_TXN;
-      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_status = LT_BLOWN_OFF_C;
       LT_CLOSE_ACK_THREADS(lt);
       lt->lt_close_ack_threads++;
       lt_transact (lt, SQL_ROLLBACK);
@@ -637,7 +802,7 @@ lt_rollback_1 (lock_trx_t * lt, int free_trx)
       GPF_T1 ("posthumous lock");
       rdbg_printf (("*** Posthumous locks on T=%ld \n", TRX_NO (lt)));
       TC (tc_posthumous_lock);
-      lt->lt_status = LT_BLOWN_OFF;
+      lt->lt_status = LT_BLOWN_OFF_C;
       lt_transact (lt, SQL_ROLLBACK);
     }
   if (lt->lt_pending_schema)
@@ -748,7 +913,7 @@ lt_ack_close (lock_trx_t * lt)
 	  lt_wait_until_dead (lt);
 	  break;
 
-      case LT_BLOWN_OFF:
+      case LT_BLOWN_OFF_C:
       case LT_FREEZE:
 	  if (lt->lt_threads - (lt->lt_lw_threads + lt->lt_close_ack_threads) > 1)
 	    {
@@ -782,6 +947,24 @@ lt_ack_close (lock_trx_t * lt)
     }
 }
 
+
+void
+itc_bust_main_lt (it_cursor_t * itc)
+{
+  ptrlong plt;
+  lock_trx_t * main_lt, *lt = itc->itc_ltrx;
+  ASSERT_IN_TXN;
+  gethash_64 (plt, lt->lt_rc_w_id, local_cll.cll_w_id_to_trx);
+  main_lt = (lock_trx_t *)plt;
+  if (main_lt && LT_DELTA_ROLLED_BACK != main_lt->lt_status)
+    {
+      main_lt->lt_error = lt->lt_error;
+      main_lt->lt_error_detail = box_copy_tree (lt->lt_error_detail);
+      lt_kill_other_trx (main_lt, NULL, NULL, LT_KILL_ROLLBACK);
+    }
+}
+
+
 void
 itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
 {
@@ -789,6 +972,8 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
      * Otherwise this function must rollback the transaction and throw to the itc reset context */
   lock_trx_t *lt = it->itc_ltrx;
   int is_rb = may_ret == ITC_BUST_THROW;
+  if (it->itc_is_col)
+    itc_col_leave (it, 0);
   if (LT_FREEZE != lt->lt_status)
     is_rb = 1;
   if (is_rb)
@@ -825,6 +1010,8 @@ itc_bust_this_trx (it_cursor_t * it, buffer_desc_t ** buf, int may_ret)
 	lt->lt_status = LT_BLOWN_OFF;
 
       thr_set_error_code (THREAD_CURRENT_THREAD, NULL);
+      if (is_rb && it->itc_ltrx->lt_rc_w_id && it->itc_ltrx->lt_rc_w_id != it->itc_ltrx->lt_w_id)
+	itc_bust_main_lt (it);
       if (!it->itc_insert_key || it->itc_insert_key->key_id != KI_TEMP)
         lt_ack_close (lt);
       else
@@ -851,7 +1038,7 @@ lt_rollback_other (lock_trx_t * lt)
   int thr = lt->lt_threads;
   if (!thr)
     lt->lt_close_ack_threads = lt->lt_threads = 1;
-  lt_transact (lt, SQL_ROLLBACK);
+  lt_transact (lt, SQL_ROLLBACK | LT_CPT_NO_WAIT);
   if (!thr)
     lt->lt_threads = 0;
 }
@@ -907,7 +1094,7 @@ lt_kill_other_trx (lock_trx_t * lt, it_cursor_t * itc, buffer_desc_t * buf, int 
       break;
     case LT_COMMITTED:
     case LT_PENDING:
-    case LT_BLOWN_OFF:
+    case LT_BLOWN_OFF_C:
       if (LT_IS_RUNNING (lt))
 	{
 	  /* the transaction is running, not waiting for locks or vdb io */
@@ -1096,7 +1283,7 @@ lt_assert_waits (lock_wait_t * waits, lock_trx_t * waiting, int first_pred, int 
 
 int
 lock_check_deadlock_1 (gen_lock_t * pl, it_cursor_t * itc,
-		       int * n_dead, lock_trx_t ** deadlocked)
+		       int * n_dead, lock_trx_t ** deadlocked, lock_trx_t * main_lt)
 {
   int inx;
   it_cursor_t * waiting = NULL;
@@ -1141,24 +1328,27 @@ lock_check_deadlock_1 (gen_lock_t * pl, it_cursor_t * itc,
   waiting = pl->pl_waiting;
   while (waiting)
     {
-      if (LT_CLOSING == waiting->itc_ltrx->lt_status)
+      lock_trx_t * waiting_main = lt_main_lt (waiting->itc_ltrx);
+      if (!waiting_main)
+	waiting_main = waiting->itc_ltrx;
+      if (LT_CLOSING == waiting->itc_ltrx->lt_status || LT_CLOSING == waiting_main->lt_status)
 	{
 	  TC (tc_wait_for_closing_lt);
 	}
       else if (PL_SHARED == waiting->itc_lock_mode)
 	{
-	  lt_assert_waits (waits, waiting->itc_ltrx, last_excl, last_excl);
+	  lt_assert_waits (waits, waiting_main, last_excl, last_excl);
 	  if (-1 == last_pred || PL_EXCLUSIVE == waits[last_pred].lw_mode)
 	    first_pred = fill;
-	  waits[fill].lw_trx = waiting->itc_ltrx;
+	  waits[fill].lw_trx = waiting_main;
 	  waits[fill].lw_mode = waiting->itc_lock_mode;
 	  last_pred = fill;
 	  fill++;
 	}
       else
 	{
-	  lt_assert_waits (waits, waiting->itc_ltrx, first_pred, last_pred);
-	  waits[fill].lw_trx = waiting->itc_ltrx;
+	  lt_assert_waits (waits, waiting_main, first_pred, last_pred);
+	  waits[fill].lw_trx = waiting_main;
 	  waits[fill].lw_mode = waiting->itc_lock_mode;
 	  first_pred = fill;
 	  last_pred = fill;
@@ -1180,12 +1370,12 @@ lock_check_deadlock_1 (gen_lock_t * pl, it_cursor_t * itc,
   for (inx = first_pred; inx <= last_pred; inx++)
     {
       int rc;
-      rc = lt_is_deadlock_1 (waits[inx].lw_trx, itc->itc_ltrx, n_dead, deadlocked, 0);
+      rc = lt_is_deadlock_1 (waits[inx].lw_trx, main_lt, n_dead, deadlocked, 0);
       if (rc)
 	return rc;
     }
   for (inx = first_pred; inx <= last_pred; inx++)
-    lt_waits_for (waits[inx].lw_trx, itc->itc_ltrx);
+    lt_waits_for (waits[inx].lw_trx, itc->itc_lock_lt);
   return 0;
 }
 
@@ -1194,12 +1384,21 @@ void
 lock_live_deadlocks (gen_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf,
 		     int * n_dead, lock_trx_t ** deadlocked)
 {
-  lock_trx_t * new_trx = itc->itc_ltrx;
+  lock_trx_t * new_trx = itc->itc_ltrx, *main_lt;
   ASSERT_IN_TXN;
   FAILCK (itc);
+  itc->itc_lock_lt = main_lt = itc_main_lt_in_txn (itc, buf);
+  if (main_lt != new_trx)
+    new_trx->lt_mt_waits = main_lt->lt_mt_waits = 1;
+  if (LT_PENDING != main_lt->lt_status)
+    {
+      LEAVE_TXN;
+      itc->itc_ltrx->lt_error = LTE_CANCEL;
+      itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
+    }
   if (pl->pl_is_owner_list)
     {
-      if (dk_set_member ((dk_set_t) pl->pl_owner, (void *) new_trx))
+      if (dk_set_member ((dk_set_t) pl->pl_owner, (void *) main_lt))
 	{
 	  new_trx->lt_error = LTE_DEADLOCK;
 	  lock_deadlocks++;
@@ -1209,7 +1408,7 @@ lock_live_deadlocks (gen_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf,
 	  itc_bust_this_trx (itc, &buf, ITC_BUST_THROW);
 	}
     }
-  lock_check_deadlock_1 (pl, itc, n_dead, deadlocked);
+  lock_check_deadlock_1 (pl, itc, n_dead, deadlocked, main_lt);
 }
 
 
@@ -1252,6 +1451,16 @@ lock_check_deadlock (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf)
   (pl->pl_is_owner_list ? 0 : TRX_NO (pl->pl_owner))
 
 
+void *
+gethash_in_mtx (void* k, dk_hash_t * ht, dk_mutex_t * mtx)
+{
+  void * r;
+  mutex_enter (mtx);
+  r = gethash (k, ht);
+  mutex_leave (mtx);
+  return r;
+}
+
 
 int
 lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
@@ -1260,9 +1469,9 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   long time;
   lock_trx_t * lt = it->itc_ltrx;
   ITC_LEAVE_MAPS (it);
-  cl_enlist_ck (it);
   it->itc_acquire_lock = acquire;
   it->itc_thread = THREAD_CURRENT_THREAD;
+  cl_enlist_ck (it, buf);
   IN_TXN;
   if (LT_PENDING != lt->lt_status && LT_FREEZE != lt->lt_status)
     {
@@ -1279,7 +1488,13 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   lock_waits++;
   if (it->itc_page != it->itc_pl->pl_page)
     GPF_T1 ("different itc_oage and pl_page in lock_wait");
-  lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
+  it->itc_lock_lt = lt_add_pl (it->itc_ltrx, it->itc_pl, LT_ADD_PL_IN_TXN);
+  if (LT_PENDING != lt->lt_status)
+    {
+      LEAVE_TXN;
+      lt->lt_error = LTE_CANCEL;
+      itc_bust_this_trx (it, &buf, ITC_BUST_THROW);
+    }
   lt->lt_wait_since = approx_msec_real_time (); /* first set approx inside the mtxm, then get real time outside of the mtx */
   if (!pl->pl_waiting)
     {
@@ -1293,6 +1508,9 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
       last->itc_next_on_lock = it;
     }
   it->itc_next_on_lock = NULL;
+#ifdef MTX_DEBUG
+  if (LT_PENDING != it->itc_lock_lt->lt_status || !gethash_in_mtx ((void*)it->itc_pl, &it->itc_lock_lt->lt_lock, &it->itc_lock_lt->lt_locks_mtx)) GPF_T1 ("failed adding pl to locks of main lt");
+#endif
   LEAVE_TXN;
 
   if (it->itc_is_registered)
@@ -1301,6 +1519,9 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
   rdbg_printf (("    LW itc=%x L=%d T=%d pl %x owner T=%d LF=%x K=%s\n",
 		it, it->itc_page,
 		TRX_NO (it->itc_ltrx), it->itc_pl, PL_OWNER_NO (pl), (int) pl->pl_type, it->itc_insert_key->key_name));
+  if (it->itc_is_col)
+    itc_col_leave (it, 0);
+  if (it->itc_ltrx->lt_rc_w_id && it->itc_lock_lt->lt_w_id != it->itc_ltrx->lt_rc_w_id) GPF_T1 ("main lt gone by time branch waits");
   page_leave_outside_map (buf);
   time = get_msec_real_time ();
   it->itc_ltrx->lt_wait_since = time;
@@ -1327,20 +1548,25 @@ lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
 int
 lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting)
 {
+  lock_trx_t * owner_lt = NO_LOCK_LT;
   if (PL_TYPE (pl) == PL_FREE)
     {
       PL_SET_TYPE (pl, it->itc_lock_mode);
-      pl->pl_owner = it->itc_ltrx;
+      if (!was_waiting || IS_MT_BRANCH (it->itc_ltrx))
+	owner_lt = lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
+      else
+	owner_lt = it->itc_ltrx;
+      it->itc_lock_lt = owner_lt;
+      pl->pl_owner = owner_lt;
       pl->pl_is_owner_list = 0;
-      if (!was_waiting)
-	lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
       ITC_MARK_LOCK_SET (it);
       return 1;
     }
-  if (pl->pl_owner == it->itc_ltrx)
+  if (pl->pl_owner && !pl->pl_is_owner_list && LT_SEES_EFFECT (it->itc_ltrx, pl->pl_owner))
     {
       if (it->itc_lock_mode == PL_EXCLUSIVE)
 	PL_SET_TYPE (pl, PL_EXCLUSIVE);
+      it->itc_lock_lt = pl->pl_owner;
       return 1;
     }
   if (PL_TYPE (pl) == PL_EXCLUSIVE)
@@ -1363,17 +1589,18 @@ lock_add_owner (gen_lock_t * pl, it_cursor_t * it, int was_waiting)
       pl->pl_owner = (lock_trx_t *) dk_set_cons ((caddr_t) pl->pl_owner,
 	  NULL);
     }
-  if (!dk_set_member ((dk_set_t) pl->pl_owner,
-	  (void *) it->itc_ltrx))
+  if (!lt_set_is_branch ((dk_set_t) pl->pl_owner, (void *) it->itc_ltrx, &owner_lt))
     {
       if (pl->pl_waiting && !was_waiting)
 	return 0;		/* There's others before */
       ITC_MARK_LOCK_SET (it);
-      dk_set_push ((dk_set_t *) & pl->pl_owner,
-	  (void *) it->itc_ltrx);
-      if (!was_waiting)
-	lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
+      if (!was_waiting || IS_MT_BRANCH (it->itc_ltrx))
+	owner_lt = lt_add_pl (it->itc_ltrx, it->itc_pl, 0);
+      else
+	owner_lt = it->itc_ltrx;
+      dk_set_push ((dk_set_t *) & pl->pl_owner, (void *) owner_lt);
     }
+  it->itc_lock_lt = owner_lt;
   return 1;
 }
 
@@ -1386,7 +1613,7 @@ lock_enter (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf)
     {
       return NO_WAIT;
     }
-  return (lock_wait (pl, it, buf, ITC_LOCK_IF_ON_ROW));
+  return (lock_wait (pl, it, buf, it->itc_non_txn_insert ? ITC_NO_LOCK : ITC_LOCK_IF_ON_ROW));
 }
 
 
@@ -1404,10 +1631,47 @@ lt_clear_pl_wait_ref (lock_trx_t * waiting, gen_lock_t * pl)
     }
 }
 
+const char * lt_short_name (lock_trx_t * lt);
+
+static void
+lock_report (char * label, it_cursor_t * it)
+{
+  lock_trx_t *lt = it->itc_ltrx;
+  dbe_key_t * key = it->itc_insert_key;
+  query_instance_t * qi = (query_instance_t *) (it->itc_out_state); 
+  query_t * qr = qi ? qi->qi_query : NULL; 
+  FILE * fp = fopen ("lock_errors.txt", "at");
+  fprintf (fp, "--- %s ---\n", label);
+  fprintf (fp, "key %s\n", key && key->key_name ? key->key_name : "<no key>");
+  fprintf (fp, "query %s\n", qr && qr->qr_text ? qr->qr_text : "<no text>");
+  if (lt->lt_waits_for || lt->lt_waiting_for_this)
+    {
+      char since[40];
+      since[0] = 0;
+      if (lt->lt_waits_for)
+	snprintf (since, sizeof (since), "for %ld ms ", (long)(get_msec_real_time () - lt->lt_wait_since));
+      fprintf (fp, "Trx %s s=%d %p: %s w. for: ", lt_short_name (lt), lt->lt_status, lt, since);
+      DO_SET (lock_trx_t *, w, &lt->lt_waits_for)
+	{
+	  fprintf (fp, " %s ", lt_short_name (w));
+	}
+      END_DO_SET();
+      fprintf (fp, "\n   is before: ");
+      DO_SET (lock_trx_t *, w, &lt->lt_waiting_for_this)
+	{
+	  fprintf (fp, " %s ", lt_short_name (w));
+	}
+      END_DO_SET();
+      fprintf (fp, "\n");
+    }
+  fprintf (fp, "--- end ---\n\n");
+  fclose (fp);
+}
 
 void
-lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
+lt_drop_wait (it_cursor_t * waiting, it_cursor_t * next)
 {
+  lock_trx_t *before = waiting->itc_ltrx, *after = next->itc_ltrx;
   int both_pending;
   IN_TXN;
   both_pending = after->lt_status == LT_PENDING && before->lt_status == LT_PENDING;
@@ -1420,15 +1684,21 @@ lt_drop_wait (lock_trx_t * before, lock_trx_t * after)
 	{
 	  log_error ("Missing wait edge between non-pending #1 after status = %d before status = %d",
 		     after->lt_status, before->lt_status);
+	  lock_report ("waiting", waiting); lock_report ("next", next);
+#ifdef DEBUG
 	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
+#endif
 	}
       if (!dk_set_delete (&after->lt_waits_for, (void*) before))
 	{
 	  log_error ("Missing wait edge between non-pending #2 after status = %d before status = %d",
 		     after->lt_status, before->lt_status);
+	  lock_report ("waiting", waiting); lock_report ("next", next);
+#ifdef DEBUG
 	  if (!wi_inst.wi_is_checkpoint_pending && both_pending)
 	    GPF_T1 ("Missing wait edge outside of checkpoint ");
+#endif
 	}
     }
   LEAVE_TXN;
@@ -1446,17 +1716,17 @@ lt_clear_non_acq_release_wait (it_cursor_t * waiting)
     GPF_T1 ("txn is released yet waits"); /*only applies if max 1 thread per txn */
 #endif
   if (!next
-      || waiting->itc_ltrx->lt_threads != 1)
+      || waiting->itc_lock_lt->lt_mt_waits || next->itc_lock_lt->lt_mt_waits)
     return;
   if (PL_EXCLUSIVE == waiting->itc_lock_mode)
     {
       if (PL_EXCLUSIVE == next->itc_lock_mode)
-	lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	lt_drop_wait (waiting, next);
       else
 	{
 	  while (next && PL_SHARED == next->itc_lock_mode)
 	    {
-	      lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	      lt_drop_wait (waiting, next);
 	      next = next->itc_next_on_lock;
 	    }
 	}
@@ -1468,7 +1738,7 @@ lt_clear_non_acq_release_wait (it_cursor_t * waiting)
       if (next && PL_EXCLUSIVE != next->itc_lock_mode)
 	GPF_T1 ("next excl is not excl");
       if (next)
-	lt_drop_wait (waiting->itc_ltrx, next->itc_ltrx);
+	lt_drop_wait (waiting, next);
     }
 }
 
@@ -1484,9 +1754,7 @@ pl_is_owner (page_lock_t *pl, lock_trx_t * lt)
 
 
 void
-pl_check_owners (page_lock_t * pl)
-{
-  DO_RLOCK (rl, pl)
+gl_check_owners (page_lock_t * pl, gen_lock_t * rl)
     {
       it_cursor_t * waiting = rl->pl_waiting;
       if (rl->pl_is_owner_list)
@@ -1501,7 +1769,7 @@ pl_check_owners (page_lock_t * pl)
 	}
       else
 	{
-	  if (!pl_is_owner (pl, rl->pl_owner))
+      if (rl->pl_owner && !pl_is_owner (pl, rl->pl_owner))
 	    GPF_T1 ("owner of rl is not owner of containing pl");
 	}
       while (waiting)
@@ -1510,6 +1778,22 @@ pl_check_owners (page_lock_t * pl)
 	    GPF_T1 ("txn waiting on rl is not owner of containing pl");
 	  waiting = waiting->itc_next_on_lock;
 	}
+    }
+
+
+void
+pl_check_owners (page_lock_t * pl)
+{
+  DO_RLOCK (rl, pl)
+    {
+      if (pl->pl_it->it_key->key_is_col)
+	{
+	  int inx;
+	  for (inx = 0; inx < rl->rl_n_cols; inx++)
+	    gl_check_owners (pl, (gen_lock_t*)rl->rl_cols[inx]);
+	}
+      else
+	gl_check_owners (pl, (gen_lock_t *)rl);
     }
   END_DO_RLOCK;
 }
@@ -1561,8 +1845,11 @@ lock_release (gen_lock_t * pl, lock_trx_t * lt)
     while (waiting)
       {
 	it_cursor_t *next;
-	if (waiting->itc_ltrx == lt)
+	if (waiting->itc_ltrx == lt
+	    || waiting->itc_lock_lt == lt)
 	  {
+	    if (waiting->itc_ltrx != lt)
+	      waiting->itc_ltrx->lt_status = LT_BLOWN_OFF;
 	    *prev = waiting->itc_next_on_lock;
 	    next = waiting->itc_next_on_lock;
 	    FAILCK (waiting);
@@ -1676,6 +1963,9 @@ rl_release_list (row_lock_t ** rlist, lock_trx_t * lt, page_lock_t * pl)
   while (rl)
     {
       row_lock_t * next = rl->rl_next;
+      if (rl->rl_n_cols)
+	rl_col_release (rl, lt);
+      else
       lock_release ((gen_lock_t *) rl, lt);
       if (PL_FREE == PL_TYPE (rl))
 	{
@@ -1694,12 +1984,17 @@ void
 pl_remove_owner (page_lock_t * pl, lock_trx_t * lt)
 {
   dk_set_t o_list;
+ again:
   if (pl->pl_is_owner_list)
     {
       if (!dk_set_delete ((dk_set_t *) &pl->pl_owner, (void*) lt))
 	GPF_T1 ("lt references pl whose owner it is not");
       if (dk_set_member ((dk_set_t) pl->pl_owner, (void*) lt))
+	{
+	  log_error ("Double owned pl, key %d slice %d dp %d", pl->pl_it->it_key->key_id, pl->pl_it->it_slice, pl->pl_page);
+	  goto again;
 	GPF_T1 ("Doubly owned pl");
+	}
       o_list = (dk_set_t) pl->pl_owner;
       if (! o_list->next)
 	{
@@ -1715,6 +2010,20 @@ pl_remove_owner (page_lock_t * pl, lock_trx_t * lt)
       pl->pl_owner = NULL;
       PL_SET_TYPE (pl, PL_FREE);
     }
+#if 0
+  DO_RLOCK (rl, pl)
+    {
+      if (rl->rl_n_cols)
+	{
+	  int inx;
+	  for (inx = 0; inx < rl->rl_n_cols; inx++)
+	    {
+	      if (rl->rl_cols[inx] && lt == rl->rl_cols[inx]->pl_owner) GPF_T1 ("removing owner while having clks");
+	    }
+	}
+    }
+  END_DO_RLOCK;
+#endif
 }
 
 
@@ -1799,6 +2108,59 @@ pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf)
     buf->bd_pl = NULL;
 }
 
+void ltbing2 () {}
+
+void
+gl_print (gen_lock_t * gl)
+{
+  printf ("owner: ");
+  if (gl->pl_is_owner_list)
+    {
+      DO_SET (lock_trx_t *, lt, (dk_set_t*)&gl->pl_owner)
+	printf (" %d:%d ", QFID_HOST (lt->lt_trx_no), (uint32)lt->lt_trx_no);
+	{
+	}
+	END_DO_SET ();
+    }
+  else
+    printf ("%d:%d ", QFID_HOST (gl->pl_owner->lt_trx_no), (uint32)gl->pl_owner->lt_trx_no);
+  printf ("\n");
+}
+
+
+
+
+void
+lt_print_locks (lock_trx_t * lt, int limit)
+{
+  int n = 0;
+  printf ("locks for %d:%d\n", QFID_HOST (lt->lt_trx_no), (uint32)lt->lt_trx_no);
+  DO_HT (page_lock_t *, pl, ptrlong, igm, &lt->lt_lock)
+    {
+      printf ("page %d %p %d %s\n", pl->pl_page, pl, pl->pl_it->it_slice, pl->pl_it->it_key->key_name);
+      gl_print ((gen_lock_t *)pl);
+      if (pl->pl_n_row_locks)
+	{
+	  DO_RLOCK (rl, pl)
+	    {
+	      int inx;
+	      printf ("leaf row %d: ", rl->rl_pos);
+	      for (inx = 0; inx < rl->rl_n_cols; inx++)
+		{
+		  col_row_lock_t * clk = rl->rl_cols[inx];
+		  printf (" col row %d: f %d  ", clk->clk_pos, clk->clk_change);
+		  gl_print ((gen_lock_t*)clk);
+		}
+	    }
+	  END_DO_RLOCK;
+	}
+      if (++limit >= n)
+	return;
+    }
+  END_DO_HT;
+}
+
+
 dk_mutex_t *srv_background_task_queue_mtx;
 dk_set_t srv_background_task_queue;
 
@@ -1852,6 +2214,54 @@ dk_mutex_t *time_mtx;
 
 unsigned long checkpointed_last_time = 0;
 
+#ifdef linux
+#include <sys/sysinfo.h>
+#endif
+/*
+#ifdef __APPLE__
+#include <mach/task.h>
+#include <mach/mach_init.h>
+#endif
+*/
+#ifdef WIN32
+#include <windows.h>
+#include <psapi.h>
+#else
+#include <sys/resource.h>
+#endif
+
+size_t
+memory_used ()
+{
+#if defined (linux)
+    size_t size = 0;
+    FILE *file = fopen("/proc/self/statm", "r");
+    if (file)
+      {
+	unsigned long vm = 0;
+	fscanf (file, "%lu", &vm);
+	fclose (file);
+	size = (size_t) vm * getpagesize();
+      }
+    return size;
+/*
+#elif defined (__APPLE__)
+    size_t size = 0;
+    struct task_basic_info t_info;
+    mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
+    task_info(current_task(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
+    size = t_info.virtual_size;
+    return size;
+*/
+#elif defined (WIN32)
+    PROCESS_MEMORY_COUNTERS count;
+    if (GetProcessMemoryInfo (GetCurrentProcess(), &count, sizeof (count)))
+      return count.PagefileUsage;
+    return 0;
+#else
+    return 0;
+#endif
+}
 
 #ifdef HAVE_GETRUSAGE
 #include <sys/resource.h>
@@ -1860,6 +2270,7 @@ unsigned long checkpointed_last_time = 0;
 int last_majflt = 0;
 int32 swap_guard_on = 0;
 int process_is_swapping = 0;
+size_t max_vsize = 0;
 
 void
 the_grim_swap_guard ()
@@ -1875,6 +2286,11 @@ the_grim_swap_guard ()
   if (ru.ru_majflt - last_majflt > 300)
     GPF_T1 ("started swapping");
 #endif
+  if (swap_guard_on & 0x10)
+    {
+      if ((ru.ru_majflt - last_majflt > 300) && !wi_inst.wi_is_checkpoint_pending)
+        GPF_T1 ("The process started swapping and SwapGuard parameter has bit 0x10 set on, forcing immediate kill. ");
+    }
   if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > 300)
     {
       if (!process_is_swapping)
@@ -1888,6 +2304,11 @@ the_grim_swap_guard ()
   last_majflt = ru.ru_majflt;
     }
 #endif
+  if (max_vsize > 0 && memory_used () > max_vsize)
+    {
+      log_error ("The process VM size went above the limit");
+      max_vsize = 0;
+    }
 }
 
 
@@ -1895,6 +2316,7 @@ unsigned long cfg_resources_clear_interval = 0;
 extern uint32 cl_last_wait_query;
 
 uint32 prev_reaper_time;
+char srv_approx_dt[DT_LENGTH];
 
 void
 clear_old_root_images ()
@@ -1910,7 +2332,7 @@ clear_old_root_images ()
 	if ((bp_ts_t)now - old_img->bd_timestamp > 30000)
 	  {
 	    *prev = old_img->bd_next;
-	    resource_store (PM_RC (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
+	    pm_store (old_img, (old_img->bd_content_map->pm_size), (void*) old_img->bd_content_map);
 	    buffer_free (old_img);
 	  }
 	else
@@ -1930,9 +2352,14 @@ the_grim_lock_reaper (void)
   static unsigned long resources_clear_last_time = 0;
   long now = approx_msec_real_time ();
   int server_is_idle = 1;
+  int n_threads = 0, n_vdb_threads = 0, n_lw_threads = 0;
   dt_init ();
+  dt_now ((caddr_t)&srv_approx_dt);
   if (CPT_CHECKPOINT == wi_inst.wi_is_checkpoint_pending)
     return;
+  page_set_last (wi_inst.wi_master->dbs_free_set);
+  page_set_last (wi_inst.wi_master->dbs_incbackup_set);
+  page_set_last (wi_inst.wi_master->dbs_extent_set);
   if (prev_reaper_time && now - prev_reaper_time > 2900)
     {
       /*printf ("lti = %d \n", now - prev_reaper_time);*/
@@ -1944,6 +2371,9 @@ the_grim_lock_reaper (void)
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
       client_connection_t * cli = lt->lt_client;
+      n_threads += lt->lt_threads;
+      n_vdb_threads += lt->lt_vdb_threads;
+      n_lw_threads += lt->lt_lw_threads;
       CHECK_DK_MEM_RESERVE (lt);
       if (lt->lt_started &&
 	  ( (lt->lt_timeout && now - lt->lt_started > lt->lt_timeout) || (process_is_swapping && LT_IS_RUNNING (lt)) ) &&
@@ -1966,7 +2396,7 @@ the_grim_lock_reaper (void)
 	{
 	  cli->cli_terminate_requested = CLI_RESULT;
 	  cli->cli_activity.da_anytime_result = 1;
-	  at_printf (("host %d set anytime flag\n", local_cll.cll_this_host));
+	  at_printf (("host %d set anytime flag after %ld\n", local_cll.cll_this_host, now - cli->cli_anytime_started));
 	}
     }
   END_DO_SET ();
@@ -1986,7 +2416,7 @@ the_grim_lock_reaper (void)
       wi_free_schemas ();
     }
   LEAVE_TXN;
-  if (now - last_exec_time > AUTO_FLUSH_DELAY &&
+  if (0 && now - last_exec_time > AUTO_FLUSH_DELAY &&
       now - last_flush_time > AUTO_FLUSH_DELAY
       && server_is_idle)
     {
@@ -2088,6 +2518,8 @@ the_grim_lock_reaper (void)
 #endif
   if (DK_ALLOC_ON_RESERVE)
     dk_alloc_set_reserve_mode (DK_ALLOC_RESERVE_PREPARED); /* IvAn/OutOfMem/040513 If idle then it must have memory reserve. */
+  mon_update (n_threads,  n_vdb_threads, n_lw_threads);
+  mon_check ();
 }
 
 
@@ -2121,3 +2553,16 @@ dbg_flush ()
   fflush (stdout);
   fflush (stderr);
 }
+
+int ltbing (int s)
+{
+  return s;
+}
+
+#ifdef MALLOC_DEBUG
+#undef lt_start
+lock_trx_t * lt_start ()
+{
+  return dbg_lt_start (__FILE__, __LINE__);
+}
+#endif

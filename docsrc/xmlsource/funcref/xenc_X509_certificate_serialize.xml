@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -55,16 +55,6 @@
 	  Also the certificate will contain the key associated with it.
       </para>
   </refsect1>
-  <refsect1 id="errors_xenc_X509_certificate_serialize">
-    <title>Errors</title>
-
-<!-- In case of non-function-specific errors, i.e. only common
-     parameter errors are signalled, comment out the table below 
-     otherwise add the unique error values as individual errorcodes -->
-
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_X509_certificate_serialize">
     <title>Examples</title>
     <example id="ex_xenc_X509_certificate_serialize"><title>Exporting a X.509 certificate</title>
@@ -74,12 +64,7 @@
 	  declare x509 varchar;
 	  x509 := xenc_X509_certificate_serialize ('dsa-test');
 	  ...
-]]>
-</screen>
+]]></screen>
     </example>
-  </refsect1>
-  <refsect1 id="seealso_xenc_X509_certificate_serialize">
-    <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
   </refsect1>
 </refentry>

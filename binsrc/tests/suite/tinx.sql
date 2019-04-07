@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tinx.sql,v 1.3.10.1 2013/01/02 16:15:11 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 drop table tinx;
 
 create table tinx (k1 int, k2 varchar, k3 int, d1 varchar,
@@ -52,32 +52,36 @@ tinx_fill (10, 10, 10);
 update tinx set k1 = null where row_no < 500;
 
 select k1, k2, k3 from tinx where k1> 3;
-ECHO BOTH $IF $EQU $ROWCNT 500 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 > 3 " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 500 "PASSED" "**FAILED";
+echo both " tinx k1 > 3 " $rowcnt " rows\n";
 
 select k1, k2, k3 from tinx where k1> 3 order by k1 desc;
-ECHO BOTH $IF $EQU $ROWCNT 500 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 > 3 " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 500 "PASSED" "**FAILED";
+echo both " tinx k1 > 3 " $rowcnt " rows\n";
 
 update tinx set k1 = row_no / 100;
 
 select k1, k2, k3 from tinx where k1 < 3;
-ECHO BOTH $IF $EQU $ROWCNT 300 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 < 3  " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 300 "PASSED" "**FAILED";
+echo both " tinx k1 < 3  " $rowcnt " rows\n";
 
 
 select k1, k2, k3 from tinx where k1 < 3 order by k1 desc;
-ECHO BOTH $IF $EQU $ROWCNT 300 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 < 3  " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 300 "PASSED" "**FAILED";
+echo both " tinx k1 < 3  " $rowcnt " rows\n";
 
 delete from tinx;
 
 tinx_fill (10, 10, 10);
 update tinx set k1 = null where row_no < 495;
 select k1, k2, k3 from tinx where k1 < 7;
-ECHO BOTH $IF $EQU $ROWCNT 205 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 < 7 " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 205 "PASSED" "**FAILED";
+echo both " tinx k1 < 7 " $rowcnt " rows\n";
 
 select k1, k2, k3 from tinx where k1 < 7 order by k1 desc;
-ECHO BOTH $IF $EQU $ROWCNT 205 "PASSED" "**FAILED";
-ECHO BOTH ": tinx k1 < 7 " $ROWCNT " rows\n";
+echo both $if $equ $rowcnt 205 "PASSED" "**FAILED";
+echo both " tinx k1 < 7 " $rowcnt " rows\n";
+
+
+
+

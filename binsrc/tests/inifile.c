@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,7 +74,7 @@ usage (void)
   		  " <section> will be\ndeleted.\n\n"));
   fprintf(stderr, _("If both <key> and <value> contain a single - character "
   		  " the whole <section>\nwill be deleted.\n"));
-  terminate (1);
+  terminate_program (1);
 }
 
 

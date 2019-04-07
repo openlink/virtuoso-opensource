@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_proc_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Create New Procedure/Module or Edit existing"/>
+    </vm:menu>
+    <vm:variables>
+      <v:variable persist="0" name="mode" type="varchar" default="''"/>
+      <v:variable persist="0" name="cat" type="varchar" default="''"/>
+      <v:variable persist="0" name="sch" type="varchar" default="''"/>
+      <v:variable persist="0" name="name" type="varchar" default="''"/>
+      <v:variable persist="0" name="type" type="varchar" default="'procedure'"/>
+      <v:variable persist="temp" name="err_msg" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:rawheader>
+      <h1 class="page_title">
+      <?vsp
+        http( case self.mode
+              when 'create' then 'Create New Procedure/Module'
+              when 'edit' then 'Edit ' || self.type || ' ' || self.name
+              else '' end );
+      ?>
+      </h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <v:before-data-bind><v:script><![CDATA[
+        self.mode := get_keyword('mode', self.vc_event.ve_params, self.mode);
+        self.cat := get_keyword('cat', self.vc_event.ve_params, self.cat);
+        self.sch := get_keyword('sch', self.vc_event.ve_params, self.sch);
+        self.name := get_keyword('name', self.vc_event.ve_params, self.name);
+        self.type := get_keyword('type', self.vc_event.ve_params, self.type);
+      ]]></v:script></v:before-data-bind>
+      <v:template name="err_tmp2" type="simple">
+        <v:form name="proc_create_form" type="simple" method="POST" action="databases_proc_edit.vspx">
+         <table align="left" border="0" cellspacing="0" cellpadding="5" class="ctl_grp">
+           <tr align="center">
+             <td>
+               <v:textarea name="crproc_textfield" xhtml_cols="80" xhtml_rows="25"
+                 value="-- case self.mode
+                    when 'create' then 'create procedure\n' || case when self.cat='%' then 'DB' else self.cat end || '.' || case when self.sch='%' then 'DBA' else self.sch end || '.[NAME]( [[IN|OUT|INOUT] [PAR_NAME] [PAR_TYPE], ...] )\n[RETURNS RET_TYPE]\n{\n\n}'
+                    when 'edit' then blob_to_string(coalesce((select coalesce (P_TEXT, P_MORE) from SYS_PROCEDURES where P_NAME = self.name),''))
+                    else '' end"
+               >
+               </v:textarea>
+             </td>
+           </tr>
+           <tr align="center">
+             <td>
+              <v:button action="simple" name="crproc_cancel" value="Cancel" >
+                <v:on-post><v:script><![CDATA[
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crproc_reset" value="Clear" >
+                <v:on-post><v:script><![CDATA[
+                  self.crproc_textfield.ufl_value := '';
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crproc_save" value="Save" >
+                <v:on-post><v:script><![CDATA[
+                  declare stat, msg varchar;
+		  declare grants, tree any;
+                  stat := '00000';
+                  commit work;
+                  if (length (self.crproc_textfield.ufl_value) = 0)
+                    return;
+		  {
+		     declare exit handler for sqlstate '*' {
+		       self.vc_is_valid := 0;
+		       self.crproc_textfield.vc_error_message := __SQL_MESSAGE;
+		       return;
+		     };
+		     tree := sql_parse (self.crproc_textfield.ufl_value);
+		     if (tree[0] <> 615 and tree[0] <> 630)
+		       signal ('22023', 'Not a function or procedure definition.');
+		     if (tree[0] = 615 and self.mode = 'create' and __proc_exists (tree[2]) is not null)
+		       signal ('22023', 'You are truing to overwrite procedure with same name.');
+                  } 
+
+		  grants := vector ();  
+		  if (self.mode = 'edit')  
+		    grants := (select vector_agg (U_NAME) from SYS_GRANTS join SYS_USERS on (G_USER = U_ID) 
+		     	where G_OP = 32 and G_OBJECT = self.name);  
+                  __set_user_id (connection_get ('vspx_user'), 1);
+		  if (lower (self.type) = 'module')
+		    {
+		      exec (sprintf ('drop module "%I"."%I"."%I"',
+		          name_part(self.name,0), name_part (self.name,1), name_part (self.name,2)), stat, msg);
+		      stat := '00000'; msg := null;
+		    }
+		  if (self.mode = 'create')
+		    set_qualifier (self.cat);
+		  else
+  		    set_qualifier (name_part(self.name,0));
+                  exec (self.crproc_textfield.ufl_value, stat, msg);
+		  set_qualifier ('DB');
+                  __set_user_id (user);
+		  if (stat = '00000') 
+		    {
+	              commit work;  		
+		      foreach (any g in grants) do
+		        {
+			  exec (sprintf ('GRANT EXECUTE ON %s TO "%s"', Y_SQL_ESC_NAME (self.name), g), stat, msg);
+			}
+		      self.vc_redirect ('databases.vspx');
+		    return;
+                  }
+		  else 
+		    {
+		    self.vc_is_valid := 0;
+		    self.crproc_textfield.vc_error_message := msg;
+                  }
+                ]]></v:script></v:on-post>
+              </v:button>
+             </td>
+           </tr>
+         </table>
+        </v:form>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

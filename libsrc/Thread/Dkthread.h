@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,13 +30,35 @@
 #define _DKTHREAD_H
 
 #define _OPL_THREADS	1
+/*#define JMP_CKSUM*/
 
-typedef struct
+typedef struct jmp_buf_splice_s
   {
     jmp_buf buf;
+#ifdef JMP_CKSUM
+    uint32	j_cksum;
+#endif
+#ifdef SIGNAL_DEBUG
+    const char *j_file;
+    int j_line;
+    struct jmp_buf_splice_s *j_parent;
+#endif
   } jmp_buf_splice;
+
+
+#ifdef JMP_CKSUM
+#define longjmp_splice(b,f)	longjmp_brk ((b), f)
+uint32 j_cksum (jmp_buf j);
+int j_set_cksum (jmp_buf_splice * j, int rc);
+
+#define setjmp_splice(b)	j_set_cksum (b, setjmp ((b)->buf))
+
+void longjmp_brk (jmp_buf_splice * j, int rc);
+
+#else
 #define setjmp_splice(b)	setjmp ((b)->buf)
 #define longjmp_splice(b,f)	longjmp ((b)->buf, f)
+#endif
 
 #if defined (__APPLE__)
 #define thread_t opl_thread_t
@@ -45,15 +67,18 @@ typedef struct
 #define thread_t opl_thread_t
 #define rwlock_t opl_rwlock_t
 #endif
-typedef struct thread_s thread_t;
 
-typedef struct semaphore_s semaphore_t;
-
-typedef struct mutex_s dk_mutex_t;
-
-typedef struct spinlock_s spinlock_t;
-
+#ifdef HAVE_PTHREAD_RWLOCK_INIT
+#undef  rwlock_t
+#define rwlock_t pthread_rwlock_t
+#else
 typedef struct rwlock_s rwlock_t;
+#endif
+
+typedef struct thread_s thread_t;
+typedef struct semaphore_s semaphore_t;
+typedef struct mutex_s dk_mutex_t;
+typedef struct spinlock_s spinlock_t;
 
 typedef int (*mtx_entry_check_t) (dk_mutex_t * mtx, thread_t * self, void * cd);
 
@@ -62,7 +87,8 @@ typedef int (*thread_init_func) (void *arg);
 typedef int32 TVAL;
 #define TV_INFINITE	((TVAL)-1)
 
-#define thread_create	oplthread_create
+#define thread_create  oplthread_create
+
 
 /*
  *  Thread priority (thr_priority)
@@ -127,29 +153,35 @@ extern int _thread_num_dead;
 
 /* sched_fiber.c, sched_pthread.c, sched_winthread.c */
 EXE_EXPORT (thread_t *, thread_current, (void));
-thread_t *thread_initial (unsigned long stack_size);
-thread_t *thread_create (thread_init_func init, unsigned long stack_size, void *init_arg);
-thread_t *thread_attach (void);
+EXE_EXPORT (thread_t *, thread_initial, (unsigned long stack_size));
+EXE_EXPORT (thread_t *, thread_create, (thread_init_func init, unsigned long stack_size, void *init_arg));
+EXE_EXPORT (thread_t *, thread_attach, (void));
 
-void thread_allow_schedule (void);
-void thread_exit (int n);
-int *thread_errno (void);
-int thread_set_priority (thread_t *self, int prio);
-int thread_get_priority (thread_t *self);
+EXE_EXPORT (void, thread_allow_schedule, (void));
+EXE_EXPORT (void, thread_exit, (int n));
+EXE_EXPORT (int *, thread_errno, (void));
+EXE_EXPORT (int, thread_set_priority, (thread_t *self, int prio));
+EXE_EXPORT (int, thread_get_priority, (thread_t *self));
 EXE_EXPORT (void *, thread_setattr, (thread_t *self, void *key, void *value));
 EXE_EXPORT (void *, thread_getattr, (thread_t *self, void *key));
-void thread_freeze (void);
-int thread_unfreeze (thread_t *self);
-int thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout);
-int thread_signal_cond (void *event);
-int thread_release_dead_threads (int leave_count);
+extern void thread_freeze (void);
+extern int thread_unfreeze (thread_t *self);
+extern int thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout);
+extern int thread_signal_cond (void *event);
+EXE_EXPORT (int, thread_release_dead_threads, (int leave_count));
 
 /* fiber_unix.c, sched_pthread.c, sched_winthread.c */
-int thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout);
-void thread_sleep (TVAL msec);
+extern int thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout);
+extern void thread_sleep (TVAL msec);
 
 EXE_EXPORT (caddr_t, thr_get_error_code, (thread_t *thr));
 EXE_EXPORT (void, thr_set_error_code, (thread_t *thr, caddr_t err));
+#ifdef MALLOC_DEBUG
+extern caddr_t dbg_thr_get_error_code (const char *file, int line, thread_t *thr);
+extern void dbg_thr_set_error_code (const char *file, int line, thread_t *thr, caddr_t err);
+#define thr_get_error_code(thr) dbg_thr_get_error_code (__FILE__, __LINE__, (thr))
+#define thr_set_error_code(thr,err) dbg_thr_set_error_code (__FILE__, __LINE__, (thr), (err))
+#endif
 
 struct sockaddr;
 
@@ -170,14 +202,13 @@ ssize_t thread_recv (int sock, void *buffer, size_t length, TVAL timeout);
 
 /* sched_fiber.c, sched_pthread.c, sched_winthread.c */
 EXE_EXPORT (semaphore_t *, semaphore_allocate, (int entry_count));
-void semaphore_free (semaphore_t *sem);
-int semaphore_enter (semaphore_t *sem);
-int semaphore_try_enter (semaphore_t *sem);
+EXE_EXPORT (void, semaphore_free, (semaphore_t *sem));
+EXE_EXPORT (int, semaphore_enter, (semaphore_t *sem));
+EXE_EXPORT (int, semaphore_try_enter, (semaphore_t *sem));
+EXE_EXPORT (void, semaphore_leave, (semaphore_t *sem));
 #ifdef SEM_DEBUG
 void semaphore_leave_dbg (int ln, const char *file, semaphore_t *sem);
 #define semaphore_leave(s) semaphore_leave_dbg (__LINE__, __FILE__, s)
-#else
-void semaphore_leave (semaphore_t *sem);
 #endif
 
 EXE_EXPORT (dk_mutex_t *, mutex_allocate, (void));
@@ -204,21 +235,23 @@ void mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * c
 #define MUTEX_OPTION_NOP
 #define mutex_option(mtx,name,ck,cd) do { ; } while (0)
 #endif
-int mutex_try_enter (dk_mutex_t *mtx);
-void mutex_stat (void);
+EXE_EXPORT (int, mutex_try_enter, (dk_mutex_t *mtx));
+void mutex_stat (int mode, int max);
 
 spinlock_t * spinlock_allocate (void);
 void spinlock_free (spinlock_t *self);
 void spinlock_enter (spinlock_t *self);
 void spinlock_leave (spinlock_t *self);
 
-rwlock_t * rwlock_allocate (void);
-void rwlock_free (rwlock_t *);
-void rwlock_rdlock (rwlock_t *);
-int rwlock_tryrdlock (rwlock_t *);
-void rwlock_wrlock (rwlock_t *);
-int rwlock_trywrlock (rwlock_t *);
-void rwlock_unlock (rwlock_t *);
+EXE_EXPORT (rwlock_t *, rwlock_allocate, (void));
+EXE_EXPORT (void, rwlock_free, (rwlock_t *));
+EXE_EXPORT (void, rwlock_rdlock, (rwlock_t *));
+EXE_EXPORT (int, rwlock_tryrdlock, (rwlock_t *));
+EXE_EXPORT (void, rwlock_wrlock, (rwlock_t *));
+EXE_EXPORT (int, rwlock_trywrlock, (rwlock_t *));
+EXE_EXPORT (void, rwlock_unlock, (rwlock_t *));
+
+
 
 END_CPLUSPLUS
 

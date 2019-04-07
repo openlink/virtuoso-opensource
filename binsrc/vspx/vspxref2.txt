@@ -1,24 +1,24 @@
- 
-
-VSPX Session Management 
 
 
+VSPX Session Management
 
 
-H2 Include 
+
+
+H2 Include
 
 vspx:include href="url"
 
 This will include the content from the specified url at this point of the page.  The url is relative to the page.
 
 
-H2 Login 
+H2 Login
 
 The vspx:login controls authentication for a particular page.  Depending on options it may or may not be visible.
 This works together with a vspx:login_form and vspx_logout_button controls.  The storage of passwords and user names is left to the application, which can specify functions called by these widgets.
 
 
-H3 Attributes 
+H3 Attributes
 
 realm="name"
 
@@ -26,7 +26,7 @@ This is the authentication realm name.
 
 mode=url digest cookie"
 
-This specifies the preferred mode of keeping session and login information.  
+This specifies the preferred mode of keeping session and login information.
 
 url - The url mode means that URL poisoning is used and that the session id passes with the links, posts etc.  Some automation is offered for this by the vspx:link and vspx:data_form and derived controls.
 
@@ -42,11 +42,11 @@ In the case of url and cookie the name and password will have to be supplied in 
 Many values may be separated by spaces.  This is the order of preference.  The system will use the first available depending on the user agent.
 
 
-user-password 
+user-password
 
-This is the name of a SQL function which will retrieve the password given a user name.  If digest authentication is to be possible, this function must be specified. 
+This is the name of a SQL function which will retrieve the password given a user name.  If digest authentication is to be possible, this function must be specified.
 
-user-password-check 
+user-password-check
 
 This is a function which takes the user name and password (unencrypted) and returns true if these match, false otherwise.
 
@@ -56,10 +56,10 @@ If there will be session state which will automatically be extracted from the ap
 Note that digest will only call user_password and others will only call user_password_check.
 
 
-H3 Children 
+H3 Children
 
 
-vspx:if-no-login redirect="url" 
+vspx:if-no-login redirect="url"
 
 This specifies what to do if there are no credentials with the page.
 If the redirect attribute is given, then the entire page containing
@@ -72,21 +72,21 @@ expire, and accessing an expired place will just prompt for the login
 before going to the page.
 
 
-If the redirect is not specified, the contents of this child are instantiated and shown in the place of the login control.  This can be arbitrary content. 
+If the redirect is not specified, the contents of this child are instantiated and shown in the place of the login control.  This can be arbitrary content.
 
-The vspx:login-form control can appear here, providing a standard login form that prompts for a user name and password and has a submit button. 
+The vspx:login-form control can appear here, providing a standard login form that prompts for a user name and password and has a submit button.
 
-vspx:if-login 
+vspx:if-login
 
 if the login is valid, the contents of this child will be instantiated.  This can be for example a logout button, a welcome message or such.  When using the vspx:login system, the user name is is obtained by connection_get ('vspx_user').
 
 
-H3 Implementation 
+H3 Implementation
 
 
 The server keeps login information in the table:
 
-create table VSPX_SESSION (VS_REALM varchar, VS_SID varchar, VS_UID varchar, VS_STATE long varchar, 
+create table VSPX_SESSION (VS_REALM varchar, VS_SID varchar, VS_UID varchar, VS_STATE long varchar,
   primary key (VS_REALM, VS_SID));
 
 
@@ -94,33 +94,33 @@ This table is shared between all vspx applications, each with their login differ
 The state is an array of name value pairs which will be accessed through connection_get and connection_set inside the page code.
 
 
-H2 Login Form 
+H2 Login Form
 
 
 vspx:login-form is the control for getting login information.  This may only appear inside a vspx:login.
 Its function will depend on the type of login being attempted.  If the type is digest, this will look like a button which, when submitted, will send the digest challenge.
 
-If the url or cookie session mode is chosen, this will be a form of 2 fields with user name and password and a submit button.  
+If the url or cookie session mode is chosen, this will be a form of 2 fields with user name and password and a submit button.
 
 
-H3 Attributes 
+H3 Attributes
 
 required - If digest is the mode, then this means that the login is mandatory and that instead of displaying the login button which will send the challenge if pressed, the challenge will be sent automatically.
 
 title - Title of login button if digest is attempted.
-user-title - Title of user name field 
-password-title  - Title of password field 
+user-title - Title of user name field
+password-title  - Title of password field
 submit-title   Title of submit button
 
 
-H3 Children 
+H3 Children
 
 if the standard form is not suitable, this can be an arbitrary form.  This must post  buttons values named "username" and "password" and a submit button named "login".  No children need be specified if the default form is OK.
 
 
 
 
-H2 Logout Button 
+H2 Logout Button
 
 vspx:logout-button inside the vspx:login control will appear as a button which when pressed will terminate the session, disabling the session id.  When the page is reloaded after this submit, it willl be in the non logged in state.
 
@@ -129,32 +129,32 @@ vspx:logout-button inside the vspx:login control will appear as a button which w
 
 
 
-H2 Combo Box 
+H2 Combo Box
 
 vspx:combo-box
 
-This is a combination of a text field and a selection widget.  There is a button beside the field which will pop up a new window for selecting a value.  This is typically a browseable complex list like a file selection box.  This is better than a selection list when there is a very large number of possible selections and a search function or tree hierarchy is needed. 
+This is a combination of a text field and a selection widget.  There is a button beside the field which will pop up a new window for selecting a value.  This is typically a browseable complex list like a file selection box.  This is better than a selection list when there is a very large number of possible selections and a search function or tree hierarchy is needed.
 
-H3 Attributes 
+H3 Attributes
 
-Any attributes of a text field plus any attributes of a button.  The name of the widget is the name of the text field. 
+Any attributes of a text field plus any attributes of a button.  The name of the widget is the name of the text field.
 
 selector="url"
 
 This specifies a page which is opened to show the possible selections.  It will get as URL parameters the current value in the field and be in the same session as the invoking page.  This page will determine the value to be given to the field.  The page can contain any controls and be submitted multiple times.  It will call vspx_return (in value varchar) which will cause the selection popup page to be terminated and the associated field to be set.
 
 
-H3 Children 
+H3 Children
 
 
 
 
-H2 FK Validator 
+H2 FK Validator
 
 This checks a value for being a reference to a database row.
 
 
-H3 Attributes 
+H3 Attributes
 
 table - The table to check against.
 
@@ -166,12 +166,12 @@ sql
 This is the SQL text of a query which will check the value.  The query's text will contain named parameter as SQL identifiers.  In the scope of the query __value is the value of the field as a varchar.  Additionally, names referenced in the vspx:param children can be referenced.  This can occur as an alternative to table and column, not together with them.
 
 
-H3 Children 
+H3 Children
 
 <vspx:param name="param" value="exp" />
 
 
-H3 Implementation 
+H3 Implementation
 
 The reference is checked.  The general behavior of validators applies, including error messages etc.  The data is cast to the type of the column.  The table, column pair and the sql statement are mutually exclusive.  The test succeeds if the query produces at least one row of evaluation.  The default query for only specifying table and column is select 1 from table where column = __value.
 
@@ -179,31 +179,31 @@ The reference is checked.  The general behavior of validators applies, including
 
 H2 Field
 
-This is a data entry text field which corresponds to <input type=text > in html.  Any applicable HTML attributes are allowed.  Additionally these attributes may contain data bind expressions and the element may contain validator children.  
+This is a data entry text field which corresponds to <input type=text > in html.  Any applicable HTML attributes are allowed.  Additionally these attributes may contain data bind expressions and the element may contain validator children.
 
-H3 Attributes 
+H3 Attributes
 
 persistent - The value is preserved across postbacks.  This is done using the view state preserved in the form.
 
 
-H3 Children 
+H3 Children
 
 vspx:validator - Any subtype of validator is supported.
 
 
 
-H2 HTML Tag 
+H2 HTML Tag
 
 This is used to have data bound  values for any HTML tag's attributes. This has the form of any HTML tag as it normally is, except that for the attributes which are in the vspx namespace will be allowed to be data bound expressions evaluated at render time.
 
 
-H3 Attributes 
+H3 Attributes
 
 Any attributes are allowed.  These may have data bound values, which may thus begin with "--" followed by a SQL expression.  These expressions are evaluated render time, where self is the page and control is the enclosing vspx control.  This is not really a control but rather a notation for having expressions as attribute values of an HTML element.  In old vsp this would be notated as:
 
 <input type=text value="<?= 1+2 ?>"/>
 
-However since this is not welll formed XML, the vspx notation is 
+However since this is not welll formed XML, the vspx notation is
 
 <input  type="text" vspxx:value="-- 1 + 2" />
 
@@ -213,12 +213,12 @@ Since self is the page any page globals are available. Additionally the control 
 
 
 
-H3 Children 
+H3 Children
 
 Any HTML or vspx children are allowed.
 
 
-H2 Button 
+H2 Button
 
 vspx:button  is a regular HTML submit button, plus that it can have data bound attributes and an attached on_post handler.
 
@@ -239,32 +239,32 @@ contents of the tre can either be fixed, in which case these are an
 XML tree, or dynamic, in which case these are generated level by level
 by SQL functions attached to the tree.
 
-The tree can have various external appearences. 
+The tree can have various external appearences.
 
 
 The tree is represented at run time by a vspx_tree instance.  Nodes of the tree are represented by vspx_tree_node objects, which are a subclass of template.  The nodes hold an identifier of the corresponding tree branch, which is used to retrieve children of the node.  These also hold a flag indicating if the node is open or not.
 
 
 
-H3 Attributes 
+H3 Attributes
 
-show_root 
+show_root
 
-This determines whether the tree's root node has a representation.  Most of the time this is not desired, so that the first level of children appear as so many roots, each with its own tree.  
+This determines whether the tree's root node has a representation.  Most of the time this is not desired, so that the first level of children appear as so many roots, each with its own tree.
 
-multi_branch 
+multi_branch
 
 This determines whether more than one branches can be open at one time.  The values are yes and no.  The default is no.
 
-fixed_content 
+fixed_content
 
 This is a SQL expression producing an XML tree as the XML entity data type.  A data bound value is required.  If this is an application menu for example, the expression can select which extent of menu is shown in function of which user is logged in.  This is suited for relatively small trees, for example a file system tree will not be practical with this approach.
 
-root 
+root
 
 For trees with dynamic content, this is a SQL expression which produces the root object.  This can be of any data type, a file system path would be an example.
 
-child_func 
+child_func
 
 Given the result of the root expression, this will generate an array
 of similar elements corresponing to the children of the node in
@@ -272,18 +272,18 @@ question.  This same function should be applicable to each element of
 the array it returns.  If the array is empty then the node in question
 is a leaf.  In the case of a file system browser, given a path this would give an array of file names contained in it if it was a directory and an empty array if the argument did not name a directory.
 
-orientation 
+orientation
 
 This can be horizontal or vertical, the default is vertical.
 
 
-H3 Children 
+H3 Children
 
-vspx:node-template 
+vspx:node-template
 
 This is the template for non-leaf nodes.  This is instantiated for each exposed non-leaf node.  Whether the children are instantiated depends on whether the node is opened.  The open node set is a property of the control, not of the tree being shown.
-This can contain special button children for opening and closing the branch.  
-The control in the data bound sections here has a vspx_tree_node widget as value.  This has the tn_open int flag which indicates whether children are expanded or not.   A 
+This can contain special button children for opening and closing the branch.
+The control in the data bound sections here has a vspx_tree_node widget as value.  This has the tn_open int flag which indicates whether children are expanded or not.   A
 
 The following buttons have a special effect on the tree widget: The
 button named <name of tree>_toggle.  This will toggle this node between
@@ -298,12 +298,12 @@ browser, the contents of the last expanded directory can be shown on a
 different pane.  These handlers can be used to fill such a
 pane.
 
-vspx:leaf-template 
+vspx:leaf-template
 
 This is the template for leaves.  If not specified this defaults to the the node template.  The functioning is otherwise identical.
 
 
-H3 Appearance 
+H3 Appearance
 
 The tree can have different styles.  The default is a vertical arrangement with open levels indented, the children under the parent node.   Each node template should be a single line.
 
@@ -312,7 +312,7 @@ case it is not practical to allow multiple open branches.  The
 children of the root will be shown on one line.  When one is opened,
 its children will fill the next line.
 
-H3 Fixed Tree Data Format 
+H3 Fixed Tree Data Format
 
 If the tree widget is in the fixed content mode, the root function is expected to produce an XML tree of the form:
 
@@ -321,13 +321,13 @@ If the tree widget is in the fixed content mode, the root function is expected t
 Where node is any xml element and its children are children in the tree.  The tn_element member of the vspx_tree_node will be assigned to the corresponding part of the tree.  The template can access attributes of this.  The element name itself does not matter.
 
 
-H2 Tab Deck 
+H2 Tab Deck
 
 The vspx:tab element selects one of its children to be active at any one time.  This can be used for making multi-part forms, alternative visualizations of the same data etc.
 
-H3 Attributes 
+H3 Attributes
 
-active 
+active
 
 This is the name of the child template which is active at the time and
 which thus will be rendered.  Whether inactive templates are
@@ -335,26 +335,26 @@ instantiated and keep state is controlled by is-input.  The active
 attribute initializes the tb_active member of the vc_tab instance.
 This is preserved in the view state. Data bindable.
 
-initial-active 
+initial-active
 
 This is the initial value of active, when there is no view state to initialize it from.  Data bindable.
 
 
-is-input 
+is-input
 
 If true, all the children are considered to be collectively a
 multipart form and each will be instantiated when the page is made and
 will get to retain a view state.  Although only one page of the form
 is shown at a time, the state of all is kept. Not data bindable.
 
-style 
+style
 
 This determines what HTML control is used to select which child is shown.
 If unspecified, there will be no such control and the program logic is responsible for flipping the pages.  Otherwise  "list" means there is a HTML select control showing the titles  of the tabs.  "radio" means the titles of the tabs are shown as a radio group.  If there is a tab selector widget, it is always above the tabs.
 
-H3 Childrenb 
+H3 Childrenb
 
-vspx:template 
+vspx:template
 
 Several named templates may occur as direct children.  The name attribute of each distinguishes these.  The one whose name corresponds to the parent's tb_active member will be rendered.  These may additionally have a title attribute which is used to name them in the tab selector control.
 

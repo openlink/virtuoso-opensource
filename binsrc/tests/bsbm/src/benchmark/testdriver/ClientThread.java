@@ -10,7 +10,7 @@ public class ClientThread extends Thread {
 	private boolean finishedWarmup;
 	private int maxQuery;
 	private int nr;
-	
+
 	ClientThread(PreCalcParameterPool pool, ServerConnection conn, int maxQuery, ClientManager parent, int clientNr) {
 		this.pool = pool;
 		this.conn = conn;
@@ -19,7 +19,7 @@ public class ClientThread extends Thread {
 		finishedWarmup = false;
 		this.nr = clientNr;
 	}
-	
+
 	public void run() {
 		queryMix = new CompiledQueryMix(maxQuery);
 		while(!Thread.interrupted()) {
@@ -31,7 +31,7 @@ public class ClientThread extends Thread {
 				inWarmup = manager.isWarmupPhase();
 				inRun = manager.isRunPhase();
 			}
-			
+
 			if(interrupted()) {
 				System.err.println("Thread interrupted. Quitting...");
 				return;
@@ -46,7 +46,7 @@ public class ClientThread extends Thread {
 							finishedWarmup = true;
 						}
 						sleep(20);//still warmup, but no querymix, so wait and try again
-						
+
 						continue;
 					}
 					else if(!inRun) {
@@ -75,7 +75,7 @@ public class ClientThread extends Thread {
 				}
 				System.out.println("Thread " + nr + ": query mix " + queryMix.getRun() + ": " + String.format(Locale.US, "%.2f", queryMix.getQueryMixRuntime()*1000)
 						+ "ms, total: " + String.format(Locale.US, "%.2f",(System.nanoTime()-startTime)/(double)1000000) + "ms");
-				
+
 				queryMix.finishRun();
 			}
 		}

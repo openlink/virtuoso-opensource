@@ -1,14 +1,14 @@
 --
 --  tupdate.sql
 --
---  $Id$
+--  $Id: tupdate.sql,v 1.20.2.4.4.4 2013/01/02 16:15:32 source Exp $
 --
 --  Update tests
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,13 +32,16 @@ CONNECT;
 -- Timeout to two hours.
 SET TIMEOUT 7200;
 set DEADLOCK_RETRIES = 200;
-load revstr.sql;
-load succ.sql;
 drop table words;
 create table words(word varchar, revword varchar, len integer, primary key(word))
   alter index words on words partition (word varchar);
 create index revword on words(revword) partition (revword varchar);
 create index len on words(len) partition (len int);
+
+load revstr.sql;
+load succ.sql;
+
+
 foreach line in words.esp
  insert into words(word,revword,len) values(?,revstr(?1),length(?1));
 
@@ -57,7 +60,16 @@ ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE 
 ECHO BOTH $IF $EQU $ROWCNT 42406"PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
--- check reading inx with mixed vcersions of keys 
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx oow 1\n";
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+
+
+-- check reading inx with mixed vcersions of keys
 select count (*) from words where word > 'b';
 
 select count (*) from words a where exists (select 1 from words b table option (loop) where a.word = b.word);
@@ -84,11 +96,17 @@ ECHO BOTH ": update words set word2 = word; STATE=" $STATE " MESSAGE=" $MESSAGE 
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+
 update words set word2 = concat (word2, '-');
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word2 = concat (word2, '-'); STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 2\n";
+
 
 -- Was: update words set word2 = subseq (word2, 0, length (word2) - 1);
 -- This is more to standard:
@@ -122,19 +140,37 @@ ECHO BOTH ": update words set word = concat('-',word); STATE=" $STATE " MESSAGE=
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 3\n";
+
+select * from words where word = '-a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 select count (*) from words where word2 = word;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": select count (*) from words; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH  $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 ECHO BOTH  ": " $LAST[1] " words where word2 = word\n";
 
-checkpoint;
+cl_exec ('checkpoint');
 
 update words set word = word2 where word like '-%';
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = word2 where word like '-%'; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
+
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 3\n";
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 
 select count (*) from words where word <> word2;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
@@ -147,15 +183,39 @@ ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = concat('-',word) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 4\n";
+
+select * from words where word = '-a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+
 update words set word = subseq (word, 1, length (word)) where aref (word, 0) = aref ('-', 0);
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
 
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 5\n";
+
 update words set word = subseq (word, 1, length (word)) where word like '-%';
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
 ECHO BOTH ": update words set word = subseq (word, 1, length(word)) where ...; STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 ECHO BOTH $ROWCNT " rows updated\n";
+
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 6\n";
+
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
 
 update words set word = word, word2 = word2;
 ECHO BOTH $IF $EQU $STATE "OK" "PASSED" "***FAILED";
@@ -163,6 +223,16 @@ ECHO BOTH ": update words set word = word, word2 = word2; STATE=" $STATE " MESSA
 ECHO BOTH $IF $EQU $ROWCNT 86061 "PASSED" "***FAILED";
 ECHO BOTH ": " $ROWCNT " rows updated\n";
 
+select top 10 revword from words a table option (index words) where not exists (select 1 from words b table option (loop) where a.revword = b.revword);
+echo both $if $neq $rowcnt 0 "***FAILED" "PASSED";
+echo both ":  revword inx ck 7\n";
+
+
+select * from words where word = 'a';
+echo both $if $neq $rowcnt 1 "***FAILED" "PASSED";
+echo both ":  wirds a ck 1\n";
+
+exit;
 -- Set ROWCNT to some different value, so that we see whether the next
 -- update statements have any effect:
 SET ROWCNT -12345;
@@ -283,7 +353,7 @@ create procedure LOCK_TT_FILL (in N int)
 
 
 select sys_stat ('tc_pl_split_while_wait');
-ECHO BOTH " tc_pl_split_while_wait=" $LAST[1] "\n";
+echo both " tc_pl_split_while_wait=" $last[1] "\n";
 
 
 drop table trb;
@@ -532,7 +602,7 @@ ECHO BOTH ": BUG 7752: wrong max row len check STATE=" $STATE " MESSAGE=" $MESSA
 
 echo BOTH "COMPLETED: UPDATE TEST\n";
 
-exit
+
 
 echo BOTH "STARTED: keyset update tests\n";
 CONNECT;
@@ -576,9 +646,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows after insert \n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
 
 
 update XX set a = a + 2 where a > 1;
@@ -587,24 +657,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with instead of trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with instead of trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
 
 drop trigger XX_U_INST;
 delete from XX_upd_log;
@@ -615,24 +685,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows with a > 3 after update w/o instead of trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update w/o instead of trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
+echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
 
 delete from XX;
 delete from XX_upd_log;
@@ -642,9 +712,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows after insert \n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
 
 create trigger XX_U_B before update on XX referencing old as O, new as N {
   dbg_obj_print ('before update - signal', O.a, N.a, N.b);
@@ -660,24 +730,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with signal in before update trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with signal in before update trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
 
 drop trigger XX_U_B;
 create trigger XX_U_B before update on XX referencing old as O, new as N {
@@ -693,9 +763,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows after insert \n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
 
 create trigger XX_U_A after update on XX referencing old as O, new as N {
   dbg_obj_print ('after update with signal' , O.a, N.a, N.b);
@@ -710,24 +780,24 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": update ... where a > 1 error in after trigger : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 select * from XX where a > 3;
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows with a > 3 after update with signal in after update trigger \n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows with a > 3 after update with signal in after update trigger \n";
 
 select * from XX_upd_log where dt = 'bu';
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in before update trigger \n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in before update trigger \n";
 
 select * from XX_upd_log where dt = 'iu';
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in instead of update trigger \n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in instead of update trigger \n";
 
 select * from XX_upd_log where dt = 'au';
-ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows logged to be updated in after update trigger \n";
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows logged to be updated in after update trigger \n";
 
 delete from XX;
 delete from XX_upd_log;
@@ -739,9 +809,9 @@ insert into XX (a) values (2);
 insert into XX (a) values (3);
 
 select * from XX;
-ECHO BOTH $IF $EQU $ROWCNT 3 "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": " $ROWCNT " rows after insert \n";
+echo both $if $equ $rowcnt 3 "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both " " $rowcnt " rows after insert \n";
 
 create trigger XX_U_A after update on XX referencing old as O, new as N {
   dbg_obj_print ('after update - recreated' , O.a, N.a, N.b);

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -5886,7 +5886,7 @@ create procedure ENEWS.WA.show_excerpt(
 --
 create procedure ENEWS.WA.dt_current_time()
 {
-  return dateadd('minute', - timezone(now()),now());
+  return dateadd('minute', - timezone(curdatetime_tz()),curdatetime_tz());
 }
 ;
 
@@ -5908,7 +5908,7 @@ create procedure ENEWS.WA.dt_gmt2user(
     pUser := connection_get('vspx_user');
   if (isnull(pUser))
     return pDate;
-  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(now())/60) as integer) * 60;
+  tz := cast(coalesce(USER_GET_OPTION(pUser, 'TIMEZONE'), timezone(curdatetime_tz())/60) as integer) * 60;
   return dateadd('minute', tz, pDate);
 }
 ;
@@ -6120,6 +6120,8 @@ create procedure ENEWS.WA.dt_rfc1123 (
 {
   if (isnull(dt))
     return dt;
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;

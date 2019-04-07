@@ -1,29 +1,48 @@
 --
 --  tfref.sql
 --
---  $Id$
+--  $Id: tfref.sql,v 1.7.10.3 2013/01/02 16:15:09 source Exp $
 --
 --  Function reference tests
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
+
+drop table T2;
+create table T2 (A integer, B integer, primary key (A));
+insert into T2 values (1, 2);
+insert into T2 values (2, 2);
+insert into T2 values (3, 2);
+
+insert into T2 (A, B) values (4, 2);
+insert into T2 (A, B) values (5, 2);
+insert into T2 (A, B) values (6, 2);
+insert into T2 (A, B) values (7, 2);
+insert into T2 (A, B) values (8, 2);
+
+insert into T2 (A, B) values (10, 2);
+insert into T2 (A, B) values (11, 2);
+insert into T2 (A, B) values (12, 2);
+insert into T2 (A, B) values (13, 2);
+insert into T2 (A, B) values (14, 2);
+
 
 create procedure tfref (in q integer)
 {
@@ -32,13 +51,16 @@ create procedure tfref (in q integer)
   while (ctr < q) {
     select count (*), sum (A), avg (A), min (A), max (A)
       into c, s, av, mi, ma from T2;
+--    dbg_obj_print_vars (c, s, av, mi, ma);
     if (s <> 96 or c <> 13 or mi <> 1 or ma <> 14 or av <> 7)
       goto failed;
     select count (*), sum (A), avg (A), min (A), max (A)
       into c, s, av, mi, ma  from T2 where A > 100;
+--    dbg_obj_print_vars (c, s, av, mi, ma);
     if (s <> null or c <> 0 or mi <> null or ma <> null or av <> null)
       goto failed;
 
+--    dbg_obj_print ('-');
     ctr := ctr + 1;
   }
   result_names (s);

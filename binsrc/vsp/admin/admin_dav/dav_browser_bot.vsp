@@ -1,28 +1,28 @@
-<?vsp 
+<?vsp
 --
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 ?>
-<!DOCTYPE html 
+<!DOCTYPE html
      PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
     "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
@@ -35,16 +35,16 @@
 
   <body bgcolor="#FFFFFF" text="#000000">
     <form name="bot_form">
-      <p>Filter pattern 
+      <p>Filter pattern
         <input type="text" name="flt_pat" />
-        <input type="button" 
-           value="Apply" 
+        <input type="button"
+           value="Apply"
            onClick="javascript:dav_newflt(document.bot_form.flt_pat.value)" />
         <input type="button"
            value="Clear"
            onClick="javascript:flt_pat.value='';dav_newflt('*')" />
       </p>
-      <p>Resource name 
+      <p>Resource name
 	<input type="hidden" name="COL" />
 	<input type="hidden" name="RES" />
         <input type="hidden" name="PATH" />

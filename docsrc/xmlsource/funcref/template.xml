@@ -49,7 +49,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -67,10 +67,6 @@
  -  
 -->
 
-<?xml version="1.0" encoding="ISO-8859-1"?>
-<!--
-  $Id$
--->
 <refentry id="fn_">
   <refmeta>
     <refentrytitle></refentrytitle>
@@ -119,9 +115,5 @@
 ]]>
 </screen>
     </example>
-  </refsect1>
-  <refsect1 id="seealso_">
-    <title>See Also</title>
-    <para><link linkend="fn"><function></function></link></para>
   </refsect1>
 </refentry>

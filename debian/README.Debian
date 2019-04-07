@@ -1,19 +1,60 @@
-virtuoso-opensource for Debian
-------------------------------
+         Debian Readme for
+OpenLink Virtuoso Open-Source Edition
+=====================================
 
-On Debian systems, Virtuoso is built with the following substantive
-modifications:
+0) Debian packaging notes
+   ----------------------
 
-  a) --with-layout=debian
-  b) the isql program is renamed to isql-v; isqlw becomes isql-vw.
+Are notably not available:
+ * PHP bindings
+ * Java-based bindings (sesame, jena...)
+ * Tutorial binaries
 
-For usage notes, see the homepage,
-<http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main> especially the
-"Getting Started" section.
+1) Initial setup
+   -------------
 
-The first time virtuoso-t is run it will create an empty database in
-/var/lib/virtuoso/db/ and install the Conductor package. Point your
-web-browser at <http://hostname:8890/> and use the conductor (default
-user and password of dba/dba) to install other VAD packages to taste.
+Edit /etc/default/virtuoso to make virtuoso run.
 
- -- OpenLink Virtuoso Maintainer <vos.admin@openlinksw.com>  Wed Feb  3 16:30:19 CET 2010
+2) Accounts
+   --------
+
+A few accounts are pre-defined on first startup:
+
++------+------+--------------------------------------------------------------+
+| User | Pass | Usage                                                        |
++------+------+--------------------------------------------------------------+
+| dba  | dba  | Default Database Administrator account.                      |
+| dav  | dav  | WebDAV Administrator account.                                |
+| vad  | vad  | WebDAV account for internal use in VAD (disabled by default) |
+| demo | demo | Default demo user for the demo database.                     |
+| soap | soap | SQL User for demonstrating SOAP services.                    |
+| fori | fori | SQL user account for 'Forums' tutorial in the Demo database. |
++------+------+--------------------------------------------------------------+
+
+It is therefore important to change these passwords immediately after the
+installation.
+
+Debconf prompts will permit to change the default password. Otherwise, use the
+following instructions.
+
+The database password can be changed using the Interactive SQL utility
+(/usr/bin/isql-vt). The ISQL interface will try to login with the default
+user and password if none are passed as parameters. To change the current
+user's password, use the following statement:
+
+set password <old password> <new password>
+
+Note that the password is an identifier, so take care to use proper quotation.
+
+You can also use the graphical Virtuoso Administration Interface to administer
+Virtuoso database users.
+
+The other accounts must have their passwords set in a different way. Either use
+the GUI in Administration Interface at http://127.0.0.1:8890/conductor/ under
+"WebDAV Administration / WebDAV services / Users Administrator" or use the SQL
+statement:
+
+update WS.WS.SYS_DAV_USER set U_PASSWORD='<new password>'
+where U_NAME='<username>'
+    
+ -- Obey Arthur Liu <arthur@milliways.fr>  Tue, 22 Dec 2009 16:49:42 +0100

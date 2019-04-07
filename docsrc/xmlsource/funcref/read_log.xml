@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_read_log">
+  <refmeta>
+    <refentrytitle>read_log</refentrytitle>
+    <refmiscinfo>admin</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>read_log</refname>
+    <refpurpose>reads Virtuoso log</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_read_log">
+      <funcprototype id="fproto_read_log">
+        <funcdef><function>read_log</function></funcdef>
+        <paramdef>in <parameter>file</parameter> varchar</paramdef>
+        <paramdef>in <parameter>pos</parameter> integer</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_read_log"><title>Description</title>
+    <para>The <function>read_log</function> function reads from the Virtuoso Transactions log file from a given position.
+    </para>
+  </refsect1>
+  <refsect1 id="params_read_log">
+    <title>Parameters</title>
+    <refsect2><title>file</title>
+      <para>Virtuoso transaction log file.</para>
+    </refsect2>
+    <refsect2><title>pos</title>
+      <para>A given position from which the read to start from.</para>
+    </refsect2>
+  </refsect1>
+  <refsect1 id="ret_read_log"><title>Return Types</title>
+    <para>The function returns array of transaction values.</para>
+  </refsect1>
+  <refsect1 id="examples_read_log">
+    <title>Examples</title>
+    <example id="ex_read_log"><title>Sample example</title>
+      <screen><![CDATA[
+-- insert sample data so to change the rdf_quad index:
+SQL> SPARQL INSERT INTO <g> { <s> <p> <o> };
+
+-- create the following example procedure
+SQL>
+create procedure rlt (in f any, in inpos int := 0)
+{
+  declare h, op, g, s, p, o any;
+  declare pos int;
+  result_names (op, g, s, p, o);
+  h := file_open (f, inpos);
+  declare r, rr any;
+  while ((rr := read_log (h, pos)) is not null)
+    {
+      declare rw, k any;
+      declare i int;
+      rw := null;
+      k := null;
+      for (i := 1; i < length (rr); i := i + 1)
+        {
+	  r := rr[i];
+	  if (r[0] = 13) -- key insert
+	    {
+	      rw := r[2];
+	      op := 'I';
+	    }
+	  else if (r[0] in (1,8,9)) -- insert,soft,replacing
+	    {
+	      rw := r[1];
+	      op := 'I';
+	    }
+	  else if (r[0] in (3,14)) -- delete
+	    {
+	      rw := r[1];
+	      op := 'D';
+	    }
+	  if (rw is not null)
+	    {
+	      k := rw[0];
+	      if (k = 273) -- RDF_QUAD, should check with SYS_KEYS
+		{
+		  result (op, __ro2sq (rw[1]), __ro2sq (rw[2]), __ro2sq (rw[3]), __ro2sq (rw[4]));
+		}
+	    }
+	}
+    }
+  result (pos + inpos, '', '', '', '');
+}
+;
+
+-- Call the procedure:
+
+-- in case of no changes to the rdf_quad index are done, it will return:
+SQL> rlt('tmp/Virtuoso.trx');
+Query result:
+op 	  g   s   p    o
+ANY   ANY ANY ANY  ANY
+8403
+No. of rows in result: 1
+
+-- in case of changes to the rdf_quad index are done ( example with the short INSERT we did above), it will return for example:
+SQL> rlt('tmp/Virtuoso.trx');
+Query result:
+op 	   g   s   p    o
+ANY    ANY ANY ANY  ANY
+I      g   s   p    o
+71446
+No. of rows in result: 2
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_read_log"><title>See Also</title>
+    <para><link linkend="fn_log_enable"><function>log_enable</function></link></para>
+    <para><link linkend="fn_log_text"><function>log_text</function></link></para>
+    <para><link linkend="fn_log"><function>log</function></link></para>
+    <para><link linkend="fn_log10"><function>log10</function></link></para>
+  </refsect1>
+</refentry>
+
+

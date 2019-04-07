@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2013 OpenLink Software
+  Copyright (C) 1998-2019 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -77,8 +77,7 @@ The function will generate a SQL 22023 error value if a supplied parameter is no
   </refsect1>
   <refsect1 id="examples_exec_score">
     <title>Examples</title>
-    <example id="ex_exec_score"><title></title>
-      <para></para>
+    <example id="ex_exec_score"><title>Simple Use</title>
       <screen><![CDATA[
 SQL> select exec_score ('select * from T1'); 	  
 ]]>

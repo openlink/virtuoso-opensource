@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -879,7 +879,7 @@ create function DB.DBA.Dropbox__datestring (
   s  := xslt_format_number (second (dt), '00');
   k  := xslt_format_number (dayofweek (dt), '00');
   y  := cast (year (dt) as varchar);
-  z  := timezone (dt);
+  z  := coalesce(timezone (dt), 0);
   if (z < 0)
   {
     zz := '-';

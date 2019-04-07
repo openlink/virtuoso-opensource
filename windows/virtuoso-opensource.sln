@@ -1,5 +1,7 @@
-Microsoft Visual Studio Solution File, Format Version 11.00
-# Visual Studio 2010
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio 15
+VisualStudioVersion = 15.0.26430.16
+MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blobs", "blobs.vcxproj", "{72ABF3AE-CF7A-11DA-85E2-A4E5714C712A}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "burstoff", "burstoff.vcxproj", "{7B2A50F2-CF7A-11DA-85E2-A4E5714C712A}"
@@ -371,6 +373,7 @@ Global
 		{F357CF96-CF7A-11DA-85E2-A4E5714C712A}.Release|Any CPU.ActiveCfg = Release|x64
 		{F357CF96-CF7A-11DA-85E2-A4E5714C712A}.Release|Win32.ActiveCfg = Release|Win32
 		{F357CF96-CF7A-11DA-85E2-A4E5714C712A}.Release|x64.ActiveCfg = Release|x64
+		{F357CF96-CF7A-11DA-85E2-A4E5714C712A}.Release|x64.Build.0 = Release|x64
 		{F357CF96-CF7A-11DA-85E2-A4E5714C712A}.Release|x86.ActiveCfg = Release|x64
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Debug|Any CPU.ActiveCfg = Release|x64
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Debug|Win32.ActiveCfg = Release|x64
@@ -543,10 +546,14 @@ Global
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|Win32.ActiveCfg = Release|Any CPU
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|Win32.Build.0 = Release|Any CPU
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|x64.ActiveCfg = Release|Any CPU
+		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|x64.Build.0 = Release|Any CPU
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|x86.ActiveCfg = Release|x86
 		{50E2DD3F-5B5E-4E62-9206-A41824905CD7}.Release|x86.Build.0 = Release|x86
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {B157B88D-A07E-4CEB-81E2-EC5F3EFC4E1D}
 	EndGlobalSection
 EndGlobal

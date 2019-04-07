@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -83,6 +83,9 @@ static char *szStart = buffer;
 static char *szEnd = buffer;
 static char *to_file;
 static char *header_line;
+static char *result_label;
+static char *rec_file;
+static long rc_timeout;
 
 static int
 sock_read_line (int fd, char *buf, int max)
@@ -100,6 +103,8 @@ sock_read_line (int fd, char *buf, int max)
 #endif
 	  if (-1 == (rc = recv (fd, szStart, sizeof (buffer), 0)))
 	    {
+	      if (errno == EAGAIN && rc_timeout > 0)
+		return -2;
 #if defined (linux)
 	      /* http://www.ussg.iu.edu/hypermail/linux/kernel/0006.3/0193.html */
 	      if (errno == EPIPE)
@@ -213,24 +218,22 @@ l_usage (char *fname)
   fprintf (stderr, " -s = silent mode\n");
   fprintf (stderr, " -S = BIG silence mode. Just the last execution times\n");
   fprintf (stderr, " -s n = number of requests to go into one connection\n");
-  fprintf (stderr,
-      " -P = when -c is specified make the requests in connection pipelined\n");
+  fprintf (stderr, " -P = when -c is specified make the requests in connection pipelined\n");
   fprintf (stderr, " -p = password \n");
   fprintf (stderr, " -u = user \n");
   fprintf (stderr, " -q n = max seconds to wait between connects \n");
-  fprintf (stderr,
-      " -t <filename> = store content to file (overwrite mode)\n");
+  fprintf (stderr, " -t <filename> = store content to file (overwrite mode)\n");
   fprintf (stderr, " -l \"line\" = send http header line \n");
+  fprintf (stderr, " -r \"label\" = Label for result total time\n");
 
 }
-
 
 static void
 l_handle_file (FILE * fp)
 {
   static int nth_url = 1;
   char line[MAX_URL_SIZE];
-  char post[65535];
+  char *post;
   int post_repeat = 1;
   int cursor = 0;
   char host[40], str_port[40];
@@ -239,6 +242,17 @@ l_handle_file (FILE * fp)
   const int GET = 1;
   const int ANY = 2;
   int STATE = -1;
+  size_t size;
+
+  fseek(fp, 0, SEEK_END);
+  size = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  if ((post = malloc (size + 1024)) == NULL)
+    {
+      fprintf (stderr, "File too big\n");
+      exit(1);
+    }
 
   if (fgets (line, sizeof (line), fp) != NULL)
     {
@@ -251,7 +265,7 @@ l_handle_file (FILE * fp)
       exit (1);
     }
 
-  ta_init (&global_times, "Total");
+  ta_init (&global_times, result_label ? result_label : "Total");
   while (!feof (fp))
     {
       if (fgets (line, sizeof (line), fp) != NULL)
@@ -328,6 +342,9 @@ l_handle_file (FILE * fp)
 		cursor +=
 		    sprintf (post + cursor,
 		    "User-Agent: urlsimu Version 0.1\r\n");
+		if (rec_file)
+		  cursor += sprintf (post + cursor, "X-Recording: %s\r\n", rec_file);
+
 		if (user != NULL && passwd != NULL)
 		  {
 		    sprintf (tmp, "%s:%s", user, passwd);
@@ -366,6 +383,7 @@ l_handle_file (FILE * fp)
 	    }
 	}
     }
+  free (post);
   ta_print_out (stdout, &global_times);
 }
 
@@ -375,6 +393,7 @@ make_connection (char *host, int port, int *s)
   struct hostent *phe = NULL;
   struct sockaddr_in sin;
   int con_rc = 0, errn = 0;
+  struct timeval timeout = {0,0};
 
 
   ta_enter (&url_times);
@@ -403,7 +422,7 @@ make_connection (char *host, int port, int *s)
       /* create socket */
       if (*s)
 	closesocket (*s);
-      *s = socket (PF_INET, SOCK_STREAM, 0);
+      *s = socket (AF_INET, SOCK_STREAM, 0);
       if (*s < 0)
 	{
 	  fprintf (stderr, "Cannot create socket\n");
@@ -431,6 +450,20 @@ make_connection (char *host, int port, int *s)
       fprintf (stderr, "Cannot connect, errno = %d\n", errn);
       perror ("");
       exit (1);
+    }
+  if (rc_timeout > 0)
+    {
+      timeout.tv_sec = rc_timeout;
+#ifdef SO_RCVTIMEO
+      con_rc = setsockopt (*s, SOL_SOCKET, SO_RCVTIMEO, (char *) &timeout, sizeof (timeout));
+      if (con_rc < 0)
+	perror ("error");
+#endif
+#ifdef SO_SNDTIMEO
+      con_rc = setsockopt (*s, SOL_SOCKET, SO_SNDTIMEO, (char *) &timeout, sizeof (timeout));
+      if (con_rc < 0)
+	perror ("error");
+#endif
     }
 }
 
@@ -484,7 +517,7 @@ send_request (int fd, char *tmp, int i1, int requests_to_send, int tmp_len)
       else
 	file_to_put[0] = 0;
     }
-  if (file_to_put && strstr (method, "PUT"))
+  if (0 != file_to_put[0] && strstr (method, "PUT"))
     {
       fput = fopen (file_to_put, "rb");
       if (!fput)
@@ -676,6 +709,11 @@ l_handle_url (char *host, int port, char *line, int repeat)
     {
       sprintf (s_port, ":%d", port);
       strcat (tmp, s_port);
+    }
+  if (rec_file)
+    {
+      strcat (tmp, "\r\nX-Recording: ");
+      strcat (tmp, rec_file);
     }
   tmp_len = strlen (tmp);
 
@@ -1045,7 +1083,7 @@ main (int argc, char *argv[])
       exit (1);
     }
 #endif
-  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:")) != EOF)
+  while ((c = getopt (argc, argv, "u:p:fhc:sSq:Pt:l:r:x:T:")) != EOF)
     {
       switch (c)
 	{
@@ -1092,9 +1130,21 @@ main (int argc, char *argv[])
 	  to_file = optarg;
 	  break;
 
+	case 'T':
+	  rc_timeout = atol (optarg);
+	  break;
+
+	case 'r':
+	  result_label = optarg;
+	  break;
+
 	case 'l':
 	  send_header_line = TRUE;
 	  header_line = optarg;
+	  break;
+
+	case 'x':
+	  rec_file = optarg;
 	  break;
 
 	case '?':

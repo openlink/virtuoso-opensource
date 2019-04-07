@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -43,30 +43,21 @@
   <refsect1 id="desc_xml_doc_output_option">
     <title>Description</title>
     <para>This function reads or updates the specified XSLT output option value
-      of the given <parameter>xml_entity</parameter>.</para>
-    <para>The function updates the option if parameter <parameter>option_value</parameter> is provided,
-      otherwise it returns the current value of the option without any side effects.</para>
-    <para>Supported options are &apos;method&apos;, &apos;version&apos;,
-      &apos;encoding&apos;, &apos;omit-xml-declaration&apos;, &apos;standalone&apos;,
-      &apos;doctype-public&apos;, &apos;doctype-system&apos;, &apos;indent&apos;
-      and &apos;media-type&apos;, but do not support&apos;cdata-section-elements&apos;.
-      When the entity is serialized,
-      the effect is very similar to the effect of the same option specified
-      in xsl:output element of an XSLT that created the entity.</para>
-    <para>Note that output options are properties of the whole document, not
-      properties of some particular node in the document, so the effect of
-      the update is document-wide.
-      Please also note that the effect of 'preamble' options
-      &apos;omit-xml-declaration&apos;, &apos;standalone&apos;,
-      &apos;doctype-public&apos; and &apos;doctype-system&apos; is visible only
-      when the root entity of the document is serialized,
-      not any descendant entity. Even the serialization of top-level element
-      of the document is not affected by these settings. The XML preamble is
-      serialized only if the document is composed by an XSLT processor or
-      &apos;doctype-system&apos; is set or at least one of two
-      boolean properties &apos;omit-xml-declaration&apos; and &apos;standalone&apos;
-      is set to &apos;yes&apos;.</para>
-    <para>According to the DTD rules, &apos;doctype-public&apos; has no effect on serialization if &apos;doctype-system&apos; is not set.</para>
+      of the given <code>xml_entity</code>.</para>
+    <para>The function updates the option if parameter <code>option_value</code> is provided, otherwise it returns the
+    current value of the option without any side effects.</para>
+    <para>Supported options are "method", "version", "encoding", "omit-xml-declaration", "standalone", "doctype-public",
+    	"doctype-system", "indent" and "media-type", but do not support"cdata-section-elements". When the entity is serialized,
+    	the effect is very similar to the effect of the same option specified in xsl:output element of an XSLT that created
+    	the entity.</para>
+    <para>Note that output options are properties of the whole document, not properties of some particular node in the
+    	document, so the effect of the update is document-wide. Please also note that the effect of 'preamble' options
+    	"omit-xml-declaration", "standalone", "doctype-public" and "doctype-system" is visible only when the root entity
+    	of the document is serialized, not any descendant entity. Even the serialization of top-level element of the
+    	document is not affected by these settings. The XML preamble is serialized only if the document is composed by
+    	an XSLT processor or "doctype-system" is set or at least one of two boolean properties "omit-xml-declaration"
+    	and "standalone" is set to "yes".</para>
+    <para>According to the DTD rules, "doctype-public" has no effect on serialization if "doctype-system" is not set.</para>
   </refsect1>
   <refsect1 id="params_xml_doc_output_option">
     <title>Parameters</title>
@@ -77,21 +68,18 @@
       <para>A name of output option to in question.</para>
     </refsect2>
     <refsect2><title>option_value</title>
-      <para>A new value of output option. This is a string or NULL (that reset option to default).
-      Allowed values of boolean properties &apos;omit-xml-declaration&apos; and &apos;standalone&apos; are &apos;yes&apos; and &apos;no&apos;, as it is in XSLT 1.0.
-      </para>
+      <para>A new value of output option. This is a string or NULL (that reset option to default). Allowed values of
+      	boolean properties "omit-xml-declaration" and "standalone" are "yes" and "no", as it is in XSLT 1.0.</para>
     </refsect2>
   </refsect1>
   <refsect1 id="ret_xml_doc_output_option"><title>Return Types</title>
-    <para>The function returns a string that is a value of the option or NULL if the option is not set.
-    </para>
+    <para>The function returns a string that is a value of the option or NULL if the option is not set.</para>
   </refsect1>
   <refsect1 id="errors_xml_doc_output_option">
     <title>Errors</title>
     <para>This function can generate the following errors:</para>
     <para><errorcode>22023</errorcode> <errorcode>SR003</errorcode> 
-    Function xml_doc_output_option needs an XML entity as argument 1, not 
-    an arg of type &lt;type_name&gt; (&lt;type&gt;)</para>
+    Function xml_doc_output_option needs an XML entity as argument 1, not an arg of type &lt;type_name&gt; (&lt;type&gt;)</para>
   </refsect1>
   <refsect1 id="examples_xml_doc_output_option">
     <title>Examples</title>

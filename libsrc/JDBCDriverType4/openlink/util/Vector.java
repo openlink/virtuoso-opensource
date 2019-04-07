@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,7 +37,7 @@ public class Vector
    // The number of valid objects in the array
    protected int elementCount;
 
-   // The increment of the array when ther's no space left
+   // The increment of the array when there is no space left
    protected int capacityIncrement;
 
    /**

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -20,8 +20,9 @@
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
-
-. ../test_fn.sh
+VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
+export VIRTUOSO_TEST
+. $VIRTUOSO_TEST/testlib.sh
 LOGFILE=tpcd.output
 
 CHECKPOINTS=OFF
@@ -240,6 +241,11 @@ LOAD_ORDERS ()
     done
 }
 
+LOAD_TPCD ()
+{
+
+echo "LOAD.sh parameters are: [$*]"
+
 _DATABASE=$1
 shift
 _USER=$1
@@ -254,8 +260,8 @@ DEFAULTPARAMS='integer=integer smallmoney="numeric(3,2)" largemoney="numeric(20,
 case z$action
 in
 	ztables)
-	    echo $_ISQL ./create_tables.sql -u $DEFAULTPARAMS $* >> $LOGFILE
-	    $_ISQL ./create_tables.sql -u $DEFAULTPARAMS $* >> $LOGFILE
+	    echo $_ISQL $VIRTUOSO_TEST/tpc-d/create_tables.sql -u $DEFAULTPARAMS $* >> $LOGFILE
+	    $_ISQL $VIRTUOSO_TEST/tpc-d/create_tables.sql -u $DEFAULTPARAMS $* >> $LOGFILE
 	    if test $? -ne 0
 	      then
 	        LOG "***ABORTED: LOAD.sh -- create_tables.sql"
@@ -265,10 +271,10 @@ in
 	    ;;
 
 	zindexes)
-            echo $_ISQL ./create_indexes.sql $* >> $LOGFILE
-            $_ISQL ./create_indexes.sql $* >> $LOGFILE
-            echo $_ISQL ./create_partitions.sql $* >> $LOGFILE
-            $_ISQL ./create_partitions.sql $* >> $LOGFILE
+            echo $_ISQL $VIRTUOSO_TEST/tpc-d/create_indexes.sql $* >> $LOGFILE
+            $_ISQL $VIRTUOSO_TEST/tpc-d/create_indexes.sql $* >> $LOGFILE
+            echo $_ISQL $VIRTUOSO_TEST/tpc-d/create_partitions.sql $* >> $LOGFILE
+            $_ISQL $VIRTUOSO_TEST/tpc-d/create_partitions.sql $* >> $LOGFILE
 	    if test $? -ne 0
 	      then
 	        LOG "*** ABORTED: LOAD.sh -- create_indexes.sql"
@@ -426,6 +432,13 @@ in
 	    ;;
 
 	z*)
-    	    LOG "usage $0 database username password (tables | indexes | procedures | cleanprocedures | cleantables | cleandata | load | attach )"
+    	    LOG "usage $0 (tables | indexes | procedures | cleanprocedures | cleantables | cleandata | load | attach )"
 	    ;;
 esac
+
+}
+
+if [ $# -ge 4 ]
+then
+  LOAD_TPCD $*
+fi

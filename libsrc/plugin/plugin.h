@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,6 +25,8 @@
 
 #ifndef _PLUGIN_H
 #define _PLUGIN_H
+
+#include "Dk.h"
 
 /*! \file
 \brief System-independent interface between dock (executable) and plugin (DLL)
@@ -60,11 +62,11 @@ typedef void unit_control_func_t (void *appdata);
 
 struct unit_version_s
 {
-  char *uv_title;			/*!< Title of unit, filled by unit */
-  char *uv_version;			/*!< Version number, filled by unit */
-  char *uv_companyname;			/*!< Plugin's developer, filled by unit */
-  char *uv_comments;			/*!< Any additional info, filled by unit */
-  char *uv_load_error;			/*!< Error message, filled by unit loader */
+  const char *uv_title;			/*!< Title of unit, filled by unit */
+  const char *uv_version;		/*!< Version number, filled by unit */
+  const char *uv_companyname;		/*!< Plugin's developer, filled by unit */
+  const char *uv_comments;		/*!< Any additional info, filled by unit */
+  const char *uv_load_error;		/*!< Error message, filled by unit loader */
   char *uv_filename;			/*!< Name of file with unit's code, filled by unit loader */
   unit_control_func_t *uv_connect;	/*!< Pointer to connection function, cannot be NULL */
   unit_control_func_t *uv_disconnect;	/*!< Pointer to disconnection function, or NULL */

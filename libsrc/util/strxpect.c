@@ -20,7 +20,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,18 +36,18 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *  
  *  
-*/
+ */
 
 #include "libutil.h"
 
 
-char *
-strexpect (char *keyword, char *source)
+static char *
+strexpect_internal (const char *keyword, const char *source, int bCaseSensitive)
 {
   while (isspace (*source))
     source++;
 
-  while (*keyword && toupper (*keyword) == toupper (*source))
+  while (*keyword && (bCaseSensitive ? (*keyword == *source) : (toupper (*keyword) == toupper (*source))))
     {
       keyword++;
       source++;
@@ -57,14 +57,28 @@ strexpect (char *keyword, char *source)
     return NULL;
 
   if (*source == '\0')
-    return source;
+    return (char *) source;
   
   if (isspace (*source))
     {
       while (isspace (*source))
 	source++;
-      return source;
+      return (char *) source;
     }
 
   return NULL;
+}
+
+
+char *
+strexpect (const char *keyword, const char *source)
+{
+  return strexpect_internal (keyword, source, 0);
+}
+
+
+char *
+strexpect_cs (const char *keyword, const char *source)
+{
+  return strexpect_internal (keyword, source, 1);
 }

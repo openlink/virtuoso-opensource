@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -25,7 +25,13 @@
  *
  */
 
+%pure-parser
+%parse-param {yyscan_t scanner}
+%lex-param {yyscan_t scanner}
+/*%parse-param {sql_comp_context_t* scs_arg}*/
+/*%lex-param {sql_comp_context_t* scs_arg}*/
 %expect 18
+
 
 %{
 
@@ -55,8 +61,8 @@
 #define obe_keyword_to_bif_fun_name(X) ((X))
 
 #ifdef DEBUG
-#define yyerror(strg) yyerror_1(yystate, yyssa, yyssp, strg)
-#define yyfatalerror(strg) yyfatalerror_1(yystate, yyssa, yyssp, strg)
+#define yyerror(scanner,strg) yyerror_1(/* no scanner */ yystate, yyssa, yyssp, strg)
+#define yyfatalerror(strg) yyfatalerror_1(/* no scanner */ yyssa, yyssp, strg)
 #endif
 
 #define assert_ms_compat(text)
@@ -353,6 +359,8 @@
 %type <tree> ordering_spec
 %type <list> ordering_spec_commalist
 %type <box> opt_order_by_clause
+%type <box> grouping_set
+%type <list> grouping_set_list
 
 %type <tree> trigger_def
 %type <tree> trig_action
@@ -514,6 +522,7 @@
 %type <tree> alter_type_action
 %type <box> array_modifier
 %type <tree> cost_decl
+%type <tree> vectored_decl
 %type <list> cost_number_list
 %type <box> cost_number
 %type <tree> cluster_def
@@ -532,12 +541,16 @@
 %type <box> opt_index
 %type <list> colnum_commalist_2
 %type <box> colnum_commalist
+%type <list> vectored_list
+%type <tree> vectored_var
+%type <intval> opt_modify
+
 
 %token <box> TYPE FINAL_L METHOD CHECKED SYSTEM GENERATED SOURCE RESULT LOCATOR INSTANCE_L CONSTRUCTOR SELF_L OVERRIDING STYLE SQL_L GENERAL DETERMINISTIC NO_L CONTAINS READS DATA DISABLE_L NOVALIDATE_L ENABLE_L VALIDATE_L
-%token <box> MODIFIES INPUT CALLED ADA C COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
+%token <box> MODIFIES INPUT CALLED ADA C_L3 COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __TAG_L RDF_BOX_L VECTOR_L
+%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -561,16 +574,16 @@
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOREIGN FOUND FROM GOTO GO
-%token GRANT GROUP GROUPING HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
+%token GRANT GROUP GROUPING_L HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
 %token IS KEY LANGUAGE ENCODING LIKE NULLX NUMERIC OF ON OPEN OPTION
 %token PRECISION PRIMARY PRIVILEGES PROCEDURE
 %token PUBLIC REAL REFERENCES RESTRICT ROLLBACK ROLLUP SCHEMA SELECT SET
 %token SMALLINT SOME SQLCODE SQLERROR TABLE TO UNION
 %token UNIQUE UPDATE USER VALUES VIEW WHENEVER WHERE WITH WORK WITHOUT_L
-%token ARRAY
+%token ARRAY SETS
 
 /* Extensions */
-%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L
+%token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -716,87 +729,88 @@ schema_element
 
 identifier
 	: NAME { $$ = $1; }
-	| TYPE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| FINAL_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| METHOD { $$ = t_sqlp_box_id_upcase (yytext); }
-	| CHECKED { $$ = t_sqlp_box_id_upcase (yytext); }
-	| SYSTEM { $$ = t_sqlp_box_id_upcase (yytext); }
-	| GENERATED { $$ = t_sqlp_box_id_upcase (yytext); }
-	| SOURCE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| RESULT { $$ = t_sqlp_box_id_upcase (yytext); }
-	| LOCATOR { $$ = t_sqlp_box_id_upcase (yytext); }
-	| INSTANCE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| CONSTRUCTOR { $$ = t_sqlp_box_id_upcase (yytext); }
-	| SELF_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| OVERRIDING { $$ = t_sqlp_box_id_upcase (yytext); }
-	| STYLE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| SQL_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| GENERAL { $$ = t_sqlp_box_id_upcase (yytext); }
-	| DETERMINISTIC { $$ = t_sqlp_box_id_upcase (yytext); }
-	| NO_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| DISABLE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| NOVALIDATE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| VALIDATE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| ENABLE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| CONTAINS { $$ = t_sqlp_box_id_upcase (yytext); }
-	| READS { $$ = t_sqlp_box_id_upcase (yytext); }
-	| DATA { $$ = t_sqlp_box_id_upcase (yytext); }
-	| MODIFIES { $$ = t_sqlp_box_id_upcase (yytext); }
-	| INPUT { $$ = t_sqlp_box_id_upcase (yytext); }
-	| CALLED { $$ = t_sqlp_box_id_upcase (yytext); }
-	| ADA { $$ = t_sqlp_box_id_upcase (yytext); }
-	| C { $$ = t_sqlp_box_id_upcase (yytext); }
-	| COBOL { $$ = t_sqlp_box_id_upcase (yytext); }
-	| FORTRAN { $$ = t_sqlp_box_id_upcase (yytext); }
-	| MUMPS { $$ = t_sqlp_box_id_upcase (yytext); }
-	| PASCAL_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| PLI { $$ = t_sqlp_box_id_upcase (yytext); }
-	| NAME_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| TEXT_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| JAVA { $$ = t_sqlp_box_id_upcase (yytext); }
-	| INOUT_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| REMOTE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| KEYSET { $$ = t_sqlp_box_id_upcase (yytext); }
-	| VALUE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| PARAMETER { $$ = t_sqlp_box_id_upcase (yytext); }
-	| VARIABLE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| CLR { $$ = t_sqlp_box_id_upcase (yytext); }
-	| TEMPORARY { $$ = t_sqlp_box_id_upcase (yytext); }
-	| ADMIN_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_DOC { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_DOCW { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_HEADER { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_HTTP { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_NAME { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_TYPE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_XML_TYPE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_FAULT { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_DIME_ENC { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_ENC_MIME { $$ = t_sqlp_box_id_upcase (yytext); }
-	| __SOAP_OPTIONS { $$ = t_sqlp_box_id_upcase (yytext); }
-	| START_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| ATTRIBUTE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| REXECUTE { $$ = t_sqlp_box_id_upcase (yytext); }
-	| PERMISSION_SET { $$ = t_sqlp_box_id_upcase (yytext); }
-	| AUTOREGISTER_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| LIBRARY_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| ASSEMBLY_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| SAFE_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| UNRESTRICTED_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| INCREMENT_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| FOREACH { $$ = t_sqlp_box_id_upcase ($1); }
-	| POSITION_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| TRANSACTION_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| ISOLATION_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| LEVEL_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| READ_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| COMMITTED_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| UNCOMMITTED_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| REPEATABLE_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| SERIALIZABLE_L { $$ = t_sqlp_box_id_upcase ($1); }
-	| __TAG_L { $$ = t_sqlp_box_id_upcase ("__tag"); }
-	| RDF_BOX_L { $$ = t_sqlp_box_id_upcase (yytext); }
-	| VECTOR_L { $$ = t_sqlp_box_id_upcase (yytext); }
+	| TYPE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| FINAL_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| METHOD		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| CHECKED		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SYSTEM		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| GENERATED		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SOURCE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| RESULT		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| LOCATOR		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| INSTANCE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| CONSTRUCTOR		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SELF_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| OVERRIDING		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| STYLE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SQL_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| GENERAL		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| DETERMINISTIC		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| NO_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| DISABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| NOVALIDATE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| VALIDATE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ENABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| CONTAINS		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| READS			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| DATA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| MODIFIES		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| INPUT			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| CALLED		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ADA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| C_L3			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| COBOL			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| FORTRAN		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| MUMPS			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| PASCAL_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| PLI			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| NAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| TEXT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| JAVA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| INOUT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| REMOTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| KEYSET		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| VALUE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| PARAMETER		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| VARIABLE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| CLR			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| TEMPORARY		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ADMIN_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_DOC		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_DOCW		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_HEADER		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_HTTP		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_NAME		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_TYPE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_XML_TYPE	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_FAULT		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_DIME_ENC	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_ENC_MIME	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __SOAP_OPTIONS	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| START_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ATTRIBUTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| REXECUTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| PERMISSION_SET	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| AUTOREGISTER_L	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| LIBRARY_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ASSEMBLY_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SAFE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| UNRESTRICTED_L	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| INCREMENT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| FOREACH		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| POSITION_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| TRANSACTION_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| ISOLATION_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| LEVEL_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| READ_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| COMMITTED_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| UNCOMMITTED_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| REPEATABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| SERIALIZABLE_L	{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| __TAG_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| RDF_BOX_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| VECTOR_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| UNAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 opt_with_data
@@ -815,7 +829,7 @@ base_table_opt
 base_table_def
 	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt
 		{ $$ = t_listst (4, TABLE_DEF, $3,
-				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), $7); }
+				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
 		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
 	;
@@ -847,7 +861,7 @@ opt_referential_triggered_action
 			  caddr_t *l  = (caddr_t *)$1;
 			  caddr_t *ll = (caddr_t *)$2;
 			if (l[0] == ll [0])
-			  yyerror ("duplicated referential actions");
+			  yyerror (scanner,"duplicated referential actions");
 			$$ = (l[0] ? t_listst (2, ll[1], l[1]) : t_listst (2, l[1], ll[1]));
 		      }
 	;
@@ -923,7 +937,8 @@ column_def_opt
 	| NULLX			{ $$ = (ST *) NULL; }
 	| IDENTITY		{ $$ = (ST *) CO_IDENTITY; }
 	| IDENTITY '(' identity_opt_list ')'		{ $$ = t_listst (2, CO_IDENTITY, t_list_to_array ($3)); }
-	| PRIMARY KEY		 { $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, (ST *) 0); }
+	| PRIMARY KEY '('opt_index_option_list ')'	{ $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, $4); }
+	| PRIMARY KEY 		 { dk_set_t opts = sqlp_index_default_opts (NULL); caddr_t * oa = opts ? (caddr_t*)t_list_to_array (opts) : NULL; $$ = t_listst (5, INDEX_DEF, NULL, NULL, NULL, oa); }
 	| compression_spec { $$ = $1; }
 	| DEFAULT signed_literal	{ $$ = t_listst (2, COL_DEFAULT, $2); }
 	| COLLATE q_table_name	{ $$ = t_listst (2, COL_COLLATE, $2); }
@@ -940,8 +955,12 @@ column_def_opt
 		      NULL );
 		  $$ = t_listst (3, CHECK_XMLSCHEMA_CONSTR, check, NULL);
 		}
-	| UNIQUE		 { $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
-					    (ST *) t_list (1, t_box_string ("unique"))); }
+	| UNIQUE		 { dk_set_t opts = t_CONS (t_box_string ("unique"), sqlp_index_default_opts (NULL));
+	   $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
+			  t_list_to_array (opts) ); }
+	| UNIQUE '(' index_option_list ')'		 {  dk_set_t opts = t_CONS (t_box_string ("unique"), $3);
+	   $$ = t_listst (5, UNIQUE_DEF, NULL, NULL, NULL,
+			  (ST *) t_list_to_array (opts)); }
 	;
 
 column_xml_schema_def
@@ -989,7 +1008,10 @@ index_option
 	| OBJECT_ID	{ $$ = t_box_string ("object_id"); }
 	| BITMAPPED 	{ $$ = t_box_string ("bitmap"); }
 	| DISTINCT { $$ = t_box_string ("distinct"); }
-	| COLUMN { $$ = t_box_string ("column"); }
+	| COLUMN 		{
+				    $$ = t_box_string (sqlp_inx_col_opt ());
+				}
+	| NOT COLUMN { $$ = t_box_string ("not_column"); }
 	| NOT NULLX { $$ = t_box_string ("not_null"); }
 	| NO_L PRIMARY KEY REF { $$ = t_box_string ("no_pk"); }
 	| INDEX_NO_FILL { $$ = t_box_string ("no_fill"); }
@@ -1001,8 +1023,8 @@ index_option_list
 	;
 
 opt_index_option_list
-	: /* empty */		{ $$ = (ST *) 0; }
-	| index_option_list	{ $$ = (ST *) t_list_to_array ($1); }
+	: /* empty */		{ dk_set_t deflt = sqlp_index_default_opts (NULL); if (deflt) $$ = (ST *) t_list_to_array (deflt); else $$ = NULL; }
+	| index_option_list	{ $$ = (ST *) t_list_to_array (sqlp_index_default_opts ($1)); }
 	;
 
 create_index_def
@@ -1109,7 +1131,7 @@ alter_constraint
 	else if (c->type == CHECK_CONSTR)
 	  c->type = 3;
 	else
-	  yyerror ("ALTER TABLE constraint must be foreign key, primary key, unique or check");
+	  yyerror (scanner,"ALTER TABLE constraint must be foreign key, primary key, unique or check");
 	$$ = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("DB.DBA.ddl_alter_constr"),
 		   t_list (3, $3, (ptrlong) $4, t_list (2, QUOTE, $5))); }
 	;
@@ -1150,8 +1172,9 @@ view_def
                 { $$ = $5; $$->_.view_def.name = $3; }
 	| CREATE PROCEDURE VIEW new_table_name AS q_table_name '(' column_commalist_or_empty ')' '(' proc_col_list ')'
 		{ $$ = (ST*) t_list (5, VIEW_DEF, $4,
-		    t_list (4, PROC_TABLE, $6, $8,
-		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11)))),
+		    t_list (5, PROC_TABLE, $6, $8,
+		      t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($4, $11))),
+		      NULL ),
 		    NULL, NULL); }
 	;
 
@@ -1409,9 +1432,9 @@ ordering_spec_commalist
 
 ordering_spec
 	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (3, ORDER_BY, (caddr_t) $1, (ptrlong) $2);  }
+		{ $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);  }
 	|  mssql_xml_col opt_asc_desc
-		{ $$ = (ST*) t_list (3, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2); }
+		{ $$ = (ST*) t_list (4, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2, NULL); }
 	;
 
 opt_asc_desc
@@ -1502,7 +1525,7 @@ create_freetext_index
 		      t_list (9, $6, t_box_string ($8), $10, $3, $11, t_list(2, QUOTE, $12), $13, $14, $15));
 /*		}
 	      else
-		yyerror ("Not a text index");*/
+		yyerror (scanner,"Not a text index");*/
 	    }
 	;
 
@@ -1684,7 +1707,14 @@ sql_option
 	| SAME_AS { $$ = t_CONS (OPT_SAME_AS, t_CONS (1, NULL)); }
 	| ARRAY { $$ = t_CONS (OPT_ARRAY, t_CONS (1, NULL)); }
 	| HASH { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_HASH, NULL)); }
+	| HASH SET INTNUM  { $$ = t_CONS (OPT_HASH_SET, t_CONS ($3, NULL)); }
+	| HASH PARTITION column { $$ = t_CONS (OPT_HASH_PARTITION, t_CONS ( $3, NULL)); }
+	| HASH REPLICATION { $$ = t_CONS (OPT_HASH_REPLICATION, t_CONS ((ptrlong)1, NULL)); }
+	| ISOLATION_L txn_isolation_level { $$ = t_CONS (OPT_ISOLATION, t_CONS ( $2, NULL)); }
 	| INTERSECT { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_INTERSECT, NULL)); }
+	| NO_L __LOCK { $$ = t_CONS (OPT_NO_LOCK, t_CONS (1, NULL)); }
+	|  FOR UPDATE { $$ = t_CONS (OPT_NO_LOCK, t_CONS (2, NULL)); }
+	| __LOCK { $$ = t_CONS (OPT_NO_LOCK, t_CONS (3, NULL)); }
 	| LOOP { $$ = t_CONS (OPT_JOIN, t_CONS (OPT_LOOP, NULL)); }
 	| LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_LOOP, NULL)); }
 	| DO NOT LOOP EXISTS { $$ = t_CONS (OPT_SUBQ_LOOP, t_CONS (SUBQ_NO_LOOP, NULL)); }
@@ -1694,12 +1724,33 @@ sql_option
 	| INDEX_ONLY { $$ = t_CONS (OPT_INDEX_ONLY, t_CONS (t_box_num (1), NULL)); }
 	| WITH STRING { $$ = t_CONS (OPT_RDF_INFERENCE, t_CONS ($2, NULL)); }
 	| NO_L CLUSTER { $$ = t_CONS (OPT_NO_CLUSTER, t_CONS (1, NULL)); }
+	| NO_L IDENTITY { $$ = t_CONS (OPT_NO_IDENTITY, t_CONS (1, NULL)); }
+	| NO_L TRIGGER { $$ = t_CONS (OPT_NO_TRIGGER, t_CONS (1, NULL)); }
+	| TRIGGER { $$ = t_CONS (OPT_TRIGGER, t_CONS (1, NULL)); }
 	| INTO scalar_exp { $$ = t_CONS (OPT_INTO, t_CONS ($2, NULL)); }
+	| FETCH column_ref BY scalar_exp SET column_ref { $$ = t_cons ((void*)OPT_INS_FETCH, t_cons (t_list (4, OPT_INS_FETCH, $2, $4, $6), NULL)); }
+| INDEX ORDER { $$ = t_cons ((void*)OPT_INDEX_ORDER, t_cons ((void*)1, NULL)); }
+	| VECTORED { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)1, NULL)); }
+	| VECTORED INTNUM { $$ = t_cons ((void*)OPT_VECTORED, t_cons ((void*)$2, NULL)); }
+	| PARTITION GROUP BY { $$ = t_cons ((void*)OPT_PART_GBY, t_cons ((void*)1, NULL)); }
+	| DO NOT PARTITION GROUP BY { $$ = t_cons ((void*)OPT_NO_PART_GBY, t_cons ((void*)1, NULL)); }
+	| CHECK { $$ = t_cons ((void*)OPT_CHECK, t_cons ((void*)1, NULL)); }
+	| WITHOUT_L VECTORING { $$ = t_cons ((void*)OPT_NOT_VECTORED, t_cons ((void*)1, NULL)); }
+	| PARTITION NAME { $$ = t_cons ((void*)OPT_PARTITION, t_cons ((void*)$2, NULL)); }
+	| FROM scalar_exp { $$ = t_cons ((void*)OPT_FROM_FILE, t_cons ((void*)$2, NULL)); }
+	| START_L scalar_exp { $$ = t_cons ((void*)OPT_FILE_START, t_cons ((void*)$2, NULL)); }
+	| ENDX scalar_exp { $$ = t_cons ((void*)OPT_FILE_END, t_cons ((void*)$2, NULL)); }
 	| NAME INTNUM {
 	  if (!stricmp ($1, "vacuum"))
 	    $$ = t_CONS (OPT_VACUUM, t_CONS ($2, NULL));
 	  else if (!stricmp ($1, "RANDOM"))
 	    $$ = t_CONS (OPT_RANDOM_FETCH, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "PARALLEL"))
+	    $$ = t_CONS (OPT_PARALLEL, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_TIME"))
+	    $$ = t_CONS (OPT_EST_TIME, t_CONS ($2, NULL));
+	  else if (!stricmp ($1, "EST_SIZE"))
+	    $$ = t_CONS (OPT_EST_SIZE, t_CONS ($2, NULL));
 	  else
 	    $$ = NULL;
 	}
@@ -1772,7 +1823,7 @@ selectinto_statement
 		      t_list (4, OPEN_STMT, t_box_string (tmp_cr), $7, NULL),
 		      t_list (5, FETCH_STMT, t_box_string (tmp_cr), t_list_to_array ($5), (ptrlong) _SQL_FETCH_NEXT, NULL),
 		      t_list (2, CLOSE_STMT, t_box_string (tmp_cr))),
-                    t_box_num (scn3_lineno),
+                    t_box_num (global_scs->scs_scn3c.lineno),
                     t_box_num (scn3_get_lineno()),
                     t_box_string (scn3_get_file_name()));
 		}
@@ -2017,15 +2068,15 @@ query_spec
 
 
 breakup_term
-	: '(' select_scalar_exp_commalist  ')' { $$ = dk_set_conc ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
+	: '(' select_scalar_exp_commalist  ')' { $$ = t_NCONC ($2, t_CONS (t_list (5, BOP_AS, (ptrlong) 1, NULL, t_box_string ("__brkup_cond"), NULL), NULL)); }
 	| '(' select_scalar_exp_commalist WHERE search_condition ')' {
 	  ST * cond = (ST*) t_list (5, BOP_AS, t_list (2, SEARCHED_CASE, t_list (4, $4, (caddr_t)1,  t_list (2, QUOTE, NULL), 0)), NULL, t_box_string ("__brkup_cond"), NULL);
-	  $$ = dk_set_conc ($2, t_CONS (cond, NULL)); }
+	  $$ = t_NCONC ($2, t_CONS (cond, NULL)); }
 	;
 
 breakup_list
-	: breakup_term { $$ = t_CONS ($1, NULL);}
-	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS ($2, NULL)); }
+	: breakup_term { $$ = t_CONS (t_list_to_array ($1), NULL); }
+	| breakup_list breakup_term { $$ = t_NCONC ($1, t_CONS (t_list_to_array ($2), NULL)); }
 	;
 
 selection
@@ -2102,9 +2153,9 @@ table_ref
 		}
 	| joined_table
 		{ $$ = t_listbox (3, TABLE_REF,$1, (caddr_t) NULL); }
-        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier
+        | q_table_name '(' column_commalist_or_empty ')' opt_proc_col_list identifier opt_table_opt
 		{
-		  $$ =  t_listbox (3, DERIVED_TABLE, t_list (4, PROC_TABLE, $1, $3, $5), $6);
+		  $$ = t_listbox (3, DERIVED_TABLE, t_list (5, PROC_TABLE, $1, $3, $5, $7), $6);
 		}
 	;
 
@@ -2172,12 +2223,34 @@ where_clause
 	: WHERE search_condition	{ $$ = $2; }
 	;
 
+grouping_set
+	: '(' ordering_spec_commalist ')' { $$ = (caddr_t) t_list_to_array ($2); }
+	| ORDER BY opt_top '(' ordering_spec_commalist ')'
+		{
+			caddr_t oby = (caddr_t) $3;
+			ST *o_spec = (ST *) ($5)->data;
+			if (!oby) oby = (caddr_t) (ptrlong) 1;
+		        o_spec->_.o_spec.gsopt = (ST *) oby;
+			$$ = (caddr_t) t_list_to_array ($5);
+		}
+	| '(' ')' { $$ = (caddr_t) t_list (0); }
+	;
+
+grouping_set_list
+	: grouping_set { $$ = t_CONS ($1, NULL); }
+	| grouping_set_list ',' grouping_set { $$ = t_NCONC ($1, t_CONS ($3, NULL));  }
+	;
+
 opt_group_by_clause
 	: /* empty */				{ $$ = NULL; }
 	| GROUP BY ordering_spec_commalist
 		{
 			$$ = (ST*) t_list_to_array(t_CONS (t_list_to_array ($3), NULL));
 		}
+	| GROUP BY GROUPING_L SETS '(' grouping_set_list ')'
+		{
+			$$ = (ST *) t_list_to_array ($6);
+ 		}
 	| GROUP BY ROLLUP '(' ordering_spec_commalist ')'
 		{
 			dk_set_t group_by_full = 0;
@@ -2413,7 +2486,7 @@ scalar_exp
 	| scalar_exp '*' scalar_exp	{ BIN_OP ($$, BOP_TIMES, $1, $3) }
 	| scalar_exp '/' scalar_exp	{ BIN_OP ($$, BOP_DIV, $1, $3) }
 	| '+' scalar_exp %prec UMINUS	{ $$ = $2; }
-	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ((caddr_t)($2))) $$ = sqlp_minus ((caddr_t)($2));
+	| '-' scalar_exp %prec UMINUS	{ if (sqlp_is_num_lit ((caddr_t)($2))) $$ = (ST *) sqlp_minus ((caddr_t)($2));
 				          else BIN_OP ($$, BOP_MINUS, (ST*) t_box_num (0), $2) }
 	| assignment_statement
 	| string_concatenation_operator
@@ -2471,7 +2544,7 @@ scalar_exp_no_col_ref_no_mem_obs_chain
 cvt_exp
 	: CONVERT '(' data_type ',' scalar_exp ')'
 		{
-		  ST *dtype = t_list (2, QUOTE, $3);
+		  ST *dtype = (ST *) t_list (2, QUOTE, $3);
 		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($5);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
 		    t_list (2, dtype, expn_to_cast) );
@@ -2488,7 +2561,7 @@ opt_collate_exp
 cast_exp
 	: CAST '(' scalar_exp AS data_type opt_collate_exp ')'
 		{
-		  ST *dtype = t_list (2, QUOTE, $5);
+		  ST *dtype = (ST *) t_list (2, QUOTE, $5);
 		  ST *expn_to_cast = sqlp_wrapper_sqlxml_assign ($3);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("_cvt"),
 		    t_list ($6 == NULL ? 2 : 3, dtype, expn_to_cast, $6) );
@@ -2600,6 +2673,7 @@ function_call
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ($1 == SQL_FN_TIMESTAMPADD ? "timestampadd" : "timestampdiff"),
 		      t_listst (3, t_box_num($3), $5, $7));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| EXTRACT '(' NAME FROM scalar_exp ')'
 		{
@@ -2608,22 +2682,27 @@ function_call
 		      t_listst (2, t_box_string ($3), $5));
 		}
 	| BEGIN_FN_X identifier '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X LEFT '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("left"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("left"), t_list_to_array ($4));
+		$$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X RIGHT '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("right"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("right"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X LOGX '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("log"), t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("log"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X identifier '(' scalar_exp IN_L scalar_exp ')' ENDX
 		{
 		  if (stricmp ($2, "POSITION"))
-		    yyerror ("syntax error");
+		    yyerror (scanner,"syntax error");
 		  $$ = t_listst (3, CALL_STMT, $2,
 		      t_listst (2, $4, $6));
 		}
 	| BEGIN_CALL_X function_name  '(' opt_scalar_exp_commalist ')' ENDX
-		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4)); }
+		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_CALL_X function_name ENDX
 		{ $$ = t_listst (3, CALL_STMT, $2, t_list_to_array (NULL)); }
 	| BEGIN_FN_X USER '(' opt_scalar_exp_commalist ')' ENDX
@@ -2631,36 +2710,40 @@ function_call
 			t_sqlp_box_id_upcase ("get_user"), t_list_to_array ($4)); }
 	| BEGIN_FN_X CHARACTER '(' opt_scalar_exp_commalist ')' ENDX
 		{ $$ = t_listst (3, CALL_STMT,
-			t_sqlp_box_id_upcase ("chr"), t_list_to_array ($4)); }
+			t_sqlp_box_id_upcase ("chr"), t_list_to_array ($4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);}
 	| BEGIN_FN_X TIMESTAMP_FUNC '(' SQL_TSI ',' scalar_exp ',' scalar_exp ')' ENDX
 		{
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ($2 == SQL_FN_TIMESTAMPADD ? "timestampadd" : "timestampdiff"),
 		      t_listst (3, t_box_num($4), $6, $8));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_FN_X CONVERT '(' scalar_exp ',' NAME ')' ENDX
 		{
 		  caddr_t data_type = sqlc_convert_odbc_to_sql_type ($6);
 		  if (!data_type)
-		    yyerror ("Not valid data type in CONVERT ODBC Scalar function");
+		    yyerror (scanner,"Not valid data type in CONVERT ODBC Scalar function");
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ("_cvt"),
 		      t_listst (2, t_list (2, QUOTE, data_type), $4));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_FN_X EXTRACT '(' NAME FROM scalar_exp ')' ENDX
 		{
 		  $$ = t_listst (3, CALL_STMT,
 		      t_sqlp_box_id_upcase ("__extract"),
 		      t_listst (2, t_box_string ($4), $6));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| CALL '(' scalar_exp ')' '(' opt_arg_commalist ')'
 		{ $$ = t_listst (3, CALL_STMT, t_list (1, $3),
 			t_list_to_array ($6)); }
-	| CURRENT_DATE
+	| CURRENT_DATE opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdate"), t_list (0));
 		}
-	| CURRENT_TIME
+	| CURRENT_TIME opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (0));
 		}
@@ -2668,7 +2751,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curtime"), t_list (1, $3));
 		}
-	| CURRENT_TIMESTAMP
+	| CURRENT_TIMESTAMP opt_lpar_rpar
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (0));
 		}
@@ -2676,12 +2759,17 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (1, $3));
 		}
-	| GROUPING '(' column_ref ')'
+	| GROUPING_L '(' column_ref ')'
 		{
 		  caddr_t bit = t_box_num (0);
 		  caddr_t bit_index = t_box_num (0);
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__grouping"), t_list (3, $3, bit, bit_index));
 		}
+	;
+
+opt_lpar_rpar
+	: /* empty */
+	| '(' ')'
 	;
 
 /* the call return statement {?=call x [()]} */
@@ -2712,6 +2800,7 @@ obe_literal
 		{ $$ = t_listst (3, CALL_STMT,
 			t_sqlp_box_id_upcase (obe_keyword_to_bif_fun_name ($2)),
 			t_list (1, $3));
+		  $$ = sqlp_patch_call_if_special_or_optimizable ($$);
 		}
 	| BEGIN_U_X STRING ENDX
 		{ $$ = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("get_keyword"),
@@ -2804,7 +2893,7 @@ aggregate_ref
 		  $$ = sqlp_make_user_aggregate_fun_ref ($2, arglist, 1);
 		}
 /*	| AMMSC '(' '*' ')'			{ FN_REF ($$, $1, 0, 0); }*/
-	| AMMSC '(' DISTINCT scalar_exp ')'	{ FN_REF ($$, $1, 1, $4) }
+| AMMSC '(' DISTINCT scalar_exp opt_sql_opt ')'	{ FN_REF ($$, $1, 1, $4); $$->_.fn_ref.fn_arglist = $5; }
 	| AMMSC '(' ALL scalar_exp ')'		{ FN_REF ($$, $1, 0, $4) }
 	| AMMSC '(' scalar_exp ')'		{ FN_REF ($$, $1, 0, $3) }
 	;
@@ -2822,6 +2911,7 @@ literal
 	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
 	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
 	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
+	| __TAG_L OF UNAME_L { $$ = (caddr_t) DV_UNAME; }
 	;
 
 signed_literal
@@ -2955,7 +3045,7 @@ base_data_type
 		{ $$ = t_listst (2, (long) DV_SHORT_INT, (long) 0);
 		}
 	| BIGINT
-{ $$ = t_listst (3, (ptrlong) DV_INT64, t_box_num (19), t_box_num (0));
+		{ $$ = t_listst (3, (ptrlong) DV_INT64, t_box_num (19), t_box_num (0));
 		}
 	| FLOAT_L
 		{ $$ = t_listst (2, (long) DV_DOUBLE_FLOAT, (long) 0);
@@ -3037,12 +3127,15 @@ data_type
 	| VARCHAR
 		{ $$ = t_listst (2, (long) DV_LONG_STRING, (long) 0);
 		}
-	| VARCHAR '(' INTNUM ')'
-		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
-		}
 	| CHARACTER '(' INTNUM ')'
 		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
 		}
+	| VARCHAR '(' INTNUM ')'
+		{ $$ = t_listst (2, (long) DV_LONG_STRING, $3);
+		}
+/*	| UNAME_L
+		{ $$ = t_listst (2, (long) DV_UNAME, (long) 0);
+		}*/
 	;
 
 array_modifier
@@ -3166,20 +3259,6 @@ admin_statement
 	| LOGX OFF
 		{ $$ = t_listst (4, OP_LOG_OFF, NULL, NULL, NULL); }
 	;
-
-/* embedded condition things */
-/*
-sql
-	: WHENEVER NOT FOUND when_action
-	| WHENEVER SQLERROR when_action
-	;
-
-when_action
-	: GOTO identifier
-	| CONTINUE
-	;
-*/
-
 
 /* SQL Procedures */
 
@@ -3349,6 +3428,11 @@ cost_decl
 	;
 
 
+vectored_decl
+	: VECTORED { $$ = (ST *) t_list (1, OPT_VECTORED); }
+	;
+
+
 routine_statement
 	: selectinto_statement
 	| update_statement_positioned
@@ -3362,6 +3446,7 @@ routine_statement
 	| rollback_statement
 	| commit_statement
 	| cost_decl
+	| vectored_decl
 	| /* empty */				{ $$ = t_listst (1, NULL_STMT); }
 	;
 
@@ -3395,7 +3480,7 @@ statement_in_cs_oper
               t_list (2,
 		t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("http_value"), t_list (1, $2)),
 		t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("http"), t_list (1, $3))),
-              t_box_num (scn3_lineno),
+              t_box_num (global_scs->scs_scn3c.lineno),
               t_box_num (scn3_get_lineno ()),
               t_box_string (scn3_get_file_name ())
                ); }
@@ -3403,7 +3488,7 @@ statement_in_cs_oper
               t_list (2,
 		t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("http_url"), t_list (1, $2)),
 		t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("http"), t_list (1, $3))),
-              t_box_num (scn3_lineno),
+              t_box_num (global_scs->scs_scn3c.lineno),
               t_box_num (scn3_get_lineno ()),
               t_box_string (scn3_get_file_name ())
               ); }
@@ -3636,6 +3721,24 @@ for_opt_search_cond
 	| search_condition { $$ = $1; }
 	;
 
+vectored_var
+	: IN_L identifier data_type_ref EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, IN_MODE, t_listst (3, COL_DOTTED, NULL, $2), $3, $5); }
+	| OUT_L identifier EQUALS scalar_exp { $$ = t_listst (5, VECT_DECL, OUT_MODE, t_listst (3, COL_DOTTED, NULL, $2), NULL, $4); }
+	;
+
+vectored_list
+	: vectored_var
+		{ $$ = t_CONS ($1, NULL); }
+	| vectored_list ',' vectored_var
+		{ $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
+	;
+
+
+opt_modify
+	: /* empty */  { $$ = 0;}
+	| MODIFY { $$ = 1; }
+;
+
 for_statement
 	: FOR query_exp  DO statement
 		{ $$ = sqlp_for_statement ($2, $4); }
@@ -3643,6 +3746,8 @@ for_statement
 		{ $$ = sqlp_c_for_statement ((ST **) t_list_to_array ($3), $5, (ST **) t_list_to_array ($7), $9); }
 	| FOREACH '(' data_type_ref identifier IN_L scalar_exp ')' DO statement
 		{ $$ = sqlp_foreach_statement ($3, $4, $6, $9); }
+	| FOR VECTORED opt_modify '(' vectored_list ')' compound_statement { $$ = t_listst (4, FOR_VEC_STMT, t_list_to_array ($5), $7, (ptrlong) $3); }
+	| NOT VECTORED compound_statement { $$ = t_listst (4, NOT_VEC_STMT, NULL, $3, NULL); }
 	;
 
 trigger_def
@@ -3730,7 +3835,7 @@ opt_element
 xml_col
 	: column_ref	 {
 	  if ($1->_.col_ref.name == STAR)
-	    yyerror ("No stars allowed inside XML view definition");
+	    yyerror (scanner,"No stars allowed inside XML view definition");
 	  else
 /*mapping schema*/
 	    $$ = (ST*) t_list (5, $1, box_dv_uname_string ($1->_.col_ref.name), XV_XC_ATTRIBUTE, NULL, NULL);
@@ -3855,7 +3960,7 @@ opt_publish
 	| PUBLIC STRING identifier STRING opt_persist opt_interval opt_metas
 	   {
 	     if (stricmp ($3, "OWNER") && stricmp ($3, "NAME"))
-	       yyerror ("syntax error at WebDAV OWNER keyword");
+	       yyerror (scanner,"syntax error at WebDAV OWNER keyword");
 	     $$ = (ST*) t_list (5, $2, $4, $5, $6, $7);
 	   }
 	;
@@ -3870,7 +3975,7 @@ xmlview_param
         : NAME COMPARISON xmlview_param_value
             {
               if ($2 != BOP_EQ)
-		yyerror ("'=' expected");
+		yyerror (scanner,"'=' expected");
 	      $$ = (ST *) t_list (2, $1, $3);
             }
 	;
@@ -4167,7 +4272,7 @@ method_characteristic
 	| PARAMETER STYLE GENERAL      { $$ = NULL; /* no action for now */ }
 	| DETERMINISTIC                { $$ = NULL; /* no action for now */ }
 	| NOT DETERMINISTIC            { $$ = NULL; /* no action for now */ }
-	| NO_L SQL_L                     { $$ = NULL; /* no action for now */ }
+	| NO_L SQL_L                   { $$ = NULL; /* no action for now */ }
 	| CONTAINS SQL_L               { $$ = NULL; /* no action for now */ }
 	| READS SQL_L DATA             { $$ = NULL; /* no action for now */ }
 	| MODIFIES SQL_L DATA          { $$ = NULL; /* no action for now */ }
@@ -4179,13 +4284,13 @@ method_characteristic
 	;
 
 external_language_name
-	: ADA     { yyerror ("Language ADA not supported"); }
-	| C       { $$ = UDT_LANG_C; }
-	| COBOL   { yyerror ("Language COBOL not supported"); }
-	| FORTRAN { yyerror ("Language FORTRAN not supported"); }
-	| MUMPS   { yyerror ("Language MUMPS not supported"); }
-	| PASCAL_L { yyerror ("Language PASCAL not supported"); }
-	| PLI     { yyerror ("Language PLI not supported"); }
+	: ADA     { yyerror (scanner,"Language ADA not supported"); }
+	| C_L3    { $$ = UDT_LANG_C; }
+	| COBOL   { yyerror (scanner,"Language COBOL not supported"); }
+	| FORTRAN { yyerror (scanner,"Language FORTRAN not supported"); }
+	| MUMPS   { yyerror (scanner,"Language MUMPS not supported"); }
+	| PASCAL_L { yyerror (scanner,"Language PASCAL not supported"); }
+	| PLI     { yyerror (scanner,"Language PLI not supported"); }
 	| JAVA    { $$ = UDT_LANG_JAVA; }
 	| CLR    { $$ = UDT_LANG_CLR; }
 	;
@@ -4303,7 +4408,7 @@ member_observer_no_id_chain
 
 method_identifier
 	: identifier { $$ = $1; }
-	| EXTRACT { $$ = t_sqlp_box_id_upcase (yytext); }
+	| EXTRACT { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 new_invocation
@@ -4381,7 +4486,7 @@ col_partition
 
 
 host
-	: NAME { $$ = $1; if (!cl_name_to_host ($1)) yyerror ("undefined host name in cluster def"); }
+	: NAME { $$ = $1; if (!cl_name_to_host ($1)) yyerror (scanner,"undefined host name in cluster def"); }
 	;
 
 host_list
@@ -4406,18 +4511,21 @@ host_group
 
 
 host_group_list
-	: host_group { $$ = t_CONS ($1, NULL); }
+	: ALL { $$ = cl_all_host_group_list (); }
+	| host_group { $$ = t_CONS ($1, NULL); }
 	| host_group_list ',' host_group { $$ = t_NCONC ($1, t_CONS ($3, NULL)); }
 	;
 
 opt_modulo
 	: { $$ = NULL; }
+	| __ELASTIC INTNUM INTNUM { $$ = list (3, OPT_ELASTIC, $2, $3); }
 	| DEFAULT { $$ = (caddr_t) 1;}
 	;
 
 cluster_def
 	: CREATE	 CLUSTER NAME opt_modulo host_group_list
-{ $$ = t_listst (4, CLUSTER_DEF, t_box_string ($3), $4, t_list_to_array ($5)); }
+	{ if (strlen ($3) >= DBS_NAME_MAX_LEN) yyerror (scanner,"cluster name too long");
+	  $$ = t_listst (4, CLUSTER_DEF, t_box_string ($3), $4, t_list_to_array ($5)); }
 	;
 
 col_part_commalist
@@ -4430,7 +4538,7 @@ col_part_list
 	| '(' col_part_commalist ')' { $$ = $2; }
 	;
 opt_cluster
-	: { $$ = t_sym_string  ("__ALL"); }
+	: { $$ = t_sym_string  (sqlp_default_cluster ()); }
 	| CLUSTER  NAME { $$ = $2; }
 	;
 

@@ -1,0 +1,293 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="http_tcn_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Content Negotiation rules</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="del_item" default="null" type="int" param-name="del"/>
+      <v:variable name="edit_item" default="null" type="int" param-name="edit"/>
+      <v:variable name="rulelist" default="null" type="varchar" persist="0" param-name="rule_list"/>
+      <v:variable name="child_rulelist" default="null" type="varchar" persist="0" param-name="crl"/>
+
+      <v:variable name="vhost" default="null" type="varchar" persist="0" param-name="vhost"/>
+      <v:variable name="lhost" default="null" type="varchar" persist="0" param-name="lhost"/>
+      <v:variable name="lpath" default="null" type="varchar" persist="0" param-name="lpath"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Content Negotiation rules"/>
+    </vm:menu>
+    <vm:rawheader>
+      <h1 class="page_title">
+        Content Negotiation rules for <?V self.lpath ?>
+      </h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <vm:help id="url_rewrite" sect=""/>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <br />
+            <table cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url1" value="URL rewrite rules" format="%s"
+                         url="--sprintf ('http_url_rewrite.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
+                </td>
+                <td class="page_tab_selected" align="center" nowrap="1">
+                  Content negotiation
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <!-- tab -->
+                  <table class="listing" rules="groups">
+                    <tr class="listing_header_row">
+                      <th>URI</th>
+                      <th>Variant</th>
+                      <th>Description</th>
+                      <th class="action">Action</th>
+                    </tr>
+                    <v:data-set name="maps"
+                                sql="select VM_ID, VM_URI, VM_VARIANT_URI, VM_QS, VM_TYPE, VM_LANG, VM_ENC, VM_DESCRIPTION
+                                       from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = :self.rulelist order by VM_ID"
+                                scrollable="1"
+                                editable="1"
+                                nrows="1000">
+                      <v:before-data-bind>
+                        <![CDATA[
+                          if (not e.ve_is_post and self.del_item is not null)
+                            delete from DB.DBA.HTTP_VARIANT_MAP where VM_ID = self.del_item;
+                        ]]>
+                      </v:before-data-bind>
+
+                      <v:template name="maps_rep" type="repeat">
+                        <v:template name="template7" type="if-not-exists">
+                          <tr>
+                            <td colspan="4">
+                              No variants defined
+                            </td>
+                          </tr>
+                        </v:template>
+
+                        <v:template name="maps_brows" type="browse">
+                          <v:after-data-bind>
+                            if (not e.ve_is_post and control.te_rowset[0] = self.edit_item)
+                            {
+                              self.ruri1.ufl_value := control.te_rowset[1];
+                              self.vuri1.ufl_value := control.te_rowset[2];
+                              self.ct1.ufl_value := control.te_rowset[4];
+                              self.lang1.ufl_value := control.te_rowset[5];
+                              self.cs1.ufl_value := control.te_rowset[6];
+                              self.desc1.ufl_value := control.te_rowset[7];
+                              self.qs1.ufl_value := sprintf ('%.3f', control.te_rowset[3]);
+                              self.qs1.vs_set_selected ();
+                            }
+                          </v:after-data-bind>
+                          <tr class="<?V case when self.edit_item = control.te_rowset[0] then 'listing_row_selected' when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                            <td>
+                              <v:url name="ur1"
+                                value='--concat (&apos;<img src="images/icons/edit_16.png" hspace="3" border="0"/>&apos;, (control.vc_parent as vspx_row_template).te_rowset[1])'
+                                format="%110.110s"
+                                url="--sprintf ('http_tcn.vspx?edit=%d&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U',
+                                    (control.vc_parent as vspx_row_template).te_rowset[0],
+                                    self.rulelist, self.lhost, self.vhost, self.lpath)"
+                                xhtml_title="Edit"
+                                xhtml_alt="Edit"
+                              />
+                            </td>
+                            <td>
+                              <v:label name="la3" format="%s"
+                                       value="--sprintf ('%s qs=%.2f', (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])" />
+                            </td>
+                            <td>
+                              <v:label name="la2" format="%50.50s" value="--coalesce ((control.vc_parent as vspx_row_template).te_rowset[7], '')" />
+                              <?vsp if (length (control.te_rowset[7]) > 50) http ('...'); ?>
+                            </td>
+                            <td class="action">
+                              &nbsp;
+                              <v:url name="ur2" value='<img src="images/icons/del_16.png" hspace="3" border="0"/>Delete'
+                                format="%s"
+                                url="--sprintf ('http_tcn.vspx?del=%d&amp;rule_list=%U&amp;lhost=%U&amp;vhost=%U&amp;lpath=%U',
+                                    (control.vc_parent as vspx_row_template).te_rowset[0],
+                                    self.rulelist, self.lhost, self.vhost, self.lpath)"
+                                xhtml_title="Delete"
+                                xhtml_alt="Delete"
+                              />
+                            </td>
+                          </tr>
+                        </v:template>
+                      </v:template>
+
+                      <v:template name="maps_footer" type="simple">
+                        <tr>
+                          <td colspan="4" class="listing_col_action">
+                            <vm:ds-navigation data-set="maps" type="set" />
+                          </td>
+                        </tr>
+                      </v:template>
+                    </v:data-set>
+
+                  </table>
+
+                  <v:form name="fm1" type="simple" method="POST">
+                    <div class="fm">
+                      <fieldset>
+                        <label for="ruri1">Requested Resource</label>
+                        <v:text name="ruri1" value="" xhtml_id="ruri1" error-glyph="*" xhtml_size="110" default_value="" />
+                        <br/>
+
+                        <label for="vuri1">Variant URI</label>
+                        <v:text name="vuri1" value="" xhtml_size="110" xhtml_id="vuri1" error-glyph="*" />
+                        <br />
+
+                        <label for="qs1">Source Quality</label>
+                        <v:select-list name="qs1" value="0" xhtml_id="qs1" error-glyph="*">
+                          <v:item name="perfect representation" value="1.000"/>
+                          <v:item name="threshold of noticeable loss of quality" value="0.900"/>
+                          <v:item name="noticeable, but acceptable quality reduction" value="0.800"/>
+                          <v:item name="barely acceptable quality" value="0.500"/>
+                          <v:item name="severely degraded quality" value="0.300"/>
+                        </v:select-list>
+                        <br />
+
+                        <label for="ct1">Content Type</label>
+                        <v:text name="ct1" xhtml_id="ct1" error-glyph="*" value="" xhtml_size="110" default_value=""/>
+                        <br />
+
+                        <label for="lang1">Content Language</label>
+                        <v:text name="lang1" value="" xhtml_size="110" xhtml_id="lang1" error-glyph="*" />
+                        <br />
+
+                        <label for="cs1">Content Character Encoding</label>
+                        <v:text name="cs1" value="" xhtml_size="110" xhtml_id="cs1" error-glyph="*"/>
+                        <br />
+
+                        <label for="desc1">Description</label>
+                        <v:textarea name="desc1" value="" xhtml_rows="5" xhtml_cols="100" xhtml_id="desc1" error-glyph="*">
+                        </v:textarea>
+                        <br />
+
+                        <span class="fm_ctl_btn">
+                          <v:button name="cancel1" value="Cancel" action="simple" enabled="--equ(isnull(self.edit_item),0)">
+                            <v:on-post>
+                              self.ruri1.ufl_value := '';
+                              self.vuri1.ufl_value := '';
+                              self.ct1.ufl_value := '';
+                              self.lang1.ufl_value := '';
+                              self.cs1.ufl_value := '';
+                              self.desc1.ufl_value := '';
+                              self.qs1.ufl_value := '1.000';
+                              self.qs1.vs_set_selected ();
+
+                              self.edit_item := null;
+                              self.save1.vc_data_bind (e);
+                              control.vc_enabled := 0;
+                            </v:on-post>
+                          </v:button>
+
+                          <v:button name="save1" value="--case when self.edit_item is null then 'Add' else 'Update' end" action="simple">
+                            <v:on-post>
+                              <![CDATA[
+                                declare dummy int;
+
+                                if (0 = length (self.rulelist))
+                                {
+                                  declare nrule int;
+                                  nrule := (select count(distinct (URRL_LIST)) from URL_REWRITE_RULE_LIST where URRL_LIST like 'http_rule_list_%');
+                                  while (1)
+                                  {
+                                    whenever not found goto finish_cnt;
+                                    nrule := nrule + 1;
+                                    self.rulelist := sprintf ('http_rule_list_%d', nrule);
+                                    select 1 into dummy from URL_REWRITE_RULE_LIST where URRL_LIST = self.rulelist;
+                                  }
+                                finish_cnt:;
+
+                                  while (1)
+                                  {
+                                    whenever not found goto finish_cnt2;
+                                    self.rulelist := sprintf ('http_rule_list_%d', nrule);
+                                    select 1 into dummy from DB.DBA.HTTP_VARIANT_MAP where VM_RULELIST = self.rulelist;
+                                    nrule := nrule + 1;
+                                  }
+                                finish_cnt2:;
+
+                                  DB.DBA.URLREWRITE_CREATE_RULELIST (self.rulelist, 1, vector ());
+                                  URL_REWRITE_UPDATE_VHOST (self.rulelist, self.lpath, self.vhost, self.lhost);
+                                }
+                                if (self.edit_item is not null)
+                                  delete from DB.DBA.HTTP_VARIANT_MAP where VM_ID = self.edit_item;
+
+                                DB.DBA.HTTP_VARIANT_ADD (self.rulelist, self.ruri1.ufl_value, self.vuri1.ufl_value, self.ct1.ufl_value,
+                                    atof (self.qs1.ufl_value), self.desc1.ufl_value, self.lang1.ufl_value, self.cs1.ufl_value);
+
+                                self.ruri1.ufl_value := '';
+                                self.vuri1.ufl_value := '';
+                                self.ct1.ufl_value := '';
+                                self.lang1.ufl_value := '';
+                                self.cs1.ufl_value := '';
+                                self.desc1.ufl_value := '';
+                                self.qs1.ufl_value := '1.000';
+                                self.qs1.vs_set_selected ();
+
+                                self.edit_item := null;
+                                control.vc_data_bind (e);
+                                self.maps.vc_data_bind (e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </span>
+                      </fieldset>
+                    </div>
+                    <div>
+                      <span class="fm_ctl_btn">
+                        <v:button name="ret_btn1" value="Back" action="simple">
+                          <v:on-post>
+                            self.vc_redirect ('http_serv_mgmt.vspx');
+                          </v:on-post>
+                        </v:button>
+                      </span>
+                    </div>
+                  </v:form>
+                </td>
+              </tr>
+            </table>
+          <!-- end tab -->
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

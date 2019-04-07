@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -509,7 +509,7 @@ create view ODS_BLOG_POST_TAGS as select
 	BLOG..BLOG_TAGS_STAT,
 	BLOG..SYS_BLOG_INFO,
 	DB.DBA.SYS_USERS
-	where blogid = BI_BLOG_ID and BI_OWNER = U_ID;
+	where blogid = BI_BLOG_ID and BI_OWNER = U_ID option (loop);
 
 create view ODS_BLOG_COMMENTS as select
 	U_NAME,

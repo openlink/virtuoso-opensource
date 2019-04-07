@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="main_tabs_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+				vm:owner=""
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Conductor</vm:pagetitle>
+  <vm:scripts>
+    <?vsp
+    http ('<script language="JavaScript" type="text/javascript" src="mm_menu.js"></script>');
+    http ('<script language="JavaScript" type="text/javascript" src="mm_menu1.js"></script>');
+    ?>
+  </vm:scripts>
+  <vm:pagewrapper>
+  <vm:menu>
+    <vm:menuitem value="Home"/>
+  </vm:menu>
+  <vm:pagebody onload="MM_preloadImages('images/conducthi_02.gif','images/conducthi_03.gif','images/conducthi_04.gif','images/conducthi_05.gif','images/conducthi_07.gif')" show="always">
+    <v:on-init><![CDATA[
+      if (get_keyword ('logout', self.vc_event.ve_params, '') = '1')
+        {
+          declare sid, realm any;
+	  sid := get_keyword ('sid', self.vc_event.ve_params, '');
+	  realm := get_keyword ('realm', self.vc_event.ve_params, '');
+          delete from VSPX_SESSION where VS_SID = sid and VS_REALM = realm;
+	}
+     ]]></v:on-init>
+    <?vsp
+      {
+    ?>
+    <script language="JavaScript1.2" type="text/javascript">
+      var vsid = '<?V self.sid ?>';
+      var vrealm = '<?V self.realm ?>';
+      var have_wa = <?V check_package ('Framework') ?>;
+      var have_bpel = <?V check_package ('bpel4ws') ?>;
+      <?vsp
+      if (check_package ('Framework'))
+        {
+      ?>
+      var wa_link = '<?V wa_link () ?>';
+      <?vsp
+	}
+      ?>
+      mmLoadMenus();
+    </script>
+          <table width="500" border="0" align="center" cellpadding="0" cellspacing="0" id="img_group">
+            <tr>
+	      <td>
+		<a href="#"  class="no_text">
+		  <img src="images/conduct01_02.gif" name="slice1" width="166" height="124" border="0" id="slice1" usemap="#conduct01_02" />
+		</a>
+	      </td>
+	      <td>
+		<a href="#"  class="no_text">
+		  <img src="images/conduct01_03.gif" name="slice2" width="166" height="124" border="0" id="slice2" usemap="#conduct01_03" />
+		</a>
+	      </td>
+	      <td>
+		<a href="#"  class="no_text">
+		<img src="images/conduct01_04.gif" name="slice3" width="168" height="124" border="0" id="slice3" usemap="#conduct01_04" />
+	      </a>
+	    </td>
+            </tr>
+            <tr>
+	      <td>
+		<a href="#"  class="no_text">
+		<img src="images/conduct01_05.gif" name="slice4" width="166" height="245" border="0" id="slice4" usemap="#conduct01_05" />
+	      </a>
+	      </td>
+	      <td>
+		<a href="#"  class="no_text">
+		<img src="images/conduct01_06.gif" name="image1" width="166" height="245" border="0" id="image1" usemap="#conduct01_06" />
+	      </a>
+	      </td>
+	      <td>
+		<a href="#"  class="no_text">
+		<img src="images/conduct01_07.gif" name="slice6" width="168" height="245" border="0" id="slice6" usemap="#conduct01_07" />
+	      </a>
+	      </td>
+            </tr>
+            <tr>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+              <td>&nbsp;</td>
+            </tr>
+	  </table>
+	  <map name="conduct01_02">
+	    <area shape="rect" coords="14,13,155,109"  onmouseout="MM_swapImgRestore();MM_startTimeout();" onmouseover="MM_swapImage('slice1','','images/conducthi_02.gif',1);MM_showMenu(window.mm_menu_0428155127_0,-44,-64,null,'slice1')" />
+	  </map>
+	  <map name="conduct01_03">
+	    <area shape="rect" coords="17,15,155,108" onmouseout="MM_swapImgRestore();MM_startTimeout();" onmouseover="MM_swapImage('slice2','','images/conducthi_03.gif',1);MM_showMenu(window.mm_menu_0428165356_0,-50,-40,null,'slice2')" />
+	  </map>
+	  <map name="conduct01_04">
+	    <area shape="rect" coords="15,13,154,109"  onmouseout="MM_swapImgRestore();MM_startTimeout();" onmouseover="MM_swapImage('slice3','','images/conducthi_04.gif',1);MM_showMenu(window.mm_menu_0428193305_0,15,-40,null,'slice3')" />
+	  </map>
+	  <map name="conduct01_05">
+	    <area shape="rect" coords="13,9,155,107" onmouseout="MM_swapImgRestore();MM_startTimeout();" onmouseover="MM_swapImage('slice4','','images/conducthi_05.gif',1);MM_showMenu(window.mm_menu_0428193705_0,-35,108,null,'slice4')" />
+	  </map>
+	  <map name="conduct01_06">
+	    <area shape="rect" coords="21,69,155,223" onmouseover="MM_showMenu(window.mm_menu_0429095826_0,-40,200,null,'image1')" onmouseout="MM_startTimeout();" />
+	  </map>
+	  <map name="conduct01_07">
+	    <area shape="rect" coords="13,10,154,106" onmouseout="MM_swapImgRestore();MM_startTimeout();" onmouseover="MM_swapImage('slice6','','images/conducthi_07.gif',1);MM_showMenu(window.mm_menu_0428193809_0,18,108,null,'slice6')" />
+	  </map>
+<?vsp
+  }
+?>
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

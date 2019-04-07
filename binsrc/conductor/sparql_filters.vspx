@@ -1,0 +1,269 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="sparql_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>GRDDL filters for XHTML</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+      <v:variable name="c_id" type="integer" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="GRDDL"/>
+    </vm:menu>
+    <vm:header caption="GRDDL filters for XHTML"/>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        Stylesheets
+                      </td>
+		                  <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- tab -->
+                        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                          <tr>
+                            <td>
+                              <v:form name="fm" type="simple" method="POST">
+                                <vm:if test="self.c_mode = 'C/browse'">
+                                  <v:button name="add1" value="Add" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.c_mode := 'C/add';
+
+                                        self.name1.ufl_value := '';
+                                        self.prof1.ufl_value := '';
+                                        self.xslt1.ufl_value := '';
+
+                                        self.c_id := null;
+                                        self.vc_data_bind (e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <table class="listing" rules="groups">
+                                    <tr class="listing_header_row">
+                                      <th colspan="2">Profile</th>
+                                      <th>Profile URI</th>
+                                      <th width="1%">Action</th>
+                                    </tr>
+
+                                    <v:data-set name="maps"
+                                                sql="select GM_NAME, GM_XSLT, GM_PROFILE from DB.DBA.SYS_GRDDL_MAPPING"
+                                                scrollable="1"
+                                                editable="1"
+                                                nrows="1000">
+
+                                      <v:template name="maps_rep" type="repeat">
+
+                                        <v:template name="maps_brows" type="browse">
+                                          <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                            <td>
+                                              <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    self.name1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                    self.prof1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                    self.xslt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+
+                                                    self.c_id := (control.vc_parent as vspx_row_template).te_rowset[0];
+
+                                                    self.c_mode := 'C/edit';
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                            <td>
+                                              <v:label name="la2" value="(system)" enabled="--equ (matches_like ((control.vc_parent as vspx_row_template).te_rowset[1], 'http://local.virt/%'), 1)"/>
+                                            </td>
+                                            <td>
+                                              <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                                            </td>
+                                            <td nowrap="nowrap">
+                                              &nbsp;
+                                              <v:button name="delete1" action="simple" style="url" value="''" enabled="--equ (matches_like ((control.vc_parent as vspx_row_template).te_rowset[1], 'http://local.virt/%'), 0)">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    delete from DB.DBA.SYS_GRDDL_MAPPING where GM_NAME = (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                          </tr>
+                                        </v:template>
+                                      </v:template>
+
+                                      <v:template name="maps_footer" type="simple">
+                                      </v:template>
+
+                                    </v:data-set>
+                                  </table>
+                                </vm:if>
+                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+                                  <div class="fm">
+                                    <fieldset>
+                                      <label for="name1">Name</label>
+                                      <v:text name="name1" value="" xhtml_id="name1" error-glyph="*" xhtml_size="110">
+                                      </v:text>
+                                      <br />
+                                      <label for="prof1">Profile URI (optional)</label>
+                                      <v:text name="prof1" xhtml_id="prof1" error-glyph="*" value="" xhtml_size="110" />
+                                      <br />
+                                      <label for="xslt1">XSL-T style</label>
+                                      <v:text name="xslt1" value="" xhtml_size="110" xhtml_id="xslt1" error-glyph="*">
+                                      </v:text>
+                                      <br />
+                                      <span class="fm_ctl_btn">
+                                        <v:button name="cancel1" value="Cancel" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+
+                                        <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              if (not self.vc_is_valid)
+                                                return;
+
+                                              declare exit handler for sqlstate '23000'
+                                              {
+                                                rollback work;
+                                                self.vc_is_valid := 0;
+                                                self.vc_error_message := 'The values entered conflict with other GRDDL filter. Please supply correct values.';
+                                                return;
+                                              };
+
+                                              self.name1.ufl_value := trim (self.name1.ufl_value);
+                                              self.prof1.ufl_value := trim (self.prof1.ufl_value);
+                                              self.xslt1.ufl_value := trim (self.xslt1.ufl_value);
+
+                                              if (not length (self.name1.ufl_value) or not length (self.xslt1.ufl_value))
+                                              {
+                                                rollback work;
+                                                self.vc_is_valid := 0;
+                                                self.vc_error_message := 'The name value cannot be empty.';
+                                                return;
+                                              }
+
+                                              if (self.c_mode = 'C/add')
+                                              {
+                                                insert into DB.DBA.SYS_GRDDL_MAPPING (GM_NAME, GM_PROFILE, GM_XSLT)
+                                                  values (self.name1.ufl_value, self.prof1.ufl_value, self.xslt1.ufl_value);
+                                              }
+                                              else
+                                              {
+                                                update DB.DBA.SYS_GRDDL_MAPPING
+                                                   set GM_NAME = self.name1.ufl_value,
+                                                       GM_PROFILE = self.prof1.ufl_value,
+                                                       GM_XSLT = self.xslt1.ufl_value
+                                                 where GM_NAME = self.c_id;
+                                              }
+
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+                                      </span>
+                                    </fieldset>
+                                  </div>
+                                </vm:if>
+                              </v:form>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+            <!-- end tab -->
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

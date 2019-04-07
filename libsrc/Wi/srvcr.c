@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -99,6 +99,9 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
 	  unsigned int numeric_len = len - NUMERIC_MAX_DATA_BYTES + numeric_precision ((numeric_t) box);
 	  MD5Update (ctx, (unsigned char *) box - 1, numeric_len + 1);
 	}
+      break;
+    case DV_DB_NULL: /* special case since NULLs has zero len */
+      MD5Update (ctx, (unsigned char *) box - 1, 1);
       break;
     default:
       MD5Update (ctx, (unsigned char *) box - 1, len + 1);
@@ -290,6 +293,12 @@ cr_lc_next (cursor_state_t * cs)
   query_instance_t *qi = (query_instance_t *) cs->cs_lc->lc_inst;
   if (!qi)
     return NULL;
+  if (qi->qi_query->qr_proc_vectored)
+    {
+      qi->qi_set++;
+      if (qi->qi_set < cs->cs_lc->lc_vec_n_rows)
+	return (caddr_t)SQL_SUCCESS;
+    }
   err = subq_next (qi->qi_query, (caddr_t *) qi, CR_OPEN);
   if (IS_BOX_POINTER (err))
     {
@@ -2048,7 +2057,12 @@ bif_scroll_cr_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   stmt = (srv_stmt_t *) dk_alloc_box_zero (sizeof (srv_stmt_t), DV_PL_CURSOR);
   stmt->sst_is_pl_cursor = 1;
   stmt->sst_query = qr;
+  IN_CLL;
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "QR_REF_COUNT++ by bif_scroll_cr_init");
+#endif
   qr->qr_ref_count++;
+  LEAVE_CLL;
 
   return (caddr_t) stmt;
 }
@@ -2073,19 +2087,19 @@ bif_scroll_cr_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t params_box_buf[5];
   caddr_t params_box;
   caddr_t **params;
-  stmt_options_t *opts;
+  stmt_options_t *opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
   uint32 inx, n_pars = BOX_ELEMENTS (args) - 1;
 
   BOX_AUTO (params_box, params_box_buf, sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   params = (caddr_t **)params_box;
+
+  opts->so_use_bookmarks = 1;
   params[0] = (caddr_t *) dk_alloc_box_zero (n_pars * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   for (inx = 0; inx < n_pars; inx++)
     {
       params[0][inx] = box_copy_tree (bif_arg (qst, args, inx + 1, "__scroll_cr_open"));
     }
-
-  opts = (stmt_options_t *)  dk_alloc_box_zero (sizeof (stmt_options_t), DV_ARRAY_OF_POINTER);
-  opts->so_use_bookmarks = 1;
+  memset (opts, 0, sizeof (opts));
   opts->so_concurrency = SQL_CONCUR_LOCK;
   opts->so_cursor_type = stmt->sst_query->qr_cursor_type;
 
@@ -2261,13 +2275,20 @@ bif_cursors_init (void)
   bif_define ( __SCROLL_CR_FETCH, bif_scroll_cr_fetch);
 
   bif_define ("bookmark", bif_bookmark);
-  bif_define_typed ("tree_md5", bif_tree_md5, &bt_varchar);
-  bif_define_typed ("__burst_mode_set", bif_burst_mode_set, &bt_integer);
+  bif_define_ex ("tree_md5", bif_tree_md5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__burst_mode_set", bif_burst_mode_set, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
+
+
+caddr_t bif_iri_to_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_box_flags_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+caddr_t bif_sprintf_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 int
 bif_is_relocatable (bif_t bif)
 {
+  bif_metadata_t * bmd;
   if (
       /* scrollable cursors */
       bif_sql_set_pos == bif
@@ -2283,8 +2304,18 @@ bif_is_relocatable (bif_t bif)
 
       /* cast (let the VDB layer decide) */
       || bif_convert == bif
+      /* box flags */
+      || bif_box_flags_tweak == bif
+      || bif_sprintf_iri == bif
       )
     return 0;
+
+  bmd = find_bif_metadata_by_bif (bif);
+  if (bmd && bmd->bmd_ret_type && DV_IRI_ID ==  bmd->bmd_ret_type->bt_dtp)
+    return 0;
+  if (bif_iri_to_id == bif || bif_iri_to_id_nosignal == bif)
+    return 0;
+
   return 1;
 }
 

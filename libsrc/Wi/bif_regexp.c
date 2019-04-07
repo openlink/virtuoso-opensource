@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -37,8 +37,10 @@
    }
  */
 
+
+
 #define NOFFSETS 20*3
-#define NHASHITEMS 2000
+#define NHASHITEMS 1000
 
 
 #define LOCK_OBJECT(__obj) \
@@ -50,25 +52,163 @@
 #define FREE_OBJECT(__obj) \
   ( mutex_free((__obj)->mutex) )
 
-typedef struct safe_hash_s
+typedef struct regexp_key_s
 {
-  id_hash_t *hash;
-  dk_mutex_t *mutex;
+  caddr_t orig_strg;
+  int options;
 }
-safe_hash_t;
+regexp_key_t;
 
-typedef struct pcre_info_s
+typedef struct compiled_regexp_s
 {
+  int refctr;
   pcre *code;
   pcre_extra *code_x;
 }
-pcre_info_t;
+compiled_regexp_t;
 
-safe_hash_t regexp_codes;
+id_hash_t *compiled_regexps;
 
+int32 c_pcre_match_limit_recursion = 500;
+int32 c_pcre_match_limit = 100000;
+int32 pcre_max_cache_sz = 20000;
+int32 pcre_rnd_seed;
 
-static caddr_t get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
-    pcre_info_t * pcre_info, int options);
+id_hashed_key_t
+regexp_key_hash (char *strp)
+{
+  regexp_key_t *k = (regexp_key_t *)strp;
+  ccaddr_t k_orig_strg = k->orig_strg;
+  id_hashed_key_t h;
+  NTS_BUFFER_HASH (h, k_orig_strg);
+  return ((h ^ k->options) & ID_HASHED_KEY_MASK);
+}
+
+int
+regexp_key_hashcmp (char *x, char *y)
+{
+  regexp_key_t *kx = (regexp_key_t *)x;
+  regexp_key_t *ky = (regexp_key_t *)y;
+  return ((0 == strcmp (kx->orig_strg, ky->orig_strg)) && (kx->options == ky->options));
+}
+
+void
+release_compiled_regexp (id_hash_t *c_r, compiled_regexp_t *data)
+{
+  int delete_data;
+  if (NULL == data)
+    return;
+  if (0 >= data->refctr)
+    GPF_T1 ("Wrong refctr of a compiled regexp; memory corruption");
+  if (NULL != c_r)
+    HT_WRLOCK (c_r);
+  delete_data = (0 == --(data->refctr));
+  if (NULL != c_r)
+    HT_UNLOCK (c_r);
+  if (!delete_data)
+    return;
+  if (NULL != data->code)
+    pcre_free (data->code);
+  if (NULL != data->code_x)
+    pcre_free (data->code_x);
+  dk_free (data, sizeof (compiled_regexp_t));
+}
+
+static void
+pcre_cache_check (id_hash_t * ht)
+{
+  while (ht->ht_count > pcre_max_cache_sz)
+    {
+      regexp_key_t key;
+      compiled_regexp_t *data;
+      int32 rnd  = sqlbif_rnd (&pcre_rnd_seed);
+      if (id_hash_remove_rnd (ht, rnd, (caddr_t)&key, (caddr_t)&data))
+        {
+          if (0 >= data->refctr)
+            GPF_T1 ("Wrong refctr of a compiled regexp on cache shrink; memory corruption");
+          dk_free_box (key.orig_strg);
+          release_compiled_regexp (NULL, data);
+        }
+    }
+}
+
+static compiled_regexp_t *
+get_compiled_regexp (id_hash_t *c_r, const char *pattern, int options, caddr_t *err_ret)
+{
+  const char *error = NULL;
+  int erroff;
+  regexp_key_t key;
+  compiled_regexp_t **val = NULL;
+  compiled_regexp_t tmp, *new_val;
+  key.orig_strg = (caddr_t)pattern;
+  key.options = options;
+  HT_WRLOCK (c_r);
+  val = (compiled_regexp_t **)id_hash_get (c_r, (caddr_t) &key);
+  if (NULL != val)
+    {
+      val[0]->refctr++;
+      HT_UNLOCK (c_r);
+      return val[0];
+    }
+  HT_UNLOCK (c_r);
+  dbg_printf (("regex compiling (%s) with options %x ...\n", pattern, options));
+  tmp.code = pcre_compile (pattern, options, &error, &erroff, 0);
+  if (NULL == tmp.code)
+    {
+      if (error)
+        err_ret[0] = srv_make_new_error ("2201B",
+            "SR098", "regexp error at \'%s\' column %d (%s)", pattern, erroff, error);
+      else
+        err_ret[0] = srv_make_new_error ("2201B",
+            "SR098", "regexp error at \'%s\' column %d", pattern, erroff);
+      return NULL;
+    }
+  tmp.code_x = pcre_study (tmp.code, options, &error);
+#ifdef DEBUG
+  if (!tmp.code_x)
+    dbg_printf (("***warning RX100: regexp warning: extra regular expression compiling failed\n"));
+#endif
+  if (!tmp.code_x)
+     {
+       tmp.code_x = pcre_malloc (sizeof (pcre_extra));
+       if (tmp.code_x)
+         memset (tmp.code_x, 0, sizeof (pcre_extra));
+     }
+#ifdef PCRE_EXTRA_MATCH_LIMIT
+  if (c_pcre_match_limit > 0)
+    {
+      tmp.code_x->flags |= PCRE_EXTRA_MATCH_LIMIT;
+      tmp.code_x->match_limit = c_pcre_match_limit;
+    }
+#endif
+#ifdef PCRE_EXTRA_MATCH_LIMIT_RECURSION
+  if (c_pcre_match_limit_recursion > 0)
+    {
+      tmp.code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
+      tmp.code_x->match_limit_recursion = c_pcre_match_limit_recursion;
+    }
+#endif
+  key.orig_strg = box_dv_short_string (pattern);
+  new_val = (compiled_regexp_t *)dk_alloc (sizeof (compiled_regexp_t));
+  new_val->code = tmp.code;
+  new_val->code_x = tmp.code_x;
+  new_val->refctr = 1;
+  HT_WRLOCK (c_r);
+  pcre_cache_check (c_r);
+  val = (compiled_regexp_t **)id_hash_get (c_r, (caddr_t) &key);
+  if (NULL != val) /* double compile */
+    {
+      dk_free_box (key.orig_strg);
+      release_compiled_regexp (NULL, new_val);
+      val[0]->refctr++;
+      HT_UNLOCK (c_r);
+      return val[0];
+    }
+  id_hash_set (c_r, (caddr_t)(&key), (caddr_t)(&new_val));
+  new_val->refctr++;
+  HT_UNLOCK (c_r);
+  return new_val;
+}
 
 #define SET_INVALID_ARG(fmt) \
   do { \
@@ -195,13 +335,15 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int utf8_mode;
   int str_len;
-  pcre_info_t cd_info;
+  compiled_regexp_t *cd_info = NULL;
   caddr_t p_to_free = NULL, str_to_free = NULL;
   char *pattern;
   char *str;
   int c_opts = 0, r_opts = 0;
   caddr_t ret_str = NULL;
   long replace_the_instr = 0;
+  int offvect[NOFFSETS];
+  int result;
 
   utf8_mode = 0;
   switch ((BOX_ELEMENTS (args)))
@@ -223,62 +365,54 @@ bif_regexp_match (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!pattern || !str)
     goto done;
 
-  *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, err_ret);
+  if (err_ret[0])
+    goto done;
 
-  if (cd_info.code && !*err_ret)
+  str_len = (int) strlen (str);
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, NOFFSETS);
+  if (result >= 0)
     {
-      int offvect[NOFFSETS];
-      int result;
-      str_len = (int) strlen (str);
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
-	  offvect, NOFFSETS);
-      if (result != -1)
-	{
-	  ret_str = dk_alloc_box (offvect[1] - offvect[0] + 1, DV_SHORT_STRING);
-	  strncpy (ret_str, str + offvect[0], offvect[1] - offvect[0]);
-	  ret_str[offvect[1] - offvect[0]] = 0;
-
-	  if (replace_the_instr && args[1]->ssl_type != SSL_CONSTANT)
-	    { /* GK: compatibility mode */
-	      caddr_t mod_str = NULL, ret_mod_str = NULL;
-	      int arg_is_wide = DV_WIDESTRINGP (bif_arg (qst, args, 1, "regexp_match"));
-
-	      mod_str = dk_alloc_box (str_len - offvect[1] + 1, DV_SHORT_STRING);
-	      strncpy (mod_str, str + offvect[1], str_len - offvect[1]);
-	      mod_str[str_len - offvect[1]] = 0;
-
-	      if (arg_is_wide)
-		{
-		  if (utf8_mode)
-		    ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0, DV_WIDE);
-		  else
-		    ret_mod_str = box_narrow_string_as_wide ((unsigned char *) mod_str,
-			NULL, 0, QST_CHARSET (qst), err_ret, 1);
-		}
-	      else
-		{
-		  if (utf8_mode)
-		    ret_mod_str = box_utf8_string_as_narrow (mod_str, NULL, 0, QST_CHARSET (qst));
-		}
-	      if (ret_mod_str)
-		{
-		  dk_free_box (mod_str);
-		  mod_str = ret_mod_str;
-		}
-	      qst_set (qst, args[1], mod_str);
-	    }
-
-	  if (utf8_mode && ret_str)
-	    {
-	      caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		  box_length (ret_str) - 1, 0, DV_WIDE);
-	      dk_free_box (ret_str);
-	      ret_str = wide_ret;
-	    }
-	}
+      ret_str = dk_alloc_box (offvect[1] - offvect[0] + 1, DV_SHORT_STRING);
+      strncpy (ret_str, str + offvect[0], offvect[1] - offvect[0]);
+      ret_str[offvect[1] - offvect[0]] = 0;
+    
+      if (replace_the_instr && args[1]->ssl_type != SSL_CONSTANT)
+        { /* GK: compatibility mode */
+          caddr_t mod_str = NULL, ret_mod_str = NULL;
+          int arg_is_wide = DV_WIDESTRINGP (bif_arg (qst, args, 1, "regexp_match"));
+          mod_str = dk_alloc_box (str_len - offvect[1] + 1, DV_SHORT_STRING);
+          strncpy (mod_str, str + offvect[1], str_len - offvect[1]);
+          mod_str[str_len - offvect[1]] = 0;
+          if (arg_is_wide)
+            {
+              if (utf8_mode)
+                ret_mod_str = box_utf8_as_wide_char (mod_str, NULL, str_len - offvect[1], 0);
+              else
+                ret_mod_str = box_narrow_string_as_wide ((unsigned char *) mod_str, NULL, 0, QST_CHARSET (qst), err_ret, 1);
+            }
+          else
+            {
+              if (utf8_mode)
+                ret_mod_str = box_utf8_string_as_narrow (mod_str, NULL, 0, QST_CHARSET (qst));
+            }
+          if (ret_mod_str)
+            {
+              dk_free_box (mod_str);
+              mod_str = ret_mod_str;
+            }
+          qst_set (qst, args[1], mod_str);
+        }
+      if (utf8_mode && ret_str)
+        {
+          caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL, box_length (ret_str) - 1, 0);
+          dk_free_box (ret_str);
+          ret_str = wide_ret;
+        }
     }
 
 done:
+  release_compiled_regexp (compiled_regexps, cd_info);
   if (*err_ret)
     dk_free_box (ret_str);
   dk_free_tree (p_to_free);
@@ -291,13 +425,14 @@ bif_rdf_regex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int utf8_mode = 1;
   int str_len;
-  pcre_info_t cd_info;
+  compiled_regexp_t *cd_info = NULL;
   caddr_t p_to_free = NULL, str_to_free = NULL;
   char *pattern;
   char *str;
   int c_opts = 0, r_opts = 0;
   int result = -1;
   caddr_t err = NULL;
+  int offvect[NOFFSETS];
   switch ((BOX_ELEMENTS (args)))
     {
     default:
@@ -315,17 +450,14 @@ bif_rdf_regex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!pattern || !str)
     goto done;
 
-  *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
-
-  if (cd_info.code && !*err_ret)
-    {
-      int offvect[NOFFSETS];
-      str_len = (int) strlen (str);
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
-	  offvect, NOFFSETS);
-    }
+  cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, err_ret);
+  if (err_ret[0])
+    goto done;
+  str_len = (int) strlen (str);
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, NOFFSETS);
 
 done:
+  release_compiled_regexp (compiled_regexps, cd_info);
   if (err)
     dk_free_tree (err);
   dk_free_tree (p_to_free);
@@ -342,10 +474,12 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *str;
   int offset;
   int res_len;
-  pcre_info_t cd_info;
+  compiled_regexp_t *cd_info = NULL;
   int c_opts = 0, r_opts = 0;
   caddr_t p_to_free = NULL, str_to_free = NULL;
   caddr_t ret_str = NULL;
+  int result;
+  int offvect[NOFFSETS];
 
   utf8_mode = 0;
   pattern = bif_regexp_str_arg (qst, args, 0, "regexp_substr", REGEXP_BF, &utf8_mode, &p_to_free, err_ret);
@@ -362,43 +496,37 @@ bif_regexp_substr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!pattern || !str)
     goto done;
 
-  *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, err_ret);
+  if (NULL != err_ret[0])
+    goto done;
 
-  if (cd_info.code && !*err_ret)
+  res_len = (int) strlen (str);
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, res_len, 0, r_opts, offvect, NOFFSETS);
+  if (result > 0)
     {
-      int result;
-      int offvect[NOFFSETS];
-      res_len = (int) strlen (str);
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, res_len, 0, r_opts,
-	  offvect, NOFFSETS);
-
-      if (result > 0)
-	{
-	  int offs = offset*2, rc;
-	  ret_str = dk_alloc_box ((offset < result && offset >= 0 ?
-		(offvect[offs+1] - offvect[offs]) : res_len) + 1, DV_SHORT_STRING);
-	  rc = pcre_copy_substring (str, offvect, result, offset, ret_str,
-	      res_len + 1);
-	  if (rc < 0)
-	    {
-	      *err_ret = srv_make_new_error ("2201B", "SR097",
-		  "regexp error : could not obtain substring (%d of %d)",
-		  offset, result - 1);
-	    }
-	  else
-	    {
-	      if (utf8_mode && ret_str)
-		{
-		  caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL,
-		      box_length (ret_str) - 1, 0, DV_WIDE);
-		  dk_free_box (ret_str);
-		  ret_str = wide_ret;
-		}
-	    }
-	}
+      int offs = offset*2, rc;
+      int ret_strlen = (offset < result && offset >= 0 ? (offvect[offs+1] - offvect[offs]) : res_len);
+      ret_str = dk_alloc_box (ret_strlen + 1, DV_SHORT_STRING);
+      rc = pcre_copy_substring (str, offvect, result, offset, ret_str, res_len + 1);
+      if (rc < 0)
+        {
+          *err_ret = srv_make_new_error ("2201B", "SR097",
+            "regexp error : could not obtain substring (%d of %d)",
+            offset, result - 1);
+        }
+      else
+        {
+          if (utf8_mode)
+            {
+              caddr_t wide_ret = box_utf8_as_wide_char (ret_str, NULL, ret_strlen, 0);
+              dk_free_box (ret_str);
+              ret_str = wide_ret;
+            }
+        }
     }
 
 done:
+  release_compiled_regexp (compiled_regexps, cd_info);
   if (*err_ret)
     dk_free_box (ret_str);
   dk_free_tree (p_to_free);
@@ -508,7 +636,6 @@ done:
  *			index of matched substrings end
  *		2...n pairs - indexes of begins and ends of matched substrings of first substring.
  *
- * Returns if not a list:
  */
 
 static caddr_t
@@ -518,7 +645,7 @@ bif_regexp_parse_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, i
   char *pattern = NULL;
   char *str = NULL;
   int offset, str_len;
-  pcre_info_t cd_info;
+  compiled_regexp_t *cd_info = NULL;
   int c_opts = 0, r_opts = 0, max_n_hits = 0x1000000 / sizeof (ptrlong);
   caddr_t p_to_free = NULL, str_to_free = NULL;
   int offvect[NOFFSETS];
@@ -544,9 +671,9 @@ bif_regexp_parse_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, i
 
   if (!pattern || !str)
     goto done;
-  *err_ret = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, err_ret);
 
-  if (*err_ret || !cd_info.code)
+  if (NULL != err_ret[0])
     goto done;
 
   str_len = (int) strlen (str);
@@ -554,7 +681,7 @@ bif_regexp_parse_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, i
     {
       while (0 < max_n_hits--)
         {
-          int result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, offset, r_opts,
+          int result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, offset, r_opts,
             offvect, NOFFSETS);
           if (0 >= result)
             break;
@@ -568,12 +695,13 @@ bif_regexp_parse_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, i
     }
   else
     {
-      int result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, offset, r_opts,
+      int result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, offset, r_opts,
         offvect, NOFFSETS);
       ret_vec = regexp_offvect_to_array_of_long ((utf8char *)str, offvect, result, utf8_mode);
     }
 
 done:
+  release_compiled_regexp (compiled_regexps, cd_info);
   dk_free_tree (p_to_free);
   dk_free_tree (str_to_free);
   if (*err_ret)
@@ -855,65 +983,6 @@ err_at_replace:
   return res_strg;
 }
 
-int32 c_match_limit_recursion = 150;
-
-static caddr_t
-get_regexp_code (safe_hash_t * rx_codes, const char *pattern,
-    pcre_info_t * pcre_info, int options)
-{
-  const char *error = 0;
-  int erroff;
-  dk_hash_t *opts_hash = NULL, **opts_hash_ptr = NULL;
-  pcre_info_t *pcre_info_ref = NULL;
-  LOCK_OBJECT (rx_codes);
-
-  opts_hash_ptr = (dk_hash_t **) id_hash_get (rx_codes->hash, (char *) &pattern);
-  if (opts_hash_ptr && *opts_hash_ptr)
-    {
-      opts_hash = *opts_hash_ptr;
-      pcre_info_ref = (pcre_info_t *) gethash ((void *) (unsigned ptrlong) (options + 1), opts_hash);
-    }
-
-  if (!pcre_info_ref)
-    {
-      dbg_printf (("regex compiling (%s) with options %x ...\n", pattern, options));
-      pcre_info->code = pcre_compile (pattern, options, &error, &erroff, 0);
-      if (pcre_info->code)
-	{
-	  box_t pattern_box = box_dv_short_string (pattern);
-
-	  pcre_info->code_x = pcre_study (pcre_info->code, options, &error);
-#ifdef DEBUG
-	  if (!pcre_info->code_x)
-	    dbg_printf (("***warning RX100: regexp warning: extra regular expression compiling failed\n"));
-#endif
-	  if (!opts_hash)
-	    {
-	      opts_hash = hash_table_allocate (5);
-	      id_hash_set (rx_codes->hash, (char *) &pattern_box, (char *) &opts_hash);
-	    }
-	  pcre_info_ref = (pcre_info_t *) dk_alloc (sizeof (pcre_info_t));
-	  *pcre_info_ref = *pcre_info;
-	  sethash ((void *) (unsigned ptrlong) (options + 1), opts_hash, pcre_info_ref);
-	}
-      else if (error)
-	{
-	  RELEASE_OBJECT (rx_codes);
-	  return srv_make_new_error ("2201B",
-	      "SR098", "regexp error at \'%s\' column %d (%s)", pattern, erroff, error);
-	};
-    }
-  else
-    *pcre_info = *pcre_info_ref;
-  if (pcre_info->code_x)
-    {
-      pcre_info->code_x->flags |= PCRE_EXTRA_MATCH_LIMIT_RECURSION;
-      pcre_info->code_x->match_limit_recursion = c_match_limit_recursion;
-    }
-  RELEASE_OBJECT (rx_codes);
-  return NULL;
-}
-
 static caddr_t
 bif_regexp_version (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -923,17 +992,18 @@ bif_regexp_version (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_regexp_init ()
 {
-  INIT_OBJECT (&regexp_codes);
-  regexp_codes.hash = id_hash_allocate (NHASHITEMS, sizeof (caddr_t), sizeof (pcre_info_t),
-      strhash, strhashcmp);
+  compiled_regexps = id_hash_allocate (NHASHITEMS, sizeof (regexp_key_t), sizeof (compiled_regexp_t *),
+      regexp_key_hash, regexp_key_hashcmp );
+  id_hash_set_rehash_pct (compiled_regexps, 200);
+  compiled_regexps->ht_rwlock = rwlock_allocate();
 
-  bif_define_typed ("regexp_match", bif_regexp_match, &bt_varchar);
-  bif_define_typed ("rdf_regex_impl", bif_rdf_regex_impl, &bt_varchar);
-  bif_define_typed ("regexp_substr", bif_regexp_substr, &bt_varchar);
-  bif_define_typed ("regexp_parse", bif_regexp_parse, &bt_any);
-  bif_define_typed ("regexp_parse_list", bif_regexp_parse_list, &bt_any);
-  bif_define_typed ("regexp_replace_hits_with_template", bif_regexp_replace_hits_with_template, &bt_varchar);
-  bif_define_typed ("regexp_version", bif_regexp_version, &bt_varchar);
+  bif_define_ex ("regexp_match", bif_regexp_match, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("rdf_regex_impl", bif_rdf_regex_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("regexp_substr", bif_regexp_substr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("regexp_parse", bif_regexp_parse, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("regexp_parse_list", bif_regexp_parse_list, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("regexp_replace_hits_with_template", bif_regexp_replace_hits_with_template, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("regexp_version", bif_regexp_version, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }
 
 
@@ -941,32 +1011,54 @@ bif_regexp_init ()
 caddr_t
 regexp_match_01 (const char* pattern, const char* str, int c_opts)
 {
-  pcre_info_t cd_info;
+  compiled_regexp_t *cd_info = NULL;
   int r_opts = 0;
   caddr_t err = NULL;
+  int offvect[NOFFSETS];
+  int result;
+  int str_len = (int) strlen (str);
 
-  err = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, &err);
   if (err)
     sqlr_resignal (err);
 
-  if (cd_info.code)
+  memset (offvect, -1, NOFFSETS * sizeof (int));
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, NOFFSETS);
+  release_compiled_regexp (compiled_regexps, cd_info);
+  if (result != -1)
     {
-      int offvect[NOFFSETS];
-      int result;
-      int str_len = (int) strlen (str);
-      memset (offvect, -1, NOFFSETS * sizeof (int));
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
-	  offvect, NOFFSETS);
-      if (result != -1)
-	{
-	  caddr_t ret_str = dk_alloc_box (offvect[1] - offvect[0] + 1, DV_SHORT_STRING);
-	  strncpy (ret_str, str + offvect[0], offvect[1] - offvect[0]);
-	  ret_str[offvect[1] - offvect[0]] = 0;
-	  return ret_str;
-	}
+      caddr_t ret_str = dk_alloc_box (offvect[1] - offvect[0] + 1, DV_SHORT_STRING);
+      strncpy (ret_str, str + offvect[0], offvect[1] - offvect[0]);
+      ret_str[offvect[1] - offvect[0]] = 0;
+      return ret_str;
     }
   return NULL;
 }
+
+
+caddr_t
+regexp_match_01_const (const char* pattern, const char* str, int c_opts, void** ret)
+{
+  compiled_regexp_t *cd_info = ((compiled_regexp_t **)ret)[0];
+  int r_opts = 0;
+  caddr_t err = NULL;
+  int offvect[NOFFSETS];
+  int result;
+  int str_len = (int) strlen (str);
+  if (NULL == cd_info)
+    {
+      cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, &err);
+      if (err)
+        sqlr_resignal (err);
+      ret[0] = cd_info;
+    }
+  memset (offvect, -1, NOFFSETS * sizeof (int));
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, NOFFSETS);
+  if (result != -1)
+    return box_dv_short_nchars (str + offvect[0], offvect[1] - offvect[0]);
+  return NULL;
+}
+
 
 struct regexp_opts_s {
   char	mc;
@@ -1024,23 +1116,17 @@ int
 regexp_split_parse (const char* pattern, const char* str, int* offvect, int offvect_sz, int c_opts)
 {
   int str_len;
-  pcre_info_t cd_info;
   int r_opts = 0;
+  int result;
   caddr_t err = NULL;
-
-  err = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  compiled_regexp_t *cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, &err);
   if (err)
     sqlr_resignal (err);
 
-  if (cd_info.code)
-    {
-      int result;
-      str_len = (int) strlen (str);
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
-	  offvect, offvect_sz);
-      return result;
-    }
-  return -1;
+  str_len = (int) strlen (str);
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, offvect_sz);
+  release_compiled_regexp (compiled_regexps, cd_info);
+  return result;
 }
 
 /* returns string part before matched substring
@@ -1055,38 +1141,31 @@ caddr_t
 regexp_split_match (const char* pattern, const char* str, int* next, int c_opts)
 {
   int str_len;
-  pcre_info_t cd_info;
   int r_opts = 0;
+  int offvect[NOFFSETS];
+  int result;
+  caddr_t ret_str;
   caddr_t err = NULL;
-
-  err = get_regexp_code (&regexp_codes, pattern, &cd_info, c_opts);
+  compiled_regexp_t *cd_info = get_compiled_regexp (compiled_regexps, pattern, c_opts, &err);
   if (err)
     sqlr_resignal (err);
 
-  if (cd_info.code)
+  str_len = (int) strlen (str);
+  result = pcre_exec (cd_info->code, cd_info->code_x, str, str_len, 0, r_opts, offvect, NOFFSETS);
+  if (result != -1)
     {
-      int offvect[NOFFSETS];
-      int result;
-      caddr_t ret_str;
-      str_len = (int) strlen (str);
-      result = pcre_exec (cd_info.code, cd_info.code_x, str, str_len, 0, r_opts,
-	  offvect, NOFFSETS);
-      if (result != -1)
-	{
-	  ret_str = dk_alloc_box (offvect[0] + 1, DV_STRING);
-	  strncpy (ret_str, str, offvect[0]);
-	  ret_str[offvect[0]] = 0;
-
-	  if (next)
-	    next[0] = offvect[1];
-	}
-      else
-	{
-	  ret_str = box_string (str);
-	  if (next)
-	    next[0] = -1;
-	}
-      return ret_str;
+      ret_str = dk_alloc_box (offvect[0] + 1, DV_STRING);
+      strncpy (ret_str, str, offvect[0]);
+      ret_str[offvect[0]] = 0;
+      if (next)
+        next[0] = offvect[1];
     }
-  return NULL;
+  else
+    {
+      ret_str = box_string (str);
+      if (next)
+        next[0] = -1;
+    }
+  release_compiled_regexp (compiled_regexps, cd_info);
+  return ret_str;
 }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,7 +74,26 @@ DBG_NAME (dk_set_pop) (DBG_PARAMS s_node_t ** set)
 
       return item;
     }
+#ifdef DK_SET_DEBUG
+  GPF_T1 ("dk_set_pop() from empty");
+#endif
+  return NULL;
+}
 
+
+void *
+DBG_NAME (dk_set_pop_or_null) (DBG_PARAMS s_node_t ** set)
+{
+  if (*set)
+    {
+      void *item;
+      s_node_t *old = *set;
+      *set = old->next;
+      item = old->data;
+      DK_FREE (old, sizeof (s_node_t));
+
+      return item;
+    }
   return NULL;
 }
 
@@ -466,6 +485,27 @@ void
 dk_set_push_two (s_node_t ** set, void *car_item, void *cadr_item)
 {
   dbg_dk_set_push_two (__FILE__, __LINE__, set, car_item, cadr_item);
+}
+
+#undef dk_set_pushnew
+void
+dk_set_pushnew (s_node_t ** set, void *item)
+{
+  dbg_dk_set_pushnew (__FILE__, __LINE__, set, item);
+}
+
+#undef dk_set_pop
+void *
+dk_set_pop (s_node_t ** set)
+{
+  return dbg_dk_set_pop (__FILE__, __LINE__, set);
+}
+
+#undef dk_set_pop_or_null
+void *
+dk_set_pop_or_null (s_node_t ** set)
+{
+  return dbg_dk_set_pop_or_null (__FILE__, __LINE__, set);
 }
 
 #undef list_to_array

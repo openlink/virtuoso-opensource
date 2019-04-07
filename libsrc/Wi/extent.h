@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -91,6 +91,7 @@ struct extent_map_s
 }
 
 #define DP_ANY ((dp_addr_t)-1)
+#define DP_MAX ((dp_addr_t)0xffffffff)
 
 #define EXT_EXTENDS_NONE ((dp_addr_t) -1)
 
@@ -116,3 +117,5 @@ caddr_t em_page_list (extent_map_t * em, int type);
 #define END_DO_EXT } } }
 
 buffer_desc_t **  ext_read (index_tree_t * it, extent_t * ext, int keep_ts, dk_hash_t * phys_to_log);
+buffer_desc_t * page_set_last (buffer_desc_t * buf);
+

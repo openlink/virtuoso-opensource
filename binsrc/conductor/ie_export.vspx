@@ -1,0 +1,299 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_pub"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    <v:variable name="fqual" persist="0" type="varchar" default="''" />
+    <v:variable name="fuser" persist="0" type="varchar" default="''" />
+    <v:variable name="fname" persist="0" type="varchar" default="''" />
+    <v:variable name="out_fmt" persist="0" type="integer" default="0" />
+    <v:variable name="ins_mode" persist="0" type="integer" default="0" />
+    <v:template name="error_temp111" type="simple" enabled="-- neq(self.sql_stt, '')">
+  <table class="Warning" width="100%" border="0" cellspacing="0" cellpadding="3">
+  <v:form name="error_form13" type="simple" method="POST" action="ie.vspx?page=2">
+      <tr><td><?V get_keyword('message', self.vc_page.vc_event.ve_params, 'Error occurred') ?></td></tr>
+      <tr><td>
+        <table width="100%" border="0" cellspacing="0" cellpadding="3">
+          <tr><td>SQL_STATE:</td><td><?V self.sql_stt ?></td></tr>
+          <tr><td>SQL_MESSAGE:</td><td><?V self.sql_msg ?></td></tr>
+        </table>
+      </td></tr>
+      <tr><td align="center">
+        <v:button action="simple" name="OK" value="OK">
+    <v:on-post>
+      <v:script><![CDATA[
+      self.sql_stt := '';
+      self.sql_msg := '';
+      return;
+      ]]></v:script>
+    </v:on-post>
+        </v:button>
+      </td></tr>
+    </v:form>
+  </table>
+
+    </v:template>
+    <v:template name="error_temp2" type="simple" enabled="-- equ(self.sql_stt, '')">
+      <v:on-init>
+      </v:on-init>
+  <v:template name="mode_temp1" type="simple" enabled="-- equ(self.p_mode, '1')">
+      <v:form name="form1" type="simple" method="POST" action="ie.vspx?page=2">
+        <v:before-data-bind>
+          <v:script><![CDATA[
+          -- some checking for consistency
+            if( self.p_mode <> '1' and self.p_mode <> '2') {
+              self.p_mode := '1';
+
+              declare dump_items varchar;
+              dump_items := self.dump_items;
+              self.dumpdir := './backup';
+              self.dumpname:= 'backup_1';
+              self.out_fmt :=  2;
+              self.fqual := '%';
+              self.fuser := '%';
+              self.fname := '%';
+              aset( dump_items, 0, 1);
+              aset( dump_items, 1, 1);
+              aset( dump_items, 2, 1);
+              aset( dump_items, 3, 1);
+              aset( dump_items, 4, 0);
+              aset( dump_items, 5, 0);
+              aset( dump_items, 6, 0);
+              aset( dump_items, 7, 0);
+              aset( dump_items, 8, 0);
+              self.dump_items := dump_items;
+              self.ins_mode:= 0;
+              self.chqual  := '';
+              self.chuser  := '';
+            }
+          ]]></v:script>
+        </v:before-data-bind>
+        <table class="SubAction" align="left" border="0" cellspacing="0" cellpadding="3">
+          <tr>
+            <td>To directory<span class="attention_marker">*</span></td>
+            <td><v:text name="t_dumpdir" value="--self.dumpdir" type="simple"></v:text>
+              <v:browse-button name="browse_button_1" value="Browse..." selector="ie_browser.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=350,width=450">
+                <v:field name="t_dumpdir" />
+                <v:field name="t_dumpname" />
+              </v:browse-button>
+            </td>
+          </tr>
+          <tr>
+            <td>Dump name<span class="attention_marker">*</span></td>
+            <td><v:text name="t_dumpname" value="--self.dumpname" type="simple"></v:text>
+              <v:browse-button name="browse_button_2" value="Browse..." selector="ie_browser.vspx" child-window-options="scrollbar=yes,resizable=yes,menubar=no,height=350,width=450">
+                <v:field name="t_dumpdir" />
+                <v:field name="t_dumpname" />
+              </v:browse-button>
+            </td>
+          </tr>
+          <tr>
+            <td>Output format<span class="attention_marker">*</span></td>
+            <td>
+              <v:radio-button name="rb_outsql" initial-checked="--case when self.out_fmt=1 then 1 else 0 end" value="1" group-name="out_fmt"/>
+              SQL
+              <v:radio-button name="rb_outbin" initial-checked="--case when self.out_fmt=2 then 1 else 0 end" value="2" group-name="out_fmt"/>
+              Binary
+            </td>
+            <td/>
+          </tr>
+          <tr>
+            <td class="MainData" colspan="3" align="left">Filter:</td><td/>
+          </tr>
+          <tr>
+            <td>Match Catalog</td>
+            <td><v:text name="t_fqual" value="--self.fqual" type="simple"></v:text></td>
+          </tr>
+          <tr>
+            <td>Match Schema</td>
+            <td><v:text name="t_fuser" value="--self.fuser" type="simple"></v:text></td>
+          </tr>
+          <tr>
+            <td>Match Name</td>
+            <td><v:text name="t_fname" value="--self.fname" type="simple"></v:text></td>
+          </tr>
+          <tr>
+            <td class="MainData" colspan="3" align="left">Export Objects:</td>
+            <td/>
+          </tr>
+            <tr>
+              <td/>
+              <td>
+                <v:check-box name="cb_tdef" initial-checked="--self.dump_items[0]" value="on" xhtml_id="cb_tdef"/>
+                <label for="cb_tdef">Table Definitions</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_tdata" initial-checked="--self.dump_items[1]" value="on" xhtml_id="cb_tdata"/>
+              <label for="cb_tdata">Table Data</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_trig" initial-checked="--self.dump_items[2]" value="on" xhtml_id="cb_trig"/>
+              <label for="cb_trig">Triggers</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_constr" initial-checked="--self.dump_items[3]" value="on" xhtml_id="cb_constr"/>
+              <label for="cb_constr">Constraints</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_fks" initial-checked="--self.dump_items[4]" value="on" xhtml_id="cb_fks"/>
+              <label for="cb_fks">Foreign Keys</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_sps" initial-checked="--self.dump_items[5]" value="on" xhtml_id="cb_sps"/>
+              <label for="cb_sps">Stored Procedures</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_views" initial-checked="--self.dump_items[6]" value="on" xhtml_id="cb_views"/>
+              <label for="cb_views">Views</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_users" initial-checked="--self.dump_items[7]" value="on" xhtml_id="cb_users"/>
+              <label for="cb_users">Users</label>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+              <v:check-box name="cb_grants" initial-checked="--self.dump_items[8]" value="on" xhtml_id="cb_grants"/>
+              <label for="cb_grants">Grants</label>
+              </td>
+            </tr>
+          <tr>
+            <td class="MainData" colspan="3" align="left">Advanced:</td>
+            <td/>
+          </tr>
+          <tr>
+            <td>Insert Mode</td>
+            <td>
+              <v:select-list name="s_insmode" >
+                <v:item name="Regular" value="0" />
+                <v:item name="Soft" value="1" />
+                <v:item name="Replacing" value="2" />
+              </v:select-list>
+            </td>
+          </tr>
+          <tr>
+            <td>Replace Catalogs</td>
+            <td><v:text name="t_chqual" value="--self.chqual" type="simple"></v:text></td>
+          </tr>
+          <tr>
+            <td>Replace Schemas</td>
+            <td><v:text name="t_chuser" value="--self.chuser" type="simple"></v:text></td>
+          </tr>
+          <tr>
+            <td class="MainData" colspan="2" align="right">
+              <v:button name="b_export" action="simple" value="Export">
+                <v:on-post>
+                  <v:script><![CDATA[
+                    declare dump_items varchar;
+                    dump_items := self.dump_items;
+                    self.dumpdir := self.t_dumpdir.ufl_value;
+                    self.dumpname:= self.t_dumpname.ufl_value;
+                    self.out_fmt :=  atoi(get_keyword('out_fmt', params));
+                    self.fqual := self.t_fqual.ufl_value;
+                    self.fuser := self.t_fuser.ufl_value;
+                    self.fname := self.t_fname.ufl_value;
+                    aset( dump_items, 0, self.cb_tdef.ufl_selected);
+                    aset( dump_items, 1, self.cb_tdata.ufl_selected);
+                    aset( dump_items, 2, self.cb_trig.ufl_selected);
+                    aset( dump_items, 3, self.cb_constr.ufl_selected);
+                    aset( dump_items, 4, self.cb_fks.ufl_selected);
+                    aset( dump_items, 5, self.cb_sps.ufl_selected);
+                    aset( dump_items, 6, self.cb_views.ufl_selected);
+                    aset( dump_items, 7, self.cb_users.ufl_selected);
+                    aset( dump_items, 8, self.cb_grants.ufl_selected);
+                    self.ins_mode:= self.s_insmode.vsl_selected_inx;
+                    self.chqual  := self.t_chqual.ufl_value;
+                    self.chuser  := self.t_chuser.ufl_value;
+                    self.dump_items := dump_items;
+
+                    self.dbp_result := "DB"."DBA"."BACKUP_VIA_DBPUMP" (
+                                          connection_get('vspx_user'),
+                                          sql_user_password(connection_get('vspx_user')),
+                                          "PUMP"."DBA"."GET_DSN"(),
+                                          self.dumpdir,
+                                          self.dumpname,
+                                          self.out_fmt,
+                                          self.dump_items,
+                                          self.ins_mode,
+                                          self.chqual,
+                                          self.chuser,
+                                          "PUMP"."DBA"."RETRIEVE_TABLES_VIA_PLSQL"(self.fqual, self.fuser, self.fname, 2)
+                                            );
+
+                    self.p_mode := '2';
+                  ]]></v:script>
+                </v:on-post>
+              </v:button></td>
+          </tr>
+        </table>
+      </v:form>
+  </v:template>
+  <v:template name="mode_temp2" type="simple" enabled="-- equ(self.p_mode, '2')">
+      <v:form name="form2" type="simple" method="POST" action="ie.vspx?page=2">
+        <table class="SubAction" border="0" cellspacing="0" cellpadding="3">
+          <tr>
+            <td><?vsp http(replace(self.dbp_result,'\n','<br/>')); ?></td>
+          </tr>
+          <tr>
+            <td class="MainData" align="right">
+              <v:button name="b_ok" action="simple" value="OK">
+                <v:on-post>
+                  <v:script><![CDATA[
+                    self.p_mode := '1';
+                  ]]></v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+  </v:template>
+</v:template>
+</v:page>

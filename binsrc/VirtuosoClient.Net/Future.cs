@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2013 OpenLink Software
+//  Copyright (C) 1998-2019 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -96,7 +96,7 @@ namespace OpenLink.Data.Virtuoso
 			}
 			else
 			{
-				endOfTime = DateTime.Now.Ticks + timeout * Values.TicksPerSec;
+				endOfTime = DateTime.Now.Ticks + (long)timeout * Values.TicksPerSec;
 				this.timeout = timeout * Values.MillisPerSec;
 			}
 			Debug.WriteLineIf (Switch.Enabled, "requestNo: " + requestNo);

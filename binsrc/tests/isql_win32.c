@@ -1,9 +1,10 @@
 /*
+ *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,7 +47,7 @@ malloc_narrow_as_wide (char *narrow)
 }
 
 static char *
-malloc_wide_as_narrow (const wchar_t *wide)
+malloc_wide_as_narrow (const wchar_t * wide)
 {
   char *ret;
   size_t sz;
@@ -67,7 +68,7 @@ malloc_wide_as_narrow (const wchar_t *wide)
 
 
 int
-isqlt_fwprintf(FILE *stream, const wchar_t *format, ...)
+isqlt_fwprintf (FILE * stream, const wchar_t * format, ...)
 {
   va_list lst;
   int ret;
@@ -84,7 +85,7 @@ isqlt_fwprintf(FILE *stream, const wchar_t *format, ...)
 }
 
 int
-isqlt_wprintf(const wchar_t *format, ...)
+isqlt_wprintf (const wchar_t * format, ...)
 {
   va_list lst;
   int ret;
@@ -101,7 +102,7 @@ isqlt_wprintf(const wchar_t *format, ...)
 }
 
 int
-isqlt_fputws(const wchar_t *s, FILE *stream)
+isqlt_fputws (const wchar_t * s, FILE * stream)
 {
   char *nbuffer = malloc_wide_as_narrow (s);
   int ret;
@@ -113,7 +114,7 @@ isqlt_fputws(const wchar_t *s, FILE *stream)
 }
 
 int
-isqlt_putwc(int c, FILE *stream)
+isqlt_putwc (int c, FILE * stream)
 {
   int ret;
   wchar_t buffer[2];
@@ -128,7 +129,7 @@ isqlt_putwc(int c, FILE *stream)
 }
 
 wchar_t *
-isqlt_fgetws(wchar_t *s, int size, FILE *stream)
+isqlt_fgetws (wchar_t * s, int size, FILE * stream)
 {
   char *buffer = malloc (size);
   wchar_t *wbuffer;
@@ -144,5 +145,5 @@ isqlt_fgetws(wchar_t *s, int size, FILE *stream)
   if (wbuffer)
     free (wbuffer);
 
-    return NULL;
+  return NULL;
 }

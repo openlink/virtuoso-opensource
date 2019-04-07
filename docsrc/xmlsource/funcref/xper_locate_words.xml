@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -51,24 +51,6 @@
     <refsect2><title>ending_word</title>
       <para>The number of the rightmost word which should be in the selected fragment</para></refsect2>
   </refsect1>
-<!--  <refsect1 id="ret"><title>Return Types</title><para></para></refsect1> -->
-<!--
-  <refsect1 id="errors"><title>Errors</title>
-    <table><title>Errors signalled by xper_locate_words()</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
--->
 </refentry>
 
 

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS	= tpc-d .
+SUBDIRS	= . tpc-d
 
 TOP=@TOP@
 
@@ -27,6 +27,8 @@ check_SCRIPTS = \
 	bpel.sh \
 	byteorder.sh \
 	clean.sh \
+	epilog.sh \
+	go_functions.sh \
 	gtkbench.sh \
 	inprocess.sh \
 	large_db.sh \
@@ -35,22 +37,34 @@ check_SCRIPTS = \
 	nwxml.sh \
 	obackup.sh \
 	oledb.sh \
+	prepare_t1.sh \
+	prolog.sh \
+	release.sh \
 	rtest.sh \
+	summary.sh \
 	tblob_recode.sh \
+	tcl.sh \
 	tclstart.sh \
 	tclstop.sh \
-	tcpt.sh \
+	tdatetime.sh \
 	tdav.sh \
 	tdav_meta.sh \
 	tdbp.sh \
 	tdconv.sh \
 	tdrop.sh \
+	test_cluster.sh \
 	test_fn.sh \
+	test_ldp.sh \
+	test_run.sh \
 	test_server.sh \
 	testall.sh \
+	testlib.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
+	tlubm.sh \
+	toptiremote.sh \
+	toptitpcd.sh \
 	tp.sh \
 	tpcd.sh \
 	tproviders.sh \
@@ -58,11 +72,10 @@ check_SCRIPTS = \
 	trecov.sh \
 	trecov_schema.sh \
 	trepl.sh \
+	trepl_rdf.sh \
 	treplh.sh \
 	tsec.sh \
 	tsoap12.sh \
-	tsparql.sh \
-	tsparql_demo.sh \
 	tsql.sh \
 	tsql2.sh \
 	tsql3.sh \
@@ -70,6 +83,7 @@ check_SCRIPTS = \
 	tsqlo.sh \
 	tstriping.sh \
 	tsxml.sh \
+	ttpch.sh \
 	ttutorial.sh \
 	tupgrade_recov.sh \
 	tvad.sh \
@@ -79,14 +93,30 @@ check_SCRIPTS = \
 	tvspxex.sh \
 	twcopy.sh \
 	twiki.sh \
-	txslt.sh
+	txslt.sh \
+	wtf.sh
 
-TESTS=test_server.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) HOME="$(TOP)" JDK2="@ac_jdk2_path@" JDK3="@ac_jdk3_path@" HOST=localhost SERVER=virtuoso-t MAKE=$(MAKE)
+#TESTS=test_server.sh
+TESTS_ENVIRONMENT= \
+	HOME="$(TOP)" \
+	HOST=localhost \
+	JDK4="@ac_jdk4_path@" \
+	JDK4_1="@ac_jdk4_1_path@" \
+	JDK4_2="@ac_jdk4_2_path@" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
+	SERVER=virtuoso-t \
+	TOP="$(TOP)"
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh
+
+test:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./test_server.sh $(T)
 
 clean-local:
-	./clean.sh
+	TOP="$(TOP)" ./clean.sh
 
 
 # ----------------------------------------------------------------------
@@ -97,43 +127,32 @@ clean-local:
 EXTRA_DIST= \
 	$(check_SCRIPTS) \
 	*.dtd \
+	*.eml \
+	*.nq \
+	*.pem \
 	*.sql \
 	*.txt \
 	*.vsp \
 	*.xml \
 	*.xsl \
-	cert.pem \
-	docsrc/*.xml \
-	docsrc/*.xsl \
-	eml1.eml \
-	eml2.eml \
-	etalon_ouput_gz \
+	cluster-test.ini \
 	grddl-tests.tar.gz \
+	ldp/*.ttl \
 	pdd_txt.gz \
-	pk.pem \
-	r4/r4.tmp \
-	r4/*.sql \
-	r4/*.xsd \
-	rtest.sh \
 	spanish.coll \
 	spotlight_test.tar.gz \
 	tdav_meta_050512.zip \
 	tdav_meta_050528.zip \
-	test_news_server_file \
+	tpcd.sh \
 	treplh-dsn-odbc.cfg \
 	treplh-test-odbc.cfg \
 	tvspxex.awk \
 	txslt.cmp \
-	vad_test/vsp/vad_test1/*.sql \
-	vad_test/vsp/vad_test1/*.vsp \
-	vad_test/vsp/vad_test2/*.sql \
-	vad_test/vsp/vad_test2/*.vsp \
 	virtuoso-1111.ini \
+	virtuoso-cl.ini \
 	virtuoso-striping.ini \
 	wi-striping-1-large.cfg \
-	wi-striping.cfg \
 	wi-striping-large.cfg \
+	wi-striping.cfg \
 	witest.cfg \
-	words.esp \
-	xsl_samples/*.xml \
-	xsl_samples/*.xsl
+	words.esp

@@ -20,15 +20,15 @@ public class LocalParameterPool extends AbstractParameterPool {
 	private Integer productCount;
 	private Integer reviewCount;
 
-	
+
 	public LocalParameterPool(File resourceDirectory, Long seed) {
 		Random seedGen = new Random(seed);
 		valueGen = new ValueGenerator(seedGen.nextLong());
 		countryGen = Generator.createCountryGenerator(seedGen.nextLong());
-		
+
 		init(resourceDirectory);
 	}
-	
+
 	private void init(File resourceDir) {
 		//Read in the Product Type hierarchy from resourceDir/pth.dat
 		ObjectInputStream productTypeInput;
@@ -56,7 +56,7 @@ public class LocalParameterPool extends AbstractParameterPool {
 			System.exit(-1);
 		}
 		catch(ClassNotFoundException e) { System.err.println(e); }
-	
+
 		//Review-Rating Site Relationships from resourceDir/rr.dat
 		File rr = new File(resourceDir, "rr.dat");
 		ObjectInputStream reviewRatingsiteInput;
@@ -87,14 +87,14 @@ public class LocalParameterPool extends AbstractParameterPool {
 		}
 		catch(ClassNotFoundException e) { System.err.println(e); }
 	}
-	
+
 	@Override
 	public Object[] getParametersForQuery(Query query) {
 		Byte[] parameterTypes = query.getParameterTypes();
 		Object[] parameters = new Object[parameterTypes.length];
 		ArrayList<Integer> productFeatureIndices = new ArrayList<Integer>();
 		ProductType pt = null;
-		
+
 		for(int i=0;i<parameterTypes.length;i++) {
 			if(parameterTypes[i]==Query.PRODUCT_TYPE_URI) {
 				pt = getRandomProductType();
@@ -119,27 +119,27 @@ public class LocalParameterPool extends AbstractParameterPool {
 			else
 				parameters[i] = null;
 		}
-		
+
 		if(productFeatureIndices.size()>0 && pt == null) {
 			System.err.println("Error in parameter generation: Asked for product features without product type.");
 			System.exit(-1);
 		}
-		
+
 		String[] productFeatures = getRandomProductFeatures(pt, productFeatureIndices.size());
 		for(int i=0;i<productFeatureIndices.size();i++) {
 			parameters[productFeatureIndices.get(i)] = productFeatures[i];
 		}
-		
+
 		return parameters;
 	}
-	
+
 	/*
 	 * Get number distinct random Product Feature URIs of a certain Product Type
 	 */
 	private String[] getRandomProductFeatures(ProductType pt, Integer number) {
 		ArrayList<Integer> pfs = new ArrayList<Integer>();
 		String[] productFeatures = new String[number];
-		
+
 		ProductType temp = pt;
 		while(temp!=null) {
 			List<Integer> tempList = temp.getFeatures();
@@ -147,59 +147,59 @@ public class LocalParameterPool extends AbstractParameterPool {
 				pfs.addAll(temp.getFeatures());
 			temp = temp.getParent();
 		}
-		
+
 		if(pfs.size() < number) {
 			System.err.println(pt.toString() + " doesn't contain number different Product Features!");
 			System.exit(-1);
 		}
-		
+
 		for(int i=0;i<number;i++) {
 			Integer index = valueGen.randomInt(0, pfs.size()-1);
 			productFeatures[i] = ProductFeature.getURIref(pfs.get(index));
 			pfs.remove(index);
 		}
-		
+
 		return productFeatures;
 	}
-	
+
 	/*
 	 * Get a random Product Type URI
 	 */
 	private ProductType getRandomProductType() {
 		Integer index = valueGen.randomInt(0, productTypeLeaves.length-1);
-		
+
 		return productTypeLeaves[index];
 	}
-	
+
 	/*
 	 * Get a random Product URI
 	 */
 	private String getRandomProductURI() {
 		Integer productNr = valueGen.randomInt(1, productCount);
 		Integer producerNr = getProducerOfProduct(productNr);
-		
+
 		return Product.getURIref(productNr, producerNr);
 	}
-	
+
 	/*
 	 * Get a random Review URI
 	 */
 	private String getRandomReviewURI() {
 		Integer reviewNr = valueGen.randomInt(1, reviewCount);
 		Integer ratingSiteNr = getRatingsiteOfReviewer(reviewNr);
-		
+
 		return Review.getURIref(reviewNr, ratingSiteNr);
 	}
-	
+
 	/*
 	 * Get random word from word list
 	 */
 	private String getRandomWord() {
 		Integer index = valueGen.randomInt(0, wordList.length-1);
-		
+
 		return wordList[index];
 	}
-	
+
 	/*
 	 * Returns the ProducerNr of given Product Nr.
 	 */
@@ -207,10 +207,10 @@ public class LocalParameterPool extends AbstractParameterPool {
 		Integer producerNr = Arrays.binarySearch(producerOfProduct, productNr);
 		if(producerNr<0)
 			producerNr = - producerNr - 1;
-		
+
 		return producerNr;
 	}
-	
+
 	/*
 	 * Returns the Rating Site Nr of given Review Nr
 	 */
@@ -218,10 +218,10 @@ public class LocalParameterPool extends AbstractParameterPool {
 		Integer ratingSiteNr = Arrays.binarySearch(ratingsiteOfReview, reviewNr);
 		if(ratingSiteNr<0)
 			ratingSiteNr = - ratingSiteNr - 1;
-		
+
 		return ratingSiteNr;
 	}
-	
+
 	/*
 	 * Returns a random number between 1-500
 	 */

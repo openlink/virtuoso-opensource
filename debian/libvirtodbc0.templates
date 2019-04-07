@@ -1,0 +1,18 @@
+# These templates have been reviewed by the debian-l10n-english
+# team
+#
+# If modifications/additions/rewording are needed, please ask
+# debian-l10n-english@lists.debian.org for advice.
+#
+# Even minor modifications require translation updates and such
+# changes should be coordinated with translators and reviewers.
+
+Template: libvirtodbc0/register-odbc-driver
+Type: boolean
+Default: false
+_Description: Register the Virtuoso ODBC driver?
+ An ODBC manager (unixodbc or iODBC)  is already installed on this system.
+ .
+ The Virtuoso ODBC driver can be automatically added to the list of
+ available ODBC drivers (and automatically deleted from the list
+ when this package is removed).

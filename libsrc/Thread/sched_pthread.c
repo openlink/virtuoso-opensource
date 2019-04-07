@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,13 +27,13 @@
 */
 
 #include <pthread.h>
-#include "thread_int.h"
+#include "Dk.h"
 
 #if defined(linux) && defined(VIRT_GPROF)
 #define pthread_create gprof_pthread_create
 #endif
 
-char *build_thread_model = "-pthreads";
+const char *build_thread_model = "-pthreads";
 
 /* Indicate preemptive scheduling for this model */
 int _thread_sched_preempt = 1;
@@ -79,7 +79,7 @@ _pthread_call_failed (const char *file, int line, int error)
 {
   char msgbuf[200];
 
-  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d) %s", error, strerror (error));
+  snprintf (msgbuf, sizeof (msgbuf), "pthread operation failed (%d) %d %s", error, errno, strerror (errno));
 #ifdef MTX_DEBUG
   gpf_notice (file, line, msgbuf);
 #else
@@ -252,6 +252,7 @@ thread_initial (unsigned long stack_size)
   stack_size = ((stack_size / 8192) + 1) * 8192;
 
   thr->thr_stack_size = stack_size;
+  thr->thr_stack_base = (void *) &stack_size;
   thr->thr_status = RUNNING;
   thr->thr_cv = _alloc_cv ();
   thr->thr_sem = semaphore_allocate (0);
@@ -361,7 +362,7 @@ thread_create (
        thr != (thread_t *) &_deadq.thq_head;
        thr = (thread_t *) thr->thr_hdr.thr_next)
     {
-      /* if (thr->thr_stack_size >= stack_size) */
+      if (thr->thr_stack_size >= stack_size) 
 	break;
     }
   Q_UNLOCK ();
@@ -468,6 +469,7 @@ thread_create (
   return thr;
 
 failed:
+  log_error ("Failed creating a thread errno %d", errno);
   if (thr->thr_status == RUNNABLE)
     {
       _thread_free_attributes (thr);
@@ -1190,7 +1192,7 @@ mutex_free (dk_mutex_t *mtx)
     {
       pthread_mutex_destroy ((pthread_mutex_t*) &mtx->mtx_mtx);
     }
-#ifdef MTX_DEBUG
+#if defined (MTX_DEBUG) || defined (MTX_METER)
   dk_free_box (mtx->mtx_name);
 #endif
 #ifdef MTX_METER
@@ -1403,6 +1405,14 @@ mutex_leave (dk_mutex_t * mtx)
 
 #endif
 
+#ifdef SEM_DEBUG
+#undef semaphore_leave
+void
+semaphore_leave (semaphore_t * sem)
+{
+   semaphore_leave_dbg (__LINE__, __FILE__, sem);
+}
+#endif
 
 int
 mutex_try_enter (dk_mutex_t *mtx)
@@ -1457,11 +1467,13 @@ mutex_leave (dk_mutex_t *mtx)
 
 
 void
-mutex_stat ()
+mutex_stat (int mode, int max)
 {
-  #ifdef MTX_METER
+#ifdef MTX_METER
   DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
+      if (!mtx->mtx_enters)
+	continue;
 #ifdef APP_SPIN
       printf ("%s %p E: %ld W %ld  spinw: %ld spin: %d\n", mtx->mtx_name ? mtx->mtx_name : "<?>",  mtx,
 	      mtx->mtx_enters, mtx->mtx_waits, mtx->mtx_spin_waits, mtx->mtx_spins);
@@ -1472,7 +1484,7 @@ mutex_stat ()
 #endif
     }
   END_DO_SET();
-  #else
+#else
   printf ("Mutex stats not enabled.}\n");
 #endif
 }

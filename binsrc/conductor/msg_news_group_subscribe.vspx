@@ -1,0 +1,536 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="msg_news_group_subscribe_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+    <v:script>
+      <![CDATA[
+declare _list, _row, _retrieve any;
+declare _name, _post, _server, _user, _pass varchar;
+declare idx, len, _port, _last, _first, _ns_id integer;
+declare expr, state, message, meta, result any;
+declare _header, _line, _ns_id, _sid, _realm any;
+
+if(self.first = 1) {
+  self.first := cast(get_keyword('FIRST', e.ve_params, '1') as integer);
+}
+if(self.first = 1) {
+  _sid := get_keyword('sid', e.ve_params);
+  _realm := get_keyword('realm', e.ve_params);
+  _ns_id := get_keyword('NS_ID', e.ve_params);
+  self.ns_id := cast(_ns_id as integer);
+  _header := http_header_get();
+  _line := sprintf('Refresh: 1; URL=msg_news_group_subscribe.vspx?NS_ID=%s&RETRIEVE=YES&FIRST=0&sid=%s&realm=%s\r\n', _ns_id, _sid, _realm);
+  if(_header is null) {
+    _header := _line;
+  }
+  else {
+    _header := concat(_header, _line);
+  }
+  http_header(_header);
+}
+if(self.first = 0) {
+  _retrieve := get_keyword('RETRIEVE', e.ve_params, 'NO');
+  if(_retrieve = 'YES' and self.done = 0) {
+    _server := '';
+    _user := '';
+    _port := 119;
+    _pass := '';
+    _ns_id := cast(get_keyword('NS_ID', e.ve_params) as int);
+    self.ns_id := _ns_id;
+
+    select
+      "NS_SERVER",
+      "NS_PORT",
+      "NS_USER",
+      "NS_PASS"
+    into
+      _server,
+      _port,
+      _user,
+      _pass
+    from
+      "DB"."DBA"."NEWS_SERVERS"
+    where
+      "NS_ID" = _ns_id;
+
+    commit work;
+
+    update
+      "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+    set
+      "UPDATED" = 'N'
+    where
+      "NS_ID" = _ns_id;
+
+    if(_server <> '' and _server <> 'localhost') {
+      if (_user = '') {
+        expr := sprintf('select nntp_get(\'%s\', \'%s\')', concat(_server, ':', cast(_port as varchar)), 'list');
+      }
+      else {
+        expr := sprintf('select nntp_auth_get(\'%s\', \'%s\', \'%s\', \'%s\')', concat(_server, ':', cast(_port as varchar)), _user, _pass, 'list');
+      }
+      state := '00000';
+      message := '';
+      exec(expr, state, message, vector(), 0, meta, result);
+      if(state <> '00000') {
+        self.error_message := message;
+        self.vc_is_valid := 0;
+	self.vc_error_message := message;
+      }
+      else {
+        _list := aref(aref(result,0),0);
+        idx := 0;
+        len := length(_list);
+        while (idx < len)
+        {
+          _row   := aref(_list, idx);
+          _name  := aref(_row, 0);
+          _post  := substring(aref(_row, 3), 1, 1);
+          _last  := aref(_row, 1);
+          _first := aref(_row, 2);
+
+          if(exists(select 1 from "DB"."DBA"."NEWS_GROUPS_AVAILABLE" where "NS_ID" = _ns_id and "NAME" = _name)) {
+            update
+              "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+            set
+              "DESCRIPTION" = '',
+              "FIRST" = _first,
+              "LAST" = _last,
+              "POSTING" = _post,
+              "UPDATED" = 'Y'
+            where
+              "NS_ID" = _ns_id and "NAME" = _name;
+          }
+          else {
+            insert into
+              "DB"."DBA"."NEWS_GROUPS_AVAILABLE"(
+                "NS_ID",
+                "NAME",
+                "DESCRIPTION",
+                "FIRST",
+                "LAST",
+                "POSTING",
+                "UPDATED")
+              values (_ns_id, _name, '', _first, _last, _post, 'Y');
+          }
+          idx := idx + 1;
+          commit work;
+        }
+        update
+          "DB"."DBA"."NEWS_GROUPS_AVAILABLE"
+        set
+          "UPDATED" = 'R'
+        where
+          "NS_ID" = _ns_id and "UPDATED" = 'N';
+      }
+    }
+  }
+}
+    if(self.server_name is null) {
+      declare host, port varchar;
+      whenever not found goto nfs;
+      select NS_SERVER, NS_PORT into host, port from DB.DBA.NEWS_SERVERS where NS_ID = self.ns_id;
+      self.server_name := sprintf ('%s:%d', host, port);
+      nfs:;
+      }
+      ]]>
+    </v:script>
+  </v:on-init>
+  <vm:pagetitle>Virtuoso NNTP Server Groups Subscriptions Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="error_message" persist="0" type="varchar" default="''" />
+      <v:variable name="ns_id" persist="0" type="integer" default="1" />
+      <v:variable name="first" persist="0" type="integer" default="1" />
+      <v:variable name="done" persist="0" type="integer" default="0" />
+      <v:variable name="search_mask" persist="0" type="varchar" default="''" />
+      <v:variable name="r_count" persist="temp" type="integer" default="0"/>
+      <v:variable name="server_name" persist="0" type="string" default="null" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="NNTP Server Group Subscripting"/>
+    </vm:menu>
+    <vm:header caption="NNTP Server Group Subscripting"></vm:header>
+    <vm:pagebody>
+      <v:method name="ng_subscribe" arglist="in _name any">
+      declare _posting, _post any;
+      declare _to_get, _first, _last, _updated, _beg, _descr any;
+
+      select FIRST, LAST, POSTING, UPDATED, DESCRIPTION into _first, _last, _posting, _updated, _descr from
+        DB.DBA.NEWS_GROUPS_AVAILABLE where NS_ID = self.ns_id;
+      if (_posting = 'N' or _posting = 'n')
+	{
+          _post := 0;
+        }
+      else
+	{
+          _post := 1;
+	}
+
+      _to_get := 500;
+      _beg := 0;
+
+      insert replacing
+        DB.DBA.NEWS_GROUPS(
+    	  NG_NEXT_NUM,
+          NG_AUTO,
+          NG_NAME,
+          NG_DESC,
+          NG_SERVER,
+          NG_POST,
+          NG_UP_TIME,
+          NG_CREAT,
+          NG_UP_INT,
+          NG_PASS,
+          NG_UP_MESS,
+          NG_NUM,
+          NG_FIRST,
+          NG_LAST,
+          NG_LAST_OUT,
+          NG_CLEAR_INT)
+        VALUES(
+          0,
+          1,
+          _name,
+          _descr,
+          self.ns_id,
+          _post,
+          now(),
+          now(),
+          30,
+          _to_get,
+          0,
+          0,      -- don't change !!!
+          0,      -- don't change !!!
+          0,      -- don't change !!!
+          _beg,
+          120);     -- days
+      </v:method>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+		      <td class="page_tab_selected" align="center">NNTP servers
+		      </td>
+		      <td class="page_tab" align="center">
+			<v:url name="gsetup" value="General Setup" url="msg_news_conf_global.vspx"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+			      <td width="100%">
+                              </td>
+                            </tr>
+                          </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN -->
+      <table class="MainData" width="100%">
+        <tr>
+          <td width="100%">
+	    Subscribed groups for "<span class="emphasize"><v:label name="snam" value="--self.server_name"/></span>"
+          </td>
+        </tr>
+        <tr>
+          <td width="100%">
+            <v:include url="msg_news_server_details.vspx"/>
+          </td>
+        </tr>
+        <tr>
+          <td width="100%">
+            Groups available for subscription
+          </td>
+        </tr>
+        <tr>
+          <td colspan="5" width="100%">
+            <v:template name="if_not_error" type="simple" enabled="-- case when (self.error_message = '' and self.first = 0) then 1 else 0 end">
+              <table align="left" border="0" cellspacing="5" cellpadding="0" width="100%">
+                <tr>
+                  <td>
+
+
+                    <v:form name="search_form" action="" type="simple" method="POST">
+                      <v:before-data-bind-container width="0" height="0">
+                        <v:script><![CDATA[
+              --declaration
+              declare saved_search_mask varchar;
+              -- processing
+              -- save current search_mask
+              saved_search_mask := self.search_mask;
+              -- get new search_mask from page parameter
+              self.search_mask := get_keyword('search_text', e.ve_params, '');
+              if(saved_search_mask <> '' and self.search_mask = '') {
+                self.search_mask := saved_search_mask;
+              }
+              -- set the value for edit control witch relate search_text value
+              self.search_text.ufl_value := self.search_mask;
+              self.search_text.vc_data_bound := 1;
+              -- do data search
+              if(saved_search_mask is null) saved_search_mask := '';
+              if(self.search_mask is null) self.search_mask := '';
+              if(saved_search_mask <> self.search_mask) {
+                -- if search_mask is changed comparing previous page state, reset data-set state
+                self.groups_availiable.ds_rows_fetched := 0;
+                self.groups_availiable.ds_rows_offs := 0;
+                self.groups_availiable.ds_prev_bookmark := null;
+                self.groups_availiable.ds_last_bookmark := null;
+              }
+              ]]></v:script>
+                      </v:before-data-bind-container>
+                      <table class="ctl_grp" align="left" border="0" cellspacing="5" cellpadding="0">
+                        <tr>
+			  <td align="right" width="20%" nowrap="1">
+			    <img src="images/icons/filter_16.png" border="0"/>
+                            Group Filtering:
+                          </td>
+                          <td>
+                            <v:text xhtml_size="50" width="80" type="simple" value="" name="search_text"/>
+                          </td>
+                          <td nowrap="nowrap">
+			    <v:button action="simple" name="search_button"
+			      value="Search"
+			      xhtml_alt="Search"
+			      xhtml_title="Search"
+			      >
+			    </v:button>
+                            <v:button name="clear_button" action="simple" value="Clear">
+                              <v:on-post>
+                                <v:script><![CDATA[
+        -- settings
+        self.search_text.ufl_value := '';
+        self.search_text.vc_data_bound := 1;
+        self.search_mask := '';
+        -- reset data-set state
+        self.groups_availiable.vc_enabled := 1;
+        self.groups_availiable.ds_rows_fetched := 0;
+        self.groups_availiable.ds_rows_offs := 0;
+        self.groups_availiable.ds_prev_bookmark := null;
+        self.groups_availiable.ds_last_bookmark := null;
+        self.groups_availiable.vc_data_bind (e);
+                            ]]></v:script>
+                              </v:on-post>
+                            </v:button>
+                          </td>
+                        </tr>
+                      </table>
+                    </v:form>
+
+
+
+
+
+                  </td>
+                </tr>
+                <tr>
+		  <td>
+		    <div class="scroll_area">
+                    <v:data-set name="groups_availiable" nrows="1000" scrollable="1" cursor-type="keyset">
+                      <v:sql>
+                        <![CDATA[
+      select
+        NAME,
+        DESCRIPTION,
+        FIRST,
+        LAST,
+        POSTING,
+        UPDATED,
+        NG_ID
+      from
+        DB.DBA.NEWS_GROUPS_AVAILABLE
+      where
+        NS_ID = self.ns_id and
+        NAME not in (select NG_NAME from DB.DBA.NEWS_GROUPS where NG_SERVER = self.ns_id) and
+        lcase(NAME) like lcase(concat('%', self.search_mask, '%'))
+                      ]]>
+                      </v:sql>
+                      <v:column name="NAME" />
+                      <v:column name="DESCRIPTION" />
+                      <v:column name="FIRST" />
+                      <v:column name="LAST" />
+                      <v:column name="POSTING" />
+                      <v:column name="UPDATED" />
+                      <v:column name="NG_ID" />
+                      <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="groups_available_header_template">
+                        <table class="listing" align="left" border="0" cellspacing="0" cellpadding="3" width="100%">
+                          <tr class="listing_header_row">
+			    <th  style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th>
+                            <th>Group Name</th>
+                            <th>Description</th>
+                            <th>First</th>
+                            <th>Last</th>
+                            <th>Posting</th>
+                            <th>Updated</th>
+                            <th>Action</th>
+                          </tr>
+                        </table>
+                      </v:template>
+                      <v:template type="repeat" name-to-remove="" set-to-remove="" name="groups_available_repeat_template">
+                        <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="groups_available_if_not_exists_template">
+                          <table class="data_set_container" width="100%" border="2" cellspacing="0" cellpadding="0" id="ds_groups_available"> <!-- dummy -->
+                            <tr>
+                              <td colspan="8">
+                                <b>No groups available</b>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:template>
+                        <v:template type="browse" name-to-remove="table" set-to-remove="both" name="groups_availiable_browse_template">
+                          <table class="data_set_container" width="100%" border="2" cellspacing="0" cellpadding="0" id="ds_groups_availiable"> <!-- dummy -->
+<?vsp
+              self.r_count := self.r_count + 1;
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+?>
+                            <!-- tr -->
+	  <td class="listing_col">
+	    <v:check-box name="cb_ngs_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+	  </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))" />
+                              </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+                              </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+                              </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_3" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+                              </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[4] as varchar))" />
+                              </td>
+                              <td align="left" nowrap="1">
+                                <v:label width="80" format="%s" name="groups_available_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
+                              </td>
+                              <td align="right" nowrap="1" class="listing_col_action">
+                                <v:button active="--(1)" action="simple" value="Subscribe" width="64" height="24" name="groups_available_subscribe" style="url">
+                                  <v:on-post>
+                                    <v:script><![CDATA[
+      declare _name any;
+      _name := (control.vc_parent as vspx_row_template).te_rowset[0];
+      self.ng_subscribe (_name);
+
+      self.groups_availiable.vc_data_bind(e);
+      self.news_groups.vc_data_bind(e);
+            ]]></v:script>
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+
+                           <?vsp http('</tr>'); ?>
+                           <!-- /tr-->
+                          </table>
+                        </v:template>
+                      </v:template>
+                      <v:template type="simple" name-to-remove="table" set-to-remove="top" name="groups_availiable_footer_template">
+                        <table class="data_set_container" width="100%" border="1" cellspacing="2" cellpadding="0" id="ds_groups_availiable">
+                          <tr class="browse_button_row">
+                            <td colspan="7" align="left"  class="listing_col_action">
+ 		    <v:button name="attach_selected_goups"
+		      action="simple"
+		      style="image"
+		      xhtml_alt="Subscribe Selected"
+		      xhtml_title="Subscribe Selected"
+		      text="&nbsp;Subscribe Selected"
+		      value="images/icons/add_16.png">
+		      <v:on-post>
+	declare i, arr any;
+	declare chil vspx_control;
+	declare cb vspx_check_box;
+ 	declare tb varchar;
+	declare ds vspx_data_set;
+
+	i := 0;
+	while ((chil := self.groups_availiable.ds_iterate_rows (i)) is not null)
+	  {
+	    cb := chil.vc_find_control ('cb_ngs_select');
+	    tb := get_keyword (cb.vc_instance_name, e.ve_params);
+	    if (tb is not null)
+	      {
+                self.ng_subscribe (tb);
+	      }
+	  }
+	self.news_groups.vc_data_bind(e);
+	self.groups_availiable.vc_data_bind(e);
+		      </v:on-post>
+		    </v:button>
+			      <vm:ds-navigation data-set="groups_availiable"/>
+                            </td>
+                            <td />
+                          </tr>
+                        </table>
+                      </v:template>
+		    </v:data-set>
+		  </div>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+            <!--v:template name="if_error" type="simple" enabled="-#- neq(self.error_message, '')">
+              <span class="Warning">
+                <v:label name="error_label" value="-#-(self.error_message)" format="%s"/>
+              </span>
+            </v:template-->
+            <v:template name="if_wait" type="simple" enabled="-- equ(self.first, 1)">
+              <span class="Warning">
+                <v:label name="processing_label" value="Downloading available groups list. Please wait..." format="%s"/>
+              </span>
+            </v:template>
+          </td>
+        </tr>
+        <tr>
+          <td align="left" colspan="5">
+            <v:url name="back_to_server_list" value="Back to servers list" active="--(1)" format="%s" url="msg_news_conf.vspx" width="80"/>
+          </td>
+        </tr>
+      </table>
+	  <!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

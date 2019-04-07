@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+
+  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+  project.
+
+  Copyright (C) 1998-2019 OpenLink Software
+
+  This project is free software; you can redistribute it and/or modify it
+  under the terms of the GNU General Public License as published by the
+  Free Software Foundation; only version 2 of the License, dated June 1991.
+
+  This program is distributed in the hope that it will be useful, but
+  WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+  General Public License for more details.
+
+  You should have received a copy of the GNU General Public License along
+  with this program; if not, write to the Free Software Foundation, Inc.,
+  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+
+  $
+-->
+<refentry id="fn_ST_Transform">
+  <refmeta>
+    <refentrytitle>ST_Transform</refentrytitle>
+    <refmiscinfo>geo</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>ST_Transform</refname>
+    <refpurpose>Transforms the given shape from its current spatial reference system to one specified by dest_srid.</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_ST_Transform">
+      <funcprototype id="fproto_ST_Transform">
+        <funcdef><function>ST_Transform</function></funcdef>
+	        <paramdef>in <parameter>shape</parameter> any</paramdef>
+	        <paramdef>in <parameter>dest_srid</parameter> any</paramdef>
+	        <paramdef><optional>in <parameter>origin_proj4_string</parameter> varchar</optional></paramdef>
+	        <paramdef><optional>in <parameter>dest_proj4_string </parameter> varchar</optional></paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_ST_Transform">
+    <title>Description</title>
+    <para>Transforms the given shape from its current spatial reference system to one specified by dest_srid.
+    	Two optional arguments: the SRID of the resulting shape is set to dest_srid but the conversion is done
+    	by proj4 using origin_proj4_string for projection of original shape and dest_proj4_string for the result.
+    	If orig_proj4_string or dest_proj4_string argument is passed but is NULL instead of string, the projection
+    	corresponding to original or destination SRID is used. ST_Transform is provided by a separate plugin named
+    	v7proj4, as described below. When the plugin is loaded, functions like ST_Intersects() support pairs of arguments
+    	with different SRIDs by converting coords of second argument into the system of the first one, as required by OGC
+    	and GeoSPARQL.</para>
+  </refsect1>
+  <refsect1 id="params_ST_Transform">
+    <title>Parameters</title>
+    <refsect2><title>shape</title><para>Geometry.</para></refsect2>
+    <refsect2><title>dest_srid</title><para>Destination SRID.</para></refsect2>
+    <refsect2><title>origin_proj4_string</title><para>String to be used for the projection.</para></refsect2>
+    <refsect2><title>dest_proj4_string</title><para>String used for the destination result.</para></refsect2>
+  </refsect1>
+  <refsect1 id="ret_ST_Transform"><title>Return Types</title>
+    <para>Returns varchar.</para>
+  </refsect1>
+  <refsect1 id="examples_ST_Transform">
+    <title>Examples</title>
+    <example id="ex_ST_Transform"><title>Simple Use</title>
+      <screen><![CDATA[
+SQL> SELECT * FROM DB.DBA.SYS_V7PROJ4_SRIDS;
+SR_ID              SR_FAMILY          SR_TAG    SR_ORIGIN              SR_IRI    SR_PROJ4_STRING                                                                                                                                                                         SR_WKT    SR_COMMENT   SR_PROJ4_XML
+INTEGER NOT NULL   VARCHAR NOT NULL   VARCHAR   VARCHAR NOT NULL       VARCHAR   VARCHAR NOT NULL                                                                                                                                                                        VARCHAR   VARCHAR      VARCHAR
+________________   ________________   _______   ____________________   _______   _____________________________________________________________________________________________________________________________________________________________________________________   _______   __________   ____________
+
+2005               EPSG               2005      /usr/share/proj/epsg   NULL      +ellps=clrk80 +k=0.9995000000000001 +lat_0=0 +lon_0=-62 +no_defs +proj=tmerc +units=m +x_0=400000 +y_0=0                                                                                          NULL         NULL
+2249               EPSG               2249      /usr/share/proj/epsg   NULL      +datum=NAD83 +ellps=GRS80 +lat_0=41 +lat_1=42.68333333333333 +lat_2=41.71666666666667 +lon_0=-71.5 +no_defs +proj=lcc +to_meter=0.3048006096012192 +x_0=200000.0001016002 +y_0=750000             NULL         NULL
+4326               EPSG               4326      /usr/share/proj/epsg   NULL      +datum=WGS84 +ellps=WGS84 +no_defs +proj=longlat                                                                                                                                                  NULL         NULL
+
+3 Rows. -- 1 msec.
+SQL> SELECT
+st_transform (
+    st_geomfromtext ('POLYGON((-16 20.25,
+                               -16.1 20.35,
+                               -15.9 20.35,
+                               -16 20.25))'),
+                     1,
+                     '+proj=latlong +ellps=clrk66',
+                     '+proj=merc +ellps=clrk66 +lat_ts=33');
+unnamed
+VARCHAR NOT NULL
+_____________________________________________________________________________________________________________________________________________
+
+SRID=1;POLYGON((-1495284.211473 1920596.789917,
+                -1504629.737795 1930501.842961,
+                -1485938.685152 1930501.842961,
+                -1495284.211473 1920596.789917))
+
+1 Rows. -- 0 msec.
+
+SQL> SELECT ST_AsText(
+              ST_Transform(
+                ST_GeomFromText('POLYGON((743238 2967416,
+                                          743238 2967450,
+                                          743265 2967450,
+                                          743265.625 2967416,
+                                          743238 2967416))',
+                                 2249),4326)) AS wgs_geom;
+wgs_geom
+VARCHAR NOT NULL
+___________________________________________________________________________________________________________________
+
+POLYGON((-71.177685 42.390290,
+         -71.177684 42.390383,
+         -71.177584 42.390383,
+         -71.177583 42.390289,
+         -71.177685 42.390290))
+
+1 Rows. -- 1 msec.
+SQL>
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_ST_Transform">
+    <title>See Also</title>
+    <para><link linkend="fn_st_transform_by_custom_projection"><function>st_transform_by_custom_projection()</function></link></para>
+    <para><link linkend="fn_ST_Translate"><function>ST_Translate()</function></link></para>
+    <para><link linkend="fn_ST_TransScale"><function>ST_TransScale()</function></link></para>
+    <para><link linkend="fn_st_x"><function>ST_X()</function></link></para>
+    <para><link linkend="fn_st_y"><function>ST_Y()</function></link></para>
+    <para><link linkend="fn_ST_Z"><function>ST_Z()</function></link></para>
+    <para><link linkend="fn_ST_M"><function>ST_M()</function></link></para>
+    <para><link linkend="fn_ST_XMin"><function>ST_XMin()</function></link></para>
+    <para><link linkend="fn_ST_XMax"><function>ST_XMax()</function></link></para>
+    <para><link linkend="fn_ST_YMin"><function>ST_YMin()</function></link></para>
+    <para><link linkend="fn_ST_YMax"><function>ST_YMax()</function></link></para>
+    <para><link linkend="fn_ST_ZMin"><function>ST_ZMin()</function></link></para>
+    <para><link linkend="fn_ST_ZMax"><function>ST_ZMax()</function></link></para>
+    <para><link linkend="fn_ST_MMin"><function>ST_MMin()</function></link></para>
+    <para><link linkend="fn_ST_MMax"><function>ST_MMax()</function></link></para>
+  </refsect1>
+</refentry>

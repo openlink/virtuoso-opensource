@@ -1,0 +1,852 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="xml_schema_validation_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        xhtml-owner="my_page_owner"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+    <script><![CDATA[
+  ]]></script>
+  </v:on-init>
+  <vm:pagetitle>XML Schema Validation</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="validation_result" default="''" type="varchar" persist="1"/>
+      <v:variable name="xml_valid_page_mode" default="null" type="any" persist="1"/>
+      <v:variable name="xml_valid_result" default="null" type="varchar" persist="1"/>
+      <v:variable name="xml_valid_configure" default="0" type="integer" persist="1"/>
+      <v:variable name="error_string" default="null" type="varchar" persist="1"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="XML Schema Validation"/>
+    </vm:menu>
+    <vm:header caption="XML Schema Validation"/>
+    <vm:pagebody>
+      <v:template name="template1" type="simple" enabled="--case when ( self.xml_valid_page_mode is null ) then 1 else 0 end">
+                    <v:before-data-bind>
+                      <v:script>
+                        <![CDATA[
+                              if ( self.xml_valid_configure = 1) {
+ 				self.Validation.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'Validation\']/@value', xtree_doc(self.validation_result));
+				self.AttrCompletion.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'AttrCompletion\']/@value', xtree_doc(self.validation_result));
+				self.AttrMisFormat.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'AttrMisFormat\']/@value', xtree_doc(self.validation_result));
+				self.AttrUnknown.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'AttrUnknown\']/@value', xtree_doc(self.validation_result));
+				self.BadRecursion.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'BadRecursion\']/@value', xtree_doc(self.validation_result));
+				self.BuildStandalone.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'BuildStandalone\']/@value', xtree_doc(self.validation_result));
+				self.Fsa.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'Fsa\']/@value', xtree_doc(self.validation_result));
+				self.FsaBadWs.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'FsaBadWs\']/@value', xtree_doc(self.validation_result));
+				self.FsaSgml.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'FsaSgml\']/@value', xtree_doc(self.validation_result));
+				self.GeRedef.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'GeRedef\']/@value', xtree_doc(self.validation_result));
+				self.IdDuplicates.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'IdDuplicates\']/@value', xtree_doc(self.validation_result));
+				self.IdrefIntegrity.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'IdrefIntegrity\']/@value', xtree_doc(self.validation_result));
+				self.Include.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'Include\']/@value', xtree_doc(self.validation_result));
+				self.MaxErrors.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'MaxErrors\']/@value', xtree_doc(self.validation_result));
+				self.MaxWarnings.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'MaxWarnings\']/@value', xtree_doc(self.validation_result));
+				self.NamesUnknown.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'NamesUnknown\']/@value', xtree_doc(self.validation_result));
+				self.NamesUnordered.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'NamesUnordered\']/@value', xtree_doc(self.validation_result));
+				self.NamesUnresolved.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'NamesUnresolved\']/@value', xtree_doc(self.validation_result));
+				self.PeRedef.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'PeRedef\']/@value', xtree_doc(self.validation_result));
+				self.Sgml.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'Sgml\']/@value', xtree_doc(self.validation_result));
+				self.TooManyWarns.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'TooManyWarns\']/@value', xtree_doc(self.validation_result));
+				self.TraceLoading.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'TraceLoading\']/@value', xtree_doc(self.validation_result));
+				self.VcData.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'VcData\']/@value', xtree_doc(self.validation_result));
+				self.VcDtd.ufl_value := xpath_eval('/xml-schema-validation/param[@name=\'VcDtd\']/@value', xtree_doc(self.validation_result));
+			         self.xml_valid_configure := 0;
+			      }
+                        ]]>
+                      </v:script>
+                    </v:before-data-bind>
+
+<!--
+
+ -->
+
+      <vm:form name="xml_schema_form" type="simple" method="POST" action="">
+        <vm:attrs border="0" class="MainSubData" width="100%" cellspacing="0" cellpadding="5" align="center"/>
+        <vm:events>
+          <v:on-post>
+            <script><![CDATA[
+                {
+                  declare result,doc_base, doc, xml_schema,xml_doc, valid_declaration, folders_message  varchar;
+		 if (get_keyword('b_execute',params) is not null)  {
+                  doc_base := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:';
+                  doc := get_keyword('doc_path',params);
+                  xml_schema := get_keyword('schema_path',params);
+                    self.error_string := null;
+                    if (xml_schema = '') {
+                        self.error_string := 'Name of XML Schema file was not  specified.';
+                        goto try_again;
+                    } else if (check_dav_file_permissions (xml_schema, connection_get('vspx_user'), '100', folders_message) <> 1  ) {
+                       self.error_string := sprintf('Path on  XML Schema file is invalid:  "%s".',folders_message);
+                       goto try_again;
+                    }
+                    if (doc = '') {
+                        self.error_string := 'Name of XML file to validate was not  specified.';
+                        goto try_again;
+                    } else if (check_dav_file_permissions (doc, connection_get('vspx_user'), '100', folders_message) <> 1  ) {
+                       self.error_string := sprintf('Path on  XML file to validate is invalid:  "%s".',folders_message);
+                       goto try_again;
+                    }
+
+                  valid_declaration := concat('Validation=',get_keyword('Validation',params));
+                  valid_declaration := concat(valid_declaration,' AttrCompletion=',get_keyword('AttrCompletion',params));
+                  valid_declaration := concat(valid_declaration,' AttrMisFormat=',get_keyword('AttrMisFormat',params));
+                  valid_declaration := concat(valid_declaration,' AttrUnknown=',get_keyword('AttrUnknown',params));
+                  valid_declaration := concat(valid_declaration,' BadRecursion=',get_keyword('BadRecursion',params));
+                  valid_declaration := concat(valid_declaration,' BuildStandalone=',get_keyword('BuildStandalone',params));
+                  valid_declaration := concat(valid_declaration,' Fsa=',get_keyword('Fsa',params));
+                  valid_declaration := concat(valid_declaration,' FsaBadWs=',get_keyword('FsaBadWs',params));
+                  valid_declaration := concat(valid_declaration,' FsaSgml=',get_keyword('FsaSgml',params));
+                  valid_declaration := concat(valid_declaration,' GeRedef=',get_keyword('GeRedef',params));
+                  valid_declaration := concat(valid_declaration,' IdDuplicates=',get_keyword('IdDuplicates',params));
+                  valid_declaration := concat(valid_declaration,' IdrefIntegrity=',get_keyword('IdrefIntegrity',params));
+                  valid_declaration := concat(valid_declaration,' Include=',get_keyword('Include',params));
+                  valid_declaration := concat(valid_declaration,' MaxErrors=',get_keyword('MaxErrors',params));
+                  valid_declaration := concat(valid_declaration,' MaxWarnings=',get_keyword('MaxWarnings',params));
+                  valid_declaration := concat(valid_declaration,' NamesUnknown=',get_keyword('NamesUnknown',params));
+                  valid_declaration := concat(valid_declaration,' NamesUnordered=',get_keyword('NamesUnordered',params));
+                  valid_declaration := concat(valid_declaration,' NamesUnresolved=',get_keyword('NamesUnresolved',params));
+                  valid_declaration := concat(valid_declaration,' PeRedef=',get_keyword('PeRedef',params));
+                  valid_declaration := concat(valid_declaration,' Sgml=',get_keyword('Sgml',params));
+                  valid_declaration := concat(valid_declaration,' TooManyWarns=',get_keyword('TooManyWarns',params));
+                  valid_declaration := concat(valid_declaration,' TraceLoading=',get_keyword('TraceLoading',params));
+                  valid_declaration := concat(valid_declaration,' VcData=',get_keyword('VcData',params));
+                  valid_declaration := concat(valid_declaration,' VcDtd=',get_keyword('VcDtd',params));
+
+                    {
+                      if (xml_schema = '' or not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xml_schema))     {
+                           self.validation_result:= 'XML Schema does not exist.';
+                           self.xml_valid_page_mode := 'result';
+			   self.xml_valid_result := 'error';
+			   self.vc_data_bind(e);
+                           return;
+                      };
+
+                      if (doc= '' or not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = doc))     {
+                        self.validation_result:= 'Xml Document does not exist.';
+                           self.xml_valid_page_mode := 'result';
+			   self.xml_valid_result := 'error';
+			   self.vc_data_bind(e);
+                           return;
+                      };
+                      select blob_to_string (RES_CONTENT) into xml_doc from WS.WS.SYS_DAV_RES where RES_FULL_PATH = doc;
+                    }
+                      declare exit handler for sqlstate '*'
+                      {
+                           self.validation_result:= sprintf('Error at validation: %s', __SQL_MESSAGE);
+                           self.xml_valid_page_mode := 'result';
+			   self.xml_valid_result := 'error';
+			   self.vc_data_bind(e);
+                           return;
+                      };
+                  result := xml_validate_schema (xml_doc , 0, xml_schema, 'UTF-8', 'x-any',valid_declaration);
+
+                  self.validation_result := result;
+                  if (result = '') {
+                           self.xml_valid_page_mode := 'result';
+			   self.xml_valid_result := 'ok';
+			   self.vc_data_bind(e);
+                           return;
+                  } else {
+                           self.xml_valid_page_mode := 'result';
+			   self.xml_valid_result := 'error';
+			   self.vc_data_bind(e);
+                           return;
+                  }
+                  --xml_uri_get(doc_base,doc)
+          } else if (get_keyword('b_load',params) is not null ) {
+                self.xml_valid_page_mode := 'load_config';
+		self.vc_data_bind(e);
+                return;
+	 }  else if (get_keyword('b_save',params) is not null ) {
+		    valid_declaration := '<xml-schema-validation mode="params">';
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','Validation', get_keyword('Validation',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','AttrCompletion',get_keyword('AttrCompletion',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','AttrMisFormat',get_keyword('AttrMisFormat',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','AttrUnknown',get_keyword('AttrUnknown',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','BadRecursion',get_keyword('BadRecursion',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','BuildStandalone',get_keyword('BuildStandalone',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','Fsa',get_keyword('Fsa',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','FsaBadWs',get_keyword('FsaBadWs',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','FsaSgml',get_keyword('FsaSgml',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','GeRedef',get_keyword('GeRedef',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','IdDuplicates',get_keyword('IdDuplicates',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','IdrefIntegrity',get_keyword('IdrefIntegrity',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','Include',get_keyword('Include',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','MaxErrors',get_keyword('MaxErrors',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','MaxWarnings',get_keyword('MaxWarnings',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','NamesUnknown',get_keyword('NamesUnknown',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','NamesUnordered',get_keyword('NamesUnordered',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','NamesUnresolved',get_keyword('NamesUnresolved',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','PeRedef',get_keyword('PeRedef',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','Sgml',get_keyword('Sgml',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','TooManyWarns',get_keyword('TooManyWarns',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','TraceLoading',get_keyword('TraceLoading',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','VcData',get_keyword('VcData',params)));
+                  valid_declaration := concat(valid_declaration,sprintf('<param name="%s" value="%s"/>','VcDtd',get_keyword('VcDtd',params)));
+		  valid_declaration := concat(valid_declaration,'</xml-schema-validation>');
+	 	 self.validation_result := valid_declaration;
+                self.xml_valid_page_mode := 'save_config';
+		self.vc_data_bind(e);
+                return;
+	 } else if (get_keyword('b_reset',params) is not null ) {
+ 		self.Validation.ufl_value := 'SGML';
+		self.AttrCompletion.ufl_value := 'DISABLE';
+		self.AttrMisFormat.ufl_value := 'DISABLE';
+		self.AttrUnknown.ufl_value := 'DISABLE';
+		self.BadRecursion.ufl_value := 'FATAL';
+		self.BuildStandalone.ufl_value := 'DISABLE';
+		self.Fsa.ufl_value := 'DISABLE';
+		self.FsaBadWs.ufl_value := 'DISABLE';
+		self.FsaSgml.ufl_value := 'DISABLE';
+		self.GeRedef.ufl_value := 'DISABLE';
+		self.IdDuplicates.ufl_value := 'DISABLE';
+		self.IdrefIntegrity.ufl_value := 'DISABLE';
+		self.Include.ufl_value := 'DISABLE';
+		self.MaxErrors.ufl_value := '25';
+		self.MaxWarnings.ufl_value := '100';
+		self.NamesUnknown.ufl_value := 'DISABLE';
+		self.NamesUnordered.ufl_value := 'DISABLE';
+		self.NamesUnresolved.ufl_value := 'DISABLE';
+		self.PeRedef.ufl_value := 'DISABLE';
+		self.Sgml.ufl_value := 'DISABLE';
+		self.TooManyWarns.ufl_value := 'DISABLE';
+		self.TraceLoading.ufl_value := 'DISABLE';
+		self.VcData.ufl_value := 'DISABLE';
+		self.VcDtd.ufl_value := 'DISABLE';
+
+                self.xml_valid_page_mode := null;
+		self.vc_data_bind(e);
+
+	 }
+	 try_again:
+	 ;
+	 }
+    ]]></script>
+          </v:on-post>
+        </vm:events>
+        <vm:row>
+          <vm:raw>
+              <?vsp
+
+	        if (self.error_string is not null) {
+		  http('<td colspan="6" align="center" class="Warning">');
+                  http (self.error_string);
+                  self.error_string := null;
+		  http('</td>');
+		}
+              ?>
+
+          </vm:raw>
+        </vm:row>
+
+
+        <vm:row>
+          <vm:raw>
+            <td> XML Schema file<span class="attention_marker">*</span>
+            </td>
+            <td>
+              <v:text name="schema_path" xhtml_size="40"/>
+              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="schema_path"/>
+            </td>
+          </vm:raw>
+        </vm:row>
+        <vm:row>
+          <vm:raw>
+            <td>XML Document file<span class="attention_marker">*</span>
+            </td>
+            <td>
+              <v:text name="doc_path" xhtml_size="40"/>
+              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="doc_path"/>
+            </td>
+          </vm:raw>
+        </vm:row>
+        <vm:row>
+        <vm:container width="100%" class="SubData" border="0" colspan="2" title="Validation process parameters" titleclass="SubInfo">
+          <vm:row>
+              <vm:static cell="yes" colspan="4">General</vm:static>
+          </vm:row>
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Validation</td>
+             <td>
+            <v:select-list name="Validation" xhtml_style="width:160px;" xhtml_default="RIGOROUS">
+                 <v:item name="SGML" value="SGML" />
+                 <v:item name="RIGOROUS" value="RIGOROUS" />
+                 <v:item name="QUICK" value="QUICK" />
+                 <v:item name="DISABLE" value="DISABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Too Many Warnings</td>
+             <td>
+            <v:select-list name="TooManyWarns" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+            <vm:control type="edit" name="MaxErrors">
+                <vm:attrs default_value="25" xhtml_style="width:154px;"/>
+              <vm:caption value="Max Errors" pos="left" class="SubInfo"/>
+            </vm:control>
+            <vm:control type="edit" name="MaxWarnings">
+                <vm:attrs default_value="100" xhtml_style="width:154px;"/>
+              <vm:caption value="Max Warnings" pos="left" class="SubInfo"/>
+            </vm:control>
+          </vm:row>
+          <vm:row>
+              <vm:static cell="yes" colspan="2">External resources</vm:static>
+              <vm:static cell="yes" colspan="2">Entity substitution</vm:static>
+          </vm:row>
+        <vm:row>
+             <vm:raw>
+                <td class="SubInfo">External sub-documents</td>
+             <td>
+            <v:select-list name="Include" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Report circular references</td>
+             <td>
+            <v:select-list name="BadRecursion" xhtml_style="width:160px;">
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+                 <v:item name="DISABLE" value="DISABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Replace every reference</td>
+             <td>
+            <v:select-list name="BuildStandalone" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="ENABLE" value="ENABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Report redundant definitions of generic entities</td>
+             <td>
+            <v:select-list name="GeRedef" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Log Reference Loading</td>
+             <td>
+            <v:select-list name="TraceLoading" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="ENABLE" value="ENABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Report redundant definitions of parameter entities</td>
+             <td>
+            <v:select-list name="PeRedef" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+              <vm:static cell="yes" colspan="4">Generic validation constraints</vm:static>
+          </vm:row>
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Report violations  in the data section</td>
+             <td>
+            <v:select-list name="VcData" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="ENABLE" value="ENABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Report violations  in the DTD section</td>
+             <td>
+            <v:select-list name="VcDtd" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="ENABLE" value="ENABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+              <vm:static cell="yes" colspan="2">Document structure</vm:static>
+              <vm:static cell="yes" colspan="2">Element names</vm:static>
+          </vm:row>
+
+          <vm:row>
+           <vm:raw>
+                <td class="SubInfo">Check the content of every element</td>
+             <td>
+            <v:select-list name="Fsa" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Document contains undeclared element names</td>
+             <td>
+            <v:select-list name="NamesUnknown" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+          </vm:row>
+
+          <vm:row>
+
+             <vm:raw>
+                <td class="SubInfo">Check for redundant whitespace</td>
+             <td>
+            <v:select-list name="FsaBadWs" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">DTD references to an element before its declaration</td>
+             <td>
+            <v:select-list name="NamesUnordered" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+
+          </vm:row>
+
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Whether all DTD rules are SGML-compatible</td>
+             <td>
+            <v:select-list name="FsaSgml" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">DTD contains undeclared element names</td>
+             <td>
+            <v:select-list name="NamesUnresolved" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+              <vm:static cell="yes" colspan="4">Attribute values</vm:static>
+           </vm:row>
+
+          <vm:row>
+             <vm:raw>
+                <td class="SubInfo">Report syntax errors in values of attributes</td>
+             <td>
+            <v:select-list name="AttrMisFormat" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+
+             <vm:raw>
+                <td class="SubInfo">Report attributes that are not listed in the DTD</td>
+             <td>
+            <v:select-list name="AttrUnknown" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+
+             <vm:raw>
+                <td class="SubInfo">Report non-unique values of ID attributes</td>
+             <td>
+            <v:select-list name="IdDuplicates" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Report 'dangling' IDREF references to missing ID values</td>
+             <td>
+            <v:select-list name="IdrefIntegrity" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+           </vm:row>
+          <vm:row>
+
+           <vm:raw>
+                <td class="SubInfo">Sgml</td>
+             <td>
+            <v:select-list name="Sgml" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="FATAL" value="FATAL" />
+                 <v:item name="ERROR" value="ERROR" />
+                 <v:item name="WARNING" value="WARNING" />
+                 <v:item name="IGNORE" value="IGNORE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+             <vm:raw>
+                <td class="SubInfo">Attribute Completion</td>
+             <td>
+            <v:select-list name="AttrCompletion" xhtml_style="width:160px;">
+                 <v:item name="DISABLE" value="DISABLE" />
+                 <v:item name="ENABLE" value="ENABLE" />
+             </v:select-list>
+           </td>
+          </vm:raw>
+
+           </vm:row>
+
+        </vm:container>
+        </vm:row>
+        <vm:row>
+          <vm:bgroup colspan="4" align="center">
+	   <table>
+	   <tr> <td align="center">Validation</td>
+	        <td width="48"/>
+	        <td align="center">Configuration</td>
+	   </tr>
+	   <tr>
+	    <td  align="center">
+            <v:button action="submit" name="b_reset" value="Reset"/>
+            <v:button action="submit" name="b_execute" value="Execute"/>
+	    </td><td width="48"/><td  align="center">
+            <v:button action="submit" name="b_load" value="Load"/>
+            <v:button action="submit" name="b_save" value="Save"/>
+	    </td>
+	    </tr>
+	    </table>
+          </vm:bgroup>
+        </vm:row>
+      </vm:form>
+      </v:template>
+      <v:template name="template2" type="simple" enabled="--case when ( self.xml_valid_page_mode = 'result' ) then 1 else 0 end">
+      <table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData" align="center">
+        <tr>
+          <td bgcolor="#83BFE8">
+            <p>
+            <?vsp if ( self.xml_valid_result = 'ok' )
+                  http('The XML Schema Validation  passed successfully');
+              else
+                  http('The XML Schema Validation failed: <br/>');
+                  http(' <span style="{color:red}">');
+                  http(self.validation_result);
+                  http('</span>');
+            ?>
+            </p>
+          </td>
+        </tr>
+        <tr>
+          <td class="MainData">
+            <table width="100%" border="0" cellspacing="0" cellpadding="5">
+              <v:form name="result_form" type="simple" method="POST" action="">
+                <v:on-post>
+                  <v:script><![CDATA[
+
+                       self.xml_valid_page_mode := null;
+		       self.vc_data_bind(e);
+
+          ]]></v:script>
+                </v:on-post>
+                <tr>
+                  <td align="center">
+                    <v:button action="submit" name="apply" value="Ok"/>
+                  </td>
+                </tr>
+              </v:form>
+            </table>
+          </td>
+        </tr>
+      </table>
+      </v:template>
+      <v:template name="template3" type="simple" enabled="--case when ( self.xml_valid_page_mode  = 'load_config' ) then 1 else 0 end">
+      <table  align="center">
+              <v:form name="load_form" type="simple" method="POST" action="">
+                <v:on-post>
+                  <v:script><![CDATA[
+		     declare load_path, key_value, folders_message varchar;
+		    if ( get_keyword('load_apply', params)is not null ) {
+		     load_path :=  get_keyword('conf_src', params);
+                    if (load_path = '') {
+                        self.error_string := 'Name of configuration file for XML Schema Validation  was not  specified.';
+                        goto try_again;
+                    } else if (check_dav_file_permissions (load_path, connection_get('vspx_user'), '100', folders_message) <> 1  ) {
+                       self.error_string := sprintf('Path on  configuration file for XML Schema Validation file is invalid:  "%s".',folders_message);
+                       goto try_again;
+                    }
+
+		     self.validation_result := null;
+		     select blob_to_string(RES_CONTENT) into self.validation_result  from WS.WS.SYS_DAV_RES where RES_FULL_PATH = load_path;
+		     key_value := xpath_eval('/xml-schema-validation/@mode', xtree_doc(self.validation_result));
+		     if (key_value = 'params') {
+		       self.xml_valid_configure := 1;
+                       self.xml_valid_page_mode := null;
+		       self.vc_data_bind(e);
+		       return;
+		     } else {
+		       self.error_string := 'Given file is not the configuration file for XML Schema Validation. Choose another file.';
+		     }
+		     } else {
+                       self.xml_valid_page_mode := null;
+		       self.vc_data_bind(e);
+		       return;
+		     }
+		     try_again: ;
+          ]]></v:script>
+                </v:on-post>
+      <tr>
+        <td colspan="2" align="center"><b>Load the configuration file</b> </td>
+	</tr>
+	<tr>
+	<td colspan="2" align="center">Specify the valid path on configuration file to load from.</td>
+      </tr>
+      <tr>
+       <?vsp
+
+	        if (self.error_string is not null) {
+      	          http('<td colspan="6" align="center" class="Warning">');
+                  http (self.error_string);
+                  self.error_string := null;
+	          http('</td>');
+		}
+
+	  ?>
+       </tr>
+            <tr>
+              <td>Configuration file<span class="attention_marker">*</span></td>
+                <td>
+                  <v:text name="conf_src" xhtml_size="40">
+                    <v:before-data-bind>
+                      <v:script>
+                        <![CDATA[
+                          if (get_keyword('conf_src', control.vc_page.vc_event.ve_params) is not null)
+                            control.ufl_value := get_keyword('conf_src', control.vc_page.vc_event.ve_params);
+                          control.vc_data_bound := 1;
+                        ]]>
+                      </v:script>
+                    </v:before-data-bind>
+                  </v:text>
+                  <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="conf_src"/>
+                </td>
+             </tr>
+                <tr>
+                  <td align="center" colspan="2">
+                    <v:button action="submit" name="load_apply" value="Load"/>
+		    <v:button action="submit" name="load_cancel" value="Cancel"/>
+                  </td>
+                </tr>
+	     </v:form>
+	     </table>
+      </v:template>
+      <v:template name="template4" type="simple" enabled="--case when ( self.xml_valid_page_mode = 'save_config' ) then 1 else 0 end">
+      <table  align="center">
+              <v:form name="save_form" type="simple" method="POST" action="">
+                <v:on-post>
+                  <v:script><![CDATA[
+		  declare save_path, folders_message, file_perms  varchar;
+		  declare result, dav_folder_owner, dav_folder_group  integer;
+		  if ( get_keyword('save_apply', params)is not null ) {
+		      save_path := get_keyword('conf_dst', control.vc_page.vc_event.ve_params);
+                      if (save_path = '') {
+                        self.error_string := 'Path on file to store result in was not  specified.';
+                        goto try_again;
+                      } else  {
+                         if ( dav_path_validate(save_path,dav_folder_owner, dav_folder_group, file_perms, folders_message) <> 1 ) {
+                           self.error_string := sprintf('Path to store into is invalid. Path validation was failed: "%s"', folders_message);
+                           goto try_again;
+                         } else if ( dav_check_permissions(connection_get('vspx_user'), file_perms,'010' ,dav_folder_owner, dav_folder_group, folders_message) <> 1) {
+                            self.error_string := sprintf('You are unable to store this file: "%s"', folders_message);
+                            goto try_again;
+                         }
+                      }
+
+		      result := DAV_RES_UPLOAD (save_path, self.validation_result, 'text/xml','110100100R', 'dav', 'dav','dav','dav');
+                      self.xml_valid_page_mode := null;
+		      self.vc_data_bind(e);
+		  } else {
+                      self.xml_valid_page_mode := null;
+		      self.vc_data_bind(e);
+		  }
+		try_again: ;
+         ]]></v:script>
+                </v:on-post>
+      <tr>
+        <td colspan="2" align="center"><b>Save the configuration file</b> </td>
+	</tr>
+	<tr>
+	<td colspan="2" align="center">Specify the valid path on configuration file to save in.</td>
+      </tr>
+      <tr>
+       <?vsp
+
+	        if (self.error_string is not null) {
+      	          http('<td colspan="6" align="center" class="Warning">');
+                  http (self.error_string);
+                  self.error_string := null;
+	          http('</td>');
+		}
+
+	  ?>
+       </tr>
+            <tr>
+              <td>Configuration file<span class="attention_marker">*</span></td>
+                <td>
+                  <v:text name="conf_dst" xhtml_size="40">
+                    <v:before-data-bind>
+                      <v:script>
+                        <![CDATA[
+                          if (get_keyword('conf_dst', control.vc_page.vc_event.ve_params) is not null)
+                            control.ufl_value := get_keyword('conf_dst', control.vc_page.vc_event.ve_params);
+                          control.vc_data_bound := 1;
+                        ]]>
+                      </v:script>
+                    </v:before-data-bind>
+                  </v:text>
+                  <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="conf_dst"/>
+                </td>
+             </tr>
+                <tr>
+                  <td align="center" colspan="2">
+                    <v:button action="submit" name="save_apply" value="Save"/>
+		    <v:button action="submit" name="save_cancel" value="Cancel"/>
+                  </td>
+                </tr>
+	     </v:form>
+	     </table>
+      </v:template>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+<!--
+ <params>
+ <param name="" value=""/>
+ </params>
+ names:
+Validation
+AttrCompletion
+AttrMisFormat
+AttrUnknown
+BadRecursion
+BuildStandalone
+Fsa
+FsaBadWs
+FsaSgml
+GeRedef
+IdDuplicates
+IdrefIntegrity
+Include
+MaxErrors
+MaxWarnings
+NamesUnknown
+NamesUnordered
+NamesUnresolved
+PeRedef
+Sgml
+TooManyWarns
+TraceLoading
+VcData
+VcDtd
+
+ -->

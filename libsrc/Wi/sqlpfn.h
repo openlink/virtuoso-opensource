@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,7 @@ caddr_t not_impl (char * text);
 
 int ammsc_to_code (char * op);
 
+caddr_t list (long n, ...);
 void list_extend (caddr_t *list_ptr, long n, ...);
 void list_nappend (caddr_t *list_ptr, caddr_t cont);
 caddr_t sc_list (long n, ...);
@@ -66,6 +67,7 @@ caddr_t DBG_NAME (sqlp_box_id_upcase) (DBG_PARAMS const char *str);
 #define sqlp_box_id_upcase(s) dbg_sqlp_box_id_upcase (__FILE__, __LINE__, s)
 #endif
 caddr_t t_sqlp_box_id_upcase (const char * str);
+caddr_t t_sqlp_box_id_upcase_nchars (const char * str, int len);
 caddr_t sqlp_box_upcase (const char * str);
 caddr_t t_sqlp_box_upcase (const char * str);
 
@@ -126,7 +128,6 @@ void sqlp_no_table (char *pref, char *name);
 caddr_t sqlp_view_u_id (void);
 caddr_t sqlp_view_g_id (void);
 
-extern dk_set_t html_lines;
 
 caddr_t sqlp_html_string (void);
 
@@ -151,7 +152,6 @@ caddr_t * sqlp_string_col_list (caddr_t * lst);
 caddr_t sqlp_xml_col_name (ST * tree);
 extern int sqlp_xml_col_directive (char *id);
 long sqlp_xml_select_flags (char * mode, char * elt);
-extern void sqlp_tweak_selection_names (ST * tree);
 ptrlong sqlp_bunion_flag (ST * l, ST * r, long f);
 ST *sqlp_wpar_nonselect (ST *subq);
 ST * sqlp_inline_order_by (ST *tree, ST **oby);
@@ -187,7 +187,7 @@ void sqlp_pragma_line (char * text);
 caddr_t sqlp_hex_literal (char *yytxt, int unprocess_chars_at_end);
 caddr_t sqlp_bit_literal (char *yytxt, int unprocess_chars_at_end);
 
-caddr_t sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval);
+caddr_t sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval, int find_lextype);
 
 ST * sqlp_udt_create_external_proc (ptrlong routine_head, caddr_t proc_name,
     caddr_t parms, ST *opt_return, caddr_t alt_type, ptrlong language_name, caddr_t external_name, ST **opts);
@@ -196,30 +196,34 @@ ST * sqlp_wrapper_sqlxml_assign (ST * tree);
 
 int sqlp_tree_has_fun_ref (ST *tree);
 
-extern int scn3_lineno;			/*!< Throughout counter of lines in the source text */
-extern int scn3_plineno;		/*!< Physical counter of lines in the source text - used for the PL debugger */
-extern int scn3_lineno_increment;	/*!< This is zero for 'macroexpanded' fragments of SQL text, to prevent from confusing when a long text is inserted instead of a single line */
-extern int scn3_lexdepth;		/*!< Number of opened parenthesis */
 extern int scn3_get_lineno (void);
 extern char *scn3_get_file_name (void);
-extern char *yytext;
-#ifndef YY_DECL
-extern int yylex(void);
-extern int scn3splityylex(void);
+#ifndef YY_TYPEDEF_YY_SCANNER_T
+#define YY_TYPEDEF_YY_SCANNER_T
+typedef void* yyscan_t;
 #endif
-void yyrestart (FILE * in);
-void scn3splityyrestart (FILE * in);
-extern void sql_yy_reset (void);
-extern void scn3split_yy_reset (void);
-extern void sql_pop_all_buffers (void);
-extern void scn3split_pop_all_buffers (void);
-void yyerror (const char *s);
+#if 0
+#ifndef YY_DECL
+extern int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner);
+extern int scn3splityylex(YYSTYPE *yylval, yyscan_t yyscanner);
+#define YY_DECL int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner)
+#endif
+#endif
+extern int scn3yylex_init (yyscan_t* scanner);
+extern int scn3yylex_destroy (yyscan_t yyscanner );
+/* No need as soon as thing is reentrant: void scn3yyrestart (FILE * in, yyscan_t yyscanner); */
+/* No need as soon as thing is reentrant: void scn3splityyrestart (FILE * in, yyscan_t yyscanner); */
+extern void sql_yy_reset (yyscan_t yyscanner);
+extern void scn3split_yy_reset (yyscan_t yyscanner);
+extern void sql_pop_all_buffers (yyscan_t yyscanner);
+extern void scn3split_pop_all_buffers (yyscan_t yyscanner);
+/*void yyerror (const char *s);*/
 extern int yydebug;
-extern jmp_buf_splice parse_reset;
-extern size_t get_yyleng (void);
+extern char * scn3_get_yytext (yyscan_t yyscanner);
+extern size_t scn3_get_yyleng (yyscan_t yyscanner);
 int scn3_sprint_curr_line_loc (char *buf, size_t max_buf);
-extern int scn3_pragmaline_depth;
 void scn3_set_file_line (char *file, int file_nchars, int line_no);
+
 int bop_weight (int bop);
 
 extern char *part_tok (char ** place);
@@ -232,4 +236,9 @@ void sqlp_dt_header (ST * exp);
 caddr_t sqlp_col_num (caddr_t);
 int sqlp_is_num_lit (caddr_t x);
 caddr_t sqlp_minus (caddr_t n);
+char * sqlp_default_cluster ();
+dk_set_t cl_all_host_group_list ();
+dk_set_t sqlp_index_default_opts(dk_set_t opts);
+char * sqlp_inx_col_opt ();
+
 #endif /* _SQLPFN_H */

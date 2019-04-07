@@ -1,0 +1,225 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="0" name="_item" type="varchar" default="''"/>
+      <v:variable persist="0" name="_item_type" type="integer" default="0"/>
+      <v:variable persist="1" name="error_str198" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Bidirectional Snapshot Replication"/>
+    </vm:menu>
+    <vm:header caption="Create Conflict Resolver"/>
+    <vm:pagebody vdb_check="1">
+      <v:form name="event_form1" type="simple" method="POST" action="">
+        <input type="hidden" name="item" value="<?V get_keyword('item', self.vc_page.vc_event.ve_params) ?>"/>
+        <input type="hidden" name="item_type" value="<?V get_keyword('item_type', self.vc_page.vc_event.ve_params) ?>"/>
+        <v:before-data-bind>
+          <v:script>
+            <![CDATA[
+              self._item := cast(deserialize(decode_base64(get_keyword('item', self.vc_page.vc_event.ve_params))) as varchar);
+              self._item_type := atoi(get_keyword('item_type', self.vc_page.vc_event.ve_params, '0'));
+            ]]>
+          </v:script>
+        </v:before-data-bind>
+        <table class="ctl_grp">
+          <tr>
+            <td class="ctl_lbl_ctr">Name suffix</td>
+            <td class="ctl_ctr">
+              <input type="text" name="suffix"/>
+            </td>
+          </tr>
+          <tr>
+            <td class="ctl_lbl_ctr">Order</td>
+            <td class="ctl_ctr"><input type="text" name="order" value="100"/></td>
+          </tr>
+          <?vsp
+            if (self._item_type <> 1)
+            {
+          ?>
+          <tr>
+            <td class="ctl_lbl_ctr">Type</td>
+            <td class="ctl_ctr">
+              <select name="type">
+                <option label="U" value="U">U</option>
+                <option label="I" value="I">I</option>
+                <option label="D" value="D">D</option>
+              </select>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+          <tr>
+            <td class="ctl_lbl_ctr">Class</td>
+            <td class="ctl_ctr">
+              <select name="class">
+                <?vsp
+                  if (self._item_type = 1)
+                  {
+                ?>
+                <option label="Min Creation Time" value="min_ctime">Min Creation Time</option>
+                <option label="Max Creation Time" value="max_ctime">Max Creation Time</option>
+                <option label="Min Modification Time" value="min_mtime">Min Modification Time</option>
+                <option label="Max Modification Time" value="max_mtime">Max Modification Time</option>
+                <option label="Backup" value="backup">Do Backup</option>
+                <option label="Notify" value="notify">Do Notify</option>
+                <?vsp
+                  }
+                  else if (self._item_type = 2)
+                  {
+                ?>
+                <option label="Min" value="min">Min</option>
+                <option label="Max" value="max">Max</option>
+                <option label="Ave" value="ave">Ave</option>
+                <?vsp
+                  }
+                  else
+                  {
+                ?>
+                <option label="Min" value="min">Min</option>
+                <option label="Max" value="max">Max</option>
+                <option label="Ave" value="ave">Ave</option>
+                <option label="Add" value="add">Add</option>
+                <?vsp
+                  }
+                ?>
+                <option label="Publisher Wins" value="pub_wins">Publisher Wins</option>
+                <option label="Subscriber Wins" value="sub_wins">Subscriber Wins</option>
+                <option label="Custom" value="custom">Custom</option>
+              </select>
+            </td>
+          </tr>
+          <?vsp
+            if (self._item_type <> 1)
+            {
+          ?>
+          <tr>
+            <td class="ctl_lbl_ctr">Column</td>
+            <td class="ctl_ctr">
+              <select name="col">
+                <?vsp
+                  declare _cols, _col any;
+                  declare _col_name varchar;
+                  declare _col_dtp integer;
+                  declare _ix, _len integer;
+                  _cols := REPL_ALL_COLS(self._item);
+                  _ix := 0;
+                  _len := length(_cols);
+                  while (_ix < _len)
+                  {
+                    _col := aref(_cols, _ix);
+                    _col_name := repl_undot_name(aref(_col, 0));
+                    _col_dtp := aref(_col, 1);
+                    if (_col_dtp <> 128)
+                    {
+                ?>
+                <option label="<?V _col_name ?>" value="<?V _col_name ?>"><?V _col_name ?></option>
+                <?vsp
+                    }
+                    _ix := _ix + 1;
+                  }
+                ?>
+              </select>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+          <tr class="form_cmd_row">
+            <td colspan="2">
+              <v:button action="simple" name="cancel" value="Cancel">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" name="add" value="Add">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      declare _suffix, _order, _type, _class, _col varchar;
+                      _suffix := get_keyword('suffix', self.vc_page.vc_event.ve_params, '');
+                      _order := get_keyword('order', self.vc_page.vc_event.ve_params, '');
+                      _type := get_keyword('type', self.vc_page.vc_event.ve_params, '');
+                      _class := get_keyword('class', self.vc_page.vc_event.ve_params, '');
+                      _col := get_keyword('col', self.vc_page.vc_event.ve_params, '');
+                      if (_order = '')
+                        _order := '100';
+                      declare _err any;
+                      declare _stmt varchar;
+                      declare _params any;
+                      if (self._item_type = 1)
+                      {
+                        _stmt := 'REPL_ADD_DAV_CR(?, ?, ?, ?)';
+                        _params := vector(self._item, _suffix, _order, _class);
+                      }
+                      else
+                      {
+                        _stmt := 'REPL_ADD_SNAPSHOT_CR(?, ?, ?, ?, ?, ?)';
+                        _params := vector(self._item, _suffix, _type, _order, _class, _col);
+                      }
+                      declare _state, _msg varchar;
+                      _state := '00000';
+                      _msg := '';
+                      exec(_stmt, _state, _msg, _params);
+                      if (_state <> '00000')
+                      {
+                        self.error_str198 := _msg;
+                        return;
+                      }
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      <span class="listing_hdr_qual">
+  <p>To create stored PL procedure for conflict resolving:</p>
+  <ol>
+    <li>Enter a unique suffix (string literal) which will be appended to the
+      procedure name. <br/>The conflict resolver stored procedure name begins with published item name.</li>
+    <li>Enter the order for execution, less number will make so the resolver to be
+      invoked earlier.</li>
+    <li>Select default rule from "Class" drop-down list.</li>
+  </ol>
+      </span>
+      <?vsp
+        if (self.error_str198 <> '' and self.error_str198 is not null)
+          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+        self.error_str198 := '';
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

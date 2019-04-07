@@ -1,0 +1,749 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="http_serv_mgmt" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <vm:pagetitle>Virtuoso HTTP Server Management</vm:pagetitle>
+  <vm:pagewrapper>
+  <vm:variables>
+    <v:variable name="err_msg" persist="temp" type="varchar" default="''" />
+    <v:variable name="mode" persist="0" type="varchar" default="''" />
+    <v:variable name="edit_host" persist="0" type="varchar" default="''" />
+    <v:variable name="edit_port" persist="0" type="varchar" default="''" />
+    <v:variable name="edit_httphost" persist="0" type="varchar" default="''" />
+    <v:variable name="clhost" persist="0" type="varchar" default="''" />
+    <v:variable name="chost" persist="0" type="varchar" default="''" />
+    <v:variable name="hpmg_openat" persist="temp" type="varchar" default="null" param-name="openat"/>
+    <v:variable name="http_tree_state" persist="session" type="any" default="null" />
+    <v:variable name="hxp_openat" persist="session" type="varchar" default="null" />
+  </vm:variables>
+  <vm:menu>
+    <vm:menuitem value="Server management"/>
+  </vm:menu>
+  <vm:header caption="Hosted Domains and Virtual Directories">
+  </vm:header>
+  <vm:pagebody>
+    <v:template name="mode_temp1" type="simple" enabled="-- equ(self.mode, 'del')">
+      <v:before-data-bind>
+        <v:script><![CDATA[
+          self.err_msg := '';
+          if(self.mode <> 'del')
+            self.mode := '';
+          ]]></v:script>
+      </v:before-data-bind>
+      <v:form name="frm_confirm" action="http_serv_mgmt.vspx" method="POST" type="simple">
+        <div class="confirm_dialog">
+          <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+          <div class="confirm_text">
+             <p>You are requesting of deletion of listener at interface <b><?V self.edit_host ?></b>, listening at port <b><?V self.edit_port ?></b>, for connections to <b><?V self.edit_httphost ?></b>.<br/>
+              Additionally, these Virtual directories shall be deleted:<br/>
+              <?vsp
+  for select HP_LPATH
+        from DB.DBA.HTTP_PATH
+        where HP_HOST = self.chost and
+              HP_LISTEN_HOST = self.clhost
+        order by HP_LPATH do
+    {
+      http ('<b>');
+      http (HP_LPATH);
+      http('</b><br/>');
+    }
+              ?>
+             </p>
+          </div>
+          <div class="confirm_buttons">
+            <v:button name="conf_cancel" action="simple" value="Cancel">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+  self.edit_host := '';
+  self.edit_httphost := '';
+  self.edit_port := '';
+  self.chost := '';
+  self.clhost := '';
+  self.mode := '';
+  self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="conf_proceed" action="simple" value="Delete">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+  for (select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PERSIST_SES_VARS
+         from DB.DBA.HTTP_PATH
+         where HP_HOST = self.chost and HP_LISTEN_HOST = self.clhost) do
+    VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
+  self.mode := '';
+  self.edit_host := '';
+  self.edit_httphost := '';
+  self.edit_port := '';
+  self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </div>
+      </v:form>
+    </v:template>
+
+    <v:template name="def_host_tmpl" type="simple" enabled="-- equ(self.mode, 'add_def')">
+      <v:before-data-bind>
+        <v:script><![CDATA[
+          self.err_msg := '';
+          if(self.mode <> 'add_def')
+            self.mode := '';
+          ]]></v:script>
+      </v:before-data-bind>
+      <v:form name="frm_confirm_def_hosts" action="http_serv_mgmt.vspx" method="POST" type="simple">
+        <div class="confirm_dialog">
+          <div class="confirm_text">
+             <p>
+              <img class="dialog_icon" src="images/icons/add_32.png" alt="Confirm" title="Confirm"/>
+              You are requesting the addition of default virtual directories to the listener at interface <b><?V self.edit_host ?></b>, listening at port <b><?V self.edit_port ?></b>, for connections to <b><?V self.edit_httphost ?></b>.<br/>
+              The following Virtual directories will be created (existing ones will be overwritten):
+            </p>
+            <p>
+              <?vsp
+                for select HPD_LPATH
+                      from DB.DBA.HTTP_PATH_DEFAULT
+                  order by HPD_LPATH do
+                {
+                  http ('<b>');
+                  http (HPD_LPATH);
+                  http('</b><br/>');
+                }
+              ?>
+             </p>
+          </div>
+          <div class="confirm_buttons">
+            <v:button name="conf_cancel_def_hosts" action="simple" value="Cancel">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.edit_host := '';
+                    self.edit_httphost := '';
+                    self.edit_port := '';
+                    self.chost := '';
+                    self.clhost := '';
+                    self.mode := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="conf_proceed_def_hosts" action="simple" value="Create Default Directories">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    DB.DBA.CREATE_DEFAULT_VHOSTS (vhost=>self.chost, lhost=>self.clhost);
+                    self.mode := '';
+                    self.edit_host := '';
+                    self.edit_httphost := '';
+                    self.edit_port := '';
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </div>
+      </v:form>
+    </v:template>
+
+
+    <v:template name="tree_tmpl" type="simple" enabled="-- equ (self.mode, '')">
+      <vm:help id="http_server_management" sect=""/>
+      <v:form name="frm1" method="POST" type="simple">
+        <table class="listing">
+	  <tr class="listing_header_row">
+	    <th>
+	      <v:button name="refresh1" style="image" action="simple"
+		value="images/icons/ref_16.png"
+		xhtml_alt="Refresh page"
+		xhtml_title="Refresh page"
+		url="--http_path ()">
+	      </v:button>
+	    </th>
+	    <th>Interface</th>
+	    <th>Port</th>
+	    <th><label class="req">HTTP Host</label></th>
+	    <th>Action</th>
+	  </tr>
+	  <v:tree name="t1" multi-branch="0" orientation="vertical"
+	    start-path="*ALL*"
+	    root="www_root_node"
+	    open-at="--case when self.vc_is_postback or self.hxp_openat is null then null else self.hxp_openat end"
+	    child-function="www_chil_node">
+	    <!--v:before-render>
+		self.http_tree_state := control.vc_get_state ();
+	    </v:before-render-->
+	    <!--v:before-data-bind>
+	      if (self.http_tree_state is not null and not e.ve_is_post)
+	        {
+	          control.vc_set_control_state (self.http_tree_state);
+		}
+	    </v:before-data-bind-->
+            <v:node-template name="node_tmpl">
+	      <tr>
+		<td style="width:17px;">
+		  <v:button name="t1_toggle" action="simple" style="image"
+		    value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'images/icons/foldr_16.png' else 'images/icons/open_16.png' end"
+		    xhtml_id="t1_toggle"
+		    xhtml_alt="Toggle" xhtml_title="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then 'Click to open' else 'Click to close' end">
+		  </v:button>
+		</td>
+		<td>
+		  <label id="label10" for="t1_toggle">
+		  <v:label name="label10" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@lhost',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		  </label>
+		</td>
+		<td>
+		  <v:label name="label11" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@port',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		</td>
+		<td>
+		  <v:label name="label12" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@host',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		</td>
+		<td class="listing_col_action">
+		   <!--<v:url name="add_new1" value="Add new directory" url="">-->
+		    <v:button action="simple" style="image" name="add_new1"
+		      value="images/icons/add_16.png"
+		      url=""
+		      xhtml_alt="New"
+		      xhtml_title="New"
+		      text="&nbsp;New Directory"
+		      >
+		     <v:after-data-bind><![CDATA[
+		      declare xt, xp1 any;
+		      declare _host, _port, _httphost, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost :=  '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+
+		      _host1 := cast (xpath_eval ('@clhost',xt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',xt) as varchar);
+
+		      if ((control.vc_parent as vspx_tree_node).tn_open)
+		        {
+			  xp1 := sprintf ('//node[@clhost="%s" and @chost="%s"]', _host1, _httphost1);
+			  if (self.hxp_openat is null or self.hxp_openat <> xp1)
+			    {
+			      self.hxp_openat := xp1;
+			    }
+			}
+
+		      www_split_host (_host1, _host, _port);
+		      www_split_host (_httphost1, _httphost, tmp);
+
+		        --control.vu_url := sprintf (
+		        control.bt_url := sprintf (
+		          'http_add_path.vspx?mode=add1&_host=%s&_port=%s&_httphost=%s',
+			  _host, _port, _httphost);
+		    ]]></v:after-data-bind>
+		   <!--</v:url>-->
+		   </v:button>
+                  <v:button name="add_default_hosts" action="simple" value="Add Defaults" style="url" xhtml_title="Add Default Virtuso Directories to Listener">
+                    <v:on-post>
+                      <![CDATA[
+                        declare host, port, lhost, edit, chost, clhost varchar;
+                        declare xt, intf any;
+
+                        xt := (control.vc_parent as vspx_tree_node).tn_element;
+                        host := cast (xpath_eval ('@host',xt) as varchar);
+                        port := cast (xpath_eval ('@port',xt) as varchar);
+                        lhost := cast (xpath_eval ('@lhost',xt) as varchar);
+                        clhost := cast (xpath_eval ('@clhost',xt) as varchar);
+                        chost := cast (xpath_eval ('@chost',xt) as varchar);
+
+                        self.edit_host := host;
+                        self.edit_httphost := lhost;
+                        self.edit_port := port;
+                        self.chost := chost;
+                        self.clhost := clhost;
+                        self.mode := 'add_def';
+
+                        self.vc_data_bind (e);
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+		  <v:button name="item_stop1" action="simple" value="Stop" style="url">
+		    <v:after-data-bind><![CDATA[
+		      declare xt, xp, vh any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@clhost',xt) as varchar);
+		      vh := cast (xpath_eval ('@chost',xt) as varchar);
+
+		      if (xp in ('*ini*', '*sslini*'))
+		        control.vc_enabled := 0;
+
+		      if (vh in ('*ini*', '*sslini*'))
+		        {
+		          declare dlt vspx_control;
+			  dlt := control.vc_parent.vc_find_control ('item_delete1');
+			  if (dlt is not null)
+			    dlt.vc_enabled := 0;
+			  dlt := control.vc_parent.vc_find_control ('item_edit1');
+			  if (dlt is not null)
+			    {
+			      dlt.vc_enabled := 0;
+			    }
+			  dlt := control.vc_parent.vc_find_control ('item_cl1');
+			  if (dlt is not null)
+			    {
+			      dlt.vc_enabled := 0;
+			    }
+			}
+	              else if (not http_listen_host (xp, 2))
+		        {
+			  control.ufl_value := 'Start';
+		        }
+
+		      if (vh not in ('*ini*', '*sslini*'))
+		        {
+		          declare dlt vspx_url;
+			  dlt := control.vc_parent.vc_find_control ('item_edit1');
+			  if (dlt is not null)
+			    {
+			      dlt.vu_url := sprintf ('http_host_edit.vspx?lhost=%U&vhost=%U', xp, vh);
+			    }
+			  dlt := control.vc_parent.vc_find_control ('item_cl1');
+			  if (dlt is not null)
+			    {
+			      dlt.vu_url := sprintf ('http_host_clone.vspx?lhost=%U&vhost=%U', xp, vh);
+			    }
+		        }
+	            ]]></v:after-data-bind>
+		    <v:on-post><![CDATA[
+		    declare xt, intf any;
+		    xt := (control.vc_parent as vspx_tree_node).tn_element;
+		    intf := cast (xpath_eval ('@clhost',xt) as varchar);
+
+		    if (http_listen_host (intf , 2) = 0)
+		    {
+ 		      declare ssl_opts any;
+                      declare lcr cursor for select deserialize (HP_AUTH_OPTIONS) from DB.DBA.HTTP_PATH
+                      where HP_LISTEN_HOST = intf and length (HP_AUTH_OPTIONS) > 10;
+                      declare exit handler for not found { ssl_opts := null; };
+                      open lcr;
+                      {
+                        fetch lcr into ssl_opts;
+                      }
+                      close lcr;
+                      http_listen_host ( intf, 0, ssl_opts);
+                    }
+		    else
+		    {
+                      http_listen_host (intf, 1);
+                    }
+		    control.vc_data_bind(e);
+		    ]]>
+		    </v:on-post>
+		    <v:before-render><![CDATA[
+		      declare xt, lh, vh any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      lh := cast (xpath_eval ('@clhost',xt) as varchar);
+		      vh := cast (xpath_eval ('@chost',xt) as varchar);
+
+	              if (vh not in ('*ini*', '*sslini*'))
+		        {
+			  if (http_listen_host (lh, 2))
+			    control.ufl_value := 'Stop';
+			  else
+			    control.ufl_value := 'Start';
+			}
+ 		    ]]></v:before-render>
+		  </v:button>
+		  <v:url name="item_edit1" value="Edit" url="http_host_edit.vspx" enabled="1">
+		  </v:url>
+		  <v:url name="item_cl1" value="Clone" url="http_host_clone.vspx" enabled="1">
+		  </v:url>
+		  <v:button name="item_delete1" action="simple" value="Delete" style="url">
+		    <v:on-post>
+                  <![CDATA[
+		    declare host, port, lhost, edit, chost, clhost varchar;
+
+		    declare xt, intf any;
+		    xt := (control.vc_parent as vspx_tree_node).tn_element;
+		    host := cast (xpath_eval ('@host',xt) as varchar);
+		    port := cast (xpath_eval ('@port',xt) as varchar);
+		    lhost := cast (xpath_eval ('@lhost',xt) as varchar);
+		    edit := cast (xpath_eval ('@edit',xt) as int);
+		    clhost := cast (xpath_eval ('@clhost',xt) as varchar);
+		    chost := cast (xpath_eval ('@chost',xt) as varchar);
+
+		 if (edit = 1)
+                  {
+                    self.edit_host := host;
+                    self.edit_httphost := lhost;
+                    self.edit_port := port;
+                    self.chost := chost;
+                    self.clhost := clhost;
+                  }
+                    self.mode := 'del';
+                    self.vc_data_bind (e);
+                   ]]>
+		    </v:on-post>
+		  </v:button>
+		</td>
+	       </tr>
+	       <tr>
+		 <td colspan="5">
+		   <div class="<?V case when control.tn_open then 'scroll_area' else '' end ?>">
+		     <table class="listing">
+	       <?vsp
+	         if (control.tn_open) {
+		?>
+	       <tr class="listing_row_odd">
+		 <td style="width:16px;"> </td>
+		 <td>Logical Path</td>
+		 <td>Type</td>
+		 <td>Executes as</td>
+		 <td>
+		 </td>
+	       </tr>
+	       <?vsp } ?>
+	       <v:node/>
+	     </table>
+	   </div>
+	 </td>
+       </tr>
+            </v:node-template>
+            <v:leaf-template name="leaf_tmpl">
+	      <tr class="<?V case when mod(control.tn_position,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+		<td> </td>
+		<td>
+		<img src="images/icons/home_16.png" alt="Virtual directory" title="Virtual directory"/>
+		<v:label name="label21" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@lpath',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		</td>
+		<td>
+		<v:label name="label22" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@type',xt) as varchar);
+		      if (xp = 'SOAP')
+		        xp := 'Web Service';
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		</td>
+		<td>
+		<v:label name="label23" value="">
+		    <v:after-data-bind>
+		      declare xt, xp any;
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      xp := cast (xpath_eval ('@user',xt) as varchar);
+		      control.ufl_value := xp;
+		    </v:after-data-bind>
+		  </v:label>
+		</td>
+		<td  class="listing_col_action">
+		    <v:button action="simple" style="image" name="edit_path" url="http_add_path.vspx"
+		      value="images/icons/edit_16.png"
+		      xhtml_alt="Edit"
+		      xhtml_title="Edit"
+		      text="&nbsp;Edit"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      tp := cast (xpath_eval ('@type',xt) as varchar);
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+
+		      www_split_host (_host1, _host, _port);
+		      www_split_host (_httphost1, _httphost, tmp);
+
+		      if (tp = 'SOAP')
+		        control.bt_url := sprintf (
+		          'soap_services_edit.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+			  _host, _port, _httphost, _path);
+	              else
+		        control.bt_url := sprintf (
+		          'http_add_path.vspx?mode=edit&_host=%s&_port=%s&_httphost=%s&path=%s',
+			  _host, _port, _httphost, _path);
+		   ]]></v:after-data-bind>
+		  </v:button>
+		    <v:button action="simple" style="image" name="delete_path" url="http_del_path.vspx"
+		      value="images/icons/trash_16.png"
+		      xhtml_alt="Delete"
+		      xhtml_title="Delete"
+		      text="&nbsp;Delete"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+
+		        control.bt_url := sprintf (
+		          'http_del_path.vspx?lhost=%s&vhost=%s&lpath=%s',
+			  _host1, _httphost1, _path);
+		  ]]></v:after-data-bind>
+		  </v:button>
+		    <v:button action="simple" style="image" name="url_rewrite_path" url="http_url_rewrite.vspx"
+		      value="images/icons/add_script_16.png"
+		      xhtml_alt="URL-rewrite"
+		      xhtml_title="URL-rewrite"
+		      text="&nbsp;URL-rewrite"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp, urw any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+
+		        control.bt_url := sprintf (
+		          'http_url_rewrite.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+			  _host1, _httphost1, _path, urw);
+		  ]]></v:after-data-bind>
+		  </v:button>
+		  <?vsp
+		  {
+		    declare xt, urw any;
+		    xt := control.tn_element;
+		    urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+		    if (length (urw))
+		      http_value ('*', 'b');
+                    else
+		    http ('<b>&nbsp;</b>');
+		  }
+		  ?>
+		    <v:button action="simple" style="image" name="vexport" url="vhost_export.vspx"
+		      value="images/icons/go_16.png"
+		      xhtml_alt="Export"
+		      xhtml_title="Export"
+		      text="&nbsp;Export"
+		      >
+		    <v:after-data-bind><![CDATA[
+		      declare xt, pxt, tp, urw any;
+		      declare _host, _port, _httphost, _path, _host1, _httphost1, tmp any;
+
+		      _host := _port := _httphost := _path := '';
+		      xt := (control.vc_parent as vspx_tree_node).tn_element;
+		      pxt := (control.vc_parent.vc_parent as vspx_tree_node).tn_element;
+
+		      _path := cast (xpath_eval ('@lpath',xt) as varchar);
+
+		      _host1 := cast (xpath_eval ('@clhost',pxt) as varchar);
+		      _httphost1 := cast (xpath_eval ('@chost',pxt) as varchar);
+		      urw := cast (xpath_eval ('@url_rew',xt) as varchar);
+
+		        control.bt_url := sprintf (
+		          'vhost_export.vspx?lhost=%s&vhost=%s&lpath=%s&rule_list=%s',
+			  _host1, _httphost1, _path, urw);
+		  ]]></v:after-data-bind>
+		  </v:button>
+		</td>
+	      </tr>
+            </v:leaf-template>
+          </v:tree>
+	  <v:form name="_add_" type="update">
+	    <v:on-post>
+	      <v:script><![CDATA[
+		if (not self.vc_is_valid )
+		  return;
+		declare host, port, port_no, httphost varchar;
+		declare st, msg, inihost varchar;
+
+		declare exit handler for sqlstate '*'
+		{
+		  self.vc_is_valid := 0;
+		  self.vc_error_message := __SQL_MESSAGE;
+		  rollback work;
+		  return;
+		};
+
+		--httphost := trim(self.t_httphost.ufl_value);
+		httphost := trim(get_keyword ('t_httphost', e.ve_params, ''));
+		host := trim(get_keyword ('t_host', e.ve_params, ''));
+		port := trim(self.t_port.ufl_value);
+		if (length (host) and regexp_match('^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\$', cast(host as varchar)) is null)
+		  {
+		    self.vc_error_message := concat(self.err_msg, 'You should provide a valid IP address.\n');
+		    self.vc_is_valid := 0;
+		    return;
+		  }
+		port_no := atoi (cast(port as varchar));
+		if (regexp_match('^[0-9]+\$', cast(port as varchar)) is null or port_no <=0 or port_no > 65535)
+		  {
+		    self.vc_error_message := concat(self.err_msg, 'You should provide a valid TCP port.\n');
+		    self.vc_is_valid := 0;
+		    return;
+		  }
+		if (length (httphost) and regexp_match('^[\.0-9A-Za-z_-]+\$', cast(httphost as varchar)) is null)
+		  {
+		    self.vc_error_message := concat(self.err_msg, 'You should provide a valid host name.');
+		    self.vc_is_valid := 0;
+		    return;
+		  }
+
+		y_check_host (httphost, host, port);
+
+		st := '00000';
+		if( self.err_msg = '' ) {
+		exec( 'VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
+		vector( concat(httphost, ':', port), concat(host, ':', port),
+		'/', '/', 0, 0, '', null, null, null, null, null, null, 0, '', '', '', 0));
+		if (st <> '00000')
+		  {
+		    rollback work;
+		    if (st <> '23000')
+		      self.vc_error_message := msg;
+		    else
+		      self.vc_error_message := 'The host with same name and port is already defined';
+		    self.vc_is_valid := 0;
+		    return;
+		  }
+		  self.t1.vc_data_bind(e);
+		  --self.t_httphost.ufl_value := '';
+		  --self.t_host.ufl_value := '';
+		  self.t_port.ufl_value := '';
+		}
+		]]></v:script>
+	    </v:on-post>
+	    <tr>
+	      <td/>
+	      <td nowrap="nowrap" id="if_opt">
+		  <![CDATA[
+		  <script type="text/javascript">
+	           function init () {
+		      var sr_cl = new OAT.Combolist([],"0.0.0.0");
+		      var sr_cl1 = new OAT.Combolist([], "");
+
+		      sr_cl.input.name = "t_host";
+		      sr_cl.input.id = "t_host";
+		      $("if_opt").appendChild(sr_cl.div);
+
+		      sr_cl1.input.name = "t_httphost";
+		      sr_cl1.input.id = "t_httphost";
+		      $("inet_opt").appendChild(sr_cl1.div);
+
+		      sr_cl.addOption("0.0.0.0");
+		      <?vsp
+		        declare arr any;
+			arr := tcpip_local_interfaces ();
+			foreach (any elm in arr) do
+			  {
+			    http (sprintf ('sr_cl.addOption("%s");', elm));
+			    http (sprintf ('sr_cl1.addOption("%s");', tcpip_gethostbyaddr (cast(elm as varchar))));
+			  }
+	  	      ?>
+		    }
+		  </script>
+		  ]]>
+		<!--v:text name="t_host" xhtml_size="10" error-glyph="*">
+		  <v:validator name="v_host" test="regexp" regexp="^[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?\.[0-9][0-9]?[0-9]?$" message="You should provide a valid IP address." empty-allowed="1"/>
+		</v:text-->
+	      </td>
+	      <td nowrap="nowrap">
+		<v:text name="t_port" xhtml_size="5" error-glyph="*">
+		  <v:validator name="v_port" test="regexp" regexp="^[0-9]+$" message="You should provide a valid TCP port."/>
+		</v:text>
+	      </td>
+	      <td nowrap="nowrap" id="inet_opt">
+		<!--v:text name="t_httphost" error-glyph="*">
+		  <v:validator name="v_httphost" empty-allowed="1" test="regexp" regexp="^[\.0-9A-Za-z_-]+$" message="You should provide a valid host name."/>
+		</v:text-->
+	      </td>
+	      <td nowrap="nowrap">
+		<v:button name="_add_button" action="simple" value="Add" style="button">
+		</v:button>
+	      </td>
+	    </tr>
+	    <tr><td colspan="4">
+		<?vsp
+		if (self.err_msg <> '' )
+		  {
+		  http('<pre>'|| self.err_msg || '</pre>');
+		  }
+		?>
+	      </td>
+	    </tr>
+	  </v:form>
+	  <!-- moved into the help
+        <tr><td colspan="4" class="attention_text"><span class="attention_marker">*</span> HTTP Host is the value of "Host:" in incoming HTTP request headers to match to.</td></tr>
+        <tr><td colspan="4" class="attention_text"><span class="attention_marker">**</span> Default listener cannot be stopped or deleted. Please refer to Virtuoso ini file.</td></tr>
+	<tr><td colspan="4" class="attention_text"><span class="attention_marker">***</span> Click on folder icon to manage the virtual directories for given listener.</td></tr>
+	-->
+        </table>
+      </v:form>
+  </v:template>
+
+  </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,0 +1,149 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>BBC demo queries</title>
+<link rel="stylesheet" type="text/css" href="styles/default.css"/>
+<script type="text/javascript" src="s/main.js"></script>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+<script type="text/javascript">
+var featureList = ["","",""];
+
+var sparql_ep = 'http://bbc.openlinksw.com/sparql';
+var isparql_ep = 'http://bbc.openlinksw.com/isparql';
+
+function init() {  }
+
+function sparql_qry (q_elm) {
+
+  document.location = sparql_ep + '?query=' + get_and_encode_query (q_elm);
+}
+
+function isparql_qry (q_elm) {
+  document.location = isparql_ep + '?default-graph-uri=%20&query=' + get_and_encode_query (q_elm);
+}
+
+function get_and_encode_query (q_elm)
+{
+  var q_txt = document.getElementById(q_elm).firstChild;
+  return encodeURIComponent (q_txt.data);
+}
+
+</script>
+</head>
+<body>
+  <div id="PG">
+    <div id="HD">
+      <a class="logo" href="/fct/facet.vsp">
+        <img id="opl_logo" alt="OpenLink Software" src="/fct/images/openlink_site_logo.png"/>
+      </a>
+    </div> <!-- #HD -->
+    <div id="MD">
+      <div id="demo_queries_ctr">
+        <h1>BBC Dataset Sample Queries</h1>
+        <p>These queries demonstrate some of the types of queries that can be done over the BBC dataset</p>
+        <ul class="demo_qry_list">
+          <li>
+            <h2>EastEnders episodes</h2>
+            <div class="expln">List all episodes of EastEnders from the programmes data.</div>
+            <div class="qry">
+              <pre id="q1">
+PREFIX po: &#60;http://purl.org/ontology/po/&#62;
+PREFIX dc: &#60;http://purl.org/dc/elements/1.1/&#62;
+
+select distinct ?title ?short_syn
+where {
+  &#60;http://www.bbc.co.uk/programmes/b006m86d#programme&#62; po:episode ?e .
+  ?e a po:Episode .
+  ?e po:short_synopsis ?short_syn .
+  ?e dc:title ?title
+}
+              </pre>
+            </div>
+            <div class="actions">
+              <a onclick="javascript:sparql_qry('q1');" href="#">Run in SPARQL endpoint</a>
+              <a onclick="javascript:isparql_qry('q1');" href="#">Open in iSPARQL</a>
+            </div>
+          </li>
+          <li>
+            <h2>Led Zeppelin Record Reviews</h2>
+            <div class="expln">Get reviews of Led Zeppelin records, with reviewer name.</div>
+            <div class="qry">
+              <pre id="q2">
+PREFIX mo:   &#60;http://purl.org/ontology/mo/&#62;
+PREFIX foaf: &#60;http://xmlns.com/foaf/0.1/&#62;
+PREFIX dc:   &#60;http://purl.org/dc/elements/1.1/&#62;
+PREFIX rev:  &#60;http://purl.org/stuff/rev#&#62;
+
+select distinct ?rtitle ?rtext ?rvname
+where {
+  ?rec foaf:maker &#60http://www.bbc.co.uk/music/artists/678d88b2-87b0-403b-b63d-5da7465aecc3#artist&#62; .
+  ?rec a mo:Record .
+  ?rec dc:title ?rtitle .
+  ?rev a rev:Review .
+  ?rev foaf:primaryTopic ?rec .
+  ?rev rev:text ?rtext .
+  ?rev rev:reviewer ?rviewer .
+  ?rviewer foaf:name ?rvname
+}
+
+              </pre>
+            </div>
+            <div class="actions">
+              <a onclick="javascript:sparql_qry('q2');" href="#">Run in SPARQL endpoint</a>
+              <a onclick="javascript:isparql_qry('q2');" href="#">Open in iSPARQL</a>
+            </div>
+          </li>
+          <li>
+            <h2>John Paul Jones' Records</h2>
+            <div class="expln">List records involving John Paul Jones</div>
+            <div class="qry">
+              <pre id="q3">
+PREFIX mo:   &#60;http://purl.org/ontology/mo/&#62;
+PREFIX foaf: &#60;http://xmlns.com/foaf/0.1/&#62;
+PREFIX dc:   &#60;http://purl.org/dc/elements/1.1/&#62;
+PREFIX rev:  &#60;http://purl.org/stuff/rev#&#62;
+PREFIX po:   &#60;http://purl.org/ontology/po/&#62;
+
+select distinct ?r_name, ?rev
+where {
+        {
+          &#60;http://www.bbc.co.uk/music/artists/4490113a-3880-4f5b-a39b-105bfceaed04#artist&#62; foaf:made ?r1 .
+          ?r1 a mo:Record .
+          ?r1 dc:title ?r_name .
+          ?r1 rev:hasReview ?rev
+        } UNION {
+          &#60;http://www.bbc.co.uk/music/artists/4490113a-3880-4f5b-a39b-105bfceaed04#artist&#62; mo:member_of ?b1 .
+          ?b1 foaf:made ?r1 .
+          ?r1 a mo:Record .
+          ?r1 dc:title ?r_name .
+          ?r1 rev:hasReview ?rev
+        }
+      }
+              </pre>
+            </div>
+            <div class="actions">
+              <a onclick="javascript:sparql_qry('q3');" href="#">Run in SPARQL endpoint</a>
+              <a onclick="javascript:isparql_qry('q3');" href="#">Open in iSPARQL</a>
+            </div>
+          </li>
+        </ul>
+      </div> <!-- #demo_queries_ctr -->
+    </div> <!-- #MD -->
+    <div id="FT">
+      <a href="http://virtuoso.openlinksw.com/">
+        <img alt="Powered by OpenLink Virtuoso" src="/fct/images/virt_power_no_border.png"/>
+      </a>
+      <a href="http://linkeddata.org">
+        <img alt="Linked Data" src="/fct/images/LoDLogo.gif"/>
+      </a>
+      <br/>
+      <span class="copyright">Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software</span>
+      <div id="FT_L"/>
+      <div id="FT_R"/>
+    </div> <!-- #FT -->
+  </div> <!-- #PG -->
+</body>
+</html>

@@ -1,0 +1,69 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="sec_auth_serv">
+    <title>Access Control Lists (ACL)</title>
+
+    <para>This page allows to edit the existing ACL or to create new</para>
+
+    <para>The following are pre-defined ACLs which cannot be deleted</para>
+    <simplelist>
+      <member>HTTP - HTTP server access rules</member>
+      <member>NEWS - NNTP server access rules</member>
+      <member>PROXY - HTTP Proxy access rules</member>
+    </simplelist>
+
+    <para>To add new ACL group enter the desired name and press <ulink url="images/icons/add_16.png" alt="Add New ACL"/> button.</para>
+    <para>To add new ACL rule to current group press "Add new" button.</para>
+    <para>To delete an ACL rule use <ulink url="images/icons/del_16.png" alt="Delete"/> button.</para>
+    <para>To edit an ACL rule use <ulink url="images/icons/edit_16.png" alt="Edit"/> button.</para>
+    <para>To move an ACL rule up use <ulink url="images/icons/skipb_16.png" alt="Up"/> button.</para>
+    <para>To move an ACL rule down use <ulink url="images/icons/skipf_16.png" alt="Down"/> button.</para>
+    <para>To make an ACL rule first use <ulink url="images/icons/rewnd_16.png" alt="First"/> button.</para>
+    <para>To make an ACL rule last use <ulink url="images/icons/fastf_16.png" alt="Last"/> button.</para>
+
+    <para>Important: Changes in ACL will not take effect until "Apply" button is pressed.
+	Also note that HTTP rules that deny access from everywhere may
+	cause this UI to be inaccessible.</para>
+
+     <para>The NEWS ACL settings description:</para>
+     <simplelist>
+	 <member>
+	     Filter  - The pattern for client's IP address, when this is matched 'this' rule will be applied. 
+	 </member>
+	 <member>
+	 Access	  - whether to allow or deny this particular rule
+	 </member>
+	 <member>
+	 Group	 - the discussion forum to which this rule pertains
+	 </member>
+	 <member>
+	 Activity - the nature of the action the user may be performing on this group
+	 </member>
+	 <member>
+	 Rate  - it is measured in accesses/second, where if you're specifying an accept rule it means a rate-limit, or in case of a reject rule it is ignored. In the case of 0 being specified the rate is unlimited.
+	 </member>
+    </simplelist>
+  </sect1>
+</HelpTopic>

@@ -3,28 +3,28 @@
   <!ENTITY LINE "&#10;#line <xsl:value-of select='xpath-debug-xslline()+1' /> &quot;<xsl:value-of select='xpath-debug-xslfile()' />&quot;">
 ]>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
- -  Copyright (C) 1998-2013 OpenLink Software
- -  
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
      version="1.0"
@@ -505,7 +505,7 @@ create method vc_error_handler_<xsl:value-of select="$vspx_local_class_name" /> 
       message := 'Not found exception';
     http_request_status ('HTTP/1.1 302 Found');
     if(length (self.sid) and self.vc_authentication_mode) {
-      http_header (sprintf ('Location: %V?__PAGE=%U&amp;__SQL_STATE=%U&amp;__SQL_MESSAGE=%U&amp;sid=%s&amp;realm=%s\r\n', '<xsl:value-of select="@on-error-redirect"/>', http_path (), state, message, self.sid, self.realm));
+      http_header (sprintf ('Location: %V?__PAGE=%U&amp;__SQL_STATE=%U&amp;__SQL_MESSAGE=%U&amp;sid=%U&amp;realm=%U\r\n', '<xsl:value-of select="@on-error-redirect"/>', http_path (), state, message, self.sid, self.realm));
     }
     else {
       http_header (sprintf ('Location: %V?__PAGE=%U&amp;__SQL_STATE=%U&amp;__SQL_MESSAGE=%U\r\n', '<xsl:value-of select="@on-error-redirect"/>', http_path (), state, message));
@@ -523,7 +523,7 @@ create method vc_error_handler_<xsl:value-of select="$vspx_local_class_name" /> 
 create method vc_redirect (in url any) for <xsl:value-of select="$vspx_full_class_name" />
 {
   if (length (self.sid))
-    url := vspx_uri_add_parameters (url, sprintf ('sid=%s&amp;realm=%s', self.sid, self.realm));
+    url := vspx_uri_add_parameters (url, sprintf ('sid=%U&amp;realm=%U', self.sid, self.realm));
   http_request_status ('HTTP/1.1 302 Found');
   http_header (concat (http_header_get (), 'Location: ',url,'\r\n'));
 }
@@ -2616,7 +2616,7 @@ login bind method (url and cookie)
     {
       vars := coalesce ((select deserialize (blob_to_string(VS_STATE)) from VSPX_SESSION where VS_SID = self.sid), NULL);
       connection_vars_set (vars);
-      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm;
+      update VSPX_SESSION set VS_EXPIRY = now () where VS_SID = self.sid and VS_REALM = control.vl_realm and VS_IP = http_client_ip () and datediff ('minute', VS_EXPIRY, now()) &lt; 30;
       if (row_count () = 0)
         goto re_auth;
       control.vl_authenticated := 1;
@@ -2646,7 +2646,7 @@ re_auth:
   if (<xsl:value-of select="@user-password-check" /> (usr, pass))
     {
        sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY) values (control.vl_realm, sid, usr, null, now());
+       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP) values (control.vl_realm, sid, usr, null, now(), http_client_ip ());
        control.vl_authenticated := 1;
        self.vc_authenticated := 1;
        self.sid := sid;
@@ -2714,8 +2714,8 @@ re_auth:
     <xsl:if test="@mode = 'url' and .//v:text[@name='password_plain']">
     if (length (self.nonce))
       {
-        insert into VSPX_SESSION (VS_REALM, VS_SID, VS_EXPIRY)
-          values (control.vl_realm, self.nonce, dateadd ('minute', -110, now ()));
+        insert into VSPX_SESSION (VS_REALM, VS_SID, VS_EXPIRY, VS_IP)
+          values (control.vl_realm, self.nonce, dateadd ('minute', -110, now ()), http_client_ip ());
       }
     </xsl:if>
 authenticated:;
@@ -2789,8 +2789,8 @@ re_auth:
      {
        declare nonce , sid varchar;
        nonce := sid := md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-       values (control.vl_realm, sid, null, null, now ());
+       insert into VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+       values (control.vl_realm, sid, null, null, now (), http_client_ip ());
        control.vl_authenticated := 0;
        self.vc_authenticated := 0;
        self.sid := sid;
@@ -3053,7 +3053,7 @@ create method vc_data_bind_node_<xsl:value-of select="@name" />
       url := xpath_eval ('@url', nodeset);
       if(length (url) > 0) {
         if (self.vc_authentication_mode and length (self.sid))
-          url := DB.DBA.vspx_uri_add_parameters (cast (url as varchar), 'sid=' || self.sid || '&amp;realm=' || self.realm);
+          url := DB.DBA.vspx_uri_add_parameters (cast (url as varchar), sprintf ('sid=%U&amp;realm=%U', self.sid, self.realm));
         url := WS.WS.EXPAND_URL(http_path(), cast (url as varchar));
       }
       chil := <xsl:value-of select="@child-function" /> ('node', nodeset);
@@ -3194,14 +3194,14 @@ toggle_label:
 <!-- XXX: refine ufl_value & rest -->
 <xsl:template match="v:url" mode="data_bind_method">
    if (length(self.sid) and self.vc_authentication_mode)
-     control.vu_l_pars := sprintf ('sid=%s&amp;realm=%s', self.sid, self.realm);
+     control.vu_l_pars := sprintf ('sid=%U&amp;realm=%U', self.sid, self.realm);
 </xsl:template>
 
 <!-- XXX: refine ufl_value & rest -->
 <xsl:template match="v:button[@action='simple']" mode="data_bind_method">
    <xsl:if test="@url">
    if (length(self.sid) and self.vc_authentication_mode)
-     control.bt_l_pars := sprintf ('sid=%s&amp;realm=%s', self.sid, self.realm);
+     control.bt_l_pars := sprintf ('sid=%U&amp;realm=%U', self.sid, self.realm);
    </xsl:if>
 </xsl:template>
 
@@ -3223,7 +3223,7 @@ toggle_label:
      if (length (self.sid) and self.vc_authentication_mode)
        {
          declare login_pars varchar;
-         login_pars := 'sid='|| self.sid || '&amp;realm=' || self.realm;
+         login_pars := sprintf ('sid=%U&amp;realm=%U', self.sid, self.realm);
          control.vcb_selector := DB.DBA.vspx_uri_add_parameters (control.vcb_selector, login_pars);
        }
    </xsl:if>

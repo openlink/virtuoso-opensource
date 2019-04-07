@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: clean.sh,v 1.26.2.2.4.9 2013/01/02 16:14:38 source Exp $
 #
 #  Cleanup after running the testsuite
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -28,14 +28,23 @@
 #
 #  Load functions
 #
-. ./test_fn.sh
+VIRTDEV_HOME=${VIRTDEV_HOME-$TOP}
+VIRTUOSO_TEST=${VIRTUOSO_TEST-$VIRTDEV_HOME/binsrc/tests/suite}
+export VIRTDEV_HOME VIRTUOSO_TEST
 
+. $VIRTUOSO_TEST/testlib.sh
+
+KILL_TEST_INSTANCES
 
 #
 #  Removing files
 #
+rm -rf $VIRTUOSO_TEST/*.test $VIRTUOSO_TEST/*.ro $VIRTUOSO_TEST/*.co $VIRTUOSO_TEST/*.clro $VIRTUOSO_TEST/*.clco
+rm -f virtuoso-cluster-inited
+
 rm -f *.bp
 rm -f *.db
+rm -f *.db.*
 rm -f *.err
 rm -f *.lck
 rm -f *.log
@@ -49,6 +58,8 @@ rm -f *.svr
 rm -f *.tdb
 rm -f *.trx
 
+rm -f $LOGFILE
+rm -f cluster.ini
 rm -f audit.txt
 rm -f backup.stat
 rm -f bpel4ws_dev.vad
@@ -90,47 +101,3 @@ rm -f wierr.rep3
 rm -f witemp.cfg
 rm -f xmemdump.txt
 rm -f xslt.vsp
-
-#
-#  Removing directories
-#
-rm -rf classlib
-rm -rf bpel_audit
-rm -rf "echo"
-rm -rf fault1
-rm -rf fault1_req
-rm -rf Flow
-rm -rf grail_backup
-rm -rf grail_backup2
-rm -rf http
-rm -rf msdtc1
-rm -rf msdtc2
-rm -rf msdtc3
-rm -rf nw1
-rm -rf nw2
-rm -rf nw3
-rm -rf nw4
-rm -rf nw5
-rm -rf oremote1
-rm -rf oremote2
-rm -rf plugins
-rm -rf remote1
-rm -rf remote2
-rm -rf rep1
-rm -rf rep2
-rm -rf rep3
-rm -rf soap12
-rm -rf t1
-rm -rf t2
-rm -rf t3
-rm -rf tdav_meta
-rm -rf tproxy
-rm -rf tutorial_test
-rm -rf vad
-rm -rf vspx
-rm -rf wcopy
-rm -rf xslt
-rm -rf cl?
-rm -rf tpcdremote[12]
-
-exit 0

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -254,25 +254,70 @@ sqlo_ip_copy (df_elt_t * tb_dfe, dk_set_t path)
   return res;
 }
 
+static int
+sqlo_key_sp_or_op (df_elt_t * tb_dfe, dbe_key_t * key)
+{
+  QNCAST (dbe_column_t, col, key->key_parts->data);
+  if (!tb_is_rdf_quad (tb_dfe->_.table.ot->ot_table))
+    return 0;
+  if (key->key_distinct && key->key_decl_parts == 2 && (0 == strcmp (col->col_name, "S") || 0 == strcmp (col->col_name, "O")))
+    {
+      df_elt_t * pred = sqlo_key_part_best (col, tb_dfe->_.table.col_preds, 0);
+      return dfe_is_eq_pred (pred);
+    }
+  return 0;
+}
+
+static int
+sqlo_key_only_on_leading_so (df_elt_t * tb_dfe, dbe_key_t * first, dbe_key_t * second)
+{
+  int inx = 0;
+  if (second->key_decl_parts != 4 || first->key_decl_parts != 2)
+    return 0;
+  DO_SET (dbe_column_t *, col, &first->key_parts)
+    {
+      if (dk_set_position (second->key_parts, col) > 1)
+	return 0;
+    }
+  END_DO_SET();
+  if (!sqlo_key_part_best ((dbe_column_t *) second->key_parts->next->next->data, tb_dfe->_.table.col_preds, 0))
+    return 1;
+  return 0;
+}
 
 float
-sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret)
+sqlo_index_path_cost (dk_set_t path, float * cost_ret, float * card_ret, char * sure_ret, df_elt_t * tb_dfe)
 {
   float cost = -1, card = 1;
-  int n_sure = 0;
+  int n_sure = 0, inx = 0;
+  dbe_key_t * first_so_key = NULL;
   DO_SET (index_choice_t *, ic, &path)
     {
       if (-1 == cost)
 	{
+	  if (sqlo_key_sp_or_op (tb_dfe, ic->ic_key))
+	    {
+	      if (!ic->ic_text_order)
+		{
+		  if (ic->ic_arity < 2)
+		    ic->ic_arity = 2;
+		  else if (ic->ic_arity > 20)
+		    ic->ic_arity = 20;
+		}
+	      first_so_key = ic->ic_key;
+	    }
 	  cost = ic->ic_unit;
 	  card = ic->ic_arity;
 	  n_sure = ic->ic_leading_constants;
 	}
       else
 	{
+	  if (first_so_key && inx == 1 && !ic->ic_key->key_distinct && sqlo_key_only_on_leading_so (tb_dfe, first_so_key, ic->ic_key))
+	    ic->ic_arity = 1.2;
 	  cost += card * ic->ic_unit;
 	  card *= ic->ic_arity;
 	}
+      inx ++;
     }
   END_DO_SET();
   if (n_sure >= *sure_ret)
@@ -298,10 +343,34 @@ dfe_is_eq_pred (df_elt_t * pred)
 
 
 int
+dfe_is_single_eq_pred (df_elt_t * pred)
+{
+  return (pred && (
+		   ((DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type) && BOP_EQ == pred->_.bin.op)));
+}
+
+
+int
 dfe_is_range_pred (df_elt_t * pred)
 {
   return (pred && (DFE_BOP_PRED  == pred->dfe_type || DFE_BOP == pred->dfe_type)
 	  && BOP_EQ != pred->_.bin.op);
+}
+
+int 
+key_serves_for_text_pred (df_elt_t * tb_dfe, dbe_key_t * key)
+{
+  /* for a distinct projection, see if the leading part is an id to be bound by a text/geo pred */
+  ST * tree;
+  caddr_t prefix;
+  df_elt_t * text_pred = tb_dfe->_.table.text_pred;
+  dbe_key_t * id_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+  dbe_column_t * id_col;
+  df_elt_t * eq_pred;
+  if (!text_pred || !id_key)
+    return 0;
+  id_col = (dbe_column_t*)id_key->key_parts->data;
+  return id_col == (dbe_column_t*)key->key_parts->data;
 }
 
 
@@ -328,12 +397,13 @@ sqlo_ip_leading_text (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, d
       if (prev_col == id_col)
 	break;
       eq_pred = sqlo_key_part_best (prev_col, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (eq_pred))
+      if (!dfe_is_eq_pred (eq_pred)
+	  || !pred_const_rhs (eq_pred))
 	return 0;
     }
   END_DO_SET();
   text_pred->dfe_is_placed = DFE_PLACED;
-  text_card = dbe_key_count (key->key_table->tb_primary_key);
+  text_card = dfe_scan_card (tb_dfe);
   ic->ic_key = key;
   ic->ic_text_pred = text_pred;
   ic->ic_text_order = 1;
@@ -356,7 +426,7 @@ sqlo_ip_trailing_text (df_elt_t * tb_dfe, index_choice_t * ic)
     return 0;
   dfe_text_cost (tb_dfe, &text_cost, &text_card, 0);
   ic->ic_unit += text_cost;
-  ic->ic_arity *= text_card;
+  ic->ic_arity *= MAX (1e-9, text_card);
   ic->ic_text_pred = text_pred;
   return 1;
 }
@@ -562,6 +632,7 @@ sqlo_rdf_string_range (df_elt_t * tb_dfe, index_choice_t * ic)
   dt_col_name = ((dbe_column_t*) range_tb->tb_primary_key->key_parts->next->data)->col_name;
   range_col = range_col_dfe->_.col.col;
   r_tb_dfe = sqlo_new_dfe (so, DFE_TABLE, NULL);
+  r_tb_dfe->dfe_super = tb_dfe; /* if expressions placed, then these are placed before tb dfe and must be found to avoid placing twice */
   snprintf (r_pref, sizeof (r_pref), "r%s", tb_dfe->_.table.ot->ot_new_prefix);
   r_ot = sqlo_ot_by_name (so, r_pref, range_tb);
   r_prefix = r_ot->ot_new_prefix;
@@ -636,6 +707,8 @@ dfe_tb_o_range_comp (df_elt_t * left, df_elt_t * right, df_elt_t * tb_dfe)
   /* left is __ro2sq (tb.o) and right is independent of tb */
   ST * tree = left->dfe_tree;
   if (dk_set_member (right->dfe_tables, (void*)tb_dfe))
+    return 0;
+  if (right->dfe_type == DFE_CONST && (IS_NUM_DTP (DV_TYPE_OF (right->dfe_tree)) || IS_DATE_DTP (DV_TYPE_OF (right->dfe_tree))))
     return 0;
   if (ST_P (tree, CALL_STMT) && DV_STRINGP (tree->_.call.name)
       && !stricmp (tree->_.call.name, "__ro2sq")
@@ -716,7 +789,7 @@ sqlo_key_add_pk_eqs (df_elt_t * tb_dfe, dbe_key_t * key, index_choice_t * ic, dk
       if (!tb_is_pk_part (tb_dfe->_.table.ot->ot_table, part))
 	continue;
       pred = sqlo_key_part_best (part, tb_dfe->_.table.col_preds, 0);
-      if (!dfe_is_eq_pred (pred))
+      if (!dfe_is_single_eq_pred (pred))
 	{
 	  /* the best is not an eq. Make an eq and remove all non-eq preds */
 	  caddr_t pref = tb_dfe->_.table.ot->ot_new_prefix;
@@ -763,7 +836,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
       ic.ic_key = key;
       sqlo_rdf_o_range (tb_dfe, key, path, &ic);
       if (key->key_no_pk_ref && !key_is_first_cond (tb_dfe, key)
-	  && !(tb_dfe->_.table.text_pred && !path) && !opt_inx_name)
+	  && !(tb_dfe->_.table.text_pred && key_serves_for_text_pred (tb_dfe, key) && !path) && !opt_inx_name)
 	{
 	  tb_dfe->_.table.col_preds = old_cp;
 	  continue;
@@ -786,7 +859,7 @@ sqlo_index_path (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t path, int pk_given)
 		t_set_push (&ic.ic_col_preds, (void*)text_id_pred);
 	      sqlo_ip_trailing_text (tb_dfe, &ic);
 	      path = dk_set_nreverse (path);
-	      cost = sqlo_index_path_cost (path, &best_cost, &so->so_best_index_card, &so->so_best_index_card_sure);
+	      cost = sqlo_index_path_cost (path, &best_cost, &so->so_best_index_card, &so->so_best_index_card_sure, tb_dfe);
 	      path = dk_set_nreverse (path);
 	      if (cost < so->so_best_index_cost || -1 == so->so_best_index_cost)
 		{
@@ -887,7 +960,7 @@ sqlg_rdf_string_range (df_elt_t * tb_dfe, table_source_t *org_ts, index_choice_t
   search_spec_t * sp;
   table_source_t * r_ts, * range_ref_ts;
   sqlo_t * so = tb_dfe->dfe_sqlo;
-  r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range);
+  r_ts = (table_source_t*)sqlg_make_ts (so, ic->ic_o_range, NULL);
   r_ts->ts_is_alternate = TS_ALT_PRE;
   dfe_list_set_placed (ic->ic_o_range_ref_ic->ic_col_preds, DFE_PLACED);
   range_ref_ts = (table_source_t*)sqlg_make_1_ts (so, tb_dfe, ic->ic_o_range_ref_ic, tb_dfe->_.table.join_test, 0);
@@ -976,12 +1049,34 @@ sqlg_in_iter_add_after_test (sqlo_t * so, dk_set_t prev_in_iters, key_source_t *
 	      sp->sp_min_op = CMP_EQ;
 	      sp->sp_next = ks->ks_row_spec;
 	      ks->ks_row_spec = sp;
+	      if (ks->ks_key->key_is_col)
+		sp->sp_cl = *cl_list_find (ks->ks_key->key_row_var, col->col_id);
+	      else
 	      sp->sp_cl = *key_find_cl (ks->ks_key, col->col_id);
+	      sp->sp_col = col;
 	    }
 	}
       END_DO_SET();
     }
   END_DO_SET();
+}
+
+int 
+ts_check_unq (table_source_t * ts, int flg)
+{
+  /* check eq spec for each part of the key */
+  dbe_key_t * key = ts->ts_order_ks->ks_key;
+  int ctr = 0;
+  search_spec_t * sp;
+  if (!flg)
+    return 0;
+  for (sp = ts->ts_order_ks->ks_spec.ksp_spec_array; sp; sp = sp->sp_next)
+    {
+      if (CMP_EQ != sp->sp_min_op)
+	return 0;
+      ctr++;
+    }
+  return ctr == key->key_n_significant;
 }
 
 data_source_t *
@@ -1023,6 +1118,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
   if (ic->ic_key == table->tb_primary_key && (tb_dfe->_.table.xpath_pred || tb_dfe->_.table.is_xcontains))
     sqlg_xpath_node (so, tb_dfe);
 
+  ts->ts_order = sc->sc_order;
   if (ic->ic_inx_op)
     {
       ts->ts_inx_op = sqlg_inx_op (so, tb_dfe, ic->ic_inx_op, NULL);
@@ -1046,7 +1142,7 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
   ts->ts_is_outer = tb_dfe->_.table.ot->ot_is_outer;
   order_ks = ts->ts_order_ks;
   if (order_ks && order_ks->ks_spec.ksp_spec_array)
-    ts->ts_is_unique = ic->ic_is_unique;
+    ts->ts_is_unique = ts_check_unq (ts, ic->ic_is_unique);
 
   if (order_ks)
   sqlg_in_iter_add_after_test (so, prev_in_iters, order_ks);
@@ -1073,7 +1169,9 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
 
   sqlc_update_set_keyset (sc, ts);
   sqlc_ts_set_no_blobs (ts);
-  if (!sc->sc_update_keyset)
+  if (SC_UPD_PLACE != sc->sc_is_update && !sc->sc_in_cursor_def)
+    ts->ts_current_of = NULL;
+  if (!sc->sc_update_keyset && !sqlg_is_vector)
     ts_alias_current_of (ts);
   else if (!ts->ts_main_ks)
     ts->ts_need_placeholder = 1;
@@ -1091,6 +1189,9 @@ sqlg_make_1_ts (sqlo_t * so, df_elt_t * tb_dfe, index_choice_t * ic, df_elt_t **
       ts->ts_order_ks->ks_is_vacuum = 1;
     }
   ts->ts_cardinality = ic->ic_arity;
+  ts->ts_inx_cardinality = ic->ic_inx_card;
+  ts->ts_cost = ic->ic_unit;
+  ts->ts_card_measured = 0 != ic->ic_leading_constants;
   so->so_sc->sc_order = ord;
   if (ic->ic_key->key_distinct || ic->ic_key->key_no_pk_ref)
     dfe_list_set_placed (ic->ic_col_preds, DFE_PLACED); /* if partial inx, must recheck the preds with a real inx, could be out of date */
@@ -1116,7 +1217,11 @@ sqlg_make_path_ts (sqlo_t * so, df_elt_t * tb_dfe)
       if (!ret_ts)
 	ret_ts = ts;
       else
+	{
 	sql_node_append (&ret_ts, ts);
+	  if (IS_TS (ts))
+	    ((table_source_t*)ts)->ts_in_index_path = 1;
+	}
     }
   END_DO_SET();
   if (tb_dfe->_.table.after_join_test)

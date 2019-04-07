@@ -1,0 +1,256 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="db_repl_pub"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:variable name="error_str" type="varchar" persist="1" default="null"/>
+  <div class="scroll_area">
+    <v:data-set name="data_set1" sql="select SERVER, ACCOUNT, SYNC_USER, case when repl_is_pushback(SERVER, ACCOUNT) = 0 then ACCOUNT else concat (subseq (ACCOUNT, 1), '!') end as ACCT from SYS_REPL_ACCOUNTS where SERVER <> repl_this_server () order by SERVER, ACCT" nrows="10" scrollable="1000" cursor-type="keyset" edit="1">
+      <v:column name="SERVER" />
+      <v:column name="ACCOUNT" />
+      <v:column name="SYNC_USER" />
+      <v:column name="ACCT" />
+      <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
+        <table class="listing" rules="groups">
+          <thead>
+            <tr class="listing_header_row">
+              <th>Server</th>
+              <th>Publication Name</th>
+              <th>Login Name</th>
+              <th>Last trx no</th>
+              <th>Sync User</th>
+              <th>Schedule</th>
+              <th>Status</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+        </table>
+      </v:template>
+      <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
+        <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
+          <table>
+            <tr>
+              <td class="Attention" colspan="8">No rows selected</td>
+            </tr>
+          </table>
+        </v:template>
+        <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
+          <table>
+            <tr>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_2"
+                  value="--( case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__rdf_repl' then 'RDF Publication' else (control.vc_parent as vspx_row_template).te_rowset[1] end)" />
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_3" value="--(coalesce((select DS_UID from SYS_DATA_SOURCE where DS_DSN = (select DB_ADDRESS from SYS_SERVERS as s where s.SERVER = cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar))), ''))" />
+              </td>
+              <td class="listing_col_num">
+                <v:label format="%d" name="data_set1_browse_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_no_fmt"/>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_user_fmt"/>
+              </td>
+              <td class="listing_col_num">
+                <v:label format="%s" name="data_set1_browse_label_6" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_shed_fmt"/>
+              </td>
+              <td class="listing_col">
+                <v:label format="%s" name="data_set1_browse_label_5" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_sch_fmt"/>
+              </td>
+              <td class="listing_col_action">
+                <?vsp
+                  if (repl_is_pushback((control as vspx_row_template).te_rowset[0], (control as vspx_row_template).te_rowset[1]) = 0)
+                  {
+                ?>
+                <v:button action="simple" style="image" name="drop"
+                  value="images/icons/del_16.png"
+                  xhtml_alt="Drop"
+                  xhtml_title="Drop"
+                  text="&nbsp;Drop">
+                  <v:on-post>
+                    <![CDATA[
+                      declare ds vspx_data_set;
+                      declare s, a varchar;
+                      s := (control.vc_parent as vspx_row_template).te_rowset[0];
+                      a := (control.vc_parent as vspx_row_template).te_rowset[1];
+                      ds := self.vc_find_control('data_set1');
+                      declare _stat, _msg, m_dta, res varchar;
+                      _stat := '00000';
+                      exec('DB.DBA.SUB_SCHEDULE(?, ?, ?)', _stat, _msg, vector(s, a, 0),  m_dta, res);
+                      if (_stat <> '00000')
+                        self.error_str := concat(self.error_str, _msg, '\n');
+                      update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = 1 where TI_SERVER = s and TI_ACCT = a;
+                      _stat := '00000';
+                      exec('DB.DBA.REPL_UNSUBSCRIBE(?, ?, ?)', _stat, _msg, vector(s, a, null),  m_dta, res);
+                      if (_stat <> '00000')
+                        self.error_str := concat(self.error_str, _msg, '\n');
+                      if (not exists(select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = s))
+                      {
+                        _stat := '00000';
+                        exec('repl_disconnect(?)', _stat, _msg, vector(s),  m_dta, res);
+                        if (_stat <> '00000')
+                          self.error_str := concat(self.error_str, _msg, '\n');
+                      }
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" style="image" name="un"
+                  value="images/icons/trash_16.png"
+                  xhtml_alt="Unsubscribe"
+                  xhtml_title="Unsubscribe"
+                  text="&nbsp;Unsubscribe">
+                  <v:on-post>
+                    <![CDATA[
+                      declare ds vspx_data_set;
+                      ds := self.vc_find_control('data_set1');
+                      declare s, a, usr, status, message, pwd, _stat, _msg varchar;
+                      s := (control.vc_parent as vspx_row_template).te_rowset[0];
+                      a := (control.vc_parent as vspx_row_template).te_rowset[1];
+                      _stat := '00000';
+                      exec(sprintf('DB.DBA.SUB_SCHEDULE(''%s'', ''%s'', 0)', s, a), _stat, _msg);
+                      if (_stat <> '00000')
+                        self.error_str := concat(self.error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                      _stat := '00000';
+                      exec(sprintf('DB.DBA.REPL_UNSUBSCRIBE(''%s'', ''%s'', null)', s, a), _stat, _msg);
+                      if (_stat <> '00000')
+                        self.error_str := concat(self.error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                      if (not exists (select 1 from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = s))
+                      {
+                        _stat := '00000';
+                        exec(sprintf('repl_disconnect(''%s'')', s), _stat, _msg);
+                        if (_stat <> '00000')
+                        self.error_str := concat(self.error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                      }
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" style="image" name="sync"
+                  value="images/icons/ref_16.png"
+                  xhtml_alt="Sync"
+                  xhtml_title="Sync"
+                  text="&nbsp;Sync"
+                  >
+                  <v:on-post>
+                    <![CDATA[
+                      declare ds vspx_data_set;
+                      ds := self.vc_find_control('data_set1');
+                      declare status, message, usr, pwd varchar;
+                      whenever not found goto not_found;
+                      select d.DS_UID, pwd_magic_calc(d.DS_UID, d.DS_PWD, 1) into usr, pwd from DB.DBA.SYS_DATA_SOURCE d, DB.DBA.SYS_SERVERS sr where sr.SERVER = (control.vc_parent as vspx_row_template).te_rowset[0] and d.DS_DSN = sr.DB_ADDRESS;
+                      status := '00000';
+                      exec('repl_sync(?, ?, ?, ?)', status, message, vector((control.vc_parent as vspx_row_template).te_rowset[0], (control.vc_parent as vspx_row_template).te_rowset[1], usr, pwd), 0);
+                      if (status <> '00000')
+                        self.error_str := message;
+                      if (0)
+                      {
+                        not_found:;
+                        self.error_str := 'Service does not find such server and server address';
+                      }
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <?vsp
+                  }
+                ?>
+                <v:button action="simple" style="image" name="url1"
+                  value="images/icons/edit_16.png"
+                  xhtml_alt="Edit"
+                  xhtml_title="Edit"
+                  text="&nbsp;Edit"
+                  enabled="--case when (control.vc_parent as vspx_row_template).te_rowset[1] = '__repl_pub' then 0 else 1 end"
+                  url="--concat('db_repl_sub_edit.vspx?acct=', (control.vc_parent as vspx_row_template).te_rowset[1], '&srv=', (control.vc_parent as vspx_row_template).te_rowset[0], '&sid=', self.sid, '&realm=', self.realm)"/>
+              </td>
+            </tr>
+          </table>
+        </v:template>
+      </v:template>
+
+      <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
+        <table>
+          <tr>
+            <td colspan="8" align="center"  class="listing_col_action">
+              <vm:ds-navigation data-set="data_set1"/>
+            </td>
+          </tr>
+        </table>
+      </v:template>
+    </v:data-set>
+  </div>
+
+  <div class="listing_bot_ctl_grp">
+    <v:form name="event_form3" type="simple" method="POST">
+      <v:button action="simple" name="new_sub" value="New Subscription">
+        <v:on-post>
+          <![CDATA[
+            http_request_status('HTTP/1.1 302 Found');
+            http_header(sprintf('Location: db_repl_sub_create.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            return;
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button action="simple" name="load_mg" value="Load Image File">
+        <v:on-post>
+          <![CDATA[
+            http_request_status('HTTP/1.1 302 Found');
+            http_header(sprintf('Location: db_repl_sub_image.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+            return;
+          ]]>
+        </v:on-post>
+      </v:button>
+      <v:button action="simple" name="disc" value="Disconnect All">
+        <v:on-post>
+          <![CDATA[
+            for select SERVER from SYS_SERVERS where SERVER <> repl_this_server() do
+              repl_disconnect(SERVER);
+            http_request_status('HTTP/1.1 302 Found');
+            http_header(sprintf('Location: db_repl_trans.vspx?page=2&sid=%s&realm=%s\r\n', self.sid, self.realm));
+            return;
+          ]]>
+        </v:on-post>
+      </v:button>
+    </v:form>
+  </div>
+
+  <v:template name="subscribe_template34" type="simple" enabled="-- case when (self.error_str <> '' and self.error_str is not null) then 1 else 0 end">
+    <table class="warning">
+      <tr>
+        <td>
+          <?vsp
+            http(self.error_str);
+            self.error_str := '';
+          ?>
+        </td>
+      </tr>
+    </table>
+  </v:template>
+</v:page>

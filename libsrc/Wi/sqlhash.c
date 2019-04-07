@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,16 +45,22 @@ int dtp_is_fixed (dtp_t dtp);
 int dtp_is_var (dtp_t dtp);
 
 
-void
-key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, gb_op_t *gb_op)
+dbe_column_t *
+key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, int op)
 {
   NEW_VARZ (dbe_column_t, col);
   col->col_name = box_dv_short_string (SSL_HAS_NAME (ssl) ? ssl->ssl_name : "const");
   col->col_compression = CC_NONE;
   col->col_sqt = ssl->ssl_sqt;
+  if (HA_FILL != op)
   col->col_sqt.sqt_non_null = 0;
-  if (DV_LONG_INT == ssl->ssl_dtp && !ssl->ssl_column)
-    col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
+  if (DV_ARRAY_OF_POINTER == col->col_sqt.sqt_dtp)
+    col->col_sqt.sqt_dtp = DV_ANY;
+  if (DV_LONG_INT == ssl->ssl_dtp /*&& !ssl->ssl_column*/)
+    {
+      col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp = DV_INT64; /* temp results of int exprs can be wider */
+      col->col_sqt.sqt_precision = 19;
+    }
   if (DV_IRI_ID == col->col_sqt.sqt_dtp)
     col->col_sqt.sqt_dtp = DV_IRI_ID_8;
   if (DV_UNKNOWN == col->col_sqt.sqt_dtp
@@ -63,33 +69,24 @@ key_col_from_ssl (dbe_key_t * key, state_slot_t * ssl, int quietcast, gb_op_t *g
       col->col_sqt.sqt_dtp = quietcast ? DV_ANY : DV_LONG_STRING;
       col->col_sqt.sqt_precision = 0;
     }
+  if (DV_ANY == ssl->ssl_dc_dtp && (DV_STRING != ssl->ssl_sqt.sqt_dtp && DV_WIDE != ssl->ssl_sqt.sqt_dtp && DV_BIN != ssl->ssl_sqt.sqt_dtp))
+    {
+      /* a any dc in a oby temp gets and any except when the ssl is typed so there is a specific colum,column type (varchar, nvarchar, binary).    Else the om ref function in the reader node is for string but the col is any */
+      col->col_sqt.sqt_dtp = DV_ANY;
+      col->col_sqt.sqt_col_dtp = DV_ANY;
+      col->col_sqt.sqt_precision = 0;
+    }
   /* turn off length checking for temp cols for now */
   if (col->col_sqt.sqt_dtp == DV_LONG_STRING ||
       col->col_sqt.sqt_dtp == DV_ANY)
     col->col_sqt.sqt_precision = 0;
-  if (gb_op && col->col_sqt.sqt_dtp == DV_ANY)
-    {
-      switch (gb_op->go_op)
-	{
-	  case AMMSC_COUNT:
-	      col->col_sqt.sqt_dtp = DV_INT64;
-	      col->col_sqt.sqt_precision = DV_LONG_INT_PREC;
-	      break;
-	  case AMMSC_COUNTSUM:
-	  case AMMSC_SUM:
-	  case AMMSC_AVG:
-	      col->col_sqt.sqt_dtp = DV_NUMERIC;
-	      col->col_sqt.sqt_precision = NUMERIC_MAX_PRECISION;
-	      col->col_sqt.sqt_precision = NUMERIC_MAX_SCALE;
-	      break;
-	  default:
-	      break;
-	}
-    }
+  if (!col->col_sqt.sqt_col_dtp)
+    col->col_sqt.sqt_col_dtp = col->col_sqt.sqt_dtp;
   col->col_id = dk_set_length (key->key_parts) + 1;
 
   col->col_options = (caddr_t *) box_copy_tree ((box_t) ssl->ssl_sqt.sqt_tree);
   NCONCF1 (key->key_parts, col);
+  return col;
 }
 
 
@@ -116,11 +113,10 @@ sqt_row_data_length (sql_type_t *sqt)
 
 
 dbe_key_t *
-setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast)
+setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast, int op)
 {
-  int inx = 0;
+  dbe_column_t * col;
   NEW_VARZ (dbe_key_t, key);
-
   key->key_n_significant = dk_set_length (setp->setp_keys);
 
   key->key_id = KI_TEMP;
@@ -128,18 +124,16 @@ setp_temp_key (setp_node_t * setp, long *row_len_ptr, int quietcast)
   key->key_super_id = KI_TEMP;
   DO_SET (state_slot_t *, ssl, &setp->setp_keys)
     {
+      col = key_col_from_ssl (key, ssl, quietcast, op);
       if (row_len_ptr)
-	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl, quietcast, NULL);
+	*row_len_ptr += sqt_row_data_length (&col->col_sqt);
     }
   END_DO_SET();
   DO_SET (state_slot_t *, ssl, &setp->setp_dependent)
     {
-      gb_op_t *gb_op = dk_set_nth (setp->setp_gb_ops, inx);
+      col = key_col_from_ssl (key, ssl, quietcast, op);
       if (row_len_ptr)
-	*row_len_ptr += sqt_row_data_length (& ssl->ssl_sqt);
-      key_col_from_ssl (key, ssl, quietcast, gb_op);
-      inx ++;
+	*row_len_ptr += sqt_row_data_length (&col->col_sqt);
     }
   END_DO_SET();
 
@@ -157,9 +151,10 @@ key_cl_count (dbe_col_loc_t * cls)
   return inx;
 }
 
+int32 setp_distinct_max_keys = 100;
 
 void
-setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
+setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
 {
   int quietcast = sc->sc_cc->cc_query->qr_no_cast_error;
 /* This was:  int quietcast = DFE_DT == sc->sc_so->so_dfe->dfe_type ?
@@ -168,7 +163,11 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
   int inx;
   int n_keys = dk_set_length (setp->setp_keys);
   int n_deps = dk_set_length (setp->setp_dependent);
-  NEW_VARZ (hash_area_t, ha);
+  hash_area_t * ha;
+  if (op != HA_DISTINCT && n_keys > CHASH_GB_MAX_KEYS)
+    sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in group by or hash join", CHASH_GB_MAX_KEYS);
+  if  (HA_DISTINCT == op && SETP_DISTINCT_MAX_KEYS <= n_keys)
+    sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in distinct", SETP_DISTINCT_MAX_KEYS);
   DO_SET (state_slot_t *, ssl, &setp->setp_keys)
     {
       if (!quietcast && IS_BLOB_DTP (ssl->ssl_sqt.sqt_dtp))
@@ -181,25 +180,27 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
 	    "group or join condition columns (%s)", ssl->ssl_name);
     }
   END_DO_SET();
+  ha = dk_alloc (sizeof (hash_area_t));
+  memset (ha, 0, sizeof (hash_area_t));
   ha->ha_row_size = 0;
-  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, quietcast);
+  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, quietcast, op);
   setp->setp_ha = setp->setp_reserve_ha = ha;
-  ha->ha_tree = ssl_new_tree (sc->sc_cc, "DISTINCT HASH");
   ha->ha_ref_itc = ssl_new_itc (sc->sc_cc);
   ha->ha_insert_itc = ssl_new_itc (sc->sc_cc);
 #ifdef NEW_HASH
   ha->ha_bp_ref_itc = ssl_new_itc (sc->sc_cc);
 #endif
+  ha->ha_tree = ssl_new_tree (sc->sc_cc, "DISTINCT HASH"); /* after the ha itc's, so in free the itc 's go first, freeing wired pages on the tree */
   ha->ha_n_keys = n_keys;
   ha->ha_n_deps = n_deps;
-  if (n_rows < 0)
-    n_rows = 100000; /* count probably overflowed.- Large amount */
+  if (enable_chash_join && HA_FILL == op)
+    ; /* none of the row count limits for chash */
   else if (n_rows < 1000)
     n_rows = 1000; /* no less than 1000 if overflows memcache, must be at least this much */
   else if (n_rows > 1000000)
-    n_rows = 1000000; /* have a cap on hash size */
-  ha->ha_row_count = n_rows;
-  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_CUSTOM);
+    n_rows = 1000000; /* cap on size except for hash join where can be large and/or partitioned */
+  ha->ha_row_count = MAX (800, n_rows);
+  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_BIN);
   for (inx = 0; inx < n_keys + n_deps; inx++)
     {
       dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
@@ -210,47 +211,37 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, long n_rows)
   ha->ha_slots = (state_slot_t **)
     list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
 				dk_set_copy (setp->setp_dependent)));
-#if 1
-  if (ha->ha_memcache_only && setp->setp_gb_ops && setp->setp_gb_ops->data)
-    {
-      inx = n_keys;
-      DO_SET (gb_op_t *, op, &(setp->setp_gb_ops))
-	{
-	  state_slot_t * ssl = ha->ha_slots[inx];
-	  switch (op->go_op)
-	{
-	  case AMMSC_COUNT:
-	  case AMMSC_COUNTSUM:
-	  case AMMSC_SUM:
-	      case AMMSC_AVG:
-	  case AMMSC_MIN:
-	  case AMMSC_MAX:
-		    {
-		      /* check dep part to be numeric type */
-		      if (IS_NUM_DTP (ssl->ssl_dtp))
-	      ha->ha_memcache_only = 0;
-		      else
-			{
-			  ha->ha_memcache_only = 1;
-			  goto check_done;
-			}
-	      break;
-		    }
-          default:
-	      break;
-	}
-	  inx++;
-	}
-      END_DO_SET ();
-check_done:;
-    }
-#endif
   ha->ha_allow_nulls = 1;
-  ha->ha_op = HA_DISTINCT;
+  ha->ha_op = op;
   if (setp->setp_any_user_aggregate_gos)
     ha->ha_memcache_only = 1;
+  if (HA_FILL == op)
+    {
+      int inx;
+      ha->ha_non_null = dk_alloc_box (BOX_ELEMENTS (ha->ha_slots), DV_BIN);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	ha->ha_non_null[inx] = ha->ha_slots[inx]->ssl_sqt.sqt_non_null;
+      END_DO_BOX;
+    }
+  if ((HA_GROUP == op && sqlg_is_vector && !setp->setp_any_user_aggregate_gos
+      && !setp->setp_any_distinct_gos
+      && ha->ha_n_keys <= CHASH_GB_MAX_KEYS)
+      || setp->setp_distinct)
+    {
+      int n_slots = BOX_ELEMENTS (ha->ha_slots);
+      ha->ha_ch_len = sizeof (int64) * (1 + n_slots);
+      ha->ha_ch_nn_flags = ha->ha_ch_len;
+      ha->ha_ch_len += ALIGN_8(n_slots) / 8;
+      ha->ha_ch_len = ALIGN_8 (ha->ha_ch_len);
+    }
 }
 
+
+/* common header of ssl and ssl ref */
+typedef struct ssl_head_s
+{
+  SSL_FLAGS;
+} ssl_head_t;
 
 void
 setp_after_deserialize (setp_node_t * setp)
@@ -260,7 +251,26 @@ setp_after_deserialize (setp_node_t * setp)
   hash_area_t * ha = setp->setp_ha;
   int n_keys = BOX_ELEMENTS (setp->setp_keys_box);
   int n_deps = BOX_ELEMENTS (setp->setp_dependent_box);
-  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, setp->src_gen.src_query->qr_no_cast_error);
+  ssl_head_t * ssl_save = NULL;
+  ha->ha_slots = (state_slot_t **)
+    list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
+				dk_set_copy (setp->setp_dependent)));
+  if (HA_FILL == ha->ha_op)
+    {
+      ssl_save = (ssl_head_t*)dk_alloc_box (BOX_ELEMENTS (ha->ha_slots) * sizeof (ssl_head_t), DV_BIN);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	{
+	  ssl_save[inx] = *(ssl_head_t*)(ha->ha_slots[inx]);
+	  ssl->ssl_sqt = ha->ha_key_cols[inx].cl_sqt;
+	  if (DV_ANY != ssl->ssl_sqt.sqt_dtp)
+	    {
+	      ssl->ssl_dc_dtp = 0;
+	      ssl_set_dc_type (ssl);
+	    }
+	}
+      END_DO_BOX;
+    }
+  ha->ha_key = setp_temp_key (setp, &ha->ha_row_size, setp->src_gen.src_query->qr_no_cast_error, ha->ha_op);
   ha->ha_n_keys = n_keys;
   ha->ha_n_deps = n_deps;
   if (n_rows < 0)
@@ -270,22 +280,34 @@ setp_after_deserialize (setp_node_t * setp)
   else if (n_rows > 1000000)
     n_rows = 1000000; /* have a cap on hash size */
   ha->ha_row_count = n_rows;
-  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_CUSTOM);
+  if (HA_FILL == ha->ha_op)
+    {
+      dk_free_box ((caddr_t)ha->ha_key_cols);
+      DO_BOX (state_slot_t *, ssl, inx, ha->ha_slots)
+	*(ssl_head_t*)ssl = ssl_save[inx];
+      END_DO_BOX;
+      dk_free_box ((caddr_t)ssl_save);
+    }
+  ha->ha_key_cols = (dbe_col_loc_t *) dk_alloc_box_zero ((n_deps + n_keys + 1) * sizeof (dbe_col_loc_t), DV_BIN);
   for (inx = 0; inx < n_keys + n_deps; inx++)
     {
       dbe_col_loc_t * cl = key_find_cl (ha->ha_key, inx +1);
+      if (DV_NUMERIC == cl->cl_sqt.sqt_dtp)
+	{
+	  cl->cl_sqt.sqt_precision = 40;
+	  cl->cl_sqt.sqt_scale = 15;
+	}
       ha->ha_key_cols[inx] = cl[0];
       if ((inx >= n_keys) && (cl->cl_fixed_len < 0))
 	ha->ha_memcache_only = 1;
     }
-  ha->ha_slots = (state_slot_t **)
-    list_to_array (dk_set_conc (dk_set_copy (setp->setp_keys),
-				dk_set_copy (setp->setp_dependent)));
   ha->ha_allow_nulls = 1;
-  if (setp->setp_any_user_aggregate_gos)
+  if (setp->setp_any_user_aggregate_gos || setp->setp_any_distinct_gos)
     ha->ha_memcache_only = 1;
   if (setp->setp_loc_ts)
     setp->setp_loc_ts->ts_order_ks->ks_key = ha->ha_key;
+  if (setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+    setp->setp_org_slots = (state_slot_t **)box_concat (setp->setp_keys_box, setp->setp_dependent_box);
 }
 
 

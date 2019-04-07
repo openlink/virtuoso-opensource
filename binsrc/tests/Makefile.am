@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -130,42 +130,42 @@ iODBC_CFLAGS=-DUNIX_ODBC -DODBC_ONLY -DDSN_TRANSLATION
 isql_iodbc_SOURCES = $(isql_SOURCES)
 isql_iodbc_CFLAGS  = $(isql_CFLAGS) $(iODBC_CFLAGS)
 isql_iodbc_LDADD   = \
-	@iodbc_LDFLAGS@ \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@clntlibs@ \
-	@LIBRDL@
+	@LIBRDL@ \
+	@iodbc_LIBS@
 
 isqlw_iodbc_SOURCES = $(isqlw_SOURCES)
 isqlw_iodbc_CFLAGS  = $(isqlw_CFLAGS) $(iODBC_CFLAGS)
 isqlw_iodbc_LDADD   = \
-	@iodbc_LDFLAGS@ \
 	$(top_builddir)/libsrc/Dk/libdk1t.la \
 	$(top_builddir)/libsrc/Thread/libthrs.la \
 	$(top_builddir)/libsrc/util/libutil.la \
 	@clntlibs@ \
-	@LIBRDL@
+	@LIBRDL@ \
+	@iodbc_LIBS@
 
 scroll_iodbc_SOURCES = $(scroll_SOURCES)
 scroll_iodbc_CFLAGS  = $(AM_CFLAGS) $(iODBC_CFLAGS)
-scroll_iodbc_LDADD   = @iodbc_LDFLAGS@
+scroll_iodbc_LDADD   = @iodbc_LIBS@
 
 ins_iodbc_SOURCES = $(ins_SOURCES)
 ins_iodbc_CFLAGS  = $(AM_CFLAGS) $(iODBC_CFLAGS)
-ins_iodbc_LDADD   = @iodbc_LDFLAGS@ $(top_builddir)/libsrc/util/libutil.la
+ins_iodbc_LDADD   = @iodbc_LIBS@ $(top_builddir)/libsrc/util/libutil.la
 
 getdata_iodbc_SOURCES = getdata.c
 getdata_iodbc_CFLAGS  = $(AM_CFLAGS) $(iODBC_CFLAGS)
-getdata_iodbc_LDADD   = @iodbc_LDFLAGS@
+getdata_iodbc_LDADD   = @iodbc_LIBS@
 
 burstoff_iodbc_SOURCES = burstoff.c 
 burstoff_iodbc_CFLAGS  = $(AM_CFLAGS) $(iODBC_CFLAGS)
-burstoff_iodbc_LDADD   = @iodbc_LDFLAGS@
+burstoff_iodbc_LDADD   = @iodbc_LIBS@
 
 force_dbms_name_iodbc_SOURCES = force_dbms_name.c
 force_dbms_name_iodbc_CFLAGS  = $(AM_CFLAGS) $(iODBC_CFLAGS)
-force_dbms_name_iodbc_LDADD   = @iodbc_LDFLAGS@
+force_dbms_name_iodbc_LDADD   = @iodbc_LIBS@
 
 inifile_SOURCES = inifile.c inifile.vers.c
 inifile_CFLAGS  = $(AM_CFLAGS)
@@ -185,11 +185,11 @@ inifile.vers.c:
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
 	davperf.sql \
+	dumptb.sql \
 	isql_win32.c \
-	tpccoci.c \
-	davperf.sql \
-	tpccddk.sql \
 	tpcc.sql \
+	tpccddk.sql \
+	tpccoci.c \
 	tpm.sql \
 	virtdriver.sql \
 	wi.cfg

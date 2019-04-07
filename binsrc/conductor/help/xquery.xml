@@ -1,0 +1,69 @@
+<!--
+ -  
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -  
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -  
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -  
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -  
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -  
+ -  
+-->
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<HelpTopic>
+<sect1 id="xquery">
+    <title>XQuery Interface</title>
+    <!--
+    <para></para>
+    <simplelist>
+      <member></member>
+    </simplelist>
+    -->
+
+    <para>
+	In general query's context node may either be a single resource or a collection.
+    </para>
+    <para>
+	This page asks which option to be used for query context (the values/selection will be asked on the next screen depending of type selected here):
+    </para>
+    <simplelist>
+      <member>DAV Resource - local WebDAV resource</member>
+      <member>DAV Collection - local WebDAV collection containing a resources</member>
+      <member>Database Table - document kept in a table</member>
+      <member>External URL - external document or external WebDAV collection</member>
+      <member>No context - an empty document will be used for context node</member>
+    </simplelist>
+    <para>	
+	The DAV browser allows selecting a resource or collection from the local DAV
+	space. If a collection is selected, all XML resources therein are
+	concatenated into a forest as by the collection function.  This is placed
+	under an element node called "root" and is used as the context of the query.
+    </para>
+
+    <para>
+	if an external resource is desired as the context node, the URL may be
+	entered.  This will be retrieved either with the collection or the doc
+	function, as indicated by the check-box.
+    </para>
+
+    <para>
+	Because many resources are not well formed, the check-box Skip Malformed
+	allows skipping resources which are not parseable as XML from the  context
+	collection.  The Parse as HTML checkbox will parse HTML, correcting tag
+	nesting.
+    </para>
+
+
+  </sect1>
+</HelpTopic>

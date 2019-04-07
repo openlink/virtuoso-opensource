@@ -1,13 +1,13 @@
 #!/bin/sh
 #
-#  $Id$
+#  $Id: tsec.sh,v 1.12.6.2.4.5 2013/01/02 16:15:23 source Exp $
 #
 #  Security tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
 
 LOGFILE=tsec.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 
 BANNER "STARTED SECURITY TEST (tsec.sh)"
@@ -485,18 +485,43 @@ then
   exit 1
 fi
 
+# XXX
 #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
-if test -f ../wb/SparqlSec.sql
-then
-  cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
-  RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
-  if test $STATUS -ne 0
-  then
-    LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"
-    exit 1
-  fi
-fi
+#cat $VIRTUOSO_TEST/../wb/SparqlSec.sql | grep -v "set echo on;" > $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql
+#RUN $ISQL $DSN dba dba $VIRTUOSO_TEST/../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+#if test $STATUS -ne 0
+#then
+#  LOG "***ABORTED: $VIRTUOSO_TEST/../wb/SparqlSec.sql Sparql graph level security tests"
+#  exit 1
+#fi
 
+if test -d ../wb
+then
+    #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
+    cat ../wb/SparqlSec.sql | grep -v "set echo on;" > ../wb/SparqlSec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/SparqlSec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/SparqlSec.sql Sparql graph level security tests"
+      exit 1
+    fi
+    #The following test should be the last before the shutdown, to prevent side effects on tests that may use SPARQL.
+    cat ../wb/Sparql11Sec.sql | grep -v "set echo on;" > ../wb/Sparql11Sec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/Sparql11Sec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/Sparql11Sec.sql Sparql 1.1 graph level security tests"
+      exit 1
+    fi
+
+    cat ../wb/Sparql11Sec.sql | grep -v "set echo on;" > ../wb/Sparql11Sec_noecho.sql
+    RUN $ISQL $DSN dba dba ../wb/Sparql11Sec_noecho.sql PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT
+    if test $STATUS -ne 0
+    then
+      LOG "***ABORTED: ../wb/Sparql11Sec.sql Sparql 1.1 graph level security tests"
+      exit 1
+    fi
+fi
 
 SHUTDOWN_SERVER
 CHECK_LOG

@@ -1,0 +1,491 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="sparql_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Sponger</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
+      <v:variable name="c_id" type="integer" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Cartridges"/>
+    </vm:menu>
+    <vm:header caption="Extractor Cartridges"/>
+    <vm:pagebody>
+      <![CDATA[
+        <script language="JavaScript" src="admin_utils.js"></script>
+      ]]>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+          <!-- tab -->
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab_selected" align="center" nowrap="1">
+                        Extractor Cartridges
+                      </td>
+                      <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center" nowrap="1">
+                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <?vsp } ?>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%">
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                      <!-- tab -->
+                        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                          <tr>
+                            <td>
+                              <v:form name="fm" type="simple" method="POST">
+                                <vm:if test="self.c_mode = 'C/browse'">
+                                  <v:button name="add1" value="Add" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.c_mode := 'C/add';
+
+                                        self.seq1.ufl_value := '';
+                                        self.desc1.ufl_value := '';
+                                        self.patt1.ufl_value := '';
+                                        self.typ1.ufl_value := '';
+                                        self.pl1.ufl_value := '';
+                                        self.key1.ufl_value := '';
+                                        self.opts1.ufl_value := '';
+
+                                        self.c_id := null;
+                                        self.vc_data_bind (e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button name="apply1" value="Enable Selected" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare M, N, enabled integer;
+                                        declare params, checked any;
+                                        declare chil vspx_control;
+                                        declare cb vspx_check_box;
+                                        declare ds vspx_data_set;
+
+                                        params := e.ve_params;
+                                        checked := vector();
+                                        for (N := 0; N < length(params); N := N + 2)
+                                        {
+                                          if (params[N] like '%:cb_item%')
+                                            checked := vector_concat (checked, vector (cast (params[N+1] as integer)));
+                                        }
+                                        ds := self.maps;
+                                        M := 0;
+                                        while ((chil := ds.ds_iterate_rows (M)) is not null)
+                                        {
+                                          enabled := 0;
+                                          cb := chil.vc_find_control ('cb_item');
+                                          for (N := 0; N < length (checked); N := N + 1)
+                                          {
+                                            if (checked[N] = cb.ufl_value)
+                                            {
+                                              enabled := 1;
+                                              goto _skip;
+                                            }
+                                          }
+                                        _skip:;
+                                          update DB.DBA.SYS_RDF_MAPPERS set RM_ENABLED = enabled where RM_ID = cb.ufl_value;
+                                          cb.ufl_selected := enabled;
+                                        }
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+                                  <table class="listing" rules="groups">
+                                    <tr class="listing_header_row">
+                                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                                      <th width="1%">Seq#</th>
+                                      <th colspan="2">Description</th>
+                                      <th>Pattern</th>
+                                      <th width="1%">Action</th>
+                                    </tr>
+                                    <v:data-source name="ds_maps" expression-type="sql" nrows="1000" initial-offset="0">
+                                      <v:before-data-bind>
+                                        <![CDATA[
+                                          control.ds_sql := 'select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RM_ENABLED, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS order by 4';
+                                        ]]>
+                                      </v:before-data-bind>
+                                    </v:data-source>
+
+                                    <v:data-set name="maps" data-source="self.ds_maps"  scrollable="1">
+
+                                      <v:template name="maps_rep" type="repeat">
+
+                                        <v:template name="maps_brows" type="browse">
+                                          <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                            <td>
+                                              <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]"/>
+                                            </td>
+                                            <td align="right" style="padding: 0 5px 0 0px">
+                                              <v:label name="la3" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" />
+                                            </td>
+                                            <td>
+                                              <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare skey, _key, _uid, _opts any;
+                                                    declare i int;
+
+                                                    skey := (control.vc_parent as vspx_row_template).te_rowset[5];
+                                                    skey := deserialize (skey);
+                                                    _opts := (control.vc_parent as vspx_row_template).te_rowset[7];
+                                                    if (not isarray(skey))
+                                                    {
+                                                      _key := (control.vc_parent as vspx_row_template).te_rowset[5];
+                                                      _uid := '';
+                                                    }
+                                                    else
+                                                    {
+                                                      _key := skey[0];
+                                                      _uid := skey[1];
+                                                    }
+                                                    self.seq1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    self.desc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
+                                                    self.patt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
+                                                    self.typ1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                                    self.pl1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[4];
+                                                    self.key1.ufl_value := _key;
+                                                    self.key2.ufl_value := _uid;
+                                                    self.opts1.ufl_value := '';
+                                                    for (i := 0; i < length (_opts); i := i + 2)
+                                                    {
+                                                      self.opts1.ufl_value :=  self.opts1.ufl_value || _opts[i] || '=' || _opts[i+1] || '\n';
+                                                    }
+                                                    self.c_id := (control.vc_parent as vspx_row_template).te_rowset[3];
+
+                                                    self.c_mode := 'C/edit';
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                            <td>
+                                              <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" />
+                                            </td>
+                                            <td>
+                                              <v:label name="la1" format="%70.70s" value="--(control.vc_parent as vspx_row_template).te_rowset[0]"/>
+                                            </td>
+                                            <td nowrap="nowrap">
+                                              &nbsp;
+                                              <v:button name="delete1" action="simple" style="url" value="''">
+                                                <v:before-render>
+                                                  <![CDATA[
+                                                    control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                                                  ]]>
+                                                </v:before-render>
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    delete from DB.DBA.SYS_RDF_MAPPERS where RM_ID = (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                              &nbsp;
+                                              <v:button name="earul1" value="Up" action="simple" style="url">
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare to_move, to_swap, mv_ord, sw_ord int;
+
+                                                    if (not self.vc_is_valid)
+                                                      return;
+
+                                                    to_swap := null;
+                                                    to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+                                                    {
+                                                      if (RM_ID = to_move)
+                                                      {
+                                                        mv_ord := RM_ID;
+                                                        goto swapit;
+                                                      }
+                                                      to_swap := RM_ID;
+                                                      sw_ord := RM_ID;
+                                                    }
+                                                  swapit:
+                                                    if (to_swap is not null)
+                                                    {
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+                                                    }
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                              &nbsp;
+                                              <v:button name="earul2" value="Down" action="simple" style="url">
+                                                <v:on-post>
+                                                  <![CDATA[
+                                                    declare to_move, to_swap, mv_ord, sw_ord int;
+
+                                                    if (not self.vc_is_valid)
+                                                      return;
+
+                                                    to_swap := null;
+                                                    to_move := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                                    mv_ord := null;
+                                                    for select RM_ID from DB.DBA.SYS_RDF_MAPPERS order by RM_ID do
+                                                    {
+                                                      if (RM_ID = to_move)
+                                                      {
+                                                        mv_ord := RM_ID;
+                                                      }
+                                                      else if (mv_ord is not null)
+                                                      {
+                                                        to_swap := RM_ID;
+                                                        sw_ord := RM_ID;
+                                                        goto swapit;
+                                                      }
+                                                    }
+                                                  swapit:
+                                                    if (to_swap is not null)
+                                                    {
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = to_swap;
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = sw_ord where RM_ID = to_move;
+                                                      update DB.DBA.SYS_RDF_MAPPERS set RM_ID = mv_ord where RM_ID = -1;
+                                                    }
+                                                    self.vc_data_bind (e);
+                                                  ]]>
+                                                </v:on-post>
+                                              </v:button>
+                                            </td>
+                                          </tr>
+                                        </v:template>
+
+                                      </v:template>
+
+                                      <v:template name="maps_footer" type="simple">
+                                      </v:template>
+
+                                    </v:data-set>
+                                  </table>
+                                </vm:if>
+                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+                                  <div class="fm">
+                                    <fieldset>
+                                      <label for="desc1">Description</label>
+                                      <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_style="width: 500px" />
+                                      <br/>
+                                      <label for="seq1">Sequence No</label>
+                                      <v:text name="seq1" value="" xhtml_id="seq1" error-glyph="*" xhtml_style="width: 120px" />
+                                      <br/>
+                                      <label for="patt1">Pattern</label>
+                                      <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_style="width: 500px" />
+                                      <br />
+                                      <label for="typ1">Pattern Type</label>
+                                      <v:select-list name="typ1" value="" xhtml_id="typ1" error-glyph="*" xhtml_style="width: 120px" >
+                                        <v:item name="Content Type" value="MIME"/>
+                                        <v:item name="URL" value="URL"/>
+                                        <v:item name="HTTP protocol" value="HTTP"/>
+                                      </v:select-list>
+                                      <br />
+                                      <label for="pl1">Cartridge Name</label>
+                                      <v:text name="pl1" value="" xhtml_id="pl1" error-glyph="*" xhtml_style="width: 500px" />
+                                      <br />
+                                      <label for="key2">API Account</label>
+                                      <v:text name="key2" value="" xhtml_id="key2" error-glyph="*" xhtml_style="width: 500px" />
+                                      <br />
+                                      <label for="key1">API Key</label>
+                                      <v:text name="key1" value="" xhtml_id="key1" error-glyph="*" xhtml_style="width: 500px" />
+                                      <br />
+                                      <label for="opts1">Options</label>
+                                      <v:textarea name="opts1" value="" xhtml_rows="5" xhtml_id="opts1" error-glyph="*" xhtml_style="width: 495px" />
+                                      <?vsp if (strstr (self.desc1.ufl_value, 'FQL') is not null) { ?>
+                                      <a href="fb_popup.vspx" target="_blank">Get Facebook session</a>
+                                      <?vsp } ?>
+                                      <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
+                                      <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
+                                      <?vsp } ?>
+                                      <?vsp
+                                      if (strstr (self.desc1.ufl_value, 'CSV') is not null and exists (select 1 from DB.DBA.sys_keys where key_table = 'DB.DBA.CSV_HEADER_PATTERNS')) { ?>
+                                      <v:button style="url" action="simple" name="csv_patterns" value="CSV Patterns" >
+                                        <v:on-post><![CDATA[
+                                          http_request_status ('HTTP/1.1 302 Found');
+                                          http_header (sprintf('Location: csv_patterns.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                                        ]]></v:on-post>
+                                      </v:button>
+                                      <?vsp } ?>
+                                      <br />
+                                      <span class="fm_ctl_btn">
+                                        <v:button name="cancel1" value="Cancel" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+
+                                        <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                          <v:on-post>
+                                            <![CDATA[
+                                              declare _id integer;
+                                              declare _key, _opts any;
+                                              declare exit handler for sqlstate '*'
+                                              {
+                                                rollback work;
+                                                if (__SQL_STATE like 'NV%')
+                                                {
+                                                  self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
+                                                }
+                                                else
+                                                {
+                                                  self.vc_error_message := 'The values entered conflict with other RDF Mapper. Please supply correct values.';
+                                                }
+                                                self.vc_is_valid := 0;
+                                                return;
+                                              };
+
+                                              self.desc1.ufl_value := trim (self.desc1.ufl_value);
+                                              self.seq1.ufl_value  := trim (self.seq1.ufl_value);
+                                              self.patt1.ufl_value := trim (self.patt1.ufl_value);
+                                              self.typ1.ufl_value  := trim (self.typ1.ufl_value);
+                                              self.pl1.ufl_value   := trim (self.pl1.ufl_value);
+                                              self.key1.ufl_value  := trim (self.key1.ufl_value);
+                                              self.key2.ufl_value  := trim (self.key2.ufl_value);
+
+                                              _id   := VALIDATE.DBA.validate (self.seq1.ufl_value, vector ('name', 'Sequence No', 'class', 'integer', 'minValue', 1));
+                                              _opts := trim (self.opts1.ufl_value);
+                                              _opts := replace (_opts, '\r', '\n');
+                                              _opts := replace (_opts, '\n\n', '\n');
+                                              _opts := rtrim (_opts, '\n');
+                                              _opts := case when (length (_opts)) then split_and_decode (_opts, 0, '\0\0\n=') else null end;
+                                              _key := case when (not length (self.key2.ufl_value))then self.key1.ufl_value else serialize (vector (self.key1.ufl_value, self.key2.ufl_value)) end;
+
+                                              if (not length (self.desc1.ufl_value) or
+                                                  not length (self.patt1.ufl_value) or
+                                                  not length (self.typ1.ufl_value) or
+                                                  not length (self.pl1.ufl_value))
+                                              {
+                                                declare what any;
+                                                what := case when length (self.desc1.ufl_value) = 0 then 'description' when length (self.patt1.ufl_value) = 0 then 'pattern'
+                                                when length (self.typ1.ufl_value) = 0 then 'type' when length (self.pl1.ufl_value) = 0  then 'function' else 'field' end;
+
+                                                rollback work;
+                                                self.vc_is_valid := 0;
+                                                self.vc_error_message := sprintf ('The %s value cannot be empty.', what);
+                                                return;
+                                              }
+                                              if (self.c_mode = 'C/add')
+                                              {
+                                                insert into DB.DBA.SYS_RDF_MAPPERS (RM_PATTERN, RM_TYPE, RM_HOOK, RM_KEY,RM_DESCRIPTION, RM_OPTIONS)
+                                                  values (self.patt1.ufl_value, self.typ1.ufl_value, self.pl1.ufl_value,_key, self.desc1.ufl_value, _opts);
+
+                                                self.c_id := identity_value ();
+                                              }
+                                              else
+                                              {
+                                                update DB.DBA.SYS_RDF_MAPPERS
+                                                   set RM_PATTERN = self.patt1.ufl_value,
+                                                       RM_TYPE = self.typ1.ufl_value,
+                                                       RM_HOOK = self.pl1.ufl_value,
+                                                       RM_KEY = _key,
+                                                       RM_DESCRIPTION = self.desc1.ufl_value,
+                                                       RM_OPTIONS = _opts
+                                                 where RM_ID = self.c_id;
+                                              }
+                                              if (_id <> self.c_id)
+                                              {
+                                                update DB.DBA.SYS_RDF_MAPPERS set RM_ID = -1 where RM_ID = self.c_id;
+                                                if (_id < self.c_id)
+                                                {
+                                                  for (select RM_ID _rm_id from DB.DBA.SYS_RDF_MAPPERS where RM_ID >= _id and RM_ID < self.c_id order by RM_ID desc) do
+                                                  {
+                                                    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = RM_ID + 1 where RM_ID = _rm_id;
+                                                  }
+                                                }
+                                                else
+                                                {
+                                                  for (select RM_ID _rm_id from DB.DBA.SYS_RDF_MAPPERS where RM_ID > self.c_id and RM_ID <= _id order by RM_ID) do
+                                                  {
+                                                    update DB.DBA.SYS_RDF_MAPPERS set RM_ID = RM_ID - 1 where RM_ID = _rm_id;
+                                                  }
+                                                }
+                                                update DB.DBA.SYS_RDF_MAPPERS set RM_ID = _id where RM_ID = -1;
+                                              }
+                                              self.c_mode := 'C/browse';
+                                              self.vc_data_bind (e);
+                                            ]]>
+                                          </v:on-post>
+                                        </v:button>
+                                      </span>
+                                    </fieldset>
+                                  </div>
+                                </vm:if>
+                              </v:form>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          <!-- end tab -->
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

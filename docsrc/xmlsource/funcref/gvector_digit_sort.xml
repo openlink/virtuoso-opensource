@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2012 OpenLink Software
+  Copyright (C) 1998-2019 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -98,8 +98,8 @@ However, out of these two similar functions, only gvector_digit_sort() is stable
   </refsect1> -->
   <refsect1 id="seealso_gvector_digit_sort">
     <title>See Also</title>
-    <para><link linkend="fn_gvector_sort"><function>gvector_sort</function></link></para>
-    <para><link linkend="fn_rowvector_digit_sort"><function>rowvector_digit_sort</function></link></para>
+    <para><link linkend="fn_gvector_sort"><function>gvector_sort()</function></link></para>
+    <para><link linkend="fn_rowvector_digit_sort"><function>rowvector_digit_sort()</function></link></para>
 <!--    <para><link linkend="fn_rowvector_sort"><function>rowvector_sort</function></link></para> -->
   </refsect1>
 </refentry>

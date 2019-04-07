@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,6 +41,8 @@
 
 
 
+int enable_rts_qp = 1;
+
 void sqlg_dt_text (sqlo_t * so, df_elt_t * dt_dfe, remote_table_source_t * top_rts,
     char * text, size_t tlen, int * fill);
 
@@ -64,9 +66,28 @@ sqlo_depends_on_locus (df_elt_t * dfe, locus_t * loc)
  */
 
 int
-sqlo_rds_support_params_in_select (df_elt_t *dfe, locus_t *loc)
+sqlo_rds_support_params_in_select (df_elt_t * dfe, locus_t * loc)
 {
   return 1;
+}
+
+int
+sqlo_in_contains_iri (df_elt_t * dfe)
+{
+  df_elt_t ** args;
+  int inx, len;
+  if (!dfe || DFE_TRUE == dfe || DFE_FALSE == dfe || DFE_BOP_PRED != dfe->dfe_type || 1 != dfe->_.bin.is_in_list)
+    return 0;
+  args = dfe->_.bin.right->_.call.args;
+  len = BOX_ELEMENTS (args);
+  for (inx = 0; inx < len; inx ++)
+    {
+      if (args[inx]->dfe_type != DFE_CONST)
+	continue;
+      if (IS_IRI_DTP (DV_TYPE_OF (args[inx]->dfe_tree)))
+	return 1;
+    }
+  return 0;
 }
 
 int
@@ -174,6 +195,7 @@ sqlo_dfe_preferred_locus (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 
 #define SQLO_VDB_SAVE
 #define SQLO_VDB_RESTORE
+
 
 
 void

@@ -7,7 +7,7 @@ public class PreCalcParameterPool {
 	private int warmups;
 	private boolean warmupPhase;
 	private boolean runPhase;
-	
+
 	PreCalcParameterPool(AbstractParameterPool parameterPool, int warmups) {
 		this.parameterPool = parameterPool;
 		this.warmups = warmups;
@@ -15,7 +15,7 @@ public class PreCalcParameterPool {
 		runPhase = false;
 		queryMixNr = 0;
 	}
-	
+
 	/*
 	 * Calculate query mixes with all queries for the test run
 	 */
@@ -23,7 +23,7 @@ public class PreCalcParameterPool {
 		System.out.print("Generating queries...");
 		System.out.flush();
 		queryMixes = new CompiledQuery[times][queryMix.queryMix.length];
-		
+
 		for(int nrRun=0;nrRun<times;nrRun++) {
 			queryMix.setRun(nrRun);
 			int i=0;
@@ -33,22 +33,22 @@ public class PreCalcParameterPool {
 				next.setParameters(queryParameters);
 
 				queryMixes[nrRun][i++] = new CompiledQuery(next, next.getQueryString(), next.getEncodedParamString());
-				
+
 				queryMix.setCurrent(0, -1.0);
 			}
 			queryMix.finishRun();
 		}
 		System.out.println("done");
 	}
-	
+
 	public synchronized CompiledQuery[] getNextQueryMix() {
 		if(queryMixNr==warmups)
 			warmupPhase = false;
-		
+
 		if(!warmupPhase && !runPhase) {
 			return null;
 		}
-		
+
 		if(queryMixNr >= queryMixes.length)
 			return null;
 		else {
@@ -58,11 +58,11 @@ public class PreCalcParameterPool {
 	public synchronized boolean getNextQueryMix(CompiledQueryMix queryMix) {
 		if(queryMixNr==warmups)
 			warmupPhase = false;
-		
+
 		if(!warmupPhase && !runPhase) {
 			return false;
 		}
-		
+
 		if(queryMixNr >= queryMixes.length)
 			return false;
 		else {

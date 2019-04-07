@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
 
 
 int
-cfg_getstring (PCONFIG pconfig, char *section, char *id, char **valptr)
+cfg_getstring (PCONFIG pconfig, const char *section, const char *id, char **valptr)
 {
   if (cfg_find (pconfig, section, id))
     return -1;
@@ -41,7 +41,7 @@ cfg_getstring (PCONFIG pconfig, char *section, char *id, char **valptr)
 
 
 int
-cfg_getlong (PCONFIG pconfig, char *section, char *id, int32 *valptr)
+cfg_getlong (PCONFIG pconfig, const char *section, const char *id, int32 *valptr)
 {
   int32 value;
   int negative;
@@ -84,7 +84,7 @@ cfg_getlong (PCONFIG pconfig, char *section, char *id, int32 *valptr)
 
 
 int
-cfg_getshort (PCONFIG pconfig, char *section, char *id, short *valptr)
+cfg_getshort (PCONFIG pconfig, const char *section, const char *id, short *valptr)
 {
   int32 value;
 

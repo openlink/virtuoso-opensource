@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -90,7 +90,7 @@ Interface chapter.
 </sect2>
 </sect1>
 	<!-- ======================================== -->
-	<sect1 id="SNAPSHOT">
+	<sect1 id="snapshot">
 		<title>Snapshot Replication</title>
 		<sect2 id="NONINC">
 			<title>Non incremental snapshot replication</title>
@@ -1201,7 +1201,7 @@ or after each successful run of repl_purge() for this account.
 </sect2>
 	</sect1>
 	<!-- ======================================== -->
-	<sect1 id="SCHEDULER">
+	<sect1 id="scheduler">
 		<title>Virtuoso scheduler</title>
 		<para>
 Virtuoso scheduler allows an arbitrary SQL command to be run at certain intervals.

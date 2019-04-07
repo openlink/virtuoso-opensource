@@ -1,0 +1,142 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="msg_news_global_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+      <![CDATA[
+        self.org := registry_get ('__nntp_organization_header');
+        self._from := registry_get ('__nntp_from_header');
+	self._retr := registry_get ('__nntp_self_retr');
+	if (self._retr = 0) self._retr := 3;
+      ]]>
+  </v:on-init>
+  <vm:pagetitle>Virtuoso NNTP Server Global Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="org" persist="0" type="varchar" default="''" />
+      <v:variable name="_from" persist="0" type="varchar" default="''" />
+      <v:variable name="_retr" persist="0" type="integer" default="3" />
+    </vm:variables>
+    <vm:variables>
+      <v:variable name="ns_id" persist="0" type="integer" default="0" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="NNTP Server Global Management"/>
+    </vm:menu>
+    <vm:header caption="NNTP Server Global Management"></vm:header>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+		      <td class="page_tab" align="center">
+			<v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
+		      </td>
+		      <td class="page_tab_selected" align="center">General Setup
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+			      <td width="100%">
+                              </td>
+                            </tr>
+                          </table>
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN -->
+      <v:form type="simple" method="POST" action="msg_news_conf.vspx">
+      <table class="ctl_grp">
+        <tr>
+	  <td colspan="2">
+	    <h3>Headers:</h3>
+          </td>
+	</tr>
+        <tr>
+          <td>
+            Default value for Organization header:
+          </td>
+          <td>
+	    <v:text xhtml_size="80" type="simple" value="--self.org" name="org_head"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+	    Optional node-name for Path header:
+          </td>
+          <td>
+	    <v:text xhtml_size="80" type="simple" value="--self._from" name="from_head"/>
+          </td>
+        </tr>
+        <tr>
+          <td>
+	    Post retrieve:
+          </td>
+          <td>
+	    <v:text xhtml_size="80" type="simple" value="--self._retr" name="retrive"/>
+          </td>
+        </tr>
+        <tr>
+	  <td colspan="2">
+	    <v:button action="submit" value="Update" name="upd" style="button" xhtml_style="width:60px"/>
+          </td>
+	</tr>
+        <tr>
+	  <td colspan="2">
+	    <!--v:url value="Access Control List" url="--'sec_acl_edit.vspx?mode=edit&edit=NEWS'" enabled="--self.vc_authenticated" /-->
+          </td>
+	</tr>
+      </table>
+  </v:form>
+	  <!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

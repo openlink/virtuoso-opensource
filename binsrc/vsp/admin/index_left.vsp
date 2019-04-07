@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -24,11 +24,11 @@
 ?>
 <!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
 <?vsp
-  declare have_cond, have_wa, have_doc, have_tut, have_phpbb, deadl int;
+  declare have_cond, have_wa, have_doc, have_tut, have_phpbb, have_fct, deadl int;
 
   deadl := 0;
-  have_cond := 0; have_wa := 0; have_doc := 0; have_tut := 0; have_phpbb := 0;
-  
+  have_cond := 0; have_wa := 0; have_doc := 0; have_tut := 0; have_phpbb := 0; have_fct := 0;
+
   declare exit handler for sqlstate '40001'
   {
     rollback work;
@@ -43,8 +43,8 @@
 again:
 
   if (VAD_CHECK_VERSION ('conductor') is not null or exists (select 1 from HTTP_PATH where HP_LPATH = '/conductor'))
-        have_cond := 1; 
-  if (VAD_CHECK_VERSION ('Framework') is not null)  
+    have_cond := 1;
+  if (VAD_CHECK_VERSION ('Framework') is not null)
     have_wa := 1;
   if (VAD_CHECK_VERSION ('doc') is not null)
     have_doc := 1;
@@ -52,6 +52,8 @@ again:
     have_tut := 1;
   if (VAD_CHECK_VERSION ('phpBB3') is not null)
     have_phpbb := 1;
+  if (VAD_CHECK_VERSION ('fct') is not null)
+    have_fct := 1;
 
 ?><html>
   <head>
@@ -63,6 +65,16 @@ again:
 	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/conductor/" target="_top">Conductor</a></li>
       </ul>
       <?vsp } ?>
+
+      <?vsp if (have_fct) { ?>
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/fct/" target="_top">Faceted Browser</a></li>
+      </ul>
+      <?vsp } ?>
+
+      <ul class="left_nav">
+	<li><img src="/images/nav_arrrow1.gif" width="8" height="8" /> <a href="/sparql/" target="_top">SPARQL endpoint</a></li>
+      </ul>
 
       <?vsp if (have_wa) { ?>
       <ul class="left_nav">
@@ -77,7 +89,7 @@ again:
       <?vsp } ?>
 
       <ul class="left_nav">
-	<!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
+	  <!--li><img src="/images/tour_16.png" width="16" height="16" /><a href="http://support.openlinksw.com/support/tutorials.vsp">Take A Tour</a></li-->
       <!--li><img src="/images/wnew_16.png" width="16" height="16" /><a href="/newfeatures.html" target="_top">What's New</a></li-->
       <?vsp if (have_doc) { ?>
       <li><img src="/images/docs_16.png" width="16" height="16" /><a href="/doc/html/" target="_top">Documentation<small> (local)</small></a></li>

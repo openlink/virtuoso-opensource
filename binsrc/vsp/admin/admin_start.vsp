@@ -1,26 +1,26 @@
-<?vsp 
+<?vsp
 --
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 
   declare _q, _state, _msg, _stmt, _sid varchar;
@@ -66,8 +66,8 @@
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="admborders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
-<TR><TD CLASS="startinfo">Administration of Virtuoso’s Runtime Hosting 
-features; this includes wizards for extending Virtuoso by integrating 
+<TR><TD CLASS="startinfo">Administration of Virtuoso’s Runtime Hosting
+features; this includes wizards for extending Virtuoso by integrating
 components built for the following runtime environments:
 <ul>
  <li>Microsoft .NET CLR</li>
@@ -86,10 +86,10 @@ components built for the following runtime environments:
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="admborders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
-<TR><TD CLASS="startinfo">Administration of Virtuoso’s Web Services features; 
-this includes wizards for publishing  persistent stored modules (stored procedures 
-and 3rd party runtime hosted components) as SOAP and WSDL compliant XML 
-Web Services. These interfaces also automate the process of securing 
+<TR><TD CLASS="startinfo">Administration of Virtuoso’s Web Services features;
+this includes wizards for publishing  persistent stored modules (stored procedures
+and 3rd party runtime hosted components) as SOAP and WSDL compliant XML
+Web Services. These interfaces also automate the process of securing
 the Web Services that you publish.
 </TD></TR>
 </TABLE>
@@ -119,7 +119,7 @@ the Web Services that you publish.
 <TR><TD CLASS="admborders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startinfo">
-Web based interfaces that expose Virtuoso’s XML features; this includes 
+Web based interfaces that expose Virtuoso’s XML features; this includes
 interfaces for doing the following:
 <ul>
  <li>SQL to XML Transformation on the fly</li>
@@ -169,10 +169,10 @@ functionality.</TD></TR>
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="admborders"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
-<TR><TD CLASS="startinfo">Use this interface to administer Virtuoso's Relational & 
-Virtual Database functionality, this includes management of: Database Users, 
-Tables & Views, Stored Procedure, Triggers.  This interface is also used 
-to manage integration of third Party Database Tables, Views, and 
+<TR><TD CLASS="startinfo">Use this interface to administer Virtuoso's Relational &
+Virtual Database functionality, this includes management of: Database Users,
+Tables & Views, Stored Procedure, Triggers.  This interface is also used
+to manage integration of third Party Database Tables, Views, and
 Stored Procedures.
 </TD></TR>
 </TABLE>
@@ -188,7 +188,7 @@ Stored Procedures.
 <TR><TD CLASS="startcell"><IMG SRC="images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>
 <TR><TD CLASS="startinfo">Configure Mail & NNTP.  <br>
 Compose/store/send/retrieve e-mail using Virtuoso and SMTP/POP3 services<br>
-NNTP support includes linking third-party NNTP servers into Virtuoso and creation of 
+NNTP support includes linking third-party NNTP servers into Virtuoso and creation of
 free-text searches on newsgroup data.
 </TD></TR>
 </TABLE>

@@ -1,0 +1,264 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Precision Search &amp; Find</title>
+
+<?vsp
+  declare main_ss varchar;
+  declare  pageUrl, query_str varchar;
+  main_ss := registry_get ('fct_main_ss');
+  if (not isstring (main_ss)) main_ss := 'styles/default.css';
+
+  pageUrl := http_path();
+  query_str := '';
+  for (declare i, j, l int, i := 0, j := 1, l := length (params); i < l; i := i + 2)
+  {
+    if (params[i] <> 'Content')
+    {
+      declare k,v varchar;
+      if (j > 1)
+	query_str := query_str || '&';
+      k := params[i];
+      v := sprintf ('%U', params[i+1]);
+      query_str := query_str || k || '=' || v;
+      j := j + 1;
+    }
+  }
+  if (length (query_str))
+    pageUrl := pageUrl || '?' || query_str;
+
+?>
+  <link rel="stylesheet" type="text/css" href="<?=main_ss?>"  charset="utf-8" />
+
+<?vsp
+  fct_gen_opensearch_link();
+?>
+
+<script type="text/javascript" >
+    var featureList=["map", "combolist", "ajax", "tab", "json", "location"];
+</script>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+<script type="text/javascript" src="facet.js"></script>
+
+<?vsp
+  declare sid, _S, ses_parms varchar;
+
+  b3s_handle_ses (path, lines, params);
+
+  sid := connection_get ('sid');
+
+  declare dbg_out any;
+  declare dbg_mode varchar;
+  declare dbg_lvl int;
+
+  dbg_mode := registry_get ('fct_dbg_mode');
+  dbg_lvl := registry_get ('fct_dbg_lvl');
+
+  if (not isstring (dbg_lvl))
+    dbg_lvl := http_param ('dbg');
+
+  if (not isstring (dbg_lvl))
+      dbg_lvl := 0;
+    else
+      dbg_lvl := atoi (dbg_lvl);
+
+  connection_set ('fct_dbg_lvl', dbg_lvl);
+
+  if (not isstring(dbg_mode))
+    dbg_mode := http_param ('dbg_mode');
+
+  if (not isstring (dbg_mode))
+    dbg_mode := 'page';
+
+  connection_set ('fct_dbg_mode', dbg_mode);
+
+  if (dbg_mode := 'page')
+    {
+      dbg_out := string_output();
+      connection_set ('__fct_dbg_out', dbg_out);
+    }
+
+--  dbg_obj_print (path);
+--  dbg_obj_print (lines);
+
+?>
+
+</head>
+<body>
+<div id="PG">
+<div id="HD">
+  <?vsp fct_page_head (); ?>
+    <div id="hd_r">
+    </div>
+</div><!-- #HD -->
+<div id="MD">
+<?vsp
+--
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+-- dbg_obj_print (http_param ('cmd'));
+-- dbg_obj_print (http_param ('search_for'));
+-- dbg_obj_print (http_request_header ());
+-- dbg_obj_print (params);
+
+declare cmd varchar;
+declare langs any;
+
+cmd := http_param ('cmd');
+
+langs := http_request_header_full (lines, 'Accept-Language', 'en');
+connection_set ('langs', langs);
+
+if ('load' = cmd)
+  {
+    declare _fsq_id int;
+    declare _sid int;
+
+    _fsq_id := http_param ('fsq_id');
+
+    if (_fsq_id)
+      {
+        _sid := fct_load (_fsq_id);
+	if (_sid is not null)
+          {
+            http_rewrite ();
+	    http_request_status ('HTTP/1.1 302 Found');
+	    http_header (sprintf ('Location: /fct/facet.vsp?sid=%d&cmd=refresh\r\n', _sid));
+            goto load_redir;
+          }
+      }
+  }
+
+declare sq varchar;
+
+sq := connection_get ('sparql_query');
+
+declare exit handler for sqlstate '*'
+{
+  commit work;
+  declare _state, _out any;
+  declare _xmlser varchar;
+
+  if (isstring (http_param ('sid')))
+    select fct_state into _state from fct_state where fct_sid = http_param ('sid');
+  else
+    _state := null;
+
+  _out := string_output();
+
+  http_value (_state, 0, _out);
+  _xmlser := string_output_string (_out);
+
+  http('<div class="error_msg dlg">\n');
+  http('  <div class="title"><h2>Error</h2></div>\n');
+  http('  <div class="body">');
+  http('<p>Could not process your request because of an unexpected error.</p>');
+  http('  </div>\n');
+  http('  <div class="diag">\n');
+  http('  <h3>Diagnostics</h3>\n');
+  http(sprintf ('<pre class="sqlstate">SQLSTATE: %s</pre><br/>\n', __SQL_STATE));
+  http(sprintf ('<pre class="sqlmsg">SQLMSG  : %s</pre><br/>\n', __SQL_MESSAGE));
+  http('<a href="#" id="err_det_toggle" onclick="javascript: OAT.Dom.show (err_details);">More info&hellip;</a>');
+  http('  <div id="err_details" style="display:none">');
+
+  if (connection_get ('sparql_query') is not null)
+    {
+      http('<pre class="sparqlqry">SPARQL:\n');
+      http_value(connection_get ('sparql_query'));
+      http('</pre><br/>\n');
+    }
+
+  http(sprintf ('<p><a href="/fct/facet.vsp?qxml=%U" title="Permalink">Permalink</a></p>', _xmlser));
+
+  commit work;
+  insert into fct_log (fl_sid, fl_cli_ip, fl_state, fl_where, fl_cmd, fl_sqlstate, fl_sqlmsg, fl_parms)
+         values (http_param('sid'),
+	         http_client_ip (),
+		 _state,
+		 'ERR_HANDLER',
+		 http_param('cmd'),
+		 __SQL_STATE,
+		 __SQL_MESSAGE,
+		 serialize(params));
+
+  http('    <pre class="facet_state">STATE:\n');
+  http_value(_xmlser);
+  http('</pre><br/>');
+
+  http('  </div>\n');
+  http('  </div>\n');
+  http('  <div class="btn_bar"><button onclick="document.location=''/fct/facet.vsp''">New Search</button></div>\n');  
+  http('</div>\n');
+
+  goto footer;
+
+};
+fct_vsp ();
+footer:;
+
+?>
+<?vsp if (dbg_lvl) { ?>
+<div class="dbg">
+  <pre><![CDATA[<?vsp if (sq is not null) http(sq); ?>]]></pre>
+<?vsp fct_render_dbg_out ();?>
+</div>
+<?vsp } ?>
+
+</div><!-- #MD -->
+<div id="FT">
+    Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?> as of <?V fct_build_info () ?><br/><br/>
+  <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+  <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a>
+  <?vsp
+    if (isstring (registry_get ('fst_hosted'))) { http (registry_get ('fst_hosted')); }
+  ?>
+  <br/>
+  <?vsp fct_virt_info (); ?><br />
+  <span class="copyright">Data on this page is owned by its respective rights holders.<br/>Virtuoso Faceted Browser Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software</span>
+  <div id="FT_L"></div>
+  <div id="FT_R"></div>
+</div>
+</div> <!-- #PG -->
+<div id="fct_ft_fm" style="display:none">
+  <input type="text" name="txt"/>
+  <button>Set</button>
+</div>
+    <?vsp if (isstring (registry_get ('urchinTracker'))) { ?>
+    <script type="text/javascript">
+	var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+	document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+    <script type="text/javascript">
+	try {
+	var pageTracker = _gat._getTracker("<?V registry_get ('urchinTracker')  ?>");
+	pageTracker._trackPageview();
+	} catch(err) {}</script>
+    <?vsp } ?>
+</body>
+</html>
+<?vsp
+load_redir:;
+?>

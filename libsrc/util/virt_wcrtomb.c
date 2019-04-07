@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,15 +44,17 @@ virt_wcrtomb (unsigned char *s, wchar_t wc, virt_mbstate_t *ps)
       wc = L'\0';
     }
 
+#ifdef MULTIBYTE_SANITY
   /* Store the UTF8 representation of WC.  */
-  if (wc < 0 || wc > 0x7fffffff)
+  if (wc& ~0x7fffffff)
     {
       /* This is no correct ISO 10646 character.  */
       /* errno  = (EILSEQ); */
       return (size_t) -1;
     }
+#endif
 
-  if (wc < 0x80)
+  if (!(wc & ~0x7f))
     {
       /* It's a one byte sequence.  */
       if (s != NULL)

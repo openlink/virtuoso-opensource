@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -60,19 +60,17 @@ const char *add_col_text =
 "insert into SYS_COLS (\"TABLE\", \"COLUMN\", COL_ID, COL_DTP, COL_PREC, COL_CHECK, COL_SCALE, COL_DEFAULT, COL_NULLABLE, COL_OPTIONS)"
 " values (?, ?, ?, ?, ?, ?, ?, serialize (?), ?, ?)";
 const char *add_key_text =
-"(seq "
-" (insert SYS_KEYS (KEY_TABLE KEY_NAME KEY_ID KEY_N_SIGNIFICANT"
-"			KEY_CLUSTER_ON_ID KEY_IS_MAIN KEY_IS_OBJECT_ID KEY_IS_UNIQUE KEY_SUPER_ID KEY_DECL_PARTS KEY_VERSION)"
-"   (:TABLE :KEY :ID :N :CLUSTER_ON_ID :IS_MAIN :IS_OBJECT_ID :IS_UNIQUE :SUPER_ID :DECL_PARTS :KV))  "
-"(end))";
+" insert into SYS_KEYS (KEY_TABLE, KEY_NAME, KEY_ID, KEY_N_SIGNIFICANT,"
+"			KEY_CLUSTER_ON_ID, KEY_IS_MAIN, KEY_IS_OBJECT_ID, KEY_IS_UNIQUE, KEY_SUPER_ID, KEY_DECL_PARTS, KEY_VERSION)"
+  " values  (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)  ";
+
 
 const char *ensure_constraint_unq_txt =
 "DDL_ENSURE_CONSTRAINT_NAME_UNIQUE(?)";
 
 const char *add_key_part_text =
-"(seq "
-"(insert SYS_KEY_PARTS (KP_KEY_ID KP_NTH KP_COL)"
-"	(:ID :N :COL))   (end))";
+"insert into SYS_KEY_PARTS (KP_KEY_ID, KP_NTH, KP_COL)"
+"	values (?, ?, ?)";
 
 const char *get_col_text =
 "select C.COL_ID, C.COL_CHECK, C.COL_OPTIONS from SYS_COLS C "
@@ -172,14 +170,11 @@ const char *key_ver_text =
 const char *col_id_text =
 "(seq (from SYS_COLS (COL_ID) by SYS_COLS prefix C where ((COL_ID >= :FROM))) (select (C.COL_ID)))";
 
-const char *drop_cols_text =
-"(seq (from SYS_COLS (COL_ID) by SYS_COLS_BY_NAME prefix C where ((COLUMN = :C)))"
-"  (delete C)(end))";
 char * proc_fill_index =
 "create procedure __CREATE_INDEX_FILL (in tb_name varchar, in inx varchar)\n"
 "{\n"
 "  declare str, cols  varchar;\n"
-"  declare is_first int;\n"
+"  declare is_first, old_mode int;\n"
 "  is_first := 1;\n"
 " cols := '';\n"
 "  for select \"COLUMN\" from sys_cols, sys_keys, sys_key_parts where col_id = kp_col and kp_key_id = key_id and key_name = inx do\n"
@@ -190,14 +185,19 @@ char * proc_fill_index =
 "  tb_name := sprintf ('\"%I\".\"%I\".\"%I\"', name_part (tb_name, 0), name_part (tb_name, 1), name_part (tb_name, 2));\n"
 "  str := sprintf ('insert into %s index \"%I\" (%s) select %s from %s table option (index primary key)', tb_name, inx, cols, cols, tb_name);\n"
 "  set triggers off;\n"
+"  old_mode := log_enable (null, 1);\n"
+" if (1 = sys_stat ('cl_run_local_only'))\n"
+" log_enable (2, 1);\n"
+"else log_enable (3, 1);\n"
 "  exec (str);\n"
+"  log_enable (old_mode, 1);\n"
 "  set triggers on;\n"
 "}\n";
 
 char * proc_cl_clr_inx =
 "create procedure __CL_CLR_INX (in t varchar, in k varchar)\n"
 "{\n"
-"  cl_exec (sprintf ('__clear_index (''%S'', ''%S'')', t, k));\n"
+"  cl_exec (sprintf ('__clear_index (''%S'', ''%S'')', t, k), txn => 1);\n"
   "}\n";
 
 char * proc_cl_log =
@@ -205,7 +205,8 @@ char * proc_cl_log =
 "{\n"
 "  declare st varchar;\n"
 "  st := sprintf ('log_text (''%S'')', sprintf ('%S', tx));\n"
-"  cl_exec (st);\n"
+"  cl_exec (st, txn => 1);\n"
+"  commit work;\n"
 "}\n";
 
 
@@ -213,7 +214,21 @@ query_t *drop_key_stmt;
 query_t *key_id_stmt;
 query_t *key_ver_stmt;
 query_t *col_id_stmt;
-query_t *drop_cols_stmt;
+
+char * inh_key_text =
+"create procedure ddl_inherit_key  (in from_tb varchar, in to_tb varchar, in old_id int, in new_id int, in new_ver int)\n"
+"{\n"
+"  insert into  sys_keys (key_table, key_name, key_id, key_n_significant, \n"
+"		    key_cluster_on_id, key_is_main, key_is_object_id, key_is_unique, key_super_id, key_decl_parts, key_version)\n"
+"    select to_tb, key_name, new_id, key_n_significant, key_cluster_on_id, \n"
+"    key_is_main, key_is_object_id, key_is_unique, key_super_id, key_decl_parts, new_ver\n"
+"    from sys_keys\n"
+"    where key_table = from_tb and key_id = old_id;\n"
+"  insert into sys_key_subkey (super, sub) values (old_id, new_id);\n"
+"  insert into sys_key_parts (kp_key_id, kp_nth, kp_col)\n"
+"       select kp_key_id, kp_nth, kp_col from sys_key_parts where kp_key_id = old_id;\n"
+"}\n";
+
 
 
 void
@@ -237,9 +252,9 @@ ddl_ensure_init (client_connection_t * cli)
       key_ver_stmt = eql_compile (key_ver_text, cli);
 
       col_id_stmt = eql_compile (col_id_text, cli);
-      drop_cols_stmt = eql_compile (drop_cols_text, cli);
       pk_sequence_set_stmt = eql_compile (pk_sequence_set_text, cli);
       udt_ensure_init (cli);
+      ddl_std_proc (inh_key_text, 0);
       ddl_std_proc (proc_fill_index, 0);
       ddl_std_proc (proc_cl_log, 0);
       ddl_std_proc (proc_cl_clr_inx, 0);
@@ -428,18 +443,8 @@ ddl_option_string (query_instance_t * qi, caddr_t * opts, dtp_t dtp, dk_set_t *c
 			}
 		      else
 			{
-			  if (IS_WIDE_STRING_DTP (dtp) && !coll->co_is_wide)
-			    {
-			      if (qi)
-				{
-				  SQL_DDL_ERROR (qi, ("42S22", "SQ140", "Collation %s is not wide", opt->_.op.arg_1));
-				}
-			    }
-			  else
-			    {
-			      strcat_ck (ostr, opt->_.op.arg_1);
-			      have_col = 1;
-			    }
+			  strcat_ck (ostr, opt->_.op.arg_1);
+			  have_col = 1;
 			}
 		    }
 		  else
@@ -687,6 +692,9 @@ ddl_table_changed (query_instance_t * qi, char *full_tb_name)
 client_connection_t *bootstrap_cli;
 int ddl_std_procs_inited = 0;
 
+client_connection_t *
+get_bootstrap_cli (void) { return bootstrap_cli; }
+
 void
 ddl_key_opt (query_instance_t * qi, char * tb_name, key_id_t key_id)
 {
@@ -765,6 +773,7 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
       sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
       return;
     }
+  lc_free (lc);
 
   if (!strncmp (name, "DB.DBA.", 7))
     { /* check for the presence of unqualified when it's DB.DBA */
@@ -776,9 +785,8 @@ ddl_create_table (query_instance_t * qi, const char *name, caddr_t * cols)
 	  sqlr_new_error ("42S01", "SQ016", "Table %s already exists", name);
 	  return;
 	}
+      lc_free (lc);
     }
-
-  lc_free (lc);
 
   for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
     {
@@ -987,8 +995,11 @@ ddl_col_set_identity_start (char *table, char *check, caddr_t *col_options, char
       char q[MAX_NAME_LEN], o[MAX_NAME_LEN], n[MAX_NAME_LEN];
       int start = 1;
       caddr_t id_start;
+      int is_null = 0;
 
-      if (NULL != (id_start = col_options ? get_keyword_int (col_options, "identity_start", NULL) : NULL))
+      id_start = col_options ? get_keyword_int_zero (col_options, "identity_start", NULL, &is_null) : NULL;
+
+      if (col_options && !is_null)
 	{
 	  if (DV_TYPE_OF (id_start) == DV_LONG_INT)
 	    start = (int) unbox (id_start);
@@ -1050,17 +1061,17 @@ ddl_first_key_parts (query_instance_t * qi,
   ddl_check_duplicate_cols (qi, parts);
 
   qr_rec_exec (add_key_stmt, cli, NULL, qi, NULL, 11,
-      ":TABLE", table, QRP_STR,
-      ":KEY", key, QRP_STR,
-      ":ID", (ptrlong) id, QRP_INT,
-      ":N", (ptrlong) n_significant, QRP_INT,
-      ":CLUSTER_ON_ID", (ptrlong) (is_cluster ? id : 0), QRP_INT,
-      ":IS_MAIN", (ptrlong) is_prim, QRP_INT,
-      ":IS_OBJECT_ID", (ptrlong) is_oid, QRP_INT,
-      ":IS_UNIQUE", (ptrlong) is_unq, QRP_INT,
-      ":SUPER_ID", (ptrlong) id, QRP_INT,
-      ":DECL_PARTS", (ptrlong) n_significant, QRP_INT,
-      ":KV", (ptrlong) 1, QRP_INT);
+	       ":0", table, QRP_STR,
+	       ":1", key, QRP_STR,
+	       ":2", (ptrlong) id, QRP_INT,
+	       ":3", (ptrlong) n_significant, QRP_INT,
+	       ":4", (ptrlong) (is_cluster ? id : 0), QRP_INT,
+	       ":5", (ptrlong) is_prim, QRP_INT,
+	       ":6", (ptrlong) is_oid, QRP_INT,
+	       ":7", (ptrlong) is_unq, QRP_INT,
+	       ":8", (ptrlong) id, QRP_INT,
+	       ":9", (ptrlong) n_significant, QRP_INT,
+	       ":10", (ptrlong) 1, QRP_INT);
   for (inx = 0; inx < n_parts; inx++)
     {
       oid_t col_id;
@@ -1076,9 +1087,9 @@ ddl_first_key_parts (query_instance_t * qi,
 	}
       col_id = (oid_t) unbox (lc_get_col (lc, "C.COL_ID"));
       rc = qr_rec_exec (add_key_part_stmt, cli, NULL, qi, NULL, 3,
-	  ":ID", (ptrlong) id, QRP_INT,
-	  ":N", (ptrlong) inx, QRP_INT,
-	  ":COL", (ptrlong) col_id, QRP_INT);
+			":0", (ptrlong) id, QRP_INT,
+			":1", (ptrlong) inx, QRP_INT,
+			":2", (ptrlong) col_id, QRP_INT);
       if (rc != SQL_SUCCESS)
 	{
 	  lc_free (lc);
@@ -1151,7 +1162,7 @@ ddl_commit_trx (query_instance_t *qi)
 void
 ddl_create_primary_key (query_instance_t * qi,
     char *name, char *table, caddr_t * parts,
-    int cluster_on_id, int is_object_id)
+			int cluster_on_id, int is_object_id, caddr_t * opts)
 {
   client_connection_t *cli = qi->qi_client;
   int inx = (int) BOX_ELEMENTS (parts);
@@ -1181,9 +1192,9 @@ ddl_create_primary_key (query_instance_t * qi,
 	SQL_DDL_ERROR (qi, ("37000", "SQ007", "Column count too large"));
       col_id = (oid_t) unbox (lc_get_col (lc_cols, "C.COL_ID"));
       qr_rec_exec (add_key_part_stmt, cli, NULL, qi, NULL, 3,
-	  ":ID", (ptrlong) id, QRP_INT,
-	  ":N", (ptrlong) inx, QRP_INT,
-	  ":COL", (ptrlong) col_id, QRP_INT);
+		   ":0", (ptrlong) id, QRP_INT,
+		   ":1", (ptrlong) inx, QRP_INT,
+		   ":2", (ptrlong) col_id, QRP_INT);
 
       check = lc_get_col (lc_cols, "C.COL_CHECK");
       col_options = (caddr_t *) lc_get_col (lc_cols, "C.COL_OPTIONS");
@@ -1193,6 +1204,22 @@ ddl_create_primary_key (query_instance_t * qi,
     }
   lc_free (lc_cols);
   ddl_check_cols (qi, id);
+
+  if (inx_opt_flag (opts, "column"))
+    {
+      caddr_t err = NULL;
+      static query_t * col_qr = NULL;
+      if (!col_qr)
+	col_qr = sql_compile_static ("update SYS_KEYS set KEY_OPTIONS = vector ('column') where KEY_TABLE = ? and KEY_IS_MAIN = 1",
+				     bootstrap_cli, &err, SQLC_DEFAULT);
+      err = qr_rec_exec (col_qr, qi->qi_client, NULL, qi, NULL, 1,
+			 ":0", table, QRP_STR);
+      if (err != SQL_SUCCESS)
+	{
+	  QI_POISON_TRX (qi);
+	  sqlr_resignal (err);
+	}
+    }
   ddl_table_changed (qi, table);
 
   ddl_commit_trx (qi);
@@ -1209,7 +1236,7 @@ tb_list_subtables (dbe_schema_t * sc, dbe_table_t * super, int directp)
   while (id_casemode_hit_next (&hit, (caddr_t *) & tbptr))
     {
       dbe_table_t *the_table = *tbptr;
-      if (the_table == super)
+      if (the_table == super || !the_table->tb_primary_key)
 	continue;
       if (directp)
 	{
@@ -1249,17 +1276,17 @@ ddl_insert_sec_key_parts (query_instance_t * qi,
   key_id_t id = qi_new_key_id (qi);
   *id_ret = id;
   qr_rec_exec (add_key_stmt, cli, NULL, qi, NULL, 11,
-      ":TABLE", table, QRP_STR,
-      ":KEY", key, QRP_STR,
-      ":ID", (ptrlong) id, QRP_INT,
-      ":N", (ptrlong) (is_unq ? decl_parts : n_parts), QRP_INT,
-      ":CLUSTER_ON_ID", (ptrlong) (is_cluster ? id : 0), QRP_INT,
-      ":IS_MAIN", (ptrlong) 0, QRP_INT,
-      ":IS_OBJECT_ID", (ptrlong) is_oid, QRP_INT,
-      ":IS_UNIQUE", (ptrlong) is_unq, QRP_INT,
-      ":SUPER_ID", (ptrlong) id, QRP_INT,
-      ":DECL_PARTS", (ptrlong) decl_parts, QRP_INT,
-      ":KV", (ptrlong) 1, QRP_INT);
+	       ":0", table, QRP_STR,
+      ":1", key, QRP_STR,
+	       ":2", (ptrlong) id, QRP_INT,
+	       ":3", (ptrlong) (is_unq ? decl_parts : n_parts), QRP_INT,
+	       ":4", (ptrlong) (is_cluster ? id : 0), QRP_INT,
+	       ":5", (ptrlong) 0, QRP_INT,
+	       ":6", (ptrlong) is_oid, QRP_INT,
+	       ":7", (ptrlong) is_unq, QRP_INT,
+	       ":8", (ptrlong) id, QRP_INT,
+      ":9", (ptrlong) decl_parts, QRP_INT,
+	       ":10", (ptrlong) 1, QRP_INT);
   for (inx = 0; inx < n_parts; inx++)
     {
       oid_t col_id;
@@ -1281,9 +1308,9 @@ ddl_insert_sec_key_parts (query_instance_t * qi,
 	SQL_DDL_ERROR (qi, ("42S22", "SQ010", "Column count too large"));
       col_id = (oid_t) unbox (lc_get_col (lc, "KP.KP_COL"));
       qr_rec_exec (add_key_part_stmt, cli, NULL, qi, NULL, 3,
-	  ":ID", (ptrlong) id, QRP_INT,
-	  ":N", (ptrlong) inx, QRP_INT,
-	  ":COL", (ptrlong) col_id, QRP_INT);
+		   ":0", (ptrlong) id, QRP_INT,
+		   ":1", (ptrlong) inx, QRP_INT,
+		   ":2", (ptrlong) col_id, QRP_INT);
       lc_free (lc);
     }
 }
@@ -1414,21 +1441,7 @@ const char *object_dd_text =
 const char *table_keys_text = "select KEY_ID, KEY_IS_MAIN, KEY_SUPER_ID from DB.DBA.SYS_KEYS where KEY_TABLE = ? and KEY_MIGRATE_TO is null";
 
 const char *inherit_key_text =
-"(seq "
-"  (from SYS_KEYS (KEY_NAME KEY_ID KEY_N_SIGNIFICANT KEY_CLUSTER_ON_ID "
-"		  KEY_IS_MAIN KEY_IS_OBJECT_ID KEY_IS_UNIQUE KEY_SUPER_ID KEY_DECL_PARTS)"
-"	 by SYS_KEYS "
-"	 prefix K where ((KEY_TABLE = :FROM) (KEY_ID = :OLD_ID)))"
-"  (insert SYS_KEYS (KEY_TABLE KEY_NAME KEY_ID KEY_N_SIGNIFICANT "
-"		    KEY_CLUSTER_ON_ID KEY_IS_MAIN KEY_IS_OBJECT_ID KEY_IS_UNIQUE KEY_SUPER_ID KEY_DECL_PARTS KEY_VERSION)"
-"	  (:TO K.KEY_NAME :NEW_ID K.KEY_N_SIGNIFICANT "
-"	   K.KEY_CLUSTER_ON_ID K.KEY_IS_MAIN K.KEY_IS_OBJECT_ID K.KEY_IS_UNIQUE K.KEY_SUPER_ID K.KEY_DECL_PARTS :NEW_VER))"
-"  (insert SYS_KEY_SUBKEY (SUPER SUB) (K.KEY_ID :NEW_ID))"
-"  (from SYS_KEY_PARTS (KP_NTH KP_COL) by SYS_KEY_PARTS prefix KP "
-"	  where ((KP_KEY_ID = :OLD_ID)))"
-"  (insert SYS_KEY_PARTS (KP_KEY_ID KP_NTH KP_COL)"
-"	 (:NEW_ID KP.KP_NTH KP.KP_COL))"
-"  (select (KP.KP_NTH)))";
+  "ddl_inherit_key (?, ?, ?, ?, ?)";
 
 const char *read_key_subkey_text =
 "(seq (from SYS_KEY_SUBKEY (SUPER SUB) by SYS_KEY_SUBKEY prefix S )"
@@ -1513,12 +1526,12 @@ sys_col_stat_text =
 "create table SYS_COL_STAT ( "
 "    CS_TABLE varchar, "
 "    CS_COL varchar, "
-"    CS_N_DISTINCT integer, "
+"    CS_N_DISTINCT bigint, "
 "    CS_MIN any, "
 "    CS_MAX any, "
-"    CS_AVG_LEN integer, " /* */
-"    CS_N_VALUES integer, " /* count of non-null  */
-"    CS_N_ROWS integer, " /* rows in table, denormalized */
+"    CS_AVG_LEN bigint, " /* */
+"    CS_N_VALUES bigint, " /* count of non-null  */
+"    CS_N_ROWS bigint, " /* rows in table, denormalized */
 "    primary key (CS_TABLE, CS_COL))";
 
 static const char *
@@ -1615,10 +1628,8 @@ dbe_col_load_stats (client_connection_t *cli, query_instance_t *caller,
       col->col_count = (long) unbox (col_n_values);
       if ( DV_TYPE_OF (n_distinct) == DV_LONG_INT)
 	col->col_n_distinct = (long) unbox (n_distinct);
-      dk_free_tree (col->col_min);
-      col->col_min = box_copy_tree (col_min);
-      dk_free_tree (col->col_max);
-      col->col_max = box_copy_tree (col_max);
+      dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+      dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
       if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	tb->tb_count = (long) unbox (col_n_rows);
       if (DV_TYPE_OF (col_avg_len) == DV_LONG_INT)
@@ -1666,10 +1677,8 @@ isp_load_stats_data (client_connection_t *cli)
 	{
 	  col->col_count = DV_TYPE_OF (col_n_values) == DV_LONG_INT ? (long) unbox (col_n_values) : 0;
 	  col->col_n_distinct = DV_TYPE_OF (n_distinct) == DV_LONG_INT ? (long) unbox (n_distinct) : 0;
-	  dk_free_tree (col->col_min);
-	  dk_free_tree (col->col_max);
-	  col->col_min = box_copy_tree (col_min);
-	  col->col_max = box_copy_tree (col_max);
+	  dk_free_tree (col->col_min); col->col_min = box_copy_tree (col_min);
+	  dk_free_tree (col->col_max); col->col_max = box_copy_tree (col_max);
 	  if (DV_TYPE_OF (col_n_rows) == DV_LONG_INT)
 	    tb->tb_count = (long) unbox (col_n_rows);
 	  col->col_avg_len = DV_TYPE_OF (col_avg_len) == DV_LONG_INT ? (long) unbox (col_avg_len) : 0;
@@ -1732,7 +1741,7 @@ char * cluster_stmt_text =
 "    {\n"
 "      cluster_def (tree[1], tree, null);\n"
 "      if (store)\n"
-"	insert into SYS_CLUSTER (CL_NAME, CL_HOSTS, CL_MAP) values (tree[1], serialize (tree), clm_map (cast (tree[1] as varchar)));\n"
+"	{ delete from SYS_CLUSTER where CL_NAME = tree[1]; insert into SYS_CLUSTER (CL_NAME, CL_HOSTS, CL_MAP) values (tree[1], serialize (tree), clm_map (cast (tree[1] as varchar))); }\n"
 "    log_text ('cl_read_cluster (?)', cast (tree[1] as varchar));\n"
 "    }\n"
 "  else if (tree[0] = 525)\n"
@@ -1745,6 +1754,8 @@ char * cluster_stmt_text =
 "    {\n"
 "	delete from SYS_PARTITION where PART_TABLE = tree[1] and PART_KEY = tree[2];\n"
 "	insert into SYS_PARTITION (PART_TABLE, PART_VERSION, PART_KEY, PART_CLUSTER, PART_DATA) values (tree[1], 0, tree[2], tree[3], tree);\n"
+"	if (exists (select 1 from sys_cluster where cl_name = tree[3] and cast (cl_map as varchar)[0] = 255 and cast (cl_map as varchar)[1] = 255 and cast (cl_map as varchar)[2] = 255 and cast (cl_map as varchar)[3] = 255))\n"
+"	  update sys_keys set key_storage = tree[3] where key_table = tree[1] and (key_name = tree[2] or key_name = tree[1]);\n"
 "   }\n"
 "	__ddl_changed (tree[1]);\n"
 "    }\n"
@@ -1785,7 +1796,6 @@ ddl_init_schema (void)
   local_commit (bootstrap_cli);
 }
 
-
 const char *
 err_first_line (const char * text)
 {
@@ -1819,6 +1829,7 @@ ddl_ensure_table (const char *name, const char *text)
 	  dk_free_tree (err);
 	  return;
 	}
+      sqlc_set_client (bootstrap_cli);
       first_id = DD_FIRST_PRIVATE_OID;
       err = qr_quick_exec (obj_create, bootstrap_cli, "", NULL, 0);
       if (err)
@@ -1912,7 +1923,7 @@ const char *ddl_fk_proc_text_1 =
 "  whenever not found goto no_pk_tb;"
 "  select KEY_ID, KEY_N_SIGNIFICANT into id, n_parts from SYS_KEYS where KEY_TABLE = tb and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is null;"
 "  cv := make_array (n_parts, 'any');"
-"  declare cr cursor for select \"COLUMN\" from SYS_KEY_PARTS, SYS_COLS where KP_KEY_ID = id and COL_ID = KP_COL option (order);"
+"  declare cr cursor for select \"COLUMN\" from SYS_KEY_PARTS, SYS_COLS where KP_KEY_ID = id and COL_ID = KP_COL order by KP_NTH option (order);"
 "  fill := 0;"
 "  open cr;"
 "  while (fill < n_parts) {"
@@ -2347,11 +2358,11 @@ ddl_create_sub_table (query_instance_t * qi, char *name,
       long new_ver = qi_new_key_version (qi, super_id);
       key_found = 1;
       qr_rec_exec (inherit_key_qr, cli, &lc_parts, qi, NULL, 5,
-	  ":FROM", supers[0], QRP_STR,
-	  ":TO", name, QRP_STR,
-	  ":OLD_ID", (ptrlong) old_id, QRP_INT,
-		   ":NEW_ID", (ptrlong) new_id, QRP_INT,
-		   ":NEW_VER", (ptrlong) new_ver, QRP_INT);
+	  ":0", supers[0], QRP_STR,
+	  ":1", name, QRP_STR,
+		   ":2", (ptrlong) old_id, QRP_INT,
+		   ":3", (ptrlong) new_id, QRP_INT,
+		   ":4", (ptrlong) new_ver, QRP_INT);
       ddl_inherit_partition (qi, supers[0], name, old_id);
       while (lc_next (lc_parts))
 	key_last_part = (long) unbox (lc_get_col (lc_parts, "KP.KP_NTH"));
@@ -2369,9 +2380,9 @@ ddl_create_sub_table (query_instance_t * qi, char *name,
 	      if (key_last_part >= TB_MAX_COLS)
 		SQL_DDL_ERROR (qi, ("42S22", "SQ011", "Column count too large"));
 	      qr_rec_exec (add_key_part_stmt, cli, NULL, qi, NULL, 3,
-		  ":ID", (ptrlong) new_id, QRP_INT,
-		  ":N", (ptrlong) key_last_part, QRP_INT,
-		  ":COL", (ptrlong) col_id, QRP_INT);
+			   ":0", (ptrlong) new_id, QRP_INT,
+			   ":1", (ptrlong) key_last_part, QRP_INT,
+			   ":2", (ptrlong) col_id, QRP_INT);
 	    }
 	  lc_free (lc_cols);
 	}
@@ -2398,11 +2409,11 @@ ddl_create_subtable_keys (query_instance_t * qi, dbe_table_t * tb,
     key_ver_t new_kv = qi_new_key_version (qi, top_super_id);
     local_cursor_t *lc_parts;
     qr_rec_exec (inherit_key_qr, qi->qi_client, &lc_parts, qi, NULL, 5,
-		 ":FROM", tb->tb_name, QRP_STR,
-		 ":TO", sub->tb_name, QRP_STR,
-		 ":OLD_ID", (ptrlong) super_key_id, QRP_INT,
-		 ":NEW_ID", (ptrlong) new_id, QRP_INT,
-		 ":NEW_VER", (ptrlong)new_kv, QRP_INT);
+		 ":0", tb->tb_name, QRP_STR,
+		 ":1", sub->tb_name, QRP_STR,
+		 ":2", (ptrlong) super_key_id, QRP_INT,
+		 ":3", (ptrlong) new_id, QRP_INT,
+		 ":4", (ptrlong)new_kv, QRP_INT);
     ddl_inherit_partition (qi, tb->tb_name, sub->tb_name, super_key_id);
     while (lc_next (lc_parts))
       key_last_part = (int) unbox (lc_get_col (lc_parts, "KP.KP_NTH"));
@@ -2436,10 +2447,6 @@ ddl_table_and_subtables_changed (query_instance_t *qi, char *tb_name)
 }
 
 
-char *ren_table_text =
-"(seq (from SYS_COLS (TABLE COLUMN) by SYS_COLs prefix C where ((TABLE = :TB)))"
-"     (update SYS_COLS C (TABLE = :NEW)) (end))";
-
 
 void
 ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
@@ -2456,10 +2463,10 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
   if (!tb)
     sqlr_new_error ("42S02", "SQ018", "No table %s.", table);
   sql_error_if_remote_table (tb);
-  err = qr_rec_exec (add_col_proc, cli, NULL, qi, NULL, 3,
+  AS_DBA (qi, err = qr_rec_exec (add_col_proc, cli, NULL, qi, NULL, 3,
       ":0", (0 == strcmp (tb->tb_name, "DB.DBA.SYS_TRIGGERS")) ? "SYS_TRIGGERS" : tb->tb_name, QRP_STR,
       ":1", col[0], QRP_STR,
-      ":2", box_copy_tree ((caddr_t) col), QRP_RAW);
+			     ":2", box_copy_tree ((caddr_t) col), QRP_RAW));
 
   if (err != SQL_SUCCESS)
     {
@@ -2602,8 +2609,9 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col)
 {
   static query_t *dc_qr;
   caddr_t err;
+  dbe_table_t * tb;
 
-  sql_error_if_remote_table (qi_name_to_table (qi, table));
+  sql_error_if_remote_table (tb = qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
   AS_DBA (qi, err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
@@ -2677,7 +2685,7 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
   char *szTheTableName, *szTheIndexName;
   int atomic;
   caddr_t temp_tx_box;
-  caddr_t *repl = NULL;
+  caddr_t * repl = qi->qi_trx->lt_replicate;
   int is_cluster = 0;
 
   atomic = count_exceed (qi, table, MIN_FOR_ATOMIC, name);
@@ -2749,15 +2757,17 @@ ddl_drop_index (caddr_t * qst, const char *table, const char *name, int log_to_t
       else
 	log_text (qi->qi_trx, temp_tx);
     }
-  if (DO_LOG(LOG_DDL))
-    {
-      client_connection_t * cli = qi->qi_client;
-      LOG_GET
-      log_info ("DDLC_6 %s %s %s Drop index %.*s (%.*s)", user, from, peer,
-	    LOG_PRINT_STR_L, szTheIndexName, LOG_PRINT_STR_L, szTheTableName);
-    }
   dk_free_box(szTheTableName);
   dk_free_box(szTheIndexName);
+
+  if (DO_LOG(LOG_DDL))
+    {
+      user_t * usr = ((query_instance_t *)(qst))->qi_client->cli_user;
+
+      if (table)
+	log_info ("DDLC_6 %s Drop index %.*s (%.*s)", GET_USER,
+	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
+    }
 }
 
 
@@ -2948,9 +2958,9 @@ ddl_index_def (query_instance_t * qi, caddr_t name, caddr_t table, caddr_t * col
   atomic_mode (qi, 0, atomic); /* unlock */
   if (DO_LOG(LOG_DDL))
     {
-      client_connection_t * cli = qi->qi_client;
-      LOG_GET
-      log_info ("DDLC_5 %s %s %s Create index %.*s (%.*s)", user, from, peer,
+      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
+      if (usr && GET_USER)
+	log_info ("DDLC_5 %s Create index %*.s (%*.s)", GET_USER,
 	    LOG_PRINT_STR_L, name, LOG_PRINT_STR_L, table);
     }
 
@@ -2966,12 +2976,12 @@ bif_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dbe_table_t *old_tb;
   dk_set_t old_roots = NULL;
   old = ddl_complete_table_name (qi, old);
-  if (!old)
+  old_tb = sch_name_to_table (isp_schema (NULL), old);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s before renaming it to %.500s", old, new_name);
       return NULL;
     }
-  old_tb = sch_name_to_table (isp_schema (NULL), old);
   DO_SET (dbe_key_t *, old_k, &old_tb->tb_keys)
     {
       dk_set_push (&old_roots, (caddr_t) ((ptrlong) old_k->key_id));
@@ -2999,17 +3009,19 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
     {
       ren_table = eql_compile ("DB.DBA.rename_table (?, ?)", bootstrap_cli);
     }
-  old = ddl_complete_table_name (qi, old);
-  sql_error_if_remote_table (qi_name_to_table (qi, old));
-  if (!old)
+  old_tb = qi_name_to_table (qi, old);
+  sql_error_if_remote_table (old_tb);
+  if (!old_tb)
     {
-      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table in rename table");
+      *err_ret = srv_make_new_error ("42S02", "SQ023", "No table %.500s in rename table", old);
       return;
     }
-  if (NULL != (new_tb = qi_name_to_table (qi, new_name)))
+  old = old_tb->tb_name;
+  new_tb = qi_name_to_table (qi, new_name);
+  if (NULL != new_tb)
     {
       *err_ret = srv_make_new_error ("42S01", "SQ201",
-	  "There is already table named %s in ALTER TABLE",
+	  "There is already table named %.500s in ALTER TABLE",
 	  new_tb->tb_name);
       return;
     }
@@ -3024,8 +3036,8 @@ ddl_rename_table_1 (query_instance_t * qi, char *old, char *new_name, caddr_t *e
   new_tb = sch_name_to_table (wi_inst.wi_schema, new_name);
   if (DO_LOG(LOG_DDL))
     {
-      LOG_GET
-      log_info ("DDLC_7 %s %s %s Rename table %.*s (%.*s)", user, from, peer,
+      user_t * usr = ((query_instance_t *)(qi))->qi_client->cli_user;
+      log_info ("DDLC_7 %s Rename table %*.s (%*.s)", GET_USER,
 	  LOG_PRINT_STR_L, old, LOG_PRINT_STR_L, new_name);
     }
 }
@@ -3215,6 +3227,7 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
   if (lc_next (lc))
     { /* it is a snapshot replication destination */
       long ret = unbox (lc_nth_col (lc, 0));
+      lc_free (lc);
       return ret ? 1 : 0;
     }
   lc_free (lc);
@@ -3261,10 +3274,9 @@ ddl_drop_table (query_instance_t * qi, char *name)
     }
 #endif
 
-
 #ifdef BIF_XML
   del_st = sql_compile_static ("DB.DBA.vt_clear_text_index (?)", cli, &err, SQLC_DEFAULT);
-  if (del_st && !sch_view_def (wi_inst.wi_schema, name))
+  if (del_st)
     {
       AS_DBA (qi, err = qr_rec_exec (del_st, cli, NULL, qi, NULL, 1,
 	  ":0", name, QRP_STR));
@@ -3283,6 +3295,14 @@ ddl_drop_table (query_instance_t * qi, char *name)
     {
       char temp[500];
       caddr_t escaped_name = box_sprintf_escaped (name, 1);
+      dbe_table_t * tb = qi_name_to_table (qi, name);
+      DO_SET (dbe_key_t *, key, &tb->tb_keys)
+	{
+	  if (key->key_is_primary || key->key_supers)
+	    continue;
+	  ddl_drop_index ((caddr_t *) qi, name, key->key_name, (CL_RUN_CLUSTER == cl_run_local_only ? 1 : 0));
+	}
+      END_DO_SET();
       snprintf (temp, sizeof (temp), "delete from \"%s\"", escaped_name);
       dk_free_box (escaped_name);
       del_st = sql_compile (temp, cli, &err, SQLC_DEFAULT);
@@ -3544,7 +3564,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
 	  qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
 	  dk_free_tree ((box_t) st);
 	  if (err != SQL_SUCCESS)
-	    {
+	    {   if (NULL != qr) GPF_T;
 	      if (qi)
 		QI_POISON_TRX (qi);
 	      sqlr_resignal (err);
@@ -3607,6 +3627,8 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
 	{
+	  if (NULL != qr)
+	    GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -3628,7 +3650,7 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
       qr = sql_compile_1 ("", cli, &err, SQLC_DO_NOT_STORE_PROC, st, NULL);
       dk_free_tree ((box_t) st);
       if (err != SQL_SUCCESS)
-	{
+	{   if (NULL != qr) GPF_T;
 	  if (qi)
 	    QI_POISON_TRX (qi);
 	  sqlr_resignal (err);
@@ -3813,6 +3835,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 #endif
   LEAVE_TXN;
 #endif
+  thr_set_tlsf (THREAD_CURRENT_THREAD, dk_base_tlsf);
   switch (tree->type)
     {
     case TABLE_DEF:
@@ -3843,6 +3866,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 			sqlr_new_error ("42S12", "SQ158",
 			    "The supertable %s in UNDER has no primary key",
 			    ((char **) super)[0]);
+		      sqlr_new_error ("37000", "VEC..", "The UNDER is not supported in vectored execution");
 		      full_name = box_string (super_tb->tb_name);
 		      ddl_same_owner_check (full_name, tree->_.table_def.name);
 		      dk_free_box (((char **) super)[0]);
@@ -3912,7 +3936,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 		(caddr_t *) tree->_.table_def.cols);
 	    ddl_create_primary_key (qi, tree->_.table_def.name,
 		tree->_.table_def.name, (caddr_t *) prime->_.index.cols,
-		KO_CLUSTER (opts), KO_OID (opts));
+				    KO_CLUSTER (opts), KO_OID (opts), opts);
 	  }
 	QR_RESET_CTX
 	  {
@@ -4129,10 +4153,10 @@ const char *sys_users_dd_text =
 ;
 
 void
-local_start_trx (client_connection_t * cli)
+DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli)
 {
   IN_TXN;
-  cli_set_new_trx (cli);
+  DBG_NAME(cli_set_new_trx) (DBG_ARGS  cli);
   cli->cli_trx->lt_replicate = REPL_NO_LOG;
   lt_threads_set_inner (cli->cli_trx, 1);
   LEAVE_TXN;
@@ -4585,6 +4609,108 @@ ddl_read_constraints (char *spec_tb_name, caddr_t *qst)
     ddl_table_check_constraints_define_triggers (qi, curr_tb_name, check_cond);
 }
 
+dk_set_t triggers_to_redo = NULL;
+
+void
+ddl_redo_undefined_triggers (void)
+{
+  caddr_t * trigs;
+  user_t *org_user = bootstrap_cli->cli_user;
+  caddr_t org_qual = bootstrap_cli->cli_qualifier;
+  caddr_t err;
+  query_t *rdproc;
+  local_cursor_t *lc;
+  int inx;
+
+  if (!triggers_to_redo) 
+    return;
+  trigs = (caddr_t *) list_to_array (dk_set_nreverse (triggers_to_redo));
+  triggers_to_redo = NULL;
+  sqlc_set_client (NULL);
+  rdproc = sql_compile_static (
+      "select T_TEXT, T_MORE, T_SCH, DB.DBA.TRIG_OWNER (T_NAME, T_TABLE), T_NAME, T_TABLE from DB.DBA.SYS_TRIGGERS where T_NAME = ? and T_TABLE = ?",
+      bootstrap_cli, NULL, SQLC_DEFAULT);
+
+  if (!rdproc)
+    goto end;
+
+  DO_BOX (caddr_t *, rec, inx, trigs)
+    {
+      caddr_t ttable = rec[0], tname = rec[1];
+      trigs[inx] = NULL;
+      lc = NULL;
+      qr_quick_exec (rdproc, bootstrap_cli, "q", &lc, 2, ":0", tname, QRP_RAW, ":1", ttable, QRP_RAW);
+      CLI_QUAL_ZERO (bootstrap_cli);
+      if (lc_next (lc))
+	{
+	  char *full_text = NULL;
+	  char *short_text = lc_nth_col (lc, 0);
+	  char *long_text = lc_nth_col (lc, 1);
+	  char *qual = lc_nth_col (lc, 2);
+	  char *owner = lc_nth_col (lc, 3);
+	  char *t_name = lc_nth_col (lc, 4);
+	  char *t_table = lc_nth_col (lc, 5);
+	  user_t *owner_user = sec_name_to_user (owner);
+	  if (owner_user)
+	    bootstrap_cli->cli_user = owner_user;
+	  else
+	    log_error ("Trigger %s on %s with bad owner, owner =  %s", t_name, t_table, owner);
+	  err = NULL;
+	  CLI_SET_QUAL (bootstrap_cli, qual);
+	  if (IS_BLOB_HANDLE (long_text))
+	    {
+	      caddr_t err2 = NULL;
+	      full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+	      short_text = NULL;
+	      if (err2)
+		{
+		  log_error (
+		      "Error reading trigger %s on %s body: %s: %s."
+		      "It will not be defined. Drop the trigger and recreate it.",
+		      t_name, t_table,
+		      ((caddr_t *) err2)[QC_ERRNO], ((caddr_t *) err2)[QC_ERROR_STRING]);
+		  dk_free_tree (err2);
+		  continue;
+		}
+	      sql_compile (full_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
+	    }
+	  else
+	    {
+	      if (DV_STRINGP (long_text))
+		{
+		  short_text = long_text;
+		  long_text = NULL;
+		}
+	      sql_compile (short_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
+	    }
+	  if (err)
+	    {
+	      if (full_text && strlen (full_text) > 60)
+		full_text[59] = 0;
+	      if (short_text && strlen (short_text) > 60)
+		short_text[59] = 0;
+	      if (0 == strcmp (ERR_STATE (err), "37000") && NULL != strstr (ERR_MESSAGE (err), "SPARQL compiler: Quad storage")) /* quad store is not inited */
+		{
+		  dk_set_push (&triggers_to_redo, list (2, box_string (t_table), box_string (t_name)));
+		}
+	      else
+		log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
+		    ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		    full_text ? full_text : short_text);
+	    }
+	  dk_free_box (full_text);
+	}
+      lc_free (lc);
+    }
+  END_DO_BOX;
+  qr_free (rdproc);
+
+end:;
+  dk_free_box (trigs);  
+  bootstrap_cli->cli_user = org_user;
+  CLI_RESTORE_QUAL (bootstrap_cli, org_qual);
+  local_commit (bootstrap_cli);
+}
 
 void
 read_proc_and_trigger_tables (int remotes)
@@ -4771,16 +4897,17 @@ scan_SYS_PROCEDURES:
       CLI_SET_QUAL (bootstrap_cli, qual);
       if (IS_BLOB_HANDLE (long_text))
 	{
-	  caddr_t err = NULL;
-	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err);
-	  if (err)
+	  caddr_t err2 = NULL;
+	  full_text = safe_blob_to_string (bootstrap_cli->cli_trx, long_text, &err2);
+ 	  short_text = NULL;
+	  if (err2)
 	    {
 	      log_error (
 		  "Error reading trigger %s on %s body: %s: %s."
 		  "It will not be defined. Drop the trigger and recreate it.",
 		  t_name, t_table,
-		  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
-	      dk_free_tree (err);
+		  ((caddr_t *) err2)[QC_ERRNO], ((caddr_t *) err2)[QC_ERROR_STRING]);
+	      dk_free_tree (err2);
 	      continue;
 	    }
 	  proc_qr = sql_compile (full_text, bootstrap_cli, &err, SQLC_DO_NOT_STORE_PROC);
@@ -4800,7 +4927,12 @@ scan_SYS_PROCEDURES:
 	    full_text[59] = 0;
 	  if (short_text && strlen (short_text) > 60)
 	    short_text[59] = 0;
-	  log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
+	  if (0 == strcmp (ERR_STATE (err), "37000") && NULL != strstr (ERR_MESSAGE (err), "SPARQL compiler: Quad storage")) /* quad store is not inited */
+	    {
+	      dk_set_push (&triggers_to_redo, list (2, box_string (t_table), box_string (t_name)));
+	    }
+	  else
+	    log_error ("Error compiling trigger %s on %s: %s: %s -- %s", t_name, t_table,
 	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
 	      full_text ? full_text : short_text);
 	}
@@ -4879,10 +5011,13 @@ du_thread_t * recomp_thread;
 
 
 void
-qr_recompile_enter (int * is_entered)
+qr_recompile_enter (int * is_entered, caddr_t * err_ret)
 {
-  /* client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL; */
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (THREAD_CURRENT_THREAD == recomp_thread)
+    return;
+  vdb_enter_lt_1 (cli->cli_trx, err_ret, 0);
+  if (err_ret && *err_ret)
     return;
   mutex_enter (recomp_mtx);
   if (!recomp_cli)
@@ -4899,14 +5034,15 @@ qr_recompile_enter (int * is_entered)
 
 
 void
-qr_recompile_leave (int * is_entered)
+qr_recompile_leave (int * is_entered, caddr_t * err_ret)
 {
-  /* client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL; */
+  client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
   if (*is_entered)
     {
       recomp_thread = NULL;
       *is_entered = 0;
       mutex_leave (recomp_mtx);
+      vdb_leave_lt (cli->cli_trx, err_ret);
     }
 }
 
@@ -4947,7 +5083,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
   dk_set_t old_qr_set = NULL;
   dbe_schema_t *sc;
   int is_entered = 0;
-  qr_recompile_enter (&is_entered);
+  if (err_ret)
+    *err_ret = NULL;
+  qr_recompile_enter (&is_entered, err_ret);
+  if (err_ret && *err_ret)
+    return NULL;
   /* whe should get schema after we got mutex as it can be changed in the meantime */
   sc = wi_inst.wi_schema;
   if (proc_name && !qr->qr_trig_table)
@@ -4960,7 +5100,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       if (NULL != new_qr && new_qr != qr)
 	{
 	  dk_free_tree (proc_name);
-	  qr_recompile_leave (&is_entered);
+	  qr_recompile_leave (&is_entered, err_ret);
 	  return new_qr;
 	}
       else
@@ -5023,7 +5163,11 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       /*if (owner_user && new_qr)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
       if (QR_IS_MODULE_PROC (qr))
-	new_qr = NULL;
+        {
+          if (new_qr != qr)
+            qr_free (new_qr);
+	  new_qr = NULL;
+        }
     }
 
   recomp_cli->cli_user = org_user;
@@ -5036,14 +5180,21 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	  if (!err)
 	    {
 	      /* find a new qr corresponding to old by name
-	       * and set grants; match the requested qr and set return value
-	       * no need to set qr_proc_grants as it's not freed by qr_free */
+	       * and set grants; match the requested qr and set return value */
 	      query_t *new_mod_qr = sch_proc_def (sc, old_mod_qr->qr_proc_name);
 	      if (new_mod_qr)
 		{
-		  new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		  if  (new_mod_qr != old_mod_qr)
+		    {
+		      new_mod_qr->qr_proc_grants = old_mod_qr->qr_proc_grants;
+		      old_mod_qr->qr_proc_grants_is_reused = 1;
+		    }
 		  if (old_mod_qr == qr)
-		    new_qr = new_mod_qr;
+                    {
+                      if (new_qr != qr)
+                        qr_free (new_qr);
+		      new_qr = new_mod_qr;
+                    }
 		}
 	    }
 	  else
@@ -5056,15 +5207,25 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
       dk_set_free (old_qr_set);
       if (new_qr)
 	{
-	  new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+         if (new_qr->qr_module != qr->qr_module)
+           {
+             new_qr->qr_module->qr_proc_grants = qr->qr_module->qr_proc_grants;
+             qr->qr_module->qr_proc_grants_is_reused = 1;
+           }
 	  /*sch_set_module_def (sc, new_qr->qr_module->qr_proc_name, new_qr->qr_module);*/
 	}
     }
 
   if (!err && !QR_IS_MODULE_PROC (qr))
-    new_qr->qr_proc_grants = qr->qr_proc_grants;
+    {
+      if (new_qr != qr)
+        {
+          new_qr->qr_proc_grants = qr->qr_proc_grants;
+          qr->qr_proc_grants_is_reused = 1;
+        }
+    }
 
-  qr_recompile_leave (&is_entered);
+  qr_recompile_leave (&is_entered, err_ret);
   if (err)
     {
       if (strstr (((caddr_t*)err)[2], "RDFNI"))
@@ -5127,6 +5288,7 @@ ddl_init_proc ()
 
 query_t *proc_st_query;
 query_t *proc_rm_duplicate_query;
+query_t *cl_proc_rm_duplicate_query;
 query_t *proc_revoke_query;
 query_t *trig_st_query;
 
@@ -5145,6 +5307,7 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       ? qst_get (state, op->op_arg_2)
       : qst_get (state, op->op_arg_3);
   caddr_t p_type =  op->op_code == OP_STORE_PROC ? qst_get (state, op->op_arg_3) : NULL;
+  int is_cl;
 /* Procedure's calls published for replication */
   query_t *qr_proc = sch_proc_def (wi_inst.wi_schema,
       (char *) qst_get (state, op->op_arg_1));
@@ -5157,6 +5320,8 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
       proc_st_query = sql_compile_static ("insert into DB.DBA.SYS_PROCEDURES (P_QUAL, P_OWNER, P_NAME, P_TEXT, P_MORE, P_TYPE) values (?, user, ?, ?, ?, ?)",
 	  bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_rm_duplicate_query = sql_compile_static ("delete from DB.DBA.SYS_PROCEDURES where P_NAME = ?",
+	      bootstrap_cli, NULL, SQLC_DEFAULT);
+      cl_proc_rm_duplicate_query = sql_compile_static ("cl_exec (\'delete from DB.DBA.SYS_PROCEDURES table option (no cluster) where P_NAME = ? option (no cluster)\', params => vector (?), txn=> case when bit_and (log_enable (null, 1), 2) = 2 then 0 else 1 end)",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
       proc_revoke_query = sql_compile_static ("delete from DB.DBA.SYS_GRANTS where G_OBJECT = ? and G_OP = 32",
 	      bootstrap_cli, NULL, SQLC_DEFAULT);
@@ -5215,17 +5380,21 @@ ddl_store_proc (caddr_t * state, op_node_t * op)
     }
   else
     {
+      oid_t org_user = qi->qi_u_id;
 #ifdef VIRT30_40
       if (is_27_40_incompartible_procedure (qst_get (state, op->op_arg_1)))
         goto skip_incomp;
 #endif
       /* first we will remove all entries with the same name,
 	 because the PK of that table is not designed to keep only one entry per name */
-      err = qr_rec_exec (proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
-	  ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      is_cl = !cl_run_local_only;
+      qi->qi_u_id = U_ID_DBA;
+      err = qr_rec_exec (is_cl ? cl_proc_rm_duplicate_query : proc_rm_duplicate_query, cli, NULL, qi, NULL, 1,
+			 ":0", qst_get (state, op->op_arg_1), QRP_STR);
+      qi->qi_u_id = org_user;
       /* the grants also must be removed */
       qr_rec_exec (proc_revoke_query, cli, NULL, qi, NULL, 1,
-	  ":0", qst_get (state, op->op_arg_1), QRP_STR);
+		   ":0", qst_get (state, op->op_arg_1), QRP_STR);
       /* and if all is OK then will make simple insert */
       if (err == SQL_SUCCESS)
 	{
@@ -5487,7 +5656,7 @@ const char * drop_proc_text =
 "  select U_GROUP into ug from DB.DBA.SYS_USERS where U_NAME = user;\n"
 "\n"
 "  if (ug <> 0 and user <> name_part (nn, 1))\n"
-"    signal ('42000', concat ('Must be in dba group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271');\n"
+"    signal ('42000', concat ('Must be in DBA group to drop non-owned ',  case proc when 4 then 'aggregate' when 0 then 'module' else 'procedure' end), 'SR271:SECURITY');\n"
 "\n"
 "  if (proc > 0 and __proc_exists (p, 0) is not null) "
 "   signal ('42000', concat ('Trying to drop a module in DROP ', case proc when 4 then 'AGGREGATE' else 'PROCEDURE' end), 'SR314'); "
@@ -5757,9 +5926,9 @@ const char *proc_obsolete_key =
 "  new_kv := new_key_version (k_id); \n"
 "  update DB.DBA.SYS_KEYS set KEY_NAME = nk_name, KEY_MIGRATE_TO = n_k_id where KEY_ID = k_id;"
 "  insert into DB.DBA.SYS_KEYS (KEY_TABLE, KEY_NAME, KEY_ID, KEY_N_SIGNIFICANT,"
-"			KEY_IS_MAIN, KEY_SUPER_ID, KEY_CLUSTER_ON_ID, KEY_IS_OBJECT_ID, KEY_IS_UNIQUE, KEY_DECL_PARTS, KEY_MIGRATE_TO, KEY_VERSION)"
+"			KEY_IS_MAIN, KEY_SUPER_ID, KEY_CLUSTER_ON_ID, KEY_IS_OBJECT_ID, KEY_IS_UNIQUE, KEY_DECL_PARTS, KEY_MIGRATE_TO, KEY_VERSION, KEY_OPTIONS, KEY_STORAGE)"
 "    select KEY_TABLE, k_name, n_k_id, KEY_N_SIGNIFICANT,"
-"			KEY_IS_MAIN, KEY_SUPER_ID, KEY_CLUSTER_ON_ID, KEY_IS_OBJECT_ID, KEY_IS_UNIQUE, KEY_DECL_PARTS, -1, new_kv"
+"			KEY_IS_MAIN, KEY_SUPER_ID, KEY_CLUSTER_ON_ID, KEY_IS_OBJECT_ID, KEY_IS_UNIQUE, KEY_DECL_PARTS, -1, new_kv, KEY_OPTIONS, KEY_STORAGE"
 "			  from DB.DBA.SYS_KEYS where KEY_ID = k_id;"
 ""
 "  if (new_super is not null) {"
@@ -5794,7 +5963,8 @@ const char *proc_add_col =
 "  add_col_recursive (tb_name, col_id);\n"
 "  update DB.DBA.SYS_KEYS set KEY_MIGRATE_TO = NULL where KEY_MIGRATE_TO = -1;\n"
 "  ddl_read_table_tree (tb_name);\n"
-"  --DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb_name);\n"
+"  cl_exec ('__key_col_ddl (?, ?, ?, 0)', vector (tb_name, name_part (tb_name, 2), col_name));"
+"  DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb_name);\n"
 "}";
 
 static const char *proc_decoy_repl_modify_col =
@@ -5833,7 +6003,7 @@ const char *proc_modify_col =
 "    COL_OPTIONS = _col_options \n"
 "   where COL_ID = _col_id;\n"
 "  ddl_read_table_tree (_tb_name);\n"
-"  --DB.DBA.__INT_REPL_ALTER_ADD_COL (_tb_name, _col_name, _col_dtp, _col_scale, _col_prec, _col_check, 'MODIFY');\n"
+"  DB.DBA.__INT_REPL_ALTER_ADD_COL (_tb_name, _col_name, _col_dtp, _col_scale, _col_prec, _col_check, 'MODIFY');\n"
 "}";
 
 
@@ -5951,10 +6121,11 @@ const char *proc_drop_col =
 "  ddl_drop_col_recursive (tb, c_id);"
 "  update DB.DBA.SYS_KEYS set KEY_MIGRATE_TO = NULL where KEY_MIGRATE_TO = -1;"
 "  ddl_read_table_tree (tb);"
-"  --if (not sys_stat ('st_lite_mode')) { \n"
-"  --DB.DBA.__INT_REPL_ALTER_DROP_COL (tb, col, _col_dtp, _col_scale, _col_prec, c_check, 'DROP');\n"
-"  --DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb);\n"
-"  --} \n"
+"  cl_exec ('__key_col_ddl (?, ?, ?, 1)', vector (tb, name_part (tb, 2), col));"
+"  if (not sys_stat ('st_lite_mode')) { \n"
+"  DB.DBA.__INT_REPL_ALTER_DROP_COL (tb, col, _col_dtp, _col_scale, _col_prec, c_check, 'DROP');\n"
+"  DB.DBA.__INT_REPL_ALTER_REDO_TRIGGERS (tb);\n"
+"  } \n"
 "  for select distinct PK_TABLE from DB.DBA.SYS_FOREIGN_KEYS where 0 = casemode_strcmp (FK_TABLE, tb)"
 /*"      and (UPDATE_RULE > 0 or DELETE_RULE > 0)"*/
 "      do {"
@@ -6079,7 +6250,7 @@ const char *proc_add_col_row =
 "			COL_NULLABLE, COL_CHECK, COL_DEFAULT, COL_OPTIONS)\n"
 "    values (tb, col, c_id, dv, prec, scale, nullable, ck, serialize (deflt), _col_options);\n"
 "\n"
-"  --DB.DBA.__INT_REPL_ALTER_ADD_COL (tb, col, dv, scale, prec, ck);\n"
+"  DB.DBA.__INT_REPL_ALTER_ADD_COL (tb, col, dv, scale, prec, ck);\n"
 "\n"
 "  if (_ddl_foreign_key is not null)\n"
 "    ddl_foreign_key (_ddl_foreign_key[0], _ddl_foreign_key[1], _ddl_foreign_key[2]);\n"
@@ -6259,25 +6430,33 @@ const char * pk3 =
 "}";
 
 
-static const char *collation_define_text =
-"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+static const char *collation_define_int_text =
+"create procedure DB.DBA.__COLLATION_DEFINE_INT (in _name varchar, in deffile varchar, in coll_is_utf8 integer, in add_type integer) \n"
 "{ \n"
-"  declare deffile, def_vector, element, collation, name varchar; \n"
+"  declare def_vector, element, collation, name varchar; \n"
 "  declare inx, weight, char_max, char_code, is_wide integer; \n"
 " \n"
 "  name := complete_collation_name (_name, 1); \n"
-"  deffile := file_to_string (filename); \n"
 "  def_vector := split_and_decode (deffile, 0, \'\\0\\0\\n=\'); \n"
+"  is_wide := 0; \n"
 "  inx := 0; \n"
 "  while (inx < length (def_vector)) \n"
 "    { \n"
 "      element := trim(aref (def_vector, inx)); \n"
 "      if (length (element) > 1) \n"
-"	aset (def_vector, inx, atoi (element)); \n"
+"        { \n"
+"          if (coll_is_utf8 and bit_and (element[0], 128)) \n"
+"            element := ascii (charset_recode (element, 'UTF-8', '_WIDE_')); \n"
+"          else \n"
+"            element := atoi (element); \n"
+"        } \n"
 "      else if (length (element) > 0) \n"
-"	aset (def_vector, inx, ascii (element)); \n"
+"        element := ascii (element); \n"
 "      else \n"
-"	aset (def_vector, inx, -1); \n"
+"        element := -1; \n"
+"      if (mod (inx, 2) = 0 and element > 255) \n"
+"        is_wide := 1; \n"
+"      def_vector[inx] := element; \n"
 "      inx := inx + 1; \n"
 "    } \n"
 "  if (add_type = 0) \n"
@@ -6294,36 +6473,41 @@ static const char *collation_define_text =
 "	} \n"
 "      return; \n"
 "    } \n"
-"  if (add_type = 1) \n"
-"    { \n"
-"      char_max := 256; \n"
-"      collation := make_string (char_max); \n"
-"      is_wide := 0; \n"
-"    } \n"
-"  else if (add_type = 2) \n"
+"  if (add_type = 2) \n"
+"    is_wide := 1; \n"
+"  if (is_wide) \n"
 "    { \n"
 "      char_max := 65536; \n"
-"      collation := make_wstring(char_max); \n"
-"      is_wide := 1; \n"
+"      collation := make_wstring(char_max, wchr1(65535)); \n"
 "    } \n"
 "  else \n"
 "    { \n"
-"      signal (\'22023\', sprintf (\'parse_collation : invalid table size %d\', add_type), 'SR279'); \n"
-"      return; \n"
+"      char_max := 256; \n"
+"      collation := make_string (char_max); \n"
 "    } \n"
-" \n"
 "  inx := 0; \n"
 "  while (inx < char_max) \n"
 "    { \n"
 "      weight := get_keyword (inx, def_vector, -1); \n"
 "      if (weight < 0) \n"
-"	weight := inx; \n"
+"	weight := case (inx) when 0 then 1 else inx end; \n"
 "      aset (collation, inx, weight); \n"
 "      inx := inx + 1; \n"
 "    } \n"
-"   collation__define (name, collation); \n"
-"   log_text(\'collation__define(?, ?)\', name, collation); \n"
-"   insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, collation, is_wide); \n"
+"  __collation_define_memonly (name, collation); \n"
+"  insert replacing SYS_COLLATIONS (COLL_NAME, COLL_TABLE, COLL_WIDE) values (name, cast (collation as varbinary), is_wide); \n"
+"  log_text(\'__collation_define_memonly(?, ?)\', name, collation); \n"
+"} \n";
+
+
+static const char *collation_define_text =
+"create procedure collation_define (in _name varchar, in filename varchar, in add_type integer) \n"
+"{ \n"
+"  declare deffile varchar; \n"
+"  declare coll_is_utf8 integer; \n"
+"  deffile := file_to_string (filename); \n"
+"  coll_is_utf8 := case when (filename like '%.coll.utf8' or filename like '%.COLL.UTF8') then 1 else 0 end; \n"
+"  DB.DBA.__COLLATION_DEFINE_INT (_name, deffile, coll_is_utf8, add_type); \n"
 "} \n";
 
 
@@ -6344,23 +6528,25 @@ void
 ddl_std_proc_1 (const char *text, int is_public, int to_recompile)
 {
   int is_stored = is_public & 0x80;
+  client_connection_t * cli = DDL_STD_REENTRANT & is_public ? sqlc_client () : bootstrap_cli;
   query_t *proc = NULL;
   caddr_t err = NULL;
   caddr_t *_text = (caddr_t *) (is_stored ? box_dv_short_string (text) : text);
-
-  is_public &= 0x7F;
+  if (!cli)
+    cli = bootstrap_cli;
+  is_public &= 0x3F;
 
   if (!is_stored && to_recompile && sql_proc_use_recompile)
     {
-      if (NULL == (proc = sql_proc_to_recompile ((char *) _text, bootstrap_cli, NULL, 1)))
+      if (NULL == (proc = sql_proc_to_recompile ((char *) _text, cli, NULL, 1)))
 	{
-	  proc = sql_compile ((char *) _text, bootstrap_cli, &err,
+	  proc = sql_compile ((char *) _text, cli, &err,
 	      is_stored ? SQLC_DEFAULT : SQLC_QR_TEXT_IS_CONSTANT);
 	}
     }
   else
     {
-      proc = sql_compile ((char *) _text, bootstrap_cli, &err,
+      proc = sql_compile ((char *) _text, cli, &err,
 	is_stored ? SQLC_DEFAULT : SQLC_QR_TEXT_IS_CONSTANT);
     }
   if (err)
@@ -6380,7 +6566,7 @@ ddl_std_proc_1 (const char *text, int is_public, int to_recompile)
 	proc->qr_proc_name, "", 1, GR_EXECUTE, U_ID_PUBLIC);
   if (is_stored)
     {
-      err = qr_quick_exec (proc, bootstrap_cli, NULL, NULL, 0);
+      err = qr_quick_exec (proc, cli, NULL, NULL, 0);
       if (err)
 	{
 	  log_error ("Error writing the stored procedure : %s: %s -- %s",
@@ -6404,6 +6590,10 @@ ddl_std_proc (const char *text, int is_public)
 {
   ddl_std_proc_1 (text, is_public, 0);
 }
+
+
+caddr_t bif_key_col_ddl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
+
 void
 ddl_standard_procs (void)
 {
@@ -6433,6 +6623,7 @@ ddl_standard_procs (void)
 #endif
   ddl_std_proc (proc_user_qual, 0);
   bif_define ("__ddl_table_renamed", bif_table_renamed);
+  bif_define ("__key_col_ddl", bif_key_col_ddl);
   ddl_std_proc (proc_read_table_tree, 0);
   ddl_std_proc (proc_drop_col, 1);
   ddl_std_proc (proc_null_blob, 0);
@@ -6446,6 +6637,7 @@ ddl_standard_procs (void)
   ddl_std_proc (pk2, 0);
   ddl_std_proc (pk3, 0);
   ddl_std_proc (bm_proc_1, 0);
+  ddl_std_proc (collation_define_int_text, 0);
   ddl_std_proc (collation_define_text, 0);
   ddl_std_proc (charset_define_text, 0);
   ddl_std_procs_inited = 1;
@@ -6590,6 +6782,7 @@ static const char *sched_table_text =
 "				SE_ENABLE_NOTIFY int default 0,"
 "				SE_NOTIFY varchar default null,"
 "				SE_NOTIFICATION_SENT int default 0,"
+"				SE_DISABLED int default 0,"
 "				primary key (SE_NAME)) ";
 
 static const char *sched_alter1 =
@@ -6603,6 +6796,9 @@ static const char *sched_alter3 =
 
 static const char *sched_alter4 =
 "alter table SYS_SCHEDULED_EVENT add SE_NOTIFICATION_SENT int default 0";
+
+static const char *sched_alter5 =
+"alter table SYS_SCHEDULED_EVENT add SE_DISABLED int default 0";
 
 static const char * scheduler_do_round_text =
 #if 0
@@ -6634,15 +6830,16 @@ static const char * scheduler_do_round_text =
 "create procedure scheduler_do_round(in n integer) \n"
 "{\n"
 "  declare n_events, inx integer;\n"
-"  declare arr any;\n"
+"  declare arr, dtn any;\n"
 "  declare last_chkp, achkp integer; \n"
+"  dtn := curdatetime(); \n"
 "  last_chkp := sys_stat ('st_chkp_last_checkpointed'); \n"
 "  achkp := sys_stat ('st_chkp_autocheckpoint'); \n"
 "  select count (*) into n_events\n"
 "      from SYS_SCHEDULED_EVENT \n"
-"      where SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
+"      where coalesce (SE_DISABLED, 0) = 0 and SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
 "      (SE_LAST_COMPLETED is NULL or \n"
-"       dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= curdatetime());\n"
+"       dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn);\n"
 " \n"
 "  if (n_events = 0)\n"
 "    return;\n"
@@ -6650,9 +6847,9 @@ static const char * scheduler_do_round_text =
 "  inx := 0;\n"
 "  for select SE_NAME, SE_SQL, SE_NOTIFICATION_SENT  \n"
 "    from SYS_SCHEDULED_EVENT \n"
-"    where SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
+"    where coalesce (SE_DISABLED, 0) = 0 and SE_START <= curdatetime() and SE_INTERVAL > 0 and\n"
 "    (SE_LAST_COMPLETED is NULL or \n"
-"     dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= curdatetime()) \n"
+"     dateadd('minute', SE_INTERVAL, SE_LAST_COMPLETED) <= dtn) \n"
 "    order by SE_LAST_COMPLETED \n"
 "    do \n"
 "      {\n"
@@ -6675,7 +6872,7 @@ static const char * scheduler_do_round_text =
 "      exec (aref (aref (arr, inx), 1), st, msg, vector (), 0);\n"
 "      if (st <> '00000')\n"
 "	{\n"
-"	  fl := 4;\n"
+"	  fl := 4; notify_flag := 0;\n"
 "         emsg := msg;\n"
 "	  rollback work;\n"
 "	}\n"
@@ -6712,7 +6909,7 @@ ddl_scheduler_init (void)
   dbe_table_t *tb;
   ddl_ensure_table("DB.DBA.SYS_SCHEDULED_EVENT", sched_table_text);
   tb = sch_name_to_table (isp_schema(NULL), "DB.DBA.SYS_SCHEDULED_EVENT");
-  if (tb && tb_name_to_column (tb, "SE_NOTIFICATION_SENT"))
+  if (tb && tb_name_to_column (tb, "SE_DISABLED"))
     ddl_std_proc(scheduler_do_round_text, 0);
 }
 
@@ -6723,6 +6920,7 @@ ddl_scheduler_arfw_init (void)
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_ENABLE_NOTIFY", sched_alter2, 0);
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_NOTIFY", sched_alter3, 0);
   ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_NOTIFICATION_SENT", sched_alter4, 0);
+  ddl_ensure_column ("SYS_SCHEDULED_EVENT", "SE_DISABLED", sched_alter5, 0);
   ddl_std_proc(scheduler_do_round_text, 0);
 }
 
@@ -6757,3 +6955,12 @@ sch_create_table_as (query_instance_t *qi, ST * tree)
   if (err)
     sqlr_resignal (err);
 }
+
+#ifdef MALLOC_DEBUG
+#undef local_start_trx
+void
+local_start_trx (client_connection_t * cli)
+{
+  dbg_local_start_trx (__FILE__, __LINE__, cli);
+}
+#endif

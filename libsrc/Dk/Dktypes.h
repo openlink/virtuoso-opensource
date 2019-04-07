@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 
 #ifndef _DKTYPES_H
 #define _DKTYPES_H
+#include <math.h>
 #ifdef HAVE_STDINT_H
 #include <stdint.h>					   /* for INT64_MAX etc */
 #endif
@@ -111,7 +112,7 @@
 #endif
 #define ptr_long 		ptrlong
 #define ptr_ulong 		uptrlong
-
+#define uint64 unsigned int64
 
 #if defined (OS2) || defined (WIN32)
 # define ssize_t		signed int
@@ -188,6 +189,68 @@ typedef __int64 		int64;
 #else
 typedef long long 		int64;
 #endif
+#endif
+
+#ifdef _WIN32
+
+/* VC10 */
+//#include <float.h>
+//#define DBL_POS_INF		((float)1e300)
+//#define DBL_NEG_INF		(-DBL_POS_INF)
+//#define DBL_NAN			((float)1e300 * 0.0f)
+//#define isfinite(d)		_finite(d)
+//#define isnan(d)		_isnan(d)
+//#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
+//#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
+__inline double
+round (double x)
+{
+  return x < 0 ? floor (x) : ceil (x);
+}
+
+/* VC12 */
+#include <math.h>
+#define DBL_POS_INF		INFINITY
+#define DBL_NEG_INF		(-INFINITY)
+#define DBL_NAN			NAN
+#define IS_DOUBLE_OVERFLOW(d)	(!isfinite(d))
+#define IS_FLOAT_OVERFLOW(f)	(!isfinite(d))
+
+#else
+#ifndef isfinite
+#ifdef _finite
+#define isfinite(val) _finite (val)
+#else
+#ifndef __cplusplus
+#error "Neither isfinite() nor _finite() is defined in standard headers"
+#endif
+#endif
+#endif
+
+#ifndef DBL_POS_INF
+#if defined(INFINITY)
+#define DBL_POS_INF		(INFINITY)
+#elif defined(DBL_MAX)
+#define DBL_POS_INF		(DBL_MAX + DBL_MAX)
+#elif defined (HUGE)
+#define DBL_POS_INF		(HUGE + HUGE)
+#else
+#define DBL_POS_INF ((double)(1e1000000))
+#endif
+#endif
+
+#ifndef DBL_NEG_INF
+#define DBL_NEG_INF (-DBL_POS_INF)
+#endif
+
+#ifndef DBL_NAN
+#if defined(NAN)
+#define DBL_NAN			(NAN)
+#else
+#define DBL_NAN			(DBL_POS_INF - DBL_POS_INF)
+#endif
+#endif
+
 #endif
 
 struct mem_pool_s;

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2593,6 +2593,8 @@ procedure "blogger.getUsersBlogs" (
 create procedure
 date_rfc1123 (in dt datetime)
 {
+  if (timezone (dt) is null)
+    dt := dt_set_tz (dt, 0);
   return soap_print_box (dt, '', 1);
 }
 ;
@@ -3351,7 +3353,7 @@ xmlStorageSystem.geterror (in code int)
     -8, 'Target is locked',
     -9, 'Destination is locked',
     -10, 'Property name is reserved (protected or private)',
-    -11, 'Property does not exists',
+    -11, 'Property does not exist',
     -12, 'Authentication failed',
     -13, 'Operation is forbidden (the authenticated user do not have a permissions for the action)',
     -14, 'the target type is not valid',
@@ -5359,8 +5361,8 @@ create procedure BLOG_DELICIOUS_DEL (in url any, in uid any, in pwd any)
 ;
 
 create procedure
-BLOG_MESSAGE_OR_META_DATA (inout meta any, inout uid int,
-  inout content any, inout postid varchar, inout tms datetime)
+BLOG_MESSAGE_OR_META_DATA (in meta any, in uid int,
+  in content any, in postid varchar, in tms datetime)
 {
   if (meta is not null)
     {

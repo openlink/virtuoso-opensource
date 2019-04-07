@@ -4,26 +4,26 @@
 --  $Id$
 --
 --  Test DDL functionality #1
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
 
@@ -31,122 +31,6 @@ ECHO BOTH "STARTED: Schema Evolution Test, part 1\n";
 
 
 --set echo on;
-
-drop table T2;
-
-create table T2 (A integer, B integer, primary key (A))
-alter index T2 on T2 partition (A int (0hexffff));
-create table T2_1 (under T2, C2_1 integer);
-create table T2_2 (under T2, C2_2 integer);
-
-create index C2_1 on T2_1 (C2_1) partition (C2_1 int);
-
-create index C2_2 on T2_2 (C2_2) partition (C2_2 int);
-
-
-create table T2_1_1 (under T2_1, D2_1_1 integer);
-create index D2_1_1 on T2_1_1 (D2_1_1) partition (D2_1_1 int);
-
-
-insert into T2 values (1, 2);
-insert into T2 values (2, 2);
-insert into T2 values (3, 02);
-
-insert into T2_1 (A, B, C2_1) values (4, 2, 1);
-insert into T2_1 (A, B, C2_1) values (5, 2, 1);
-insert into T2_1 (A, B, C2_1) values (6, 2, 1);
-insert into T2_1 (A, B, C2_1) values (7, 2, 1);
-insert into T2_1 (A, B, C2_1) values (8, 2, 1);
-
-insert into T2_2 (A, B, C2_2) values (10, 2, 1);
-insert into T2_2 (A, B, C2_2) values (11, 2, 1);
-insert into T2_2 (A, B, C2_2) values (12, 2, 1);
-insert into T2_2 (A, B, C2_2) values (13, 2, 1);
-insert into T2_2 (A, B, C2_2) values (14, 2, 1);
-
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (20, 1, 2, 3);
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (21, 1, 2, 3);
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (22, 1, 2, 3);
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (23, 1, 2, 3);
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (24, 1, 2, 3);
-insert into T2_1_1 (A, B, C2_1, D2_1_1) values (4, 1, 2, 3);
-
--- XXX: VJ
---ECHO BOTH $IF $EQU $STATE 23000 "PASSED" "***FAILED";
---ECHO BOTH ": primary key in subtable conflicts with super table.\n";
-
-select count (*) from T2;
-ECHO BOTH $IF $EQU $LAST[1] 18 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " Rows in T2.\n";
-
-alter table T2_1 add D2_1 integer;
-select count (*) from T2;
-ECHO BOTH $IF $EQU $LAST[1] 18 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " Rows in T2 after ALTER TABLE of T2_1.\n";
-
-alter table T2 add E integer;
-select count (*) from T2;
-ECHO BOTH $IF $EQU $LAST[1] 18 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " Rows in T2 after ALTER TABLE of T2.\n";
-
-update T2_1 set E = 11;
-select count (*) from T2 where E = 11;
-ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " rows in T2 with E = 11\n";
-
-update T2 set E = 5555 where E is null;
-select count (*) from T2 where E = 5555;
-ECHO BOTH $IF $EQU $LAST[1] 8 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " rows in T2 with E = 5555\n";
-
-alter table T2_1 add F varchar;
-select count (*) from T2;
-ECHO BOTH $IF $EQU $LAST[1] 18 "PASSED" "***FAILED";
-ECHO BOTH ": Cached statement gives " $LAST[1] " in T2 after alter of T2_1\n";
-
-select  count (*) from T2;
-ECHO BOTH $IF $EQU $LAST[1] 18 "PASSED" "***FAILED";
-ECHO BOTH ": Recompiled statement gives " $LAST[1] " in T2 after alter of T2_1\n";
-
-update T2_1_1 set F = 'T2_1_1';
-update T2_1 set F = 'T2_1' where F is null;
-select count (*) from T2;
-drop table T2_1_1;
-select count (*)  from T2;
-ECHO BOTH $IF $EQU $LAST[1] 13 "PASSED" "***FAILED";
-ECHO BOTH ": Recompiled statement gives " $LAST[1] " in T2 after drop of T2_1_1\n";
-
-create index b on t2 (b) partition (b int);
-update t2 set b = a;
-select count (*) from t2_2 table option (index b);
-ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
-ECHO BOTH ": Recompiled statement gives " $LAST[1] " in T2 after drop of T2_1_1\n";
-
-
-
-select K1. KEY_NAME, K2.KEY_NAME from SYS_KEY_SUBKEY, SYS_KEYS K1, SYS_KEYS K2 WHERE K1.KEY_ID = SUPER AND K2.KEY_ID = SUB;
-
-ECHO BOTH "COMPLETED: Schema Evolution Test, part 1\n";
-
-
-
-create table AI (id integer identity, a integer)
-alter index AI on AI partition (ID int);
-create table AI_2 (sub_id integer identity, under AI);
-
-insert into AI (A) values (11);
-insert into AI_2 (A) values (11);
-insert into AI_2 (A) values (11);
-insert into AI (A) values (11);
-
-select count (*) from AI;
-ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
-ECHO BOTH ": rows in inherited IDENTITY test\n";
-
-
-alter table AI add B long varchar;
-update AI set B = '1234567890';
-alter table AI drop B;
 
 
 create table USR_TABLE (COL1 integer, COL2 integer)
@@ -281,6 +165,7 @@ alter table B5258 add dt long varchar;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": B5258 1st alter STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+update b5258 set dt = make_string (32000);
 alter table B5258 drop dt;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 ECHO BOTH ": B5258 2nd alter STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
@@ -474,5 +359,6 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B9948 test case returns " $ROWCNT " cols STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 
-ECHO BOTH "tschema1 check trees\n";
+echo both "tschema1 check trees\n";
 cl_exec ('backup ''/dev/null''');
+

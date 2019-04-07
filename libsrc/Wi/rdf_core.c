@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,6 @@
  *
  */
 
-#include "../Dk/Dkhash64.h"
 #include "libutil.h"
 #include "sqlnode.h"
 #include "sqlbif.h"
@@ -35,6 +34,8 @@
 #include "rdf_core.h"
 #include "security.h" /* for sec_proc_check() */
 #include "http.h"
+#include "../Dk/Dkhash64.h"
+
 #ifdef __cplusplus
 extern "C" {
 #endif
@@ -58,6 +59,7 @@ extern "C" {
 #else
 #include "../util/md5.h"
 #endif /* _SSL */
+#include "mhash.h"
 
 int uriqa_dynamic_local = 0;
 
@@ -220,11 +222,28 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
   char **full_name_ret, query_t **proc_ret, caddr_t *err_ret )
 {
   const char *param_type_iter;
+  char *full_name;
   proc_ret[0] = NULL;
   err_ret[0] = NULL;
-  full_name_ret[0] = sch_full_proc_name (wi_inst.wi_schema, cbk_name, cli_qual (cli), CLI_OWNER (cli));
-  if (NULL != full_name_ret[0])
-    proc_ret[0] = sch_proc_def (wi_inst.wi_schema, full_name_ret[0]);
+  if ('\0' == cbk_name[0])
+    {
+      if (NULL != full_name_ret)
+        full_name_ret[0] = NULL;
+      proc_ret[0] = NULL;
+      return;
+    }
+  if ('!' == cbk_name[0])
+    {
+      if (NULL != full_name_ret)
+        full_name_ret[0] = cbk_name;
+      proc_ret[0] = NULL;
+      return;
+    }
+  full_name = sch_full_proc_name (wi_inst.wi_schema, cbk_name, cli_qual (cli), CLI_OWNER (cli));
+  if (NULL != full_name_ret)
+    full_name_ret[0] = full_name;
+  if (NULL != full_name)
+    proc_ret[0] = sch_proc_def (wi_inst.wi_schema, full_name);
   if (NULL == proc_ret[0])
     {
       err_ret[0] = srv_make_new_error ("42001", "SR574",
@@ -237,17 +256,17 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
       if (err_ret[0])
         return;
     }
-  if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_id, cli->cli_user->usr_g_id))
+  if (NULL != cli->cli_user && !sec_proc_check (proc_ret[0], cli->cli_user->usr_g_id, cli->cli_user->usr_id))
     {
-      err_ret[0] = srv_make_new_error ("42000", "SR575",
-        "No permission to execute %.300s as callback of %.100s()", full_name_ret[0], funname );
+      err_ret[0] = srv_make_new_error ("42000", "SR575:SECURITY", "No permission to execute %.300s as callback of %.100s() with user ID %d, group ID %d",
+        full_name, funname, (int)(cli->cli_user->usr_id), (int)(cli->cli_user->usr_g_id) );
       return;
     }
   if (strlen (cbk_param_types) != dk_set_length (proc_ret[0]->qr_parms))
     {
       err_ret[0] = srv_make_new_error ("42000", "SR576",
         "The callback %.300s[] of %.100s() declaration contains %d arguments, not %d as expected",
-        full_name_ret[0], funname, (int)(dk_set_length (proc_ret[0]->qr_parms)), (int)(strlen (cbk_param_types)) );
+        full_name, funname, (int)(dk_set_length (proc_ret[0]->qr_parms)), (int)(strlen (cbk_param_types)) );
       return;
     }
   param_type_iter = cbk_param_types;
@@ -274,7 +293,7 @@ sqlr_set_cbk_name_and_proc (client_connection_t *cli, const char *cbk_name, cons
           err_ret[0] = srv_make_new_error ("42000", "SR577",
             "The argument #%ld (%.100s) of callback %.300s[] of %.100s() %.100s",
             (long) (param_type_iter - cbk_param_types) + 1, ssl->ssl_name,
-            full_name_ret[0], funname, problem );
+            full_name, funname, problem );
 	  return;
 	}
       param_type_iter++;
@@ -721,7 +740,13 @@ ttlp_reset_stacks (ttlp_t *ttlp)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_saved_uris)));
   while (NULL != ttlp->ttlp_unused_seq_bnodes)
     dk_free_tree ((box_t) dk_set_pop (&(ttlp->ttlp_unused_seq_bnodes)));
-  dk_free_tree (ttlp->ttlp_last_complete_uri);	ttlp->ttlp_last_complete_uri = NULL;
+  if (NULL != ttlp->ttlp_last_complete_uri)
+    {
+      if (ttlp->ttlp_last_complete_uri != ttlp->ttlp_obj)
+        dk_free_tree (ttlp->ttlp_last_complete_uri);
+      ttlp->ttlp_last_complete_uri = NULL;
+    }
+  dk_free_tree (ttlp->ttlp_last_q_save);		ttlp->ttlp_last_q_save = NULL;
   dk_free_tree (ttlp->ttlp_subj_uri);		ttlp->ttlp_subj_uri = NULL;
   dk_free_tree (ttlp->ttlp_pred_uri);		ttlp->ttlp_pred_uri = NULL;
   dk_free_tree (ttlp->ttlp_obj);			ttlp->ttlp_obj = NULL;
@@ -1041,7 +1066,73 @@ ttlp_uri_resolve (ttlp_t *ttlp_arg, caddr_t qname)
 }
 
 void
-ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
+ttlp_triple_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_uri)
+{
+  if (ttlp_arg[0].ttlp_obj != o_uri)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_uri;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'r' : 'R';
+}
+
+void
+ttlp_triple_l_and_inf_prepare (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+{
+  if (ttlp_arg[0].ttlp_obj != o_sqlval)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj)
+        dk_free_tree (ttlp_arg[0].ttlp_obj);
+      ttlp_arg[0].ttlp_obj = o_sqlval;
+    }
+  if (ttlp_arg[0].ttlp_obj_type != o_dt)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_type)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_type);
+      ttlp_arg[0].ttlp_obj_type = o_dt;
+    }
+  if (ttlp_arg[0].ttlp_obj_lang != o_lang)
+    {
+      if (NULL != ttlp_arg[0].ttlp_obj_lang)
+        dk_free_tree (ttlp_arg[0].ttlp_obj_lang);
+      ttlp_arg[0].ttlp_obj_lang = o_lang;
+    }
+  if (ttlp_arg[0].ttlp_triple_is_prepared)
+    ttlyyerror_impl (ttlp_arg, "", "Internal error: an triple is not processed before complete reading of next triple");
+  ttlp_arg[0].ttlp_triple_is_prepared = ttlp_arg[0].ttlp_pred_is_reverse ? 'l' : 'L';
+}
+
+void
+ttlp_triple_process_prepared (ttlp_t *ttlp_arg)
+{
+  switch (ttlp_arg[0].ttlp_triple_is_prepared)
+    {
+    case 'R':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'r':
+      ttlp_triple_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'L':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 0);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 'l':
+      ttlp_triple_l_and_inf_now (ttlp_arg, ttlp_arg[0].ttlp_obj, ttlp_arg[0].ttlp_obj_type, ttlp_arg[0].ttlp_obj_lang, 1);
+      ttlp_arg[0].ttlp_triple_is_prepared = 0;
+      return;
+    case 0: return;
+    default: GPF_T1 ("Bad ttlp_triple_is_prepared");
+    }
+}
+
+void
+ttlp_triple_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_uri, int pred_is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
@@ -1049,7 +1140,7 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
   caddr_t o = o_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (pred_is_reverse)
     {
       caddr_t swap = o;
       o = s;
@@ -1068,14 +1159,14 @@ ttlp_triple_and_inf (ttlp_t *ttlp_arg, caddr_t o_uri)
 }
 
 void
-ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang)
+ttlp_triple_l_and_inf_now (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t o_lang, int is_reverse)
 {
   triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
   caddr_t s = ttlp_arg[0].ttlp_subj_uri;
   caddr_t p = ttlp_arg[0].ttlp_pred_uri;
   if ((NULL == s) || (NULL == p))
     return;
-  if (ttlp_arg[0].ttlp_pred_is_reverse)
+  if (is_reverse)
     {
       if (!(ttlp_arg[0].ttlp_flags & TTLP_SKIP_LITERAL_SUBJECTS))
         ttlyyerror_impl (ttlp_arg, "", "Virtuoso does not support literal subjects");
@@ -1100,6 +1191,21 @@ ttlp_triple_l_and_inf (ttlp_t *ttlp_arg, caddr_t o_sqlval, caddr_t o_dt, caddr_t
       tf_triple (tf, ttlp_arg[0].ttlp_formula_iid, uname_swap_reify_ns_uri_statement, stmt);
     }
   tf_triple_l (ttlp_arg[0].ttlp_tf, s, p, o_sqlval, o_dt, o_lang);
+}
+
+void
+ttlp_triples_for_prefix (ttlp_t *ttlp_arg, caddr_t prefix, caddr_t ns, int lineno)
+{
+  triple_feed_t *tf = ttlp_arg[0].ttlp_tf;
+  caddr_t bnode_iid = tf_bnode_iid (ttlp_arg->ttlp_tf, NULL);
+static caddr_t empty_string = NULL;
+  if (NULL == empty_string)
+    empty_string = box_dv_short_nchars ("", 0);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_prefix, (NULL != prefix) ? prefix : empty_string, NULL, NULL);
+  tf_triple (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_iri, ns);
+  if (NULL != ttlp_arg->ttlp_base_uri)
+    tf_triple_l (tf, prefix, uname_virtrdf_ns_uri_namespace_base, ttlp_arg->ttlp_base_uri, NULL, NULL);
+  tf_triple_l (tf, bnode_iid, uname_virtrdf_ns_uri_namespace_row, box_num_nonull (lineno), NULL, NULL);
 }
 
 void
@@ -1260,39 +1366,216 @@ bif_turtle_lex_analyze (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ttl_lex_analyze (str, mode_flags, QST_CHARSET(qst));
 }
 
+
+id_hashed_key_t iristrhash (char *strp);
+int iristrhashcmp (char *x, char *y);
+
+
+void
+nic_set_n_ways (name_id_cache_t * nic, int n_ways)
+{
+  int inx, sz;
+  if (!n_ways)
+    GPF_T1 ("n_ways in nic_set_n_ways must be > 0.");
+  sz = 1 + (nic->nic_size / n_ways);
+  nic->nic_n_ways = n_ways;
+  id_hash_free (nic->nic_name_to_id);
+  nic->nic_name_to_id = NULL;
+  hash_table_free_64 (nic->nic_id_to_name);
+  nic->nic_id_to_name = NULL;
+  nic->nic_in_array = (dk_hash_64_t**)dk_alloc_box (sizeof (caddr_t) * n_ways, DV_BIN);
+  nic->nic_ni_array = (id_hash_t **)dk_alloc_box (sizeof (caddr_t) * n_ways, DV_BIN);
+  nic->nic_ni_mtx = dk_alloc_box (sizeof (dk_mutex_t) * n_ways, DV_BIN);
+  nic->nic_in_mtx = dk_alloc_box (sizeof (dk_mutex_t) * n_ways, DV_BIN);
+  for (inx = 0; inx < n_ways; inx++)
+    {
+      nic->nic_in_array[inx] = hash_table_allocate_64 (sz);
+      nic->nic_ni_array[inx] = id_hash_allocate (sz, sizeof (caddr_t), sizeof (caddr_t), iristrhash, iristrhashcmp);
+      dk_mutex_init (&nic->nic_in_mtx[inx], MUTEX_TYPE_SHORT);
+      mutex_option (&nic->nic_in_mtx[inx], "NICB_IN", NULL, NULL);
+      dk_mutex_init (&nic->nic_ni_mtx[inx], MUTEX_TYPE_SHORT);
+      mutex_option (&nic->nic_in_mtx[inx], "NICB_NI", NULL, NULL);
+    }
+}
+
+
+#define NIC_IN_ID(nic, __n, id) {__n = ((uint32)id) % nic->nic_n_ways; mutex_enter (&nic->nic_in_mtx[__n]);}
+#define NIC_LEAVE_ID(nic, __n) mutex_leave (&nic->nic_in_mtx[__n])
+#define NIC_WAY_OF_HI(nic,hi) ((((uint32)hi) >> 8) % (nic)->nic_n_ways)
+#define NIC_IN_NAME(nic, __n, name, __hi) { __hi = iristrhash (&name); __n = NIC_WAY_OF_HI(nic,hi); mutex_enter (&nic->nic_ni_mtx[__n]);}
+#define NIC_LEAVE_NAME(nic, __n) mutex_leave (&nic->nic_ni_mtx[__n])
+
+boxint
+nic_name_id_n (name_id_cache_t * nic, char * name)
+{
+  boxint * place, res = 0;
+  id_hashed_key_t hi = iristrhash ((char*)&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi);
+  mutex_enter (&nic->nic_ni_mtx[nth_name]);
+  place = (boxint*) id_hash_get_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t) &name, hi);
+  if (place)
+    res = *place;
+  mutex_leave (&nic->nic_ni_mtx[nth_name]);
+  return res;
+}
+
+caddr_t
+DBG_NAME (nic_id_name_n) (DBG_PARAMS name_id_cache_t * nic, boxint id)
+{
+  caddr_t ret;
+  boxint r;
+  int nth_id;
+  NIC_IN_ID (nic, nth_id, id);
+  gethash_64 (r, id, nic->nic_in_array[nth_id]);
+  ret = r ? DBG_NAME(box_copy) (DBG_ARGS (caddr_t)((ptrlong)r)) : NULL;
+  /* read the value inside the mtx because cache replacement may del it before the copy is made if not in the mtx */
+  NIC_LEAVE_ID (nic, nth_id);
+  return ret;
+}
+
+static void
+nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_mutex_locked)
+{
+/*  id_hashed_key_t hi = iristrhash (&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi); */
+  int nth_id, flag;
+  if (!cachelet_mutex_locked)
+    mutex_enter (&nic->nic_ni_mtx[nth_name]);
+
+  while (nic->nic_ni_array[nth_name]->ht_count > nic->nic_size / nic->nic_n_ways)
+    {
+      nic_name_id_cache_element_t el;
+      int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
+      el.nicel_name = NULL;
+      if (id_hash_remove_rnd (nic->nic_ni_array[nth_name], rnd, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+        {
+          mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+          NIC_IN_ID (nic, nth_id, el.nicel_id);
+          remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
+	  if (!flag)
+	    log_debug ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
+          NIC_LEAVE_ID (nic, nth_id);
+
+          if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
+            dk_free_box (el.nicel_name);
+
+          mutex_enter (&nic->nic_ni_mtx[nth_name]);
+        }
+    }
+
+  if (!cachelet_mutex_locked)
+    mutex_leave (&nic->nic_ni_mtx[nth_name]);
+}
+
+static void
+nic_remove_some_elements (name_id_cache_t * nic, char cache_mutex_locked)
+{
+  if (!cache_mutex_locked)
+    mutex_enter (nic->nic_mtx);
+
+  while (nic->nic_id_to_name->ht_count > nic->nic_size)
+    {
+      nic_name_id_cache_element_t el;
+      int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
+      el.nicel_name = NULL;
+      if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+        {
+          remhash_64 ( el.nicel_id, nic->nic_id_to_name);
+          dk_free_box (el.nicel_name);
+        }
+    }
+
+  if (!cache_mutex_locked)
+    mutex_leave (nic->nic_mtx);
+}
+
+void
+nic_set_n (name_id_cache_t * nic, caddr_t name, boxint id)
+{
+  caddr_t name_box = NULL;
+  caddr_t * place;
+  id_hashed_key_t hi = iristrhash ((char*)&name);
+  int nth_name = NIC_WAY_OF_HI(nic,hi);
+  int nth_id;
+
+  mutex_enter (&nic->nic_ni_mtx[nth_name]);
+
+  place = (caddr_t*) id_hash_get_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t)&name, hi);
+  if(place) /* the key is found */
+    {
+      boxint old_id = *(boxint*)place;
+      name_box = ((caddr_t*)place) [-1];
+
+      if (old_id == id) /* we already have this name <-> id pair */
+	{
+	  mutex_leave (&nic->nic_ni_mtx[nth_name]);
+	  return;
+	}
+
+      *(boxint*) place = id;
+
+      mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+      NIC_IN_ID (nic, nth_id, old_id);
+      remhash_64 (old_id, nic->nic_in_array[nth_id]);
+      NIC_LEAVE_ID (nic, nth_id);
+
+      NIC_IN_ID (nic, nth_id, id);
+      sethash_64 (id, nic->nic_in_array[nth_id],  (boxint)((ptrlong)(name_box)));
+      NIC_LEAVE_ID (nic, nth_id);
+    }
+  else
+    {
+      /* free some space in the cache if there is not enough */
+      nic_remove_some_elements_n (nic, nth_name, 1);
+
+      name_box = nic->nic_is_boxes ? box_copy (name) : box_dv_short_string (name);
+
+      id_hash_set_with_hash_number (nic->nic_ni_array[nth_name], (caddr_t)&name_box, (caddr_t)&id, hi);
+
+      mutex_leave (&nic->nic_ni_mtx[nth_name]);
+
+      NIC_IN_ID (nic, nth_id, id);
+      sethash_64 (id, nic->nic_in_array[nth_id], (boxint)((ptrlong)(name_box)));
+      NIC_LEAVE_ID (nic, nth_id);
+    }
+}
+
 void
 nic_set (name_id_cache_t * nic, caddr_t name, boxint id)
 {
   caddr_t name_box = NULL;
-  caddr_t * place;
-  mutex_enter (nic->nic_mtx);
-  place = (caddr_t*) id_hash_get (nic->nic_name_to_id, (caddr_t)&name);
-  if(place)
+  caddr_t *place;
+  WITH_TLSF (dk_base_tlsf)
+  {
+  if (nic->nic_n_ways)
     {
-      boxint old_id = *(boxint*)place;
-      name_box = ((caddr_t*)place) [-1];
-      *(boxint*) place = id;
-      remhash_64 (old_id, nic->nic_id_to_name);
-      sethash_64 (id, nic->nic_id_to_name,  (boxint)((ptrlong)(name_box)));
+      nic_set_n (nic, name, id);
     }
   else
     {
-      while (nic->nic_id_to_name->ht_count > nic->nic_size)
+      mutex_enter (nic->nic_mtx);
+      place = (caddr_t *) id_hash_get (nic->nic_name_to_id, (caddr_t) & name);
+      if (place)
 	{
-	  caddr_t key = NULL;
-	  boxint id;
-	  int32 rnd  = sqlbif_rnd (&tf_rnd_seed);
-	  if (id_hash_remove_rnd (nic->nic_name_to_id, rnd, (caddr_t)&key, (caddr_t)&id))
-	    {
-	      remhash_64 ( id, nic->nic_id_to_name);
-	      dk_free_box (key);
-	    }
+	  boxint old_id = *(boxint *) place;
+	  name_box = ((caddr_t *) place)[-1];
+	  *(boxint *) place = id;
+	  remhash_64 (old_id, nic->nic_id_to_name);
+	  sethash_64 (id, nic->nic_id_to_name, (boxint) ((ptrlong) (name_box)));
 	}
-      name_box = treehash == nic->nic_name_to_id->ht_hash_func  ? box_copy (name) :  box_dv_short_string (name);
-      id_hash_set (nic->nic_name_to_id, (caddr_t)&name_box, (caddr_t)&id);
-      sethash_64 (id, nic->nic_id_to_name, (boxint)((ptrlong)(name_box)));
+      else
+	{
+	  nic_remove_some_elements (nic, 1);
+	  name_box = nic->nic_is_boxes ? box_copy (name) : box_dv_short_string (name);
+	  id_hash_set (nic->nic_name_to_id, (caddr_t) & name_box, (caddr_t) & id);
+	  sethash_64 (id, nic->nic_id_to_name, (boxint) ((ptrlong) (name_box)));
+	}
+      mutex_leave (nic->nic_mtx);
     }
-  mutex_leave (nic->nic_mtx);
+}
+  END_WITH_TLSF;
 }
 
 
@@ -1300,6 +1583,18 @@ boxint
 nic_name_id (name_id_cache_t * nic, char * name)
 {
   boxint * place, res = 0;
+  if (nic->nic_n_ways)
+    return nic_name_id_n (nic, name);
+  if (nic->nic_is_boxes)
+    {
+      id_hashed_key_t hi = iristrhash ((char*)&name);
+      mutex_enter (nic->nic_mtx);
+      place = (boxint*) id_hash_get_with_hash_number (nic->nic_name_to_id, (caddr_t) &name, hi);
+      if (place)
+	res = *place;
+      mutex_leave (nic->nic_mtx);
+      return res;
+    }
   mutex_enter (nic->nic_mtx);
   place = (boxint*) id_hash_get (nic->nic_name_to_id, (caddr_t) &name);
   if (place)
@@ -1308,6 +1603,25 @@ nic_name_id (name_id_cache_t * nic, char * name)
   return res;
 }
 
+void
+nic_merge_n (name_id_cache_t * to, name_id_cache_t * from)
+{
+  int inx;
+  id_hash_iterator_t hit;
+  caddr_t * pn;
+  boxint * pid;
+  for (inx = 0; inx < from->nic_n_ways; inx++)
+    {
+      id_hash_iterator (&hit, from->nic_ni_array[inx]);
+      while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
+        {
+          nic_set (to, *pn, *pid);
+          dk_free_box (*pn);
+        }
+      id_hash_clear (from->nic_ni_array[inx]);
+      id_hash_clear (from->nic_in_array[inx]);
+    }
+}
 
 void
 nic_merge (name_id_cache_t * to, name_id_cache_t * from)
@@ -1315,6 +1629,13 @@ nic_merge (name_id_cache_t * to, name_id_cache_t * from)
   id_hash_iterator_t hit;
   caddr_t * pn;
   boxint * pid;
+
+  if (from->nic_n_ways)
+    {
+      nic_merge_n ( to, from );
+      return;
+    }
+
   id_hash_iterator (&hit, from->nic_name_to_id);
   while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
     {
@@ -1325,10 +1646,24 @@ nic_merge (name_id_cache_t * to, name_id_cache_t * from)
   id_hash_clear (from->nic_id_to_name);
 }
 
-
-resource_t * iri_nic_rc;
-resource_t * prefix_nic_rc;
-
+void
+nic_clear_n (name_id_cache_t * nic)
+{
+  int inx;
+  for (inx = 0; inx < nic->nic_n_ways; inx++)
+    {
+      id_hash_iterator_t hit;
+      caddr_t * pn;
+      boxint * pid;
+      id_hash_iterator (&hit, nic->nic_ni_array[inx]);
+      while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
+        {
+          dk_free_box (*pn);
+        }
+      id_hash_clear (nic->nic_ni_array[inx]);
+      id_hash_clear (nic->nic_in_array[inx]);
+    }
+}
 
 void
 nic_clear (name_id_cache_t * nic)
@@ -1336,6 +1671,11 @@ nic_clear (name_id_cache_t * nic)
   id_hash_iterator_t hit;
   caddr_t * pn;
   boxint * pid;
+  if (nic->nic_n_ways)
+    {
+      nic_clear_n (nic);
+      return;
+    }
   id_hash_iterator (&hit, nic->nic_name_to_id);
   while (hit_next (&hit, (caddr_t*)&pn, (caddr_t*)&pid))
     {
@@ -1349,20 +1689,44 @@ void
 nic_free (name_id_cache_t * nic)
 {
   nic_clear (nic);
+  if (nic->nic_name_to_id)
   id_hash_free (nic->nic_name_to_id);
+  if (nic->nic_id_to_name)
   id_hash_free (nic->nic_id_to_name);
+
+  if (nic->nic_n_ways)
+    {
+      int inx;
+      for (inx = 0; inx < nic->nic_n_ways; inx++)
+        {
+          hash_table_free_64 (nic->nic_in_array[inx]);
+          id_hash_free (nic->nic_ni_array[inx]);
+          mutex_free (&nic->nic_in_mtx[inx]);
+          mutex_free (&nic->nic_ni_mtx[inx]);
+        }
+      dk_free ( nic->nic_ni_mtx, sizeof (dk_mutex_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_in_mtx, sizeof (dk_mutex_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_in_array, sizeof (caddr_t) * nic->nic_n_ways );
+      dk_free ( nic->nic_ni_array, sizeof (caddr_t) * nic->nic_n_ways );
+    }
+
   mutex_free (nic->nic_mtx);
   dk_free ((caddr_t)nic, sizeof (name_id_cache_t));
 }
 
+resource_t * iri_nic_rc;
+resource_t * prefix_nic_rc;
 
 void
 nic_done (resource_t * rc, name_id_cache_t * nic)
 {
-  if (11 == nic->nic_name_to_id->ht_buckets)
+  if (30 > nic->nic_name_to_id->ht_buckets)
     resource_store (rc, (void*) nic);
   else
-    nic_free (nic);
+    {
+      resource_track_delete (nic);
+      nic_free (nic);
+    }
 }
 
 
@@ -1405,6 +1769,8 @@ DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 {
   caddr_t ret;
   boxint r;
+  if (nic->nic_n_ways)
+    return DBG_NAME(nic_id_name_n) (DBG_ARGS nic, id);
   mutex_enter (nic->nic_mtx);
   gethash_64 (r, id, nic->nic_id_to_name);
   ret = r ? DBG_NAME (box_copy) (DBG_ARGS (caddr_t) (ptrlong)r) : NULL;
@@ -1414,6 +1780,33 @@ DBG_NAME(nic_id_name) (DBG_PARAMS name_id_cache_t * nic, boxint id)
 }
 
 
+id_hashed_key_t
+iristrhash (char *strp)
+{
+  char *str = *(char **) strp;
+  int l = box_length (str) - 1;
+  uint64 h = 1;
+  MHASH_VAR (h, str, l);
+  return h & 0x7fffffff;
+}
+
+int
+iristrhashcmp (char *x, char *y)
+{
+  char * str1 = *(caddr_t *) x;
+  char * str2 = *(caddr_t *) y;
+  int l = box_length (str1);
+  if (l != box_length (str2))
+    return 0;
+  l--;
+  memcmp_8 (str1, str2, l, neq);
+  return 1;
+ neq:
+  return 0;
+}
+
+
+
 name_id_cache_t *
 nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
 {
@@ -1421,10 +1814,11 @@ nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
   nic->nic_size = sz;
   if (ht_init_sz)
     sz = ht_init_sz * 2;
+  nic->nic_is_boxes = is_box;
   if (!is_box)
     nic->nic_name_to_id = id_hash_allocate (sz / 2, sizeof (caddr_t), sizeof (boxint), strhash, strhashcmp);
   else
-    nic->nic_name_to_id = id_hash_allocate (sz / 2, sizeof (caddr_t), sizeof (boxint), treehash, treehashcmp);
+    nic->nic_name_to_id = id_hash_allocate (sz, sizeof (caddr_t), sizeof (boxint), iristrhash, iristrhashcmp);
   nic->nic_id_to_name = hash_table_allocate_64 (sz);
   id_hash_set_rehash_pct (nic->nic_id_to_name, 220);
   id_hash_set_rehash_pct (nic->nic_name_to_id, 220);
@@ -1434,9 +1828,51 @@ nic_allocate (unsigned long sz, int is_box, int ht_init_sz)
 }
 
 void
+nic_flush_n (name_id_cache_t * nic)
+{
+  dk_set_t removed_keys = NULL;
+  int bucket_ctr = 0, inx;
+  int nth_id;
+
+  for (inx = 0; inx < nic->nic_n_ways; inx++)
+    {
+      mutex_enter (&nic->nic_ni_mtx[inx]);
+
+      for (bucket_ctr = nic->nic_ni_array[inx]->ht_buckets; bucket_ctr--; /* no step */)
+        {
+          nic_name_id_cache_element_t el;
+          while (id_hash_remove_rnd (nic->nic_ni_array[inx], bucket_ctr, (caddr_t)&el.nicel_name, (caddr_t)&el.nicel_id))
+            {
+              nic_name_id_cache_element_t *new_el = dk_alloc( sizeof(nic_name_id_cache_element_t) );
+              memcpy ( new_el, &el, sizeof(nic_name_id_cache_element_t) );
+              dk_set_push ( &removed_keys, new_el );
+            }
+        }
+
+      mutex_leave(&nic->nic_ni_mtx[inx]);
+    }
+
+  DO_SET(nic_name_id_cache_element_t*,el,&removed_keys)
+  {
+    NIC_IN_ID ( nic, nth_id, el->nicel_id );
+    remhash_64 ( el->nicel_id, nic->nic_in_array[nth_id]);
+    dk_free_box (el->nicel_name);
+    dk_free (el, sizeof(nic_name_id_cache_element_t));
+    NIC_LEAVE_ID( nic, nth_id);
+  }
+  END_DO_SET();
+  dk_set_free(removed_keys);
+}
+
+void
 nic_flush (name_id_cache_t * nic)
 {
   int bucket_ctr = 0;
+  if (nic->nic_n_ways)
+  {
+    nic_flush_n (nic);
+    return;
+  }
   mutex_enter (nic->nic_mtx);
   for (bucket_ctr = nic->nic_name_to_id->ht_buckets; bucket_ctr--; /* no step */)
     {
@@ -1463,7 +1899,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_iri = (name_id_cache_t*) resource_get (iri_nic_rc);
 	      if (!lt->lt_rdf_iri)
-		lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+ 		{
+		  lt->lt_rdf_iri = nic_allocate (140000, 1, 11);
+		  resource_track_new (lt->lt_rdf_iri);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }
@@ -1480,7 +1919,10 @@ lt_nic_set (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name, boxint id)
 	    {
 	      lt->lt_rdf_prefix = (name_id_cache_t*) resource_get (prefix_nic_rc);
 	      if (!lt->lt_rdf_prefix)
-		lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+		{
+		  lt->lt_rdf_prefix = nic_allocate (4000, 0, 11);
+                  resource_track_new (lt->lt_rdf_prefix);
+		}
 	      lt->lt_commit_hook = lt_nic_commit_hook;
 	      lt->lt_rollback_hook = lt_nic_rollback_hook;
 	    }
@@ -1506,19 +1948,34 @@ lt_nic_name_id (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name)
   return nic_name_id (nic, name);
 }
 
-
-caddr_t
-lt_nic_id_name (lock_trx_t * lt, name_id_cache_t * nic, boxint id)
+#if 0
+boxint
+nic_prefix_local (lock_trx_t * lt, name_id_cache_t * nic, caddr_t name)
 {
   name_id_cache_t * lt_nic = lt->lt_client->cli_row_autocommit ? NULL
     : nic == iri_name_cache ? lt->lt_rdf_iri : lt->lt_rdf_prefix;
   if (lt_nic)
     {
-      caddr_t name = nic_id_name (lt_nic, id);
+      boxint id = nic_name_id (lt_nic, name);
+      if (id)
+	return id;
+    }
+  return nic_name_id (nic, name);
+}
+#endif
+
+caddr_t
+DBG_NAME(lt_nic_id_name) (DBG_PARAMS lock_trx_t * lt, name_id_cache_t * nic, boxint id)
+{
+  name_id_cache_t * lt_nic = lt->lt_client->cli_row_autocommit ? NULL
+    : nic == iri_name_cache ? lt->lt_rdf_iri : lt->lt_rdf_prefix;
+  if (lt_nic)
+    {
+      caddr_t name = DBG_NAME(nic_id_name) (DBG_ARGS lt_nic, id);
       if (name)
 	return name;
     }
-  return nic_id_name (nic, id);
+  return DBG_NAME(nic_id_name) (DBG_ARGS nic, id);
 }
 
 
@@ -1544,8 +2001,11 @@ tb_string_and_id_check (dbe_table_t * tb, dbe_column_t ** str_col, dbe_column_t 
   return 1;
 }
 
+int32 iri_range_size = 1000000;
 #define N_IRI_SEQS 19
-#define IRI_RANGE_SZ 10000
+#define N_IRI_SEQS_USED iri_seqs_used
+int iri_seqs_used = N_IRI_SEQS;
+#define IRI_RANGE_SZ iri_range_size
 
 extern dk_mutex_t * log_write_mtx;
 
@@ -1563,10 +2023,10 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
     {
       du_thread_t * self = THREAD_CURRENT_THREAD;
       nth = (((uptrlong)self) ^ (((uptrlong)self) >> 11))
-      % N_IRI_SEQS;
+      % N_IRI_SEQS_USED;
     }
   else
-    nth = ((unsigned int)nth) % N_IRI_SEQS;
+    nth = ((unsigned int)nth) % N_IRI_SEQS_USED;
   if (!range_seq)
     {
       int inx;
@@ -1641,7 +2101,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   res_box = box_iri_int64 (res, id_col->col_sqt.sqt_dtp);
   itc->itc_insert_key = tb->tb_primary_key;
   itc->itc_owned_search_par_fill= 0; /* do not free the name yet */
-  itc_from (itc, itc->itc_insert_key);
+  itc_from (itc, itc->itc_insert_key, QI_NO_SLICE);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM(itc, name);
   rd.rd_non_comp_len = itc->itc_insert_key->key_row_var_start[0] + box_length (name) - 1;
@@ -1655,7 +2115,7 @@ tb_new_id_and_name (lock_trx_t * lt, it_cursor_t * itc, dbe_table_t * tb, caddr_
   itc->itc_insert_key = id_key;
   rd.rd_non_comp_len = itc->itc_insert_key->key_row_var_start[0] + box_length (name) - 1;
   itc->itc_owned_search_par_fill = 0; /* do not free the name yet */
-  itc_from (itc, itc->itc_insert_key);
+  itc_from (itc, itc->itc_insert_key, QI_NO_SLICE);
   ITC_SEARCH_PARAM(itc, res_box);
   ITC_SEARCH_PARAM(itc, name);
   ITC_OWNS_PARAM (itc, name);
@@ -1705,7 +2165,7 @@ tb_name_to_id (lock_trx_t * lt, char * tb_name, caddr_t name, char * value_seq_n
     return NULL;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc->itc_ltrx = lt;
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, name);
   ITC_OWNS_PARAM(itc, name);
   if(lt)
@@ -1731,6 +2191,7 @@ re_search:
       res = itc_search (itc, &buf);
       if (DVC_MATCH == res)
 	{
+	  KEY_TOUCH (itc->itc_insert_key);
 	  iri = itc_box_column (itc, buf, iri_col->col_id, NULL);
 	  itc_page_leave (itc, buf);
 	}
@@ -1847,7 +2308,7 @@ local_start_found:
 }
 
 void
-iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
+iri_split_ttl_qname_impl (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid, int flag)
 {
   const char *tail;
   int iri_strlen;
@@ -1861,8 +2322,17 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(flag == SPLIT_MODE_XML && '.' == c))
+        {
+          char *prev_utf8_head;
+          if (!(c & 0x80))
         break;
+          prev_utf8_head = tail-1;
+          while ((prev_utf8_head > iri) && IS_UTF8_CHAR_CONT (prev_utf8_head[0])) prev_utf8_head--;
+          if (!utf8_is_pn_chars_base (prev_utf8_head, tail))
+            break;
+          tail = prev_utf8_head;
+        }
     }
   if (isdigit (tail[0]) || ('-' == tail[0]) || ((tail > iri) && (NULL == strchr ("#/:?", tail[-1]))))
     tail = iri + iri_strlen;
@@ -1878,6 +2348,12 @@ iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, i
   else
     pref_ret[0] = box_dv_short_nchars (iri, tail - iri);
   name_ret[0] = box_dv_short_nchars (tail, iri + iri_strlen - tail);
+}
+
+void
+iri_split_ttl_qname (const char * iri, caddr_t * pref_ret, caddr_t * name_ret, int abbreviate_nodeid)
+{
+  iri_split_ttl_qname_impl (iri, pref_ret, name_ret, abbreviate_nodeid, SPLIT_MODE_TTL);
 }
 
 name_id_cache_t * iri_name_cache;
@@ -1966,6 +2442,7 @@ caddr_t
 key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
 {
   caddr_t r;
+  mem_pool_t * mp;
   int entered = 0;
   if (!lt)
     {
@@ -1980,7 +2457,10 @@ key_name_to_iri_id (lock_trx_t * lt, caddr_t name, int make_new)
 	    return NULL;
     }
     }
+  /* can be called from compiler, can do a cluster req and can potentially service recursive req so where can lose the tmp pool so save */
+  mp = THR_TMP_POOL;
   r = key_name_to_iri_id_1 (lt, name, make_new);
+  SET_THR_TMP_POOL (mp);
   if (entered)
     {
       IN_TXN;
@@ -2015,7 +2495,7 @@ key_find_rdf_obj_1 (rdf_box_t * rb, caddr_t name)
   val_col = (dbe_column_t*)key->key_parts->data;
   dtlang_col = (dbe_column_t*)key->key_parts->next->next->data;
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, name);
   ITC_SEARCH_PARAM (itc, dtlang);
   ITC_OWNS_PARAM (itc, dtlang);
@@ -2176,8 +2656,6 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
-extern iri_id_t bnode_t_treshold;
-
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
@@ -2316,7 +2794,13 @@ canon_iri_to_id (query_instance_t *qi, caddr_t canon_name, int mode, caddr_t *er
         case IRI_TO_ID_IF_KNOWN:
           return key_name_to_iri_id (qi->qi_trx, canon_name, 0);
         case IRI_TO_ID_WITH_CREATE:
-          return key_name_to_iri_id (qi->qi_trx, canon_name, 1);
+          {
+            caddr_t boxed_iid = key_name_to_iri_id (qi->qi_trx, canon_name, 1);
+#ifdef DEBUG
+	  if (!boxed_iid) bing ();
+#endif
+            return boxed_iid;
+          }
         case IRI_TO_ID_IF_CACHED:
           return key_name_to_existing_cached_iri_id (qi->qi_trx, canon_name);
         }
@@ -2402,7 +2886,6 @@ bif_iri_to_id_repl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
     case DV_LONG_INT: case DV_IRI_ID:
       {
-        /* caddr_t tmp_name = NULL; */
         iri_id_t iid = unbox_iri_int64 (name);
         if (iid < min_bnode_iri_id ())
           sqlr_new_error ("22023", "SR626", "The argument of iri_to_id_repl() is an IRI_ID of URI");
@@ -2475,7 +2958,10 @@ bif_iri_to_id_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (NULL != err)
     {
       if (!strcmp (ERR_STATE(err), "RDFXX"))
-        return NEW_DB_NULL;
+        {
+          dk_free_tree (err);
+          return NEW_DB_NULL;
+        }
       sqlr_resignal (err);
     }
   if (NULL == res)
@@ -2524,7 +3010,7 @@ tb_id_to_name (lock_trx_t * lt, char * tb_name, caddr_t id)
   key = (dbe_key_t *)(tb->tb_keys->data == tb->tb_primary_key ? tb->tb_keys->next->data : tb->tb_keys->data);
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc->itc_ltrx = lt;
-  itc_from (itc, key);
+  itc_from (itc, key, QI_NO_SLICE);
   ITC_SEARCH_PARAM (itc, id);
   itc->itc_isolation =ISO_COMMITTED;
   itc->itc_key_spec = key->key_insert_spec;
@@ -2579,13 +3065,38 @@ uriqa_dynamic_local_replace_nocheck (caddr_t name, client_connection_t * cli)
   return name;
 }
 
+int
+utf8_is_pn_chars_base (const char *head, const char *pasttail)
+{
+  const char *rest = head;
+  unichar uchr = eh_decode_char__UTF8 (&rest, pasttail);
+  if (rest != pasttail)
+    return 0;			/* encoding error resulting in too many UTF-8 continuation characters like in case of C0 BF BF BF BF BF BF */
+#define ret_1_if_in_range(uchr,a,b) do { if (((a) >= (uchr)) && ((b) <= (uchr))) return 1; } while (0)
+  ret_1_if_in_range (uchr, 0x00C0, 0x00D6);
+  ret_1_if_in_range (uchr, 0x00F8, 0x02FF);
+  ret_1_if_in_range (uchr, 0x0370, 0x037D);
+  ret_1_if_in_range (uchr, 0x037F, 0x1FFF);
+  ret_1_if_in_range (uchr, 0x200C, 0x200D);
+  ret_1_if_in_range (uchr, 0x2070, 0x218F);
+  ret_1_if_in_range (uchr, 0x2C00, 0x2FEF);
+  ret_1_if_in_range (uchr, 0x3001, 0xD7FF);
+  ret_1_if_in_range (uchr, 0xF900, 0xFDCF);
+  ret_1_if_in_range (uchr, 0xFDF0, 0xFFFD);
+  ret_1_if_in_range (uchr, 0x10000, 0xEFFFF);
+  return 0;
+}
+
 caddr_t
 key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 {
   boxint pref_id;
-  lock_trx_t * lt = qi->qi_trx;
+  lock_trx_t * lt = qi ? qi->qi_trx : NULL;
+  lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
-  local = lt_nic_id_name (lt, iri_name_cache, iri_id_no);
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
+  local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     {
       caddr_t id_box;
@@ -2596,12 +3107,11 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	  dk_free_box (id_box);
 	  return ret;
 	}
-
-      local = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_IRI", id_box);
+      local = tb_id_to_name (lt, "DB.DBA.RDF_IRI", id_box);
       dk_free_box (id_box);
       if (!local)
 	return NULL;
-      if (lt->lt_lock.ht_count)
+      if (qi && lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
 	nic_set (iri_name_cache, local, iri_id_no);
@@ -2621,14 +3131,14 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       else
 	{
 	  caddr_t pref_id_box = box_num (pref_id);
-	  prefix = tb_id_to_name (qi->qi_trx, "DB.DBA.RDF_PREFIX", pref_id_box);
+	  prefix = tb_id_to_name (lt, "DB.DBA.RDF_PREFIX", pref_id_box);
 	  dk_free_box (pref_id_box);
 	  if (!prefix)
 	    {
 	      dk_free_box (local);
 	      return NULL;
 	    }
-	  if (lt->lt_lock.ht_count)
+	  if (qi && lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
 	    nic_set (iri_prefix_cache, prefix, pref_id);
@@ -2643,6 +3153,29 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   return name;
 }
 
+caddr_t
+key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no)
+{
+  boxint pref_id;
+  lock_trx_t * nic_lt = bootstrap_cli->cli_trx;
+  caddr_t local, prefix, name;
+  if (0 == iri_id_no) return uname_nodeID_ns_0;
+  if (8192 == iri_id_no) return uname_nodeID_ns_8192;
+  local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
+  if (!local)
+    return NULL;
+  pref_id = LONG_REF_NA (local);
+  prefix = nic_id_name (iri_prefix_cache, pref_id);
+  if (!prefix)
+    return NULL;
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
+  memcpy (name, prefix, box_length (prefix) - 1);
+  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  dk_free_box (prefix);
+  dk_free_box (local);
+  return name;
+}
 
 caddr_t
 key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no)
@@ -2737,6 +3270,24 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
   return 1;
 }
 
+void
+rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
+{
+  sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
+}
+
+caddr_t
+bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
+  iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  if (0 == iid) return uname_nodeID_ns_0;
+  if (8192 == iid) return uname_nodeID_ns_8192;
+  rdf_handle_invalid_iri_id (qst, msg, iid);
+  return NULL; /* never reached */
+}
+
 caddr_t
 bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2750,15 +3301,20 @@ bif_id_to_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       {
 	iri_id_t iid = unbox_iri_id (iid_box);
 	caddr_t iri;
-	if (0L == iid)
-	  return NEW_DB_NULL;
 	if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
 	  iri = BNODE_IID_TO_LABEL (iid);
 	else
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -2797,7 +3353,10 @@ bif_id_to_canonicalized_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
           {
             iri = key_id_to_canonicalized_iri (qi, iid);
             if (!iri)
-              return NEW_DB_NULL;
+              {
+                rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+                return NULL; /* never reached */
+              }
           }
         box_flags (iri) = BF_IRI;
         return iri;
@@ -2834,7 +3393,14 @@ bif_id_to_iri_nosignal (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  {
 	    iri = key_id_to_iri (qi, iid);
 	    if (!iri)
-	      return NEW_DB_NULL;
+	      {
+		if (0 == iid)
+		  return uname_nodeID_ns_0;
+		if (8192 == iid)
+		  return uname_nodeID_ns_8192;
+		rdf_handle_invalid_iri_id (qst, "Invalid IRI_ID #i", iid);
+		return NULL;	/* never reached */
+	      }
 	  }
 	box_flags (iri) = BF_IRI;
 	return iri;
@@ -2856,7 +3422,7 @@ bif_iri_id_cache_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   lock_trx_t *lt = qi->qi_trx;
   caddr_t log_array;
   int rc;
-  if (!srv_have_global_lock (THREAD_CURRENT_THREAD))
+  if (0 && !srv_have_global_lock (THREAD_CURRENT_THREAD))
     srv_make_new_error ("42000", "SR535", "iri_id_cache_flush() can be used only inside atomic section");
   nic_flush (iri_name_cache);
   nic_flush (iri_prefix_cache);
@@ -2887,22 +3453,26 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_default_geo_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return uname_virtrdf_ns_uri_Geometry;
+}
 
 caddr_t
-bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
 {
-  QNCAST (query_instance_t, qi, qst);
-  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
-  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+    : mode[0] == 't' ? rdf_type_cache
+    : mode[0] == 'i'? iri_name_cache : NULL;
+  if ('t' == mode[0] && !strcmp (pref, "http://www.opengis.net/ont/geosparql#wktLiteral"))
+    return box_num (256);
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id");
-  if (BOX_ELEMENTS (args) > 2)
+  if (is_set)
     {
-      boxint new_id = bif_long_arg (qst, args, 2, "rdf_cache_id");
-      if (cache == iri_name_cache || cache == iri_prefix_cache)
+      if (is_txn && (cache == iri_name_cache || cache == iri_prefix_cache))
 	lt_nic_set (qi->qi_trx, cache, pref, new_id);
       else
 	nic_set (cache, pref, new_id);
@@ -2915,6 +3485,49 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 
+
+caddr_t
+bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  QNCAST (query_instance_t, qi, qst);
+  int is_set = 0;
+  caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id");
+  caddr_t pref = bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id");
+  boxint new_id = 0;
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      is_set = 1;
+    }
+  return  rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
+}
+
+
+void
+bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  caddr_t mode;
+  int is_txn = lt_has_delta (qi->qi_trx);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  if (BOX_ELEMENTS (args) < 3 || SSL_CONSTANT != args[0]->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  SET_LOOP
+    {
+      boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
+	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+      rdf_cache_id (qi, mode, bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id"), new_id, 1, is_txn);
+    }
+  END_SET_LOOP;
+}
+
+
 caddr_t
 bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2923,6 +3536,7 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
   name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
     : mode[0] == 't' ? rdf_type_cache : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
@@ -2930,6 +3544,71 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     return lt_nic_id_name (qi->qi_trx, cache, id);
   else
     return nic_id_name (cache, id);
+}
+
+
+void
+bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (QI, qi, qst);
+  name_id_cache_t * cache;
+  boxint prev = -1;
+  caddr_t mode;
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+  caddr_t box = NULL;
+  if (BOX_ELEMENTS (args) < 2 || SSL_CONSTANT != args[0]->ssl_type || !ret || SSL_VEC != ret->ssl_type)
+    {
+      *err_ret = BIF_NOT_VECTORED;
+      return;
+    }
+  mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
+  cache = mode[0] == 'p' ? iri_prefix_cache
+    : mode[0] == 'l' ? rdf_lang_cache
+    : mode[0] == 'i' ? iri_name_cache
+    : mode[0] == 't' ? rdf_type_cache : NULL;
+  if (!cache)
+    sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
+  SET_LOOP
+    {
+      boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+      if (id == prev)
+	{
+	  qst_set_copy (qst, ret, box);
+	  continue;
+	}
+      dk_free_tree (box);
+      if (cache == iri_name_cache || cache == iri_prefix_cache)
+	box = lt_nic_id_name (qi->qi_trx, cache, id);
+      else
+	box = nic_id_name (cache, id);
+      qst_set_copy (qst, ret, box);
+      prev = id;
+    }
+  END_SET_LOOP;
+  dk_free_tree (box);
+}
+
+
+caddr_t
+bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t pref = bif_string_arg (qst, args, 0, "iri_from_pref_name");
+  caddr_t name = bif_string_arg (qst, args, 1, "iri_from_pref_name");
+  int pref_len = box_length (pref) - 1;
+  int name_len = box_length (name) - 1;
+  caddr_t res;
+  if (name_len < 4)
+    res = box_dv_short_string ("iri_from_pref_name");
+  else
+    {
+      res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
+      memcpy_16 (res, pref, pref_len);
+      memcpy_16 (res + pref_len, name + 4, name_len - 4);
+      res[pref_len + name_len - 4] = 0;
+    }
+  box_flags (res) = BF_IRI;
+  return res;
 }
 
 
@@ -3027,18 +3706,6 @@ id_hash_t *rdf_obj_ft_rules_by_iris = NULL;
 id_hash_t *rdf_obj_ft_graph_rule_counts = NULL;
 ptrlong rdf_obj_ft_predonly_rule_count = 0;
 
-typedef struct rdf_obj_ft_rule_iid_hkey_s
-{
-   iri_id_t hkey_g;
-   iri_id_t hkey_iid_p;
-} rdf_obj_ft_rule_iid_hkey_t;
-
-typedef struct rdf_obj_ft_rule_iri_hkey_s
-{
-   iri_id_t hkey_g;
-   caddr_t hkey_iri_p;
-} rdf_obj_ft_rule_iri_hkey_t;
-
 id_hashed_key_t
 rdf_obj_ft_rule_iid_hkey_hash (caddr_t p_data)
 {
@@ -3071,7 +3738,9 @@ int rdf_obj_ft_rule_iri_hkey_cmp (caddr_t d1, caddr_t d2)
 {
   rdf_obj_ft_rule_iri_hkey_t *ht1 = (rdf_obj_ft_rule_iri_hkey_t *)d1;
   rdf_obj_ft_rule_iri_hkey_t *ht2 = (rdf_obj_ft_rule_iri_hkey_t *)d2;
-  return ((ht1->hkey_g == ht2->hkey_g) && !strcmp (ht1->hkey_iri_p, ht2->hkey_iri_p));
+  caddr_t p1 = ht1->hkey_iri_p ? ht1->hkey_iri_p : "";
+  caddr_t p2 = ht2->hkey_iri_p ? ht2->hkey_iri_p : "";
+  return ((ht1->hkey_g == ht2->hkey_g) && !strcmp (p1, p2));
 }
 
 static ptrlong *
@@ -3102,11 +3771,10 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   rdf_obj_ft_rule_iri_hkey_t iri_hkey;
   iid_hkey.hkey_g = g_id;
   iid_hkey.hkey_iid_p = p_id;
-  if (CL_RUN_LOCAL != cl_run_local_only)
+  if (1)
     {
       iri_hkey.hkey_g = g_id;
-      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
-				     : cl_id_to_iri ((query_instance_t*)qst, bif_arg_nochecks (qst, args, 1)));
+      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL : key_id_to_iri ((query_instance_t *)qst, p_id));
     }
   mutex_enter (rdf_obj_ft_rules_mtx);
   known_reasons_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey));
@@ -3116,7 +3784,6 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_set_t new_reasons = NULL;
       dk_set_push (&new_reasons, box_copy (reason));
       id_hash_add_new (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey), (caddr_t)(&new_reasons));
-      if (CL_RUN_LOCAL != cl_run_local_only)
         id_hash_add_new (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey), (caddr_t)(&new_reasons));
       rule_count_ptr[0]++;
       mutex_leave (rdf_obj_ft_rules_mtx);
@@ -3125,7 +3792,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 > dk_set_position_of_string (known_reasons_ptr[0], reason))
     {
       dk_set_push (known_reasons_ptr, box_copy (reason));
-      if (CL_RUN_LOCAL != cl_run_local_only)
+      if (1)
         {
           dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
           second_ptr[0] = known_reasons_ptr[0];
@@ -3135,7 +3802,7 @@ bif_rdf_obj_ft_rule_add (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return box_num (1);
     }
   mutex_leave (rdf_obj_ft_rules_mtx);
-  if (CL_RUN_LOCAL != cl_run_local_only)
+  if (1)
     dk_free_box (p_iri);
   return box_num (0);
 }
@@ -3167,17 +3834,12 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       return box_num (0);
     }
   dk_free_box (dk_set_delete_nth (known_reasons_ptr, reason_pos));
-  if (CL_RUN_LOCAL != cl_run_local_only)
-    {
-      iri_hkey.hkey_g = g_id;
-      iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL
-				     : cl_id_to_iri ((query_instance_t *)qst, bif_arg_nochecks (qst, args, 1)));
-    }
+  iri_hkey.hkey_g = g_id;
+  iri_hkey.hkey_iri_p = p_iri = ((0 == p_id) ? NULL : key_id_to_iri ((query_instance_t *)qst, p_id));
   if (NULL == known_reasons_ptr[0])
     {
       ptrlong *rule_count_ptr = rdf_obj_ft_get_rule_count_ptr (g_id);
       id_hash_remove (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey));
-      if (CL_RUN_LOCAL != cl_run_local_only)
         {
           rdf_obj_ft_rule_iri_hkey_t *old_iri_hkey = (rdf_obj_ft_rule_iri_hkey_t *)id_hash_get_key (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
           caddr_t old_iri_p = old_iri_hkey->hkey_iri_p;
@@ -3189,12 +3851,9 @@ bif_rdf_obj_ft_rule_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else
     {
-      if (CL_RUN_LOCAL != cl_run_local_only)
-        {
-          dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
-          second_ptr[0] = known_reasons_ptr[0];
-          dk_free_box (p_iri);
-        }
+      dk_set_t *second_ptr = (dk_set_t *)id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey));
+      second_ptr[0] = known_reasons_ptr[0];
+      dk_free_box (p_iri);
     }
   mutex_leave (rdf_obj_ft_rules_mtx);
   return box_num (1);
@@ -3231,25 +3890,24 @@ bif_rdf_obj_ft_rule_zap_all (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return 0;
 }
 
-caddr_t
-bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+int
+rdf_obj_ft_rule_check_if_configured (caddr_t * qst, state_slot_t ** args, int g_arg_idx, const char *fname)
 {
   iri_id_t g_id;
   caddr_t p;
   rdf_obj_ft_rule_iid_hkey_t iid_hkey;
   dtp_t p_dtp;
-  if (CL_RUN_LOCAL != cl_run_local_only)
-    {
-      caddr_t cl_text_set = registry_get ("cl_rdf_text_index");
-      char flag = cl_text_set ? cl_text_set[0] : '\0';
-      dk_free_tree (cl_text_set);
-      if ('1' == flag)
-        return box_num (2);
-    }
-  g_id = bif_iri_id_arg (qst, args, 0, "__rdf_obj_ft_rule_check");
-  p = bif_arg (qst, args, 1, "__rdf_obj_ft_rule_check");
+  if (!rdf_obj_ft_rules_by_iris->ht_count)
+    return 0;
   iid_hkey.hkey_g = 0;
   iid_hkey.hkey_iid_p = 0;
+  mutex_enter (rdf_obj_ft_rules_mtx);
+  if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
+    goto hit; /* see_below */
+  mutex_leave (rdf_obj_ft_rules_mtx);
+  g_id = bif_iri_id_or_null_arg (qst, args, g_arg_idx, fname);
+  p = bif_arg (qst, args, g_arg_idx + 1, fname);
+  mutex_enter (rdf_obj_ft_rules_mtx);
   p_dtp = DV_TYPE_OF (p);
   switch (p_dtp)
     {
@@ -3259,12 +3917,11 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 	  p = 0;
 	  break;
       default:
+        mutex_leave (rdf_obj_ft_rules_mtx);
 	  sqlr_new_error ("22023", "SR008",
-		    "Function __rdf_obj_ft_rule_check needs a string or UNAME or IRI_ID as argument 2, "
-		    "not an arg of type %s (%d)", dv_type_title (p_dtp), p_dtp);
+	  "Function %s() needs a string or UNAME or IRI_ID as argument %d, "
+	  "not an arg of type %s (%d)", fname, g_arg_idx + 2, dv_type_title (p_dtp), p_dtp);
     }
-
-  mutex_enter (rdf_obj_ft_rules_mtx);
   if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
     goto hit; /* see_below */
   if (DV_IRI_ID == p_dtp || DV_DB_NULL == p_dtp)
@@ -3283,7 +3940,7 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
   else
     {
@@ -3301,10 +3958,94 @@ bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
       if (NULL != id_hash_get (rdf_obj_ft_rules_by_iris, (caddr_t)(&iri_hkey)))
         goto hit; /* see_below */
       mutex_leave (rdf_obj_ft_rules_mtx);
-      return box_num (0);
+      return 0;
    }
 hit:
   mutex_leave (rdf_obj_ft_rules_mtx);
+  return 1;
+}
+
+caddr_t
+bif_rdf_obj_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        return box_num (2);
+    }
+  return box_num (rdf_obj_ft_rule_check_if_configured (qst, args, 0, "__rdf_obj_ft_rule_check"));
+}
+
+caddr_t
+bif_rdf_obj_set_is_text_if_ft_rule_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t obj = bif_arg (qst, args, 0, "__rdf_obj_set_is_text_if_ft_rule_check");
+  caddr_t ro_dict;
+  int wrap_if_ft;
+  switch (DV_TYPE_OF (obj))
+    {
+    case DV_RDF:
+      {
+        rdf_box_t *obj_rb = (rdf_box_t *)obj;
+        if (obj_rb->rb_is_text_index
+          || (obj_rb->rb_is_outlined && (DV_STRING != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp) && (DV_XML_ENTITY != ((rdf_bigbox_t *)obj_rb)->rbb_box_dtp)) )
+          return box_num (1);
+        if (!obj_rb->rb_is_complete)
+          rb_complete (obj_rb, ((query_instance_t *)qst)->qi_trx, (query_instance_t *)qst);
+        if ((DV_STRING != DV_TYPE_OF (obj_rb->rb_box)) && (DV_XML_ENTITY != DV_TYPE_OF (obj_rb->rb_box)))
+          return box_num (1);
+        wrap_if_ft = 0;
+        break;
+      }
+    case DV_XML_ENTITY: case DV_STRING:
+      wrap_if_ft = 1;
+      break;
+    default:
+      return box_num (0);
+    }
+  ro_dict = bif_arg (qst, args, 3, "__rdf_obj_set_is_text_if_ft_rule_check");
+  if (DV_DB_NULL != DV_TYPE_OF (ro_dict))
+    goto need_ft; /* see below */
+  if (CL_RUN_LOCAL != cl_run_local_only)
+    {
+      char *  cl_text_set, flag;
+      IN_TXN;
+      cl_text_set = registry_get ("cl_rdf_text_index");
+      LEAVE_TXN;
+      flag = cl_text_set ? cl_text_set[0] : '\0';
+      dk_free_tree (cl_text_set);
+      if ('1' == flag)
+        goto need_ft; /* see below */
+    }
+  if (rdf_obj_ft_rule_check_if_configured (qst, args, 1, "__rdf_obj_set_is_text_if_ft_rule_check"));
+    goto need_ft; /* see below */
+  return box_num (0);
+need_ft:
+  if (wrap_if_ft)
+    {
+      caddr_t swap;
+      rdf_box_t *rb = rb_allocate ();
+      rb->rb_box = obj;
+      rb->rb_is_complete = 1;
+      rb->rb_is_text_index = 1;
+      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+      rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+      swap = (caddr_t)((void *)rb);
+      qst_swap (qst, args[0], &swap);
+      if (swap != obj)
+        GPF_T1 ("weird swap");
+    }
+  else
+    {
+      rdf_box_t *rb = (rdf_box_t *)((void *)obj);
+      rb->rb_is_text_index = 1;
+    }
   return box_num (1);
 }
 
@@ -3316,8 +4057,7 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   boxint g_id_int;
   if (CL_RUN_LOCAL != cl_run_local_only)
     {
-      char flag;
-      caddr_t cl_text_set;
+      char *  cl_text_set, flag;
       IN_TXN;
       cl_text_set = registry_get ("cl_rdf_text_index");
       LEAVE_TXN;
@@ -3335,6 +4075,8 @@ bif_rdf_obj_ft_rule_count_in_graph (caddr_t * qst, caddr_t * err_ret, state_slot
   return box_num (res);
 }
 
+int rdf_g_pref_digits = 3;
+
 void
 rdf_graph_keyword (iri_id_t id, char *ret)
 {
@@ -3348,7 +4090,7 @@ rdf_graph_keyword (iri_id_t id, char *ret)
       sprintf (ret, "g%s", str);
       return;
     }
-  brk -= 6;
+  brk -= rdf_g_pref_digits;
   ch[0] = str[brk];
   ch[1] = 0;
   str[brk] = 0;
@@ -3391,6 +4133,15 @@ bif_iri_ensure (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_iri_cache_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  nic_clear (iri_name_cache);
+  nic_clear (iri_prefix_cache);
+  return NULL;
+}
+
+
+caddr_t
 bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t name = bif_string_or_uname_arg (qst, args, 0, "uriqa_iri_is_local");
@@ -3401,8 +4152,10 @@ bif_uriqa_iri_is_local (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t 
 bif_uriqa_dynamic_local_replace (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = box_copy (bif_string_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
+  caddr_t name = box_copy (bif_string_or_uname_arg (qst, args, 0, "uriqa_dynamic_local_replace"));
   name = uriqa_dynamic_local_replace (name, ((query_instance_t *) qst)->qi_client);
+  if (DV_STRING == DV_TYPE_OF (name))
+    box_flags (name) = BF_IRI;
   return name;
 }
 
@@ -3420,6 +4173,8 @@ bif_uriqa_dynamic_local_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
 void rdf_inf_init ();
 
 int iri_cache_size = 0;
+int32 enable_iri_nic_n = 1;
+int32 enable_iri_prefix_nic_n = 1;
 
 
 dbe_key_t *
@@ -3491,9 +4246,15 @@ rdf_key_comp_init ()
   key_cl_by_name (ogps, "S")->cl_comp_asc = 1;
 }
 
+void bif_rld_init ();
+void bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+void bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
+
+
 extern jso_class_descr_t jso__quad_map;
 
-void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+void
+jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *structname, jso_rtti_t *inst_rtti, dk_set_t *errors_log_ptr, dk_set_t *warnings_log_ptr)
 {
   rdf_val_range_t saved_orig_rvr;
   memcpy (&saved_orig_rvr, rvr, sizeof (rdf_val_range_t));
@@ -3567,34 +4328,39 @@ void jso__rdf_val_range_inst_validation (rdf_val_range_t *rvr, const char *struc
     }
 }
 
-void jso__quad_map_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+void
+jso__quad_map_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *errors_log_ptr, dk_set_t *warnings_log_ptr)
 {
   quad_map_t *qm = (quad_map_t *)(inst_rtti->jrtti_self);
-  jso__rdf_val_range_inst_validation (&(qm->qmGraphRange), "qmGraphRange", inst_rtti, warnings_log_ptr);
-  jso__rdf_val_range_inst_validation (&(qm->qmSubjectRange), "qmSubjectRange", inst_rtti, warnings_log_ptr);
-  jso__rdf_val_range_inst_validation (&(qm->qmPredicateRange), "qmPredicateRange", inst_rtti, warnings_log_ptr);
-  jso__rdf_val_range_inst_validation (&(qm->qmObjectRange), "qmObjectRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmGraphRange)	, "qmGraphRange"	, inst_rtti, errors_log_ptr, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmSubjectRange)	, "qmSubjectRange"	, inst_rtti, errors_log_ptr, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmPredicateRange)	, "qmPredicateRange"	, inst_rtti, errors_log_ptr, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qm->qmObjectRange)	, "qmObjectRange"	, inst_rtti, errors_log_ptr, warnings_log_ptr);
 }
 
 extern jso_class_descr_t jso__qm_value;
 
-void jso__qm_value_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+void
+jso__qm_value_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *errors_log_ptr, dk_set_t *warnings_log_ptr)
 {
   qm_value_t *qmv = (qm_value_t *)(inst_rtti->jrtti_self);
-  jso__rdf_val_range_inst_validation (&(qmv->qmvRange), "qmVRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qmv->qmvRange), "qmVRange", inst_rtti, errors_log_ptr, warnings_log_ptr);
 }
 
 extern jso_class_descr_t jso__qm_format;
 
-void jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *warnings_log_ptr)
+void
+jso__qm_format_jsocd_validation_cbk (jso_rtti_t *inst_rtti, dk_set_t *errors_log_ptr, dk_set_t *warnings_log_ptr)
 {
   qm_format_t *qmf = (qm_format_t *)(inst_rtti->jrtti_self);
-  jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, warnings_log_ptr);
+  jso__rdf_val_range_inst_validation (&(qmf->qmfValRange), "qmfValRange", inst_rtti, errors_log_ptr, warnings_log_ptr);
 }
 
 #ifdef DEBUG
 extern caddr_t bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 #endif
+
+void bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret);
 
 void
 rdf_core_init (void)
@@ -3604,69 +4370,61 @@ rdf_core_init (void)
   jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
   jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
   jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
+  if (iri_seqs_used < 1)
+    iri_seqs_used = 1;
+  if (iri_seqs_used > N_IRI_SEQS)
+    iri_seqs_used = N_IRI_SEQS;
   iri_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
   prefix_nic_rc = resource_allocate (10, NULL, (rc_destr_t)nic_free, (rc_destr_t)nic_clear, 0);
-  bif_define_typed ("rdf_load_rdfxml", bif_rdf_load_rdfxml, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfxml", bif_rdf_load_rdfxml, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfxml);
-  bif_define_typed ("rdf_load_rdfa", bif_rdf_load_rdfa, &bt_xml_entity);
+  bif_define_ex ("rdf_load_rdfa", bif_rdf_load_rdfa, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_rdfa);
-  bif_define_typed ("rdf_load_microdata", bif_rdf_load_microdata, &bt_xml_entity);
+  bif_define_ex ("rdf_load_microdata", bif_rdf_load_microdata, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_rdf_load_microdata);
   bif_define ("rdf_load_turtle", bif_rdf_load_turtle);
   bif_set_uses_index (bif_rdf_load_turtle);
   bif_define ("rdf_load_turtle_local_file", bif_rdf_load_turtle_local_file);
   bif_set_uses_index (bif_rdf_load_turtle_local_file);
   bif_define ("turtle_lex_analyze", bif_turtle_lex_analyze);
-  bif_define ("iri_to_id", bif_iri_to_id);
+  bif_define_ex ("iri_to_id"			, bif_iri_to_id	, BMD_ALIAS, "__i2id"	, BMD_VECTOR_IMPL, bif_iri_to_id_vec, BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_NO_CLUSTER, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_define ("iri_ensure", bif_iri_ensure);
-  bif_set_uses_index (bif_iri_to_id);
-  bif_set_no_cluster ("iri_to_id");
-  bif_define ("iri_to_id_repl", bif_iri_to_id_repl);
+  bif_define_ex ("iri_to_id_repl", bif_iri_to_id_repl, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_NEED_ENLIST, BMD_DONE);
   bif_set_uses_index (bif_iri_to_id_repl);
   bif_define ("iri_canonicalize", bif_iri_canonicalize);
   bif_set_uses_index (bif_iri_canonicalize);
-  bif_set_no_cluster ("iri_to_id_repl");
-  bif_define ("iri_to_id_nosignal", bif_iri_to_id_nosignal);
-  bif_set_uses_index (bif_iri_to_id_nosignal);
-  bif_set_no_cluster ("iri_to_id_nosignal");
-  bif_define ("iri_to_id_if_cached", bif_iri_to_id_if_cached);
-  bif_define ("id_to_iri", bif_id_to_iri);
-  bif_set_uses_index (bif_id_to_iri);
-  bif_set_no_cluster ("id_to_iri");
-  bif_define_typed ("id_to_canonicalized_iri", bif_id_to_canonicalized_iri, &bt_varchar);
-  bif_set_uses_index (bif_id_to_canonicalized_iri);
-  bif_set_no_cluster ("id_to_canonicalized_iri");
-  bif_define ("id_to_iri_nosignal", bif_id_to_iri_nosignal);
-  bif_set_uses_index (bif_id_to_iri_nosignal);
-  bif_set_no_cluster ("id_to_iri_nosignal");
-
+  bif_define_ex ("iri_to_id_nosignal", bif_iri_to_id_nosignal, BMD_ALIAS, "__i2idn", BMD_RET_TYPE, &bt_iri_id, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("iri_to_id_if_cached", bif_iri_to_id_if_cached, BMD_ALIAS, "__i2idc", BMD_RET_TYPE, &bt_iri_id, BMD_DONE);
+  bif_define_ex ("__rdf_handle_invalid_iri_id"	, bif_rdf_handle_invalid_iri_id, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("id_to_iri"			, bif_id_to_iri	, BMD_ALIAS, "__id2i"	, BMD_VECTOR_IMPL, bif_id2i_vec, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_canonicalized_iri"	, bif_id_to_canonicalized_iri	, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
+  bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
+  bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("default_geo_type"		, bif_default_geo_type	, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
+
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
-  bif_set_no_cluster ("rdf_cache_id");
+  bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);
-  bif_set_no_cluster ("rdf_cache_id_to_name");
+  bif_set_vectored (bif_rdf_cache_id_to_name, bif_rdf_cache_id_to_name_vec);
   bif_define ("iri_id_cache_flush", bif_iri_id_cache_flush);
-  bif_set_no_cluster ("iri_id_cache_flush");
   bif_define ("iri_id_new", bif_iri_id_new);
-  bif_set_no_cluster ("iri_id_new");
   bif_define ("__rdf_obj_ft_rule_add", bif_rdf_obj_ft_rule_add);
   bif_define ("__rdf_obj_ft_rule_del", bif_rdf_obj_ft_rule_del);
   bif_define ("__rdf_obj_ft_rule_zap_all", bif_rdf_obj_ft_rule_zap_all);
   bif_define ("__rdf_obj_ft_rule_check", bif_rdf_obj_ft_rule_check);
+  bif_define ("__rdf_obj_set_is_text_if_ft_rule_check", bif_rdf_obj_set_is_text_if_ft_rule_check);
+  bif_set_uses_index (bif_rdf_obj_set_is_text_if_ft_rule_check);
   bif_define ("__rdf_obj_ft_rule_count_in_graph", bif_rdf_obj_ft_rule_count_in_graph);
-  /* Short aliases for use in generated SQL text: */
-  bif_define ("__i2idn", bif_iri_to_id_nosignal);
-  bif_set_no_cluster ("__i2idn");
-  bif_define ("__i2id", bif_iri_to_id);
-  bif_set_no_cluster ("__i2id");
-  bif_define ("__i2idc", bif_iri_to_id_if_cached);
-  bif_set_no_cluster ("__i2idc");
-  bif_define ("__id2i", bif_id_to_iri);
-  bif_set_no_cluster ("__id2i");
-  bif_define ("__id2in", bif_id_to_iri_nosignal);
-  bif_set_no_cluster ("__id2in");
+  {
+    char * inv1[] = { "__id2in", "__i2idn", "__ID2IN", "__I2IDN"};
+    char * inv2[] = { "__i2idn", "__id2in", "__I2IDN", "__ID2IN"};
+    int flags[] = { 0, 0, 0, 0 };
+    sinv_builtin_inverse (inv1, inv2, flags, 4);
+  }
   bif_define ("rdf_graph_keyword", bif_rdf_graph_keyword);
   bif_define ("iri_split", bif_iri_split);
+  bif_define ("iri_cache_clear",  bif_iri_cache_clear);
   bif_define ("uriqa_dynamic_local_set", bif_uriqa_dynamic_local_set);
   bif_define ("uriqa_iri_is_local", bif_uriqa_iri_is_local);
   bif_define ("uriqa_dynamic_local_replace", bif_uriqa_dynamic_local_replace);
@@ -3674,14 +4432,19 @@ rdf_core_init (void)
   bif_define ("turtle_lex_test", bif_turtle_lex_test);
 #endif
   if (100 >= iri_cache_size)
-    iri_cache_size = main_bufs / 2;
+    iri_cache_size = MIN (500000, main_bufs / 2);
   iri_name_cache = nic_allocate (iri_cache_size, 1, 0);
+  if (enable_iri_nic_n)
+    nic_set_n_ways (iri_name_cache, 64);
   iri_prefix_cache = nic_allocate (iri_cache_size / 10, 0, 0);
-  rdf_lang_cache = nic_allocate (255, 0, 0);
-  rdf_type_cache = nic_allocate (1000, 0, 0);
+  if (enable_iri_prefix_nic_n)
+    nic_set_n_ways (iri_prefix_cache, 64);
+  rdf_lang_cache = nic_allocate (16000, 0, 0);
+  rdf_type_cache = nic_allocate (16000, 0, 0);
   ddl_ensure_table ("DB.DBA.RDF_PREFIX", rdf_prefix_text);
   ddl_ensure_table ("DB.DBA.RDF_IRI", rdf_iri_text);
   rdf_obj_ft_rules_mtx = mutex_allocate ();
+  mutex_option (rdf_obj_ft_rules_mtx, "rdf_ft_rules", NULL, NULL);
   rdf_obj_ft_rules_by_iids = id_hash_allocate (1000,
     sizeof (rdf_obj_ft_rule_iid_hkey_t), sizeof (dk_set_t),
     rdf_obj_ft_rule_iid_hkey_hash, rdf_obj_ft_rule_iid_hkey_cmp );
@@ -3695,4 +4458,5 @@ rdf_core_init (void)
   ddl_std_proc (range_replay, 0);
   rdf_inf_init ();
   rdf_key_comp_init  ();
+  bif_rld_init ();
 }

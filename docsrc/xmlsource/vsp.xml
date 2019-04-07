@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -987,7 +987,7 @@ We can, however, add PL code to handle errors and display a different page.
 	    ]]></programlisting>
     </example>
     <tip><title>See Also:</title>
-	<para><ulink url="/tutorial/wap/index.vsp">WML Tutorials</ulink></para>
+	<para><ulink url="http://demo.openlinksw.com/tutorial/wap/index.vsp">WML Tutorials</ulink></para>
     </tip>
 
 </sect2>

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -343,7 +343,7 @@ BLOG2_MAIN_PAGE_DATA (inout e vspx_event, inout dss vspx_data_source, in  _forda
   else
     d2 := dateadd('day', 1, d1);
 
-  tzo := timezone (now());
+  tzo := timezone (curdatetime_tz());
 
   --d1 := dateadd ('minute', tzo, d1);
   --d1 := dt_set_tz (d1, 0);

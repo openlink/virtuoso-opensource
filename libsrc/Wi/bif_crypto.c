@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -248,7 +248,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
   while ((p < tot) && (op < p))
     {
       op = p;
-      j = ASN1_get_object (&p, &len, &tag, &xclass, length);
+      j = ASN1_get_object ((const unsigned char **) &p, &len, &tag, &xclass, length);
       save_tag = tag;
 #ifdef LINT
       j = j;
@@ -332,7 +332,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	  else if (tag == V_ASN1_OBJECT)
 	    {
 	      opp = op;
-	      if (d2i_ASN1_OBJECT (&o, &opp, len + hl) != NULL)
+	      if (d2i_ASN1_OBJECT (&o, (const unsigned char **)&opp, len + hl) != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
 		  i2a_ASN1_OBJECT (bp, o);
@@ -348,7 +348,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int ii;
 
 	      opp = op;
-	      ii = d2i_ASN1_BOOLEAN (NULL, &opp, len + hl);
+	      ii = d2i_ASN1_BOOLEAN (NULL, (const unsigned char **)&opp, len + hl);
 	      if (ii < 0)
 		{
 		  if (BIO_write (bp, "Bad boolean\n", 12))
@@ -365,7 +365,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i, printable = 1;
 
 	      opp = op;
-	      os = d2i_ASN1_OCTET_STRING (NULL, &opp, len + hl);
+	      os = d2i_ASN1_OCTET_STRING (NULL, (const unsigned char **)&opp, len + hl);
 	      if (os != NULL && os->length > 0)
 		{
 		  opp = os->data;
@@ -425,7 +425,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i;
 
 	      opp = op;
-	      bs = d2i_ASN1_INTEGER (NULL, &opp, len + hl);
+	      bs = d2i_ASN1_INTEGER (NULL, (const unsigned char **)&opp, len + hl);
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
@@ -456,7 +456,7 @@ asn1_parse_to_xml (BIO * bp, unsigned char **pp, long length, int offset, int de
 	      int i;
 
 	      opp = op;
-	      bs = d2i_ASN1_ENUMERATED (NULL, &opp, len + hl);
+	      bs = d2i_ASN1_ENUMERATED (NULL, (const unsigned char **) &opp, len + hl);
 	      if (bs != NULL)
 		{
 		  /*if (BIO_write(bp,":",1) <= 0) goto end; */
@@ -714,7 +714,7 @@ strses_to_bio (dk_session_t * ses)
   return in_bio;
 }
 
-dk_session_t * 
+dk_session_t *
 bio_to_strses (BIO * out_bio)
 {
   dk_session_t * ses = strses_allocate ();
@@ -1244,7 +1244,16 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   DO_BOX (caddr_t, ca, inx, ((caddr_t *) array))
   {
     mem_bio = BIO_new_mem_buf (ca, box_length (ca) - 1);
-    cacert = d2i_X509_bio (mem_bio, NULL);
+    if (NULL != strstr (ca, PEM_STRING_X509))
+      {
+#if OPENSSL_VERSION_NUMBER >= 0x00908000L
+	cacert = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#else
+	cacert = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
+#endif
+      }
+    else
+      cacert = d2i_X509_bio (mem_bio, NULL);
     BIO_free (mem_bio);
     if (!cacert)
       {
@@ -1562,7 +1571,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	  {
 	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
 	    n = OBJ_obj2nid (ne->object);
-	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	    if ((n == NID_undef) || ((s = (char *) OBJ_nid2sn (n)) == NULL))
 	      {
 		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
 		s = buffer;
@@ -1593,7 +1602,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	X509_NAME_ENTRY *ne;
 	int n, i, len;
 	char *s, *data_ptr;
-	dk_set_t set = NULL; 
+	dk_set_t set = NULL;
 	caddr_t val;
 	BIO *mem = BIO_new (BIO_s_mem ());
 	for (i = 0; NULL != subj && i < sk_X509_NAME_ENTRY_num(subj->entries); i++)
@@ -1601,7 +1610,7 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	    val = NULL;
 	    ne = sk_X509_NAME_ENTRY_value(subj->entries,i);
 	    n = OBJ_obj2nid (ne->object);
-	    if ((n == NID_undef) || ((s = OBJ_nid2sn (n)) == NULL))
+	    if ((n == NID_undef) || ((s = (char *) OBJ_nid2sn (n)) == NULL))
 	      {
 		i2t_ASN1_OBJECT (buffer, sizeof (buffer), ne->object);
 		s = buffer;
@@ -1642,6 +1651,34 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	  }
 	val[n * 2] = 0;
 	ret = list (2, box_dv_short_string (buf), val);
+	break;
+      }
+    case 14:					 /* certificate public key */
+      {
+	EVP_PKEY *k = X509_get_pubkey (cert);
+	BIO * b;
+	if (k)
+	  {
+#ifdef EVP_PKEY_RSA
+	    if (k->type == EVP_PKEY_RSA)
+	      {
+		char *data_ptr;
+		int len;
+		RSA *x = k->pkey.rsa;
+		b = BIO_new (BIO_s_mem());
+		i2d_RSA_PUBKEY_bio (b, x);
+		len = BIO_get_mem_data (b, &data_ptr);
+		ret = dk_alloc_box (len, DV_BIN);
+		memcpy (ret, data_ptr, len);
+		BIO_free (b);
+	      }
+	    else
+#endif
+	      *err_ret = srv_make_new_error ("42000", "XXXXX", "The certificate's public key not supported");
+	    EVP_PKEY_free (k);
+	  }
+	else
+	  *err_ret = srv_make_new_error ("42000", "XXXXX", "Can not read the public key from the certificate");
 	break;
       }
     default:
@@ -1717,22 +1754,93 @@ bif_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string ((char *) md64);
 }
 
+static caddr_t
+bif_pkcs7_certificates (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char * me = "pkcs7_certificates";
+  X509 *cert = NULL;
+  caddr_t scert = bif_string_arg (qst, args, 0, me);
+  caddr_t * ret = NULL;
+  BIO *in = BIO_new_mem_buf (scert, box_length (scert) - 1), *out;
+  PKCS7 *p7 = NULL;
+  STACK_OF(X509) *certs = NULL;
+  int i;
+
+  p7 = d2i_PKCS7_bio (in, NULL);
+  BIO_free (in);
+
+  if (!p7)
+    sqlr_new_error ("22023", "CR014", "Invalid PKCS7 file");
+
+  certs = PKCS7_get0_signers (p7, NULL, 0);
+  if (certs != NULL)
+    {
+      int n_certs = sk_X509_num (certs);
+      char * ptr;
+
+      ret = (caddr_t *) dk_alloc_box_zero (n_certs * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+      out = BIO_new (BIO_s_mem ());
+      for (i = 0; i < n_certs; i++)
+	{
+	  cert = sk_X509_value (certs,i);
+	  PEM_write_bio_X509 (out, cert);
+	  ret[i] = dk_alloc_box (BIO_get_mem_data (out, &ptr) + 1, DV_SHORT_STRING);
+	  memcpy (ret[i], ptr, box_length (ret[i]) - 1);
+	  ret[i][box_length (ret[i]) - 1] = 0;
+	  BIO_reset (out);
+	}
+      BIO_free (out);
+    }
+  PKCS7_free (p7);
+  return (caddr_t) ret;
+}
+
+static caddr_t
+bif_base36enc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint value = bif_long_range_arg (qst, args, 0, "base36enc", 0, INT64_MAX);
+  char base36[36] = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+  char buf[14];
+  size_t offset = sizeof (buf);
+
+  buf[--offset] = '\0';
+  do 
+    {
+      buf [--offset] = base36 [value % 36];
+    } 
+  while (value /= 36);
+
+  return box_dv_short_string (&buf[offset]);
+}
+
+static caddr_t
+bif_base36dec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint str = bif_string_arg (qst, args, 0, "base36dec");
+  boxint ret;
+  ret = strtoul(str, NULL, 36);
+  return box_num (ret);
+}
+
 void
 bif_crypto_init (void)
 {
-  bif_define_typed ("tree_sha1", bif_tree_sha1, &bt_varchar);
-  bif_define_typed ("sha1_digest", bif_sha1_digest, &bt_varchar);
-  bif_define_typed ("asn1_to_xml", bif_asn1_to_xml, &bt_varchar);
-  bif_define_typed ("tree_hmac", bif_tree_hmac, &bt_varchar);
-  bif_define_typed ("smime_verify", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("smime_sign", bif_smime_sign, &bt_varchar);
-  bif_define_typed ("smime_encrypt", bif_smime_encrypt, &bt_varchar);
-  bif_define_typed ("smime_decrypt", bif_smime_decrypt, &bt_varchar);
-  bif_define_typed ("pem_certificates_to_array", bif_pem_certificates_to_array, &bt_any);
-  bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
-  bif_define_typed ("x509_certificate_verify", bif_x509_certificate_verify, &bt_any);
-  bif_define_typed ("bin2hex", bif_bin2hex, &bt_varchar);
-  bif_define_typed ("hex2bin", bif_hex2bin, &bt_bin);
+  bif_define_ex ("tree_sha1", bif_tree_sha1, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("sha1_digest", bif_sha1_digest, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("asn1_to_xml", bif_asn1_to_xml, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("tree_hmac", bif_tree_hmac, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_verify", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_sign", bif_smime_sign, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_encrypt", bif_smime_encrypt, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_decrypt", bif_smime_decrypt, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("pem_certificates_to_array", bif_pem_certificates_to_array, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("x509_certificate_verify", bif_x509_certificate_verify, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("pkcs7_certificates", bif_pkcs7_certificates, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("bin2hex", bif_bin2hex, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("hex2bin", bif_hex2bin, BMD_RET_TYPE, &bt_bin, BMD_DONE);
+  bif_define_ex ("base36enc", bif_base36enc, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("base36dec", bif_base36dec, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 }
 
 #else /* _SSL dummy section for bifs that are defined here to not break existing apps */
@@ -1755,10 +1863,10 @@ bif_smime_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_crypto_init (void)
 {
-  bif_define_typed ("smime_verify", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("smime_sign", bif_smime_verify, &bt_varchar);
-  bif_define_typed ("pem_certificates_to_array", bif_get_certificate_info, &bt_any);
-  bif_define_typed ("get_certificate_info", bif_get_certificate_info, &bt_any);
+  bif_define_ex ("smime_verify", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("smime_sign", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("pem_certificates_to_array", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
 }
 #endif
 

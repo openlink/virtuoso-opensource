@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -464,8 +464,8 @@ loop:
 	  (*pattern != MATCH_TO_LAST_CHAR) &&
 	  (*pattern != GROUP_BEG_CHAR))
 	{
-	  while (*string && collation->co_table[(unsigned char)*string] !=
-	      collation->co_table[(unsigned char)*pattern])
+	  while (*string && COLLATION_XLAT_NARROW (collation, (unsigned char)*string) !=
+	      COLLATION_XLAT_NARROW (collation, (unsigned char)*pattern) )
 	    string++;
 	  if (!string)
 	    {
@@ -536,8 +536,8 @@ loop:
 	}
     }
 ordinary_match:
-  if (collation->co_table[(unsigned char)*pattern] ==
-      collation->co_table[(unsigned char)*string])	/* Same characters ? */
+  if (COLLATION_XLAT_NARROW (collation, (unsigned char)*pattern) ==
+      COLLATION_XLAT_NARROW (collation, (unsigned char)*string) )	/* Same characters ? */
     {
       pattern++;
       string++;
@@ -910,7 +910,7 @@ nc_strstr_coll (const unsigned char *string1, const unsigned char *string2, coll
 		  d = get_plain_letter (d);
 		}		/* e is some plain vowel? */
 #endif
-	      if (collation->co_table[d] != collation->co_table[e])
+	      if (COLLATION_XLAT_NARROW (collation, d) != COLLATION_XLAT_NARROW (collation, e))
 		{
 		  break;
 		}		/* Found first differing character. */

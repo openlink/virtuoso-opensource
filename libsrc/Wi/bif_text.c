@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,9 +122,9 @@ asciistr_upc_copy (char *to, const char *from, int len)
    lowercase letters, whether Western Latin-1, Baltic, Turkish, Greek,
    Cyrillic. Only certain special letters like Polish crossed L and l
    are outside of 192-256 range.
-   else if (fc == 'ö' ) fc = 'Ö' ; // o umlaut
-   else if (fc == 'ä' ) fc ='Ä' ; // a umlaut
-   else if (fc == 'å') fc = 'Å'; // swedish o - educated guess
+   else if (fc == 'ï¿½' ) fc = 'ï¿½' ; // o umlaut
+   else if (fc == 'ï¿½' ) fc ='ï¿½' ; // a umlaut
+   else if (fc == 'ï¿½') fc = 'ï¿½'; // swedish o - educated guess
  */
 	(((unsigned char *) to)[inx]) = fc;
     }
@@ -472,6 +472,178 @@ bif_vt_word_string_ends  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return 0;
 }
 
+#define REALLOC_ACC_IF_NEEDED(acc_addr,acc,acc_len,acc_used,inc) do { \
+    if ((1 + acc_used + inc) > acc_len) \
+      { \
+        int new_acc_len = (acc_len * 2) + inc + 14; \
+        boxint* new_acc = (boxint *)dk_alloc_box (new_acc_len * sizeof (boxint), DV_STRING); \
+        memcpy (new_acc, acc, (1 + acc_used) * sizeof (boxint)); \
+        dk_free_box ((caddr_t)acc); \
+        acc_addr[0] = acc = new_acc; \
+        acc_len = new_acc_len; \
+      } } while (0)
+
+caddr_t
+bif_vt_word_string_id_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  boxint **acc_addr = ((boxint **) (QST_GET_ADDR (qst, args[0])));
+  boxint *acc = acc_addr[0];
+  caddr_t str = bif_arg (qst, args, 1, "vt_word_string_id_acc");
+  int acc_len, acc_used;
+  if (DV_STRING != DV_TYPE_OF (acc))
+    {
+      if (DV_DB_NULL != DV_TYPE_OF (acc))
+	sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong type)");
+      dk_free_tree ((caddr_t) acc);
+      acc_addr[0] = acc = (boxint *) dk_alloc_box_zero (15 * sizeof (boxint), DV_STRING);
+    }
+  acc_len = box_length (acc);
+  if ((acc_len % sizeof (boxint)) || (0 == acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong length)");
+  acc_len /= sizeof (boxint);
+  acc_used = (int) (acc[0]);
+  if ((acc_used < 0) || (acc_used >= acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_acc (wrong content)");
+  switch (DV_TYPE_OF (str))
+    {
+    case DV_LONG_INT:
+      REALLOC_ACC_IF_NEEDED (acc_addr, acc, acc_len, acc_used, 1);
+      acc[++acc_used] = unbox (str);
+      acc[0] = acc_used;
+      break;
+    case DV_STRING:
+      {
+	int l, hl;
+	int pos = 0;
+	int total = box_length (str) - 1;
+	while (pos < total)
+	  {
+	    db_buf_t id_place;
+	    boxint id;
+	    WP_LENGTH (str + pos, hl, l, str, total);
+            id_place = (db_buf_t)(str + pos + hl);
+            id = D_ID_NUM_REF(id_place);
+	    REALLOC_ACC_IF_NEEDED (acc_addr, acc, acc_len, acc_used, 1);
+	    acc[++acc_used] = id;
+	    acc[0] = acc_used;
+	    pos += l + hl;
+	  }
+	break;
+      }
+    default:
+      break;
+    }
+  return 0;
+}
+
+caddr_t
+bif_vt_word_string_id_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return dk_alloc_box_zero (15 * sizeof (boxint), DV_STRING);
+}
+
+caddr_t
+bif_vt_word_string_id_final_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int make_rdf_boxes)
+{
+  boxint *acc = (boxint *) bif_string_or_null_arg (qst, args, 0, "vt_word_string_id_final");
+  int acc_len, acc_used, unique_count, u_ctr;
+  uint32 *offsets;
+  caddr_t *res;
+  int shift, offsets_count, itm_ctr, twobyte, max_twobyte;
+  boxint prev_val, minv = BOXINT_MAX, maxv = BOXINT_MIN;
+  boxint *src, *swap, *tgt, *tgt_to_free;
+  if (NULL == acc)
+    return list (0);
+  src = acc + 1;
+  acc_len = box_length (acc);
+  if ((acc_len % sizeof (boxint)) || (0 == acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_final (wrong length)");
+  acc_len /= sizeof (boxint);
+  acc_used = (int) (acc[0]);
+  if ((acc_used < 0) || (acc_used >= acc_len))
+    sqlr_new_error ("22003", "?????", "Weird accumulator argument of vt_word_string_id_final (wrong content)");
+  if (0 == acc_used)
+    return list (0);
+  for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+    {
+      boxint key_val = src[itm_ctr];
+      if (key_val < minv)
+	minv = key_val;
+      if (key_val > maxv)
+	maxv = key_val;
+    }
+  if ((maxv - minv) < 0L)
+    {
+      sqlr_new_error ("22023", "SR573",
+	  "Function vt_word_string_id_final has failed to sort array: the difference between greatest and smallest keys does not fit 63 bit range, meaning wrong d_ids");
+    }
+  tgt_to_free = tgt = (boxint *) dk_alloc (acc_used * sizeof (boxint));
+  offsets_count = ((maxv >= 0x10000) ? 0x10000 : (maxv + 1));
+  offsets = (uint32 *) dk_alloc (offsets_count * sizeof (uint32));
+  for (shift = 0; shift < 8 * sizeof (boxint); shift += 16)
+    {
+      if (0 == (maxv >> shift))
+	break;
+      max_twobyte = (((maxv >> shift) >= 0x10000L) ? 0x10000 : (int) ((maxv >> shift) + 1));
+      memset (offsets, 0, max_twobyte * sizeof (uint32));
+      for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+	{
+	  (offsets[(src[itm_ctr] >> shift) & 0xffff])++;
+	}
+      if (acc_used == offsets[0])
+	continue;
+      for (twobyte = 1; twobyte < max_twobyte; twobyte++)
+	offsets[twobyte] += offsets[twobyte - 1];
+#ifndef NDEBUG
+      if (acc_used != offsets[max_twobyte - 1])
+	GPF_T1 ("Bad offsets in bif_vt_word_string_id_final()");
+#endif
+      for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+	{
+	  int ofs = --(offsets[(src[itm_ctr] >> shift) & 0xffff]);
+	  tgt[ofs] = src[itm_ctr];
+	}
+      swap = src;
+      src = tgt;
+      tgt = swap;
+    }
+  unique_count = 1;
+  for (itm_ctr = acc_used - 1; itm_ctr--; /* no step */ )
+    if (src[itm_ctr] != src[itm_ctr + 1])
+      unique_count++;
+  res = (caddr_t *) dk_alloc_box (unique_count * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+  u_ctr = unique_count;
+  prev_val = minv - 1;
+  for (itm_ctr = acc_used; itm_ctr--; /* no step */ )
+    {
+      if (src[itm_ctr] == prev_val)
+	continue;
+      prev_val = src[itm_ctr];
+      res[--u_ctr] = (make_rdf_boxes ? (caddr_t) rbb_from_id (prev_val) : box_num (prev_val));
+    }
+#ifndef NDEBUG
+  if (0 != u_ctr)
+    GPF_T1 ("Bad u_ctr bif_vt_word_string_id_final()");
+#endif
+#ifndef NDEBUG
+  dk_check_tree (res);
+#endif
+  dk_free (tgt_to_free, acc_used * sizeof (boxint));
+  dk_free (offsets, offsets_count * sizeof (uint32));
+  return (caddr_t) res;
+}
+
+caddr_t
+bif_vt_word_string_id_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vt_word_string_id_final_impl (qst, err_ret, args, 0);
+}
+
+caddr_t
+bif_vt_word_string_ro_id_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return bif_vt_word_string_id_final_impl (qst, err_ret, args, 1);
+}
 
 caddr_t
 bif_wb_all_done  (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1051,18 +1223,18 @@ xte_vtb_feed (caddr_t * xte, vt_batch_t * vtb, lh_word_callback_t *cbk, char **t
       caddr_t name;
       size_t namelen;
       if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (head))
-	sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
-	name = head[0];
-	if (!DV_STRINGP (name))
-	  sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
-	if (' ' == name[0])
-	  {
-	    if (!strcmp(name," root"))
-	      goto process_tag; /* see below */
-	    return hider;
-	  }
-	if(box_length(name)>(XML_MAX_EXP_NAME-2))
-	  sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
+        sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
+      name = head[0];
+      if (!DV_STRINGP (name))
+        sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
+      if (' ' == name[0])
+        {
+          if (!strcmp(name," root"))
+            goto process_tag; /* see below */
+          return hider;
+        }
+      if(box_length(name)>(XML_MAX_EXP_NAME-2))
+        sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
 process_tag:
       attr_idx_max = BOX_ELEMENTS(head) - 1;
       for (attr_idx = 1; attr_idx < attr_idx_max; attr_idx += 2)
@@ -1317,8 +1489,25 @@ process_string:
     }
   if (XE_XPACK_SERIALIZATION == is_serialized_xml)
     {
-      dk_session_t *ses = blob_to_string_output (qi->qi_trx, str);
-      xte_deserialize_packed (ses, (caddr_t **) &temp_tree, NULL);
+      dk_session_t *ses = NULL;
+      if (DV_STRINGP (str))
+        {
+	  ses = strses_allocate();
+	  ses->dks_in_buffer = str;
+	  ses->dks_in_read = 0;
+	  ses->dks_in_fill = box_length (str) - 1;
+	  xte_deserialize_packed (ses, (caddr_t **) &temp_tree, NULL);
+	  ses->dks_in_buffer = NULL;
+	}
+      else if (DV_DB_NULL == DV_TYPE_OF (str))
+	return NULL;
+      else if (IS_BLOB_HANDLE (str))
+	{
+	  ses = blob_to_string_output (qi->qi_trx, str);
+	  xte_deserialize_packed (ses, (caddr_t **) &temp_tree, NULL);
+	}
+      else
+	sqlr_new_error ("HT002", "XI022", "Can't deserialize XML tree from datum of type %d", (int) DV_TYPE_OF (str));
       strses_free (ses);
       goto temp_tree_ready;
     }
@@ -2000,14 +2189,14 @@ static char *vt_create_text_index_text =
 "	} \n "
 "    }\n"
 "  vt_name := concat (tb, \'_\', col, \'_WORDS\');\n"
-/*"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID any, VT_D_ID_2 any, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID))\',\n"*/
+/*"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID any, VT_D_ID_2 any, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID) not column)\',\n"*/
 /* the PK can be bigint */
 "  is_bigint_id := DB.DBA.col_of_type (tb, text_id_col, 247);\n"
 "  is_int_id := DB.DBA.col_of_type (tb, text_id_col, 189); \n"
 "  if (is_bigint_id = 0 and is_int_id = 0)"
 "    signal (\'22023\', concat (\'the column \', text_id_col, \' is not an integer\'), \'FT024\'); \n"
 "  text_id_col_type := case when is_bigint_id then \'BIGINT\' when is_int_id then \'INTEGER\' else \'ANY\' end;\n"
-"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID %s, VT_D_ID_2 %s, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID))\',\n"
+"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID %s, VT_D_ID_2 %s, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID) not column)\',\n"
 "  name_part (vt_name, 0), name_part (vt_name, 1), name_part (vt_name, 2), text_id_col_type, text_id_col_type);\n"
 "  DB.DBA.execstr (str);\n"
 "  if (is_part) { \n" /* cluster options */
@@ -2083,7 +2272,7 @@ static char *vt_free_text_proc_gen_text =
 "{\n"
 "  declare data_table, words_table, full_words_table, text_value, data_table_suffix, dav_cond, theuser, _type_col varchar;\n"
 "  declare _flag_val integer;\n"
-"  declare dbpref varchar;\n"
+"  declare dbpref, dbpref1 varchar;\n"
 "  declare _lang_enc_args varchar;\n"
 "  theuser := user; \n"
 "  if (theuser = 'dba') theuser := 'DBA'; \n"
@@ -2092,6 +2281,7 @@ static char *vt_free_text_proc_gen_text =
 "  data_table := name_part (_data_table, 2);\n"
 "  data_table_suffix := concat (name_part (_data_table, 0), \'_\', name_part (_data_table, 1), \'_\', name_part (_data_table, 2));\n"
 "  dbpref := sprintf ('\"%I\".\"%I\".',  name_part (_data_table, 0),  name_part (_data_table, 1));\n"
+"  dbpref1 := sprintf ('%s.%s.',  name_part (_data_table, 0),  name_part (_data_table, 1));\n"
 "  data_table_suffix := DB.DBA.SYS_ALFANUM_NAME (data_table_suffix);\n"
 "  words_table := concat (data_table, \'_\', _data_column, \'_WORDS\');\n"
 "  full_words_table := concat (_data_table, \'_\', _data_column, \'_WORDS\');\n"
@@ -2250,7 +2440,19 @@ static char *vt_free_text_proc_gen_text =
 "	   sprintf (\' if (0 = in_batch and 0 = sys_stat (\\\'cl_run_local_only\\\')) "
 " 	         { \\\n %s\"VT_BATCH_REAL_PROCESS_CL_%s\" (invd, doc_id);\\\n return;\\\n }\', dbpref, data_table_suffix) "
 "	   else \'\' end, \n"
-"	   sprintf ( \'    %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id);\', dbpref, data_table_suffix), \n"
+"	   sprintf ( \'declare len, qp, clen, part, n_parts, inx, enab int; len := length (invd) / 2; qp := sys_stat (''enable_qp''); enab := sys_stat (''enable_mt_ft_inx''); "
+"		       if (0 = sys_stat (\\\'cl_run_local_only\\\') or enab = 0 or qp < 2 or len < 200  or len <= qp) { %s\"VT_BATCH_REAL_PROCESS_1_%s\" (invd, doc_id); } "
+"                      else { \\\n"
+"			  declare aq any; \\\n"
+"			  gvector_sort (invd, 2, 0, 1); \\\n"
+"			  aq := async_queue (qp, 8);  clen := 2 * (len / qp); n_parts := qp;\\\n"
+"			  for (inx := 0; inx < n_parts; inx := inx + 1) { \\\n"
+"			     part := subseq (invd, clen * inx, case when inx = n_parts - 1 then len * 2 else clen * (inx + 1) end); \\\n"
+/*"			     dbg_obj_print ('' from '', clen * inx, '' to '', clen * (inx + 1) , '' part '' , length (part), '' len '', len); \\\n"*/
+"			     aq_request (aq, ''%sVT_BATCH_REAL_PROCESS_1_%s'', vector (part, doc_id)); \\\n"
+"			  } \\\n"
+"			  aq_wait_all (aq); \\\n"
+"                      }\', dbpref, data_table_suffix, dbpref1, data_table_suffix), \n"
 " \'	 }\');\n"
 "  DB.DBA.execstr (text_value);\n"
 "\n"
@@ -2650,7 +2852,7 @@ static char *vt_create_update_log_text =
 "  cl_opts := DB.DBA.VT_GET_CLUSTER_COL_OPTS (tablename, key_name, keycol); \n"
 "  commands := vector ( "
 /* KFU_TYPE is the type of PK, can be bigint */
-"      case when create_log_tb then \'create table <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" (\"VTLOG_<KFU>\" <KFU_TYPE> not null primary key, SNAPTIME datetime, DMLTYPE varchar (1), VT_GZ_WORDUMP long varbinary, VT_OFFBAND_DATA long varchar)\\\n\' else NULL end, "
+"      case when create_log_tb then \'create table <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" (\"VTLOG_<KFU>\" <KFU_TYPE> not null primary key (not column), SNAPTIME datetime, DMLTYPE varchar (1), VT_GZ_WORDUMP long varbinary, VT_OFFBAND_DATA long varchar)\\\n\' else NULL end, "
 "      case when is_part then \'ALTER INDEX \"VTLOG_<VTLOGSUFF>\" on <DB>.<DBA>.\"VTLOG_<VTLOGSUFF>\" partition <CL_PART> (\"VTLOG_<KFU>\" <KFU_TYPE> <CL_OPTS>)\' else NULL end,"
 "	either (isnull (is_pk), "
 "	 \'create trigger \"<SUFF>_VTI_log\" after insert on <DB>.<DBA>.<TB>  ORDER 2 { \\\n"
@@ -2925,6 +3127,11 @@ static char *vt_create_update_log_text =
 "	     txn_error (6); \\\n"
 "	     signal (\\\'22008\\\', \\\'Invalid XML supplied for an validating free text index of <DB>.<DBA>.<TB>:\\\n\\\' || __SQL_MESSAGE, \\\'FT030\\\'); \\\n"
 "       }\', "
+"       \'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SLICE_<SUFF>\" (in slid int)\n"
+"       {\n"
+"         cl_set_slice (\\'<DB_1>.<DBA_1>.<TBU>\\', \\'<TBU>\\', slid);\n"
+"         <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" ();\n"
+"       }\', \n"
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_<SUFF>\" () \n"
 "	{ \n"
 "	  if (0 = <IS_CL>) \n"
@@ -2934,9 +3141,14 @@ static char *vt_create_update_log_text =
 "	}\', \n"
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_SRV_<SUFF>\" () \n"
 "	{ \n"
-"	  declare aq any; \n"
-"	  aq := async_queue (1); \n"
-"	  aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_1_<SUFF_1>\\', vector ()); \n"
+"	  declare aq, slices any; \n"
+"         declare inx int; \n"
+"	  if (not exists (select 1 from DB.DBA.SYS_CLUSTER where CL_NAME = \\'ELASTIC\\')) { aq := async_queue (1); \n"
+"	  aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_1_<SUFF_1>\\', vector ()); } else { \n"
+"	  aq := async_queue (sys_stat (\\'enable_qp\\')); \n"
+"         slices := cl_hosted_slices (\\'ELASTIC\\', sys_stat (\\'cl_this_host\\'));\n"
+"         for (inx := 0; inx < length (slices); inx := inx + 1) \n"
+"	    aq_request (aq, \\'<DB_1>.<DBA_1>.VT_INC_INDEX_SLICE_<SUFF>\\', vector (slices[inx])); }\n"
 "	  aq_wait_all (aq); \n"
 "	}\', \n"
 "	\'create procedure <DB>.<DBA>.\"VT_INC_INDEX_1_<SUFF>\" () \n"
@@ -3281,6 +3493,7 @@ static char *vt_clear_free_text_index_text =
 "      _datatable := DB.DBA.SYS_ALFANUM_NAME (replace (datatable, \'.\', \'_\')); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INDEX_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INDEX_1_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
+"      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_INC_INDEX_SLICE_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_BATCH_PROCESS_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_HITS_%I\"\', name_part (datatable,0), name_part (datatable, 1), name_part (datatable, 2)), stat, msg); \n"
 "      exec (sprintf (\'drop procedure \"%I\".\"%I\".\"VT_BATCH_REAL_PROCESS_%s\"\', name_part (datatable, 0), name_part (datatable, 1), _datatable), stat, msg); \n"
@@ -3325,9 +3538,13 @@ bif_text_init (void)
 {
   stop_words_mtx = mutex_allocate ();
   vt_stop_words = id_hash_allocate (11, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  bif_define ("vt_word_string_id_init", bif_vt_word_string_id_init);
+  bif_define ("vt_word_string_id_acc", bif_vt_word_string_id_acc);
+  bif_define ("vt_word_string_id_final", bif_vt_word_string_id_final);
+  bif_define ("vt_word_string_ro_id_final", bif_vt_word_string_ro_id_final);
   bif_define ("vt_word_string_ends", bif_vt_word_string_ends);
   bif_define ("vt_word_string_details", bif_vt_word_string_details);
-  bif_define_typed ("wb_all_done_bif", bif_wb_all_done, &bt_integer);
+  bif_define_ex ("wb_all_done_bif", bif_wb_all_done, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("vt_batch", bif_vt_batch);
   bif_define ("vt_batch_d_id", bif_vt_batch_d_id);
   bif_define ("vt_batch_alpha_range", bif_vt_batch_alpha_range);
@@ -3341,8 +3558,8 @@ bif_text_init (void)
   bif_define ("wb_apply", bif_wb_apply);
   bif_define ("vt_batch_words_length", bif_vt_batch_words_length);
 
-  bif_define_typed ("vt_is_noise", bif_vt_is_noise, &bt_integer);
-  bif_define_typed ("vt_load_stop_words", bif_vt_load_stop_words, &bt_any);
+  bif_define_ex ("vt_is_noise", bif_vt_is_noise, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("vt_load_stop_words", bif_vt_load_stop_words, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("key_is_d_id_partition", bif_key_is_d_id_partition);
   vt_noise_word_init ("noise.txt", &lh_noise_words);
   dk_mem_hooks(DV_TEXT_BATCH, (box_copy_f)vtb_copy, (box_destr_f) vtb_destroy, 0);

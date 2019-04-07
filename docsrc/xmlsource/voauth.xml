@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -102,7 +102,7 @@ http://server-cname/OAuth/request_token
       <sect4 id="voauthserverreqtokexample"><title>Example</title>
         <para>Request:</para>
 <programlisting><![CDATA[
-http://localhost:8890/OAuth/request_token?oauth_version=1.0&oauth_nonce
+http://example.com/OAuth/request_token?oauth_version=1.0&oauth_nonce
 =dad4cb071e2169cbcaa051d404ac61a3&oauth_timestamp=1201873644&oauth_cons
 umer_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_signature_metho
 d=HMAC-SHA1&oauth_signature=z76k5fQ0msFsQzCmhO%2FJZ329ZUE%3D
@@ -131,7 +131,7 @@ Provider will use to redirect the User back to the Consumer when Obtaining User 
       <sect4 id="voauthserverauthexample"><title>Example</title>
         <para>Request:</para>
 <programlisting><![CDATA[
-http://localhost:8890/OAuth/authorize?oauth_token=b4e22daa117b0bebf60ab
+http://example.com/OAuth/authorize?oauth_token=b4e22daa117b0bebf60ab
 6ba6e401edc7addd78c&oauth_callback=http%3A%2F%2Flocalhost%3A8890%2Foaut
 h%2Fexample%2Fclient.php%3Fkey%3Df756023be5ff1f20881cf8fe398069f3976b23
 04%26secret%3Dcc249bfb732039d8ecba9e4f94fdead7%26token%3Db4e22daa117b0b
@@ -162,7 +162,7 @@ sign the request.</listitem>
       <sect4 id="voauthserveractexample"><title>Example</title>
         <para>Request:</para>
 <programlisting><![CDATA[
-http://localhost:8890/OAuth/access_token?oauth_version=1.0&oauth_nonce=
+http://example.com/OAuth/access_token?oauth_version=1.0&oauth_nonce=
 8ad75091a66bdd741472be42149c828e&oauth_timestamp=1201873800&oauth_consu
 mer_key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=b4e22daa11
 7b0bebf60ab6ba6e401edc7addd78c&oauth_signature_method=HMAC-SHA1&oauth_s
@@ -205,7 +205,7 @@ An OAuth testing page
       </sect4>
       <sect4 id="voauthserveravsr"><title>Sample request:</title>
 <programlisting><![CDATA[
-http://localhost:8890/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
+http://example.com/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
 640869b994b2d51bf9800229c4997&oauth_timestamp=1201873935&oauth_consumer
 _key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=8c03b3da93480
 ca4728cc1194d6d03962f3bb5bb&oauth_signature_method=HMAC-SHA1&oauth_sign
@@ -214,7 +214,7 @@ ature=X3K4lr9bJVz5YLnnyJDkykQZivY%3D
       </sect4>
       <sect4 id="voauthserveravsr"><title>Sample request:</title>
 <programlisting><![CDATA[
-http://localhost:8890/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
+http://example.com/admin/oauth.vsp?oauth_version=1.0&oauth_nonce=d57
 640869b994b2d51bf9800229c4997&oauth_timestamp=1201873935&oauth_consumer
 _key=f756023be5ff1f20881cf8fe398069f3976b2304&oauth_token=8c03b3da93480
 ca4728cc1194d6d03962f3bb5bb&oauth_signature_method=HMAC-SHA1&oauth_sign
@@ -258,7 +258,7 @@ in Virtuoso/PL.</para>
     declare srv, res, signature_base, ret_url, url, tmp, sid varchar;
     declare meth, pars any;
     consumer_key := {?'key'};
-    srv := sprintf ('http://localhost:%s/OAuth/', server_http_port ());
+    srv := sprintf ('http://example.com:%s/OAuth/', server_http_port ());
     sid := null;
     res := '';
 
@@ -285,7 +285,7 @@ in Virtuoso/PL.</para>
         res := http_get (url);
     sid := OAUTH..parse_response (sid, consumer_key, res);
     OAUTH..set_session_data (sid, params);
-    ret_url := sprintf ('http://localhost:%s/oauth/oauth_client.vsp?ready=%U', server_http_port (), sid);
+    ret_url := sprintf ('http://example.com:%s/oauth/oauth_client.vsp?ready=%U', server_http_port (), sid);
     -- call authorize
         url := sprintf ('%sauthorize?oauth_token=%U&oauth_callback=%U', srv, OAUTH..get_auth_token (sid), ret_url);
     http_status_set (301);
@@ -312,7 +312,7 @@ in Virtuoso/PL.</para>
             pars := get_keyword ('pars', tmp, pars);
         meth := get_keyword ('meth', tmp, meth);
       }
-    url := sprintf ('http://localhost:%s/ods/api/%s', server_http_port (), meth);
+    url := sprintf ('http://example.com:%s/ods/api/%s', server_http_port (), meth);
     tmp := split_and_decode (pars);
     params := '';
     for (declare i,l int, l:=length (tmp); i < l; i := i + 2)
@@ -358,7 +358,7 @@ GET /OAuth/request_token?oauth_consumer_key=50082d0fb861b0e6e67d5d986b8
 333607edc5f36&oauth_nonce=b8f1089077cbce6e&oauth_signature_method=HMAC-
 SHA1&oauth_timestamp=1211212829&oauth_version=1.0&oauth_signature=V1zmk
 757LBHcmqVJ6obMhNX5hKA%3D HTTP/1.1
-Host: localhost:6666
+Host: example.com
 
 HTTP/1.1 200 Ok
 Content-Length: NNN
@@ -370,7 +370,7 @@ oauth_token=86da75079d3aee0fab57a36fcffbf900768e4de3&oauth_token_secret
 GET /OAuth/authorize?oauth_token=86da75079d3aee0fab57a36fcffbf900768e4d
 e3&oauth_callback=http%3A//localhost%3A6666/oauth/oauth_client.vsp%3Fre
 ady%3D00c874b2fab2f6424008b5064fe83e88 HTTP/1.1
-Host: localhost:6666
+Host: example.com
 
 HTTP/1.1 301 Moved
 Location: /ods/oauth_authorize.vspx?....
@@ -381,7 +381,7 @@ GET /OAuth/access_token?oauth_consumer_key=50082d0fb861b0e6e67d5d986b83
 HA1&oauth_timestamp=1211212831&oauth_token=86da75079d3aee0fab57a36fcffb
 f900768e4de3&oauth_version=1.0&oauth_signature=sqs/8nmNNnNJiZ/eBa688uNe
 g9o%3D HTTP/1.1
-Host: localhost:6666
+Host: example.com
 
 HTTP/1.1 200 Ok
 Content-Length: NNN
@@ -395,7 +395,7 @@ oauth_consumer_key=50082d0fb861b0e6e67d5d986b8333607edc5f36&oauth_nonce
 213321&oauth_token=db83a37d74faf53edc8ed56d418ded3a70fcc0bc&oauth_versi
 on=1.0&title=testing&oauth_signature=oocIyr6kgoEQkC3WVwzvl6w62W4%3D HTT
 P/1.1
-Host: localhost:6666
+Host: example.com
 
 HTTP/1.1 200 Ok
 Content-Length: NNN
@@ -586,7 +586,7 @@ and associated API parameters.</para>
     <para>ODS OAuth standards validate the credentials of an external user by means of the digital signature.
 If the user signs the request, and the ODS server validates the digital signature, the developer is granted
 access to the requested resource.</para>
-    <para>To tool is accessible via http:/host:port/ods/oauth_test.vsp</para>
+    <para>To tool is accessible via http://host:port/ods/oauth_test.vsp</para>
     <sect3 id="voauthtoolexample"><title>Example</title>
       <para>The following example demonstrates creating and getting contact info by the ODS REST APIs
 weblog.post.new and weblog.post.get using the OAuth Test Tool.</para>

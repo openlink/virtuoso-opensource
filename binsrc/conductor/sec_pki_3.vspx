@@ -1,0 +1,377 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="pki_1" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	fast-render="1" 
+	xmlns:v="http://www.openlinksw.com/vspx/" 
+	xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
+      <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <v:variable name="is_public" type="int" default="null" persist="0"/>
+      <v:variable name="is_visible" type="int" default="null" persist="0"/>
+      <v:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <v:variable name="iname" type="varchar" default="null" persist="0"/>
+      <v:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <v:variable name="_app" type="varchar" default="null" persist="0"/>
+      <v:variable name="_host" type="varchar" default="null" persist="0"/>
+      <v:variable name="_lhost" type="varchar" default="null" persist="0"/>
+      <v:variable name="_path" type="varchar" default="null" persist="0"/>
+      <v:variable name="remove_mode" type="integer" default="0" persist="0"/>
+      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
+    <vm:pagebody>
+    <vm:help id="sec_pki" sect=""/>
+    <v:form name="form1" type="simple" method="POST">
+	<!-- top of security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="page_tab_selected" align="center">
+			  Public Key Infrastructure	
+		      </td>
+		      <td class="page_tab" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+		      </td>
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+			<td valign="top">
+			    <h3>Configure Data Spaces Endpoints</h3>
+		   <!-- end of top security layout -->
+      <v:template name="main1" type="simple" condition="self.remove_mode = 0">
+          <v:data-source name="vdds" expression-type="sql" nrows="-1" initial-offset="0">
+            <v:expression>
+              <![CDATA[
+               select
+                HP_HOST,
+                HP_LPATH,
+		HP_LISTEN_HOST,
+		WD_MODEL,
+		HP_SECURITY
+               from
+                DB.DBA.HTTP_PATH, DB.DBA.WA_DOMAINS
+               where
+                 HP_PPATH = \'/DAV/VAD/wa/\' and
+		 HP_HOST not like \'*ini*\'and HP_HOST not like \'*sslini*\'
+		 and WD_HOST = HP_HOST and WD_LISTEN_HOST = HP_LISTEN_HOST and WD_LPATH = HP_LPATH
+              ]]>
+            </v:expression>
+            <v:column name="HP_HOST" label="Host" />
+            <v:column name="HP_LPATH" label="Instance" />
+            <v:column name="HP_LISTEN_HOST" label="ListenHost" />
+            <v:column name="WD_MODEL" label="model" />
+            <v:column name="HP_SECURITY" label="security" />
+          </v:data-source>
+            <table class="listing">
+              <v:template name="header11" type="simple">
+                <thead>
+                  <tr class="listing_header_row">
+                    <th>Endpoint</th>
+                    <th>Registration</th>
+                    <th>
+                      <v:url name="wa_create_ref" format="%s" value="--'Create New Endpoint'" url="--'sec_pki_4.vspx?mode=create'"/>
+                    </th>
+                  </tr>
+                </thead>
+              </v:template>
+              <v:data-set name="vd" scrollable="1" edit="1" data-source="self.vdds" width="80">
+                <v:template type="repeat">
+                  <v:template type="if-not-exists">
+                    <tr class="listing_count">
+                      <td class="listing_count" colspan="2">
+                        No Endpoints for Data Space Applications 
+                      </td>
+                    </tr>
+                  </v:template>
+                  <v:template name="vd_edit_template" type="edit" name-to-remove="" set-to-remove="">
+                    <v:form type="update" name="_edit1_" if-not-exists="nothing" method="POST" >
+                      <tr>
+                        <td nowrap="nowrap">
+                          <v:text name="t_site1" error-glyph="*" value="">
+                            <v:after-data-bind>
+                              <![CDATA[
+                                declare pos integer;
+                                pos := strchr(cast(self.vd.ds_current_row.te_rowset[0] as varchar), ':');
+                                if (pos is null)
+                                  control.ufl_value := cast(self.vd.ds_current_row.te_rowset[0] as varchar);
+                                else
+                                  control.ufl_value := subseq(cast(self.vd.ds_current_row.te_rowset[0] as varchar), 0, pos);
+                              ]]>
+                            </v:after-data-bind>
+                          </v:text>
+                          <v:label name="nexist" value="" format="%s">
+                            <v:after-data-bind>
+                              <![CDATA[
+                                declare pos integer;
+                                pos := strchr(cast(self.vd.ds_current_row.te_rowset[2] as varchar), ':');
+                                if (pos is null)
+                                  control.ufl_value := ':80';
+                                else
+                                  control.ufl_value := concat(':', trim(subseq(cast(self.vd.ds_current_row.te_rowset[2] as varchar), pos + 1)));
+                              ]]>
+                            </v:after-data-bind>
+                          </v:label>
+                          <input type="hidden" name="domain" value="<?V cast(self.vd.ds_current_row.te_rowset[0] as varchar) ?>"/>
+                          <input type="hidden" name="lhost" value="<?V cast(self.vd.ds_current_row.te_rowset[2] as varchar) ?>"/>
+                          /
+                          <v:text name="t_path1" xhtml_size="10" error-glyph="*" value="--(trim(cast(self.vd.ds_current_row.te_rowset[1] as varchar), '/'))"/>
+                          <input type="hidden" name="lpath" value="<?V cast(self.vd.ds_current_row.te_rowset[1] as varchar) ?>"/>
+                        </td>
+                        <td nowrap="nowrap">
+                    <v:select-list xhtml_id="t_model" name="t_model" >
+		      <v:item name="Disabled" value="0"/>
+		      <v:item name="Enabled" value="1"/>
+                      <v:before-data-bind>
+                        control.ufl_value := self.vd.ds_current_row.te_rowset[3];
+                      </v:before-data-bind>
+                    </v:select-list>
+                        </td>
+                        <td nowrap="nowrap">
+                          <v:button name="vd_update_btn" action="submit" value="Update" style="url">
+                            <v:on-post>
+                              <v:script>
+                                <![CDATA[
+                                  declare path, host, _host, _lhost, _path, _port, domain varchar;
+                                  declare pos integer;
+                                  _host := get_keyword('domain', self.vc_event.ve_params);
+                                  _lhost := get_keyword('lhost', self.vc_event.ve_params);
+                                  _path := get_keyword('lpath', self.vc_event.ve_params);
+                                  host := trim(self.t_site1.ufl_value);
+                                  if (host is null or host = '')
+                                  {
+                                    self.vc_is_valid := 0;
+                                    self.vc_error_message := 'Please provide valid domain.';
+                                    return;
+                                  }
+                                  path := self.t_path1.ufl_value;
+                                  path := trim(path, '/\\.');
+                                  path := concat('/', path);
+                                  commit work;
+                                  declare exit handler for sqlstate '*'
+                                  {
+                                    self.vc_is_valid := 0;
+                                    self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                                    rollback work;
+                                    return;
+                                  };
+				  -- Home URL
+
+				  domain := (select WD_DOMAIN from DB.DBA.WA_DOMAINS
+				  where WD_HOST = _host and WD_LPATH = _path and WD_LISTEN_HOST = _lhost);
+
+                                  VHOST_REMOVE(vhost=>_host, lhost=>_lhost, lpath=>_path);
+                                  pos := strchr(_lhost, ':');
+                                  if (pos is not null)
+                                  {
+                                    _port := subseq(_lhost, pos + 1);
+                                    _port := trim(_port);
+                                    if (atoi(_port) = 0)
+                                    {
+                                      self.vc_error_message := 'HTTP path table contains incorrect entry';
+                                      self.vc_is_valid := 0;
+                                      rollback work;
+                                      return;
+                                    }
+                                    --if (_port <> '80' and _port <> '')
+                                    --  host := concat(host, ':', _port);
+                                  }
+                                  -- Home URL
+                                  VHOST_DEFINE(
+                                    vhost=>host,
+                                    lhost=>_lhost,
+                                    opts=>vector('executable', 'yes'),
+                                    lpath=>path,
+                                    ppath=>'/DAV/VAD/wa/',
+                                    is_dav=>1,
+                                    vsp_user=>'dba',
+                                    def_page=>'sfront.vspx');
+
+				  -- Add /dataspace etc.
+				  if (__proc_exists ('DB.DBA.ods_define_common_vd') is not null)
+				    {	
+				    DB.DBA.ods_define_common_vd (host, _lhost);
+				    }  
+
+				  insert into DB.DBA.WA_DOMAINS (WD_HOST,WD_LPATH,WD_LISTEN_HOST,WD_MODEL,WD_DOMAIN)
+				    values (host,path,_lhost,self.t_model.ufl_value, domain);
+				  self.vc_redirect ('sec_pki_3.vspx');
+                                ]]>
+                              </v:script>
+                            </v:on-post>
+                          </v:button>
+                          <v:button name="vd_cancel_btn" action="submit" value="Cancel" style="url"/>
+                        </td>
+                      </tr>
+                    </v:form>
+                  </v:template>
+                  <v:template type="browse">
+                    <?vsp
+                      self.r_count := self.r_count + 1;
+                      http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                    ?>
+                    <td class="listing_col">
+			<v:url format="%s" value="" url="">
+			    <v:after-data-bind>
+				declare host, lhost, lpath, sec any;
+				host := (control.vc_parent as vspx_row_template).te_rowset[0];
+				lhost := (control.vc_parent as vspx_row_template).te_rowset[2];
+				lpath := (control.vc_parent as vspx_row_template).te_rowset[1];
+				sec := (control.vc_parent as vspx_row_template).te_rowset[4];
+
+				control.ufl_value := y_make_url_from_vd (host, lhost, lpath, sec);
+				control.vu_url := control.ufl_value;
+			    </v:after-data-bind>
+			</v:url>
+                    </td>
+		    <td class="listing_col">
+		      <v:label name="model_t1" value="">
+			<v:before-render>
+			  control.ufl_value := case when (control.vc_parent as vspx_row_template).te_rowset[3] then 'Enabled' else 'Disabled' end;
+			</v:before-render>
+		      </v:label>
+                    </td>
+                    <td class="listing_col_action">
+                      <b><v:button action="simple" style="image" name="vd_edit" value="images/icons/edit_16.png" xhtml_alt="Edit" xhtml_title="Edit" xhtml_hspace="3" text="Edit"/></b>
+                      <b>
+                        <v:button action="simple" style="image" name="vd_delete" value="images/icons/trash_16.png" xhtml_alt="Delete" xhtml_title="Delete" xhtml_hspace="3" text="Remove">
+                          <v:on-post>
+                            <v:script>
+                              <![CDATA[
+                                self._host := cast((control.vc_parent as vspx_row_template).te_rowset[0] as varchar);
+                                self._lhost := cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar);
+                                self._path := cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar);
+                                self.remove_mode := 1;
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                      </b>
+                    </td>
+                    <?vsp
+                      http ('</tr>');
+                    ?>
+                  </v:template>
+                </v:template>
+              </v:data-set>
+            </table>
+      </v:template>
+      <v:template name="main2" type="simple" condition="self.remove_mode = 1">
+        <v:form name="event_form2" type="simple" method="POST" action="">
+            <h2>Remove Confirmation of Application Endpoint</h2>
+            <table class="data">
+              <tr>
+                <td>Are you sure you want to remove the application endpoint
+                  <?vsp
+                    http(concat(' http://', self._host, self._path));
+                  ?>
+                  for the application instance <?V self._app ?>?
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
+                  <v:button action="simple" name="cancel1" value="Cancel">
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          self.remove_mode := 0;
+                          self.vc_data_bind(e);
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="rem" value="Remove">
+                    <v:on-post>
+                      <v:script>
+                        <![CDATA[
+                          self.remove_mode := 0;
+                          commit work;
+                          declare exit handler for sqlstate '*'
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                            rollback work;
+                            return;
+                          };
+                          VHOST_REMOVE(vhost=>self._host, lhost=>self._lhost, lpath=>self._path);
+			  self.vc_redirect ('sec_pki_3.vspx');
+                        ]]>
+                      </v:script>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+        </v:form>
+    </v:template>
+    <div>
+	<v:button action="simple" name="back" value="Back">
+	    <v:on-post><![CDATA[
+		self.vc_redirect ('sec_pki_2.vspx');
+		]]></v:on-post>
+	</v:button>
+	<v:button action="simple" name="back_to_ods" value="Go to ODS">
+	    <v:on-post><![CDATA[
+		declare sid any;
+		sid := self.sid;
+		self.sid := null;
+		self.vc_redirect ('/ods/');
+		self.sid := sid;
+		]]></v:on-post>
+	</v:button>
+    </div>
+		   <!-- bottom of security layout -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+	<!-- end of bottom security layout -->
+    </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

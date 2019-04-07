@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -76,5 +76,44 @@
 #define INT64_SET_NA(p, v) \
   {LONG_SET_NA (p,  (v >> 32));				\
     LONG_SET_NA (((caddr_t)p) + 4, 0xffffffff & v); }
+#ifdef WORDS_BIGENDIAN
 
+#define memcmp_8(p1, p2, l, neq) \
+  {if (memcmp (p1, p2, l)) goto neq;}
+#else
+
+#define memcmp_8(a1, a2, len, neq)				\
+{ \
+ unsigned char * p1 = (unsigned char *)a1, *p2 = (unsigned char *)a2; \
+  unsigned char * end = p1 + (len & ~0x7); \
+  while (p1 != end) \
+    { \
+      if (*(int64*)p1 != *(int64*)p2) goto neq; \
+      p1 += 8; p2 += 8; \
+    } \
+  if (len & 0x7) \
+    { \
+      int64 xo = *(int64*)p1 ^*(int64*)p2; \
+      if (xo & (((int64)1 << ((len & 0x7) << 3)) - 1))	\
+	goto neq; \
+    } \
+}
+
+#define memcmp_8l(a1, a2, len, neq, lret)		\
+{ \
+ unsigned char * p1 = (unsigned char *)a1, *p2 = (unsigned char *)a2; \
+  unsigned char * end = p1 + (len & ~0x7); \
+  while (p1 != end) \
+    { \
+      if (*(int64*)p1 != *(int64*)p2) {lret = p1 - a1; goto neq; }	\
+      p1 += 8; p2 += 8; \
+    } \
+  if (len & 0x7) \
+    { \
+      int64 xo = *(int64*)p1 ^*(int64*)p2; \
+      if (xo & (((int64)1 << ((len & 0x7) << 3)) - 1))	\
+	{lret = p1 - a1; goto neq;}			\
+    } \
+}
+#endif
 #endif

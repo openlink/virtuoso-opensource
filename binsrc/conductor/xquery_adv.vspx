@@ -1,0 +1,471 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="xquery_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_xquery_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+ <vm:pagetitle>XQuery Execution</vm:pagetitle>
+ <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="query_text" default="''" type="varchar" persist="1"/>
+      <v:variable name="store_path" default="null" type="varchar" persist="1"/>
+      <v:variable name="tbln" default="'Use the URI'" type="varchar" persist="0"/>
+      <v:variable name="step" default="0" type="int" persist="0"/>
+    </vm:variables>
+  <vm:menu>
+   <vm:menuitem value="XQuery"/>
+  </vm:menu>
+  <vm:header caption="XQuery Execution"/>
+  <vm:pagebody>
+    <v:after-data-bind>
+      if (get_keyword ('edit', e.ve_params) is not null)
+        {
+	       declare xt, ctx, root, xslt, tmp any;
+	       whenever not found goto nf;
+	       select RES_CONTENT into tmp from WS.WS.SYS_DAV_RES where RES_FULL_PATH = get_keyword ('edit', e.ve_params);
+	       xt := xtree_doc (tmp);
+	       self.qr.ufl_value := xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//sql:xquery/text()', xt);
+	       ctx := xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//sql:xquery/@sql:context', xt);
+	       root := xpath_eval ('local-name (/*[1])', xt);
+	       xslt := xpath_eval ('[ xmlns:sql="urn:schemas-openlink-com:xml-sql" ]//*/@sql:xsl', xt);
+
+	       if (ctx like 'virt://%')
+	         {
+		   declare hf, ar, pos any;
+		   ctx := cast (ctx as varchar);
+		   hf := WS.WS.PARSE_URI (ctx);
+		   ar := split_and_decode (cast (hf[1] as varchar), 0, '\0\0.');
+		   pos := strrchr (ctx, ':');
+		   if (pos is not null)
+		     self.dav_path.ufl_value := substring (ctx, pos+2, length (ctx));
+		   else
+		     self.dav_path.ufl_value :=  cast (hf[2] as varchar);
+		   self.tbl.ufl_value := sprintf ('%s.%s.%s', ar[0], ar[1], ar[2]);
+		   self.tbln := self.tbl.ufl_value;
+		   self.tbkey.vc_data_bind (e);
+		   self.tbdt.vc_data_bind (e);
+		   self.tbkey.ufl_value := ar[3];
+		   self.tbdt.ufl_value := ar[4];
+		   self.tbl.vs_set_selected ();
+		   self.tbkey.vs_set_selected ();
+		   self.tbdt.vs_set_selected ();
+		 }
+               else
+	         self.dav_path.ufl_value := ctx;
+	       self.root_element.ufl_value := root;
+	       self.style_path_control.ufl_value := xslt;
+	       if (length (xslt))
+	         self.xslt_include.ufl_selected := 1;
+	       self.store_path := get_keyword ('edit', e.ve_params);
+	       nf:;
+	}
+    </v:after-data-bind>
+    <script type="text/javascript"><![CDATA[
+]]></script>
+    <vm:help id="xquery" sect=""/>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab" align="center">
+			  <v:url name="b_url32" value="XQuery Basic" url="xquery.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center">XQuery Advanced</td>
+                        <td class="page_tab" align="center">
+			  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN AREA -->
+			<v:template name="t_qry" type="simple" enabled="--equ (self.step, 0)">
+			<v:form name="edit_form" type="simple" method="POST">
+			  <v:on-post>
+			    if (e.ve_button = control and e.ve_initiator = self.tbl)
+			      {
+			        self.tbln := self.tbl.ufl_value;
+			        control.vc_data_bind (e);
+			      }
+			  </v:on-post>
+			  <table border="0" cellspacing="0" class="ctl_grp" cellpadding="5" align="center">
+			    <tr><th colspan="2" style="text-align:center;">Document Context</th></tr>
+			    <tr>
+			      <td>Table</td>
+			      <td>
+				<v:data-list name="tbl" key-column="TBL" value-column="TBL" auto-submit="1"
+				  sql="select top 1 'Use the URI' as TBL, 'Use the URI' as COL_CHECK from SYS_KEYS
+				  union all
+				  select top 1 'No context' as TBL, 'No context' as COL_CHECK from SYS_KEYS
+				  union all select distinct \TABLE as TBL, COL_CHECK from SYS_COLS where COL_CHECK like '% U %'">
+				</v:data-list>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Key Column</td>
+			      <td>
+				<v:data-list name="tbkey" key-column="COL" value-column="COL"
+				  sql="select distinct get_keyword ('U', split_and_decode (trim(COL_CHECK), 0, '\0\0 '), '** NOT AVAILABLE **') as COL from SYS_COLS where \TABLE = self.tbln and COL_CHECK like '% U %'">
+				  <v:before-render>
+				    if (self.tbln in ('Use the URI', 'No context'))
+				      control.vc_add_attribute ('disabled', '1');
+				  </v:before-render>
+				</v:data-list>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Data Column</td>
+			      <td>
+				<v:data-list name="tbdt" key-column="COL" value-column="COL"
+				  sql="select distinct \COLUMN as COL from SYS_COLS where \TABLE = self.tbln and COL_CHECK like '% U %'">
+				  <v:before-render>
+				    if (self.tbln in ('Use the URI', 'No context'))
+				      control.vc_add_attribute ('disabled', '1');
+				  </v:before-render>
+				</v:data-list>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Path</td>
+			      <td>
+				<v:text name="dav_path" value="" xhtml_size="70" >
+				  <v:before-render>
+				    if (self.tbln in ('No context'))
+				      control.vc_add_attribute ('disabled', '1');
+				    </v:before-render>
+				  </v:text>
+				<?vsp if (self.tbln = 'WS.WS.SYS_DAV_RES') { ?>
+                		<vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="both" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="dav_path"/>
+				<?vsp } ?>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Base URL <small>(optional)</small></td>
+			      <td>
+				<v:text name="tbase" value="" xhtml_size="70" />
+			      </td>
+			    </tr>
+			    <tr>
+			      <td colspan="2">
+				<label>XQuery expression</label><br/>
+				  <v:textarea name="qr" value="" xhtml_cols="70" xhtml_rows="15"/>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td colspan="2">
+				<v:button action="simple" name="exec1" value="Execute">
+				  <v:on-post><![CDATA[
+				        declare tmp, doc_base, doc_url, ctx any;
+				        doc_base := self.tbase.ufl_value;
+					declare exit handler for sqlstate '*' {
+					  self.vc_is_valid := 0;
+					  self.vc_error_message := __SQL_MESSAGE;
+					  self.xqresult.ufl_value := '';
+					  return;
+					};
+					if (self.tbl.ufl_value = 'Use the URI' or self.tbl.ufl_value = 'No context')
+					  {
+					    ctx := '3';
+					    doc_url := self.dav_path.ufl_value;
+					    if (not length (doc_url))
+					      ctx := '0';
+					  }
+					else
+					  {
+					    ctx := '1';
+					    doc_url := sprintf ('virt://%s.%s.%s:%s',
+					    self.tbl.ufl_value, self.tbkey.ufl_value,
+					    self.tbdt.ufl_value, self.dav_path.ufl_value);
+					  }
+					tmp := y_execute_xq (self.qr.ufl_value, 'root', doc_base, doc_url,
+					  ctx, '0');
+					self.xqresult.ufl_value := tmp;
+				    ]]></v:on-post>
+				</v:button>
+				<v:button action="simple" name="sav1" value="Save">
+				  <v:on-post>
+
+				    self.exec1.vc_focus := 1;
+				    self.exec1.vc_user_post (e);
+
+				    if (self.vc_is_valid)
+				      {
+					self.t_qry.vc_enabled := 0;
+					self.step := 1;
+					self.t_save.vc_data_bind (e);
+				      }
+				  </v:on-post>
+				</v:button>
+				<v:button action="simple" name="load1" value="Load">
+				  <v:on-post>
+				    self.vc_redirect ('xquery_templates.vspx?ret=xquery_adv.vspx');
+				  </v:on-post>
+				</v:button>
+				  <v:button action="simple" name="reset1" value="Clear">
+				    <v:on-post>
+				      self.vc_redirect ('xquery_adv.vspx');
+				    </v:on-post>
+				  </v:button>
+			      </td>
+			    </tr>
+			  </table>
+	 	    <?vsp if (length (self.xqresult.ufl_value)) { ?>
+
+		    <v:textarea name="xqresult" xhtml_language="xml" value="" xhtml_rows="5" xhtml_cols="70"/>
+                    <?vsp
+		    http ('<script language="javascript" src="syntax/shCore.js"></script>');
+		    http ('<script language="javascript" src="syntax/shBrushXml.js"></script>');
+		    http ('<script language="javascript">dp.SyntaxHighlighter.HighlightAll(''xqresult'', true, false);</script>');
+		    }
+		    ?>
+			</v:form>
+		      </v:template>
+		      <v:template name="t_save" type="simple" enabled="--equ (self.step, 1)">
+			<v:form name="save_form" type="simple" method="POST">
+			  <table border="0" cellspacing="0" class="ctl_grp" cellpadding="5" align="center">
+			    <caption>Save XQuery as a XML Template</caption>
+			    <tr>
+			      <td>Root Element</td><td>
+				<v:text name="root_element" value="ROOT" />
+			      </td>
+			      <td></td><td>
+
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>File of XML template</td><td>
+				<v:text name="save_path" xhtml_size="40" value="--coalesce (control.ufl_value,
+				  self.store_path, '')" />
+				<vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes"
+				  flt_pat="" path="DAV" browse_type="col"
+				  w_title="DAV Browser" title="DAV Browser" lang="en" return_box="save_path"/>
+			      </td>
+			      <td colspan="2" align="center">Permissions
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Stylesheet for XSLT</td><td>
+        <v:text name="style_path_control" xhtml_size="40"/>
+        <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.xsl" path="DAV" browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="style_path_control"/>
+			      </td>
+			      <td colspan="2" rowspan="2">
+				<table>
+				  <tr>
+				     <td colspan="3">Owner</td><td colspan="3">Group</td><td colspan="3">Users</td><td>Idx</td>
+				     <tr align="center">
+				       <td>r
+				       </td>
+				       <td>w
+				       </td>
+				       <td>x
+				       </td>
+				       <td>r
+				       </td>
+				       <td>w
+				       </td>
+				       <td>x
+				       </td>
+				       <td>r
+				       </td>
+				       <td>w
+				       </td>
+				       <td>x
+				       </td>
+				       <td>
+				       </td>
+				     </tr>
+				     <tr>
+				       <td>
+					 <v:check-box name="cb1" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb2" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb3" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb4" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb5" value="1" initial-checked="0"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb6" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb7" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb8" value="1" initial-checked="0"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb9" value="1" initial-checked="1"/>
+				       </td>
+				       <td>
+					 <v:check-box name="cb0" value="1" initial-checked="0"/>
+				       </td>
+				     </tr>
+				  </tr>
+				</table>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td>Description</td><td>
+				<v:text name="t_desc" value="" xhtml_size="70"/>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td colspan="4">
+				<v:button action="simple" name="save_tm" value="Save">
+	  <v:on-post><![CDATA[
+	   declare save_path, dav_folder_owner, dav_folder_group, file_perms, folders_message, res_string,
+				    style_path, doc_elem, doc_url, user_perm any;
+
+	   save_path := self.save_path.ufl_value;
+	   style_path := self.style_path_control.ufl_value;
+	   doc_elem := self.root_element.ufl_value;
+
+	   if (save_path = '' )
+	     {
+		self.vc_error_message := 'Path to save result in is empty. Enter a  correct path.';
+		self.vc_is_valid := 0;
+		return;
+	     }
+	   else
+	      {
+		if (dav_path_validate(save_path,dav_folder_owner, dav_folder_group, file_perms, folders_message) <> 1 )
+		  {
+		     self.vc_error_message := sprintf('Path to store into is invalid. Path validation was failed: "%s"',
+		  		folders_message);
+		     self.vc_is_valid := 0;
+		     return;
+		  }
+		else if (dav_check_permissions(connection_get('vspx_user'), file_perms,'010' ,
+		  dav_folder_owner, dav_folder_group, folders_message) <> 1)
+		  {
+		    self.vc_error_message := sprintf('You are unable to store this file: "%s"', folders_message);
+		    self.vc_is_valid := 0;
+		    return;
+		  }
+		}
+
+	   user_perm:='';
+	   user_perm:=concat(user_perm, chr(self.cb1.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb2.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb3.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb4.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb5.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb6.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb7.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb8.ufl_selected + 48));
+	   user_perm:=concat(user_perm, chr(self.cb9.ufl_selected + 48));
+	   if (self.cb0.ufl_selected)
+	     user_perm:=concat(user_perm, 'R');
+	   else
+	     user_perm:=concat(user_perm, 'N');
+
+               res_string := '<?xml version="1.0" encoding="UTF-8"?>';
+               res_string := concat(res_string, '<', doc_elem, ' xmlns:sql="urn:schemas-openlink-com:xml-sql"');
+               if (length(style_path) > 0)
+                 res_string := concat(res_string,' sql:xsl="', style_path,'">');
+               else
+                 res_string := concat(res_string,'>');
+		 res_string := concat(res_string,'<sql:xquery');
+
+	       doc_url := '';
+               if (self.tbl.ufl_value = 'Use the URI')
+                 doc_url := self.dav_path.ufl_value;
+               else
+	         doc_url := sprintf ('virt://%s.%s.%s:%s', self.tbl.ufl_value,
+	            self.tbkey.ufl_value, self.tbdt.ufl_value, self.dav_path.ufl_value);
+
+               res_string := concat(res_string,' sql:context="', doc_url ,'">');
+
+               res_string := concat(res_string,'<![CDATA[',self.qr.ufl_value, ']]','></sql:xquery>');
+	       res_string := concat(res_string, '</', doc_elem, '>');
+
+	       YAC_DAV_RES_UPLOAD (save_path,  res_string, 'text/xml',user_perm,
+	          'dav', 'administrators');
+               YAC_DAV_PROP_SET (save_path,'xml-template','execute');
+	       if (length (self.t_desc.ufl_value))
+	         {
+	           YAC_DAV_PROP_SET (save_path, 'xml-sql-description', self.t_desc.ufl_value);
+	         }
+
+	    self.t_save.vc_enabled := 0;
+	    self.step := 0;
+	    self.t_qry.vc_data_bind (e);
+	    ]]></v:on-post>
+				</v:button>
+				<v:button action="simple" name="cancel_tm" value="Cancel">
+				  <v:on-post>
+				    self.t_save.vc_enabled := 0;
+				    self.step := 0;
+				    self.t_qry.vc_data_bind (e);
+				  </v:on-post>
+				</v:button>
+			      </td>
+			    </tr>
+			  </table>
+			</v:form>
+		      </v:template>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+  </vm:pagebody>
+ </vm:pagewrapper>
+</v:page>

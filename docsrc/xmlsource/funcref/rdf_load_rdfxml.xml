@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2013 OpenLink Software
+  Copyright (C) 1998-2019 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -72,7 +72,7 @@
 -->
   <refsect1 id="examples_rdf_load_rdfxml">
     <title>Examples</title>
-    <example id="ex_rdf_load_rdfxml"><title></title>
+    <example id="ex_rdf_load_rdfxml"><title>Simple Use</title>
       <para>Load from local file:</para>
       <screen><![CDATA[
 SQL>sparql drop graph <http://www.biopax.org/prototype#sample-closure>;
@@ -105,10 +105,10 @@ _______________________________________________________________________________
   </refsect1>
   <refsect1 id="seealso_rdf_load_rdfxml">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT</function></link></para>
-    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP</function></link></para>
-    <para><link linkend="fn_ttlp_nt"><function>DB.DBA.TTLP_MT</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_backup_metadata"><function>DB.DBA.RDF_BACKUP_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_load_rdfxml_mt"><function>DB.DBA.RDF_LOAD_RDFXML_MT()</function></link></para>
+    <para><link linkend="fn_ttlp"><function>DB.DBA.TTLP()</function></link></para>
+    <para><link linkend="fn_ttlp_nt"><function>DB.DBA.TTLP_MT()</function></link></para>
   </refsect1>
 </refentry>

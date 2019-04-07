@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@
     <refsect2><title>pwd</title><para>The password of the dba user.</para></refsect2>
   </refsect1>
   <refsect1 id="examples_http_unlock"><title>Examples</title>
-  <example id="ex_http_unlock"><title></title>
+  <example id="ex_http_unlock"><title>Simple Use</title>
   <screen><![CDATA[
 SQL> http_unlock('password');
 
@@ -56,7 +56,7 @@ SQL>
   </refsect1>
     <refsect1 id="seealso_http_unlock">
     <title>See Also</title>
-    <para><link linkend="fn_http_lock"><function>http_lock</function></link></para>
+    <para><link linkend="fn_http_lock"><function>http_lock()</function></link></para>
   </refsect1>
 </refentry>
 

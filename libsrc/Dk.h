@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,20 @@
 #ifndef _DK_H
 #define _DK_H	/* libutil needs this name !!! */
 
+#ifndef VIRT_C_LINKAGE
+#ifdef __cplusplus
+#define VIRT_C_LINKAGE "C"
+#define VIRT_API_BEGIN extern "C" {
+#define VIRT_API_END }
+#else
+#define VIRT_C_LINKAGE
+#define VIRT_API_BEGIN
+#define VIRT_API_END
+#endif
+#endif
+
+#include "Dk/Dksystem.h"
+
 #include "plugin/exe_export.h"
 
 #ifdef LONGJMP_DEBUG
@@ -36,8 +50,6 @@
 extern void ldbg_longjmp (jmp_buf env, int value);
 #define longjmp(buf,val) ldbg_longjmp((buf),(val))
 #endif
-
-#include "Dk/Dksystem.h"
 
 /* These are about to disappear when merge is complete */
 #define PMN_THREADS	/* Activate new threading model */
@@ -69,9 +81,9 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 # define LOW_ORDER_FIRST
 #endif
 
-#ifndef MALLOC_DEBUG
-#include "util/dbgmal.h"
-#endif
+# define _IEEE_FLOATS
+
+VIRT_API_BEGIN
 
 #include "Dk/Dkparam.h"
 #include "Dk/Dktypes.h"
@@ -94,12 +106,15 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #include "Dk/Dkernel.h"
 
 #include "Thread/thread_int.h"
+#include "Dk/tlsf.h"
 
 #ifdef PMN_LOG
 # include "util/logmsg.h"
 #endif
 
 #include "Dk/Dkstubs.h"
+
+VIRT_API_END
 
 /*
  * Localization macros

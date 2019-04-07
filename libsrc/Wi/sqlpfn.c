@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -440,10 +440,10 @@ wideliteral (char *s)
 	      box = t_alloc_box (len + 1, DV_SHORT_STRING);
 	      start = s + 1;
 	      parse_string_literal ((unsigned char **) &start, (unsigned char *) box, 0);
-	      return t_box_utf8_as_wide_char (box, NULL, strlen (box), 0, DV_WIDE);
+	      return t_box_utf8_as_wide_char (box, NULL, strlen (box), 0);
 	    }
 	  else
-	    return t_box_utf8_as_wide_char (s + 2, NULL, strlen (s + 2) - 1, 0, DV_WIDE);
+	    return t_box_utf8_as_wide_char (s + 2, NULL, strlen (s + 2) - 1, 0);
 	}
       else
 	return NULL;
@@ -604,7 +604,7 @@ sqlc_ensure_primary_key (dk_set_t elements)
       t_list (5,
 	  INDEX_DEF, NULL, NULL,
 	  t_list (1, t_box_string ("_IDN")),
-	  NULL));
+	      t_list_to_array (sqlp_index_default_opts (NULL))));
   t_set_push (&elements, NULL);
   t_set_push (&elements,
       t_list (2,
@@ -671,6 +671,19 @@ t_sqlp_box_id_upcase (const char *str)
   return s;
 }
 
+caddr_t
+t_sqlp_box_id_upcase_nchars (const char * str, int len)
+{
+  /* nothing in 2 */
+  caddr_t s;
+  if (len > MAX_NAME_LEN - 2)
+    len = MAX_NAME_LEN - 2;
+  s = t_box_dv_short_nchars ((caddr_t) str, len);
+  box_tag_modify (s, DV_SYMBOL);
+  if (CM_UPPER == case_mode)
+    sqlp_upcase (s);
+  return s;
+}
 
 caddr_t
 sqlp_box_upcase (const char *str)
@@ -891,7 +904,7 @@ sqlp_table_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int do_c
   char temp[MAX_QUAL_NAME_LEN];
 
   if (do_case)
-    sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, o, max_o);
+    sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, o, max_o);
 
   if (o)
     sqlp_check_infoschema (o);
@@ -921,7 +934,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
       if (!CASEMODESTRCMP (as_new_name, sqlp_udt_current_type))
 	return as_new_name;
     }
-  udt = sch_name_to_type (top_sc->sc_cc->cc_schema, as_new_name);
+  udt = sch_name_to_type (wi_inst.wi_schema, as_new_name);
   if (udt)
     return as_new_name;
   if (q)
@@ -930,7 +943,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
     snprintf (temp, sizeof (temp), "%s.%s", o, n);
   else
     snprintf (temp, sizeof (temp), "%s", n);
-  udt = sch_name_to_type (top_sc->sc_cc->cc_schema, temp);
+  udt = sch_name_to_type (wi_inst.wi_schema, temp);
   if (udt)
     return (t_box_string (udt->scl_name));
   return as_new_name;
@@ -940,7 +953,7 @@ sqlp_type_name (char *q, size_t max_q, char *o, size_t max_o, char *n, int add_i
       caddr_t as_new_name = sqlp_new_table_name (q, o, n);
       udt = udt_alloc_class_def (as_new_name);
       udt->scl_ext_lang = sqlp_udt_current_type_lang == UDT_LANG_NONE ? UDT_LANG_SQL : sqlp_udt_current_type_lang;
-      id_hash_set (top_sc->sc_cc->cc_schema->sc_name_to_type,
+      id_hash_set (wi_inst.wi_schema->sc_name_to_type,
 	  (caddr_t) & udt->scl_name,
 	  (caddr_t) & udt);
       return as_new_name;
@@ -971,7 +984,7 @@ sqlp_new_table_name (char *q, size_t max_q, char *o, size_t max_o, char *n)
   char *q2 = q ? q : sqlc_client ()->cli_qualifier;
   char *o2 = o ? o : CLI_OWNER (sqlc_client ());
 
-  sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, o, max_o);
+  sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, o, max_o);
 
   snprintf (temp, sizeof (temp), "%s.%s.%s", q2, o2, n);
 /*  dk_free_box (q);
@@ -984,7 +997,7 @@ caddr_t
 sqlp_new_qualifier_name (char *q, size_t max_q)
 {
   caddr_t new_q = t_box_string (q);
-  sch_normalize_new_table_case (top_sc->sc_cc->cc_schema, q, max_q, NULL, 0);
+  sch_normalize_new_table_case (wi_inst.wi_schema, q, max_q, NULL, 0);
   return new_q;
 }
 
@@ -1153,7 +1166,7 @@ sqlp_expand_1_star_table_ref (ST * col, ST * tb_ref, dk_set_t * exp)
 	  dbe_table_t *tb;
 
 	  sqlp_infoschema_redirect_tb (tb_name, new_tb_name, sizeof (new_tb_name), NULL);
-	  tb = sch_name_to_table (top_sc->sc_cc->cc_schema,
+	  tb = sch_name_to_table (wi_inst.wi_schema,
 					       new_tb_name);
 	  if (!tb)
 	    sqlp_no_table (tb_pref, tb_name);
@@ -1275,6 +1288,7 @@ ST **
 sqlp_wrapper_sqlxml (ST ** selection)
 {
   int inx;
+  /* dk_check_tree_mp_or_plain (selection, 1000); */
   DO_BOX (ST *, arg, inx, selection)
   {
     selection[inx] = sqlp_wrapper_sqlxml_assign (arg);
@@ -1474,11 +1488,7 @@ sqlp_complete_fun_ref (ST * tree)
     {
       /* count of non-* */
       ST * arg = tree->_.fn_ref.fn_arg; /* not AMMSC_USER so it's argument, not a vector of them */
-      ST * exp = (ST*) t_list (2, SEARCHED_CASE,
-			     t_list (4, t_list (4, BOP_NULL, arg, NULL, NULL),
-				   box_num (0),
-				   t_list (2, QUOTE, NULL),
-				   box_num (1)));
+      ST * exp = (ST*) t_list (3, CALL_STMT, t_sqlp_box_id_upcase  ("isnotnull"), t_list (1, arg));
       tree->_.fn_ref.fn_arg = exp;
       tree->_.fn_ref.fn_code = AMMSC_COUNTSUM;
     }
@@ -1541,7 +1551,6 @@ sqlp_view_u_id (void)
 }
 
 
-dk_set_t html_lines;
 
 caddr_t
 sqlp_html_string (void)
@@ -1647,17 +1656,17 @@ sqlp_for_statement (ST * sel, ST * body)
 		      while_fetch,
 		      while_handler,
 		      body),
-		  t_box_num (scn3_lineno),
+		  t_box_num (global_scs->scs_scn3c.lineno),
 		  t_box_num (scn3_get_lineno()),
 		  t_box_string (scn3_get_file_name())
 		        )),
 	  t_list (3, LABELED_STMT, t_box_string (cn),
 		t_list (5, COMPOUND_STMT, t_list (0),
-		  t_box_num (scn3_lineno),
+		  t_box_num (global_scs->scs_scn3c.lineno),
 		  t_box_num (scn3_get_lineno()),
 		  t_box_string (scn3_get_file_name())
 		  ))),
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())
 	);
@@ -1892,7 +1901,8 @@ sqlp_contains_opts (ST * tree)
 		  || 0 == stricmp (name, "attr_ranges")
 		  || 0 == stricmp (name, "score")
 		  || 0 == stricmp (name, "score_limit")
-		  || 0 == stricmp (name, "end_id"))
+		  || 0 == stricmp (name, "end_id")
+		  || 0 == stricmp (name, "ext_fti") )
 		{
 /*		  dk_free_tree ((caddr_t) arg);*/
 		  tree->_.call.params[inx] = (ST *) t_box_string (name);
@@ -1991,6 +2001,8 @@ sqlp_xpath_or_xquery_eval (ST * funcall_tree)
       char buf[30];
       ST **old_params = funcall_tree->_.call.params;
       size_t old_argcount = BOX_ELEMENTS (old_params);
+  if (enable_vec)
+    return; /* FIXME: the _w_cache  do not run vectored, hack with ssl should be made vectored  */
       if (2 > old_argcount)
     yyerror ("Functions xpath_eval() and xquery_eval() require at least two arguments");
       if (DV_STRING == DV_TYPE_OF(old_params[0]))
@@ -2116,6 +2128,7 @@ sqlp_xpath_funcall_or_apply (ST * funcall_tree)
             }
         }
       xqr = xqr_stub_for_funcall (metas, fn_argcount);
+      xqr->xqr_key = box_copy (old_params[0]);
       /*t_trash_push (xqr);*/
       old_params[0] = (ST *)xqr;
     }
@@ -2266,7 +2279,9 @@ generic_check:
               dk_free_box (ret_val);
               goto not_a_constant_pure; /* see below */
             }
-          lit = (ST *)(t_full_box_copy_tree (ret_val));
+	  lit = (ST *)(t_full_box_copy_tree (ret_val));
+	  if (DV_TYPE_OF (ret_val) == DV_RDF)
+	    lit = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__rdflit"), t_list (1, lit));
             dk_free_box (ret_val);
           return lit;
 not_a_constant_pure: ;
@@ -2276,6 +2291,8 @@ not_a_constant_pure: ;
   return funcall_tree;
 }
 
+
+extern caddr_t uname_one_of_these;
 
 ST *
 sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
@@ -2316,7 +2333,7 @@ sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
   else
     {
       ST * res =
-	t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("one_of_these"),
+	t_listst (3, CALL_STMT, uname_one_of_these,
 		t_list_to_array (t_CONS (left, right)));
       if (is_not)
 	return (t_listst (3, BOP_EQ, t_box_num (0), res));
@@ -2347,7 +2364,7 @@ sqlp_pl_file (char * text)
           sem++;
 
 	  line_no = atol (sem);
-	  if (scn3_pragmaline_depth == 0)
+	  if (global_scs->scs_scn3c.pragmaline_depth == 0)
 	    { /* only on top level */
 	      pl_file_offs = atol (sem);
 	      pl_file = t_alloc_box (len+1, DV_STRING);
@@ -2365,8 +2382,8 @@ void _br_push (void)
 {
   if (parse_pldbg)
     {
-      t_set_push(&sql3_ppbreaks, t_box_num(scn3_plineno));
-      t_set_push(&sql3_pbreaks, t_box_num(scn3_lineno));
+      t_set_push(&sql3_ppbreaks, t_box_num(global_scs->scs_scn3c.plineno));
+      t_set_push(&sql3_pbreaks, t_box_num(global_scs->scs_scn3c.lineno));
       t_set_push(&sql3_breaks, t_box_num(scn3_get_lineno()));
     }
 }
@@ -2384,10 +2401,10 @@ void _br_pop (void)
 void _br_set (void)
 {
   if (parse_pldbg && sql3_pbreaks &&
-      (int) unbox ((box_t) sql3_pbreaks->data) != scn3_lineno)
+      (int) unbox ((box_t) sql3_pbreaks->data) != global_scs->scs_scn3c.lineno)
     {
-      sql3_ppbreaks->data = (void *)t_box_num(scn3_plineno);
-      sql3_pbreaks->data = (void *)t_box_num(scn3_lineno);
+      sql3_ppbreaks->data = (void *)t_box_num(global_scs->scs_scn3c.plineno);
+      sql3_pbreaks->data = (void *)t_box_num(global_scs->scs_scn3c.lineno);
       sql3_breaks->data = (void *)t_box_num(scn3_get_lineno());
     }
 }
@@ -2444,12 +2461,12 @@ ST * sqlp_c_for_statement (ST **init, ST *cond, ST **inc, ST * body)
 
   cst[init_cnt] = t_listst (3, WHILE_STMT, cond, t_listst (5, COMPOUND_STMT,
 	incst,
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())));
 
   res = t_listst (5, COMPOUND_STMT, cst,
-      t_box_num (scn3_lineno),
+      t_box_num (global_scs->scs_scn3c.lineno),
       t_box_num (scn3_get_lineno()),
       t_box_string (scn3_get_file_name()));
   return res;
@@ -2495,7 +2512,7 @@ ST * sqlp_foreach_statement (ST *data_type, caddr_t var, ST *arr, ST *body)
 			    CALL_STMT, t_sqlp_box_id_upcase ("aref"),
 			      t_list (2, arr, t_box_copy_tree ((caddr_t) inx))))),
 	  body),
-	t_box_num (scn3_lineno),
+	t_box_num (global_scs->scs_scn3c.lineno),
 	t_box_num (scn3_get_lineno()),
 	t_box_string (scn3_get_file_name())));
 }
@@ -2542,15 +2559,16 @@ sqlp_breakup (ST * sel)
   if (sel->_.select_stmt.top || !sel->_.select_stmt.table_exp
       || sel->_.select_stmt.table_exp->_.table_exp.order_by || sel->_.select_stmt.table_exp->_.table_exp.group_by)
     yyerror ("breakup is not compatible with distinct, group by, order by or select with no from");
-  DO_BOX (dk_set_t, term_list, inx, terms)
+  DO_BOX_FAST (ST **, term_list, inx, terms)
     {
-if (!inx)
-  continue; /* the 0th elt is a marker.  Not part of the breakup set */
+      int exp_inx;
+      if (!inx)
+        continue; /* the 0th elt is a marker.  Not part of the breakup set */
       if (is_first)
-	brk_len = dk_set_length (term_list);
-      else if (brk_len != dk_set_length (term_list))
+	brk_len = BOX_ELEMENTS (term_list);
+      else if (brk_len != BOX_ELEMENTS (term_list))
 	yyerror ("breakup terms lists are not of even length");
-      DO_SET (ST *, exp, &term_list)
+      DO_BOX_FAST (ST *, exp, exp_inx, term_list)
 	{
 	  if (!is_first)
 	    {
@@ -2562,7 +2580,7 @@ if (!inx)
 	  else
 	    t_set_push (&new_terms, (void*) exp);
 	}
-      END_DO_SET();
+      END_DO_BOX_FAST;
       is_first = 0;
     }
   END_DO_BOX;
@@ -2625,4 +2643,80 @@ sqlp_is_num_lit (caddr_t x)
       return 1;
     default: return 0;
     }
+}
+
+
+char *
+sqlp_default_cluster ()
+{
+  return "__ALL";
+}
+
+
+dk_set_t
+cl_all_host_group_list ()
+{
+  dk_hash_t *visited = NULL;
+  dk_set_t res = NULL;
+  int inx;
+  for (inx = local_cll.cll_max_host; inx > 0; inx--)
+    {
+      cl_host_t *ch;
+      if ((ch = cl_id_to_host (inx)))
+	{
+	  char name[20];
+	  snprintf (name, sizeof (name), "Host%d", inx);
+	  if (ch->ch_replica)
+	    {
+	      if (!visited)
+		visited = hash_table_allocate (11);
+	      if (gethash ((void *) ch, visited))
+		continue;
+	      {
+		caddr_t *h_list = (caddr_t *) t_alloc_box (sizeof (caddr_t) * dk_set_length (ch->ch_replica), DV_ARRAY_OF_POINTER);
+		int fill = 0;
+		sethash ((void *) ch, visited, (void *) 1);
+		DO_SET (cl_host_t *, repl, &ch->ch_replica)
+		{
+		  snprintf (name, sizeof (name), "Host%d", repl->ch_id);
+		  sethash ((void *) repl, visited, (void *) 1);
+		  h_list[fill++] = t_sym_string (name);
+		}
+		END_DO_SET ();
+		dk_set_push (&res, t_list (3, NULL, h_list, NULL));
+	      }
+	    }
+	  else
+	  dk_set_push (&res, t_list (3, NULL, t_list (1, t_sym_string (name)), NULL));
+	}
+    }
+  if (visited)
+    hash_table_free (visited);
+  return res;
+}
+
+int enable_col_by_default  = 0;
+
+dk_set_t
+sqlp_index_default_opts(dk_set_t opts)
+{
+  if (enable_col_by_default)
+    {
+      DO_SET (caddr_t, opt, &opts)
+	{
+	  if (0 == stricmp (opt,  "not_column")
+	      || 0 == stricmp (opt,  "column")
+	      || 0 == stricmp (opt,  "bitmap"))
+	    return opts;
+	}
+      END_DO_SET();
+      return t_cons (t_box_string ("column"), opts);
+    }
+  return opts;
+}
+
+char *
+sqlp_inx_col_opt ()
+{
+    return "column";
 }

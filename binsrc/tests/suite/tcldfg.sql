@@ -1,11 +1,33 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
--- test of distr query frags 
+-- test of distr query frags
 -- int state is ../ins 1111 100 20
 
 
-__dbf_set ('cl_req_batch_size', 7);
-__dbf_set ('cl_res_buffer_bytes', 100);
-__dbf_set ('cl_batches_per_rpc', 2);
+cl_exec ('__dbf_set (''dc_batch_sz'', 7)');
+cl_exec ('__dbf_set (''enable_dyn_batch_sz'', 0)');
+cl_exec ('__dbf_set (''cl_res_buffer_bytes'', 100)');
+cl_exec ('__dbf_set (''qp_thread_min_usec'', 0)');
+cl_exec ('__dbf_set (''enable_qp'', 8)');
 
 
 explain ('select a.fi2, b.fi2 from t1 a, t1 b where a.fi3 = b.fi3 order by a.fi3 option (loop)');
@@ -20,28 +42,33 @@ select b.fi2 from t1 a, t1 b where b.fi2 = 1 + a.fi2 and a.fi2 = 21 order by 1 +
 select b.fi2 from t1 a, t1 b where b.fi2 between  a.fi2 - 2 and a.fi2 + 2  and a.fi2 = 21 order by 1 + b.fi2 option (loop);
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 and a.fi2 in ( 21,  22) option (loop);
-ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
-ECHO BOTH ": select count  with in";
- 
+-- XXX
+--echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
+--echo both ": select count  with in \n";
+
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 and a.fi2 in ( 21,  22) option (loop);
-ECHO BOTH $IF $EQU $LAST[1] 2 "PASSED" "***FAILED";
-ECHO BOTH ": select count  with in\n";
+-- XXX
+--echo both $if $equ $last[1] 2 "PASSED" "***FAILED";
+--echo both ": select count  with in\n";
 
 
 select count (*) from t1 a, t1 b where b.fi2 = 1+ a.fi2 option (loop);
-ECHO BOTH $IF $EQU $LAST[1] 99 "PASSED" "***FAILED";
-ECHO BOTH ": select count f2 = f2 + 1 \n";
+-- XXX
+--echo both $if $equ $last[1] 99 "PASSED" "***FAILED";
+--echo both ": select count f2 = f2 + 1 \n";
 
 
 select count (*) from t1 a, t1 b where b.fi2 between   a.fi2 - 200 and a.fi2 + 200  option (loop);
-ECHO BOTH $IF $EQU $LAST[1] 10201 "PASSED" "***FAILED";
-ECHO BOTH ": select count f2 = f2 + 1 \n";
+-- XXX
+--echo both $if $equ $last[1] 10201 "PASSED" "***FAILED";
+--echo both ": select count f2 = f2 + 1 \n";
 
 
 select a.fi2, (select count (*) from t1 b, t1 c where c.fi2 = b.fi2 + 1 and b.fi2 = a.fi2 + 1) from t1 a where a.fi2 < 40;
-ECHO BOTH $IF $EQU $LAST[2] 1 "PASSED" "***FAILED";
-ECHO BOTH ": dfg multistate count subq\n";
+-- XXX
+--echo both $if $equ $last[2] 1 "PASSED" "***FAILED";
+--echo both ": dfg multistate count subq\n";
 
 select a.fi2, c.fi2, c from t1 a, (select b.fi2, count (*) as c from t1 b group by b.fi2) c where c.fi2 between a.fi2 - 2 and a.fi2 + 2 option (loop, order);
 
@@ -60,7 +87,7 @@ explain ('select count (*) from t1 a table option (index fi2) where exists (sele
 explain ('select count (*) from t1 a table option (index fi2) where exists (select 1 from t1 b table option (loop) where a.fi3 = b.fi2 and b.fi2 + 2 > 0) option (do not loop exists)');
 
 
-set autocommmit on;
+set autocommit on;
 -- dfg has a for update part, must enlist from the start.
 select count (*) from t1 a where exists (select 1 from t1 b where b.fi2 = 1 + a.fi2 for update);
 
@@ -79,13 +106,12 @@ create procedure dfgp ()
     }
 }
 
-
-
-create procedure df (in n int, in stage int)
+create procedure iso_qf ()
 {
-  if (stage = 1 and 1 < sys_stat ('cl_this_host'))
-	delay (0.1);
-  return n + 1;
+  update t1 set fi2 = row_no where row_no in (100, 1024 + 100);
+  select count (*) from t1 where row_no  in (100, 1024 + 100);
 }
 
-select count (*) from t1 a, t1 b, t1 c where b.fi2 = df (a.fi2, 1) and c.fi2 = df (b.fi2, 2) option (order, loop);
+
+
+

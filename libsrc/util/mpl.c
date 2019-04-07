@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,7 +58,7 @@ getcore (memsz_t size)
       abort ();
 # endif
       log (L_ERR, "out of memory");
-      terminate (1);
+      terminate_program (1);
     }
 #endif
 

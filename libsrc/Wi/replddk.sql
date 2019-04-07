@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -45,25 +45,6 @@ create view TP_ITEM as select * from SYS_TP_ITEM where TI_SERVER = repl_this_ser
 exec ('grant select on TP_ITEM to PUBLIC')
 ;
 
---#IF VER=5
-alter table SYS_REPL_ACCOUNTS add IS_UPDATEABLE integer
-;
-
-alter table SYS_REPL_ACCOUNTS add SYNC_USER varchar
-;
-
-alter table SYS_REPL_ACCOUNTS add P_MONTH integer
-;
-
-alter table SYS_REPL_ACCOUNTS add P_DAY integer
-;
-
-alter table SYS_REPL_ACCOUNTS add P_WDAY integer
-;
-
-alter table SYS_REPL_ACCOUNTS add P_TIME time
-;
---#ENDIF
 
 create view REPL_ACCOUNTS as select SERVER, ACCOUNT from SYS_REPL_ACCOUNTS
        where SERVER = repl_this_server () and ACCOUNT <> repl_this_server ()

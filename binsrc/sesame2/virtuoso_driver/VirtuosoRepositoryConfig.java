@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,8 @@ import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.FETCHSIZE;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.ROUNDROBIN;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.RULESET;
 import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.BATCHSIZE;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.INSERTBNodeAsVirtuosoIRI;
+import static virtuoso.sesame2.driver.config.VirtuosoRepositorySchema.USE_DEF_GRAPH_FOR_QUERIES;
 
 import org.openrdf.model.Graph;
 import org.openrdf.model.Literal;
@@ -39,6 +41,7 @@ import org.openrdf.model.Resource;
 import org.openrdf.model.URI;
 import org.openrdf.model.util.GraphUtil;
 import org.openrdf.model.util.GraphUtilException;
+import org.openrdf.model.ValueFactory;
 import org.openrdf.repository.config.RepositoryConfigException;
 import org.openrdf.repository.config.RepositoryImplConfigBase;
 
@@ -56,13 +59,17 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 
 	private boolean useLazyAdd;
 
-	private int fetchSize = 200;
+	private int fetchSize = 100;
 
 	private boolean roundRobin;
 
 	private String ruleSet;
 
 	private int batchSize = 5000;
+
+	private boolean insertBNodeAsVirtuosoIRI = false;
+
+	private boolean useDefGraphForQueries = false;
 
 	public VirtuosoRepositoryConfig() {
 		super(VirtuosoRepositoryFactory.REPOSITORY_TYPE);
@@ -145,13 +152,31 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	}
 
 	public int getBatchSize() {
-		return fetchSize;
+		return batchSize;
 	}
 
 	public void setBatchSize(int batchSize) {
 		this.batchSize = batchSize;
 	}
 
+
+	public void setInsertBNodeAsVirtuosoIRI(boolean v) {
+		this.insertBNodeAsVirtuosoIRI = v;
+	}
+
+	public boolean getInsertBNodeAsVirtuosoIRI() {
+		return this.insertBNodeAsVirtuosoIRI;
+	}
+
+	
+	public void setUseDefGraphForQueries(boolean v) {
+		this.useDefGraphForQueries = v;
+	}
+
+	public boolean getUseDefGraphForQueries() {
+		return this.useDefGraphForQueries;
+	}
+	
 
 	@Override
 	public void validate()
@@ -167,32 +192,38 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 	public Resource export(Graph graph) {
 		Resource implNode = super.export(graph);
 
+		ValueFactory vf = graph.getValueFactory();
+
 		if (hostlist != null) {
 //--			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist), new Resource[0]);
-			graph.add(implNode, HOSTLIST, graph.getValueFactory().createLiteral(hostlist));
+			graph.add(implNode, HOSTLIST, vf.createLiteral(hostlist));
 		}
 		if (username != null) {
-			graph.add(implNode, USERNAME, graph.getValueFactory().createLiteral(username));
+			graph.add(implNode, USERNAME, vf.createLiteral(username));
 		}
 		if (password != null) {
-			graph.add(implNode, PASSWORD, graph.getValueFactory().createLiteral(password));
+			graph.add(implNode, PASSWORD, vf.createLiteral(password));
 		}
 
 		if (defGraph != null) {
-			graph.add(implNode, DEFGRAPH, graph.getValueFactory().createLiteral(defGraph));
+			graph.add(implNode, DEFGRAPH, vf.createLiteral(defGraph));
 		}
 
 		if (ruleSet != null && ruleSet.length() > 0 && !ruleSet.equals("null")) {
-			graph.add(implNode, RULESET, graph.getValueFactory().createLiteral(ruleSet));
+			graph.add(implNode, RULESET, vf.createLiteral(ruleSet));
 		}
 
-		graph.add(implNode, USELAZYADD, graph.getValueFactory().createLiteral(new Boolean(useLazyAdd).toString()));
+		graph.add(implNode, USELAZYADD, vf.createLiteral(new Boolean(useLazyAdd).toString()));
 
-		graph.add(implNode, ROUNDROBIN, graph.getValueFactory().createLiteral(new Boolean(roundRobin).toString()));
+		graph.add(implNode, ROUNDROBIN, vf.createLiteral(new Boolean(roundRobin).toString()));
 
-		graph.add(implNode, FETCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(fetchSize,10)));
+		graph.add(implNode, FETCHSIZE, vf.createLiteral(Integer.toString(fetchSize,10)));
 
-		graph.add(implNode, BATCHSIZE, graph.getValueFactory().createLiteral(Integer.toString(batchSize,10)));
+		graph.add(implNode, BATCHSIZE, vf.createLiteral(Integer.toString(batchSize,10)));
+
+		graph.add(implNode, INSERTBNodeAsVirtuosoIRI, vf.createLiteral(new Boolean(insertBNodeAsVirtuosoIRI).toString()));
+
+		graph.add(implNode, USE_DEF_GRAPH_FOR_QUERIES, vf.createLiteral(new Boolean(useDefGraphForQueries).toString()));
 
 		return implNode;
 	}
@@ -222,11 +253,11 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			}
 			Literal uselazyadd = GraphUtil.getOptionalObjectLiteral(graph, implNode, USELAZYADD);
 			if (uselazyadd != null) {
-				setUseLazyAdd(Boolean.getBoolean(uselazyadd.getLabel()));
+				setUseLazyAdd(Boolean.parseBoolean(uselazyadd.getLabel()));
 			}
 			Literal roundrobin = GraphUtil.getOptionalObjectLiteral(graph, implNode, ROUNDROBIN);
 			if (roundrobin != null) {
-				setRoundRobin(Boolean.getBoolean(roundrobin.getLabel()));
+				setRoundRobin(Boolean.parseBoolean(roundrobin.getLabel()));
 			}
 			Literal fetchsize = GraphUtil.getOptionalObjectLiteral(graph, implNode, FETCHSIZE);
 			if (fetchsize != null) {
@@ -240,6 +271,15 @@ public class VirtuosoRepositoryConfig extends RepositoryImplConfigBase {
 			if (batchsize != null) {
 				setBatchSize(Integer.parseInt(batchsize.getLabel()));
 			}
+			Literal bnodeAsUri = GraphUtil.getOptionalObjectLiteral(graph, implNode, INSERTBNodeAsVirtuosoIRI);
+			if (bnodeAsUri != null) {
+				setInsertBNodeAsVirtuosoIRI(Boolean.parseBoolean(bnodeAsUri.getLabel()));
+			}
+			Literal useDefGraphForQueries = GraphUtil.getOptionalObjectLiteral(graph, implNode, USE_DEF_GRAPH_FOR_QUERIES);
+			if (useDefGraphForQueries != null) {
+				setUseDefGraphForQueries(Boolean.parseBoolean(useDefGraphForQueries.getLabel()));
+			}
+
 		}
 		catch (GraphUtilException e) {
 			throw new RepositoryConfigException(e.getMessage(), e);

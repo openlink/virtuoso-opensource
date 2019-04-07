@@ -1,0 +1,259 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="roles_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="inter" type="integer" default="0" persist="1"/>
+      <v:variable name="chk" type="integer" default="0" persist="1"/>
+      <v:variable name="c_text" type="varchar" default="''" persist="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="cont_man"  value="Repository" type="hot" url="cont_management.vspx"/>
+      <vm:menuitem name="robot_control_url" type="hot" value="Content Imports" url="robot_control.vspx"/>
+      <vm:menuitem name="txt_trig" value="Text Triggers"/>
+      <vm:menu-common value="Web server DAV repository and Web site hosting control"/>
+    </vm:menu>
+    <vm:header caption="WebDAV Text Trigger Hits"/>
+    <vm:pagebody>
+      <table>
+        <tr>
+          <td class="SubInfo">
+            <vm:url name="ind_mode_ref" format="%s" value="--'Indexing Mode'" url="--'text_triggers.vspx'"/>
+          </td>
+          <td class="SubInfo">
+            <vm:url name="search_tr_ref" format="%s" value="--'Search'" url="--'text_search.vspx'"/>
+          </td>
+          <td class="SubInfo">
+            <vm:url name="trig_que_ref" format="%s" value="--'Trigger Queries'" url="--'text_queries.vspx'"/>
+          </td>
+          <td class="SubInfo">
+            <vm:url name="trigger_result_ref" format="%s" value="--'Trigger Results'" url="--'text_results.vspx'"/>
+          </td>
+        </tr>
+      </table>
+      <?vsp
+        declare _u_id, _tt_id, _tth_d_id integer;
+        declare err, _query, _comment, stat, _sid_id varchar;
+        -- This parameters is needed for WebDAV browser
+        declare _current_uri, _show_browser, _trf_doc, _q_scope, _sty_to_ent, _disp_result, _sys, _mod varchar;
+        declare _dav_result any;
+        _show_browser := null;
+        _dav_result := null;
+        _current_uri := 'ftt_hits.vsp';
+        _disp_result := 'yes';
+        -- end DAV browser parameters
+        stat := null;
+        set isolation='uncommitted';
+        _u_id := DB.DBA.adm_dav_check_auth (lines, 1);
+        if ( _u_id < 1)
+        {
+          http_request_status ('HTTP/1.1 401 Unauthorized');
+          http ( concat ('<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML 2.0//EN">', '<HTML><HEAD>', '<TITLE>401 Unauthorized</TITLE>', '</HEAD><BODY><H1>Unauthorized</H1>', 'Access to page is forbidden.</BODY></HTML>'));
+          return (0);
+        }
+        _sid_id := adm_get_sesid (params);
+        if ('' <> get_keyword ('dav_st', params, '') or '' <> get_keyword ('dav_qs', params, ''))
+        {
+          _show_browser := 'yes';
+          _disp_result := 'no';
+        }
+      ?>
+      <?include admin_dav_browse.vsp ?>
+      <?vsp
+        if (_show_browser is null)
+        {
+          _tt_id := atoi (get_keyword ('tt_id', params, '0'));
+          _tth_d_id := atoi (get_keyword ('tth_d_id', params, '0'));
+          if (_dav_result is not null and _dav_result <> '' and exists (select 1 from WS.WS.SYS_DAV_RES where RES_ID = _tth_d_id))
+          {
+            declare _content, _res_name any;
+            if (not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _dav_result))
+            {
+              err := 'The selected item is not a WebDAV document';
+              goto erret;
+            }
+            stat := '00000';
+            exec('xml_tree (?)', stat, err, vector(DB.DBA.XML_URI_GET ('', concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _dav_result))));
+            if (stat <> '00000')
+            {
+              err := concat ('Style sheet (', _dav_result, ') : ', err);
+              goto erret;
+            }
+            select RES_CONTENT, RES_NAME into _content, _res_name from WS.WS.SYS_DAV_RES where RES_ID = _tth_d_id;
+            exec ('xml_tree (?)', stat, err, vector (_content));
+            if (stat <> '00000')
+            {
+              err := concat ('Document (', _res_name, ') : ', err);
+              goto erret;
+            }
+            else
+              stat := null;
+            http_rewrite (0);
+            http (_content);
+            http_xslt (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _dav_result));
+            return (0);
+          }
+          if ('' <> get_keyword ('del', params, ''))
+          {
+            if (_tt_id > 0)
+            {
+              declare ix integer;
+              declare _val varchar;
+              if (_tth_d_id > 0)
+                delete from WS.WS.SYS_DAV_RES_RES_CONTENT_HIT where TTH_T_ID = _tt_id and TTH_D_ID = _tth_d_id;
+              ix := 0;
+              while (_val := adm_next_checkbox ('CB_', params, ix))
+              {
+                _tth_d_id := atoi (_val);
+                delete from WS.WS.SYS_DAV_RES_RES_CONTENT_HIT where TTH_T_ID = _tt_id and TTH_D_ID = _tth_d_id;
+              }
+            }
+            else
+            {
+              err := 'Query ID is not valid';
+              goto erret;
+            }
+          }
+          if (_tt_id > 0)
+          {
+            select distinct TT_QUERY, TT_COMMENT into _query, _comment from WS.WS.SYS_DAV_RES_RES_CONTENT_QUERY where TT_ID = _tt_id;
+        ?>
+        <form method="POST" name="del_form" action="text_results.vspx">
+          <table CLASS="MainData" BORDER="1" CELLPADDING="3" cellspacing="0">
+            <tr>
+              <th colspan="4">Current Hits</th>
+            </tr>
+            <tr>
+              <th>Document</th>
+              <th>Excerpt</th>
+              <th>Registered</th>
+              <th>Action</th>
+            </tr>
+            <?vsp
+              declare _is integer; _is := 0; for select TTH_D_ID, TTH_TS, RES_FULL_PATH, "left" (coalesce (blob_to_string (RES_CONTENT), 'empty'), 85) as CNT, RES_TYPE from WS.WS.SYS_DAV_RES_RES_CONTENT_HIT, WS.WS.SYS_DAV_RES where TTH_T_ID = _tt_id and TTH_U_ID = _u_id and RES_ID = TTH_D_ID order by TTH_TS desc do
+              {
+                _is := 1;
+            ?>
+            <tr>
+              <td CLASS="SubAction">
+                <a href="http:<?V WS.WS.STR_TO_URI(RES_FULL_PATH) ?>"><?V RES_FULL_PATH ?></a>
+              </td>
+              <td CLASS="SubAction"><?V CNT ?></td>
+              <td CLASS="SubAction"><?V DB.DBA.adm_date_fmt(TTH_TS) ?></td>
+              <td CLASS="SubAction">
+                <table BORDER="0" CELLPADDING="0">
+                  <tr>
+                    <td CLASS="SubAction">
+                      <table border="0">
+                        <tr>
+                          <td CLASS="SubAction">
+                            <a class="tablelistaction" href="text_results.vspx?tth_d_id=<?=TTH_D_ID?>&tt_id=<?=_tt_id?>&del=1&sid=<?=_sid_id?>">Remove</a>
+                          </td>
+                          <td CLASS="SubAction">
+                            <?vsp
+                              if (isstring (RES_TYPE) and strstr (RES_TYPE, 'xml') is not null)
+                              {
+                            ?>
+                            <a class="tablelistaction" href="text_results.vspx?tt_id=<?=_tt_id?>&tth_d_id=<?=TTH_D_ID?>&dav_st=1&sid=<?=_sid_id?>">Transform</a>
+                            <?vsp
+                              }
+                              else
+                                http ('&nbsp;');
+                            ?>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <?vsp
+              }
+              if (_is = 0)
+                http ('<td colspan=4 class="SubAction" align=center>*** No hits registered ***</td>');
+            ?>
+          </table>
+          <input type="hidden" name="tt_id" value="<?=_tt_id?>"/>
+          <input type="hidden" name="sid" value="<?=_sid_id?>"/>
+        </form>
+        <?vsp
+          }
+          else
+          {
+        ?>
+        <table CLASS="statlist" BORDER="1" CELLPADDING="3" CELLSPACING="0">
+          <!-- there should be added user name -->
+          <tr>
+            <th>Comment</th>
+            <th>Query</th>
+            <th>Count</th>
+          </tr>
+          <?vsp
+            declare _cnt, ht integer;
+            declare _qryt varchar;
+            for select distinct TTH_T_ID as tid, TT_XPATH, TT_QUERY, TT_COMMENT from WS.WS.SYS_DAV_RES_RES_CONTENT_HIT, WS.WS.SYS_DAV_RES_RES_CONTENT_QUERY where TTH_T_ID = TT_ID and TTH_U_ID = _u_id do
+            {
+              select count (*) into _cnt from WS.WS.SYS_DAV_RES_RES_CONTENT_HIT where TTH_T_ID = tid and TTH_U_ID = _u_id;
+              ht := 1;
+              if (TT_XPATH is not null)
+                _qryt := TT_XPATH;
+              else
+                _qryt := TT_QUERY;
+          ?>
+          <tr>
+            <td CLASS="SubAction"><?V TT_COMMENT ?></td>
+            <td CLASS="SubAction"><a href="text_results.vspx?tt_id=<?V tid ?>&sid=<?V _sid_id ?>"><?V _qryt ?></a></td>
+            <td CLASS="SubAction"><?V _cnt ?></td>
+          </tr>
+          <?vsp
+            }
+            if (ht <> 1)
+              http ('<td colspan=5 class="SubAction" align=center>*** No hits registered ***</td>');
+          ?>
+        </table>
+        <?vsp
+          }
+          -- Error exit
+          return (0);
+          erret:
+        ?>
+      <?vsp
+        }
+      ?>
+      <v:form name="inx_form" type="simple" method="POST" action="">
+        <table>
+          <tr>
+            <td colspan="2" align="center">
+
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

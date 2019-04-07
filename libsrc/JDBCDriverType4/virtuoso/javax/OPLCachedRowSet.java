@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,9 +39,7 @@ import javax.sql.*;
 import javax.naming.*;
 import openlink.util.OPLHeapBlob;
 import openlink.util.OPLHeapClob;
-#if JDK_VER >= 16
 import openlink.util.OPLHeapNClob;
-#endif
 
 /**
  *
@@ -53,8 +51,8 @@ import openlink.util.OPLHeapNClob;
  * an Enterprise JavaBeans component running in a server environment over
  * a network to a client running in a web browser.  A second use for
  * OPLCachedRowSets is to provide scrolling and updating for ResultSets that
- * don't provide these capabilities themselves.  A OPLCachedRowSet can be
- * used to augment the capabilities of a JDBC driver that doesn't have
+ * do not provide these capabilities themselves.  A OPLCachedRowSet can be
+ * used to augment the capabilities of a JDBC driver that does not have
  * full support for scrolling and updating.  Finally, a OPLCachedRowSet can
  * be used to provide Java applications with access to tabular data in an
  * environment such as a thin client or PDA, where it would be
@@ -73,7 +71,7 @@ import openlink.util.OPLHeapNClob;
  * a JDBC connection briefly while data is being read from the database
  * and used to populate it with rows, and again while updated rows are being
  * propagated back to the underlying database.  During the remainder of
- * its lifetime, a OPLCachedRowSet object isn't associated with an
+ * its lifetime, a OPLCachedRowSet object is not associated with an
  * underlying database connection. A OPLCachedRowSet object can simply be
  * thought of as a disconnected set of rows that are being cached outside
  * of a data source.  Since all data is cached in memory, OPLCachedRowSets are
@@ -105,11 +103,7 @@ public class OPLCachedRowSet extends BaseRowSet
     private RowSetMetaData rowSMD;
     private int keyCols[];
     private String tableName;
-#if JDK_VER >= 16
     private ArrayList<Object> rowsData;
-#else
-    private ArrayList rowsData;
-#endif
     private int curState = NOROWS;
     private int curRow;
     private int absolutePos;
@@ -130,11 +124,7 @@ public class OPLCachedRowSet extends BaseRowSet
   public OPLCachedRowSet() throws SQLException {
     rowSetReader = new RowSetReader();
     rowSetWriter = new RowSetWriter();
-#if JDK_VER >= 16
     rowsData = new ArrayList<Object>();
-#else
-    rowsData = new ArrayList();
-#endif
     onInsertRow = false;
     updateRow = null;
     setType(ResultSet.TYPE_SCROLL_INSENSITIVE);
@@ -191,7 +181,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * is set to the first "updated" row that resulted in an exception, in
    * the case that an exception is thrown.  With one exception, if the row
    * that caused the exception is a "deleted" row, then in the usual case,
-   * when deleted rows are not shown, the current row isn't affected.
+   * when deleted rows are not shown, the current row is not affected.
    *
    * When successful, calling acceptChanges() replaces the original value
    * of the rowset with the current value.  Note: Both the original and
@@ -236,7 +226,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Like acceptChanges() above, but takes a Connection argument.  The
    * Connection is used internally when doing the updates.  This form
-   * isn't used unless the underlying data source is a JDBC data source.
+   * is not used unless the underlying data source is a JDBC data source.
    *
    * @param _conn a database connection
    *
@@ -278,7 +268,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Populates the rowset with data.  The first form uses the properties:
    * url/data source name, user, and password to create a database
-   * connection.  If these properties haven't been set, an exception is
+   * connection.  If these properties have not been set, an exception is
    * thrown.  The second form uses an existing JDBC connection object
    * instead.  The values of the url/data source name, user, and password
    * properties are ignored when the second form is used.  Execute() closes
@@ -302,7 +292,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Populate the OPLCachedRowSet object with data from a ResultSet.  This
    * method is an alternative to execute() for filling the rowset with
-   * data.  Populate() doesn't require that the properties needed by
+   * data.  Populate() does not require that the properties needed by
    * execute(), such as the command property, be set. A RowSetChangedEvent
    * is sent to all registered listeners prior to returning.
    *
@@ -316,11 +306,7 @@ public class OPLCachedRowSet extends BaseRowSet
     tableName = null;
     keyCols = null;
 
-#if JDK_VER >= 16
     Map<String,Class<?>> map = getTypeMap();
-#else
-    Map map = getTypeMap();
-#endif
     ResultSetMetaData rsmd = rs.getMetaData();
     int colCount = rsmd.getColumnCount();
     int i;
@@ -339,11 +325,9 @@ public class OPLCachedRowSet extends BaseRowSet
         else
         if  (x instanceof Clob)
           x = new OPLHeapClob(((Clob)x).getSubString(0L, (int)((Clob)x).length()));
-#if JDK_VER >= 16
         else
         if  (x instanceof NClob)
           x = new OPLHeapNClob(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
-#endif
         row.setOrigColData(j, x);
       }
       rowsData.add(row);
@@ -436,7 +420,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * Sets the identifier for the table from which this rowset was derived
    * to the given table name.
    *
-   * Note: You don't usually need to set a table name, because the OPLCachedRowSet tries
+   * Note: You do not usually need to set a table name, because the OPLCachedRowSet tries
    * to determine the table name from your SQL query command.
    *
    * @param _tabName - a String object that identifies the table from which
@@ -462,7 +446,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * Sets this OPLCachedRowSet object's keyCols field with the given array of column numbers,
    * which forms a key for uniquely identifying a row in this rowset.
    *
-   * Note: If you don't set the keyCols, the OPLCachedRowSet will set automatically
+   * Note: If you do not set the keyCols, the OPLCachedRowSet will set automatically
    * based on RowSetMetaData
    *
    * @param keys - an array of int indicating the columns that form a key for
@@ -491,7 +475,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * has changed.  After calling cancelRowDelete()
    * the current row is no longer marked for deletion.  An exception is
    * thrown if there is no current row.  Note:  This method can be
-   * ignored if deleted rows aren't being shown (the normal case).
+   * ignored if deleted rows are not being shown (the normal case).
    *
    * @exception SQLException if an error occurs.
    */
@@ -513,7 +497,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Cancels insertion of the current row and notifies listeners that a row
    * has changed.  An exception is thrown if
-   * the row isn't an inserted row.  The current row is immediately removed
+   * the row is not an inserted row.  The current row is immediately removed
    * from the rowset.  This operation cannot be undone.
    *
    * @exception SQLException if an error occurs.
@@ -703,20 +687,12 @@ public class OPLCachedRowSet extends BaseRowSet
     int count = countRows - countDeleted;
     if (count == 0)
       return null;
-#if JDK_VER >= 16
     ArrayList<Object> tmpRowset = new ArrayList<Object>(count);
-#else
-    ArrayList tmpRowset = new ArrayList(count);
-#endif
     int colCount = rowSMD.getColumnCount();
     for(Iterator i = rowsData.iterator(); i.hasNext(); ) {
       Row row = (Row)i.next();
       if (!row.isDeleted) {
-#if JDK_VER >= 16
         ArrayList<Object> tmpCol = new ArrayList<Object>(colCount);
-#else
-        ArrayList tmpCol = new ArrayList(colCount);
-#endif
         for(int j = 1; j <= colCount; j++)
           tmpCol.add(row.getColData(j));
         tmpRowset.add(tmpCol);
@@ -727,7 +703,7 @@ public class OPLCachedRowSet extends BaseRowSet
 
   /**
    * Return a column of the rowset as a collection.  Makes a copy of the
-   * column's data.
+   * column data.
    *
    * @return a collection object
    *
@@ -737,11 +713,7 @@ public class OPLCachedRowSet extends BaseRowSet
     int count = countRows - countDeleted;
     if (count == 0)
       return null;
-#if JDK_VER >= 16
     ArrayList<Object> tmpRowset = new ArrayList<Object>(count);
-#else
-    ArrayList tmpRowset = new ArrayList(count);
-#endif
     checkColumnIndex(col);
     for(Iterator i = rowsData.iterator(); i.hasNext(); ) {
       Row row = (Row)i.next();
@@ -782,7 +754,7 @@ public class OPLCachedRowSet extends BaseRowSet
    * a copy of a rowset is completely independent from the original.
    * Making a copy saves the cost of creating an identical rowset from
    * first principles, which can be quite expensive.
-   * For example, it doesn't do the query to a remote database server.
+   * For example, it does not do the query to a remote database server.
    *
    * @return a copy of the rowset
    * @exception SQLException if an error occurs.
@@ -1550,10 +1522,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return Bin2Hex(((Blob)x).getBytes(0L, (int)((Blob)x).length()));
       else if (x instanceof Clob)
         return ((Clob)x).getSubString(0L, (int)((Clob)x).length());
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return ((NClob)x).getSubString(0L, (int)((NClob)x).length());
-#endif
       else
         return x.toString();
     }
@@ -1585,11 +1555,9 @@ public class OPLCachedRowSet extends BaseRowSet
       else if (x instanceof Clob) {
         c =((Clob)x).getSubString(0L, 1).charAt(0);
         return (c == 'T' || c == 't' || c == '1');
-#if JDK_VER >= 16
       }else if (x instanceof NClob) {
         c =((NClob)x).getSubString(0L, 1).charAt(0);
         return (c == 'T' || c == 't' || c == '1');
-#endif
       }else if (x instanceof Number)
         return ((Number)x).intValue() != 0;
       else
@@ -1806,10 +1774,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return ((Blob)x).getBytes(0L, (int)((Blob)x).length());
       else if (x instanceof Clob)
         return ((Clob)x).getSubString(0L, (int)((Clob)x).length()).getBytes();
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return ((NClob)x).getSubString(0L, (int)((NClob)x).length()).getBytes();
-#endif
       else if (x instanceof String)
         return ((String)x).getBytes();
       else
@@ -1844,13 +1810,11 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
         return dt;
-#if JDK_VER >= 16
       } else if (x instanceof NClob) {
         Date dt = _getDate(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
         return dt;
-#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Date'");
     }
@@ -1883,13 +1847,11 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
         return dt;
-#if JDK_VER >= 16
       } else if (x instanceof NClob) {
         Time dt = _getTime(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
         if (dt == null)
               throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
         return dt;
-#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Time'");
     }
@@ -1924,13 +1886,11 @@ public class OPLCachedRowSet extends BaseRowSet
         if (dt == null)
            throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
         return dt;
-#if JDK_VER >= 16
       } else if (x instanceof NClob) {
         Timestamp dt = _getTimestamp(((NClob)x).getSubString(0L, (int)((NClob)x).length()));
         if (dt == null)
            throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
         return dt;
-#endif
        } else
          throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'Timestamp'");
     }
@@ -1965,10 +1925,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = new ByteArrayInputStream(((String)x).getBytes());
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return objInputStream = ((NClob)x).getAsciiStream();
-#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'AsciiStream'");
     }
@@ -2004,10 +1962,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = new ByteArrayInputStream(((String)x).getBytes());
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return objInputStream = ((NClob)x).getAsciiStream();
-#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'UnicodeStream'");
     }
@@ -2045,10 +2001,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return objInputStream = ((Blob)x).getBinaryStream();
       else if (x instanceof Clob)
         return objInputStream = ((Clob)x).getAsciiStream();
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return objInputStream = ((NClob)x).getAsciiStream();
-#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'BinaryStream'");
     }
@@ -2059,7 +2013,7 @@ public class OPLCachedRowSet extends BaseRowSet
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -2302,7 +2256,7 @@ public class OPLCachedRowSet extends BaseRowSet
    *
    * <p>This method will return the value of the given column as a
    * Java object.  The type of the Java object will be the default
-   * Java object type corresponding to the column's SQL type,
+   * Java object type corresponding to the column SQL type,
    * following the mapping for built-in types specified in the JDBC
    * spec.
    *
@@ -2340,10 +2294,8 @@ public class OPLCachedRowSet extends BaseRowSet
         return objReader = new StringReader((String)x);
       else if (x instanceof Clob)
         return objReader = ((Clob)x).getCharacterStream();
-#if JDK_VER >= 16
       else if (x instanceof NClob)
         return objReader = ((NClob)x).getCharacterStream();
-#endif
       else
         throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Could_not_convert_parameter_to_XX, "'CharacterStream'");
     }
@@ -2396,11 +2348,9 @@ public class OPLCachedRowSet extends BaseRowSet
   public synchronized void updateBoolean(int columnIndex, boolean x) throws SQLException {
     Row r = this.getRowForUpdate(columnIndex, "'updateBoolean(...)'");
     switch(rowSMD.getColumnType(columnIndex)) {
-#if JDK_VER >= 14
      case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean(x));
         break;
-#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -2416,11 +2366,9 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
-#if JDK_VER >= 16
      case Types.NCHAR:
      case Types.NVARCHAR:
      case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, String.valueOf(x));
         break;
       default:
@@ -2561,11 +2509,9 @@ public class OPLCachedRowSet extends BaseRowSet
       updateNull(columnIndex);
     else
       switch(rowSMD.getColumnType(columnIndex)) {
-#if JDK_VER >= 14
       case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean(x));
         break;
-#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -2579,15 +2525,11 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
-#if JDK_VER >= 14
       case Types.DATALINK:
-#endif
-#if JDK_VER >= 16
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
       case Types.NCLOB:
-#endif
       case Types.BLOB:
       case Types.CLOB:
         r.setColData(columnIndex, x);
@@ -2648,12 +2590,10 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
-#if JDK_VER >= 16
       case Types.NCLOB:
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, Bin2Hex(x));
         break;
       case Types.BLOB:
@@ -2691,12 +2631,10 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
-#if JDK_VER >= 16
       case Types.NCLOB:
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.DATE:
@@ -2732,12 +2670,10 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
-#if JDK_VER >= 16
       case Types.NCLOB:
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.TIME:
@@ -2773,12 +2709,10 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
       case Types.CLOB:
-#if JDK_VER >= 16
       case Types.NCLOB:
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, x.toString());
         break;
       case Types.TIMESTAMP:
@@ -3410,7 +3344,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object.  Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3434,7 +3368,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Date
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Date, if the underlying database doesn't store
+   * value for the Date, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -3449,7 +3383,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3473,7 +3407,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Time
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Time, if the underlying database doesn't store
+   * value for the Time, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -3488,7 +3422,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnIndex the first column is 1, the second is 2, ...
@@ -3517,7 +3451,7 @@ public class OPLCachedRowSet extends BaseRowSet
   /**
    * Get the value of a column in the current row as a java.sql.Timestamp
    * object. Use the calendar to construct an appropriate millisecond
-   * value for the Timestamp, if the underlying database doesn't store
+   * value for the Timestamp, if the underlying database does not store
    * timezone information.
    *
    * @param columnName is the SQL name of the column
@@ -3529,7 +3463,6 @@ public class OPLCachedRowSet extends BaseRowSet
     return getTimestamp(findColumn (columnName), cal);
   }
 
-#if JDK_VER >= 14
     //-------------------------- JDBC 3.0 ----------------------------------------
     /**
      * Retrieves the value of the designated column in the current row
@@ -3740,7 +3673,6 @@ public class OPLCachedRowSet extends BaseRowSet
     updateArray (findColumn (columnName), x);
   }
 
-#if JDK_VER >= 16
     //------------------------- JDBC 4.0 -----------------------------------
 
     /**
@@ -5102,7 +5034,7 @@ public class OPLCachedRowSet extends BaseRowSet
   public <T> T unwrap(java.lang.Class<T> iface) throws java.sql.SQLException
   {
     try {
-      // This works for classes that aren't actually wrapping anything
+      // This works for classes that are not actually wrapping anything
       return iface.cast(this);
     } catch (ClassCastException cce) {
       throw OPLMessage_x.makeExceptionV(OPLMessage_x.errx_Unable_to_unwrap_to_XX, iface.toString());
@@ -5126,7 +5058,7 @@ public class OPLCachedRowSet extends BaseRowSet
      */
   public boolean isWrapperFor(java.lang.Class<?> iface) throws java.sql.SQLException
   {
-    // This works for classes that aren't actually wrapping anything
+    // This works for classes that are not actually wrapping anything
     return iface.isInstance(this);
   }
 
@@ -5163,9 +5095,9 @@ public class OPLCachedRowSet extends BaseRowSet
   public <T> T getObject(int columnIndex, Class<T> type) throws SQLException
   {
     if (type == null) {
-      throw new SQLException("Type parameter can not be null", "S1009");
+      throw new SQLException("Type parameter cannot be null", "S1009");
     }
-		
+
     if (type.equals(String.class)) {
       return (T) getString(columnIndex);
     } else if (type.equals(BigDecimal.class)) {
@@ -5199,19 +5131,19 @@ public class OPLCachedRowSet extends BaseRowSet
     } else if (type.equals(java.net.URL.class)) {
       return (T) getURL(columnIndex);
 //		} else if (type.equals(Struct.class)) {
-//				
-//			} 
+//
+//			}
 //		} else if (type.equals(RowId.class)) {
-//			
+//
 //		} else if (type.equals(NClob.class)) {
-//			
+//
 //		} else if (type.equals(SQLXML.class)) {
-			
+
     } else {
       try {
         return (T) getObject(columnIndex);
       } catch (ClassCastException cce) {
-         throw new SQLException ("Conversion not supported for type " + type.getName(), 
+         throw new SQLException ("Conversion not supported for type " + type.getName(),
                     "S1009");
       }
     }
@@ -5251,8 +5183,6 @@ public class OPLCachedRowSet extends BaseRowSet
   }
 #endif
 
-#endif
-#endif
 
 /////////////////////////////////////////////////////////////////////////////
 
@@ -5342,11 +5272,9 @@ public class OPLCachedRowSet extends BaseRowSet
   {
     Row r = this.getRowForUpdate(columnIndex, funcName);
     switch(rowSMD.getColumnType(columnIndex)) {
-#if JDK_VER >= 14
       case Types.BOOLEAN:
         r.setColData(columnIndex, new Boolean((val.intValue()!=0? true:false)));
         break;
-#endif
       case Types.BIT:
       case Types.TINYINT:
       case Types.SMALLINT:
@@ -5362,11 +5290,9 @@ public class OPLCachedRowSet extends BaseRowSet
       case Types.CHAR:
       case Types.VARCHAR:
       case Types.LONGVARCHAR:
-#if JDK_VER >= 16
       case Types.NCHAR:
       case Types.NVARCHAR:
       case Types.LONGNVARCHAR:
-#endif
         r.setColData(columnIndex, val.toString());
         break;
       default:
@@ -5754,11 +5680,7 @@ public class OPLCachedRowSet extends BaseRowSet
       char[] query;
       final static String blankChars = " \t\n\r\f";
       final static String symb = "_-$#";
-#if JDK_VER >= 16
       HashMap<String,Integer> keywords = new HashMap<String,Integer>();
-#else
-      HashMap keywords = new HashMap();
-#endif
       Token tok = null;
 
     private Scanner(String sql) {
@@ -6263,11 +6185,7 @@ public class OPLCachedRowSet extends BaseRowSet
     private int[]  keyCols;
     private ResultSetMetaData rsmd;
     private int colCount;
-#if JDK_VER >= 16
     private LinkedList<Object> params = new LinkedList<Object>();
-#else
-    private LinkedList params = new LinkedList();
-#endif
 
     private boolean writeData(RowSetInternal x) throws java.sql.SQLException {
       OPLCachedRowSet crs = (OPLCachedRowSet)x;
@@ -6338,14 +6256,10 @@ public class OPLCachedRowSet extends BaseRowSet
     private boolean doUpdate(OPLCachedRowSet crs) throws SQLException {
       ResultSet rs_orig = crs.getOriginalRow();
       if (!rs_orig.next())
-        return true; //ERROR , data isn't found
+        return true; //ERROR , data is not found
 
       StringBuffer tmpSQL = new StringBuffer(updateSQL);
-#if JDK_VER >= 16
       LinkedList<Object> setData = new LinkedList<Object>();
-#else
-      LinkedList setData = new LinkedList();
-#endif
       boolean comma = false;
       for (int i = 1; i <= colCount; i++)
         if (crs.columnUpdated(i)) {
@@ -6384,7 +6298,7 @@ public class OPLCachedRowSet extends BaseRowSet
         pstmt.setObject(++par, i.next());
 
       if (pstmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't updated
+        return true; //ERROR , data was not updated
 
       pstmt.close();
       return false;
@@ -6402,7 +6316,7 @@ public class OPLCachedRowSet extends BaseRowSet
       }
 
       if (insertPStmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't inserted
+        return true; //ERROR , data was not inserted
 
       return false;
     }
@@ -6410,7 +6324,7 @@ public class OPLCachedRowSet extends BaseRowSet
     private boolean doDelete(OPLCachedRowSet crs) throws SQLException {
       ResultSet rs = crs.getOriginalRow();
       if (!rs.next())
-        return true; //ERROR , data isn't found
+        return true; //ERROR , data is not found
 
       String delWhere = createWhere(keyCols, rs);
       PreparedStatement pstmt = conn.prepareStatement(deleteSQL + delWhere);
@@ -6425,7 +6339,7 @@ public class OPLCachedRowSet extends BaseRowSet
         pstmt.setObject(++par, i.next());
 
       if (pstmt.executeUpdate() != 1)
-        return true; //ERROR , data wasn't deleted
+        return true; //ERROR , data was not deleted
 
       pstmt.close();
       return false;
@@ -6523,9 +6437,7 @@ public class OPLCachedRowSet extends BaseRowSet
             case Types.DECIMAL:
             case Types.NUMERIC:
             case Types.BIT:
-#if JDK_VER >= 14
             case Types.BOOLEAN:
-#endif
             case Types.CHAR:
             case Types.VARCHAR:
             case Types.BINARY:
@@ -6533,14 +6445,10 @@ public class OPLCachedRowSet extends BaseRowSet
             case Types.DATE:
             case Types.TIME:
             case Types.TIMESTAMP:
-#if JDK_VER >= 14
             case Types.DATALINK:
-#endif
-#if JDK_VER >= 16
             case Types.NCHAR:
             case Types.ROWID:
             case Types.NVARCHAR:
-#endif
             case Types.DISTINCT:
               tmpCols[count++] = i;
               break;

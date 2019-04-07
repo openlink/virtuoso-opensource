@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -98,7 +98,6 @@
   </refsect1>
   <refsect1 id="params_dav_api_change"><title>Parameters</title>
     <refsect2><title>path</title>
-      <para></para>
       <para>Directory and name of source to be operated on.</para>
     </refsect2>
     <refsect2><title>destination</title>
@@ -195,7 +194,7 @@
 	  <row><entry><errorcode>-10</errorcode></entry>
 	    <entry><errorname>Property name is reserved (protected or private)</errorname></entry></row>
 	  <row><entry><errorcode>-11</errorcode></entry>
-	    <entry><errorname>Property does not exists</errorname></entry></row>
+	    <entry><errorname>Property does not exist</errorname></entry></row>
 	  <row><entry><errorcode>-12</errorcode></entry>
 	    <entry><errorname>Authentication failed</errorname></entry></row>
 	  <row><entry><errorcode>-13</errorcode></entry>

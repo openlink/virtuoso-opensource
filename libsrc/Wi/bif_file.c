@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -42,8 +42,12 @@
 #include "security.h"
 #include "sqlbif.h"
 
-#ifdef __MINGW32__
-#define P_tmpdir _P_tmpdir
+#ifndef P_tmpdir
+# ifdef _P_tmpdir               /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
 #endif
 
 #define UUID_T_DEFINED
@@ -397,7 +401,7 @@ is_db_file (char *f)
 }
 
 int
-is_allowed (char *path)
+is_allowed_int (char *path, int allow_db_files_ro)
 {
   int rc = 0;
   caddr_t abs_path = NULL;
@@ -415,7 +419,7 @@ is_allowed (char *path)
 
 
   /* explicitly deny any db file */
-  if (is_db_file (abs_path))
+  if (!allow_db_files_ro && is_db_file (abs_path))
     {
       rc = 0;
       goto ret;
@@ -465,16 +469,23 @@ ret:
   return rc;
 }
 
+int
+is_allowed (char *path)
+{
+  return is_allowed_int (path, 0);
+}
 
 void
-file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+file_path_assert_int (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt, int allow_db_files_ro)
 {
   caddr_t err = NULL;
+  if (!DV_STRINGP (fname_cvt))
+    sqlr_new_error ("42000", "FS....", "File path not a string");
   if (PATH_MAX < (box_length (fname_cvt) - 1))
     err = srv_make_new_error ("42000", "FA117",
       "File path '%.200s...' is too long (%ld chars), OS limit is %ld chars",
       fname_cvt, (long)(box_length (fname_cvt) - 1), (long)PATH_MAX);
-  else if (!is_allowed (fname_cvt))
+  else if (!is_allowed_int (fname_cvt, allow_db_files_ro))
     err = srv_make_new_error ("42000", "FA003",
       "Access to '%.1000s' is denied due to access control in ini file",
     fname_cvt );
@@ -488,6 +499,11 @@ file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
     sqlr_resignal (err);
 }
 
+void
+file_path_assert (caddr_t fname_cvt, caddr_t *err_ret, int free_fname_cvt)
+{
+  file_path_assert_int (fname_cvt, err_ret, free_fname_cvt, 0);
+}
 
 static caddr_t
 bif_sys_unlink (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -661,10 +677,27 @@ signal_error:
 
 
 caddr_t
+bif_file_read_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char buf[10000];
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "file_read_line");
+  int rc = -1;
+  CATCH_READ_FAIL (ses)
+  {
+    rc = dks_read_line (ses, buf, sizeof (buf));
+  }
+  END_READ_FAIL (ses);
+  if (-1 == rc)
+    return box_num (0);
+  return box_n_chars (buf, rc);
+}
+
+
+caddr_t
 bif_server_root (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static char abs_path[PATH_MAX + 1], *p_abs_path = abs_path;
-  char *path = "";
+  const char *path = "";
 
   abs_path[0] = 0;
   if (!rel_to_abs_path (p_abs_path, path, sizeof (abs_path)))
@@ -1167,11 +1200,11 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   df = opendir (fname_cvt);
 #else
   fname_pattern_end = box_length (fname_cvt);
-  while (0 == fname_cvt [fname_pattern_end - 1])
+  while (0 == fname_cvt[fname_pattern_end - 1])
     fname_pattern_end--;
   fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
   memcpy (fname_pattern, fname_cvt, fname_pattern_end);
-  if ('\\' != fname_cvt [fname_pattern_end - 1])
+  if ('\\' != fname_cvt[fname_pattern_end - 1])
     fname_pattern[fname_pattern_end++] = '\\';
   fname_pattern[fname_pattern_end++] = '*';
   fname_pattern[fname_pattern_end] = '\0';
@@ -1192,15 +1225,15 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    {
 	      if (strlen (fname_cvt) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
 		{
-                  int hit = 0;
-                  caddr_t raw_name;
-                  int make_wide_name;
+		  int hit = 0;
+		  caddr_t raw_name;
+		  int make_wide_name;
 #ifndef WIN32
-                  char path [PATH_MAX];
+		  char path[PATH_MAX];
 		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
 		  V_STAT (path, &st);
 		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
-		    hit = 1; /* Different values of \c hit are solely for debugging purposes */
+		    hit = 1;	/* Different values of \c hit are solely for debugging purposes */
 		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
 		    hit = 2;
 		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
@@ -1208,57 +1241,57 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
 		    hit = 4;
 #else
-                  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
+		  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
 		    hit = 5;
-                  else if (files == 1 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) == 0)
+		  else if (files == 1 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) == 0)
 		    hit = 6;
-                  else if (files == 3)
-                    hit = 7;
+		  else if (files == 3)
+		    hit = 7;
 #endif
-                  if (!hit)
-                    goto next_file;
-                  raw_name = box_dv_short_string (DIRNAME (de));
-                  make_wide_name = 0;
-                  if (i18n_wide_file_names)
-                    {
-                      char *tail;
-                      for (tail = raw_name; '\0' != tail[0]; tail++)
-                        {
-                          if ((tail[0] >= ' ') && (tail[0] < 0x7f))
-                            continue;
-                          make_wide_name = 1;
-                          break;
-                        }
-                    }
-                  if (make_wide_name)
-                    {
-                      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
-                      int state = 0;
-                      wchar_t *buf = dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
-                      wchar_t *wide_name;
-                      const char *raw_tail = raw_name;
+		  if (!hit)
+		    goto next_file;
+		  raw_name = box_dv_short_string (DIRNAME (de));
+		  make_wide_name = 0;
+		  if (i18n_wide_file_names)
+		    {
+		      char *tail;
+		      for (tail = raw_name; '\0' != tail[0]; tail++)
+			{
+			  if ((tail[0] >= ' ') && (tail[0] < 0x7f))
+			    continue;
+			  make_wide_name = 1;
+			  break;
+			}
+		    }
+		  if (make_wide_name)
+		    {
+		      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
+		      int state = 0;
+                      wchar_t *buf = (wchar_t *)dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
+		      wchar_t *wide_name;
+		      const char *raw_tail = raw_name;
                       int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
                         buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
-                        i18n_volume_encoding, state );
-                      if (res < 0)
-                        {
-                          dk_free_box (raw_name);
-                          goto next_file; /*!!! TBD Emergency encoding */
-                        }
-                      if (res < buflen-1)
-                        {
-                          wide_name = dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
-                          memcpy (wide_name, buf, res * sizeof (wchar_t));
-                          dk_free_box (buf);
-                        }
-                      else
-                        wide_name = buf;
-                      wide_name [res] = 0;
-                      dk_set_push (&dir_list, wide_name);
-                      dk_free_box (raw_name);
-                    }
-                  else
-                    dk_set_push (&dir_list, raw_name);
+			  i18n_volume_encoding, state);
+		      if (res < 0)
+			{
+			  dk_free_box (raw_name);
+			  goto next_file;	/*!!! TBD Emergency encoding */
+			}
+		      if (res < buflen - 1)
+			{
+                          wide_name = (wchar_t *)dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
+			  memcpy (wide_name, buf, res * sizeof (wchar_t));
+                          dk_free_box ((caddr_t)buf);
+			}
+		      else
+			wide_name = buf;
+		      wide_name[res] = 0;
+		      dk_set_push (&dir_list, wide_name);
+		      dk_free_box (raw_name);
+		    }
+		  else
+		    dk_set_push (&dir_list, raw_name);
 		}
 	      else
 		{
@@ -1273,9 +1306,9 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  goto error_end;
 		}
 	    }
-next_file: ;
+	next_file:;
 #ifdef WIN32
-          rc = FindNextFile (df, &fd) ? 0 : 1;
+	  rc = FindNextFile (df, &fd) ? 0 : 1;
 #endif
 	}
       while (de);
@@ -1293,22 +1326,17 @@ next_file: ;
       err_msg = virt_strerror (errn);
 #else
       char msg_buf[200];
-      DWORD dw = GetLastError();
+      DWORD dw = GetLastError ();
 
       err_msg = &msg_buf[0];
       msg_buf[0] = 0;
-      FormatMessage(
-        FORMAT_MESSAGE_FROM_SYSTEM,
-        NULL,
-        dw,
-        MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
-        (LPTSTR) &msg_buf[0], sizeof (msg_buf), NULL);
+      FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM,
+	  NULL, dw, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) & msg_buf[0], sizeof (msg_buf), NULL);
 #endif
       if (BOX_ELEMENTS (args) > 2)
 	{
 	  if (ssl_is_settable (args[2]))
-	    qst_set (qst, args[2],
-		(caddr_t) box_dv_short_string (err_msg));
+	    qst_set (qst, args[2], (caddr_t) box_dv_short_string (err_msg));
 	}
       else
 	{
@@ -1316,10 +1344,187 @@ next_file: ;
 	  goto error_end;
 	}
     }
+  if (dk_set_length (dir_list) >= MAX_BOX_ELEMENTS)
+    {
+      caddr_t box;
+      *err_ret =
+	  srv_make_new_error ("22003", "SR346", "Out of memory allocation limits: the composed vector contains too many items");
+      while (NULL != (box = (caddr_t) dk_set_pop (&dir_list)))
+	{
+	  dk_free_tree (box);
+	}
+      goto error_end;
+    }
   lst = list_to_array (dk_set_nreverse (dir_list));
-  if (BOX_ELEMENTS (args) > 3 && bif_long_arg (qst, args, 3, "sys_dirlist") &&
-      IS_BOX_POINTER (lst) && BOX_ELEMENTS (lst))
+  if (BOX_ELEMENTS (args) > 3 && bif_long_arg (qst, args, 3, "sys_dirlist") && IS_BOX_POINTER (lst) && BOX_ELEMENTS (lst))
     qsort (lst, BOX_ELEMENTS (lst), sizeof (caddr_t), str_compare);
+error_end:
+  dk_free_box (fname_cvt);
+#ifdef WIN32
+  dk_free_box (fname_pattern);
+#endif
+  return lst;
+}
+
+
+caddr_t
+sys_dirlist (caddr_t fname, int files)
+{
+  caddr_t fname_cvt;
+  long errn = 0;
+  dk_set_t dir_list = NULL;
+#ifndef WIN32
+  DIR *df = 0;
+  struct dirent *de;
+  struct stat st;
+#else
+  ptrlong rc = 0;
+  WIN32_FIND_DATA fd, *de;
+  HANDLE df;
+  caddr_t fname_pattern;
+  size_t fname_pattern_end;
+#endif
+  caddr_t lst = NULL;
+  fname_cvt = file_native_name (fname);
+#ifndef WIN32
+  df = opendir (fname_cvt);
+#else
+  fname_pattern_end = box_length (fname_cvt);
+  while (0 == fname_cvt[fname_pattern_end - 1])
+    fname_pattern_end--;
+  fname_pattern = dk_alloc_box (fname_pattern_end + 3, DV_STRING);
+  memcpy (fname_pattern, fname_cvt, fname_pattern_end);
+  if ('\\' != fname_cvt[fname_pattern_end - 1])
+    fname_pattern[fname_pattern_end++] = '\\';
+  fname_pattern[fname_pattern_end++] = '*';
+  fname_pattern[fname_pattern_end] = '\0';
+  df = FindFirstFile (fname_pattern, &fd);
+#endif
+  if (CHECKFH (df))
+    {
+      do
+	{
+#ifndef WIN32
+	  de = readdir (df);
+#else
+	  de = NULL;
+	  if (rc == 0)
+	    de = &fd;
+#endif
+	  if (de)
+	    {
+	      if (strlen (fname_cvt) + strlen (DIRNAME (de)) + 1 < PATH_MAX)
+		{
+		  int hit = 0;
+		  caddr_t raw_name;
+		  int make_wide_name;
+#ifndef WIN32
+		  char path[PATH_MAX];
+		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
+		  stat (path, &st);
+		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
+		    hit = 1;	/* Different values of \c hit are solely for debugging purposes */
+		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
+		    hit = 2;
+		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
+		    hit = 3;
+		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
+		    hit = 4;
+#else
+		  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
+		    hit = 5;
+		  else if (files == 1 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) == 0)
+		    hit = 6;
+		  else if (files == 3)
+		    hit = 7;
+#endif
+		  if (!hit)
+		    goto next_file;
+		  raw_name = box_dv_short_string (DIRNAME (de));
+		  make_wide_name = 0;
+		  if (i18n_wide_file_names)
+		    {
+		      char *tail;
+		      for (tail = raw_name; '\0' != tail[0]; tail++)
+			{
+			  if ((tail[0] >= ' ') && (tail[0] < 0x7f))
+			    continue;
+			  make_wide_name = 1;
+			  break;
+			}
+		    }
+		  if (make_wide_name)
+		    {
+		      int buflen = (box_length (raw_name) - 1) / i18n_volume_encoding->eh_minsize;
+		      int state = 0;
+                      wchar_t *buf = (wchar_t *)dk_alloc_box ((buflen+1) * sizeof (wchar_t), DV_WIDE);
+		      wchar_t *wide_name;
+		      const char *raw_tail = raw_name;
+                      int res = i18n_volume_encoding->eh_decode_buffer_to_wchar (
+                        buf, buflen, &raw_tail, raw_name + box_length (raw_name) - 1,
+			  i18n_volume_encoding, state);
+		      if (res < 0)
+			{
+			  dk_free_box (raw_name);
+			  goto next_file;	/*!!! TBD Emergency encoding */
+			}
+		      if (res < buflen - 1)
+			{
+                          wide_name = (wchar_t *)dk_alloc_box ((res+1) * sizeof (wchar_t), DV_WIDE);
+			  memcpy (wide_name, buf, res * sizeof (wchar_t));
+                          dk_free_box ((caddr_t)buf);
+			}
+		      else
+			wide_name = buf;
+		      wide_name[res] = 0;
+		      dk_set_push (&dir_list, wide_name);
+		      dk_free_box (raw_name);
+		    }
+		  else
+		    dk_set_push (&dir_list, raw_name);
+		}
+	      else
+		{
+/* This bug is possible only in UNIXes, because it requires the use of links,
+   but WIN32 case added too, due to paranoia. */
+#ifndef WIN32
+		  closedir (df);
+#else
+		  FindClose (df);
+#endif
+		  goto error_end;
+		}
+	    }
+	next_file:;
+#ifdef WIN32
+	  rc = FindNextFile (df, &fd) ? 0 : 1;
+#endif
+	}
+      while (de);
+#ifndef WIN32
+      closedir (df);
+#else
+      FindClose (df);
+#endif
+    }
+  else
+    {
+      const char *err_msg;
+#ifndef WIN32
+      errn = errno;
+      err_msg = virt_strerror (errn);
+#else
+      char msg_buf[200];
+      DWORD dw = GetLastError ();
+
+      err_msg = &msg_buf[0];
+      msg_buf[0] = 0;
+      FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM,
+	  NULL, dw, MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT), (LPTSTR) & msg_buf[0], sizeof (msg_buf), NULL);
+#endif
+      goto error_end;
+    }
+  lst = list_to_array (dk_set_nreverse (dir_list));
 error_end:
   dk_free_box (fname_cvt);
 #ifdef WIN32
@@ -1351,7 +1556,8 @@ file_native_name (caddr_t se_name)
 	buf = dk_alloc_box (bufsize + 1, DV_STRING);
 	buf_end = buf + bufsize;
 	end_of_dat = i18n_volume_encoding->eh_encode_wchar_buffer (
-	    ((const wchar_t *) se_name), ((const wchar_t *) se_name) + wchars, buf, buf_end, i18n_volume_encoding);
+          ((const wchar_t *)se_name), ((const wchar_t *)se_name) + wchars, buf, buf_end,
+          i18n_volume_encoding );
 	if (end_of_dat == buf_end)
 	  {
 	    buf_end[0] = '\0';
@@ -1386,7 +1592,7 @@ file_native_name (caddr_t se_name)
 	  long len = box_length (se_name) - 1;
 	  if (len > PATH_MAX * 30)
 	    len = PATH_MAX * 30;
-	  se1 = box_utf8_as_wide_char (se_name, NULL, len, 0, DV_WIDE);
+          se1 = box_utf8_as_wide_char (se_name, NULL, len, 0);
 	  res = file_native_name (se1);
 	  dk_free_box (se1);
 	  return res;
@@ -1404,9 +1610,7 @@ file_native_name (caddr_t se_name)
       switch (fname_tail[0])
 	{
 	  /* case '|': fname_tail[0] = ':'; break; */
-	case '/':
-	  fname_tail[0] = '\\';
-	  break;
+        case '/': fname_tail[0] = '\\'; break;
 	}
     }
   if ((fname_tail - 1) >= volume_fname && *(fname_tail - 1) == '\\')
@@ -1474,7 +1678,7 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   place = bif_long_arg (qst, args, 2, "string_to_file");
   if (place < -2 /* i.e. (place<0) && (place != -1) */ )
     sqlr_new_error ("22003", "FA021",
-	"Third argument of string_to_file function, should be nonnegative offset value, -1 or -2");
+	"Third argument of string_to_file function, should be non-negative offset value, -1 or -2");
 
   if (!DV_STRINGP (string) && !DV_WIDESTRINGP (string) &&
       !IS_BLOB_HANDLE (string) && string_dtp != DV_C_STRING
@@ -1529,8 +1733,11 @@ bif_string_to_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       char buffer[64000];
       int to_read;
+      int64 len, ofs = 0;
       dk_session_t *ses = (dk_session_t *) string;
-      int64 len = strses_length (ses), ofs = 0;
+      if (ses->dks_session && ses->dks_session->ses_file && ses->dks_session->ses_file->ses_file_descriptor)
+	session_flush (ses);
+      len = strses_length (ses);
       while (ofs < len)
 	{
 	  int readed;
@@ -1922,7 +2129,7 @@ bif_cfg_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   PCONFIG pcfgFile = NULL;
   char *pszPath, *pszSection, *pszItemName, *pszItemValue;
 
-  sec_check_dba ((query_instance_t *) qst, "cfg_write");	/* allowed only for dba group */
+  sec_check_dba ((query_instance_t *) qst, "cfg_write");	/* allowed only for DBA group */
 
   pszPath = bif_string_arg (qst, args, 0, "cfg_write");
   pszSection = bif_string_arg (qst, args, 1, "cfg_write");
@@ -2119,7 +2326,7 @@ get_random_info (unsigned char seed[16])
     char hostname[MAX_COMPUTERNAME_LENGTH + 1];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
+  memset (&r, 0, sizeof (r));
   MD5Init (&c);			/* memory usage stats */
   GlobalMemoryStatus (&r.m);	/* random system stats */
   GetSystemInfo (&r.s);		/* 100ns resolution (nominally) time of day */
@@ -2155,15 +2362,16 @@ get_random_info (unsigned char seed[16])
   struct
   {
     pid_t pid;
-    struct timeval t;
+    struct timeval tv;
     char hostname[257];
   } r;
 
-  memset (&c, 0, sizeof (MD5_CTX));
-  MD5Init (&c);
+  memset (&r, 0, sizeof (r));
   r.pid = getpid ();
-  gettimeofday (&r.t, (struct timezone *) 0);
+  gettimeofday (&r.tv, (struct timezone *) 0);
   gethostname (r.hostname, 256);
+
+  MD5Init (&c);
   MD5Update (&c, (unsigned char *) &r, sizeof (r));
   MD5Final (seed, &c);
 }
@@ -2357,13 +2565,13 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t sctx = bif_string_arg (qst, args, 0, "md5_update");
   caddr_t str = bif_arg (qst, args, 1, "md5_update");
   dtp_t dtp = DV_TYPE_OF (str);
-  if (DV_STRING == dtp)
+  if (DV_STRING == dtp || DV_RDF == dtp)
     str = bif_string_arg (qst, args, 1, "md5_update");
   else
-    str = bif_strses_arg (qst, args, 1, "md5_update");
+    str = (caddr_t)bif_strses_arg (qst, args, 1, "md5_update");
 
   string_to_md5ctx (&ctx, sctx);
-  if (DV_STRING == dtp)
+  if (DV_STRING == dtp || DV_RDF == dtp)
     MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   else
     {
@@ -2676,8 +2884,8 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    full_exe_name);
       if ((1 == safety) && (NULL != cli->cli_user)
 	  && (0 == sec_user_has_group (0, cli->cli_user->usr_g_id)))
-	sqlr_new_error ("42000", "SR407",
-	    "Running of file '%s' is restricted to dba group.",
+	sqlr_new_error ("42000", "SR407:SECURITY",
+	    "Running of file '%s' is restricted to DBA group.",
 	    full_exe_name);
     }
 #ifdef WIN32
@@ -2770,6 +2978,11 @@ bif_run_executable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #endif
 #else
   mutex_enter (run_executable_mtx);
+
+#if defined (HAVE_WORKING_VFORK)
+#define fork	vfork
+#endif
+
   child_pid = fork ();
   if (-1 == child_pid)
     {
@@ -3883,10 +4096,10 @@ bif_mime_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return result ? result : NEW_DB_NULL;
 }
 
-static caddr_t 
+static caddr_t
 bif_mime_tree_ses (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "mime_tree");
+  dk_session_t *ses = bif_strses_arg (qst, args, 0, "mime_tree");
   int rfc822 = 1;
   caddr_t result = NULL;
 
@@ -3928,7 +4141,7 @@ zlib_box_compress (caddr_t src, caddr_t * err_ret)
   uLongf dest_size_ret;
   caddr_t dest;
   caddr_t dest_tmp = (caddr_t) dk_alloc ((uint32) dest_size);
-  char *err_msg;
+  const char *err_msg;
   int rc;
   if (src_size & 0xff000000 || dest_size & 0xff000000)	/* sign error causes overflow */
     {
@@ -3951,7 +4164,7 @@ zlib_box_compress (caddr_t src, caddr_t * err_ret)
   dk_free (dest_tmp, dest_size);
   if (err_ret)
     {
-      char *state = "22000";
+      const char *state = "22000";
       switch (rc)
 	{
 	case Z_MEM_ERROR:
@@ -4010,6 +4223,10 @@ zlib_box_uncompress (caddr_t src, dk_session_t * out, caddr_t * err_ret)
   while (rc != Z_STREAM_END);
   inflateEnd (&zs);
 }
+
+#ifdef DBG_BLOB_PAGES_ACCOUNT
+extern int is_reg;
+#endif
 
 void
 zlib_blob_uncompress (lock_trx_t *lt, blob_handle_t *bh, dk_session_t * out, caddr_t * err_ret)
@@ -4332,7 +4549,7 @@ error:
 static caddr_t
 bif_gz_compress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_compress";
+  static const char *szMe = "gz_compress";
   caddr_t src = bif_string_arg (qst, args, 0, szMe);
   return zlib_box_compress (src, err_ret);
 }
@@ -4342,7 +4559,7 @@ static caddr_t
 bif_string_output_gz_compress (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args)
 {
-  static char *szMe = "string_output_gz_compress";
+  static const char *szMe = "string_output_gz_compress";
   dk_session_t *ses = (dk_session_t *) bif_arg (qst, args, 0, szMe);
   dk_session_t *out = (dk_session_t *) bif_arg (qst, args, 1, szMe);
   dtp_t ses_dtp = DV_TYPE_OF (ses), out_dtp = DV_TYPE_OF (out);
@@ -4361,7 +4578,7 @@ bif_string_output_gz_compress (caddr_t * qst, caddr_t * err_ret,
 static caddr_t
 bif_gz_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_uncompress";
+  static const char *szMe = "gz_uncompress";
   caddr_t src = bif_string_arg (qst, args, 0, szMe);
   dk_session_t *out = (dk_session_t *) bif_arg (qst, args, 1, szMe);
 
@@ -4380,7 +4597,7 @@ extern int http_ses_size;
 static caddr_t
 bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gzip_uncompress";
+  static const char *szMe = "gzip_uncompress";
   caddr_t src = bif_arg (qst, args, 0, szMe);
   dk_session_t *out;
   dtp_t dtp = DV_TYPE_OF (src);
@@ -4402,7 +4619,7 @@ bif_gzip_uncompress (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_compress_file";
+  static const char *szMe = "gz_compress_file";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   caddr_t dname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
@@ -4462,7 +4679,7 @@ bif_gz_compress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_gz_uncompress_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "gz_uncompress_file";
+  static const char *szMe = "gz_uncompress_file";
   caddr_t dname = bif_string_arg (qst, args, 0, szMe);
   caddr_t fname = bif_string_arg (qst, args, 1, szMe);
   gzFile gz_fd = NULL;
@@ -4586,11 +4803,12 @@ bif_get_mailmsg_hf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 id_hash_t *http_ext_to_mime_type = NULL;
 
 
-char *
-ws_file_ctype (char *name)
+const char *
+ws_file_ctype (const char *name)
 {
-  char **ft, *dot = strrchr (name, '.'), szExtBuffer[20], *szPtr =
-      szExtBuffer;
+  const char *dot = strrchr (name, '.');
+  char szExtBuffer[20], *szPtr = szExtBuffer;
+  const char * const *ft;
   int inx;
   if (http_ext_to_mime_type)
     {
@@ -4599,7 +4817,7 @@ ws_file_ctype (char *name)
       for (inx = 0; inx < sizeof (szExtBuffer) - 1 && name[inx]; inx++)
 	szExtBuffer[inx] = tolower (name[inx]);
       szExtBuffer[inx] = 0;
-      ft = (char **) id_hash_get (http_ext_to_mime_type, (caddr_t) & szPtr);
+      ft = (const char * const *) id_hash_get (http_ext_to_mime_type, (caddr_t) & szPtr);
       if (ft)
 	return *ft;
     }
@@ -4611,8 +4829,9 @@ static caddr_t
 bif_http_mime_type_add (caddr_t * qst, caddr_t * err_ret,
     state_slot_t ** args)
 {
-  char *szMe = "http_mime_type_add", *ptr;
-  caddr_t ext = bif_string_arg (qst, args, 0, szMe);
+  const char *szMe = "http_mime_type_add";
+  char *ptr;
+  caddr_t ext = bif_string_or_uname_arg (qst, args, 0, szMe);
   caddr_t mime_type = bif_string_or_null_arg (qst, args, 1, szMe);
 
   if (!http_ext_to_mime_type)
@@ -4637,8 +4856,8 @@ bif_http_mime_type_add (caddr_t * qst, caddr_t * err_ret,
 static caddr_t
 bif_http_mime_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char *szMe = "http_mime_type";
-  caddr_t ext = bif_string_arg (qst, args, 0, szMe);
+  const char *szMe = "http_mime_type";
+  caddr_t ext = bif_string_or_uname_arg (qst, args, 0, szMe);
   char *mime_type = ws_file_ctype (ext);
 
   return box_dv_short_string (mime_type);
@@ -4671,11 +4890,11 @@ gz_s_free (gz_stream *s)
     }
 
   if (s->inbuf)
-    dk_free (s->inbuf, -1);
+    dk_free_box (s->inbuf);
   if (s->outbuf)
-    dk_free (s->outbuf, -1);
+    dk_free_box (s->outbuf);
   if (s)
-    dk_free (s, -1);
+    dk_free (s, sizeof (gz_stream));
   return err;
 }
 
@@ -4799,7 +5018,7 @@ gz_init_ses (dk_session_t * ses_out)
   err = deflateInit2 (&(s->stream), level,
       Z_DEFLATED, -MAX_WBITS, DEF_MEM_LEVEL, strategy);
 
-  s->stream.next_out = s->outbuf = (Byte *) dk_alloc (Z_BUFSIZE);
+  s->stream.next_out = s->outbuf = (Byte *) dk_alloc_box (Z_BUFSIZE, DV_BIN);
   if (err != Z_OK || s->outbuf == Z_NULL)
     {
       gz_s_free (s);
@@ -5888,7 +6107,7 @@ bif_vector_sort (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t in_vector, out_vector;
   int inx;
   in_vector = bif_strict_array_or_null_arg (qst, args, 0, "__vector_sort");
-  if (in_vector == NULL || in_vector == NEW_DB_NULL)
+  if (in_vector == NULL || DV_TYPE_OF (in_vector) == DV_DB_NULL)
     return NEW_DB_NULL;
   DO_BOX (caddr_t, line, inx, ((caddr_t *) in_vector))
     {
@@ -5920,7 +6139,7 @@ fiop_release (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_destroy: nonpositive refctr");
+    GPF_T1 ("filep_destroy: non-positive refctr");
   if (--(fiod->fiod_refctr))
 {
       if (NULL != fiod->fiod_mutex)
@@ -5946,7 +6165,7 @@ fiop_copy (caddr_t box)
   if (NULL != fiod->fiod_mutex)
     mutex_enter (fiod->fiod_mutex);
   if (0 >= fiod->fiod_refctr)
-    GPF_T1 ("filep_copy: nonpositive refctr");
+    GPF_T1 ("filep_copy: non-positive refctr");
   fiod->fiod_refctr++;
   if (NULL != fiod->fiod_mutex)
     mutex_leave (fiod->fiod_mutex);
@@ -6146,14 +6365,15 @@ caddr_t
 bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t fname = bif_string_arg (qst, args, 0, "file_open");
+  OFF_T start_off = BOX_ELEMENTS (args) > 1 ? bif_long_low_range_arg (qst, args, 1, "file_open", 0) : 0;
   dk_session_t * ses = strses_allocate ();
   caddr_t fname_cvt, err = NULL;
   int fd = 0;
-  OFF_T off;
+  OFF_T off, ck;
   strsestmpfile_t * sesfile;
 
   fname_cvt = file_native_name (fname);
-  file_path_assert (fname_cvt, &err, 0);
+  file_path_assert_int (fname_cvt, &err, 0, QI_IS_DBA ((QI*)qst));
   if (NULL != err)
     goto signal_error;
   fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
@@ -6175,11 +6395,20 @@ bif_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
       goto signal_error;
     }
-  LSEEK (fd, 0, SEEK_SET);
+  ck = LSEEK (fd, start_off, SEEK_SET);
+  if (ck == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = fd;
   sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = off;
+  sesfile->ses_fd_read = start_off;
   dk_free_box (fname_cvt);
   return (caddr_t) ses;
 signal_error:
@@ -6189,6 +6418,14 @@ signal_error:
   sqlr_resignal (err);
   return NULL;
 }
+
+caddr_t
+bif_read_object (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "read_object");
+  return PrpcReadObject (ses);
+}
+
 
 caddr_t
 bif_getenv (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -6263,6 +6500,7 @@ bif_gz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
   sesfile = ses->dks_session->ses_file;
   sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<gz stream>");
 
   sesfile->ses_lseek_func = zlib_lseek;
   sesfile->ses_read_func = zlib_read;
@@ -6283,6 +6521,346 @@ signal_error:
   return NULL;
 }
 
+#ifdef HAVE_LZMA
+
+#include <lzma.h>
+
+typedef struct xz_ctx_s 
+{
+  int fd;
+  lzma_stream *strm;
+  uint8_t inbuf[BUFSIZ];
+  lzma_action action;
+} xz_ctx_t;
+
+OFF_T
+xz_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
+{
+  xz_ctx_t * ctx = sesfile->ses_file_ctx;
+  lzma_stream *strm = ctx->strm;
+  lzma_stream strm_init = LZMA_STREAM_INIT;
+  if (whence == SEEK_SET && offset == 0)
+    {
+      LSEEK (ctx->fd, 0, SEEK_SET);
+      lzma_end (strm);
+      *strm = strm_init;
+      strm->next_in = NULL;
+      strm->avail_in = 0;
+      lzma_stream_decoder(strm, INT64_MAX, LZMA_CONCATENATED);
+    }
+  return offset;
+}
+
+static size_t
+xz_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
+{
+  return -1; /* write is not supported in gz stream for now */
+}
+
+size_t
+xz_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
+{
+  xz_ctx_t * ctx = sesfile->ses_file_ctx;
+  lzma_stream *strm = ctx->strm;
+  lzma_ret ret;
+  int64 last_out = strm->total_out;
+
+  strm->next_out = buf;
+  strm->avail_out = nbyte;
+  while (1) 
+    {
+      if (strm->avail_in == 0)
+	{
+	  strm->next_in = ctx->inbuf;
+	  strm->avail_in = read (ctx->fd, ctx->inbuf, sizeof(ctx->inbuf));
+
+	  /* tbd error if (strm->avail_in < 0) */
+	  if (strm->avail_in != sizeof(ctx->inbuf)) /* eof */
+	     ctx->action = LZMA_FINISH;
+	}
+
+      ret = lzma_code(strm, ctx->action);
+
+      if (strm->avail_out == 0 || ret == LZMA_STREAM_END) 
+	{
+	  return strm->total_out - last_out;
+	}
+
+      if (ret != LZMA_OK) 
+	{
+	  const char *msg;
+	  if (ret == LZMA_STREAM_END)
+	    return strm->total_out - last_out;
+
+	  switch (ret) {
+	    case LZMA_MEM_ERROR:
+		msg = "Memory allocation failed";
+		break;
+
+	    case LZMA_FORMAT_ERROR:
+		msg = "The input is not in the .xz format";
+		break;
+
+	    case LZMA_OPTIONS_ERROR:
+		msg = "Unsupported compression options";
+		break;
+
+	    case LZMA_DATA_ERROR:
+		msg = "Compressed file is corrupt";
+		break;
+
+	    case LZMA_BUF_ERROR:
+		msg = "Compressed file is truncated or otherwise corrupt";
+		break;
+
+	    default:
+		msg = "Unknown error, possibly a bug";
+		break;
+	  }
+	  /* tbd err */
+	  return -1;
+	}
+    }
+
+  return -1;
+}
+
+int
+xz_close (strsestmpfile_t * sesfile)
+{
+  xz_ctx_t * ctx = sesfile->ses_file_ctx;
+  lzma_stream *strm = ctx->strm;
+  fd_close (ctx->fd, "xz");
+  lzma_end (strm);
+  dk_free (strm, sizeof (lzma_stream));
+  dk_free (ctx, sizeof (xz_ctx_t));
+  return 0;
+}
+
+caddr_t
+bif_xz_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "xz_file_open");
+  dk_session_t * ses = strses_allocate ();
+  caddr_t fname_cvt, err = NULL;
+  int fd = 0;
+  OFF_T off;
+  strsestmpfile_t * sesfile;
+  xz_ctx_t * ctx;
+  lzma_stream *strm, strm_init = LZMA_STREAM_INIT;
+  lzma_ret ret;
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 0);
+  if (NULL != err)
+    goto signal_error;
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
+
+  if (fd < 0)
+    {
+      int errn = errno;
+      err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
+	  fname_cvt, virt_strerror (errn));
+      goto signal_error;
+    }
+
+  off = LSEEK (fd, 0, SEEK_END);
+  if (off == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
+  LSEEK (fd, 0, SEEK_SET);
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
+  sesfile = ses->dks_session->ses_file;
+  sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<lzma stream>");
+
+  sesfile->ses_lseek_func = xz_lseek;
+  sesfile->ses_read_func = xz_read;
+  sesfile->ses_wrt_func = xz_write;
+  sesfile->ses_close_func = xz_close;
+
+  sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = INT64_MAX;
+
+  strm = dk_alloc (sizeof (lzma_stream));
+  *strm = strm_init;
+  strm->next_in = NULL;
+  strm->avail_in = 0;
+  ret = lzma_stream_decoder(strm, INT64_MAX, LZMA_CONCATENATED);
+
+  if (ret != LZMA_OK)
+    {
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025", "Can't open XZ file '%.1000s'", fname_cvt);
+      goto signal_error;
+    }
+
+  ctx = dk_alloc (sizeof (xz_ctx_t));
+  ctx->fd = fd;
+  ctx->strm = strm;
+  ctx->action = LZMA_RUN;
+  sesfile->ses_file_ctx = ctx;
+  sesfile->ses_fd_is_stream = 1;
+
+  dk_free_box (fname_cvt);
+  return (caddr_t) ses;
+signal_error:
+  /* cleanup */
+  dk_free_box (fname_cvt);
+  dk_free_box ((caddr_t) ses);
+  sqlr_resignal (err);
+  return NULL;
+}
+#endif
+
+#ifdef HAVE_BZ2
+#include <bzlib.h>
+
+typedef struct bz2_ctx_s 
+{
+  FILE * fp;
+  BZFILE * bz2;
+  size_t pos;
+} bz2_ctx_t;
+
+OFF_T
+bz2_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx;
+  int err = 0;
+  if (whence == SEEK_SET && offset == 0)
+    {
+      fseek (ctx->fp, 0, SEEK_SET);
+      BZ2_bzReadClose (&err, ctx->bz2);
+      if (err != BZ_OK)
+	return -1;
+      ctx->bz2 = BZ2_bzReadOpen (&err, ctx->fp, 0, 0, NULL, 0);
+      ctx->pos = 0;
+    }
+  return offset;
+}
+
+size_t
+bz2_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  size_t rc;
+  int err = 0;
+  char * msg = NULL;
+  if (!ctx->bz2)
+    return 0;
+  rc = BZ2_bzRead(&err, ctx->bz2, buf, nbyte);
+  if (err != BZ_OK && err != BZ_STREAM_END)
+    return -1;
+  if (BZ_STREAM_END == err)
+    {
+      void *unusedp;
+      int i;
+      unsigned char unused[BZ_MAX_UNUSED];
+      int32 nUnused;
+      BZ2_bzReadGetUnused (&err, ctx->bz2, &unusedp, &nUnused);
+      if (err != BZ_OK)
+	return -1;
+      for (i = 0; i < nUnused; i++) unused[i] = ((unsigned char *)unusedp)[i];
+      BZ2_bzReadClose (&err, ctx->bz2);
+      if (err != BZ_OK)
+	return -1;
+      if (!feof (ctx->fp))
+	ctx->bz2 = BZ2_bzReadOpen (&err, ctx->fp, 0, 0, unused, nUnused);
+      else
+	ctx->bz2 = NULL;
+      if (err != BZ_OK)
+	return -1;
+    }
+  ctx->pos += rc;
+  return rc;
+}
+
+static size_t
+bz2_write (strsestmpfile_t * sesfile, const void *buf, size_t nbyte)
+{
+  return -1; /* write is not supported in gz stream for now */
+}
+
+int
+bz2_close (strsestmpfile_t * sesfile)
+{
+  bz2_ctx_t * ctx = sesfile->ses_file_ctx; 
+  int err = 0;
+  if (ctx->bz2)
+    BZ2_bzReadClose (&err, ctx->bz2);
+  fclose (ctx->fp);
+  dk_free (ctx, sizeof (bz2_ctx_t));
+  return 0;
+}
+
+caddr_t
+bif_bz2_file_open (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fname = bif_string_arg (qst, args, 0, "bz2_file_open");
+  dk_session_t * ses = strses_allocate ();
+  caddr_t fname_cvt, err = NULL;
+  int fd = 0, bzerr = 0;
+  OFF_T off;
+  strsestmpfile_t * sesfile;
+  bz2_ctx_t * ctx;
+
+  fname_cvt = file_native_name (fname);
+  file_path_assert (fname_cvt, &err, 0);
+  if (NULL != err)
+    goto signal_error;
+  fd = fd_open (fname_cvt, OPEN_FLAGS_RO);
+
+  if (fd < 0)
+    {
+      int errn = errno;
+      err = srv_make_new_error ("39000", "FA006", "Can't open file '%.1000s', error : %s",
+	  fname_cvt, virt_strerror (errn));
+      goto signal_error;
+    }
+
+  off = LSEEK (fd, 0, SEEK_END);
+  if (off == -1)
+    {
+      int saved_errno = errno;
+      fd_close (fd, fname);
+      err = srv_make_new_error ("39000", "FA025",
+	  "Seek error in file '%.1000s', error : %s", fname_cvt, virt_strerror (saved_errno));
+      goto signal_error;
+    }
+  LSEEK (fd, 0, SEEK_SET);
+  strses_enable_paging (ses, DKSES_IN_BUFFER_LENGTH);
+  sesfile = ses->dks_session->ses_file;
+  sesfile->ses_file_descriptor = -1;
+  sesfile->ses_temp_file_name = box_dv_short_string ("<bz2 stream>");
+
+  sesfile->ses_lseek_func = bz2_lseek;
+  sesfile->ses_read_func = bz2_read;
+  sesfile->ses_wrt_func = bz2_write;
+  sesfile->ses_close_func = bz2_close;
+
+  sesfile->ses_fd_fill = sesfile->ses_fd_fill_chars = INT64_MAX;
+  ctx = dk_alloc (sizeof (bz2_ctx_t));
+  ctx->fp = fdopen (fd, "r");
+  ctx->bz2 = BZ2_bzReadOpen (&bzerr, ctx->fp, 0, 0, NULL, 0);
+  ctx->pos = 0;
+  sesfile->ses_file_ctx = ctx;
+  sesfile->ses_fd_is_stream = 1;
+
+  dk_free_box (fname_cvt);
+  return (caddr_t) ses;
+signal_error:
+  /* cleanup */
+  dk_free_box (fname_cvt);
+  dk_free_box ((caddr_t) ses);
+  sqlr_resignal (err);
+  return NULL;
+}
+#endif
 
 #if defined(__APPLE__) || defined(__FreeBSD__)
 #define fseeko64 fseeko
@@ -6298,7 +6876,7 @@ signal_error:
 static caddr_t
 bif_unzip_file (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "unzip_file";
+  static const char *szMe = "unzip_file";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   caddr_t zname = bif_string_arg (qst, args, 1, szMe);
   caddr_t fname_cvt;
@@ -6363,7 +6941,7 @@ err_end:
 static caddr_t
 bif_unzip_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char *szMe = "unzip_list";
+  static const char *szMe = "unzip_list";
   caddr_t fname = bif_string_arg (qst, args, 0, szMe);
   unzFile uf;
   uint32 i;
@@ -6439,11 +7017,13 @@ err_end:
 /* tiny CSV parser */
 #define CSV_DELIM 		','
 #define CSV_QUOTE		'\"'
+#define CSV_ESCAPE              '%'
 
 #define CSV_ROW_NOT_STARTED 	0
 #define CSV_FIELD_NOT_STARTED	1
 #define CSV_FIELD_STARTED	2
 #define CSV_FIELD_MAY_END	3
+#define CSV_ESC_SEQUENCE_STARTED 4
 
 #define CSV_FIELD(set,ses) \
     do \
@@ -6473,24 +7053,36 @@ err_end:
 /* CSV mode */
 #define CSV_STRICT	1
 #define CSV_LAX		2
+#define CSV_LAX_STR	3
 
 static caddr_t
 csv_field (dk_session_t * ses, int mode)
 {
+  static void *r1, *r2, *r3;
   caddr_t regex, ret = NULL, str = strses_string (ses);
+  if (mode == CSV_LAX_STR)
+    goto string_val;
   if (mode == CSV_LAX && !strcmp (str, "NULL"))
     {
       ret = NEW_DB_NULL;
     }
-  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0)))
+  else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+\\.[0-9]*$", str, 0, &r1)))
     {
-      float d = 0;
-      sscanf (str, "%f", &d);
-      ret = box_float (d);
+      double d = 0;
+      sscanf (str, "%lf", &d);
+      ret = box_double (d);
       dk_free_box (str);
       dk_free_box (regex);
     }
-  else if (NULL != (regex = regexp_match_01 ("^[\\+\\-]?[0-9]+$", str, 0)))
+  else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+\\.[0-9]*[Ee][\\+\\-]?[0-9]+$", str, 0, &r3)))
+    {
+      double d = 0;
+      sscanf (str, "%lg", &d);
+      ret = box_double (d);
+      dk_free_box (str);
+      dk_free_box (regex);
+    }
+  else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+$", str, 0, &r2)))
     {
       ret = box_num (atol (str));
       dk_free_box (str);
@@ -6498,6 +7090,7 @@ csv_field (dk_session_t * ses, int mode)
     }
   else
     {
+string_val:
       if (0 != str[0])
       ret = str;
       else
@@ -6527,16 +7120,20 @@ get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
   return c;
 }
 
+int csv_field_escapes = 1;
+
 caddr_t
 bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t *in = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_csv_row");
+  dk_session_t *in = bif_strses_arg (qst, args, 0, "get_csv_row");
   dk_set_t row = NULL;
   dk_session_t *fl;
   caddr_t res = NULL;
   int quoted = 0, error = CSV_OK, mode = CSV_STRICT, signal_error = 0;
-  unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE;
+  unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE, esc = CSV_ESCAPE;
   unichar c;
+  unichar escaped[2];
+  int escaped_idx = 0;
   char utf8char[MAX_UTF8_CHAR];
   encoding_handler_t *eh = &eh__ISO8859_1;
   if (BOX_ELEMENTS (args) > 1)
@@ -6563,10 +7160,12 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
       signal_error = f & 0x04;
       f &= 0x03;
-      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT)
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT && f != CSV_LAX_STR)
 	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
       mode = f;
     }
+  escaped[0] = 0;
+  escaped[1] = 0;
   fl = strses_allocate ();
   CATCH_READ_FAIL (in)
   {
@@ -6649,12 +7248,48 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      goto end;	/* row end */
 		    }
 		}
+		      else if (c == esc && csv_field_escapes)
+		        {
+                          state = CSV_ESC_SEQUENCE_STARTED;
+		          escaped_idx = 0;
+		        }
 	      else
 		{
 		  CSV_CHAR (c, fl);
 		}
 	    }
 	    break;
+	      case CSV_ESC_SEQUENCE_STARTED:
+	          {                             /*30                 9 A B C D E F40 41 42 43 44 45 46*/
+	            static char digit_weights[] = {0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,0,10,11,12,13,14,15};
+	            if (c == esc)
+	              {
+                        CSV_CHAR (c, fl);
+                        escaped_idx = escaped[0] = escaped[1] = 0;
+                        state = CSV_FIELD_STARTED;
+	              }
+	            else if (c >= 0x30 && c <= 0x46)
+                      {
+                        escaped[escaped_idx++] = c;
+                        if (escaped_idx >= 2)
+                          {
+                            unichar ch = 16 * digit_weights[ escaped[0] - 0x30] + digit_weights[ escaped[1] - 0x30 ];
+                            CSV_CHAR (ch, fl);
+                            escaped_idx = escaped[0] = escaped[1] = 0;
+                            state = CSV_FIELD_STARTED;
+                          }
+                      }
+	            else
+                      {
+                        /* wrong digit in esc sequence */
+                        CSV_CHAR (esc, fl);
+                        CSV_CHAR (escaped[0], fl);
+                        CSV_CHAR (escaped[0], fl);
+                        escaped_idx = escaped[0] = escaped[1] = 0;
+                        state = CSV_FIELD_STARTED;
+                      }
+	          }
+	          break;
 	  case CSV_FIELD_MAY_END:
 	    {
 	      if (c == quote)
@@ -6716,14 +7351,14 @@ end:
       if (signal_error)
 	*err_ret = srv_make_new_error ("37000", "CSV04", "Error parsing CSV row, error code: %d", error);
     }
-  dk_free_box (fl);
+  dk_free_box ((caddr_t)fl);
   return res;
 }
 
 caddr_t
 bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dk_session_t * ses = (dk_session_t *) bif_strses_arg (qst, args, 0, "get_plaintext_row");
+  dk_session_t * ses = bif_strses_arg (qst, args, 0, "get_plaintext_row");
   char buf_on_stack[4096];
   char *buf = buf_on_stack;
   int buf_size = sizeof (buf_on_stack);
@@ -6732,11 +7367,9 @@ bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   char *read_begin, *eol = NULL;
   caddr_t res = NULL;
   int buf_is_allocated = 0;
-  int buf_add_len, new_buf_size;
+  int buf_add_len, min_new_buf_size, new_buf_size;
   char *new_buf;
   char c;
-  CATCH_READ_FAIL (ses)
-    {
 /* First, full scan of buffered in hope that the whole line is in session buffer already */
       read_begin = ses->dks_in_buffer + ses->dks_in_read;
       eol = (char *)memchr (read_begin, '\n', ses->dks_in_fill - ses->dks_in_read);
@@ -6747,11 +7380,26 @@ bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           goto res_done; /* see below */
         }
 /* Now we know that the '\n' is not in buffer so an extra copying is unavoidable */
+  CATCH_READ_FAIL (ses)
+    {
   buf_add_len = ses->dks_in_fill - ses->dks_in_read;
 add_portion_to_buf:
   if (buf_tail + buf_add_len + 1 > buf_end)
     {
-      new_buf_size = (buf_end + buf_add_len + 1 - buf) * 2;
+          min_new_buf_size = buf_tail + buf_add_len + 1 - buf;
+          if (min_new_buf_size > MAX_BOX_LENGTH)
+            goto res_done; /* abnormally long line, can't return it */
+          new_buf_size = min_new_buf_size * 2;
+#if 0 /* no big beed */
+          if (2 <= BOX_ELEMENTS (args))
+            {
+              int recommended_buf_size = bif_long_arg (qst, args, 1, "get_plaintext_row");
+              if (new_buf_size < recommended_buf_size)
+                new_buf_size = recommended_buf_size;
+            }
+#endif
+          if (new_buf_size > MAX_BOX_LENGTH)
+            new_buf_size = MAX_BOX_LENGTH;
       new_buf = (char *)dk_alloc (new_buf_size);
       memcpy (new_buf, buf, buf_tail - buf);
       buf_end = new_buf + new_buf_size;
@@ -6804,79 +7452,80 @@ bif_file_init (void)
 {
   run_executable_mtx = mutex_allocate ();
   bif_define ("string_to_file", bif_string_to_file);
-  bif_define_typed ("server_root", bif_server_root, &bt_varchar);
-  bif_define_typed ("file_to_string", bif_file_to_string, &bt_varchar);
-  bif_define_typed ("file_to_string_output", bif_file_to_string_session, &bt_any);
-  bif_define_typed ("file_to_string_output_utf8", bif_file_to_string_session_utf8, &bt_any);
-  bif_define_typed ("file_append_to_string_output", bif_file_append_to_string_session, &bt_integer);
-  bif_define_typed ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, &bt_integer);
-  bif_define_typed ("virtuoso_ini_path", bif_virtuoso_ini_path, &bt_varchar);
-  bif_define_typed ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, &bt_varchar);
-  bif_define_typed ("cfg_section_count", bif_cfg_section_count, &bt_integer);
-  bif_define_typed ("cfg_item_count", bif_cfg_item_count, &bt_integer);
-  bif_define_typed ("cfg_section_name", bif_cfg_section_name, &bt_varchar);
-  bif_define_typed ("cfg_item_name", bif_cfg_item_name, &bt_varchar);
-  bif_define_typed ("cfg_item_value", bif_cfg_item_value, &bt_varchar);
+  bif_define_ex ("server_root", bif_server_root, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_to_string", bif_file_to_string, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_to_string_output", bif_file_to_string_session, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
+  bif_define_ex ("file_to_string_output_utf8", bif_file_to_string_session_utf8, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_append_to_string_output", bif_file_append_to_string_session, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("file_append_to_string_output_utf8", bif_file_append_to_string_session_utf8, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("file_read_line", bif_file_read_line, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("virtuoso_ini_path", bif_virtuoso_ini_path, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("virtuoso_ini_item_value", bif_virtuoso_ini_item_value, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_section_count", bif_cfg_section_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("cfg_item_count", bif_cfg_item_count, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("cfg_section_name", bif_cfg_section_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_item_name", bif_cfg_item_name, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("cfg_item_value", bif_cfg_item_value, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("cfg_write", bif_cfg_write);
-  bif_define_typed ("adler32", bif_adler32, &bt_integer);
+  bif_define_ex ("adler32", bif_adler32, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("tridgell32", bif_tridgell32);
-  bif_define_typed ("mdigest5", bif_mdigest5, &bt_varchar);
-  bif_define_typed ("md5", bif_md5, &bt_varchar);
-  bif_define_typed ("md5_init", bif_md5_init, &bt_varchar);
-  bif_define_typed ("md5_update", bif_md5_update, &bt_varchar);
-  bif_define_typed ("md5_final", bif_md5_final, &bt_varchar);
-  bif_define_typed ("__vector_sort", bif_vector_sort, &bt_any);
-  bif_define ("uuid", bif_uuid);
-  bif_define ("rdf_struuid_impl", bif_uuid);
+  bif_define_ex ("mdigest5", bif_mdigest5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5", bif_md5, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_init", bif_md5_init, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_update", bif_md5_update, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("md5_final", bif_md5_final, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__vector_sort", bif_vector_sort, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
-  bif_define_typed ("file_stat", bif_file_stat, &bt_any);
+  bif_define_ex ("file_stat", bif_file_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);
   if (do_os_calls)
-    bif_define_typed ("system", bif_system, &bt_integer);
-  bif_define_typed ("run_executable", bif_run_executable, &bt_integer);
-  bif_define_typed ("mime_tree", bif_mime_tree, &bt_any);
-  bif_define_typed ("mime_header", bif_mime_header, &bt_any);
-  bif_define_typed ("mime_tree_ses", bif_mime_tree_ses, &bt_any);
-  bif_define_typed ("gz_compress", bif_gz_compress, &bt_varchar);
-  bif_define_typed ("string_output_gz_compress",
-      bif_string_output_gz_compress, &bt_integer);
+    bif_define_ex ("system", bif_system, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("run_executable", bif_run_executable, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("mime_tree", bif_mime_tree, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mime_header", bif_mime_header, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mime_tree_ses", bif_mime_tree_ses, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("gz_compress", bif_gz_compress, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_typed ("string_output_gz_compress", bif_string_output_gz_compress, &bt_integer);
   bif_define ("gz_uncompress", bif_gz_uncompress);
   bif_define ("gzip_uncompress", bif_gzip_uncompress);
-  bif_define_typed ("gz_compress_file", bif_gz_compress_file, &bt_integer);
-  bif_define_typed ("gz_uncompress_file", bif_gz_uncompress_file, &bt_integer);
+  bif_define_ex ("gz_compress_file", bif_gz_compress_file, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("gz_uncompress_file", bif_gz_uncompress_file, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("unzip_file", bif_unzip_file);
   bif_define ("unzip_list", bif_unzip_list);
-  bif_define_typed ("sys_unlink", bif_sys_unlink, &bt_integer);
-  bif_define_typed ("sys_mkdir", bif_sys_mkdir, &bt_integer);
-  bif_define_typed ("sys_mkpath", bif_sys_mkpath, &bt_integer);
-  bif_define_typed ("mail_header", bif_get_mailmsg_hf, &bt_varchar);
-  bif_define_typed ("sys_dirlist", bif_sys_dirlist, &bt_any);
-  bif_define_typed ("file_delete", bif_file_delete, &bt_any);
-  bif_define_typed ("tmp_file_name", bif_tmp_file, &bt_varchar);
+  bif_define_ex ("sys_unlink", bif_sys_unlink, BMD_ALIAS, "file_unlink", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_mkdir", bif_sys_mkdir, BMD_ALIAS, "file_mkdir", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_mkpath", bif_sys_mkpath, BMD_ALIAS, "file_mkpath", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("sys_dirlist", bif_sys_dirlist, BMD_ALIAS, "file_dirlist", BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("mail_header", bif_get_mailmsg_hf, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("file_delete", bif_file_delete, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("tmp_file_name", bif_tmp_file, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("http_mime_type_add", bif_http_mime_type_add);
-  bif_define_typed ("http_mime_type", bif_http_mime_type, &bt_varchar);
-  bif_define_typed ("delay", bif_sleep, &bt_integer);
+  bif_define_ex ("http_mime_type", bif_http_mime_type, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("delay", bif_sleep, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_set_uses_index (bif_sleep); /* is io sect, means can't hold a page wired */
-  bif_define_typed ("trace_on", bif_trace_on, &bt_any);
-  bif_define_typed ("trace_status", bif_trace_status, &bt_any);
-  bif_define_typed ("trace_off", bif_trace_off, &bt_any);
+  bif_define_ex ("trace_on", bif_trace_on, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("trace_status", bif_trace_status, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("trace_off", bif_trace_off, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("log_message", bif_log_message);
-  bif_define_typed ("sys_dir_is_allowed", bif_sys_dir_is_allowed,
-      &bt_integer);
+  bif_define_typed ("sys_dir_is_allowed", bif_sys_dir_is_allowed, &bt_integer);
   /* aliases of sys_... bifs */
-  bif_define_typed ("file_unlink", bif_sys_unlink, &bt_integer);
-  bif_define_typed ("file_mkdir", bif_sys_mkdir, &bt_integer);
-  bif_define_typed ("file_mkpath", bif_sys_mkpath, &bt_integer);
-  bif_define_typed ("file_dirlist", bif_sys_dirlist, &bt_any);
-  bif_define_typed ("file_rl", bif_file_rl, &bt_any);
-  bif_define_typed ("file_rb", bif_file_rb, &bt_any);
-  bif_define_typed ("file_rlo", bif_file_rlo, &bt_any);
-  bif_define_typed ("file_rlc", bif_file_rlc, &bt_any);
-  bif_define_typed ("file_open", bif_file_open, &bt_any);
-  bif_define_typed ("gz_file_open", bif_gz_file_open, &bt_any);
-  bif_define_typed ("get_csv_row", bif_get_csv_row, &bt_any);
-  bif_define_typed ("get_plaintext_row", bif_get_plaintext_row, &bt_any);
-  bif_define_typed ("getenv", bif_getenv, &bt_varchar);
+  bif_define_ex ("file_rl", bif_file_rl, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rb", bif_file_rb, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rlo", bif_file_rlo, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_rlc", bif_file_rlc, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("file_open", bif_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("read_object", bif_read_object, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("gz_file_open", bif_gz_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+#ifdef HAVE_LZMA
+  bif_define_ex ("xz_file_open", bif_xz_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+#endif
+#ifdef HAVE_BZ2
+  bif_define_ex ("bz2_file_open", bif_bz2_file_open, BMD_RET_TYPE, &bt_any, BMD_DONE);
+#endif
+  bif_define_ex ("get_csv_row", bif_get_csv_row, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("get_plaintext_row", bif_get_plaintext_row, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("getenv", bif_getenv, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
@@ -6889,8 +7538,8 @@ bif_file_init (void)
 #endif
 #endif
 #if defined (__APPLE__) && defined(SPOTLIGHT)
-  bif_define_typed ("spotlight_metadata", bif_spotlight_metadata, &bt_any);
-  bif_define_typed ("spotlight_status", bif_spotlight_status, &bt_any);
+  bif_define_ex ("spotlight_metadata", bif_spotlight_metadata, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("spotlight_status", bif_spotlight_status, BMD_RET_TYPE, &bt_any, BMD_DONE);
   init_file_acl_set ("/usr/bin/mdimport", &dba_execs_set);
 #endif
   set_ses_tmp_dir ();

@@ -1,17 +1,38 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_GROUP_CONCAT">
   <refmeta>
-    <refentrytitle>GROUP_CONCAT</refentrytitle>
+    <refentrytitle>DB.DBA.GROUP_CONCAT</refentrytitle>
     <refmiscinfo>rdf</refmiscinfo>
   </refmeta>
   <refnamediv>
-    <refname>GROUP_CONCAT</refname>
+    <refname>DB.DBA.GROUP_CONCAT</refname>
     <refpurpose>returns an arbitrary value from the multiset passed to it.</refpurpose>
   </refnamediv>
   <refsynopsisdiv>
     <funcsynopsis id="fsyn_GROUP_CONCAT">
       <funcprototype id="fproto_GROUP_CONCAT">
-        <funcdef><function>GROUP_CONCAT</function></funcdef>
+        <funcdef><function>DB.DBA.GROUP_CONCAT</function></funcdef>
 	        <paramdef>in <parameter>token</parameter> varchar</paramdef>
 	        <paramdef>in <parameter>delim</parameter> varchar</paramdef>
       </funcprototype>
@@ -19,7 +40,7 @@
   </refsynopsisdiv>
   <refsect1 id="desc_GROUP_CONCAT">
     <title>Description</title>
-    <para>GROUP_CONCAT is aggregate function that performs a string concatenation across 
+    <para>DB.DBA.GROUP_CONCAT is aggregate function that performs a string concatenation across
     	the values of an expression with a group. The order of the strings is not specified. 
     	The separator character used in the concatenation may be given with the scalar 
     	argument delimiter.</para>
@@ -42,7 +63,7 @@
   </refsect1>
   <refsect1 id="examples_GROUP_CONCAT">
     <title>Examples</title>
-    <example id="ex_GROUP_CONCAT"><title></title>
+    <example id="ex_GROUP_CONCAT"><title>Simple Use</title>
 <programlisting><![CDATA[
 SQL>SPARQL 
 SELECT ?name, (sql:GROUP_CONCAT(?near, ' , '))
@@ -61,7 +82,6 @@ name callret-1
 ANY  ANY
 ________________________________________________
 Jonas Smedegaard	 nodeID://b6190457 , nodeID://b6190507
-Dimitar Dimitrov	 http://mitko.dnsalias.net:8005/dataspace/person/dav#based_near , http://ods-qa.openlinksw.com/dataspace/person/dav1#based_near , http://ods-qa.openlinksw.com/dataspace/person/dav2#based_near
 Adam Harvey	       nodeID://b780751
 John Breslin	     nodeID://b56694
 John Breslin	     nodeID://b56694
@@ -70,6 +90,7 @@ Leo Sauermann	     nodeID://b53598
 Andreas Harth	     http://dbpedia.org/resource/Karlsruhe , nodeID://b53559 , nodeID://b53569
 Alexandre Passant	 http://dbpedia.org/resource/Galway
 Leon Lord	         http://ods-qa.openlinksw.com/dataspace/person/t1#based_near
+Leon Smith         http://ods-qa.openlinksw.com/dataspace/person/t2#based_near
 No. of rows in result: 10 
 
 ]]></programlisting>
@@ -77,9 +98,11 @@ No. of rows in result: 10
   </refsect1>
   <refsect1 id="seealso_GROUP_CONCAT">
     <title>See Also</title>
-    <para><link linkend="fn_SAMPLE"><function>SAMPLE</function></link></para>
-    <para><link linkend="fn_GROUP_DIGEST"><function>GROUP_DIGEST</function></link></para>
-    <para><link linkend="samplegroupconcatdigest">Differences between SAMPLE, GROUP_CONCAT and GROUP_DIGEST functions usage.</link></para>        
+    <para><link linkend="fn_SAMPLE"><function>DB.DBA.SAMPLE()</function></link></para>
+    <para><link linkend="fn_GROUP_CONCAT_DISTINCT"><function>DB.DBA.GROUP_CONCAT_DISTINCT()</function></link></para>
+    <para><link linkend="fn_GROUP_DIGEST"><function>DB.DBA.GROUP_DIGEST()</function></link></para>
+    <para><link linkend="samplegroupconcatdigest">Differences between DB.DBA.SAMPLE, DB.DBA.GROUP_CONCAT and
+    DB.DBA.GROUP_DIGEST functions usage.</link></para>
   </refsect1>
 </refentry>
 

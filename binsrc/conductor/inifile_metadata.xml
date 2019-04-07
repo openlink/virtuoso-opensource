@@ -1,0 +1,808 @@
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<?xml version="1.0" encoding="UTF-8"?>
+<inifile>
+	<section name="Database" title="Modifying of the Database section parameters">
+		<parameter name="DatabaseFile" required="No" default="virtuoso.db">
+			<label>Database File</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="TransactionFile" required="No" default="virtuoso.trx">
+			<label>Transaction File</label>
+			<control type="text">
+				<validator test="length" min="1" max="256" message="No file is defined"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ErrorLogFile" required="No" default="virtuoso.log">
+			<label>Database Error Log File</label>
+			<control type="text">
+				<validator test="length" min="1" max="256" message="No file is defined"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ErrorLogLevel" required="No" default="7">
+			<label>Database Error Log Level</label>
+			<control type="text">
+				<validator test="value" min="0" max="7" message="Wrong value!"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="FileExtend" required="No" default="100">
+			<label>File Extend</label>
+			<control type="text">
+				<validator test="value" min="100" max="999999999" message="Wrong value!"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="Striping" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Enable Stripings"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="LogSegments" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Log Segments"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="LogSegmentInfo" required="No">
+			<label>Log Segment Info</label>
+			<control type="textarea"/>
+			<description/>
+		</parameter>
+		<parameter name="crashdump_start_dp" required="No">
+			<label>Crashdump Start Diskpage</label>
+			<control type="text">
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="crashdump_end_dp" required="No">
+			<label>Crashdump End Diskpage</label>
+			<control type="text">
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+	</section>
+	<section name="Parameters" title="Modifying of the Engine section parameters">
+		<parameter name="SingleCPU" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Force Single CPU mode"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ServerPort" required="No" default="1111">
+			<label>Server Port</label>
+			<control type="text">
+				<validator test="length" min="1" max="256"  message="No port is defined"/>
+				<validator test="regexp" min="1025" max="65000" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ServerThreads" required="No" default="10">
+			<label>Server Threads</label>
+			<control type="text">
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+				<validator test="value" min="0" max="4090" message="Wrong value"/>
+			</control>
+			<description>cannot exceed current licensed connections</description>
+		</parameter>
+		<parameter name="ServerThreadSize" required="No" default="50000">
+			<label>Server Thread Size</label>
+			<control type="text">
+				<validator test="value" min="0" max="100000000000" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="MainThreadSize" required="No" default="100000">
+			<label>Main Thread Size</label>
+			<control type="text">
+				<validator test="value" min="0" max="1000000000000" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="ThreadCleanupInterval" required="No" default="0">
+			<label>Thread Cleanup Interval</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Minutes</unit>
+			<description/>
+		</parameter>
+		<parameter name="ThreadThreshold" required="No" default="10">
+			<label>Thread Threshold</label>
+			<control type="text">
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ResourcesCleanupInterval" required="No" default="10">
+			<label>Resources Cleanup Interval</label>
+			<control type="text">
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="FutureThreadSize" required="No" default="100000">
+			<label>Future Thread Size</label>
+			<control type="text">
+				<validator test="value" min="140000" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="CheckpointInterval" required="No" default="60">
+			<label>Checkpoint Interval</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Minutes</unit>
+			<description/>
+		</parameter>
+		<parameter name="CheckpointSynchMode" required="No" default="0">
+			<label>Checkpoint Synch Mode</label>
+			<control type="radio">
+				<row>
+					<item value="0" label="Continue"/>
+				</row>
+				<row>
+					<item value="1" label="initiate"/>
+				</row>
+				<row>
+					<item value="2" label="Block"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="NumberOfBuffers" required="No" default="2000">
+			<label>Number Of Buffers</label>
+			<control type="text">
+				<validator test="value" min="50" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaxCheckpointRemap" required="No" default="2000">
+			<label>Maximum Checkpoint Remap</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="CaseMode" required="No" default="1">
+			<label>SQL Case Mode</label>
+			<control type="radio">
+				<row>
+					<item value="0" label="0"/>
+				</row>
+				<row>
+					<item value="1" label="1"/>
+				</row>
+				<row>
+					<item value="2" label="2"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MultiThreadedWrite" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Enable Multi-threaded Write"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MinAutoCheckpointSize" required="No" default="4000000">
+			<label>Minimum Auto Checkpoint Size</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="AutoCheckpointLogSize" required="No" default="0">
+			<label>Auto Checkpoint Log Size</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="CheckpointAuditTrail" required="No" default="1">
+			<label>Checkpoint Audit Trail</label>
+			<control type="radio">
+				<row>
+					<item value="0" label="Reuse Log"/>
+				</row>
+				<row>
+					<item value="1" label="New Log"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="AllowOSCalls" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Allow OS Calls"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaxStaticCursorRows" required="No" default="5000">
+			<label>Maximum Static Cursor Rows</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="FreeTextBatchSize" required="No" default="10000000">
+			<label>Freetext Batch Size</label>
+			<control type="text">
+				<validator test="value" min="0" max="99999999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="NullUnspecifiedParams" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Null Unspecified Parameters"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="Collation" required="No">
+			<label>Collation</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="DirsAllowed" required="No">
+			<label>Directories Allowed</label>
+			<control type="textarea"/>
+			<description/>
+		</parameter>
+		<parameter name="DirsDenied" required="No">
+			<label>Directories Denied</label>
+			<control type="textarea"/>
+			<description/>
+		</parameter>
+		<parameter name="SSLServerPort" required="No">
+			<label>SSL Server Port</label>
+			<control type="text">
+				<validator test="value" min="1" max="65000" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+
+		<parameter name="CallstackOnException" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Show Call Stack on Exception"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaxJoins" required="No">
+			<label>Maximum JOINs per SELECT</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="MaxOptimizeLayouts" required="No" default="100">
+			<label>Maximum Optimized Layouts</label>
+			<control type="text">
+				<validator test="value" min="0" max="99999999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="TraceOn" required="No" default="user_log, client_sql">
+			<label>Trace On</label>
+			<control type="checkbox">
+				<row>
+					<item value="user_log" label="user_log"/>
+					<item value="failed_log" label="failed_log"/>
+				</row>
+				<row>
+					<item value="compile" label="ddl_log"/>
+					<item value="ddl_log" label="ddl_log"/>
+				</row>
+				<row>
+					<item value="client_sql" label="client_sql"/>
+					<item value="errors" label="errors"/>
+				</row>
+				<row>
+					<item value="dsn" label="dsn"/>
+					<item value="sql_send" label="sql_send"/>
+				</row>
+				<row>
+					<item value="transact" label="transact"/>
+					<item value="remote_transact" label="remote_transact"/>
+				</row>
+				<row>
+					<item value="exec" label="exec"/>
+					<item value="soap" label="soap"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="DBAExecutables" required="No">
+			<label>DBA Executables</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="SchedulerInterval" required="No">
+			<label>Scheduler Interval</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="CompileProceduresOnStartup" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Compile Procedures On Startup"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="FDsPerFile" required="No" default="1">
+			<label>Number of file descriptors per file</label>
+			<control type="text">
+				<validator test="value" min="0" max="99999999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="RecursiveFreeTextUsage" required="No" default="1">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Recursive FreeText Usage"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="RecursiveTriggerCalls" required="No" default="1">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Recursive Trigger Calls"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="DisableUnixSocket" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Disable Unix Socket"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaxSortedTopRows" required="No" default="10000">
+			<label>MaxSortedTopRows</label>
+			<control type="text">
+				<validator test="value" min="0" max="99999999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="TempAllocationPct" required="No" default="100">
+			<label>MaxSortedTopRows</label>
+			<control type="text">
+				<validator test="value" min="0" max="99999999999999" message="Wrong value"/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>%%</unit>
+			<description/>
+		</parameter>
+		<parameter name="SSLCertificate" required="No" default="">
+			<label>SSL Certificate</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="SSLPrivateKey" required="No" default="">
+			<label>SSL Private Key</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="AllowPasswordEncryption" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Allow Password Encryption"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+
+
+
+	</section>
+	<section name="HTTPServer" title="Modifying of the HTTP Server section parameters">
+		<parameter name="ServerPort" required="No">
+			<label>Server Port</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="HTTPLogFile" required="No">
+			<label>Log file path</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="ServerRoot" required="No">
+			<label>Server root  path</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="ServerIdString" required="No">
+			<label>Server Identifier</label>
+			<control type="text">
+				<validator test="length" min="0" max="80" message="Wrong string size!"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ClientIdString" required="No" default="Mozilla/4.0">
+			<label>ServerIdString </label>
+			<control type="text">
+				<validator test="length" min="0" max="80" message="Wrong string size!"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ServerThreads" required="No">
+			<label>Server Threads</label>
+			<control type="text">
+				<validator test="value" min="1" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="HTTPThreadSize" required="No" default="120000">
+			<label>Server Threads</label>
+			<control type="text">
+				<validator test="value" min="1" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+		<parameter name="EnabledGzipContent" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Enable gzip content"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaxKeepAlives" required="No" default="10">
+			<label>Maximum Keep Alives</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="KeepAliveTimeout" required="No" default="10">
+			<label>Keep Alive Timeout</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Seconds</unit>
+			<description/>
+		</parameter>
+		<parameter name="HTTPProxyEnabled" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Enable HTTP Proxy Service"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="MaximumCachedProxyConnections" required="No" default="10">
+			<label>Maximum Cached Proxy Connections</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ProxyConnectionCacheTimeout" required="No" default="15">
+			<label>Proxy Connection Cache Timeout</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Seconds</unit>
+			<description/>
+		</parameter>
+		<parameter name="DavRoot" required="No" default="DAV">
+			<label>Repository Root</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="EnableDavVSP" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Permit VSP execution"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+	</section>
+	<section name="Vdb" title="Modifying of the VDB section parameters">
+		<parameter name="ArrayOptimization" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Use Array Optimization"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="UseMTS" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Use Multi-Threaded Server"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="TransactionServerName" required="No">
+			<label>Transaction Server Name</label>
+			<control type="text"/>
+			<description/>
+		</parameter>
+		<parameter name="NumArrayParameters" required="No">
+			<label>Number of Array Parameters</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="VDBDisconnectTimeout" required="No">
+			<label>Disconnect Timeout</label>
+			<control type="text">
+				<validator test="value" min="1" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Seconds</unit>
+			<description/>
+		</parameter>
+		<parameter name="VDBOracleCatalogFix" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Oracle Catalog Fix"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="AttachInAutoCommit" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Attach In Auto-Commit"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ReconnectOnFailure" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Reconnect On Failure"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SingleThread" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Forces a single thread for each ODBC session"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SerializeConnections" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Serialize Connections"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+	</section>
+	<section name="Replication" title="Modifying of the Replication section parameters">
+		<parameter name="ServerEnable" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Transaction Replication Allowed"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="ReplicationServerName" required="No">
+			<label>Replication Server Name</label>
+			<control type="text">
+				<validator test="length" min="0" max="200" message="Wrong length! "/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="QueueMax" required="No" default="50000">
+			<label>Transactional Replication Queue Maximum</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<unit>Byte</unit>
+			<description/>
+		</parameter>
+	</section>
+	<section name="Autorepair" title="Modifying of the Autorepair section parameters">
+		<parameter name="BadParentLinks" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Automatically Repair Bad Links"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="BadDTP" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Bad DTP"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+	</section>
+	<section name="Client" title="Modifying of the Client section parameters">
+		<parameter name="SQL_QUERY_TIMEOUT" required="No" default="0">
+			<label>SQL Query Timeout</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_TXN_TIMEOUT" required="No" default="0">
+			<label>SQL Transaction Timeout</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_PREFETCH_ROWS" required="No" default="100">
+			<label>SQL Prefetch Rows</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_PREFETCH_BYTES" required="No" default="16000">
+			<label>SQL Prefetch Bytes</label>
+			<control type="text">
+				<validator test="value" min="0" max="999999999" message="Wrong value! "/>
+				<validator test="regexp" min="0" max="0" regexp="^[0-9]+$" message="Wrong value! must be a number"/>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_NO_CHAR_C_ESCAPE" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Backslash Escapes Next Char"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_UTF8_EXECS" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Allow UTF-8 Identifiers"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_BINARY_TIMESTAMP" required="No" default="1">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Binary Timestamp"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_NO_SYSTEM_TABLES" required="No" default="0">
+			<label/>
+			<control type="checkbox">
+				<row>
+					<item value="1" label="Disable System Tables in SQLTables"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+		<parameter name="SQL_ENCRYPTION_ON_PASSWORD" required="No" default="0">
+			<label>Encrypt the passwords?</label>
+			<control type="radio">
+				<row>
+					<item value="0" label="0"/>
+				</row>
+				<row>
+					<item value="1" label="1"/>
+				</row>
+				<row>
+					<item value="2" label="2"/>
+				</row>
+			</control>
+			<description/>
+		</parameter>
+	</section>
+</inifile>

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -24,11 +24,18 @@ if WITH_JDK4
 TARGETS		= lib virt_dialect.jar
 JDK		= @ac_jdk4_path@
 JDK_FLAGS	= -Xlint -O -g:none -source 1.5 -target 1.5
+
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
 JAVADOC		= $(JDK)/javadoc
 JAR		= $(JDK)/jar
+else
+JAVA		= :
+JAVAC		= :
+JAVAH		= :
+JAVADOC		= :
+JAR		= :
 endif
 
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -79,35 +79,37 @@ unsigned char dks_esc_char_props[0x100] = {
 #define CDATA	'd'
 #define CDATA2	'D'
 #define BSLASHC	'\\'
-#define BSLASHU	'u'
-#define DOCWRI  'W'
-#define REPEAT  'R'
+#define BSLAU4	'u'
+#define BSLAU8	'U'
+#define DOCWRI	'W'
+#define REPEAT	'R'
 
 
 dks_charclass_props_t dks_charclasses['R'+1-'>'] = {
-/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|13	*/
-/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	*/
-/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHU,BSLASHU,BSLASHU,BSLASHU,BSLASHU},
-/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	},
-/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
-/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
-/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
-/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLASHU,0	,BSLASHC},
-/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	},
-/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,BSLASHU,BSLASHC,0	},
-/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
-/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
-/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLASHU,0	,0	},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
-/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	},
-/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	},
-/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLASHU,BSLASHC,BSLASHC},
-/* R |, 0x7f */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	} };
+/*		|0	|1	|2	|3	|4	|5	|6	|7	|8	|9	|10	|11	|12	|13	|14	|15	|16	|17	|18	|19	,20	*/
+/*		|0x00	|0x01	|0x02	|0x03	|0x04	|0x05	|0x06	|0x07	|0x08	|0x09	|0x0A	|0x0B	|0x0C	|0x0D	|0x0E	|0x0F	|0x10	|0x11	|0x12	|0x13	,0x14	*/
+/*		|NONE	|PTEXT	|SQATTR	|DQATTR	|COMMENT|CDATA	|URI	|DAV	|URI_R	|URI_NR	|TTL_SQ	|TTL_DQ	|TTLIRI	|JS_SQ	|JS_DQ	|hTTL_SQ|hTTL_DQ|hTTLIRI|JAVA_SQ|JAVA_DQ,QNAME11*/
+/* > wide    */ {0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
+/* ? enc.miss*/ {BAD	,LATTICE,LATTICE,LATTICE,LATTICE,CDATA2	,PCT	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
+/* @ letters */	{0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* A 8-bit   */	{0	,0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,0	},
+/* B < 0x20  */	{BAD	,LATTICE,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU4	,BSLAU4	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BSLAU8	,BAD	},
+/* C !       */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* D 0x09    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
+/* E 0x0A    */	{0	,0	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
+/* F 0x0D    */	{0	,SOAPCR	,LATTICE,LATTICE,0	,0	,PCT	,0	,PCT	,PCT	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
+/* G "       */	{0	,QUOT	,0	,QUOT	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,BSLASHC,BSLAU8	,0	,BSLASHC,QUOT	,BSLASHC,BSLAU8	,0	,BSLASHC,BAD	},
+/* H &       */	{0	,AMP	,AMPATTR,AMPATTR,0	,0	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,AMP	,AMP	,AMP	,0	,0	,0	},
+/* I '       */	{0	,LATTICE,LATTICE,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,0	,BSLAU8	,BSLASHC,0	,BSLASHC,LATTICE,BSLAU8	,BSLASHC,0	,0	},
+/* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,0	,0	,BSLAU8	,0	,0	,0	},
+/* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,LT	,LT	,BSLAU8	,0	,0	,BAD	},
+/* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,GT	,GT	,BSLAU8	,0	,0	,BAD	},
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* Q \	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BSLASHC,BSLASHC,BSLAU8	,BSLASHC,BSLASHC,BAD	},
+/* R |, 0x7f */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	} };
 
 unsigned char dks_esc_bslashc[0x80] = {
 /* 0   1   2   3   4   5   6   7   8   9   A   B   C   D   E   F  */
@@ -176,7 +178,7 @@ again:
       virt_mbstate_t state;
       int charlen;
       memset (&state, 0, sizeof (virt_mbstate_t));
-      charlen = (int) virt_mbrtowc (&wc, src_tail, str_end - src_tail, &state);
+      charlen = (int) virt_mbrtowc_z (&wc, src_tail, str_end - src_tail, &state);
       if (charlen <= 0)
 	{
 	  wc = L'?';
@@ -221,7 +223,44 @@ again:
         goto char_done;
       }
     case BSLASHC:	out_buf[out_buf_idx++] = '\\'; out_buf[out_buf_idx++] = dks_esc_bslashc[wc]; goto char_done;
-    case BSLASHU:
+    case BSLAU4:
+      {
+        if (!(wc & ~0xffff))
+          {
+            out_buf[out_buf_idx++] = '\\';
+            out_buf[out_buf_idx++] = 'u';
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[wc&0x0000000F];
+            goto char_done;
+          }
+        else if (wc > 0x10ffff)
+          {
+            out_buf[out_buf_idx++] = '?';
+            goto char_done;
+          }
+        else
+          {
+            wchar_t shifted_cp = wc - 0x10000;
+            wchar_t hi_surro = 0xD800 + (shifted_cp >> 10);
+            wchar_t lo_surro = 0xDC00 + (shifted_cp & 0x3FF);
+            out_buf[out_buf_idx++] = '\\';
+            out_buf[out_buf_idx++] = 'u';
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(hi_surro&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[hi_surro&0x0000000F];
+            out_buf[out_buf_idx++] = '\\';
+            out_buf[out_buf_idx++] = 'u';
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x0000F000)>>12];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x00000F00)>>8];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[(lo_surro&0x000000F0)>>4];
+            out_buf[out_buf_idx++] = "0123456789ABCDEF"[lo_surro&0x0000000F];
+            goto char_done;
+          }
+      }
+    case BSLAU8:
       {
         out_buf[out_buf_idx++] = '\\';
         if (wc & ~0xffff)
@@ -419,7 +458,46 @@ flush_bad_char:
                   session_buffered_write (ses, tmp, strlen(tmp));
                   continue;
                 }
-              case BSLASHU:
+              case BSLAU4:
+                {
+                  char tmp[12];
+                  char *tail = tmp;
+                  if (!(wc & ~0xffff))
+                    {
+                      (tail++)[0] = '\\';
+                      (tail++)[0] = 'u';
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x0000F000)>>12];
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x00000F00)>>8];
+                      (tail++)[0] = "0123456789ABCDEF"[(wc&0x000000F0)>>4];
+                      (tail++)[0] = "0123456789ABCDEF"[wc&0x0000000F];
+                    }
+                  else if (wc > 0x10ffff)
+                    {
+                      session_buffered_write_char ('?', ses);
+                      continue;
+                    }
+                  else
+                    {
+                      wchar_t shifted_cp = wc - 0x10000;
+                      wchar_t hi_surro = 0xD800 + (shifted_cp >> 10);
+                      wchar_t lo_surro = 0xDC00 + (shifted_cp & 0x3FF);
+                      (tail++)[0] = '\\';
+                      (tail++)[0] = 'u';
+                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x0000F000)>>12];
+                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x00000F00)>>8];
+                      (tail++)[0] = "0123456789ABCDEF"[(hi_surro&0x000000F0)>>4];
+                      (tail++)[0] = "0123456789ABCDEF"[hi_surro&0x0000000F];
+                      (tail++)[0] = '\\';
+                      (tail++)[0] = 'u';
+                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x0000F000)>>12];
+                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x00000F00)>>8];
+                      (tail++)[0] = "0123456789ABCDEF"[(lo_surro&0x000000F0)>>4];
+                      (tail++)[0] = "0123456789ABCDEF"[lo_surro&0x0000000F];
+                    }
+                  session_buffered_write (ses, tmp, (tail-tmp));
+                  continue;
+                }
+              case BSLAU8:
                 {
                   char tmp[10];
                   char *tail = tmp;

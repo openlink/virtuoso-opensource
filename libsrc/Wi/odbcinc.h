@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@
 #  include <odbcinst.h>
 #  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # else
-#  define ERR_STRING	"[OpenLink][Virtuoso iODBC Driver]"
+#  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # endif
 
 # ifndef SQL_COPT_SS_BASE
@@ -61,7 +61,9 @@
 # else
 #  ifdef NO_UDBC_SDK
 #   include <iodbcinst.h>
+#   ifndef HAVE_ODBCINST_H
 #   define HAVE_ODBCINST_H
+#   endif
 #  else
 #   include "iodbcinst.h"
 #  endif

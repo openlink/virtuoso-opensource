@@ -1,5 +1,25 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
---- cluster waits for ins and serializable 
+--- cluster waits for ins and serializable
 
 drop table CLLK;
 create table CLLK (id int primary key, dt varchar, ct int default 0)
@@ -45,16 +65,16 @@ insert into cllk (id) values (14) &
 sleep (0.2);
 
 select count (*) from cllk;
-ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
-ECHO BOTH ": cl serializable insert 1\n";
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ": cl serializable insert 1\n";
 
 commit work;
 
 delay (0.2);
 
 select count (*) from cllk;
-ECHO BOTH $IF $EQU $LAST[1] 5 "PASSED" "***FAILED";
-ECHO BOTH ": cl serializable insert 2\n";
+echo both $if $equ $last[1] 5 "PASSED" "***FAILED";
+echo both ": cl serializable insert 2\n";
 
 
 sread (10);
@@ -167,11 +187,11 @@ create procedure test_deadlock (in n1 int, in n2 int, in host1 int, in host2 int
 
 -- Different combinations of executing thread, place of deadlock.  The host that detects the deadlock is the one of the 1st arg of test_deadlock.
 
--- local detection on master 
+-- local detection on master
   test_deadlock (24, 28, 1, 1);
   test_deadlock (24, 28, 2, 3);
 
--- local detection on non master 
+-- local detection on non master
   test_deadlock (25, 29, 1, 1);
   test_deadlock (25, 29, 4, 4);
 
@@ -183,7 +203,7 @@ test_deadlock (25, 26, 4, 4, 'DB.DBA.DBLLK');
 
 
 
--- now deadlock with no distr wait notify, see if wiat query catches it 
+-- now deadlock with no distr wait notify, see if wiat query catches it
 cl_exec ('__dbf_set (''dbf_cl_skip_wait_notify'', 1)');
 dbllk (24, 25) &
 dbllk (25, 24) &
@@ -195,7 +215,7 @@ cl_exec ('__dbf_set (''dbf_cl_skip_wait_notify'', 0)');
 
 
 
----  A little thing with delld serializable rl getting acquired 
+---  A little thing with delld serializable rl getting acquired
 
 set autocommit manual;
 insert into cllk  (id) values (64);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,8 +44,8 @@ static int _cfg_freeent (PCFGENTRY e);
 static int _cfg_freeimage (PCONFIG pconfig);
 static int _cfg_copyent (PCFGENTRY dst, PCFGENTRY src);
 static int _cfg_refresh (PCONFIG pconfig);
-static int _cfg_storeentry ( PCONFIG pconfig, char *section, char *id,
-    char *value, char *comment, int dynamic);
+static int _cfg_storeentry ( PCONFIG pconfig, const char *section, const char *id,
+    const char *value, const char *comment, int dynamic);
 
 /*** READ MODULE ****/
 
@@ -55,7 +55,7 @@ static int _cfg_storeentry ( PCONFIG pconfig, char *section, char *id,
 
 
 int
-cfg_init (PCONFIG *ppconf, char *filename)
+cfg_init (PCONFIG *ppconf, const char *filename)
 {
   return cfg_init2 (ppconf, filename, 0);
 }
@@ -65,7 +65,7 @@ cfg_init (PCONFIG *ppconf, char *filename)
  *  Initialize a configuration
  */
 int
-cfg_init2 (PCONFIG *ppconf, char *filename, int doCreate)
+cfg_init2 (PCONFIG *ppconf, const char *filename, int doCreate)
 {
   PCONFIG pconfig;
 
@@ -460,10 +460,10 @@ _cfg_parse (PCONFIG pconfig)
 static int
 _cfg_storeentry (
     PCONFIG pconfig,
-    char *section,
-    char *id,
-    char *value,
-    char *comment,
+    const char *section,
+    const char *id,
+    const char *value,
+    const char *comment,
     int dynamic)
 {
   TCFGENTRY newentry;
@@ -472,10 +472,10 @@ _cfg_storeentry (
   if ((data = _cfg_poolalloc (pconfig, 1)) == NULL)
     return -1;
 
-  newentry.section = section;
-  newentry.id = id;
-  newentry.value = value;
-  newentry.comment = comment;
+  newentry.section = (char *)section;
+  newentry.id = (char *)id;
+  newentry.value = (char *)value;
+  newentry.comment = (char *)comment;
   newentry.flags = 0;
 
   if (dynamic)
@@ -490,10 +490,10 @@ _cfg_storeentry (
 int
 cfg_storeentry (
     PCONFIG pconfig,
-    char *section,
-    char *id,
-    char *value,
-    char *comment,
+    const char *section,
+    const char *id,
+    const char *value,
+    const char *comment,
     int dynamic)
 {
   int rc;
@@ -632,7 +632,7 @@ cfg_nextentry (PCONFIG pconfig)
 
 
 static int
-_cfg_find (PCONFIG pconfig, char *section, char *id)
+_cfg_find (PCONFIG pconfig, const char *section, const char *id)
 {
   int atsection;
 
@@ -659,7 +659,7 @@ _cfg_find (PCONFIG pconfig, char *section, char *id)
 
 
 int
-cfg_find (PCONFIG pconfig, char *section, char *id)
+cfg_find (PCONFIG pconfig, const char *section, const char *id)
 {
   int rc;
 
@@ -811,7 +811,7 @@ cfg_merge (PCONFIG pconfig, PCONFIG src)
  *   value  NULL  NULL		delete section <section>
  */
 static int
-_cfg_write (PCONFIG pconfig, char *section, char *id, char *value)
+_cfg_write (PCONFIG pconfig, const char *section, const char *id, const char *value)
 {
   PCFGENTRY e, e2, eSect;
   size_t idx;
@@ -968,7 +968,7 @@ _cfg_write (PCONFIG pconfig, char *section, char *id, char *value)
 
 
 int
-cfg_write (PCONFIG pconfig, char *section, char *id, char *value)
+cfg_write (PCONFIG pconfig, const char *section, const char *id, const char *value)
 {
   int rc;
 
@@ -984,7 +984,7 @@ cfg_write (PCONFIG pconfig, char *section, char *id, char *value)
 
 
 static int
-_cfg_digestprintf (MD5_CTX *pMd5, FILE *fd, char *fmt, ...)
+_cfg_digestprintf (MD5_CTX *pMd5, FILE *fd, const char *fmt, ...)
 {
   char buf[4096];
   va_list ap;

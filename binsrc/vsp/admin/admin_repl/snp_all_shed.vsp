@@ -1,26 +1,26 @@
-<?vsp 
---  
+<?vsp
+--
 --  $Id$
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --no_c_escapes-
 declare _tbl varchar;
@@ -36,7 +36,7 @@ if ('' <> get_keyword ('add', params, ''))
     {
 	if (exists (select 1 from SYS_SCHEDULED_EVENT where SE_NAME = _tbl))
 	  {
-	    update SYS_SCHEDULED_EVENT 
+	    update SYS_SCHEDULED_EVENT
 	      set SE_START = now (),
 	          SE_INTERVAL = _sint
 	          where SE_NAME = _tbl;
@@ -71,33 +71,33 @@ Snapshot replication scheduled update wizard
 <form action="snp_all_shed.vsp" method=POST>
 <table>
 <th bgcolor=silver>Table Name</th><th>On remote</th><th>Last replication</th><th>Sel</th>
-<?vsp 
+<?vsp
 declare _ex integer;
 declare _ts varchar;
 declare _sch varchar;
 _ex := 0;
 
-for select SN_SOURCE_TABLE as src, SN_NAME as dst, substring (cast (SN_LAST_TS as varchar), 1, 19) as ts, 
-           RT_DSN 
-	   from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_NAME = RT_NAME do { 
-_ex := _ex + 1;	     
-_ts := '**source not changed**';     
-_sch := '';     
-whenever not found goto nxt;      
-select '*' into _sch from SYS_SCHEDULED_EVENT where SE_NAME = dst;     
+for select SN_SOURCE_TABLE as src, SN_NAME as dst, substring (cast (SN_LAST_TS as varchar), 1, 19) as ts,
+           RT_DSN
+	   from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_NAME = RT_NAME do {
+_ex := _ex + 1;
+_ts := '**source not changed**';
+_sch := '';
+whenever not found goto nxt;
+select '*' into _sch from SYS_SCHEDULED_EVENT where SE_NAME = dst;
 nxt:
 if (ts <> '0')
-  _ts := ts;  
+  _ts := ts;
 ?>
 <tr><td><?= src ?></td><td><?=RT_DSN?></td><td align="right"><?= _ts ?></td>
 <td>
 <input type=checkbox name=CB_<?=dst?>><?=_sch?>
 </td>
-</tr>  
-<?vsp 
-   } 
+</tr>
+<?vsp
+   }
 if (_ex = 0)
-  http ('<tr><td colspan=4>*** No replications defined ***</td></tr>\n');   
+  http ('<tr><td colspan=4>*** No replications defined ***</td></tr>\n');
 ?>
 <tr>
 <td>Interval <input type=text name="sint" size=5 value=<?=_sint?>></td>

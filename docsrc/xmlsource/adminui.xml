@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -84,10 +84,10 @@ perform WSDL Import/Export, manage your BPEL processes.
 </para>
 
 	<figure id="adminuiwebservices" float="1">
-		<title>web Services</title>
+		<title>Web Services</title>
 		<graphic fileref="webservices.png"/>
 	</figure>
-      <para>From "Linked Data" you can execute/save/load SPARQL queries, add/edit RDF Mapping, make 
+      <para>From "Linked Data" tab you can execute/save/load SPARQL queries, add/edit RDF Mapping, make
       	statistics, manage graphs, import schemas and define namespaces, generated Linked Data Views, 
       	upload to the Quad Store:</para>
 	<figure id="adminuirdf" float="1">

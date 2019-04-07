@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2013 OpenLink Software
+ *  Copyright (C) 2005-2019 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -229,14 +229,14 @@ OAT.WebDav = {
 		var wopts = {
 			buttons:"cr",
 			outerWidth:this.options.width,
-			outerHeight:this.options.height,
+			// outerHeight:this.options.height - 40,
 			imagePath:this.options.imagePath,
 			title:"WebDAV Browser",
 			stackGroupBase:998
 		}
 		this.window = new OAT.Win(wopts);
 		var div = this.window.dom.content;
-		var content = OAT.Dom.create("div",{paddingLeft:"2px",paddingRight:"5px"});
+		var content = OAT.Dom.create("div",{paddingLeft:"2px",paddingRight:"2px"});
 
 		this.window.dom.content.appendChild(content);
 		div.id = "dav_browser";
@@ -562,6 +562,7 @@ OAT.WebDav = {
 		{
 			var content = this.dom.content;
 			var g = new OAT.Grid(content,{imagePath:this.options.imagePath});
+			g.html.style.cssText = 'width: 100%';
 			var header = ["Name"];
 			g.createHeader(header);
 			var numRows = -1;
@@ -581,6 +582,7 @@ OAT.WebDav = {
 			if (this.displayMode == 0) { /* details */
 				var content = this.dom.content;
 				var g = new OAT.Grid(content,{imagePath:this.options.imagePath});
+				g.html.style.cssText = 'width: 100%';
 				var header = ["Name",{value:"Size",align:OAT.GridData.ALIGN_RIGHT},"Modified","Type","Owner","Group","Perms"];
 				g.createHeader(header);
 				var numRows = -1;

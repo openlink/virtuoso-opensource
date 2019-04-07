@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@ create function DB.DBA."RDFData_DAV_AUTHENTICATE" (in id any, in what char(1), i
 {
   RDFData_log_message (current_proc_name ());
   --log_message (sprintf ('RDFData_DAV_AUTHENTICATE req=%s uname=%s uid=%d', req, auth_uname, auth_uid));
---  dbg_obj_princ ('RDFData_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
+  -- dbg_obj_princ ('RDFData_DAV_AUTHENTICATE (', id, what, req, auth_uname, auth_pwd, auth_uid, ')');
   if (not ('110' like req))
   {
     return -13;
@@ -214,7 +214,7 @@ create procedure DB.DBA.RDFData_cast_dt_silent (in d any)
 create function DB.DBA."RDFData_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
---  dbg_obj_princ ('RDFData_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+  -- dbg_obj_princ ('RDFData_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
   declare path_parts any;
   declare access, ownergid, owner_uid, mime any;
   declare len int;
@@ -258,7 +258,7 @@ create function DB.DBA."RDFData_DAV_DIR_LIST" (in detcol_id any, in path_parts a
 
   DB.DBA."RDFData_ACCESS_PARAMS" (detcol_id, access, ownergid, owner_uid);
 
---  dbg_obj_princ ('RDFData_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('RDFData_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
 
   if ((0 = length (path_parts)) or ('' = path_parts[length (path_parts) - 1]))
     what := 'C';
@@ -509,7 +509,7 @@ create function RDFData_std_pref (in iri varchar, in rev int := 0)
 create function DB.DBA."RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts any, in detcol_path varchar, inout compilation any, in recursive integer, in auth_uid integer) returns any
 {
   RDFData_log_message (current_proc_name ());
---  dbg_obj_princ ('RDFData_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
+  -- dbg_obj_princ ('RDFData_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
   return vector();
 }
 ;
@@ -517,7 +517,7 @@ create function DB.DBA."RDFData_DAV_DIR_FILTER" (in detcol_id any, in path_parts
 create function DB.DBA."RDFData_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
 {
   RDFData_log_message (current_proc_name ());
---  dbg_obj_princ ('RDFData_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
+  -- dbg_obj_princ ('RDFData_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
   declare orig_id, ctr, len integer;
   declare r_id, cl_id, cl any;
   declare access, ownergid, owner_uid any;
@@ -570,22 +570,48 @@ create function DB.DBA."RDFData_DAV_SEARCH_PATH" (in id any, in what char(1)) re
   declare col_path varchar;
   declare ret any;
   RDFData_log_message (current_proc_name ());
---  dbg_obj_princ ('RDFData_DAV_SEARCH_PATH (', id, what, ')');
+  -- dbg_obj_princ ('RDFData_DAV_SEARCH_PATH (', id, what, ')');
   col_path := WS.WS.COL_PATH (id[1]);
-  ret := sprintf ('%s%s/iid (%d).rdf', col_path, id_to_iri (id[2]), iri_id_num (id[4]));
+  if (what = 'C')
+    ret := sprintf ('%s%s/', col_path, id_to_iri (id[2]));
+  else
+    ret := sprintf ('%s%s/iid (%d).rdf', col_path, id_to_iri (id[2]), iri_id_num (id[4]));
 --  dbg_obj_print (ret);
   return ret;
 }
 ;
 
-create function DB.DBA."RDFData_DAV_RES_UPLOAD_COPY" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_RES_UPLOAD_COPY" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
 }
 ;
 
-create function DB.DBA."RDFData_DAV_RES_UPLOAD_MOVE" (in detcol_id any, in path_parts any, in source_id any, in what char(1), in overwrite_flags integer, in auth_uid integer) returns any
+create function DB.DBA."RDFData_DAV_RES_UPLOAD_MOVE" (
+  in detcol_id any,
+  in path_parts any,
+  in source_id any,
+  in what char(1),
+  in overwrite_flags integer,
+  in auth_uid integer,
+  in auth_uname varchar := null,
+  in auth_pwd varchar := null,
+  in extern integer := 1,
+  in check_locks any := 1) returns any
 {
   RDFData_log_message (current_proc_name ());
   return -20;
@@ -597,7 +623,7 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
   RDFData_log_message (current_proc_name ());
   declare iri, url, qr, _from any;
   declare path, params, lines, ses, gr any;
---  dbg_obj_princ ('RDFData_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
+  -- dbg_obj_princ ('RDFData_DAV_RES_CONTENT (', id, ', [content], [type], ', content_mode, ')');
   if (id [4] is null)
     return -20;
   type := 'application/rdf+xml';

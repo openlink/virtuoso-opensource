@@ -1,14 +1,14 @@
 #!/bin/sh
 #  tsql3.sh
 #
-#  $Id$
+#  $Id: tsql3.sh,v 1.14.4.5.4.10 2013/01/02 16:15:28 source Exp $
 #
 #  SQL conformance tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,8 @@
 
 LOGFILE=tsql3.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
+cp -r $VIRTUOSO_TEST/docsrc .
 
 BANNER "STARTED SERIES OF SQL TESTS (tsql3.sh)"
 
@@ -39,30 +40,42 @@ MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
 SHUTDOWN_SERVER
 START_SERVER $PORT 1000
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnull.sql
+LOG + running sql script tnull
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnull.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tnull.sql"
     exit 1
 fi
 
+LOG + running sql script tgeo
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tgeo.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tgeo.sql"
+    exit 1
+fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tarray.sql
+LOG + running sql script tarray
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tarray.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tarray.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tarith.sql
+LOG + running sql script tarith
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tarith.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tarith.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnumt.sql
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tnum.sql
+LOG + running sql script tnumt
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnumt.sql
+LOG + running sql script tnum
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tnum.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: tnum.sql"
@@ -71,36 +84,42 @@ fi
 
 RUN date
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < testgz.sql
+LOG + running sql script testgz
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/testgz.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Compression test -- testgz.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST1' 'idtype=integer' 'haspk=yes' < testtext.sql
+LOG + "running sql script testtext.sql (full text search index)"
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST1' 'idtype=integer' 'haspk=yes' < $VIRTUOSO_TEST/testtext.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: freetext test integer primary key -- testtext.sql"
     exit 1
 fi
-if [ "z$CLUSTER" != "zyes" ] # explicit with key option is required for partitioned table
+
+if [ "$CURRENT_VIRTUOSO_CAPACITY" = "single" ] # explicit with key option is required for partitioned table
 then
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST2' 'idtype=integer' 'haspk=no' < testtext.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: freetext test integer -- testtext.sql"
-    exit 1
-fi
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST3' 'idtype=varchar' 'haspk=yes' < testtext.sql
-if test $STATUS -ne 0
-then
-    LOG "***ABORTED: freetext test varchar primary key -- testtext.sql"
-    exit 1
-fi
+    LOG + "running sql script testtext.sql (fti, table TTEST2)"
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST2' 'idtype=integer' 'haspk=no' < $VIRTUOSO_TEST/testtext.sql
+    if test $STATUS -ne 0
+    then
+	LOG "***ABORTED: freetext test integer -- testtext.sql"
+	exit 1
+    fi
+    LOG + "running sql script testtext.sql (fti, table TTEST3)"
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'table=TTEST3' 'idtype=varchar' 'haspk=yes' < $VIRTUOSO_TEST/testtext.sql
+    if test $STATUS -ne 0
+    then
+	LOG "***ABORTED: freetext test varchar primary key -- testtext.sql"
+	exit 1
+    fi
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tftt.sql
+LOG + running sql script tftt
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tftt.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: freetext triggers test -- tftt.sql"
@@ -108,65 +127,73 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tescape.sql
+LOG + running sql script tescape
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tescape.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: C escaping tests -- tescape.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < texecute.sql
+#LOG + running sql script texecute
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/texecute.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: EXEC & company tests -- texecute.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tidxksize.sql
+LOG + running sql script tidxksize
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tidxksize.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Index key sizes test -- tidxksize.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tfk.sql
+LOG + running sql script tfk
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tfk.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: FK tests -- tfk.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tunq.sql
+LOG + running sql script tunq
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tunq.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: UNIQUE constraint tests -- tunq.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tcheck.sql
+LOG + running sql script tcheck
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tcheck.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: CHECK constraint tests -- tcheck.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tft_offband.sql
+LOG + running sql script tft_offband
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tft_offband.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: freetext offband data tests -- tft_offband.sql"
     exit 1
 fi
 
-
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tplmodule.sql
+LOG + running sql script tplmodule
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tplmodule.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: PL modules tests -- tplmodule.sql"
     exit 1
 fi
 
-# disabled 
-#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tldap.sql
+# disabled until internal server is installed
+#LOG + running sql script tldap
+#RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tldap.sql
 #if test $STATUS -ne 0
 #then
 #    LOG "***ABORTED: LDAP tests -- tldap.sql"
@@ -174,7 +201,8 @@ fi
 #fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tchars.sql
+LOG + running sql script tchars
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tchars.sql
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Varchar restrictions test -- tchars.sql"
@@ -182,14 +210,16 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tstrses.sql 
+LOG + running sql script tstrses
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tstrses.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: Limited string session test -- tstrses.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinf.sql 
+LOG + running sql script trdfinf
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinf.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinf.sql"
@@ -197,14 +227,16 @@ then
 fi
 
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < trdfinfifp.sql 
+LOG + running sql script trdfinfifp
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfinfifp.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- trdfinfifp.sql"
     exit 1
 fi
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ttrans2.sql 
+LOG + running sql script ttrans2
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans2.sql 
 if test $STATUS -ne 0
 then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"
@@ -217,7 +249,8 @@ fi
 if [ "x$SQLOPTIMIZE" = "x" ]
 then
     cat $CFGFILE >> $LOGFILE
-    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=1 < tviewqual.sql
+    LOG + running sql script tviewqual
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=1 < $VIRTUOSO_TEST/tviewqual.sql
     if test $STATUS -ne 0
     then
 	LOG "***ABORTED: view qualifier expansion (off part)"
@@ -231,12 +264,29 @@ then
     cat $CFGFILE >> $LOGFILE
     START_SERVER $PORT 1000
 
-    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < tviewqual.sql
+    LOG + running sql script tviewqual
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_TEST/tviewqual.sql
     if test $STATUS -ne 0
     then
 	LOG "***ABORTED: view qualifier expansion (on part)"
 	exit 1
     fi
+fi
+
+    LOG + running sql script tveccli
+    RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_TEST/tveccli.sql
+    if test $STATUS -ne 0
+    then
+	LOG "***ABORTED:tveccli "
+	exit 1
+    fi
+
+cp -R $VIRTUOSO_TEST/tsparup/* .
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u follow_std=0 < $VIRTUOSO_TEST/tsparup/tsparup_run.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED:tsparup "
+    exit 1
 fi
 
 SHUTDOWN_SERVER

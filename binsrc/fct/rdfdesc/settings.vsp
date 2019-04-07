@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+  declare host,gr,page_resource_uri,_S varhar;
+  declare sid,ses_parms  varchar;
+  declare arr any;
+  declare pageUrl varchar;
+  declare user_permissions int;
+
+  gr := get_keyword ('g', params, '');
+  arr := rfc1808_parse_uri (gr);
+
+  if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+    gr := 'http://' || gr;
+
+  page_resource_uri := gr;
+  --page_resource_uri := replace (page_resource_uri, '%23', '#');
+
+  pageUrl := FCT.DBA.build_page_url_on_current_host ('/fct/rdfdesc/settings.vsp', sprintf ('g=%U', page_resource_uri));
+
+  _S := page_resource_uri;
+
+  host := http_request_header (http_request_header (), 'Host');
+
+  b3s_handle_ses (path, lines, params);
+  sid := connection_get ('sid');
+  b3s_parse_inf (sid, params);
+  ses_parms := b3s_render_ses_params ();
+
+    user_permissions := DB.DBA.RDF_GRAPH_USER_PERMS_GET (gr, http_nobody_uid());
+    if (bit_and (user_permissions, 1) = 0)
+    {
+      -- User doesn't have read permission
+      declare protocol, view_uri varchar;
+      view_uri := gr;
+      protocol := 'http'; if (is_https_ctx()) protocol := 'https';
+      http_status_set (303);
+      http_header (sprintf('Location: %s://%s//fct/rdfdesc/fct_no_view_perms.vsp?gr=%U%s\r\n', protocol, host, view_uri, FCT.DBA.get_describe_request_params (params)));
+      return;
+    }
+?>
+<head>
+  <base href="/fct/rdfdesc/" />
+  <title>Settings</title>
+
+  <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
+  <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+  <script type="text/javascript" >
+      var featureList=["tab"];
+  </script>
+  <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
+  <script type="text/javascript" src="s/description.js"></script>
+</head>
+<body>
+  <div id="PG">
+    <div id="HD">
+      <?vsp fct_desc_page_head (); ?>
+      <div id="hd_r">
+      </div>
+      <ul id="main_menu">
+        <?vsp if (sid is not null) { ?>
+          <li><a href="<?= b3s_render_fct_link() ?>">Facets</a></li>
+        <?vsp } ?>
+        <li id="mnu_descr"><a href="/describe/?uri=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Description</a></li>
+        <li id="mnu_usage" class="sel">
+          <a href="usage.vsp?g=<?U b3s_u2w (_S) ?><?V ses_parms ?>">Metadata</a>
+        </li>
+        <li id="mnu_settings"><a href="settings.vsp?uri=<?U b3s_u2w (page_resource_uri) ?><?V ses_parms ?>">Settings</a></li>
+      </ul>
+
+    </div> <!-- #HD -->
+    <div id="MD">
+      <div id="settings">
+        <h1>Settings</h1>
+        <h2>Inference</h2>
+        <table> <!-- yeah I know but life's just too short. -->
+          <tr>
+            <td></td>
+            <td><input class="ckb" id="sas_ckb" type="checkbox" <?= b3s_sas_selected() ?> onchange="javascript:sas_cb();"/> <label class="ckb" for="sas_ckb">owl:sameAs</label></td>
+          </tr>
+          <tr>
+            <td><label for="inf_sel">Inference Rule:</label></td>
+            <td><select id="inf_sel" onchange="javascript:inf_cb();"><?vsp b3s_render_inf_opts (); ?></select></td>
+          </tr>
+        </table>
+      </div> <!-- settings -->
+    </div>
+    <!-- footer -->
+    <div id="FT">
+	Faceted Search &amp; Find service v<?vsp http(DB.DBA.VAD_CHECK_VERSION('fct')); ?><br/><br/>
+      <div id="ft_t">
+      </div> <!-- #ft_t -->
+      <div id="ft_b">
+	<?vsp fct_virt_info (); ?><br />
+	Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software | <a href="/fct/facet_doc.html">About</a>
+      </div> <!-- #ft_b -->
+    </div> <!-- #FT -->
+  </div> <!-- #PG -->
+</body>
+</html>

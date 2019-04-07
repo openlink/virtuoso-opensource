@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@
     xmlns:admin="http://webns.net/mvcb/" 
 	xmlns:h="http://www.w3.org/1999/xhtml" 
 	xmlns:owl="http://www.w3.org/2002/07/owl#"
-    xmlns:review="http:/www.purl.org/stuff/rev#" 
+    xmlns:review="http://purl.org/stuff/rev#" 
 	xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
     xmlns:v="http://www.w3.org/2006/vcard/ns#" 
 	xmlns:cv="http://purl.org/captsolo/resume-rdf/0.2/cv#"

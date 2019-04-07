@@ -1,0 +1,199 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="sparql_create_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+	<vm:pagetitle>RDF Subscription</vm:pagetitle>
+	<vm:pagewrapper>
+	    <vm:variables>
+		<v:variable name="message" default="null" type="varchar" persist="0"/>
+	    </vm:variables>
+	    <vm:menu>
+		<vm:menuitem value="Linked Data"/>
+	    </vm:menu>
+	    <vm:header caption="Subscriptions (PHSB)"/>
+	    <vm:pagebody>
+		<v:on-init>
+		    <![CDATA[
+		    set http_charset='utf-8';
+		    ]]>
+		</v:on-init>
+		<v:form name="form1" type="simple" method="POST" action="">
+		    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+			<tr valign='top'>
+			    <td>
+				<div class="message"><v:label name="msg" value="--self.message" /> </div>
+				<table border='0' width='100%'  class="ctl_grp">
+				    <tr>
+					<td>Callback <span class="redstar">*</span></td>
+					<td>
+					    <v:text name="callback" value=""
+						default_value="-- sprintf ('http://%s/psh/callback.vsp', registry_get ('URIQADefaultHost'))"
+						xhtml_size="100"/>
+					</td>
+				    </tr>
+				    <tr>
+					<td>RDF Resource URI <span class="redstar">*</span></td>
+					<td>
+					    <v:text name="topic" value="" default_value="" xhtml_size="100"/>
+					</td>
+				    </tr>
+				    <tr>
+					<td>Hub endpoint <span class="redstar">*</span></td>
+					<td>
+					    <v:text name="hub" value="" default_value="" xhtml_size="100"/>
+					    <v:button name="retrieve" action="simple" value="Retrieve">
+						<v:on-post>
+						    <![CDATA[
+						    declare head, hub, content, url, links any;
+						    self.topic.ufl_value := trim (self.topic.ufl_value);
+						    if (not length (self.topic.ufl_value))
+						      {
+                                                        self.vc_is_valid := 0;
+						        self.vc_error_message := 'Invalid RDF Resource URI';
+						        return 0;
+					              }
+						    url := self.topic.ufl_value;
+						    content := DB.DBA.RDF_HTTP_URL_GET (url, '', head, 'GET',
+						    'Accept: application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle;'||
+						    ' q=0.7, application/x-turtle; q=0.6, application/turtle; q=0.5, application/xml;'||
+						    ' q=0.2, */*; q=0.1');
+						    links := http_request_header_full (head, 'Link');
+						    --self.topic.ufl_value := url;
+						    self.hub.ufl_value := y_parse_link_headers (links, 'rel', 'hub');
+						    if (self.hub.ufl_value is not null)
+						      self.message := 'Hub endpoint is found';
+						    ]]>
+						</v:on-post>
+					    </v:button>
+					</td>
+				    </tr>
+				    <tr>
+					<td>Action <span class="redstar"></span></td>
+					<td>
+					    <v:select-list name="action" >
+						<v:item name="Subscribe" value="subscribe"/>
+						<v:item name="Unsubscribe" value="unsubscribe"/>
+					    </v:select-list>
+					</td>
+				    </tr>
+				    <tr>
+					<td>Mode <span class="redstar"></span></td>
+					<td>
+					    <v:select-list name="mode" >
+						<v:item name="Synchronous" value="sync"/>
+						<v:item name="Asynchronous" value="async"/>
+					    </v:select-list>
+					</td>
+				    </tr>
+				    <tr>
+					<td>Verify token <span>(optional)</span></td>
+					<td>
+					    <v:text name="verify_token" value="" default_value="--xenc_rand_bytes (8,1)" xhtml_size="100"/>
+					</td>
+				    </tr>
+				    <tr>
+					<td>HMAC secret <span>(optional)</span></td>
+					<td>
+					    <v:text name="secret" value="" default_value="" xhtml_size="100"/>
+					</td>
+				    </tr>
+				    <tr align="center">
+					<td colspan="2">
+					    <v:button action="simple" name="cnl" value="Cancel">
+						<v:on-post>
+						    self.vc_redirect (http_path ());
+						</v:on-post>
+					    </v:button>
+					    <v:button action="simple" name="bt1" value="Subscribe">
+						<v:on-post>
+	<![CDATA[
+	declare head, hub, content, url, links any;
+	self.topic.ufl_value := trim (self.topic.ufl_value);
+	if (not length (self.topic.ufl_value))
+	  {
+            self.vc_is_valid := 0;
+	    self.vc_error_message := 'Invalid RDF Resource URI';
+	    return 0;
+	  }
+	if (not length (self.callback.ufl_value))
+	  {
+            self.vc_is_valid := 0;
+	    self.vc_error_message := 'Invalid callback URL';
+	    return 0;
+	  }
+	if (not length (self.hub.ufl_value))
+	  {
+            self.vc_is_valid := 0;
+	    self.vc_error_message := 'Invalid hub endpoint';
+	    return 0;
+	  }
+	url := self.topic.ufl_value;
+	hub := self.hub.ufl_value;
+	PSH..cli_subscribe ('dba', self.action.ufl_value, url, 'rdf',
+	   self.secret.ufl_value, self.verify_token.ufl_value);
+	url := sprintf ('%s?hub.callback=%U&hub.mode=%U&hub.topic=%U&hub.verify=%s&hub.verify_token=%U&hub.secret=%U',
+           hub,
+	   self.callback.ufl_value,
+	   self.action.ufl_value,
+	   self.topic.ufl_value,
+	   self.mode.ufl_value,
+	   self.verify_token.ufl_value,
+	   self.secret.ufl_value
+	   );
+	{
+	  declare exit handler for sqlstate '*'
+	  {
+	    self.vc_is_valid := 0;
+	    self.vc_error_message := __SQL_MESSAGE;
+	    return;
+	  };
+	  content := http_get (url, head);
+	  if (head[0] not like 'HTTP/1._ 20_ %')
+	    {
+              self.vc_is_valid := 0;
+	      self.vc_error_message := head[0];
+	    }
+	  else
+	    self.message := 'Subscribed';
+	}
+						    ]]>
+						</v:on-post>
+					    </v:button>
+					</td>
+				    </tr>
+				</table>
+			      </td>
+			    </tr>
+		    </table>
+		  </v:form>
+    </vm:pagebody>
+	</vm:pagewrapper>
+</v:page>

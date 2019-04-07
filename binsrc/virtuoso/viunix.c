@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -486,21 +486,29 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
+  extern char *git_head;
 
   sprintf (line, "%s %s\n", PACKAGE_NAME,
-	build_thread_model[0] == '-' && build_thread_model[1] == 'f' ?
-	PACKAGE_FIBER : PACKAGE_THREAD);
+      build_thread_model[0] == '-' && build_thread_model[1] == 'f' ? PACKAGE_FIBER : PACKAGE_THREAD);
   p = stpcpy (version, line);
 
-  sprintf (line, "Version %s.%s%s%s as of %s\n",
+  sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
 
-  sprintf (line, "Compiled for %s (%s)\n", build_opsys_id, build_host_id);
+  /*
+   *  Add git SHA1 of HEAD for easier identification of code base
+   */
+  if (git_head[0])
+    {
+      sprintf (line, " (%s)", git_head);
+      p = stpcpy (p, line);
+    }
+
+  sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
 
-
-  if (build_special_server_model && strlen(build_special_server_model) > 1)
+  if (build_special_server_model && strlen (build_special_server_model) > 1)
     {
       sprintf (line, "Hosted Runtime Environments: %s\n", build_special_server_model);
       p = stpcpy (p, line);
@@ -515,7 +523,6 @@ usage (void)
 
   call_exit (1);
 }
-
 
 void db_not_in_use (void);
 
@@ -572,7 +579,7 @@ main (int argc, char **argv)
 
   process_exit_hook = viunix_terminate;
 
-  thread_initial (50000);
+  thread_initial (140000);
   if (!background_sem)
     background_sem = semaphore_allocate (0);
 
@@ -584,7 +591,7 @@ main (int argc, char **argv)
   if (f_backup_dump || recover_file_prefix || f_crash_dump)
     f_foreground = 1;
 #ifdef V5UPGRADE
-  if (!f_backup_dump)
+  if (!f_backup_dump && !f_read_from_rebuilt_database)
     log_v6_format = 0;
 #endif
 
@@ -596,6 +603,8 @@ main (int argc, char **argv)
             f_debug ?
                 L_STYLE_LEVEL | L_STYLE_GROUP | L_STYLE_TIME :
 		L_STYLE_GROUP | L_STYLE_TIME);
+
+  dk_box_initialize (); /* This should happen before cfg_setup() because loading plugins may result in calls of bif_define() and thus calls of box_dv_uname_string() and the like */
 
   /* parse configuration file */
   if (cfg_setup () == -1)

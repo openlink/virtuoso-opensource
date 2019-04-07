@@ -2,7 +2,7 @@
 //  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 //  project.
 //  
-//  Copyright (C) 1998-2013 OpenLink Software
+//  Copyright (C) 1998-2019 OpenLink Software
 //  
 //  This project is free software; you can redistribute it and/or modify it
 //  under the terms of the GNU General Public License as published by the
@@ -48,6 +48,9 @@ namespace OpenLink.Data.Virtuoso
 
   public sealed class SqlRdfBox
     {
+      const string gYear = "http://www.w3.org/2001/XMLSchema#gYear";
+      const string gYearMonth = "http://www.w3.org/2001/XMLSchema#gYearMonth";
+
       internal const int DEFAULT_TYPE = 257;
       internal const int DEFAULT_LANG = 257;
 
@@ -64,124 +67,128 @@ namespace OpenLink.Data.Virtuoso
 
       internal SqlRdfBox (ManagedConnection connection, object box, bool is_complete, short rtype, short lang, long ro_id)
       {
-	Debug.WriteLineIf (CLI.FnTrace.Enabled, "SqlRdfBox.ctor (connection, box, is_complete, rtype, lang, ro_id)");
-	this.connection = connection;
-	this.rb_box = box;
-	this.rb_type = rtype;
-	this.rb_lang = lang;
-	this.rb_is_complete = is_complete;
-	this.rb_ro_id = ro_id;
-	this.rb_is_outlined = false;
-	this.rb_chksum_tail = false;
+		  Debug.WriteLineIf(CLI.FnTrace.Enabled, "SqlRdfBox.ctor (connection, box, is_complete, rtype, lang, ro_id)");
+		  this.connection = connection;
+		  this.rb_type = rtype;
+		  this.rb_lang = lang;
+		  this.rb_is_complete = is_complete;
+		  this.rb_ro_id = ro_id;
+		  this.rb_is_outlined = false;
+		  this.rb_chksum_tail = false;
+
+		  if (box != null && box is DateTimeMarshaler)
+			  this.rb_box = ((IConvertData)box).ConvertData(typeof(DateTime));
+		  else
+			  this.rb_box = box;
       }
 
       internal SqlRdfBox (ManagedConnection connection, object box, string rtype, string lang)
       {
-	Debug.WriteLineIf (CLI.FnTrace.Enabled, "SqlRdfBox.ctor (connection, box, rtype, lang)");
-	long ro_id;
-	this.connection = connection;
-	this.rb_box = box;
-	ro_id = rdfMakeObj (box, rtype, lang);
-	this.rb_type = GetTypeKey (rtype);
-	this.rb_lang = GetLangKey (lang);
-	this.rb_is_complete = false;
-	this.rb_ro_id = ro_id;
-	this.rb_is_outlined = false;
-	this.rb_chksum_tail = false;
-      }
+		  Debug.WriteLineIf(CLI.FnTrace.Enabled, "SqlRdfBox.ctor (connection, box, rtype, lang)");
+		  long ro_id;
+		  this.connection = connection;
+		  this.rb_box = box;
+		  ro_id = rdfMakeObj(box, rtype, lang);
+		  this.rb_type = GetTypeKey(rtype);
+		  this.rb_lang = GetLangKey(lang);
+		  this.rb_is_complete = false;
+		  this.rb_ro_id = ro_id;
+		  this.rb_is_outlined = false;
+		  this.rb_chksum_tail = false;
+	  }
 
 
 
       private long rdfMakeObj (object box, string rtype, string lang)
       {
-	long ro_id = 0;
-	VirtuosoParameterCollection p0 = new VirtuosoParameterCollection (null);
-        p0.Add("box", box);
-	p0.Add("type", rtype);
-        p0.Add("lang", lang);
+		  long ro_id = 0;
+		  VirtuosoParameterCollection p0 = new VirtuosoParameterCollection(null);
+		  p0.Add("box", box);
+		  p0.Add("type", rtype);
+		  p0.Add("lang", lang);
 
-	ManagedCommand cmd0 = new ManagedCommand (connection);
-	cmd0.SetParameters (p0);
-	try
-	{
-		cmd0.Execute ("DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (?, ?, ?)");
-	}
-	finally
-	{
-		cmd0.CloseCursor (true);
-		cmd0.Dispose ();
-	}
+		  ManagedCommand cmd0 = new ManagedCommand(connection);
+		  cmd0.SetParameters(p0);
+		  try
+		  {
+			  cmd0.Execute("DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (?, ?, ?)");
+		  }
+		  finally
+		  {
+			  cmd0.CloseCursor(true);
+			  cmd0.Dispose();
+		  }
 
-	VirtuosoParameterCollection p1 = new VirtuosoParameterCollection (null);
-        p1.Add("box", box);
+		  VirtuosoParameterCollection p1 = new VirtuosoParameterCollection(null);
+		  p1.Add("box", box);
 
-	ManagedCommand cmd1 = new ManagedCommand (connection);
-	cmd1.SetParameters (p1);
-	try
-	{
-		cmd1.Execute ("select rdf_box_ro_id (?)");
-                while(cmd1.Fetch())
-                {
-		    object data = cmd1.GetColumnData (0, cmd1.GetColumnMetaData ());
-		    if (data != null)
-			  ro_id = (long) data;
-                }
-	}
-	finally
-	{
-		cmd1.CloseCursor (true);
-		cmd1.Dispose ();
-	}
-	return ro_id;
-      }
+		  ManagedCommand cmd1 = new ManagedCommand(connection);
+		  cmd1.SetParameters(p1);
+		  try
+		  {
+			  cmd1.Execute("select rdf_box_ro_id (?)");
+			  while (cmd1.Fetch())
+			  {
+				  object data = cmd1.GetColumnData(0, cmd1.GetColumnMetaData());
+				  if (data != null)
+					  ro_id = (long)data;
+			  }
+		  }
+		  finally
+		  {
+			  cmd1.CloseCursor(true);
+			  cmd1.Dispose();
+		  }
+		  return ro_id;
+	  }
 
       internal short GetLangKey (string lang)
       {
-        object k = null;  	
-        if (lang == null)
-	        return (short) DEFAULT_LANG;
-        ensureLangHash ();
-        k = connection.rdf_lang_rev[lang];
-        return (k != null ? (short)k : (short)DEFAULT_LANG);
-      }
+		  object k = null;
+		  if (lang == null)
+			  return (short)DEFAULT_LANG;
+		  ensureLangHash();
+		  k = connection.rdf_lang_rev[lang];
+		  return (k != null ? (short)k : (short)DEFAULT_LANG);
+	  }
 
       internal short GetTypeKey (string type)
-      { 
-        object k = null; 	
-        if (type == null)
-	        return (short) DEFAULT_TYPE;
-        ensureTypeHash ();
-        k = connection.rdf_type_rev[type];
-        return (k != null ? (short)k : (short) DEFAULT_TYPE);
-      }
+      {
+		  object k = null;
+		  if (type == null)
+			  return (short)DEFAULT_TYPE;
+		  ensureTypeHash();
+		  k = connection.rdf_type_rev[type];
+		  return (k != null ? (short)k : (short)DEFAULT_TYPE);
+	  }
 
       private void fillHashFromSQL (Dictionary<int,string> ht, Hashtable rev, string sql) 
       {
-	ManagedCommand cmd = new ManagedCommand (connection);
-	cmd.SetParameters (null);
-	try
-	{
-		cmd.Execute (sql);
-                while(cmd.Fetch())
-                {
-                    int k = 0;
-                    string v = null;
-		    object data = cmd.GetColumnData (0, cmd.GetColumnMetaData ());
-		    if (data != null)
-			  k = (int) data;
-		    data = cmd.GetColumnData (1, cmd.GetColumnMetaData ());
-		    if (data != null && data is string)
-			  v = (string) data;
-		    ht[k] =  v;
-                    rev[v] = k;
-                }
-	}
-	finally
-	{
-		cmd.CloseCursor (true);
-		cmd.Dispose ();
-	}
-      }
+		  ManagedCommand cmd = new ManagedCommand(connection);
+		  cmd.SetParameters(null);
+		  try
+		  {
+			  cmd.Execute(sql);
+			  while (cmd.Fetch())
+			  {
+				  int k = 0;
+				  string v = null;
+				  object data = cmd.GetColumnData(0, cmd.GetColumnMetaData());
+				  if (data != null)
+					  k = (int)data;
+				  data = cmd.GetColumnData(1, cmd.GetColumnMetaData());
+				  if (data != null && data is string)
+					  v = (string)data;
+				  ht[k] = v;
+				  rev[v] = k;
+			  }
+		  }
+		  finally
+		  {
+			  cmd.CloseCursor(true);
+			  cmd.Dispose();
+		  }
+	  }
 
       private void ensureTypeHash ()
       {
@@ -223,18 +230,52 @@ namespace OpenLink.Data.Virtuoso
 	}
       }
 
-      public object Value 
-      {
-        get {
-        	return rb_box;
-	}
-      }
+	  public object Value
+	  {
+		  get
+		  {
+			  return rb_box;
+		  }
+	  }
 
-      public override string ToString() 
+	  public override string ToString() 
       {
-	Debug.WriteLineIf (CLI.FnTrace.Enabled, "SqlRdfBox.ToString ()");
-        return rb_box.ToString();
-      }
+		  Debug.WriteLineIf(CLI.FnTrace.Enabled, "SqlRdfBox.ToString ()");
+          
+		  string retVal = "NULL";
+		  object val = this.Value;
+
+		  if (val != null) {
+		      string o_type = this.StrType;
+
+          if (o_type!=null && o_type.Equals(gYear))
+          {
+            if (val is VirtuosoDateTime)
+              retVal = ((VirtuosoDateTime) val).ToXSD_String().Substring(0,4);
+#if ADONET3
+            else if (val is VirtuosoDateTimeOffset)
+              retVal = ((VirtuosoDateTimeOffset) val).ToXSD_String().Substring(0,4);
+#endif
+            else
+    	      retVal = val.ToString();
+    	  }
+    	  else if (o_type!=null && o_type.Equals(gYearMonth))
+    	  {
+            if (val is VirtuosoDateTime)
+              retVal = ((VirtuosoDateTime) val).ToXSD_String().Substring(0,7);
+#if ADONET3
+            else if (val is VirtuosoDateTimeOffset)
+				retVal = ((VirtuosoDateTimeOffset)val).ToXSD_String().Substring(0, 7);
+#endif
+            else
+    	      retVal = val.ToString ();
+          } else {
+    	    retVal = val.ToString ();
+          }
+        }
+        return retVal;
+
+	  }
 
     }
 }

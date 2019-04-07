@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1938,7 +1938,7 @@ create procedure BPEL.BPEL.script_source_update (in scp_id int, in url varchar, 
   whenever sqlstate '22007' goto relax;
 
   if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 2))
-    signal ('22023', 'The process with given id does not exists or it is not in edit mode');
+    signal ('22023', 'The process with given id does not exist or it is not in edit mode');
 
   if (content is null)
     {
@@ -1992,10 +1992,10 @@ create procedure BPEL.BPEL.copy_script (in scp_id int) returns int
     return scp_id;
   -- the script is in current mode
   --if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 0))
-  --  signal ('22023', 'The process with given id does not exists or it is not current');
+  --  signal ('22023', 'The process with given id does not exist or it is not current');
 
   if (not exists (select 1 from BPEL..script where bs_id = scp_id))
-     signal ('22023', 'The process with given id does not exists.');
+     signal ('22023', 'The process with given id does not exist.');
 
   select bs_name, bs_state into sName,iState from BPEL..script where bs_id = scp_id;
   -- there is no current version
@@ -2028,7 +2028,7 @@ create procedure BPEL.BPEL.wsdl_upload (in scp_id int, in url varchar, in conten
   declare wsdl, wsdl_expn any;
 
   if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 2))
-    signal ('22023', 'The process with given id does not exists or it is not in edit mode');
+    signal ('22023', 'The process with given id does not exist or it is not in edit mode');
 
   if (length (content) = 0)
     {
@@ -2069,7 +2069,7 @@ create procedure BPEL.BPEL.get_partner_links (in scp_id int) returns any
   return xml_cut (pl);
   nf:
   close cr;
-  signal ('22023', 'The process with given id does not exists');
+  signal ('22023', 'The process with given id does not exist');
 }
 ;
 
@@ -2082,7 +2082,7 @@ create procedure BPEL.BPEL.compile_script (in scp_id int, in vdir varchar := nul
   dretr := BPEL..max_deadlock_cnt ();
 
   if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 2))
-    signal ('22023', 'The process with given id does not exists or not being edited');
+    signal ('22023', 'The process with given id does not exist or is not being edited');
   -- increase version & state = 0 if all is ok
 
   select bs_parent_id, bs_name into parent_id, scp_name
@@ -2262,7 +2262,7 @@ relax:
 create procedure BPEL.BPEL.script_delete (in script int, in delete_instances int)
 {
   if (not delete_instances and exists (select 1 from BPEL..instance where bi_script = script))
-    signal ('42000', 'The process have existing instances');
+    signal ('42000', 'The process has existing instances');
   delete from BPEL..script where bs_id = script;
 }
 ;
@@ -2414,7 +2414,7 @@ create procedure BPEL.BPEL.script_revert (in scp_id int)
   declare parent_id int;
 
   if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 2))
-    signal ('22023', 'The process with given id does not exists or it is not in edit mode');
+    signal ('22023', 'The process with given id does not exist or it is not in edit mode');
 
   declare continue handler for NOT FOUND parent_id := null;
   select bs_parent_id into parent_id
@@ -2450,7 +2450,7 @@ create procedure BPEL.BPEL.import_script( in base_uri varchar, in base_name varc
   if (scp_id > 0)
   {
     if (not exists (select 1 from BPEL..script where bs_id = scp_id and bs_state = 2))
-      signal ('22023', 'The process with given id does not exists or it is not in edit mode');
+      signal ('22023', 'The process with given id does not exist or it is not in edit mode');
   };
 
   deploy_content := DB.DBA.XML_URI_GET ('', base_uri);
@@ -2582,7 +2582,7 @@ create procedure BPEL.BPEL.plink_get_option (in script varchar, in plink varchar
   return xpath_eval (xp, opts, flag);
 
   nf:
-  signal ('22023', 'The specified script does not exists');
+  signal ('22023', 'The specified script does not exist');
 }
 ;
 
@@ -2633,14 +2633,14 @@ create procedure BPEL.BPEL.plink_set_option (in script varchar, in plink varchar
     {
       xp := '/wsOptions/security/key';
       if (not BPEL.BPEL.check_ekey (val))
-	signal ('22023', 'The key does not exists in BPEL user repository');
+	signal ('22023', 'The key does not exist in BPEL user repository');
       repl := sprintf ('<key name="%s"/>', val);
     }
   else if (opt = 'wss-pub-key')
     {
       xp := '/wsOptions/security/pubkey';
       if (not BPEL.BPEL.check_ekey (val))
-	signal ('22023', 'The key does not exists in BPEL user repository');
+	signal ('22023', 'The key does not exist in BPEL user repository');
       repl := sprintf ('<pubkey name="%s"/>', val);
     }
   else if (opt = 'wss-in-encrypt')
@@ -2666,7 +2666,7 @@ create procedure BPEL.BPEL.plink_set_option (in script varchar, in plink varchar
       foreach (any x in val) do
 	{
           if (not BPEL.BPEL.check_ekey (x))
-	    signal ('22023', 'The key does not exists in BPEL user repository');
+	    signal ('22023', 'The key does not exist in BPEL user repository');
 	  repl := repl || sprintf ('<key name="%s"/>', x);
 	}
       repl := repl || '</keys>';
@@ -2720,7 +2720,7 @@ create procedure BPEL.BPEL.plink_set_option (in script varchar, in plink varchar
   return;
 
   nf:
-  signal ('22023', 'The specified script does not exists');
+  signal ('22023', 'The specified script does not exist');
 }
 ;
 

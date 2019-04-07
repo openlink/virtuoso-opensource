@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,9 +25,7 @@ package virtuoso.javax;
 
 import java.text.MessageFormat;
 import java.sql.SQLException;
-#if JDK_VER >= 16
 import java.sql.SQLFeatureNotSupportedException;
-#endif
 class OPLMessage_x extends openlink.util.BaseMessage {
 
   protected static final int errx_Physical_Connection_is_closed = 1;
@@ -94,13 +92,11 @@ class OPLMessage_x extends openlink.util.BaseMessage {
     return new SQLException (err_Prefix + getMessage(err_id), S_GENERAL_ERR);
   }
 
-#if JDK_VER >= 16
   protected static SQLFeatureNotSupportedException makeFExceptionV (int err_id, String p0)
   {
     Object params[] = { p0 };
     return new SQLFeatureNotSupportedException (err_Prefix + getMessage(err_id, params), S_GENERAL_ERR);
   }
-#endif
 
   protected static SQLException makeExceptionV (int err_id, String p0)
   {

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -36,39 +36,29 @@
       <funcprototype id="fproto_timezone">
         <funcdef><function>timezone</function></funcdef>
 	<paramdef>in <parameter>dt</parameter> datetime</paramdef>
+	      <paramdef><optional>in <parameter>ignore_timezone</parameter> integer</optional></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_timezone"><title>Description</title>
-    <para><function>timezone</function> takes a <type>datetime</type> and returns
-    an <type>integer</type> containing localtime - GMT in minutes.</para>
+    <para>The function returns timezone offset of its first argument, as an integer value in minutes. If the first argument
+    	is timezoneless and second argument is missing or zero then the returned value is NULL. If the first argument is
+    	timezoneless and second argument is nonzero then the returned value is 0.</para>
   </refsect1>
   <refsect1 id="params_timezone"><title>Parameters</title>
     <refsect2><title>dt</title>
       <para>A <type>datetime</type>.</para>
     </refsect2>
+    <refsect2>
+      <title>ignore_timezone</title>
+      <para>Flag</para>
+    </refsect2>
   </refsect1>
-  <refsect1 id="ret_timezone"><title>Return Values</title>
-    <para>An <type>INTEGER</type> containing the timezone difference.</para></refsect1>
-<!--  <refsect1 id="errors_timezone"><title>Errors</title>
-    <table><title>Errors signalled by timezone</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1> -->
   <refsect1 id="examples_timezone"><title>Examples</title>
     <example id="ex_timezone"><title>Simple example</title>
       <para>Get current timezone.</para>
-      <screen>SQL> select timezone (now ());
+      <screen>
+SQL> select timezone (now ());
 callret
 INTEGER
 _______________________________________________________________________________
@@ -79,17 +69,26 @@ _______________________________________________________________________________
     </example>
   </refsect1>
   <refsect1 id="seealso_timezone"><title>See Also</title>
-    <para><link linkend="fn_dayname"><function>dayname</function></link>,
-<!--    <link linkend="fn_yearname"><function>yearname</function></link>, -->
-    <link linkend="fn_dayofmonth"><function>dayofmonth</function></link>,
-    <link linkend="fn_dayofweek"><function>dayofweek</function></link>,
-    <link linkend="fn_dayofyear"><function>dayofyear</function></link>,
-    <link linkend="fn_quarter"><function>quarter</function></link>,
-    <link linkend="fn_week"><function>week</function></link>,
-    <link linkend="fn_month"><function>month</function></link>,
-    <link linkend="fn_year"><function>year</function></link>,
-    <link linkend="fn_hour"><function>hour</function></link>,
-    <link linkend="fn_minute"><function>minute</function></link>,
-    <link linkend="fn_second"><function>second</function></link></para>
+    <para><link linkend="fn_now"><function>now</function></link></para>
+    <para><link linkend="fn_forget_timezone"><function>forget_timezone</function></link></para>
+    <para><link linkend="fn_is_timezoneless"><function>is_timezoneless</function></link></para>
+    <para><link linkend="fn_adjust_timezone"><function>adjust_timezone</function></link></para>
+    <para><link linkend="fn_rdf_now_impl"><function>rdf_now_impl</function></link></para>
+    <para><link linkend="fn_current_timestamp"><function>current_timestamp</function></link></para>
+    <para><link linkend="fn_curdatetime"><function>curdatetime</function></link></para>
+    <para><link linkend="fn_curdatetimeoffset"><function>curdatetimeoffset</function></link></para>
+    <para><link linkend="fn_curutcdatetime"><function>curutcdatetime</function></link></para>
+    <para><link linkend="fn_sysutcdatetime"><function>sysutcdatetime</function></link></para>
+    <para><link linkend="fn_dayname"><function>dayname</function></link></para>
+    <para><link linkend="fn_dayofmonth"><function>dayofmonth</function></link></para>
+    <para><link linkend="fn_dayofweek"><function>dayofweek</function></link></para>
+    <para><link linkend="fn_dayofyear"><function>dayofyear</function></link></para>
+    <para><link linkend="fn_quarter"><function>quarter</function></link></para>
+    <para><link linkend="fn_week"><function>week</function></link></para>
+    <para><link linkend="fn_month"><function>month</function></link></para>
+    <para><link linkend="fn_year"><function>year</function></link></para>
+    <para><link linkend="fn_hour"><function>hour</function></link></para>
+    <para><link linkend="fn_minute"><function>minute</function></link></para>
+    <para><link linkend="fn_second"><function>second</function></link></para>
   </refsect1>
 </refentry>

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -41,7 +41,7 @@
 #include "libutil.h"
 #include "srvmultibyte.h"
 #include "multibyte.h"
-
+#include "sqlfn.h"
 #include "xml.h"
 #include "http.h"
 #include "xmltree.h"
@@ -737,7 +737,7 @@ xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, const char
     {
       blob_handle_t *bh = (blob_handle_t *) text;
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&bcfi, bh, qi->qi_client);
           iter = bcfi_read;
@@ -788,7 +788,7 @@ make_tree:
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = uname___empty;
   config.root_lang_handler = lh;
   parser = VXmlParserCreate (&config);
@@ -888,7 +888,7 @@ xml_make_tree_with_ns (query_instance_t * qi, caddr_t text, caddr_t *err_ret, co
     {
       blob_handle_t *bh = (blob_handle_t *) text;
       text_strg_is_wide = ((DV_BLOB_WIDE_HANDLE == dtp_of_text) ? 1 : 0);
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&bcfi, bh, qi->qi_client);
           iter = bcfi_read;
@@ -942,7 +942,7 @@ make_tree:
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = uname___empty;
   config.root_lang_handler = lh;
   parser = VXmlParserCreate (&config);
@@ -1485,7 +1485,7 @@ xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t 
   if ((DV_BLOB_HANDLE == dtp_of_text) || (DV_BLOB_WIDE_HANDLE == dtp_of_text))
     {
       blob_handle_t *bh = (blob_handle_t *) text;
-      if (bh->bh_ask_from_client)
+      if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
         {
           bcfi_reset (&(xrie->xrie_bcfi), bh, qi->qi_client);
           xrie->xrie_iter = bcfi_read;
@@ -1591,7 +1591,7 @@ xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long h
   config.uri_resolver = (VXmlUriResolver)(xml_uri_resolve_like_get);
   config.uri_reader = (VXmlUriReader)(xml_uri_get);
   config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
   config.uri = ((NULL == uri) ? uname___empty : uri);
   config.dtd_config = dtd_config;
   config.root_lang_handler = lh;
@@ -3036,7 +3036,7 @@ bif_xml_validate_dtd (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);
@@ -3105,7 +3105,7 @@ void shuric_parse_text__xmlschema (shuric_t *shuric, caddr_t uri_text_content, q
 	  config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
 	  config.uri_reader = (VXmlUriReader) xml_uri_get;
 	  config.uri_appdata = qi; /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-	  config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+	  config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
 	  config.initial_src_enc_name = "UTF-8";
 	  config.dtd_config = xmlschema_dflt_config;
 	  config.uri = shuric->shuric_uri;
@@ -3251,7 +3251,7 @@ bif_xml_load_schema_decl_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t **
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       if (NULL == dtd_config)
         dtd_config = xmlschema_dflt_config;
@@ -3570,7 +3570,7 @@ bif_xml_validate_schema (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       config.uri_resolver = (VXmlUriResolver) xml_uri_resolve_like_get;
       config.uri_reader = (VXmlUriReader) xml_uri_get;
       config.uri_appdata = (query_instance_t *)(qst); /* Both xml_uri_resolve_like_get and xml_uri_get uses qi as first argument */
-      config.error_reporter = (VXmlErrorReporter)(sqlr_error);
+      config.error_reporter = (VXmlErrorReporter)(DBG_NAME(sqlr_error));
       config.initial_src_enc_name = enc;
       config.dtd_config = dtd_config;
       config.uri = ((NULL == uri) ? uname___empty : uri);
@@ -3710,11 +3710,11 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	return box_wide_as_utf8_char (data, wcslen ((wchar_t *) data), DV_LONG_STRING);
     case DV_BLOB_WIDE_HANDLE:
       {
-	caddr_t res;
-	result = blob_to_string (((query_instance_t *) qst)->qi_trx, data);
-	res = box_wide_as_utf8_char (result, wcslen ((wchar_t *) result), DV_LONG_STRING);
-	dk_free_tree (result);
-	return res;
+        caddr_t res = blob_to_string (((query_instance_t *) qst)->qi_trx, data);
+        result = box_wide_as_utf8_char (res, wcslen ((wchar_t *) res), DV_LONG_STRING);
+        dk_free_tree (res);
+        box_flags (result) |= BF_UTF8;
+        return result;
       }
     case DV_XML_ENTITY:
       {
@@ -3723,16 +3723,18 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	if (ent->xe_attr_name)
 	  {
 	    res = ent->_->xe_currattrvalue (ent);
-	    return DBG_NAME(box_copy) (DBG_ARGS res);
+            result = DBG_NAME(box_copy) (DBG_ARGS res);
 	  }
 	else
 	  {
-	    ent->_->DBG_NAME(xe_string_value) (DBG_ARGS ent, &res, DV_STRING);
-	    return res;
+            result = NULL;
+            ent->_->DBG_NAME(xe_string_value) (DBG_ARGS ent, &result, DV_STRING);
 	  }
+        if (DV_STRING == DV_TYPE_OF (result))
+          box_flags (result) |= BF_UTF8;
+        return result;
       }
     case DV_STRING:
-    case DV_UNAME:
       {
         /* Bug 5763: No need:
         encoding_handler_t * eh = eh_get_handler (CHARSET_NAME(QST_CHARSET (qst), "ISO-8859-1"));
@@ -3740,11 +3742,18 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
 	  return literal_as_utf8 (eh, data, box_length (data) - 1);
 	else
 	*/
+          if (box_flags (data) & BF_UTF8)
+            return DBG_NAME(box_copy) (DBG_ARGS data);
 	  result = DBG_NAME (box_narrow_string_as_utf8) (DBG_ARGS NULL, data, 0, QST_CHARSET (qst), &err, 1);
 	  if (err)
 	    sqlr_resignal (err);
+          box_flags (result) |= BF_UTF8;
 	  return result;
       }
+    case DV_UNAME:
+      result = DBG_NAME(box_dv_short_nchars) (DBG_ARGS data, box_length (data) - 1);
+      box_flags (result) |= BF_UTF8;
+      return result;
     case DV_DB_NULL:
       return NEW_DB_NULL;
     default:
@@ -3752,18 +3761,19 @@ DBG_NAME(box_cast_to_UTF8) (DBG_PARAMS caddr_t * qst, caddr_t data)
         /* Bug 5763: No need:
 	encoding_handler_t * eh = eh_get_handler (CHARSET_NAME(QST_CHARSET (qst), "ISO-8859-1"));
 	*/
-	caddr_t res;
-	result = box_cast (qst, data, (sql_tree_tmp*) varchar, dtp);
+        caddr_t res = box_cast (qst, data, (sql_tree_tmp*) varchar, dtp);
         /* Bug 5763: No need:
 	if (eh)
 	  res = literal_as_utf8 (eh, result, box_length (result) - 1);
 	else
 	*/
-	res = box_narrow_string_as_utf8 (NULL, result, 0, QST_CHARSET (qst), &err, 1);
+        result = box_narrow_string_as_utf8 (NULL, res, 0, QST_CHARSET (qst), &err, 1);
+        dk_free_tree (res);
 	if (err)
 	  sqlr_resignal (err);
-	dk_free_tree (result);
-	return res;
+        if (DV_STRING == DV_TYPE_OF (result))
+          box_flags (result) |= BF_UTF8;
+        return result;
       }
     }
 }
@@ -3782,23 +3792,13 @@ box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
     default: return box_cast_to_UTF8 (qst, data);
     }
 make_double:
+  if (!isfinite (boxdbl))
+    return box_dv_short_string (isnan (boxdbl) ? "NaN" : ((boxdbl > 0.0) ? "INF" : "-INF"));
   buffill = sprintf (tmpbuf, "%lg", boxdbl);
   if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
     {
-      if (isalpha(tmpbuf[1+1]))
-        {
-	  double myZERO = 0.0;
-          double myPOSINF_d = 1.0/myZERO;
-          double myNEGINF_d = -1.0/myZERO;
-          if (myPOSINF_d == boxdbl) return box_dv_short_string ("INF");
-          else if (myNEGINF_d == boxdbl) return box_dv_short_string ("-INF");
-          else return box_dv_short_string ("NAN");
-        }
-      else
-        {
-          strcpy (tmpbuf+buffill, ".0");
-          buffill += 2;
-        }
+      strcpy (tmpbuf+buffill, ".0");
+      buffill += 2;
     }
   return box_dv_short_nchars (tmpbuf, buffill);
 }
@@ -4290,6 +4290,92 @@ bif_xte_nodebld_xmlagg_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
 
 
 caddr_t
+bif_int_vectorbld_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t *acc = (caddr_t *) dk_alloc_box_zero (sizeof (caddr_t) * 15 /*  2^n - 1 */ , DV_ARRAY_OF_LONG);
+  if (1 > BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR344", "Too few arguments for vectorbld_init");
+  qst_set (qst, args[0], (caddr_t) acc);
+  return NULL;
+}
+
+
+caddr_t
+bif_int_vectorbld_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int acc_length, new_acc_length;
+  int filled_count;		/* number of non-null elements in the first argument, excluding the counter */
+  int argcount;			/* number of arguments in the call */
+  int arg_inx;			/* index of current argument */
+  int new_filled_count;		/* value of filled_count at the end of the procedure */
+  int64 *acc = bif_array_arg (qst, args, 0, "int_vector_agg");
+  caddr_t *dst;
+  qi_signal_if_trx_error ((query_instance_t *) qst);
+  if (1 > BOX_ELEMENTS (args))
+    sqlr_new_error ("22003", "SR345", "Too few arguments for vectorbld_acc");
+  argcount = BOX_ELEMENTS (args);
+/* The following 'if' must not appear here, but this is a workaround for a weird error in aggr in nested select. */
+  if (NULL == acc)
+    {
+      acc = (int64 *) dk_alloc_box_zero (sizeof (int64) * 15 /*  2^n - 1 */ , DV_ARRAY_OF_LONG);
+      qst_set (qst, args[0], acc);
+    }
+  filled_count = acc[0];
+  acc_length = BOX_ELEMENTS (acc);
+  new_filled_count = filled_count;
+  for (arg_inx = 1; arg_inx < argcount; arg_inx++)
+    {
+      if (DV_DB_NULL != DV_TYPE_OF (QST_GET (qst, args[arg_inx])))
+	new_filled_count++;
+    }
+
+  for (new_acc_length = acc_length; (new_filled_count) >= new_acc_length; new_acc_length += (new_acc_length + 1));
+      /* do nothing */ ;
+  if (new_acc_length > MAX_BOX_ELEMENTS)
+    sqlr_new_error ("22003", "SR346", "Out of memory allocation limits: the composed vector contains too many items");
+  if (acc_length != new_acc_length)
+    {
+      caddr_t new_acc;
+      if (NULL == (new_acc = dk_try_alloc_box (sizeof (int64) * new_acc_length, DV_ARRAY_OF_LONG)))
+	qi_signal_if_trx_error ((query_instance_t *) qst);
+      memset (new_acc, 0, sizeof (int64) * new_acc_length);
+      memcpy (new_acc, acc, sizeof (int64) * acc_length);
+      qst_set (qst, args[0], new_acc);
+      acc = new_acc;
+      acc_length = new_acc_length;
+    }
+  dst = acc + filled_count + 1;
+  for (arg_inx = 1; arg_inx < argcount; arg_inx++)
+    {
+      caddr_t arg = QST_GET (qst, args[arg_inx]);
+      if (DV_DB_NULL == DV_TYPE_OF (arg))
+	continue;
+      dst[0] = unbox_iri_int64 (arg);
+      dst++;
+    }
+  /* Now we know what's the precise value of new_filled_count */
+  acc[0] = new_filled_count;
+  return NULL;
+}
+
+
+caddr_t
+bif_int_vectorbld_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int64 *acc = NULL, new_box;
+  size_t filled_size;
+  int arg_ctr = BOX_ELEMENTS (args);
+  if (1 > arg_ctr)
+    sqlr_new_error ("22003", "SR444", "Too few arguments for vectorbld_final");
+  qst_swap_or_get_copy (qst, args[0], (int64 *) (&acc));
+  filled_size = sizeof (int64) * acc[0];
+  new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_LONG);
+  memcpy (new_box, acc + 1, filled_size);
+  return new_box;
+}
+
+
+caddr_t
 bif_vectorbld_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t * acc = (caddr_t *) dk_alloc_box_zero (sizeof (caddr_t) * 15 /*  2^n - 1 */, DV_ARRAY_OF_POINTER);
@@ -4521,7 +4607,11 @@ bif_vectorbld_final_impl (caddr_t * qst, state_slot_t ** args, int return_bits)
   dk_check_vectorbld_acc (acc);
   dk_free_box (acc[0]);
   if ((0 == filled_size) && (2 & return_bits))
-    new_box = NEW_DB_NULL;
+    {
+      new_box = NEW_DB_NULL;
+      acc[0] = NULL;
+      dk_free_tree ((caddr_t)acc);
+    }
   else
     {
       new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_POINTER);
@@ -5196,25 +5286,23 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	if (BOX_ELEMENTS (elem) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
 
-	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
-	    { /* XMLATTRIBUTES */
-	      int inx, attr_length = BOX_ELEMENTS (elem);
+	if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
+	  {				/* XMLATTRIBUTES */
+	    int inx, attr_length = BOX_ELEMENTS (elem);
 
-	      for (inx = 1; inx < attr_length; inx += 2)
-		{
-		  if (elem_is_writeable)
-		    {
-		      if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0,
-			  ((caddr_t *) elem)[inx + 1]))
-			((caddr_t *) elem)[inx] = NULL;
-		      ((caddr_t *) elem)[inx + 1] = NULL;
-		    }
-		  else
-		    bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1,
-			box_copy_tree (((caddr_t *) elem)[inx + 1]));
-		}
-              goto array_arg_done;
-	    }
+	    for (inx = 1; inx < attr_length; inx += 2)
+	      {
+		if (elem_is_writeable)
+		  {
+		    if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0, ((caddr_t *) elem)[inx + 1]))
+		      ((caddr_t *) elem)[inx] = NULL;
+		    ((caddr_t *) elem)[inx + 1] = NULL;
+		  }
+		else
+		  bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1, box_copy_tree (((caddr_t *) elem)[inx + 1]));
+	      }
+	    goto array_arg_done;
+	  }
 	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))
@@ -5832,19 +5920,19 @@ bif_xml_init (void)
   bif_define (XMLSPROC, bif_xmls_proc);
 
   /* bif_define (TREETOXML, bif_tree_to_xml); */
-  bif_define ("xml_tree", bif_xml_tree);
+  bif_define_ex ("xml_tree", bif_xml_tree, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_xml_tree);
-  bif_define_typed ("xtree_doc", bif_xtree_doc, &bt_xml_entity);
+  bif_define_ex ("xtree_doc", bif_xtree_doc, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_xtree_doc);
-  bif_define_typed ("xtree_doc_vdb", bif_xtree_doc_vdb, &bt_xml_entity);
+  bif_define_ex ("xtree_doc_vdb", bif_xtree_doc_vdb, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_set_uses_index (bif_xtree_doc_vdb);
   bif_define ("xml_expand_refs", bif_xml_expand_refs);
 #if 0
   bif_define ("xml_store_tree", bif_xml_store_tree);
   bif_set_uses_index (bif_xml_store_tree);
 #endif
-  bif_define_typed ("number", bif_number, &bt_numeric);
-  bif_define_typed ("xml_cut", bif_xml_cut, &bt_xml_entity);
+  bif_define_ex ("number", bif_number, BMD_RET_TYPE, &bt_numeric, BMD_DONE);
+  bif_define_ex ("xml_cut", bif_xml_cut, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
   bif_define ("__vt_index", bif_vt_index);
   bif_define ("xmls_viewremove", bif_xmls_viewremove);
   bif_define ("xml_view_dtd", bif_xml_view_dtd);
@@ -5881,6 +5969,10 @@ bif_xml_init (void)
   bif_define ("xte_nodebld_xmlagg_final", bif_xte_nodebld_xmlagg_final);
   bif_define ("xte_node_from_nodebld", bif_xte_node_from_nodebld);
 
+  bif_define ("int_vectorbld_init", bif_int_vectorbld_init);
+  bif_define ("int_vectorbld_acc", bif_int_vectorbld_acc);
+  bif_define ("int_vectorbld_final", bif_int_vectorbld_final);
+
   bif_define ("vectorbld_init", bif_vectorbld_init);
   bif_define ("vectorbld_acc", bif_vectorbld_acc);
   bif_define ("vectorbld_agg_acc", bif_vectorbld_agg_acc);
@@ -5899,16 +5991,14 @@ bif_xml_init (void)
   bif_define ("xq_sequencebld_final", bif_xq_sequencebld_final);
   bif_define ("xq_sequencebld_agg_final", bif_xq_sequencebld_agg_final);
 
-  bif_define_typed ("xmlelement", bif_xmlelement, &bt_any);
-  bif_define_typed ("xmlattributes", bif_xmlattributes, &bt_any);
-  bif_define_typed ("xmlattributes_2", bif_xmlattributes, &bt_any);
-  bif_define_typed ("xmlforest", bif_xmlforest, &bt_any);
-  bif_define_typed ("xmlforest_2", bif_xmlforest, &bt_any);
-  bif_define_typed ("xmlconcat", bif_xmlconcat, &bt_any);
-  bif_define_typed ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, &bt_varchar);
-  bif_define_typed ("xte_expand_xmlns", bif_xte_expand_xmlns, &bt_any);
-  bif_define_typed ("xmlnss_get", bif_xmlnss_get, &bt_xml_entity);
-  bif_define_typed ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, &bt_varchar);
+  bif_define_ex ("xmlelement", bif_xmlelement, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("xmlattributes", bif_xmlattributes, BMD_ALIAS, "xmlattributes_2", BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("xmlforest", bif_xmlforest, BMD_ALIAS, "xmlforest_2", BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("xmlconcat", bif_xmlconcat, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("serialize_to_UTF8_xml", bif_serialize_to_UTF8_xml, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("xte_expand_xmlns", bif_xte_expand_xmlns, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("xmlnss_get", bif_xmlnss_get, BMD_RET_TYPE, &bt_xml_entity, BMD_DONE);
+  bif_define_ex ("xmlnss_xpath_pre", bif_xmlnss_xpath_pre, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   bif_text_init ();
   bif_ap_init ();

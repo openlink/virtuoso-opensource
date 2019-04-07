@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -211,7 +211,7 @@ processing of the form continues.
     <screen><![CDATA[
 <html>
 <body>
-<v:page name="page01" xmlns:v="http://www.openlinksw.com/vspx/" >
+<v:page name="page01" xmlns:v="http://example.com/vspx/" >
   <v:form name="form01" type="simple" action="" method="POST">
     <v:label name="label01" value="--'Simple form'" />
     <v:text name="txt01" default="" />

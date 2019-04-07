@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@
     <funcsynopsis id="fsyn_repl_sched_init">
       <funcprototype id="fproto_repl_sched_init">
 		<funcdef><function>REPL_SCHED_INIT</function></funcdef>
-		<paramdef />
+		<paramdef></paramdef>
       </funcprototype>
     </funcsynopsis>
   </refsynopsisdiv>

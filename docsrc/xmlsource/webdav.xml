@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -520,11 +520,11 @@ by simply re-enabling the feature.  This will adjust the graph and
 resource IRI's.</para>
 
 <para>
-If the URIQA default name of the host is localhost:1113, then, the
-graph will be http://localhost:1113/DAV .</para>
+If the URIQA default name of the host is example.com, then, the
+graph will be http://example.com/DAV .</para>
 
 <para>
-The IRI's of DAV resources will be  like http://localhost:1113/DAV/docsrc/XMLDOM.xml , meaning that these are directly usable from a user agent for accessing the resource.</para>
+The IRI's of DAV resources will be  like http://example.com/DAV/docsrc/XMLDOM.xml , meaning that these are directly usable from a user agent for accessing the resource.</para>
 
 <para>
 </para>
@@ -532,16 +532,16 @@ The IRI's of DAV resources will be  like http://localhost:1113/DAV/docsrc/XMLDOM
 <para>
 <programlisting>
 <![CDATA[
-SQL> sparql select ?s ?o from <http://localhost:1113/DAV> where {?s <http://www.openlinksw.com/schemas/DAV#ownerUser> ?o};
+SQL> sparql select ?s ?o from <http://example.com/DAV> where {?s <http://www.openlinksw.com/schemas/DAV#ownerUser> ?o};
 s                                                                                 o
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
 
-http://localhost:1113/DAV/docsrc/2pc.xml                                          mailto:somebody@example.domain
-http://localhost:1113/DAV/docsrc/Virtdocs.spp                                     mailto:somebody@example.domain
+http://example.com/DAV/docsrc/2pc.xml                                          mailto:somebody@example.domain
+http://example.com/DAV/docsrc/Virtdocs.spp                                     mailto:somebody@example.domain
 
 
-SQL> sparql select ?p ?o from <http://localhost:1113/DAV> where {<http://localhost:1113/DAV/docsrc/2pc.xml> ?p ?o};
+SQL> sparql select ?p ?o from <http://example.com/DAV> where {<http://example.com/DAV/docsrc/2pc.xml> ?p ?o};
 p                                                                                 o
 VARCHAR                                                                           VARCHAR
 _______________________________________________________________________________
@@ -549,7 +549,7 @@ _______________________________________________________________________________
 http://purl.org/dc/terms/created                                                  2006-05-23 15:10:32
 http://purl.org/dc/terms/modified                                                 2006-05-23 15:10:32
 http://www.openlinksw.com/schemas/DAV#ownerUser                                   mailto:somebody@example.domain
-03http://purl.org/dc/terms/extent                                                   7850
+http://purl.org/dc/terms/extent                                                   7850
 ]]>
 </programlisting>
 </para>

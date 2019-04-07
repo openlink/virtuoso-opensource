@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -141,6 +141,7 @@ int numeric_to_int32 (numeric_t n, int32 *pvalue);
 int numeric_to_int64 (numeric_t n, int64 *pvalue);
 int numeric_to_double (numeric_t n, double *pvalue);
 int numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength);
+int numeric_dv_len (numeric_t n);
 
 int numeric_rescale (numeric_t y, numeric_t x, int prec, int scale);
 int numeric_rescale_noround (numeric_t y, numeric_t x, int prec, int scale);

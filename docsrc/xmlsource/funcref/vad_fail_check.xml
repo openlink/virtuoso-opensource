@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -72,14 +72,14 @@
   </refsect1>
 -->
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_vad_check_uninstallability">vad_check_uninstallability()</link></para>
-    <para><link linkend="fn_vad_check_installability">vad_check_installability()</link></para>
-    <para><link linkend="fn_vad_install">vad_install()</link></para>
-    <para><link linkend="fn_vad_pack">vad_pack()</link></para>
-    <para><link linkend="fn_vad_safe_exec">vad_safe_exec()</link></para>
-    <para><link linkend="fn_vad_uninstall">vad_uninstall()</link></para>
-    <para><link linkend="fn_vad_load_file">vad_load_file()</link></para>
-    <para><link linkend="fn_vad_check">vad_check()</link></para>
+    <para><link linkend="fn_vad_check_uninstallability"><function>vad_check_uninstallability()</function></link></para>
+    <para><link linkend="fn_vad_check_installability"><function>vad_check_installability()</function></link></para>
+    <para><link linkend="fn_vad_install"><function>vad_install()</function></link></para>
+    <para><link linkend="fn_vad_pack"><function>vad_pack()</function></link></para>
+    <para><link linkend="fn_vad_safe_exec"><function>vad_safe_exec()</function></link></para>
+    <para><link linkend="fn_vad_uninstall"><function>vad_uninstall()</function></link></para>
+    <para><link linkend="fn_vad_load_file"><function>vad_load_file()</function></link></para>
+    <para><link linkend="fn_vad_check"><function>vad_check()</function></link></para>
   </refsect1>
 </refentry>
 

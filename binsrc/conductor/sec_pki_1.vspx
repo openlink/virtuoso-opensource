@@ -1,0 +1,287 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="pki_1"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="c1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="st1" type="varchar"  default="''" persist="temp"/>
+      <v:variable name="o1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="ou1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="name1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="email1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="uri1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="sdt" type="varchar" default="''" persist="temp"/>
+      <v:variable name="edt" type="varchar" default="''" persist="temp"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
+    <vm:pagebody>
+      <v:on-init>
+        <![CDATA[
+          if (xenc_key_exists ('id_rsa'))
+          {
+            declare tmp, arr any;
+            tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
+            if (tmp is not null)
+            {
+              arr := split_and_decode (tmp, 0, '\0\0/=');
+              self.c1 := get_keyword ('C', arr, '');
+              self.st1 := get_keyword ('ST', arr, '');
+              self.o1 := get_keyword ('O', arr, '');
+              self.ou1 := get_keyword ('OU', arr, '');
+              self.name1 := get_keyword ('CN', arr, '');
+              self.email1 := get_keyword ('emailAddress', arr, '');
+              self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
+	      self.sdt := get_certificate_info (4, 'id_rsa', 3);
+	      self.edt := get_certificate_info (5, 'id_rsa', 3);
+              if (self.uri1 is null)
+                self.uri1 := '';
+              if (self.uri1 = '' or self.uri1 like 'email:%')
+              {
+                declare rc, res, gr any;
+                res := make_cert_iri ('id_rsa');
+                gr := sprintf ('http://%{WSHost}s/pki');
+                rc := coalesce ((sparql ask where { graph `iri(?:gr)` { `iri(?:res)` ?p ?o }}), 0);
+                if (rc)
+                  self.uri1 := res;
+                else
+                  self.uri1 := '';
+              }
+            }
+          }
+          else
+            self.uri1 := make_cert_iri ('id_rsa');
+        ]]>
+      </v:on-init>
+      <v:form name="form1" type="simple" method="POST">
+      <!-- top of security layout -->
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                <tr>
+                  <td>
+                    <table cellpadding="0" cellspacing="0" border="0">
+                      <tr>
+                        <td class="page_tab_selected" align="center">
+                          Public Key Infrastructure
+                        </td>
+                        <td class="page_tab" align="center">
+                          <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
+                        </td>
+                        <td class="page_tab" align="center">
+                          <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+                        </td>
+                        <td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                      </tr>
+                    </table>
+                    <table class="tab_page">
+                      <tr>
+                        <td valign="top">
+                          <!-- end of top security layout -->
+                          <div id="pki_form">
+                            <h3>CA Root Certificate Details</h3>
+                            <label>Country:</label>
+                            <v:text xhtml_size="100" value="" name="c" default_value="--self.c1">
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>State:</label>
+                            <v:text xhtml_size="100" value="" name="st"  default_value="--self.st1">
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>Organization:</label>
+                            <v:text xhtml_size="100" value="" name="o"  default_value="--self.o1">
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>Organization Unit:</label>
+                            <v:text xhtml_size="100" value="" name="ou" default_value="--self.ou1" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>Name:</label>
+                            <v:text xhtml_size="100" value="" name="name" default_value="--self.name1" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>e-mail:</label>
+                            <v:text xhtml_size="100" value="" name="email" default_value="--self.email1" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+			    <br />
+
+			    <v:template type="simple" condition="xenc_key_exists ('id_rsa')">
+                            <label>Not Before:</label>
+                            <v:text xhtml_size="100" value="" name="sdt1" default_value="--self.sdt" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>Not After:</label>
+                            <v:text xhtml_size="100" value="" name="edt1" default_value="--self.edt" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+			    <br />
+			    </v:template>
+
+                            <label>SAN (URI):</label>
+                            <v:text xhtml_size="100" value="" name="uri" default_value="--self.uri1" >
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:text>
+                            <br />
+                            <label>Key strength:</label>
+                            <v:select-list name="num">
+                              <v:item name="2048" value="2048"/>
+                              <v:item name="1024" value="1024"/>
+                              <v:item name="512" value="512"/>
+                              <v:before-render>
+                                if (xenc_key_exists ('id_rsa'))
+                                  control.vc_add_attribute ('disabled', '1');
+                              </v:before-render>
+                            </v:select-list>
+                            <br />
+                            <v:button action="simple" name="createcert" value="Generate" enabled="--equ (0, xenc_key_exists ('id_rsa'))">
+                              <v:on-post>
+                                <![CDATA[
+                                  if (xenc_key_exists ('id_rsa'))
+                                    return 0;
+
+                                  if (length (get_keyword ('name', params)) = 0)
+                                  {
+                                    self.vc_is_valid := 0;
+                                    self.vc_error_message := 'The name field is mandatory';
+                                    return 0;
+                                  }
+
+                                  declare w varchar;
+                                  w := get_keyword ('uri', params);
+                                  if (length (w))
+                                    w := 'URI:'||w;
+
+                                  xenc_key_RSA_create ('id_rsa', atoi (get_keyword ('num', params, '2048')));
+                                  xenc_x509_ss_generate ('id_rsa', sequence_next ('ca_id_rsa'), 365,
+                                    vector ('C',  get_keyword ('c', params),
+                                            'ST', get_keyword ('st', params),
+                                            'O',  get_keyword ('o', params),
+                                            'OU', get_keyword ('ou', params),
+                                            'CN', get_keyword ('name', params),
+                                            'emailAddress',  get_keyword ('email', params)),
+                                    vector ('basicConstraints', 'critical,CA:TRUE',
+                                            'authorityKeyIdentifier', 'keyid,issuer:always',
+                                            'subjectAltName', w,
+                                            'nsComment', 'Virtuoso Generated Certificate'));
+                                  USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', cast (xenc_pkcs12_export ('id_rsa', 'CA Certificate', '') as varchar));
+                                  exec (make_cert_stmt ('id_rsa'));
+                                  commit work;
+                                  control.vc_enabled := 0;
+                                  self.delcert.vc_enabled := 1;
+                                  self.nxt.vc_enabled := 1;
+                                  self.mgr.vc_enabled := 1;
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="mgr" value="Create Issuer Graph" enabled="--case when xenc_key_exists ('id_rsa') and length (self.uri1) = 0 then 1 else 0 end ">
+                              <v:on-post>
+                                <![CDATA[
+                                  exec (make_cert_stmt ('id_rsa'));
+                                  commit work;
+                                  self.vc_redirect ('sec_pki_1.vspx');
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="nxt" value="Configure HTTPS Listeners" enabled="--xenc_key_exists ('id_rsa')">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.vc_redirect ('sec_pki_2.vspx');
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="delcert" value="Delete" enabled="--xenc_key_exists ('id_rsa')">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.vc_redirect ('sec_pki_drop.vspx');
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <v:button action="simple" name="dwncert" value="Download Certificate" enabled="--xenc_key_exists ('id_rsa')">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.vc_redirect ('sec_pki_download.vsp?key=id_rsa');
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+                            <!-- bottom of security layout -->
+                          </div> <!-- #pki_form -->
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      <!-- end of bottom security layout -->
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,37 +1,37 @@
 #!/bin/sh
-#
+#  
 #  $Id$
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
 #  Free Software Foundation; only version 2 of the License, dated June 1991.
-#
+#  
 #  This program is distributed in the hope that it will be useful, but
 #  WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 #  General Public License for more details.
-#
+#  
 #  You should have received a copy of the GNU General Public License along
 #  with this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
-#
+#  
 
 LOGFILE=`pwd`/bpel.output
 BINARIESDIR="$BINDIR"
 export LOGFILE
-. ./test_fn.sh
-echo $BINDIR
+. $VIRTUOSO_TEST/testlib.sh
+testhome=`pwd`
 
 find ./ -name 'bpel.output' -exec rm -f '{}' ';'
 
 
 if [ "yes" = "yes" ] ; then
-MAKE_VAD=yes
+MAKEVAD=yes
 TEST_ECHO=yes
 BS2_TEST=no
 FAULT1_TEST=yes
@@ -49,9 +49,11 @@ HOST_OS=`uname -s | grep WIN`
 case $SERVER in
           *java*)
 	  if [ "x$HOST_OS" = "x" ] ; then
-	  	export CLASSPATH="$CLASSPATH:classlib"
+	  	CLASSPATH="$CLASSPATH:classlib"
+		export CLASSPATH
 	  else
-	  	export CLASSPATH="$CLASSPATH;classlib"
+	  	CLASSPATH="$CLASSPATH;classlib"
+		export CLASSPATH
 	  fi
 	  echo "CLASSPATH: $CLASSPATH"
 ;;
@@ -194,7 +196,7 @@ END_SQL
 
   comment="ECHO BOTH \": "$comment" STATE=\" \$STATE \" MESSAGE=\" \$MESSAGE \"\n\";"
   echo $comment >> $file
-  echo "+ " ${ISQL} ${_dsn} dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $*             >> $LOGFILE
+  echo "+ " ${ISQL} ${_dsn} dba dba ERRORS=STDOUT VERBOSE=OFF PROMPT=OFF "EXEC=$command" $* >> $LOGFILE
   RUN ${ISQL} ${_dsn} dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $file
 }
 
@@ -213,12 +215,16 @@ SetPort ()
 SHUTDOWN_SERVER
 
 if [ "$MAKE_VAD" = "yes" ] ; then
-LOG "Create VAD BPEL4WS Package"
-
-(cd ../../bpel; $MAKE)
+    LOG "Create VAD BPEL4WS Package"
+    (cd $VIRTUOSO_TEST/../../bpel; $MAKE)
 fi
 
-cp ../../bpel/bpel_filesystem.vad ./
+RUN cp $VIRTUOSO_TEST/../../bpel/bpel_filesystem.vad .
+if [ $STATUS -ne 0 ] 
+then
+  LOG "***FAILED: Can't create BPEL VAD."
+  exit 3
+fi
 
 MakeConfig $DS1 $HP1
 
@@ -237,7 +243,7 @@ DoCommand $DS1 "vhost_define (vhost=>'*ini*', lhost=>'*ini*', lpath=>'/SRC/', pp
 
 ECHO "Echo BPEL script test"
 rm -rf echo
-cp -r ../../bpel/tests/echo ./
+cp -r $VIRTUOSO_TEST/../../bpel/tests/echo ./
 
 RUN $ISQL $DS1 BPELTEST BPELTEST PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < echo/ini.sql
 
@@ -252,7 +258,7 @@ LOG "Buyer/Seller BPEL script test"
 LOG "Seller instance"
 
 rm -rf t1
-cp -r ../../bpel/tests/t1 ./
+cp -r $VIRTUOSO_TEST/../../bpel/tests/t1 ./
 
 #LOGFILE=../../bpel.output
 cd t1
@@ -261,7 +267,7 @@ DSN=$DS1
 SHUTDOWN_SERVER
 CNT=`expr $CNT + 1`
 START_SERVER $DS1 1000
-cp ../bpel_filesystem.vad ./
+cp $VIRTUOSO_TEST/../bpel_filesystem.vad ./
 DoCommand $DS1 "vad_install ('bpel_filesystem.vad', 0, 1);" "bpel_filesystem.vad install"
 #DoCommand $DS1 "trace_on('soap');" "TRACE ON"
 RUN $ISQL $DS1 BPEL BPEL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'buyer_http_port=$HP1' < seller/ini.sql
@@ -273,7 +279,7 @@ RUN $ISQL $DS1 BPEL BPEL PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u 'seller_http_po
 sleep 60
 
 
-cd ../
+cd ..
 
 # LOGFILE=bpel.output
 
@@ -288,30 +294,30 @@ fi
 if [ $FAULT1_TEST = "yes" ] ; then
 
 rm -rf fault1
-cp -r ../../bpel/tests/fault1 ./
+cp -r $VIRTUOSO_TEST/../../bpel/tests/fault1 ./
 cd fault1
-cp -r ../../../bpel/tests/mix .
-cp -r ../../../bpel/tests/order .
-cp -r "../../../bpel/tests/fi" .
-cp -r "../../../bpel/tests/pick" .
-cp -r "../../../bpel/tests/wss" .
-cp -r "../../../bpel/tests/wsrm" .
-cp -r "../../../bpel/tests/pick1" .
-cp -r "../../../bpel/tests/post" .
-cp -r "../../../bpel/tests/echovirt" .
-cp -r "../../../bpel/tests/echo" .
-cp -r "../../../bpel/tests/tver" .
-cp -r "../../../bpel/tests/tevent" .
-cp -r "../../../bpel/tests/processXSLT" .
-cp -r "../../../bpel/tests/processXSQL" .
-cp -r "../../../bpel/tests/processXQuery" .
-cp -r "../../../bpel/tests/LoanFlow" .
+cp -r $VIRTUOSO_TEST/../../bpel/tests/mix .
+cp -r $VIRTUOSO_TEST/../../bpel/tests/order .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/fi" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/pick" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/wss" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/wsrm" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/pick1" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/post" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/echovirt" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/echo" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/tver" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/tevent" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/processXSLT" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/processXSQL" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/processXQuery" .
+cp -r "$VIRTUOSO_TEST/../../bpel/tests/LoanFlow" .
 if [ "x$HOST_OS" = "x" ]
 then
 mkdir tutorial
 mkdir tutorial/services
-cp -r ../../../tutorial/services/bp_s_1 tutorial/services
-cp ../../../bpel/tests/Flow/test_tutorial.sql .
+cp -r $VIRTUOSO_TEST/../../tutorial/services/bp_s_1 tutorial/services
+cp $VIRTUOSO_TEST/../../bpel/tests/Flow/test_tutorial.sql .
 fi
 
 SetPort "fi/fi.wsdl"
@@ -331,7 +337,7 @@ cd ..
 rm -rf fault1_req
 mkdir fault1_req
 cd fault1_req
-cp -r ../../../bpel/tests/fault1/*.vsp .
+cp -r $VIRTUOSO_TEST/../../bpel/tests/fault1/*.vsp .
 #LOGFILE=../../bpel.output
 MakeConfig $DS2 $HP2
 DSN=$DS2
@@ -346,7 +352,7 @@ DSN=$DS1
 SHUTDOWN_SERVER
 CNT=`expr $CNT + 1`
 START_SERVER $DS1 1000
-cp ../bpel_filesystem.vad ./
+cp $VIRTUOSO_TEST/../bpel_filesystem.vad ./
 DoCommand $DS1 "vad_install ('bpel_filesystem.vad', 0, 1);" "bpel_filesystem.vad install"
 DoCommand $DS1 "create user BPELTEST;" "create user BPELTEST"
 DoCommand $DS1 "user_set_qualifier ('BPELTEST', 'BPEL');" "user_set_qualifier ('BPELTEST', 'BPEL')"
@@ -405,7 +411,7 @@ esac
 
 if [ "x$HOST_OS" = "x" ]
 then
-#RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < ../../../tutorial/setup_tutorial.sql
+#RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < tutorial/setup_tutorial.sql
 RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < LoanFlow/LoanFlow.sql
 RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < test_tutorial.sql
 else
@@ -434,7 +440,7 @@ RUN $ISQL $DS1 dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < mix/recovery_test.
 
 RUN $ISQL $DS1 '"EXEC=shutdown;"' ERRORS=STDOUT
 RUN $ISQL $DS2 '"EXEC=shutdown;"' ERRORS=STDOUT
-cd ../
+cd ..
 
 pwd
 
@@ -450,7 +456,6 @@ DSN=$DS3
 STOP_SERVER
 
 #find ./ -name 'bpel.output' -exec cat '{}' >> $LOGFILE.tmp ';'
-
 #mv $LOGFILE.tmp $LOGFILE
 
 CHECK_LOG

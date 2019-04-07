@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1320,20 +1320,20 @@ void
 bif_kerberos_init (void)
 {
   /* TGT */
-  bif_define_typed ("kerberos_get_tgt", bif_kerberos_get_tgt, &bt_varchar);
-  bif_define_typed ("kerberos_destroy_tiket", bif_kerberos_destroy_tiket, &bt_varchar);
+  bif_define_ex ("kerberos_get_tgt", bif_kerberos_get_tgt, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_destroy_tiket", bif_kerberos_destroy_tiket, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   /* old-style auth using GSS API */
-  bif_define_typed ("kerberos_client_auth", bif_kerberos_client_auth, &bt_varchar);
-  bif_define_typed ("kerberos_server_auth", bif_kerberos_server_auth, &bt_varchar);
-  bif_define_typed ("kerberos_seal", bif_kerberos_seal, &bt_varchar);
-  bif_define_typed ("kerberos_unseal", bif_kerberos_unseal, &bt_varchar);
+  bif_define_ex ("kerberos_client_auth", bif_kerberos_client_auth, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_server_auth", bif_kerberos_server_auth, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_seal", bif_kerberos_seal, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_unseal", bif_kerberos_unseal, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   /* krb5 API */
-  bif_define_typed ("kerberos_encrypt_tst", bif_kerberos_encrypt_tst, &bt_varchar);
-  bif_define_typed ("kerberos_decrypt_tst", bif_kerberos_decrypt_tst, &bt_varchar);
-  bif_define_typed ("kerberos_get_tiket_info", bif_kerberos_get_tiket_info, &bt_varchar);
-  bif_define_typed ("kerberos_free_context", bif_kerberos_free_context, &bt_varchar);
+  bif_define_ex ("kerberos_encrypt_tst", bif_kerberos_encrypt_tst, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_decrypt_tst", bif_kerberos_decrypt_tst, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_get_tiket_info", bif_kerberos_get_tiket_info, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("kerberos_free_context", bif_kerberos_free_context, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   /* GSS API  */
   bif_define ("krb_init_ctx", bif_krb_init_ctx);

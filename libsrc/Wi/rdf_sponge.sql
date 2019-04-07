@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,6 +22,8 @@
 --
 
 -- Function				is called from
+-- RDF_LOG_DEBUG_INFO_RESET		RDF_GRAP
+-- RDF_LOG_DEBUG_INFO			almost everywhere :)
 -- RDF_FT_INDEX_GRABBED			RDF_GRAB_SEEALSO, RDF_GRAB
 -- RDF_GRAB_PREPARE_PRIVATE		RDF_GRAB_SINGLE
 -- RDF_GRAB_SINGLE			RDF_GRAB_SINGLE_ASYNC
@@ -46,6 +48,36 @@
 
 -----
 -- Procedures for graph grabber
+
+--!AWK PUBLIC
+
+create procedure DB.DBA.RDF_LOG_DEBUG_INFO_RESET (in flag varchar)
+{
+  declare ctx, flags_to_ignore any;
+  flags_to_ignore := connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO_RESET');
+  if ((__tag(ctx) = __tag of vector) and (0 < position (flag, flags_to_ignore)))
+    return;
+  vectorbld_init(ctx);
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+}
+;
+
+create procedure DB.DBA.RDF_LOG_DEBUG_INFO (in message varchar, in arg1 any, in arg2 any)
+{
+  --dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO (', message, arg1, arg2);
+  declare ctx any;
+  if (not connection_get ('DB.DBA.RDF_LOG_DEBUG_INFO', 0, -1))
+    return;
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+  if (__tag(ctx) <> __tag of vector)
+    {
+      dbg_obj_princ ('DB.DBA.RDF_LOG_DEBUG_INFO(): initialization');
+      vectorbld_init(ctx);
+    }
+  vectorbld_acc (ctx, vector (message, arg1, arg2));
+  connection_swap ('DB.DBA.RDF_LOG_DEBUG_INFO acc', ctx, -1);
+}
+;
 
 --!AWK PUBLIC
 create procedure DB.DBA.RDF_FT_INDEX_GRABBED (inout grabbed any, inout options any)
@@ -163,7 +195,7 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
 
 create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env any) returns integer
 {
-  declare url, get_method, recov varchar;
+  declare resolver, url, get_method, recov varchar;
   declare dest varchar;
   declare opts, err any;
   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SINGLE (', coalesce (id_to_iri_nosignal (val), val), ',,... , ', env, ')');
@@ -177,13 +209,24 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         return 0;
       val := id_to_iri (val);
     }
-  if (217 = __tag (val))
+  if (__tag of UNAME = __tag (val))
     val := cast (val as varchar);
   dest := null;
-  call (get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT')) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
+  resolver := get_keyword_ucase ('resolver', env, 'DB.DBA.RDF_GRAB_RESOLVER_DEFAULT');
+  call (resolver) (get_keyword_ucase ('base_iri', env), val, url, dest, get_method);
   --if (dest is not null and dest = url)
   --  dest := null;
-  if (url is not null and not dict_get (grabbed, url, 0))
+  if (url is null)
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() will not try to process <%s>, because the IRI resolver "%s" returned NULL', val, resolver);
+      return 0;
+    }
+  else if (dict_get (grabbed, url, 0))
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() will not try to process <%s>, because it is resolved as <%s> and processed before', val, url);
+      return 0;
+    }
+  else
     {
       declare final_dest, final_gdest, get_private varchar;
       final_dest := get_keyword ('get:destination', env, dest);
@@ -199,6 +242,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         'get:error-recovery', get_keyword_ucase ('get:error-recovery', env),
         'get:note', get_keyword_ucase ('get:note', env) );
       dict_put (grabbed, url, 1);
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SINGLE() has resolved <%s> as <%s> and will try to grab it', val, url);
       get_private := get_keyword_ucase ('get:private', env, null);
       if (get_private is not null)
         DB.DBA.RDF_GRAB_PREPARE_PRIVATE (final_dest, get_private, user, env);
@@ -216,7 +260,6 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
         }
       return 1;
     }
-  return 0;
   }
 end_of_sponge:
   commit work;
@@ -249,7 +292,7 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
 {
   declare grabbed, aq any;
   declare sa_graphs, sa_preds any;
-  declare doc_limit integer;
+  declare doc_limit, flags integer;
   if (not isiri_id (subj))
     return 1;
   aq := async_queue (8);
@@ -270,11 +313,14 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s>', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+              else
+                DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
@@ -290,11 +336,14 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s> in "see-also" graphs', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+                  else
+                    DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> in "see-also" graphs because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
@@ -309,21 +358,26 @@ create function DB.DBA.RDF_GRAB_SEEALSO (in subj varchar, in opt_g varchar, inou
               if ("val" like 'http://%')
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector ("val", '...', env, doc_limit));
+                  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests <%s> due to predicate <%s> in "additional" graph', "val", __id2i (pred));
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC ("val", grabbed, env, doc_limit);
                   aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector ("val", grabbed, env, doc_limit));
                   if (dict_size (grabbed) > doc_limit)
                     goto out_of_limit;
                 }
+              else
+                DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO rejects <%s> inferred via predicate <%s> in "additional" graph because it is not of <http://...> format', "val", __id2i (pred));
             }
         }
     }
-  if (bit_and (1, get_keyword ('flags', env, 0)))
+  flags := get_keyword ('flags', env, 0);
+  if (bit_and (1, flags))
     {
       declare subj_iri varchar;
       subj_iri := id_to_iri (subj);
       if (subj_iri like 'http://%')
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB_SEEALSO () aq_request ', vector (subj, '...', env, doc_limit));
+          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB_SEEALSO suggests subject <%s> as required by bit 1 of flags %d', subj_iri, flags);
           --DB.DBA.RDF_GRAB_SINGLE_ASYNC (subj, grabbed, env, doc_limit);
           aq_request (aq, 'DB.DBA.RDF_GRAB_SINGLE_ASYNC', vector (subj_iri, grabbed, env, doc_limit));
         }
@@ -338,8 +392,7 @@ out_of_limit:
 }
 ;
 
-create procedure
-DB.DBA.RDF_GRAB (
+create procedure DB.DBA.RDF_GRAB (
   in app_params any, in grab_params any, in seed varchar, in iter varchar, in final varchar, in ret_limit integer,
   in const_iris any, in depth integer, in plain_ret integer, in uid any )
 {
@@ -347,12 +400,14 @@ DB.DBA.RDF_GRAB (
   declare stat, msg varchar;
   declare sa_graphs, sa_preds, all_params any;
   declare grabbed, metas, rset, aq any;
-  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
+  RDF_LOG_DEBUG_INFO_RESET ('DB.DBA.RDF_GRAB');
   sa_preds := get_keyword ('sa_preds', grab_params);
   doc_limit := get_keyword ('doc_limit', grab_params, 0hex1000000);
   grab_params := vector_concat (grab_params, vector ('grabbed', dict_new()));
   all_params := vector_concat (vector (grab_params), app_params);
-  aq := async_queue (8);
+  -- dbg_obj_princ ('DB.DBA.RDF_GRAB (', app_params, grab_params, ',..., ', ret_limit, const_iris, depth, doc_limit, plain_ret, uid, ')');
+  DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() begins its work with limit on number of documents set to %d, depth limit is %d', doc_limit, depth);
+  aq := async_queue (sys_stat ('enable_qp'));
   grabbed := dict_new ();
   foreach (any val in const_iris) do
     {
@@ -379,6 +434,8 @@ DB.DBA.RDF_GRAB (
   for (iter_ctr := 0; iter_ctr <= depth; iter_ctr := iter_ctr + 1)
     {
       declare old_doc_count integer;
+      declare colctr integer;
+      declare col_null_stat, col_nonref_stat any;
       old_doc_count := dict_size (grabbed);
       stat := '00000';
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, will exec with params ', all_params);
@@ -389,10 +446,12 @@ DB.DBA.RDF_GRAB (
         signal (stat, msg);
       rcount := length (rset);
       colcount := length (metas[0]);
+      col_null_stat := make_array (colcount, 'any');
+      col_nonref_stat := make_array (colcount, 'any');
       -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, '/', depth, ' rset is ', rcount, ' rows * ', colcount, ' cols');
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has executed query on iteration %d, result set is %d rows long', iter_ctr, rcount);
       for (rctr := 0; rctr < rcount; rctr := rctr + 1)
         {
-          declare colctr integer;
           for (colctr := 0; colctr < colcount; colctr := colctr + 1)
             {
               declare val any;
@@ -400,7 +459,9 @@ DB.DBA.RDF_GRAB (
               if (dict_size (grabbed) >= doc_limit)
                 goto final_exec;
               val := rset[rctr][colctr];
-              if (is_named_iri_id (val) and __rgs_ack_cbk (val, uid, 4))
+              if (is_named_iri_id (val))
+                {
+                  if (__rgs_ack_cbk (val, uid, 4))
                 {
                   -- dbg_obj_princ ('DB.DBA.RDF_GRAB ():, iter ', iter_ctr, ', row ', rctr, ', col ', colctr, ', vector (', val, '=<', id_to_iri(val), ',..., ', grab_params, doc_limit, ')');
                   --DB.DBA.RDF_GRAB_SINGLE_ASYNC (val, grabbed, grab_params, doc_limit);
@@ -413,20 +474,39 @@ DB.DBA.RDF_GRAB (
                       DB.DBA.RDF_GRAB_SEEALSO (val, null, grab_params);
                     }
                   if (dict_size (grabbed) >= doc_limit)
+                        {
+                          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has reached the limit of number of document IRIs to grab: %d grabbed, limit is %d', dict_size (grabbed), doc_limit);
                     goto final_exec;
                 }
+            }
+                  else
+                    DB.DBA.RDF_LOG_DEBUG_INFO ('No sponge permission on value "%s" of variable "%s"', __id2i (val), metas[0][colctr][0]);
+                }
+              else if (val is null)
+                col_null_stat[colctr] := col_null_stat[colctr] + 1;
+              else
+                col_nonref_stat[colctr] := col_nonref_stat[colctr] + 1;
             }
         }
       commit work;
       aq_wait_all (aq);
       commit work;
+      for (colctr := 0; colctr < colcount; colctr := colctr + 1)
+        {
+          if (col_null_stat[colctr])
+             DB.DBA.RDF_LOG_DEBUG_INFO ('Note %d NULL values of variable "%s"', col_null_stat[colctr], metas[0][colctr][0]);
+          if (col_nonref_stat[colctr])
+             DB.DBA.RDF_LOG_DEBUG_INFO ('Note %d non-IRI values of variable "%s"', col_nonref_stat[colctr], metas[0][colctr][0]);
+        }
       DB.DBA.RDF_FT_INDEX_GRABBED (grabbed, grab_params);
       commit work;
       if (old_doc_count = dict_size (grabbed))
         {
           -- dbg_obj_princ ('DB.DBA.RDF_GRAB () has reached a stable point with ', old_doc_count, ' grabbed docs');
+          DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() has reached a stable point with %d distinct document IRIs at iteration step %d. No need in further iterations.', dict_size (grabbed), iter_ctr);
         goto final_exec;
     }
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_GRAB() iteration is done with %d document IRIs (was %d)', dict_size (grabbed), old_doc_count);
     }
 
 final_exec:
@@ -447,9 +527,9 @@ create function DB.DBA.RDF_GRAB_RESOLVER_DEFAULT (in base varchar, in rel_uri va
 {
   declare rel_lattice_pos, base_lattice_pos integer;
   declare lattice_tail varchar;
-  if (217 = __tag (rel_uri))
+  if (__tag of UNAME = __tag (rel_uri))
     rel_uri := cast (rel_uri as varchar);
-  if (217 = __tag (base))
+  if (__tag of UNAME = __tag (base))
     base := cast (base as varchar);
   rel_lattice_pos := strrchr (rel_uri, '#');
   lattice_tail := '';
@@ -559,7 +639,7 @@ create table DB.DBA.SYS_HTTP_SPONGE (
   primary key (HS_LOCAL_IRI, HS_PARSER)
 )
 alter index SYS_HTTP_SPONGE on DB.DBA.SYS_HTTP_SPONGE partition (HS_LOCAL_IRI varchar)
-create index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
+create not null index SYS_HTTP_SPONGE_EXPIRATION on DB.DBA.SYS_HTTP_SPONGE (HS_EXPIRATION desc) partition (HS_LOCAL_IRI varchar)
 create index SYS_HTTP_SPONGE_FROM_IRI on DB.DBA.SYS_HTTP_SPONGE (HS_FROM_IRI, HS_PARSER) partition (HS_FROM_IRI varchar)
 create index SYS_HTTP_SPONGE_ORIGIN_URI on DB.DBA.SYS_HTTP_SPONGE (HS_ORIGIN_URI) partition (HS_ORIGIN_URI varchar)
 ;
@@ -584,13 +664,8 @@ create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
 )
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
-;
---#ENDIF
 
-create table RDF_WEBID_ACL_GROUPS (
+create table DB.DBA.RDF_WEBID_ACL_GROUPS (
 	AG_WEBID varchar,
 	AG_GROUP varchar,
 primary key (AG_WEBID, AG_GROUP)
@@ -679,9 +754,6 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
 }
 ;
 
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
---#ENDIF
 create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
@@ -885,7 +957,7 @@ perform_actual_load:
   --!!!TBD: if (get_method in ('MGET', 'GET+MGET')) { ... }
   if (get_method in ('POST', 'GET', 'GET+MGET'))
     {
-      declare acc_hdr varchar; 
+      declare acc_hdr varchar;
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
       acc_hdr := trim (get_keyword_ucase ('get:accept', options));
@@ -949,14 +1021,14 @@ perform_actual_load:
 	  rollback work;
 	  update DB.DBA.SYS_HTTP_SPONGE
 	      set HS_SQL_STATE = 'RDFXX',
-	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	      HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	      HS_EXPIRATION = now (),
 	      HS_EXP_IS_TRUE = 0,
 	      HS_NOTE = get_note
 		  where
 		  HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
 	  commit work;
-	  signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+	  signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
 	}
       goto resp_received;
     }
@@ -996,13 +1068,13 @@ resp_received:
       rollback work;
       update DB.DBA.SYS_HTTP_SPONGE
 	  set HS_SQL_STATE = 'RDFXX',
-	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
+	  HS_SQL_MESSAGE = sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]),
 	  HS_EXPIRATION = now (),
 	  HS_EXP_IS_TRUE = 0, HS_NOTE = get_note
 	      where
 	      HS_LOCAL_IRI = local_iri and HS_PARSER = parser;
       commit work;
-      signal ('RDFXX', sprintf ('Unable to retrieve RDF data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
+      signal ('RDFXX', sprintf ('Unable to retrieve data from "%.500s": %.500s', new_origin_uri, ret_hdr[0]));
     }
   --!!!TBD: proper character set handling in response
   new_download_size := length (ret_body);
@@ -1294,39 +1366,6 @@ create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID) partition clus
 create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID) partition cluster replicated
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-{
-  declare id int;
-  update DB.DBA.SYS_RDF_MAPPERS set RM_PID = RM_ID where RM_PID is null;
-  if (row_count() = 0)
-    return;
-  id := (select max (RM_PID) from DB.DBA.SYS_RDF_MAPPERS) + 1;
-  DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', id);
-}
-;
-
---!AFTER
-DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-;
---#ENDIF
 
 create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr any,
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)
@@ -1358,7 +1397,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
     content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
   redirects := redirects - 1;
 
-  if (hdr[0] not like 'HTTP/1._ 200 %')
+  if (hdr[0] not like 'HTTP/1._ 200 %' and hdr[0] not like 'HTTP/1._ 203 %')
     {
       if (hdr[0] like 'HTTP/1._ 30_ %' and hdr[0] not like 'HTTP/1._ 304 %')
 	{
@@ -1384,7 +1423,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 }
 ;
 
--- Extracts Set-Cookie: headers from a source URL's response and builds a corresponding 
+-- Extracts Set-Cookie: headers from a source URL's response and builds a corresponding
 -- Cookie: request header for the URL being redirected to
 create procedure DB.DBA.COOKIE_HDR (in src_url any, in resp_hdrs any, in dest_url any)
 {
@@ -1427,11 +1466,11 @@ create procedure DB.DBA.COOKIE_HDR (in src_url any, in resp_hdrs any, in dest_ur
 
   if (length (cookies) = 0)
     goto done;
-    
+
   req_cookie_hdr := '';
   foreach (any cookie in cookies) do
   {
-    -- Assume any expiring cookies are still valid, they've only just been set. 
+    -- Assume any expiring cookies are still valid, they've only just been set.
     -- Check the cookies apply to the domain + path being redirected to
     valid := 1;
     cookie_domain := get_keyword ('domain', cookie, ua_src_domain);
@@ -1515,7 +1554,7 @@ create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
     else if (connection_get ('__http_host') is not null)
         default_host := connection_get ('__http_host');
     else
-        default_host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+        default_host := virtuoso_ini_item_value ('URIQA', 'DefaultHost');
     if (default_host is not null)
         cname := default_host;
     else
@@ -1607,15 +1646,20 @@ create procedure DB.DBA.RDF_SPONGE_PROXY_IRI(in uri varchar := '', in login varc
 }
 ;
 
--- Postprocessing for sponging pure RDF sources 
+-- Postprocessing for sponging pure RDF sources
 create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base varchar, in graph varchar, in mimetype varchar :='text/html')
 {
   declare proxyiri, docproxyiri, dociri varchar;
+
+  if (__proc_exists ('DB.DBA.RM_SPONGE_DOC_IRI') is null)
+    return;
+
   proxyiri := DB.DBA.RDF_PROXY_ENTITY_IRI (graph);
   docproxyiri := DB.DBA.RDF_SPONGE_PROXY_IRI (graph);
   dociri:=DB.DBA.RM_SPONGE_DOC_IRI(graph);
   
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in iri(?:graph) { 
       `iri(?:graph)` <http://xmlns.com/foaf/0.1/topic> `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` .
       `iri(sql:XML_URI_RESOLVE_LIKE_GET(?:base, ?s))` <http://www.w3.org/2007/05/powder-s#describedby> `iri(?:proxyiri)` 
@@ -1628,6 +1672,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC (in contents varchar, in base
     }
   };
   sparql define input:storage "" 
+    define sql:table-option "index G"
     insert in graph iri(?:graph) { 
       `iri(?:docproxyiri)` a <http://purl.org/ontology/bibo/Document> ;
       <http://www.w3.org/ns/formats/media_type> `?:mimetype` ;
@@ -1699,13 +1744,13 @@ retry_after_deadlock:
       if (xpath_eval ('[ xmlns:dv="http://www.w3.org/2003/g/data-view#" ] /*[1]/@dv:transformation', xt) is not null)
         goto load_grddl;
       DB.DBA.RDF_LOAD_RDFXML (ret_body, base, coalesce (dest, graph_iri));
-      if (extra <> '0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
       if (groupdest is not null)
         {
           DB.DBA.RDF_LOAD_RDFXML (ret_body, base, groupdest);
-          if (extra <> '0')
+	  if (get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
         goto load_grddl;
@@ -1746,14 +1791,16 @@ retry_after_deadlock:
       --log_enable (2, 1);
       --if (dest is null)
       --  DB.DBA.SPARUL_CLEAR (coalesce (dest, graph_iri), 1);
+
       DB.DBA.TTLP (ret_body, base, coalesce (dest, graph_iri), ttl_mode);
-      if(extra<>'0')
+      if (get_soft <> 'no-sponge')
         DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, coalesce (dest, graph_iri), ret_content_type);
       rdf_fmt := 1;
+
       if (groupdest is not null)
         {
           DB.DBA.TTLP (ret_body, base, groupdest);
-          if(extra<>'0')
+          if(get_soft <> 'no-sponge')
             DB.DBA.RDF_LOAD_RDFXML_PP_GENERIC(ret_body, base, groupdest, ret_content_type);
         }
       if (exists (select 1 from DB.DBA.SYS_RDF_MAPPERS where RM_TYPE = 'URL' and regexp_match (RM_PATTERN, new_origin_uri) and RM_ENABLED = 1))
@@ -1913,11 +1960,11 @@ load_grddl:;
   --      DB.DBA.RDF_LOAD_RDFXML (xd, new_origin_uri, groupdest);
   --    return 1;
   --  }
-  
+
 no_cart:
 
   if (rdf_fmt) -- even cartridges didn't extracted anything more, the rdf is already loaded
-    return 1; 
+    return 1;
 
   if ((dest is null) and (get_soft is null or (get_soft <> 'add')))
     {
@@ -2016,13 +2063,18 @@ create function DB.DBA.RDF_SPONGE_UP (in graph_iri varchar, in options any, in u
   aq_request (aq, 'DB.DBA.RDF_SPONGE_UP_1', vector (graph_iri, options, uid));
   commit work;
   aq_wait_all (aq);
-
   graph_iri := cast (graph_iri as varchar);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)
-    local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
+    {
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_SPONGE_UP() uses destination <%s> for document <%s>', dest, graph_iri);
+      local_iri := 'destMD5=' || md5(dest) || '&graphMD5=' || md5(graph_iri);
+      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.RDF_SPONGE_UP() will return hash %s for document <%s>', local_iri, graph_iri);
+    }
   else
-    local_iri := graph_iri;
+    {
+      local_iri := graph_iri;
+    }
   return local_iri;
 }
 ;
@@ -2070,7 +2122,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
           res_graph_iri := local_iri;
           goto graph_is_ready;
         }
-      -- dbg_obj_princ ('Does not exists, continue despite get:soft=soft');
+      -- dbg_obj_princ ('Does not exist, continue despite get:soft=soft');
     }
   else
     if (('replacing' = get_soft) or ('replace' = get_soft) or ('add' = get_soft) or ('no-sponge' = get_soft))
@@ -2080,7 +2132,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
       }
   else
     signal ('RDFZZ', sprintf (
-      'This version of Virtuoso supports only "soft", "replacing" and "add" values of "define get:soft ...", not "%.500s"',
+      'This version of Virtuoso supports only "soft", "replacing", "add" and "no-sponge" values of "define get:soft ...", not "%.500s"',
       get_soft ) );
   get_private := get_keyword_ucase ('get:private', options, null);
   if (get_private is not null)
@@ -2151,7 +2203,7 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
         }
       else
 	{
-	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger do not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
+	  -- signal ('RDFZZ', sprintf ('This version of Virtuoso Sponger does not support "%s" IRI scheme (IRI "%.1000s")', lower(sch), graph_iri));
           return null;
 	}
     }
@@ -2184,6 +2236,142 @@ create function DB.DBA.RDF_SPONGE_UP_LIST (in sources any)
 }
 ;
 
+-- API
+
+create function DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (in doc varchar)
+{
+  if (exists (select 1 from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+    return 1;
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_DOCUMENT_EXPIRATION (in graph varchar)
+{
+  declare ret datetime;
+  ret := null;
+  for select HS_EXPIRATION from DB.DBA.SYS_HTTP_SPONGE where HS_ORIGIN_URI = graph do
+    {
+      ret := HS_EXPIRATION;
+    }
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_CHECK (in url varchar, in top_url varchar, out old_etag varchar, out old_last_modified any)
+{
+  declare old_exp_is_true, old_expiration, old_read_count any;
+  whenever not found goto no_record;
+  select HS_EXP_IS_TRUE, HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG, HS_READ_COUNT
+      into old_exp_is_true, old_expiration, old_last_modified, old_etag, old_read_count
+      from DB.DBA.SYS_HTTP_SPONGE where HS_FROM_IRI = url and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE';
+  -- as we are at point we load everything we always do re-load
+no_record:
+  return 0;
+}
+;
+
+create procedure DB.DBA.SPONGER_CACHE_REGISTER (in url varchar, in top_url varchar, inout hdr any,
+                   in old_last_modified any, in download_size int, in load_msec int)
+{
+  declare explicit_refresh, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+      ret_dt_date, ret_dt_expires, ret_dt_last_modified any;
+
+  if (not isarray (hdr))
+    return;
+
+  url := WS.WS.EXPAND_URL (top_url, url);
+  explicit_refresh := null;
+  new_expiration := now ();
+  DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS (explicit_refresh, old_last_modified,
+      hdr, new_expiration, ret_content_type, ret_etag, ret_date, ret_expires, ret_last_modif,
+       ret_dt_date, ret_dt_expires, ret_dt_last_modified);
+  insert replacing DB.DBA.SYS_HTTP_SPONGE (
+      HS_LAST_LOAD,
+      HS_LAST_ETAG,
+      HS_LAST_READ,
+      HS_EXP_IS_TRUE,
+      HS_EXPIRATION,
+      HS_LAST_MODIFIED,
+      HS_DOWNLOAD_SIZE,
+      HS_DOWNLOAD_MSEC_TIME,
+      HS_READ_COUNT,
+      HS_SQL_STATE,
+      HS_SQL_MESSAGE,
+      HS_LOCAL_IRI,
+      HS_PARSER,
+      HS_ORIGIN_URI,
+      HS_ORIGIN_LOGIN,
+      HS_FROM_IRI)
+      values
+      (
+       now (),
+       ret_etag,
+       now(),
+       case (isnull (ret_dt_expires)) when 1 then 0 else 1 end,
+       coalesce (ret_dt_expires, new_expiration, now()),
+       ret_dt_last_modified,
+       download_size,
+       load_msec,
+       1,
+       NULL,
+       NULL,
+       url,
+       'DB.DBA.RDF_LOAD_HTTP_RESPONSE',
+       url,
+       NULL,
+       top_url
+       );
+
+  return;
+}
+;
+
+-- scheduler task if needed to keep volume under certain limit
+create procedure DB.DBA.SPONGE_CLEAN_SPONGE (in d int := 30, in n int := 2000)
+{
+  declare res, stat, msg varchar;
+  declare inx int;
+
+  declare exit handler for sqlstate '*'
+    {
+      log_enable (1);
+      resignal;
+    }
+  ;
+  log_enable (2);
+  inx := 0;
+  for select HS_LOCAL_IRI as graph from DB.DBA.SYS_HTTP_SPONGE where HS_EXPIRATION < dateadd ('day', -1*d, now ()) do
+    {
+       inx := inx + 1;
+       stat := '00000';
+       exec ('sparql clear graph <'||graph||'>', stat, msg);
+       if (inx > n)
+         goto endp;
+    }
+ endp:
+  log_enable (1);
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_GRAPHS_LIKE (in graph_pattern varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (HS_ORIGIN_URI) from DB.DBA.SYS_HTTP_SPONGE where regexp_match (graph_pattern, HS_ORIGIN_URI) is not null);
+  return ret;
+}
+;
+
+create procedure DB.DBA.SPONGER_GET_EXPIRY_INFO (in graph varchar)
+{
+  declare ret any;
+  ret := (select VECTOR_AGG (vector (HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG))
+      from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI =  graph and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE');
+  return ret;
+}
+;
+
+-- end API
 
 create procedure DB.DBA.RDF_GRANT_SPONGE ()
 {
@@ -2201,7 +2389,13 @@ create procedure DB.DBA.RDF_GRANT_SPONGE ()
     'grant execute on DB.DBA.SPARQL_EVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_SPONGE_UP to SPARQL_SPONGE',
     'grant execute on DB.DBA.RDF_SPONGE_UP_1 to SPARQL_SPONGE',
-    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE' );
+    'grant execute on DB.DBA.RDF_SPONGE_UP_LIST to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_IS_SPONGED to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_DOCUMENT_EXPIRATION to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CACHE_CHECK to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_CLEAN_SPONGE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_GRAPHS_LIKE to SPARQL_SPONGE',
+    'grant execute on DB.DBA.SPONGER_GET_EXPIRY_INFO to SPARQL_SPONGE');
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);

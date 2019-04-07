@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -133,7 +133,9 @@ create function R2RML_NS_OF_IRI (in iri varchar) returns varchar
   patchedlen := length (patched);
   for (taillen := 0; taillen < irilen; taillen := taillen + 1)
     {
-      if (iri[irilen-(1+taillen)] <> patched[patchedlen-(1+taillen)])
+      declare orig_code integer;
+      orig_code := iri[irilen-(1+taillen)];
+      if ((orig_code <> patched[patchedlen-(1+taillen)]) or (orig_code >= 127) or strchr ('@`~', chr (orig_code)) is not null)
         goto found_diff;
     }
 found_diff:
@@ -165,7 +167,7 @@ create method R2RML_FILL_NS_PREFIXES_CACHE () returns integer for DB.DBA.R2RML_M
     select distinct ?i where { graph `iri(?:self.graph_iid)` {
               {
                 ?s ?p ?i .
-                filter (?p in (rr:graph, rr:subject, rr:predicate, rr:object))
+                filter (?p in (rr:graph, rr:subject, rr:predicate, rr:object, rr:class))
               }
             union
               {
@@ -248,6 +250,8 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
       all_metas := vector (null, null);
       if ("q" is not null)
         {
+	  if (__tag ("q") = 246)
+	    "q" := rdf_box_data ("q");
           while (("q" <> '') and strchr (' \t\r\n', chr ("q" [length ("q") - 1])) is not null)
             "q" := "LEFT" ("q", length ("q") - 1);
           if (("q" <> '') and ';' = chr ("q" [length ("q") - 1]))
@@ -442,12 +446,12 @@ create function DB.DBA.R2RML_XSD_TYPE_OF_DTP (in dtp integer)
   if (__tag of date = dtp) return 'http://www.w3.org/2001/XMLSchema#date';
   if (__tag of time = dtp) return 'http://www.w3.org/2001/XMLSchema#time';
   if (dtp in (__tag of varchar, __tag of nvarchar, __tag of long varchar, __tag of long nvarchar)) return NULL;
-  if (__tag of integer = dtp) return 'http://www.w3.org/2001/XMLSchema#integer';
+  if (dtp in (__tag of integer, __tag of smallint, __tag of bigint)) return 'http://www.w3.org/2001/XMLSchema#integer';
   if (__tag of double precision = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of numeric = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of real = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
   if (230) return 'http://www.w3.org/2001/XMLSchema#XMLLiteral';
-  if (238) return 'http://www.openlinksw.com/schemas/virtrdf#Geometry';
+  if (238) return default_geo_type();
   return 'http://www.w3.org/2001/XMLSchema#any';
 }
 ;
@@ -515,7 +519,8 @@ create method R2RML_GEN_CREATE_IOL_CLASS_OR_REF (in fld_idx integer, in mode int
       argtypes[argctr] := vector (coltype[1], coltype[4]);
       col_fmt := case
         when (coltype[1] in (__tag of date, __tag of datetime, __tag of datetime)) then '%D'
-        when (coltype[1] in (__tag of integer)) then '%d'
+        when (coltype[1] in (__tag of integer, __tag of smallint)) then '%d'
+        when (coltype[1] in (__tag of bigint)) then '%ld'
         when (coltype[1] in (__tag of real, __tag of double precision, __tag of numeric)) then '%g'
         when (coltype[1] in (__tag of varchar, __tag of nvarchar)) then
           case (termtype) when 'http://www.w3.org/ns/r2rml#Literal' then '%s' else '%U' end
@@ -543,11 +548,12 @@ create_iol_class:
       for (argctr := 0; argctr < argcount; argctr := argctr + 1)
         {
           declare argdtp integer;
-          declare argname varchar;
+          declare raw_argname, argname varchar;
           argdtp := argtypes[argctr][0];
-          argname := format_parts[argctr * 2 + 1];
-          if (argname <> sprintf ('%U', argname))
-            argname := sprintf ('%s_n%d', replace (replace (sprintf ('%U', argname), '+', '_'), '%', '__'), argctr);
+          raw_argname := format_parts[argctr * 2 + 1];
+          argname := replace (replace (replace (replace (sprintf ('%U', raw_argname), '-', '_'), '@', '_'), '`', '_'), '~', '_');
+          if (raw_argname <> argname)
+            argname := sprintf ('%s_n%d', replace (replace (argname, '+', '_'), '%', '__'), argctr);
           if (argctr > 0)
             http (', ', self.codegen_ses);
           http ('in ' || argname || ' ' ||
@@ -556,6 +562,8 @@ create_iol_class:
               when __tag of time then 'time'
               when __tag of datetime then 'datetime'
               when __tag of integer then 'integer'
+              when __tag of smallint then 'integer'
+              when __tag of bigint then 'integer'
               when __tag of real then 'real'
               when __tag of double precision then 'double precision'
               when __tag of numeric then 'numeric'
@@ -634,7 +642,7 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
 {
   foreach (varchar dflttt in vector ('http://www.w3.org/ns/r2rml#IRI', 'http://www.w3.org/ns/r2rml#Literal')) do
     {
-      for (sparql define input:storage ""
+      for (sparql define input:storage "" define output:valmode "LONG"
         select ?triplesmap ?fldmap ?template ?termtype ?dt ?lang
         where { graph `iri(?:self.graph_iid)` {
                 ?triplesmap a rr:TriplesMap .
@@ -655,10 +663,10 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
         order by asc(str(?template)) asc(str(?dt)) asc(str(?lang)) asc(str(?triplesmap)) asc(str(?fldmap))
         ) do
         {
-          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), "template", coalesce (cast ("termtype" as varchar), dflttt), iri_to_id ("dt"), "lang");
+          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), coalesce (__id2i ("termtype"), dflttt), "dt", __ro2sq ("lang"));
         }
     }
-  for (sparql define input:storage ""
+  for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype
     where { graph `iri(?:self.graph_iid)` {
             ?triplesmap a rr:TriplesMap .
@@ -673,9 +681,9 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:termType ?termtype . }
           } } ) do
     {
-      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), '{' || DB.DBA.R2RML_UNQUOTE_NAME ("col") || '}', coalesce (cast ("termtype" as varchar), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
+      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
     }
-  for (sparql define input:storage ""
+  for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype ?dt ?lang
     where { graph `iri(?:self.graph_iid)` {
             ?triplesmap a rr:TriplesMap .
@@ -685,8 +693,8 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:datatype ?dt . }
             optional { ?fldmap rr:language ?lang . } } } ) do
     {
-      if ((("termtype" is not null) and ("termtype" <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
-        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, iri_to_id ("triplesmap"), '{' || DB.DBA.R2RML_UNQUOTE_NAME ("col") || '}', coalesce ("termtype", 'http://www.w3.org/ns/r2rml#Literal'), iri_to_id ("dt"), "lang");
+      if ((("termtype" is not null) and (__id2i ("termtype") <> 'http://www.w3.org/ns/r2rml#Literal')) or ("dt" is not null) or ("lang" is not null))
+        self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#Literal'), "dt", __ro2sq ("lang"));
     }
 }
 ;
@@ -695,7 +703,7 @@ create method R2RML_MAKE_QM_IMPL_REL_PO (in tmap IRI_ID, in tmap2 IRI_ID, in tma
 {
   declare p_md5 varchar;
   declare where_is_opened integer;
-  -- dbg_obj_princ ('R2RML_MAKE_QM: cross from ', "tmap", ' to ', "tmap2" );
+  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_REL_PO: cross from ', "tmap", ' to ', "tmap2" );
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?constp, ?consto, ?ocol, ?otmpl, ?ott
     where { graph `iri(?:self.graph_iid)` {
@@ -713,7 +721,7 @@ create method R2RML_MAKE_QM_IMPL_REL_PO (in tmap IRI_ID, in tmap2 IRI_ID, in tma
           } }
     order by 1 2 3 4 5) do
     {
-      p_md5 := md5_box (vector (__rdf_strsqlval ("constp"), null, null));
+      p_md5 := md5_box (vector (tmap, __rdf_strsqlval ("constp"), null, null));
       if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
         {
           if (self.prev_p_md5 is not null)
@@ -808,7 +816,7 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
           } }
     order by 1 2 3 4 5 6 7 8 9) do
     {
-      p_md5 := md5_box (vector (__rdf_strsqlval("constp"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("pcol")), __rdf_strsqlval("ptmpl")));
+      p_md5 := md5_box (vector (tmap, __rdf_strsqlval("constp"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("pcol")), __rdf_strsqlval("ptmpl")));
       if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
         {
           if (self.prev_p_md5 is not null)
@@ -830,63 +838,167 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
 
 create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns any for DB.DBA.R2RML_MAP
 {
-  declare prev_g_md5, prev_s_md5 any;
+  declare prev_g_md5, prev_s_md5, childs any;
+  -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS(', needs_inner_g_field, '), graph_iid is ', self.graph_iid);
   -- For each combination of mapclasses and graph
   prev_g_md5 := prev_s_md5 := null;
   self.prev_p_md5 := null;
+
+-- There was this query here but it fails for unknown reason.
+--  for (sparql define input:storage "" define output:valmode "LONG" define 
+--    select ?constg, ?gcol, ?gtmpl, ?tmap, ?sfld, ?consts, ?scol, ?stmpl, ?stt, ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld
+--    where { graph `iri(?:self.graph_iid)` {
+--            ?tmap a rr:TriplesMap .
+--              { ?tmap rr:subject ?consts }
+--            union
+--              {
+--                ?tmap rr:subjectMap ?sfld .
+--                  { ?sfld rr:constant ?consts }
+--                union
+--                  { ?sfld rr:column ?scol }
+--                union
+--                  { ?sfld rr:template ?stmpl }
+--                optional { ?sfld rr:termType ?stt }
+--              }
+--              {
+--                ?sfld rr:class ?sclass .
+--              }
+--            union
+--              {
+--                ?tmap rr:predicateObjectMap ?pofld .
+--                  { ?pofld rr:predicate ?pconst }
+--                union
+--                  { ?pofld rr:predicateMap ?pfld }
+--                  { ?pofld rr:object ?oconst }
+--                union
+--                  { ?pofld rr:objectMap ?ofld
+--                    optional {
+--                        ?ofld rr:parentTriplesMap ?tmap2 .
+--                        ?tmap2 a rr:TriplesMap ;
+--                          rr:subjectMap ?tmap2sfld . }
+--                  }
+--              }
+--            optional {
+--                  { ?gcontainer rr:graph ?constg . }
+--                union
+--                  {
+--                    ?gcontainer rr:graphMap ?gfld .
+--                      { ?gfld rr:constant ?constg }
+--                    union
+--                      { ?gfld rr:column ?gcol }
+--                    union
+--                      { ?gfld rr:template ?gtmpl } } }
+--              filter (?gcontainer in (?sfld, ?pofld) || !(bound(?gcontainer)))
+--          } }
+--    order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
+--    {
+
+
+  vectorbld_init (childs);
   for (sparql define input:storage "" define output:valmode "LONG"
-    select ?constg, ?gcol, ?gtmpl, ?tmap, ?sfld, ?consts, ?scol, ?stmpl, ?stt, ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld
+    select ?tmap
     where { graph `iri(?:self.graph_iid)` {
-            ?tmap a rr:TriplesMap .
-              { ?tmap rr:subject ?consts }
-            union
-              {
-                ?tmap rr:subjectMap ?sfld .
-                  { ?sfld rr:constant ?consts }
-                union
-                  { ?sfld rr:column ?scol }
-                union
-                  { ?sfld rr:template ?stmpl }
-                optional { ?sfld rr:termType ?stt }
-              }
-              {
-                ?sfld rr:class ?sclass .
-              }
-            union
-              {
-                ?tmap rr:predicateObjectMap ?pofld .
-                  { ?pofld rr:predicate ?pconst }
-                union
-                  { ?pofld rr:predicateMap ?pfld }
-                  { ?pofld rr:object ?oconst }
-                union
-                  { ?pofld rr:objectMap ?ofld
-                    optional {
-                        ?ofld rr:parentTriplesMap ?tmap2 .
-                        ?tmap2 a rr:TriplesMap ;
-                          rr:subjectMap ?tmap2sfld . }
-                  }
-              }
-            optional {
-                  { ?gcontainer rr:graph ?constg . }
+            ?tmap a rr:TriplesMap . } } ) do
+    {
+      -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: tmap woudl be ', "tmap");
+      for (sparql define input:storage "" define output:valmode "LONG"
+        select ?sfld, ?consts, ?scol, ?stmpl, ?stt
+        where { graph `iri(?:self.graph_iid)` {
+                  { ?:"tmap" rr:subject ?consts }
                 union
                   {
-                    ?gcontainer rr:graphMap ?gfld .
-                      { ?gfld rr:constant ?constg }
+                    ?:"tmap" rr:subjectMap ?sfld .
+                      { ?sfld rr:constant ?consts }
                     union
-                      { ?gfld rr:column ?gcol }
+                      { ?sfld rr:column ?scol }
                     union
-                      { ?gfld rr:template ?gtmpl } }
-                filter (?gcontainer in (?sfld, ?pofld)) }
-          } }
-    order by 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15 16) do
+                      { ?sfld rr:template ?stmpl }
+                    optional { ?sfld rr:termType ?stt }
+                  } } } ) do
+        {
+          -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: tmap would be ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt");
+          for (sparql define input:storage "" define output:valmode "LONG"
+            select ?sclass, ?pofld, ?pconst, ?pfld, ?oconst, ?ofld, ?tmap2, ?tmap2sfld, ?constg, ?gcol, ?gtmpl
+            where { graph `iri(?:self.graph_iid)` {
+                      {
+                        ?:"sfld" rr:class ?sclass .
+                      }
+                    union
+                      {
+                        ?:"tmap" rr:predicateObjectMap ?pofld .
+                          { ?pofld rr:predicate ?pconst }
+                        union
+                          { ?pofld rr:predicateMap ?pfld }
+                          { ?pofld rr:object ?oconst }
+                        union
+                          { ?pofld rr:objectMap ?ofld
+                            optional {
+                                ?ofld rr:parentTriplesMap ?tmap2 .
+                                ?tmap2 a rr:TriplesMap ;
+                                  rr:subjectMap ?tmap2sfld . }
+                          }
+                      }
+                    optional {
+                          { ?gcontainer rr:graph ?constg . }
+                        union
+                          {
+                            ?gcontainer rr:graphMap ?gfld .
+                              { ?gfld rr:constant ?constg }
+                            union
+                              { ?gfld rr:column ?gcol }
+                            union
+                              { ?gfld rr:template ?gtmpl } } }
+                      filter (?gcontainer in (?:"sfld", ?pofld) || !(bound(?gcontainer)))
+                  } } ) do
+            {
+              -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: g would be ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
+              vectorbld_acc (childs, vector ("constg", "gcol", "gtmpl", "tmap", "sfld", "consts", "scol", "stmpl", "stt", "sclass", "pofld", "pconst", "pfld", "oconst", "ofld", "tmap2", "tmap2sfld"));
+            }
+        }
+    }
+  vectorbld_final (childs);
+  rowvector_obj_sort (childs, 15, 1);
+  rowvector_obj_sort (childs, 14, 1);
+  rowvector_obj_sort (childs, 13, 1);
+  rowvector_obj_sort (childs, 12, 1);
+  rowvector_obj_sort (childs, 11, 1);
+  rowvector_obj_sort (childs, 10, 1);
+  rowvector_obj_sort (childs, 9, 1);
+  rowvector_obj_sort (childs, 8, 1);
+  rowvector_obj_sort (childs, 7, 1);
+  rowvector_obj_sort (childs, 6, 1);
+  rowvector_obj_sort (childs, 5, 1);
+  rowvector_obj_sort (childs, 4, 1);
+  rowvector_obj_sort (childs, 3, 1);
+  rowvector_obj_sort (childs, 2, 1);
+  rowvector_obj_sort (childs, 1, 1);
+  rowvector_obj_sort (childs, 0, 1);
+  foreach (any tmap_case in childs) do
     {
+      declare "constg", "gcol", "gtmpl", "tmap", "sfld", "consts", "scol", "stmpl", "stt", "sclass", "pofld", "pconst", "pfld", "oconst", "ofld", "tmap2", "tmap2sfld" any;
       declare s_md5, p_md5 varchar;
-      -- dbg_obj_princ ('R2RML_MAKE_QM: g is ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
+      "constg" := tmap_case[0];
+      "gcol" := tmap_case[1];
+      "gtmpl" := tmap_case[2];
+      "tmap" := tmap_case[3];
+      "sfld" := tmap_case[4];
+      "consts" := tmap_case[5];
+      "scol" := tmap_case[6];
+      "stmpl" := tmap_case[7];
+      "stt" := tmap_case[8];
+      "sclass" := tmap_case[9];
+      "pofld" := tmap_case[10];
+      "pconst" := tmap_case[11];
+      "pfld" := tmap_case[12];
+      "oconst" := tmap_case[13];
+      "ofld" := tmap_case[14];
+      "tmap2" := tmap_case[15];
+      "tmap2sfld" := tmap_case[16];
+      -- dbg_obj_princ ('R2RML_MAKE_QM_IMPL_CHILDS: g is ', "constg", "gcol", "gtmpl", '; tmap is ', "tmap", '; s is ', "sfld", "consts", "scol", "stmpl", "stt", "sclass", '; po is ', "pconst", "pfld", ' and ', "oconst", "ofld");
       if (needs_inner_g_field)
         {
           declare g_md5 any;
-          g_md5 := md5_box (vector (coalesce ("constg", self.default_constg), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("gcol")), __rdf_strsqlval("gtmpl")));
+          g_md5 := md5_box (vector ("tmap", coalesce ("constg", self.default_constg), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("gcol")), __rdf_strsqlval("gtmpl")));
           if (prev_g_md5 is null or prev_g_md5 <> g_md5)
             {
               if (prev_g_md5 is not null)
@@ -904,7 +1016,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
               prev_g_md5 := g_md5;
             }
         }
-      s_md5 := md5_box (vector (__rdf_strsqlval("consts"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("scol")), __rdf_strsqlval("stmpl"), __rdf_strsqlval("stt")));
+      s_md5 := md5_box (vector ("tmap", __rdf_strsqlval("consts"), DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("scol")), __rdf_strsqlval("stmpl"), __rdf_strsqlval("stt")));
       if (prev_s_md5 is null or prev_s_md5 <> s_md5)
         {
           if (prev_s_md5 is not null)
@@ -922,7 +1034,7 @@ create method R2RML_MAKE_QM_IMPL_CHILDS (in needs_inner_g_field integer) returns
         }
       if ("sclass" is not null)
         {
-          p_md5 := 'rdf:type';
+          p_md5 := md5_box (vector ("tmap", __bft ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type', 1), null, null));
           if (self.prev_p_md5 is null or self.prev_p_md5 <> p_md5)
             {
               if (self.prev_p_md5 is not null)
@@ -1012,7 +1124,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
               { ?gfld rr:column ?c }
             union { ?gfld rr:template ?t }
             filter (?gcontainer in (?smap, ?pomap)) } } );
---  -- dbg_obj_princ ('const_graph_count = ', const_graph_count, ', var_graph_count = ', var_graph_count);
+  -- dbg_obj_princ ('const_graph_count = ', const_graph_count, ', var_graph_count = ', var_graph_count);
   http ('alter quad storage ' || self.R2RML_IRI_ID_AS_QNAME (storage_iid) || '\n', self.codegen_ses);
   iter := self.triplesmap_metas_cache;
   for (dict_iter_rewind (iter); dict_iter_next (iter, iter_tmap, iter_metas); )

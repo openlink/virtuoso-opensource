@@ -1,28 +1,27 @@
 /*
- *  $Id$
+ *  $Id: sparqlwords.gperf,v 1.1.4.11 2013/02/27 10:06:00 ivan Exp $
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
- *  This project is free software; you can redistribute it and/or modify it
+ *  This project is free softwareyou can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
- *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *  Free Software Foundationonly version 2 of the License, dated June 1991.
  *
  *  This program is distributed in the hope that it will be useful, but
- *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  WITHOUT ANY WARRANTYwithout even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  *  General Public License for more details.
  *
  *  You should have received a copy of the GNU General Public License along
- *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  with this programif not, write to the Free Software Foundation, Inc.,
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
 
 struct sparql_keyword { char *kwd; int token; int subtype; };
-
 %%
 "ABS",			SPARQL_BIF		, SPAR_BIF_ABS
 "ADD",			ADD_L			, 0
@@ -42,6 +41,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "BNODE",		SPARQL_BIF		, SPAR_BIF_BNODE
 "BOUND",		BOUND_L			, 0
 "BY",			BY_L			, 0
+"CASE",			CASE_L			, 0
 "CLASS",		CLASS_L			, 0
 "CLEAR",		CLEAR_L			, 0
 "CEIL",			SPARQL_BIF		, SPAR_BIF_CEIL
@@ -52,6 +52,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "COPY",			COPY_L			, 0
 "COUNT",		COUNT_L			, 0
 "CREATE",		CREATE_L		, 0
+"CUBE",			CUBE_L			, 0
 "DATA",			DATA_L			, 0
 "DATATYPE",		DATATYPE_L		, 0
 "DAY",			SPARQL_BIF		, SPAR_BIF_DAY
@@ -65,7 +66,11 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "DETACH",		DETACH_L		, 0
 "DISTINCT",		DISTINCT_L		, 0
 "DROP",			DROP_L			, 0
+"EBV",			SPARQL_BIF		, SPAR_BIF_EBV
+"EBV_INT",		SPARQL_BIF		, SPAR_BIF_EBV_INT
+"ELSE",			ELSE_L			, 0
 "ENCODE_FOR_URI",	SPARQL_BIF		, SPAR_BIF_ENCODE_FOR_URI
+"END",			END_L			, 0
 "EXCLUSIVE",		EXCLUSIVE_L		, 0
 "EXISTS",		EXISTS_L		, 0
 "FALSE",		false_L			, 0
@@ -74,9 +79,11 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "FROM",			FROM_L			, 0
 "FUNCTION",		FUNCTION_L		, 0
 "HOURS",		SPARQL_BIF		, SPAR_BIF_HOURS
+"GEO",			GEO_L			, 0
 "GRAPH",		GRAPH_L			, 0
 "GROUP",		GROUP_L			, 0
 "GROUP_CONCAT",		GROUP_CONCAT_L		, 0
+"GROUPING",		GROUPING_L		, 0
 "HAVING",		HAVING_L		, 0
 "IF",			SPARQL_BIF		, SPAR_BIF_IF
 "IFP",			IFP_L			, 0
@@ -128,14 +135,17 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "OPTION",		OPTION_L		, 0
 "OR",			_BAR_BAR		, 0
 "ORDER",		ORDER_L			, 0
+"PRECISION",		PRECISION_L		, 0
 "PREDICATE",		PREDICATE_L		, 0
 "PREFIX",		PREFIX_L		, 0
 "QUAD",			QUAD_L			, 0
 "RAND",			SPARQL_BIF		, SPAR_BIF_RAND
 "REGEX",		SPARQL_BIF		, SPAR_BIF_REGEX
 "REDUCED",		REDUCED_L		, 0
+"REMOVE_UNICODE3_ACCENTS",	SPARQL_BIF	, SPAR_BIF_REMOVE_UNICODE3_ACCENTS
 "REPLACE",		SPARQL_BIF		, SPAR_BIF_REPLACE
 "RETURNS",		RETURNS_L		, 0
+"ROLLUP",		ROLLUP_L		, 0
 "ROUND",		SPARQL_BIF		, SPAR_BIF_ROUND
 "SCORE",		SCORE_L			, 0
 "SCORE_LIMIT",		SCORE_LIMIT_L		, 0
@@ -149,6 +159,7 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SECONDS",		SPARQL_BIF		, SPAR_BIF_SECONDS
 "SELECT",		SELECT_L		, 0
 "SERVICE",		SERVICE_L		, 0
+"SETS",			SETS_L			, 0
 "SHA1",			SPARQL_BIF		, SPAR_BIF_SHA1
 "SHA224",		SPARQL_BIF		, SPAR_BIF_SHA224
 "SHA256",		SPARQL_BIF		, SPAR_BIF_SHA256
@@ -172,10 +183,13 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "SUBJECT",		SUBJECT_L		, 0
 "SUBSTR",		SPARQL_BIF		, SPAR_BIF_SUBSTR
 "SUM",			SUM_L			, 0
+"TABID",		TABID_L			, 0
 "TABLE_OPTION",		TABLE_OPTION_L		, 0
 "TEXT",			TEXT_L			, 0
+"THEN",			THEN_L			, 0
 "TIMEZONE",		SPARQL_BIF		, SPAR_BIF_TIMEZONE
 "TO",			TO_L			, 0
+"TOP",			TOP_L			, 0
 "TRANSITIVE",		TRANSITIVE_L		, 0
 "TRUE",			true_L			, 0
 "TZ",			SPARQL_BIF		, SPAR_BIF_TZ
@@ -197,11 +211,12 @@ struct sparql_keyword { char *kwd; int token; int subtype; };
 "UNBOUND",		UNBOUND_L		, 0
 "UNDEF",		UNDEF_L			, 0
 "UNION",		UNION_L			, 0
-"URI",			SPARQL_BIF		, SPAR_BIF_URI
+"URI",			IRI_L			, 0
 "USING",		USING_L			, 0
 "UUID",			SPARQL_BIF		, SPAR_BIF_UUID
 "VALID",		SPARQL_BIF		, SPAR_BIF_VALID
 "VALUES",		VALUES_L		, 0
+"WHEN",			WHEN_L			, 0
 "WHERE",		WHERE_L			, 0
 "WITH",			WITH_L			, 0
 "XML",			XML_L			, 0

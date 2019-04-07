@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,7 +36,7 @@ operations on an initial seed, all intermediate results should be
 unsigned and 32-bits, even if the platform is 64 bit, to have reproducible
 errors */
 typedef uint32 id_hashed_key_t;
-#define ID_HASHED_KEY_MASK 		0xFFFffff
+#define ID_HASHED_KEY_MASK 		0x7FFFffff
 #ifdef DEBUG
 #define ID_HASHED_KEY_CHECK(i) \
   do { \
@@ -45,6 +45,8 @@ typedef uint32 id_hashed_key_t;
 #else
 #define ID_HASHED_KEY_CHECK(i)
 #endif
+
+#define ROL(h) ((h << 1) | ((h >> 31) & 1))
 
 typedef id_hashed_key_t (*hash_func_t) (caddr_t p_data);
 typedef int (*cmp_func_t) (caddr_t d1, caddr_t d2);
@@ -72,14 +74,16 @@ struct id_hash_s
     long		ht_deletes;
     long		ht_overflows;		/*!< Number of bucket overflows */
     uint32      	ht_count;
-    int         	ht_rehash_threshold;
+    short         	ht_rehash_threshold;
+    short               ht_tlsf_id;
     int			ht_dict_refctr;		/*!< Number of references to dictionary, if the hastable is used as a box */
     long		ht_dict_version;	/*!< Version of dictionary, to track parallel access */
     size_t 		ht_dict_mem_in_use;	/*!< Approximate size of dictonary in memory. Each stored item adds length of key + lenght of the data + size of hash table entry. That is filled only if \c ht_dict_max_mem_in_use is not zero */
     size_t 		ht_dict_max_entries;	/*!< Maximum number of entries kept in dictonary */
     size_t 		ht_dict_max_mem_in_use;	/*!< Memory size limit to prevent exausting of the physical memory */
-    dk_mutex_t *	ht_mutex;		/*!< Optional mutex, esp. popular when this is a dictionary propagated across threads of async queue. The mutex is NOT owned by the hashtable box! */
+    rwlock_t *		ht_rwlock;		/*!< Optional rwlock, esp. popular when this is a dictionary propagated across threads of async queue. The rwlock is NOT owned by the hashtable box! */
     id_hash_free_t	ht_free_hook;
+    void * 		ht_mp;
 #ifdef RH_TRACE
     int64		ht_rem_k;
     char *		ht_rem_file;
@@ -87,8 +91,13 @@ struct id_hash_s
 #endif
 };
 
+#define HT_RDLOCK(ht) rwlock_rdlock ((ht)->ht_rwlock)
+#define HT_WRLOCK(ht) rwlock_wrlock ((ht)->ht_rwlock)
+#define HT_UNLOCK(ht) rwlock_unlock ((ht)->ht_rwlock)
 
-
+#define HT_RDLOCK_COND(ht,locked) (((locked) = (NULL != (ht)->ht_rwlock)) ? (rwlock_rdlock ((ht)->ht_rwlock), 1) : 0)
+#define HT_WRLOCK_COND(ht,locked) (((locked) = (NULL != (ht)->ht_rwlock)) ? (rwlock_wrlock ((ht)->ht_rwlock), 1) : 0)
+#define HT_UNLOCK_COND(ht,locked) ((locked) && (rwlock_unlock ((ht)->ht_rwlock), 1))
 
 typedef struct id_hash_iterator_s
 {
@@ -98,6 +107,12 @@ typedef struct id_hash_iterator_s
   long 			hit_dict_version;
 } id_hash_iterator_t;
 
+extern caddr_t dict_bitor_or_put_impl (id_hash_iterator_t *hit, caddr_t key, boxint bits_to_set, int signal_unsafe_args);
+extern caddr_t dict_dec_or_remove_impl (id_hash_iterator_t *hit, caddr_t key, boxint dec_val, int signal_unsafe_args);
+extern caddr_t dict_inc_or_put_impl (id_hash_iterator_t *hit, caddr_t key, boxint inc_val, int signal_unsafe_args);
+extern caddr_t dict_put_impl (id_hash_iterator_t *hit, caddr_t key, caddr_t val, int signal_unsafe_args);
+extern caddr_t dict_remove_impl (id_hash_iterator_t *hit, caddr_t key);
+extern caddr_t dict_zap_impl (id_hash_iterator_t *hit, ptrlong destructive, int signal_unsafe_args);
 
 /* The structure of the bucket array is this:
    char key [key_length bytes]

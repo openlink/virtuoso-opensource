@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2009-2013 OpenLink Software
+ *  Copyright (C) 2009-2019 OpenLink Software
  *
  *  See LICENSE file for details.
  *
@@ -658,7 +658,7 @@ var QueryExec = function(optObj) {
 
 		OAT.Dom.clear(ctr);
 
-		if (iSPARQL.Settings.pivotInstalled) 
+		if (iSPARQL.Settings.pivotInstalled || iSPARQL.Settings.html5PivotInstalled) 
 			self.makePivotPermalink(ctr);
 		
 	var nloca = document.location;
@@ -918,6 +918,11 @@ var QueryExec = function(optObj) {
 		xparm += "&timeout=" + (opts.timeout ? opts.timeout : "");
 		xparm += "&default-graph-uri=" + (opts.defaultGraph ? encodeURIComponent(opts.defaultGraph) : "");
 		xparm += "&format=text%2Fcxml";
+
+		if (iSPARQL.Settings.html5PivotInstalled)
+			a.href = document.location.protocol + '//' + document.location.host + 
+				'/HtmlPivotViewer/' + "?url=" + encodeURIComponent(xparm);
+		else
 	a.href = document.location.protocol + '//' + document.location.host + 
 	    '/PivotViewer/' + "?url=" + encodeURIComponent(xparm);
 	a.target = "_blank";
@@ -1363,8 +1368,10 @@ var QueryExec = function(optObj) {
 		if (data.firstChild.tagName == 'sparql' && 
 		    data.firstChild.namespaceURI == 'http://www.w3.org/2005/sparql-results#') {		    
 
-					if (iSPARQL.Settings.pivotInstalled)
-						OAT.Dom.append ([item.dom.plink_c, self.makePivotPermalink()]);
+					if (iSPARQL.Settings.pivotInstalled || iSPARQL.Settings.html5PivotInstalled) {
+						OAT.Dom.append ([item.dom.plnk_c, self.makePivotPermalink()]);
+						OAT.Dom.append ([item.dom.plnk_c, OAT.Dom.text(" ")]);
+                                        }
 
 					OAT.Dom.append ([item.dom.plnk_c, self.makeExecPermalink ()]);
 

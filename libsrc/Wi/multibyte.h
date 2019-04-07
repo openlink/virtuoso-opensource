@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,19 +49,30 @@ typedef struct wcharset_s {
 /* size_t virt_mbsrtowcs (wchar_t *dst, unsigned char **src, size_t len, virt_mbstate_t *ps);
 size_t virt_wcsrtombs (unsigned char *dst, wchar_t **src, size_t len, virt_mbstate_t *ps); */
 
-wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
-wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
-wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wcschr (const wchar_t *__wcs, wchar_t __wc);
+extern const wchar_t *virt_wcsrchr (const wchar_t *__wcs, wchar_t __wc);
+extern const wchar_t *virt_wcsstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wcsrstr (const wchar_t *__wcs, const wchar_t *__wc);
+extern const wchar_t *virt_wmemmem (const wchar_t *haystack, size_t haystacklen, const wchar_t *needle, size_t needlelen);
 size_t virt_wcslen (const wchar_t *__wcs);
-int virt_wcsncmp (const wchar_t *from, const wchar_t *to, size_t len);
+size_t virt_ucs2len (const uint16 *__wcs);
+int virt_wcsncmp (const wchar_t *wcs1, const wchar_t *wcs2, size_t len);
+#define virt_wmemcmp(ptr1,ptr2,num) memcmp ((ptr1), (ptr2), (num) * sizeof(wchar_t))
 
-caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
-caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len, dtp_t dtp);
+
+caddr_t box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len);
+caddr_t t_box_utf8_as_wide_char (ccaddr_t _utf8, caddr_t _wide_dest, size_t utf8_len, size_t max_wide_len);
 extern caddr_t DBG_NAME (box_wide_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp);
 #ifdef MALLOC_DEBUG
 #define box_wide_as_utf8_char(w,l,d) dbg_box_wide_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
 #endif
+
+extern caddr_t DBG_NAME (box_utf16_as_utf8_char) (DBG_PARAMS ccaddr_t _wide, size_t wide_len, dtp_t dtp);
+#ifdef MALLOC_DEBUG
+#define box_utf16_as_utf8_char(w,l,d) dbg_box_utf16_as_utf8_char (__FILE__,__LINE__,(w),(l),(d))
+#endif
+
+
 extern caddr_t mp_box_wide_as_utf8_char (mem_pool_t * mp, ccaddr_t _wide, size_t wide_len, dtp_t dtp);
 wchar_t CHAR_TO_WCHAR (unsigned char uchar, wcharset_t *charset);
 unsigned char WCHAR_TO_CHAR (wchar_t wchar, wcharset_t *charset);
@@ -85,9 +96,21 @@ void wide_charset_free (wcharset_t *charset);
 
 size_t cli_wide_to_narrow (wcharset_t * charset, int flags, const wchar_t *src, size_t max_wides,
     unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_utf16_to_narrow (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_wide_to_utf16 (int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len);
+size_t cli_utf16_to_wide (int flags, const char *src, size_t max_len,
+    wchar_t *dest, size_t max_wides);
+
 size_t cli_narrow_to_wide (wcharset_t *charset, int flags, const unsigned char *src, size_t max_wides,
     wchar_t *dest, size_t max_len);
+size_t cli_narrow_to_utf16 (wcharset_t * charset, int flags, const unsigned char *src, size_t max_len,
+    uint16 *dest, size_t max_wides);
+
 size_t cli_wide_to_escaped (wcharset_t *charset, int flags, const wchar_t *src, size_t max_wides,
+    unsigned char *dest, size_t max_len, char *default_char, int *default_used);
+size_t cli_utf16_to_escaped (wcharset_t * charset, int flags, const uint16 *src, size_t max_wides,
     unsigned char *dest, size_t max_len, char *default_char, int *default_used);
 
 char *cli_box_wide_to_narrow (const wchar_t * in);
@@ -100,9 +123,6 @@ wcharset_t *sch_name_to_charset (const char *name);
 size_t wide_as_utf8_len (caddr_t _wide);
 caddr_t box_wide_string (const wchar_t *wstr);
 caddr_t box_wide_nchars (const wchar_t *wstr, size_t len);
-
-extern wcharset_t *charset_native_for_box (ccaddr_t box, int expected_bf_if_zero);
-
 
 #ifdef UTF8_DEBUG
 #define ASSERT_BOX_ENC_MATCHES_BF(box,expected_bf_if_zero) assert_box_enc_matches_bf (__FILE__, __LINE__, (box), (expected_bf_if_zero))

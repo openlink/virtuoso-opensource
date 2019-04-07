@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -33,13 +33,19 @@ endif
 # ----------------------------------------------------------------------
 #  Test loading of vad packages by creating demo.db
 # ----------------------------------------------------------------------
-TESTS=mkdemo.sh
-TESTS_ENVIRONMENT=PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
-	PORT=$(PORT) \
+#TESTS=mkdemo.sh
+TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
+	HOST=localhost \
 	HTMLDOC="$(HTMLDOC)" \
+	MAKE=$(MAKE) \
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
+	PORT=$(PORT) \
 	prefix="$(prefix)" \
-	HOST=localhost 
+	TOP="$(TOP)"
+
+check-local:
+	env $(TESTS_ENVIRONMENT) $(SHELL) ./mkdemo.sh
 
 
 # ----------------------------------------------------------------------
@@ -144,6 +150,15 @@ endif
 if !WITH_RUBY
 REM_RUBY_C=;
 endif
+if !WITH_PROJ4
+REM_PROJ4_C=;
+endif
+if !WITH_GEOS
+REM_GEOS_C=;
+endif
+if !WITH_SHAPEFILEIO
+REM_SHAPEFILEIO_C=;
+endif
 
 do_subst = \
 	sed -e 's,[@]PREFIX[@],$(prefix),g' \
@@ -159,7 +174,10 @@ do_subst = \
 	    -e 's,[@]REM_PHP5[@],$(REM_PHP5_C),g' \
 	    -e 's,[@]REM_PYTHON[@],$(REM_PYTHON_C),g' \
 	    -e 's,[@]REM_PERL[@],$(REM_PERL_C),g' \
-	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g'
+	    -e 's,[@]REM_RUBY[@],$(REM_RUBY_C),g' \
+	    -e 's,[@]REM_PROJ4[@],$(REM_PROJ4_C),g' \
+	    -e 's,[@]REM_GEOS[@],$(REM_GEOS_C),g' \
+	    -e 's,[@]REM_SHAPEFILEIO[@],$(REM_SHAPEFILEIO_C),g'
 
 install-data-local:
 	$(do_subst) < "$(srcdir)/install_ini.sh.in" > "install_ini.sh"

@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,21 +22,25 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
+-- drop table DB.DBA.RDF_VOID_GRAPH;
+-- drop table DB.DBA.RDF_VOID_GRAPH_MEMBER;
+
 create table DB.DBA.RDF_VOID_GRAPH (
-  RVG_IID IRI_ID not null primary key,
+  RVG_IID IRI_ID_8 not null primary key,
   RVG_IRI varchar not null,
+  RVG_VOID_IRI varchar null,
   RVG_COMMENT varchar
   )
-alter index RDF_VOID_GRAPH on DB.DBA.RDF_VOID_GRAPH partition cluster replicated
-create index RDF_VOID_GRAPH_IRI on DB.DBA.RDF_VOID_GRAPH (RVG_IRI) partition cluster replicated
+alter index RDF_VOID_GRAPH on DB.DBA.RDF_VOID_GRAPH partition (RVG_IID int (0hexffff00))
+create index RDF_VOID_GRAPH_IRI on DB.DBA.RDF_VOID_GRAPH (RVG_IRI) partition (RVG_IRI varchar)
 ;
 
 create table DB.DBA.RDF_VOID_GRAPH_MEMBER (
-  RVGM_GROUP_IID IRI_ID not null,
-  RVGM_MEMBER_IID IRI_ID not null,
+  RVGM_GROUP_IID IRI_ID_8 not null,
+  RVGM_MEMBER_IID IRI_ID_8 not null,
   primary key (RVGM_GROUP_IID, RVGM_MEMBER_IID)
   )
-alter index RDF_VOID_GRAPH_MEMBER on DB.DBA.RDF_VOID_GRAPH_MEMBER partition cluster replicated
+alter index RDF_VOID_GRAPH_MEMBER on DB.DBA.RDF_VOID_GRAPH_MEMBER partition (RVGM_GROUP_IID int (0hexffff00))
 ;
 
 
@@ -132,7 +136,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
 	   ns_ctr := ns_ctr + 1;
 	   RDF_VOID_GEN_1 (id_to_iri (RVGM_MEMBER_IID), null, sprintf ('ns%d', ns_ctr),
 	       target_graph || rtrim (id_to_iri (RVGM_MEMBER_IID), '/#') || '/',
-	       ses, grp_cnt, 1, details);
+	       ses, grp_cnt, 1);
 	   http (sprintf ('ns%d:Dataset void:subset ns%d:Dataset . \n', gr_pref_ctr, ns_ctr), ses);
          }
        http (sprintf ('ns%d:Dataset void:statItem ns%d:Stat . \n', gr_pref_ctr, gr_pref_ctr), ses);
@@ -142,7 +146,7 @@ create procedure RDF_VOID_ALL_GEN (in target_graph varchar, in details int := 0)
        total := total + grp_cnt;
     }
   http (sprintf ('ns1:Dataset void:statItem ns1:Stat . \n'), ses);
-  http (sprintf ('ns1:Stat a scovo:Item ; \n rdf:value %d ; \n', total), ses);
+  http (sprintf ('ns1:Stat a scovo:Item ; \n rdf:value %ld ; \n', total), ses);
   http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
   http (sprintf ('\n'), ses);
   return ses;
@@ -154,8 +158,8 @@ create procedure RDF_VOID_NS (inout ses any)
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
-  http ('@prefix dc: <http://purl.org/dc/elements/1.1/> .\n', ses);
-  http ('@prefix scovo: <http://purl.org/NET/scovo#> .\n', ses);
+  --http ('@prefix dc: <http://purl.org/dc/elements/1.1/> .\n', ses);
+  --http ('@prefix scovo: <http://purl.org/NET/scovo#> .\n', ses);
   http ('@prefix void: <http://rdfs.org/ns/void#> .\n', ses);
 }
 ;
@@ -168,59 +172,134 @@ create procedure RDF_VOID_GEN (in graph varchar, in gr_name varchar := null)
   ses := string_output (http_strses_memory_size ());
   RDF_VOID_NS (ses);
   http (sprintf ('\n'), ses);
-  RDF_VOID_GEN_1 (graph, gr_name, 'this', '', ses, dummy, 1, 1);
+  RDF_VOID_GEN_1 (graph, gr_name, 'this', '', ses, dummy, 1);
   return ses;
 }
 ;
 
-create procedure RDF_VOID_DIST_O_SRV (in graph any)
+create function RDF_VOID_CHECK_GRAPH (in graph varchar) returns float
 {
-  declare cnt int;
-  cnt := (select count(distinct O) from DB.DBA.RDF_QUAD table option (no cluster) where G = graph);
-  return cnt;
+  --pl_debug+
+  declare _total_quad_count_estimate, _graph_quad_count_estimate int;
+  _total_quad_count_estimate := (select count(*) from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only));
+  _graph_quad_count_estimate := (select count(*) from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = __i2id(graph));
+  return cast(_graph_quad_count_estimate as float) / cast(_total_quad_count_estimate as float) * 100;
 }
 ;
 
-create procedure RDF_VOID_DIST_O (in graph varchar)
-{
-  declare daq, r any;
-  declare s int;
-  daq := daq (0);
-  daq_call (daq, 'DB.DBA.SYS_COLS', 'SYS_COLS_BY_NAME', 'DB.DBA.RDF_VOID_DIST_O_SRV', vector (iri_to_id (graph)), 1);
-  while (r:= daq_next (daq))
-    {
-      if (length (r) >2 and isarray (r[2]) and r[2][0] = 3)
+create procedure RDF_VOID_GEN_IMPL_SMALL_GRAPH (in graph varchar,
+                                                out cnt int, out cnt_subj int, out cnt_obj int,
+                                                out n_classes int, out n_entities int, out n_properties int)
 	{
-	  declare err any;
-	  err := r[2][1];
-	  if (isarray (err))
-	    signal (err[2], err[2]);
-	}
-      s := s + r[2][1];
+  --pl_debug+
+  declare exit handler for sqlstate '*' { goto end1; };
+  cnt := 0;
+  cnt_subj := 0;
+  cnt_obj := 0;
+  n_classes := 0;
+  n_entities := 0;
+  n_properties := 0;
+
+  cnt := (select count(*)
+	  from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)
+	  where G = __i2id(graph));
+
+  cnt_subj := (select count(distinct S)
+               from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)
+               where G = __i2id (graph));
+
+  cnt_obj  := (select count(distinct O)
+	       from RDF_QUAD table option (index RDF_QUAD_GS)
+	       where G = __i2id (graph));
+
+  -- number of classes
+  n_classes := (select count (distinct O)
+                from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS)
+                where G = __i2id (graph)
+                  and P = __i2id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'));
+
+  -- number of entities
+  n_entities := (select count (distinct S)
+                 from DB.DBA.RDF_QUAD table option (index RDF_QUAD)
+                 where G = __i2id (graph)
+                   and P = __i2id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'));
+
+  -- number of properties
+  n_properties := (select count (distinct P)
+                   from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)
+                   where G = __i2id (graph));
+end1:;
     }
-  return s;
+;
+
+create procedure RDF_VOID_GEN_IMPL_LARGE_GRAPH (in graph varchar,
+                                                out cnt int, out cnt_subj int, out cnt_obj int,
+                                                out n_classes int, out n_entities int, out n_properties int)
+{
+  --pl_debug+
+  declare exit handler for sqlstate '*' { goto end1; };
+  cnt := 0;
+  cnt_subj := 0;
+  cnt_obj := 0;
+  n_classes := 0;
+  n_entities := 0;
+  n_properties := 0;
+
+  cnt := (select count(*)
+          from DB.DBA.RDF_QUAD table option (index RDF_QUAD)
+          where G = __i2id (graph));
+
+  cnt_subj := (select count(distinct S)
+               from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS)
+               where G = __i2id (graph));
+
+  cnt_obj  := (select count (distinct O)
+               from RDF_QUAD table option (index RDF_QUAD_POGS)
+               where G = __i2id (graph));
+
+  -- number of classes
+  n_classes := (select count (distinct O)
+                from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS)
+                where G = __i2id (graph)
+                  and P = __i2id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'));
+
+  -- number of entities
+  n_entities := (select count (distinct S)
+                 from DB.DBA.RDF_QUAD table option (index RDF_QUAD)
+                 where G = __i2id (graph)
+                   and P = __i2id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type'));
+
+  -- number of properties
+  n_properties := (select count (distinct P)
+                   from DB.DBA.RDF_QUAD table option (index RDF_QUAD)
+                   where G = __i2id (graph));
+
+end1:;
 }
 ;
 
 create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
 				in ns_pref varchar := 'this', in this_ns varchar := '',
-				inout ses any, inout total int, in ep int := 1, in details int := 1)
+        inout ses any, inout total int, in ep int := 1)
 {
-  declare _cnt, _cnt_subj, _cnt_obj, has_links int;
+  --pl_debug+
+  declare _cnt, _cnt_subj, _cnt_obj, _n_classes, _n_entities, _n_properties, has_links int;
   declare preds, dict any;
   declare pref, name, pred, host varchar;
   declare nam, inx any;
 
-  preds := vector ('owl:sameAs', 'rdfs:seeAlso');
   host := null;
   if (is_http_ctx ())
     host := http_request_header(http_request_header (), 'Host', null, null);
   if (host is null)
     host := virtuoso_ini_item_value ('URIQA','DefaultHost');
-  -- if (host is null)
-  --  host := 'lod.openlinksw.com';
 
-  _cnt := (sparql define input:storage "" select count(*) where { graph `iri (?:graph)` { ?s ?p ?o . } });
+  -- check if this is a small or large graph.
+  if (RDF_VOID_CHECK_GRAPH (graph) < 1)
+    RDF_VOID_GEN_IMPL_SMALL_GRAPH (graph, _cnt, _cnt_subj, _cnt_obj, _n_classes, _n_entities, _n_properties);
+  else
+    RDF_VOID_GEN_IMPL_LARGE_GRAPH (graph, _cnt, _cnt_subj, _cnt_obj, _n_classes, _n_entities, _n_properties);
+
   total := total + _cnt;
 
   http (sprintf ('@prefix %s: <%s> .\n', ns_pref, this_ns), ses); -- put NS prefix here
@@ -233,106 +312,158 @@ create procedure RDF_VOID_GEN_1 (in graph varchar, in gr_name varchar := null,
     http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
   if (ep)
     http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
-  http (sprintf (' void:statItem %s:Stat ; \n', ns_pref), ses);
 
-  http (sprintf (' void:statItem %s:DistinctSubjectsStat ; \n', ns_pref), ses);
-  http (sprintf (' void:statItem %s:DistinctObjectsStat . \n', ns_pref), ses);
-
-  http (sprintf ('%s:Stat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt), ses);
-  http (sprintf (' scovo:dimension void:numOfTriples . \n'), ses);
-
-  if (details)
-  {
-    declare exit handler for sqlstate '*' { goto end1; };
-     _cnt_subj := (select count(distinct S) from DB.DBA.RDF_QUAD where G = iri_to_id (graph));
-     http (sprintf ('%s:DistinctSubjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_subj), ses);
-     http (sprintf (' scovo:dimension void:numberOfDistinctSubjects . \n'), ses);
-    end1:;
-  }
-  if (details)
-  {
-    declare exit handler for sqlstate '*' { goto end2; };
-    if (1 <> sys_stat ('cl_run_local_only'))
-      {
-	_cnt_obj  := RDF_VOID_DIST_O (graph);
-      }
-    else
-      {
-	_cnt_obj  := (sparql define input:storage "" select count(distinct (?o)) where { graph `iri (?:graph)` { ?s ?p ?o . filter (isIRI (?o)) } });
-      }
-    http (sprintf ('%s:DistinctObjectsStat a scovo:Item ; \n rdf:value %d ; \n', ns_pref, _cnt_obj), ses);
-    http (sprintf (' scovo:dimension void:numberOfDistinctObjects . \n'), ses);
-    end2:;
-  }
+  http (sprintf (' void:triples %ld ; \n', _cnt), ses);
+  http (sprintf (' void:classes %ld ; \n', _n_classes), ses);
+  http (sprintf (' void:entities %ld ; \n', _n_entities), ses);
+  http (sprintf (' void:distinctSubjects %ld ; \n', _cnt_subj), ses);
+  http (sprintf (' void:properties %ld ; \n', _n_properties), ses);
+  http (sprintf (' void:distinctObjects %ld . \n', _cnt_obj), ses);
 
   http (sprintf ('\n'), ses);
 
-  has_links := 0;
-  dict := dict_new ();
+  preds := vector ('owl:sameAs', 'rdfs:seeAlso');
+  foreach (any rel in preds) do
+  {
+      RDF_VOID_SPLIT_IRI (rel, pref, name);
+      pred := __xml_get_ns_uri (pref, 2) || name;
+
+      _cnt := (sparql
+               define input:storage ""
+               select count(*)
+               where { graph `iri (?:graph)`
+                       { ?s `iri (?:pred)` ?o .
+                         filter (?o != iri (?:graph))
+  }
+                      });
+      if (_cnt > 0)
+  {
+        http (sprintf ('%s:%sLinks a void:Linkset ;\n', ns_pref, name), ses);
+        http (sprintf (' void:inDataset %s:Dataset ; \n', ns_pref), ses);
+        http (sprintf (' void:triples %ld ; \n', _cnt), ses);
+        http (sprintf (' void:linkPredicate %s . \n', rel), ses);
+        http (sprintf ('\n'), ses);
+      }
+    }
+
+  return ses;
+  }
+;
+
+
+
+create procedure void_ins (inout gs any, inout iris any, in fill int)
+  {
+  if (fill < 10000)
+      {
+    iris := subseq (iris, 0, fill);
+    gs := subseq (gs, 0, fill);
+      }
+  set non_txn_insert = 1;
+  for vectored (in g iri_id_8 := gs, in iri varchar := iris)
+      {
+		   insert into DB.DBA.RDF_VOID_GRAPH ( RVG_IID, RVG_IRI ) values (g, iri);
+      }
+  }
+;
+
+create procedure void_distinct_graphs ()
+{
+  declare g_iid, prev_g iri_id;
+  declare iri varchar;
+  declare gs, iris any;
+  declare fill int;
+  fill := 0;
+ iris := make_array (10000, 'any');
+ gs := make_array (10000, 'any');
+  declare cr cursor for select G, __id2i (g) from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only);
+  whenever not found goto nf;
+  open cr;
+  while (1)
+      {
+      fetch cr into g_iid, iri;
+      if (g_iid <> prev_g)
+	{
+	  gs[fill] := g_iid;
+	  iris[fill] := iri;
+	fill := fill + 1;
+	prev_g := g_iid;
+	  if (fill >= 10000)
+	    {
+	      void_ins (gs, iris, fill);
+	    fill := 0;
+	    }
+      }
+  }
+nf:
+  close cr;
+  void_ins (gs, iris, fill);
+}
+;
+
+create procedure RDF_DCAT_GEN (in graph varchar,
+                               in gr_name varchar := null,
+                               in ns_pref varchar := 'this',
+                               in this_ns varchar := '',
+                               inout ses any)
+{
+  --pl_debug+
+  declare _cnt, _cnt_subj, _cnt_obj, _n_classes, _n_entities, _n_properties, has_links int;
+  declare preds, dict any;
+  declare pref, name, pred, host varchar;
+  declare nam, inx any;
+
+  host := null;
+  if (is_http_ctx ())
+    host := http_request_header(http_request_header (), 'Host', null, null);
+  if (host is null)
+    host := virtuoso_ini_item_value ('URIQA','DefaultHost');
+
+  http (sprintf ('@prefix %s: <%s> .\n', ns_pref, this_ns), ses); -- put NS prefix here
+
+  http (sprintf ('\n'), ses);
+
+  http (sprintf ('%s:Dataset a void:Dataset ; \n', ns_pref), ses);
+  http (sprintf (' rdfs:seeAlso <%s> ; \n', graph), ses);
+  if (gr_name is not null)
+    http (sprintf (' rdfs:label "%s" ; \n', gr_name), ses);
+-- XXX: no endpoint  
+--  if (ep)
+--    http (sprintf (' void:sparqlEndpoint <http://%s/sparql> ; \n', host), ses);
+
+  http (sprintf (' void:triples %ld ; \n', _cnt), ses);
+  http (sprintf (' void:classes %ld ; \n', _n_classes), ses);
+  http (sprintf (' void:entities %ld ; \n', _n_entities), ses);
+  http (sprintf (' void:distinctSubjects %ld ; \n', _cnt_subj), ses);
+  http (sprintf (' void:properties %ld ; \n', _n_properties), ses);
+  http (sprintf (' void:distinctObjects %ld . \n', _cnt_obj), ses);
+
+  http (sprintf ('\n'), ses);
+
+  preds := vector ('owl:sameAs', 'rdfs:seeAlso');
   foreach (any rel in preds) do
     {
       RDF_VOID_SPLIT_IRI (rel, pref, name);
       pred := __xml_get_ns_uri (pref, 2) || name;
 
-      _cnt := (sparql define input:storage "" select count(*)
-      	where { graph `iri (?:graph)` { ?s `iri (?:pred)` ?o . filter (?o != iri (?:graph)) } });
-      if (_cnt)
-	{
-	  nam := name;
-	  inx := 1;
-	  while (dict_get (dict, nam, 0))
-	    {
-	      nam := name||cast (inx as varchar);
-	      inx := inx + 1;
-	    }
-	  name := nam;
-	  dict_put (dict, nam, 1);
-	  http (sprintf ('%s:Dataset void:containsLinks %s:%sLinks .\n', ns_pref, ns_pref, name), ses);
-
+      _cnt := (sparql
+               define input:storage ""
+               select count(*)
+               where { graph `iri (?:graph)`
+                       { ?s `iri (?:pred)` ?o .
+                         filter (?o != iri (?:graph))
+                        }
+                      });
+      if (_cnt > 0)
+      {
 	  http (sprintf ('%s:%sLinks a void:Linkset ; \n', ns_pref, name), ses);
-	  http (sprintf (' void:statItem %s:%sStat . \n', ns_pref, name), ses);
-
-	  http (sprintf ('%s:%sStat a  scovo:Item ; \n', ns_pref, name), ses);
-	  http (sprintf (' rdf:value %d ; \n', _cnt), ses);
-	  http (sprintf (' scovo:dimension %s:%sType .\n', ns_pref, name), ses);
-
-	  http (sprintf ('%s:%sType rdf:type %s:TypeOfLink ;\n', ns_pref, name, ns_pref), ses);
+        http (sprintf (' void:inDataset %s:Dataset ; \n', ns_pref), ses);
+        http (sprintf (' void:triples %ld ; \n', _cnt), ses);
 	  http (sprintf (' void:linkPredicate %s .\n', rel), ses);
 	  http (sprintf ('\n'), ses);
-	  has_links := has_links + 1;
-        }
+    }
     }
 
-  for select "class", "cnt" from (sparql define input:storage "" select ?class (count(*)) as ?cnt
-    where { graph `iri (?:graph)` { [] a ?class . filter (!isLiteral (?class)) } } group by ?class order by desc 2) s do
-    {
-      if ("class" like 'http://rdfs.org/ns/void#%' or "class" like 'http://purl.org/NET/scovo#%'
-	  or "class" = graph || '#TypeOfLink' or "class" like graph || '#%Links')
-	goto skip;
-      RDF_VOID_SPLIT_IRI ("class", pref, name);
-      if (name is null)
-	goto skip;
-      nam := sprintf ('%U', name);
-      inx := 1;
-      while (dict_get (dict, nam, 0))
-	{
-	  nam := name||cast (inx as varchar);
-	  nam := sprintf ('%U', nam);
-	  inx := inx + 1;
-	}
-      name := nam;
-      dict_put (dict, nam, 1);
-      http (sprintf ('%s:Dataset void:statItem %s:%sStat .\n', ns_pref, ns_pref, name), ses);
-      http (sprintf ('%s:%sStat a  scovo:Item ; \n', ns_pref, name), ses);
-      http (sprintf (' rdf:value %d ; \n', "cnt"), ses);
-      http (sprintf (' scovo:dimension <%s> ; \n', "class"), ses);
-      http (sprintf (' scovo:dimension void:numberOfResources . \n'), ses);
-      http (sprintf ('\n'), ses);
-      skip:;
-    }
-
-  if (has_links)
-    http (sprintf ('%s:TypeOfLink rdfs:subClassOf scovo:Dimension . \n', ns_pref), ses);
   return ses;
 }
 ;

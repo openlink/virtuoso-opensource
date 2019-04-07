@@ -1,0 +1,323 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="pki_1" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+	fast-render="1" 
+	xmlns:v="http://www.openlinksw.com/vspx/" 
+	xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="inst" type="db.dba.web_app" default="null" persist="0" />
+      <v:variable name="wa_name" type="varchar" default="null" persist="0" param-name="wa_name"/>
+      <v:variable name="is_public" type="int" default="null" persist="0"/>
+      <v:variable name="is_visible" type="int" default="null" persist="0"/>
+      <v:variable name="iid" type="int" default="null" persist="0" param-name="wai_id"/>
+      <v:variable name="iname" type="varchar" default="null" persist="0"/>
+      <v:variable name="idesc" type="varchar" default="null" persist="0"/>
+      <v:variable name="_app" type="varchar" default="null" persist="0"/>
+      <v:variable name="_host" type="varchar" default="null" persist="0"/>
+      <v:variable name="_lhost" type="varchar" default="null" persist="0"/>
+      <v:variable name="_path" type="varchar" default="null" persist="0"/>
+      <v:variable name="remove_mode" type="integer" default="0" persist="0"/>
+      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
+    <vm:pagebody>
+    <vm:help id="sec_pki" sect=""/>
+    <v:form name="form1" type="simple" method="POST">
+	<!-- top of security layout -->
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+		      <td class="page_tab_selected" align="center">
+			  Public Key Infrastructure	
+		      </td>
+		      <td class="page_tab" align="center">
+			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+		      </td>
+			<td class="page_tab_empty" align="right" width="100%">
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+			<td valign="top">
+			    <h3>Configure Data Spaces Endpoints</h3>
+		   <!-- end of top security layout -->
+      <v:form type="update" name="_add_">
+        <table>
+          <?vsp
+            declare domains_string varchar;
+            declare with_dom integer;
+            with_dom := 0;
+            if (exists(select 1 from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%')
+	       --or exists(select 1 from WA_DOMAINS)
+	      )
+            {
+          ?>
+          <tr>
+            <th>
+              <label for="t_site">Endpoint prefix</label>
+            </th>
+            <td>
+              <v:text name="t_site" error-glyph="*" xhtml_id="t_site">
+                <v:validator name="v_site" test="regexp" regexp="[\-0-9A-Za-z]." message="* You should provide a site prefix."/>
+              </v:text>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <label for="l_domains">Domain</label>
+            </th>
+            <td>
+              <select name="l_domains" xhtml_id="l_domains">
+                <?vsp
+                  declare domains_string, cur varchar;
+                  declare i, len integer;
+                  declare dom_vec any;
+                  i := 0;
+                  for select distinct HP_HOST, HP_LISTEN_HOST from DB.DBA.HTTP_PATH where HP_HOST not like '%ini%' do
+                  {
+                    http(sprintf ('<option value=\"%s=%s\">%s (%s)</option>', HP_HOST, HP_LISTEN_HOST, HP_HOST, HP_LISTEN_HOST));
+                  }
+                ?>
+              </select>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <label for="t_path">Virtual directory</label>
+            </th>
+            <td>
+		<v:text name="t_path" error-glyph="*" xhtml_id="t_path" default_value="/ods">
+              </v:text>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <label for="t_model">Domain registration</label>
+            </th>
+            <td>
+                    <v:select-list xhtml_id="t_model" name="t_model" >
+		      <v:item name="Disabled" value="0"/>
+		      <v:item name="Enabled" value="1"/>
+                      <v:before-data-bind>
+                        declare imodel integer;
+                        imodel := (select top 1 WS_REGISTER
+                        from WA_SETTINGS);
+                        control.ufl_value := imodel;
+                      </v:before-data-bind>
+                    </v:select-list>
+            </td>
+          </tr>
+          <tr>
+            <th>
+              <label for="t_overwrite">Overwrite Existing</label>
+            </th>
+            <td>
+              <v:check-box name="t_overwrite" xhtml_id="t_overwrite" value="off"></v:check-box>
+            </td>
+          </tr>
+          <tr>
+            <td colspan="2">
+              <v:button action="simple" name="cancel1" value="Cancel">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+		      self.vc_redirect ('sec_pki_3.vspx');
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+              <v:button name="add_button" action="submit" value="Save">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      declare prefix, domain, ip, path, phys_path varchar;
+                      declare arr any;
+                      declare ssl_port, model integer;
+		      declare top_domain varchar;
+
+		      -- XXX: here domain is not a domain per se.
+		      -- this is a virtual host that can be used to manage wa via that domain
+
+                      path := self.t_path.ufl_value;
+                      path := trim(path, '/\\.');
+                      path := concat('/', path);
+                      prefix := self.t_site.ufl_value;
+                      if (strstr(prefix, 'http://') = 0)
+                        prefix := subseq(prefix, 7);
+                      prefix := trim(prefix, '/\\. ');
+                      domain := get_keyword('l_domains', self.vc_event.ve_params);
+                      domain := trim(domain, '/.\\ ');
+                      arr := split_and_decode(domain);
+		      domain := arr[0];
+		      top_domain := domain;
+                      ip := arr[1];
+                      if (prefix is not null and prefix <> '')
+                        domain := concat(prefix, '.', domain);
+                      if (domain is null or domain = '')
+                      {
+                        self.vc_error_message := 'Domain name can not not be empty';
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                      declare pos integer;
+                      declare _port varchar;
+                      pos := strchr(domain, ':');
+                      if (pos is null)
+                        _port := '80';
+                      else
+                      {
+                        _port := subseq(domain, pos + 1);
+                        _port := trim(_port);
+                        if (atoi(_port) = 0)
+                        {
+                          self.vc_error_message := 'Please specify correct port number';
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                        if (atoi(_port) = 80 or _port = '')
+                        {
+                          _port := '80';
+                          domain := subseq(domain, 0, pos);
+                        }
+                      }
+                      if (not self.t_overwrite.ufl_selected and exists(select 1 from HTTP_PATH where HP_HOST=domain and HP_LISTEN_HOST=ip and HP_LPATH=path))
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'This site already exists';
+                        rollback work;
+                        return;
+                      }
+		      if (exists(select 1 from DB.DBA.WA_DOMAINS where WD_DOMAIN = domain))
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'This domain already configured';
+                        rollback work;
+                        return;
+                      }
+                      commit work;
+                      declare exit handler for sqlstate '*' {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := concat (__SQL_STATE,' ',__SQL_MESSAGE);
+                        rollback work;
+                        return;
+                      };
+                      VHOST_REMOVE(
+                        vhost=>domain,
+                        lhost=>ip,
+                        lpath=>path
+                      );
+                      VHOST_DEFINE(
+                        vhost=>domain,
+                        lhost=>ip,
+                        opts=>vector('executable', 'yes'),
+                        lpath=>path,
+                        ppath=>'/DAV/VAD/wa/',
+                        is_dav=>1,
+                        vsp_user=>'dba',
+			def_page=>'index.vspx');
+
+		      if (strchr (top_domain, ':') is not null)
+		        {
+			  arr := split_and_decode (top_domain, 0, '\0\0:');
+			  top_domain := arr[0];
+	                }
+
+	              model := self.t_model.ufl_value;
+
+		      -- Add /dataspace etc.
+		      if (__proc_exists ('DB.DBA.ods_define_common_vd') is not null)
+		        DB.DBA.wa_redefine_vhosts (domain, ip, 1);
+
+	              insert replacing DB.DBA.WA_DOMAINS (WD_HOST, WD_LISTEN_HOST, WD_LPATH, WD_DOMAIN, WD_MODEL)
+		         values (domain, ip, path, top_domain, model);
+
+
+		      commit work;
+		      self.vc_redirect ('sec_pki_3.vspx');
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+          <?vsp
+            }
+            else
+            {
+          ?>
+          <tr>
+            <td>
+                <b>There are no entries in Existing Hosted Domain list of ODS Site Settings and no existing non-default HTTP listeners.</b><br/>
+		To create new domain first <v:url name="site_creatre_create_ref" format="%s" value="--'HTTP Listener'" url="--'http_serv_mgmt.vspx'"/> must be created
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:button action="simple" name="cancel2" value="Cancel">
+                <v:on-post>
+                  <v:script>
+		      <![CDATA[
+		      self.vc_redirect ('sec_pki_3.vspx');
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+          <?vsp
+            }
+          ?>
+        </table>
+      </v:form>
+		   <!-- bottom of security layout -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+	<!-- end of bottom security layout -->
+    </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

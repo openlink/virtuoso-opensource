@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -19,11 +19,13 @@
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseOfMfc>false</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <PlatformToolset>v141</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -46,6 +48,7 @@
     <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\</OutDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
+    <ExecutablePath Condition="'$(Configuration)|$(Platform)'=='Release|x64'">C:\cygwin\bin;$(ExecutablePath)</ExecutablePath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
@@ -125,6 +128,7 @@
     <ClCompile Include="..\libsrc\Wi\bif_diff.c" />
     <ClCompile Include="..\libsrc\Wi\bif_explain.c" />
     <ClCompile Include="..\libsrc\Wi\bif_file.c" />
+    <ClCompile Include="..\libsrc\Wi\bif_geo.c" />
     <ClCompile Include="..\libsrc\Wi\bif_gnw.c" />
     <ClCompile Include="..\libsrc\Wi\bif_imap.c" />
     <ClCompile Include="..\libsrc\Wi\bif_intl.c" />
@@ -155,7 +159,27 @@
     <ClCompile Include="..\libsrc\Wi\bitmap.c" />
     <ClCompile Include="..\libsrc\Wi\blob.c" />
     <ClCompile Include="..\libsrc\Wi\blobio.c" />
-    <ClCompile Include="..\libsrc\Wi\cl_stubs.c" />
+    <ClCompile Include="..\libsrc\Wi\cedel.c" />
+    <ClCompile Include="..\libsrc\Wi\ceins.c" />
+    <ClCompile Include="..\libsrc\Wi\cetop.c" />
+    <ClCompile Include="..\libsrc\Wi\chash.c" />
+    <ClCompile Include="..\libsrc\Wi\clcli.c" />
+    <ClCompile Include="..\libsrc\Wi\cldaq.c" />
+    <ClCompile Include="..\libsrc\Wi\cldfg.c" />
+    <ClCompile Include="..\libsrc\Wi\cldt.c" />
+    <ClCompile Include="..\libsrc\Wi\clnode.c" />
+    <ClCompile Include="..\libsrc\Wi\clop.c" />
+    <ClCompile Include="..\libsrc\Wi\clrdf.c" />
+    <ClCompile Include="..\libsrc\Wi\clserial.c" />
+    <ClCompile Include="..\libsrc\Wi\clsql.c" />
+    <ClCompile Include="..\libsrc\Wi\clsrv.c" />
+    <ClCompile Include="..\libsrc\Wi\cltrx.c" />
+    <ClCompile Include="..\libsrc\Wi\clvec.c" />
+    <ClCompile Include="..\libsrc\Wi\col.c" />
+    <ClCompile Include="..\libsrc\Wi\colin.c" />
+    <ClCompile Include="..\libsrc\Wi\colins.c" />
+    <ClCompile Include="..\libsrc\Wi\collock.c" />
+    <ClCompile Include="..\libsrc\Wi\colsearch.c" />
     <ClCompile Include="..\libsrc\Wi\crypt.c" />
     <ClCompile Include="..\libsrc\Wi\datesupp.c" />
     <ClCompile Include="..\libsrc\Wi\ddlrun.c" />
@@ -164,6 +188,9 @@
     <ClCompile Include="..\libsrc\Wi\eqlcomp.c" />
     <ClCompile Include="..\libsrc\Wi\extent.c" />
     <ClCompile Include="..\libsrc\Wi\gate.c" />
+    <ClCompile Include="..\libsrc\Wi\geo.c" />
+    <ClCompile Include="..\libsrc\Wi\geo_shapes.c" />
+    <ClCompile Include="..\libsrc\Wi\git_head.c" />
     <ClCompile Include="..\libsrc\Wi\hash.c" />
     <ClCompile Include="..\libsrc\Wi\hosting.c" />
     <ClCompile Include="..\libsrc\Wi\http.c" />
@@ -178,6 +205,7 @@
     <ClCompile Include="..\libsrc\Wi\log.c" />
     <ClCompile Include="..\libsrc\Wi\map_schema.c" />
     <ClCompile Include="..\libsrc\Wi\meta.c" />
+    <ClCompile Include="..\libsrc\Wi\monitor.c" />
     <ClCompile Include="..\libsrc\Wi\mtwrite.c" />
     <ClCompile Include="..\libsrc\Wi\multibyte.c" />
     <ClCompile Include="..\libsrc\Wi\neodisk.c" />
@@ -188,11 +216,14 @@
     <ClCompile Include="..\libsrc\Wi\page.c" />
     <ClCompile Include="..\libsrc\Wi\pldebug.c" />
     <ClCompile Include="..\libsrc\Wi\plugin_loader.c" />
+    <ClCompile Include="..\libsrc\Wi\qncache.c" />
+    <ClCompile Include="..\libsrc\Wi\rdfld.c" />
     <ClCompile Include="..\libsrc\Wi\rdf_core.c" />
     <ClCompile Include="..\libsrc\Wi\rdf_mapping_jso.c" />
     <ClCompile Include="..\libsrc\Wi\rdfbox.c" />
     <ClCompile Include="..\libsrc\Wi\rdfinf.c" />
     <ClCompile Include="..\libsrc\Wi\rdfxml_parser.c" />
+    <ClCompile Include="..\libsrc\Wi\read.c" />
     <ClCompile Include="..\libsrc\Wi\recovery.c" />
     <ClCompile Include="..\libsrc\Wi\regist.c" />
     <ClCompile Include="..\libsrc\Wi\rltrx.c" />
@@ -217,6 +248,10 @@
     <ClCompile Include="..\libsrc\Wi\sparqld.c" />
     <ClCompile Include="..\libsrc\Wi\sparul2sql.c" />
     <ClCompile Include="..\libsrc\Wi\sql3_vc.c" />
+    <ClCompile Include="..\libsrc\Wi\sqljp.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlvec.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlvnode.c" />
+    <ClCompile Include="..\libsrc\Wi\sqlvrun.c" />
     <ClCompile Include="..\libsrc\Wi\sql_code.c">
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Disabled</Optimization>
       <Optimization Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Disabled</Optimization>
@@ -413,6 +448,11 @@
     <ClCompile Include="..\libsrc\Wi\uname_const_decl.c" />
     <ClCompile Include="..\libsrc\Wi\update.c" />
     <ClCompile Include="..\libsrc\Wi\uuencode.c" />
+    <ClCompile Include="..\libsrc\Wi\vec.c" />
+    <ClCompile Include="..\libsrc\Wi\vechash.c" />
+    <ClCompile Include="..\libsrc\Wi\vecins.c" />
+    <ClCompile Include="..\libsrc\Wi\vecrdf.c" />
+    <ClCompile Include="..\libsrc\Wi\vecsearch.c" />
     <ClCompile Include="..\libsrc\Wi\wi_xid.c" />
     <ClCompile Include="..\libsrc\Wi\wirpc.c" />
     <ClCompile Include="..\libsrc\Wi\wiservic.c" />
@@ -434,6 +474,7 @@
     <ClCompile Include="..\libsrc\Wi\xslt_opt.c" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\libsrc\Wi\clq.h" />
     <ClInclude Include="..\libsrc\Wi\map_schema.h" />
     <ClInclude Include="..\libsrc\Wi\2pc.h" />
     <ClInclude Include="..\libsrc\Wi\2pc_client.h" />
@@ -613,20 +654,20 @@ cd $(ProjectDir)
     <CustomBuild Include="..\libsrc\Wi\scn3.l">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
@@ -634,20 +675,20 @@ cd $(ProjectDir)
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)scn3_vsnet.c;%(RootDir)%(Directory)scn3split.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f scn3_vsnet.c
-flex -oscn3_vsnet.c %(FullPath)
+flex -Pscn3yy -oscn3_vsnet.c %(FullPath)
 flex -Pscn3splityy -oscn3split.c %(FullPath)
 cd $(ProjectDir)
 </Command>
@@ -753,7 +794,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -761,14 +802,14 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -777,7 +818,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)sql3.c;%(RootDir)%(Directory)sql3.h;%(Outputs)</Outputs>
@@ -785,7 +826,7 @@ cd $(ProjectDir)
 cd %(RootDir)%(Directory)
 rm -f sql3.c
 rm -f sql3.h
-bison -y  -vd sql3.y -osql3.c
+bison -y  -vd -pscn3yy sql3.y -osql3.c
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -1072,6 +1113,17 @@ gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,5,7,$ sparqlwords.gperf --ignore-case -Ns
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\sparqlwords.h;%(Outputs)</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\libsrc\Wi\mkgit_head.sh">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+set PATH=/usr/bin:%PATH% 
+bash mkgit_head.sh
+cd $(ProjectDir)
+</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\git_head.c;%(Outputs)</Outputs>
     </CustomBuild>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

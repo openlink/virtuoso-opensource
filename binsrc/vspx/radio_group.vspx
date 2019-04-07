@@ -1,27 +1,27 @@
 <?xml version="1.0"?>
 <!--
- -  
+ -
  -  $Id$
  -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
- -  
- -  Copyright (C) 1998-2013 OpenLink Software
- -  
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
  -  Free Software Foundation; only version 2 of the License, dated June 1991.
- -  
+ -
  -  This program is distributed in the hope that it will be useful, but
  -  WITHOUT ANY WARRANTY; without even the implied warranty of
  -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
  -  General Public License for more details.
- -  
+ -
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -  
- -  
+ -
+ -
 -->
 <html>
 <body>
@@ -34,14 +34,14 @@
 <table border="1">
   <v:form name="sf" type="simple" action="radio_group.vspx" method="POST">
      <v:radio-group name="radio00">
-     <p><v:radio-button name="radiob01" value="--'one'" /></p>  
-     <p><v:radio-button name="radiob02" value="--'two'" /></p>  
+     <p><v:radio-button name="radiob01" value="--'one'" /></p>
+     <p><v:radio-button name="radiob02" value="--'two'" /></p>
      </v:radio-group>
-     <p><v:button name="ok" value="--'OK'" action='simple' /></p>  
+     <p><v:button name="ok" value="--'OK'" action='simple' /></p>
      <v:before-render>
      <![CDATA[
      dbg_vspx_control (control);
-     ]]> 
+     ]]>
      </v:before-render>
   </v:form>
 </table>

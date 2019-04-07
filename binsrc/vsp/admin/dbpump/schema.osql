@@ -20,7 +20,7 @@ create procedure __extract_qualif( in name integer )
   v := split_and_decode(name,1,'\0\0.');
   if (length(v)=3)
     return aref(v,0);
-  else 
+  else
     return '';
 }
 ;
@@ -35,7 +35,7 @@ create procedure __extract_owner( in name integer )
 --  dbg_obj_print(v);
   if (length(v)=3)
     return aref(v,1);
-  else 
+  else
     return '';
 }
 ;
@@ -68,16 +68,16 @@ create   xml view "schema"   as
 drop xml view "schema_procs";
 create xml view "schema_procs" as
 {
-  DB.DBA.SYS_PROCS p as "procedure" 
-	("P_NAME" as "name", 
-	 "P_COMMENT" as "comment", 
-	 "P_QUAL" as "qualif", 
-	 "P_N_IN" as "n_in", 
-	 "P_N_OUT" as "n_out", 
-	 "P_N_R_SETS" as "n_r_sets", 
-	 "P_MORE" as "more", 
-	 "P_OWNER" as "owner", 
-	 "P_TEXT" as "text", 
+  DB.DBA.SYS_PROCS p as "procedure"
+	("P_NAME" as "name",
+	 "P_COMMENT" as "comment",
+	 "P_QUAL" as "qualif",
+	 "P_N_IN" as "n_in",
+	 "P_N_OUT" as "n_out",
+	 "P_N_R_SETS" as "n_r_sets",
+	 "P_MORE" as "more",
+	 "P_OWNER" as "owner",
+	 "P_TEXT" as "text",
 	 "TYPE" as "type")
 } public '/schema_procs.xml' owner 'dav';
 

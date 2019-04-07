@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -63,7 +63,7 @@ spar_compose_report_flag (sparp_t *sparp)
   caddr_t res;
   if (NULL != sparp->sparp_sg->sg_output_compose_report)
     return sparp->sparp_sg->sg_output_compose_report;
-  fmtname = (sparp->sparp_env->spare_disable_output_formatting ? NULL : sparp->sparp_sg->sg_output_format_name); /* Report is always a result-set, so no spare_output_XXX_format name */
+  fmtname = (spare->spare_disable_output_formatting ? NULL : sparp->sparp_sg->sg_output_format_name); /* Report is always a result-set, so no spare_output_XXX_format name */
   if ((NULL == fmtname) && (NULL == sparp->sparp_env->spare_parent_env)
     && ssg_is_odbc_cli () )
     {
@@ -120,7 +120,7 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART *top, SPA
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
-            sparp_rvr_set_by_constant (sparp, &tmp, NULL, ctor_fld);
+            sparp_rvr_set_by_constant (sparp, &tmp, NULL, ctor_fld, NULL);
             sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
@@ -136,7 +136,7 @@ sparp_ctor_fields_are_disjoin_with_where_fields (sparp_t *sparp, SPART *top, SPA
         case SPAR_LIT: case SPAR_QNAME:
           {
             rdf_val_range_t tmp;
-            sparp_rvr_set_by_constant (sparp, &tmp, NULL, where_fld);
+            sparp_rvr_set_by_constant (sparp, &tmp, NULL, where_fld, NULL);
             sparp_rvr_tighten (sparp, &rvr, &tmp, ~0);
             break;
           }
@@ -354,7 +354,11 @@ spar_compose_retvals_of_ctor (sparp_t *sparp, SPART *ctor_gp, const char *funnam
                 {
                 case SPAR_BLANK_NODE_LABEL:
                   if (cve->cve_bnodes_are_prohibited)
-                    spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                    {
+                      while (NULL != list_of_triples)
+                        dk_free_tree ((caddr_t)(dk_set_pop (&list_of_triples)));
+                      spar_error (sparp, "Blank nodes are not allowed in DELETE constructor patterns");
+                    }
                   var_ctr = bnode_count;
                   for (bnode_iter = bnodes_acc; NULL != bnode_iter; bnode_iter = bnode_iter->next)
                     {
@@ -717,7 +721,8 @@ spar_compose_retvals_of_modify (sparp_t *sparp, SPART *top, SPART *graph_to_patc
   spar_compose_retvals_of_ctor (sparp, ins_ctor_gp, "sql:SPARQL_CONSTRUCT", NULL /* no big ssl const */, NULL, NULL,
     &ins, &cve, NULL, NULL, NULL, 0 );
   rv = top->_.req_top.retvals;
-
+  if (NULL == graph_to_patch)
+    graph_to_patch = (SPART *)uname_virtrdf_ns_uri_DefaultSparul11Target;
   if (NULL != sparp->sparp_sg->sg_output_route_name)
     rv[0] = spar_make_funcall (sparp, 0,
       t_box_sprintf (200, "sql:SPARQL_ROUTE_DICT_CONTENT_%.100s", sparp->sparp_sg->sg_output_route_name),

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -21,23 +21,30 @@
 
 noinst_SCRIPTS	= cache_gen.sh
 BUILT_SOURCES	= cached_resources.c
+DISTCLEANFILES  = cached_resources.c
+
+DEPS	= \
+	$(srcdir)/Makefile.am \
+	$(srcdir)/cache_gen.sh \
+	$(srcdir)/res_to_c.awk \
+	$(srcdir)/w3-1999-xhtml/vocab \
+	$(srcdir)/w3-2000-01/rdf-schema \
+	$(srcdir)/w3-TR-xhtml1-DTD/*.dtd \
+	$(srcdir)/w3-TR-xhtml1-DTD/*.ent
 
 all: cached_resources.c
 
-cached_resources.c: \
-	cache_gen.sh res_to_c.awk cache_gen.sh Makefile.am \
-	openlinksw-sparql/*.ttl \
-	w3-1999-xhtml/vocab \
-	w3-2000-01/rdf-schema \
-	w3-TR-xhtml1-DTD/*.ent \
-	w3-TR-xhtml1-DTD/*.dtd \
-	openlinksw-sparql/*.ttl
+cached_resources.c:FORCE $(DEPS)
 	@echo Generating cached_resources.c 
-	@$(SHELL) ./cache_gen.sh > cached_resources.c
+	@$(SHELL) $(srcdir)/cache_gen.sh > cached_resources.c.tmp
+	@cmp cached_resources.c cached_resources.c.tmp >/dev/null 2>/dev/null || mv cached_resources.c.tmp cached_resources.c
+	@rm -f *.tmp
 
 .PHONY: clean
 clean:
 	-rm -f *.tmp
+
+FORCE:
 
 # ----------------------------------------------------------------------
 #
@@ -47,15 +54,11 @@ clean:
 EXTRA_DIST = \
 	cached_resources.c \
 	cache_gen.sh \
-	openlinksw-sparql/virtrdf-data-formats.ttl \
+	openlinksw-sparql/*.ttl \
 	res_to_c.awk \
 	w3-1999-xhtml/vocab \
-	w3-2000-01/README.txt \
+	w3-2000-01/*.txt \
 	w3-2000-01/rdf-schema \
-	w3-TR-xhtml1-DTD/README.txt \
-	w3-TR-xhtml1-DTD/xhtml-lat1.ent \
-	w3-TR-xhtml1-DTD/xhtml-special.ent \
-	w3-TR-xhtml1-DTD/xhtml-symbol.ent \
-	w3-TR-xhtml1-DTD/xhtml1-frameset.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-strict.dtd \
-	w3-TR-xhtml1-DTD/xhtml1-transitional.dtd
+	w3-TR-xhtml1-DTD/*.txt \
+	w3-TR-xhtml1-DTD/*.ent \
+	w3-TR-xhtml1-DTD/*.dtd

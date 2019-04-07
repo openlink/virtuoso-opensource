@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -287,262 +287,168 @@ netstat -an | more
 		</sect2>
 		<sect2 id="InstallStepsWin">
 			<title>Installation Steps</title>
-			<para>You can install Virtuoso in any one of the following
-    configurations: Stand-Alone, 2-Tier Client-Server, or 3-Tier Client-Server.</para>
-			<sect3 id="standalone">
-				<title>Stand-Alone Configuration</title>
-				<para>In this scenario you have one machine making up your entire
-    solution, which implies that your Applications, Virtuoso&apos;s client and server components,
-    and the back end database engine(s) that you want to access via Virtuoso all reside on the
-    same machine. </para>
-                                <para>Virtuoso Personal Edition Release 5.0 Installation on Windows</para>
-				<orderedlist>
-					<listitem>
-						<para>Double click on the Virtuoso Personal Edition installer (for example &quot;ntvpz2zz.msi&quot;) to run the Windows installer.</para>
-                                                <figure id="winpersinst001" float="1">
-							<title>Run the installer</title>
-							<graphic fileref="inst/v50pex8601.png" width="194" depth="62"/>
+		  <sect3 id="InstallStepsWinPrepareToInstall">
+		    <title>Prepare to Install</title>
+		    <para>If you are upgrading an existing Virtuoso installation and want to preserve your existing data and configuration files:</para>
+        <orderedlist>
+          <listitem>Shut down your Virtuoso instance as normal.</listitem>
+          <listitem>Right-click on the existing <code>Virtuoso.app</code> (exact name may vary), and select
+          <code>Show Package Contents</code>.</listitem>
+          <listitem>Drill down to <code>Contents</code> -&lt; <code>virtuoso</code> -&lt; <code>database</code>.</listitem>
+          <listitem>Check the size of the <code>virtuoso.trx</code> file, found in the <code>database</code> folder alongside the
+          <code>virtuoso.db</code> and <code>virtuoso.ini</code> files.
+            <itemizedlist mark="bullet">
+              <listitem>If zero bytes, proceed to step 6.</listitem>
+              <listitem>If larger than zero bytes, start the instance from the command line with the extra argument,
+              "<link linkend="COMMANDLINE">+checkpoint-only</link>", and recheck <code>.trx</code> file size -- expecting
+              zero bytes.</listitem>
+              <listitem>If larger <code>.trx</code> files persist,
+              <ulink url="http://support.openlinksw.com/support/online-support.vsp">contact Technical Support</ulink>.</listitem>
+            </itemizedlist>
+					</listitem>
+          <listitem>Make a backup of your existing Virtuoso Database and Configuration files (defaults are <code>virtuoso.db</code> and
+          <code>virtuoso.ini</code>) prior to performing the steps that follow. <i><emphasis>Note</emphasis>: Virtuoso's
+          <link linkend="onlinebackups">online backup feature</link>, if enabled, should have already generated a backup-set</i>.</listitem>
+          <listitem> Use the Add/Remove Programs utility to uninstall any previously installed Virtuoso components. Data and
+          configuration files will be left behind by this process.</listitem>
+        </orderedlist>
+		  </sect3>
+		  <sect3 id="InstallStepsWinDownload">
+		    <title>Download the Virtuoso Installer Program</title>
+        <orderedlist>
+          <listitem>Download the <ulink url="http://opldownload.s3.amazonaws.com/uda%2Fvirtuoso%2F7.2%2Fx86_64-generic-win-64%2Fwavpz2zz.msi#this">Virtuoso 7.2 installer archive (wavpz2zz.msi)</ulink>
+          from the <ulink url="http://virtuoso.openlinksw.com/download/">download site</ulink>. <i><emphasis>Note</emphasis>: Virtuoso
+          7.x is 64-bit only, and requires Vista or Windows Server 2003, or later.</i></listitem>
+        </orderedlist>
+		  </sect3>
+		  <sect3 id="InstallStepsWinObtainLicense">
+		    <title>Obtain a License File</title>
+        <orderedlist>
+          <listitem> If you haven't already obtained a suitable Virtuoso 7.x license file, return to the
+          <ulink url="http://virtuoso.openlinksw.com/download/">download site</ulink>, and click the link for
+          <emphasis>Free Eval License</emphasis> (15 day duration, requires only your email address) or
+          <emphasis>Free Pilot License</emphasis> (30 day duration, requires some additional personal and business information).
+            <figure id="wininstobtainlic" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Obtain a License File</title>
+              <graphic fileref="ui/win_obtain_license.jpg"/>
 						</figure>
 					</listitem>
-					<listitem>
-						<para>The installer Welcome dialog is loaded:</para>
-						<figure id="winpersinst002" float="1">
-							<title>The Welcome Screen</title>
-							<graphic fileref="inst/v50pex8602.png" width="504" depth="386"/>
+          <listitem>Fill out the relevant form, and download the license file when presented. <i><emphasis>Note</emphasis>: the
+          file must be named <code>virtuoso.lic</code> for use. Some browsers may rename the file during download; you can simply
+          rename the file on your machine.</i>
+					</listitem>
+        </orderedlist>
+		  </sect3>
+		  <sect3 id="InstallStepsWinRunInstaller">
+		    <title>Run the Virtuoso Installer</title>
+		    <para></para>
+        <orderedlist>
+          <listitem>Double-click the installer archive, <code>wavpz2zz.msi</code>, to start the process with the Installer Program
+          Introduction.
+            <figure id="wininstruninst" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Run the Virtuoso Installer</title>
+              <graphic fileref="ui/win_installer_program.jpg"/>
 						</figure>
 					</listitem>
-					<listitem>
-						<para>Review the license agreement and 'agree' to the terms:</para>
-						<figure id="winpersinst003" float="1">
-							<title>License Agreement</title>
-							<graphic fileref="inst/v50pex8603.png" width="504" depth="386"/>
+          <listitem>Click <emphasis>Next</emphasis>, and you'll be presented with the License Agreement:
+            <figure id="wininstrunnext" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- License Agreement</title>
+              <graphic fileref="ui/win_license_agreement.jpg"/>
 						</figure>
 					</listitem>
-                                        <listitem>
-						<para>If a license file already exists the installer can place this in the correct
-location for use. Browse to the location of your installer file and the installer will use this for the
-Virtuoso Server. Alternatively the &quot;Try &amp; Buy&quot; feature of the installer can be used to enable
-a trial or full license file to be obtained online:</para>
-						<figure id="winpersinst004" float="1">
-							<title>The License File Location</title>
-							<graphic fileref="inst/v50pex8604.png" width="504" depth="386"/>
+          <listitem>Tick the box for <emphasis>I accept</emphasis>, and click <emphasis>Next</emphasis>. You'll be asked to locate
+          your license file:
+            <figure id="wininstrunnextaccept" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- License Agreement Accept</title>
+              <graphic fileref="ui/win_install_folder.jpg"/>
 						</figure>
 					</listitem>
-                                        <listitem>
-						<para>Choose to obtain a Trial license for an evaluation or enter the shop
-            site to purchase a full license.</para>
-						<figure id="winpersinst005" float="1">
-							<title>The obtain Trial license screen</title>
-							<graphic fileref="inst/v50pex8605.png" width="976" depth="682"/>
+          <listitem>Use the <emphasis>Browse</emphasis> button to locate the license file you obtained earlier, or click the
+          <emphasis>Try and Buy</emphasis> button to obtain a new one now, or tick the box for
+          <emphasis>I don't want to install a license file now</emphasis>. Then, click <emphasis>Next</emphasis>. You'll be
+          prompted to select an Installation Type:
+            <figure id="wininstrunnextbrowse" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Choose Installation Type</title>
+              <graphic fileref="ui/win_install_type.jpg"/>
 						</figure>
 					</listitem>
-                                        <listitem>
-						<para>Click on the &quot;Download License&quot; button on the right to obtain the
-            license file immediately. An e-mail will also be sent with details of the license and the location on the ODS account
-            of the registered user where in can be obtained from at a later date. Once a license file is available on the machine
-            use the &quot;Browse&quot; button to locate it and the &quot;Set License&quot; button to initialize the Virtuoso
-            server with this license file.</para>
-						<figure id="winpersinst006" float="1">
-							<title>The Download license screen</title>
-							<graphic fileref="inst/v50pex8606.png" width="976" depth="680"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>Select the Installation Type to be performed from the options presented:</para>
-						<figure id="winpersinst007" float="1">
-							<title>Setup Type</title>
-							<graphic fileref="inst/v50pex8607.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>If the custom option was chosen, the installer prompts for the
-            Destination folder of the installation.</para>
-						<figure id="winpersinst008" float="1">
-							<title>Choose Destination Location</title>
-							<graphic fileref="inst/v50pex8608.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>Select the Product Features to be installed.</para>
-						<figure id="winpersinst009" float="1">
-							<title>Select Components</title>
-							<graphic fileref="inst/v50pex8609.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>The Installation is now ready to proceed.</para>
-						<figure id="winpersinst010" float="1">
-							<title>Proceed Installation</title>
-							<graphic fileref="inst/v50pex8610.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>The Progress of the installation is indicated in the Status bar.</para>
-						<figure id="winpersinst011" float="1">
-							<title>Status bar</title>
-							<graphic fileref="inst/v50pex8611.png" width="504" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>The installation is now complete.</para>
-						<figure id="winpersinst012" float="1">
-							<title>Complete Installation</title>
-							<graphic fileref="inst/v50pex8612.png" width="508" depth="386"/>
-						</figure>
-					</listitem>
-					<listitem>
-						<para>The installer may prompt for the machine to be reboot if required.</para>
-						<figure id="winpersinst013" float="1">
-							<title>Reboot prompt</title>
-							<graphic fileref="inst/v50pex8613.png" width="436" depth="161"/>
-						</figure>
-					</listitem>
-					<listitem>Post installation the Virtuoso Server can be started by running the "Virtuoso
-Service Manager" which gets added to the Windows "Icons Tray" in the status bar.
-                                           <figure id="winpinst14" float="1">
-                                             <title>Post installation</title>
-                                             <graphic fileref="ui/winpinst14.png"/>
+          <listitem> Select the desired option:
+            <itemizedlist mark="bullet">
+              <listitem><emphasis>Typical</emphasis> -- installs to the default filesystem location, may not include all components</listitem>
+              <listitem><emphasis>Complete</emphasis> -- installs to the default filesystem location, includes all components</listitem>
+              <listitem><emphasis>Custom</emphasis> -- to install to any filesystem location, and select which components will be installed</listitem>
+            </itemizedlist>
+                                        </listitem>
+          <listitem>Click <emphasis>Next</emphasis>, and if you chose <emphasis>Typical</emphasis> or <emphasis>Complete</emphasis>,
+          skip this and the next step; if you chose <emphasis></emphasis>Custom, you'll be prompted to choose a destination folder:
+            <figure id="wininstrunnextfolder" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Choose Destination Folder</title>
+              <graphic fileref="ui/win_destination_folder.jpg"/>
                                           </figure>
                                         </listitem>
-                                        <listitem>Double click on the "Virtuoso Service Manager" icon in the "Icons Tray" to load
-the application, select the "OpenLink Virtuoso Server" instance and press the "Start" button to run
-the Service.
-                                          <figure id="winpinst15" float="1">
-                                            <title>Virtuoso Service Manager</title>
-                                            <graphic fileref="ui/winpinst15.png"/>
+          <listitem>Click <emphasis>Next</emphasis>, and if you chose <emphasis>Custom</emphasis>, you'll be prompted for Feature Selection:
+            <figure id="wininstrunnextfeature" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Feature Selection</title>
+              <graphic fileref="ui/win_feature_selection.jpg."/>
                                           </figure>
                                         </listitem>
-                                        <listitem>Once the Virtuoso service has successfully started, it is recommended that
-the default "dba" and "dav" passwords be changed to secure values by loading the URL
-"http://localhost:8890/install" in a Web Browser which loads the following page for making these changes:
-                                          <figure id="winpinst16" float="1">
-                                            <title>Default passwords</title>
-                                            <graphic fileref="ui/winpinst16.png"/>
-                                          </figure>
-                                        </listitem>
-                                        <listitem>The Virtuoso Server Welcome page will now be displayed indicating the server is
-online. This Web based page can be used for general configuration and usage of the Virtuoso Server:
-                                            <figure id="winpinst17" float="1">
-                                              <title>Virtuoso Server Welcome page</title>
-                                              <graphic fileref="ui/winpinst17.png"/>
+          <listitem>Click <emphasis>Next</emphasis>, and the installer will indicate it's ready to begin:
+            <figure id="wininstrunnextready" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Read to install</title>
+              <graphic fileref="ui/win_file_copystart.jpg"/>
                                             </figure>
                                           </listitem>
+          <listitem>Click install, and wait for notification of completion.</listitem>
                                         </orderedlist>
-                                        <para>The installation Virtuoso Universal Server is complete.</para>
 			</sect3>
-			<sect3 id="TwoTierConfigInst">
-			<title>2-Tier Client-Server Configuration</title>
-			<para>In this scenario you have two logically distinct machine
-    types making up your total solution, one machine hosts your Applications and Virtuoso
-    client components, while the other hosts your Virtuoso and back-end Database Servers. This
-    installation configuration format will allow Windows client machines to communicate with non
-    Windows server machines running Virtuoso, it also allows Virtuoso clients on non Windows
-    client machines to connect to Virtuoso servers on Windows server machines.</para>
-			<sect4 id="twotierclicomp">
-				<title>Client Components:</title>
+		  <sect3 id="InstallStepsWinStartService">
+		    <title>Start the Virtuoso Service Manager, and Locate it in the Task Bar</title>
 				<orderedlist>
-					<listitem>
-						<para>Move the Virtuoso installation archive into a temporary
-					        installation folder on your Client machine</para>
-					</listitem>
-					<listitem>
-						<para>Choose the Client install option.
-						No further component selection will be required.</para>
-						<figure id="wininst103" float="1">
-							<title>Setup Screens</title>
-							<graphic fileref="inst/12clienttype.png" width="504" depth="386"/>
+          <listitem>Launch the Virtuoso Service Manager from your <emphasis>Start</emphasis> menu.
+            <figure id="winstartservlaunch" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Launch the Virtuoso Service Manager.</title>
+              <graphic fileref="ui/win_locate_manager.jpg"/>
 						</figure>
 					</listitem>
-					<listitem>
-						<para>The installer will now extract and install your Virtuoso Client components</para>
-					</listitem>
-				</orderedlist>
-			</sect4>
-			<sect4 id="twotiersrvcomp">
-				<title>Server Components:</title>
-				<orderedlist>
-					<listitem>
-						<para>Move the Virtuoso installation archive into a temporary
-					        installation folder on your Server machine.</para>
-					</listitem>
-					<listitem>
-						<para>Choose the Server install option.</para>
-						<figure id="wininst203" float="1">
-							<title>Setup Screens</title>
-							<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
+          <listitem>Look for an icon to appear in the Task Bar at the bottom right of your screen.
+            <figure id="winstartservicon" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Look for an icon</title>
+              <graphic fileref="win_launch_manager.jpg"/>
 						</figure>
 					</listitem>
-					<listitem>
-						<para>At the component selection, uncheck the &quot;Virtuoso Drivers for ODBC&quot;
-						and &quot;Virtuoso Drivers for JDBC&quot; and the &quot;Samples&quot; check-boxes
-						since you are only installing Virtuoso&apos;s Server components on this machine.</para>
-					</listitem>
-					<listitem>
-						<para>The installer will now extract and install your Virtuoso Server components.</para>
-					</listitem>
 				</orderedlist>
-			</sect4>
 			</sect3>
-			<sect3 id="ThreeTierConfigInst">
-				<title>3-Tier Client-Server Configuration</title>
-				<para>In this scenario you have three logically distinct machine
-    types making up your total solution, the first machine hosts your Applications and
-    Virtuoso client components (Client Machine), the second hosts your Virtuoso server,
-    (Middle Tier Server Machine) and the third machine your back end Database Server (Database
-    Server Machine). This installation configuration format will allow Windows client machines
-    to communicate with non Windows middle-tier server machines running Virtuoso, as well as
-    allowing Virtuoso clients on non Windows client machines to connect to Virtuoso servers on
-    windows based middle-tier server machines. </para>
-				<sect4 id="threetierclicomp">
-					<title>Client Components:</title>
+		  <sect3 id="InstallStepsWinAdminInst">
+		    <title>Start and Administer your Virtuoso Instance</title>
 					<orderedlist>
-						<listitem>
-							<para>Move the Virtuoso installation archive into a temporary
-						        installation folder on your Client machine</para>
-						</listitem>
-						<listitem>
-							<para>Choose the Client install option.
-							No further component selection will be required.</para>
-							<figure id="wininst303" float="1">
-								<title>Setup Screens</title>
-								<graphic fileref="inst/12clienttype.png" width="504" depth="386"/>
+          <listitem>Right-click on the Virtuoso Service Manager icon in the Task Bar, and click on
+          <emphasis>OpenLink Virtuoso Server - Start</emphasis>:
+            <figure id="winstartadminstart" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Start your Virtuoso Instance</title>
+              <graphic fileref="win_start_service.jpg"/>
 							</figure>
 						</listitem>
-						<listitem>
-							<para>The installer will now extract and  install your Virtuoso Client components</para>
+          <listitem>Open the <emphasis>Virtuoso Conductor</emphasis>, Virtuoso's HTTP-based administration tool, by loading this URL in
+          your Web Browser: <ulink url="http://example.com/conductor">http://example.com/conductor</ulink> .
+            <figure id="winstartadmincond" float="1">
+              <title>Installing the Virtuoso Universal Server on Windows -- Virtuoso Conductor</title>
+              <graphic fileref="win_virt_admin.jpg"/>
+            </figure>
 						</listitem>
+          <listitem>Use the Conductor to configure your Virtuoso instance for future use. For example, it is
+          <i><emphasis>strongly</emphasis></i> advised that you change the default passwords for the <emphasis>dba</emphasis> and
+          <emphasis>dav</emphasis> super-user accounts (drill down to <emphasis>System Admin</emphasis> -&lt; <emphasis>User
+          Accounts</emphasis>).</listitem>
 					</orderedlist>
-				</sect4>
-				<sect4 id="threetiermidsrccomp">
-					<title>Middle-Tier Server Components:</title>
-					<para>You need to install both the Virtuoso client and server
-    components on this machine. This is due to the fact that in many cases this server will
-    double as an Application Server, which entails having  clients connecting to an
-    application service that uses Virtuoso for data access.</para>
+		  </sect3>
+		  <sect3 id="InstallStepsWinOptional">
+		    <title>Optional - Restore your old Data and Configuration Files</title>
+		    <para>If you preserved existing data and configuration files at the start of this process, now is the time to bring them back into play.</para>
 					<orderedlist>
-						<listitem>
-							<para>Move the Virtuoso installation archive into a temporary
-        installation folder on your Server machine.</para>
-						</listitem>
-						<listitem>
-							<para>Choose the Server install option.</para>
-							<figure id="wininst403" float="1">
-								<title>Setup Screens</title>
-								<graphic fileref="inst/13installtype.png" width="504" depth="386"/>
-							</figure>
-						</listitem>
-						<listitem>
-							<para>At the component selection, uncheck the &quot;Sample Application&quot; check-box then the
-		&quot;Virtuoso Driver for ODBC&quot; and &quot;Virtuoso Drivers for JDBC&quot;
-		check-boxes since you are only installing Virtuoso&apos;s Server components on this machine.</para>
-						</listitem>
-						<listitem>
-							<para>The installer will now extract and install your Virtuoso Server components.</para>
-						</listitem>
+          <listitem>If you used Virtuoso's online backup feature, <link linkend="onlinebackups">the documentation</link> will walk you through the restoration process.</listitem>
+          <listitem>If you simply copied the INI and DB files elsewhere, and if they were Virtuoso 7.x files, you can just stop the current Virtuoso instance, and replace the newly created INI and DB with the old ones. For best results, we do advise that you compare the content of the old INI with the new, and add any new settings from the new to the old, adjust as may be appropriate to your deployment.</listitem>
+          <listitem>If you simply copied the INI and DB files elsewhere, and if they were Virtuoso 6.x or older files, there are some extra steps that must be taken.</listitem>
 					</orderedlist>
-					<para>You will not need to install anything on the remote database server since you will be connecting to remote
-    database either via ODBC or Native Drivers installed on this Server.</para>
-				</sect4>
 			</sect3>
 		</sect2>
 		
@@ -552,15 +458,16 @@ online. This Web based page can be used for general configuration and usage of t
 			<para>A quick way to check that the database is running, is to point a browser to the
 			http port. The following example URLs will show the System Manager for
 			the default, and the demo Virtuoso databases:</para>
-			<programlisting>http://localhost:8889
-http://localhost:8890
-http://a_virtuoso_server.org:8890</programlisting>
+			<programlisting>
+http://example.com
+http://example.com:8890
+</programlisting>
 		</sect3>
 		<sect3 id="wininstposttrb"><title>Troubleshooting DB Startup Failures</title>  
   <para><emphasis>Install failure</emphasis></para> 
   <para>Check the .log file in your Virtuoso installation db location, for ex:</para>
 <programlisting><![CDATA[
-	C:\Program Files\OpenLink Software\Virtuoso 6.0\db\virtuoso.log  
+	C:\Program Files\OpenLink Software\Virtuoso 7.2\db\virtuoso.log
 ]]></programlisting>  
 <para>which is for the database and log files etc. in order to review the installed files 
 binaries and databases (defaults) for issues if install fails.</para>
@@ -792,17 +699,9 @@ isqlo &lt;enter a valid ODBC Data Source Name&gt;</programlisting>
 		</sect2>
 
 	</sect1>
-	<!-- ############################################################# -->
+	<!-- obsolete
 	<sect1 id="linuxinstall">
 		<title>Virtuoso for Linux (Enterprise Edition)</title>
-			<!--sect2 id="lindoyouwannamigrate">
-				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using
-        the migration utility.  The Virtuoso database file structure has been considerably
-        altered between versions.  Please consult the
-        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
-        section for more details.</para>
-			</sect2-->
 		<sect2 id="b4instlin">
 			<title>Before You Install</title>
 			<para>To ensure a smooth installation, please review the
@@ -1209,8 +1108,8 @@ one via e-mail; in case of difficulties please contact
 			<para>A quick way to check that the database is running, is to point a browser to the
 			http port. The following example URLs will show the System Manager for
 			the default, and the demo Virtuoso databases:</para>
-			<programlisting>http://localhost:8889
-http://localhost:8890
+			<programlisting>http://example.com
+http://example.com
 http://a_virtuoso_server.org:8890</programlisting>
 		</sect3>
 		<sect3 id="linuxinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
@@ -1276,14 +1175,6 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 	</sect1>
 	<sect1 id="unxinstvirt">
 		<title>Virtuoso for Unix (Enterprise Edition)</title>
-			<!--sect2 id="unixdoyouwannamigrate">
-				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using
-        the migration utility.  The Virtuoso database file structure has been considerably
-        altered between versions.  Please consult the
-        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
-        section for more details.</para>
-			</sect2-->
 		<sect2 id="b4instunx">
 			<title>Before You Install</title>
 			<para>To ensure a smooth installation, please review the
@@ -1672,8 +1563,8 @@ one via e-mail; in case of difficulties please contact
 			<para>A quick way to check that the database is running, is to point a browser to the
 			http port. The following example URLs will show the System Manager for
 			the default, and the demo Virtuoso databases:</para>
-			<programlisting>http://localhost:8889
-http://localhost:8890
+			<programlisting>http://example.com
+http://example.com
 http://a_virtuoso_server.org:8890</programlisting>
 		</sect3>
 		<sect3 id="unxinstvirtinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
@@ -1737,34 +1628,32 @@ bash# cd /etc/rc5.d ; ln -s ../init.d/virtuoso S99virtuoso
 			<link linkend="defpasschange">changing the default passwords</link>.</para>
 		</sect2>
 	</sect1>
-<sect1 id="unixpersonainstall">
-  <title>Virtuoso for Unix (Personal Edition)</title>
-  <sect2 id="unixpersonainstalldescr">
+	-->
+
+<sect1 id="virtuosoinstallunixpe">
+  <title>Installing the Virtuoso Universal Server on Unix-like OS (AIX, HP-UX, Linux, Solaris, etc.) </title>
+  <sect2 id="virtuosoinstallunixpedescr">
     <title>Installation</title>
-    <para>Once the required tar file has been downloaded from the web or ftp site and
-placed in a designated installation directory the installation process is ready to
-commence. Choose or create a suitable user account to own your Virtuoso installation.
+    <para>Once the required tar file has been downloaded from the web or ftp site and placed in a designated installation
+    	directory the installation process is ready to commence.
     </para>
     <itemizedlist>
-      <listitem>The first step is to un-tar the file to obtain the install script and
-archive file. Use the following command, replacing  with the relevant name of the file
-you downloaded:
-      </listitem>
+      <listitem>Choose or create a suitable user account to own your Virtuoso installation.</listitem>
+      <listitem>Un-tar the file to obtain the install script and archive file using a command like this, where XX specifies the
+      	OS identifier (e.g., l3 = Linux glibc23 x86, l9 = Linux glibc25 x86_64, sv = Solaris 2.10 x86_64, etc.):
 <programlisting><![CDATA[
-tar xvf <tar file>.tar
+tar -xvf XXvpz2zz.tar
 ]]></programlisting>
-      <listitem>
-If a license file exists place this in the same directory as installation files and it
-will be used during installation.
       </listitem>
-      <listitem>
-If upgrading an existing Virtuoso instance ensure it is shutdown first and a backup of
-your database file is made, then run the install script using the following command:
+      <listitem>If a license file exists, place this in the same directory as the installation files, and it will automatically
+      	be applied during installation. If upgrading an existing Virtuoso instance, be sure to take a backup of your database
+      	file and shut down the existing instance before proceeding.
       </listitem>
+      <listitem>Run the install script using the following command:
 <programlisting><![CDATA[
 $ sh ./install.sh
 
-- Extracting Virtuoso Personal Edition v5.0
+- Extracting Virtuoso Universal Server vX.Y
 
 - Creating default environment settings
 
@@ -1802,88 +1691,221 @@ the installation process:
 Installation completed
 $
 ]]></programlisting>
+       </listitem>
+       <listitem>Proceed to the Configuration section below.</listitem>
     </itemizedlist>
 </sect2>
-   <sect2 id="unixpersonainstallinstpost"><title>Post Installation</title>  
-  <sect3 id="unixpersonainstallpost">
-			<title>Post-Installation Sanity Check</title>
-			<para>A quick way to check that the database is running, is to point a browser to the
-			http port. The following example URLs will show the System Manager for
-			the default, and the demo Virtuoso databases:</para>
-			<programlisting>http://localhost:8889
-http://localhost:8890
-http://a_virtuoso_server.org:8890</programlisting>
-		</sect3>
-		<sect3 id="unixpersonainstallinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
-  <para><emphasis>Install failure</emphasis></para> 
-  <para>Check the .log file in:</para>
-<programlisting><![CDATA[
-$<Directory where Virtuoso is installed>/bin/virtuoso.log
-]]></programlisting>  
- <para>in order to review the installed files binaries and databases (defaults) 
- for issues if install fails.</para>
-   <para><emphasis>.lck existance</emphasis></para>   
-   <para>Check .log in case of .lck issue</para>
-   <para>Delete the .lck file and repeat the steps from above.</para>
-   <para><emphasis>.trx incompatiblity issue</emphasis></para>   
-   <para>Check .log in case of .trx incompatiblity issue</para>
-    <para><emphasis>oplmgr issue</emphasis></para>     
-   <para>See <link linkend="oplmngrlfla">OpenLink License Management for Linux</link></para>
-  </sect3>
-  </sect2>
-<sect2 id="unixpersonainstallconfg">
+<sect2 id="virtuosoinstallunixpeconfg">
     <title>Configuration</title>
     <itemizedlist>
-      <listitem>Once the URL above has been loaded a browser the first page can be
-used to select a license file for use with the installation if one is not already
-in place, otherwise the task can be skipped using the button provided:
+      <listitem>Once the URL above has been loaded into a browser, you can select a license file for use with the installation;
+      	if a license file is already in place, you can "Skip" this task with the obvious button:
         <figure id="v50peunx00" float="1">
           <title>License file</title>
 	  <graphic fileref="inst/v50-pe-unx-00.png"/>
         </figure>
       </listitem>
-      <listitem>
-It is strongly advised that the standard "dba" and "dav" user account password be
-changed using the post installation page provided:
+      <listitem>It is strongly advised that the standard "dba" and "dav" user account password be changed using the post installation
+      	page provided:
         <figure id="v50peunx01" float="1">
           <title>DAV/DBA authentication Setting page</title>
 	  <graphic fileref="inst/v50-pe-unx-01.png"/>
         </figure>
       </listitem>
-      <listitem>The post installation page is now complete and the Virtuoso Welcome
-page is presented:
+      <listitem>The post installation page is now complete and the Virtuoso Welcome page is presented:
         <figure id="v50peunx02" float="1">
           <title>Post installation page</title>
 	  <graphic fileref="inst/v50-pe-unx-02.png"/>
         </figure>
       </listitem>
+      <listitem>The installation is now ready for use.</listitem>
     </itemizedlist>
-    <para>The installation is now ready for use.</para>
 </sect2>
         <sect2 id="installdemopersonaledition">
 		<title>Demo Database</title>
            <para><link linkend="demodbinstallsteps">Installation steps</link>.</para>
         </sect2>
-
 </sect1>
+<!-- This need to be merged with http://wikis.openlinksw.com/dataspace/owiki/wiki/VirtuosoWikiWeb/VirtuosoInstallMac-->
 <sect1 id="installmacosx"><title>Virtuoso for Mac OS X</title>
-
-			<!--sect2 id="macxdoyouwannamigrate">
-				<title>Existing Virtuoso 2.7 Users</title>
-				<para>You can migrate your existing Virtuoso servers to 3.0 using
-        the migration utility.  The Virtuoso database file structure has been considerably
-        altered between versions.  Please consult the
-        <link linkend="migrate27to30">Migration of Virtuoso from Version 2.7 to Version 3.0</link>
-        section for more details.</para>
-			</sect2-->
   <sect2 id="macosxbeforeuinst"><title>Before You Install</title>
   <para>Before installing the Virtuoso software for Mac OS X you must ensure
-  that you have the correct package from the <ulink url="http://www.openlinksw.com/">OpenLink</ulink>
+  that you have the correct package from the <ulink url="http://virtuoso.openlinksw.com/download/">OpenLink</ulink>
   Web Site.</para>
 
 	</sect2>
-
-  <sect2 id="macosxinst"><title>Installation Process</title>
+    <sect2 id="macosxinstdragdrop"><title>Virtuoso Drag and Drop Installer for Mac OS X</title>
+      <para><emphasis>Note</emphasis>: Virtuoso 7 and its Drag-and-Drop Installer for Mac OS X require Lion
+      (10.7.x), Mountain Lion (10.8.x), Mavericks (10.9.x), or later. Virtuoso 6 remains available for
+      deployment on Leopard (10.5.x) or Snow Leopard (10.6.x).</para>
+      <orderedlist>
+         <listitem><ulink url="http://virtuoso.openlinksw.com/download/">Download</ulink> and double-click on
+         the Virtuoso installer disk image, <emphasis>mwvp2zzz.dmg</emphasis>, to start the installation.
+           <figure id="v7pe1" float="1">
+             <title>Mac OS X installer: Start installation</title>
+             <graphic fileref="mac/v7pe1.png" width="101" depth="84"/>
+           </figure>
+         </listitem>
+         <listitem>Drag the Virtuoso application icon to your Applications folder (recommended) or any
+         	preferred location on your Mac.
+           <figure id="v7pe2" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe2.png" width="602" depth="472"/>
+           </figure>
+         </listitem>
+         <listitem>Double-click the Virtuoso application (e.g., Virtuoso 7.1.app) to launch the Virtuoso
+         	Application Manager Menu Extra, which will display as a V symbol in the menu bar.
+           <figure id="v7pe6" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe6.png" width="97" depth="19"/>
+           </figure>
+         </listitem>
+         <listitem>Select <emphasis>Start Default Instance</emphasis> from the <emphasis>V</emphasis> menu.
+           <figure id="v7pe7" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe7.png" width="266" depth="170"/>
+           </figure>
+         </listitem>
+         <listitem>If this is a first time installation of OpenLink components, a dialog will be prompt you
+         	to install the OpenLink License Manager.
+           <figure id="v7pe8" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe8.png" width="422" depth="213"/>
+           </figure>
+           <orderedlist>
+             <listitem>Click the <emphasis>Continue</emphasis> button to start the installation.
+               <figure id="v7pe9" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe9.png" width="619" depth="443"/>
+               </figure>
+             </listitem>
+             <listitem>Select the disk the installation should be performed on.
+               <figure id="v7pe10" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe10.png" width="621" depth="441"/>
+               </figure>
+             </listitem>
+             <listitem>Click <emphasis>Install</emphasis> to commence the installation of the License Manager
+             components.
+             	 <figure id="v7pe11" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe11.png" width="619" depth="442"/>
+               </figure>
+             </listitem>
+             <listitem>The following dialog will be displayed to confirm successful installation of the License
+             	Manager, which will be automatically started and ready for use upon installation.
+               <figure id="v7pe12" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe12.png" width="624" depth="445"/>
+               </figure>
+             </listitem>
+           </orderedlist>
+         </listitem>
+         <listitem>If a license file is not already in place, you will be prompted to locate an available
+         	license file or to purchase one for installation. Click the Install button to install the license
+         	file of your choice.
+           <figure id="v7pe13" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe13.png" width="423" depth="217"/>
+           </figure>
+           <orderedlist>
+             <listitem>Navigate to the location of the license file to be installed, and click the
+             	<emphasis>Open</emphasis> button. The installer will move it into the
+             	<emphasis>/Library/Application Support/openlink/Licenses/</emphasis> folder.
+               <figure id="v7pe14" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe14.png" width="700" depth="400"/>
+               </figure>
+             </listitem>
+             <listitem>A dialog confirming the successful installation of the license file will be displayed.
+               <figure id="v7pe15" float="1">
+                 <title>Mac OS X installer: Drag Virtuoso Application</title>
+                 <graphic fileref="mac/v7pe15.png" width="422" depth="155"/>
+               </figure>
+             </listitem>
+           </orderedlist>
+         </listitem>
+         <listitem>The Default database instance can now be started by clicking the <emphasis>Start</emphasis>
+         button.
+           <figure id="v7pe16" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe16.png" width="420" depth="157"/>
+           </figure>
+         </listitem>
+         <listitem>The Virtuoso server is now ready for use, and the browser-based Virtuoso Conductor
+         	administration interface may be accessed by selecting <emphasis>Open Virtuoso Conductor</emphasis>
+         	from the <emphasis>V</emphasis> menu.
+           <figure id="v7pe17" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe17.png" width="264" depth="167"/>
+           </figure>
+         </listitem>
+         <listitem>The Virtuoso Conductor may also be accessed by manually loading the URL
+         	&lt;http://example.com/conductor&gt; (or &lt;http://full-hostname.example.com:8890/conductor&gt;
+         	from a remote host) into any web browser.
+           <figure id="v7pe18" float="1">
+             <title>Mac OS X installer: Drag Virtuoso Application</title>
+             <graphic fileref="mac/v7pe18.png" width="700" depth="432"/>
+           </figure>
+         </listitem>
+      </orderedlist>
+    <sect3 id="macosxinstdragdroptrbsh"><title>Troubleshooting</title>
+      <para>Many issues may be quickly diagnosed and resolved by reviewing Virtuoso's <code>.log</code> file,
+      typically located alongside the active <code>.db</code> file. </para>
+      <figure id="v7pe19" float="1">
+        <title>Mac OS X installer: Troubleshooting</title>
+        <graphic fileref="mac/v7pe19.png" width="700" depth="498"/>
+      </figure>
+      <para>The default instance log file may be opened in Mac OS X's Console.app by:</para>
+      <itemizedlist mark="bullet">
+        <listitem>selecting <emphasis>Open Diagnostic Messages</emphasis> from the <emphasis>V</emphasis> menu</listitem>
+        <listitem>right-clicking on the <emphasis>Virtuoso 7.1.app </emphasis> icon, select
+        <emphasis>View Package Contents</emphasis>, and then drilling down to
+        <emphasis>Contents -> virtuoso -> database -> virtuoso.log</emphasis>
+          <figure id="v7pe20" float="1">
+            <title>Mac OS X installer: Troubleshooting</title>
+            <graphic fileref="mac/v7pe20.png" width="700" depth="492"/>
+          </figure>
+        </listitem>
+        <listitem>executing the following command in <emphasis>Terminal.app</emphasis>:
+<programlisting><![CDATA[
+open /Applications/Virtuoso\ 7.1.app/Contents/virtuoso/database/virtuoso.log
+]]></programlisting>
+        </listitem>
+      </itemizedlist>
+      <sect4 id="macosxinstdragdroptrbshmissingl"><title>Missing license file</title>
+        <para>Make sure that the license file, always named <code>virtuoso.lic</code> is in the correct
+        location, as described above -- <code>/Library/Application Support/openlink/Licenses/.</code></para>
+        <para>Restarting the License Manager may be necessary. Rebooting should always result in a running License Manager, but you can also use the <emphasis>Terminal.app</emphasis>:</para>
+<programlisting><![CDATA[
+cd /Library/Application\ Support/openlink/bin
+./oplmgr -fd /Library/Application\ Support/openlink/Licenses
+]]></programlisting>
+      </sect4>
+      <sect4 id="macosxinstdragdroptrbshexpiredl"><title>Expired license file</title>
+        <para>Acquire a non-expired license file, by purchase or conversation with Technical Support or your
+        	Account Manager, and replace the expired file with the non-expired, as
+        	<ulink url="http://support.openlinksw.com/supportweb/ApplyVirtLicenses">documented</ulink>.</para>
+      </sect4>
+      <sect4 id="macosxinstdragdroptrbsnolm"><title>Cannot contact the License Manager</title>
+        <para>Rebooting should always result in a running License Manager. You can use
+        	<emphasis>Terminal.app</emphasis> to check whether it's running:</para>
+<programlisting><![CDATA[
+ps -ef | grep oplmgr | grep -v grep
+]]></programlisting>
+        <para>If no process is listed, these two commands should get it running:</para>
+<programlisting><![CDATA[
+cd /Library/Application\ Support/openlink/bin
+./oplmgr -fd ../Licenses
+]]></programlisting>
+        <para>If the process is listed, there are many possible causes, including firewall or other networking
+        	issues. Please <ulink url="http://support.openlinksw.com/support/online-support.vsp">allow our Support Team</ulink>
+        	to assist you in diagnosis and resolution.
+        </para>
+      </sect4>
+    </sect3>
+  </sect2>
+  <sect2 id="macosxinst"><title>Installing Virtuoso 6 or earlier</title>
 
   <para>Open the Virtuoso Personal Edition Disk Image file ntvpz2zz.dmg by either double clicking on
         the DMG file in the Finder windows or using the &quot;open&quot; command from a Terminal window, to mount
@@ -1942,8 +1964,7 @@ page is presented:
   <figure id="v50pe08" float="1"><title>Preparing ... </title>
     <graphic fileref="mac/v50pe08.png" width="623" depth="441"/></figure>
 
-  <para>The Virtuoso Server is started at the end of this process and a Web page loaded enabling you
-        to obtain a trial or full license from the company order processing site online.
+  <para>The Virtuoso Server is started at the end of this process. A Web page is loaded to enable you to obtain a trial or full license from the OpenLink online shop:
   </para>
   
   <figure id="v50pe09" float="1"><title>Admin Assistant</title>
@@ -1955,25 +1976,21 @@ page is presented:
   <figure id="v50pe10" float="1"><title>The Trial license page</title>
     <graphic fileref="mac/v50pe10.png" width="905" depth="693"/></figure>
 
-  <para>Click on the &quot;Download License&quot; button on the right to obtain the license file immediately.
-        An e-mail will also be sent with details of the license and the location on the ODS account of the
-        registered user where in can be obtained from at a later date. Once a license file is available on the
-        machine use the &quot;Browse&quot; button to locate it and the &quot;Set License&quot; button to
-        initialize the Virtuoso server with this license file.
+  <para>Click on the &quot;Download License&quot; button on the right to obtain the license file immediately. An e-mail will also be sent to your registered email address. This email contains the details of the Virtuoso license and the location of an OpenLink Data Spaces account where you can obtain an additional demo license at a later date.
   </para>
-
+  <para>Once a license file is available on your Mac, use the &quot;Browse&quot; button to locate it. Then, use the
+  &quot;Set License&quot; button to initialize the Virtuoso server with it:</para>
   <figure id="v50pe11" float="1"><title>Download license</title>
     <graphic fileref="mac/v50pe11.png" width="881" depth="759"/></figure>
 
-  <para>Choose to change the &quot;dba&quot; and &quot;dav&quot; administrative user passwords from their default
-        of &quot;dba&quot; and &quot;dav&quot; respectively to a value of your choice.
+  <para>Change the &quot;dba&quot; and &quot;dav&quot; user passwords from their default of &quot;dba&quot; and
+  &quot;dav&quot; to a value of your choice:
   </para>
 
   <figure id="v50pe12" float="1"><title>Change passwords</title>
     <graphic fileref="mac/v50pe12.png" width="858" depth="503"/></figure>
 
-  <para>The Virtuoso Server Welcome page will now be displayed indicating the server is online.
-        This Web based page can be used for general configuration and usage of the Virtuoso Server.
+  <para>The Virtuoso Server Welcome page will now be displayed. The server is online. This Web based page can be used for general configuration and usage of the Virtuoso Server:
   </para>
 
   <figure id="v50pe13" float="1"><title>Welcome</title>
@@ -2019,8 +2036,8 @@ page is presented:
 		<para>A quick way to check that the database is running, is to point a browser to the
 		http port. The following example URLs will show the System Manager for
 		the default, and the demo Virtuoso databases:</para>
-		<programlisting>http://localhost:8889
-http://localhost:8890
+		<programlisting>http://example.com
+http://example.com
 http://a_virtuoso_server.org:8890</programlisting>
 	</sect3> 
   <sect3 id="macosxinstposttrb"><title>Troubleshooting DB Startup Failures</title>  
@@ -2673,7 +2690,8 @@ make updates to objects and persist the changes to the database.</para>
         <title>Pre-requisites</title>
         <para>In order to create an Entity Framework Application in your own environment you will need:</para>
         <orderedlist>
-          <listitem>Microsoft Visual Studio 2008 SP1, the ADO.NET Entity Framework runtime and associated tools are included in Visual Studio 2008 SP1.</listitem>
+          <listitem>Microsoft Visual Studio 2008 SP1, the ADO.NET Entity Framework runtime and associated tools are included
+          	in Visual Studio 2008 SP1.</listitem>
           <listitem>A running Virtuoso Universal Server instance.</listitem>
         </orderedlist>
       </sect2>
@@ -2701,7 +2719,8 @@ schools_db_dav.vad package and click <emphasis>proceed</emphasis>.
                <graphic fileref="ui/uado3.png"/>
              </figure>
            </listitem>
-           <listitem>Once complete return to the <emphasis>Packages</emphasis> tab and scroll down to confirm the *schools_db* package is listed as installed.
+           <listitem>Once complete return to the <emphasis>Packages</emphasis> tab and scroll down to confirm the *schools_db*
+           package is listed as installed.
              <figure id="uado4" float="1">
                <title>Install package</title>
                <graphic fileref="ui/uado4.png"/>
@@ -2853,26 +2872,28 @@ and click <emphasis>Finish</emphasis>.
         </orderedlist>
         <para><emphasis>View the EDM in the ADO.NET Entity Data Model Designer</emphasis></para>
         <orderedlist>
-          <listitem>In the <emphasis>Solution Explorer</emphasis>, double-click the
-<emphasis>School.edmx</emphasis> file. This displays the School model in the ADO.NET Entity Data Model Designer window.
+          <listitem>In the <emphasis>Solution Explorer</emphasis>, double-click the <emphasis>School.edmx</emphasis>
+          file. This displays the School model in the ADO.NET Entity Data Model Designer window.
             <figure id="uado17" float="1">
               <title>Solution Explorer</title>
               <graphic fileref="ui/uado17.png"/>
             </figure>
           </listitem>
-          <listitem>From the <emphasis>View</emphasis> menu, select <emphasis>Other Windows</emphasis>,
-and then click <emphasis>Model Browser</emphasis> to display the <emphasis>Entity Model Browser</emphasis> window.
+          <listitem>From the <emphasis>View</emphasis> menu, select <emphasis>Other Windows</emphasis>, and then click
+          <emphasis>Model Browser</emphasis> to display the <emphasis>Entity Model Browser</emphasis> window.
           </listitem>
-          <listitem>Expand the <emphasis>SchoolModel</emphasis> and <emphasis>SchoolModel.Store</emphasis> nodes to view conceptual and store definitions, respectively.
+          <listitem>Expand the <emphasis>SchoolModel</emphasis> and <emphasis>SchoolModel.Store</emphasis> nodes to view
+          conceptual and store definitions, respectively.
             <figure id="uado20" float="1">
               <title>SchoolModel</title>
               <graphic fileref="ui/uado20.png"/>
             </figure>
           </listitem>
-          <listitem>From the <emphasis>View menu</emphasis>, select <emphasis>Other Windows</emphasis>,
-click <emphasis>Mapping Details</emphasis>, and then click an entity (Person for example) or association in the Entity Designer.
+          <listitem>From the <emphasis>View menu</emphasis>, select <emphasis>Other Windows</emphasis>, click
+          <emphasis>Mapping Details</emphasis>, and then click an entity (Person for example) or association in the Entity Designer.
             </listitem>
-            <listitem>This displays the Entity Mapping Details window with information about the object-relational mapping for the selected object.
+            <listitem>This displays the Entity Mapping Details window with information about the object-relational mapping
+            	for the selected object.
               <figure id="uado21" float="1">
                 <title>View menu</title>
                 <graphic fileref="ui/uado21.png"/>
@@ -2882,11 +2903,13 @@ click <emphasis>Mapping Details</emphasis>, and then click an entity (Person for
         </sect2>
         <sect2 id="installvsentqueryentity">
           <title>Querying Entities and Associations</title>
-          <para>This section creates strongly-typed queries against the CLR objects that represent entities and associations in the School model, and bind display controls to the object collections returned from these queries.</para>
+          <para>This section creates strongly-typed queries against the CLR objects that represent entities and associations
+          	in the School model, and bind display controls to the object collections returned from these queries.</para>
           <para><emphasis>Query the departments in the School database</emphasis></para>
           <orderedlist>
             <listitem>At the beginning of the code file for the <emphasis>CourseViewer</emphasis> form,
-add the following <emphasis>using</emphasis> (C#) or <emphasis>Imports</emphasis> (Visual Basic) statements to reference the model created from the School database and the entity namespace.
+add the following <emphasis>using</emphasis> (C#) or <emphasis>Imports</emphasis> (Visual Basic) statements to reference the
+model created from the School database and the entity namespace.
 <programlisting><![CDATA[
 Visual Basic
 
@@ -2966,8 +2989,8 @@ catch (Exception ex)
         </orderedlist>
         <para><emphasis>Display courses for the selected department</emphasis></para>
         <orderedlist>
-          <listitem>In the <emphasis>CourseViewer</emphasis> form designer, double-click the
-<emphasis>departmentList</emphasis> control. This creates the <emphasis>departmentList_SelectedIndexChanged</emphasis> event handler method.</listitem>
+          <listitem>In the <emphasis>CourseViewer</emphasis> form designer, double-click the <emphasis>departmentList</emphasis>
+          control. This creates the <emphasis>departmentList_SelectedIndexChanged</emphasis> event handler method.</listitem>
           <listitem>Paste the following code that loads the courses that are related to the selected department.
 <programlisting><![CDATA[
 Visual Basic
@@ -3024,7 +3047,8 @@ catch (Exception ex)
         </sect2>
         <sect2 id="installvsentinsertandupdate">
           <title>Inserting and Updating Data</title>
-          <para>In this section the changes made to Course objects bound are saved to the DataGridView control to the database and also run the completed Course Manager application.</para>
+          <para>In this section the changes made to Course objects bound are saved to the DataGridView control to the
+          	database and also run the completed Course Manager application.</para>
           <para><emphasis>Save changes made to objects</emphasis></para>
           <orderedlist>
             <listitem>In the <emphasis>Toolbox</emphasis>, expand <emphasis>Common Controls</emphasis>,
@@ -3171,9 +3195,11 @@ Provider for accessing the sample Northwind Demo database:
         <listitem>When the New Project window appears, choose either <emphasis>Visual Basic</emphasis>
 or <emphasis>Visual C#</emphasis> as the programming language.
         </listitem>
-        <listitem>Within the language category click on <emphasis>Web</emphasis>, and select <emphasis>ASP.NET Web Application</emphasis> from the right-hand panel.
+        <listitem>Within the language category click on <emphasis>Web</emphasis>, and select
+        <emphasis>ASP.NET Web Application</emphasis> from the right-hand panel.
         </listitem>
-        <listitem>Choose a name for the project, for example <emphasis>VirtuosoDataService</emphasis>, and click <emphasis>OK</emphasis>.
+        <listitem>Choose a name for the project, for example <emphasis>VirtuosoDataService</emphasis>,
+        and click <emphasis>OK</emphasis>.
           <figure id="ados2" float="1">
             <title>Name project</title>
             <graphic fileref="ui/eora2.png"/>
@@ -3222,8 +3248,8 @@ OpenLink <emphasis>Virtuoso Data Source</emphasis> from the list displayed and c
             <graphic fileref="ui/dora9.png"/>
           </figure>
         </listitem>
-        <listitem>In the <emphasis>Add Connection</emphasis> dialog, specify the
-<emphasis>hostname, portno, username and password</emphasis> for the target Virtuoso Server and check the <b>Save Password</b> check box.
+        <listitem>In the <emphasis>Add Connection</emphasis> dialog, specify the <emphasis>hostname, portno,
+        username and password</emphasis> for the target Virtuoso Server and check the <b>Save Password</b> check box.
           <figure id="ados9" float="1">
             <title>Connection Properties</title>
             <graphic fileref="ui/dora10.png"/>
@@ -3243,24 +3269,23 @@ successful and then click OK to add the connection.
             <graphic fileref="ui/ados11.png"/>
           </figure>
         </listitem>
-        <listitem>Set the <emphasis>entity connect string</emphasis> name to
-<emphasis>VirtuosoDemoEntities</emphasis> (note this name as it is required in step 17 below)
-and click <emphasis>Next</emphasis>.
+        <listitem>Set the <emphasis>entity connect string</emphasis> name to <emphasis>VirtuosoDemoEntities</emphasis>
+        (note this name as it is required in step 17 below) and click <emphasis>Next</emphasis>.
           <figure id="ados12" float="1">
             <title>entity connect string</title>
             <graphic fileref="ui/ados12.png"/>
           </figure>
         </listitem>
-        <listitem>In the <emphasis>Choose your Database Objects</emphasis>
-page select the <emphasis>Tables</emphasis> check box to select all tables in the Demo database for
-addition to the Entity Data Model, set the <emphasis>Model Namespace</emphasis> to
-<emphasis>VirtuosoDemoModel</emphasis> and click <emphasis>Finish</emphasis>.
+        <listitem>In the <emphasis>Choose your Database Objects</emphasis> page select the <emphasis>Tables</emphasis>
+        check box to select all tables in the Demo database for addition to the Entity Data Model, set the
+        <emphasis>Model Namespace</emphasis> to <emphasis>VirtuosoDemoModel</emphasis> and click <emphasis>Finish</emphasis>.
           <figure id="ados13" float="1">
             <title>Database Objects</title>
             <graphic fileref="ui/ados13.png"/>
           </figure>
         </listitem>
-        <listitem>The <emphasis>Virtuoso.edmx</emphasis> EDM will be created with the tables and relationships displayed in the Visual Studio IDE
+        <listitem>The <emphasis>Virtuoso.edmx</emphasis> EDM will be created with the tables and relationships displayed
+        in the Visual Studio IDE
           <figure id="ados14" float="1">
             <title>Virtuoso.edmx</title>
             <graphic fileref="ui/ados14.png"/>
@@ -3274,17 +3299,17 @@ addition to the Entity Data Model, set the <emphasis>Model Namespace</emphasis> 
           </figure>
         </listitem>
         <listitem>The <emphasis>Add New Item</emphasis> dialog will appear, choose the
-<emphasis>ADO.NET Data Service</emphasis> template, give it the name <emphasis>Virtuoso.svc</emphasis> and
-click <emphasis>Add</emphasis> to create the ADO.Net Data Service.
+        <emphasis>ADO.NET Data Service</emphasis> template, give it the name <emphasis>Virtuoso.svc</emphasis> and click
+        <emphasis>Add</emphasis> to create the ADO.Net Data Service.
           <figure id="ados15" float="1">
             <title>ADO.NET Data Service</title>
             <graphic fileref="ui/ados15.png"/>
           </figure>
         </listitem>
-        <listitem>In the <emphasis>Virtuoso.svc.cs</emphasis> Data Service file created add the
-data source class name of <emphasis>VirtuosoDemoEntities</emphasis> (note this is the name set in step 12)
-as the <emphasis>DataService</emphasis> name and enable the access to the Data Service by adding
-the entry <emphasis>config.SetEntitySetAccessRule("*", EntitySetRights.All);</emphasis> in the
+        <listitem>In the <emphasis>Virtuoso.svc.cs</emphasis> Data Service file created add the data source class
+        name of <emphasis>VirtuosoDemoEntities</emphasis> (note this is the name set in step 12) as the
+        <emphasis>DataService</emphasis> name and enable the access to the Data Service by adding the entry
+        <emphasis>config.SetEntitySetAccessRule("*", EntitySetRights.All);</emphasis> in the
 <emphasis>InitializeService</emphasis> method.
 <programlisting><![CDATA[
 // C#
@@ -3312,7 +3337,9 @@ namespace SimpleDataService
             <graphic fileref="ui/ados16.png"/>
           </figure>
         </listitem>
-        <listitem>To test the Data Service, simply hit <emphasis>Ctrl+F5</emphasis> within Visual Studio, which will start the development web server, run the Data Services server inside and load a Web browser page displaying the list of available tables/entities of the Demo database.
+        <listitem>To test the Data Service, simply hit <emphasis>Ctrl+F5</emphasis> within Visual Studio, which will
+        start the development web server, run the Data Services server inside and load a Web browser page displaying
+        the list of available tables/entities of the Demo database.
           <figure id="ados17" float="1">
             <title>test the Data Service</title>
             <graphic fileref="ui/ados17.png"/>
@@ -3328,15 +3355,15 @@ namespace SimpleDataService
         </orderedlist>
         <para><emphasis>NOTES</emphasis></para>
         <orderedlist>
-          <listitem><emphasis>Important</emphasis> - To view <emphasis>Atom</emphasis> (the default
-format returned by an ADO.NET Data Service) in Internet Explorer, you must first ensure that
-<emphasis>Feed Reading View</emphasis> is turned <emphasis>off</emphasis>. This can be done on
-the <emphasis>Content tab</emphasis> of <emphasis>Tools in Internet Options</emphasis>.
+          <listitem><emphasis>Important</emphasis> - To view <emphasis>Atom</emphasis> (the default format returned by
+          an ADO.NET Data Service) in Internet Explorer, you must first ensure that <emphasis>Feed Reading View</emphasis>
+          is turned <emphasis>off</emphasis>. This can be done on the <emphasis>Content tab</emphasis> of <emphasis> Tools
+          	in Internet Options</emphasis>.
           </listitem>
           <listitem>If a Data Services entity instance URI page fails to load you can turn
-<emphasis>Verbose</emphasis> errors on by adding <emphasis>config.UseVerboseErrors = true;</emphasis>
-in the <emphasis>virtuoso.svc.cs InitializeService</emphasis> method to obtain more detailed
-information from the server as to why the page failed to load:
+          	<emphasis>Verbose</emphasis> errors on by adding <emphasis>config.UseVerboseErrors = true;</emphasis> in the
+          	<emphasis>virtuoso.svc.cs InitializeService</emphasis> method to obtain more detailed information from the
+          	server as to why the page failed to load:
 <programlisting><![CDATA[
 public static void InitializeService(IDataServiceConfiguration config)
 
@@ -3353,7 +3380,8 @@ config.SetEntitySetAccessRule("*", EntitySetRights.All);
       </sect2>
   </sect1>
 
-<sect1 id="installwfas"><title>Windows Form Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</title>
+<sect1 id="installwfas">
+	  <title>Windows Form Application for accessing Virtuoso RDF data via SPASQL using the Virtuoso ADO.Net Provider</title>
     <para>This section will guide you through creating a simple application that allows you to access RDF
 data in a Virtuoso database as an Entity DataSet and explore that RDF data in an intuitive way by clicking
 on dereferenceable <link linkend="rdfiriidtype">IRIs</link>.</para>
@@ -3369,7 +3397,7 @@ containing the familiar Northwind tables. It will also creates <link linkend="rd
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
-application, and would be would be localhost:8890 for a default installation or whatever the <link linkend="ini_URIQA">URIQA DefaultHost</link>
+application, and would be would be example.com for a default installation or whatever the <link linkend="ini_URIQA">URIQA DefaultHost</link>
 Virtuoso configuration parameter is set to when the demo database VAD package is installed.
   </listitem>
 </orderedlist>
@@ -3718,7 +3746,7 @@ FROM <http://demo.openlinksw.com/Northwind>
 WHERE {?s a nwind:Customer}
 ]]></programlisting>
 <para>If you examine the ExtendedStringHandler class you will see that the dataset clause, from
-&lt;http://localhost:8890/Northwind&gt;, is hard coded. This means that when when the selected IRI is
+&lt;http://example.com/Northwind&gt;, is hard coded. This means that when when the selected IRI is
 a link to an external data store, such as dbpedia, there is no matching data and an error is displayed.
 If the application is to be able to dereference external IRIs then the hard coded dataset clause needs
 to be removed and then we can use a Virtuoso extension to SPARQL, get:soft, that tells Virtuoso that it
@@ -4457,7 +4485,7 @@ the property which can itself be explored further by clicking on labels and valu
 local Northwind graph you quickly find that the property details are not found. The application needs some
 further changes to work consistently. The problem is finding the graph where the property information is
 defined. The general handler for Extended Strings first checks the local Northwind graph,
-http://localhost:8890/Northwind, where the Northwind data is held, and then uses the IRI itself as the graph
+http://example.com/Northwind, where the Northwind data is held, and then uses the IRI itself as the graph
 and tries to load that dynamically. This is not working for information about the Northwind properties.
 These properties are defined in the Northwind ontology, http://demo.openlinksw.com/schemas/northwind. We
 have already had to find this graph when getting the short label name. We need to be able to associate the
@@ -4648,7 +4676,7 @@ public ExtendedStringHandler(SqlExtendedString iri, VirtuosoConnection parentCon
       {
           ParentIRI = iri;
           isIRI = true;
-          DescribeCommandSimple = new StringBuilder("sparql select * from <http://localhost:8890/Northwind> where {<" + iri.ToString() + "> ?p ?o}");
+          DescribeCommandSimple = new StringBuilder("sparql select * from <http://example.com/Northwind> where {<" + iri.ToString() + "> ?p ?o}");
           DescribeCommandGeneral = new StringBuilder("sparql define get:soft " + '"'.ToString() + "soft" + '"'.ToString() + " select * from <" + graph + "> where { <" + iri.ToString() + "> ?p ?o }");
       }
   }
@@ -4686,7 +4714,7 @@ containing the familiar Northwind tables. It will also creates <link linkend="rd
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users would
 use the appropriate hostname and port number of their Virtuoso installation to create the sample
-application, and would be would be localhost:8890 for a default installation or whatever the <link linkend="ini_URIQA">URIQA DefaultHost</link>
+application, and would be would be example.com for a default installation or whatever the <link linkend="ini_URIQA">URIQA DefaultHost</link>
 Virtuoso configuration parameter is set to when the demo database VAD package is installed.
   </listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
@@ -4703,7 +4731,7 @@ dba. Then open iSQL from the menu on the left and execute the following statemen
 <programlisting><![CDATA[
 create view Demo.demo.sparqlview as
 sparql
-select distinct ?s  from <http://localhost:8890/Northwind>
+select distinct ?s  from <http://example.com/Northwind>
 where {?s a <http://demo.openlinksw.com/schemas/northwind#Customer>}
 ]]></programlisting>
     <para>Note:</para>
@@ -4781,7 +4809,7 @@ prompted to enable debugging. The default browser will be launched showing a pag
 </para>
 <programlisting><![CDATA[
   <?xml version="1.0" encoding="utf-8" standalone="yes" ?>
-- <service xml:base="http://localhost:1241/WebDataService1.svc/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:app="http://www.w3.org/2007/app" xmlns="http://www.w3.org/2007/app">
+- <service xml:base="http://example.com/WebDataService1.svc/" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:app="http://www.w3.org/2007/app" xmlns="http://www.w3.org/2007/app">
 - <workspace>
   <atom:title>Default</atom:title>
 - <collection href="sparqlview">
@@ -4794,7 +4822,7 @@ prompted to enable debugging. The default browser will be launched showing a pag
 </para>
 <para>Note the address on which the service is made available. You will need to know this when creating
 the app to consume the service. Look in the Address Bar of the browser. It will be something like:
-http://localhost:1492/WebDataService1.svc/
+http://example.com/WebDataService1.svc/
 </para>
     </sect2>
     <sect2 id="installcrbrappl">
@@ -4814,7 +4842,7 @@ http://localhost:1492/WebDataService1.svc/
   <listitem>Navigate to *C:\WINDOWS\Microsoft.NET\Framework\v3.5*.</listitem>
   <listitem>Generate the client classes using the following command:
 <programlisting><![CDATA[
-datasvcutil.exe /uri:http://localhost:1492/WebDataService1.svc /out:DemoEntities.cs
+datasvcutil.exe /uri:http://example.com/WebDataService1.svc /out:DemoEntities.cs
 ]]></programlisting>
 <para>Note the address of the service - you may need to change the port number to
 match the one seen in the address at the end of Step 4 in Creating the Web Service.
@@ -4838,7 +4866,7 @@ We then use each IRI from sparqlview to create a hyperlink. The hyperlinks are d
 cells. To do this add the following block of code to the page_load method in Default.aspx.cs.
 </para>
 <programlisting><![CDATA[
- DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://localhost:1492/WebDataService1.svc"));
+ DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://example.com/WebDataService1.svc"));
 
   var query = svc.sparqlview;
   Table iriTable = new Table();
@@ -4890,7 +4918,7 @@ section. Select <emphasis>Use local IIS Server</emphasis>. The project URL defau
   <listitem>Build the project then start without debugging (ctrl F5).</listitem>
 </itemizedlist>
 <para>The start page that you see when you test the service will look the same as before but the address
-in the browser bar will be something like http://localhost/RDFWebDemo1/WebDataService1.svc/. You can now
+in the browser bar will be something like http://example.com/RDFWebDemo1/WebDataService1.svc/. You can now
 access your service remotely using the hostname or IP address of your server.
 </para>
 <para>If at this point you get an Access is denied error, 401.3, then you will need to add the Internet
@@ -4909,19 +4937,19 @@ we will also change RDFWebApp so that it too is deployed using IIS
 section. Select <emphasis>Use local IIS Server</emphasis>. The project URL defaults to using localhost.</listitem>
   <listitem>Click the <emphasis>Create Virtual Directory</emphasis> button. The web application will then run on the local IIS.
 <programlisting><![CDATA[
-DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://localhost:1492/WebDataService1.svc"));
+DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://example.com/WebDataService1.svc"));
 ]]></programlisting>
 <para>to
 </para>
 <programlisting><![CDATA[
-DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://localhost/RDFWebDemo/WebDataService1.svc/"));
+DemoModel.DemoEntities svc = new DemoModel.DemoEntities(new Uri("http://example.com/RDFWebDemo/WebDataService1.svc/"));
 ]]></programlisting>
 </listitem>
   <listitem>To reference the web service running on IIS you will need to edit Default.aspx.cs. Change </listitem>
   <listitem>Build the project then start without debugging (ctrl F5).</listitem>
 </itemizedlist>
 <para>
-The web application is accessible on http://localhost/RDFWebApp/Default.aspx and can also be accessed using
+The web application is accessible on http://example.com/RDFWebApp/Default.aspx and can also be accessed using
 the hostname or IP address of you server e.g. http://192.168.7.129/RDFWebApp/Default.aspx
 </para>
     <figure id="sparqlwinf31" float="1">
@@ -5078,7 +5106,7 @@ containing the familiar Northwind tables. It will also creates Linked Data Views
 In the example we assume the database is accessible on a hostname of "demo.openlinksw.com" on the
 default port 80, where an actually live instance of the Virtuoso Demo database is hosted. Users
 would use the appropriate hostname and port number of their Virtuoso installation to create the
-sample application, and would be would be localhost:8890 for a default installation or whatever
+sample application, and would be would be example.com for a default installation or whatever
 the URIQA DefaultHost Virtuoso configuration parameter is set to when the demo database VAD package
 is installed.</listitem>
   <listitem>The Virtuoso ADO.Net provider for .Net 3.5 and the Entity Framework.</listitem>
@@ -5206,7 +5234,7 @@ the Demo RDF data in Virtuoso.
 <orderedlist>
   <listitem>Open the Virtuoso Conductor.</listitem>
   <listitem>In isql execute the following statement. Remember to use the appropriate hostname and port
-number of your Virtuoso installation, typically localhost:8890 for a default installation or whatever
+number of your Virtuoso installation, typically example.com for a default installation or whatever
 the <link linkend="ini_URIQA">URIQA DefaultHost</link> Virtuoso configuration parameter was set to when
 the demo database VAD package was installed.
 <programlisting><![CDATA[
@@ -5534,17 +5562,45 @@ the data in Virtuoso will be updated.
 </sect1>
 
 
-<sect1 id="clusterstcnf"><title>Cluster Installation and Config</title>
-    <sect2 id="clusterstcnfsetup"><title>Creating New Cluster Setup</title>
-<orderedlist>
-	<listitem>Run the Virtuoso 6 Unix ( MacOsX) installer to perform a default installation:
+<sect1 id="clusterstcnf"><title>Cluster Installation and Configuration</title>
+
+<!-- ======================================== -->
+  <sect2 id="clusterstcnf7">
+     <title>Virtuoso Elastic Cluster Installation &amp; Configuration -- Version 7.x</title>
+     <para>These sections apply to Virtuoso as of version 7.x .</para>
+       <sect3 id="clusterstcnfconf7what">
+         <title>What</title>
+         <para>Virtuoso 7 and later versions can be configured in Elastic scale out cluster mode. The data is sharded in a
+         	large number of self-contained partitions. These partitions are divided among a number of database server processes
+         	and can migrate between them.</para>
+       </sect3>
+       <sect3 id="clusterstcnfconf7why">
+         <title>Why</title>
+         <para>An Elastic cluster can be dynamically resized with new partitions or shards dynamically added to the
+         	same or new hardware resources as the need to increase the size of the scale cluster or relocation of
+         	partitions is required.</para>
+       </sect3>
+       <sect3 id="clusterstcnfconf7how">
+         <title>How</title>
+         <para>This documentation details the steps for the installation and configuration of a Virtuoso Elastic Cluster on Unix:</para>
+         <orderedlist>
+           <listitem><emphasis>Step 1</emphasis>: Perform Virtuoso 7 Unix installation;</listitem>
+           <listitem><emphasis>Step 2</emphasis>: Determine Elastic Cluster size;</listitem>
+           <listitem><emphasis>Step 3</emphasis>: Enable Elastic Cluster mode;</listitem>
+           <listitem><emphasis>Step 4</emphasis>: Start Elastic Cluster;</listitem>
+           <listitem><emphasis>Step 5</emphasis>: Splitting Cluster nodes across different machines.</listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconf7unix">
+         <title>Virtuoso 7 Unix installation</title>
+         <para><emphasis>Step 1</emphasis>: Perform Virtuoso 7 Unix installation</para>
 <programlisting><![CDATA[
-$ tar xvf virtuoso-universal-server-6.1.tar 
+$ tar xvf virtuoso-universal-server-7.x.tar
 x install.sh
 x universal-server.taz
 $ sh install.sh
 
-- Extracting Virtuoso Universal Server v6.1
+- Extracting Virtuoso Universal Server v7.x
 
 - Creating default environment settings
 
@@ -5586,8 +5642,13 @@ the installation process:
 Installation completed
 $
 ]]></programlisting>		
-	</listitem>
-  <listitem>Determine how many nodes you want to start the cluster with: 2, 3, 4, 5, 6, 7, 8 etc. <emphasis>Note</emphasis>: the number of the nodes should be &gt;= 2</listitem>
+       </sect3>
+       <sect3 id="clusterstcnfconf7clsize">
+         <title>Determine Elastic Cluster size</title>
+         <para><emphasis>Step 2</emphasis>: Determine Elastic Cluster size</para>
+         <orderedlist>
+           <listitem>Determine how many nodes you want to start the elastic cluster with: 2, 3, 4, 5, 6, 7, 8 etc. Note:
+           	the number of the nodes must be &gt;= 2 </listitem>
   <listitem>Setup Virtuoso environment and stop default database: 
 <programlisting><![CDATA[
 $ . ./virtuoso-environment.sh
@@ -5601,7 +5662,7 @@ $
 rm  -rf database	
 ]]></programlisting>  	
   </listitem>
-  <listitem>Full list of supported options for the script <emphasis>"virtuoso-mkcluster.sh"</emphasis>:
+           <listitem>Full list of supported options for the script "virtuoso-mkcluster.sh":
 <programlisting><![CDATA[
   -cluster-size       Number of nodes in cluster
   -cluster-node       Node number in a cluster
@@ -5611,9 +5672,9 @@ rm  -rf database
   -virtuoso_home      Virtuoso home path
 ]]></programlisting>  
   </listitem>
-  <listitem>Run the virtuoso-mkcluster.sh script to create the cluster, note the default number of 
-  	nodes is 4, but this can be changed by setting the environment variable CLUSTER_SIZE to the 
-  	required number of nodes to be created before running the script: 
+           <listitem>Run the virtuoso-mkcluster.sh script to create the cluster, note the default number of nodes is 4,
+           	but this can be changed by setting the environment variable CLUSTER_SIZE to the required number of nodes to
+           	be created before running the script:
 <programlisting><![CDATA[
 $ virtuoso-mkcluster.sh 
 Configuring cluster node: 1/4
@@ -5648,8 +5709,571 @@ Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
 $
 ]]></programlisting>
   </listitem>
-  <listitem>For each of the cluster_XX directories created edit the cluster.ini file and set the 
-  	HostXX parameter to the hostname:portno to be used by the cluster nodes for internal communication. 
+           <listitem>In each cluster_XX directory the following the <code>cluster.ini</code> files are created for cluster
+           internal communication:
+<programlisting><![CDATA[
+$ more cluster_01/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host1
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = localhost:22201
+Host2               = localhost:22202
+Host3               = localhost:22203
+Host4               = localhost:22204
+MaxHosts            = 5
+$ more cluster_02/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host2
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = localhost:22201
+Host2               = localhost:22202
+Host3               = localhost:22203
+Host4               = localhost:22204
+MaxHosts            = 5
+$ more cluster_03/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host3
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = localhost:22201
+Host2               = localhost:22202
+Host3               = localhost:22203
+Host4               = localhost:22204
+MaxHosts            = 5
+$ more cluster_04/cluster.ini
+[Cluster]
+Threads             = 20
+Master              = Host1
+ThisHost            = Host4
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 1000
+Host1               = localhost:22201
+Host2               = localhost:22202
+Host3               = localhost:22203
+Host4               = localhost:22204
+MaxHosts            = 5
+$	
+]]></programlisting>  	
+  </listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconf7enmode">
+         <title>Enable Elastic Cluster mode</title>
+         <para><emphasis>Step 3</emphasis>: Enable Elastic Cluster mode</para>
+         <orderedlist>
+           <listitem>The <code>cluster.ini</code> files need to be reconfigured as detailed below for elastic cluster and
+           file slicing/sharding to be enabled.</listitem>
+           <listitem>A common file called <code>cluster.global.ini</code> can be created and placed in the home directory
+           of the Virtuoso installation:
+<programlisting><![CDATA[
+[Cluster]
+Threads             = 300
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 100
+RDFLoadBytes        = 52428800
+Host1               = localhost:22201
+Host2               = localhost:22202
+Host3               = localhost:22203
+Host4               = localhost:22204
+]]></programlisting>
+           </listitem>
+           <listitem>This file can then be sym-linked to each of the <code>cluster_XX</code> directories of the cluster,
+           and its content will be merged with the <code>cluster.ini</code> in the respective directory of each node
+           when starting the cluster.
+<programlisting><![CDATA[
+ln -s cluster.global.ini cluster_01/cluster.global.ini
+ln -s cluster.global.ini cluster_02/cluster.global.ini
+ln -s cluster.global.ini cluster_03/cluster.global.ini
+ln -s cluster.global.ini cluster_04/cluster.global.ini
+]]></programlisting>
+           </listitem>
+           <listitem>Edit each of the the <code>cluster.ini</code> files in the <code>cluster_XX</code> directories as
+           follows to enable, elastic cluster mode:
+<programlisting><![CDATA[
+$ more cluster_01/cluster.ini
+[Cluster]
+Master              = Host1
+ThisHost            = Host1
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 6
+MaxSlices = 2048
+
+$ more cluster_02/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host2
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 6
+MaxSlices = 2048
+
+$ more cluster_03/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host3
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 6
+MaxSlices = 2048
+
+$ more cluster_04/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host4
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 6
+MaxSlices = 2048
+]]></programlisting>
+           </listitem>
+           <listitem>The <code>[ELASTIC]</code> section in the <code>cluster.ini</code> files above, enables the elastic
+           cluster mode, where multiple <code>segments</code> and <code>stripes</code> as detailed in the standard
+           Virtuoso documentation <link linkend="ini_Striping">database striping</link>.
+           </listitem>The <code>Slices</code> parameter above should be set to the number of hardware threads on the
+           CPUs running on. Thus in the example above where it is set to 6, this assumes all nodes are running on the
+           same physical machine with 12 cores with hyper-threading enabled i.e. 24 threads, thus 6 per cluster node.
+           <listitem>The <code>MaxSlices</code> parameter above sets the the maximum number of physical slices in the cluster.
+           </listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconf7start">
+         <title>Start Elastic Cluster</title>
+         <para><emphasis>Step 4</emphasis>: Start Elastic Cluster</para>
+         <orderedlist>
+           <listitem>Start the Elastic cluster using the standard <code>virtuoso-start.sh</code> script run from the home
+           directory of the Virtuoso installation,which automatically detects the number for nodes to be started:
+<programlisting><![CDATA[
+
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_01]
+Starting Virtuoso instance in [cluster_02]
+Starting Virtuoso instance in [cluster_03]
+Starting Virtuoso instance in [cluster_04]
+$	
+]]></programlisting>  	
+  </listitem> 	
+           <listitem>The default SQL port of the master node is 12201, as indicated in the virtuoso.ini file of the
+           	cluster_01 directory, and can then be used for connecting to the newly created cluster and check its
+           	status to ensure all nodes are online:
+<programlisting><![CDATA[
+$ isql 12201
+Connected to OpenLink Virtuoso
+Driver: 07.10.3211 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> status('cluster_d');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+Cluster: No samples, Please refresh
+
+1 Rows. -- 22 msec.
+SQL> status('cluster_d');
+REPORT
+VARCHAR
+_______________________________________________________________________________
+
+Cluster 4 nodes, 2 s. 5 m/s 0 KB/s  5% cpu 0%  read 0% clw threads 1r 0w 0i buffers 349144 2 d 0 w 0 pfs
+cl 1: 2 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 1r 0w 0i buffers 45391 2 d 0 w 0 pfs
+cl 2: 0 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 0r 0w 0i buffers 43367 0 d 0 w 0 pfs
+cl 3: 0 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 0r 0w 0i buffers 50129 0 d 0 w 0 pfs
+cl 4: 0 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 0r 0w 0i buffers 39383 0 d 0 w 0 pfs
+
+5 Rows. -- 22 msec.
+SQL>
+SQL> cl_ping(1,500, 1000);
+
+Done. -- 7 msec.
+SQL> cl_ping(2,500, 1000);
+
+Done. -- 52 msec.
+SQL> cl_ping(3,500, 1000);
+
+Done. -- 60 msec.
+SQL> cl_ping(4,500, 1000);
+
+Done. -- 51 msec.
+SQL>
+]]></programlisting>
+           </listitem>
+           <listitem>The <code>database.log</code> of the master node can be checked to verify the Elastic cluster mode
+           has been enable on server startup, which will contain the entry <emphasis>PL LOG: Elastic cluster setup</emphasis>:
+<programlisting><![CDATA[
+$ more cluster_01/database.log
+
+                Thu Oct 09 2014
+05:11:49 { Loading plugin 1: Type `plain', file `wikiv' in `../hosting'
+05:11:49   WikiV version 0.6 from OpenLink Software
+05:11:49   Support functions for WikiV collaboration tool
+05:11:49   SUCCESS plugin 1: loaded from ../hosting/wikiv.so }
+05:11:49 { Loading plugin 2: Type `plain', file `mediawiki' in `../hosting'
+05:11:49   MediaWiki version 0.1 from OpenLink Software
+05:11:49   Support functions for MediaWiki collaboration tool
+05:11:49   SUCCESS plugin 2: loaded from ../hosting/mediawiki.so }
+05:11:49 { Loading plugin 3: Type `plain', file `creolewiki' in `../hosting'
+05:11:49   CreoleWiki version 0.1 from OpenLink Software
+05:11:49   Support functions for CreoleWiki collaboration tool
+05:11:49   SUCCESS plugin 3: loaded from ../hosting/creolewiki.so }
+05:11:49 { Loading plugin 4: Type `plain', file `im' in `../hosting'
+05:11:49   IM version 0.61 from OpenLink Software
+05:11:49   Support functions for Image Magick 6.8.1
+05:11:49   SUCCESS plugin 4: loaded from ../hosting/im.so }
+05:11:49 { Loading plugin 5: Type `plain', file `wbxml2' in `../hosting'
+05:11:49   WBXML2 version 0.9 from OpenLink Software
+05:11:49   Support functions for WBXML2 0.9.2 Library
+05:11:49   SUCCESS plugin 5: loaded from ../hosting/wbxml2.so }
+05:11:49 { Loading plugin 6: Type `attach', file `libphp5.so' in `../hosting'
+05:11:49   SUCCESS plugin 6: loaded from ../hosting/libphp5.so }
+05:11:49 { Loading plugin 7: Type `Hosting', file `hosting_php.so' in `../hosting'
+05:11:49   Hosting version 3208 from OpenLink Software
+05:11:49   PHP engine version 5.3.21
+05:11:49   SUCCESS plugin 7: loaded from ../hosting/hosting_php.so }
+05:11:49 { Loading plugin 8: Type `plain', file `qrcode' in `../hosting'
+05:11:49   QRcode version 0.1 from OpenLink Software
+05:11:49   Support functions for ISO/IEC 18004:2006, using QR Code encoder (C) 2006 Kentaro Fukuchi <fukichi@megaui.net>
+05:11:49   SUCCESS plugin 8: loaded from ../hosting/qrcode.so }
+05:11:49 OpenLink Virtuoso Universal Server
+05:11:49 Version 07.10.3211-pthreads for Linux as of Oct  6 2014
+05:11:49 uses parts of OpenSSL, PCRE, Html Tidy
+05:11:51 SQL Optimizer enabled (max 1000 layouts)
+05:11:52 Compiler unit is timed at 0.000403 msec
+05:12:03 Checkpoint started
+05:12:04 Roll forward started
+05:12:04 Roll forward complete
+05:12:07 PL LOG: Elastic cluster setup
+05:12:08 Checkpoint started
+05:12:09 Checkpoint finished, log reused
+05:12:11 Checkpoint started
+05:12:12 Checkpoint finished, log reused
+05:12:12 PL LOG: new clustered database:Init of RDF
+05:12:23 Checkpoint started
+05:12:25 Checkpoint finished, log reused
+05:12:50 PL LOG: Installing Virtuoso Conductor version 1.00.8727 (DAV)
+05:12:51 Checkpoint started
+05:12:53 Checkpoint finished, log reused
+05:13:23 Checkpoint started
+05:13:25 Checkpoint finished, log reused
+05:13:26 Checkpoint started
+05:13:26 Checkpoint finished, log reused
+05:13:28 HTTP/WebDAV server online at 8890
+05:13:28 Server online at 12201 (pid 15211)
+05:13:29 ZeroConfig registration CLUSTER (MASALA)
+]]></programlisting>
+           </listitem>
+           <listitem>The cluster node directories can also be checked, where the database slice/shard files i.e.
+           	<code>database.db.X, database.db.Y, database.db.Z</code> can be seen:
+<programlisting><![CDATA[
+$ ls -ltr cluster_01
+total 2322804
+drwxr-xr-x. 2 virtuoso virtuoso      4096 Oct  9 04:26 backup
+drwxr-xr-x. 2 virtuoso virtuoso      4096 Oct  9 04:26 logs
+-rwxr-xr-x. 1 virtuoso virtuoso     70607 Oct  9 04:26 php.ini
+lrwxrwxrwx. 1 virtuoso virtuoso        24 Oct  9 04:26 virtuoso -> ..//bin/virtuoso-iodbc-t
+-rw-r--r--. 1 virtuoso virtuoso         0 Oct  9 04:26 database.pxa
+-rwxr-xr-x. 1 virtuoso virtuoso      6594 Oct  9 04:33 virtuoso.ini
+-rw-r--r--. 1 virtuoso virtuoso       137 Oct  9 05:03 cluster.ini
+lrwxrwxrwx. 1 virtuoso virtuoso        21 Oct  9 05:04 cluster.global.ini -> ../cluster.global.ini
+drwxr-xr-x. 2 virtuoso virtuoso    131072 Oct  9 05:37 dump
+-rw-r--r--. 1 virtuoso virtuoso     32915 Oct  9 06:55 database.2pc
+-rw-r--r--. 1 virtuoso virtuoso        25 Oct 10 02:24 database.map
+-rw-r--r--. 1 virtuoso virtuoso  56623104 Oct 10 03:23 database-temp.db
+-rw-r--r--. 1 virtuoso virtuoso 824180736 Oct 10 05:10 database.db.16
+-rw-r--r--. 1 virtuoso virtuoso 723517440 Oct 10 05:10 database.db.8
+-rw-r--r--. 1 virtuoso virtuoso 740294656 Oct 10 05:10 database.db.0
+-rw-r--r--. 1 virtuoso virtuoso  33554432 Oct 10 05:10 database.db
+-rw-r--r--. 1 virtuoso virtuoso         0 Oct 10 05:10 database.trx
+-rw-r--r--. 1 virtuoso virtuoso     34234 Oct 10 05:10 database.log
+$
+]]></programlisting>
+           </listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconf7split">
+         <title>Splitting Cluster nodes across different machines</title>
+         <para><emphasis>Step 5</emphasis>: Splitting Cluster nodes across different machines</para>
+         <orderedlist>
+           <listitem>To split the node across across physical machines for better scale out performance, scalability
+           	and growth, simply perform a parallel Virtuoso installation on the additional physical machines and move
+           	the cluster nodes required to the designated machine. Example, for the default 4 node cluster to be split
+           	across two identical machines it would make sense to split 2 nodes across each machine, thus you would
+           	move say the cluster_03 and cluster_04 directory nodes to the new machine (removing them from the original).
+           	The <code>cluster.global.ini</code> file on each node would then need to be updated to set the HostXX
+           	parameters to point to the new locations for nodes 03 and 04:
+<programlisting><![CDATA[
+$ more cluster.global.ini
+
+[Cluster]
+Threads             = 300
+ReqBatchSize        = 10000
+BatchesPerRPC       = 4
+BatchBufferBytes    = 20000
+LocalOnly           = 2
+MaxKeepAlivesMissed = 100
+RDFLoadBytes        = 52428800
+Host1               = hostname1:22201
+Host2               = hostname1:22202
+Host3               = hostname2:22203
+Host4               = hostname2:22204
+
+Machine 1 (hostname1)
+
+$ more cluster_01/cluster.ini
+[Cluster]
+Master              = Host1
+ThisHost            = Host1
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 12
+MaxSlices = 2048
+
+$ more cluster_02/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host2
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 12
+MaxSlices = 2048
+
+Machine 2 (hostname2)
+
+$ more cluster_03/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host3
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 12
+MaxSlices = 2048
+
+$ more cluster_04/cluster.ini
+
+[Cluster]
+Master              = Host1
+ThisHost            = Host4
+
+[ELASTIC]
+Segment1 = 4G, database.db = q1
+Slices = 12
+MaxSlices = 2048
+]]></programlisting>
+           </listitem>
+           <listitem>Note assuming the same number of CPU threads on each machine i.e. 24, then the <code>Slices</code>
+           param can be doubled to 12 for each node in <code>cluster.ini</code>, as above.
+           </listitem>
+           <listitem>The cluster nodes can then be started on each machine, with 2 nodes being started on each in this
+           	case to form the cluster:
+<programlisting><![CDATA[
+Machine 1 (hostname1)
+
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_01]
+Starting Virtuoso instance in [cluster_02]
+$
+
+Machine 2 (hostname2)
+
+$ virtuoso-start.sh
+Starting Virtuoso instance in [cluster_03]
+Starting Virtuoso instance in [cluster_04]
+$
+]]></programlisting>
+           </listitem>
+           <listitem>To stop the cluster use the standard <code>virtuoso-stop.sh</code> script on each machine, which
+           automatically detects the number for nodes to be stopped:
+<programlisting><![CDATA[
+Machine 1 (hostname1)
+
+$ virtuoso-stop.sh
+Stopping Virtuoso instance in [cluster_01]
+Stopping Virtuoso instance in [cluster_02]
+
+Machine 2 (hostname2)
+
+$ virtuoso-stop.sh
+Stopping Virtuoso instance in [cluster_03]
+Stopping Virtuoso instance in [cluster_04]
+$
+]]></programlisting>
+           </listitem>
+           <listitem>The <code>cl_exec('shutdown')</code> command can also be run from <code>isql</code> on any node
+           of the cluster to shutdown all nodes at once:
+<programlisting><![CDATA[
+$ isql 12201
+Connected to OpenLink Virtuoso
+Driver: 07.10.3211 OpenLink Virtuoso ODBC Driver
+OpenLink Interactive SQL (Virtuoso), version 0.9849b.
+Type HELP; for help and EXIT; to exit.
+SQL> cl_exec ('checkpoint');
+
+Done. -- 2487 msec.
+SQL> cl_exec ('shutdown');
+
+*** Error 08S01: VD CL065: Lost connection to server
+at line 2 of Top-Level:
+cl_exec ('shutdown')
+$
+]]></programlisting>
+           </listitem>
+         </orderedlist>
+       </sect3>
+   </sect2>
+
+   <sect2 id="clusterstcnfsetup">
+<title>Virtuoso default Cluster Installation and Configuration</title>
+<para>These sections apply to Virtuoso as of version 6.x and higher.</para>
+<orderedlist>
+	<listitem>Run the Virtuoso 6 Unix ( MacOsX) installer to perform a default installation:
+<programlisting><![CDATA[
+$ tar xvf virtuoso-universal-server-6.1.tar
+x install.sh
+x universal-server.taz
+$ sh install.sh
+
+- Extracting Virtuoso Universal Server v6.1
+
+- Creating default environment settings
+
+- Creating default database settings
+Configuring: database
+Creating directory $VIRTUOSO_HOME/database/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/database
+Installing new php.ini in $VIRTUOSO_HOME/database
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+
+- Registering ODBC drivers
+
+- Registering .NET provider for Mono
+
+- Installing VAD packages in database (this can take some time)
+
+- Checking where license should be stored
+
+- Starting OpenLink License Manager
+
+- Checking for initial Virtuoso license
+
+- Starting Virtuoso server instance
+
+- Finalizing installation
+
+
+This concludes the first part of the installation.
+
+
+- Attempting to start browser
+
+Please start a browser manually and open the following URL to finalize
+the installation process:
+
+     http://cname:8890/install/
+
+
+Installation completed
+$
+]]></programlisting>
+	</listitem>
+  <listitem>Determine how many nodes you want to start the cluster with: 2, 3, 4, 5, 6, 7, 8 etc. <emphasis>Note</emphasis>:
+  the number of the nodes should be &gt;= 2</listitem>
+  <listitem>Setup Virtuoso environment and stop default database:
+<programlisting><![CDATA[
+$ . ./virtuoso-environment.sh
+$ virtuoso-stop.sh
+Shutting down Virtuoso instance in [database]
+$
+]]></programlisting>
+  </listitem>
+  <listitem>Optionally remove the default database such that is does not get started with the cluster:
+<programlisting><![CDATA[
+rm  -rf database
+]]></programlisting>
+  </listitem>
+  <listitem>Full list of supported options for the script <emphasis>"virtuoso-mkcluster.sh"</emphasis>:
+<programlisting><![CDATA[
+  -cluster-size       Number of nodes in cluster
+  -cluster-node       Node number in a cluster
+  -cluster-port       Base portnumer for cluster
+  -cluster-ipc-port   Base portnumer for cluster IPC
+  -cluster_size       Size of the cluster
+  -virtuoso_home      Virtuoso home path
+]]></programlisting>
+  </listitem>
+  <listitem>Run the virtuoso-mkcluster.sh script to create the cluster, note the default number of
+  	nodes is 4, but this can be changed by setting the environment variable CLUSTER_SIZE to the
+  	required number of nodes to be created before running the script:
+<programlisting><![CDATA[
+$ virtuoso-mkcluster.sh
+Configuring cluster node: 1/4
+
+Creating directory $VIRTUOSO_HOME/cluster_01
+Creating directory $VIRTUOSO_HOME/cluster_01/backup
+Creating directory $VIRTUOSO_HOME/cluster_01/logs
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_01
+Installing new php.ini in $VIRTUOSO_HOME/cluster_01
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 2/4
+
+Creating directory $VIRTUOSO_HOME/cluster_02
+Creating directory $VIRTUOSO_HOME/cluster_02/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_02
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 3/4
+
+Creating directory $VIRTUOSO_HOME/cluster_03
+Creating directory $VIRTUOSO_HOME/cluster_03/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_03
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+Configuring cluster node: 4/4
+
+Creating directory $VIRTUOSO_HOME/cluster_04
+Creating directory $VIRTUOSO_HOME/cluster_04/backup
+Installing new virtuoso.ini in $VIRTUOSO_HOME/cluster_04
+Removing unneeded sections from virtuoso.ini
+Creating symlink to $VIRTUOSO_HOME/bin/virtuoso-iodbc-t
+$
+]]></programlisting>
+  </listitem>
+  <listitem>For each of the cluster_XX directories created edit the cluster.ini file and set the
+  	HostXX parameter to the hostname:portno to be used by the cluster nodes for internal communication.
 <programlisting><![CDATA[
 $ more cluster_01/cluster.ini
 [Cluster]
@@ -5711,23 +6335,23 @@ Host2               = hostname:22202
 Host3               = hostname:22203
 Host4               = hostname:22204
 MaxHosts            = 5
-$	
-]]></programlisting>  	
+$
+]]></programlisting>
   </listitem>
-  <listitem>Start the cluster using the standard virtuoso-start.sh script which automatically detects 
-  	the number for nodes to be started: 
+  <listitem>Start the cluster using the standard virtuoso-start.sh script which automatically detects
+  	the number for nodes to be started:
 <programlisting><![CDATA[
 $ virtuoso-start.sh
 Starting Virtuoso instance in [cluster_01]
 Starting Virtuoso instance in [cluster_02]
 Starting Virtuoso instance in [cluster_03]
 Starting Virtuoso instance in [cluster_04]
-$	
-]]></programlisting>  	
-  </listitem> 	
-  <listitem>The default SQL port of the master node is 12201, as indicated in the virtuoso.ini file 
-  	of the cluster_01 directory, and can then be used for connecting to the newly created cluster 
-  	and check its status to ensure all nodes are online: 
+$
+]]></programlisting>
+  </listitem>
+  <listitem>The default SQL port of the master node is 12201, as indicated in the virtuoso.ini file
+  	of the cluster_01 directory, and can then be used for connecting to the newly created cluster
+  	and check its status to ensure all nodes are online:
 <programlisting><![CDATA[
 $ isql 12201
 Connected to OpenLink Virtuoso
@@ -5878,8 +6502,7 @@ SQL> backup_online('dbp',10000000,0,vector('backup'));
 Done. -- 272 msec.
 ]]></programlisting>
 </listitem>
-  <listitem>Make backup of all nodes at once using
-<link linkend="clusteroperationadmclexec"><function>cl_exec</function></link>. For example, execute:
+  <listitem>Make backup of all nodes at once using <link linkend="fn_cl_exec">cl_exec()</link>. For example, execute:
 <programlisting><![CDATA[
 SQL> cl_exec ('backup_online (''dbp'', 10000000, 0,  vector (''backup''))');
 
@@ -5928,6 +6551,174 @@ Cluster 4 nodes, 293 s. 0 m/s 0 KB/s  0% cpu 0%  read 0% clw threads 1r 0w 0i bu
 </listitem>
 </orderedlist>
     </sect2>
+
+    <!-- ======================================== -->
+     <sect2 id="clusterstcnfconfnodesconfig">
+       <title>HTTP Service Configuration on Subordinate Nodes of a Virtuoso Cluster</title>
+       <para>This section applies to Virtuoso as of version 6.x and higher.</para>
+       <sect3 id="clusterstcnfconfnodesconfigwhat">
+         <title>What</title>
+         <para>This documentation details how to configure the Subordinate (also called Slave) Nodes of a Virtuoso Elastic Cluster
+         	to service HTTP clients.</para>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfigwhy">
+         <title>Why</title>
+         <para>By default, only the Primary (also called Master) instance of a Virtuoso Elastic Cluster is configured to provide
+         	HTTP services.</para>
+         <para>The Subordinate (also called Slave) nodes of the cluster may also be configured to provide HTTP services,
+         	enabling load balancing by spreading HTTP requests across the cluster's nodes.</para>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfighow">
+         <title>How</title>
+         <para>This documentation details the steps for the installation and configuration of a Virtuoso Elastic Cluster on Unix:</para>
+         <orderedlist>
+           <listitem><emphasis>Step 1</emphasis>: Set up each instance as a HTTP Server;</listitem>
+           <listitem><emphasis>Step 2</emphasis>: Install and configure HTTP services on each instance;</listitem>
+           <listitem><emphasis>Step 3</emphasis>: Configure load balancing.</listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfiginst">
+         <title>Set up each instance as an HTTP Server</title>
+         <para><emphasis>Step 1</emphasis>: Set up each instance as a HTTP Server</para>
+         <para>Each node can be configured to provide HTTP services as follows:</para>
+         <orderedlist>
+           <listitem>Copy the <code>[HTTP Server]</code> section from the Primary instance's configuration file (by
+           default, <code>virtuoso.ini</code>) to the configuration file of each Subordinate instance:
+<programlisting><![CDATA[
+[HTTPServer]
+ServerPort                  = 8890
+ServerRoot                  = ../vsp
+DavRoot                     = DAV
+EnabledDavVSP               = 0
+HTTPProxyEnabled            = 0
+TempASPXDir                 = 0
+DefaultMailServer           = localhost:25
+MaxClientConnections        = 5
+MaxKeepAlives               = 10
+KeepAliveTimeout            = 10
+MaxCachedProxyConnections   = 10
+ProxyConnectionCacheTimeout = 15
+HTTPThreadSize              = 280000
+HttpPrintWarningsInOutput   = 0
+Charset                     = UTF-8
+;HTTPLogFile                 = logs/http.log
+MaintenancePage             = atomic.html
+EnabledGzipContent          = 1
+]]></programlisting>
+           </listitem>
+           <listitem>Edit the <code>ServerPort</code> parameter to make it unique on the machine hosting this instance;
+           i.e., if a subordinate instance is running on same physical node as the primary instance, then the subordinate's
+           HTTP port must to be changed (from 8890, for instance) to a unique port (e.g., 8891).</listitem>
+           <listitem>Install the Virtuoso Conductor to enable HTTP Administration of the instance being configured. <i>Note:
+           if the subordinate instance is not on the same machine as the primary instance, then the vad directory may also
+           need to be copied from the primary instance to the subordinate instance.</i>:
+<programlisting><![CDATA[
+SQL> vad_install ('../vad/conductor_dav.vad', 0);
+SQL_STATE  SQL_MESSAGE
+VARCHAR  VARCHAR
+_______________________________________________________________________________
+
+00000    No errors detected
+00000    Installation of "Virtuoso Conductor" is complete.
+00000    Now making a final checkpoint.
+00000    Final checkpoint is made.
+00000    SUCCESS
+
+
+6 Rows. -- 10263 msec.
+SQL>
+]]></programlisting>
+           </listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfigservice">
+         <title>Install and configure HTTP services on each instance</title>
+         <para><emphasis>Step 2</emphasis>: Install and configure HTTP services on each instance</para>
+         <para>Any HTTP services required on the subordinate instance will need to specifically installed or configured on
+         	that physical node. For example, the Virtuoso default SPARQL endpoint (<code>/sparql</code>) may be configured by:</para>
+         <orderedlist>
+           <listitem>Log in into the Virtuoso Conductor http://hostname:port/conductor :
+             <figure id="clst1" float="1">
+               <title>Configure SPARQL Endpoint: log in</title>
+               <graphic fileref="ui/cluster1.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>Go the the Web Application Server -&gt; Virtual Domains &amp; Directories tab:
+             <figure id="clst2" float="1">
+               <title>Configure SPARQL Endpoint: Virtual Domains and Directories</title>
+               <graphic fileref="ui/cluster2.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>Select the New Directory Action for the Default Web Site HTTP host:
+             <figure id="clst3" float="1">
+               <title>Configure SPARQL Endpoint: new directory</title>
+               <graphic fileref="ui/cluster3.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>Select the Type radio button and SPARQL access point item from the drop down list box:
+             <figure id="clst4" float="1">
+               <title>Configure SPARQL Endpoint: set type SPARQL</title>
+               <graphic fileref="ui/cluster4.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>Click "Next".</listitem>
+           <listitem>Enter /sparql as the Path param in the Virtual Directory Information section and click Save Changes:
+             <figure id="clst5" float="1">
+               <title>Configure SPARQL Endpoint: set /sparql virtual directory</title>
+               <graphic fileref="ui/cluster5.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>The SPARQL endpoint will not be accessible on http://hostname:port/sparql the the newly configured slave nodes:
+             <figure id="clst6" float="1">
+               <title>Configure SPARQL Endpoint: SPARQL Endpoint</title>
+               <graphic fileref="ui/cluster6.jpg"/>
+             </figure>
+           </listitem>
+           <listitem>Further details on SPARQL endpoint configuration can be found in
+           	<link linkend="rdfsupportedprotocolendpoint">Service Endpoint</link> documentation section.</listitem>
+           <listitem>Typical Virtuoso server log output from a slave node when started, showing the HTTP server running on
+           	port 8890, being:
+<programlisting><![CDATA[
+20:12:49 OpenLink Virtuoso Universal Server
+20:12:49 Version 07.10.3209-pthreads for Linux as of Apr 26 2014
+20:12:49 uses parts of OpenSSL, PCRE, Html Tidy
+20:12:49 Registered to OpenLink Virtuoso (Internal Use)
+20:12:49 Personal Edition license for 500 connections
+20:12:49 Issued by OpenLink Software
+20:12:49 This license will expire on Sun May 17 06:18:35 2015 GMT
+20:12:49 Enabled Cluster Extension
+20:12:49 Enabled Column Store Extension
+20:12:57 Database version 3126
+20:12:57 SQL Optimizer enabled (max 1000 layouts)
+20:12:58 Compiler unit is timed at 0.000208 msec
+20:12:58 Roll forward started
+20:12:58 Roll forward complete
+20:12:59 Checkpoint started
+20:12:59 Checkpoint finished, log reused
+20:12:59 HTTP/WebDAV server online at 8890
+20:12:59 Server online at 12202 (pid 15969)
+]]></programlisting>
+           </listitem>
+         </orderedlist>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfigload">
+         <title>Configure load balancing</title>
+         <para><emphasis>Step 3</emphasis>: Configure load balancing</para>
+         <para>A reverse-proxy service (like Nginx or Apache) can then be configured such that requests are proxied across
+         	as any or all nodes of the cluster, to provide the desired load balancing.</para>
+       </sect3>
+       <sect3 id="clusterstcnfconfnodesconfigaddinf">
+         <title>Additional Information</title>
+         <itemizedlist mark="bullet">
+           <listitem>Only the Primary Node of an Elastic Cluster may be configured as a Publisher for Virtuoso Replication
+           	Cluster purposes.</listitem>
+           <listitem>The <ulink url="http://virtuoso.openlinksw.com/whitepapers/LOD2_D2.1.5_LOD_Cloud_Hosted_On_The_LOD2_Knowledge_Store_Cluster_500B_Triples.pdf">Virtuoso 500 billion triple Berlin SPARQL Benchmark (BSBM) dataset</ulink>
+           runs were performed on a 24-node Elastic Cluster. Each node was configured to provide HTTP services and a SPARQL
+           endpoint, and the query load was spread over the entire cluster.</listitem>
+         </itemizedlist>
+       </sect3>
+     </sect2>
+
     <sect2 id="clusterstcnftrsh"><title>Troubleshooting Tips</title>
     <para>If an operation seems to hang, see the output of:</para>
 <programlisting><![CDATA[

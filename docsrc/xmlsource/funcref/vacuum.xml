@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -66,13 +66,6 @@ this index. The index name is a LIKE pattern and if given should match the case 
 names as returned by the ODBC call SQLStatistics or equivalent, which is also the KEY_NAME column of
 SYS_KEYS.</para>
     </refsect2>
-  </refsect1>
-  <refsect1 id="ret_vacuum">
-    <title>Return Types</title>
-    <para></para>
-  </refsect1>
-  <refsect1 id="errors_vacuum"><title>Errors</title>
-    <para></para>
   </refsect1>
   <refsect1 id="examples_vacuum">
     <title>Examples</title>

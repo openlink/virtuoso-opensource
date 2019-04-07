@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: uaggr_test.sql,v 1.3.10.2 2013/01/02 16:15:37 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 create procedure BB (in num numeric)
 {
   declare ceil integer;
@@ -106,7 +106,8 @@ insert into var_test (val) values (6);
 
 select VAR_POP (val) as VAR, STDDEV_POP (val) as STDDEV_POP, STDDEV_SAMP (val) as STDDEV_SAMP, COVAR_SAMP (i, i) as COVAR_SAMPxx, COVAR_SAMP (i, val) as COVAR_SAMPxy, COVAR_SAMP( val, i) as COVAR_SAMPyx, COVAR_POP (val, i) as COVAR_POPxy, COVAR_SAMP (val,val) as COVAR_SAMPyy from var_test;
 
-select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
+--XXX
+--select val, VAR_SAMP (i), VAR_POP(i), STDDEV_POP (i), COVAR_SAMP (i,i) from var_test group by val;
 
 
 select BB (COVAR_SAMP (i, val)), BB ((SUM( (cast (i as numeric)) * val) - SUM(i) * SUM(val) / COUNT(i)) / (COUNT (i)-1))  from var_test;
@@ -153,7 +154,7 @@ ECHO BOTH ": REGR_AVGY = AVG(y) = " $LAST[1] "\n";
 select BB (CORR (i, val)), BB (COVAR_POP (i, val) / STDDEV_POP (i) / STDDEV_POP (val)  ) from var_test where val is not null;
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 ECHO BOTH ": CORR (x,y) == COVAR_POP (x,y) / (STDDEV_POP (x) * STDDEV_POP (y) ) = " $LAST[1] "\n";
- 
+
 select BB (REGR_R2 (i, val)), BB (CORR (i, val) * CORR (i, val)) from var_test;
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 ECHO BOTH ": REGR_R2 (x,y) = CORR (x,y)^2 = " $LAST[1] "\n";
@@ -167,3 +168,4 @@ ECHO BOTH ": REGR_SYY = REGR_COUNT () * VAR_POP (x) = " $LAST[1] "\n";
 select BB (REGR_SXY (i, val)), BB(REGR_COUNT(i,val) * COVAR_POP (i,val)) from var_test where val is not null;
 ECHO BOTH $IF $EQU $LAST[1] $LAST[2] "PASSED" "***FAILED";
 ECHO BOTH ": REGR_SXY = REGR_COUNT () * COVAR_POP (x,y) = " $LAST[1] "\n";
+

@@ -5,12 +5,12 @@ import java.util.Random;
 
 public class ValueGenerator {
 	private Random ranGen;
-	
+
 	public ValueGenerator(long seed)
 	{
 		ranGen = new Random(seed);
 	}
-	
+
 	/*
 	 * Returns an int value between from and to (inclusive)
 	 */
@@ -18,7 +18,7 @@ public class ValueGenerator {
 	{
 		return ranGen.nextInt(to-from+1) + from;
 	}
-	
+
 	/*
 	 * Returns an double value between from and to
 	 */
@@ -26,7 +26,7 @@ public class ValueGenerator {
 	{
 		return ranGen.nextDouble()*(to-from)+from;
 	}
-	
+
 	/*
 	 * Returns a long value between from and to
 	 */
@@ -34,7 +34,7 @@ public class ValueGenerator {
 	{
 		return (long)ranGen.nextDouble()*(to-from+1) + from;
 	}
-	
+
 	/*
 	 * Returns a random String (a-z) of given length.
 	 */
@@ -45,11 +45,11 @@ public class ValueGenerator {
 		{
 			temp[i] = (char)(ranGen.nextDouble() * ('z'-'a'+1) + 'a');
 		}
-		
+
 		return new String(temp);
-			
+
 	}
-	
+
 	public String randomSHA1()
 	{
 		byte[] b = new byte[4];
@@ -60,26 +60,26 @@ public class ValueGenerator {
 			b[j] = (byte)(i % 256);
 			i >>= 8;
 		}
-		
+
 		MessageDigest md=null;
 		try{
 			md = MessageDigest.getInstance("SHA1");
 		} catch(java.security.NoSuchAlgorithmException e) {}
-		
+
 		byte[] chksum = md.digest(b);
 		StringBuffer result=new StringBuffer();
-		
+
 		for(int j=0;j<chksum.length;j++)
 			result.append(Integer.toHexString(0xFF & chksum[j]));
-		
+
 		return result.toString();
 	}
-	
-	
+
+
 	public static void main(String argv[])
 	{
 		TextGenerator textGen = new TextGenerator("familynames.txt", 5235332l);
-		
+
 		System.out.println(textGen.getRandomSentence(20));
 	}
 }

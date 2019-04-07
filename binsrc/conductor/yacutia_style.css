@@ -1,0 +1,1915 @@
+/*
+ *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ *  project.
+ *
+ *  Copyright (C) 1998-2019 OpenLink Software
+ *
+ *  This project is free software; you can redistribute it and/or modify it
+ *  under the terms of the GNU General Public License as published by the
+ *  Free Software Foundation; only version 2 of the License, dated June 1991.
+ *
+ *  This program is distributed in the hope that it will be useful, but
+ *  WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *  General Public License for more details.
+ *
+ *  You should have received a copy of the GNU General Public License along
+ *  with this program; if not, write to the Free Software Foundation, Inc.,
+ *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ *
+ */
+
+body
+{
+        padding-right: 0px;
+        padding-bottom: 0px;
+        padding-left: 0px;
+        padding-top: 0px;
+        margin-right: 0px;
+        margin-bottom: 0px;
+        margin-left: 0px;
+        margin-top: 0px;
+        background-color: #eaeaee;
+        color: #0a0a0a;
+        font-family: Arial, Helvetica, Helv, sans-serif;
+        font-size: 80%;
+}
+
+table
+{
+    font-family: Arial, Helvetica, Helv, sans-serif;
+    font-size: 10pt;
+}
+
+form
+{
+  margin-bottom: 0px;
+}
+
+input[type="text"], input[type="password"], select {
+  box-sizing: border-box;
+  -moz-box-sizing: border-box;
+  -webkit-box-sizing: border-box;
+}
+
+/* Main page segments */
+
+/* Main banner */
+#MB
+{
+  background-color: #86B9D9;
+  width: 100%;
+}
+
+#MB2 {
+	background-color: #FFFFFF;
+	width: 100%;
+	height: 45px;
+	background-image: url(images/slvnav3.gif);
+	background-repeat: repeat-x;
+	text-align: right;
+	vertical-align: middle;
+}
+
+/* Wraps rest of the page */
+#MT
+{
+}
+
+/* Right side within MT */
+#RC
+{
+  left: 0px;
+  top: 0px;
+  right: 0px;
+  margin-left: 5px;
+  vertical-align: top;
+  width: auto;
+  /*border: 1px dashed red;*/
+}
+
+/* Top tabs containing block */
+#RT
+{
+  /*float: left;
+  clear: both;*/
+  margin-top: 8px;
+  margin-left: 0px;
+  /*overflow: visible;*/
+}
+
+#RB
+{
+  /*float: left;
+  clear: both;*/
+  /*border: 1px dashed green;*/
+}
+
+#MTB
+{
+  position: absolute;
+  width: 100%;
+  top: 0px;
+  left: 0px;
+  right: 0px;
+  /*border: 2px dashed black;*/
+}
+
+#RTB
+{
+  width: 100%;
+  /*border: 2px dashed orange;*/
+}
+
+/* Left side within MT */
+
+#LC
+{
+  font-size: 11px;
+  left: 0px;
+  top: 4px;
+  width: 165px;
+  background-color: #99B3C5;
+  padding-bottom: 5px;
+  /*overflow: visible;*/
+  /*border: 1px dashed blue;*/
+  vertical-align: top;
+}
+
+.lc_box table.login_fm_ctr
+{
+  background-color: #99B3C5;
+}
+
+div.login_fm_ctr, table.login_fm_ctr
+{
+  width: 158px; /* XXX Do not increase this value or IE6 will crash and burn!!! */
+  margin: 3px;
+  padding: 5px;
+  background-image: url('images/stl_blu1_grad.gif');
+  background-repeat: repeat-x;
+  border-top: 1px solid #FFFFFF;
+  border-right: 1px solid #ADC9E0;
+  border-bottom: 1px solid #7F94A5;
+  border-left: 1px solid #7F94A5;
+
+  /*border: 1px dashed red;*/
+}
+
+table.login_fm_ctr
+{
+  vertical-align: top;
+}
+
+
+table.login_fm_ctr label
+{
+  text-align: right;
+  font-weight: bold;
+}
+
+table.login_fm_ctr th
+{
+  color: #033566;
+}
+
+#login_btn
+{
+}
+
+#logout_btn
+{
+}
+
+#t_login_usr
+{
+  width: 8.5pc;
+}
+
+#t_login_pwd
+{
+  width: 8.5pc;
+}
+
+ul.left_toolbox
+{
+  /*float: left;
+  clear: both;*/
+  width: 146px;
+  padding: 5px;
+  margin: 3px;
+  list-style-type: none;
+  background-repeat: repeat-x;
+  border-top: 1px solid #FFFFFF;
+  border-right: 1px solid #ADC9E0;
+  border-bottom: 1px solid #7F94A5;
+  border-left: 1px solid #7F94A5;
+  background-image: url('images/stl_blu1_grad.gif');
+}
+
+ul.left_toolbox li
+{
+  margin: 0;
+  padding: 0;
+}
+
+ul.left_toolbox li img
+{
+  margin-right: 3px;
+}
+
+ul.left_toolbox li a
+{
+  text-decoration: none;
+}
+
+ul.left_toolbox li a:hover
+{
+  text-decoration: underline;
+}
+
+ul li a
+{
+  color: #0d0d0d;
+}
+
+ul li a:visited
+{
+  color: #0d0d0d;
+}
+
+ul li a:active
+{
+  color: yellow;
+}
+
+div.lmenu_ctr
+{
+  /*float: left;
+  clear: both;*/
+  width: 146px;
+  padding: 5px;
+  margin: 3px;
+  color: #f0f0f0;
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+  border-top: 1px solid #FFFFFF;
+  border-right: 1px solid #ADC9E0;
+  border-bottom: 1px solid #7F94A5;
+  border-left: 1px solid #7F94A5;
+  font-size: 11px;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+}
+
+ul.lmenu
+{
+  list-style-type: none;
+  padding: 5px;
+}
+
+ul.lmenu li
+{
+  margin: 0;
+  padding: 2px;
+}
+
+ul.left_nav
+{
+  /*float: left;
+  clear: both;*/
+  width: 146px;
+  padding: 5px;
+  margin: 3px;
+  list-style-type: none;
+  padding: 5px;
+  border-top: 1px solid #F1F1F1;
+  border-right: 1px solid #ADC9E0;
+  border-bottom: 1px solid #7F94A5;
+  border-left: 1px solid #7F94A5;
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+ul.left_nav li
+{
+  margin: 0;
+  padding: 2px;
+}
+
+ul.left_id
+{
+  /*float: left;
+  clear: both;*/
+  width: 146px;
+  padding: 5px;
+  margin: 3px;
+  list-style-type: none;
+  padding: 5px;
+  font-size: x-small;
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+  border-top: 1px solid #FFFFFF;
+  border-right: 1px solid #ADC9E0;
+  border-bottom: 1px solid #7F94A5;
+  border-left: 1px solid #7F94A5;
+}
+
+ul.left_id li
+{
+  margin: 0;
+  padding: 2px;
+}
+
+a.xtern
+{
+  text-decoration: none;
+  margin-left: -7px;
+}
+
+/*a.xtern:before
+{
+  content: url("images/icons/smarrblk.gif");
+}
+*/
+
+table.cvs_id
+{
+  display: none;
+}
+
+div.cvs_id
+{
+  display: none;
+}
+
+div.page_help
+{
+  text-align: right;
+}
+
+#dav_list
+{
+  right: 0px;
+  min-width: 400px;
+  height: 300px;
+  top: 0px;
+}
+
+a
+{
+  font-family: Verdana, Arial, Sans-Serif;
+  text-decoration: none;
+}
+
+a:active
+{
+  text-decoration: none;
+}
+
+a:visited
+{
+  text-decoration: none;
+}
+
+a:hover
+{
+  text-decoration: underline;
+}
+
+th
+{
+  text-align: left
+}
+
+.clear {
+  clear: both;
+}
+
+#copyright_ctr
+{
+  /*clear: both;*/
+  font-size: x-small;
+  text-align: right;
+  margin-right: 5px;
+  border-top: 1px solid silver;
+}
+
+span.note
+{
+  font-style: italic;
+  font-size: x-small;
+}
+
+.system_info
+{
+  font-size: 75%
+}
+
+h1.page_title
+{
+  white-space: nowrap;
+  margin-bottom: 5px;
+  margin-top: 0;
+  margin-left: 5px;
+  padding-bottom: 0;
+  font-size: 24px;
+  font-weight: bold;
+  color: #aeaeaa;
+  width: 80%;
+  float: left;
+}
+
+td.page_title img
+{
+  padding-left: 0;
+  padding-bottom: 0;
+  padding-right: 10px;
+}
+
+div.main_page_area
+{
+
+}
+
+div.main_page_area table {
+  clear: left;
+}
+
+.sub_page
+{
+  background-color: white;
+}
+
+.page_section_head
+{
+  font-size: 12pt;
+  font-weight: bold;
+}
+
+div.sub_page_area
+{
+  width: 100%;
+}
+
+/* Page section - vertical divide */
+
+div.page_sect
+{
+  width: 100%;
+  border-top: 2px solid #444;
+}
+
+/* Control label with required field indicator */
+
+label.req:after
+{
+  content: " *";
+  color: red;
+}
+
+img.page_icon
+{
+  float: left;
+  clear: left;
+  padding-top: 15px;
+}
+
+td.page_icon_ctr
+{
+  vertical-align: top;
+  padding-top: 15px;
+  width: 32px;
+}
+
+td.page_icon_ctr img
+{
+  vertical-align: top;
+}
+/* Control Group - a group of controls such as a filter selector*/
+
+table.ctl_grp
+{
+  padding-top: 3px;
+  border: 1px solid #ccc;
+  border-top: 2px solid #444;
+  background-color: #eee;
+  margin: 0px;
+}
+
+tr.ctl_grp_title
+{
+  font-weight: bold;
+}
+
+tr.ctl_grp_err
+{
+  background-color: yellow;
+}
+
+/* Control container */
+
+td.ctl_ctr
+{
+  white-space: nowrap;
+}
+
+/* Control label container */
+
+td.ctl_lbl_ctr
+{
+}
+
+tr.form_cmd_row
+{
+  text-align: right;
+}
+
+table.form_sub
+{
+  width: 100%;
+  border: 0;
+}
+
+/*
+   form_complex_selector - a combination multiple selector with
+   two select lists and buttons to move items between available
+   and selected.
+*/
+
+table.complex_selector
+{
+  padding-top: 3px;
+  border: 1px solid #ccc;
+  border-top: 2px solid #444;
+  background-color: #eee;
+  margin: 0px;
+}
+
+tr.complex_selector_header_row
+{
+}
+
+tr.complex_selector
+{
+}
+
+td.complex_selector
+{
+}
+
+select.complex_selector
+{
+  width: 100%;
+}
+
+td.complex_selector_buttons
+{
+  text-align: center;
+  vertical-align: middle;
+}
+
+button.form_complex_selector
+{
+}
+
+table.listing_ctr
+{
+  width: 100%;
+  text-align: left;
+}
+
+table.listing
+{
+  width: 100%;
+  background-color: white;
+}
+
+table.listing th
+{
+  border-color: #FFFFFF;
+  border-style: solid;
+  border-width: 0px 0px 0px 1px;
+  padding: 2px;
+}
+
+table.listing th.checkbox, table.listing td.checkbox {
+  width: 1px;
+  text-align: center;
+  margin: 0;
+  padding: 0.5px;
+}
+
+table.listing th.action, table.listing td.action {
+  width: 1px;
+  white-space: nowrap;
+}
+
+table.listing tbody tr:nth-child(odd) {
+  background-color: #f0f0f0;
+}
+
+table.listing tbody tr:nth-child(even) {
+  background-color: #fff;
+}
+
+table.listing tbody tr:hover {
+ 	background-color: #eec;
+}
+
+table.ODS_grid tbody tr.selected {
+  background-color: #FFFFCC;
+}
+
+tr.listing_header_row
+{
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+tr.listing_header_row th
+{
+  white-space: nowrap;
+}
+
+/* Listing-related commands - top and bottom */
+
+div.listing_top_ctl_grp
+{
+  text-align: right;
+  padding-left: 5px;
+  padding-right: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  /*border-top: 2pt solid #033566;
+  background-color: #d0d0d0;*/
+}
+
+div.listing_bot_ctl_grp
+{
+  text-align: right;
+  padding-left: 5px;
+  padding-top: 2px;
+  padding-bottom: 2px;
+  padding-right: 5px;
+  /*border-bottom: 2pt solid #033566;
+  background-color: #d0d0d0;*/
+}
+
+/* see resroweven and resrowodd et al for formatting result tables
+   generated by adm_result_to_table (used in ISQL.) */
+
+tr.listing_row_even
+{
+}
+
+tr.listing_row_even:hover,
+tr.listing_row_odd:hover
+{
+	background-color: #eec;
+}
+
+tr.listing_row_odd
+{
+  background-color: #f0f0f0;
+}
+
+tr.listing_row_selected
+{
+  background-color: green!important;
+}
+
+td.listing_column
+{
+}
+
+td.listing_col_label
+{
+  font-weight: bold;
+}
+
+td.listing_col
+{
+}
+
+td.listing_col_num
+{
+  text-align: right;
+}
+
+td.listing_col_action
+{
+  white-space: nowrap;
+}
+
+td.listing_count
+{
+  font-weight: bold;
+}
+
+td.listing_col_action a
+{
+  text-decoration: none;
+}
+
+.code_listing
+{
+  font-family: courier, fixed;
+}
+
+/* accounts.vspx, sys_queues.vspx, etc. unhide the "Add New Item" */
+
+th.new_item
+{
+}
+
+th.new_item img
+{
+  display: inline
+}
+
+th.new_item a
+{
+  text-decoration: underline;
+  font-weight: normal;
+  vertical-align: middle;
+}
+
+th.new_item a:before
+{
+  content: url(images/icons/add_16.png);
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+/* sys_queues.vsp
+
+/* Various error message containers */
+
+.Warning
+{
+  /* border: 5px solid red; */ /* Mixed case is deprecated */
+  background-color: #ffff99
+}
+
+table.warning
+{
+  width: 100%;
+  background-color: #ffff99
+}
+
+div.warning
+{
+  width: 100%;
+  background-color: #ffff99;
+}
+
+div.error_dialog
+{
+}
+
+div.error_msg
+{
+  background-color: yellow;
+}
+
+table.error_msg
+{
+  background-color: yellow;
+}
+
+span.error_summary
+{
+}
+
+span.acl_allow
+{
+  background-color: green;
+  color: white;
+  text-transform: uppercase;
+}
+
+span.acl_deny
+{
+  background-color: red;
+  color: black;
+  text-transform: uppercase;
+}
+
+.emphasize
+{
+  font-weight: bold;
+  /*font-size: large;*/
+}
+
+/* was VerdanaPlainSmall */
+.SubInfo
+{
+  font-size: smaller
+}
+
+/* XXX; Deprecated. was VerdanaItal */
+.Emphasis
+{
+  /* border: 5px solid red; */
+  font-style: italic
+}
+
+/* XXX: deprecated. was WhiteText */
+.AdviceStrong
+{
+  font-weight: bold;
+  color: #ffffff
+}
+
+/* XXX: deprecated. was VerdanaPlainSmallWhite */
+.AdviceText
+{
+  /* border: 5px solid red; */
+  font-size: smaller;
+  color: #ffffff
+}
+/*  XXX; Deprecated. was VerdanaPlainWhite */
+.Advice
+{
+  /* border: 5px solid red; */
+  color: #ffffff
+}
+
+/*  XXX; Deprecated. was VerdanaLgWhite */
+.AdviceMajor
+{
+  /* border: 5px solid red; */
+  font-size: large;
+  color: #ffffff
+}
+
+/* was yellow */
+.attention_text
+{
+  color: #cccc99
+}
+
+/* XXX; Deprecated. */
+.AttentionData
+{
+/* border: 5px solid red; */
+  font-size: smaller;
+  color: #ffff99;
+  background-color: #53bfe8
+}
+
+img.dialog_icon
+{
+  float: left;
+  padding: 0px 10px 0px 10px;
+}
+
+div.dialog_text {
+  clear: both;
+}
+
+div.confirm_dialog
+{
+  clear:both;
+  border: 4px solid red;
+  padding: 10px;
+}
+
+div.dialog_buttons
+{
+  margin-top: 10px;
+}
+
+/* was redstar */
+div.attention_box
+{
+  border: 4px dashed orange;
+  padding: 10px;
+}
+
+/* was redstar */
+.attention_marker
+{
+  color: #ff0033
+}
+/* font-size: smaller; */
+
+.SearchLink
+{
+}
+
+/* XXX: deprecated */
+.ButtonBar
+{
+  background-color: #8d2175;
+  border: 5px solid green
+}
+
+.left_nav
+{
+  /*  background-color: #3399c8 */
+}
+
+.subpage_header_area
+{
+}
+
+.page_header_area
+{
+  border: 1pt solid silver;
+  position: relative;
+  bottom:15pt
+}
+
+/* XXX: Deprecated MainSubData, SubData, SubAction, SubSubInfo */
+.MainSubData
+{
+  width: 100%;
+  /* background-color: red;*/
+  font-size: smaller
+}
+
+.SubData
+{
+  /* background-color: red; */
+  background-color: white;
+  width: 100%
+}
+
+.SubAction
+{
+  /*  background-color: red; */
+  background-color: white;
+  width: 100%;
+  font-size: smaller
+}
+
+.SubSubInfo
+{
+  /*  background-color: red; */
+  background-color: #6ca5c3;
+  font-size: smaller
+}
+
+.tab_page
+{
+  font-size: 11px;
+  border-left: 1px solid #CCCCCC;
+  border-right: 1px solid #CCCCCC;
+  border-bottom: 1px solid #CCCCCC;
+  background-color: white;
+  padding-left: 10px;
+  padding-right: 10px;
+  color: black;
+  width: 100%;
+}
+
+table.page_main_listing
+{
+  width: 100%;
+}
+
+table.form_layout
+{
+  border-spacing: 0px;
+}
+
+.page_tab
+{
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+  padding: 2px 4px;
+  background-image: url(images/slvnav.jpg);
+  border-top: 1px solid #999999;
+  border-right: 1px solid #999999;
+  border-bottom: 1px solid #CCCCCC;
+  border-left: 1px solid #FFFFFF;
+  background-repeat: repeat-x;
+  background-color: #FFFFFF;
+}
+
+.page_tab_sub
+{
+  font-size: 11px;
+  text-align: left;
+  white-space: nowrap;
+  padding: 2px 4px;
+  border-top: 1px solid #999999;
+  border-right: 1px solid #999999;
+  border-bottom: 1px solid #CCCCCC;
+  border-left: 1px solid #FFFFFF;
+  background-repeat: repeat-x;
+  background-color: #FFFFFF;
+}
+
+.page_tab_empty
+{
+  white-space: nowrap;
+  border-bottom:1px solid #CCCCCC;
+  border-left:1px solid #CCCCCC;
+  border-right:0;
+  border-top:0;
+  width: 100%;
+}
+
+.page_tab_selected
+{
+  white-space: nowrap;
+  font-size: 11px;
+  background-color: white;
+  text-align: left;
+  padding: 2px 7px;
+  border-top:1px solid #999999;
+  border-left:1px solid #CCCCCC;
+  border-right:1px solid #CCCCCC;
+  border-bottom:0;
+  font-family: Verdana, Arial, Helvetica, sans-serif;
+  font-weight: bold;
+  line-height: 1.5em;
+}
+
+.page_tab a, .page_tab_selected a
+{
+  color: black;
+  text-decoration: none;
+}
+
+table.page_tab_row
+{
+  width: 100%;
+}
+
+table.page_cmd_row
+{
+  width: 100%;
+}
+
+#pki_form label
+{
+  width: 100px;
+  font-weight: bold;
+  clear:left;
+  float:left;
+  font-weight:bold;
+  padding-top:4px;
+  width:10em;
+}
+
+/* XXX: Deprecated tab anchor markup - see above */
+
+a.uddi
+{
+  font-size: 11px;
+  color: black;
+  text-decoration: none;
+}
+
+a.uddi:hover
+{
+  text-decoration: none;
+}
+
+.ListHeader
+{
+  background-color: #0000c0;
+  color: #ffffff;
+  font-size: smaller;
+}
+.HeaderButton
+{
+  background-color: #c0c0c0;
+}
+
+/* XXX: (ghard) the following classes break Yacutia naming convention
+     because these are generated by a PL procedure adm_result_to_table
+     originally written for and still used in classic admin assistant */
+
+.resdata
+{
+  font-family: Courier, fixed;
+  font-size: 8pt;
+  white-space: nowrap;
+}
+
+.resfooter
+{
+  font-family: Tahoma, Verdana, Arial;
+  font-size: 8pt;
+}
+
+#nav_bar
+{
+  display: block;
+  padding: 0;
+  margin: 0;
+  line-height: 1.9em;
+  font-size: 80%;
+}
+
+#nav_bar td.sel
+{
+  color: #000000;
+}
+
+#nav_bar td
+{
+  background: #ddd;
+}
+
+#nav_bar td.filler
+{
+  background: #B0CDE4;
+  width: 100%;
+}
+
+#nav_bar a
+{
+  display: block;
+  color: #444;
+  text-decoration: none;
+  font-weight: bold;
+  background: #99B3C5;
+  background-image: url(images/stl_blu2_grad.gif);
+  background-repeat: repeat-x;
+  margin: 0;
+  padding: 0.25em 1em;
+  border-left: 1px solid #fff;
+  border-right: 1px solid #aaa;
+  white-space: nowrap;
+}
+
+#nav_bar a.les
+{
+  background: #B0CDE4;
+  background-image: url(images/sel_nav_grad2.gif);
+}
+
+#nav_bar a.les:hover
+{
+  color: black;
+  background: #99B3C5;
+}
+
+#nav_bar a:hover,
+#nav_bar a:active,
+#nav_bar a.sel:link,
+#nav_bar a.sel:visited
+{
+  background: #B0CDE4;
+  background-image: url(images/sel_nav_grad2.gif);
+  color: #000000;
+}
+
+/* The NEW NEW nav_bar (LI-based)*/
+
+/*#nav_bar
+{
+  float: left;
+  clear: both;
+  list-style: none;
+  line-height: 1em;
+  font-size: 80%;
+  padding: 0px;
+  margin: 0px;
+}*/
+
+#nav_bar1
+{
+  position: relative;
+  padding: 0 0 1.75em 1em;
+  margin: 0;
+  list-style: none;
+  line-height: 1em;
+  font-size: 80%;
+}
+
+#nav_bar1 li
+{
+  float: left;
+  margin: 0;
+  padding: 0;
+  overflow: visible;
+}
+
+#nav_bar1 a
+{
+  display: block;
+  color: #444;
+  text-decoration: none;
+  font-weight: bold;
+  background-image: url("images/stl_blu2_grad.gif");
+  background: #ddd;
+  margin: 0;
+  padding: 0.25em 1em;
+  border-left: 1px solid #fff;
+  border-top: 1px solid #fff;
+  border-right: 1px solid #aaa;
+  white-space: nowrap;
+}
+
+#nav_bar1 a:hover,
+#nav_bar1 a:active,
+#nav_bar1 a.sel:link,
+#nav_bar1 a.sel:visited
+{
+  background: #99b3c5;
+}
+
+#nav_bar1 a.sel:link,
+#nav_bar1 a.sel:visited
+{
+  position: relative;
+  z-index: 102;
+}
+
+/*NAVIGATION BAR SECOND LEVEL NEW (MATT)*/
+
+#nav_bar2
+{
+  display: block;
+  padding: 0;
+  margin: 0;
+  line-height: 1.8em;
+  font-size: 80%;
+}
+
+#nav_bar2 td.sel
+{
+  color: #000000;
+}
+
+#nav_bar2 td.sel2 {
+  color: #000000;
+}
+
+#nav_bar2 td
+{
+}
+
+#nav_bar2 td.filler
+{
+  background: #B0CDE4;
+  width: 100%;
+}
+
+#nav_bar2 a
+{
+  display: block;
+  color: #444;
+  text-decoration: none;
+  font-weight: bold;
+  margin: 0;
+  padding: 0.25em 1em;
+  white-space: nowrap;
+  background-image: url(images/sel_nav2_grad2.gif);
+}
+
+#nav_bar2 a.les
+{
+  background: #B0CDE4;
+  background-image: url(images/sel_nav2_grad2.gif);
+}
+
+#nav_bar2 a.les2 {
+  background: #B0CDE4;
+}
+
+#nav_bar2 a.les2:hover
+{
+  background-image: url(images/sel_nav2_grad2.gif);
+  background-repeat: repeat-x;
+}
+
+#nav_bar2 a:hover
+{
+  color: #000000;
+}
+
+#nav_bar2 a:active
+{
+  color: #000000;
+  background-image: url(images/sky_blu_grad.gif);
+}
+
+#nav_bar2 a.sel2:link
+{
+  color: #000000;
+  background-image: url(images/sky_blu_grad.gif);
+}
+
+#nav_bar2 a.sel2:visited
+{
+  color: #000000;
+  background-image: url(images/sel_nav2_grad2.gif);
+}
+
+/* NAVIGATION BAR SECOND LEVEL: NOT USE D- MATT?)
+#nav_bar1 ul
+{
+  position: absolute;
+  left: 0;
+/*  top: 1.5em; */
+
+/*
+
+  float: left;
+  background: #99b3c5;
+  right: 0px;
+  margin: 0;
+  padding: 0.25em 0.25em 0.5em 1em;
+  list-style: none;
+  border-top: 1px solid #fff;
+}
+
+
+#nav_bar1 ul li
+{
+  float: left;
+  display: block;
+  margin-top: 1px;
+  white-space: nowrap;
+}
+
+#nav_bar1 ul a
+{
+  background:#99b3c5;
+  color: #fff;
+  display: inline;
+  margin: 0;
+  padding: 0 1em;
+  border: 0;
+  white-space: nowrap;
+}
+
+#nav_bar1 ul a:hover,
+#nav_bar1 ul a:active,
+#nav_bar1 ul a.sel:link,
+#nav_bar1 ul a.sel:visited
+{
+  color:#444;
+}
+*/
+
+/* to avoid CR/LF to be shown as an empty space */
+a.no_text
+{
+  font-size: 0px;
+}
+
+div.splash
+{
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 0;
+  /*width: 98%;*/
+}
+
+div.splash h1
+{
+  font-size: 24pt;
+  color: #9e9e9a;
+}
+
+div.splash h2
+{
+  font-size: 18pt;
+  color: #9e9e9a;
+}
+
+div.splash_left
+{
+  float: left;
+  width: 40%
+}
+
+div.splash_right
+{
+  margin-left: 10px;
+  float: left;
+  width: 40%
+}
+
+div.splash_group
+{
+}
+
+div.splash_row
+{
+  clear: left;
+  float: left;
+}
+
+div.splash_group br
+{
+  clear: left
+}
+
+div.splash_row label
+{
+  display: block;
+  float: left;
+  margin-bottom: 8px;
+}
+
+div.box
+{
+  background-color: white;
+  color: black;
+  width: 99%;
+  margin: 0px; margin-bottom: 1em; padding: 2px;
+  border: 1px solid silver;
+  vertical-align: top;
+  overflow: auto;
+  overflow-y: auto;
+  overflow-x: auto;
+}
+
+/*
+    generic form markup
+    form container
+
+   fm
+     fm_img
+     fm_section
+       fm_section_head
+       fm_row
+
+
+*/
+
+div.fm
+{
+  background-color: #eaeaee;
+  margin: .3em;
+  padding: 5px;
+}
+
+div.fm_section
+{
+  border: 1px solid silver;
+  padding-top: .5em;
+  padding-bottom: 2em;
+  margin: .5em;
+  clear: both;
+}
+
+div.fm_section_head
+{
+  border: 1px solid silver;
+  position: relative;
+  display: inline;
+  top: -1em;
+  left: 1em;
+  background-color: white;
+  font-weight: bold;
+  padding: .3em;
+}
+
+div.fm_row
+{
+  clear: both;
+}
+
+div.fm_button_row
+{
+  white-space: nowrap;
+  /*float: left;
+  clear: both;*/
+  text-align: right;
+}
+
+fm img
+{
+  float: left;
+  /*  clear: top;*/
+}
+
+span.fm_label
+{
+  display: block;
+  float: left;
+  text-align: right;
+  clear: left;
+}
+
+div.fm label
+{
+  clear: both;
+  display: block;
+  float: left;
+  width: 170px;
+  padding: 0px 5px;
+  margin: 0 0 5px 0;
+  font-size: 10pt;
+  font-weight: bold;
+  text-align: right;
+}
+
+span.fm_ctl_label
+{
+  float: right;
+  text-align: left;
+}
+
+span.fm_ctl_text
+{
+  float: right;
+  text-align: left;
+}
+
+span.fm_ctl_btn
+{
+  float: right;
+  text-align: left;
+}
+
+span.footnote_id
+{
+  font-size: 6pt;
+  position: relative;
+  top: -.5em;
+}
+
+div.footnotes
+{
+  margin-top: 1em;
+  text-align: right;
+}
+
+p.footnote
+{
+  font-size: 7pt;
+}
+
+/* Page-specific id selectors */
+
+#u_sl_roles_assigned
+{
+  size: 5pt;
+  width: 15pt;
+}
+
+div.validator_err_ctr
+{
+  clear: both;
+  margin-left: 10px;
+}
+
+div.validator_err_ctr p
+{
+  color: red;
+}
+
+#nav_separator {
+  left: 0px;
+  top: 0px;
+  width: 100%;
+  background-color: #B0CDE4;
+  padding-bottom: 0px;
+  vertical-align: top;
+  border-left: 1px solid #fff;
+}
+
+table.stat_table
+{
+  background-color: white;
+}
+
+table.stat_table td
+{
+  font-weight: bold;
+  font-size: 80%;
+}
+
+table.stat_table th
+{
+  border-color: #99B3C5;
+  border-style: solid;
+  border-width: 0px 0px 1px 0px;
+  padding: 2px;
+  color: #033566;
+}
+
+tr.stat_header_line
+{
+}
+
+td.stat_col_label
+{
+  text-align: right;
+  vertical-align: top;
+  font-weight: normal!important;
+}
+
+td.stat_col
+{
+  text-align: left;
+  vertical-align: top;
+  font-weight: normal!important;
+}
+
+td.stat_colr
+{
+  text-align: right;
+  vertical-align: top;
+  font-weight: normal!important;
+}
+td.stat_col_label:after
+{
+  content: ": ";
+}
+
+table.home
+{
+  width: 100%;
+  background-color: white;
+}
+
+table.home th
+{
+  border-color: #FFFFFF;
+  border-style: solid;
+  border-width: 0px 0px 0px 1px;
+  padding: 2px;
+  color: #033566;
+  text-align: left;
+}
+
+#home_icon
+{
+  text-align: right;
+}
+
+#home_label
+{
+  color: black;
+}
+
+#home_label a,
+#home_label a:hover,
+#home_label a:visited,
+#home_label a:link
+{
+  color: black;
+  font-weight: bold;
+  text-decoration: none;
+}
+
+.scroll_area
+{
+  background-color: white;
+  height: 22em;
+  width: auto;
+  margin-right:12px;
+  overflow: auto;
+  clear: left;
+}
+
+.banner1
+{
+  font-weight: bold;
+  color: #033566;
+  font-size: 150%;
+  white-space: nowrap;
+  vertical-align: middle;
+  text-align: left;
+}
+
+.login_box
+{
+  padding-left: 20px;
+  margin-left: 20px;
+}
+
+div.help_button
+{
+  border: 1px solid #666;
+  background-color: #ddd;
+  margin-right: 8px;
+  padding: 5px;
+  float: right;
+}
+
+div.help_button:hover {
+  background-color: #aaa;
+  border: 1px solid #ddd;
+}
+
+div.help_button a {
+  text-decoration: none;
+  color: #333;
+  vertical-align: middle;
+}
+
+div.help_button img {
+  vertical-align: middle;
+  margin-right: 3px;
+}
+
+.login_info
+{
+  clear: none;
+  float: right;
+  margin-right: 50px;
+  /*margin-left: 500px;*/
+}
+
+#dav_res_frame
+{
+}
+
+.combo_list_list {
+  background-color: white;
+  border: 1px solid black;
+  padding: 2px;
+  height: 100px;
+  overflow: auto;
+}
+
+.combo_list_option:hover {
+  background-color: #0080FF;
+  color: white;
+}
+
+#img_group
+{
+  margin-top: 70px;
+}
+
+.vdir_listtable
+{
+  width: 100%;
+  background-image: url(images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+.form-list {
+  width: 100%;
+  border: solid #7f94a5;
+  border-width: 1px 1px 1px 1px;
+  background-color: #fff;
+}
+
+.form-list th {
+  text-align: center;
+  white-space: nowrap;
+  font-size: 1em;
+  font-weight: bold;
+  padding: 2px 4px 2px 4px;
+  border: solid #7f94a5;
+  background-color: #b0cde4;
+  border-width: 0px 1px 1px 0px;
+}
+
+.form-list th:last-child {
+  border-width: 0px 0px 1px 0px;
+}
+.form-list td {
+  border: solid #7f94a5;
+  border-width: 0px 0px 0px 0px;
+  padding: 2px 4px 2px 4px;
+}
+
+.pointer
+{
+  cursor: pointer;
+}
+
+span.button {
+  background: none repeat scroll 0 0 #99B3C5;
+  border: 1px solid #7F94A5;
+  -moz-border-radius: 5px;
+  -webkit-border-radius: 5px;
+  color: #FFFFFF;
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 3px 4px 1px;
+  text-decoration:none;
+}
+
+img.button {
+  margin-bottom: -3px;
+}
+
+a.img_button {
+  background: none repeat scroll 0 0 #99b3c5;
+  border: 1px solid #7f94a5;
+  border-radius: 5px;
+  color: #ffffff;
+  font-size: 0.8em;
+  font-weight: bold;
+  padding: 2px 2px 1px;
+  text-decoration: none;
+}
+
+/* Popup Calendar */
+.calendar {
+	border: 1px solid #000;
+	background-color: #FFF;
+  z-index: 101;
+}
+
+.calendar_year, .calendar_month {
+	text-align: center;
+	border-bottom: 1px solid #aaa;
+	padding: 2px 0px;
+}
+
+.calendar table {
+	margin-top: 2px;
+}
+
+.calendar thead {
+	font-weight: bold;
+}
+
+.calendar thead td {
+	padding: 0px 2px;
+}
+
+.calendar td {
+	font-size: 75%;
+	text-align: center;
+}
+
+td.calendar_selected {
+	background-color: #faa;
+}
+
+.calendar_special {
+	color: #c55;
+}
+
+div.tabContent
+{
+  font-size: 1em;
+  padding: 6px;
+}
+
+div.tab
+{
+  cursor: pointer;
+  display: inline;
+  font-weight: bold;
+  background-color: #85B9D2;
+  border: 1px solid #000;
+  border-bottom-width: 0px;
+  border-color: #7f94a5;
+  padding: 2px 10px 2px 10px;
+  margin-right: 3px;
+  position: relative;
+  text-decoration: none;
+  top: -1px;
+  z-index: 100;
+}
+
+div.activeTab
+{
+  background-color: #EFEFEF;
+  border-color: #7f94a5;
+}
+
+div.contents
+{
+  background-color: #EFEFEF;
+  border: 1px solid #7F94A5;
+  padding: 0.5em;
+}
+
+.tabs
+{
+	margin-top: 1.5em;
+	list-style-type: none;
+	padding-bottom: 0px;
+	padding-left: 0.5em;
+}
+
+.tabs li
+{
+	display: inline;
+	padding: 1px 3px;
+	margin-left: 0.1em;
+	cursor: pointer;
+  border-top: 1px solid #aaa;
+  border-left: 1px solid #aaa;
+  border-right: 1px solid #aaa;
+  border-top-left-radius: 3px;
+  border-top-right-radius: 3px;
+  -moz-border-radius-topleft: 3px;
+  -moz-border-radius-topright: 3px;
+  -webkit-border-top-left-radius: 3px;
+  -webkit-border-top-right-radius: 3px;
+	background-color: #EFEFEF;
+	z-index: 10;
+}
+
+.tabs li.tab_selected
+{
+	background-color: #FFF;
+}
+
+.tabs li.tab:hover
+{
+	background-color: #FFF;
+}

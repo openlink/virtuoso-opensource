@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,10 +78,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_node_from_nodebld"><title>Examples</title>
-    <example id="ex_xte_node_from_nodebld"><title></title>
+    <example id="ex_xte_node_from_nodebld"><title>Simple Use</title>
       <para>The vector res  below is corresponding to the following XML element:  </para>
       <para>&lt;product&gt;&lt;supplier CompanyName="Seller"&gt;&lt;/supplier&gt;&lt;/product&gt;</para>
       <screen>create procedure test_nodebld()

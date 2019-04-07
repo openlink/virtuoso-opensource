@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,7 @@
 #include "sqlintrp.h"
 #include "sqlo.h"
 #include "sqlcstate.h"
+#include "date.h"
 
 
 
@@ -164,7 +165,7 @@ sqlc_print_literal_proc (char *text, size_t tlen, int *fill, char *name, ST ** p
     }
   else
     {
-      query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, name);
+      query_t *qr = sch_proc_def (wi_inst.wi_schema, name);
       if (!qr || IS_REMOTE_ROUTINE_QR (qr) || !qr->qr_proc_ret_type)
 	return;
       else
@@ -174,6 +175,7 @@ sqlc_print_literal_proc (char *text, size_t tlen, int *fill, char *name, ST ** p
 	    {
 	      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
 	      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	    }
 	}
     }
@@ -286,6 +288,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	}
       END_DO_BOX;
       sc->sc_exp_sqt.sqt_dtp = DV_DATETIME;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "_cvt"))
     {				/* convert needs SQL_xxx instead of datatype xxx for second arg */
@@ -295,6 +298,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sqlc_exp_print (sc, ct, params[1], text, tlen, fill);
       sprintf_more (text, tlen, fill, ", %s", sqlc_sql_type_name (vd_dv_to_sql_type (dtp)));
       sc->sc_exp_sqt.sqt_dtp = dtp;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "__extract"))
     {				/* extract needs a special parameter layout */
@@ -303,6 +307,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " FROM ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else if (!stricmp (name, "position"))
     {				/* extract needs a special parameter layout */
@@ -311,6 +316,7 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
       sprintf_more (text, tlen, fill, " IN ");
       sqlc_exp_print (sc, ct, params[2], text, tlen, fill);
       sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+      sc->sc_exp_sqt.sqt_col_dtp = 0;
     }
   else
     {
@@ -341,13 +347,14 @@ sqlc_print_standard_proc (char *text, size_t tlen, int *fill, char *name, ST ** 
 	}
       else
 	{
-	  query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, name);
+	  query_t *qr = sch_proc_def (wi_inst.wi_schema, name);
 	  if (qr && !IS_REMOTE_ROUTINE_QR (qr) && qr->qr_proc_ret_type)
 	    {
 	      ptrlong *rtype = (ptrlong *) qr->qr_proc_ret_type;
 	      if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 		{
 		  sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+		  sc->sc_exp_sqt.sqt_col_dtp = 0;
 		  sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 		}
 	    }
@@ -510,6 +517,8 @@ bop_text (int bop)
 {
   switch (bop)
     {
+    case BOP_NOT:
+      return "not";
     case BOP_EQ:
       return "=";
     case BOP_GT:
@@ -540,8 +549,6 @@ bop_text (int bop)
       return (" UNION ALL ");
     case BOP_LIKE:
       return (" LIKE ");
-    case BOP_NOT:
-      return "not";
     case BOP_NULL:
       return (" IS NULL ");
     }
@@ -820,7 +827,7 @@ sqlc_remote_assign_param_type (sql_comp_t * sc, char *tb_name, char *col_name)
 {
   if (sc->sc_exp_param && sc->sc_exp_param->ssl_dtp == DV_UNKNOWN)
     {
-      dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tb_name);
+      dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tb_name);
       dbe_column_t *col = tb_name_to_column (tb, col_name);
       sc->sc_exp_param->ssl_sqt = col->col_sqt;
     }
@@ -990,6 +997,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	      sqlc_exp_print (sc, ct, arg_st->_.comma_exp.exps[0]->_.bin_exp.left, text, tlen, fill);
 	      sprintf_more (text, tlen, fill, ")");
 	      sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	      sc->sc_exp_sqt.sqt_col_dtp = 0;
 	      return 1;
 	    }
 	}
@@ -1007,6 +1015,7 @@ sqlc_print_count_exp (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, 
 	    sqlc_exp_print (sc, ct, arg_st, text, tlen, fill);
 	  sprintf_more (text, tlen, fill, ")");
 	  sc->sc_exp_sqt.sqt_dtp = DV_LONG_INT;
+	  sc->sc_exp_sqt.sqt_col_dtp = 0;
 	  return 1;
 	}
     }
@@ -1109,8 +1118,23 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	break;
       }
 
+    case DV_IRI_ID:
+      {
+	iri_id_t iid = unbox_iri_id (exp);
+	if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	  sprintf_more (text, tlen, fill, "#ib" IIDBOXINT_FMT, (boxint)(iid-MIN_64BIT_BNODE_IRI_ID));
+	else
+	  sprintf_more (text, tlen, fill, "#i" IIDBOXINT_FMT, (boxint)(iid));
+	break;
+      }
+
     case DV_DOUBLE_FLOAT:
       sprintf_more (text, tlen, fill, "%lg", unbox_double ((caddr_t) exp));
+      sc->sc_exp_sqt.sqt_dtp = dtp;
+      break;
+
+    case DV_SINGLE_FLOAT:
+      sprintf_more (text, tlen, fill, "%lg", unbox_float ((caddr_t) exp));
       sc->sc_exp_sqt.sqt_dtp = dtp;
       break;
 
@@ -1140,7 +1164,16 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
       }
       break;
 #endif
-
+    case DV_DATETIME:
+    case DV_DATE:
+    case DV_TIME:
+	{
+	  char temp[100];
+	  int dt_type = DT_DT_TYPE (exp);
+	  dt_to_string ((char *) exp, temp, sizeof (temp));
+	  sprintf_more (text, tlen, fill, "{%s '%s'}", dt_type == DT_TYPE_DATE ? "d" : dt_type == DT_TYPE_TIME ? "t" : "ts",  temp);
+	  break;
+	}
 
     case DV_LIST_OF_POINTER:
     case DV_ARRAY_OF_POINTER:
@@ -1193,18 +1226,9 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case SEARCHED_CASE:
 	  {
 	    int inx;
-	    id_hash_t *old_private_elts = NULL;
-	    df_elt_t * case_dfe = NULL;
-	    if (sc->sc_so)
-	      case_dfe = sqlo_df (sc->sc_so, tree);
 	    sprintf_more (text, tlen, fill, "CASE ");
 	    for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (tree->_.comma_exp.exps); inx += 2)
 	      {
-		if (sc->sc_so)
-		  {
-		    old_private_elts = sc->sc_so->so_df_private_elts;
-		    sc->sc_so->so_df_private_elts = case_dfe->_.control.private_elts[inx];
-		  }
 		if (ST_P (tree->_.comma_exp.exps[inx], QUOTE))
 		  {
 		    sprintf_more (text, tlen, fill, " ELSE ");
@@ -1217,8 +1241,6 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		    sprintf_more (text, tlen, fill, " THEN ");
 		    sqlc_exp_print (sc, ct, tree->_.comma_exp.exps[inx + 1], text, tlen, fill);
 		  }
-		if (sc->sc_so)
-		  sc->sc_so->so_df_private_elts = old_private_elts;
 	      }
 	    sprintf_more (text, tlen, fill, " END ");
 	  }
@@ -1347,7 +1369,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 
 	case TABLE_DOTTED:
 	  {
-	    dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tree->_.table.name);
+	    dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
 	    comp_table_t *ct = sqlc_table_ct (sc, tb, tree);
 	    char *c_prefix = sqlc_ct_vdb_prefix (sc, ct);
 	    remote_table_t *rt = find_remote_table (tb->tb_name, 0);
@@ -1432,7 +1454,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	case INSERT_STMT:
 	  {
 	    ST *tb_ref = tree->_.insert.table;
-	    dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tb_ref->_.table.name);
+	    dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tb_ref->_.table.name);
 	    sprintf_more (text, tlen, fill, "INSERT INTO ");
 	    sqlc_quote_dotted (text, tlen, fill, tb_remote_name (tb));
 	    if (!sec_tb_check (tb, (oid_t) unbox (tb_ref->_.table.g_id), (oid_t) unbox (tb_ref->_.table.u_id), GR_INSERT) ||
@@ -1473,7 +1495,7 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 	  {
 	    dbe_table_t *tb = sc->sc_tables[0]->ct_table;
 	    if (tb && !sec_tb_check (tb, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_DELETE))
-	      sqlc_new_error (sc->sc_cc, "42000", "SQ110", "Permission denied for delete from table %.300s", tb->tb_name);
+	      sqlc_new_error (sc->sc_cc, "42000", "SQ110:SECURITY", "Permission denied for delete from table %.300s", tb->tb_name);
 	    sprintf_more (text, tlen, fill, "DELETE FROM ");
 	    sqlc_quote_dotted (text, tlen, fill, tb_remote_name (sc->sc_tables[0]->ct_table));
 	    if (tree->_.delete_src.table_exp->_.table_exp.where)
@@ -1502,8 +1524,8 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		if (col_obj)
 		  {
 		    if (!sec_checked && !sec_col_check (col_obj, sc->sc_tables[0]->ct_g_id, sc->sc_tables[0]->ct_u_id, GR_UPDATE))
-		      sqlc_new_error (sc->sc_cc, "42000", "SQ164", "Update of column %s of table %.300s not allowed (user ID = %lu)",
-			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, sc->sc_tables[0]->ct_u_id);
+		      sqlc_new_error (sc->sc_cc, "42000", "SQ164:SECURITY", "Update of column %s of table %.300s not allowed (user ID = %lu)",
+			  col_obj->col_name, sc->sc_tables[0]->ct_table->tb_name, (long)(sc->sc_tables[0]->ct_u_id) );
 		  }
 		sprintf_more (text, tlen, fill, " ");
 		sqlc_quote_dotted (text, tlen, fill, col_obj ? col_obj->col_name : (char *) tree->_.update_src.cols[inx]);
@@ -1564,13 +1586,14 @@ sqlc_exp_print (sql_comp_t * sc, comp_table_t * ct, ST * exp, char *text, size_t
 		    }
 		  else
 		    {
-		      query_t *qr = sch_proc_def (sc->sc_cc->cc_schema, tree->_.call.name);
+		      query_t *qr = sch_proc_def (wi_inst.wi_schema, tree->_.call.name);
 		      if (qr && !IS_REMOTE_ROUTINE_QR (qr) && qr->qr_proc_ret_type)
 			{
 			  ptrlong *rtype = (ptrlong *) qr->qr_proc_ret_type;
 			  if (((dtp_t) rtype[0]) != DV_UNKNOWN)
 			    {
 			      sc->sc_exp_sqt.sqt_dtp = (dtp_t) rtype[0];
+			      sc->sc_exp_sqt.sqt_col_dtp = 0;
 			      sc->sc_exp_sqt.sqt_precision = (uint32) rtype[1];
 			    }
 			}
@@ -1795,4 +1818,124 @@ sqlc_resignal (sql_comp_t * sc, caddr_t err)
   sqlc_new_error (sc->sc_cc, state, "VD032", temp);
 }
 
+
+
+ST **box_add_prime_keys (ST ** selection, dbe_table_t * tb);
+
+
+dbe_table_t *
+sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree)
+{
+  /* single table select of remote/cluster/col-wise table, add prime key cols */
+  ST **n_sel;
+  ST **from = tree->_.select_stmt.table_exp ? tree->_.select_stmt.table_exp->_.table_exp.from : NULL;
+  ST *t1 = from ? from[0]->_.table_ref.table : NULL;
+  if (1 == BOX_ELEMENTS_0 (from) && ST_P (t1, TABLE_DOTTED) && !tree->_.select_stmt.table_exp->_.table_exp.group_by)
+    {
+      dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, t1->_.table.name);
+      remote_table_t *rt;
+      if (!tb)
+	return 0;
+      if (sqlo_opt_value (t1->_.table.opts, OPT_INDEX_ONLY))
+	return 0;
+      if (sch_view_def (wi_inst.wi_schema, tb->tb_name))
+	return 0;
+      rt = find_remote_table (tb->tb_name, 0);
+      if (!rt && !tb->tb_primary_key->key_partition && !tb->tb_primary_key->key_is_col)
+	return 0;
+      n_sel = box_add_prime_keys ((ST **) tree->_.select_stmt.selection, tb);
+      /*dk_free_tree ((caddr_t) tree->_.select_stmt.selection); */
+      tree->_.select_stmt.selection = (caddr_t *) n_sel;
+      return tb;
+    }
+  return 0;
+}
+
+
+ST *
+sqlc_co_ref (sql_comp_t * sc, subq_compilation_t * sqc, state_slot_t * sl, dbe_column_t * col, caddr_t prefix)
+{
+  ST * ref = (ST *) t_list (3, COL_DOTTED, t_box_string (prefix), t_box_string (col->col_name));
+  col_ref_rec_t * pre_crr = sqlc_col_ref_rec (sc, ref, 0);
+  if (!pre_crr)
+    {
+      state_slot_t * copy_ssl = ssl_new_variable (sc->sc_cc, sl->ssl_name, sl->ssl_sqt.sqt_dtp);
+      t_NEW_VARZ (col_ref_rec_t, crr);
+      crr->crr_ssl = copy_ssl;
+      crr->crr_col_ref = ref;
+      t_set_push (&sc->sc_col_ref_recs, (void *) crr);
+      pre_crr = crr;
+    }
+  DO_SET (instruction_t *, ins, &sqc->sqc_fetches)
+    {
+      int pos = box_position_no_tag ((caddr_t*)ins->_.fetch.targets, (caddr_t)pre_crr->crr_ssl);
+      if (-1 == pos)
+	ins->_.fetch.targets = (state_slot_t **) box_append_1_free ((caddr_t)ins->_.fetch.targets, (caddr_t)pre_crr->crr_ssl);
+    }
+  END_DO_SET();
+  return ref;
+}
+
+
+ST *
+sqlc_pos_to_searched_where (sql_comp_t * sc, subq_compilation_t * sqc, char *cr_name, dbe_table_t * tb)
+{
+  int inx;
+  ST *tree = NULL;
+  if (sqc)
+    {
+      /*add pk cols of cr to scope, then generate where referencing these */
+      ST *pred;
+      char prefix[11];
+      static int cr_ctr;
+      state_slot_t **out = sqc->sqc_query->qr_select_node->sel_out_slots;
+      int n_out = BOX_ELEMENTS (out);
+      int n_parts = tb->tb_primary_key->key_n_significant;
+      dk_set_t pk_cols = tb->tb_primary_key->key_parts;
+
+      /* for local cr in cluster, n_out may include co placeholders which will be ignored here */
+      while (n_out &&
+	     DV_ITC == out[n_out - 1]-> ssl_sqt.sqt_dtp)
+	n_out--;
+      if (!sqc->sqc_cr_pref_no)
+	sqc->sqc_cr_pref_no = ++cr_ctr;
+      snprintf (prefix, sizeof (prefix), "C%d", sqc->sqc_cr_pref_no);
+
+      for (inx = 0; inx < n_parts; inx++)
+	{
+	  dbe_column_t *col = (dbe_column_t *) pk_cols->data;
+	  state_slot_t *sl = out[(n_out - n_parts) + inx];
+	  ST * cr_ref = sqlc_co_ref (sc, sqc, sl, col, prefix);
+	  pred = (ST *) t_list (4, BOP_EQ, t_list (3, COL_DOTTED, NULL, t_box_string (col->col_name)), cr_ref, NULL);
+	  if (tree)
+	    {
+	      ST *res;
+	      BIN_OP (res, BOP_AND, tree, pred);
+	      tree = res;
+	    }
+	  else
+	    tree = pred;
+	  pk_cols = pk_cols->next;
+	}
+
+      return tree;
+    }
+  else
+    {
+      int inx = 0;
+      DO_SET (dbe_column_t *, col, &tb->tb_primary_key->key_parts)
+	{
+	  t_st_and (&tree, (ST *)
+	      t_list (4, BOP_EQ, t_list (3, COL_DOTTED, NULL, t_box_string (col->col_name)),
+		  t_list (3, CALL_STMT, t_sqlp_box_id_upcase ("__cr_id_part"),
+		      t_list (3, t_box_string (cr_name), t_box_string (tb->tb_name), t_box_num (inx))), NULL));
+
+	  inx++;
+	  if (inx >= tb->tb_primary_key->key_n_significant)
+	    break;
+	}
+      END_DO_SET ();
+      return tree;
+    }
+}
 

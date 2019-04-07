@@ -8,6 +8,43 @@ import com.hp.hpl.jena.graph.test.AbstractTestGraph;
 import com.hp.hpl.jena.rdf.model.Model ;
 import com.hp.hpl.jena.rdf.model.ModelFactory ;
 
+//----------------------------------------------
+/**
+import java.io.InputStream ;
+import java.net.MalformedURLException ;
+import java.net.URISyntaxException ;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import com.hp.hpl.jena.graph.Capabilities;
+import com.hp.hpl.jena.graph.Factory;
+import com.hp.hpl.jena.graph.Graph;
+import com.hp.hpl.jena.graph.GraphEventManager;
+import com.hp.hpl.jena.graph.GraphEvents;
+import com.hp.hpl.jena.graph.GraphListener;
+import com.hp.hpl.jena.graph.GraphStatisticsHandler;
+import com.hp.hpl.jena.graph.GraphUtil;
+import com.hp.hpl.jena.graph.Node;
+import com.hp.hpl.jena.graph.TransactionHandler;
+import com.hp.hpl.jena.graph.Triple;
+import com.hp.hpl.jena.mem.TrackingTripleIterator ;
+import com.hp.hpl.jena.rdf.model.Model ;
+import com.hp.hpl.jena.rdf.model.ModelFactory ;
+import com.hp.hpl.jena.rdf.model.impl.ReifierStd ;
+import com.hp.hpl.jena.shared.Command ;
+import com.hp.hpl.jena.shared.JenaException ;
+import com.hp.hpl.jena.util.CollectionFactory ;
+import com.hp.hpl.jena.util.iterator.ClosableIterator ;
+import com.hp.hpl.jena.util.iterator.ExtendedIterator ;
+
+import com.hp.hpl.jena.graph.test.*;
+***/
+//-----------------------------
 
 public class VirtuosoTestGraph extends AbstractTestGraph {
     protected VirtGraph graph;
@@ -34,10 +71,13 @@ public class VirtuosoTestGraph extends AbstractTestGraph {
 
 		url = System.getProperty("url");
                 if(url == null)
-                    url = "jdbc:virtuoso://localhost:1111";
+//                    url = "jdbc:virtuoso://mf64:1111";
+                    url = "jdbc:virtuoso://mc64:1111";
 
 		graph = new VirtGraph("http://example.org/testing", url, "dba", "dba");
+		graph.setInsertBNodeAsVirtuosoIRI(true);
 		graph1 = new VirtGraph("http://example.org/testing1", url, "dba", "dba");
+		graph1.setInsertBNodeAsVirtuosoIRI(true);
     }
 
 //	public static TestSuite suite() {
@@ -72,7 +112,7 @@ public class VirtuosoTestGraph extends AbstractTestGraph {
     }
 
     @Override
-    public void testIsomorphismFile() throws URISyntaxException, MalformedURLException {
+    public void testIsomorphismFile() {
 	//skip
         testIsomorphismXMLFile(1,true);
         testIsomorphismXMLFile(2,true); //FAILED because XMLLiteral isn't supported properly
@@ -84,21 +124,21 @@ public class VirtuosoTestGraph extends AbstractTestGraph {
         testIsomorphismNTripleFile(8,false);
     }
 
-    private void testIsomorphismNTripleFile(int i, boolean result) throws URISyntaxException, MalformedURLException {
+    private void testIsomorphismNTripleFile(int i, boolean result) {
        testIsomorphismFile(i,"N-TRIPLE","nt",result);
     }
 
-    private void testIsomorphismXMLFile(int i, boolean result) throws URISyntaxException, MalformedURLException {
+    private void testIsomorphismXMLFile(int i, boolean result) {
        testIsomorphismFile(i,"RDF/XML","rdf",result);
     }
 
-    private InputStream getInputStream( int n, int n2, String suffix) throws URISyntaxException, MalformedURLException
+    private InputStream getInputStream( int n, int n2, String suffix)
     {
     	String urlStr = String.format( "regression/testModelEquals/%s-%s.%s", n, n2, suffix);
     	return AbstractTestGraph.class.getClassLoader().getResourceAsStream(  urlStr );
     }
     
-    private void testIsomorphismFile(int n, String lang, String suffix, boolean result) throws URISyntaxException, MalformedURLException {
+    private void testIsomorphismFile(int n, String lang, String suffix, boolean result) {
 
         Graph g1 = getGraph();
         Graph g2 = getGraph1();

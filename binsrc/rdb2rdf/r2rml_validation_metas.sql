@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -74,7 +74,7 @@ rr:useSubjectMap		a OVL:ObsoleteProperty ; rdfs:comment "Use rr:subjectMap inste
 
 
 rr:OVL-G_S_P_O_Map	OVL:superClassOf	rr:GraphMap,	rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
-rr:OVL-S_P_O_Map		OVL:superClassOf			rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
+rr:OVL-S_P_O_Map	OVL:superClassOf			rr:SubjectMap,	rr:PredicateMap,	rr:ObjectMap						.
 rr:OVL-S_Po_Map		OVL:superClassOf			rr:SubjectMap,						rr:PredicateObjectMap			.
 rr:OVL-S_O_Map		OVL:superClassOf			rr:SubjectMap,				rr:ObjectMap						.
 rr:OVL-O_Ro_Map		OVL:superClassOf								rr:ObjectMap,				rr:RefObjectMap	.
@@ -101,10 +101,10 @@ rr:logicalTable		a OVL:InferTypeFromRange .
 rr:subjectMap		a OVL:InferTypeFromRange .
 rr:predicateObjectMap	a OVL:InferTypeFromRange .
 rr:predicateMap		a OVL:InferTypeFromRange .
-rr:objectMap			a OVL:InferTypeFromRange .
-rr:useRefPredicateObjectMap	a OVL:InferTypeFromRange .
-rr:useRefPredicateMap		a OVL:InferTypeFromRange .
-rr:useRefObjectMap		a OVL:InferTypeFromRange .
+# rr:objectMap			a OVL:InferTypeFromRange .
+rr:RefPredicateObjectMap	a OVL:InferTypeFromRange .
+rr:RefPredicateMap		a OVL:InferTypeFromRange .
+rr:RefObjectMap			a OVL:InferTypeFromRange .
 rr:joinCondition		a OVL:InferTypeFromRange .
 
 rr:termType			OVL:inconsistencyOfPredicate """select ?s, ("Error") as ?severity,
@@ -127,8 +127,8 @@ rr:tableName			OVL:inconsistencyOfPredicate """select ?lt, ("Warning") as ?sever
   (if (bif:isnotnull (sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 1)),
       bif:concat ("rr:tableName refers to ", sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 1), " as to ",
         bif:sprintf ("%s.%s.%s", bif:coalesce (?to, "DB"), bif:coalesce (?ts, "DBA"), ?tn),
-        ", i.e., using wrong character case ; adjust the R2RML or the table before generating an RDF View" ),
-      "rr:tableName refers to table that does not exists ; adjust the R2RML or create the table before generating an RDF View" ) ) as ?message
+        ", i.e., using wrong character case; adjust the R2RML or the table before generating an RDF View" ),
+      "rr:tableName refers to table that does not exist; adjust the R2RML or create the table before generating an RDF View" ) ) as ?message
   where {
       ?lt rr:tableName ?tn .
       OPTIONAL { ?lt rr:tableOwner ?to }
@@ -138,9 +138,9 @@ rr:column			OVL:inconsistencyOfPredicate """select ?fldmap as ?s, ("Warning") as
   (if (bif:isnotnull (sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1)),
       bif:concat ("rr:column refers to column ", ?col , " that is misspelled name of column ",
         sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1), " that the table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now ; adjust the R2RML or the table before generating an RDF View" ),
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now; adjust the R2RML or the table before generating an RDF View" ),
       bif:concat ("rr:column refers to column ", ?col , " that is not found in table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " ; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), "; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
   where {
       ?lt rr:tableName ?tn .
       OPTIONAL { ?lt rr:tableOwner ?to }
@@ -162,9 +162,9 @@ rr:parent			OVL:inconsistencyOfPredicate """select ?join as ?s, ("Warning") as ?
   (if (bif:isnotnull (sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1)),
       bif:concat ("rr:parent refers to column ", ?col , " that is misspelled name of column ",
         sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1), " that the table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now ; adjust the R2RML or the table before generating an RDF View" ),
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now; adjust the R2RML or the table before generating an RDF View" ),
       bif:concat ("rr:parent refers to column ", ?col , " that is not found in table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " ; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), "; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
   where {
       ?lt rr:tableName ?tn .
       OPTIONAL { ?lt rr:tableOwner ?to }
@@ -178,9 +178,9 @@ rr:child			OVL:inconsistencyOfPredicate """select ?join as ?s, ("Warning") as ?s
   (if (bif:isnotnull (sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1)),
       bif:concat ("rr:child refers to column ", ?col , " that is misspelled name of column ",
         sql:R2RML_KEY_COLUMN_EXISTS (?ts, ?to, ?tn, ?col, 1), " that the table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now ; adjust the R2RML or the table before generating an RDF View" ),
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " contains now; adjust the R2RML or the table before generating an RDF View" ),
       bif:concat ("rr:child refers to column ", ?col , " that is not found in table ",
-        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), " ; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
+        sql:R2RML_MAIN_KEY_EXISTS (?ts, ?to, ?tn, 0), "; adjust the R2RML or the table before generating an RDF View" ) ) ) as ?message
   where {
       ?lt rr:tableName ?tn .
       OPTIONAL { ?lt rr:tableOwner ?to }

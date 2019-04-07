@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,9 +27,35 @@
 
 #include "Dk.h"
 
+
+int enable_no_free = 0;
+
+
 #ifdef UNIX
 long init_brk;
 #endif
+
+
+size_t dk_init_size;
+
+void
+dk_set_initial_mem (size_t sz)
+{
+  dk_init_size = sz;
+}
+#define dk_tlsf_init()
+
+
+int enable_alloc_ctr;
+int64 dk_n_allocs;
+int64 dk_n_total;
+int64 dk_max_allocs;
+int64 dk_max_bytes;
+int64 dk_n_free;
+int64 dk_n_nosz_free;
+int64 dk_n_bytes;
+int64 dk_n_max_allocs;
+
 
 #ifndef MALLOC_DEBUG
 
@@ -42,6 +68,10 @@ long init_brk;
 #endif
 
 extern void dk_box_initialize (void);
+extern void dk_box_finalize (void);
+
+#define NO_MALLOC_CACHE
+#undef CACHE_MALLOC
 
 #if !defined (NO_MALLOC_CACHE) && !defined (PURIFY) && !defined (VALGRIND)
 # if defined (UNIX) || defined (WIN32)
@@ -49,10 +79,10 @@ extern void dk_box_initialize (void);
 # endif
 #endif
 
+
 #define NO_SIZE ((size_t) -1)
 
 #ifdef CACHE_MALLOC
-
 
 
 #define AV_LIST_MEMBERS \
@@ -62,6 +92,89 @@ extern void dk_box_initialize (void);
   unsigned short	av_max;\
   int			av_n_empty;\
   int			av_n_full
+
+#if 0
+#define N_CACHED_SIZES (MAX_CACHED_MALLOC_SIZE / 8)
+#define ALIGN_A(align_sz, nth_sz, req_sz) \
+{ align_sz = ALIGN_8 (req_sz); nth_sz = align_sz / 8;}
+
+#define NTH_SIZE(nth) ((nth) * 8)
+
+#else
+
+#undef MAX_CACHED_MALLOC_SIZE
+#define MAX_CACHED_MALLOC_SIZE 0x10000
+#define N_CACHED_SIZES 97
+
+#define ALIGN_A(align_sz, nth_sz, c) \
+  align_sz = dk_alloc_align (c, &nth_sz)
+#define NTH_SIZE(nth) \
+dk_alloc_nth_size (nth)
+
+
+int
+dk_alloc_bin_log (int sz)
+{
+  unsigned char h = sz >> 8;
+  if (0xf0 & h)
+    {
+      if (0xc0 & h)
+		    return h & 0x80 ? 7 : 6;
+      return 0x20 & h ? 5 : 4;
+    }
+  if (0xc & h)
+    return 0x8 & h ? 3 : 2;
+  return 0x2 & h ? 1 : 0;
+}
+
+int
+dk_alloc_align (size_t sz, int * nth_ret)
+{
+  if (sz <= 256)
+    {
+      sz = ALIGN_8 (sz);
+      *nth_ret = sz / 8;
+      return sz;
+    }
+  else
+    {
+      int bin_log = dk_alloc_bin_log (sz - 1);
+      int grain = 32 << bin_log;
+      *nth_ret = 33 + (8 * bin_log) + (((sz - 1) - (256 << bin_log)) >>  (bin_log + 5));
+	return _RNDUP_PWR2 (sz, grain);
+    }
+}
+
+
+int
+dk_alloc_nth_size (int nth)
+{
+  int sz2;
+  if (nth <= 32)
+    sz2 = nth * 8;
+  else
+    {
+      int i, nth2 = nth - 32;
+      sz2 = 256;
+      for (i = 0; i + 8 < nth2; i+= 8)
+	{
+	  sz2 += 256 << (i / 8);
+	}
+      sz2 += (nth2 - i) * (32 << (i / 8));
+    }
+  return sz2;
+}
+
+void
+dk_al_test (int sz)
+{
+  int nth;
+  int al = dk_alloc_align (sz, &nth);
+  int sz2 = dk_alloc_nth_size (nth);;
+  printf ("%d %d %d\n", al, nth, sz2);
+}
+#endif
+
 
 
 typedef struct av_list_s
@@ -78,7 +191,7 @@ typedef struct av_s_list_s
 
 #define MEMBLOCKS_N_WAYS 16
 #define MEMBLOCKS_MASK 15
-av_s_list_t memblock_set[MAX_CACHED_MALLOC_SIZE / 8][MEMBLOCKS_N_WAYS];
+av_s_list_t memblock_set[N_CACHED_SIZES][MEMBLOCKS_N_WAYS];
 int nth_memblock;
 #define NTH_MEMB ((++nth_memblock) & MEMBLOCKS_MASK)
 
@@ -86,7 +199,6 @@ int nth_memblock;
 
 #define AV_NOT_IN_USE 0xffff			 /* in av_fill */
 
-#define AV_FREE_MARK 0x00deadbeeffeedba00LL	 /* in 2nd word of free of over 8 b */
 #define AV_ALLOC_MARK 0x00a110cfcacfe00LL
 
 #define AV_CHECK_DOUBLE_FREE(av, thing, len)	\
@@ -110,6 +222,7 @@ int nth_memblock;
       av->av_gets++; \
       av->av_first = *(caddr_t**)p; \
       if ((av->av_fill && !av->av_first) || (!av->av_fill && av->av_first)) GPF_T1 ("av fill and list not in sync, likely double free"); \
+      if (align_sz > 8 && ((int64*)p)[1] != AV_FREE_MARK) GPF_T1 ("item in av list does not have av mark"); \
       hit; \
     } \
   else  \
@@ -135,6 +248,21 @@ int nth_memblock;
       fit; \
     } \
 }
+
+
+uint32 malloc_hits;
+uint32 malloc_misses;
+uint32 thread_malloc_hits;
+uint32 thread_malloc_misses;
+
+dk_mutex_t * dk_cnt_mtx;
+#ifndef NDEBUG
+#define CNT_ENTER if (dk_cnt_mtx) mutex_enter (dk_cnt_mtx)
+#define CNT_LEAVE if (dk_cnt_mtx) mutex_leave (dk_cnt_mtx)
+#else
+#define CNT_ENTER
+#define CNT_LEAVE
+#endif
 
 
 void
@@ -171,13 +299,23 @@ av_check_double_free (av_list_t * av1, void *thing, int len)
 
 
 void
-av_clear (av_list_t * av)
+av_clear (av_list_t * av, size_t sz)
 {
   caddr_t *ptr, *next;
+  if (enable_no_free)
+    return;
   for (ptr = av->av_first; ptr; ptr = next)
     {
-      next = *(caddr_t **) ptr;;
+      next = *(caddr_t **) ptr;
       free (ptr);
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total --;
+	  CNT_LEAVE;
+	  dk_n_free ++;
+	  dk_n_bytes -= sz;
+	}
     }
   av->av_first = NULL;
   av->av_fill = 0;
@@ -217,18 +355,24 @@ av_adjust (av_list_t * av, int sz)
 
 
 #if defined (MTX_DEBUG) || defined (MTX_METER)
-#define MALLOC_CACHE_ENTRY_MTX(sz) \
-  { char name[20]; snprintf (name, sizeof (name), "MEM:%ld", (long)sz);	\
-  mutex_option (&memblock_set[sz/8][way].av_mtx, name, NULL, NULL); }
+#define MALLOC_CACHE_ENTRY_MTX(nth_sz) \
+  { char name[20]; snprintf (name, sizeof (name), "MEM:%ld", (long)nth_sz);	\
+  mutex_option (&memblock_set[nth_sz][way].av_mtx, name, NULL, NULL); }
 #else
 #define MALLOC_CACHE_ENTRY_MTX(sz)
 #endif
 
 # define MALLOC_CACHE_ENTRY(sz,rcsz) \
-  if (!memblock_set[sz/8][way].av_max) \
   { \
-    av_s_init (&memblock_set[sz/8][way], rcsz); \
-    MALLOC_CACHE_ENTRY_MTX(sz); \
+int sz2, nth_sz; \
+ALIGN_A (sz2, nth_sz, sz); \
+  if (!memblock_set[nth_sz][way].av_max) \
+  { \
+    av_s_init (&memblock_set[nth_sz][way], rcsz); \
+    MALLOC_CACHE_ENTRY_MTX(nth_sz); \
+  } \
+  else \
+    memblock_set[nth_sz][way].av_max += rcsz; \
   }
 #endif
 
@@ -290,18 +434,18 @@ malloc_cache_clear (void)
   if (thr->thr_alloc_cache)
     {
       av_list_t *blocks = (av_list_t *) thr->thr_alloc_cache;
-      for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
-	av_clear (&blocks[inx]);
+      for (inx = 0; inx < N_CACHED_SIZES; inx++)
+	av_clear (&blocks[inx], NTH_SIZE (inx));
     }
   for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
     {
-      for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
+      for (inx = 0; inx < N_CACHED_SIZES; inx++)
 	{
 	  if (memblock_set[inx][way].av_max && AV_NOT_IN_USE != memblock_set[inx][way].av_max)
 	    {
 	      av_s_list_t *av = &memblock_set[inx][way];
 	      mutex_enter (&av->av_mtx);
-	      av_clear ((av_list_t *) av);
+	      av_clear ((av_list_t *) av, NTH_SIZE (inx));
 	      mutex_leave (&av->av_mtx);
 	    }
 	}
@@ -316,7 +460,7 @@ thr_init_alloc_cache (thread_t * thr)
   av_list_t *res = (av_list_t *) malloc (sizeof (av_list_t) * MAX_CACHED_MALLOC_SIZE / 8);
   memset (res, 0, sizeof (av_list_t) * MAX_CACHED_MALLOC_SIZE / 8);
   thr->thr_alloc_cache = res;
-  for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
     {
       if (memblock_set[inx][0].av_max)
 	res[inx].av_max = memblock_set[inx][0].av_max / 3;
@@ -326,14 +470,25 @@ thr_init_alloc_cache (thread_t * thr)
 
 
 void
+thr_alloc_cache_clear (thread_t * thr)
+{
+  av_list_t *res = (av_list_t *) thr->thr_alloc_cache;
+  int inx;
+  if (!res)
+    return;
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    av_clear (&res[inx], NTH_SIZE (inx));
+}
+
+void
 thr_free_alloc_cache (thread_t * thr)
 {
   av_list_t *res = (av_list_t *) thr->thr_alloc_cache;
   int inx;
   if (!res)
     return;
-  for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
-    av_clear (&res[inx]);
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    av_clear (&res[inx], NTH_SIZE (inx));
   free (thr->thr_alloc_cache);
   thr->thr_alloc_cache = NULL;
 }
@@ -347,7 +502,7 @@ thr_free_alloc_cache (thread_t * thr)
 }
 
 
-#define THREAD_ALLOC_LOOKUP(thr, thing, align_sz) \
+#define THREAD_ALLOC_LOOKUP(thr, thing, nth_sz) \
 { \
   thr = THREAD_CURRENT_THREAD; \
   if (thr) \
@@ -355,13 +510,13 @@ thr_free_alloc_cache (thread_t * thr)
       av_list_t * blocks = (av_list_t *) thr->thr_alloc_cache; \
       if (!blocks) \
 	blocks = thr_init_alloc_cache (thr); \
-      blocks += align_sz / 8; \
+      blocks += nth_sz; \
       AV_GET (thing, blocks, HIT (thread_malloc_hits++), THREAD_ALLOC_MISS); \
     }\
 }
 
 
-#define THREAD_ALLOC_FREE(thr, thing, align_sz) \
+#define THREAD_ALLOC_FREE(thr, thing, nth_sz) \
 { \
   av_list_t * blocks; \
   thr = THREAD_CURRENT_THREAD; \
@@ -370,10 +525,11 @@ thr_free_alloc_cache (thread_t * thr)
       blocks = (av_list_t *) thr->thr_alloc_cache; \
       if (blocks) \
 	{ \
-	  blocks += align_sz / 8; \
+	  blocks += nth_sz; \
 	  AV_CHECK_DOUBLE_FREE (blocks,thing, align_sz); \
 	  AV_PUT (blocks, thing, return, ;); \
 	}\
+      else { if (align_sz > 8) ((int64*)thing)[1] = AV_FREE_MARK; };	\
     } \
 }
 
@@ -381,30 +537,24 @@ thr_free_alloc_cache (thread_t * thr)
 #else
 #define THREAD_ALLOC_LOOKUP(thr, thing, align_sz)
 #define THREAD_ALLOC_FREE(thr, thing, align_sz)
+#define CNT_ENTER
+#define CNT_LEAVE
 void
 malloc_cache_clear (void)
 {
 }
 
+void
+thr_alloc_cache_clear (thread_t * thr)
+{
+}
 
 void
 thr_free_alloc_cache (thread_t * thr)
 {
 }
-#endif
 
-
-void
-dk_alloc_cache_status (resource_t ** cache)
-{
-  int inx;
-  printf ("\n--------- dk_alloc cache\n");
-#ifdef CACHE_MALLOC
-  for (inx = 0; inx < MAX_CACHED_MALLOC_SIZE / 8; inx++)
-    {
-    }
 #endif
-}
 
 
 #ifdef MEMDBG
@@ -436,6 +586,11 @@ uint32 malloc_misses;
 uint32 thread_malloc_hits;
 uint32 thread_malloc_misses;
 
+void
+dk_cpu_init ()
+{
+}
+
 
 void
 dk_memory_initialize (int do_malloc_cache)
@@ -443,10 +598,14 @@ dk_memory_initialize (int do_malloc_cache)
   /* This is a global flag. In a DLL all users get to
      share the same cached resources */
   static int is_mem_init = 0;
-
+#ifdef CACHE_MALLOC
+  int s;
+#endif
   if (is_mem_init)
     return;
+  dk_cpu_init ();
   is_mem_init = 1;
+  dk_tlsf_init ();
 
 #ifdef UNIX
   init_brk = (long) sbrk (0);
@@ -456,8 +615,8 @@ dk_memory_initialize (int do_malloc_cache)
   allocations = hash_table_allocate (0x100000);
   mdbg_mtx = mutex_allocate ();
 #endif
-
 #ifdef CACHE_MALLOC
+  dk_cnt_mtx = mutex_allocate ();
   if (do_malloc_cache)
     {						 /* GK: it's not a good idea to cache things on a thread from a library */
       int way;
@@ -485,11 +644,24 @@ dk_memory_initialize (int do_malloc_cache)
 	  MALLOC_CACHE_ENTRY (sizeof (future_t), 100);
 	}
     }
+  for (s = 0; s < N_CACHED_SIZES; s++)
+    {
+      size_t sz = NTH_SIZE (s), way;
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	{
+	  MALLOC_CACHE_ENTRY (sz, 2);
+	}
+    }
 #endif
   dk_box_initialize ();
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_mem_stat (char *out, int max)
@@ -505,6 +677,7 @@ dk_mem_stat (char *out, int max)
   snprintf (&tmp[strlen (tmp)], sizeof (tmp) - strlen (tmp), " %ld block, %ld cum bytes",
 	(long) (alloc_count - free_count), (long) bytes_cum_allocated);
 #endif
+  snprintf (tmp, sizeof (tmp), "%ldM large, %ldM max", mp_large_in_use >> 20, mp_max_large_in_use >> 20);
   strncpy (out, tmp, max);
   if (max > 0)
     out[max - 1] = 0;
@@ -515,7 +688,9 @@ int
 dk_is_alloc_cache (size_t sz)
 {
 #ifdef CACHE_MALLOC
-  if (memblock_set[sz][0].av_max)
+  int sz2, nth_sz;
+  ALIGN_A(sz2, nth_sz, sz);
+  if (memblock_set[nth_sz][0].av_max)
     return 1;
 #endif
   return 0;
@@ -526,8 +701,10 @@ void
 dk_cache_allocs (size_t sz, size_t cache_sz)
 {
 #ifdef CACHE_MALLOC
+  int nth_sz, sz2;
   int way;
-  if (sz < MAX_CACHED_MALLOC_SIZE)
+  ALIGN_A (sz2, nth_sz, sz);
+  if (nth_sz < N_CACHED_SIZES)
     {
       for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
 	{
@@ -537,61 +714,100 @@ dk_cache_allocs (size_t sz, size_t cache_sz)
 #endif
 }
 
-
 #define MC_MISS \
   HIT (malloc_misses++); \
   if (0 == av->av_n_empty % 1000) \
     av_adjust ((av_list_t*) av, align_sz);
+
+
+#define MALLOC_IN_DK_ALLOC(c) \
+  dk_alloc_reserve_malloc (c, 1)
+#define FREE_IN_DK_FREE(c) free (c)
+
 
 void *
 dk_alloc (size_t c)
 {
   void *thing = NULL;
   size_t align_sz;
-
-  align_sz = ALIGN_8 (c);
-
 #ifndef CACHE_MALLOC
-  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+  align_sz = ALIGN_8 (c);
+  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
+#ifdef ALLOC_CTR
+  dk_n_total ++;
+  dk_n_allocs++;
+  dk_n_bytes += align_sz;
+  if (dk_n_total > dk_max_allocs)
+    dk_max_allocs = dk_n_total;
+  if (dk_n_bytes > dk_max_bytes)
+    dk_max_bytes = dk_n_bytes;
+#endif
 #else
-  if (align_sz < MAX_CACHED_MALLOC_SIZE)
+  av_s_list_t *av1;
+  if (c <= MAX_CACHED_MALLOC_SIZE)
     {
+      int nth_sz;
       thread_t *thr = NULL;
-      THREAD_ALLOC_LOOKUP (thr, thing, align_sz);
+      ALIGN_A (align_sz, nth_sz, c);
+      THREAD_ALLOC_LOOKUP (thr, thing, nth_sz);
 
       if (!thing)
 	{
-	  int way = NTH_MEMB;
-	  av_s_list_t *av = &memblock_set[align_sz / 8][way];
+	  int way = NTH_MEMB, ctr = 0;
+	  av1 = &memblock_set[nth_sz][(way + ctr) & MEMBLOCKS_MASK];
+	  for (ctr = 0; ctr < MEMBLOCKS_N_WAYS; ctr++)
+	    {
+	      av_s_list_t *av = &memblock_set[nth_sz][(way + ctr) & MEMBLOCKS_MASK];
 	  if (av->av_fill)
 	    {
 	      mutex_enter (&av->av_mtx);
 	      AV_GET (thing, av, HIT (malloc_hits++), MC_MISS);
 	      mutex_leave (&av->av_mtx);
-	    }
-	  else
-	    {
-	      if (av->av_max)
-		HIT (malloc_misses++);
-	      if (av->av_max && 0 == ++av->av_n_empty % 1000)
-		{
-		  mutex_enter (&av->av_mtx);
-		  av_adjust ((av_list_t *) av, align_sz);
-		  mutex_leave (&av->av_mtx);
+		  if (thing)
+		    break;
 		}
 	    }
 	}
       if (!thing)
 	{
-	  thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+	  if (av1->av_max)
+	    HIT (malloc_misses++);
+	  if (av1->av_max && 0 == ++av1->av_n_empty % 1000)
+	    {
+	      mutex_enter (&av1->av_mtx);
+	      av_adjust ((av_list_t *) av1, align_sz);
+	      mutex_leave (&av1->av_mtx);
+	    }
+
+	  thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total ++;
+	      CNT_LEAVE;
+	      dk_n_allocs++;
+	      dk_n_bytes += align_sz;
+	    }
 	}
       AV_MARK_ALLOC (thing, align_sz);
     }
   else
     {
-      thing = dk_alloc_reserve_malloc (ADD_END_MARK (align_sz), 1);
+      align_sz = _RNDUP_PWR2 (c, 4096);
+      thing = MALLOC_IN_DK_ALLOC (ADD_END_MARK (align_sz));
+      AV_MARK_ALLOC (thing, align_sz);
+      if (enable_alloc_ctr)
+	{
+	  CNT_ENTER;
+	  dk_n_total ++;
+	  CNT_LEAVE;
+	  dk_n_allocs++;
+	  dk_n_bytes += align_sz;
+	}
     }
 #endif
+  if (dk_n_allocs > dk_n_max_allocs)
+    dk_n_max_allocs = dk_n_allocs;
 
   SET_END_MARK (thing, align_sz);
 
@@ -630,15 +846,18 @@ dk_try_alloc (size_t c)
 
 #define FREE_FIT mutex_leave (&av->av_mtx); return;
 
+
 void
 dk_free (void *ptr, size_t sz)
 {
+  ASSERT_NOT_IN_POOL (ptr);
 #ifdef MEMDBG
   {
     size_t alloc_sz;
     mutex_enter (mdbg_mtx);
     free_count++;
     alloc_sz = (size_t) gethash (ptr, allocations);
+#error " memdbg define not supported.  Must correct the alignment to ALIGN_A"
     if (!alloc_sz || (sz != NO_SIZE && ALIGN_8 (sz) != ALIGN_8 (alloc_sz)))
       GPF_T;
     CHECK_END_MARK (ptr, ALIGN_4 (alloc_sz));
@@ -659,32 +878,60 @@ dk_free (void *ptr, size_t sz)
 #ifdef CACHE_MALLOC
   if (sz != NO_SIZE)
     {
-      size_t align_sz = ALIGN_8 (sz);
-      if (align_sz < MAX_CACHED_MALLOC_SIZE)
+      int nth_sz;
+      size_t align_sz;
+      if (sz < MAX_CACHED_MALLOC_SIZE)
 	{
 	  int way;
 	  thread_t *thr = NULL;
 	  av_s_list_t *av;
-	  THREAD_ALLOC_FREE (thr, ptr, align_sz);
+	  ALIGN_A (align_sz, nth_sz, sz);
+	  THREAD_ALLOC_FREE (thr, ptr, nth_sz);
 	  way = NTH_MEMB;
-	  av = &memblock_set[align_sz / 8][way];
+	  av = &memblock_set[nth_sz][way];
 	  if (av->av_fill >= av->av_max)
 	    {
 	      av->av_n_full++;
+	      if (enable_no_free)
+		av->av_max = av->av_fill + 100;
+	      else
 	      goto full;
 	    }
 	  mutex_enter (&av->av_mtx);
 	  AV_PUT (av, ptr, FREE_FIT, ;);
 	  mutex_leave (&av->av_mtx);
 	full:
-	  free (ptr);
+	  FREE_IN_DK_FREE (ptr);
+	  if (enable_alloc_ctr)
+	    {
+	      CNT_ENTER;
+	      dk_n_total --;
+	      CNT_LEAVE;
+	      dk_n_bytes -= sz;
+	      dk_n_free ++;
+	    }
 	  return;
 	}
     }
 #endif
 
-  free (ptr);
+  FREE_IN_DK_FREE (ptr);
+#ifdef ALLOC_CTR
+  CNT_ENTER;
+  dk_n_total --;
+  CNT_LEAVE;
+  if (NO_SIZE != sz)
+    {
+      dk_n_free ++;
+      dk_n_bytes -= sz;
+    }
+  else
+    {
+      dk_n_nosz_free ++;
+    }
+#endif
 }
+
 
 
 #ifdef MEMDBG
@@ -704,13 +951,33 @@ dk_check_end_marks (void)
 
 #else /* == if defined(MALLOC_DEBUG) */
 
+
 void
 dk_alloc_assert (void *ptr)
 {
-  const char *err = dbg_find_allocation_error (ptr, NULL);
+  const char *err = dk_find_alloc_error (ptr, NULL);
   if (err)
     GPF_T1 (err);
 }
+
+void
+dk_alloc_assert_mp_or_plain (void *ptr)
+{
+  const char *err;
+  if (ptr == NULL)
+    GPF_T1("NULL pointer");
+  if (!dbgmal_is_enabled())
+    return;
+  if (DBGMAL_MAGIC_POOL_OK == dbg_malloc_magic_of_data (ptr))
+    err = dk_find_alloc_error (ptr, dbg_mp_of_data (ptr));
+  else
+    err = dk_find_alloc_error (ptr, NULL);
+  if (err)
+    GPF_T1 (err);
+}
+
+
+
 
 
 void
@@ -723,6 +990,11 @@ dk_memory_initialize (int do_malloc_cache)
   strses_mem_initalize ();
 }
 
+void
+dk_memory_finalize (void)
+{
+  dk_box_finalize ();
+}
 
 void
 dk_cache_allocs (size_t sz, size_t cache_sz)
@@ -744,12 +1016,6 @@ malloc_cache_clear (void)
 
 
 void
-dk_alloc_cache_status (resource_t ** cache)
-{
-}
-
-
-void
 dk_mem_stat (char *out, int max)
 {
   strcpy_size_ck (out, "", max);
@@ -760,8 +1026,91 @@ void
 thr_free_alloc_cache (thread_t * thr)
 {
 }
+
+void
+thr_alloc_cache_clear (thread_t * thr)
+{
+}
+
+
 #endif /* MALLOC_DEBUG */
 
+
+void
+dk_alloc_cache_status (void * cache)
+{
+#ifdef CACHE_MALLOC
+  int inx;
+  size_t bs = 0;
+  printf ("\n--------- dk_alloc cache\n");
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int way;
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      printf ("Size %d %d blocks\n", sz, n);
+      bs += n * inx * 8;
+    }
+  printf ("%Ld total\n", bs);
+#else
+  printf ("\n dk_alloc cache is off, because CACHE_MALLOC is not defined\n");
+#endif
+}
+
+size_t
+dk_alloc_global_cache_total ()
+{
+  size_t bs = 0;
+#ifdef CACHE_MALLOC
+  int inx;
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int way;
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      for (way = 0; way < MEMBLOCKS_N_WAYS; way++)
+	n += memblock_set[inx][way].av_fill;
+      bs += n;
+    }
+#endif
+  return bs;
+}
+
+size_t
+dk_alloc_cache_total (void * cache)
+{
+  size_t bs = 0;
+#ifdef CACHE_MALLOC
+  int inx;
+  av_list_t * av = cache;
+  for (inx = 0; inx < N_CACHED_SIZES; inx++)
+    {
+      int n = 0;
+      int sz = NTH_SIZE (inx);
+      n += av[inx].av_fill;
+      bs += n;
+    }
+#endif
+  return bs;
+}
+
+#ifndef MALLOC_DEBUG
+int
+all_allocs_at_line (const char *file, int line)
+{
+  printf ("\nall_allocs_at_line () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+
+int
+new_allocs_after (int res_no)
+{
+  printf ("\nnew_allocs_after () requires MALLOC_DEBUG and slow_malloc_debug set to 1\n");
+  return 0;
+}
+#endif
 
 #ifdef MALLOC_DEBUG
 #undef dk_alloc
@@ -813,3 +1162,4 @@ dk_free (void *ptr, size_t sz)
   dbg_free_sized (__FILE__, __LINE__, ptr, sz);
 }
 #endif
+

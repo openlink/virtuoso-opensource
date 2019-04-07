@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,14 +69,13 @@ it_cache_check (index_tree_t * it, int mode)
 	      /* This can be legitimate if a thread is in freeze mode and one itc is on a table scan and another is in order by or hash fill, so that the freeze is in the temp space operation . */
 	      /* error = 1; */
 	    }
-	  if (dbs_cache_check_enable && DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
-	      && IT_CHECK_FAST != mode)
+	  if (dbs_cache_check_enable && (DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)) && (IT_CHECK_FAST != mode))
 	    pg_check_map_1 (buf);
-	    if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
-	      {
-		log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
-		dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
-	      }
+          if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
+            {
+              log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
+              dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
+            }
 	  if (((dp_addr_t) dp) != buf->bd_page)
 	    {
 	      log_error ("*** Buffer %p cache dp %ld buf dp %ld \n",
@@ -138,6 +137,19 @@ it_cache_check (index_tree_t * it, int mode)
     }
 }
 
+extent_map_t *
+buf_em (buffer_desc_t * buf)
+{
+  if (DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS)
+      && buf->bd_tree->it_col_extent_maps)
+    {
+      extent_map_t * em = (extent_map_t *)gethash ((void*)(ptrlong)LONG_REF (buf->bd_buffer + DP_PARENT), buf->bd_tree->it_col_extent_maps);
+      if (em)
+	return em;
+    }
+  return buf->bd_tree->it_extent_map;
+}
+
 
 buffer_desc_t *
 itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
@@ -195,7 +207,7 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 long tc_new_page;
 
 buffer_desc_t *
-it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
+it_new_page (index_tree_t * it, dp_addr_t addr, int type, oid_t col_id,
 	     it_cursor_t * has_hold)
 {
   it_map_t * itm;
@@ -203,11 +215,22 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
   int ext_type = (!it->it_blobs_with_index && (DPF_BLOB  == type || DPF_BLOB_DIR == type)) ? EXT_BLOB : EXT_INDEX, n_tries;
   buffer_desc_t *buf;
   buffer_pool_t * action_bp = NULL;
-  dp_addr_t physical_dp;
-
-  if (in_pmap)
-    GPF_T1 ("do not call isp_new_page in page map");
-
+  dp_addr_t physical_dp = 0;
+  if (col_id)
+    {
+      extent_map_t * em2;
+      if (!it->it_col_extent_maps)
+	it->it_col_extent_maps = hash_table_allocate (21);
+      em2 = (extent_map_t *)gethash ((void*)(ptrlong)col_id, it->it_col_extent_maps);
+      if (!em2)
+	{
+	  em2 = it_col_own_extent_map (it, col_id);
+	}
+      if (em2)
+	physical_dp = em_new_dp (em2, ext_type, addr, NULL);
+    }
+  if (!physical_dp)
+    {
   physical_dp = em_new_dp (em, ext_type, addr, NULL);
   if (!physical_dp)
     {
@@ -224,6 +247,7 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
 	}
       else
 	return NULL;
+    }
     }
 
   if (DPF_INDEX == type)
@@ -284,13 +308,13 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
     {
       page_map_t * map = buf->bd_content_map;
       if (!map)
-	buf->bd_content_map = (page_map_t*) resource_get (PM_RC (PM_SZ_1));
+	buf->bd_content_map = (page_map_t*) pm_get (buf, (PM_SZ_1));
       else
 	{
 	  if (map->pm_size > PM_SZ_1)
 	    {
-	      resource_store (PM_RC (map->pm_size), (void*) map);
-	      buf->bd_content_map = (page_map_t *) resource_get (PM_RC (PM_SZ_1));
+	      pm_store (buf, (map->pm_size), (void*) map);
+	      buf->bd_content_map = (page_map_t *) pm_get (buf, (PM_SZ_1));
 	    }
 	}
       pg_map_clear (buf);
@@ -298,10 +322,14 @@ it_new_page (index_tree_t * it, dp_addr_t addr, int type, int in_pmap,
     }
   else if (buf->bd_content_map)
     {
-      resource_store (PM_RC (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
+      pm_store (buf, (buf->bd_content_map->pm_size), (void*) buf->bd_content_map);
       buf->bd_content_map = NULL;
     }
 
+#ifdef PAGE_DEBUG
+  buf->bd_delta_line = __LINE__;
+  buf->bd_delta_ts = buf->bd_timestamp;
+#endif
   buf_set_dirty (buf);
   DBG_PT_PRINTF (("New page L=%d B=%p FL=%d K=%s \n", buf->bd_page, buf, type,
 		 it->it_key ? (it->it_key->key_name ? it->it_key->key_name : "unnamed key") : "no key"));
@@ -326,10 +354,10 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
     GPF_T1 ("isp_free_page without write access to buffer.");
   dp_may_compact (buf->bd_storage, buf->bd_page); /* no need to keep deld buffers in checked for compact list */
   l=SHORT_REF (buf->bd_buffer + DP_FLAGS);
-  if (!(l == DPF_BLOB || l == DPF_BLOB_DIR)
+  if (!(l == DPF_BLOB || l == DPF_BLOB_DIR || l == DPF_COLUMN)
       && !remap)
     GPF_T1 ("Freeing a page that is not remapped");
-  if (DPF_INDEX == l)
+  if (DPF_INDEX == l || DPF_COLUMN == l)
     it->it_n_index_est--;
   else
     it->it_n_blob_est--;
@@ -346,7 +374,7 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
   if (!remap)
     {
       /* a blob in checkpoint space can be deleted without a remap existing in commit space. */
-      if (DPF_BLOB != l && DPF_BLOB_DIR != l )
+      if (DPF_BLOB != l && DPF_BLOB_DIR != l && DPF_COLUMN != l)
 	GPF_T1 ("not supposed to delete a buffer in a different space unless it's a blob");
       if (buf->bd_is_dirty)
 	GPF_T1 ("blob in checkpoint space can't be dirty - has no remap, in commit, hence is in checkpoint");
@@ -364,16 +392,13 @@ it_free_page (index_tree_t * it, buffer_desc_t * buf)
   if (!remhash (DP_ADDR2VOID (buf->bd_page), &itm->itm_dp_to_buf))
     GPF_T1 ("it_free_page does not hit the buffer in tree cache");
 
-  it_free_remap (it, buf->bd_page, buf->bd_physical_page, l);
+  it_free_remap (it, buf->bd_page, buf->bd_physical_page, l, DPF_COLUMN == l ? LONG_REF (buf->bd_buffer + DP_PARENT) : 0);
   page_leave_as_deleted (buf);
 }
 
-#if defined(DEBUG) || defined(MTX_DEBUG)
-void bing () {}
-#endif
 
 void
-it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
+it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type, oid_t col_id)
 {
   buffer_desc_t * buf;
   dp_addr_t phys_dp = 0;
@@ -389,7 +414,7 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
       log_info ("Deleting blob page while it is being read dp=%d .\n", dp);
 /* the buffer can be a being read decoy with no dp, so check dps only if not being read */
     }
-  else if (phys_dp != dp)
+  else if (phys_dp != dp && DPF_COLUMN != dp_type)
     GPF_T1 ("A blob/hash temp dp is not supposed to be remapped in isp_free_blob_dp_no_read");
   if (buf)
     {
@@ -415,7 +440,7 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
   {
     dp_addr_t remap = (dp_addr_t) (ptrlong) gethash (DP_ADDR2VOID (dp), &itm->itm_remap);
     dp_addr_t cpt_remap = (dp_addr_t) (ptrlong) DP_CHECKPOINT_REMAP (it->it_storage, dp);
-    if (cpt_remap)
+    if (cpt_remap && DPF_COLUMN != dp_type)
       GPF_T1 ("Blob/hash temp dp  not expected to have cpt remap in delete no read");
     if (DPF_BLOB == dp_type)
       it->it_n_blob_est--;
@@ -423,14 +448,20 @@ it_free_dp_no_read (index_tree_t * it, dp_addr_t dp, int dp_type)
       {
 	/* if this was CREATED AND DELETED without intervening checkpoint the delete
 	 * does not carry outside commit space. */
+	extent_map_t * em = IT_COL_REMAP_EM (it, col_id);
+	if (remap == phys_dp)
+	  {
 	remhash (DP_ADDR2VOID (dp), &itm->itm_remap);
-	em_free_dp (it->it_extent_map, dp, DPF_BLOB == dp_type ? EXT_BLOB : EXT_INDEX);
+	    em_free_dp (em, dp, DPF_BLOB == dp_type ? EXT_BLOB : EXT_INDEX);
+	  }
       }
     else
       {
 	if (DPF_HASH == dp_type) GPF_T1 ("a hash temp page is not supposed to be in cpt s[space");
 	sethash (DP_ADDR2VOID (dp), &itm->itm_remap, (void *) (ptrlong) DP_DELETED);
       }
+    if (dp_type == DPF_COLUMN && phys_dp != dp)
+      it_free_remap (it, dp, phys_dp, DPF_COLUMN, col_id);
   }
 }
 
@@ -441,3 +472,58 @@ isp_schema_1 (void * thr)
 {
   return (wi_inst.wi_schema);
 }
+
+
+void
+dp_info (dbe_storage_t * dbs, dp_addr_t dp)
+{
+  extent_map_t * em;
+  extent_t * ext;
+  dp_addr_t cp_remap  = (dp_addr_t)gethash (DP_ADDR2VOID (dp), dbs->dbs_cpt_remap);
+  int is_bp = dp_backup_flag (dbs, dp);
+  printf ("page %ld %s: ", dp, is_bp ? "in backup set" : "");
+  if (!cp_remap)
+    {
+      DO_HT (uptrlong, log, uptrlong, phys, dbs->dbs_cpt_remap)
+	{
+	  if (dp == phys)
+	    {
+	      printf (" %ld is cpt remap page of logical %ld\n", dp, log);
+	      break;
+	    }
+	}
+      END_DO_HT;
+    }
+  em = (extent_map_t *)gethash (EXT_ROUND (dp), dbs->dbs_dp_to_extent_map);
+  if (em)
+    {
+      int is_free  = dbs_is_free_page (dbs, dp);
+      printf ("%s: ", is_free ? "free" : "allocated");
+      ext = (extent_t*)gethash (EXT_ROUND (dp), em->em_dp_to_ext);
+      if (ext)
+	printf ("extent map %s %p, extent %p\n", em->em_name, em, ext);
+      else
+	printf ("extent map %s %p, no extent, inconsistent with dbs dp to extent map\n", em->em_name, em);
+    }
+  else
+    printf ("no extent map\n" );
+  DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
+    {
+      buffer_desc_t * buf;
+      dp_addr_t remap;
+      int nth = dp % it_n_maps;
+      mutex_enter (&it->it_maps[nth].itm_mtx);
+      buf = (buffer_desc_t*)gethash (DP_ADDR2VOID(dp), &it->it_maps[nth].itm_dp_to_buf);
+      remap = (uptrlong)gethash (DP_ADDR2VOID(dp), &it->it_maps[nth].itm_remap);
+      mutex_leave (&it->it_maps[nth].itm_mtx);
+      if (buf || remap)
+	{
+	  printf ("buffer %p remap %ld\n", buf, remap);
+	  goto found;
+	}
+    }
+  END_DO_SET();
+  printf (" no buffer or remap\n");
+ found: ;
+}
+

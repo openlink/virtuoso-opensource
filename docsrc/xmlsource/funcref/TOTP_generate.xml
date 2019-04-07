@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<refentry id="fn_TOTP_generate">
+  <refmeta>
+    <refentrytitle>TOTP_generate</refentrytitle>
+    <refmiscinfo>hash</refmiscinfo>
+  </refmeta>
+  <refnamediv>
+    <refname>TOTP_generate</refname>
+    <refpurpose>Returns TOTP string Time-based One-time Password Generator (rfc6238)</refpurpose>
+  </refnamediv>
+  <refsynopsisdiv>
+    <funcsynopsis id="fsyn_TOTP_generate">
+      <funcprototype id="fproto_TOTP_generate">
+        <funcdef>varchar <function>TOTP_generate</function></funcdef>
+     	    <paramdef>in <parameter>start_date</parameter>  datetime</paramdef>
+     	    <paramdef>in <parameter>date</parameter>  datetime</paramdef>
+     	    <paramdef>in <parameter>step</parameter>  integer</paramdef>
+     	    <paramdef>in <parameter>return_digits</parameter>  integer</paramdef>
+     	    <paramdef>in <parameter>key_name</parameter>  varchar</paramdef>
+     	    <paramdef>in <parameter>digest_algo</parameter>  varchar</paramdef>
+      </funcprototype>
+    </funcsynopsis>
+  </refsynopsisdiv>
+  <refsect1 id="desc_TOTP_generate">
+    <title>Description</title>
+    <para>Returns TOTP string Time-based One-time Password Generator (rfc6238).</para>
+  </refsect1>
+  <refsect1 id="params_TOTP_generate">
+    <title>Parameters</title>
+    <refsect2><title>start_date</title>
+      <para>T0 (zero time, usually 1970-1-1) .</para>
+    </refsect2>
+    <refsect2><title>date</title>
+	    <para>The current time ex. now () .</para>
+    </refsect2>
+    <refsect2><title>step</title>
+	    <para>Time step in secconds, usually 30.</para>
+    </refsect2>    
+    <refsect2><title>return_digits</title>
+	    <para>How much digits to return, from 1 to 8.</para>
+    </refsect2> 
+    <refsect2><title>key_name</title>
+	    <para>The key name keeping secret. Note: when setting up the key, should use 20 bytes for hmac-sha1, 
+	    32 bytes for hmac-sha256. Also the systems that are used for TOTP should have time synchronized. </para>
+    </refsect2>      
+    <refsect2><title>digest_algo</title>
+	    <para>string, one of hmac-sha1 or hmac-sha256 .</para>
+    </refsect2>        
+  </refsect1>
+  <refsect1 id="ret_TOTP_generate"><title>Return Types</title>
+      <para>On success the function will return TOTP string Time-based One-time Password Generator (rfc6238).</para>
+  </refsect1>
+  <refsect1 id="examples_TOTP_generate">
+    <title>Examples</title>
+    <example id="ex_TOTP_generate"><title></title>
+      <screen><![CDATA[
+ xenc_key_RAW_read ('k2', encode_base64 (cast (hex2bin ('3132333435363738393031323334353637383930313233343536373839303132') as varchar)));
+ select TOTP_generate (stringdate ('1970-01-01Z'), stringdate ('2603-10-11 11:33:20Z'), 30, 8, 'k2', 'hmac-sha256');
+]]>
+</screen>
+    </example>
+  </refsect1>
+  <refsect1 id="seealso_TOTP_generate">
+    <title>See Also</title>
+    <para><link linkend="fn_encrypt"><function>encrypt()</function></link></para>    
+    <para><link linkend="fn_xenc_encrypt"><function>xenc_encrypt()</function></link></para>    
+    <para><link linkend="fn_dsig_template_ext"><function>dsig_template_ext()</function></link></para>
+    <para><link linkend="fn_xenc_key_inst_create"><function>xenc_key_inst_create()</function></link></para>
+  </refsect1>
+</refentry>

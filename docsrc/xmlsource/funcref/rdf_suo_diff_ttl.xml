@@ -1,4 +1,25 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
 <refentry id="fn_rdf_suo_diff_ttl">
   <refmeta>
     <refentrytitle>DB.DBA.RDF_SUO_DIFF_TTL</refentrytitle>
@@ -113,8 +134,8 @@
   <refsect1 id="seealso_rdf_suo_diff_ttl">
     <title>See Also</title>
     <para><link linkend="fastapproxdiffandpatch">Fast Approximate RDF Graph Diff and Patch</link></para>             
-    <para><link linkend="fn_rdf_graph_diff">DB.DBA.RDF_GRAPH_DIFF</link></para>
-    <para><link linkend="fn_rdf_suo_apply_patch">DB.DBA.RDF_SUO_APPLY_PATCH</link></para>
-    <para><link linkend="fn_rdf_graph_collect_fp_list">DB.DBA.RDF_GRAPH_COLLECT_FP_LIST</link></para>            
+    <para><link linkend="fn_rdf_graph_diff"><function>DB.DBA.RDF_GRAPH_DIFF()</function></link></para>
+    <para><link linkend="fn_rdf_suo_apply_patch"><function>DB.DBA.RDF_SUO_APPLY_PATCH()</function></link></para>
+    <para><link linkend="fn_rdf_graph_collect_fp_list"><function>DB.DBA.RDF_GRAPH_COLLECT_FP_LIST()</function></link></para>
   </refsect1>
 </refentry>

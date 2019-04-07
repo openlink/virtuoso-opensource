@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -429,7 +429,7 @@ sqlc_mark_pred_deps (sql_comp_t * sc, predicate_t * pred, sql_tree_t * tree)
     {
       /* this is to prevent assignment of value NULL to ssl constant when sql data not found */
       sqlc_union_constants (tree->_.bin_exp.left);
-      sqlc_subquery (sc, pred, &(tree->_.bin_exp.left));
+      sqlc_subquery_1 (sc, pred, &(tree->_.bin_exp.left), _SQL_CURSOR_FORWARD_ONLY, (ST**)SCALAR_SUBQ);
     }
   else if (ST_P (tree, CALL_STMT))
     {
@@ -593,25 +593,43 @@ sqlc_ancestor_args (ST * tree)
 char
 sqlc_contains_fn_to_char (const char *name)
 {
-  char c1 = name[0];
-  if (! ('x' == c1 || 'X' == c1 || 'c' == c1 || 'C' == c1))
-    return 0;
+  switch (name[0])
+    {
+    case 'c': case 'C':
   if (0 == stricmp (name, "contains"))
     return 'c';
-  else if (0 == stricmp (name, "xcontains"))
+      break;
+    case 'e': case 'E':
+      if (0 == stricmp (name, "ext_contains"))
+        return 'e';
+      break;
+    case 'x': case 'X':
+      if (0 == stricmp (name, "xcontains"))
     return 'x';
-  else if (0 == stricmp (name, "xpath_contains"))
+      if (0 == stricmp (name, "xpath_contains"))
     return 'p';
-  else if (0 == stricmp (name, "xquery_contains"))
+      if (0 == stricmp (name, "xquery_contains"))
     return 'q';
-  else
-    return 0;
+      break;
+    }
+  return '\0';
 }
-
 
 char
 sqlc_geo_fn_to_char (const char *name)
 {
+  char c1 = name[0];
+  if (c1 != 's' && c1 != 'S')
+    return 0;
+  if (0 == stricmp (name, "st_contains"))
+    return GSOP_CONTAINS;
+  else if (0 == stricmp (name, "st_intersects"))
+    return GSOP_INTERSECTS;
+  else if (0 == stricmp (name, "st_within"))
+    return GSOP_WITHIN;
+  else if (0 == stricmp (name, "st_may_intersect"))
+    return GSOP_MAY_INTERSECT;
+  else
   return 0;
 }
 

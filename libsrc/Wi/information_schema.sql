@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,28 +25,6 @@
 --
 --
 
---#IF VER=5
-create procedure INFORMATION_SCHEMA_UPGRADE ()
-{
-  if (registry_get ('INFORMATION_SCHEMA_VERSION') = '3')
-    return;
-  if (exists (select 1 from SYS_VIEWS where V_NAME = 'DB.INFORMATION_SCHEMA.COLUMNS'))
-    {
-      log_message ('Upgrading INFORMATION SCHEMA');
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.COLUMNS', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.KEY_COLUMN_USAGE', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.PARAMETERS', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.REFERENTIAL_CONSTRAINTS', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.ROUTINES', 0);
-      EXEC_STMT ('drop view DB.INFORMATION_SCHEMA.VIEWS', 0);
-    }
-  registry_set ('INFORMATION_SCHEMA_VERSION', '3');
-}
-;
-
-INFORMATION_SCHEMA_UPGRADE ()
-;
---#ENDIF
 
 create view INFORMATION_SCHEMA.TABLES as
 select
@@ -357,6 +335,7 @@ create procedure column_privileges (in TableQualifier varchar,
 	 and __any_grants (k.KEY_TABLE)
 	 and k.KEY_IS_MAIN = 1
 	 and k.KEY_MIGRATE_TO is NULL
+	 order by COLUMN_NAME, PRIVILEGE_TYPE
      ) x
      where TABLE_CATALOG like TableQualifier
        and TABLE_SCHEMA like TableOwner

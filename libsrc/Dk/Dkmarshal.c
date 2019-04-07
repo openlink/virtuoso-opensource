@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,28 +31,18 @@
 # include <netinet/in.h>			 /* for ntohl, htonl */
 #endif
 
-#if defined (i386) || \
-    defined (_WIN64) || \
-    defined (_M_IX86) || \
-    defined (_M_ALPHA) || \
-    defined (mc68000) || \
-    defined (sparc) || \
-    defined (__x86_64) || \
-    defined (__alpha) || \
-    defined (__powerpc) || \
-    defined (mips) || \
-    defined (__OS2__) || \
-    defined (_IBMR2)
-# define _IEEE_FLOATS
-#elif defined (OPL_SOURCE)
+#ifndef _IEEE_FLOATS
+#if defined (OPL_SOURCE)
 # include <librpc.h>
 #else
 # include <rpc/types.h>
 # include <rpc/xdr.h>
 #endif
+#endif
 
 macro_char_func readtable[256];
 ses_write_func writetable[256];
+macro_char_func rpcreadtable[256];
 
 #if 1
 /*** INLINE THIS ! */
@@ -298,9 +288,15 @@ read_object (dk_session_t * session)
   FAILED
   {
     res = NULL;
+    if (session->dks_pending_obj)
+      {
+	caddr_t box;
+	while (NULL != (box = (caddr_t)dk_set_pop (&session->dks_pending_obj)))
+	  dk_free_tree (box);
+      }
   }
   END_READ_FAIL (session);
-
+  session->dks_top_obj = NULL;
   return (void *) res;
 }
 
@@ -321,8 +317,10 @@ box_read_short_string (dk_session_t * session, dtp_t dtp)
   char *string;
 
   MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length + 1, DV_SHORT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   session_buffered_read (session, string, length);
   string[length] = 0;
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -334,8 +332,10 @@ box_read_long_string (dk_session_t * session, dtp_t dtp)
   char *string;
   MARSH_CHECK_LENGTH (length);
   MARSH_CHECK_BOX (string = (char *) dk_try_alloc_box (length + 1, DV_LONG_STRING));
+  MARSH_KEEP_OBJ(session, string);
   session_buffered_read (session, string, (int) length);
   string[length] = 0;
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -344,10 +344,34 @@ static void *
 box_read_flags (dk_session_t * session, dtp_t dtp)
 {
   uint32 flags = (uint32) read_long (session);
-  char *string = scan_session_boxing (session);
-  if (IS_BOX_POINTER (string))
-    box_flags (string) = flags;
-  return (void *) string;
+  if (flags & BF_UNAME_AS_STRING)
+    {
+      dtp_t next_char = session_buffered_read_char (session);
+      int length;
+      char *res;
+      switch (next_char)
+        {
+        case DV_SHORT_STRING_SERIAL: length = (int) session_buffered_read_char (session); break;
+        case DV_LONG_STRING: length = (size_t) read_long (session); break;
+        default: box_read_error (session, next_char); break;
+        }
+      MARSH_CHECK_LENGTH (length);
+      res = box_dv_ubuf_or_null (length);
+      MARSH_CHECK_BOX (res);
+      session_buffered_read (session, res, length);
+      res[length] = '\0';
+      /* box flags are not set. */
+      return box_dv_uname_from_ubuf (res);
+    }
+  else
+    {
+      char *string = (caddr_t)scan_session_boxing (session);
+      if (IS_BOX_POINTER (string))
+        {
+          box_flags (string) = flags;
+        }
+      return (void *) string;
+    }
 }
 
 
@@ -357,9 +381,11 @@ box_read_short_cont_string (dk_session_t * session, dtp_t dtp)
   dtp_t length = session_buffered_read_char (session);
   unsigned char *string;
   MARSH_CHECK_BOX (string = (unsigned char *) dk_try_alloc_box (length + 2, DV_SHORT_CONT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   string[0] = DV_SHORT_CONT_STRING;
   string[1] = length;
   session_buffered_read (session, (char *) (string + 2), (int) length);
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -373,6 +399,7 @@ box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (length + 5);
   MARSH_CHECK_BOX (string = (unsigned char *) dk_try_alloc_box (length + 5, DV_LONG_CONT_STRING));
+  MARSH_KEEP_OBJ(session, string);
   p = string;
   *p++ = DV_LONG_CONT_STRING;
   *p++ = (unsigned char) (length >> 24);
@@ -380,6 +407,7 @@ box_read_long_cont_string (dk_session_t * session, dtp_t dtp)
   *p++ = (unsigned char) (length >> 8);
   *p++ = (unsigned char) (length & 0xff);
   session_buffered_read (session, (char *) p, (int) length);
+  MARSH_POP_OBJ(session, string);
   return (void *) string;
 }
 
@@ -391,7 +419,7 @@ read_int (dk_session_t *session)
   if (dtp == DV_SHORT_INT)
     return read_short_int (session);
   else if (DV_LONG_INT == dtp)
-    return read_long (session);
+  return read_long (session);
   else if (DV_INT64 == dtp)
     return read_int64 (session);
 
@@ -416,12 +444,23 @@ box_read_array (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (void *));
   MARSH_CHECK_BOX (array = (void **) dk_try_alloc_box (sizeof (void *) * count, dtp));
+  memzero (array, sizeof (void *) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = scan_session_boxing (session);
-
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
+#ifdef SIGNAL_DEBUG
+static void *
+box_read_error_report (dk_session_t * session, dtp_t dtp)
+{
+  void *res = box_read_array (session, dtp);
+  log_error_report_event ((caddr_t) res, 1, "READ");
+  return res;
+}
+#endif
 
 static void *
 box_read_array_of_double (dk_session_t * session, dtp_t dtp)
@@ -432,9 +471,12 @@ box_read_array_of_double (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (double));
   MARSH_CHECK_BOX (array = (double *) dk_try_alloc_box (sizeof (double) * count, dtp));
+  memzero (array, sizeof (double) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_double (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -448,9 +490,12 @@ box_read_array_of_float (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (float));
   MARSH_CHECK_BOX (array = (float *) dk_try_alloc_box (sizeof (float) * count, dtp));
+  memzero (array, sizeof (float) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_float (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -464,10 +509,13 @@ box_read_packed_array_of_long (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (ptrlong));
   MARSH_CHECK_BOX (array = (ptrlong *) dk_try_alloc_box (sizeof (ptrlong) * count, dtp));
+  memzero (array, sizeof (ptrlong) * count);
+  MARSH_KEEP_OBJ(session, array);
 
   for (n = 0; n < count; n++)
     array[n] = read_int (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -481,9 +529,12 @@ box_read_array_of_long (dk_session_t * session, dtp_t dtp)
 
   MARSH_CHECK_LENGTH (count * sizeof (ptrlong));
   MARSH_CHECK_BOX (array = (ptrlong *) dk_try_alloc_box (sizeof (ptrlong) * count, dtp));
+  memzero (array, sizeof (ptrlong) * count);
+  MARSH_KEEP_OBJ(session, array);
   for (n = 0; n < count; n++)
     array[n] = read_long (session);
 
+  MARSH_POP_OBJ(session, array);
   return (void *) array;
 }
 
@@ -544,7 +595,7 @@ rb_id_deserialize (dk_session_t * ses, dtp_t dtp)
     n = read_long (ses);
   return (void*)rbb_from_id (n);
 }
- 
+
 
 static void *
 rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
@@ -562,18 +613,19 @@ rb_ext_deserialize (dk_session_t * ses, dtp_t flags)
       rb->rb_type = read_short (ses);
       rb->rb_lang = RDF_BOX_DEFAULT_LANG;
     }
+  rb_dt_lang_check(rb);
   if (flags & RBS_64)
     rb->rb_ro_id = read_int64 (ses);
   else
     rb->rb_ro_id = read_long (ses);
   if (flags & RBS_COMPLETE)
     {
-      rb->rb_box = scan_session_boxing (ses);
+      rb->rb_box = (caddr_t)scan_session_boxing (ses);
       rb->rb_is_complete = 1;
     }
   return (void*)rb;
 }
- 
+
 
 static void *
 rb_deserialize (dk_session_t * ses, dtp_t dtp)
@@ -595,7 +647,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 	  rbb->rbb_chksum[len] = 0;
 	}
       else
-	((rdf_bigbox_t *) rb)->rbb_chksum = scan_session_boxing (ses);
+	((rdf_bigbox_t *) rb)->rbb_chksum = (caddr_t)scan_session_boxing (ses);
     }
   else
     {
@@ -608,7 +660,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 	  rb->rb_box[len] = 0;
 	}
       else
-	rb->rb_box = scan_session_boxing (ses);
+	rb->rb_box = (caddr_t)scan_session_boxing (ses);
     }
   if (flags & RBS_OUTLINED)
     {
@@ -627,6 +679,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
     rb->rb_lang = read_short (ses);
   else
     rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+  rb_dt_lang_check(rb);
   if (flags & RBS_CHKSUM)
     ((rdf_bigbox_t *) rb)->rbb_box_dtp = session_buffered_read_char (ses);
   if ((RDF_BOX_DEFAULT_TYPE != rb->rb_type) && (RDF_BOX_DEFAULT_LANG != rb->rb_lang))
@@ -638,7 +691,7 @@ rb_deserialize (dk_session_t * ses, dtp_t dtp)
 }
 
 
-void *
+NORETURN void
 box_read_error (dk_session_t * session, dtp_t dtp)
 {
   /*assert (session->dks_read_fail_on); */
@@ -653,11 +706,10 @@ box_read_error (dk_session_t * session, dtp_t dtp)
       char temp[30];
       snprintf (temp, sizeof (temp), "Bad incoming tag %u", (unsigned) dtp);
       sr_report_future_error (session, "", temp);
+      SESSTAT_CLR (session->dks_session, SST_OK);
       SESSTAT_SET (session->dks_session, SST_BROKEN_CONNECTION);
     }
   longjmp_splice (&(SESSION_SCH_DATA (session)->sio_read_broken_context), 1);
-
-  return NULL;
 }
 
 
@@ -671,7 +723,7 @@ init_readtable (void)
 
   for (i = 0; i < 256; i++)
     if (NULL == readtable[i])
-      readtable[i] = box_read_error;
+      readtable[i] = (macro_char_func)box_read_error;
 
   readtable[DV_NULL] = imm_read_null;
   readtable[DV_SHORT_INT] = imm_read_short_int;
@@ -696,6 +748,9 @@ init_readtable (void)
   readtable[DV_ARRAY_OF_XQVAL] = box_read_array;
   readtable[DV_XTREE_HEAD] = box_read_array;
   readtable[DV_XTREE_NODE] = box_read_array;
+#ifdef SIGNAL_DEBUG
+  readtable[DV_ERROR_REPORT] = box_read_error_report;
+#endif
 
   readtable[DV_ARRAY_OF_LONG_PACKED] = box_read_packed_array_of_long;
   readtable[DV_ARRAY_OF_LONG] = box_read_array_of_long;
@@ -704,6 +759,7 @@ init_readtable (void)
 
   readtable[DV_DB_NULL] = box_read_db_null;
   readtable[DV_BOX_FLAGS] = box_read_flags;
+  memcpy (&rpcreadtable[0], &readtable[0], sizeof (readtable));
   readtable[DV_RDF] = rb_deserialize;
   readtable[DV_RDF_ID] = rb_id_deserialize;
   readtable[DV_RDF_ID_8] = rb_id_deserialize;
@@ -722,6 +778,12 @@ macro_char_func *
 get_readtable (void)
 {
   return readtable;
+}
+
+macro_char_func *
+get_rpcreadtable (void)
+{
+  return rpcreadtable;
 }
 
 
@@ -761,6 +823,8 @@ scan_session (dk_session_t * session)
 /*
  *  Like scan_session, but allocates a box if needed
  */
+extern box_destr_f box_destr[256];
+
 void *
 scan_session_boxing (dk_session_t * session)
 {
@@ -789,6 +853,11 @@ scan_session_boxing (dk_session_t * session)
       return (box_t) box;
     }
 
+  if (session->dks_is_server && rpcreadtable[next_char] == (macro_char_func) box_read_error)
+    {
+      box_read_error (session, next_char);
+      return NULL;
+    }
   result = (*readtable[next_char]) (session, next_char);
 
   if (next_char == DV_LONG_INT || next_char == DV_SHORT_INT)
@@ -1050,7 +1119,7 @@ dks_array_head (dk_session_t * session, long n_elements, dtp_t type)
 int (*box_flags_serial_test_hook) (dk_session_t * ses);
 
 void
-print_string (char *string, dk_session_t * session)
+print_string (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   uint32 flags = box_flags (string);
@@ -1073,9 +1142,32 @@ print_string (char *string, dk_session_t * session)
   session_buffered_write (session, string, length);
 }
 
+void
+print_uname (const char *string, dk_session_t * session)
+{
+  /* There will be a zero at the end. Do not send the zero. */
+  uint32 flags = box_flags (string) | BF_IRI | BF_UNAME_AS_STRING;
+  size_t length = box_length (string) - 1;
+  if (flags && (!box_flags_serial_test_hook || box_flags_serial_test_hook (session)))
+    {
+      session_buffered_write_char (DV_BOX_FLAGS, session);
+      print_long (flags, session);
+    }
+  if (length < 256)
+    {
+      session_buffered_write_char (DV_SHORT_STRING_SERIAL, session);
+      session_buffered_write_char ((char) length, session);
+    }
+  else
+    {
+      session_buffered_write_char (DV_STRING, session);
+      print_long ((long) length, session);
+    }
+  session_buffered_write (session, string, length);
+}
 
 void
-print_ref_box (char *string, dk_session_t * session)
+print_ref_box (const char *string, dk_session_t * session)
 {
   /* There will be a zero at the end. Do not send the zero. */
   size_t length = box_length (string);
@@ -1101,7 +1193,7 @@ print_ref_box (char *string, dk_session_t * session)
  */
 
 void
-print_object2 (void *object, dk_session_t * session)
+print_object2 (const void *object, dk_session_t * session)
 {
   if (object == NULL)
     session_buffered_write_char (DV_NULL, session);
@@ -1116,6 +1208,9 @@ print_object2 (void *object, dk_session_t * session)
 
       switch (tag)
 	{
+#ifdef SIGNAL_DEBUG
+        case DV_ERROR_REPORT:
+#endif
 	case DV_ARRAY_OF_POINTER:
 	case DV_LIST_OF_POINTER:
 	case DV_ARRAY_OF_XQVAL:
@@ -1187,8 +1282,10 @@ print_object2 (void *object, dk_session_t * session)
 
 	case DV_STRING:
 	case DV_C_STRING:
-	case DV_UNAME:
 	  print_string ((char *) object, session);
+	  break;
+	case DV_UNAME:
+	  print_uname ((char *) object, session);
 	  break;
 	case DV_SINGLE_FLOAT:
 	  print_float (*(float *) object, session);

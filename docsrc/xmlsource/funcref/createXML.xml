@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -45,8 +45,7 @@
     <title>Description</title>
     <para>This function creates an XMLType instance. It works absolutely identically to the
 <link linkend="fn_XMLType.XMLType"><function>XMLType()</function></link> constructor and
-is provided solely for compatibility.
-     </para>
+    	is provided solely for compatibility.</para>
   </refsect1>
   <refsect1 id="params_createXML">
     <title>Parameters</title>
@@ -57,8 +56,8 @@ is provided solely for compatibility.
       <para>An URI of the schema of the document. The default is NULL to make result non-schema based.</para>
     </refsect2>
     <refsect2><title>validated</title>
-      <para>An integer flag that indicates if the document is already validated against the
-schema of the document (this is to avoid redundant validations). The default is 0.</para>
+      <para>An integer flag that indicates if the document is already validated against the schema of the document
+      	(this is to avoid redundant validations). The default is 0.</para>
     </refsect2>
     <refsect2><title>wellformed</title>
       <para>This parameter is unused and is listed solely for compatibility.</para>
@@ -69,8 +68,7 @@ schema of the document (this is to avoid redundant validations). The default is 
   </refsect1>
   <refsect1 id="examples_createXML">
     <title>Examples</title>
-    <example id="ex_createXML"><title></title>
-      <para></para>
+    <example id="ex_createXML"><title>Sample example</title>
       <screen><![CDATA[
 create table XMLTYPE_TEST (I integer primary key, XMLVAL long xml)
 

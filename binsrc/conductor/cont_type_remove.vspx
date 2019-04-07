@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="cont_type_remove"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+  <vm:pagetitle>WebDAV Content Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="1" name="error_str1" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="WebDAV Content Management"/>
+    </vm:menu>
+    <vm:header caption="Remove MIME Type"/>
+    <vm:pagebody>
+      <v:form name="event_form2" type="simple" method="POST" action="cont_type_remove.vspx">
+        <div class="confirm_dialog">
+          <div><img src="images/icons/stop_32.png" alt="Stop" title="stop"/></div>
+          <div class="confirm_text">
+            <br />
+            The MIME type <?vsp http(sprintf('<b> %s </b>', cast(deserialize(decode_base64(get_keyword('name', self.vc_page.vc_event.ve_params))) as varchar))); ?> will be removed permanently and there is no way to restore it. <br/>
+            Are you sure you want to remove this MIME type?
+          </div>
+
+          <div class="dialog_buttons">
+            <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+            <v:on-post>
+              <![CDATA[
+                declare _name varchar;
+
+                if (get_keyword ('remove', params, '') <> '')
+                {
+                  _name := cast (deserialize (decode_base64 (get_keyword ('name', params))) as varchar);
+                  if (not DB.DBA.is_empty_or_null (_name))
+                  {
+                    declare state, msg varchar;
+
+                    state := '00000';
+                    exec ('delete from WS.WS.SYS_DAV_RES_TYPES where T_EXT = ?', state, msg, vector (_name));
+                    if (state <> '00000')
+                    {
+                      self.error_str1 := 'Can not delete this MIME Type';
+                      return;
+                    }
+                  }
+                  else
+                  {
+                    self.error_str1 := 'File extension is empty';
+                    return;
+                  }
+                }
+                self.vc_redirect ('cont_page.vspx?page=4');
+              ]]>
+            </v:on-post>
+            <v:button action="submit" name="remove" value="Yes"/>
+            <v:button action="submit" name="cancel" value="No"/>
+          </div>
+
+        </div>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

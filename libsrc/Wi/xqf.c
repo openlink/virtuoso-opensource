@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,7 @@
 #include "CLI.h"
 #include "xmltree.h"
 #include "arith.h"
+#include "geo.h"
 #include "sqlbif.h"
 #include "xml.h"
 #include "date.h"
@@ -57,6 +58,8 @@
 
 sql_tree_tmp * st_double;
 double virt_rint (double x);
+
+int32 simple_rdf_numbers = 0;
 
 int
 utf8_strlen (const unsigned char *str)
@@ -250,8 +253,8 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
     "unsigned long",
     "integer",
     "negative integer",
-    "nonpositive integer",
-    "nonnegative integer",
+    "non-positive integer",
+    "non-negative integer",
     "positive integer" };
   int l, s = 0;
   const char *p = str;
@@ -264,7 +267,7 @@ __integer_from_string (caddr_t *n, const char *str, int do_what)
   while ('0'== *p) p++;
   if  (
     (s && ((XQ_NNINT == do_what) || (XQ_PINT == do_what) || ((XQ_UINT8 <= do_what) && (XQ_UINT64 >= do_what)))) ||
-    (!s && ((XQ_NPINT == do_what) || (XQ_NINT == do_what))) ||
+    (!s && ((XQ_NINT == do_what) || ((XQ_NPINT == do_what) && ('\0' != p[0])))) ||
     (('\0' == p[0]) && ((XQ_NINT == do_what) || (XQ_PINT == do_what))) )
     sqlr_new_error ("42001", "XPQ??", "'%.100s' is not a valid value for %s constructor", str, s_int_name[do_what] );
   if (XQ_INT <= do_what)
@@ -384,7 +387,7 @@ __chk_float_string (const char *str)
   for (; *p; p ++, n++ )
     {
       if (NULL == strchr("+-eE.", *p) && (p[0] > '9' || p[0] <'0' ))
-	return -1;;
+	return -1;
 
       if ('.' == p[0])
 	{
@@ -571,25 +574,31 @@ xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #define XQ_DAY		7
 #define COUNTOF__XQ_DT_MODE	8
 
+typedef struct xq_dt_mode_s {
+  const char *name;
+  int dt_type;
+  int flags; }
+xq_dt_mode_t;
+
+xq_dt_mode_t xq_dt_modes[] = {
+  {"dateTime"	, DT_TYPE_DATETIME	, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD | DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"date"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"time"	, DT_TYPE_TIME		,                                     DTFLAG_HH | DTFLAG_MIN | DTFLAG_SS | DTFLAG_SF | DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYearMonth"	, DT_TYPE_DATE		, DTFLAG_YY | DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gYear"	, DT_TYPE_DATE		, DTFLAG_YY |                                                                          DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonthDay"	, DT_TYPE_DATE		,             DTFLAG_MM | DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gMonth"	, DT_TYPE_DATE		,             DTFLAG_MM |                                                              DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	},
+  {"gDay"	, DT_TYPE_DATE		,                         DTFLAG_DD |                                                  DTFLAG_ZH | DTFLAG_ZM | DTFLAG_T_FORMAT_SETS_TZL | DTFLAG_DATES_AND_TIMES_ARE_ISO	}
+};
+
 static void
 __datetime_from_string (caddr_t *n, const char *str, int do_what)
 {
-  int flags[] = {0x1ff, 0x187, 0x1f8, 0x183, 0x181, 0x186, 0x182, 0x184};
-  int types[] = { DT_TYPE_DATETIME, DT_TYPE_DATE, DT_TYPE_TIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME, DT_TYPE_DATETIME };
-  const char *names[] = {	"dateTime",
-				"date",
-				"time",
-				"gYearMonth",
-				"gYear",
-				"gMonthDay",
-				"gMonth",
-				"gDay",
-  };
   caddr_t err_msg = NULL;
   caddr_t err;
   assert (do_what >= 0 && do_what < COUNTOF__XQ_DT_MODE);
   n[0] = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
-  iso8601_or_odbc_string_to_dt (str, n[0], flags[do_what], types[do_what], &err_msg);
+  iso8601_or_odbc_string_to_dt (str, n[0], xq_dt_modes[do_what].flags, xq_dt_modes[do_what].dt_type, &err_msg);
   if (NULL == err_msg)
     return;
   if (0 == do_what)
@@ -599,7 +608,7 @@ __datetime_from_string (caddr_t *n, const char *str, int do_what)
     }
   dk_free_box (n[0]);
   n[0] = NULL;
-  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, names[do_what], str);
+  err = srv_make_new_error ("42001", "XPQ??", "%s in %s constructor: \"%.300s\"", err_msg, xq_dt_modes[do_what].name, str);
   dk_free_box (err_msg);
   sqlr_resignal (err);
 }
@@ -1442,9 +1451,7 @@ collation_t * xpf_arg_collation (xp_instance_t* xqi, XT * tree, xml_entity_t * c
     {
       coll = sch_name_to_collation (coll_name);
       if (!coll)
-	sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
-      if (!coll->co_is_wide)
-	sqlr_new_error ("42001", "XPQ??", "Collation %.300s must be wide", coll_name);
+        sqlr_new_error ("22023", "IN006", "Collation %.300s not defined", coll_name);
     }
   return coll;
 }
@@ -1478,9 +1485,8 @@ __xqf_compare  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int do_wh
       break;
     case XQ_STARTSWITH:
       {
-	utf8char *tail, c;
 	int len = 0, wide_len;
-	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0, DV_WIDE), utf8_box;
+	caddr_t wide_box = box_utf8_as_wide_char (str1, NULL, strlen (str1), 0), utf8_box; 
 
 	wide_len = box_length (wide_box) / sizeof (wchar_t) - 1;
 	n = utf8_strlen ((utf8char *)str2);
@@ -1639,11 +1645,17 @@ xqf_matches (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   val2 = __normalize_arg (val2);
   val3 = __normalize_arg (val3);
 
+  if (!DV_STRINGP (val2))
+    {
+      XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L );
+      return;
+    }
+
   c_opts = xqf_make_regexp_modes (val3);
   xqf_check_regexp (val2, c_opts);
 
   {
-    caddr_t res = regexp_match_01 (val2, val1, c_opts);
+    caddr_t res = DV_STRINGP (val1) ? regexp_match_01 (val2, val1, c_opts) : NULL;
     if (res)
       XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 1L );
     else
@@ -1833,7 +1845,7 @@ void
 xqf_lower_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1849,7 +1861,7 @@ void
 xqf_upper_case  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
-  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int i;
   int len = box_length (wide_str)/sizeof (wchar_t);
   wchar_t * res =  (wchar_t*)dk_alloc_box (len * sizeof (wchar_t), DV_WIDE);
@@ -1866,7 +1878,7 @@ xqf_escape_uri  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t str = xpf_arg (xqi, tree, ctx_xe, DV_STRING, 0);
   ptrlong esc_reserved = unbox (xpf_arg (xqi, tree, ctx_xe, DV_LONG_INT, 1));
-  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0, DV_LONG_WIDE);
+  wchar_t * wide_res = 0, *wide_str = (wchar_t*) box_utf8_as_wide_char ((caddr_t) str, NULL, box_length (str), 0);
   int esc_type = DKS_ESC_URI_NRES;
 
   if (esc_reserved)
@@ -1905,8 +1917,8 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
   long idx, utf8_idx = 0;
   if (coll)
     {
-      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0, DV_LONG_WIDE);
-      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0, DV_LONG_WIDE);
+      wchar_t *wide1 = (wchar_t*) box_utf8_as_wide_char (str, NULL, box_length (str) - 1, 0);
+      wchar_t *wide2 = (wchar_t*) box_utf8_as_wide_char (mstr, NULL, box_length (mstr) - 1, 0);
       size_t _1len = box_length (wide1)/sizeof (wchar_t) - 1;
       size_t _2len = box_length (wide2)/sizeof (wchar_t) - 1;
       int n1inx=0, n2inx=0;
@@ -1914,9 +1926,9 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
       reverse_wide_string (wide1);
       reverse_wide_string (wide2);
 
-      while (1)
+      for (;;)
 	{
-	again:
+          wchar_t xlat1, xlat2;
 	  if (_1len && n1inx == _1len && n2inx != _2len)
 	    return 0;
 	  if (n2inx == _2len)
@@ -1924,19 +1936,21 @@ __xqf_ends_with (caddr_t str, caddr_t mstr, collation_t * coll)
 	      res = (caddr_t) 1;
 	      break;
 	    }
-	  if (!((wchar_t *)coll->co_table)[wide2[n2inx]])
+          xlat2 = COLLATION_XLAT_WIDE (coll, wide2[n2inx]);
+	  if (!xlat2)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n2inx++;
-	      goto again;
+	      continue;
 	    }
 	  if (!_1len)
 	    break;
-	  if (!((wchar_t *)coll->co_table)[wide1[n1inx]])
+          xlat1 = COLLATION_XLAT_WIDE (coll, wide1[n1inx]);
+	  if (!xlat1)
 	    { /* ignore symbol, unicode normalization algorithm */
 	      n1inx++;
-	      goto again;
+	      continue;
 	    }
-	  if (((wchar_t *)coll->co_table)[wide1[n1inx]] != ((wchar_t *)coll->co_table)[wide2[n2inx]])
+	  if (xlat1 != xlat2)
 	    break;
 	  n1inx++;
 	  n2inx++;
@@ -2154,7 +2168,7 @@ xqf_string_to_codepoints (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   while (inx < utf8_len)
     {
       wchar_t wtmp;
-      int rc = (int) virt_mbrtowc (&wtmp, utf8_str + inx, utf8_len - inx, &state);
+      int rc = (int) virt_mbrtowc_z (&wtmp, utf8_str + inx, utf8_len - inx, &state);
       if (rc < 0)
 	GPF_T1 ("inconsistent wide char data");
       dk_set_push (&set, (caddr_t)((ptrlong)(wtmp)));
@@ -2358,7 +2372,6 @@ xqf_exists (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 #endif
 
-#define ROL(h) ((h << 1) | ((h >> 31) & 1))
 static id_hashed_key_t
 xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 {
@@ -2373,12 +2386,14 @@ xqf_box_hash (query_instance_t* qi, caddr_t box, collation_t * coll)
 	int inx=0, len = box_length (box)-1;
 	while (inx < len)
 	  {
-	    int rc = (int) virt_mbrtowc (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+	    int rc = (int) virt_mbrtowc_z (&wtmp, ((utf8char *)(box)) + inx, len - inx, &state);
+            wchar_t xlat;
 	    if (rc < 0)
 	      GPF_T1 ("inconsistent wide char data");
-	    if (((wchar_t*)coll->co_table)[wtmp])
+            xlat = COLLATION_XLAT_WIDE (coll, wtmp);
+	    if (xlat)
 	      {
-		h = ROL (h) ^ ((wchar_t*)coll->co_table)[wtmp];
+		h = ROL (h) ^ xlat;
 	      }
 	    inx+=rc;
 	  }
@@ -3368,10 +3383,10 @@ xdt_define_builtin (
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
 /*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
-    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
+    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
     {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, "DATE"		},
+    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, NULL /* not "DATE" */	},
     {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, "DATETIME"		},
     {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
     {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
@@ -3386,20 +3401,20 @@ static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
     {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
     {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"normalizedString"	, __gen_string_from_string	, __gen_string_rcheck	, XQ_NORM_STRING	, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
     {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, "TIME"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, NULL /* not "TIME" */	},
     {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
     {	"yearMonthDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			} };
 
 /* No parsing or validation for
@@ -3542,9 +3557,29 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
           xte->xe_doc.xd->xd_id_scan = XD_ID_SCAN_COMPLETED;
           xte->xe_doc.xd->xd_ns_2dict = ns_2dict;
           xte->xe_doc.xd->xd_namespaces_are_valid = 0;
+	  xte->xe_doc.xd->xout_encoding = box_dv_short_string ("UTF-8");
           /* test only : xte_word_range(xte,&l1,&l2); */
           return ((caddr_t) xte);
         }
+      if ((!strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")
+	   || !strcmp (type_iri, "http://www.opengis.net/ont/geosparql#wktLiteral"))
+	  && DV_STRING == arg_dtp)
+	{
+	  caddr_t err = NULL;
+	  caddr_t g = geo_parse_wkt (arg, &err);
+	  if (err && (!(suppress_error & 1) || !strcmp (type_iri, "http://www.openlinksw.com/schemas/virtrdf#Geometry")))
+	    sqlr_resignal (err);
+	  if (!err)
+	    {
+	      rdf_box_t * rb = rb_allocate ();
+	      geo_calc_bounding ((geo_t *) g, GEO_CALC_BOUNDING_DO_ALL);
+	      rb->rb_type = RDF_BOX_GEO;
+	      rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+	      rb->rb_box = g;
+	      rb->rb_is_complete = 1;
+	      return (caddr_t) rb;
+	    }
+	}
       return NEW_DB_NULL;
     }
   p_name = type_iri + XMLSCHEMA_NS_URI_LEN + 1; /* +1 is to skip '#' */
@@ -3564,6 +3599,13 @@ bif_xqf_str_parse_to_rdf_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
   if (DV_STRING != arg_dtp)
     {
       caddr_t err = NULL;
+      if (simple_rdf_numbers && DV_NUMERIC == desc->p_dest_dtp && DV_NUMERIC == arg_dtp)
+	{
+	  double d;
+	  numeric_to_double ((numeric_t)arg, &d);
+	  res = box_double (d);
+	  goto res_ready;
+	}
       if (desc->p_dest_dtp == arg_dtp)
         {
           res = box_copy_tree (arg);
@@ -3617,23 +3659,41 @@ res_ready:
   return res;
 }
 
+#define XQF_STR_FN(n) \
+caddr_t bif_xqf_str_parse_##n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \
+{ \
+  return bif_xqf_str_parse (qst, err_ret, args); \
+}
+
+XQF_STR_FN(boolean)
+XQF_STR_FN(date)
+XQF_STR_FN(datetime)
+XQF_STR_FN(double)
+XQF_STR_FN(float)
+XQF_STR_FN(integer)
+XQF_STR_FN(numeric)
+XQF_STR_FN(nvarchar)
+XQF_STR_FN(time)
 
 /* TO DO: the whole list 5.7.1 */
 void xqf_init(void)
 {
   st_double =  (sql_tree_tmp *) list (3, DV_DOUBLE_FLOAT, (ptrlong)0, (ptrlong)0);
 
-  bif_define ("__xqf_str_parse", bif_xqf_str_parse);
+  bif_define_ex ("__xqf_str_parse", bif_xqf_str_parse, BMD_ALIAS, "__xqf_str_parse_boolean", BMD_ALIAS, "__xqf_str_parse_date", BMD_ALIAS, "__xqf_str_parse_datetime", BMD_ALIAS, "__xqf_str_parse_double", BMD_ALIAS, "__xqf_str_parse_float", BMD_ALIAS, "__xqf_str_parse_integer", BMD_ALIAS, "__xqf_str_parse_numeric", BMD_ALIAS, "__xqf_str_parse_nvarchar", BMD_ALIAS, "__xqf_str_parse_time",
+    BMD_RET_TYPE, &bt_any, BMD_DONE );
   bif_define ("__xqf_str_parse_to_rdf_box", bif_xqf_str_parse_to_rdf_box);
-  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_date	);
-  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_datetime	);
-  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_double	);
-  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_float	);
-  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_integer	);
-  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_numeric	);
-  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_wvarchar	);
-  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_time	);
+#if 0
+  bif_define_typed ("__xqf_str_parse_boolean"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_date"	, bif_xqf_str_parse	, &bt_any /* was &bt_date */		);
+  bif_define_typed ("__xqf_str_parse_datetime"	, bif_xqf_str_parse	, &bt_any /* was &bt_datetime */	);
+  bif_define_typed ("__xqf_str_parse_double"	, bif_xqf_str_parse	, &bt_any /* was &bt_double */		);
+  bif_define_typed ("__xqf_str_parse_float"	, bif_xqf_str_parse	, &bt_any /* was &bt_float */		);
+  bif_define_typed ("__xqf_str_parse_integer"	, bif_xqf_str_parse	, &bt_any /* was &bt_integer */		);
+  bif_define_typed ("__xqf_str_parse_numeric"	, bif_xqf_str_parse	, &bt_any /* was &bt_numeric */		);
+  bif_define_typed ("__xqf_str_parse_nvarchar"	, bif_xqf_str_parse	, &bt_any /* was &bt_wvarchar */	);
+  bif_define_typed ("__xqf_str_parse_time"	, bif_xqf_str_parse	, &bt_any /* was &bt_time */		);
+#endif
 
   /* Functions */
   x2f_define_builtin ("ENTITY"					, NULL /*xqf_entity*/		/* ??? */	, DV_SHORT_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);

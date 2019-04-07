@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -162,7 +162,6 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       goto error_end;
     }
   END_READ_FAIL (ses);
-
   /*  IS_OK_NEXT (ses, resp, rc, "Bad user name and password"); */
 
   inx_mails = 0;
@@ -284,7 +283,7 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		      goto error_end;
 		    }
 		}
-	      session_flush_1 (msg);
+	    strses_flush (msg);
 	      if (tcpses_check_disk_error (msg, NULL, 0))
 		{
 		  strcpy_ck (err_text, "Server error in accessing temp file");
@@ -298,7 +297,12 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 		  msg = strses_allocate ();
 		}
 	      else
-		dk_set_push (ret_v, list (2, my_list[inx - 1], strses_string (msg)));
+	      {
+		caddr_t val = strses_string (msg);
+		caddr_t lst = list (2, my_list[inx - 1], val);
+		strses_flush (msg);
+		dk_set_push (ret_v, lst);
+	      }
 	      my_list[inx - 1] = NULL;
 	    }
 	  FAILED
@@ -318,7 +322,8 @@ pop3_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
       if (!stricmp ("delete", mode))
 	{
 	  SEND (ses, rc, "DELE ", message);
-	  IS_OK_NEXT (ses, resp, rc, "PO011", "Could not DELE messages from remote POP3 server");
+	  IS_OK_NEXT (ses, resp, rc, "PO011",
+		      "Could not DELE messages from remote POP3 server");
 	}
     }
 
@@ -356,13 +361,11 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t user = bif_string_arg (qst, args, 1, "pop3_get");
   caddr_t pass = bif_string_arg (qst, args, 2, "pop3_get");
   long end_size = (long) bif_long_arg (qst, args, 3, "pop3_get");
-  caddr_t ret = NULL;
 
   caddr_t mode = "";
   caddr_t err = NULL;
   long cert = 0;
   dk_set_t volatile uidl_mes = NULL;
-  IO_SECT (qst);
 
   if (BOX_ELEMENTS (args) > 4)
     mode = bif_string_arg (qst, args, 4, "pop3_get");
@@ -377,22 +380,27 @@ bif_pop3_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 6)
     cert = bif_long_arg (qst, args, 6, "pop3_get");
 
+  IO_SECT (qst);
+
   pop3_get (addr, &err, user, pass, end_size, mode, (dk_set_t *) & uidl_mes, in_uidl, qst, cert);
 
   if (err)
     {
-      dk_free_tree (list_to_array (uidl_mes));
-      uidl_mes = NULL;
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
       sqlr_resignal (err);
     }
-  END_IO_SECT (err_ret);
-  ret = list_to_array (dk_set_nreverse (uidl_mes));
-  if (*err_ret)
+  END_IO_SECT (&err);
+  if (err)
     {
-      dk_free_tree (ret);
-      ret = NULL;
+      while (uidl_mes)
+	dk_free_tree ((caddr_t) (dk_set_pop (&uidl_mes)));
+      if (NULL == err_ret)
+	sqlr_resignal (err);
+      err_ret[0] = err;
+      return NULL;
     }
-  return ret;
+  return list_to_array (dk_set_nreverse (uidl_mes));
 }
 
 static caddr_t
@@ -423,15 +431,18 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   CATCH_WRITE_FAIL (out)
     {
-      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING || dtp == DV_C_STRING)
-	session_buffered_write (out, string, box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
+      if (dtp == DV_SHORT_STRING || dtp == DV_LONG_STRING ||
+	  dtp == DV_C_STRING)
+	session_buffered_write (out, string,
+	    box_length (string) - (IS_STRING_DTP (DV_TYPE_OF (string)) ? 1 : 0));
       else if ((dtp == DV_BLOB_HANDLE) || (dtp == DV_BLOB_WIDE_HANDLE))
 	{
 	  blob_handle_t *bh = (blob_handle_t *) string;
 	  if (!bh->bh_length)
 	    {
 	      if (bh->bh_ask_from_client)
-		sqlr_new_error ("22023", "HT001", "An interactive blob can't be passed as argument to ses_write");
+		sqlr_new_error ("22023", "HT001",
+		    "An interactive blob can't be passed as argument to ses_write");
 	      goto endwrite;
 	    }
 	  bh->bh_current_page = bh->bh_page;
@@ -445,7 +456,8 @@ bif_ses_write (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  strses_write_out ((dk_session_t *) string, out);
 	}
       else
-	*err_ret = srv_make_new_error ("22023", "HT002", "ses_write requires string, string_output or blob as argument 1");
+	*err_ret = srv_make_new_error ("22023", "HT002",
+	    "ses_write requires string, string_output or blob as argument 1");
     }
   FAILED
     {
@@ -462,6 +474,6 @@ endwrite:
 void
 bif_pop3_init (void)
 {
-  bif_define_typed ("pop3_get", bif_pop3_get, &bt_varchar);
-  bif_define_typed ("ses_write", bif_ses_write, &bt_varchar);
+  bif_define_ex ("pop3_get", bif_pop3_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("ses_write", bif_ses_write, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

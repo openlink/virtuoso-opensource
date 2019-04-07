@@ -17,6 +17,7 @@ x
 *.log
 *.rej
 *.orig
+*.patch
 .deps
 .libs
 .generated
@@ -82,6 +83,7 @@ docsrc/xmlsource/vspxdoc.xml
 libsrc/Wi/json_l.c
 libsrc/Wi/json_p.c
 libsrc/Wi/json_p.h
+libsrc/Wi/git_head.c
 libsrc/Wi/nquad_p.c
 libsrc/Wi/nquad_p.h
 libsrc/Wi/nquad_p.output

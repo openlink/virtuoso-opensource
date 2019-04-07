@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,35 +86,22 @@ void
 ts_set_local_code (table_source_t * ts, int is_cluster)
 {
   key_source_t *ks = ts->ts_main_ks ? ts->ts_main_ks : ts->ts_order_ks;
-  if (!ks)
+  if (!ks || ks->ks_key->key_is_col)
     return; /* inx op that does not join main row */
   if (ts->src_gen.src_after_test
-      && cv_is_local_1 (ts->src_gen.src_after_test, 0))
+      && cv_is_local_1 (ts->src_gen.src_after_test, CV_NO_INDEX))
     {
       ks->ks_local_test = ts->src_gen.src_after_test;
       ts->src_gen.src_after_test = NULL;
     }
   if (ts->src_gen.src_after_code
       && !ts->src_gen.src_after_test
+      && !ts->src_gen.src_query->qr_proc_vectored
       && cv_is_local_1 (ts->src_gen.src_after_code, 0)
       && !ts->ts_is_outer)
     {
       ks->ks_local_code = ts->src_gen.src_after_code;
       ts->src_gen.src_after_code = NULL;
-      if (ts->src_gen.src_count)
-	{
-	  ks->ks_count = ts->src_gen.src_count;
-	  ts->src_gen.src_count = 0;
-	}
-    }
-  if (!ts->ts_is_outer
-      && ts->src_gen.src_count
-      && !ts->src_gen.src_after_test
-      && !ts->src_gen.src_after_code
-      && ts->src_gen.src_count)
-    {
-      ks->ks_count = ts->src_gen.src_count;
-      ts->src_gen.src_count = 0;
     }
 }
 
@@ -159,8 +146,9 @@ fun_ref_free (fun_ref_node_t * fref)
   dk_set_free (fref->fnr_distinct_ha);
   dk_set_free (fref->fnr_setps);
   clb_free (&fref->clb);
-  dk_free_box ((box_t)fref->fnr_ssa.ssa_save);
   dk_set_free (fref->fnr_select_nodes);
+  dk_set_free (fref->fnr_prev_hash_fillers);
+  dk_set_free (fref->fnr_cl_merge_temps);
 }
 
 
@@ -308,7 +296,7 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
       break;
     case TABLE_DOTTED:
       {
-	dbe_table_t *tb = sch_name_to_table (sc->sc_cc->cc_schema, tree->_.table.name);
+	dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, tree->_.table.name);
 	t_NEW_VARZ (comp_table_t, ct);
 	if (!tb)
 	  sqlc_new_error (sc->sc_cc, "42S02", "SQ069", "No table %s", tree->_.table.name);
@@ -320,11 +308,11 @@ sqlc_add_table_ref (sql_comp_t * sc, ST * tree, dk_set_t * res)
 	ct->ct_u_id = (oid_t) unbox (tree->_.table.u_id);
 	ct->ct_g_id = (oid_t) unbox (tree->_.table.g_id);
 	ct->ct_derived = (ST *)
-	  t_box_copy_tree (sch_view_def (sc->sc_cc->cc_schema, tb->tb_name));
+	  t_box_copy_tree (sch_view_def (wi_inst.wi_schema, tb->tb_name));
 	if (ct->ct_derived)
 	  {
-	    if (!sec_tb_check (tb, ct->ct_u_id, ct->ct_u_id, GR_SELECT))
-	      sqlc_new_error (sc->sc_cc, "42000", "SQ070",
+	    if (!sec_tb_check (tb, ct->ct_g_id, ct->ct_u_id, GR_SELECT))
+	      sqlc_new_error (sc->sc_cc, "42000", "SQ070:SECURITY",
 		  "Must have select privileges on view %s", tb->tb_name);
 	    if (ST_P (ct->ct_derived, SELECT_STMT))
 	      sqlc_union_constants (ct->ct_derived);
@@ -419,126 +407,6 @@ sqlc_table_ref (sql_comp_t * sc, ST * ref)
   sc->sc_tables = (comp_table_t **) t_list_to_array (dk_set_nreverse (cts));
 }
 
-#if 0
-
-gb_op_t *
-sqlc_make_gb_op (sql_comp_t * sc, int op, user_aggregate_t *user_aggr, int arglist_len)
-{
-  NEW_VARZ (gb_op_t, go);
-  go->go_op = op;
-  go->go_old_val = sqlc_new_temp (sc, "gb_tmp", DV_UNKNOWN);
-  switch (op)
-    {
-    case AMMSC_AVG:
-      GPF_T1("AVG() is not reduced to SUM()/COUNT()?");
-      go->go_avg = sqlc_new_temp (sc, "gb_tmp", DV_UNKNOWN);
-      go->go_sum = sqlc_new_temp (sc, "gb_tmp", DV_UNKNOWN);
-      go->go_ctr = sqlc_new_temp (sc, "gb_tmp", DV_UNKNOWN);
-      break;
-    case AMMSC_USER:
-      go->go_user_aggr = user_aggr;
-      go->go_arglist_len = arglist_len;
-      break;
-    }
-  return go;
-}
-
-
-void
-sqlc_query_spec (sql_comp_t * sc, int is_distinct, caddr_t * selection,
-		 sql_tree_t * table_exp,
-		 data_source_t ** head_ret, state_slot_t *** sel_out_ret)
-{
-  int fun_ref_p = 0, all_fun_refs;
-  data_source_t *head = NULL;
-  dk_set_t sel_code_list = NULL, fun_ref_accum_code = NULL;
-  int inx;
-  state_slot_t **ssl_out = (state_slot_t **) box_copy ((caddr_t) selection);
-  sql_tree_t **from = table_exp->_.table_exp.from;
-  comp_table_t **ct_from;
-  sqlc_table_ref_list (sc, from);
-  ct_from = sc->sc_tables;
-
-  sqlc_make_and_list (table_exp->_.table_exp.where,
-		      &sc->sc_preds);
-#ifdef BIF_XML
-  sqlc_implied_columns (sc);
-#endif
-  DO_SET (predicate_t *, pred, &sc->sc_preds)
-  {
-    sqlc_mark_pred_deps (sc, pred, pred->pred_text);
-  }
-  END_DO_SET ();
-
-  DO_SET (dk_set_t, pred_set, &sc->sc_jt_preds)
-    {
-      DO_SET (predicate_t *, pred, &pred_set)
-	{
-	  sqlc_mark_pred_deps (sc, pred, pred->pred_text);
-	}
-      END_DO_SET ();
-    }
-  END_DO_SET ();
-  sqlc_preprocess_group_by (sc, (ST **) selection, table_exp);
-  all_fun_refs = selection && BOX_ELEMENTS (selection) && ST_P (((ST **) selection)[0], FUN_REF);
-  DO_BOX (ST *, sel, inx, selection)
-  {
-    sqlc_mark_pred_deps (sc, NULL, sel);
-    ssl_out[inx] = select_ref_generate (sc, sel, &sel_code_list,
-					&fun_ref_accum_code, &fun_ref_p);
-    if (all_fun_refs != ST_P (sel, FUN_REF))
-      sqlc_new_error (sc->sc_cc, "42000", "SQ071",
-	  "Can't mix aggregate functions with non-aggregate functions or columns not included in GROUP BY.");
-  }
-  END_DO_BOX;
-  if (all_fun_refs || is_distinct)
-    sc->sc_no_current_of = 1;
-
-  sqlc_order_joins (sc, table_exp, ssl_out);
-
-  DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
-  {
-    sqlc_ct_generate (sc, ct);
-  }
-  END_DO_BOX;
-
-  DO_BOX (comp_table_t *, ct, inx, sc->sc_tables)
-  {
-    sqlc_ct_generate_ts (sc, ct);
-    if (!head)
-      head = ct_ts_src_gen (ct_from[inx]);
-    else
-      sql_node_append (&head, ct_ts_src_gen (ct_from[inx]));
-  }
-  END_DO_BOX;
-  sqlc_opt_last_joins (sc);
-  if (is_distinct && !all_fun_refs)
-    {
-      sqlc_add_distinct_node (sc, &head, ssl_out);
-    }
-
-  sqlc_query_handle_jt (sc, &head);
-
-  ct_ts_last_src_gen (ct_from[(BOX_ELEMENTS (ct_from)) - 1])->src_after_code =
-    code_to_cv (sc, all_fun_refs ? fun_ref_accum_code : sel_code_list);
-  if (all_fun_refs)
-    {
-      ct_ts_last_src_gen (ct_from[(BOX_ELEMENTS (ct_from)) - 1])->src_count = sc->sc_cc->cc_any_result_ind;
-
-      head = sqlc_add_fun_ref_head (sc, head);
-      head->src_after_code = code_to_cv (sc, sel_code_list);
-    }
-  if (sc->sc_sort_insert_node && !all_fun_refs)
-    {
-      head = sqlc_add_sort_nodes (sc, head);
-      if (table_exp->_.table_exp.group_by)
-	head = sqlc_group_by_order_by (sc, table_exp, head, ssl_out);
-    }
-  *head_ret = head;
-  *sel_out_ret = ssl_out;
-}
-
-#endif
 
 void
 sqlc_select_strip_as (ST ** selection, caddr_t *** as_list, int keep)
@@ -585,7 +453,7 @@ sqlc_select_unique_ssls (sql_comp_t * sc, select_node_t * sel, dk_set_t *code_se
 		    {
 		      sel->sel_out_slots[inx] = sqlc_new_temp (sc, ssl->ssl_name, ssl->ssl_dtp);
 		      sel->sel_out_slots[inx]->ssl_sqt = ssl->ssl_sqt;
-		      cv_artm (code_set, box_identity, sel->sel_out_slots[inx], ssl, NULL);
+		      cv_artm (code_set, (ao_func_t) box_identity, sel->sel_out_slots[inx], ssl, NULL);
 		    }
 		  break;
 		}
@@ -618,12 +486,27 @@ sqlc_select_as (state_slot_t ** sls, caddr_t ** as_list)
   END_DO_BOX;
 }
 
+int
+qr_has_sort_oby (query_t * qr)
+{
+  DO_SET (setp_node_t *, setp, &qr->qr_nodes)
+    {
+      if (IS_QN (setp, setp_node_input) && setp->setp_ha && HA_ORDER == setp->setp_ha->ha_op)
+	return 1;
+    }
+  END_DO_SET();
+  return 0;
+}
+
 
 void
 sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
 		 dk_set_t * code)
 {
   ST * top = SEL_TOP (tree);
+  ST * texp = tree->_.select_stmt.table_exp;
+  if (texp && texp->_.table_exp.order_by && qr_has_sort_oby (sc->sc_cc->cc_query))
+    return;
   if (!top || SEL_IS_TRANS (tree))
     return;
   sc->sc_top = top;
@@ -638,22 +521,20 @@ sqlc_select_top (sql_comp_t * sc, select_node_t * sel, ST * tree,
   else
     sel->sel_top_skip = NULL;
   sc->sc_top_sel_node = sel;
-  sel->sel_row_ctr = sqlc_new_temp (sc, "rowctr", DV_LONG_INT);
+  sel->sel_row_ctr = ssl_new_variable (sc->sc_cc, "rowctr", DV_LONG_INT);
 }
 
 
-jmp_buf_splice parse_reset;
-
-
+#ifdef OLD_GOOD_PARSER
 void
 yy_new_error (const char *s, const char *state, const char *native)
 {
   int nlen;
   int is_semi;
-  int this_lineno = scn3_lineno;
+  int this_lineno = global_scs->scs_scn3c.lineno;
   char buf_for_next [2000];
   scn3_include_fragment_t *outer;
-  if (scn3_inside_error_reporter)
+  if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   nlen = scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
   if (state)
@@ -668,9 +549,9 @@ yy_new_error (const char *s, const char *state, const char *native)
     }
   is_semi = !strcmp (yytext, ";");
   snprintf (sql_err_text + nlen, sizeof (sql_err_text)-nlen, ": %s at '%s'", s, yytext);
-  scn3_inside_error_reporter ++;
+  global_scs->scs_scn3c.inside_error_reporter ++;
   if (0 != yylex ())
-    if (scn3_lineno != this_lineno)
+    if (global_scs->scs_scn3c.lineno != this_lineno)
       strcpy (buf_for_next, " immediately before end of line");
     else
       {
@@ -690,7 +571,6 @@ yy_new_error (const char *s, const char *state, const char *native)
     }
   strncat_ck (sql_err_text, buf_for_next, (sizeof (sql_err_text) - 1));
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
-
 jmp:
   outer = scn3_include_stack + scn3_include_depth;
   if (outer->_.sif_skipped_part)
@@ -698,8 +578,43 @@ jmp:
       dk_free_box (outer->_.sif_skipped_part);
       outer->_.sif_skipped_part = NULL;
     }
-  longjmp_splice (&parse_reset, 1);
+  longjmp_splice (&(global_scs->parse_reset), 1);
 }
+#else
+void
+yy_new_error (const char *s, const char *state, const char *native)
+{
+  int nlen;
+  int is_semi;
+  int this_lineno = global_scs->scs_scn3c.lineno;
+  char buf_for_next [2000];
+  scn3_include_fragment_t *outer;
+  if (global_scs->scs_scn3c.inside_error_reporter)
+    goto jmp; /* see below */
+  nlen = scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  if (state)
+    {
+      strncpy (sql_err_state, state, sizeof (sql_err_state));
+      sql_err_state[sizeof (sql_err_state) - 1] = 0;
+    }
+  if (native)
+    {
+      strncpy (sql_err_native, native, sizeof (sql_err_native));
+      sql_err_native[sizeof (sql_err_native) - 1] = 0;
+    }
+  snprintf (sql_err_text + nlen, sizeof (sql_err_text)-nlen, ": %s", s);
+  sql_err_text [sizeof (sql_err_text)-1] = '\0';
+
+jmp:
+  outer = global_scs->scs_scn3c.include_stack + global_scs->scs_scn3c.include_depth;
+  if (outer->_.sif_skipped_part)
+    {
+      dk_free_box (outer->_.sif_skipped_part);
+      outer->_.sif_skipped_part = NULL;
+    }
+  longjmp_splice (&(global_scs->parse_reset), 1);
+}
+#endif
 
 
 void
@@ -711,19 +626,21 @@ yyerror (const char *s)
 void
 yyfatalerror (const char *s)
 {
-  if (scn3_inside_error_reporter)
+  if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   strcpy_ck (sql_err_text, s);
   sql_err_text [sizeof (sql_err_text)-1] = '\0';
 
 jmp:
-  longjmp_splice (&parse_reset, 1);
+  longjmp_splice (&(global_scs->parse_reset), 1);
 }
 
-void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
+#ifdef OLD_GOOD_PARSER
+void
+yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 {
   char buf [2000];
-  int this_lineno = scn3_lineno;
+  int this_lineno = global_scs->scs_scn3c.lineno;
   char buf_for_next [2000];
 #ifdef DEBUG
   int sm2, sm1, sp1;
@@ -736,13 +653,13 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
-  if (scn3_inside_error_reporter)
+  if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
   strcat_ck (sql_err_text, buf);
-  scn3_inside_error_reporter ++;
+  global_scs->scs_scn3c.inside_error_reporter ++;
   if (0 != yylex ())
-    if (scn3_lineno != this_lineno)
+    if (global_scs->scs_scn3c.lineno != this_lineno)
       strcpy (buf_for_next, " immediately before end of line");
     else
       snprintf (buf_for_next, sizeof (buf_for_next), " before '%s'", yytext);
@@ -751,10 +668,37 @@ void yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
   strcat_ck (sql_err_text, buf_for_next);
 
 jmp:
-  longjmp_splice (&parse_reset, 1);
+  longjmp_splice (&(global_scs->parse_reset), 1);
 }
+#else
+void
+yyerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
+{
+  char buf [2000];
+  int this_lineno = global_scs->scs_scn3c.lineno;
+  char buf_for_next [2000];
+#ifdef DEBUG
+  int sm2, sm1, sp1;
+  sp1 = yyssp[1];
+  sm1 = yyssp[-1];
+  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d]", strg, sm2, sm1, yystate,
+    ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ );
+#else
+  snprintf (buf, sizeof (buf), ": %s", strg);
+#endif
+  if (global_scs->scs_scn3c.inside_error_reporter)
+    goto jmp; /* see below */
+  scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  strcat_ck (sql_err_text, buf);
+  global_scs->scs_scn3c.inside_error_reporter ++;
 
+jmp:
+  longjmp_splice (&(global_scs->parse_reset), 1);
+}
+#endif
 
+#ifdef OLD_GOOD_PARSER
 void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 {
   char buf [2000];
@@ -769,13 +713,53 @@ void yyfatalerror_1 (int yystate, short *yyssa, short *yyssp, const char *strg)
 #else
   snprintf (buf, sizeof (buf), ": %s at '%s'", strg, yytext);
 #endif
-  if (scn3_inside_error_reporter)
+  if (global_scs->scs_scn3c.inside_error_reporter)
     goto jmp; /* see below */
   scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
   strcat_ck (sql_err_text, buf);
 
 jmp:
-  longjmp_splice (&parse_reset, 1);
+  longjmp_splice (&(global_scs->parse_reset), 1);
+}
+#else
+void yyfatalerror_1 (yyscan_t scanner, int yystate, short *yyssa, short *yyssp, const char *strg)
+{
+  char buf [2000];
+#ifdef DEBUG
+  int sm2, sm1, sp1;
+  sp1 = yyssp[1];
+  sm1 = yyssp[-1];
+  sm2 = ((sm1 > 0) ? yyssp[-2] : 0);
+  snprintf (buf, sizeof (buf), ": %s [%d-%d-(%d)-%d]", strg, sm2, sm1, yystate,
+    ((sp1 & ~0x7FF) ? -1 : sp1) /* stub to avoid printing random garbage in logs */ );
+#else
+  snprintf (buf, sizeof (buf), ": %s", strg);
+#endif
+  if (global_scs->scs_scn3c.inside_error_reporter)
+    goto jmp; /* see below */
+  scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  strcat_ck (sql_err_text, buf);
+
+jmp:
+  longjmp_splice (&(global_scs->parse_reset), 1);
+}
+#endif
+
+void
+scn3yyerror (const char *strg)
+{
+  char buf [2000];
+  int this_lineno = global_scs->scs_scn3c.lineno;
+  char buf_for_next [2000];
+  snprintf (buf, sizeof (buf), ": %s", strg);
+  if (global_scs->scs_scn3c.inside_error_reporter)
+    goto jmp; /* see below */
+  scn3_sprint_curr_line_loc (sql_err_text, sizeof (sql_err_text));
+  strcat_ck (sql_err_text, buf);
+  global_scs->scs_scn3c.inside_error_reporter ++;
+
+jmp:
+  longjmp_splice (&(global_scs->parse_reset), 1);
 }
 
 
@@ -810,8 +794,8 @@ sqlc_make_param_list (sql_comp_t * sc)
     dk_set_push (&qr->qr_parms, (void*) arr[inx]);
   DO_SET (state_slot_t *, param, &qr->qr_state_map)
   {
-
-    if (param->ssl_type == SSL_PARAMETER
+    if ((param->ssl_type == SSL_PARAMETER
+	 || param->ssl_vec_param)
 	&& !dk_set_member (qr->qr_parms, (void *) param))
       qr->qr_parms = NCONC (qr->qr_parms,
 			    CONS (param, NULL));
@@ -889,18 +873,18 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
   char err_str[300];
 
   err_str[0] = 0;
-  if (NULL != (udt = sch_name_to_type (top_sc->sc_cc->cc_schema, name)) &&
+  if (NULL != (udt = sch_name_to_type (wi_inst.wi_schema, name)) &&
       (type != MPU_UDT || udt->scl_defined))
     {
       snprintf (err_str, sizeof (err_str),
 	  "An user defined type with name %.200s already exists", udt->scl_name);
     }
-  else if (NULL != (module_qr = sch_module_def (top_sc->sc_cc->cc_schema, name)))
+  else if (NULL != (module_qr = sch_module_def (wi_inst.wi_schema, name)))
     {
       snprintf (err_str, sizeof (err_str),
 	  "A SQL module with name %.200s already exists", module_qr->qr_proc_name);
     }
-  else if (NULL != (proc_qr = sch_proc_def (top_sc->sc_cc->cc_schema, name)) &&
+  else if (NULL != (proc_qr = sch_proc_def (wi_inst.wi_schema, name)) &&
       type != MPU_PROC)
     {
       snprintf (err_str, sizeof (err_str),
@@ -910,6 +894,44 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
     sqlc_new_error (top_sc->sc_cc, "42000", "SQ171", "%s", err_str);
 }
 
+/* returns true if table in the tree has subkeys, if tree is not delete must extend the switch */
+int
+sqlc_table_has_subtables (sql_comp_t * sc, ST * tree)
+{
+  const char * tb_name;
+  dbe_table_t *super, **tbptr;
+  id_casemode_hash_iterator_t hit;
+
+  switch (tree->type)
+    {
+      case DELETE_SRC:
+	  tb_name = tree->_.delete_src.table_exp->_.table_exp.from[0]->_.table.name;
+	  break;
+      case UPDATE_SRC:
+	  tb_name = tree->_.update_src.table->_.table.name;
+	  break;
+      case INSERT_STMT:
+	  tb_name = tree->_.insert.table->_.table.name;
+	  break;
+      default:
+	  return 0;
+    }
+
+  super = sch_name_to_table (wi_inst.wi_schema, tb_name);
+  if (!super)
+    return 0;
+  id_casemode_hash_iterator (&hit, wi_inst.wi_schema->sc_name_to_object[sc_to_table]);
+  while (id_casemode_hit_next (&hit, (caddr_t *) & tbptr))
+    {
+      dbe_table_t *the_table = *tbptr;
+      if (the_table == super || !the_table->tb_primary_key)
+	continue;
+      if (dk_set_member (the_table->tb_primary_key->key_supers, (void *) super->tb_primary_key))
+	return 1;
+    }
+  return 0;
+}
+
 #if 1
 #define TREE_CHECK(tree) box_tree_check ((caddr_t) tree)
 #else
@@ -917,6 +939,8 @@ sqlc_check_mpu_name (caddr_t name, mpu_name_type_t type)
 #endif
 
 long sqlc_add_views_qualifiers = 0;
+int enable_vec_upd = 1;
+int ins_vec_always = 1;
 
 void
 sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
@@ -931,6 +955,8 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
       {
       case SELECT_STMT:
 	{
+	  if (enable_vec && !(tree->_.select_stmt.table_exp && sqlo_opt_value (tree->_.select_stmt.table_exp->_.table_exp.opts, OPT_NOT_VECTORED)))
+	    sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	  sqlo_top_select (sc, ptree);
 	  tree = *ptree;
 	  break;
@@ -945,25 +971,32 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 	sqlc_union_order (sc, ptree);
 	tree = *ptree;
 	break;
-
       case INSERT_STMT:
+	if (ins_vec_always  || (enable_vec && (param_inx || ST_P (tree->_.insert.vals, SELECT_STMT) || cluster_enable)
+		  && INS_REPLACING != tree->_.insert.mode))
+	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	sqlc_insert (sc, tree);
 	break;
 
       case UPDATE_POS:
-	sqlc_update_pos (sc, tree, NULL);
+	sqlc_update_pos (sc, tree, NULL, NULL);
 	break;
 
       case UPDATE_SRC:
+	if (enable_vec_upd && !sqlc_table_has_subtables (sc, tree))
+	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	sqlc_update_searched (sc, tree);
 	break;
 
       case DELETE_SRC:
+	/* if table has subtables can't be vectored */
+	if (enable_vec && !sqlc_table_has_subtables (sc, tree))
+	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	sqlc_delete_searched (sc, tree);
 	break;
 
       case DELETE_POS:
-	sqlc_delete_pos (sc, tree, NULL);
+	sqlc_delete_pos (sc, tree, NULL, NULL);
 	break;
 
       case OP_SHUTDOWN:
@@ -1005,6 +1038,8 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 	break;
 
       case CALL_STMT:
+	if (enable_vec && param_inx)
+	  sc->sc_cc->cc_query->qr_proc_vectored = QR_VEC_STMT;
 	tree = sqlo_udt_check_method_call (sc->sc_so, sc, tree);
 	sqlc_mark_pred_deps (sc, NULL, tree);
 	sqlc_call_exp (sc, &sc->sc_routine_code, NULL, tree);
@@ -1025,7 +1060,25 @@ sql_stmt_comp (sql_comp_t * sc, ST ** ptree)
 }
 
 
-semaphore_t *parse_sem;
+dk_mutex_t *parse_mtx;
+du_thread_t * parse_mtx_owner;
+int enable_parse_mtx = 0;
+
+void
+parse_enter ()
+{
+  if (enable_parse_mtx)
+    mutex_enter (parse_mtx);
+}
+
+
+void
+parse_leave ()
+{
+  if (enable_parse_mtx)
+    mutex_leave (parse_mtx);
+}
+
 
 char *
 wrap_sql_string (const char *text)
@@ -1044,6 +1097,7 @@ sqlc_temp_tree (sql_comp_t * sc, caddr_t tree)
   t_set_push (&sc->sc_temp_trees, (void *) tree);
 }
 
+void smp_destroy (tb_sample_t * smp);
 
 void
 sc_free (sql_comp_t * sc)
@@ -1066,18 +1120,19 @@ sc_free (sql_comp_t * sc)
   if (sc->sc_sample_cache)
     {
       id_hash_iterator_t hit;
-      caddr_t * pid, *pnum;
+      caddr_t * pid;
+      tb_sample_t*pnum;
       id_hash_iterator (&hit, sc->sc_sample_cache);
       while (hit_next (&hit, (caddr_t *)&pid, (caddr_t *)&pnum))
 	{
 	  dk_free_tree (*pid);
-	  dk_free_box (*pnum);
+	  smp_destroy (pnum);
 	}
       id_hash_free (sc->sc_sample_cache);
     }
   if (NULL != sc->sc_big_ssl_consts)
     {
-#ifndef NDEBUG
+#if 0 /* This check is no longer valid, because the pointers to big consts are not (erroneously) zeroed anymore */
       int ctr;
       DO_BOX_FAST (caddr_t, itm, ctr, sc->sc_big_ssl_consts)
         {
@@ -1088,6 +1143,21 @@ sc_free (sql_comp_t * sc)
 #endif
       dk_free_tree (sc->sc_big_ssl_consts);
     }
+  if (sc->sc_qn_to_dfe)
+    hash_table_free (sc->sc_qn_to_dfe);
+  /*if left due to error in vec */
+  if (sc->sc_vec_ssl_def)
+    hash_table_free (sc->sc_vec_ssl_def);
+  if (sc->sc_vec_ssl_shadow)
+    hash_table_free (sc->sc_vec_ssl_shadow);
+  if (sc->sc_vec_no_copy_ssls)
+    hash_table_free (sc->sc_vec_no_copy_ssls);
+  if (sc->sc_vec_cast_ssls)
+    hash_table_free (sc->sc_vec_cast_ssls);
+  if (sc->sc_vec_last_ref)
+    hash_table_free (sc->sc_vec_last_ref);
+  if (sc->sc_vec_save_shadow)
+    hash_table_free (sc->sc_vec_save_shadow);
 }
 
 query_t *
@@ -1150,14 +1220,12 @@ sqlc_make_proc_store_qr (client_connection_t * cli, query_t * proc_or_trig, cons
 
   qr_set_freeable (&cc, qr);
   sc_free (sc);
+#ifdef QUERY_DEBUG
+  log_query_event (proc_or_trig, 1, "MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d resulting %p", __FILE__, __LINE__, qr);
+  log_query_event (qr, 1, "ALLOC+MAKE_PROC_STORE by sqlc_make_proc_store_qr at %s:%d wrapping %p", __FILE__, __LINE__, proc_or_trig);
+#endif
   return qr;
 }
-
-
-void yyrestart (FILE * in);
-void sql_yy_reset ();
-int yyparse ();
-
 
 void
 sqlc_table_used (sql_comp_t * sc, dbe_table_t * tb)
@@ -1207,7 +1275,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
       return;
     }
-  semaphore_leave (parse_sem);
+  parse_leave ();
   if (proc->qr_to_recompile)
     proc = qr_recompile (proc, NULL);
   p1 = (state_slot_t *) (proc->qr_parms ? proc->qr_parms->data : NULL);
@@ -1215,7 +1283,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     {
 
       log_error ("SQLPrepare hook must take at least 1 reference parameter");
-      semaphore_enter (parse_sem);
+      parse_enter ();
       return;
     }
   tree = box_copy_tree (*real_tree_ret);
@@ -1225,7 +1293,7 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
 		 NULL, NULL, params, NULL, 0);
   dk_free_box ((caddr_t) params);
  SET_THR_TMP_POOL (saved_thr_mem_pool);
-  semaphore_enter (parse_sem);
+  parse_enter ();
   sqlc_set_client (cli);
   if (err_ret)
     *err_ret = err;
@@ -1313,6 +1381,7 @@ sqlc_assign_unknown_dtps (query_t *qr)
 
 
 
+#if 0
 static int
 sql_is_ddl (sql_tree_t * tree)
 {
@@ -1327,12 +1396,87 @@ sql_is_ddl (sql_tree_t * tree)
     }
   return 0;
 }
+#endif
+
+#ifdef QUERY_DEBUG
+extern FILE *query_log;
+extern dk_mutex_t *query_log_mutex;
+
+void
+log_query_content (FILE *query_log, const char *title, query_t *qr)
+ {
+   char buf[200];
+   char *eol;
+   if (NULL == qr)
+     return;
+   if (NULL == qr->qr_text)
+     {
+       fprintf (query_log, " %s{{null}}", title);
+       return;
+     }
+   strncpy (buf, qr->qr_text, sizeof (buf)-1);
+   buf [sizeof (buf)-1] = '\0';
+   for (eol = strchr (buf, '\n'); NULL != eol; eol = strchr (eol+1, '\n')) eol[0] = '\t';
+   fprintf (query_log, " %s{{%s}}", title, buf);
+ }
+
+void
+log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  if (NULL == cli)
+    return;
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{CLI %p ", cli);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content)
+    {
+      if (cli->cli_first_query)
+        log_query_content (query_log, "first=", cli->cli_first_query);
+      if (cli->cli_last_query)
+        if (cli->cli_last_query != cli->cli_first_query)
+          log_query_content (query_log, "last=", cli->cli_last_query);
+        else
+          fprintf (query_log, " last={{first}}");
+    }
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+  mutex_leave (query_log_mutex);
+}
+
+void
+log_query_event (query_t *qr, int print_full_content, const char *fmt, ...)
+{
+  jmp_buf_splice *ctx;
+  va_list ap;
+  va_start (ap, fmt);
+  mutex_enter (query_log_mutex);
+  fprintf (query_log, "\n{{{QRY %p ", qr);
+  vfprintf (query_log, fmt, ap);
+  if (print_full_content)
+    log_query_content (query_log, "", qr);
+  for (ctx = THREAD_CURRENT_THREAD->thr_reset_ctx; NULL != ctx; ctx = ctx->j_parent)
+    fprintf (query_log, " {%s:%d}", ctx->j_file, ctx->j_line);
+  fprintf (query_log, " }}}");
+  fflush (query_log);
+  mutex_leave (query_log_mutex);
+}
+#endif
+
+
+extern int enable_vec;
+int64 sqlc_cum_memory;
 
 query_t *
 DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
 {
   volatile long msecs = prof_on ? get_msec_real_time () : 0;
+  db_activity_t da_before;
   caddr_t cc_error;
   char *string = NULL;
   ST *tree;
@@ -1344,6 +1488,12 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   int nested_sql_comp = (THR_TMP_POOL ? 1 : 0);
   volatile int inside_sem = 0;
   volatile int is_ddl = 0;
+  yyscan_t scanner;
+  if (!nested_sql_comp)
+    {
+      CLI_THREAD_TIME (cli);
+      da_before = cli->cli_activity;
+    }
   if (DO_LOG_INT (LOG_COMPILE))
     {
       LOG_GET;
@@ -1366,26 +1516,29 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   qr->qr_text_is_constant = cr_type == SQLC_QR_TEXT_IS_CONSTANT;
 
   sc.sc_text = string2;
+  SET_QR_TEXT(qr,sc.sc_text);
   sc.sc_client = cli;
 
   cc.cc_query = qr;
 
   sqlc_compile_hook (cli, string2, err);
-  if (!parse_sem)
-    parse_sem = semaphore_allocate (1);
-  if (parse_sem->sem_entry_count > 1)
-    GPF_T1 ("compiler parse sem entry count > 1");
+  if (!parse_mtx)
+    {
+      parse_mtx = mutex_allocate ();
+      mutex_option (parse_mtx, "parse_mtx", NULL, NULL);
+    }
   if (!nested_sql_comp)
     {
       sql_warnings_clear ();
       MP_START();
+      mp_comment (THR_TMP_POOL, "compile ", string2);
     }
   string = wrap_sql_string (string2);
   if (SQLC_PARSE_ONLY_REC == cr_type)
     cr_type = SQLC_PARSE_ONLY;
   else
     {
-      semaphore_enter (parse_sem);
+      parse_enter ();
       inside_sem = 1;
     }
   SCS_STATE_PUSH;
@@ -1414,36 +1567,43 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   if (err)
     *err = NULL;
 
+  scn3yylex_init (&scanner);
   CATCH (CATCH_LISP_ERROR)
   {
       if (!the_parse_tree)
 	{
 	  if (!sqlc_xpath (&sc, string, err))
 	    {
-	      if (0 == setjmp_splice (&parse_reset))
+	      if (0 == setjmp_splice (&(global_scs->parse_reset)))
 		{
-		  sql_yy_reset ();
-		  yyrestart (NULL);
-		  yyparse ();
+		  sql_yy_reset (scanner);
+		  scn3yyrestart (NULL, scanner);
+		  scn3yyparse (scanner);
 		}
 	      else
 		parse_tree = NULL;
 	    }
 	  if (!parse_tree)
 	    {
+#ifdef QUERY_DEBUG
+              qr->qr_text = string2;
+              qr->qr_text_is_constant = 1;
+              log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, parse error", file, line);
+#endif
 	      qr_free (qr);
 	      if (err && !*err)
 		*err = srv_make_new_error (sql_err_state[0] ? sql_err_state : "37000",
 					   sql_err_native[0] ? sql_err_native : "SQ074", "%s", sql_err_text);
 	      sqlc_set_client (old_cli);
+	      sql_pop_all_buffers (scanner);
+	      scn3yylex_destroy (scanner);
+	      SCS_STATE_POP;
 	      if (!nested_sql_comp)
 		{
 		  MP_DONE();
 		}
-	      sql_pop_all_buffers ();
-	      SCS_STATE_POP;
 	      if (inside_sem)
-	        semaphore_leave (parse_sem);
+		parse_leave ();
 	      POP_CATCH;
 	      if (*err && strstr ((*(caddr_t**)err)[2], "RDFNI") )
 		{
@@ -1459,15 +1619,16 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      return NULL;
 	    }
 	}
-      sql_pop_all_buffers ();
+      sql_pop_all_buffers (scanner);
+      scn3yylex_destroy (scanner);
       tree = the_parse_tree ? (ST *) t_full_box_copy_tree ((caddr_t) the_parse_tree) : parse_tree;
       if (cr_type != SQLC_PARSE_ONLY && cr_type != SQLC_TRY_SQLO && cr_type != SQLC_SQLO_SCORE)
-	is_ddl = sql_is_ddl (tree);
+	is_ddl = 0; /*sql_is_ddl (tree);*/
       if (!is_ddl)
 	{
           if (inside_sem)
             {
-              semaphore_leave (parse_sem);
+              parse_leave ();
               inside_sem = 0;
             }
 	}
@@ -1475,6 +1636,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	sqlc_inside_sem = 1;
       if (cr_type == SQLC_PARSE_ONLY)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+PARSE_ONLY by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1 = box_copy_tree ((box_t) tree);
 	  sqlc_set_client (old_cli);
 	  if (!nested_sql_comp)
@@ -1485,11 +1651,16 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	  qr_free (qr);
 	  POP_CATCH;
 	  if (inside_sem)
-	    semaphore_leave (parse_sem);
+	    parse_leave ();
 	  return ((query_t*) tree1);
 	}
       if (cr_type == SQLC_TRY_SQLO)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+TRY_SQLO by sql_compile_1 at %s:%d", file, line);
+#endif
 	  caddr_t tree1;
 	  ST *ret = (ST *) sqlo_top (&sc, &tree, NULL);
 	  tree1 = box_copy_tree ((box_t) (ret ? ret : tree));
@@ -1507,6 +1678,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	}
       else if (cr_type == SQLC_SQLO_SCORE)
 	{
+#ifdef QUERY_DEBUG
+          qr->qr_text = string2;
+          qr->qr_text_is_constant = 1;
+          log_query_event (qr, 1, "ALLOC+SQLO_SCORE by sql_compile_1 at %s:%d", file, line);
+#endif
 	  float score = 0;
 	  sqlo_top (&sc, &tree, &score);
 	  sqlc_set_client (old_cli);
@@ -1542,6 +1718,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	sql_stmt_comp (&sc, &tree);
       }
     qr_set_local_code_and_funref_flag (sc.sc_cc->cc_query);
+    if (sc.sc_cc->cc_query->qr_proc_vectored || sc.sc_cc->cc_has_vec_subq)
+      sqlg_vector (&sc, sc.sc_cc->cc_query);
     qr_resolve_aliases (qr);
     qr_set_freeable (&cc, qr);
     qr->qr_instance_length = cc.cc_instance_fill * sizeof (caddr_t);
@@ -1563,6 +1741,11 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
   }
   THROW_CODE
   {
+#ifdef QUERY_DEBUG
+    qr->qr_text = string2;
+    qr->qr_text_is_constant = 1;
+    log_query_event (qr, 1, "ALLOC+FAILED by sql_compile_1 at %s:%d, compilation error", file, line);
+#endif
     if (qr && qr->qr_proc_name)
       query_free (qr);
     else
@@ -1575,18 +1758,12 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	else
 	  *err = srv_make_new_error ("42000", "SQ075", "Unclassified SQL compilation error.");
       }
-    else
+    else if (IS_BOX_POINTER (cc_error))
       {
 #ifdef DEBUG
-	if (IS_BOX_POINTER (err))
-	  {
-	    log_error (
-		"Error compiling %.500s : %s: %s.",
-		string2,
-		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
-
-	  }
+	log_error ("Error compiling %.500s : %s: %s.", string2, ((caddr_t *) cc_error)[QC_ERRNO], ((caddr_t *) cc_error)[QC_ERROR_STRING]);
 #endif
+	SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_ERROR, NULL);
 	dk_free_tree (cc_error);	/* IvAn/010411/LeakOnError */
       }
     qr = NULL;
@@ -1600,23 +1777,32 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_SQLC_META, NULL);
 
   sqlc_set_client (old_cli);
-  /* TREE_CHECK (tree); */
   SCS_STATE_POP;
   if (inside_sem)
-    semaphore_leave (parse_sem);
+    parse_leave ();
   if (qr)
     {
-      qr->qr_text = SET_QR_TEXT(qr,sc.sc_text);
+      if ((NULL != qr->qr_text) && !qr->qr_text_is_constant)
+        dk_free_box (qr->qr_text);
+      SET_QR_TEXT(qr,sc.sc_text);
       qr->qr_parse_tree = box_copy_tree ((box_t) the_parse_tree);
+#ifdef QUERY_DEBUG
+      log_query_event (qr, 1, "ALLOC+PARSE by sql_compile_1 at %s:%d", file, line);
+#endif
     }
-
   if (!nested_sql_comp)
     {
-      /* printf ("sql sz %d \}n", mp_size (THR_TMP_POOL)); */
+      int64 sqlc_mem;
+      db_activity_t tmp;
+      sqlc_cum_memory += sqlc_mem = THR_TMP_POOL->mp_bytes;
     MP_DONE();
+      CLI_THREAD_TIME (cli);
+      tmp = cli->cli_activity;
+      da_sub (&tmp, &da_before);
+      da_add (&cli->cli_compile_activity, &tmp);
+      da_sub (&cli->cli_activity, &tmp);
+      cli->cli_compile_activity.da_memory = sqlc_mem;
     }
-/*  dk_free_tree ((caddr_t) tree);*/
-/*  dk_free (string, -1); */
   sc_free (&sc);
 
   if (qr)
@@ -1629,8 +1815,8 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
     {
 /* Procedure's calls published for replication keep old account name*/
       query_t *old_place = qr->qr_module ?
-	  sch_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name) :
-	      sch_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name);
+	  sch_module_def (wi_inst.wi_schema, qr->qr_proc_name) :
+	      sch_proc_def (wi_inst.wi_schema, qr->qr_proc_name);
       user_t * p_user = cli->cli_user;
 
       /* Only DBA can create procedures with owner different than creator */
@@ -1647,7 +1833,7 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	      qr = NULL;
 	    }
 	}
-      if (qr && !QR_IS_MODULE (qr) && sch_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name))
+      if (qr && !QR_IS_MODULE (qr) && sch_module_def (wi_inst.wi_schema, qr->qr_proc_name))
 	{
 	  if (err)
 	    *err = srv_make_new_error ("37000", "SQ133",
@@ -1668,10 +1854,10 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 	    }
 
 	  if (QR_IS_MODULE (qr))
-	    sch_set_module_def (sc.sc_cc->cc_schema, qr->qr_proc_name, qr);
+	    sch_set_module_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
 	  else if (!qr->qr_trig_table)
 	    {
-	      sch_set_proc_def (sc.sc_cc->cc_schema, qr->qr_proc_name, qr);
+	      sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
 	      if (DO_LOG_INT(LOG_DDL))
 		{
 		  LOG_GET;
@@ -1689,16 +1875,20 @@ DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * c
 		  static char *ua_header = "--#pragma bootstrap user-aggregate\n";
 		  caddr_t string3 = dk_alloc_box (strlen (ua_header)+strlen(string2)+1, DV_STRING);
 		  snprintf (string3, box_length (string3), "%s%s", ua_header, string2);
-	          return (sqlc_make_proc_store_qr (cli, qr, string3));
+		  qr = sqlc_make_proc_store_qr (cli, qr, string3);
+	          return qr;
 		}
-	      return (sqlc_make_proc_store_qr (cli, qr, string2));
+	      qr = sqlc_make_proc_store_qr (cli, qr, string2);
+	      return qr;
 	    }
 	}
     }
   if (prof_on)
     {
+      uint32 elapsed = get_msec_real_time () - msecs;
       prof_n_compile++;
-      prof_compile_time += get_msec_real_time () - msecs;
+      prof_compile_time += elapsed;
+      cli->cli_compile_msec += elapsed;
     }
   return qr;
 }
@@ -1722,7 +1912,7 @@ dbg_sql_compile_static (const char *file, int line, const char *string2, client_
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;
@@ -1823,7 +2013,7 @@ sql_compile_static (const char *string2, client_connection_t * cli,
   sql_tree_t *tree = NULL;
   if (SQLC_STATIC_PRESERVES_TREE == cr_type)
     {
-      int cr_tree_type = ((NULL != parse_sem) && parse_sem->sem_entry_count) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
+      int cr_tree_type = ((NULL != parse_mtx) && global_scs && !sqlc_inside_sem) ? SQLC_PARSE_ONLY_REC : SQLC_PARSE_ONLY;
       tree = (sql_tree_t *)DBG_NAME(sql_compile_1) (DBG_ARGS string2, cli, err, cr_tree_type, NULL, NULL);
       if (NULL != err[0])
         return NULL;
@@ -1837,19 +2027,70 @@ sql_compile_static (const char *string2, client_connection_t * cli,
 
 int sql_proc_use_recompile = 0;
 
+dtp_t
+sqlc_find_dtp (int tok, int tok2)
+{
+  if (ARRAY == tok2)
+    return DV_ARRAY_OF_POINTER;
+  switch (tok)
+    {
+      case NUMERIC:
+      case DECIMAL_L:
+	  return DV_NUMERIC;
+      case INTEGER:
+	  return DV_LONG_INT;
+      case SMALLINT:
+	  return DV_SHORT_INT;
+      case BIGINT:
+	  return DV_INT64;
+      case FLOAT_L:
+	  return DV_DOUBLE_FLOAT;
+      case REAL:
+	  return DV_SINGLE_FLOAT;
+      case DOUBLE_L:
+	  return DV_DOUBLE_FLOAT;
+      case VARCHAR:
+	  return DV_STRING;
+      case NVARCHAR:
+      case NCHAR:
+	  return DV_WIDE;
+      case BINARY:
+      case VARBINARY:
+	  return DV_BIN;
+      case DATETIME:
+	  return DV_DATETIME;
+      case TIMESTAMP:
+	  return DV_TIMESTAMP;
+      case TIME:
+	  return DV_TIME;
+      case DATE_L:
+	  return DV_DATE;
+      case ANY:
+	return DV_ANY;
+      case IRI_ID:
+	  return DV_IRI_ID;
+      case IRI_ID_8:
+	  return DV_IRI_ID_8;
+    }
+  return 0;
+}
 
 query_t *
 DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
 {
   query_t *qr = NULL;
   char proc_name_buffer[MAX_QUAL_NAME_LEN];
+  caddr_t **lexems;
+  int n_lexems, inx = 0;
+  dtp_t ret_dtp = 0;
 
   if (!sql_proc_use_recompile)
     return NULL;
+
+  lexems = (caddr_t **) sql_lex_analyze (string2, NULL, 0, 1, BEGINX);
+  n_lexems = BOX_ELEMENTS (lexems);
   if (!proc_name)
     { /* have to find out one using the parser */
-      caddr_t **lexems = (caddr_t **) sql_lex_analyze (string2, NULL, 10, 1);
-      int n_lexems = BOX_ELEMENTS (lexems);
       char *q, *o, *n;
       char qb[MAX_NAME_LEN], ob[MAX_NAME_LEN], nb[MAX_NAME_LEN];
       if (n_lexems < 4)
@@ -1897,9 +2138,19 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
       sch_normalize_new_table_case (isp_schema (NULL), qb, sizeof (qb), ob, sizeof (ob));
       snprintf (proc_name_buffer, sizeof (proc_name_buffer), "%s.%s.%s", qb, ob, nb);
       proc_name = &(proc_name_buffer[0]);
-      dk_free_tree ((box_t) lexems);
     }
+  _DO_BOX (inx, lexems)
+    {
+      if (unbox (lexems[inx][2]) == RETURNS && (inx + 1) < n_lexems)
+	{
+	  ret_dtp = sqlc_find_dtp (unbox (lexems[inx + 1][2]),
+				   inx + 2 < n_lexems ? unbox (lexems[inx + 2][2]) : 0);
+	  break;
+	}
+    }
+  END_DO_BOX;
 
+  dk_free_tree ((box_t) lexems);
   DK_ALLOC_QUERY (qr);
   qr->qr_to_recompile = 1;
 
@@ -1909,7 +2160,12 @@ DBG_NAME(sql_proc_to_recompile) (DBG_PARAMS const char *string2, client_connecti
   if (cli->cli_user)
     qr->qr_proc_owner = cli->cli_user->usr_id;
   qr->qr_text_is_constant = text_is_constant;
+  if (ret_dtp)
+    qr->qr_proc_ret_type = list (2, ret_dtp, 0);
   SET_QR_TEXT(qr,string2);
+#ifdef QUERY_DEBUG
+  log_query_event (qr, 1, "ALLOC+TEXT by sql_proc_to_recompile at %s:%d", file, line);
+#endif
   sch_set_proc_def (wi_inst.wi_schema, qr->qr_proc_name, qr);
   return qr;
 }
@@ -1952,9 +2208,14 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
   comp_context_t cc;
   dk_set_t gen_params_set = NULL;
   caddr_t volatile err_save = NULL;
-
+  int is_scalar_subq = 0;
   sql_comp_t sc;
   NEW_VARZ (query_t, qr);
+  if (SCALAR_SUBQ == (ptrlong)params)
+    {
+      params = NULL;
+      is_scalar_subq = 1;
+    }
   memset (&sc, 0, sizeof (sc));
   memset (subq_comp, 0, sizeof (subq_compilation_t));
 
@@ -1973,6 +2234,8 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
   cc.cc_query = qr;
   qr->qr_qualifier = box_string (sqlc_client ()->cli_qualifier);
   sc.sc_check_view_sec = super_sc->sc_check_view_sec;
+  sc.sc_in_cursor_def = super_sc->sc_in_cursor_def;
+  qr->qr_proc_vectored = super_sc->sc_cc->cc_query->qr_proc_vectored;
   if (super_pred)
     sc.sc_no_current_of = 1;	/* subq condition, e.g. exists */
   sc.sc_client = super_sc->sc_client;
@@ -2002,6 +2265,15 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
     else
       {
 	sql_stmt_comp (&sc, ptree);
+	if (is_scalar_subq)
+	  {
+	    state_slot_t * ext_sets = ssl_new_variable (super_sc->sc_cc, "ext_sets", DV_LONG_INT);
+	    if (!IS_QN (qr->qr_head_node, set_ctr_input)) GPF_T1 ("scalar subq must start w setc ctr");
+	    ((set_ctr_node_t*)qr->qr_head_node)->sctr_ext_set_no = ext_sets;
+	    qr->qr_select_node->sel_ext_set_no = ext_sets;
+	  }
+	if (qr->qr_proc_vectored && !sc.sc_check_view_sec)
+	  sqlg_vector_subq (&sc);
 	tree = *ptree;
       }
     subq_comp->sqc_tree = tree;
@@ -2039,6 +2311,7 @@ sqlc_subquery_1 (sql_comp_t * super_sc, predicate_t * super_pred, ST ** ptree, i
     lisp_throw (CATCH_LISP_ERROR, 1);
   }
   END_CATCH;
+  sc.sc_cc->cc_query->qr_super = super_sc->sc_cc->cc_query;
   sc_free (&sc);
   dk_set_push (&super_sc->sc_cc->cc_query->qr_subq_queries, subq_comp->sqc_query);
   return subq_comp;
@@ -2137,13 +2410,28 @@ sql_compile (const char *string2, client_connection_t * cli, caddr_t * err, int 
 {
   return dbg_sql_compile (__FILE__, __LINE__, string2, cli, err, store_procs);
 }
+#endif
 
-#undef sql_proc_to_recompile
+#if defined (MALLOC_DEBUG) || defined (VALGRIND)
+#undef sql_compile_static
 query_t *
-sql_proc_to_recompile (const char *string2, client_connection_t * cli, caddr_t proc_name, int text_is_constant)
+sql_compile_static (const char *string2, client_connection_t * cli, caddr_t * err, volatile int store_procs)
 {
-  return dbg_sql_proc_to_recompile (__FILE__, __LINE__, string2, cli, proc_name, text_is_constant);
+  return  dbg_sql_compile_static (__FILE__, __LINE__, string2, cli, err, store_procs);
+}
+#endif
+
+void
+qr_free_1 (query_t * qr)
+{
+  qr_free (qr);
 }
 
-
+#ifdef MALLOC_DEBUG
+#undef qr_free
+void
+qr_free (query_t * qr)
+{
+  dbg_qr_free (__FILE__, __LINE__, qr);
+}
 #endif

@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tdav_meta_rdf.sql,v 1.17.10.3 2013/01/02 16:15:03 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 set echo off;
 
 create procedure TDAV_RDF_QUAD_CHECK (in resname varchar, in propuri varchar, in encoded_propval varchar, in should_present integer := 1)
@@ -49,7 +49,11 @@ create procedure TDAV_RDF_QUAD_CHECK (in resname varchar, in propuri varchar, in
     actual := 0;
   dbg_obj_princ ('TDAV_RDF_QUAD_CHECK: should be ', should_present, ', actual ', actual);
   if (isiri_id(propval))
-    propval := concat ('<', DB.DBA.RDF_QNAME_OF_IID(propval), '>');
+    {
+      declare propval_iid IRI_ID;
+      propval_iid := propval;
+      propval := concat ('<', id_to_iri (propval_iid), '>');
+    }
   if (should_present)
     {
       if (actual)
@@ -73,7 +77,7 @@ DAV_COL_CREATE('/DAV/tdav_meta_home/zip_samples/test11/', '100100100R', 'tdav_me
 update WS.WS.SYS_DAV_RES set RES_PERMS = '100100100RR';
 update WS.WS.SYS_DAV_COL set COL_PERMS = '100100100RR';
 DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (1);
-load 'tdav_meta_rdf_checks.sql'; 
+load tdav_meta_rdf_checks.sql;
 
 --create procedure TDAV_RDF_QUAD_CHECK2 (in resname varchar, in propuri varchar, in encoded_propval varchar)
 --{
@@ -361,14 +365,15 @@ create procedure TDAV_RDF_QUAD_CHECK_COL11(in col_full_path varchar, in propuri 
 
 --- tests!
 --set echo on;
-TDAV_RDF_QUAD_CHECK3 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK44 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK5 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK6 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
-TDAV_RDF_QUAD_CHECK7 ('George Kodinov.vcf.mod');
-TDAV_RDF_QUAD_CHECK8 ('George Kodinov.vcf.mod');	
-TDAV_RDF_QUAD_CHECK9 ('George Kodinov.vcf.mod');
-TDAV_RDF_QUAD_CHECK10 ('George Kodinov.vcf.mod');
+-- TBD:
+--TDAV_RDF_QUAD_CHECK3 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK44 ('George Kodinov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK5 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK6 ('George Kodinov.vcf.mod', 'http://www.w3.org/2001/vcard-rdf/3.0#Address-Country', 'Bulgaria');
+--TDAV_RDF_QUAD_CHECK7 ('George Kodinov.vcf.mod');
+--TDAV_RDF_QUAD_CHECK8 ('George Kodinov.vcf.mod');
+--TDAV_RDF_QUAD_CHECK9 ('George Kodinov.vcf.mod');
+--TDAV_RDF_QUAD_CHECK10 ('George Kodinov.vcf.mod');
 TDAV_RDF_QUAD_CHECK11 ('Dimitar Dimitrov.vcf', 'http://www.w3.org/2001/vcard-rdf/3.0#Org-Orgname', 'OpenLink Bulgaria');
 TDAV_RDF_QUAD_CHECK_COL44 ('/DAV/tdav_meta_home/zip_samples/test', 'http://www.openlinksw.com/schemas/DAV#ownerUser', DB.DBA.RDF_MAKE_IID_OF_QNAME('mailto:tdav_meta@localhost'));
 TDAV_RDF_QUAD_CHECK_COL6('/DAV/tdav_meta_home/zip_samples/test.mod', 'http://www.openlinksw.com/schemas/DAV#ownerUser', DB.DBA.RDF_MAKE_IID_OF_QNAME('mailto:tdav_meta@localhost'));

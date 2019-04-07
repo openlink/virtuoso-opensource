@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -522,7 +522,7 @@ extern void sqlr_new_error_xdl (const char *code, const char *virt_code, xp_debu
                 __attribute__ ((format (printf, 4, 5)))
 #endif
 ;
-extern caddr_t 
+extern caddr_t
 sqlr_make_new_error_xqi_xdl (const char *code, const char *virt_code, xp_instance_t * xqi, const char *string, ...)
 #ifdef __GNUC__
                 __attribute__ ((format (printf, 4, 5)))

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -193,5 +193,10 @@ int session_get_default_control (int field, char *p_value, int size);
 int utf8_align_memcpy (void *dst, const void *src, size_t len, size_t * pnwc, int *space_exausted);
 OFF_T strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence);
 size_t strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte);
+
+int fileses_read (session_t * ses, char *buffer, int n_bytes);
+void fileses_close (session_t * ses);
+int tcpses_read (session_t * ses, char *buffer, int n_bytes);
+
 
 #endif

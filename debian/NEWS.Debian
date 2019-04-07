@@ -1,0 +1,24 @@
+virtuoso-opensource (6.1.0+dfsg2-3) unstable; urgency=high
+
+  This version introduces an emergency rollback of a defective patch
+  introduced in the 6.1.0+dfsg2-2 of this package.
+  This patch modifies the binary format of the Virtuoso database that is
+  internally consistent but is not compatible with previous versions.
+  It is likely that data corruption has happened if the 6.1.0+dfsg2-2 version
+  has been executed over database files created in previous versions.
+  Installing 6.1.0+dfsg2-3 introduces back the correct format.
+  Any database files manipulated by the 6.1.0+dfsg2-2 version need to be
+  deleted.
+
+  The default Virtuoso database is located in:
+  /var/lib/virtuoso-opensource-6.1/db/
+  To remove it:
+  # rm -rf /var/lib/virtuoso-opensource-6.1/db/
+
+  For the benefit of KDE/Nepomuk users, the Nepomuk database is located in:
+  ~/.kde/share/apps/nepomuk/repository/
+  To remove it:
+  $ rm -rf ~/.kde/share/apps/nepomuk/repository/
+
+ -- Obey Arthur Liu <arthur@milliways.fr>  Wed, 24 Mar 2010 02:03:42 +0100
+

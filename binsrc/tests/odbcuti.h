@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -33,37 +33,32 @@ extern int quiet;
 #define QUIET quiet = 1
 #define QUIET_OFF quiet = 0
 
-#define IS_ERR(stmt, foo) \
+#define IF_ERR(stmt, foo) do { \
   if (SQL_ERROR == foo) \
     { \
       print_error (SQL_NULL_HENV, SQL_NULL_HDBC, stmt); \
       if (!messages_off) \
 	printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
-    }
+    } } while (0)
 
-#define IF_ERR(stmt, foo) \
-  if (SQL_ERROR == foo) \
-    { \
-	  print_error (SQL_NULL_HENV, SQL_NULL_HDBC, stmt); \
-	  if (!messages_off) \
-	    printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
-    }
+/* Old typo, easier to legalize than to fix */
+#define IS_ERR(stmt, foo) IF_ERR ((stmt), (foo))
 
-#define IF_ERR_GO(stmt, tag, foo) \
+#define IF_ERR_GO(stmt, tag, foo) do { \
   if (SQL_ERROR == (foo)) \
     { \
       print_error (SQL_NULL_HENV, SQL_NULL_HDBC, stmt); \
       if (!messages_off) \
 	printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
       goto tag; \
-    }
+    } } while (0)
 
 #define DECLARE_FOR_SQLERROR \
   int len; \
   char state[10]; \
   char message[1000]
 
-#define IF_DEADLOCK_OR_ERR_GO(stmt, tag, foo, deadlocktag) \
+#define IF_DEADLOCK_OR_ERR_GO(stmt, tag, foo, deadlocktag) do { \
   if (SQL_ERROR == (foo)) \
     { \
       while (SQL_NO_DATA_FOUND != SQLError (SQL_NULL_HENV, SQL_NULL_HDBC, stmt, (UCHAR *) state, NULL, \
@@ -80,43 +75,43 @@ extern int quiet;
 	      printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
 	    goto tag; \
 	  } \
-    }
+    } } while (0)
 
 
-#define IF_CERR_GO(con, tag, foo) \
+#define IF_CERR_GO(con, tag, foo) do { \
   if (SQL_ERROR == (foo)) \
     { \
       print_error (SQL_NULL_HENV, con, SQL_NULL_HSTMT); \
       if (!messages_off) \
 	printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
       goto tag; \
-    }
+    } } while (0)
 
 
-#define IF_ERR_EXIT(stmt, foo) \
+#define IF_ERR_EXIT(stmt, foo) do { \
   if (SQL_ERROR == foo) \
     { \
       print_error (SQL_NULL_HENV, SQL_NULL_HDBC, stmt); \
       if (!messages_off) \
 	printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
       exit (1); \
-    }
+    } } while (0)
 
-#define IF_CERR_EXIT(hdbc, foo) \
+#define IF_CERR_EXIT(hdbc, foo) do { \
   if (SQL_ERROR == foo)  { \
     print_error (SQL_NULL_HENV, hdbc, SQL_NULL_HSTMT);  \
     if (!messages_off) \
      printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
     exit (1); \
- }
+ } } while (0)
 
-#define IF_EERR_EXIT(henv, foo) \
+#define IF_EERR_EXIT(henv, foo) do { \
   if (SQL_ERROR == foo)  { \
     print_error (henv, SQL_NULL_HDBC, SQL_NULL_HSTMT);  \
     if (!messages_off) \
       printf ("\n    Line %d, file %s\n", __LINE__, __FILE__); \
     exit (1); \
- }
+ } } while (0)
 
 #define BINDN(stmt, n, v) \
   SQLSetParam (stmt, n, SQL_C_LONG, SQL_INTEGER, 0,0, &v, NULL);
@@ -152,9 +147,10 @@ extern int quiet;
   SQLBindCol (stmt, n, SQL_C_LONG, &buf, sizeof (buf) , &len)
 
 
-#define INIT_STMT(hdbc, st, text) \
+#define INIT_STMT(hdbc, st, text) do { \
   SQLAllocStmt (hdbc, &st); \
-  IF_ERR_EXIT (st, SQLPrepare (st, (UCHAR *) text, SQL_NTS));
+  IF_ERR_EXIT (st, SQLPrepare (st, (UCHAR *) text, SQL_NTS)); \
+  } while (0)
 
 
 #define HIST_READ(st) \

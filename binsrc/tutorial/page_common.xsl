@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
   <xsl:param name="mount_point">/tutorial</xsl:param>
   <xsl:param name="path" select="concat(/tutorial/section[1]/subsection[2]/@wwwpath,'/')"/>
-	<xsl:param name="now_rfc1123"><?V date_rfc1123(now())?></xsl:param>
+	<xsl:param name="now_rfc1123"><?V date_rfc1123(curutcdatetime())?></xsl:param>
   <xsl:variable name="subsecpath">
     <xsl:choose>
       <xsl:when test="//example[@wwwpath = $path]">

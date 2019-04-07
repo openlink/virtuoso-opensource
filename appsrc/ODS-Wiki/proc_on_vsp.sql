@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -768,7 +768,7 @@ create procedure WV.WIKI.VSPCHECKWEBAUTH (
   goto auth_get;    
    --dbg_obj_print ('_su_name', _su_name);
 badname: ;
-   _reason := '. The name provided by your browser does not exists';
+   _reason := '. The name provided by your browser does not exist';
    --dbg_obj_print ('_username', _username);
 auth_get: ;
   DB.DBA.vsp_auth_get ('wiki', concat('/', aref (path, 0)),
@@ -1670,12 +1670,16 @@ create function WV.WIKI.DATEFORMAT (in dt datetime, in _type varchar:=NULL) retu
       _months := vector ('Jav', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec');
       return sprintf ('%02ld %s %ld', dayofmonth (dt), _months[month (dt)-1], year(dt));
     }
-  else if (_type = 'rfc1123')
-    return soap_print_box (dt, '', 1);
+  else if (_type = 'rfc1123') 
+    {
+      if (timezone (dt) is null)
+        dt := dt_set_tz (dt, 0);
+      return soap_print_box (dt, '', 1);
+    }
   else if (_type = 'iso8601')
     return soap_print_box (dt, '', 0);
   else if (_type = 'local')
-    return substring (datestring (dt_set_tz (dt, timezone (now ()))), 1, 19);
+    return substring (datestring (dt_set_tz (dt, timezone (curdatetime_tz ()))), 1, 19);
 }
 ;
 

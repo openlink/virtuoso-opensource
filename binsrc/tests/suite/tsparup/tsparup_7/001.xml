@@ -1,0 +1,63 @@
+<test>
+    <comment>sparql select * from &lt;http://mygraph/&gt; where { ?s ?p ?o .  }</comment>
+    <query><![CDATA[sparql select * from <http://mygraph/> where { ?s ?p ?o .  }    ]]></query>
+    <plans>
+	<plan>
+	    <verify result-order="0" col-names="1" plan-xpath="/report[ts[following::sel]]">
+		<da-below rnd="0" seq="0" same-seg="" />
+	    </verify>
+<text><![CDATA[{ 
+RDF_QUAD_POGS        17 rows(s_1_1_t0.S, s_1_1_t0.P, s_1_1_t0.O)
+ G =  #/ 
+ 
+After code:
+      0: s := Call __ID2IN (s_1_1_t0.S)
+      5: p := Call __ID2IN (s_1_1_t0.P)
+      10: o := Call __RO2SQ (s_1_1_t0.O)
+      15: BReturn 0
+Select (s, p, o)
+}
+]]></text>
+	    <xmlplan>
+<report>
+<sctr sctr_ose='0'/>
+<ts key='RDF_QUAD_POGS' table='DB.DBA.RDF_QUAD'>
+<after_code><call name='__ID2IN'><params><ssl index='31' name='s_1_1_t0.S' />
+</params><ret><ssl index='34' name='s' />
+</ret></call><call name='__ID2IN'><params><ssl index='30' name='s_1_1_t0.P' />
+</params><ret><ssl index='36' name='p' />
+</ret></call><call name='__RO2SQ'><params><ssl index='29' name='s_1_1_t0.O' />
+</params><ret><ssl index='38' name='o' />
+</ret></call><bret ret='0'/></after_code><ks_row_spec>
+<sp col='G'>
+<op code='=' >
+<ssl constant='#i3993094' />
+</op>
+</sp></ks_row_spec>
+<ks_out_slots>
+<ssl index='31' name='s_1_1_t0.S' />
+<ssl index='30' name='s_1_1_t0.P' />
+<ssl index='29' name='s_1_1_t0.O' />
+</ks_out_slots>
+</ts>
+<sel><ssl index='34' name='s' />
+<ssl index='36' name='p' />
+<ssl index='38' name='o' />
+</sel>
+</report>
+	    </xmlplan>
+	</plan>
+    </plans>
+    <columns>
+         <column name="s"/>
+         <column name="p"/>
+         <column name="o"/>
+    </columns>
+    <result cnt="1">
+<row>
+    <col dtp="182">http://mygraph/#austrian_lot_source_1</col>
+    <col dtp="182">http://www.opengis.net/ont/geosparql#geometry</col>
+    <col dtp="246">MULTIPOLYGON(((0 0,1 0,1 1,0 1,0 0)))</col>
+</row>
+    </result>
+</test>

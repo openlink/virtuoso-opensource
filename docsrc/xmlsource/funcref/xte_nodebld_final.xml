@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -81,10 +81,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_nodebld_final"><title>Examples</title>
-    <example id="ex_xte_nodebld_final"><title>xte_nodebld_final() with a single argument. </title>
+    <example id="ex_xte_nodebld_final"><title>xte_nodebld_final() with a single argument</title>
       <para>Before the xte_nodebld_final() call the length of the vector acc is equal to 16, after the call the length is 3.
             The vector acc does not correspond to a xml document - there is no a root tag. The result of the xte_nodebld_final()
             may be used as argument for xte_node_from_nodebld() to get a vector corresponding to complete xml document.

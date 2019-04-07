@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -124,6 +124,7 @@
 #define AMMSC_SUM		(ptrlong)5
 #define AMMSC_COUNTSUM		(ptrlong)6
 #define AMMSC_USER		(ptrlong)7
+#define AMMSC_ONE (long)8  /* return of scalar subq in vectored exec, align set no to calling outside subq  sets */
 
 #define ORDER_BY		(ptrlong)111
 
@@ -183,7 +184,9 @@
 #define MODULE_DECL		(ptrlong)630
 #define BREAKPOINT_STMT		(ptrlong)631
 #define USER_AGGREGATE_DECL	(ptrlong)632
-
+#define FOR_VEC_STMT (ptrlong)635
+#define VECT_DECL ((ptrlong)636)
+#define NOT_VEC_STMT ((ptrlong)637)
 #define SIMPLE_CASE		(ptrlong)622
 #define SEARCHED_CASE		(ptrlong)623
 #define WHEN_CLAUSE		(ptrlong)624
@@ -304,11 +307,23 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 
 /* options */
 #define OPT_ORDER  ((ptrlong) 900)
+#define OPT_INDEX_ORDER ((ptrlong)968)
 #define OPT_JOIN  ((ptrlong) 901)
 #define OPT_INDEX ((ptrlong) 902)
 #define OPT_SPARQL ((ptrlong) 907)
 #define OPT_NO_CLUSTER ((ptrlong) 930)
 #define OPT_INTO ((ptrlong) 931)
+#define OPT_INS_FETCH ((ptrlong)933)
+#define OPT_VECTORED ((ptrlong)934)
+#define OPT_NOT_VECTORED ((ptrlong)935)
+#define OPT_NO_IDENTITY ((ptrlong)936)
+#define OPT_ELASTIC ((ptrlong)937)
+#define OPT_NO_TRIGGER ((ptrlong)938)
+#define OPT_PARTITION ((ptrlong)939)
+#define OPT_PARALLEL ((ptrlong)947)
+#define OPT_FROM_FILE ((ptrlong)953)
+#define OPT_FILE_START  ((ptrlong)954)
+#define OPT_FILE_END  ((ptrlong)955)
 
 #define OPT_HASH ((ptrlong) 903)
 #define OPT_INTERSECT ((ptrlong) 1015)
@@ -323,7 +338,18 @@ Note: bitwise OR of all these masks should be less than SMALLEST_POSSIBLE_POINTE
 #define OPT_ARRAY ((ptrlong) 1017)
 #define OPT_ANY_ORDER (ptrlong)1018
 #define OPT_INDEX_ONLY (ptrlong)932
+#define OPT_HASH_SET ((ptrlong)940)
+#define OPT_HASH_PARTITION ((ptrlong)941)
+#define OPT_HASH_REPLICATION ((ptrlong)942)
+#define OPT_ISOLATION ((ptrlong)943)
+#define OPT_CHECK ((ptrlong)944)
+#define OPT_PART_GBY ((ptrlong)945)
+#define OPT_NO_PART_GBY ((ptrlong)946)
+#define OPT_NO_LOCK ((ptrlong)956)
+#define OPT_TRIGGER ((ptrlong)957)
 
+#define OPT_EST_TIME ((ptrlong)950)
+#define OPT_EST_SIZE ((ptrlong)951)
 
 /* GROUPING SETS */
 #define GROUPING_FUNC	"__grouping"
@@ -536,10 +562,11 @@ typedef struct sql_tree_s
 	    ptrlong	fk_state;
 	  } fkey;
 	struct {
-	  caddr_t	proc;
-	  ST **	params;
-	  ST **	cols;
-	} proc_table;
+	    caddr_t	proc;
+	    ST **	params;
+	    ST **	cols;
+	    caddr_t *	opts;
+	  } proc_table;
 	struct
 	  {
 	    char *	name;
@@ -656,6 +683,7 @@ typedef struct sql_tree_s
 	  {
 	    ST *	col;
 	    ptrlong	order;
+	    ST *	gsopt;
 	  } o_spec;
 	struct
 	  {
@@ -696,7 +724,7 @@ typedef struct sql_tree_s
 	compound;
 	struct {
 	  caddr_t 	name;
-	  ptrlong	is_modulo;
+	  caddr_t *	options;
 	  ST **		hosts;
 	} cluster;
 	struct {
@@ -730,6 +758,17 @@ typedef struct sql_tree_s
 	  ptrlong	shortest_only;
 	  ptrlong	direction;
 	} trans;
+	struct {
+	  ptrlong		mode;
+	  ST *		name;
+	  ST *		type;
+	  ST *	exp;
+	} vect_decl;
+	struct {
+	  ST **	decl;
+	  ST *	body;
+	  ptrlong	modify;
+	} for_vec;
     } _;
   } sql_tree_t;
 
@@ -831,29 +870,6 @@ extern long sqlp_bin_op_serial;
 		 (ptrlong) pred, (caddr_t) left, (ST *) subq, (ptrlong) cmp_, (ptrlong) flags, NULL)
 
 
-#define ARRAYP(a) \
-  (IS_BOX_POINTER(a) && DV_ARRAY_OF_POINTER == box_tag((caddr_t) a))
-
-#define SYMBOLP(a) \
-  (IS_BOX_POINTER(a) && DV_SYMBOL == box_tag((caddr_t) a))
-
-#define LITERAL_P(a) \
-  (! IS_BOX_POINTER (a) \
-   || DV_SHORT_STRING == box_tag((caddr_t) a) \
-   || DV_LONG_STRING == box_tag((caddr_t) a) \
-   || DV_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_WIDE == box_tag((caddr_t) a) \
-   || DV_LONG_INT == box_tag((caddr_t) a) \
-   || DV_DB_NULL == box_tag((caddr_t) a) \
-   || DV_SINGLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_NUMERIC == box_tag((caddr_t) a) \
-   || DV_DOUBLE_FLOAT == box_tag((caddr_t) a) \
-   || DV_BIN == box_tag((caddr_t) a) \
-   || DV_UNAME == box_tag((caddr_t) a) \
-   || DV_IRI_ID == box_tag((caddr_t) a) \
-   || DV_DATETIME == box_tag((caddr_t) a) \
-   || DV_XPATH_QUERY == box_tag((caddr_t) a) )
-
 #define ST_P(s, tp) \
   (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp)
 
@@ -878,22 +894,8 @@ extern long sqlp_bin_op_serial;
 
 #define t_NULLCONST	t_alloc_box (0, DV_DB_NULL)
 
-#define CAR(dt,x)	(x ? ((dt) ((x)->data)) : 0)
-
-#define CDR(x)		(x ? (x)->next : NULL)
-
-#define CONS(car,cdr)	dk_set_cons ((caddr_t) car, (dk_set_t) cdr)
-
-#define t_CONS(car,cdr)	t_cons ((caddr_t) car, (dk_set_t) cdr)
-
-#define NCONC(x,y)	dk_set_conc ((dk_set_t) x, (dk_set_t) y)
-
-#define t_NCONC(x,y)	dk_set_conc ((dk_set_t) x, (dk_set_t) y)
-
 #define t_dk_set_append_1(res,item) \
   *(res) = t_NCONC (*(res), t_CONS (item, NULL))
-
-#define NCONCF1(l, n)	(l = NCONC (l, CONS (n, NULL)))
 
 #define t_NCONCF1(l, n)	(l = t_NCONC (l, t_CONS (n, NULL)))
 

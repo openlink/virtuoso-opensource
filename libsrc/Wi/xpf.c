@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2092,11 +2092,11 @@ xpf_document_impl (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int ca
 	      {
 	      case DV_XML_ENTITY:
 		uri = xe_get_sysid_base_uri ((xml_entity_t *)base);
-		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0, DV_WIDE);
+		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0);
 		break;
 	      case DV_STRING:
 		uri = base;
-		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0, DV_WIDE);
+		uri = box_utf8_as_wide_char (uri, NULL, strlen (uri), 0);
 		break;
 	      default:
 		sqlr_new_error_xqi_xdl ("XP001", "XPF10", xqi, "XML entity or a string expected as \"base_uri\" argument of XPATH function %s()", fnames[call_mode]);
@@ -4514,7 +4514,7 @@ xpf_extension (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 	  tree->_.xp_func.qname, *pname, (unsigned long)(decl_arg_no - sys_arg_no), call_arg_no );
       goto err_end;
     }
-  if (!sec_proc_check (proc, U_ID_PUBLIC, G_ID_PUBLIC))
+  if (!sec_proc_check (proc, G_ID_PUBLIC, U_ID_PUBLIC))
     {
       err = srv_make_new_error ("42001", "XPE07",
 	  "XPATH extension function '%.200s' refers to the Virtuoso/PL procedure '%.200s' that is is not granted to public",
@@ -4678,7 +4678,7 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	sqlr_new_error ("42001", "XPE01", "The function %s does not exist", pname);
     }
 
-  if (!sec_proc_check (proc, U_ID_PUBLIC, G_ID_PUBLIC))
+  if (!sec_proc_check (proc, G_ID_PUBLIC, U_ID_PUBLIC))
     {
       if (is_define)
 	{
@@ -4724,7 +4724,7 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!is_define)
     {
-      caddr_t err = NULL;
+      caddr_t err;
       query_instance_t *qi = (query_instance_t *)qst;
       if (!xpf_store_query)
 	xpf_store_query = sql_compile (
@@ -4733,6 +4733,8 @@ bif_xpf_extension (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       err = qr_rec_exec (xpf_store_query, qi->qi_client, NULL, qi, NULL, 2,
 	  ":0", f, QRP_STR,
 	  ":1", pname, QRP_STR);
+      if (NULL != err)
+        sqlr_resignal (err);
     }
 
   return (box_num (0));
@@ -4757,7 +4759,7 @@ bif_xpf_extension_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   place = (caddr_t *) id_hash_get (xp_ext_funcs, (caddr_t) &f);
   if (place)
     {
-      caddr_t err = NULL;
+      caddr_t err;
       query_instance_t *qi = (query_instance_t *)qst;
 
       id_hash_remove (xp_ext_funcs, (caddr_t) &f);
@@ -4767,6 +4769,8 @@ bif_xpf_extension_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 	xpf_remove_query = sql_compile ("DELETE FROM DB.DBA.SYS_XPF_EXTENSIONS WHERE XPE_NAME = ?",
 	    bootstrap_cli, NULL, SQLC_DEFAULT);
       err = qr_rec_exec (xpf_remove_query, qi->qi_client, NULL, qi, NULL, 1, ":0", f, QRP_STR);
+      if (NULL != err)
+        sqlr_resignal (err);
     }
 
   return (box_num (0));
@@ -5770,7 +5774,7 @@ xpf_collection_dir_list (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   static query_t * proc = NULL;
   caddr_t *res = NULL;
   caddr_t err = NULL;
-  local_cursor_t * lc;
+  local_cursor_t * lc = NULL;
   ptrlong recursive = 1;
   if (NULL == proc)
     {
@@ -5825,12 +5829,16 @@ xpf_collection_dir_list (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 #endif
   err = qr_rec_exec (proc, cli, &lc, qi, NULL, 2, ":0", cache_key[1], QRP_STR, ":1", recursive, QRP_INT);
   if (err)
-    goto scan_error;
+    {
+      LC_FREE (lc);
+      goto scan_error;
+    }
   if (lc_next (lc))
     {
       res = (caddr_t*) box_copy_tree (lc_nth_col (lc, 0));
       xml_doc_cache_add_copy (&(xqi->xqi_doc_cache), (caddr_t)cache_key, (caddr_t)res);
     }
+  LC_FREE (lc);
 
 scan_complete:
   XQI_SET_INT (xqi, tree->_.xp_func.var->_.var.state, XI_INITIAL);

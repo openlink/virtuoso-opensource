@@ -1,6 +1,26 @@
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
 
 
-ECHO BOTH "Any number collation\n";
+echo both "Any number collation\n";
 
 
 drop table tnum;
@@ -57,12 +77,12 @@ create procedure controversy (in exp int)
 }
 
 select controversy (52);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": controversy 52\n";
+echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
+echo both ": controversy 52\n";
 
 select controversy (53);
-ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
-ECHO BOTH ": controversy 53\n";
+echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
+echo both ": controversy 53\n";
 
 nfill (100000);
 
@@ -77,12 +97,12 @@ select count (*) from tnum a table option (index primary key), tnum b table opti
 
 
 select __tag (k),  * from tnum a table option (index ii) where not exists (select 1 from tnum b table option (loop, index primary key) where a.k = b.k and a.id = b.id);
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": any num coll 1\n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": any num coll 1\n";
 
 select __tag (k),  * from tnum a table option (index primary key) where not exists (select 1 from tnum b table option (loop, index ii) where a.k = b.k and a.id = b.id);
-ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
-ECHO BOTH ": any num coll 2\n";
+echo both $if $equ $rowcnt 0 "PASSED" "***FAILED";
+echo both ": any num coll 2\n";
 
 
 

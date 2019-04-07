@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,22 +35,6 @@
 # include "Dkconfig.w32"
 #else
 # include "Dkconfig.h"
-#endif
-
-#if 0
-/* XXX cleanup for final version */
-#ifndef NO_THREAD
-# if defined (WITH_PTHREADS) || defined (PTHREAD)
-#  include <pthread.h>
-#  ifndef _REENTRANT
-#   define _REENTRANT
-#  endif
-#  ifndef PTHREAD
-#   define PTHREAD
-#  endif
-#  define PREEMPT
-# endif
-#endif
 #endif
 
 #if !defined (NO_THREAD) && defined (WITH_PTHREADS) && !defined (_REENTRANT)
@@ -101,7 +85,7 @@
 #if !defined(__FreeBSD__)
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
-#else
+#elif !defined (__cplusplus)
 void *malloc ();
 void *calloc ();
 void *realloc ();
@@ -140,8 +124,12 @@ void free ();
 # define O_BINARY 0
 #endif
 
+#ifndef MAP_ANONYMOUS
+#define MAP_ANONYMOUS MAP_ANON
+#endif
+
 #include <errno.h>
-#if !defined(linux) && !defined(__APPLE__) && !defined (WIN32) && !defined (__CYGWIN__) && !defined(__FreeBSD__) && !defined (__cplusplus)
+#if !defined(linux) && !defined(__APPLE__) && !defined (WIN32) && !defined (__CYGWIN__) && !defined(__FreeBSD__) && !defined (__cplusplus) && !defined(__GLIBC__)
 extern char *sys_errlist[];
 extern int sys_nerr;
 #endif
@@ -191,10 +179,43 @@ char *strtok_r ();
 # define GLOBALREF extern
 #endif
 
+
+#ifndef __attribute__
+/* This feature is available in gcc versions 2.5 and later.  */
+# if (! defined __GNUC__ || __GNUC__ < 2 \
+      || (__GNUC__ == 2 && __GNUC_MINOR__ < 5))
+#  define __attribute__(Spec) /* empty */
+# endif
+#endif
+
+/*
+ *  Easier way of checking GCC version
+ */
+#if defined(__GNUC__)
+#  define GCC_VERSION (__GNUC__ * 1000 + __GNUC_MINOR__)
+#endif
+
+/*
+ *  Portable way to tag functions that do not return
+ */
+#if (_MSC_VER >= 1310)		/* MS Visual Studio 2003/.NET Framework 1.1 or newer */
+#  define NORETURN 		/*__declspec(noreturn)*/
+#elif defined(__HP_cc) && (__HP_cc >= 61000)
+#  define NORETURN 		__attribute__((noreturn))
+#elif (GCC_VERSION >= 3004) || defined (__clang__)
+#  define NORETURN		__attribute__((noreturn))
+#else
+#  define NORETURN		/*NOTHING*/
+#endif
+
+#ifdef __cplusplus
+#define DK_INLINE	inline
+#else
 #ifdef __GNUC__
 # define DK_INLINE	__inline__
 #else
 # define DK_INLINE
+#endif
 #endif
 
 #endif

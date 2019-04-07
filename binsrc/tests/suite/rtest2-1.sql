@@ -1,29 +1,29 @@
 --
 --  rtest2-1.sql
 --
---  $Id$
+--  $Id: rtest2-1.sql,v 1.9.10.3 2013/01/02 16:14:54 source Exp $
 --
 --  Remote database testing
---  
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 
 --
 --  Start the test
@@ -31,6 +31,9 @@
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 echo BOTH "STARTED: Remote test 2 (rtest2.sql)\n";
+
+
+__dbf_set ('dc_batch_sz', 11);
 
 select * from R1..T1 where ROW_NO < 130;
 ECHO BOTH $IF $EQU $ROWCNT 30 "PASSED" "***FAILED";
@@ -111,6 +114,11 @@ ECHO BOTH $IF $EQU $ROWCNT 31 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": insert remote, select local " $ROWCNT " rows\n";
 
+select ROW_NO, STRING1, STRING2, FS1, FI2 from DB..T1 L where ROW_NO between 3000 and 3300 and not exists (select 1 from R1..T1 C where C.ROW_NO = L.ROW_NO);
+ECHO BOTH $IF $EQU $ROWCNT 270 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select local not exists remote (for insert remote)" $ROWCNT " rows\n";
+
 insert into R1..T1 (ROW_NO, STRING1, STRING2, FS1, FI2) select ROW_NO, STRING1, STRING2, FS1, FI2 from DB..T1 L where ROW_NO between 3000 and 3300 and not exists (select 1 from R1..T1 C where C.ROW_NO = L.ROW_NO);
 ECHO BOTH $IF $EQU $ROWCNT 270 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -126,7 +134,7 @@ ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": pass through subquery\n";
 
---- ******
+
 select count (*) from R1..T1 O  where not exists (select 1 from R1..T1 S where S.ROW_NO = O.ROW_NO) and ROW_NO = n_identity (ROW_NO);
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
@@ -136,6 +144,11 @@ select count (*) from R1..T1 O  where not exists (select 1 from R1..T1 S where S
 ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": rts with subq with local proc\n";
+
+select ROW_NO, STRING1, STRING2, FS1, FI2 from R1..T1 R where  not exists (select 1 from DB..T1 L where R.ROW_NO = L.ROW_NO);
+ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select (for insert) local select remote not exists local " $ROWCNT " rows.\n";
 
 insert into DB..T1 (ROW_NO, STRING1, STRING2, FS1, FI2) select ROW_NO, STRING1, STRING2, FS1, FI2 from R1..T1 R where  not exists (select 1 from DB..T1 L where R.ROW_NO = L.ROW_NO);
 ECHO BOTH $IF $EQU $ROWCNT 1000 "PASSED" "***FAILED";
@@ -223,25 +236,25 @@ ECHO BOTH ": " $LAST[1] " rows in remote x remote natural join\n";
 
 
 select (select count (*) from R1..T1 where ROW_NO < 110) from R1..T1 where ROW_NO < 110;
-ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " count of remote scalar subq #1.\n";
+echo both $if $equ $last[1] 10 "PASSED" "***FAILED";
+echo both ": " $last[1] " count of remote scalar subq #1.\n";
 
 select (select count (*) from R1..T1 where ROW_NO < n_identity (110)) from R1..T1 where ROW_NO < 110;
-ECHO BOTH $IF $EQU $LAST[1] 10 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " count of remote scalar subq #2.\n";
+echo both $if $equ $last[1] 10 "PASSED" "***FAILED";
+echo both ": " $last[1] " count of remote scalar subq #2.\n";
 
 create view TU as select ROW_NO, FI2 from T1 union all select ROW_NO, FI2 from R1..T1;
 
 select count (*) from TU A where ROW_NO < 300 and exists (select 1 from TU B where A.ROW_NO = B.ROW_NO);
-ECHO BOTH $IF $EQU $LAST[1] 200 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " from union view as an existence predicate\n";
+echo both $if $equ $last[1] 200 "PASSED" "***FAILED";
+echo both " " $last[1] " from union view as an existence predicate\n";
 
 
 
 
 select ROW_NO, T1_UN.ROW_NO, DBA.T1_UN.ROW_NO, DB.DBA.T1_UN.ROW_NO  from T1_UN where ROW_NO = 111;
-ECHO BOTH $IF $EQU $LAST[1] 111 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " from funny correlated ref to union view col\n";
+echo both $if $equ $last[1] 111 "PASSED" "***FAILED";
+echo both " " $last[1] " from funny correlated ref to union view col\n";
 
 create view T1_FR3 as
        select ROW_NO, STRING1, STRING2, FI2  from R1..T1 where ROW_NO < 120
@@ -250,25 +263,25 @@ create view T1_FR3 as
 
 
 select ROW_NO from T1_FR3 where ROW_NO < 1200;
-ECHO BOTH $IF $EQU $ROWCNT 40 "PASSED" "***FAILED";
-ECHO BOTH ": " $ROWCNT  " rows  in t1_fr3 < 1200\n";
+echo both $if $equ $rowcnt 40 "PASSED" "***FAILED";
+echo both " " $rowcnt  " rows  in t1_fr3 < 1200\n";
 
 select count (*) from T1_FR3;
-ECHO BOTH $IF $EQU$LAST[1] 61 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " count of t1_fr3\n";
+echo both $if $equ$last[1] 61 "PASSED" "***FAILED";
+echo both " " $last[1] " count of t1_fr3\n";
 
 select max (ROW_NO) as xx from T1_FR3 where ROW_NO < 1200;
-ECHO BOTH $IF $EQU $LAST[1] 1099 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " max row_no  of t1_fr3 where row_no < 1200 \n";
+echo both $if $equ $last[1] 1099 "PASSED" "***FAILED";
+echo both " " $last[1] " max row_no  of t1_fr3 where row_no < 1200 \n";
 
 select FI2, max (ROW_NO) from T1_FR3 group by FI2 order by FI2 desc;
-ECHO BOTH $IF $EQU$LAST[1] 1111 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] "  fi2 from t1_fr3 gb, ob fi2 desc\n";
+echo both $if $equ$last[1] 1111 "PASSED" "***FAILED";
+echo both " " $last[1] "  fi2 from t1_fr3 gb, ob fi2 desc\n";
 
 
 select FI2, max (ROW_NO) as xx from T1_FR3 group by FI2 having xx > 3000 order by FI2 desc;
-ECHO BOTH $IF $EQU$LAST[1] 1111 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
+echo both $if $equ$last[1] 1111 "PASSED" "***FAILED";
+echo both " " $last[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
 
 
 
@@ -276,3 +289,6 @@ ECHO BOTH ": " $LAST[1] "  fi2 from t1_fr3 gb,having max > 3000  ob fi2 desc\n";
 -- End of test
 --
 ECHO BOTH "COMPLETED: Remote test 2 (rtest2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
+
+
+

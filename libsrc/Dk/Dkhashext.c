@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,6 +31,17 @@
 /* But it's inevitable for 64-bit platforms with structures as hash data * (GK) */
 #undef NEXT4
 #define NEXT4(X)	_RNDUP((X), SIZEOF_VOID_P)
+
+
+#define memcpy_8(target, source, len) \
+  {if (sizeof (caddr_t) == len) *(caddr_t*)(target) = *(caddr_t*)(source); \
+  else memcpy (target, source, len);}
+
+#define memcpy_8c(target, source, len) \
+  {if (sizeof (caddr_t) == len) *(caddr_t*)(target) = *(caddr_t*)(source); \
+    else if (len) memcpy (target, source, len);}
+
+
 
 caddr_t
 id_hash_get (id_hash_t * ht, caddr_t key)
@@ -283,9 +294,6 @@ boxint_hashcmp (char *x, char *y)
   return k1 == k2 ? 1 : 0;
 }
 
-
-#define ROL(h) ((h << 1) | ((h >> 31) & 1))
-
 box_hash_func_t dtp_hash_func[256];
 
 extern id_hashed_key_t rdf_box_hash (caddr_t box);
@@ -303,8 +311,10 @@ box_hash (caddr_t box)
   switch (dtp)
     {
     case DV_LONG_INT:
-      return ((*(boxint *) box) & ID_HASHED_KEY_MASK);
-
+      {
+	uint64 i = *(uint64*)box;
+	return ((i >> 32) ^ i) & ID_HASHED_KEY_MASK;
+      }
     case DV_IRI_ID:
     case DV_IRI_ID_8:
       if (NULL == box)
@@ -332,7 +342,7 @@ box_hash (caddr_t box)
       {
 	uint32 len = box_length_inline (box);
 	if (len > 0)
-	  BYTE_BUFFER_HASH (h, box, len - 1);
+	  BYTE_BUFFER_HASH (h, box, len - 1); /* was BYTE_BUFFER_HASH2 but it break xslt compare with UNAMEs etc. */
 	else
 	  h = 0;
 	return h & ID_HASHED_KEY_MASK;
@@ -390,13 +400,15 @@ box_hash_cut (caddr_t box, int depth)
 }
 
 void dtp_set_cmp (dtp_t dtp, box_hash_cmp_func_t f);
+void dtp_set_strong_cmp (dtp_t dtp, box_hash_cmp_func_t f);
 
 
 void
-dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp)
+dk_dtp_register_hash (dtp_t dtp, box_hash_func_t hf, box_hash_cmp_func_t cmp, box_hash_cmp_func_t strong_cmp)
 {
   dtp_hash_func[dtp] = hf;
   dtp_set_cmp (dtp, cmp);
+  dtp_set_strong_cmp (dtp, strong_cmp);
 }
 
 
@@ -407,11 +419,12 @@ treehash (char *strp)
   return (box_hash (str));
 }
 
+extern int box_strong_equal (cbox_t b1, cbox_t b2);
 
 int
 treehashcmp (char *x, char *y)
 {
-  return (box_equal (*((caddr_t *) x), *((caddr_t *) y)));
+  return (box_strong_equal (*((caddr_t *) x), *((caddr_t *) y)));
 }
 
 
@@ -441,15 +454,14 @@ DBG_NAME (box_dv_dict_iterator) (DBG_PARAMS caddr_t ht_box)
   id_hash_t *ht = (id_hash_t *) ht_box;
   res->hit_hash = ht;
   res->hit_bucket = -1;
-  res->hit_chilum = (void *)(-1);
+  res->hit_chilum = (char *)(-1);
   if (NULL != ht)
     {
-      if (NULL != ht->ht_mutex)
-	mutex_enter (ht->ht_mutex);
+      int rdlocked;
+      HT_RDLOCK_COND(ht,rdlocked);
       res->hit_dict_version = ht->ht_dict_version;
       ht->ht_dict_refctr += 1;
-      if (NULL != ht->ht_mutex)
-	mutex_leave (ht->ht_mutex);
+      HT_UNLOCK_COND(ht,rdlocked);
     }
   else
     res->hit_dict_version = 0;
@@ -469,13 +481,13 @@ box_dict_hashtable_copy_hook (caddr_t orig)
   id_hash_t *res;
   caddr_t key, val;
   id_hash_iterator_t hit;
+  int rdlocked;
 #ifndef NDEBUG
   if (0 >= orig_dict->ht_dict_refctr)
     GPF_T;
 #endif
   res = (id_hash_t *) dk_alloc_box (sizeof (id_hash_t), DV_DICT_HASHTABLE);
-  if (orig_dict->ht_mutex)
-    mutex_enter (orig_dict->ht_mutex);
+  HT_RDLOCK_COND(orig_dict,rdlocked);
   buckets = (((id_hash_t *) orig_dict)->ht_inserts - ((id_hash_t *) orig_dict)->ht_deletes);
   if (buckets < orig_dict->ht_buckets)
     buckets = orig_dict->ht_buckets;
@@ -495,11 +507,9 @@ box_dict_hashtable_copy_hook (caddr_t orig)
       val_copy = box_copy_tree (((caddr_t *)val)[0]);
       id_hash_set (res, (caddr_t) (&key_copy), (caddr_t) (&val_copy));
     }
-  if (orig_dict->ht_mutex)
-    {
-      res->ht_mutex = mutex_allocate ();
-      mutex_leave (orig_dict->ht_mutex);
-    }
+  if (rdlocked)
+    res->ht_rwlock = rwlock_allocate ();
+  HT_UNLOCK_COND(orig_dict,rdlocked);
   return (caddr_t) res;
 }
 
@@ -523,12 +533,14 @@ box_dict_hashtable_destr_hook (caddr_t dict)
   else
     {
       id_hash_iterator (&hit, (id_hash_t *) (dict));
-      while (hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
+      while (!ht->ht_mp && hit_next (&hit, (caddr_t *) (&key), (caddr_t *) (&val)))
 	{
 	  dk_free_tree (key[0]);
 	  dk_free_tree (val[0]);
 	}
     }
+  if (ht->ht_mp)
+    mp_free ((mem_pool_t*)ht->ht_mp);
   id_hash_clear ((id_hash_t *) (dict));
   ID_HASH_FREE_INTERNALS ((id_hash_t *) (dict));
   return 0;
@@ -550,11 +562,11 @@ box_dict_iterator_copy_hook (caddr_t orig_iter)
       if (0 >= org->hit_hash->ht_dict_refctr)
 	GPF_T;
 #endif
-      if ((org->hit_hash->ht_mutex) && (ID_HASH_LOCK_REFCOUNT != org->hit_hash->ht_dict_refctr))
+      if ((org->hit_hash->ht_rwlock) && (ID_HASH_LOCK_REFCOUNT != org->hit_hash->ht_dict_refctr))
 	{
-	  mutex_enter (org->hit_hash->ht_mutex);
+	  rwlock_wrlock (org->hit_hash->ht_rwlock);
 	  org->hit_hash->ht_dict_refctr += 1;
-	  mutex_leave (org->hit_hash->ht_mutex);
+	  rwlock_unlock (org->hit_hash->ht_rwlock);
 	}
       else
 	org->hit_hash->ht_dict_refctr += 1;
@@ -569,23 +581,23 @@ box_dict_iterator_destr_hook (caddr_t iter)
   id_hash_iterator_t *hit = (id_hash_iterator_t *) iter;
   if ((hit->hit_hash) && (ID_HASH_LOCK_REFCOUNT != hit->hit_hash->ht_dict_refctr))
     {
-      dk_mutex_t *mtx = hit->hit_hash->ht_mutex;
+      rwlock_t *rwl = hit->hit_hash->ht_rwlock;
 #ifndef NDEBUG
       if (0 >= hit->hit_hash->ht_dict_refctr)
 	GPF_T;
 #endif
-      if (NULL != mtx)
+      if (NULL != rwl)
 	{
-	  mutex_enter (mtx);
+	  rwlock_wrlock (rwl);
 	  hit->hit_hash->ht_dict_refctr -= 1;
 	  if (0 == hit->hit_hash->ht_dict_refctr)
 	    {
 	      dk_free_box ((caddr_t) (hit->hit_hash));
-	      mutex_leave (mtx);
-	      mutex_free (mtx);
+	      rwlock_unlock (rwl);
+	      rwlock_free (rwl);
 	    }
 	  else
-	    mutex_leave (mtx);
+	    rwlock_unlock (rwl);
 	}
       else
 	{
@@ -614,15 +626,15 @@ id_hash_set_rehash_pct (id_hash_t * ht, uint32 pct)
 
 #ifdef MALLOC_DEBUG
 #define DBG_HASHEXT_NAME(name) dbg_t_##name
-#define DBG_HASHEXT_ALLOC(SZ) dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (SZ), DV_CUSTOM)
+#define DBG_HASHEXT_ALLOC(SZ) dbg_mp_alloc_box (DBG_ARGS THR_TMP_POOL, (SZ), DV_NON_BOX)
 #else
 #define DBG_HASHEXT_NAME(name) t_##name
-#define DBG_HASHEXT_ALLOC(SZ) mp_alloc_box (THR_TMP_POOL, (SZ), DV_CUSTOM)
+#define DBG_HASHEXT_ALLOC(SZ) mp_alloc_box_ni (THR_TMP_POOL, (SZ), DV_NON_BOX)
 #endif
 #define DBG_HASHEXT_FREE(BOX,SZ)
-
+#define FROM_POOL
 #include "Dkhashext_template.c"
-
+#undef FROM_POOL
 #undef DBG_HASHEXT_NAME
 #undef DBG_HASHEXT_ALLOC
 #undef DBG_HASHEXT_FREE
@@ -651,7 +663,7 @@ void id_hash_rehash (id_hash_t * ht, uint32 new_sz) { dbg_id_hash_rehash (__FILE
 int id_hash_remove (id_hash_t * ht, caddr_t key) { return dbg_id_hash_remove (__FILE__, __LINE__, ht, key); }
 #undef id_hash_get_and_remove
 int id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data) { return dbg_id_hash_get_and_remove (__FILE__, __LINE__, ht, key, found_key, found_data); }
-#undef id_hash_remove_rnd 
+#undef id_hash_remove_rnd
 int id_hash_remove_rnd (id_hash_t * ht, int inx, caddr_t key, caddr_t data) { return dbg_id_hash_remove_rnd (__FILE__, __LINE__, ht, inx, key, data); }
 #undef id_str_hash_create
 id_hash_t * id_str_hash_create (id_hashed_key_t buckets) { return dbg_id_str_hash_create (__FILE__, __LINE__, buckets); }
@@ -679,7 +691,7 @@ void t_id_hash_rehash (id_hash_t * ht, uint32 new_sz) { dbg_t_id_hash_rehash (__
 int t_id_hash_remove (id_hash_t * ht, caddr_t key) { return dbg_t_id_hash_remove (__FILE__, __LINE__, ht, key); }
 #undef t_id_hash_get_and_remove
 int t_id_hash_get_and_remove (id_hash_t * ht, caddr_t key, caddr_t found_key, caddr_t found_data) { return dbg_t_id_hash_get_and_remove (__FILE__, __LINE__, ht, key, found_key, found_data); }
-#undef t_id_hash_remove_rnd 
+#undef t_id_hash_remove_rnd
 int t_id_hash_remove_rnd (id_hash_t * ht, int inx, caddr_t key, caddr_t data) { return dbg_t_id_hash_remove_rnd (__FILE__, __LINE__, ht, inx, key, data); }
 #undef t_id_str_hash_create
 id_hash_t * t_id_str_hash_create (id_hashed_key_t buckets) { return dbg_t_id_str_hash_create (__FILE__, __LINE__, buckets); }

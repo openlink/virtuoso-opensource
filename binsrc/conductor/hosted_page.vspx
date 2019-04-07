@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>User Defined Types</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="page" param-name="page" persist="0" type="varchar" default="'1'" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="User Defined Types"/>
+    </vm:menu>
+    <vm:header caption="User Defined Types">
+    </vm:header>
+    <vm:pagebody>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url11" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url12" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="nowrap">
+                        <v:url name="b_url13" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &nbsp;
+                      </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
+                          <v:include url="hosted_modules.vspx"/>
+                        </v:template>
+                        <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
+                          <v:include url="hosted_import.vspx"/>
+                        </v:template>
+                        <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
+                          <v:include url="hosted_grant.vspx"/>
+                        </v:template>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

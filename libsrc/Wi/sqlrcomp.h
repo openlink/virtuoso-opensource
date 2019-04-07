@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,6 +47,7 @@ remote_ds_t *sqlc_table_remote_ds (sql_comp_t * sc, char *name);
   { \
   (sc)->sc_exp_col_name = ""; \
   (sc)->sc_exp_sqt.sqt_dtp = DV_UNKNOWN; \
+  (sc)->sc_exp_sqt.sqt_col_dtp = DV_UNKNOWN; \
   (sc)->sc_exp_sqt.sqt_precision = 0; \
   (sc)->sc_exp_sqt.sqt_scale = 0; \
   (sc)->sc_exp_sqt.sqt_non_null = 0; \

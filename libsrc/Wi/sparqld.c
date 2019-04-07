@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,6 +21,7 @@
  *
  */
 
+#include "datesupp.h"
 #include "sparql2sql.h"
 #include "sqlparext.h"
 /*#include "arith.h"
@@ -51,7 +52,19 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
     case DV_ARRAY_OF_POINTER:
       if (SPAR_LIT != tree->type)
         spar_sqlprint_error ("ssg_" "sdprin_literal: non-literal vector as argument");
-      ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
+        if (DV_DATETIME == DV_TYPE_OF (tree->_.lit.val))
+          {
+            char temp [100];
+            int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (tree->_.lit.datatype);
+            dt_to_iso8601_string_ext (tree->_.lit.val, temp, sizeof (temp), mode);
+            ssg_putchar ('"');
+            ssg_puts (temp);
+            ssg_putchar ('"');
+          }
+        else if (NULL != tree->_.lit.original_text)
+          ssg_puts (tree->_.lit.original_text);
+        else
+          ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
       if (DV_STRING != DV_TYPE_OF (tree->_.lit.val))
         return;
       if (NULL != tree->_.lit.datatype)
@@ -92,7 +105,7 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
         return;
       }
     default:
-      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_UTF8_ONLY);
+      ssg_print_box_as_sql_atom (ssg, (caddr_t)tree, SQL_ATOM_SPARQL_INTEROP);
       return;
     }
 }
@@ -189,7 +202,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case BOP_PLUS: return "+";
     case BOP_MINUS: return "-";
     case BOP_TIMES: return "*";
-    case BOP_DIV: return "DIV";
+    case BOP_DIV: return "/";
     case BOP_MOD: return "MOD";
     }
 
@@ -208,6 +221,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case false_L: return "false";
     case FILTER_L: return "FILTER";
     /* case FROM_L: return "FROM"; */
+    case GEO_L: return "GEO";
     /* case GRAPH_L: return "GRAPH"; */
     case IFP_L: return "IFP";
     case IN_L: return "IN";
@@ -223,6 +237,7 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
     case OFFSET_L: return "OFFSET";
     case OPTIONAL_L: return "OPTIONAL";
     case ORDER_L: return "ORDER";
+    case PRECISION_L: return "PRECISION";
     /* case PREDICATE_L: return "PREDICATE"; */
     /* case PREFIX_L: return "PREFIX"; */
     case SCORE_L: return "SCORE";
@@ -272,8 +287,28 @@ ssg_sd_opname (sparp_t *sparp, ptrlong opname, int is_op)
   return NULL;
 }
 
+void
+ssg_assert_sd_flags (spar_sqlgen_t *ssg, int sd_needed_flags, const char *feature_name)
+{
+  char *msg_tail = "";
+  if (sd_needed_flags & ssg->ssg_sd_flags)
+    return;
+  if (NULL != ssg->ssg_sd_current_sinv)
+    {
+      SPART *sinv = ssg->ssg_sd_current_sinv;
+      if ((SSG_SD_NEED_LOAD_SERVICE_DATA & ssg->ssg_sd_flags) && (SPAR_QNAME == SPART_TYPE (sinv->_.sinv.endpoint)))
+        {
+          client_connection_t *cli = ssg->ssg_sparp->sparp_sparqre->sparqre_cli;
+          if (NULL != cli)
+            connection_set (cli, box_dv_uname_string ("SPARQL_endpoint_to_load_service_metadata"), box_dv_short_string (sinv->_.sinv.endpoint->_.qname.val));
+          msg_tail = "; execute SPARQL LOAD SERVICE ... DATA and re-try";
+        }
+    }
+  spar_error (ssg->ssg_sparp, "%.100s does not support %.300s so SPARQL query can not be composed%.300s", ssg->ssg_sd_service_naming, feature_name, msg_tail);
+}
+
 int
-ssg_fields_are_equal (SPART *tree1, SPART *tree2)
+ssg_fields_are_equal (sparp_t *sparp, SPART *tree1, SPART *tree2)
 {
   int type1, type2;
   if (tree1 == tree2)
@@ -290,8 +325,27 @@ ssg_fields_are_equal (SPART *tree1, SPART *tree2)
       return !strcmp (tree1->_.qname.val, tree2->_.qname.val);
     case SPAR_LIT:
       return box_hash ((caddr_t)tree1) == box_hash ((caddr_t)tree2);
+    case SPAR_PPATH:
+      {
+        int partctr, partcount;
+        if (tree1->_.ppath.subtype != tree2->_.ppath.subtype)
+          return 0;
+        if (tree1->_.ppath.num_of_invs != tree2->_.ppath.num_of_invs)
+          return 0;
+        if (tree1->_.ppath.minrepeat != tree2->_.ppath.minrepeat)
+          return 0;
+        if (tree1->_.ppath.maxrepeat != tree2->_.ppath.maxrepeat)
+          return 0;
+        partcount = BOX_ELEMENTS (tree1->_.ppath.parts);
+        if (partcount != BOX_ELEMENTS (tree2->_.ppath.parts))
+          return 0;
+        for (partctr = 0; partctr < partcount; partctr++)
+          if (!ssg_fields_are_equal (sparp, tree1->_.ppath.parts[partctr], tree2->_.ppath.parts[partctr]))
+            return 0;
+        return 1;
+      }
     }
-  GPF_T1 ("ssg_" "fields_are_equal: unsupported tree type");
+  spar_internal_error (sparp, "ssg_" "fields_are_equal(): unsupported tree type");
   return 0;
 }
 
@@ -317,11 +371,10 @@ ssg_sdprin_local_varname (spar_sqlgen_t *ssg, ccaddr_t vname)
     {
       if (ssg->ssg_inside_t_inouts)
         spar_error (ssg->ssg_sparp, "External parameter ?%.100s should not appear in T_IN or T_OUT variable lists", vname);
-      if (!(SSG_SD_GLOBALS & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like external parameters) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+      ssg_assert_sd_flags (ssg, SSG_SD_GLOBALS, "SPARQL-BI extensions (like external parameters)");
     }
-  else if ((/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':')) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-    spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (say, SQL-like names of variables) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+  else if (/* strchr (vname, '_') || --- Bug 14613 */ strchr (vname, '"') || strchr (vname, ':'))
+    ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (say, SQL-like names of variables)");
   ssg_putchar ('?');
   ssg_puts (vname);
 }
@@ -454,11 +507,27 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
     }
   if ((SPART_VARR_FIXED & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_FIXED & mixed_field_restr))
     {
+      dtp_t val_dtp = DV_TYPE_OF (eq->e_rvr.rvrFixedValue);
       ssg_newline (0);
       ssg_puts (" FILTER (");
       ssg_sdprin_varname (ssg, eq->e_varnames[0]);
       ssg_puts (" = ");
-      ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
+      if ((NULL != eq->e_rvr.rvrFixedOrigText) && ((DV_DOUBLE_FLOAT == val_dtp) || (DV_SINGLE_FLOAT == val_dtp) || (DV_NUMERIC == val_dtp)))
+        ssg_puts (eq->e_rvr.rvrFixedOrigText);
+      else
+        {
+          ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrFixedValue));
+          if ((DV_STRING == DV_TYPE_OF (eq->e_rvr.rvrFixedValue)) && (NULL != eq->e_rvr.rvrDatatype))
+            {
+              ssg_puts ("^^");
+              ssg_sdprint_tree (ssg, (SPART *)(eq->e_rvr.rvrDatatype));
+            }
+          if (NULL != eq->e_rvr.rvrLanguage)
+            {
+              ssg_puts ("@");
+              ssg_puts (eq->e_rvr.rvrLanguage);
+            }
+        }
       ssg_puts (")");
       goto end_builtin_checks;
     }
@@ -469,7 +538,7 @@ ssg_sdprint_equiv_restrs (spar_sqlgen_t *ssg, sparp_equiv_t *eq)
   else if ((SPART_VARR_IS_BLANK & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_BLANK & mixed_field_restr))
     builtin_name = "isBLANK";
   else if ((SPART_VARR_IS_REF & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_IS_REF & mixed_field_restr))
-    builtin_name = ((ssg->ssg_sd_flags & (SSG_SD_BI | SSG_SD_VIRTSPECIFIC)) ? "isREF" : "!isLITERAL");
+    builtin_name = ((ssg->ssg_sd_flags & SSG_SD_VIRTSPECIFIC) ? "isREF" : "!isLITERAL");
   else if ((SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && !(SPART_VARR_NOT_NULL & mixed_field_restr))
     builtin_name = "BOUND";
   if (NULL != builtin_name)
@@ -506,8 +575,7 @@ ssg_sdprint_option_list (spar_sqlgen_t *ssg, SPART **options)
         case LIMIT_L: continue; /* It's only a hint, not a requirement, and it's put sometimes via other parts of codegen, but not always */
         case SPAR_SERVICE_INV: continue; /* It's printed via dedicated code */
         }
-      if (!(SSG_SD_OPTION & ssg->ssg_sd_flags))
-        spar_error (ssg->ssg_sparp, "%.100s does not support OPTION (...) clause for triples so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+      ssg_assert_sd_flags (ssg, SSG_SD_OPTION, "OPTION (...) clause for triples");
       if (inside_option_list)
         ssg_puts (", ");
       else
@@ -638,8 +706,7 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
         switch (tree->_.builtin.btype)
           {
           case LIKE_L:
-            if (!(SSG_SD_LIKE & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support LIKE operator so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_LIKE, "LIKE operator");
             ssg_puts (" (");
             ssg->ssg_indent++;
             ssg_sdprint_tree (ssg, tree->_.builtin.args[0]);
@@ -705,8 +772,7 @@ ssg_sdprint_tree (spar_sqlgen_t *ssg, SPART *tree)
 static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX", "MIN", "SAMPLE", "SUM" };
             if (ECM_MEM_NOT_FOUND != ecm_find_name (fname+13, sparql11aggregates, sizeof (sparql11aggregates)/sizeof (char *), sizeof (char *)))
               {
-                if (!(SSG_SD_BI_OR_SPARQL11_DRAFT & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support %s aggregate function so SPARQL query can not be composed", ssg->ssg_sd_service_naming, fname+13);
+                ssg_assert_sd_flags (ssg, SSG_SD_BI_OR_SPARQL11_DRAFT, t_box_sprintf (100, "%.50s aggregate function", fname+13));
                 ssg_puts (fname+13);
                 goto fname_printed; /* see below */
               }
@@ -723,11 +789,27 @@ static const char *sparql11aggregates[] = { "AVG", "COUNT", "GROUP_CONCAT", "MAX
                 colon[0] = ':';
               }
           }
+        if (!strcmp (fname, "SQLVAL::_STAR"))
+          {
+            ssg_puts (" *");
+            return;
+          }
         ssg_sdprin_qname (ssg, (SPART *)(fname));
 fname_printed:
         ssg_putchar ('(');
         ssg->ssg_indent++;
+        if (tree->_.funcall.agg_mode)
+          {
+            if (DISTINCT_L == tree->_.funcall.agg_mode)
+              ssg_puts (" DISTINCT");
+            if ((1 == BOX_ELEMENTS (tree->_.funcall.argtrees)) && ((SPART *)((ptrlong)_STAR) == tree->_.funcall.argtrees[0]))
+              {
+                ssg_puts (" *");
+                goto args_printed; /* see below */
+              }
+          }
         ssg_sdprint_tree_list (ssg, tree->_.funcall.argtrees, ',');
+args_printed:
         ssg_putchar (')');
         ssg->ssg_indent--;
         return;
@@ -758,8 +840,7 @@ fname_printed:
         switch (tree->_.gp.subtype)
           {
           case SELECT_L:
-            if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like nested SELECT) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like nested SELECT)");
             if ((gp_is_top_in_filter) && (ASK_L == tree->_.gp.subquery->_.req_top.subtype)
               && (0 == BOX_ELEMENTS_0 (tree->_.gp.options))
               && (0 == BOX_ELEMENTS_0 (tree->_.gp.subquery->_.req_top.sources))
@@ -848,6 +929,8 @@ fname_printed:
                       SPART ***vals = (SPART ***)(sinv->_.sinv.defines[ctr+1]);
                       int valctr;
                       if (!strcmp (name, "lang:dialect"))
+                        continue;
+                      if (!strcmp (name, "lang:exceptions"))
                         continue;
                       ssg_puts (" DEFINE ");
                       ssg_puts (name);
@@ -996,8 +1079,7 @@ fname_printed:
         ssg->ssg_sd_graph_gp_nesting = 0;
         if ((NULL != tree->_.req_top.storage_name) && (tree->_.req_top.storage_name != uname_virtrdf_ns_uri_DefaultServiceStorage))
           {
-            if (!(SSG_SD_VIRTSPECIFIC & ssg->ssg_sd_flags))
-              spar_error (ssg->ssg_sparp, "%.100s does not support Virtuoso-specific extensions (like define input:storage) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+            ssg_assert_sd_flags (ssg, SSG_SD_VIRTSPECIFIC, "Virtuoso-specific extensions (like define input:storage)");
             ssg_puts ("define input:storage <");
             ssg_puts (tree->_.req_top.storage_name);
             ssg_puts ("> ");
@@ -1029,8 +1111,7 @@ fname_printed:
                 ssg_sdprint_tree (ssg, arg);
                 break;
               default:
-                if (!(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expressions in result list) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                ssg_assert_sd_flags (ssg, SSG_SD_BI | SSG_SD_SPARQL11_MORE, "SPARQL-BI extensions (like expressions in result set)");
                 ssg_putchar ('(');
                 ssg->ssg_indent++;
                 ssg_sdprint_tree (ssg, arg);
@@ -1090,16 +1171,16 @@ fname_printed:
               }
             if (NULL != lim)
               {
-                if ((DV_LONG_INT != DV_TYPE_OF (lim)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in LIMIT clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                if (DV_LONG_INT != DV_TYPE_OF (lim))
+                  ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like expression in LIMIT clause)");
                 ssg_newline (0);
                 ssg_puts ("LIMIT");
                 ssg_sdprint_tree (ssg, lim);
               }
             if (NULL != ofs)
               {
-                if ((DV_LONG_INT != DV_TYPE_OF (ofs)) && !(SSG_SD_BI & ssg->ssg_sd_flags))
-                  spar_error (ssg->ssg_sparp, "%.100s does not support SPARQL-BI extensions (like expression in OFFSET clause) so SPARQL query can not be composed", ssg->ssg_sd_service_naming);
+                if (DV_LONG_INT != DV_TYPE_OF (ofs))
+                  ssg_assert_sd_flags (ssg, SSG_SD_BI, "SPARQL-BI extensions (like expression in OFFSET clause)");
                 ssg_newline (0);
                 ssg_puts ("OFFSET");
                 ssg_sdprint_tree (ssg, ofs);
@@ -1140,7 +1221,7 @@ fname_printed:
                 need_new_graph = 0;
               }
             else
-              should_close_graph = need_new_graph = !ssg_fields_are_equal (ssg->ssg_sd_prev_graph, curr_graph);
+              should_close_graph = need_new_graph = !ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_graph, curr_graph);
           }
         else
           {
@@ -1156,7 +1237,7 @@ fname_printed:
           {
             if ((OPTIONAL_L == tree->_.triple.subtype) ||
              place_qm || should_close_graph || need_new_graph ||
-             !ssg_fields_are_equal (ssg->ssg_sd_prev_subj, tree->_.triple.tr_subject) )
+             !ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_subj, tree->_.triple.tr_subject) )
               {
                 ssg_puts (" .");
                 ssg->ssg_indent -= 4;
@@ -1176,6 +1257,8 @@ fname_printed:
           ssg_newline (0);
         if (need_new_graph)
           {
+            if (SSG_SD_NO_GRAPH & ssg->ssg_sd_no)
+              spar_error (ssg->ssg_sparp, "%.100s does not support GRAPH <...> {...} syntax, so SPARQL query is not composed", ssg->ssg_sd_service_naming);
             ssg_puts (" GRAPH");
             ssg_sdprint_tree (ssg, curr_graph);
             ssg_puts (" {");
@@ -1209,7 +1292,7 @@ fname_printed:
             ssg->ssg_sd_prev_pred = tree->_.triple.tr_predicate;
             ssg->ssg_indent += 2;
           }
-        else if (!ssg_fields_are_equal (ssg->ssg_sd_prev_pred, tree->_.triple.tr_predicate))
+        else if (!ssg_fields_are_equal (ssg->ssg_sparp, ssg->ssg_sd_prev_pred, tree->_.triple.tr_predicate))
           {
             ssg_puts (" ;");
             ssg->ssg_indent -= 2;
@@ -1248,11 +1331,20 @@ fname_printed:
           ssg->ssg_sd_forgotten_dot = 1;
         return;
       }
+    case BOP_MOD:
+      ssg_puts (" mod (");
+      ssg->ssg_indent++;
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.left);
+      ssg_puts (", ");
+      ssg_sdprint_tree (ssg, tree->_.bin_exp.right);
+      ssg_putchar (')');
+      ssg->ssg_indent--;
+        return;
     case BOP_EQ: case BOP_NEQ:
     case BOP_LT: case BOP_LTE: case BOP_GT: case BOP_GTE:
     /*case BOP_LIKE: Like is built-in in SPARQL, not a BOP! */
     case BOP_SAME: case BOP_NSAME:
-    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV: case BOP_MOD:
+    case BOP_PLUS: case BOP_MINUS: case BOP_TIMES: case BOP_DIV:
     case BOP_AND: case BOP_OR:
       {
         if (SPART_TYPE (tree->_.bin_exp.left) < 1000)
@@ -1296,7 +1388,7 @@ fname_printed:
         SPART *expn = tree->_.oby.expn;
         switch (tree->_.oby.direction)
           {
-          case ASC_L: ssg_puts (" ASC ("); break;
+          case 0: case ASC_L: ssg_puts (" ASC ("); break;
           case DESC_L: ssg_puts (" DESC ("); break;
           }
         ssg->ssg_indent++;
@@ -1367,21 +1459,52 @@ fname_printed:
       }
     case SPAR_PPATH:
       {
-      int ctr, count = BOX_ELEMENTS (tree->_.ppath.parts);
+        SPART **p = tree->_.ppath.parts;
+        int count = BOX_ELEMENTS (p);
+        int fwd_ctr, ctr, fwdstar, invstar;
       switch (tree->_.ppath.subtype)
         {
-        case '!':
-          ssg_puts (" !");
-          /* no break */
-        case 0:
-          if (1 != count) ssg_puts (" (");
+        case 0: case '!':
+          fwd_ctr = count - tree->_.ppath.num_of_invs;
+          fwdstar = ((0 < fwd_ctr) && ((SPART *)_STAR == p[0]));
+          invstar = ((fwd_ctr < count) && ((SPART *)_STAR == p[fwd_ctr]));
+          if (fwdstar || invstar)
+            {
+              ssg_puts (" (");
+              if (fwdstar)
+                ssg_puts (" <star>|!<star>");
+              if (fwdstar && invstar)
+                ssg_puts ("|");
+              if (invstar)
+                ssg_puts (" ^<star>|!(^<star>)");
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (fwd_ctr, (ccaddr_t *)p), (ptrlong)0, (ptrlong)0, (ptrlong)0);
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              if ((0 < fwd_ctr) && !fwdstar)
+                {
+                  SPART *tmp = spartlist (ssg->ssg_sparp, 6, SPAR_PPATH, tree->_.ppath.subtype, t_list_memcpy (count-fwd_ctr, (ccaddr_t *)(p+fwd_ctr)), (ptrlong)0, (ptrlong)0, t_box_num(count-fwd_ctr));
+                  ssg_puts ("|");
+                  ssg_sdprint_tree (ssg, tmp);
+                }
+              ssg_puts (")");
+              break;
+            }
+          if ('!' == tree->_.ppath.subtype)
+            ssg_puts (" !");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
+              SPART *part = tree->_.ppath.parts[ctr];
               if (0 < ctr) ssg_puts (" |");
               if ((count - tree->_.ppath.num_of_invs) <= ctr) ssg_puts (" ^");
+              if ((SPART *)_STAR == part)
+                ssg_puts (" <x>|!<x>");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
-          if (1 != count) ssg_puts (" )");
+          if (('!' == tree->_.ppath.subtype) || (1 != count)) ssg_puts (" )");
           return;
         case 'D':
           ssg_puts (" DISTINCT");
@@ -1390,7 +1513,7 @@ fname_printed:
           ssg_puts (" (");
           for (ctr = 0; ctr < count; ctr++)
             {
-              if (0 < ctr) ssg_puts (" |");
+              if (0 < ctr) ssg_puts ("  | ");
               ssg_sdprint_tree (ssg, tree->_.ppath.parts[ctr]);
             }
           ssg_puts (" )");

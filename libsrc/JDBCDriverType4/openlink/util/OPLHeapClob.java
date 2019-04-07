@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -228,7 +228,6 @@ public class OPLHeapClob implements Clob, Serializable {
 
     //---------------------------- jdbc 3.0 -----------------------------------
 
-#if JDK_VER >= 14
 
     /**
      * Writes the given Java <code>String</code> to the <code>CLOB</code>
@@ -346,7 +345,6 @@ public class OPLHeapClob implements Clob, Serializable {
     }
   }
 
-#if JDK_VER >= 16
     /**
      * This method frees the <code>Clob</code> object and releases the resources the resources
      * that it holds.  The object is invalid once the <code>free</code> method
@@ -394,8 +392,6 @@ public class OPLHeapClob implements Clob, Serializable {
   }
 
 
-#endif
-#endif
 
   private void ensureOpen() throws SQLException
   {
@@ -574,7 +570,6 @@ public class OPLHeapClob implements Clob, Serializable {
 
   }
 
-#if JDK_VER >= 14
   // === Inner class ===========================================
   protected class BlobOutputWriter extends Writer {
 
@@ -683,6 +678,5 @@ public class OPLHeapClob implements Clob, Serializable {
     }
 
   }
-#endif
 
 }

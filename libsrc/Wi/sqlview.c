@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -663,14 +663,14 @@ qr_alias_out_cols (sql_comp_t * sc, query_t * qr, select_node_t * target_sel)
 
 void
 qr_replace_node (query_t * qr, data_source_t * to_replace,
-    data_source_t * replace_with)
+		 data_source_t * replace_with, int move_after_code)
 {
   /* replace query's select node  with given */
   if (to_replace == qr->qr_head_node)
     qr->qr_head_node = replace_with;
   DO_SET (data_source_t *, ds, &qr->qr_nodes)
   {
-    if ((qn_input_fn)fun_ref_node_input == ds->src_input)
+    if ((qn_input_fn)fun_ref_node_input == ds->src_input || IS_QN (ds, hash_fill_node_input))
       {
 	fun_ref_node_t * fref = (fun_ref_node_t  *)ds;
 	if (fref->fnr_select == to_replace)
@@ -678,9 +678,24 @@ qr_replace_node (query_t * qr, data_source_t * to_replace,
       }
     if (ds->src_continuations
 	&& ds->src_continuations->data == (caddr_t) to_replace)
+      {
+	if (move_after_code)
+	  {
+	    replace_with->src_after_code = ds->src_after_code;
+	    ds->src_after_code = NULL;
+	  }
       ds->src_continuations->data = (caddr_t) replace_with;
   }
+  }
   END_DO_SET ();
+  if (IS_QN (qr->qr_head_node, union_node_input))
+    {
+      QNCAST (union_node_t, uni, qr->qr_head_node);
+      DO_SET (query_t *, uqr, &uni->uni_successors)
+	if (to_replace == uqr->qr_head_node)
+	  uqr->qr_head_node = replace_with;
+      END_DO_SET();
+    }
 }
 
 
@@ -701,7 +716,7 @@ qr_ensure_distinct_node (sql_comp_t * sc, query_t * qr)
       data_source_t *rts = qr->qr_head_node, *distinct;
       dk_set_free (rts->src_continuations);
       rts->src_continuations = NULL;
-      sqlc_add_distinct_node (sc, &qr->qr_head_node, sel->sel_out_slots, 0);
+      sqlc_add_distinct_node (sc, &qr->qr_head_node, sel->sel_out_slots, 0, NULL, NULL);
       sql_node_append (&qr->qr_head_node, (data_source_t *) sel);
       distinct = (data_source_t *) rts->src_continuations->data;
       return distinct;
@@ -736,8 +751,11 @@ ssl_name_last_dot (char *name)
 setp_node_t *
 setp_node_keys (sql_comp_t * sc, select_node_t * sel, caddr_t * cols)
 {
+  GPF_T1 ("no longer in use");
+#if 0
   int inx, sinx;
   SQL_NODE_INIT (setp_node_t, setp, setp_node_input, setp_node_free);
+
   setp->setp_distinct = 1;
   if (cols)
     {
@@ -747,7 +765,7 @@ setp_node_keys (sql_comp_t * sc, select_node_t * sel, caddr_t * cols)
 	{
 	  if (0 == CASEMODESTRCMP (name, ssl_name_last_dot (ssl->ssl_name)))
 	    {
-	      dk_set_push (&setp->setp_keys, (void *) ssl);
+	      dk_set_push (&setp->setp_keys, (void *) sqlg_dt_inner_ssl (sc, ssl));
 	      goto next_name;
 	    }
 	}
@@ -764,11 +782,13 @@ setp_node_keys (sql_comp_t * sc, select_node_t * sel, caddr_t * cols)
 	int type = ssl->ssl_type;
 	if (type == SSL_ITC || type == SSL_PLACEHOLDER)
 	  break;
-	dk_set_push (&setp->setp_keys, (void *) ssl);
+	dk_set_push (&setp->setp_keys, (void *) sqlg_dt_inner_ssl (sc, ssl));
       }
       END_DO_BOX;
     }
   return setp;
+#endif
+  return NULL;
 }
 
 
@@ -803,30 +823,28 @@ sqlc_set_stmt (sql_comp_t * sc, ST * tree)
     {
       qr_replace_node (right->sqc_query,
 	  (data_source_t *) right->sqc_query->qr_select_node,
-	  (data_source_t *) sel);
+		       (data_source_t *) sel, 1);
 
     }
   else
     {
       setp_left = setp_node_keys (sc, sel, cols);
-      setp_left->setp_temp_key = sqlc_new_temp_key_id (sc);
       setp_left->src_gen.src_continuations = CONS (sel, NULL);
       qr_replace_node (left->sqc_query,
-	  (data_source_t *) sel, (data_source_t *) setp_left);
+		       (data_source_t *) sel, (data_source_t *) setp_left, 1);
 
       if (ST_P (tree, UNION_ST))
 	{
 	  qr_replace_node (right->sqc_query,
 	      (data_source_t *) right->sqc_query->qr_select_node,
-	      (data_source_t *) setp_left);
+			   (data_source_t *) setp_left, 1);
 	}
       else
 	{
 	  setp_right = setp_node_keys (sc, sel, cols);
-	  setp_right->setp_temp_key = setp_left->setp_temp_key;
 	  qr_replace_node (right->sqc_query,
 	      (data_source_t *) right->sqc_query->qr_select_node,
-	      (data_source_t *) setp_right);
+			   (data_source_t *) setp_right, 1);
 	  setp_left->setp_set_op = (int) tree->type;
 	}
     }
@@ -856,14 +874,14 @@ sqlc_copy_union_as (ST * exp, ST * as, int inx)
   return copy;
 }
 
+
 ST **
-sqlc_selection_names (ST * tree, int only_edit_tree)
+sqlc_selection_names (ST * tree)
 {
   int inx;
-  ST ** sel = (only_edit_tree ? (ST **)(tree->_.select_stmt.selection) : (ST **) t_box_copy ((caddr_t)(tree->_.select_stmt.selection)));
+  ST ** sel = (ST **) t_box_copy ((caddr_t) tree->_.select_stmt.selection);
   dk_set_t double_set = NULL;
   dk_set_t names_set = NULL;
-
   /*if (SQLO_ENABLE (sqlc_client()))*/
     {
       DO_BOX (ST *, exp, inx, sel)
@@ -893,14 +911,15 @@ next:;
 	  if (dk_set_member (double_set, (caddr_t) (ptrlong) inx))
 	    {
 	      char tname[100];
+
 	      snprintf (tname, sizeof (tname), "computed%d", inx);
-	      if (!only_edit_tree)
 	      sel[inx] = sqlc_copy_union_as (
-		  (ST*) t_list (3, COL_DOTTED, NULL, t_box_string (tname)),
+		  (ST*) t_list (3, COL_DOTTED,
+				NULL, t_box_string (tname)),
 		  exp, inx);
 	      exp->_.as_exp.name = t_box_string (tname);
 	    }
-	  else if (!only_edit_tree)
+	  else
 	    {
 	      sel[inx] = sqlc_copy_union_as (
 		  (ST*) t_list (3, COL_DOTTED,
@@ -912,7 +931,6 @@ next:;
 	{
 	  tree->_.select_stmt.selection[inx] = (caddr_t) t_list (5,
 	      BOP_AS, exp, NULL, t_box_string (exp->_.col_ref.name), NULL);
-	  if (!only_edit_tree)
 	  sel[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_copy_tree (exp->_.col_ref.name));
 	}
       else
@@ -920,7 +938,6 @@ next:;
 	  char tname[100];
 	  snprintf (tname, sizeof (tname), "computed%d", inx);
 	  tree->_.select_stmt.selection[inx] = (caddr_t) t_list (5, BOP_AS, tree->_.select_stmt.selection[inx], NULL, t_box_string (tname), NULL);
-	  if (!only_edit_tree)
 	  sel[inx] = (ST*) t_list (3, COL_DOTTED, NULL, t_box_string (tname));
 	}
     }
@@ -944,7 +961,7 @@ sqlc_union_dt_wrap (ST * tree)
       texp = sqlp_infoschema_redirect (t_listst (9,
 	    TABLE_EXP, t_list (1, t_list (3, DERIVED_TABLE, tree, t_box_string ("__"))),
 		   NULL, NULL, NULL, order, flags,opts, NULL));
-      sel = (ST*) t_list (5, SELECT_STMT, NULL, sqlc_selection_names (left, 0), NULL,
+      sel = (ST*) t_list (5, SELECT_STMT, NULL, sqlc_selection_names (left), NULL,
 			texp);
       return sel;
     }
@@ -977,7 +994,7 @@ sqlc_top_select_dt (sql_comp_t * sc, ST * tree)
   top = SEL_TOP (tree);
   if (top)
     {
-      ST * out_names = (ST *) sqlc_selection_names (tree, 0);
+      ST * out_names = (ST *) sqlc_selection_names (tree);
       sel = (ST*) /*list*/ t_list (5, SELECT_STMT, top, tree->_.select_stmt.selection, NULL,
 			tree->_.select_stmt.table_exp);
       texp = (ST*) /*list*/ t_list (9, TABLE_EXP,
@@ -1001,7 +1018,7 @@ sqlc_union_stmt (sql_comp_t * sc, ST ** ptree)
   ST **pleft_select;
   comp_context_t *cc = sc->sc_cc;
   SQL_NODE_INIT (union_node_t, un, union_node_input, union_node_free);
-
+  GPF_T1 ("not used");
   if (!sqlc_is_all_unions (tree))
     {
       sqlc_set_stmt (sc, tree);
@@ -1033,7 +1050,7 @@ sqlc_union_stmt (sql_comp_t * sc, ST ** ptree)
 	qr_alias_out_cols (sc, sqc->sqc_query, sel_node);
 	qr_replace_node (sqc->sqc_query,
 	    (data_source_t *) sqc->sqc_query->qr_select_node,
-	    (data_source_t *) sel_node);
+			 (data_source_t *) sel_node, 1);
       }
     else
       {
@@ -1057,7 +1074,7 @@ sqlc_union_stmt (sql_comp_t * sc, ST ** ptree)
       qr_alias_out_cols (sc, sqc->sqc_query, sel_node);
       qr_replace_node (sqc->sqc_query,
 	  (data_source_t *) sqc->sqc_query->qr_select_node,
-	  (data_source_t *) distinct_node);
+		       (data_source_t *) distinct_node, 1);
     }
     END_DO_SET ();
   }

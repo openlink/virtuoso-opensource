@@ -11,7 +11,7 @@ public class NormalDistRangeGenerator {
 	private int max;
 	private double normalLimit;
 	private Random ranGen;
-	
+
 	public NormalDistRangeGenerator(double mu, double sigma, int maxValue, double normalLimit, long seed)
 	{
 		normal 	= new NormalDistQuick(mu,sigma);
@@ -19,14 +19,14 @@ public class NormalDistRangeGenerator {
 		this.normalLimit = normalLimit;
 		ranGen = new Random(seed);
 	}
-	
+
 	public int getValue()
 	{
 		double randVal = normal.inverseF(ranGen.nextDouble());
-		
+
 		while(randVal > normalLimit || randVal < 0)
 			randVal = normal.inverseF(ranGen.nextDouble());
-		
+
 		return (int) ((randVal / normalLimit) * max + 1);
 	}
 }

@@ -1,0 +1,296 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="ldap_server"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+
+      <v:variable name="mode" type="varchar" default="'add'" />
+
+  <script type="text/javascript">
+    <![CDATA[
+      function sslTypeChange ()
+      {
+        $('port').value = ($('ssl').checked)? '636' : '389';
+      }
+    ]]>
+  </script>
+  <table class="tab_page" style="border: 0px;">
+                    <tr>
+		      <td valign="top">
+                        <b>
+                          <v:label name="mm" value="--''" render-only="0">
+			  <v:before-render>
+			    ;
+			  </v:before-render>
+                          </v:label>
+                        </b>
+      <v:form type="simple" name="ldsf1" method="POST" >
+	<table class="ctl_grp">
+	  <tr>
+              <th>Host name</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="host" value="" >
+                  <!--v:validator test="regexp" regexp="^(ldap://|ldaps://)?[a-zA-z0-9][a-zA-z0-9\.]*$" message="Invalid host name" runat="client"/-->
+                  <v:validator test="regexp" regexp="^(ldap(s)?://)?(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$" message="Invalid host name" runat="client"/>
+		<v:before-render>
+		  if (self.mode = 'edit')
+		    control.vc_add_attribute ('disabled', '1');
+		</v:before-render>
+	      </v:text>
+	    </td>
+	  </tr>
+	  <tr>
+              <th>Port</th>
+              <td>
+                <v:text xhtml_size="2" name="port" value="389" xhtml_id="port">
+		<v:before-render>
+		  if (self.mode = 'edit')
+		    control.vc_add_attribute ('disabled', '1');
+		</v:before-render>
+	      </v:text>
+	    </td>
+	  </tr>
+	  <tr>
+              <td></td>
+              <th><label><v:check-box name="ssl" xhtml_id="ssl" value="1" xhtml_onchange="sslTypeChange();" /> Try TLS</label></th>
+	    </tr>
+	  <tr>
+              <th>Base</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="base" value=""/>
+	    </td>
+	  </tr>
+	  <tr>
+              <th>Bind DN</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="bind" value=""/>
+	      </td>
+	    </tr>
+	    <tr>
+              <th>UID field</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="uidf" value="" />
+	      </td>
+	    </tr>
+	    <tr>
+              <th>Account</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="uid" value="" />
+	      </td>
+	    </tr>
+	    <tr>
+              <th>Password</th>
+              <td>
+                <v:text xhtml_style="width: 350px;" name="pwd" value="" type="password"/>
+	      </td>
+	    </tr>
+	    <tr>
+              <th>LDAP Version</th>
+              <td>
+		<v:select-list name="lver">
+		  <v:item value="2" name="2"/>
+		  <v:item value="3" name="3"/>
+		</v:select-list>
+	      </td>
+	    </tr>
+	    <tr>
+              <th></th>
+              <td>
+		<v:button action="simple" name="tst" value="Test">
+		  <v:on-post>
+		    declare addr any;
+		    declare exit handler for sqlstate '*'
+		    {
+		      rollback work;
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := __SQL_MESSAGE;
+		      return;
+                                    };
+
+		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
+		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+                    if (addr not like 'ldap%://%')
+                      addr := case when self.ssl.ufl_selected then 'ldaps://' else 'ldap://' end || addr;
+
+                                    ldap_search (
+                                      addr,
+                                      self.ssl.ufl_selected,
+                                      self.base.ufl_value,
+                                      sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
+                                      self.pwd.ufl_value
+                                    );
+
+		    self.mm.ufl_value := 'Connection successful.';
+		  </v:on-post>
+		</v:button>
+		<v:button action="simple" name="get" value="-- case when self.mode = 'edit' then 'Save' else 'Add' end">
+		  <v:on-post>
+		    declare addr, ssl, pwd any;
+		    declare exit handler for sqlstate '*'
+		    {
+		      rollback work;
+		      self.vc_is_valid := 0;
+		      self.vc_error_message := __SQL_MESSAGE;
+		      return;
+                                    };
+
+		    connection_set ('LDAP_VERSION', atoi(self.lver.ufl_value));
+		      addr := self.host.ufl_value||':'||self.port.ufl_value;
+                    if (addr not like 'ldap%://%')
+                      addr := case when self.ssl.ufl_selected then 'ldaps://' else 'ldap://' end || addr;
+
+                    ssl := self.ssl.ufl_selected;
+                                    ldap_search (
+                                      addr,
+                      ssl,
+                                      self.base.ufl_value,
+                                      sprintf ('(%s=%s)', self.uidf.ufl_value, self.uid.ufl_value),
+		    sprintf('%s=%s, %s', self.uidf.ufl_value, self.uid.ufl_value, self.bind.ufl_value),
+                      self.pwd.ufl_value
+                    );
+		    if (self.mode = 'edit')
+		    {
+		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
+                                      insert replacing SYS_LDAP_SERVERS (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
+                                        values (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value), self.uid.ufl_value, pwd, ssl);
+		    }
+		    else
+		    {
+		      pwd := pwd_magic_calc (self.uid.ufl_value, self.pwd.ufl_value, 0);  
+                                      insert soft SYS_LDAP_SERVERS (LS_ADDRESS, LS_BASE, LS_BIND_DN, LS_UID_FLD, LS_LDAP_VERSION, LS_ACCOUNT, LS_PASSWORD, LS_TRY_SSL)
+                                        values (addr, self.base.ufl_value, self.bind.ufl_value, self.uidf.ufl_value, atoi(self.lver.ufl_value), self.uid.ufl_value, pwd, ssl);
+		      if (not row_count())
+			{
+			  self.vc_is_valid := 0;
+			  self.vc_error_message := 'An LDAP server with same address is already defined.';
+			  return;
+			}
+		    }
+
+		    foreach (vspx_control c in self.ldsf1.vc_children) do
+		      {
+		        declare fld vspx_field;
+			if (c is not null
+			        and udt_instance_of (c, fix_identifier_case ('vspx_field'))
+			        and not udt_instance_of (c, fix_identifier_case ('vspx_button'))
+			    )
+			  {
+			    fld := c;
+			    fld.ufl_value := '';
+			  }
+		      }
+		   self.mode := 'add';
+		   self.lds.vc_data_bind (e);
+		  </v:on-post>
+		</v:button>
+	      </td>
+	    </tr>
+	  </table>
+	</v:form>
+	<table class="listing">
+	  <tr class="listing_header_row">
+	    <th>
+	      Address
+	    </th>
+	    <th>
+	      Base
+	    </th>
+	    <th>
+	      LDAP version
+	    </th>
+                            <th class="action">
+	      Action
+	    </th>
+	  </tr>
+	<v:data-set name="lds" scrollable="1" nrows="1000" cursor="keyset" edit="0">
+	  <v:sql>
+	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, pwd_magic_calc (LS_ACCOUNT, LS_PASSWORD, 1) as LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
+	  </v:sql>
+	  <v:template type="repeat" name="ldst1">
+
+	    <v:template type="browse" name="ldst2">
+	      <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+		<td>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
+		</td>
+		<td>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" />
+		</td>
+		<td>
+                                    <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%d" />
+			    </td>
+                                  <td class="action">
+                    <v:button action="simple"
+                              style="image"
+                              name="lds_edit"
+                              value="images/icons/edit_16.png"
+                              xhtml_alt="Edit"
+                              xhtml_title="Edit"
+                              text="&nbsp;Edit">
+                                      <v:on-post>
+                                        <![CDATA[
+				  declare hf, arr, host, port any;
+
+				  hf := WS.WS.PARSE_URI ((control.vc_parent as vspx_row_template).te_rowset[0]);
+				  arr := split_and_decode (hf[1], 0, '\0\0:');
+				  self.host.ufl_value := arr[0];
+                          self.port.ufl_value := case when (length (arr) > 1) then arr[1] else case when self.ssl.ufl_selected then '636' else '389' end end;
+				  self.base.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+				  self.bind.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[3];
+				  self.uidf.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[4];
+				  self.lver.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
+				  self.lver.vs_set_selected ();
+				  self.uid.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[5];
+				  self.pwd.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[6];
+				  self.mode := 'edit';
+				  self.get.vc_data_bind (e);
+                                        ]]>
+                                      </v:on-post>
+			      </v:button>
+                    <v:button action="simple"
+                              style="image"
+                              name="delete1"
+                              value="images/icons/trash_16.png"
+                              xhtml_alt="Delete"
+                              xhtml_title="Delete"
+                              text="&nbsp;Delete">
+				<v:on-post>
+                                        delete from SYS_LDAP_SERVERS where LS_ADDRESS = (control.vc_parent as vspx_row_template).te_rowset[0];
+			          self.lds.vc_data_bind (e);
+				</v:on-post>
+			      </v:button>
+			    </td>
+	      </tr>
+	  </v:template>
+	  </v:template>
+	</v:data-set>
+      </table>
+                      </td>
+                    </tr>
+                  </table>
+</v:page>

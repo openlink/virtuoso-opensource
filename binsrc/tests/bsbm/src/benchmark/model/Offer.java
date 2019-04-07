@@ -26,7 +26,7 @@ public class Offer extends BSBMResource {
 		this.deliveryDays = deliveryDays;
 		this.offerWebpage = offerWebpage;
 	}
-	
+
 	public int getNr() {
 		return nr;
 	}
@@ -64,7 +64,7 @@ public class Offer extends BSBMResource {
 	public double getPrice() {
 		return price;
 	}
-	
+
 	public String getPriceString()
 	{
 		return String.format(Locale.ENGLISH, "%.2f", price);
@@ -105,7 +105,7 @@ public class Offer extends BSBMResource {
 	public void setOfferWebpage(String offerWebpage) {
 		this.offerWebpage = offerWebpage;
 	}
-	
+
 	public String toString()
 	{
 		StringBuffer s = new StringBuffer();
@@ -116,7 +116,7 @@ public class Offer extends BSBMResource {
 		s.append(">");
 		return s.toString();
 	}
-	
+
 	public String getPrefixed() {
 		StringBuffer s = new StringBuffer();
 		s.append(Vendor.getVendorNSprefixed(vendor));
@@ -124,7 +124,7 @@ public class Offer extends BSBMResource {
 		s.append(nr);
 		return s.toString();
 	}
-	
+
 	public static String getURIref(int offerNr, int vendorNr)
 	{
 		StringBuffer s = new StringBuffer();

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -29,7 +29,7 @@
 <!ENTITY sioc "http://rdfs.org/sioc/ns#">
 <!ENTITY opl "http://www.openlinksw.com/schema/attribution#">
 <!ENTITY sioct "http://rdfs.org/sioc/types#">
-<!ENTITY review "http:/www.purl.org/stuff/rev#">
+<!ENTITY review "http://purl.org/stuff/rev#">
 <!ENTITY gr "http://purl.org/goodrelations/v1#">
 <!ENTITY c "http://www.w3.org/2002/12/cal/icaltzd#">
 <!ENTITY vcard "http://www.w3.org/2001/vcard-rdf/3.0#">

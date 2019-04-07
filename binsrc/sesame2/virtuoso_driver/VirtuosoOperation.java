@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@ public class VirtuosoOperation implements Operation {
 	MapBindingSet bindingSet = new MapBindingSet();
 	boolean includeInferred = false;
 	Dataset dataset = null;
+	int maxExecutionTime = 0;
 	
 	/**
 	 * Binds the specified variable to the supplied value. Any value that was
@@ -117,6 +118,36 @@ public class VirtuosoOperation implements Operation {
 	 */
 	public boolean getIncludeInferred() {
 		return this.includeInferred;
+	}
+
+
+	/**
+	 * Specifies the maximum time that an operation is allowed to run. The
+	 * operation will be interrupted when it exceeds the time limit. Any
+	 * consecutive requests to fetch query results will result in
+	 * {@link QueryInterruptedException}s or {@link UpdateInterruptedException}s
+	 * (depending on whether the operation is a query or an update).
+	 * 
+	 * @param maxExecTime
+	 *        The maximum query time, measured in seconds. A negative or zero
+	 *        value indicates an unlimited execution time (which is the default).
+	 * @since 2.8.0
+	 */
+	public void setMaxExecutionTime(int maxExecTime)
+	{
+		this.maxExecutionTime = maxExecTime;
+	}
+
+	/**
+	 * Returns the maximum operation execution time.
+	 * 
+	 * @return The maximum operation execution time, measured in seconds.
+	 * @see #setMaxExecutionTime(int)
+	 * @since 2.8.0
+	 */
+	public int getMaxExecutionTime()
+	{
+		return maxExecutionTime;
 	}
 
 }

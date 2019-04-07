@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -373,7 +373,7 @@ DB.DBA.VHOST_DEFINE(lpath=>'/support', ppath=>'http://support.mycompany.com/');
   Afterwards the procedure is similar:</para>
 
     <programlisting><![CDATA[
-DB.DBA.VHOST_DEFINE(lpath=>'/apache', ppath=>'http://localhost:90/');
+DB.DBA.VHOST_DEFINE(lpath=>'/apache', ppath=>'http://example.com:90/');
 ]]></programlisting>
 
 <sect4 id="apachedoingproxy"><title>Proxying Virtuoso via Apache</title>
@@ -408,7 +408,7 @@ ProxyPass /virtserver   http://MyVirtuosoServer:8890/
 
 <programlisting><![CDATA[
 <Location /virtuoso/>
-   ProxyPass               http://localhost:8890/
+   ProxyPass               http://example.com:8890/
    ProxyPassReverse        /
 </Location>
 ]]></programlisting>
@@ -421,13 +421,13 @@ it to the internal http endpoint.</para>
 <para>So when the browser makes a request for:</para>
 
 <programlisting><![CDATA[
-http://localhost/virtuoso/conductor/login.vsp
+http://example.com/virtuoso/conductor/login.vsp
 ]]></programlisting>
 
 <para>it is rewritten to use:</para>
 
 <programlisting><![CDATA[
-http://localhost:8890/conductor/login.vsp
+http://example.com:8890/conductor/login.vsp
 ]]></programlisting>
 
 <para>before sending the request over to the Virtuoso server.</para>
@@ -437,11 +437,11 @@ http://localhost:8890/conductor/login.vsp
 from Virtuoso to map back to the external URL. This is needed for e.g. 303 Location 
 redirects where Virtuoso will use:</para>
 <programlisting><![CDATA[
-Location: http://localhost:8890/conductor/pageXXX.vsp
+Location: http://example.com:8890/conductor/pageXXX.vsp
 ]]></programlisting>
 <para>which Apache needs to rewrite to:</para>
 <programlisting><![CDATA[
-Location: http://localhost/virtuoso/conductor/pageXXX.vsp
+Location: http://example.com/virtuoso/conductor/pageXXX.vsp
 ]]></programlisting>
 <para>before sending the reply back to the browser.</para>
 </listitem>
@@ -454,7 +454,7 @@ since ProxyPass and ProxyPassReverse only deal with rewriting urls and http head
 ]]></programlisting>
 <para>If you click on this link in your browser, it would use:</para>
 <programlisting><![CDATA[
-http://localhost/conductor/mypage.vsp
+http://example.com/conductor/mypage.vsp
 ]]></programlisting>
 <para>which does not map back to your /virtuoso/ vpath in apache.</para>
 <para>As phpBB3 has been written from outset to cater for this 
@@ -464,7 +464,7 @@ host/path names everywhere in its pages, which is not always very practical.</pa
 <programlisting><![CDATA[
      ProxyHTMLEnable         On
      ProxyHTMLURLMap         / /virtuoso/
-     ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+     ProxyHTMLURLMap         http://example.com:8890/ /virtuoso/
 ]]></programlisting>
 <para>This will rewrite the content of every page to make sure that links 
 inside the page are rewritten to use the external mapping of this instance.</para>
@@ -493,7 +493,7 @@ setup a virtual path on user's own system that points to some external system.</
 
 <para>Now you should be able to use for ex.:</para>
 <programlisting><![CDATA[
-http://localhost/dbp/page/London
+http://example.com/dbp/page/London
 ]]></programlisting>
 </listitem>
 </orderedlist>
@@ -529,13 +529,13 @@ ServerName www.mysite.net <http://www.mysite.net>
      #  content.
      #
      <Location /virtuoso/>
-         ProxyPass               http://localhost:8890/
+         ProxyPass               http://example.com:8890/
          ProxyPassReverse        /
 
          #  Enable rewrite rules
          ProxyHTMLEnable         On
          ProxyHTMLURLMap         / /virtuoso/
-         ProxyHTMLURLMap         http://localhost:8890/ /virtuoso/
+         ProxyHTMLURLMap         http://example.com:8890/ /virtuoso/
 
 # Uncomment this when EnabledGzipContent=1 in virtuoso.ini
          #SetOutputFilter         INFLATE;DEFLATE
@@ -553,7 +553,7 @@ ServerName www.mysite.net <http://www.mysite.net>
      #  rewrite the content.
      #
      <Location />
-         ProxyPass               http://localhost:8890/
+         ProxyPass               http://example.com:8890/
          ProxyPassReverse        /
      </Location>
 ]]></programlisting>
@@ -1223,7 +1223,7 @@ No-Operation.</para>
 	Listen 8080
 	<VirtualHost 999.999.999.999:8080 127.0.0.1:8080>
 	       ServerAdmin webmaster@host.example.domain
-	       ProxyPass  / http://localhost:6666/
+	       ProxyPass  / http://example.com/
 	</VirtualHost>
 	----------------------------------
 	]]></programlisting>
@@ -1256,7 +1256,7 @@ subjectAltName=$ENV::ALTNAME
 </listitem>
   <listitem>Set the environment variable <code>ALTNAME</code> to the owner's Web ID, e.g., 
 <programlisting><![CDATA[
-export ALTNAME=URI:http://localhost/dataspace/person/myname#this	
+export ALTNAME=URI:http://example.com/dataspace/person/myname#this
 ]]></programlisting>
 </listitem>
   <listitem>Make a self-signed certificate, e.g., 
@@ -1268,7 +1268,7 @@ $ CA.pl -sign
   <listitem>When asked to commit the certificate, make sure you see several lines above, like
 <programlisting><![CDATA[
 X509v3 Subject Alternative Name: 
-    URI:http://localhost/dataspace/person/myname#this 	
+    URI:http://example.com/dataspace/person/myname#this
 ]]></programlisting>
 </listitem>
   <listitem>If your browser wants a <code>PKCS#12</code> bundle, you must make one
@@ -1295,13 +1295,13 @@ X509ClientVerifyDepth       = 15
 ]]></programlisting>
 </listitem>
   <listitem>Also in the Virtuoso INI file, in the <code>[URIQA]</code> section, <code>DefaultHost</code>
-(<code>localhost:8890</code> below) must be edited to correspond to the DNS-resolvable host name 
+(<code>example.com:8890</code> below) must be edited to correspond to the DNS-resolvable host name
 ("CNAME") of the Virtuoso host, combined with the <code>ServerPort</code> as set in the 
 <code>[HTTPServer]</code> section of the same INI file. 
 <programlisting><![CDATA[
 [URIQA]
 DynamicLocal = 1
-DefaultHost  = localhost:8890	
+DefaultHost  = example.com:8890
 ]]></programlisting>
 <para>For example, if the CNAME of the host is <code>virtuoso.example.com</code>, and the 
 <code>ServerPort</code> is <code>4321</code>, the <code>DefaultHost</code> should be set to 

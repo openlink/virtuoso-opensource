@@ -1,0 +1,2321 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="vdb_main_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_vdb_link_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:scripts>
+      <?vsp
+        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
+      ?>
+    </vm:scripts>
+
+    <vm:variables>
+      <v:variable name="ds_name" type="varchar" default="null" persist="0"/>
+      <v:variable name="dsn_to_connect" type="varchar" default="null" persist="0"/>
+      <v:variable name="current_dsn" type="varchar" default="null" persist="0"/>
+      <v:variable name="res_current_dsn" type="varchar" default="'%'" persist="0"/>
+      <v:variable name="dsn_list" type="any" default="null" persist="0"/>
+      <v:variable name="system_table_list" type="any" default="null" persist="1"/>
+      <v:variable name="user_table_list" type="any" default="null" persist="1"/>
+      <v:variable name="view_list" type="any" default="null" persist="1"/>
+      <v:variable name="proc_list" type="any" default="null" persist="1"/>
+      <v:variable name="pks_t" persist="0" type="any" default="null" />
+      <v:variable name="pks_st" persist="0" type="any" default="null" />
+      <v:variable name="pks_v" persist="0" type="any" default="null" />
+      <v:variable name="s_stables" persist="0" type="any" default="null" />
+      <v:variable name="s_tables" persist="0" type="any" default="null" />
+      <v:variable name="s_views" persist="0" type="any" default="null" />
+      <v:variable name="s_procs" persist="0" type="any" default="null" />
+      <v:variable name="t_msgs" persist="0" type="any" default="null" />
+      <v:variable name="s_msgs" persist="0" type="any" default="null" />
+      <v:variable name="v_msgs" persist="0" type="any" default="null" />
+      <v:variable name="p_msgs" persist="0" type="any" default="null" />
+      <v:variable name="ul_tables" persist="0" type="any" default="null" />
+      <v:variable name="ul_views" persist="0" type="any" default="null" />
+      <v:variable name="ul_procs" persist="0" type="any" default="null" />
+      <v:variable name="proc_col_mode" persist="0" type="any" default="null" />
+      <v:variable name="linked_objects" persist="0" type="any" default="null" />
+      <v:variable name="to_unlink_objects" persist="0" type="any" default="null" />
+      <v:variable name="res_tables_flag" type="integer" default="1" persist="0"/>
+      <v:variable name="res_views_flag" type="integer" default="0" persist="0"/>
+      <v:variable name="res_procs_flag" type="integer" default="0" persist="0"/>
+      <v:variable name="current_catalog" type="varchar" default="null" persist="0"/>
+      <v:variable name="current_schema" type="varchar" default="null" persist="0"/>
+      <v:variable name="name_mask" type="varchar" default="null" persist="0"/>
+      <v:variable name="res_name_mask" type="varchar" default="null" persist="0"/>
+      <v:variable name="sys_tables_flag" type="integer" default="0" persist="0"/>
+      <v:variable name="user_tables_flag" type="integer" default="1" persist="0"/>
+      <v:variable name="views_flag" type="integer" default="0" persist="0"/>
+      <v:variable name="page" type="integer" default="-1" persist="0"/>
+      <v:variable name="page_back" type="integer" default="-1" persist="0"/>
+      <v:variable name="procedures_flag" type="integer" default="0" persist="0"/>
+      <v:variable name="ds_login" type="varchar" default="null" persist="0"/>
+      <v:variable name="login_error" type="varchar" default="null" persist="0"/>
+      <v:variable name="row_count" type="integer" default="0" persist="0"/>
+      <v:variable name="param_mode" type="varchar" default="0" persist="0"/>
+      <v:variable persist="1" name="vdb_object_errs" type="any" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+    <vm:header caption="External Data Sources"/>
+    <vm:pagebody vdb_check="1">
+      <v:before-data-bind>
+	    <![CDATA[
+declare params any;
+params := e.ve_params;
+
+              if (self.dsn_list is null)
+                {
+                  declare dsns, dsnsu, profile any;
+                  declare  dsn, dsnd,  drv, page, driver, host varchar;
+                  declare len, idx, con_state, n, sz integer;
+
+                  self.proc_col_mode := vector ('IN','OUT','INOUT','RETURNS');
+
+                  dsnsu := sql_data_sources (1, 'user');
+                  dsns := sql_data_sources (1, 'system');
+                  self.dsn_list := vector ();
+
+                  if (length (dsns) + length (dsnsu) = 0) -- No data sources defined
+                    {
+                      self.page := 2;
+                      self.vc_data_bind (e);
+                    }
+                  else
+                    {
+                      declare selected, cur_dsn varchar;
+
+                      cur_dsn := self.ds_name;
+                      idx := 0;
+                      len := length (dsnsu);
+
+                      while (idx < len)
+                        {
+                          dsn := aref (aref (dsnsu, idx), 0);
+                          dsnd := aref (aref (dsnsu, idx), 1);
+
+                          if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn))
+                            con_state := 1;
+                          else
+                            con_state := 0;
+
+                          profile := sql_get_private_profile_string (dsn, 'user');
+                          n := 0; sz := length (profile);
+                          driver := '&nbsp;';
+                          host := '&nbsp;';
+
+                          while (n < sz)
+                            {
+                              if (upper (aref (aref (profile, n), 0)) = 'ADDRESS')
+                                host := aref (aref (profile, n), 1);
+
+                              if (upper (aref (aref (profile, n), 0)) = 'DRIVER')
+                                driver := aref (aref (profile, n), 1);
+
+                              n := n + 1;
+                            }
+                          self.dsn_list := vector_concat (self.dsn_list,
+                                                          vector (vector (dsn,
+                                                                          dsnd,
+                                                                          con_state,
+                                                                          'user',
+                                                                          driver,
+                                                                          host)));
+                          idx := idx + 1;
+                        }
+
+                      idx := 0;
+                      len := length (dsns);
+
+                      while (idx < len)
+                        {
+                          dsn := aref (aref (dsns, idx), 0);
+                          dsnd := aref (aref (dsns, idx), 1);
+
+                          if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn))
+                            con_state := 1;
+                          else
+                            con_state := 0;
+
+                          profile := sql_get_private_profile_string (dsn, 'system');
+                          n := 0; sz := length(profile);
+                          driver := '&nbsp;';
+                          host := '&nbsp;';
+
+                          while (n < sz)
+                            {
+                              if (upper (aref (aref (profile, n), 0)) = 'ADDRESS')
+                                host := aref (aref (profile, n), 1);
+
+                              if (upper (aref (aref (profile, n), 0)) = 'DRIVER')
+                                driver := aref (aref (profile, n), 1);
+
+                              n := n + 1;
+                            }
+
+                          self.dsn_list :=
+                          vector_concat (self.dsn_list,
+                                         vector (vector (dsn,
+                                                         dsnd,
+                                                         con_state,
+                                                         'system',
+                                                         driver,
+                                                         host)));
+                          idx := idx + 1;
+                        }
+                    }
+                }
+
+              self.param_mode := get_keyword ('mode', params);
+
+              if (self.param_mode is not null and self.page = -1)
+                {
+                  if (self.param_mode = 'link_objects')
+                    {
+                      self.current_dsn := null;
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+                      self.page_back := -1;
+                      self.page := 0;
+                      self.vc_data_bind (e);
+                    }
+                  else if (self.param_mode = 'link_tables')
+                    {
+                      self.current_dsn := null;
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+                      self.page_back := -1;
+                      self.page := 0;
+                      self.sys_tables_flag := 1;
+                      self.user_tables_flag := 1;
+                      self.views_flag := 0;
+                      self.procedures_flag := 0;
+                      self.name_mask :=  '%';
+                      self.vc_data_bind(e);
+                    }
+                  else if (self.param_mode = 'link_views')
+                    {
+                      self.current_dsn := null;
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+                      self.page_back := -1;
+                      self.page := 0;
+                      self.sys_tables_flag := 0;
+                      self.user_tables_flag := 0;
+                      self.views_flag := 1;
+                      self.procedures_flag := 0;
+                      self.name_mask :=  '%';
+                      self.vc_data_bind(e);
+                    }
+                  else if (self.param_mode = 'link_procs')
+                    {
+                      self.current_dsn := null;
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+                      self.page_back := -1;
+                      self.page := 0;
+                      self.sys_tables_flag := 0;
+                      self.user_tables_flag := 0;
+                      self.views_flag := 0;
+                      self.procedures_flag := 1;
+                      self.name_mask :=  '%';
+                      self.vc_data_bind (e);
+                    }
+                  else if (self.param_mode = 'add_cred' or
+                           self.param_mode = 'edit_cred')
+                    {
+                      self.current_dsn := null;
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+                      self.page_back := -1;
+                      self.page := 1;
+                      self.vc_data_bind(e);
+                    }
+                  else if (self.param_mode = 'remove_cred')
+                    {
+                      self.dsn_to_connect := get_keyword ('dsn', params);
+
+                      if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = self.dsn_to_connect))
+                        {
+                          declare i, len integer;
+                          declare tmp_list, tmp_vec any;
+
+                          vdd_disconnect_data_source (self.dsn_to_connect);
+
+                          delete from DB.DBA.SYS_DATA_SOURCE where DS_DSN = self.dsn_to_connect;
+
+                          i := 0;
+                          tmp_list := self.dsn_list;
+                          len := length (tmp_list);
+
+                          while (i < len)
+                            {
+                              tmp_vec := aref (tmp_list, i);
+
+                              if (aref (tmp_vec, 0) = self.dsn_to_connect)
+                                {
+                                  aset (tmp_vec, 2, 0 );
+                                  aset (tmp_list, i, tmp_vec);
+                                }
+                              i := i + 1;
+                            }
+                          self.dsn_list := tmp_list;
+                        }
+                    }
+                  else if (self.param_mode = 'unlink_table')
+                    {
+                      self.to_unlink_objects := vector (get_keyword ('dsn', params),
+                                                        vector (get_keyword ('lname', params),
+                                                                get_keyword ('rname', params)),
+                                                        vector (),
+                                                        vector ());
+                      self.page_back := -1;
+                      self.page := 3;
+                      self.vc_data_bind (e);
+                    }
+                  else if (self.param_mode = 'unlink_view')
+                    {
+                      self.to_unlink_objects := vector (get_keyword ('dsn', params),
+                                                        vector (),
+                                                        vector (get_keyword ('lname', params),
+                                                                get_keyword ('rname', params)),
+                                                        vector ());
+                      self.page_back := -1;
+                      self.page := 3;
+                      self.vc_data_bind (e);
+                    }
+                  else if (self.param_mode = 'unlink_proc')
+                    {
+                      self.to_unlink_objects := vector (get_keyword ('dsn', params),
+                                                        vector (),
+                                                        vector (),
+                                                        vector (get_keyword ('lname', params),
+                                                                get_keyword ('rname', params)));
+                      self.page_back := -1;
+                      self.page := 3;
+                      self.vc_data_bind (e);
+                    }
+                }
+            ]]>
+        </v:before-data-bind>
+      <v:template name="vdb_dsn_main_template"
+                  type="simple"
+                  enabled="--case when (self.page = -1) then 1 else 0 end">
+        <v:before-render> <!-- Produce linked objects list -->
+          <v:script>
+            <![CDATA[
+              declare vec, dsn_tmp, l_tables, l_views, l_procs any;
+              declare n, len, p, p1 integer;
+              declare ds_name varchar;
+
+              self.linked_objects := vector ();
+
+              if (self.res_current_dsn = '%')
+                {
+                  dsn_tmp := self.dsn_list;
+                }
+              else
+                {
+                  dsn_tmp := vector (vector (self.res_current_dsn, '', 1, ''));
+                }
+
+              n := 0;
+              len := length (dsn_tmp);
+
+              while (n < len)
+                {
+                  ds_name := aref (aref (dsn_tmp, n), 0);
+                  l_tables := vector ();
+                  l_views := vector ();
+                  l_procs :=  vector ();
+
+                  for select rt_name as lname,
+                             rt_remote_name as rname
+                        from db.dba.sys_remote_table
+                        where rt_dsn = ds_name do
+                    {
+
+--
+-- So is it a table or view? Difficult to determine
+-- XXX Add code to check with remote data source - include indicator for data source which (currently)
+-- is unavailable. Perhaps (semi)persist this information across sessions to make page render faster.
+--
+                      l_tables := vector_concat (l_tables, vector(lname, rname));
+
+                    }
+                  -- PROCEDURES
+                  for select P_NAME, RP_REMOTE_NAME
+		  from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_REMOTE_PROCEDURES
+		   where P_NAME = RP_NAME and RP_DSN = ds_name do
+		    {
+                      l_procs :=  vector_concat (l_procs, vector (P_NAME, RP_REMOTE_NAME));
+                    }
+
+                  if (length (l_tables) > 0 or
+                      length (l_views) > 0  or
+                      length (l_procs) > 0)
+                    self.linked_objects :=
+                      vector_concat (self.linked_objects,
+                                     vector (ds_name, l_tables, l_views, l_procs));
+                  n := n + 1;
+                }
+            ]]>
+          </v:script>
+        </v:before-render>
+        <div class="page_sect">
+          <v:data-set name="ds"
+                      data="--self.dsn_list"
+                      meta="--vector (vector ('callret',182,0,256,1,0,1,0,0,0,0,0))"
+                      nrows="6"
+                      scrollable="1"
+                      edit="0"
+                      width="80">
+            <v:template name="dsn_lst_h_tmpl" type="simple" name-to-remove="table" set-to-remove="bottom"> <!-- DS list headers -->
+              <table class="listing">
+                <thead>
+                  <tr>
+                    <th/>
+	             <v:button name="refresh1" style="image" action="simple"
+		       value="images/icons/ref_16.png"
+                              xhtml_alt="Refresh page"
+			      xhtml_title="Refresh page" url="vdb_main.vspx">
+		    </v:button>
+                    <th>
+                      <v:label name="dsn_h_l" value="'DSN'" format="%s" width="80"/>
+                    </th>
+                    <th>
+                      <v:label name="desc_h_l" value="'Description'" format="%s" width="80"/>
+                    </th>
+                    <th>
+                      <v:label name="cred_h_l" value="'Access Credentials'" format="%s" width="80"/>
+                    </th>
+                    <th>
+                    </th>
+                  </tr>
+                </thead>
+              </table>
+            </v:template>
+            <v:template name="template2" type="repeat" name-to-remove="" set-to-remove="">
+              <v:template name="template7"
+                          type="if-not-exists"
+                          name-to-remove="table"
+                          set-to-remove="both"> <!-- No data sources available -->
+                <table rules="groups">
+                  <tr>
+                    <td align="center" colspan="11">
+                      <b>No data sources available</b>
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+              <v:template name="dsn_list_tmpl"
+                          type="browse"
+                          name-to-remove="table"
+                          set-to-remove="both"> <!-- DS list -->
+                <table>
+<?vsp
+                  self.row_count := self.row_count + 1;
+                  if (mod (self.row_count, 2))
+                    http ('<tr class="listing_row_odd">');
+                  else
+                    http ('<tr class="listing_row_even">');
+?>
+                  <td>
+                    <img class="icon" src="images/icons/database_16.png" alt="database"/>
+                  </td>
+                  <td>
+                    <v:label name="dsn_l"
+                             value="--(control.vc_parent as vspx_row_template).te_rowset[0]"
+                             format="%s"
+                             width="40"/>
+                  </td>
+                  <td>
+                    <v:label name="descr_l"
+                             value="--(control.vc_parent as vspx_row_template).te_rowset[1]"
+                             format="%s"
+                             width="40"/>
+                  </td>
+                  <td  class="listing_col_action">
+                    <v:label name="acc_cred_cmd_l" value="" format="%s" width="80">
+                      <v:after-data-bind>
+                          <![CDATA[
+                            if ((control.vc_parent as vspx_row_template).te_rowset[2] = 0)
+                              control.ufl_value :=
+                                sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=add_cred&dsn=%s">Add</a>',
+                                         self.sid,
+                                         self.realm,
+                                         (control.vc_parent as vspx_row_template).te_rowset[0]);
+                            else if ((control.vc_parent as vspx_row_template).te_rowset[2] = 1)
+                              {
+                                control.ufl_value :=
+                                  sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=edit_cred&dsn=%s">Edit</a>&nbsp;<a href="vdb_main.vspx?sid=%s&realm=%s&mode=remove_cred&dsn=%s">Remove</a>&nbsp;&nbsp;&nbsp;',
+                                           self.sid,
+                                           self.realm,
+                                           (control.vc_parent as vspx_row_template).te_rowset[0],
+                                           self.sid,
+                                           self.realm,
+                                           (control.vc_parent as vspx_row_template).te_rowset[0]);
+                              }
+                          ]]>
+                      </v:after-data-bind>
+                    </v:label>
+                  </td>
+                  <td>
+                    <v:label name="label6D" value="" format="%s" width="80">
+                      <v:after-data-bind>
+                        <v:script>
+                          <![CDATA[
+                            control.ufl_value :=
+                              sprintf ('<a href="vdb_main.vspx?sid=%s&realm=%s&mode=link_objects&dsn=%s">Link objects</a>',
+                                       self.sid,
+                                       self.realm,
+                                       (control.vc_parent as vspx_row_template).te_rowset[0]);
+                          ]]>
+                        </v:script>
+                      </v:after-data-bind>
+                    </v:label>
+                  </td>
+<?vsp           http('</tr>');?>
+                </table>
+              </v:template>
+            </v:template>
+            <v:template name="dsn_list_ftr_tmpl" type="simple" name-to-remove="table" set-to-remove="top">
+              <table>
+                <tr>
+                  <td align="center"  class="listing_col_action">
+		    <vm:ds-navigation data-set="ds"/>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+          </v:data-set>
+          <v:form name="res_filter_form" type="simple" method="POST" action="">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+    self.res_current_dsn := get_keyword ('res_dsn_list_control', params);
+    self.res_name_mask :=  get_keyword ('res_mask_of_name', params);
+    if (get_keyword ('res_tables_en', params) is not null)
+      self.res_tables_flag := 1;
+    else
+      self.res_tables_flag := 0;
+    if (get_keyword ('res_views_en', params) is not null)
+      self.res_views_flag := 1;
+    else
+      self.res_views_flag := 0;
+
+    if (get_keyword ('res_procs_en', params) is not null)
+      self.res_procs_flag := 1;
+    else
+      self.res_procs_flag := 0;
+                ]]>
+              </v:script>
+            </v:on-post>
+            <div class="page_sect">
+              <h3 class="page_sect_title">Linked objects</h3>
+              <table class="ctl_grp">
+                <tr>
+                  <td>Data Source</td>
+                  <td>
+                    <v:select-list name="res_dsn_list_control">
+                      <v:after-data-bind>
+                        <v:script>
+                          <![CDATA[
+
+if (self.page = -1)
+  {
+    declare i, len integer;
+    declare dsn varchar;
+
+    (control as vspx_select_list).vsl_items:= vector ();
+    (control as vspx_select_list).vsl_item_values:= vector ();
+
+    (control as vspx_select_list).vsl_items :=
+      vector_concat ((control as vspx_select_list).vsl_items,
+                     vector ('All Data Sources'));
+
+    (control as vspx_select_list).vsl_item_values :=
+      vector_concat ((control as vspx_select_list).vsl_item_values,
+                     vector ('%'));
+
+    len := length(self.dsn_list);
+    i := 0;
+
+    while (i < len)
+      {
+        dsn := aref (aref (self.dsn_list, i),0);
+        (control as vspx_select_list).vsl_items :=
+          vector_concat ((control as vspx_select_list).vsl_items,
+                         vector (dsn));
+        (control as vspx_select_list).vsl_item_values :=
+          vector_concat ((control as vspx_select_list).vsl_item_values,
+                         vector (dsn));
+        i := i + 1;
+      }
+    control.ufl_value := self.res_current_dsn;
+    control.vs_set_selected ();
+  }
+
+                          ]]>
+                        </v:script>
+                      </v:after-data-bind>
+                    </v:select-list>
+                  </td>
+                  <td>
+                    <v:check-box name="res_tables_en"
+                                 initial-checked="--self.res_tables_flag"
+                                 value="1"
+                                 xhtml_id="res_tables_en"/>
+                  </td>
+                  <td>
+                    <label for="res_tables_en">Tables</label>
+                  </td>
+                </tr>
+                <tr>
+                  <td><label for="name_t">Object Name</label></td>
+                  <td><input type="text" name="flt_name_t" size="15" xhtml_id="name_t"/></td>
+                  <td><v:check-box name="res_views_en"
+                                   initial-checked="--self.res_views_flag"
+                                   value="1"
+                                   xhtml_id="res_views_en"/></td>
+                  <td><label for="res_views_en">Views</label></td>
+                  <td><v:button action="simple" name="res_filter_clear" value="Clear" /></td>
+                </tr>
+                <tr>
+                  <td/>
+                  <td/>
+                  <td><v:check-box name="res_procs_en"
+                                   initial-checked="--self.res_procs_flag"
+                                   value="1"
+                                   xhtml_id="res_procs_en"/></td>
+                  <td><label for="res_procs_en">Stored Procedures</label></td>
+                  <td><v:button action="simple" name="res_filter_apply" value="Apply" /></td>
+                </tr>
+              </table>
+            </div> <!-- page_sect -->
+          </v:form>
+          <v:form name="res_linked_form" type="simple" method="POST" action=""> <!-- linked tables form -->
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+
+declare n, len, obj, objects, i, n integer;
+declare lname, rname, _data, ds_name, _param varchar;
+declare l_objects, ul_tables , ul_views, ul_procs any;
+
+self.to_unlink_objects := vector ();
+obj :=  0;
+objects := length (self.linked_objects);
+while (obj < objects)
+  {
+    ul_tables := vector ();
+    ul_views := vector ();
+    ul_procs := vector ();
+    ds_name := aref (self.linked_objects, obj);
+    if (get_keyword (sprintf ('%s_unlink_all_tables', ds_name), params) is not null)
+      {
+        l_objects := aref (self.linked_objects, obj + 1); -- tables
+        n := length (l_objects);
+        i := 0;
+        while (i < n)
+          {
+            ul_tables := vector_concat (ul_tables,
+                                        vector (aref (l_objects, i),
+                                                aref (l_objects, i + 1)));
+            i := i + 2;
+          }
+      }
+    else
+      {
+        l_objects  := aref (self.linked_objects, obj + 1); -- tables
+        n := length (l_objects);
+        i := 0;
+
+        while (i < n)
+          {
+            _param := get_keyword (sprintf ('cbt_%s_%d',ds_name, i), params, '');
+
+            if (_param <> '')
+              {
+                _data := decode_base64(_param);
+                ul_tables := vector_concat (ul_tables, vector (_data, aref (l_objects, i + 1)));
+              }
+            i := i + 2;
+          }
+      }
+
+    if (get_keyword (sprintf ('%s_unlink_all_views', ds_name), params) is not null)
+      {
+        l_objects  := aref (self.linked_objects, obj + 2); -- views
+        n := length (l_objects);
+        i := 0;
+        while (i < n)
+          {
+            ul_views := vector_concat (ul_views, vector (aref (l_objects, i),
+                                                         aref (l_objects, i + 1)));
+            i := i + 2;
+          }
+      }
+    else
+      {
+        l_objects := aref (self.linked_objects, obj + 2); -- views
+        n := length (l_objects);
+        i := 0;
+
+        while (i < n)
+          {
+            _param := get_keyword (sprintf ('cbv_%s_%d',ds_name, i), params,'');
+            if (_param <> '')
+            {
+              _data := decode_base64 (_param);
+              ul_views := vector_concat (ul_views, vector (_data, aref (l_objects, i + 1)));
+            }
+            i := i + 2;
+          }
+      }
+
+    if (get_keyword (sprintf ('%s_unlink_all_procs', ds_name), params) is not null)
+      {
+        l_objects := aref (self.linked_objects, obj + 3); -- procs
+        n := length (l_objects);
+        i := 0;
+        while (i < n)
+          {
+            ul_procs := vector_concat (ul_procs, vector (aref (l_objects, i),
+                                                         aref (l_objects, i + 1)));
+            i := i + 2;
+          }
+      }
+    else
+      {
+        l_objects := aref (self.linked_objects, obj + 3); -- procs
+        n := length (l_objects);
+        i := 0;
+        while (i < n)
+          {
+            _param := get_keyword (sprintf ('cbp_%s_%d', ds_name, i), params,'');
+            if (_param <> '')
+              {
+                _data := decode_base64 (_param);
+                ul_procs := vector_concat (ul_procs, vector (_data, aref (l_objects, i + 1)));
+              }
+            i := i + 2;
+          }
+      }
+
+    self.to_unlink_objects := vector_concat (self.to_unlink_objects,
+                                             vector (ds_name,
+                                                     ul_tables,
+                                                     ul_views,
+                                                     ul_procs));
+    obj:= obj + 4;
+  }
+
+self.page := 3;
+self.vc_data_bind (e);
+return;
+
+                ]]>
+              </v:script>
+            </v:on-post>
+            <div class="listing_top_ctl_grp">
+              <v:button action="simple"
+                        name="res_unlink_apply1"
+                        value="Unlink selected">
+                <v:before-render>
+                  <v:script>
+                    <![CDATA[
+                          if (length (self.linked_objects) > 0)
+                            control.vc_enabled := 1;
+                          else
+                            control.vc_enabled := 0;
+                    ]]>
+                  </v:script>
+                </v:before-render>
+              </v:button>
+            </div>
+            <table class="listing">
+              <tr class="listing_head_row">
+                <?vsp
+                if (length (self.linked_objects) > 0)
+		http ('<th><INPUT type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th><th>Type</th><th>Local name</th><th>DSN</th><th>Remote name</th><th> </th>');
+                else
+                  {
+                    http ('<td colspan="5">');
+                    http ('There are no objects of selected types linked from the Data Source selected.');
+                    http ('</td>');
+                  }
+                ?>
+		<td> </td>
+              </tr>
+                  <?vsp
+declare n, len, obj, objects integer;
+declare lname, rname varchar;
+declare l_objects any;
+declare l_dsn varchar;
+
+obj :=  0;  objects := length (self.linked_objects);
+
+if (objects > 0)
+  {
+
+    while (obj < objects)
+      {
+        if ((length (aref (self.linked_objects, obj + 1)) > 0 and self.res_tables_flag = 1) or
+            (length (aref (self.linked_objects, obj + 2)) > 0 and self.res_views_flag = 1) or
+            (length (aref (self.linked_objects, obj + 3)) > 0 and self.res_procs_flag = 1))
+          l_dsn := aref (self.linked_objects, obj);
+
+        l_objects := aref (self.linked_objects, obj + 1); -- tables
+        n := 0;
+        len := length (l_objects);
+
+        while (n < len and self.res_tables_flag = 1)
+          {
+            lname := aref (l_objects, n);
+            rname := aref (l_objects, n + 1);
+
+            self.row_count := self.row_count + 1;
+
+            if (mod (self.row_count, 2))
+              http ('<tr class="listing_row_odd">');
+            else
+              http ('<tr class="listing_row_even">');
+
+            http (sprintf ('<td><input type="checkbox" name="cbt_%s_%d" value="%s" border="0" /></td>',
+                           aref (self.linked_objects, obj), n, encode_base64 (lname)));
+            http ('<td><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+                           self.sid ,self.realm , lname, lname));
+            http (sprintf ('<td>%s</td>', l_dsn));
+            http (sprintf ('<td>%s</td>',
+                           rname));
+            http (sprintf ('<td><a href="vdb_main.vspx?sid=%s&realm=%s&mode=unlink_table&rname=%s&lname=%s&dsn=%s">Unlink</a></td>',
+                           self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
+            http ('</tr>');
+
+            n := n + 2;
+          }
+
+        l_objects :=  aref (self.linked_objects, obj + 3); -- procedures
+        n := 0; len := length (l_objects);
+
+        while (n < len and self.res_procs_flag = 1)
+          {
+            lname := aref (l_objects, n);
+            rname := aref (l_objects, n + 1);
+
+            if (mod (self.row_count, 2))
+              http ('<tr class="listing_row_odd">');
+            else
+              http ('<tr class="listing_row_even">');
+
+            http (sprintf ('<td><input type="checkbox" name="cbp_%s_%d" value="%s" border="0" /></td>',
+                           aref (self.linked_objects, obj), n, encode_base64 (lname)));
+            http ('<td><img src="images/icons/script_16.png" alt="Procedure" title="Stored Procedure"/></td>');
+            http (sprintf ('<td><a href="#" class="nav_link" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&gen_table_sel=%s\', \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')">%s</a></td>',
+                           self.sid ,self.realm , lname, lname));
+            http (sprintf ('<td>%s</td>', l_dsn));
+            http (sprintf ('<td>%s</td>', rname));
+            http (sprintf ('<td><a href="vdb_main.vspx?sid=%s&realm=%s&mode=unlink_proc&rname=%s&lname=%s&dsn=%s">Unlink</a></td>',
+                           self.sid ,self.realm, rname, lname, aref (self.linked_objects, obj)));
+            http('</tr>');
+            n := n + 2;
+          }
+
+        obj := obj + 4;
+      }
+  }
+                  ?>
+              <tr>
+                <td />
+                <td />
+                <td />
+                <td />
+                <td />
+                <td>
+
+                </td>
+              </tr>
+            </table>
+            <div class="listing_bot_ctl_grp">
+              <v:button action="simple" name="res_unlink_apply2" value="Unlink selected">
+                <v:before-render>
+                  <v:script>
+                    <![CDATA[
+
+if (length (self.linked_objects) > 0)
+  control.vc_enabled := 1;
+else
+  control.vc_enabled := 0;
+
+                    ]]>
+                  </v:script>
+                </v:before-render>
+              </v:button>
+            </div>
+          </v:form>
+        </div>
+      </v:template>
+      <v:template name="vdb_dsn_res_list_tmpl"
+                  type="simple"
+                  enabled="--case when (self.page = 0) then 1 else 0 end"> <!-- Link tables -->
+        <v:before-data-bind>
+          <v:script>
+            <![CDATA[
+declare exit handler for sqlstate '*'
+  {
+                  self.vc_error_message := sprintf ('%s',__SQL_MESSAGE);
+                  self.vc_is_valid := 0;
+                  return;
+                };
+
+              if (self.dsn_list is null and self.page = -1)
+                {
+                  self.name_mask := '%';
+                }
+
+              if (0 and self.current_catalog is null and self.current_dsn is not null and self.page = 0)
+                {
+                  if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0)
+                    self.current_catalog := aref (aref (sql_tables (self.current_dsn,
+                                                                    null,
+                                                                    null,
+                                                                    null,
+                                                                    null), 0), 0);
+                }
+              if (0 and self.current_schema is null and self.current_dsn is not null and self.page = 0)
+                {
+                  if (length (sql_tables (self.current_dsn, null, null, null, null)) > 0 )
+                    self.current_schema := aref (aref (sql_tables (self.current_dsn,
+                                                                   null,
+                                                                   null,
+                                                                   null,
+                                                                   null), 0), 1) ;
+                }
+              if (self.page = 0)
+                {
+                  declare len, idx integer;
+                  if (self.current_dsn is null)
+                    {
+                      if  (self.page_back = 0)
+                        {
+                          self.page := -1;
+                          self.vc_data_bind (e);
+                          return;
+                        }
+                      else
+                        {
+                          idx := 0;
+                          len := length (self.dsn_list);
+                          while (idx < len)
+                            {
+                              if (aref (aref (self.dsn_list, idx), 0) = self.dsn_to_connect and
+                                  aref (aref (self.dsn_list, idx), 2) = 0)
+                                {
+                                  self.page := 1;
+                                  self.page_back := 0;
+                                  self.vc_data_bind (e);
+                                  return;
+                                }
+                              idx := idx + 1;
+                            }
+                          self.current_dsn := self.dsn_to_connect;
+                        }
+                    }
+                  else if (get_keyword ('dsn_reload', params) is not null)
+                    {
+                      idx := 0;
+                      len := length (self.dsn_list);
+                      self.dsn_to_connect := get_keyword('dsn_list_control', params);
+                      self.page_back := 0;
+
+                      while (idx < len)
+                        {
+                          if (aref (aref (self.dsn_list, idx),0) = self.dsn_to_connect and
+                              aref (aref (self.dsn_list, idx), 2) = 0)
+                            {
+                              self.page := 1;
+                              self.page_back := 0;
+                              self.vc_data_bind (e);
+                              return;
+                            }
+                          idx := idx + 1;
+                        }
+                      self.current_dsn := get_keyword ('dsn_list_control', params);
+                    }
+                }
+            ]]>
+          </v:script>
+        </v:before-data-bind>
+        <table>
+          <tr>
+            <td id="RB" width="90%" valign="top" border="0" cellspacing="0" cellpadding="0">
+              <table id="DT" width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr class="subpage_header_area">
+                  <td>
+                    <table class="ctl_grp">
+                        <tr> <!-- dsn row -->
+                          <td>
+                            <v:form name="dsn_form" type="simple" method="POST" action="">
+                              <table> <!-- dsn dropbox w. description and host -->
+                                <tr>
+                                  <th>DSN</th>
+                                  <th>Description</th>
+                                  <th>Host</th>
+                                </tr>
+                                <tr>
+                                  <td>
+                                    <v:select-list name="dsn_list_control"
+                                     xhtml_onchange="javascript:doPost(\'dsn_form\', \'dsn_reload\');">
+                                      <v:after-data-bind>
+                                        <v:script>
+                                          <![CDATA[
+if (self.page = 0)
+  {
+    declare i, len integer;
+    declare dsn varchar;
+
+    (control as vspx_select_list).vsl_items:= vector();
+    (control as vspx_select_list).vsl_item_values:= vector();
+    len := length(self.dsn_list);
+    i := 0;
+
+    while (i < len)
+      {
+        dsn := aref (aref (self.dsn_list, i), 0);
+        (control as vspx_select_list).vsl_items :=
+        vector_concat ((control as vspx_select_list).vsl_items, vector(dsn));
+        (control as vspx_select_list).vsl_item_values :=
+          vector_concat ((control as vspx_select_list).vsl_item_values, vector(dsn));
+        i := i + 1;
+      }
+    control.ufl_value := self.current_dsn;
+    control.vs_set_selected ();
+  }
+                                          ]]>
+                                        </v:script>
+                                      </v:after-data-bind>
+                                    </v:select-list>
+                                  </td>
+                                  <?vsp
+                      http('<td>');
+                      if (self.current_dsn is not null and self.dsn_list is not null and self.page = 0)
+                        {
+                          declare i, len, n, sz  integer;
+                          declare ds_type, driver, host varchar;
+                          declare profile any;
+                          i := 0;
+                          len := length (self.dsn_list);
+                             while (i < len)
+                            {
+                              if (aref (aref (self.dsn_list, i),0) = self.current_dsn)
+                                {
+                                  http (aref (aref (self.dsn_list, i), 1));
+                                  ds_type :=  aref (aref (self.dsn_list, i), 3);
+                                }
+                              i := i + 1;
+                            }
+                          http ('</td>');
+                          http ('<td>');
+                          profile := sql_get_private_profile_string (self.current_dsn, ds_type);
+                          n := 0; sz := length (profile);
+                          driver := '&nbsp;';
+                          host := '&nbsp;';
+                             while (n <  sz)
+                            {
+                              if (upper (aref (aref (profile, n), 0)) = 'ADDRESS')
+                                host := aref (aref (profile, n), 1);
+                              if (upper (aref (aref (profile, n), 0)) = 'DRIVER')
+                                driver := aref (aref (profile, n), 1);
+                              n := n + 1;
+                            }
+                          http(host);
+                          http('</td>');
+                        }
+                                  ?>
+                                </tr>
+                              </table> <!-- DSN dropbox w. description and host -->
+                            </v:form> <!-- dsn_form -->
+                          </td>
+                        </tr> <!-- dsn row -->
+                        <tr> <!-- filter row -->
+                          <td>
+                            <v:form name="dsn_filter_form" type="simple" method="POST" action="">
+                              <v:on-post>
+                                <v:script>
+                                  <![CDATA[
+      self.current_catalog := get_keyword ('catalog_list', params);
+      self.current_schema := get_keyword ('schema_list', params);
+
+      if (get_keyword ('user_tables_en', params))
+        self.user_tables_flag := 1;
+      else
+        self.user_tables_flag := 0;
+
+      if (get_keyword('views_en', params) is not null)
+        self.views_flag := 1;
+      else
+        self.views_flag := 0;
+
+      if (get_keyword('procedures_en', params) is not null)
+        self.procedures_flag := 1;
+      else
+        self.procedures_flag := 0;
+
+      self.name_mask :=  get_keyword ('mask_of_name', params);
+                                  ]]>
+                                </v:script>
+                              </v:on-post>
+                              <table> <!-- dsn_filter_form -->
+                                <tr>
+                                  <td valign="top">
+                                    <table> <!-- flt -->
+                                      <tr>
+                                        <td></td>
+                                        <td>Catalog</td>
+                                        <td>Schema</td>
+                                        <td>Name</td>
+                                      </tr>
+                                      <tr>
+                                        <td><label>Filter</label></td>
+                                        <td>
+                                          <v:select-list name="catalog_list"
+                                                         defvalue="--self.current_catalog">
+                                            <v:after-data-bind>
+                                              <v:script>
+                                                <![CDATA[
+  if (self.page = 0  and self.current_dsn is not null)
+    {
+      declare key_list any;
+      declare i, len, n, sz, is_found integer;
+      declare v varchar;
+
+      control.vsl_items := vector ('All');
+      control.vsl_item_values:= vector ('%');
+      control.vsl_selected_inx := 0;
+
+      if (self.current_dsn is not null and self.current_dsn <> '')
+        {
+          key_list := sql_tables (self.current_dsn, null, null, null, null);
+          i := 0;
+          len :=  length (key_list);
+
+          while (i < len)
+            {
+              v := aref (aref (key_list, i), 0);
+	      if (v is not null and not position (v, control.vsl_item_values))
+                {
+                  control.vsl_items := vector_concat (control.vsl_items, vector (v));
+                  control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
+                }
+              i := i + 1;
+            }
+          control.vs_set_selected();
+        }
+    }
+                                                ]]>
+                                              </v:script>
+                                            </v:after-data-bind>
+                                          </v:select-list>
+                                        </td>
+                                        <td>
+                                          <v:select-list name="schema_list" defvalue="--self.current_schema">
+                                            <v:before-data-bind>
+                                              <v:script>
+                                                <![CDATA[
+  if (self.page = 0 and self.current_dsn is not null)
+    {
+      declare key_list any;
+      declare i, len, n, sz, is_found integer;
+      declare v varchar;
+
+      control.vsl_items := vector ('All');
+      control.vsl_item_values:= vector ('%');
+      control.vsl_selected_inx := 0;
+
+      if (self.current_dsn is not null and self.current_dsn <> '')
+        {
+          key_list := sql_tables (self.current_dsn, null, null, null, null);
+          i := 0;
+          len :=  length (key_list);
+
+          while (i < len)
+            {
+              v := aref (aref (key_list, i), 1);
+	      if (v is not null and not position (v, control.vsl_item_values))
+                {
+                  control.vsl_items := vector_concat (control.vsl_items, vector (v));
+                  control.vsl_item_values := vector_concat (control.vsl_item_values, vector (v));
+                }
+              i := i + 1;
+            }
+          control.vs_set_selected();
+        }
+    }
+                                                ]]>
+                                              </v:script>
+                                            </v:before-data-bind>
+                                          </v:select-list>
+                                        </td>
+                                        <td>
+                                          <v:text name="res_mask_of_name" size="24" value="--self.name_mask" />
+                                        </td>
+                                      </tr>
+                                    </table> <!-- flt -->
+                                  </td>
+                                  <td valign="top">
+                                    <table> <!-- checkboxes -->
+                                      <tr>
+                                        <td>
+                                          <v:check-box name="user_tables_en"
+                                                       initial-checked="--self.user_tables_flag"
+                                                       value="1"
+                                                       xhtml_id="user_tables_en"/>
+                                        </td>
+                                        <td>
+                                          <label for="user_tables_en">Tables</label>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td>
+                                          <v:check-box name="views_en"
+                                                       initial-checked="--self.views_flag"
+                                                       value="1"
+                                                       xhtml_id="views_en"/>
+                                        </td>
+                                        <td>
+                                          <label for="views_en">Views</label>
+                                        </td>
+                                      </tr>
+                                      <tr>
+                                        <td>
+                                          <v:check-box name="procedures_en"
+                                                       initial-checked="--self.procedures_flag"
+                                                       value="1"
+                                                       xhtml_id="procedures_en"/>
+                                        </td>
+                                        <td>
+                                          <label for="procedures_en">Stored Procedures</label>
+                                        </td>
+                                      </tr>
+                                    </table> <!-- checkboxes -->
+                                  </td>
+                                  <td valign="top">
+                                    <table> <!-- btns -->
+                                      <tr>
+                                        <td>
+                                          <v:button action="simple" name="filter_apply" value="Apply" xhtml_id="flt_apply"/>
+                                        </td>
+                                        <td>
+                                          <v:button action="simple" name="filter_clear" value="Clear" />
+                                        </td>
+                                      </tr>
+                                    </table> <!-- btns -->
+                                  </td>
+                                </tr>
+                              </table> <!-- dns_filter_form -->
+                            </v:form>
+                          </td>
+                        </tr> <!-- filter_row -->
+                      </table> <!-- ctl_grp -->
+                    </td>
+                  </tr>
+                  <tr class="main_page_area">
+                  <td>
+                    <v:form name="obj_list_form" method="POST" type="simple" action="">
+                      <v:on-post>
+                        <v:script>
+                          <![CDATA[
+  declare n, i integer;
+  declare _data any;
+  declare _param varchar;
+  declare err_tables, err_messages, err_pks any;
+
+-- Catch cancel
+--
+--  if (get_keyword ('btn_cancel_top', params) is not null or
+--      get_keyword ('btn_cancel_bot', params) is not null)
+
+
+  if (e.ve_button.vc_name = 'btn_cancel_top' or
+      e.ve_button.vc_name = 'btn_cancel_bot')
+
+    {
+      self.page := -1;
+      self.vc_data_bind (e);
+      return;
+    }
+
+--
+-- Process checkboxes, make vectors
+--
+
+  self.s_procs := vector ();
+  self.s_stables := vector ();
+  self.s_tables := vector ();
+  self.s_views := vector ();
+
+  if (self.user_tables_flag = 1)
+    {
+      n := length (self.user_table_list);
+      i := 0;
+      self.pks_t := vector ();
+
+      while (i < n)
+        {
+          if (get_keyword ('link_all_tables', params) is null)
+            {
+              _param := get_keyword (sprintf ('cbu_%d', i), self.vc_page.vc_event.ve_params, '');
+              if (_param <> '')
+                _data := deserialize (decode_base64 (_param));
+              else
+                _data := vector ();
+            }
+          else
+            _data := vector (aref (aref (self.user_table_list, i), 0),
+                                   aref (aref (self.user_table_list, i), 1),
+                                   aref (aref (self.user_table_list, i), 2));
+
+          if (length (_data))
+            {
+              self.s_tables := vector_concat (self.s_tables, vector (vector (_data,
+                                                                             vector (aref (_data, 0),
+                                                                                     self.current_dsn,
+                                                                                     aref (_data, 2)))));
+              self.pks_t := vector_concat (self.pks_t,
+                                          vector (adm_lt_getRPKeys2 (self.current_dsn,
+                                                                     _data[0],
+                                                                     _data[1],
+                                                                     _data[2])));
+            }
+          i := i + 1;
+        }
+    }
+
+  if (self.views_flag = 1)
+    {
+      n := length (self.view_list);
+      i := 0;
+      self.pks_v := vector ();
+
+      while (i < n)
+        {
+          if (get_keyword ('link_all_views', params) is null)
+            {
+              _param := get_keyword (sprintf ('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
+
+              if (_param <> '')
+                _data := deserialize (decode_base64( _param));
+              else
+                _data := vector();
+            }
+          else
+            _data := vector (aref (aref (self.view_list, i), 0),
+                             aref (aref (self.view_list, i), 1),
+                             aref (aref (self.view_list, i), 2));
+
+          if (length (_data))
+            {
+              self.s_views := vector_concat (self.s_views, vector (vector (_data,
+                                                                           vector (aref (_data, 0),
+                                                                                   self.current_dsn,
+                                                                                   aref (_data, 2)))));
+              self.pks_v := vector_concat (self.pks_v,
+                                           vector (adm_lt_getRPKeys2 (self.current_dsn,
+                                                                      _data[0],
+                                                                      _data[1],
+                                                                      _data[2])));
+            }
+          i := i + 1;
+        }
+    }
+  if (self.procedures_flag = 1)
+    {
+      n := length (self.proc_list);
+      i := 0;
+
+      while (i < n)
+        {
+          if (get_keyword ('link_all_procs', params) is null)
+            {
+              _param := get_keyword (sprintf ('cbp_%d',i), self.vc_page.vc_event.ve_params,'');
+
+              if (_param <> '')
+                _data := deserialize (decode_base64 (_param));
+              else
+                _data := vector();
+            }
+          else
+            _data := vector (aref (aref (self.proc_list, i), 0),
+                             aref (aref (self.proc_list, i), 1),
+                             aref (aref (self.proc_list, i), 2));
+
+            if (length (_data) > 0)
+              {
+                declare cols, ncols, k, wrapit any;
+                declare pars varchar;
+                declare j, l, k integer;
+
+                cols := sql_procedure_cols (self.current_dsn, _data[0], _data[1], _data[2], NULL);
+                j := 0;
+                l := length (cols);
+                k := 0;
+                ncols := make_array (l, 'any');
+                wrapit := '';
+
+                while (j < l)
+                  {
+                    declare stype, sprec, sscale any;
+                    declare type, prec, scale, ty, nam, lopts any;
+                    stype := cols[j][5];
+                    sprec := cols[j][7];
+                    sscale := cols[j][10];
+                    att_sql_to_dv_type (stype, sprec, sscale, null, null, type, prec, scale, lopts);
+                    ty := case cols[j][4]
+                            when 1 then 'IN'
+                            when 4 then 'OUT'
+                            when 2 then 'INOUT'
+                            when 3 then 'RESULTSET'
+                            when 5 then 'RETURNS'
+                            else 'UNDEFINED'
+                          end;
+
+                    if (ty = 'OUT' and cols[j][6] = 'PL/SQL TABLE')
+                      ty := 'RESULTSET';
+
+                    wrapit := 'checked';
+                    nam := SYS_ALFANUM_NAME (cols[j][3]);
+
+                    if (cols[j][4] <> 5 and
+                        length (cols[j]) > 16 and
+                        cols[j][17] <= l)
+                      aset (ncols, cols[j][17] - 1, vector (ty, nam, dv_type_title (type)));
+                    else
+                      if (cols[j][4] <> 5)
+                        {
+                          aset (ncols, k, vector (ty, nam, dv_type_title (type)));
+                          k := k + 1;
+                        }
+                      else
+                        aset (ncols, l - 1, vector (ty, nam, dv_type_title (type)));
+
+                    j := j + 1;
+                  }
+
+                declare q, o, n, q1, o1, n1, lname varchar;
+
+                q := aref ( _data, 0);
+                o := aref ( _data, 1);
+                n := aref ( _data, 2);
+                lname := att_local_name (self.current_dsn, n);
+                q1 := name_part (lname, 0);
+                o1 := name_part (lname, 1);
+                n1 := SYS_ALFANUM_NAME (n);
+                self.s_procs := vector_concat (self.s_procs,
+                                               vector (sprintf ('%s.%s.%s', q, o, n),
+                                                       q1, o1, n1, 'attach', '', ncols));
+              }
+            i := i + 1;
+        }
+    }
+
+self.page := 4; -- phase 2 - link options
+self.vc_data_bind (e);
+                          ]]>
+                        </v:script>
+                      </v:on-post>
+                      <table class="listing"> <!-- Tables available for linking -->
+                        <tr class="listing_head_cmd_row">
+                          <td colspan="3">
+                            <v:button action="simple" name="btn_cancel_top" value="Cancel" />
+                            <v:button action="simple" name="btn_link_top" value="Link..." />
+                          </td>
+                        </tr>
+                        <tr>
+			<th><INPUT type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th>
+                          <th>Type</th>
+                          <th>Name</th>
+                        </tr>
+                        <?vsp
+  if (self.page = 0 and self.current_dsn is not null)
+    {
+      declare row_no integer; row_no := 0;
+      declare row_class varchar;
+      declare n, size, table_deni integer;
+      declare system_table_list, user_table_list, view_list, proc_list any;
+      declare table_name, table_den, table_value  varchar;
+      declare hits, row_cnt integer;
+
+      user_table_list := get_sql_tables (self.current_dsn,
+                                         self.current_catalog,
+                                         self.current_schema,
+                                         self.name_mask, 'TABLE');
+
+      view_list := get_sql_tables (self.current_dsn,
+                                   self.current_catalog,
+                                   self.current_schema,
+                                   self.name_mask,
+                                   'VIEW');
+
+      proc_list := get_sql_procedures (self.current_dsn,
+                                       self.current_catalog,
+                                       self.current_schema,
+                                       self.name_mask);
+
+      self.user_table_list := user_table_list;
+      self.view_list := view_list;
+      self.proc_list := proc_list;
+
+      row_cnt := 0;
+
+      if (self.user_tables_flag = 1) -- Table listing
+        {
+          size := length (user_table_list);
+          n := 0;
+
+          while (n < size)
+            {
+              table_name := sprintf ('%s.%s.%s', aref (aref (user_table_list, n), 0),
+                                                 aref (aref (user_table_list, n), 1),
+                                                 aref (aref (user_table_list, n), 2));
+
+              table_value := encode_base64 (serialize (vector (aref (aref (user_table_list, n), 0),
+                                                               aref (aref (user_table_list, n), 1),
+                                                               aref (aref (user_table_list, n), 2))));
+
+              if (not exists (select RT_NAME
+                                from SYS_REMOTE_TABLE
+                                where RT_DSN = self.current_dsn and
+                                      RT_REMOTE_NAME = table_name))
+                {
+		  row_no := row_no + 1;
+		  row_cnt := row_cnt + 1;
+
+                  if (mod (row_cnt, 2))
+                    row_class := 'listing_row_odd';
+                  else
+                    row_class := 'listing_row_even';
+
+                  http (sprintf ('<tr class="%s">', row_class));
+                  http (sprintf ('<td><input type="checkbox" name="cbu_%d" value="%s"/></td>',
+                                 n, table_value));
+                  http ('<td><img class="icon" src="images/icons/table_16.png" title="Table" alt="Table"/></td>');
+                  http (sprintf ('<td>%s</td>', table_name));
+                  http ('</tr>');
+                }
+              n := n + 1;
+            }
+
+          if (row_no = 0)
+            http ('<tr><td colspan="3">No tables available for linking</td></tr>');
+        }
+
+      row_no := 0;
+
+      if (length (view_list) > 0 and self.views_flag = 1)
+        {
+	  --http ('<th><INPUT type="checkbox" name="link_all_views" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th>');
+          --http ('<th>T</th><th>Name</th></tr>');
+
+         size := length (view_list);
+         n := 0;
+
+         while (n < size)
+           {
+
+             table_name :=  sprintf('%s.%s.%s', aref (aref (view_list, n), 0),
+                                                      aref (aref (view_list, n), 1),
+                                                      aref (aref (view_list, n), 2));
+
+             table_value := encode_base64 (serialize (vector (aref (aref (view_list, n), 0),
+                                                              aref (aref (view_list, n), 1),
+                                                              aref (aref (view_list, n), 2))));
+
+             if (not exists (select RT_NAME
+                               from SYS_REMOTE_TABLE
+                               where RT_DSN = self.current_dsn and
+                                     RT_REMOTE_NAME = table_name))
+               {
+                 row_no := row_no + 1;
+		 row_cnt := row_cnt + 1;
+
+		 if (mod (row_cnt, 2))
+                   row_class := 'listing_row_odd';
+                 else
+                   row_class := 'listing_row_even';
+
+                 http (sprintf ('<tr class="%s">', row_class));
+                 http (sprintf ('<td><input type="checkbox" name="cbv_%d" value="%s"/></td>',
+                                n, table_value));
+                 http ('<td><img class="icon" src="images/icons/view_16.png" title="View" alt="View"/></td>');
+                 http (sprintf ('<td>%s</td>', table_name));
+                 http ('</tr>');
+               }
+             n := n + 1;
+           }
+
+          if (row_no = 0)
+            http ('<tr><td colspan="3">No views available for linking</td></tr>');
+        }
+
+      row_no := 0;
+
+      if (length (proc_list) > 0 and self.procedures_flag = 1)
+        {
+	  --http ('<tr class="listing_subh"><th colspan="3">Procedures</th></tr>');
+          --http ('<tr>');
+	  --http ('<th><input type="checkbox" name="link_all_procs" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>All</th>');
+          --http ('<th>T</th><th>Name</th>');
+          --http ('</tr>');
+
+          size := length (proc_list);
+          n:= 0;
+
+          while (n < size)
+            {
+              table_name :=  sprintf ('%s.%s.%s', aref (aref (proc_list, n), 0),
+                                                  aref (aref (proc_list, n), 1),
+                                                  aref (aref (proc_list, n), 2));
+              table_value := encode_base64 (serialize (vector (aref (aref (proc_list, n), 0),
+                                                               aref (aref (proc_list, n), 1),
+                                                               aref (aref (proc_list, n), 2))));
+              row_no := row_no + 1;
+              row_cnt := row_cnt + 1;
+
+              if (mod (row_cnt, 2))
+                row_class := 'listing_row_odd';
+              else
+                row_class := 'listing_row_even';
+
+              http (sprintf ('<tr class="%s">', row_class));
+              http (sprintf ('<td><input type="checkbox" name="cbp_%d" value="%s"/></td>',
+                             n, table_value));
+              http ('<td><img class="icon" src="images/icons/script_16.png" title="Stored procedure" alt="Stored procedure"/></td>');
+              http (sprintf ('<td>%s</td>', table_name));
+              http ('</tr>');
+
+              n := n + 1;
+            }
+
+          if (row_no = 0)
+            http ('<tr><td colspan="3">No procedures available for linking</td></tr>');
+        }
+    }
+                        ?>
+                        <tr class="listing_foot_cmd_row">
+                          <td colspan="3">
+                            <v:button action="simple" name="btn_cancel_bot" value="Cancel" />
+                            <v:button action="simple" name="btn_link_bot" value="Link..." />
+                          </td>
+                        </tr>
+                      </table>
+                    </v:form>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </v:template>
+      <v:template name="vdb_dsn_credential"
+                  type="simple"
+                  enabled="--case when (self.page = 1) then 1 else 0 end">
+        <v:form name="dsn_cred_form" type="simple" method="POST" action="">
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <td colspan="2">
+                <?vsp
+                  if (self.page = 1)
+                  {
+                    if (self.dsn_to_connect is not null)
+                      http ('Please enter valid access credentials');
+                    else
+                      http ('Please choose a DSN and enter access credentials');
+                  }
+                ?>
+              </td>
+            </tr>
+            <?vsp
+              if (self.login_error is not null)
+                {
+                  http ('<tr class="ctl_grp_err"><td colspan="2">');
+                  http (self.login_error);
+                  self.login_error := null;
+                  http ('</td></tr>');
+                }
+            ?>
+            <tr>
+              <?vsp
+if (self.page = 1)
+  {
+    http (sprintf ('<input type="hidden" name="dsn_name" value="%s"/>', self.ds_name));
+    http ('<td>Data Source Name');
+
+    if (self.dsn_to_connect is not null)
+      {
+        http ('</td><td><table><tr><td>');
+        http ( self.dsn_to_connect );
+        http ('</td></tr></table>');
+      }
+    else
+      {
+        http ('<span class="attention_marker">*</span></td><td>');
+
+        declare dsn, drv, page varchar;
+        declare len, i integer;
+
+        if (length (self.dsn_list) = 0)
+          http (sprintf ('No pre-defined DSNs'));
+        else
+          {
+            declare selected, cur_dsn varchar;
+
+            http ('<select name="dsn_names">');
+            i := 0;
+            len := length (self.dsn_list);
+
+            while (i < len)
+              {
+                dsn := aref (aref (self.dsn_list, i),0);
+                http (sprintf ('<option value="%s">%s</option>', dsn, dsn));
+                i := i + 1;
+              }
+
+            http('</select>');
+          }
+      }
+    http('</td>');
+  }
+              ?>
+            </tr>
+            <tr>
+              <td>User<span class="attention_marker">*</span></td>
+              <td><v:text name="user_name"/></td>
+            </tr>
+            <tr>
+              <td>Password<span class="attention_marker">*</span></td>
+              <td><v:text name="new_pass" type="password"/></td>
+            </tr>
+            <tr align="center">
+              <td colspan="2">
+                <v:button action="simple" name="dsn_cread_cancel" value="Cancel">
+                  <v:before-render>
+                    <v:script>
+                      <![CDATA[
+                        control.vc_enabled := case when self.dsn_to_connect is null then 0 else 1 end;
+                      ]]>
+                    </v:script>
+                  </v:before-render>
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.page := self.page_back;
+                        self.vc_data_bind (e);
+                        return;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="save" value="Connect">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare i, cnt, len integer;
+                        declare tmp_list, tmp_vec any;
+                        declare ds_pwdo, ds_pwdn, dsn_name varchar;
+                        if (get_keyword ('cancel', self.vc_page.vc_event.ve_params) <> '' or
+                            self.vc_is_valid = 0)
+                          {
+                            error:
+                            self.page := self.page_back;
+                            self.vc_data_bind (e);
+                            return;
+                          }
+
+                        if (self.dsn_to_connect is null)
+                          dsn_name := get_keyword ('dsn_names', params, '???' );
+                        else
+                          dsn_name := self.dsn_to_connect;
+                        self.ds_login :=
+                          (control.vc_parent.vc_find_control ('user_name') as vspx_field).ufl_value;
+                        ds_pwdn :=
+                          (control.vc_parent.vc_find_control ('new_pass') as vspx_field).ufl_value;
+
+                        if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE
+                                             where DS_DSN = dsn_name and
+                                                   DS_UID = self.ds_login))
+                          {
+                            vdd_disconnect_data_source (dsn_name);
+                            delete from DB.DBA.SYS_DATA_SOURCE
+                                   where DS_DSN = dsn_name and
+                                         DS_UID = self.ds_login;
+                          }
+                        {
+                          declare exit handler for sqlstate '*'
+                            {
+                              self.login_error := sprintf ('%s',__SQL_MESSAGE);
+                              self.vc_data_bind(e);
+                              return;
+                            };
+
+                          vd_remote_data_source (dsn_name, '', self.ds_login, ds_pwdn);
+                        }
+
+                        self.current_dsn := dsn_name;
+                        i := 0;
+                        tmp_list := self.dsn_list;
+                        len := length (tmp_list);
+
+                        while (i < len)
+                          {
+                            tmp_vec := aref (tmp_list, i);
+                            if (aref (tmp_vec,0) = self.current_dsn)
+                              {
+                                aset (tmp_vec,2,1);
+                                aset (tmp_list, i, tmp_vec);
+                              }
+                            i := i + 1;
+                          }
+
+                        self.dsn_list := tmp_list;
+                        self.page := self.page_back;
+                        self.vc_data_bind(e);
+                        return;
+                        try_again: ;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+      <v:template name="vdb_no_dsns" type="simple" enabled="--case when ( self.page = 2 ) then 1 else 0 end">
+        <div class="warning">No data sources are available.</div>
+      </v:template>
+      <v:template name="vdb_unlink_confirmation" type="simple" enabled="--case when ( self.page = 3  ) then 1 else 0 end">
+          <div class="confirm_dialog">
+            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <div class="confirm_text">
+        You have requested unlinking of external resources listed below.
+        This means that they will no longer be available for virtual database
+        operations.<br/>The data stored in external data source will remain unchanged.
+      </div>
+    </div>
+        <table class="listing">
+          <tr>
+            <td><b>DSN</b></td>
+            <td><b>Type</b></td>
+            <td><b>Local Name</b></td>
+            <td><b>Remote Name</b></td>
+          </tr>
+          <?vsp
+            declare i, n, j, k integer;
+            declare objects any;
+            declare ds_name varchar;
+            n := length(self.to_unlink_objects);
+            i := 0;
+            while (i < n)
+            {
+              ds_name := aref(self.to_unlink_objects, i);
+              objects := aref(self.to_unlink_objects, i + 1); -- tables
+              j := 0; k := length(objects);
+              while (j < k)
+              {
+                http('<tr>');
+                http('<td>');
+                http(ds_name);
+                http('</td>');
+                http('<td>Table</td>');
+                http('<td>');
+                http(aref(objects, j));
+                http('</td>');
+                http('<td>');
+                http(aref(objects, j + 1));
+                http('</td>');
+                http('</tr>');
+                j := j + 2;
+              }
+              objects := aref(self.to_unlink_objects, i + 3); -- procedures
+              j := 0;
+              k := length(objects);
+              while (j < k)
+              {
+                http('<tr>');
+                http('<td>');
+                http(ds_name);
+                http('</td>');
+                http('<td>Procedure</td>');
+                http('<td>');
+                http(aref(objects, j));
+                http('</td>');
+                http('<td>');
+                http(aref(objects, j + 1));
+                http('</td>');
+                http('</tr>');
+                j := j + 2;
+              }
+              i := i + 4;
+            }
+          ?>
+        </table>
+
+        <v:form name="unlink_form" type="simple" method="POST" action="">
+          <table>
+            <tr>
+              <td align="left">
+                <v:button action="simple" name="unlink_apply" value="Unlink">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare state, msg, m_dta, res, state1, msg1 varchar;
+                        declare i, n, j, k integer;
+                        declare objects any;
+                        n := length (self.to_unlink_objects);
+                        i := 0;
+
+                        while (i < n)
+                          {
+                            objects := aref (self.to_unlink_objects, i + 1); -- tables
+                            j := 0;
+                            k := length (objects);
+
+                            while (j < k)
+                              {
+                                state := '00000';
+                                exec (sprintf ('drop table "%s"."%s"."%s"',
+                                               name_part (aref (objects, j), 0, 'DB'),
+                                               name_part (aref (objects, j), 1, 'DBA'),
+                                               name_part (aref (objects, j), 2, null)),
+                                      state, msg, vector(), m_dta, res);
+                                exec ('commit work', state1, msg1);
+
+                                j := j + 2;
+                              }
+
+                            objects := aref (self.to_unlink_objects, i + 2); -- views
+                            j := 0; k := length (objects);
+
+                            while (j < k)
+                              {
+                                state := '00000';
+                                exec (sprintf ('drop view "%s"."%s"."%s"',
+                                               name_part (aref (objects, j), 0, 'DB'),
+                                               name_part (aref (objects, j), 1, 'DBA'),
+                                               name_part (aref (objects, j), 2, null)),
+                                      state, msg, vector (), m_dta, res);
+
+                                exec ('commit work', state1, msg1);
+                                j := j + 2;
+-- XXX no error handling
+                              }
+
+                            objects := aref (self.to_unlink_objects, i + 3); -- procs
+                            j := 0;
+                            k := length(objects);
+
+                            while (j < k)
+                              {
+                                state := '00000';
+                                exec (sprintf ('drop procedure "%s"."%s"."%s"',
+                                               name_part (aref (objects, j), 0, 'DB'),
+                                               name_part (aref (objects, j), 1, 'DBA'),
+                                               name_part (aref (objects, j), 2, null)),
+                                      state, msg, vector(), m_dta, res);
+
+                                exec('commit work', state1, msg1);
+                                j := j + 2;
+                              }
+                            i := i + 4;
+                          }
+
+                        self.page := -1;
+                        self.vc_data_bind(e);
+                        return;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="unlink_cancel" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.page := -1;
+                        self.vc_data_bind(e);
+                        return;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+
+<!-- Link confirmation page -->
+
+      <v:template name="vdb_link_confirmation" type="simple" enabled="--case when (self.page = 4) then 1 else 0 end">
+        <br/>
+                <table>
+                  <tr>
+                    <td id="RB" width="90%" valign="top" border="0" cellspacing="0" cellpadding="0">
+                      <table id="DT" width="100%" border="0" cellspacing="0" cellpadding="0">
+                        <tr class="subpage_header_area">
+			  <td>
+			    <div>
+                            <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+			    Linking objects from data source <b><?V self.current_dsn ?></b>.<br/>
+			    If you wish to make modifications to local names and other properties of the objects being linked, you may do so now.<br/>Hit 'Link' to proceed.
+			  </div>
+                          </td>
+                         </tr>
+                      </table>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td class="Warning"/>
+                  </tr>
+                  <tr class="main_page_area">
+                    <td>
+                      <v:form name="link_options_form" type="simple" method="POST" action="">
+                        <table>
+                          <tr>
+                            <th align="center">Tables and views</th>
+                          </tr>
+                          <tr>
+                            <td>
+                              <?vsp
+declare i, len, vlen integer;
+declare cols, tmp_vec any;
+declare col_name, col_type, col_mode varchar;
+declare _r_tbl, _l_tbl any;
+declare pref any;
+
+len := length (self.s_tables);
+vlen := length (self.s_views);
+i := 0;
+
+if (len > 0 or vlen > 0)
+  {
+    declare arr, tbls any;
+
+    http ('<table class="listing">');
+    http ('<tr class="listing_head_row">');
+    http ('<th align="left">External Table Name</th>');
+    http ('<th align="left">Database Catalog</th>');
+    http ('<th align="left">Owner (Schema)</th>');
+    http ('<th align="left">Link as</th>');
+    http ('<th align="left">Primary key(s)</th>');
+    http ('</tr>');
+
+
+    arr := self.s_tables;
+    tbls := 1;
+    pref := 't';
+
+againt:
+    len := length (arr);
+    i := 0;
+
+    while (i < len)
+      {
+        declare pkeys any;
+
+        _r_tbl := arr[i][0];
+        _l_tbl := arr[i][1];
+
+        http ('<tr class="">');
+        http (sprintf('<td>%s.%s.%s</td>', _r_tbl[0], _r_tbl[1], _r_tbl[2]));
+        http (sprintf('<td><input type="text" name="%s_catalog_%d" value="%s" /></td>', pref, i, _l_tbl[0]));
+        http (sprintf('<td><input type="text" name="%s_schema_%d" value="%s" /></td>', pref, i, _l_tbl[1]));
+        http (sprintf('<td><input type="text" name="%s_name_%d" value="%s" /></td>', pref, i, _l_tbl[2]));
+        http ('<td>');
+
+
+	pkeys := vdb_get_pkeys (self.current_dsn, _r_tbl[0], _r_tbl[1], _r_tbl[2]);
+
+	if (length (pkeys) > 0)
+	  {
+	    for (declare x any, x := 0; x < length (pkeys) ; x := x + 1)
+	      {
+		 http (sprintf('%s', pkeys[x]));
+		 if (x < length (pkeys) - 1)
+		   http (', ');
+	      }
+	  }
+	else
+	  http ('-');
+
+	  http ('</td></tr>');
+
+        i := i + 1;
+     }
+
+    if (tbls)
+      {
+        tbls := 0;
+        pref := 'v';
+	arr := self.s_views;
+	goto againt;
+      }
+
+    http ('</table>');
+  }
+else
+  {
+    http ('None selected');
+  }
+                              ?>
+                            </td>
+                          </tr>
+                        </table>
+                        <table>
+                          <tr>
+                            <th align="center">Procedures</th>
+                          </tr>
+                          <tr>
+                            <td>
+                              <?vsp
+declare i, len, j , n, l, k integer;
+declare cols, tmp_vec any;
+declare col_name, col_type, col_mode varchar;
+
+len := length (self.s_procs);
+i := 0;
+
+if (len > 0)
+  {
+    http ('<table class="listing">');
+    http ('<tr class="listing_head_row">');
+    http ('<th align="left">Remote Name</th>');
+    http ('<th align="left">Local Catalog</th>');
+    http ('<th align="left">Local Schema</th>');
+    http ('<th align="left">Local Name</th>');
+    http ('<th align="left">Description</th>');
+    http ('</tr>');
+
+    while (i < len)
+      {
+        http ('<tr class="">');
+        http (sprintf('<td>%s</td>',aref(self.s_procs,i)));
+        http (sprintf('<td><input type="text" name="catalog_%d" value="%s" /></td>', i, aref (self.s_procs, i + 1)));
+        http (sprintf('<td><input type="text" name="schema_%d" value="%s" /></td>', i, aref (self.s_procs, i + 2)));
+        http (sprintf('<td><input type="text" name="name_%d" value="%s" /></td>', i, aref (self.s_procs, i + 3)));
+        http (sprintf('<td><input type="text" name="COMMENT_%d" value="" /></td>', i));
+        http ('</tr>');
+        http ('<tr><th class="">PL Wrapper Requirements</th><td class="" colspan="4" align="left">');
+        http (sprintf('<input type="radio" name="wrap_0_%d" value="wrap"/>SOAP Execution',i));
+        http (sprintf('<input type="radio" name="wrap_0_%d" value="rset" />SQL Execution',i));
+        http (sprintf('<input type="radio" name="wrap_0_%d" value="attach"  checked="true" />None',i));
+        http ('</td></tr>');
+        http ('</table>');
+        cols := aref (self.s_procs,i + 6);
+        n := length (cols);
+        j := 0;
+        http ('<table>');
+        http ('<tr>');
+        http ('<th colspan="4" align="center">Parameters</th>');
+        http ('</tr>');
+        http ('<tr><th>Type</th><th>Name</th><th>Data Type</th><th>SOAP Type</th></tr>');
+        while (j < n)
+          {
+            col_mode := aref (aref (cols, j), 0);
+            col_name := aref (aref (cols, j), 1);
+            col_type := aref (aref (cols, j), 2);
+            http ('<tr class=""><td>');
+            http (sprintf ('<select name="parm_%d_%s_io">', j, col_name));
+            tmp_vec := self.proc_col_mode;
+            k := length (tmp_vec);
+            l := 0;
+
+            while (l < k)
+              {
+                http (sprintf ('<option value="%s"', aref (tmp_vec, l)));
+
+                if (aref (tmp_vec, l) = upper (col_mode))
+                  http ('selected="true"');
+
+                http (sprintf ('>%s</option>', aref (tmp_vec, l)));
+                l := l + 1;
+              }
+
+            http ('</select></td>');
+            http (sprintf ('<td>%s</td>', col_name));
+            http (sprintf ('<td><select name="parm_%d_%s_t">', i, col_name));
+            tmp_vec := get_vdb_data_types ();
+            k := length (tmp_vec);
+            l := 0;
+
+            while (l < k)
+              {
+                http (sprintf ('<option value="%s"', aref (tmp_vec,l) ));
+                if (aref (tmp_vec,l) = upper (col_type))
+                  http ('selected="true"');
+                http (sprintf ('>%s</option>',aref (tmp_vec,l)));
+                l := l + 1;
+              }
+
+            http ('</select></td>');
+            http (sprintf ('<td><select name="parm_%d_%s_s"><option value="" selected="true">*none*</option> ',i,col_name));
+            tmp_vec := vector ();
+            k := length (tmp_vec);
+            l := 0;
+
+            while (l < k)
+              {
+                http (sprintf ('<option value="%s"', aref (tmp_vec,l) ));
+                http (sprintf ('>%s</option>',aref (tmp_vec,l + 1) ));
+                l := l + 2;
+              }
+            http ('</select></td></tr>');
+            j := j + 1;
+          }
+        http ('<tr><td colspan="5">&nbsp;</td><tr></table>');
+        i := i + 7;
+      }
+  }
+else
+  {
+    http ('None selected');
+  }
+                              ?>
+                            </td>
+                          </tr>
+                        </table>
+                        <v:button action="simple" name="proc_link_apply" value="Link">
+                          <v:on-post>
+                            <v:script>
+                              <![CDATA[
+declare i, len, j , n, l, k integer;
+declare cols, l_procs any;
+declare local_cat,
+        local_sch,
+        local_name,
+        col_name,
+        col_type,
+        col_mode,
+        col_soap_type,
+        wrap_mode,
+        comments varchar;
+
+l_procs := self.s_procs;
+len := length (l_procs);
+i := 0;
+
+while (i < len)
+  {
+    local_cat := get_keyword (sprintf ('catalog_%d', i), params);
+    local_sch := get_keyword (sprintf ('schema_%d', i), params);
+    local_name := get_keyword (sprintf ('name_%d', i), params);
+    wrap_mode := get_keyword (sprintf ('wrap_0_%d', i), params);
+    comments := get_keyword (sprintf ('COMMENT_%d', i), params);
+    aset (l_procs,i + 1, local_cat);
+    aset (l_procs,i + 2, local_sch);
+    aset (l_procs,i + 3, local_name);
+    aset (l_procs,i + 4, wrap_mode);
+    aset (l_procs,i + 5, comments);
+    cols := aref(l_procs,i + 6);
+    n := length (cols);
+    j := 0;
+
+    while (j < n)
+      {
+        col_mode := aref (aref (cols, j), 0);
+        col_name := aref (aref (cols, j), 1);
+        col_type := aref (aref (cols, j), 2);
+        col_mode := get_keyword (sprintf ('parm_%d_%s_io', j, col_name), params);
+        col_type := get_keyword (sprintf ('parm_%d_%s_t', i, col_name), params);
+        col_soap_type := get_keyword (sprintf ('parm_%d_%s_s', i, col_name), params);
+        aset (cols, j , vector (col_mode, col_name, col_type, col_soap_type));
+        j := j + 1;
+      }
+
+    aset (l_procs, i + 6, cols);
+    i := i + 7;
+  }
+
+declare errs any;
+
+errs := vector();
+
+vdb_link_procedures (self.vc_event.ve_params,
+                     self.current_dsn,
+                     l_procs,
+                     errs);
+
+vdb_link_tables ('t',
+	         self.vc_event.ve_params,
+                 self.current_dsn,
+                 self.s_tables,
+                 self.pks_t,
+                 errs);
+
+vdb_link_tables ('v',
+		 self.vc_event.ve_params,
+                 self.current_dsn,
+                 self.s_views,
+                 self.pks_v,
+                 errs);
+
+if (length (errs))
+  {
+    self.vdb_object_errs := errs;
+    errs := null;
+    self.vc_redirect ('vdb_errs.vspx');
+  }
+
+self.page := -1;
+self.vc_data_bind (e);
+self.system_table_list := null;
+self.user_table_list := null;
+self.view_list := null;
+self.proc_list := null;
+return;
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                        <v:button action="simple" name="proc_link_cancel" value="Cancel">
+                          <v:on-post>
+                            <v:script>
+                              <![CDATA[
+                                self.page := -1;
+                                self.vc_data_bind (e);
+                                return;
+                              ]]>
+                            </v:script>
+                          </v:on-post>
+                        </v:button>
+                      </v:form>
+                    </td>
+                  </tr>
+                </table>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

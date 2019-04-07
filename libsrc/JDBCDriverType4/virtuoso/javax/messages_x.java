@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,7 +38,7 @@ public class messages_x extends ListResourceBundle {
 //##
    { "jdbcx.err.1", "Physical Connection is closed"},
    { "jdbcx.err.2", "Connection is closed"},
-   { "jdbcx.err.3", "Unexpected state of cache... cache_unit hasn't found"},
+   { "jdbcx.err.3", "Unexpected state of cache... cache_unit was not found"},
    { "jdbcx.err.4", "Connection failed : loginTimeout has expired"},
    { "jdbcx.err.5", "ConnectionPoolDataSource is closed"},
    { "jdbcx.err.6", "Statement is closed"},
@@ -71,8 +71,8 @@ public class messages_x extends ListResourceBundle {
    { "jdbcx.err.30", "Invalid cursor position"},
    { "jdbcx.err.31", "Unable to get Connection"},
    { "jdbcx.err.32", "RowSetMetaData is not defined"},
-   { "jdbcx.err.33", "{0} can not determine the table name."},
-   { "jdbcx.err.34", "{0} can not determine the keyCols."},
+   { "jdbcx.err.33", "{0} cannot determine the table name."},
+   { "jdbcx.err.34", "{0} cannot determine the keyCols."},
    { "jdbcx.err.35", "Method {0} not yet implemented."},
    { "jdbcx.err.36", "Unable to unwrap to: {0}"},
 

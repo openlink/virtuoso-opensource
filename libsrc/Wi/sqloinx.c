@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -153,13 +153,17 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
   float a1, cost, best_arity = 0;
   dbe_table_t * tb = tb_dfe->_.table.ot->ot_table;
   int n_eqs;
+  return;
+#if 0
+  if (so->so_sc->sc_cc->cc_query && so->so_sc->sc_cc->cc_query->qr_proc_vectored)
+    return;
   if (LOC_LOCAL != tb_dfe->dfe_locus)
     return;
   DO_SET (dbe_key_t *, k1, &tb->tb_keys)
     {
       if (k1 != tb->tb_primary_key && !k1->key_no_pk_ref)
 	{
-	  dk_set_t group = NULL, eq_cols = NULL;;
+	  dk_set_t group = NULL, eq_cols = NULL;
 	  n_eqs = sqlo_leading_eqs (k1, col_preds);
 	  if (!n_eqs || n_eqs == k1->key_n_significant)
 	    goto next;
@@ -201,6 +205,7 @@ sqlo_find_inx_intersect (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, flo
       tb_dfe->dfe_unit = best;
       tb_dfe->dfe_arity = best_arity;
     }
+#endif
 }
 
 
@@ -213,6 +218,8 @@ int
 sqlo_is_col_eq (op_table_t * ot, df_elt_t * col, df_elt_t * val)
 {
   dk_set_t *place;
+  if (col == val)
+    return 1;
   if (!ot->ot_eq_hash)
     return 0;
   place = (dk_set_t *) id_hash_get (ot->ot_eq_hash, (caddr_t) &col->dfe_tree);
@@ -297,7 +304,7 @@ dfe_col_placed_eq (sqlo_t *so, op_table_t * ot, df_elt_t * col_dfe)
 	return c;
       if (DFE_COLUMN == c->dfe_type)
 	{
-	  df_elt_t * def = dfe_col_def_dfe (so, c);;
+	  df_elt_t * def = dfe_col_def_dfe (so, c);
 	  if (def)
 	    return c;
 	}
@@ -510,7 +517,7 @@ sqlo_try_inx_int_joins (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * group_ret, fl
   op_table_t * ot = so->so_this_dt;
   int n_eqs;
   dk_set_t group = NULL;
-  if (!inx_int_join)
+  if (!inx_int_join || (so->so_sc->sc_cc->cc_query && so->so_sc->sc_cc->cc_query->qr_proc_vectored))
     return;
   if (tb_dfe->_.table.is_unique
       || tb_dfe->_.table.ot->ot_rds

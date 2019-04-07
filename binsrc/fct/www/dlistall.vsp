@@ -1,0 +1,137 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+  declare label, puri varchar;
+
+  label := 'Drill-down queries';
+  puri := get_keyword('p', params,'');
+  puri := replace (puri, '\'', '%27');
+?>
+  <head>
+    <link rel="stylesheet" type="text/css" href="style.css">
+    <title><?=label?></title>
+  </head>
+  <body>
+    <div id="header">
+      <div id="hd_l">
+	  <h1 id="title"><?vsp http (sprintf ('%s', label)); ?> for
+	      <a href="/describe?url=<?U puri ?>"><?V puri ?></a>
+	  </h1>
+      </div> <!-- hd_l -->
+    </div> <!-- header -->
+    <div id="homelink">
+      <table class="description">
+        <tr>
+          <td>
+            <?vsp http(sprintf('<a href="listall.vsp\r\n">Back to main menu</a>'));?>
+          </td>
+       </tr>
+     </table>
+    </div>
+    <div id="content">
+      <table class="description">
+        <?vsp
+          declare i integer;
+
+          for(i:=100;i<104;i:=i+1)
+          {
+            http (sprintf ('<tr><td><a class="homelinks" href="search.vsp?q=%s&sc=%U">%s</a></td></tr>',cast(i as varchar), puri, label_get(cast(i as varchar))));
+          };
+        ?>
+      </table>
+      <div>Properties</div>
+      <table class="tableresult" border="1">
+	  <?vsp
+	  declare sql_state, err_msg, meta, data, res any;
+	  declare tmp, i, j, rs, len, to_print any;
+	  sql_state := '00000';
+	  err_msg := 'none';
+	  exec ('b3s_exec (?)', sql_state, err_msg, vector(
+	  sprintf ('sparql select distinct ?p ?o where { <%s> ?p ?o }', puri)
+	  ),0, meta, data);
+	  if (sql_state = '00000')
+	    {
+	      res := deserialize (data[0][0]);
+	      len := length (res);
+	      if (len > 5)
+	        to_print := 5;
+              else
+	        to_print := len;
+	        {
+                  for(i:=0;i<to_print;i:=i+1)
+                  {
+                    j:=0;
+                    rs := res[i];
+                    http('<tr>');
+                    for(j:=0;j<length(rs);j:=j+1)
+                    {
+                      tmp := rs[j];
+                      if ( isstring(tmp ) and (strstr(tmp,'http://') = 0 or strstr(tmp,'nodeID://')=0))
+                      {
+		        http (sprintf ('<td><a class="uri" href="%s">%s</a>', concat('/describe/?url=', sprintf ('%U',tmp)), tmp));
+                        http ('</td>');
+                      }
+                      else
+                      {
+                        http('<td>');
+			if (__tag of rdf_box = __tag (tmp) and not rdf_box_is_complete (tmp))
+			  http ('Incomplete box');
+			else
+			  {
+			    http_value(tmp);
+			  }
+                        http('</td>');
+                      };
+                    };
+                    http('</tr>');
+                  };
+               }
+	  }
+	  ?>
+      </table>
+      <?vsp
+      http (sprintf ('<div>total count: %d</div>', len));
+      ?>
+    </div><!--  #content -->
+    <div id="homelink">
+      <table class="description">
+        <tr>
+          <td>
+            <?vsp http(sprintf('<a href="listall.vsp\r\n">Back to main menu</a>'));?>
+          </td>
+       </tr>
+     </table>
+    </div>
+    <div id="footer">
+      <div id="ft_b">
+        <a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="http://dbpedia.org/statics/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+        <a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/LoDLogo.gif" border="0"></a> &nbsp;
+        <a href="http://dbpedia.org/sparql"><img alt="W3C Semantic Web Technology" src="http://dbpedia.org/statics/sw-sparql-blue.png" border="0"></a> &nbsp;  &nbsp;
+        <a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="http://dbpedia.org/statics/od_80x15_red_green.png" border="0"></a>
+      </div> <!-- #ft_b -->
+    </div> <!-- #footer -->
+  </body>
+</html>
+
+

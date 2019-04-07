@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -150,13 +150,14 @@ typedef struct sparp_equiv_s
     SPART **e_vars;		/*!< Array of all equivalent variables, including different occurrences of same name in different triples */
     ptrlong e_var_count;	/*!< Number of used items in e_vars. This can be zero if equiv passes top-level var from alias to alias without local uses */
     ptrlong e_gspo_uses;	/*!< Number of all local uses in members (+1 for each in G, P, S or O in triples). Note that nonzero e_gspo_uses does not imply SPART_VARR_NOT_NULL if some members has triple.subtype == OPTIONAL_L */
-    ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each subquery use) */
+    ptrlong e_nested_bindings;	/*!< Number of all nested uses in members (+1 for each in G, P, S or O in triples, +1 for each sub-gp use, +1 if \c e_gp is of subtype VALUES_L) */
+    ptrlong e_nested_optionals;	/*!< Number of all nested uses in OPTIONAL_L members, VALUES_L memebers with UNDEF for the variable in question and"pure chains" to such OPTIONALs and VALUEs (+1 for each such sub-gp use) */
     ptrlong e_const_reads;	/*!< Number of constant-read uses in filters and in 'graph' of members */
     ptrlong e_optional_reads;	/*!< Number of uses in scalar subqueries of filters; both local and member filter are counted */
     ptrlong e_subquery_uses;	/*!< Number of all local uses in subquery (0 for plain queries, 1 in groups of subtype SELECT_L) */
     ptrlong e_replaces_filter;	/*!< Bitmask of SPART_RVR_XXX bits, nonzero if a filter has been replaced (and removed) by tightening of this equiv or by merging this and some other equiv, so the equiv is the only bearer of knowledge about the restriction. */
     rdf_val_range_t e_rvr;	/*!< Restrictions that are common for all variables. They are combined from rvrs of variables and subvalues, however rvrs of variables can be tightened by ancestor equivs, making the dependencies circular. */
-    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from, as array of indexes of equivs */
+    ptrlong *e_subvalue_idxs;	/*!< Subselects where values of these variables come from, as array of indexes of equivs. The order is not defined, but subvalues from OPTIONALs are after all other. */
     ptrlong *e_receiver_idxs;	/*!< Aliases of surrounding query where values of variables from this equiv are used, as array of indexes of equivs */
     ptrlong e_clone_idx;	/*!< Index of the current clone of the equiv */
     ptrlong e_cloning_serial;	/*!< The serial used when \c e_clone_idx is set, should be equal to \c sparp->sparp_sg->sg_cloning_serial */
@@ -168,6 +169,7 @@ typedef struct sparp_equiv_s
 #ifdef DEBUG
     ptrlong e_dbg_merge_dest;	/*!< After the merge of equiv into some destination equiv, \c e_dbg_merge_dest keeps destination */
     SPART **e_dbg_saved_gp;	/*!< \c e_gp that is boxed as ptrlong, to save the pointer after \c e_gp is set to NULL */
+    sparp_t *e_dbg_allocator;	/*!< The sparp where the equiv is created. This is to differentiate equivs with same gp selids from, e.g., three different variants of grabbing query */
 #endif
   } sparp_equiv_t;
 
@@ -193,6 +195,17 @@ typedef struct sparp_equiv_s
 #define SPARP_EQ_IS_USED(eq) \
   ((0 != eq->e_const_reads) || (0 != BOX_ELEMENTS_0 (eq->e_receiver_idxs)))
 
+#define SPAR_VALUES_GP_HAS_UNBOUND(sparp,wrapping_gp,vname) \
+      ((wrapping_gp)->_.gp.subquery->_.binv.counters_of_unbound [ \
+                  sparp_find_binv_rset_pos_of_varname ((sparp), (wrapping_gp), (wrapping_gp)->_.gp.subquery, (vname)) ] )
+
+#define SPARP_EQ_RETURNS_LIKE_OPTIONAL(sparp,eq) \
+  ( (OPTIONAL_L == (eq)->e_gp->_.gp.subtype) \
+    || \
+    ((VALUES_L == (eq)->e_gp->_.gp.subtype) && \
+      SPAR_VALUES_GP_HAS_UNBOUND((sparp), (eq)->e_gp, (eq)->e_varnames[0]) ) \
+    || \
+    (((eq)->e_nested_bindings == (eq)->e_nested_optionals) && (0 == (eq)->e_gspo_uses) && (0 == (eq)->e_subquery_uses) ) )
 
 #define SPARP_EQUIV_GET_NAMESAKES	0x01	/*!< \c sparp_equiv_get() returns equiv of namesakes, no need to search for exact var. */
 #define SPARP_EQUIV_INS_CLASS		0x02	/*!< \c sparp_equiv_get() has a right to add a new equiv to the \c haystack_gp */
@@ -261,12 +274,9 @@ extern sparp_equiv_t *sparp_equiv_exact_copy (sparp_t *sparp, sparp_equiv_t *ori
 #define SPARP_EQUIV_MERGE_CONFLICT	1003 /*!< Restrict or merge is done but it is proven that restrictions contradict */
 #define SPARP_EQUIV_MERGE_DUPE		1004 /*!< Merge gets \c primary equal to \c secondary */
 
-/*! Returns 1 if tree always returns a reference or NULL but never returns literal */
-extern int sparp_tree_returns_ref (sparp_t *sparp, SPART *tree);
-
 /*! Tries to restrict \c primary by \c datatype and/or value.
 If neither datatype nor value is provided, SPARP_EQUIV_MERGE_OK is returned. */
-extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value);
+extern int sparp_equiv_restrict_by_constant (sparp_t *sparp, sparp_equiv_t *primary, ccaddr_t datatype, SPART *value, ccaddr_t orig_text);
 
 /*! Removes unused \c garbage from the list of equivs of its gp.
 The debug version GPFs if the \c garbage is somehow used. */
@@ -379,7 +389,7 @@ If dest is equal to SPARP_RVR_CREATE then it allocates new rvr otherwise it over
 extern rdf_val_range_t *sparp_rvr_copy (sparp_t *sparp, rdf_val_range_t *dest, const rdf_val_range_t *src);
 
 /*! Tries to zap \c dest and then restrict it by \c datatype and/or value. */
-extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value);
+extern void sparp_rvr_set_by_constant (sparp_t *sparp, rdf_val_range_t *dest, ccaddr_t datatype, SPART *value, ccaddr_t orig_text);
 
 /*! Restricts \c dest by additional restrictions from \c addon_restrictions.
 The operation checks for validity of resulting combination of the \c rvrRestrictions bits and may set SPART_VARR_CONFLICT.
@@ -438,7 +448,7 @@ sparp_rewrite_basic() should not call sparp_simplify_expns() directly or indirec
 extern void sparp_rewrite_basic (sparp_t *sparp, SPART *req_top);
 
 /*! Checks whether \c sqlval of a literal is a proper string represendation of an object value with type \c dt_iri and language \c lang */
-extern int sparp_literal_is_xsd_valid (sparp_t *sparp, caddr_t sqlval, caddr_t dt_iri, caddr_t lang);
+extern int sparp_literal_is_xsd_valid (sparp_t *sparp, ccaddr_t sqlval, ccaddr_t dt_iri, ccaddr_t lang);
 
 /*! Tries to calculate the range of values returned by a \c tree and fill in the structure under \c rvr_ret.
 if \c return_independent_copy is zero then the filled structure should remain static, otherwise it gets its own copy of list of formats and can be edited
@@ -463,11 +473,17 @@ extern void sparp_simplify_expns (sparp_t *sparp, SPART *req_top);
 
 extern void spar_invalidate_binv_dataset_row (sparp_t *sparp, SPART *binv, int rowno, int reason_col);
 
-/*! Removes data rows from \c binv as soon as they conflict with equivs of variables in any single cell. As a side effect, unused sprintf formats are remvoed from equivs. */
+/*! Removes data rows from \c binv as soon as they conflict with equivs of variables in any single cell. As a side effect, unused sprintf formats are removed from equivs. */
 extern void spar_shorten_binv_dataset (sparp_t *sparp, SPART *binv);
 
 /*! Re-calculates common properties of \c binv variables by values in their data columns. Any UNBOUND in column disables the re-calculation. */
 extern void spar_refresh_binv_var_rvrs (sparp_t *sparp, SPART *binv);
+
+/*! Checks whether a single-column binv without UNSETs and duplicates can be replaced with FILTER (?var IN ( values )) on a gspo or otherwise set variable */
+extern int spar_binv_is_convertible_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv);
+
+/*! Replace binv with FILTER (?var IN ( values )) . No checks are made in this function, the check must be made before via \c spar_binv_is_convertible_to_filter () */
+extern void spar_binv_to_filter (sparp_t *sparp, SPART *parent_gp, SPART *member_gp, SPART *member_binv);
 
 /*! Returns triple that contains the given variable \c var as a field.
 If \c gp is not NULL the search is restricted by triples that
@@ -508,13 +524,14 @@ extern SPART *sparp_find_subexpn_in_retlist (sparp_t *sparp, const char *varname
 extern int sparp_subexpn_position1_in_retlist (sparp_t *sparp, const char *varname, SPART **retvals);
 
 /*! This returns a mapping of \c var.
-If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals */
-extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var);
+If var_triple is NULL then it tries to find it using \c sparp_find_triple_of_var() for vars and \c sparp_find_triple_of_var_or_retval() for retvals.
+\c allow_returning_null is useful when a \c var is a retval from subselect so it is not associated with any triple pattern */
+extern qm_value_t *sparp_find_qmv_of_var_or_retval (sparp_t *sparp, SPART *var_triple, SPART *gp, SPART *var, int allow_returning_null);
 
-extern int sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn);
+extern void sparp_find_language_dialect_by_service (sparp_t *sparp, SPART *service_expn, int *dialect_ret, int *exceptions_ret);
 
 /*! This searches for storage by its name. NULL arg means default (or no storage if there's no default loaded), empty UNAME means no storage */
-extern quad_storage_t *sparp_find_storage_by_name (ccaddr_t name);
+extern quad_storage_t *sparp_find_storage_by_name (sparp_t *sparp, ccaddr_t name);
 
 /*! This searches for quad map by its name. */
 extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);
@@ -527,17 +544,17 @@ extern quad_map_t *sparp_find_quad_map_by_name (ccaddr_t name);
 #define SSG_QM_MATCH_AND_CUT	5	/*!< SSG_QM_APPROX_MATCH plus qm is soft/hard exclusive so red cut and no more search for possible quad maps of lower priority */
 
 typedef struct tc_context_s {
-  SPART *tcc_triple;		/*!< Triple pattern in question */
-  int tcc_check_source_graphs;	/*!< Nonzero if \c tcc_sources contains nonzero number of graphs so it forms the restriction that should be checked */
-  SPART **tcc_sources;		/*!< Source graphs that can be used */
-  uint32 *tcc_source_invalidation_masks;	/*!< String of integers, nonzero means that the source graph with same index in \c tcc_sourcess has failed some restriction at some level of nested quad maps. 0x1 is for global restriction by type, 0x2 is for RDF views etc. SPAN_NOT_FROM_xxx are never masked, of course */
-  quad_storage_t *tcc_qs;	/*!< Quad storage in question */
-  quad_map_t *tcc_top_allowed_qm;	/*!< Top qm that is allowed, if it is specified in the triple */
+  SPART *		tcc_triple;			/*!< Triple pattern in question */
+  int			tcc_check_source_graphs;	/*!< Nonzero if \c tcc_sources contains nonzero number of graphs so it forms the restriction that should be checked */
+  SPART **		tcc_sources;			/*!< Source graphs that can be used */
+  uint32 *		tcc_source_invalidation_masks;	/*!< String of integers, nonzero means that the source graph with same index in \c tcc_sourcess has failed some restriction at some level of nested quad maps. 0x1 is for global restriction by type, 0x2 is for RDF views etc. SPAN_NOT_FROM_xxx are never masked, of course */
+  quad_storage_t *	tcc_qs;				/*!< Quad storage in question */
+  quad_map_t **		tcc_top_allowed_qms;		/*!< Top qms that are allowed, if some are specified in the triple via QUAD MAP xx { } */
   void *tcc_last_qmvs [SPART_TRIPLE_FIELDS_COUNT];	/*!< Pointers to recently checked QMVs or constants. QMVs tend to repeat in sequences. */
   int tcc_last_qmv_results [SPART_TRIPLE_FIELDS_COUNT];	/*!< Results of recent comparisons. */
   dk_set_t tcc_cuts [SPART_TRIPLE_FIELDS_COUNT];	/*!< Accumulated red cuts for possible values of fields */
-  dk_set_t tcc_found_cases;		/*!< Accumulated triple cases */
-  int tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
+  dk_set_t		tcc_found_cases;		/*!< Accumulated triple cases */
+  int			tcc_nonfiltered_cases_found;	/*!< Count of triples cases that passed tests, including cases rejected due to QUAD MAP xx { } restriction of triple */
 } tc_context_t;
 
 /*! This checks if the given \c qm may contain data that matches \c tcc->tcc_triple by itself,
@@ -701,7 +718,7 @@ Equivalences are touched, of course, but who cares?
 extern void sparp_flatten_join (sparp_t *sparp, SPART *parent_gp);
 
 /*! If a gp is group of non-optional triples and each triple has exactly one possible quad map then the function returns vector of tabids of triples.
-In addition, if the \c expected_triples_count argument is nonnegative then number of triples in group should be equal to that argument.
+In addition, if the \c expected_triples_count argument is non-negative then number of triples in group should be equal to that argument.
 If any condition fails, the function returns NULL.
 This function is used in breakup code generation. */
 extern caddr_t *sparp_gp_may_reuse_tabids_in_union (sparp_t *sparp, SPART *gp, int expected_triples_count);
@@ -816,12 +833,20 @@ struct rdf_ds_s;
 #define SSG_VALMODE_SQLVAL		((ssg_valmode_t)((ptrlong)(0x330)))	/*!< SQL value to bereturned to the SQL caller */
 #define SSG_VALMODE_DATATYPE		((ssg_valmode_t)((ptrlong)(0x340)))	/*!< Datatype UNAME or BF_URI string, not a value */
 #define SSG_VALMODE_LANGUAGE		((ssg_valmode_t)((ptrlong)(0x350)))	/*!< Language is needed, not a value */
-#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< Something simplest */
-#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_BOOL		((ssg_valmode_t)((ptrlong)(0x360)))	/*!< No more than a boolean is needed */
+#define SSG_VALMODE_AUTO		((ssg_valmode_t)((ptrlong)(0x370)))	/*!< Something simplest */
 #define SSG_VALMODE_SPECIAL		((ssg_valmode_t)((ptrlong)(0x380)))
 /* typedef struct rdf_ds_field_s *ssg_valmode_t; -- moved to sparql.h */
 
-extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
+/*! \c returns smallest valmode that can keep values from both \c m1 and \c m2.
+In addition to the returned value it can set \c sqlval_is_ok_and_cheap_ret[0] to zero if the sqlval of either \c m1 or \c m2 is not cheap.
+sqlval of SSG_VALMODE_AUTO is cheap because "auto" can become sqlval when needed and the conversion is not needed at all.
+sqlval SSG_VALMODE_SHORT_OR_LONG \c m1 or \c m2 is not cheap.
+SSG_VALMODE_LONG \c m1 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x2 set:
+this bit is convenient if \c m1 is a result of previous ssg_smallest_union_valmode() of other members of same union.
+Similarly, SSG_VALMODE_LONG \c m2 is not cheap by default but can be treated as cheap if \c sqlval_is_ok_and_cheap_ret[0] has bit 0x4 set:
+this is primarily for internal use when ssg_smallest_union_valmode() calls itself with swapped arguments. */
+extern ssg_valmode_t ssg_smallest_union_valmode (ssg_valmode_t m1, ssg_valmode_t m2, int *sqlval_is_ok_and_cheap_ret);
 extern ssg_valmode_t ssg_largest_intersect_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern ssg_valmode_t ssg_largest_eq_valmode (ssg_valmode_t m1, ssg_valmode_t m2);
 extern int ssg_valmode_is_subformat_of (ssg_valmode_t m1, ssg_valmode_t m2);
@@ -906,6 +931,7 @@ typedef struct spar_sqlgen_s
   struct spar_sqlgen_s	*ssg_nested_ssg;	/*!< Ssg that prints some fragment for the current one, like a text of query to send to a remote service. This is used for GC on abort */
   SPART *		ssg_wrapping_gp;	/*!< A gp of subtype SELECT_L or SERVICE_L that contains the current subquery */
   SPART *		ssg_wrapping_sinv;	/*!< Service invocation description of \c ssg_wrapping_p in case of SERVICE_L gp subtype */
+  int			ssg_comment_sql;	/*!< The mode of putting comments into the generated SQL, as set by define sql:comments (default 0 for release, 1 otherwise) */
 /* Run-time environment */
   SPART			**ssg_sources;		/*!< Data sources from ssg_tree->_.req_top.sources and/or environment */
 /* SQL Codegen temporary values */
@@ -923,6 +949,7 @@ typedef struct spar_sqlgen_s
   SPART *		ssg_sd_current_sinv;	/*!< Service invocation that will receive the fragment that is printed ATM (for error reporting) */
   caddr_t		ssg_sd_service_naming;	/*!< The text like "SERVICE <iri>" or "SERVICE called via ?var" (for error reporting) */
   int			ssg_sd_flags;		/*!< Bitmask of SSG_SD_xxx flags, see rdf_mapping.jso */
+  int			ssg_sd_no;		/*!< Bitmask of SSG_SD_NO_xxx flags, see rdf_mapping.jso */
   id_hash_t		*ssg_sd_used_namespaces;	/*!< Dictionary of namespaces used for prettyprinting of IRIs */
   dk_set_t		ssg_sd_outer_gps;	/*!< Parent GP of the current tree */
   int			ssg_sd_forgotten_graph;	/*!< Flags that a '}' is not printed after the last triple (in hope that the next member of a group is a triple with same graph so '} GRAPH ... {' is not required */
@@ -946,11 +973,30 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
 
 #define ssg_putchar(c) session_buffered_write_char (c, ssg->ssg_out)
 #define ssg_puts(strg) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#ifdef NDEBUG
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg, strlen (strg))
-#else
-#define ssg_puts_with_comment(strg,cmt) session_buffered_write (ssg->ssg_out, strg " /* " cmt " */", strlen (strg " /* " cmt " */"))
-#endif
+
+#define ssg_puts_with_comment(strg,cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (strg " /* " cmt " */"); \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_with_comment3(strg,cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (strg " /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+  else \
+    ssg_puts (strg); \
+} while (0)
+
+#define ssg_puts_comment(cmt) do {\
+  if (ssg->ssg_comment_sql) \
+    ssg_puts (" /* " cmt " */"); \
+} while (0)
+
+#define ssg_puts_comment3(cmt1,cmt2,cmt3) do {\
+  if (ssg->ssg_comment_sql) \
+    { ssg_puts (" /* " cmt1); ssg_puts (cmt2); ssg_puts (cmt3 " */"); } \
+} while (0)
 
 #define ssg_print_asname_tail(cmt,asname) do { \
   if (NULL != (asname)) { \
@@ -1015,6 +1061,7 @@ extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const
 #define SQL_ATOM_NARROW_OR_WIDE	13
 #define SQL_ATOM_UNAME_ALLOWED	14
 #define SQL_ATOM_ABORT_ON_CAST	15	/*!< Intentionally "bad" mode to get an error on any cast to string */
+#define SQL_ATOM_SPARQL_INTEROP	16
 extern void ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode);
 extern void ssg_print_literal_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);
 extern void ssg_print_literal_as_sqlval (spar_sqlgen_t *ssg, ccaddr_t type, SPART *lit);

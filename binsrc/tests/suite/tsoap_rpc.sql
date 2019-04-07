@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tsoap_rpc.sql,v 1.6.10.2 2013/01/02 16:15:27 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 select soap_dt_define('','
 
 <element xmlns="http://www.w3.org/2001/XMLSchema" name="echoStringArrayParam" targetNamespace="http://soapinterop.org/xsd" type="xsd1:ArrayOfstring_literal" xmlns:xsd1="http://soapinterop.org/xsd" />
@@ -795,7 +795,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoFloat : " $LAST[1] "\n";
 
 select soap_box_xml_entity_validating (aref(InteropTests.echoFloat(cast(1e40 as float)),1), 'float');
-ECHO BOTH $IF $EQU $LAST[1] '1e+40' "PASSED" $IF $EQU $LAST[1] '1e+040' "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $LAST[1] '1e+40' "PASSED" $if $EQU $LAST[1] '1e+040' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoFloat : " $LAST[1] "\n";
 
@@ -896,6 +896,7 @@ select soap_box_xml_entity_validating (aref (InteropTests.echoStructAsSimpleType
 ECHO BOTH $IF $EQU $LAST[1] 'This is a test' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": InteropTests.echoStructAsSimpleTypes (varString element) : " $LAST[1] "\n";
+
 
 select get_keyword ('varString', aref(soap_box_xml_entity_validating (aref (InteropTests.echoStructArray (vector (soap_box_structure ('varString', 'This is a test', 'varInt', 123,'varFloat', cast(3.14 as float)),soap_box_structure ('varString', 'This is a test', 'varInt', 123,'varFloat', cast(3.14 as float)))),1), 'http://soapinterop.org/xsd:ArrayOfSOAPStruct'), 0), NULL);
 

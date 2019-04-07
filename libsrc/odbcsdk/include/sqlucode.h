@@ -7,7 +7,7 @@
  *
  *  The iODBC driver manager.
  *
- *  Copyright (C) 1996-2013 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1996-2019 OpenLink Software <iodbc@openlinksw.com>
  *  All Rights Reserved.
  *
  *  This software is released under the terms of either of the following
@@ -68,12 +68,14 @@
  *  LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
  *  NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- *
  */
+
 #ifndef _SQLUCODE_H
 #define _SQLUCODE_H
 
+#ifndef _SQLEXT_H
 #include <sqlext.h>
+#endif
 
 #ifdef __cplusplus
 extern "C" {

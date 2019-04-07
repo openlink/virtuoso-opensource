@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="r2rml_import"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>R2RML Upload</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="message" default="null" type="varchar" persist="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Linked Data"/>
+    </vm:menu>
+    <vm:header caption="R2RML Upload"/>
+    <vm:pagebody>
+      <v:on-init>
+        <![CDATA[
+          set http_charset='utf-8';
+        ]]>
+      </v:on-init>
+      <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <div class="message"><v:label name="msg" value="--self.message" /></div>
+              <table border='0' width='100%' class="ctl_grp">
+                <tr id="rd1">
+                  <th width="120px">
+                    <v:radio-button name="rb1" group-name="rb" value="fs">
+                      <v:before-render>
+                        if (get_keyword ('rb', self.vc_event.ve_params) = 'fs' or get_keyword ('rb', self.vc_event.ve_params) is null)
+                          control.ufl_selected := 1;
+                      </v:before-render>
+                    </v:radio-button>
+                    Source File<span class="redstar">*</span>
+                  </th>
+                  <td>
+                    <input type="file" name="t_rdf_file" size="100"></input>
+                  </td>
+                </tr>
+                <tr id="rd1">
+                  <th>
+                    <v:radio-button name="rb2" group-name="rb" value="ur">
+                      <v:before-render>
+                        if (get_keyword ('rb', self.vc_event.ve_params) = 'ur')
+                          control.ufl_selected := 1;
+                      </v:before-render>
+                    </v:radio-button>
+                    Source URL<span class="redstar">*</span>
+                  </th>
+                  <td>
+                    <input type="text" name="t_rdf_url" size="100"></input>
+                  </td>
+                </tr>
+                <tr id="rd2">
+                  <th>Target Graph IRI<span class="redstar">*</span></th>
+                  <td>
+                    <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/r2rml' " xhtml_size="100"/>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>
+                    <v:check-box name="del" value="1" initial-checked="1" xhtml_id="del"/> <label for="del">Clean Target Graph before import</label>
+                  </td>
+                </tr>
+                <tr>
+                  <td></td>
+                  <td>
+                    <br />
+                    <v:button action="simple" name="cnl" value="Cancel">
+                      <v:on-post>
+                        self.vc_redirect (http_path ());
+                      </v:on-post>
+                    </v:button>
+
+                    <v:button action="simple" name="bt1" value="Validate">
+                      <v:on-post>
+                        <![CDATA[
+                          declare usr, grp vspx_select_list;
+                          declare i, _uid, ownern, groupn integer;
+                          declare cname, _perms, _p, _idx, mimetype, owner_name, group_name, _inh varchar;
+                          declare _file, _graph, is_ttl, is_xml any;
+
+                          _file := get_keyword ('t_rdf_file', e.ve_params);
+                          _graph := trim (self.rdf_graph_name.ufl_value);
+                          if (not length (_graph))
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'The graph IRI must be non-empty string.';
+                            return;
+                          }
+
+                          if (not length (_file))
+                          {
+                            declare uri any;
+                            declare exit handler for sqlstate '*'
+                            {
+                              self.vc_is_valid := 0;
+                              self.vc_error_message := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+                              return;
+                            };
+                            uri := get_keyword ('t_rdf_url', e.ve_params);
+                            if (not length (uri))
+                            {
+                              self.vc_is_valid := 0;
+                              self.vc_error_message := 'The file or source URL must be specified';
+                              return;
+                            }
+                            exec (sprintf ('sparql load "%s" into <%s>', uri, _graph));
+                            goto end_post;
+                          }
+
+                          if (self.del.ufl_selected)
+                          {
+                            sparql clear graph iri(?:_graph);
+                          }
+
+                          is_ttl := 1;
+                          {
+                            declare continue handler for SQLSTATE '*'
+                            {
+                              is_ttl := 0;
+                            };
+                            DB.DBA.TTLP (_file, _graph, _graph, 4096);
+                          }
+                          is_xml := 0;
+                          if (not is_ttl)
+                          {
+                            is_xml := 1;
+                            declare continue handler for SQLSTATE '*'
+                            {
+                              is_xml := 0;
+                            };
+                            DB.DBA.RDF_LOAD_RDFXML (_file, _graph, _graph);
+                          }
+                          if ((is_ttl + is_xml) = 0)
+                          {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
+                            return;
+                          }
+
+                        end_post:;
+                          self.message := 'The document contains valid R2RML graph';
+                          self.vc_redirect (sprintf ('r2rml_validate.vspx?graph=%U', _graph));
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

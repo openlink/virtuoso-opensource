@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,7 +58,7 @@ typedef struct _subqpred {
 
 typedef int (* pred_func_t) (caddr_t * qst, void * comp);
 
-typedef caddr_t (* ao_func_t) (ccaddr_t l, ccaddr_t r, caddr_t * qst, state_slot_t * target);
+typedef caddr_t (* ao_func_t) (caddr_t l, caddr_t r, caddr_t * qst, state_slot_t * target);
 
 
 typedef long jmp_label_t;
@@ -91,8 +91,11 @@ typedef long jmp_label_t;
 #define IN_ARTM_IDENTITY	25
 #define INS_CALL_BIF 26
 #define IN_BRET 		27
-#define INS_MAX			IN_BRET
+#define IN_AGG 		28
+#define INS_FOR_VECT	29
+#define INS_MAX			30
 #define INS_MIN			IN_ARTM_FPTR
+
 
 #if 0
 #define IS_INS_ARTM(x)	(((x) >= IN_ARTM_PLUS && (x) <= IN_ARTM_DIV) || (x) == IN_ARTM_COMON)
@@ -103,10 +106,19 @@ struct instruction_s {
   union {
     struct {
       char		ins_type;
+      short		func;
       state_slot_t *	result;
       state_slot_t *	left;
       state_slot_t *	right;
     } artm;
+    struct {
+      char		ins_type;
+      char		op;
+      state_slot_t *	result;
+      state_slot_t *	arg;
+      state_slot_t *	set_no;
+      hash_area_t *	distinct;
+    } agg;
     struct {
       char		ins_type;
       state_slot_t *	result;
@@ -119,6 +131,8 @@ struct instruction_s {
       short		succ;
       short		fail;
       short		unkn;
+      short		end;
+      ssl_index_t 	next_mask;
       pred_func_t	func;
       void *		cmp;
     } pred;
@@ -128,6 +142,9 @@ struct instruction_s {
       short		succ;
       short		fail;
       short		unkn;
+      short		end;
+      ssl_index_t 	next_mask;
+      short		func;
       state_slot_t *	left;
       state_slot_t *	right;
     } cmp;
@@ -153,6 +170,7 @@ struct instruction_s {
       state_slot_t *	cl_out; /* for multistate, array with a 1 for each set for which the subq had a value */
       data_source_t *	cl_clb;
       short		cl_set_no_in_clb;
+      state_slot_t *	scalar_ret; /* if vectored scalar subq called from scalar code, result here*/
     } subq;
     struct {
       char		ins_type;
@@ -172,9 +190,11 @@ struct instruction_s {
     } open;
     struct {
       char		ins_type;
+      ssl_index_t	row_ctr;
       query_t *		query;
       state_slot_t *	cursor;
       state_slot_t **	targets;
+      state_slot_t *	set_no_ret;
     } fetch;
     struct {
       char		ins_type;
@@ -191,6 +211,7 @@ struct instruction_s {
     } call;
     struct {
       char		ins_type;
+      char		vectored;
       caddr_t		proc;
       state_slot_t *	ret;
       state_slot_t **	params;
@@ -224,11 +245,23 @@ struct instruction_s {
       int		brk_set;
       dk_set_t		scope;
     } breakpoint;
+    struct {
+      char	ins_type;
+      char	modify;
+      state_slot_t **	in_vars;
+      state_slot_t **	in_values;
+      state_slot_t **	out_vars;
+      state_slot_t **	out_values;
+      code_vec_t	code;
+    } for_vect;
   } _;
 };
 
 #define ins_type	_.artm.ins_type
 extern unsigned char ins_lengths[];
+
+/* for_vect.modify */
+#define NO_VEC 2
 
 #if 1
 #define INSTR_ALIGN_UNIT (sizeof (void *))
@@ -304,8 +337,8 @@ void cv_jump (dk_set_t * code, jmp_label_t label);
 void cv_open (dk_set_t * code, subq_compilation_t * sqc, ST ** opts);
 void cv_fetch (dk_set_t * code, subq_compilation_t *sqc, state_slot_t ** targets);
 void cv_close (dk_set_t * code, state_slot_t * cr_ssl);
-void cv_subq (dk_set_t * code, subq_compilation_t * sqc);
-void cv_subq_qr (dk_set_t * code, query_t * qr);
+state_slot_t * cv_subq (dk_set_t * code, subq_compilation_t * sqc, sql_comp_t * sc);
+state_slot_t *  cv_subq_qr (sql_comp_t * sc, dk_set_t * code, query_t * qr);
 void cv_qnode (dk_set_t * code, data_source_t * mode);
 void cv_bret (dk_set_t * code, int val);
 void cv_vret (dk_set_t * code, state_slot_t * ssl);
@@ -326,6 +359,8 @@ void cv_artm_set_type (instruction_t * ins);
 
 void cv_artm (dk_set_t * code, ao_func_t f, state_slot_t * res,
 	      state_slot_t * l, state_slot_t * r);
+void cv_agg (dk_set_t * code, int op, state_slot_t * res,
+	     state_slot_t * arg, state_slot_t * set_no, void * distinct, sql_comp_t * sc);
 void cv_compare (dk_set_t * code, int bop,
      state_slot_t * l, state_slot_t * r, jmp_label_t succ, jmp_label_t fail, jmp_label_t unkn);
 
@@ -355,6 +390,27 @@ void ks_check_params_changed (it_cursor_t * itc, key_source_t * ks, caddr_t * st
 int exists_pred_func (caddr_t * qst, subq_pred_t * subp);
 int  ins_cl_exists (subq_pred_t * subp, caddr_t * inst);
 int ins_cl_subq (instruction_t * ins, caddr_t * inst);
+
+
+
+typedef void (*ins_dc_artm_t) (instruction_t * ins, caddr_t * inst);
+typedef int (*ins_dc_cmp_1_t) (instruction_t * ins, caddr_t * inst);
+typedef int (*ins_dc_cmp_t) (instruction_t * ins, caddr_t * inst, db_buf_t bits);
+
+extern ins_dc_artm_t dc_artm_funcs[20];
+extern ins_dc_artm_t dc_artm_1_funcs[20];
+extern ins_dc_cmp_t dc_cmp_funcs[10];
+extern ins_dc_cmp_1_t dc_cmp_1_funcs[10];
+
+typedef struct typed_ins_s
+{
+  char		ti_ins_type;
+  sql_type_t	ti_sqt1;
+  sql_type_t	ti_sqt2;
+  sql_type_t	ti_res_sqt;
+  short		ti_inx;
+} typed_ins_t;
+
 
 
 #endif /* _SQLINTRP_H */

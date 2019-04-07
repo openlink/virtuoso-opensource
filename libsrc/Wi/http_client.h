@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -281,4 +281,10 @@ HC_RET http_cli_ssl_cert (http_cli_ctx *, caddr_t);
 HC_RET http_cli_ssl_cert_pass (http_cli_ctx *, caddr_t);
 int http_cli_target_is_proxy_exception (char *);
 
+extern caddr_t
+bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
+    caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
+    caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
+    int ret_arg_index,
+    int follow_redirects);
 #endif /* __HTTP_CLIENT_H__ */

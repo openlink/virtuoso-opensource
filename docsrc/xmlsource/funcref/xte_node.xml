@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -72,10 +72,9 @@
 	</tbody>
       </tgroup>
     </table>
-  <para></para>
   </refsect1>
   <refsect1 id="xte_node"><title>Examples</title>
-    <example id="ex_xte_node"><title></title>
+    <example id="ex_xte_node"><title>Simple Use</title>
       <para>The xte_node() call </para> 
       <screen>xte_node(xte_head ('supplier', 'CompanyName', 'Seller'), 'this string will be ', 'concatenated with it')</screen>
       <para>produces a vector corresponding the following XML element: </para>

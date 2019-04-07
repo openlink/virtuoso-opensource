@@ -1,13 +1,13 @@
 #!/bin/sh 
 #
-#  $Id$
+#  $Id: tblob_recode.sh,v 1.4.10.3 2013/01/02 16:14:59 source Exp $
 #
 #  blob recoding tests
 #  
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -26,7 +26,7 @@
 
 LOGFILE=tblob_recode.output
 export LOGFILE
-. ./test_fn.sh
+. $VIRTUOSO_TEST/testlib.sh
 
 DBPUMP=${DBPUMP-~/binsrc/dbdump/dbpump}
 cp ${CFGFILE} "dbp.sav"
@@ -90,7 +90,7 @@ START_SERVER $PORT 1000
 
 gunzip -c pdd_txt.gz >pdd.txt
 
-RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < pddin2.sql
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/pddin2.sql
 
 DoCommand  $DSN "string_to_file('pddutf.txt', charset_recode(file_to_string ('pdd.txt'),'IBM866','UTF-8'), -2);" "Preparing the ethalon utf data"
 DoCommand  $DSN "string_to_file('pdd866.txt', charset_recode(file_to_string ('pdd.txt'),'IBM866','IBM866'), -2);" "Preparing the ethalon 866 data"

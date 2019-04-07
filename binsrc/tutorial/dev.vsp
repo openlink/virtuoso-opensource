@@ -5,7 +5,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -111,7 +111,7 @@
 	  if (trim(req_path,'/') <> '')
 	    _xsl_params := vector_concat(_xsl_params,vector('path',ltrim(req_path,'/')));
 	    
-	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(now())));
+	  _xsl_params := vector_concat(_xsl_params,vector('now_rfc1123',date_rfc1123(curutcdatetime())));
 	  
 	  http_value(xslt('file://'||_TUT_ROOT || '/page'||xml_output||'.xsl',_TUT_XML,_xsl_params),null,_stream);
 	  if (_file = '')

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -81,11 +81,6 @@ key store of the calling user account.</para>
 	  optionally signed SOAP message.
       </para>
   </refsect1>
-  <refsect1 id="errors_xenc_encrypt">
-    <title>Errors</title>
-    <para>This function can generate the following errors:</para>
-    <errorcode></errorcode>
-  </refsect1>
   <refsect1 id="examples_xenc_encrypt">
     <title>Examples</title>
     <example id="ex_xenc_encrypt"><title>Encrypting and signing SOAP message</title>
@@ -102,6 +97,8 @@ key store of the calling user account.</para>
   </refsect1>
   <refsect1 id="seealso_xenc_encrypt">
     <title>See Also</title>
+    <para><link linkend="fn_encrypt"><function>encrypt()</function></link></para>    
+    <para><link linkend="fn_decrypt"><function>decrypt()</function></link></para>    
     <para><link linkend="fn_dsig_template_ext"><function>dsig_template_ext()</function></link></para>
     <para><link linkend="fn_xenc_key_inst_create"><function>xenc_key_inst_create()</function></link></para>
   </refsect1>

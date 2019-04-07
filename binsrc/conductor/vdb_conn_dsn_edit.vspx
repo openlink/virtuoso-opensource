@@ -1,0 +1,145 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="dsn_to_connect" type="varchar" default="null" param-name="dsn"/>
+      <v:variable name="ret_bmk" type="varchar" default="null" param-name="bmk"/>
+    </vm:variables>
+
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+
+    <vm:header caption="External Data Sources">
+    </vm:header>
+
+    <vm:pagebody vdb_check="1">
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <tr>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Data Sources</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        <table cellpadding="0" cellspacing="0">
+                          <tr>
+                            <td width="100%" >
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table class="tab_page">
+                    <tr>
+                      <td valign="top">
+                        <!-- MAIN -->
+                        <v:form name="dsn_cred_form" type="simple" method="POST" action="">
+                          <table class="ctl_grp">
+                            <tr class="ctl_grp_title">
+                              <td colspan="2"><h3>Please enter valid access credentials</h3></td>
+                            </tr>
+                            <tr>
+                              <th>Data Source Name</th>
+                              <td><v:label name="ldsn_1" value="--self.dsn_to_connect"/></td>
+                            </tr>
+                            <tr>
+                              <th>User<span class="attention_marker">*</span></th>
+                              <td><v:text name="user_name"/></td>
+                            </tr>
+                            <tr>
+                              <th>Password<span class="attention_marker">*</span></th>
+                              <td><v:text name="new_pass" type="password"/></td>
+                            </tr>
+                            <tr align="center">
+                              <td colspan="2">
+                                <v:button action="simple" name="dsn_cread_cancel" value="Cancel">
+                                  <v:on-post>
+                                    self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
+                                  </v:on-post>
+                                </v:button>
+
+                                <v:button action="simple" name="save" value="Connect">
+                                  <v:on-post>
+                                    <v:script>
+                                      <![CDATA[
+                                        declare ds_login, ds_pwdo, ds_pwdn, dsn_name varchar;
+
+                                        dsn_name := self.dsn_to_connect;
+                                        ds_login := self.user_name.ufl_value;
+                                        ds_pwdn :=  self.new_pass.ufl_value;
+
+                                        if (exists (select 1 from DB.DBA.SYS_DATA_SOURCE where DS_DSN = dsn_name and DS_UID = ds_login))
+                                        {
+                                          vdd_disconnect_data_source (dsn_name);
+                                        }
+
+                                        {
+                                          declare exit handler for sqlstate '*'
+                                          {
+                                            self.vc_error_message := __SQL_MESSAGE;
+                                            self.vc_is_valid := 0;
+                                            return;
+                                          };
+                                          vd_remote_data_source (dsn_name, '', ds_login, ds_pwdn);
+                                        }
+                                       self.vc_redirect (sprintf('vdb_conn_dsn.vspx#%s',self.ret_bmk));
+                                      ]]>
+                                    </v:script>
+                                  </v:on-post>
+                                </v:button>
+                              </td>
+                            </tr>
+                          </table>
+                        </v:form>
+                        <!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

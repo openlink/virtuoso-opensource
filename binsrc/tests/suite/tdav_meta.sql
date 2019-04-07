@@ -1,10 +1,10 @@
 --
---  $Id$
+--  $Id: tdav_meta.sql,v 1.12.6.2.4.1 2013/01/02 16:15:02 source Exp $
 --
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -55,6 +55,7 @@ create procedure TDAV_META_LOAD ()
   passed_if_not_error ('set up CatFilter in /DAV/tdav_meta_home/catfilt/',
     "CatFilter_CONFIGURE" (
       DAV_SEARCH_ID ('/DAV/tdav_meta_home/catfilt/', 'C'),
+      '',
       '/DAV/tdav_meta_home/',
       vector() ) );
   passed_if_not_error ('copy /DAV/mnt/tdav_meta/ to /DAV/tdav_meta_home/zip_samples/',

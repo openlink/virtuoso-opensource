@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -39,122 +39,106 @@
     </funcsynopsis>
   </refsynopsisdiv>
   <refsect1 id="desc_XMLAGG"><title>Description</title>
-    <para>
-   <function>XMLAGG</function> is aggregate function that produces a forest of XML elements from the given list of xml elements.
+    <para><function>XMLAGG</function> is aggregate function that produces a forest of XML elements from the given list of xml elements.
    It concatenates the values returned from one column of multiple rows, unlike <function>XMLCONCAT</function>, 
-   which concatenates the values returned from multiple columns in the same row.
-    </para>
-    <para>
-The order of element in the result of <function>XMLAGG</function> is defined by the order of retrieval of the source data rows.
-It is important to remember that the order of rows in an SQL resultset defined only if there's an explicit ORDER BY clause.
-Hence if the order of elements in the resulting forest is important then XMLAGG should be applied to data that comes from
-inner SELECT statement that has an ORDER BY clause, not e.g. from a table reference.
-    </para>
-    <para>
-    Note that <function>XMLAGG</function> is actually declared as <function>DB.DBA.XMLAGG</function>
-    but it is not important for plain use:
-    for compatibility with other systems, any call of <function>XMLAGG</function> in any SQl statement
-    is always replaced with the call of <function>DB.DBA.XMLAGG</function>, no matter
-    which qualifier and user name are in use.
-    </para>
+    which concatenates the values returned from multiple columns in the same row.</para>
+    <para>The order of element in the result of <function>XMLAGG</function> is defined by the order of retrieval of the
+    source data rows. It is important to remember that the order of rows in an SQL resultset defined only if there's an explicit
+    ORDER BY clause. Hence if the order of elements in the resulting forest is important then XMLAGG should be applied to data
+    that comes from inner SELECT statement that has an ORDER BY clause, not e.g. from a table reference.</para>
+    <para>Note that <function>XMLAGG</function> is actually declared as <function>DB.DBA.XMLAGG</function> but it is not
+    important for plain use: for compatibility with other systems, any call of <function>XMLAGG</function> in any SQl statement
+    is always replaced with the call of <function>DB.DBA.XMLAGG</function>, no matter which qualifier and user name are in use.</para>
   </refsect1>
   <refsect1 id="params_XMLAGG"><title>Parameters</title>
     <refsect2><title>value_expression</title>
-      <para> the result of one of the following functions <function>XMLAGG</function>, 
-            <function>XMLCONCAT</function>, <function>XMLELEMENT</function>, or <function>XMLFOREST</function>.
-      </para>
+      <para>the result of one of the following functions <function>XMLAGG</function>, <function>XMLCONCAT</function>,
+      <function>XMLELEMENT</function>, or <function>XMLFOREST</function>.</para>
     </refsect2>
   </refsect1>
-  <refsect1 id="ret_XMLAGG"><title>Parameters</title>
+  <refsect1 id="ret_XMLAGG"><title>Return Types</title>
     <para>The aggregate returns a vector that is a suitable input for functions <function>XMLELEMENT</function>,
- <function>XMLCONCAT</function> and <function>xml_tree_doc</function>.
-    </para>
+    <function>XMLCONCAT</function> and <function>xml_tree_doc</function>.</para>
   </refsect1>
   <refsect1 id="examples_XMLAGG"><title>Examples</title>
     <example id="ex_XMLAGG_1"><title>XMLAGG() enclosed in XMLELEMENT()</title>
-      <para>
-The following example produces an &apos;Emp&apos; element with attribute &apos;Title&apos;
-and a list of all employees having 
-the title &apos;Sales Representative&apos; as element content.
-</para>
-      <screen>
-select XMLELEMENT (&apos;Emp&apos;, XMLATTRIBUTES (&apos;Sales Representative&apos; as "Title"),
-  XMLAGG (XMLELEMENT (&apos;Name&apos;, "FirstName", &apos; &apos;, "LastName")))
+      <para>The following example produces an 'Emp' element with attribute 'Title' and a list of all employees having
+      	the title 'Sales Representative' as element content.</para>
+<programlisting><![CDATA[
+select XMLELEMENT ('Emp', XMLATTRIBUTES ('Sales Representative' as "Title"),
+       XMLAGG (XMLELEMENT ('Name', "FirstName", ' ', "LastName")))
   from "Demo"."demo"."Employees"
-  where "Title" = &apos;Sales Representative&apos;;
+ where "Title" = 'Sales Representative';
 
 callret
 VARCHAR
 _______________________________________________________________________________
  
-&lt;Emp Title="Sales Representative"&gt;
-  &lt;Name&gt;Nancy Davolio&lt;/Name&gt;
-  &lt;Name&gt;Janet Leverling&lt;/Name&gt;
-  &lt;Name&gt;Margaret Peacock&lt;/Name&gt;
-  &lt;Name&gt;Michael Suyama&lt;/Name&gt;
-  &lt;Name&gt;Robert King&lt;/Name&gt;
-  &lt;Name&gt;Anne Dodsworth&lt;/Name&gt;
-&lt;/Emp&gt;
+<Emp Title="Sales Representative">
+  <Name>Nancy Davolio</Name>
+  <Name>Janet Leverling</Name>
+  <Name>Margaret Peacock</Name>
+  <Name>Michael Suyama</Name>
+  <Name>Robert King</Name>
+  <Name>Anne Dodsworth</Name>
+</Emp>
  
 1 Rows. 
-       </screen>
+]]></programlisting>
     </example>
     <example id="ex_XMLAGG_2"><title>XMLAGG() that produces a sorted document</title>
-      <para>
-The result of the previous example contains an unsorted list of names.
-This is because data rows were retrieved from "Demo"."demo"."Employees"
-in primary key order, and this order has nothing common with fields "FirstName" and "LastName".
-To produce the sorted result, the query should contain ORDER BY in a subquery.
-These two variants will work identically if "FirstName" never contains whitespaces
-or nonprintable control characters, but the last one is formally more correct.
-</para>
-      <screen>
-select XMLELEMENT (&apos;Emp&apos;, XMLATTRIBUTES (&apos;Sales Representative&apos; as "Title"),
-  XMLAGG (XMLELEMENT (&apos;Name&apos;, "FirstName", &apos; &apos;, "LastName")))
+      <para>The result of the previous example contains an unsorted list of names. This is because data rows were retrieved
+      	from "Demo"."demo"."Employees" in primary key order, and this order has nothing common with fields "FirstName"
+      	and "LastName". To produce the sorted result, the query should contain ORDER BY in a subquery. These two variants
+      	will work identically if "FirstName" never contains whitespaces or nonprintable control characters, but the last
+      	one is formally more correct.</para>
+<programlisting><![CDATA[
+select XMLELEMENT ('Emp', XMLATTRIBUTES ('Sales Representative' as "Title"),
+       XMLAGG (XMLELEMENT ('Name', "FirstName", ' ', "LastName")))
   from
     (select "FirstName", "LastName"
      from "Demo"."demo"."Employees"
-     where "Title"= &apos;Sales Representative&apos;
+     where "Title"= 'Sales Representative'
      order by 1, 2) as subq;
 
 callret
 VARCHAR
 _______________________________________________________________________________
  
-&lt;Emp Title="Sales Representative"&gt;
-  &lt;Name&gt;Anne Dodsworth&lt;/Name&gt;
-  &lt;Name&gt;Janet Leverling&lt;/Name&gt;
-  &lt;Name&gt;Margaret Peacock&lt;/Name&gt;
-  &lt;Name&gt;Michael Suyama&lt;/Name&gt;
-  &lt;Name&gt;Nancy Davolio&lt;/Name&gt;
-  &lt;Name&gt;Robert King&lt;/Name&gt;
-&lt;/Emp&gt;
+<Emp Title="Sales Representative">
+  <Name>Anne Dodsworth</Name>
+  <Name>Janet Leverling</Name>
+  <Name>Margaret Peacock</Name>
+  <Name>Michael Suyama</Name>
+  <Name>Nancy Davolio</Name>
+  <Name>Robert King</Name>
+</Emp>
  
 1 Rows. 
 
-select XMLELEMENT (&apos;Emp&apos;, XMLATTRIBUTES (&apos;Sales Representative&apos; as "Title"),
-  XMLAGG (XMLELEMENT (&apos;Name&apos;, full_name)))
+select XMLELEMENT ('Emp', XMLATTRIBUTES ('Sales Representative' as "Title"),
+       XMLAGG (XMLELEMENT ('Name', full_name)))
   from
-    (select concat ("FirstName", &apos; &apos;, "LastName") as full_name
+    (select concat ("FirstName", ' ', "LastName") as full_name
      from "Demo"."demo"."Employees"
-     where "Title"= &apos;Sales Representative&apos;
+     where "Title"= 'Sales Representative'
      order by 1) as subq;
 
 callret
 VARCHAR
 _______________________________________________________________________________
  
-&lt;Emp Title="Sales Representative"&gt;
-  &lt;Name&gt;Anne Dodsworth&lt;/Name&gt;
-  &lt;Name&gt;Janet Leverling&lt;/Name&gt;
-  &lt;Name&gt;Margaret Peacock&lt;/Name&gt;
-  &lt;Name&gt;Michael Suyama&lt;/Name&gt;
-  &lt;Name&gt;Nancy Davolio&lt;/Name&gt;
-  &lt;Name&gt;Robert King&lt;/Name&gt;
-&lt;/Emp&gt;
+<Emp Title="Sales Representative">
+  <Name>Anne Dodsworth</Name>
+  <Name>Janet Leverling</Name>
+  <Name>Margaret Peacock</Name>
+  <Name>Michael Suyama</Name>
+  <Name>Nancy Davolio</Name>
+  <Name>Robert King</Name>
+</Emp>
  
 1 Rows. 
-        </screen>
+]]></programlisting>
     </example>
   </refsect1>
   <refsect1 id="seealso_XMLAGG"><title>See Also</title>

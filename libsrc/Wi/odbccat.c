@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -202,31 +202,30 @@ void
 odbc_cat_init (void)
 {
 
-  bif_define_typed ("_sql_columns", bif_sql_columns, &bt_any);
-  bif_define_typed ("_sql_tables", bif_sql_tables, &bt_any);
-  bif_define_typed ("_sql_primary_keys", bif_sql_primary_keys, &bt_any);
-  bif_define_typed ("_sql_foreign_keys", bif_sql_foreign_keys, &bt_any);
-  bif_define_typed ("sql_special_columns", bif_sql_special_columns, &bt_any);
-  bif_define_typed ("_sql_statistics", bif_sql_statistics, &bt_any);
-  bif_define_typed ("sql_data_sources", bif_sql_data_sources, &bt_any);
-  bif_define_typed ("sql_escape_meta_identifier", bif_sql_escape_meta_identifier, &bt_any);
-  bif_define_typed ("sql_unescape_meta_identifier", bif_sql_unescape_meta_identifier, &bt_any);
-  bif_define_typed ("_sql_procedures", bif_sql_procedures, &bt_any);
-  bif_define_typed ("_sql_procedure_columns", bif_sql_procedure_columns, &bt_any);
-  bif_define_typed ("sql_transact", bif_sql_transact, &bt_integer);
+  bif_define_ex ("_sql_columns", bif_sql_columns, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_tables", bif_sql_tables, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_primary_keys", bif_sql_primary_keys, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_foreign_keys", bif_sql_foreign_keys, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_special_columns", bif_sql_special_columns, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_statistics", bif_sql_statistics, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_data_sources", bif_sql_data_sources, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_escape_meta_identifier", bif_sql_escape_meta_identifier, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_unescape_meta_identifier", bif_sql_unescape_meta_identifier, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_procedures", bif_sql_procedures, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("_sql_procedure_columns", bif_sql_procedure_columns, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_transact", bif_sql_transact, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 
-  bif_define ("sql_gettypeinfo", bif_sql_gettypeinfo);
-  bif_define ("sql_get_type_info", bif_sql_gettypeinfo);  /* backward compatibility */
+  bif_define_ex ("sql_gettypeinfo", bif_sql_gettypeinfo, BMD_ALIAS, "sql_get_type_info", BMD_DONE);
   bif_define ("vd_autocommit", bif_vd_autocommit);
 
 #ifdef HAVE_ODBCINST_H
-  bif_define_typed ("sql_remove_dsn_from_ini", bif_sql_remove_dsn_from_ini, &bt_any);
-  bif_define_typed ("sql_get_installed_drivers", bif_sql_get_installed_drivers, &bt_any);
-  bif_define_typed ("sql_config_data_sources", bif_sql_config_data_sources, &bt_any);
-  bif_define_typed ("sql_get_private_profile_string", bif_sql_get_private_profile_string, &bt_any);
-  bif_define_typed ("sql_write_private_profile_string", bif_sql_write_private_profile_string, &bt_any);
-  bif_define_typed ("sql_write_file_dsn", bif_sql_write_file_dsn, &bt_any);
-  bif_define_typed ("sql_driver_connect", bif_sql_driver_connect, &bt_any);
+  bif_define_ex ("sql_remove_dsn_from_ini", bif_sql_remove_dsn_from_ini, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_get_installed_drivers", bif_sql_get_installed_drivers, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_config_data_sources", bif_sql_config_data_sources, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_get_private_profile_string", bif_sql_get_private_profile_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_write_private_profile_string", bif_sql_write_private_profile_string, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_write_file_dsn", bif_sql_write_file_dsn, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("sql_driver_connect", bif_sql_driver_connect, BMD_RET_TYPE, &bt_any, BMD_DONE);
 #endif
 
   sqls_define_vdb ();

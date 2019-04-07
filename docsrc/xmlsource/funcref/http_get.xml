@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -119,7 +119,7 @@ page := http_get ('http://www.openlinksw.com/');
 page := http_get ('http://www.openlinksw.com/',
 		header, 'GET', 'If-Modified-Since: Fri, 21 Jul 2000 11:19:45 GMT');
 ...
-page := http_get ('http://www.openlinksw.com/some_link.html',
+page := http_get ('http://example.com/some_link.html',
 		header, 'POST', '', 'a=1&amp;b=2');
 ...
 page := http_get ('http://www.openlinksw.com/',

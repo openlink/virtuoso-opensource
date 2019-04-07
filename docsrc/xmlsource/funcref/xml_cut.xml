@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -145,6 +145,6 @@ With XPER entity given, xml_cut() works exactly as xper_cut().
   </refsect1>
 -->
   <refsect1 id="seealso"><title>See Also</title>
-    <para><link linkend="fn_xper_cut">xper_cut</link></para>
+    <para><link linkend="fn_xper_cut"><function>xper_cut()</function></link></para>
   </refsect1>
 </refentry>

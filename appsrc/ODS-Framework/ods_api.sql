@@ -503,7 +503,7 @@ create procedure ODS_CREATE_NEW_APP_INST (
    {
     declare exit handler for not found
            {
-            _err:='User - '||owner||' does not exists;';
+            _err:='User - '||owner||' does not exist;';
             goto report_err;
            };
 
@@ -515,7 +515,7 @@ create procedure ODS_CREATE_NEW_APP_INST (
   {
    declare exit handler for not found
           {
-           _err:='Application type - '||app_type||' does not exists; ';
+           _err:='Application type - '||app_type||' does not exist; ';
            goto report_err;
           };
    select WAT_TYPE into ty from WA_TYPES where WAT_NAME = app_type;
@@ -711,7 +711,6 @@ create procedure ODS_DELETE_USER_DATA (
     delete from DB.DBA.sn_related where snr_from = _sne_id or snr_to=_sne_id;
     delete from DB.DBA.sn_member  where snm_group = _sne_id or snm_entity=_sne_id;
     delete from DB.DBA.sn_person  where sne_org_id = _u_id;
-    delete from DB.DBA.sn_entity  where sne_org_id = _u_id;
     }
 
 skip_sn:;

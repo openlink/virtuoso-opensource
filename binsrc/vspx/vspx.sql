@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -41,9 +41,14 @@ create table DB.DBA.VSPX_SESSION
       VS_UID varchar,
       VS_STATE long varchar,
       VS_EXPIRY datetime,
+      VS_IP varchar,
       primary key (VS_REALM, VS_SID))
+create index VSPX_SESSION_TS on DB.DBA.VSPX_SESSION (VS_EXPIRY)
 ;
 --#pragma end session
+
+alter table DB.DBA.VSPX_SESSION add VS_IP varchar
+;
 
 create table WS.WS.HTTP_SES_TRAP_DISABLE
       (
@@ -92,6 +97,22 @@ create trigger VSPX_SESSION_INSERT_AFTER after insert on DB.DBA.VSPX_SESSION {
       }
     }
     result := cast(DB.DBA.DAV_RES_UPLOAD(name, v_sql,'text/html','110110110R','dav','dav','dav', pwd) as INTEGER);
+  }
+}
+;
+
+-- VSPX Trigger for delete graphs used for WebID verifivation
+--
+create trigger VSPX_SESSION_WEBID_D before delete on DB.DBA.VSPX_SESSION order 100 referencing old as O
+{
+  -- dbg_obj_print ('VSPX_SESSION_WEBID_D');
+  declare _state, webidGraph any;
+
+  _state := deserialize (O.VS_STATE);
+  if (not isnull (get_keyword ('agent', _state)) and not isnull (get_keyword ('vtype', _state)))
+  {
+    webidGraph := 'http:' || replace (O.VS_SID, ':', '');
+    DB.DBA.SPARUL_CLEAR (webidGraph, 0, 0, silent=>1);
   }
 }
 ;
@@ -2162,7 +2183,7 @@ text_split_complete:
   return;
 
 run_error:
-    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__sql_state,__sql_message)) );
+    self.vc_error_message := vector_concat( self.vc_error_message, vector(vector(__SQL_STATE,__SQL_MESSAGE)) );
     self.isql_mtd := vector_concat( self.isql_mtd, vector(0) );
     self.isql_res := vector_concat( self.isql_res, vector(vector()) );
     self.isql_stmts := vector_concat(self.isql_stmts, vector (self.isql_text));
@@ -2221,8 +2242,11 @@ vspx_result_tbl_hdrs (in m_dta any)
 ;
 
 
-create procedure
-vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset varchar := 'UTF-8')
+create procedure vspx_result_row_render (
+  in result any,
+  in m_dta any,
+  in inx int := 0,
+  in cset varchar := 'UTF-8')
 {
   declare jnx integer;
   declare res_row varchar;
@@ -2235,58 +2259,66 @@ vspx_result_row_render (in result any, in m_dta any, in inx int := 0, in cset va
   n_cols := length (aref (m_dta, 0));
   dt_nfo := aref(m_dta, 0);
 
-      http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
+  http (sprintf ('<tr class="%s">', case when mod(inx, 2) then 'resrowodd' else 'resroweven' end));
 
-      res_row := result;
-      res_cols := length (res_row);
+  res_row := result;
+  res_cols := length (res_row);
+  jnx := 0;
+  while (jnx < res_cols)
+  {
+    declare exit handler for sqlstate '*'
+    {
+      http ('Can''t display result');
+      goto next;
+    };
 
-      jnx := 0;
+    http ('<td class="resdata"> &nbsp;');
+    res_col := aref (res_row, jnx);
+    col_type := aref (aref (dt_nfo, jnx), 1);
 
+  again:
+    if (__tag (res_col) = 193)
+    {
+      http_value (concat ('(', vector_print (res_col), ')'));
+    }
+    else if (__tag (res_col) = 230 and res_col is not null)
+    {
+      declare ses any;
+      ses := string_output ();
+      http_value (res_col, NULL, ses);
+      http_value (string_output_string (ses));
+    }
+    else if (__tag (res_col) = 246 and res_col is not null)
+    {
+      declare dat any;
+      dat := __rdf_sqlval_of_obj (res_col, 1);
+      res_col := dat;
+      goto again;
+    }
+    else
+    {
+      declare res any;
 
-      while (jnx < res_cols)
-	{
-	  declare exit handler for sqlstate '*'
-	    {
-	      http ('Can\'t display result');
-	      goto next;
-	    };
-	  http ('<td class="resdata"> &nbsp;');
-	  res_col := aref (res_row, jnx);
-	  col_type := aref (aref (dt_nfo, jnx), 1);
-	  again:
-	  if (__tag (res_col) = 193)
-	    http_value (concat ('(', vector_print (res_col), ')'));
-	  else if (__tag (res_col) = 230 and res_col is not null)
-	    {
-	      declare ses any;
-	      ses := string_output ();
-	      http_value (res_col, NULL, ses);
-	      http_value (string_output_string (ses));
-	    }
-	  else if (__tag (res_col) = 246 and res_col is not null)
-	    {
-	      declare dat any;
-	      dat := __rdf_sqlval_of_obj (res_col, 1);
-	      res_col := dat;
-	      goto again;
-	    }
-	  else
-	    {
-	      declare res any; 
-	      res := 0;
-	      if (__tag (res_col) = 182 and cset is not null)
-		res := charset_recode (res_col, cset, '_WIDE_');
-              if (res <> 0)
-	        res_col := res;		
-	      http_value (coalesce (res_col, '<DB NULL>'));
-	    }
-	  next:
-	  http ('</td>');
-	  jnx := jnx + 1;
-	}
-      http ('</tr>\n');
+      res := 0;
+      if (__tag (res_col) = 225)
+        res_col := cast (res_col as varchar);
+
+      if (__tag (res_col) = 182 and cset is not null)
+        res := charset_recode (res_col, cset, '_WIDE_');
+
+      if (res <> 0)
+        res_col := res;
+
+      http_value (coalesce (res_col, '<DB NULL>'));
+    }
+  next:
+    http ('</td>');
+    jnx := jnx + 1;
+  }
+  http ('</tr>\n');
 }
 ;
+
 
 create constructor method vspx_field_value (in name varchar, inout parent vspx_control) for vspx_field_value
 {
@@ -2844,12 +2876,12 @@ create method prologue_render (in sid varchar, in realm varchar, in nonce varcha
 	  {
 	    if (length (sid) > 0)
 	      {
-	        http (sprintf ('<input type="hidden" name="sid" value="%s" />\n', sid));
-	        http (sprintf ('<input type="hidden" name="realm" value="%s" />\n', realm));
+	        http (sprintf ('<input type="hidden" name="sid" value="%V" />\n', sid));
+	        http (sprintf ('<input type="hidden" name="realm" value="%V" />\n', realm));
 	      }
 	    else
 	      {
-	        http (sprintf ('<input type="hidden" name="nonce" value="%s" />\n', nonce));
+	        http (sprintf ('<input type="hidden" name="nonce" value="%V" />\n', nonce));
 	      }
 	  }
 	http ('<input type="hidden" name="__submit_func" value="" />\n');
@@ -3149,10 +3181,10 @@ create method vc_render () for vspx_check_box
     return;
   if (self.ufl_is_boolean)
     self.vc_get_selected_from_value();
-  http (sprintf ('<input type="checkbox" name="%s%s" value="%s" %s %s',
+  http (sprintf ('<input type="checkbox" name="%s%s" value="%V" %s %s',
   case self.ufl_group when '' then self.vc_get_name () else self.ufl_group end,
   self.ufl_name_suffix,
-  case self.ufl_is_boolean when 0 then cast(self.ufl_value as varchar) else '1' end,
+  case self.ufl_is_boolean when 0 then cast(coalesce(self.ufl_value,'') as varchar) else '1' end,
   case self.ufl_selected when 1 then 'checked="checked"' else '' end,
   case self.ufl_client_validate when 0 then '' else ' onchange="javascript: vv_validate_' || self.vc_name || '(this)"' end));
   if (self.ufl_auto_submit) http (' onclick="doAutoSubmit (this.form, this)"');
@@ -4434,7 +4466,7 @@ create method vc_render () for vspx_select_list
 	  else
 	    sel := '';
 	}
-      http (sprintf ('<option value="%s" %s>%s</option>', self.vsl_item_values[inx], sel, self.vsl_items[inx]));
+      http (sprintf ('<option value="%V" %s>%V</option>', self.vsl_item_values[inx], sel, self.vsl_items[inx]));
       inx := inx + 1;
     }
   http ('</select>');
@@ -4962,7 +4994,10 @@ create method vc_render () for vspx_radio_button
 {
   if ( not self.vc_enabled)
     return;
-  http (sprintf ('<input type="radio" name="%s" value="%s" %s ', case coalesce(self.ufl_group,'') when '' then self.vc_get_name () else self.ufl_group end, cast(self.ufl_value as varchar), case self.ufl_selected when 0 then '' else 'checked="checked"'  end));
+  http (sprintf ('<input type="radio" name="%s" value="%V" %s ',
+	case coalesce(self.ufl_group,'') when '' then self.vc_get_name () else self.ufl_group end,
+	cast(coalesce(self.ufl_value, '') as varchar),
+	case self.ufl_selected when 0 then '' else 'checked="checked"'  end));
   vspx_print_html_attrs (self);
   if (self.ufl_auto_submit) http (' onclick="doAutoSubmit (this.form, this)"');
   http ('/>');
@@ -5539,7 +5574,7 @@ create procedure vspx_base_url (in f varchar)
   if (http_map_get ('is_dav'))
     return concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:',f);
   else
-    return concat ('file://', f);
+    return concat ('file://', ltrim (f, '/'));
 }
 ;
 
@@ -6236,7 +6271,7 @@ create procedure
 VSPX_EXPIRE_SESSIONS ()
 {
   delete from VSPX_SESSION where VS_EXPIRY is null;
-  delete from VSPX_SESSION where datediff ('minute', VS_EXPIRY, now()) > 120;
+  delete from VSPX_SESSION where VS_EXPIRY < dateadd ('minute', -30, now());
   --if (row_count () > 0)
   --  log_message (sprintf ('%d VSPX session entries erased', row_count ()));
 }
@@ -6301,7 +6336,7 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
 {
   declare _ext, result, name, content, pwd, cnt any;
   -- do nor record itself
-  if (registry_get ('__block_http_history') = http_path ()) 
+  if (registry_get ('__block_http_history') = http_path ())
     {
     return;
   }
@@ -6312,11 +6347,11 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
     return;
   -- record all others
   -- cut off parameters from resource name
-  if (length (vres) > 0) 
+  if (length (vres) > 0)
     {
     declare p any;
       p := strstr (vres, '?');
-      if (p) 
+      if (p)
 	{
       vres := subseq(vres, 0, p);
     }
@@ -6337,7 +6372,7 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
       if (registry_get ('__save_http_history_use_ip') = '1')
 	use_ip := 1;
       else
-        use_ip := 0; 	
+        use_ip := 0;
       ip := http_client_ip ();
       if (file_stat ('./sys_http_recording') = 0)
 	signal ('VSPX9', 'Can not upload resource into sys_http_recording/ directory');
@@ -6355,20 +6390,20 @@ create procedure DB.DBA.sys_save_http_history(in vdir any, in vres any)
       name := concat ('/DAV/sys_http_recording/', name);
       -- check if necessary DAV path exists
       result := cast (DB.DBA.DAV_SEARCH_ID ('/DAV/sys_http_recording/', 'c') as integer);
-      if (result < 0) 
+      if (result < 0)
 	{
 	-- create DAV collection
-	  result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null, 
+	  result := cast (DB.DBA.DAV_COL_CREATE_INT ('/DAV/sys_http_recording/', '110100000NN', 'dav', 'dav', 'dav', null,
 	  0, 0, 0, http_dav_uid (), http_admin_gid ()) as integer);
-	  if(result < 0) 
+	  if(result < 0)
 	    {
 	      signal ('VSPX9', 'Can not create /DAV/sys_http_recording/ directory');
 	      return;
 	    }
 	}
-      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null, 
+      result := cast (DB.DBA.DAV_RES_UPLOAD_STRSES_INT (name, content,'text/html','110100000NN','dav','dav', 'dav', null,
 	0, now (), now (), null, http_dav_uid (), http_admin_gid (), 0) as integer);
-      if (result < 0) 
+      if (result < 0)
 	{
 	  signal ('VSPX9', 'Can not upload resource into /DAV/sys_http_recording/ directory');
 	}
@@ -6617,7 +6652,7 @@ create procedure vspx_url_render (in fmt varchar, in val any, in url any, in sid
       declare uinfo any;
       uinfo := WS.WS.PARSE_URI (url);
       if (uinfo[0] = '' or is_local = 1)
-        url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s', sid, realm));
+        url := vspx_uri_add_parameters (url, sprintf ('sid=%U&realm=%U', sid, realm));
     }
   http (sprintf ('<a href="%V">', url));
   if (length (fmt))
@@ -6636,7 +6671,7 @@ create procedure vspx_url_render_ex (in fmt varchar, in val any, in url any, in 
       declare uinfo any;
       uinfo := WS.WS.PARSE_URI (url);
       if (uinfo[0] = '' or is_local = 1)
-        url := vspx_uri_add_parameters (url, sprintf ('sid=%s&realm=%s', sid, realm));
+        url := vspx_uri_add_parameters (url, sprintf ('sid=%U&realm=%U', sid, realm));
     }
   http (sprintf ('<a href="%V"', url));
   i := 1; l := length (attrs);

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -70,7 +70,7 @@ regular text editor or a supporting HTML editor.</para>
 
  <para>A VSPX page describes a web page in terms of static XHTML plus XML
  elements in the VSPX namespace,
- <computeroutput>"http://www.openlinksw.com/vspx/"</computeroutput>.  This
+ <computeroutput>"http://example.com/vspx/"</computeroutput>.  This
  namespace is abbreviated as <computeroutput>v:</computeroutput> in the rest
  of this document.</para>
 
@@ -304,7 +304,7 @@ regular text editor or a supporting HTML editor.</para>
  <programlisting><![CDATA[
 <html>
   <body>
-    <v:page name="demo_label" xmlns:v="http://www.openlinksw.com/vspx/">
+    <v:page name="demo_label" xmlns:v="http://example.com/vspx/">
       <p>
         <?vsp http ('<H3>Simple page to demonstrate simple VSPX controls</H3>'); ?>
       </p>
@@ -370,7 +370,7 @@ as (
      <programlisting><![CDATA[
 	 <html>
 	     <body>
-		 <v:page name="handler_demo" xmlns:v="http://www.openlinksw.com/vspx/">
+		 <v:page name="handler_demo" xmlns:v="http://example.com/vspx/">
 		     <v:form name="sf" type="simple" action="form.vspx" method="POST">
 			 <v:text name="txt" />
 			 <v:button name="submit2" action="simple" value="OK" />
@@ -415,7 +415,7 @@ as (
 </para>
 
 <programlisting><![CDATA[
-    <v:page xmlns:v="http://www.openlinksw.com/vspx/" name="xform_demo">
+    <v:page xmlns:v="http://example.com/vspx/" name="xform_demo">
 	<v:on-init>
 	    -- enable XForms rendering
 	    connection_set ('RenderXForms', 1);
@@ -429,7 +429,7 @@ as (
  <sect2 id="vspxschema"><title>XMLSchema for VSPX page</title>
  <programlisting><![CDATA[
 <?xml version="1.0" encoding="UTF-8"?>
-<xs:schema targetNamespace="http://www.openlinksw.com/vspx/" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+<xs:schema targetNamespace="http://example.com/vspx/" xmlns:v="http://example.com/vspx/" xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
   <xs:simpleType name="CalculateableValue" final="restriction">
     <xs:restriction base="xs:string">
       <xs:whiteSpace value="preserve"/>

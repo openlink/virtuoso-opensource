@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -474,8 +474,5 @@ create procedure DB.DBA.vt_drop_ftt (in tb varchar, in dbcol varchar)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 grant execute on DB.DBA.vt_create_text_index to public
 ;

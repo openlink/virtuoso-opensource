@@ -1,0 +1,117 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="databases" decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="dsn" persist="0" type="any" default="null" param-name="dsn"/>
+      <v:variable name="dsn_type" persist="0" type="any" default="null" param-name="type"/>
+      <v:variable name="driver" persist="0" type="any" default="null" param-name="driver"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+    <vm:header caption="External Data Sources">
+    </vm:header>
+    <vm:pagebody vdb_check="1">
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table cellpadding="0" cellspacing="0" border="0">
+                    <colgroup>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                      <col/>
+                    </colgroup>
+                    <tr>
+                        <td class="page_tab" align="center">
+                          <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab" align="center">
+			  <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                        </td>
+                        <td class="page_tab_selected" align="center">Configure Data Sources</td>
+                        <td class="page_tab_empty" align="center" width="100%">
+                          <table cellpadding="0" cellspacing="0">
+                            <tr>
+                              <td width="100%" >
+                              </td>
+                            </tr>
+                          </table>
+                        </td>
+                    </tr>
+                  </table>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN AREA -->
+			<div class="confirm_dialog">
+			  <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+			  <div class="confirm_text">
+			    Do you want to delete <v:label name="dsn_l1" value="--self.driver"/>
+			    Data Source: "<v:label name="dsn_l1" value="--self.dsn"/>"
+			  </div>
+
+			  <v:form name="unlink_form" type="simple" method="POST">
+			    <v:button action="simple" name="unlink_apply" value="OK">
+			      <v:on-post>
+				<![CDATA[
+				sql_remove_dsn_from_ini (self.dsn, self.dsn_type);
+				self.vc_redirect ('vdb_config_dsn.vspx');
+				]]>
+			      </v:on-post>
+			    </v:button>
+			    <v:button action="simple" name="unlink_cancel" value="Cancel">
+			      <v:on-post>
+				self.vc_redirect ('vdb_config_dsn.vspx');
+			      </v:on-post>
+			    </v:button>
+			  </v:form>
+			</div>
+			<!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -291,7 +291,7 @@ bh_fill_page_generic (
 		{
 		  log_error (
 		      "Incomplete UTF-8 char found in filling up a BLOB."
-		      " The wide blob data may be garbaled.");
+		      " The wide blob data may be garbled.");
 		  memset (buffer, '?', ilen);
 		  ret = ilen;
 		}
@@ -315,7 +315,7 @@ blob_layout_ctor (dtp_t blob_handle_dtp, dp_addr_t start, dp_addr_t dir_start, i
 		  index_tree_t * it)
 {
   blob_layout_t *ret;
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
   if ( DV_BLOB_HANDLE != blob_handle_dtp &&
     DV_BLOB_WIDE_HANDLE != blob_handle_dtp &&
     DV_BLOB_XPER_HANDLE != blob_handle_dtp)
@@ -338,7 +338,7 @@ blob_layout_from_handle_ctor (blob_handle_t *bh)
 {
   blob_layout_t *ret = (blob_layout_t *) dk_alloc_box_zero (sizeof (blob_layout_t), DV_CUSTOM);
   ret->bl_blob_handle_dtp = (dtp_t)DV_TYPE_OF (bh);
-#ifdef DEBUG
+#ifdef BLOB_HANDLE_DEBUG
   if ( DV_BLOB_HANDLE != ret->bl_blob_handle_dtp &&
     DV_BLOB_WIDE_HANDLE != ret->bl_blob_handle_dtp &&
     DV_BLOB_XPER_HANDLE != ret->bl_blob_handle_dtp)
@@ -1233,7 +1233,7 @@ blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl)
       for (i = 0; i < n; i++)
 	{
 	  ITC_IN_KNOWN_MAP (it, bl->bl_pages[i]);
-	  it_free_dp_no_read (it->itc_tree, bl->bl_pages[i], DPF_BLOB);
+	  it_free_dp_no_read (it->itc_tree, bl->bl_pages[i], DPF_BLOB, 0);
 	  blob_releases_noread++;
 	  blob_releases_dir++;
 	  blob_releases++;
@@ -1247,11 +1247,14 @@ blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl)
 static void
 __blob_chain_delete (it_cursor_t * it, dp_addr_t start, dp_addr_t first, int npages /* unused */, blob_handle_t * bh)
 {
+  dbe_storage_t * dbs = it->itc_tree->it_storage;
+  if (!dbs)
+    dbs = wi_inst.wi_master;
   npages = 0; /* unused */
   while (start)
     {
       buffer_desc_t *buf;
-      if (!DBS_PAGE_IN_RANGE (wi_inst.wi_master, start))
+      if (!DBS_PAGE_IN_RANGE (dbs, start))
 	{
 	  log_error ("Blob next link out of range %ld", (long) start);
 	  break;
@@ -1339,7 +1342,26 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
   else
   /* if (REPL_NO_LOG != itc->itc_ltrx->lt_replicate) GK: nothing to do w/ the log mode */
     {
-      dk_hash_t ** hash_ptr = &(itc->itc_ltrx->lt_dirty_blobs);
+      int in_mtx = 0;
+      lock_trx_t * main_lt = itc->itc_ltrx;
+      dk_hash_t ** hash_ptr;
+
+      if ((main_lt->lt_has_branches || IS_MT_BRANCH (main_lt) || cl_run_local_only == CL_RUN_CLUSTER) && main_lt->lt_status == LT_PENDING)
+	{
+	  IN_TXN;
+	  in_mtx = 1;
+	}
+      if (IS_MT_BRANCH (main_lt))
+	{
+	  if (NULL == (main_lt = lt_main_lt (main_lt)))
+	    {
+	      main_lt = itc->itc_ltrx;
+	      main_lt->lt_status = LT_BLOWN_OFF_C;
+	      main_lt->lt_error = LTE_CANCEL;
+	    }
+	}
+
+      hash_ptr = &(main_lt->lt_dirty_blobs);
       if (0 != add_jobs)
 	{
 /* If some jobs should be added, hashtable should be created, if missing, and either old
@@ -1357,6 +1379,7 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
 	    }
 	  bl->bl_delete_later = add_jobs;
 	  sethash ((void *) (ptrlong) (bl->bl_start), hash_ptr[0], bl);
+	  if (in_mtx) LEAVE_TXN;
 	  return;
 	}
       else
@@ -1372,10 +1395,12 @@ blob_schedule_delayed_delete (it_cursor_t * itc, blob_layout_t *bl, int add_jobs
 /*There was an error here: dk_free_box() instead of blob_layout_free(). */
 		  blob_layout_free (old_bl);	/* ...and free old versions. */
 		  sethash ((void *) (ptrlong) (bl->bl_start), hash_ptr[0], bl);
+		  if (in_mtx) LEAVE_TXN;
 		  return;
 		}
 	    }
 	}
+      if (in_mtx) LEAVE_TXN;
     }
 /* If no real processing has performed, bl will not be freed in future and
    it should be freed right now */
@@ -1489,7 +1514,8 @@ blob_layout_t *
 bl_from_dv_it (dtp_t * col, index_tree_t * it)
 {
   key_id_t key_id;
-  int frag_no = 0;
+  uint32 frag_no = 0;
+  slice_id_t slice;
   int inx, n_pages;
   blob_layout_t * bl = (blob_layout_t *) blob_layout_ctor (
 	DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(*col),	/* bl_blob_handle_dtp */
@@ -1512,6 +1538,8 @@ bl_from_dv_it (dtp_t * col, index_tree_t * it)
     }
   key_id = (key_id_t)LONG_REF_NA (col + BL_KEY_ID);
   frag_no = LONG_REF_NA (col + BL_FRAG_NO);
+  slice = frag_no >> 16;
+  frag_no &= 0xffff;
   if (KI_TEMP == key_id)
     bl->bl_it = it;
   else
@@ -1520,13 +1548,15 @@ bl_from_dv_it (dtp_t * col, index_tree_t * it)
       dbe_key_frag_t ** frags;
       if (!key)
 	bl->bl_it = it;
+      else if (key->key_is_elastic)
+	bl->bl_it = it;
       else
 	{
 	  int n_frags;
 	  frags = key->key_fragments;
 	  n_frags = BOX_ELEMENTS (frags);
-	  if (frag_no < n_frags)
-	    bl->bl_it = frags[frag_no]->kf_it;
+	  if (slice < n_frags && frags[slice])
+	    bl->bl_it = frags[slice]->kf_it;
 	  else
 	    bl->bl_it = it;
 	}
@@ -1540,11 +1570,17 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
 {
   dbe_key_t * key;
   key_id_t key_id;
-  int32 frag_no;
+  uint32 frag_no;
+  slice_id_t slice;
   int inx, n_pages;
-  blob_handle_t * bh = (blob_handle_t *)
+  dtp_t dtp = *col;
+  blob_handle_t * bh;
+  index_tree_t * it = itc->itc_tree;
+  if (DV_COL_BLOB_SERIAL == dtp)
+    dtp = DV_BLOB;
+  bh = (blob_handle_t *)
     dk_alloc_box_zero (sizeof (blob_handle_t),
-		       DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(*col));
+		       DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP(dtp));
   bh->bh_length = INT64_REF_NA (col + BL_CHAR_LEN);
   bh->bh_diskbytes = INT64_REF_NA (col + BL_BYTE_LEN);
   bh->bh_page = LONG_REF_NA (col + BL_DP);
@@ -1564,14 +1600,34 @@ bh_from_dv (dtp_t * col, it_cursor_t * itc)
     }
   key_id = (key_id_t)LONG_REF_NA (col + BL_KEY_ID);
   frag_no = LONG_REF_NA (col + BL_FRAG_NO);
+  slice = frag_no >> 16;
+  frag_no &= 0xffff;
   bh->bh_key_id = key_id;
+  bh->bh_slice = slice;
   key = sch_id_to_key (wi_inst.wi_schema, key_id);
   if (key)
-    bh->bh_it = key->key_fragments[0]->kf_it;
+    {
+      if (it->it_key && it->it_key->key_id != KI_TEMP)
+	{
+	  bh->bh_it = key->key_fragments[it->it_slice]->kf_it;
+	  bh->bh_slice = bh->bh_it->it_slice;
+	}
+      else
+	{
+	  /* reading from temp but blob is from a table */
+	  if (key->key_fragments[slice])
+	    bh->bh_it = key->key_fragments[slice]->kf_it;
+	}
+    }
   else if (itc)
+    {
+      /* the bh is in temp tree */
     bh->bh_it = itc->itc_tree;
+    }
   if (CL_RUN_LOCAL != cl_run_local_only && key && KI_TEMP != key->key_id)
+    {
     bh->bh_frag_no = local_cll.cll_this_host;
+    }
   else
     bh->bh_frag_no = frag_no;
   return bh;
@@ -1631,11 +1687,15 @@ bh_to_dv (blob_handle_t * bh, dtp_t * col, dtp_t dtp)
 {
   int inx;
   int n_pages;
+  uint32 fragslice = bh->bh_frag_no + (bh->bh_slice << 16);
+  if (bh->bh_it->it_key->key_is_col)
+    col[0] = DV_COL_BLOB_SERIAL;
+  else
   col[0] = dtp;
   INT64_SET_NA (col + BL_CHAR_LEN, bh->bh_length);
   INT64_SET_NA (col + BL_BYTE_LEN, bh->bh_diskbytes);
   LONG_SET_NA (col + BL_KEY_ID, bh->bh_it->it_key->key_id);
-  LONG_SET_NA (col + BL_FRAG_NO, bh->bh_frag_no);
+  LONG_SET_NA (col + BL_FRAG_NO, fragslice);
   n_pages = box_length ((caddr_t) bh->bh_pages) / sizeof (dp_addr_t);
   n_pages = MIN (n_pages, BL_DPS_ON_ROW);
   for (inx = 0; inx < BL_DPS_ON_ROW; inx++)
@@ -1675,7 +1735,7 @@ itc_set_xper_col (it_cursor_t * row_itc, db_buf_t col, xper_entity_t *data, dp_a
       else
         {
           dbe_key_t* xper_key = sch_id_to_key (wi_inst.wi_schema, KI_COLS);
-          itc_from (tmp_itc, xper_key);
+          itc_from (tmp_itc, xper_key, row_itc->itc_ltrx->lt_client->cli_slice);
         }
       for (migr_ctr = 0; migr_ctr < migr_no; migr_ctr++)
         {
@@ -1768,13 +1828,69 @@ blob_str_head_len (int32 str_head_len, buffer_desc_t * first, blob_handle_t * ta
 }
 
 
+blob_handle_t *
+cli_ready_dae (client_connection_t  * cli, blob_handle_t * bh)
+{
+  DO_SET (blob_handle_t *, ready_bh, &cli->cli_dae_blobs)
+    {
+      if (bh->bh_param_index == ready_bh->bh_param_index)
+	{
+	  blob_handle_t * ret = (blob_handle_t *)box_copy ((caddr_t)ready_bh);
+	  ret->bh_ask_from_client = 0;
+	  ret->bh_current_page = ret->bh_page;
+	  ret->bh_position = 0;
+	  return ret;
+	}
+    }
+  END_DO_SET();
+  return NULL;
+}
+
+
+void
+cli_remember_dae (client_connection_t * cli, blob_handle_t * bh)
+{
+  blob_handle_t * copy = (blob_handle_t *)box_copy ((caddr_t)bh);
+  if (cli->cli_cl_dae_blob)
+    copy->bh_ask_from_client = BH_CLUSTER_DAE;
+  dk_set_push (&cli->cli_dae_blobs, (void*)copy);
+}
+
+void
+cli_free_dae (client_connection_t * cli)
+{
+  it_cursor_t itc_auto;
+  it_cursor_t * itc = &itc_auto;
+  ITC_INIT (itc, NULL, NULL);
+  DO_SET (blob_handle_t *, bh, &cli->cli_dae_blobs)
+    {
+      dtp_t tmp[DV_BLOB_LEN];
+      blob_layout_t * old_bl;
+      if (BH_CLUSTER_DAE != bh->bh_ask_from_client)
+	{
+	  dk_free_box ((caddr_t)bh);
+	  continue;}
+      bh_to_dv ((blob_handle_t*)bh, tmp, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (bh)));
+      old_bl = bl_from_dv_it  (tmp, itc->itc_tree);
+      old_bl->bl_it = bh->bh_it;
+      blob_chain_delete (itc, old_bl);
+      dk_free_box ((caddr_t)bh);
+    }
+  END_DO_SET();
+  itc_free (itc);
+  dk_set_free (cli->cli_dae_blobs);
+  cli->cli_dae_blobs = NULL;
+}
+
+
 int
 itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
     caddr_t data, blob_layout_t * replaced_version,
     int log_as_insert, sql_type_t * col_sqt)
 {
-  dtp_t col_dtp = col_sqt->sqt_dtp;
+  dtp_t col_dtp = col_sqt->sqt_col_dtp;
   int32 str_head_len = -1;
+  int remember_dae = 0;
   blob_handle_t *volatile target_bh = NULL, * volatile source_bh = NULL;
   dk_set_t volatile pages = NULL;
   int n_pages = 0, page_inx;
@@ -1789,7 +1905,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
   size_t data_len = 0;
   dtp_t volatile dtp = (dtp_t)DV_TYPE_OF (data);
   buffer_desc_t *blob_buf = NULL, *next_blob_buf = NULL, *volatile first_buf = NULL;
-  int row_is_temporary;
+  int row_is_temporary = 0;
 
   int rc;
   ASSERT_OUTSIDE_MAPS (row_itc);
@@ -1867,7 +1983,20 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
       source_bh = (blob_handle_t *) data;
       source_bh->bh_current_page = source_bh->bh_page;
       if (source_bh->bh_ask_from_client)
+	{
+	  blob_handle_t * ready_dae = cli_ready_dae (row_itc->itc_ltrx->lt_client, source_bh);
+	  if (!ready_dae)
+	    {
 	target_bh = source_bh;
+	      if (!row_itc->itc_ltrx->lt_client->cli_is_log)
+		remember_dae = 1;
+	    }
+	  else
+	    {
+	      source_bh = ready_dae;
+	      target_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
+	    }
+	}
       else
 	target_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
       bh_tag_modify (source_bh, col_dtp, dtp);
@@ -2025,9 +2154,8 @@ bh_is_ready:
 	  blob_log_write (row_itc, first_page, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)), 0, 0, 0, 0);
       }
     bh_to_dv (target_bh, col, DV_BLOB_DTP_FOR_BLOB_HANDLE_DTP (box_tag (target_bh)));
-    if (!row_is_temporary)
-    blob_schedule_delayed_delete (row_itc, bl_from_dv (col, row_itc),
-				  BL_DELETE_AT_ROLLBACK );
+    if (!row_is_temporary && !row_itc->itc_ltrx->lt_client->cli_cl_dae_blob && !row_itc->itc_non_txn_insert)
+      blob_schedule_delayed_delete (row_itc, bl_from_dv (col, row_itc), BL_DELETE_AT_ROLLBACK);
     if (BLOB_NULL_RECEIVED != read_status)
       source_bh->bh_ask_from_client = 0;	/* next time this bh is used it will refer to
 				   this blob and won't ask the user again. */
@@ -2050,6 +2178,8 @@ bh_is_ready:
     page_leave_outside_map (first_buf);
   rc = row_itc->itc_ltrx->lt_error;
 resource_cleanup:
+  if (LTE_OK == rc && remember_dae)
+    cli_remember_dae (row_itc->itc_ltrx->lt_client, source_bh);
 #ifdef BIF_XML
   if (NULL != strses)
     dk_free_box ((box_t) strses);
@@ -2070,7 +2200,7 @@ void
 rd_fixup_blob_refs (it_cursor_t * itc, row_delta_t* rd)
 {
   dbe_key_t * key = rd->rd_key;
-  itc_from_it (itc, key->key_fragments[0]->kf_it);
+  itc_from_it (itc, itc->itc_tree);
   if (key && key->key_row_var)
     {
       DO_CL (cl, key->key_row_var)
@@ -2200,7 +2330,7 @@ blob_write_crash_log_via_dir (dk_session_t * log, blob_log_t *  bl)
   int is_crash = 0;
   long fulllen = 0;
   dp_addr_t dir_start = bl->bl_dir_start;
-  if (!bl->bl_it)
+  if (is_crash_dump /*!bl->bl_it*/)
     is_crash = 1;
 
   if (!buf)
@@ -2235,14 +2365,15 @@ blob_write_crash_log_via_dir (dk_session_t * log, blob_log_t *  bl)
 #ifdef DBG_BLOB_PAGES_ACCOUNT
 	      db_dbg_account_add_page (start);
 #endif
-	      buf->bd_readers++;
 	      if (DPF_BLOB == SHORT_REF (buf->bd_buffer + DP_FLAGS))
 		return -2;
+	      buf->bd_readers++;
 	      if (DPF_BLOB_DIR != SHORT_REF (buf->bd_buffer + DP_FLAGS))
 		{
 		  log_error ("Non-blob-dir page %ld remap %ld in logging blob. %d", buf->bd_page, buf->bd_physical_page,  SHORT_REF (buf->bd_buffer + DP_FLAGS));
 		  if (is_crash)
 		    {
+		      buf->bd_readers--;
 		      is_crash++;
 		      goto fin;
 		    }
@@ -2320,7 +2451,7 @@ blob_write_crash_log (lock_trx_t * lt /* unused */, dk_session_t * log, blob_log
   static buffer_desc_t * buf = NULL;
   int is_crash = 0;
   long fulllen = 0;
-  if (!bl->bl_it)
+  if (is_crash_dump /*!bl->bl_it*/)
     is_crash = 1;
 
   if (is_crash && bl->bl_dir_start)
@@ -2371,6 +2502,7 @@ blob_write_crash_log (lock_trx_t * lt /* unused */, dk_session_t * log, blob_log
 		  log_error ("Non-blob page %ld remap %ld in logging blob. %d", buf->bd_page, buf->bd_physical_page,  SHORT_REF (buf->bd_buffer + DP_FLAGS));
 		  if (is_crash)
 		    {
+		      buf->bd_readers--;
 		      is_crash++;
 		      goto fin;
 		    }
@@ -2453,7 +2585,7 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
 	{
 	  ASSERT_IN_MTX (log_write_mtx);
 	}
-      if (!bl->bl_it)
+      if (is_crash_dump /*!bl->bl_it*/)
 	{ /* only if crash dump */
 	  return blob_write_crash_log (lt, log, bl);
 	}
@@ -2468,6 +2600,8 @@ blob_write_log (lock_trx_t * lt, dk_session_t * log, blob_log_t * bl)
 	  ITC_IN_KNOWN_MAP (tmp_itc, start);
 	  page_wait_access (tmp_itc, start, NULL, &buf, PA_READ, RWG_WAIT_ANY);
 	  ITC_LEAVE_MAPS (tmp_itc);
+	  if (PF_OF_DELETED == buf)
+	    break;
 	  if (DPF_BLOB != SHORT_REF (buf->bd_buffer + DP_FLAGS))
 	    {
 	      log_error ("Non-blob page %ld remap %ld in logging blob",
@@ -2624,15 +2758,15 @@ bh_string_output_n (lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buff
   return (string_output);
 }
 
-#define bh_string_list(lt, bh, get_bytes, omit, blob_type) \
+#define bh_string_list(lt, bh, get_bytes, omit) \
 ((box_tag (bh) == DV_BLOB_WIDE_HANDLE) ? \
-    bh_string_list_w (lt, bh, get_bytes, omit, blob_type) : \
-    bh_string_list_n (lt, bh, get_bytes, omit, blob_type))
+    bh_string_list_w (lt, bh, get_bytes, omit) : \
+    bh_string_list_n (lt, bh, get_bytes, omit))
 
 
 dk_set_t
 bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh,
-    long get_bytes, int omit, long blob_type)
+    long get_bytes, int omit)
 {
   /* take current page at current place and make string of
      n bytes from the place and return as string list */
@@ -2682,13 +2816,9 @@ bh_string_list_n (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * l
 		  SET_DK_MEM_RESERVE_STATE (lt);
 		  itc_bust_this_trx (tmp_itc, &buf, ITC_BUST_THROW);
 		}
-	      if (blob_type) /* BLOB_BIN */
-		page_string = dk_alloc_box (bytes_on_page, DV_BIN);
-	      else
 		page_string = dk_alloc_box (bytes_on_page + 1, DV_LONG_STRING);
 	      memcpy (page_string, buf->bd_buffer + DP_DATA + from_byte,
 		  bytes_on_page);
-	      if (!blob_type) /* BLOB_BIN */
 		page_string[bytes_on_page] = 0;
 	      dk_set_push (&string_list, page_string);
 	    }
@@ -2886,7 +3016,6 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       dk_set_free (pages_list);
       return BLOB_FREE;
       }
-  dk_free_box ((box_t) *pages);
   n = dk_set_length (pages_list);
   *is_complete = 1;
   if (n > 0)
@@ -2894,8 +3023,11 @@ blob_read_dir (it_cursor_t * tmp_itc, dp_addr_t ** pages, int * is_complete, dp_
       int i;
       dp_addr_t pt;
       pages_list = dk_set_nreverse (pages_list);
-/*???      dk_free_box ((caddr_t)(pages[0]));*/
+      if (sizeof (dp_addr_t) * n != box_length (*pages))
+	{
+	  dk_free_box ((box_t) *pages);
       *pages = (dp_addr_t *) dk_alloc_box (sizeof (dp_addr_t) * n, DV_BIN);
+	}
       for (i = 0; (pt = (dp_addr_t) (ptrlong) dk_set_pop (&pages_list)) != 0 && i < n; i++)
 	{
 	  (*pages)[i] = pt;
@@ -2920,6 +3052,30 @@ bh_fetch_dir (lock_trx_t * lt, blob_handle_t * bh)
   return blob_read_dir (itc, &bh->bh_pages, &bh->bh_page_dir_complete, bh->bh_dir_page, NULL);
 }
 
+void
+blob_dump (blob_handle_t * bh)
+{
+  log_debug (" Blob dump %p", bh);
+  log_debug ("\t bh_page %d", bh->bh_page);
+  log_debug ("\t bh_dir_page %d", bh->bh_dir_page);
+  log_debug ("\t bh_position %d", bh->bh_position);
+  log_debug ("\t bh_frag_no %d", bh->bh_frag_no);
+  log_debug ("\t bh_slice %d", bh->bh_slice);
+  log_debug ("\t bh_length %Ld", bh->bh_length);
+  log_debug ("\t bh_diskbytes %Ld", bh->bh_diskbytes);
+  log_debug ("\t bh_page_dir_complete %d", (int)bh->bh_page_dir_complete);
+  log_debug ("\t bh_all_received %d", (int)bh->bh_all_received);
+  log_debug ("\t bh_send_as_bh %d", (int)bh->bh_send_as_bh);
+  log_debug ("\t bh_pages %p", bh->bh_pages);
+  if (bh->bh_pages)
+    {
+      int inx, n = box_length ((caddr_t) bh->bh_pages) / sizeof (dp_addr_t);
+      for (inx = 0; inx < n; inx++)
+	log_debug ("\t\t %d:%d", inx, bh->bh_pages[inx]);
+    }
+  log_debug ("\t bh_key_id %d", bh->bh_key_id);
+  log_debug ("\t bh_timestamp %d", bh->bh_timestamp);
+}
 
 int
 blob_check (blob_handle_t * bh)
@@ -2957,12 +3113,24 @@ blob_check (blob_handle_t * bh)
 
       for (inx = 0; inx < n; inx++)
 	{
+	  int type;
+	  extent_map_t * em;
+	  extent_t * ext;
 	  dp = bh->bh_pages[inx];
+	  em = DBS_DP_TO_EM (it->it_storage, dp);
+	  mutex_enter (em->em_mtx);
+	  ext = EM_DP_TO_EXT (em, EXT_ROUND (dp));
+	  type = EXT_TYPE (ext);
+	  mutex_leave (em->em_mtx);
+	  if (type != EXT_BLOB)
+	    {
+	      log_info ("extent map not a BLOB extent dp=%d tp=%d", dp, type);
+	      error = 1;
+	    }
 	  if (dp <3 || dp > it->it_storage->dbs_n_pages)
 	    {
 	      error = 1;
-	      GPF_T1 ("blob out of range");
-	      log_info ("Out of range  blob page refd start = %d L=%d ", bh->bh_page, dp);
+	      log_info ("Out of range  blob page refd start = %d L=%d max dp=%d", bh->bh_page, dp, it->it_storage->dbs_n_pages);
 	    }
 	  else if (dp && dbs_is_free_page (it->it_storage, dp))
 	    {
@@ -2972,10 +3140,15 @@ blob_check (blob_handle_t * bh)
 	}
     }
   if (error)
-    return BLOB_FREE;
+    {
+      blob_dump (bh);
+      return BLOB_FREE;
+    }
   return BLOB_OK;
 }
 
+
+dp_addr_t bl_trap;
 
 int
 bl_check (blob_layout_t * bl)
@@ -3014,6 +3187,7 @@ bl_check (blob_layout_t * bl)
       for (inx = 0; inx < n; inx++)
 	{
 	  dp = bl->bl_pages[inx];
+	  if (dp == bl_trap) bing ();
 	  if (dp <3 || dp > it->it_storage->dbs_n_pages)
 	    {
 	      error = 1;
@@ -3095,11 +3269,12 @@ bh_write_out (lock_trx_t * lt, blob_handle_t * bh, dk_session_t * ses)
 
 void
 blob_send_bytes (lock_trx_t * lt, caddr_t bhp, long get_bytes,
-    int send_position, long blob_type)
+    int send_position)
 {
   blob_handle_t *bh = (blob_handle_t *) bhp;
   caddr_t arr;
-  dk_set_t string_list = bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0, blob_type);
+  dk_set_t string_list =
+  bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0);
 
   if (BH_DIRTYREAD == string_list)
     {
@@ -3180,7 +3355,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	      if (from)
 		{
 		  bh->bh_position = 0;
-		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
+		  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
 		}
 	    }
 	}
@@ -3192,7 +3367,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	{
 
 	  bh->bh_position = 0;
-	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1, 0);
+	  bh_string_list (/*NULL,*/ lt, bh, (long) from, 1);
 	}
       else
 	{
@@ -3200,7 +3375,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
 	    bh_read_ahead (lt, bh, (unsigned) from, (unsigned) to);
 	}
     }
-  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0, 0);
+  string_list = bh_string_list (/*NULL,*/ lt, bh, (long)(to - from), 0);
  strings_ready:
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
@@ -3213,7 +3388,7 @@ blob_subseq (lock_trx_t * lt, caddr_t bhp, size_t from, size_t to)
       MAKE_TRX_ERROR (lt->lt_error, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
-  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_LONG_WIDE : DV_LONG_STRING)))
+  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_WIDE : DV_STRING)))
     {
       caddr_t err = NULL;
       SET_DK_MEM_RESERVE_STATE (lt);
@@ -3297,7 +3472,7 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
     }
 
   string_list = bh_string_list (lt, bh,
-      10000000, 0, 0);		/* up to 10MB as varchar */
+      10000000, 0);		/* up to 10MB as varchar */
   bh->bh_current_page = bh->bh_page;
   bh->bh_position = 0;
 
@@ -3312,7 +3487,7 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
       MAKE_TRX_ERROR (lt->lt_error, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
-  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_LONG_WIDE : DV_LONG_STRING)))
+  if (NULL == (out = dk_try_alloc_box (bytes + sizeof_symbol, isWide ? DV_WIDE : DV_STRING)))
     {
       caddr_t err;
       SET_DK_MEM_RESERVE_STATE (lt);
@@ -3512,7 +3687,7 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   caddr_t str, outlined;
   db_buf_t inlined = (db_buf_t) rd->rd_values[cl->cl_nth];
   ITC_INIT (itc, NULL, qi->qi_trx);
-  itc_from_it (itc, rd->rd_key->key_fragments[0]->kf_it);
+  itc_from (itc, rd->rd_key, qi->qi_client->cli_slice);
   len = box_col_len ((caddr_t)inlined);
   str = dk_alloc_box (len, DV_STRING);
   memcpy (str, inlined + 1, len - 1);
@@ -3520,7 +3695,6 @@ rd_outline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl)
   outlined = dk_alloc_box (DV_BLOB_LEN + 1, DV_STRING);
   ITC_OWNS_PARAM (rd->rd_itc, outlined);
   itc_set_blob_col (itc, (db_buf_t)outlined,  str, NULL, BLOB_IN_UPDATE, &cl->cl_sqt);
-  dk_free_box (str);
   rd->rd_values[cl->cl_nth] = outlined;
 }
 
@@ -3581,6 +3755,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   int was_ask_from_cli = 1; /* when blob got from cli, the handle keeps the ref so no free until commit cause trigs or other code can ref the blob subsequently. */
   caddr_t str;
   int32 len;
+  mem_pool_t * mp = qi->qi_mp;
   blob_layout_t * bl;
   it_cursor_t itc_auto;
   buffer_desc_t * buf = NULL;
@@ -3588,22 +3763,27 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   dp_addr_t dp;
   db_buf_t outlined = (db_buf_t) rd->rd_values[cl->cl_nth];
   ITC_INIT (itc, NULL, qi->qi_trx);
-  itc_from_it (itc, rd->rd_key->key_fragments[0]->kf_it);
+  itc_from (itc, rd->rd_key, qi->qi_client->cli_slice);
   dp = LONG_REF_NA (outlined + BL_DP);
   page_wait_blob_access (itc, dp, &buf, PA_WRITE, NULL, 1);
   len = LONG_REF (buf->bd_buffer + DP_BLOB_LEN);
+  if (mp)
+    str = mp_alloc_box (mp, len + 2, DV_STRING);
+  else
+    {
   str = dk_alloc_box (len + 2, DV_STRING);
+      ITC_OWNS_PARAM (rd->rd_itc, str);
+    }
   str[0] = DV_STRING;
   memcpy (str + 1, buf->bd_buffer + DP_DATA, len);
   str[len + 1] = 0;
-  ITC_OWNS_PARAM (rd->rd_itc, str);
   if (BLOB_IN_INSERT == log_mode)
     {
       blob_log_set_delete (&qi->qi_trx->lt_blob_log, dp);
       if (was_ask_from_cli)
 	{
 	  page_leave_outside_map (buf);
-	  bl = bl_from_dv_it  (outlined, rd->rd_key->key_fragments[0]->kf_it);
+	  bl = bl_from_dv_it  (outlined, itc->itc_tree);
 	  blob_schedule_delayed_delete (itc, bl, BL_DELETE_AT_COMMIT);
 	}
       else
@@ -3617,7 +3797,7 @@ rd_inline_1 (query_instance_t * qi, row_delta_t * rd, dbe_col_loc_t * cl, int lo
   else
     {
       page_leave_outside_map (buf);
-      bl = bl_from_dv_it  (outlined, rd->rd_key->key_fragments[0]->kf_it);
+      bl = bl_from_dv_it  (outlined, itc->itc_tree);
       blob_schedule_delayed_delete (itc, bl, BL_DELETE_AT_COMMIT);
     }
   rd->rd_values[cl->cl_nth] = str;
@@ -3742,7 +3922,7 @@ wide_blob_buffered_read (
 	  /*GPF_T1 ("Received bad UTF8 string");*/
 	  /*return -1;*/
           state->count = 0;
-          log_error ("Invalid UTF-8 char (%02X) read in filling up a BLOB. The wide blob data may be garbaled.",
+          log_error ("Invalid UTF-8 char (%02X) read in filling up a BLOB. The wide blob data may be garbled.",
               utf8_char);
           utf8_char = '?';
 	}
@@ -3798,3 +3978,49 @@ blob_fill_buffer_from_wide_string (caddr_t _bh, caddr_t _buf, int *at_end, long 
   return (utf8len == -1 ? 0 : utf8len);
 }
 #endif
+
+dk_set_t
+bh_dp_list_n (lock_trx_t * lt, blob_handle_t * bh)
+{
+  /* take current page at current place and make string of
+     n bytes from the place and return as string list */
+  caddr_t page_string;
+  dk_set_t list = NULL;
+  dp_addr_t start = bh->bh_current_page;
+  buffer_desc_t *buf = NULL;
+  long from_byte = bh->bh_position;
+  long bytes_filled = 0, bytes_on_page;
+  it_cursor_t *tmp_itc;
+  tmp_itc = itc_create (NULL, lt);
+  itc_from_it (tmp_itc, bh->bh_it);
+  dk_set_push (&list, box_num (bh->bh_dir_page));
+  while (start)
+    {
+      long len, next;
+      uint32 timestamp;
+      int type;
+
+      if (!page_wait_blob_access (tmp_itc, start, &buf, PA_READ, bh, 1))
+	break;
+      type = SHORT_REF (buf->bd_buffer + DP_FLAGS);
+      timestamp = LONG_REF (buf->bd_buffer + DP_BLOB_TS);
+      if ((bh->bh_timestamp != BH_ANY) && (bh->bh_timestamp != timestamp))
+	{
+	  page_leave_outside_map (buf);
+	  return 0;
+	}
+      if ((DPF_BLOB != type) && (DPF_BLOB_DIR != type))
+	{
+	  page_leave_outside_map (buf);
+	  return 0;
+	}
+      dk_set_push (&list, box_num (start));
+      next = LONG_REF (buf->bd_buffer + DP_OVERFLOW);
+      page_leave_outside_map (buf);
+      bh->bh_current_page = next;
+      bh->bh_position = 0;
+      start = next;
+    }
+  itc_free (tmp_itc);
+  return (dk_set_nreverse (list));
+}

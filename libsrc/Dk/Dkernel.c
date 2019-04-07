@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2013 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,6 +32,8 @@
 #include "Dk.h"
 #include "Dk/Dksystem.h"
 #include "util/logmsg.h"
+#include "util/strfuns.h"
+
 
 #define BASKET_PEEK(b) basket_peek(b)
 
@@ -53,6 +55,10 @@
 int LEVEL_VAR = 4;
 #endif
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
+
 
 #ifdef _SSL
 #include <openssl/rsa.h>
@@ -65,8 +71,14 @@ int LEVEL_VAR = 4;
 #include <openssl/asn1.h>
 #include <openssl/pkcs12.h>
 #include <openssl/rand.h>
+#include <openssl/dh.h>
 
 static void ssl_server_init ();
+
+int ssl_ctx_set_cipher_list(SSL_CTX *ctx, char *cipher_list);
+int ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol);
+int ssl_ctx_set_dhparam(SSL_CTX *ctx, char * dhparam);
+int ssl_ctx_set_ecdh_curve(SSL_CTX *ctx, char * curve);
 
 #ifndef NO_THREAD
 static int ssl_server_accept (dk_session_t * listen, dk_session_t * ses);
@@ -76,6 +88,10 @@ static SSL_CTX *ssl_server_ctx = NULL;
 int32 ssl_server_verify = 0;
 int32 ssl_server_verify_depth = 0;
 char *ssl_server_verify_file = NULL;
+char *ssl_server_cipher_list = NULL;
+char *ssl_server_protocols = NULL;
+char *ssl_server_dhparam = NULL;
+char *ssl_server_ecdh_curve = NULL;
 #endif
 
 #ifndef NO_THREAD
@@ -85,7 +101,7 @@ long second_rpcs = 0;
 
 void (*process_exit_hook) (int);
 future_request_t *frq_create (dk_session_t * ses, caddr_t * request);
-
+id_hash_t * cli_abuse;
 
 void
 call_exit_outline (int status)
@@ -319,6 +335,8 @@ find_service (char *name)
 {
   USE_GLOBAL
   service_t * srv = services;
+  if (!(IS_BOX_POINTER (name) && DV_STRING == box_tag (name)))
+    return NULL;
   while (srv)
     {
       if (0 == strcmp (srv->sr_name, name))
@@ -361,6 +379,7 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
     {
       if (for_ses)
 	for_ses->dks_n_threads++;
+      return dkt;
     }
   else
     {
@@ -368,7 +387,6 @@ get_free_thread (TAKE_G dk_session_t * for_ses)
 	{
 	  dkt = dk_thread_alloc ();
 	  future_thread_count++;
-
 	  if (for_ses)
 	    for_ses->dks_n_threads++;
 	}
@@ -583,7 +601,7 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
   if (rc < 0)
     {
       int eno = errno;
-      check_inputs_for_errors (eno, protocol); 
+      check_inputs_for_errors (eno, protocol);
       PROCESS_ALLOW_SCHEDULE ();
       return 0;
     }
@@ -937,6 +955,9 @@ dk_report_error (const char *format, ...)
   return rc;
 }
 
+int dbf_assert_on_malformed_data;
+
+dk_mutex_t bad_rpc_mtx;
 
 void
 sr_report_future_error (dk_session_t * ses, const char *service_name, const char *reason)
@@ -945,12 +966,23 @@ sr_report_future_error (dk_session_t * ses, const char *service_name, const char
       (ses->dks_session->ses_class == SESCLASS_TCPIP ||
        ses->dks_session->ses_class == SESCLASS_UDPIP))
     {
-      char ip_buffer[16];
+      char ip_buffer[16] = "", *ipp = &(ip_buffer[0]);
+      ptrlong p = 0, *pp;
+      uint32 now = approx_msec_real_time ();
       tcpses_print_client_ip (ses->dks_session, ip_buffer, sizeof (ip_buffer));
       if (service_name && strlen (service_name) > 0)
 	log_error ("Malformed RPC %.10s received from IP [%.256s] : %.255s. Disconnecting the client", service_name, ip_buffer, reason);
       else
 	log_error ("Malformed data received from IP [%.256s] : %.255s. Disconnecting the client", ip_buffer, reason);
+      mutex_enter (&bad_rpc_mtx);
+      pp = (ptrlong*) id_hash_get (cli_abuse, (caddr_t)&ipp);
+      if (pp)
+	p = (*pp) & 0xFFFF;
+      p ++;
+      p = ((ptrlong)now << 16) | p;
+      if (!pp) ipp = box_dv_short_string (ip_buffer);
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p);
+      mutex_leave (&bad_rpc_mtx);
     }
 /* do not report - it's usually an internal session - like txn log, deserialize etc
   else
@@ -963,6 +995,8 @@ sr_report_future_error (dk_session_t * ses, const char *service_name, const char
 	    reason);
     }
 */
+  if (dbf_assert_on_malformed_data)
+    GPF_T1 ("Malformed data serialization");
 }
 
 #define is_string_type(type)\
@@ -1078,11 +1112,14 @@ future_wrapper (void *ignore)
 
   du_thread_t *this_thread = THREAD_CURRENT_THREAD;
 
+ again:
   {
 
     dbg_printf_2 (("future wrapper point 1 thread %p", this_thread));
     semaphore_enter (this_thread->thr_schedule_sem);	/* XXX: schedule_sem */
     dbg_printf_1 (("future wrapper activated thread %p", this_thread));
+    if ((void*)-1 == this_thread->thr_client_data)
+      return 0;
     c_thread = PROCESS_TO_DK_THREAD (this_thread);
   }
 
@@ -1112,7 +1149,10 @@ future_wrapper (void *ignore)
 	      arg_array[finx] = NULL;
 	}
 
-      dk_free_box_and_int_boxes ((caddr_t) arguments);
+      if (error)
+	dk_free_tree ((caddr_t)arguments);
+      else
+	dk_free_box_and_int_boxes ((caddr_t) arguments);
 
       /* Free this now. If freed after RPC func the references items may have been
          freed and reallocated and could be erroneously re-freed. */
@@ -1159,7 +1199,10 @@ future_wrapper (void *ignore)
 		else if (ret_type == DV_C_STRING)
 		  ret_box[0] = box_string (result);
 		else
-		  ret_box[0] = result;
+		  {
+		    ret_box[0] = result;
+		    result = NULL;
+		  }
 	      }
 	    ret_block[DA_MESSAGE_TYPE] = (caddr_t) (long) DA_FUTURE_ANSWER;
 	    ret_block[RRC_COND_NUMBER] = box_num (future->rq_condition);
@@ -1172,10 +1215,7 @@ future_wrapper (void *ignore)
 	    write_in_session ((caddr_t) ret_block, future->rq_client, NULL, NULL, 1);
 #endif
 	    CB_DONE;
-	    if (ret_type == DV_C_STRING)
-	      dk_free_box ((caddr_t) ret_box[0]);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_block);	/* mty HUHTI */
-	    dk_free_box_and_numbers ((caddr_t) ret_box);	/* mty HUHTI */
+	    dk_free_tree ((caddr_t)ret_block);
 	  }
       }
 
@@ -1190,8 +1230,19 @@ future_wrapper (void *ignore)
       if (this_thread->thr_reset_code)
 	thr_set_error_code (this_thread, NULL);
       dbg_printf_2 (("Done Future %ld on thread %p", future->rq_condition, this_thread));
-      mutex_enter (thread_mtx);
       F_RETURNED;
+      mutex_enter (thread_mtx);
+      if (DKST_FINISH == client->dks_thread_state && !client->dks_to_close && !client->dks_fixed_thread
+	  && 1 == client->dks_n_threads && !in_basket.bsk_count)
+	{
+	  c_thread->dkt_request_count = 0;
+	  client->dks_thread_state = DKST_IDLE;
+	  client->dks_n_threads = 0;
+	  resource_store (free_threads, (void*)c_thread);
+	  mutex_leave (thread_mtx);
+	  dk_free (future, sizeof (future_request_t));
+	  goto again;
+	}
       client->dks_n_threads--;
       if (client->dks_n_threads < 0 || client->dks_n_threads > MAX_THREADS)
 	{
@@ -1358,7 +1409,7 @@ future_wrapper (void *ignore)
 
 			  dk_free_box (req[FRQ_SERVICE_NAME]);
 			  req[FRQ_SERVICE_NAME] = NULL;
-			  dk_free_box_and_numbers ((box_t) req);	/* mty HUHTI */
+			  dk_free_tree ((box_t) req);	/* mty HUHTI */
 			}
 		      else
 			{
@@ -1412,7 +1463,7 @@ future_wrapper (void *ignore)
       PROCESS_ALLOW_SCHEDULE ();
     }
   dbg_printf_2 (("future_wrapper exiting on thread %p", this_thread));
-  return 0;
+  goto again;
 }
 
 
@@ -1468,6 +1519,7 @@ future_request_t *
 frq_create (dk_session_t * ses, caddr_t * request)
 {
   future_request_t *future_request = (future_request_t *) dk_alloc (sizeof (future_request_t));
+  caddr_t * args;
   memset (future_request, 0, sizeof (*future_request));
 
   future_request->rq_client = ses;
@@ -1483,12 +1535,13 @@ frq_create (dk_session_t * ses, caddr_t * request)
       future_request->rq_to_close = 1;
       return future_request;
     }
-  if (BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
+  if (!IS_BOX_POINTER (request) || BOX_ELEMENTS (request) != DA_FRQ_LENGTH)
     {
       sr_report_future_error (ses, "", "invalid future request length");
-      dk_free_tree (request);
-      PrpcDisconnect (ses);
-      PrpcSessionFree (ses);
+      if (IS_BOX_POINTER (request))
+	dk_free_tree ((caddr_t)request);
+      SESSTAT_CLR (ses->dks_session, SST_OK);
+      SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
       dk_free (future_request, sizeof (future_request_t));
       return NULL;
     }
@@ -1499,13 +1552,27 @@ frq_create (dk_session_t * ses, caddr_t * request)
 
   if (!future_request->rq_service)
     {
-      printf ("\nUnknown service %s requested. req no = %d", request[FRQ_SERVICE_NAME], (int) unbox (request[FRQ_COND_NUMBER]));
+      caddr_t name = request[FRQ_SERVICE_NAME], svc;
+
+      if (IS_BOX_POINTER (name) && DV_TYPE_OF (name) == DV_STRING)
+	svc = name;
+      else
+	svc = "no name";
+
+      printf ("\nUnknown service %s requested. req no = %d", svc, (int) unbox (request[FRQ_COND_NUMBER]));
       dk_free (future_request, sizeof (future_request_t));
+      if (IS_BOX_POINTER (request))
+	dk_free_tree ((caddr_t)request);
       return NULL;
     }
 
   future_request->rq_condition = (long) unbox (request[FRQ_COND_NUMBER]);	/* mty HUHTI */
-  future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+  args = (caddr_t*)request[FRQ_ARGUMENTS];
+  if (IS_BOX_POINTER (args) && DV_TYPE_OF (args) == DV_ARRAY_OF_POINTER)
+    {
+      future_request->rq_arguments = (long **) request[FRQ_ARGUMENTS];
+      request[FRQ_ARGUMENTS] = NULL;
+    }
 
   return future_request;
 }
@@ -1563,7 +1630,7 @@ schedule_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
   dk_free_box (request[FRQ_SERVICE_NAME]);
   request[FRQ_SERVICE_NAME] = NULL;
-  dk_free_box_and_numbers ((box_t) request);	 /* mty HUHTI */
+  dk_free_tree ((box_t) request);	 /* mty HUHTI */
 #if 1						 /*!!! */
   ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
 	  /*future_request->rq_service->sr_name, */ thread));
@@ -1583,21 +1650,11 @@ schedule_future:
       return;
     }
   thread = get_free_thread (PASS_G ses);
-  /* If there is a thread for the request, put it underway right off
-     without queuing - oui 020693 */
   if (thread)
     {
-      ss_dprintf_4 (("found free thread %p", thread->dkt_process));
-      reqs_on_the_fly++;
       thread->dkt_requests[0] = future_request;
       thread->dkt_request_count = 1;
       future_request->rq_thread = thread;
-#if 1						 /*!!! */
-      ss_dprintf_2 (("Starting future %ld with thread %p", future_request->rq_condition,
-	      /*future_request->rq_service->sr_name, */ thread->dkt_process));
-#else
-      ss_dprintf_2 (("Starting future %ld %s with thread %p", future_request->rq_condition, future_request->rq_service->sr_name, thread->dkt_process));
-#endif
       if (ses->dks_thread_state != DKST_BURST)
 	{
 	  if (ses->dks_thread_state != DKST_IDLE)
@@ -1626,9 +1683,9 @@ schedule_future:
 	{
 	  thrs_printf ((thrs_fo, "ses %p thr:%p still burst (%s, to_close:%d)\n", ses, THREAD_CURRENT_THREAD, future_request->rq_service ? future_request->rq_service->sr_name : "<no-service>", future_request->rq_to_close));
 	}
-      mutex_leave (thread_mtx);
 
-      semaphore_leave (thread->dkt_process->thr_schedule_sem);	/* XXX: schedule_sem */
+      mutex_leave (thread_mtx);
+      semaphore_leave (thread->dkt_process->thr_schedule_sem);
       check_inputs_action_count++;
     }
   else
@@ -1646,7 +1703,7 @@ schedule_future:
       ss_dprintf_4 (("found no free thread - queueing"));
       queued_reqs++;
       if (client_trace_flag)
-	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service->sr_name);
+	logit (L_DEBUG, "adding to in_basket client: %lx service: %s", future_request->rq_client, future_request->rq_service ? future_request->rq_service->sr_name : "no service");
       thrs_printf ((thrs_fo, "**ses %p thr:%p req to basket\n", ses, THREAD_CURRENT_THREAD));
       basket_add (&in_basket, future_request);
       mutex_leave (thread_mtx);
@@ -2288,8 +2345,7 @@ read_service_request (dk_session_t * ses)
 
   if (!SESSTAT_ISSET (ses->dks_session, SST_TIMED_OUT) && !SESSTAT_ISSET (ses->dks_session, SST_BROKEN_CONNECTION) && (DV_TYPE_OF (request) != DV_ARRAY_OF_POINTER || BOX_ELEMENTS (request) < 1))
     {
-      if (!box_destr [DV_TYPE_OF (request)])
-	dk_free_tree (request);
+      dk_free_tree ((caddr_t)request);
       sr_report_future_error (ses, "", "invalid future box");
       SESSTAT_CLR (ses->dks_session, SST_OK);
       SESSTAT_SET (ses->dks_session, SST_BROKEN_CONNECTION);
@@ -2392,6 +2448,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2413,6 +2470,7 @@ read_service_request (dk_session_t * ses)
 	{
 	  sr_report_future_error (ses, "", "invalid future partial answer length");
 	  PrpcDisconnect (ses);
+	  PrpcSessionFree (ses);
 	  dk_free_tree ((box_t) request);
 	  return 0;
 	}
@@ -2430,6 +2488,7 @@ read_service_request (dk_session_t * ses)
     default:
       sr_report_future_error (ses, "", "invalid future type");
       PrpcDisconnect (ses);
+      PrpcSessionFree (ses);
       dk_free_tree ((box_t) request);
       return 0;
 
@@ -2491,11 +2550,36 @@ dk_session_allocate (int sesclass)
 
   dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
   dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
   dk_ses->dks_read_block_timeout.to_sec = 100;
 
   return dk_ses;
 }
 
+
+dk_session_t *
+dk_session_alloc_box (int sesclass, int in_len)
+{
+  dk_session_t *dk_ses = NULL;
+  session_t *ses;
+  dk_ses = (dk_session_t *) dk_alloc_box (sizeof (dk_session_t), DV_STRING_SESSION);
+  memset (dk_ses, 0, sizeof (dk_session_t));
+  ses = session_allocate (sesclass);
+  SESSION_SCH_DATA (dk_ses) = (scheduler_io_data_t *) dk_alloc (sizeof (scheduler_io_data_t));
+  memset (SESSION_SCH_DATA (dk_ses), 0, sizeof (scheduler_io_data_t));
+  SESSION_SCH_DATA (dk_ses)->sio_is_served = -1;
+  dk_ses->dks_session = ses;
+  SESSION_DK_SESSION (ses) = dk_ses;		 /* two way link. */
+  dk_ses->dks_mtx = mutex_allocate ();
+  dk_ses->dks_in_buffer = (char *) dk_alloc (in_len);
+  dk_ses->dks_in_length = in_len;
+  dk_ses->dks_out_buffer = (char *) dk_alloc (DKSES_OUT_BUFFER_LENGTH);
+  dk_ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  dk_ses->dks_connect_timeout.to_sec = 20;
+  dk_ses->dks_read_block_timeout.to_sec = 100;
+  dk_ses->dks_refcount = 1;
+  return dk_ses;
+}
 
 void
 dk_session_clear (dk_session_t * ses)
@@ -2518,6 +2602,7 @@ dk_session_clear (dk_session_t * ses)
   ses->dks_in_length = DKSES_IN_BUFFER_LENGTH;
   ses->dks_out_buffer = out;
   ses->dks_out_length = DKSES_OUT_BUFFER_LENGTH;
+  ses->dks_connect_timeout.to_sec = 20;
   ses->dks_read_block_timeout.to_sec = 100;
   ses->dks_mtx = mtx;
   ses->dks_session = dks_ses;
@@ -2534,12 +2619,43 @@ dk_session_clear (dk_session_t * ses)
   the served sessions set.
 */
 #ifndef NO_THREAD
+int32 max_bad_rpc_on_connection = 100;
+int32 max_bad_rpc_timeout = 60;
+
 static int
 accept_client (dk_session_t * ses)
 {
+  char ip_buffer[16] = "", *ipp = &(ip_buffer[0]);
+  ptrlong p = 0;
+  uint32 now = approx_msec_real_time (), last;
   dk_session_t *newses = dk_session_allocate (ses->dks_session->ses_class);
   without_scheduling_tic ();
   session_accept (ses->dks_session, newses->dks_session);
+  tcpses_print_client_ip (newses->dks_session, ip_buffer, sizeof (ip_buffer));
+
+  mutex_enter (&bad_rpc_mtx);
+  if (NULL != (p = (ptrlong) id_hash_get (cli_abuse, (caddr_t)&ipp)))
+    {
+      p = *(ptrlong*)p;
+      last = p >> 16;
+      p = p & 0xFFFF;
+    }
+  if (max_bad_rpc_on_connection > 0 && p && p >= max_bad_rpc_on_connection && (now - last) < max_bad_rpc_timeout * 1000)
+    {
+      p = ((ptrlong)now << 16) | p;
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p); /* set timestamp */
+      PrpcDisconnect (newses);
+      PrpcSessionFree (newses);
+      mutex_leave (&bad_rpc_mtx);
+      return 0;
+    }
+  else if (max_bad_rpc_on_connection > 0 && p && p >= max_bad_rpc_on_connection && (now - last) > max_bad_rpc_timeout * 1000)
+    {
+      p = ((ptrlong)now << 16); /* reset counter */
+      id_hash_set (cli_abuse, (caddr_t)&ipp, (caddr_t)&p);
+    }
+  mutex_leave (&bad_rpc_mtx);
+
   restore_scheduling_tic ();
 
   SESSION_SCH_DATA (newses)->sio_default_read_ready_action = read_service_request;
@@ -2584,7 +2700,7 @@ sesclass_select_func (int sesclass)
 #endif /* NO_THREAD */
 
 timeout_t time_now;
-long time_now_msec;
+uint32 time_now_msec;
 
 
 static int
@@ -2690,7 +2806,7 @@ server_loop (void *arg)
   int sesclass = (int) (ptrlong) arg;
   timeout_t zero_timeout = { 0, 0 };
 
-  USE_GLOBAL 
+  USE_GLOBAL
   long time_spent = 0;
   long time_between_rounds = (atomic_timeout.to_sec * 1000 + atomic_timeout.to_usec / 1000) / time_slice;
 
@@ -2750,7 +2866,10 @@ void
 dk_thread_free (void *data)
 {
   dk_thread_t *dkt = (dk_thread_t *) data;
+  du_thread_t  * thr = dkt->dkt_process;
   ASSERT_IN_MTX (thread_mtx);
+  thr->thr_client_data = (void*)-1;
+  semaphore_leave (thr->thr_schedule_sem);
   if (dkt && dkt->dkt_requests[0] && dkt->dkt_request_count)
     dk_free (dkt->dkt_requests[0], sizeof (future_request_t));
   dk_free (dkt, sizeof (dk_thread_t));
@@ -3620,10 +3739,6 @@ void PrpcRegisterServiceDescPostProcess (service_desc_t * desc, server_func f, p
 
 SERVICE_1 (s_caller_identification, _sci, "caller_identification", DA_FUTURE_REQUEST, DV_ARRAY_OF_POINTER, DV_C_STRING, 1);
 
-#ifndef NO_THREAD
-extern char *build_thread_model;
-#endif
-
 void
 PrpcInitialize (void)
 {
@@ -3634,6 +3749,8 @@ PrpcInitialize (void)
 #endif
 }
 
+
+int enable_malloc_cache = 1;
 
 void
 PrpcInitialize1 (int mem_mode)
@@ -3664,7 +3781,7 @@ PrpcInitialize1 (int mem_mode)
 
   dk_memory_initialize (
 #ifndef NO_THREAD
-      1
+			enable_malloc_cache
 #else
       0
 #endif
@@ -3740,9 +3857,16 @@ PrpcInitialize1 (int mem_mode)
   process_futures_initialize (timeout_checker->dkt_process);
   semaphore_leave (timeout_checker->dkt_process->thr_sem);
 #endif
+  cli_abuse = id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
 
 #ifdef _SSL
   ssl_server_init ();
+#endif
+#ifndef NO_THREAD
+  dk_mutex_init (&bad_rpc_mtx, MUTEX_TYPE_SHORT);
+#ifdef MALLOC_DEBUG
+  log_info ("*** THIS SERVER BINARY CONTAINS MEMORY DEBUG CODE! ***");
+#endif
 #endif
 }
 
@@ -4681,7 +4805,9 @@ cli_ssl_get_error_string (char *out_data, int out_data_len)
   const char *func = ERR_func_error_string (err);
   out_data[out_data_len - 1] = 0;
   snprintf (out_data, out_data_len - 1, "%s (%s:%s)",
-      reason ? reason : (err == 0 ? "No error" : "Unknown error"), lib ? lib : "?", func ? func : "?");
+      reason ? reason : (err == 0 ? "No error" : "Unknown error"),
+      lib ? lib : "?",
+      func ? func : "?");
   return 0;
 }
 
@@ -4794,7 +4920,6 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
 	cp2 != NULL ? cp2 : "-unknown");
 #endif
-
   /*
    * Additionally perform CRL-based revocation checks
    *
@@ -4872,9 +4997,9 @@ dk_ssl_free (void *old)
 #endif
 
 #if defined (_SSL) && !defined (NO_THREAD)
-int ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name, char * extra);
+int ssl_server_set_certificate (SSL_CTX * ssl_ctx, char *cert_name, char *key_name, char *extra);
 
-static int 
+static int
 ssl_server_key_setup ()
 {
   if (!c_ssl_server_cert || !c_ssl_server_key)
@@ -4921,6 +5046,368 @@ ssl_server_key_setup ()
 }
 #endif
 
+#if !defined(OPENSSL_THREADS)
+#error Must have openssl configures with threads support
+#endif
+
+#ifndef NO_THREAD
+static dk_mutex_t ** lock_cs;
+
+void
+ssl_locking_callback (int mode, int type, char *file, int line)
+{
+  if (mode & CRYPTO_LOCK)
+    mutex_enter (lock_cs [type]);
+  else
+    mutex_leave (lock_cs [type]);
+}
+
+unsigned long
+ssl_thread_id (void)
+{
+  return (unsigned long) (ptrlong) THREAD_CURRENT_THREAD;
+}
+
+void
+ssl_thread_setup ()
+{
+  int i;
+  lock_cs = (dk_mutex_t **)dk_alloc (CRYPTO_num_locks() * sizeof (dk_mutex_t *));
+  for (i = 0; i < CRYPTO_num_locks (); i ++)
+    {
+      lock_cs [i] = mutex_allocate ();
+    }
+  CRYPTO_set_locking_callback ((void (*) (int, int, const char *, int)) ssl_locking_callback);
+  CRYPTO_set_id_callback ((unsigned long (*)()) ssl_thread_id);
+}
+#endif
+
+
+/*
+ *  Define the SSL Protocol bits
+ */
+#define SSL_PROTOCOL_NONE  (0)
+#define SSL_PROTOCOL_SSLV2 (1<<0)
+#define SSL_PROTOCOL_SSLV3 (1<<1)
+#define SSL_PROTOCOL_TLSV1 (1<<2)
+#define SSL_PROTOCOL_TLSV1_1 (1<<3)
+#define SSL_PROTOCOL_TLSV1_2 (1<<4)
+#define SSL_PROTOCOL_TLSV1_3 (1<<5)
+
+#if OPENSSL_VERSION_NUMBER >= 0x1000100FL
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1_2|SSL_PROTOCOL_TLSV1_3)
+#else
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1|SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
+#endif
+
+#define	VIRTUOSO_DEFAULT_CIPHER_LIST "HIGH:!aNULL:!eNULL:!MD5:!RC4:!RSA"
+
+int
+ssl_ctx_set_cipher_list (SSL_CTX * ctx, char *cipher_list)
+{
+  /*
+   *  Default cipher lists excludes all the weak export ciphers
+   */
+  if (!cipher_list || !*cipher_list || !strcasecmp(cipher_list, "default"))
+    cipher_list = VIRTUOSO_DEFAULT_CIPHER_LIST;
+
+  if (!SSL_CTX_set_cipher_list (ctx, cipher_list))
+    {
+      log_error ("SSL: Failed setting cipher list [%s]", cipher_list);
+      return 0;
+}
+
+  return 1;
+}
+
+
+int
+ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
+{
+  int proto = SSL_PROTOCOL_NONE;
+  int i;
+
+  /*
+   *  Parse protocol list
+   */
+  if (!protocol || !*protocol || !strcasecmp(protocol, "default"))
+    protocol = "ALL";
+
+  for (i = 1; i <= cslnumentries (protocol); i++)
+    {
+      char *ent, *name;
+      char disable = 0;
+      int opt = 0;
+
+      name = ent = cslentry (protocol, i);
+      if (!ent)
+	continue;
+
+      /*
+       *  Check if we explicity want to enable (+) or disable (-!) a particular protocol
+       */
+      if (*ent == '-' || *ent == '!' || *ent == '+')
+	{
+	  name++;
+
+	  if (*ent == '-' || *ent == '!')
+	    disable = 1;
+	}
+
+      if (!strcasecmp (name, "SSLv3"))
+	opt = SSL_PROTOCOL_SSLV3;
+      else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
+	opt = SSL_PROTOCOL_TLSV1;
+#if defined (SSL_OP_NO_TLSv1_1)
+      else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
+	opt = SSL_PROTOCOL_TLSV1_1;
+#endif
+#if defined (SSL_OP_NO_TLSv1_2)
+      else if (!strcasecmp (name, "TLSv1_2") || !strcasecmp (name, "TLSv1.2"))
+	opt = SSL_PROTOCOL_TLSV1_2;
+#endif
+#if defined (SSL_OP_NO_TLSv1_3)
+      else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
+	opt = SSL_PROTOCOL_TLSV1_3;
+#endif
+      else if (!strcasecmp (name, "ALL"))
+	opt = SSL_PROTOCOL_ALL;
+      else
+	{
+	  log_error ("SSL: Unsupported protocol [%s]", name);
+	  goto skip;
+	}
+
+      if (disable)
+	proto &= ~opt;
+      else
+	proto |= opt;
+
+    skip:
+      free (ent);
+    }
+
+  /*
+   *   Start by enabling all options
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_ALL);
+
+  /*
+   *  Always disable SSLv2, as per RFC 6176
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv2);
+
+  /*
+   *  Always disable SSLv3 as well
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv3);
+
+  /*
+   *  Show warning if user enabled the TLSv1 protocol
+   */
+#if defined (SSL_OP_NO_TLSv1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1);
+  if (!(proto & SSL_PROTOCOL_TLSV1))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1);
+  else
+    log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vulnerable");
+#endif
+
+  /*
+   *  Check rest of protocols
+   */
+#if defined (SSL_OP_NO_TLSv1_1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_1);
+  if (!(proto & SSL_PROTOCOL_TLSV1_1))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_1);
+#endif
+
+#if defined (SSL_OP_NO_TLSv1_2)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_2);
+  if (!(proto & SSL_PROTOCOL_TLSV1_2))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_2);
+#endif
+
+#if defined (SSL_OP_NO_TLSv1_3)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_3);
+  if (!(proto & SSL_PROTOCOL_TLSV1_3))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_3);
+#endif
+
+  /*
+   *  Disable compression on OpenSSL >= 1.0 to fix "CRIME" attack
+   */
+#ifdef SSL_OP_NO_COMPRESSION
+  SSL_CTX_set_options (ctx, SSL_OP_NO_COMPRESSION);
+#endif
+
+  /*
+   *  Server prefers cipher in order it listed
+   */
+#ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
+  SSL_CTX_set_options (ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
+#endif
+
+
+#ifdef SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+#endif
+
+  return 1;
+}
+
+int
+ssl_ctx_set_ecdh_curve (SSL_CTX * ctx, char *curve)
+{
+#ifndef OPENSSL_NO_ECDH
+
+  if (!curve)
+    curve = "auto";
+
+  /*
+   *  Configure ECDH
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_ECDH_USE);
+
+  /*
+   *  Set default curve(s) for ECDH
+   */
+
+#if defined (SSL_CTX_set1_curves_list) || defined (SSL_CTRL_SET_CURVES_LIST)
+    /*
+     *  OpenSSL 1.0.2+ can use a cuve list instead of a single curve
+     */
+#if defined (SSL_CTRL_SET_ECDH_AUTO)
+    SSL_CTX_set_ecdh_auto (ctx, 1);		/* For OpenSSL 1.0.2+ */
+#endif
+
+  if (!strcasecmp(curve, "auto"))
+    return 1;
+
+  /*
+   *  Try setting list of curves
+   */
+  if (SSL_CTX_set1_curves_list(ctx, curve) == 0)
+    return 0;
+
+#else
+
+  /*
+   *  Try setting the specified curve with default of prime256v1
+   */
+  {
+    EC_KEY *eckey = NULL;
+    int nid;
+
+    if (!strcasecmp(curve, "auto"))
+      curve = "prime256v1";
+
+    nid = OBJ_sn2nid(curve);
+    if (nid == 0)
+	return 0;
+    eckey = EC_KEY_new_by_curve_name (nid);
+    if (eckey == NULL)
+	return 0;
+    SSL_CTX_set_tmp_ecdh (ctx, eckey);
+    EC_KEY_free (eckey);
+  }
+#endif
+#endif
+
+  return 1;
+}
+
+int
+ssl_ctx_set_dhparam (SSL_CTX * ctx, char *dh_file)
+{
+  DH *dh = NULL;
+  BIO *bio = NULL;
+  int ok = 0;
+
+  /*
+   *  If the dba provided a filename, try to read the DH from
+   */
+  if (dh_file)
+    {
+      bio = BIO_new_file (dh_file, "r");
+      if (bio)
+	dh = PEM_read_bio_DHparams (bio, NULL, NULL, NULL);
+      if (!dh)
+	goto cleanup;
+    }
+
+#ifndef VIRTUOSO_NO_INTERNAL_DH
+  /*
+   *  If dba has not provided a custom dhparam, then use a built-in version
+   */
+  if (!dh)
+    {
+      static unsigned char dh2048_p[] = {
+	0x90, 0xE0, 0xDE, 0x4C, 0x70, 0x1D, 0xCB, 0x0F, 0xD9, 0x2E,
+	0xD9, 0x44, 0x3C, 0x99, 0x99, 0x4C, 0x92, 0x41, 0x3F, 0x09,
+	0x65, 0xB9, 0x7D, 0xAD, 0xEE, 0xD2, 0x73, 0xAC, 0x17, 0x46,
+	0x6E, 0x7F, 0x6D, 0x42, 0x36, 0xC8, 0x19, 0x0D, 0x69, 0xF4,
+	0xA2, 0x4D, 0x83, 0x7E, 0x15, 0x3A, 0xB8, 0x09, 0x86, 0xA5,
+	0xA6, 0x9E, 0xD5, 0x72, 0xBF, 0xD9, 0x64, 0xE0, 0x14, 0x09,
+	0x27, 0xC0, 0x13, 0x73, 0x98, 0xAC, 0xB2, 0xD6, 0x8A, 0xC8,
+	0x4F, 0xD1, 0x41, 0x45, 0x10, 0x08, 0xA2, 0x4F, 0xA9, 0xD9,
+	0xD0, 0xAF, 0x9B, 0x98, 0xF1, 0xAF, 0x52, 0x17, 0xB1, 0x9E,
+	0x0B, 0x87, 0xCE, 0x6F, 0xDC, 0xA3, 0x42, 0x56, 0xFD, 0x04,
+	0xBD, 0xBF, 0x57, 0xCB, 0xB8, 0xB3, 0x62, 0x36, 0x3E, 0x2C,
+	0xC0, 0xA0, 0x37, 0xC3, 0x1B, 0x22, 0x8B, 0x25, 0x9A, 0x69,
+	0xF3, 0x94, 0xF7, 0x14, 0x7B, 0xAA, 0x2E, 0xD3, 0x79, 0x20,
+	0x93, 0x58, 0xA5, 0xD7, 0x84, 0x69, 0x94, 0x5E, 0xB0, 0x72,
+	0x7A, 0x7A, 0x4E, 0x70, 0x64, 0x10, 0x69, 0xAD, 0x51, 0x7A,
+	0xDE, 0xD2, 0x03, 0xE0, 0xDE, 0x0C, 0xEC, 0xA8, 0xB1, 0x41,
+	0x08, 0x54, 0x76, 0xF5, 0x09, 0xF4, 0xBE, 0xA6, 0xAF, 0x13,
+	0x1F, 0xCB, 0xF7, 0xA6, 0xE4, 0x43, 0x62, 0x7D, 0xDC, 0x4B,
+	0x43, 0x4F, 0x64, 0x00, 0x44, 0xBC, 0xE3, 0x6F, 0x61, 0x81,
+	0xEF, 0x4D, 0x3B, 0x43, 0x37, 0x9E, 0xA2, 0x88, 0xAE, 0x8C,
+	0x26, 0x05, 0x0A, 0xD2, 0x41, 0xA2, 0x28, 0xDD, 0x1A, 0xEE,
+	0x8C, 0x2A, 0xDB, 0x39, 0xF8, 0x43, 0xB3, 0xD4, 0x3B, 0xC9,
+	0x9B, 0x8B, 0xBA, 0xCA, 0xEC, 0x91, 0x12, 0x0E, 0xA5, 0xDC,
+	0x4F, 0x61, 0xD8, 0xBB, 0x3E, 0x9D, 0x7B, 0x7D, 0x76, 0x3F,
+	0xF5, 0xDA, 0xC1, 0xFA, 0x72, 0x37, 0x0B, 0xD9, 0xC3, 0xED,
+	0xC0, 0x2C, 0x70, 0x71, 0x77, 0x6B
+      };
+      static unsigned char dh2048_g[] = {
+	0x02
+      };
+
+      if ((dh = DH_new ()) == NULL)
+	goto cleanup;
+
+      dh->p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
+      dh->g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
+
+      if (dh->p == NULL || dh->g == NULL)
+        goto cleanup;
+    }
+#endif
+
+  /*
+   *  Always create a new key when using temporary DH parameters
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_DH_USE);
+
+  /*
+   *  Assign dh
+   */
+  SSL_CTX_set_tmp_dh (ctx, dh);
+
+  /*
+   *  Signal success
+   */
+  ok = 1;
+
+cleanup:
+  BIO_free (bio);
+  DH_free (dh);
+
+  return ok;
+}
+
+
 static void
 ssl_server_init ()
 {
@@ -4930,18 +5417,41 @@ ssl_server_init ()
   CRYPTO_set_mem_functions (dk_ssl_alloc, dk_ssl_realloc, dk_ssl_free);
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
+
+#if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
+  SSL_library_init ();
+#endif
+
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
-#ifndef WIN32
+
+  /*
+   *  Make sure the PRNG is properly seeded
+   */
+  do
   {
     unsigned char tmp[1024];
-    RAND_bytes (tmp, sizeof (tmp));
-    RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
-  }
+      int pid;
+      timeout_t tm;
+
+#ifndef NDEBUG
+      log_debug ("Initializing PRNG");
 #endif
-# if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
-  SSL_library_init ();
-# endif
+
+      /* Add current pid to seed */
+      pid = getpid ();
+      RAND_seed (&pid, sizeof (pid));
+
+      /* Add current time in secs + usec to seed */
+      get_real_time (&tm);
+      RAND_seed (&tm, sizeof (tm));
+
+      /* Read one block of random bytes and feed it back to seed */
+    RAND_bytes (tmp, sizeof (tmp));
+      RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp) * 0.9));
+  }
+  while (!RAND_status ());
+
   SSLeay_add_all_algorithms ();
   PKCS12_PBE_add ();		/* stub */
 
@@ -4956,6 +5466,40 @@ ssl_server_init ()
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
+
+#ifndef NO_THREAD
+  /*
+   *  Set Protocols & Ciphers
+   */
+  if (!ssl_ctx_set_protocol_options (ssl_server_ctx, ssl_server_protocols))
+    {
+      log_error ("Error setting SSL Protocols [%s]", ssl_server_protocols);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_cipher_list (ssl_server_ctx, ssl_server_cipher_list))
+    {
+      log_error ("Error setting SSL Cipher list [%s]", ssl_server_cipher_list);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_dhparam (ssl_server_ctx, ssl_server_dhparam))
+    {
+      log_error ("Error setting SSL DH param [%s]", ssl_server_dhparam);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_ecdh_curve (ssl_server_ctx, ssl_server_ecdh_curve))
+    {
+      log_error ("Error setting SSL ECDH curve [%s]", ssl_server_ecdh_curve);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+#endif
+
+#ifndef NO_THREAD
+  ssl_thread_setup ();
+#endif
 }
 
 
@@ -5085,7 +5629,7 @@ end:
 int
 ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
 {
-  int /*session_id_context = 2, */ i;
+  int i, j;
   FILE *fi;
   PKCS12 *p12 = NULL;
   EVP_PKEY *pkey;
@@ -5122,9 +5666,9 @@ ssl_client_use_pkcs12 (SSL * ssl, char *pkcs12file, char *passwd, char *ca)
     i = SSL_check_private_key (ssl);
   if (i)
     {
-      for (i = 0; i < sk_X509_num (ca_list); i++)
+      for (j = 0; j < sk_X509_num (ca_list); j++)
 	{
-	  X509 *ca = (X509 *) sk_X509_value (ca_list, i);
+	  X509 *ca = (X509 *) sk_X509_value (ca_list, j);
 	  SSL_add_client_CA (ssl, ca);
 	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca);
 	}
@@ -5153,7 +5697,7 @@ ssl_server_accept (dk_session_t * listen, dk_session_t * ses)
       new_ssl = SSL_new (ssl_server_ctx);
       SSL_set_fd (new_ssl, dst);
       ssl_err = SSL_accept (new_ssl);
-      if (ssl_err == -1) /* the SSL_accept do the certificate verification */
+      if (ssl_err == -1)	/* the SSL_accept do the certificate verification */
 	{
 	  char client_ip[16];
 	  caddr_t err;

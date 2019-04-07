@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -587,7 +587,7 @@ DataGrid1.DataBind()
   </listitem>
 
   <listitem><formalpara><title>Configure Virtual Directory</title>
-    <para>Now we have to configure a Virtuoso virtual directory. Go to Conductor / Web Application Server / HTTP Hosts &mp; Directories.
+    <para>Now we have to configure a Virtuoso virtual directory. Go to Conductor / Web Application Server / HTTP Hosts &amp; Directories.
     </para></formalpara>
     <figure id="rthmig009"><title>Migrating ASP.Net Applications to Virtuoso</title>
       <graphic fileref="rth/mig009.png"/></figure>
@@ -622,7 +622,7 @@ DataGrid1.DataBind()
   <listitem><formalpara><title>View the ASPX page hosted in Virtuoso DAV</title>
     <para>With the virtual directory configured we have only to test that it works
     as expected.  On opening a browser at:
-    <computeroutput>http://localhost/aspxdemo1/WebForm1.aspx</computeroutput>,
+    <computeroutput>http://example.com/aspxdemo1/WebForm1.aspx</computeroutput>,
     we will see the same output as before.</para></formalpara>
     <figure id="rthmig013"><title>Migrating ASP.Net Applications to Virtuoso</title>
       <graphic fileref="rth/mig013.jpg" width="" depth=""/></figure>

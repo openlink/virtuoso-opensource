@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2013 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -20,16 +20,22 @@
 #  
 
 
-if WITH_JDK4
+if WITH_JDK4_1
 TARGETS		= lib virt_jena2.jar
-JDK		= @ac_jdk4_path@
-JDK_FLAGS	= -O -g:none -source 1.5 -target 1.5
+JDK		= @ac_jdk4_1_path@
+JDK_FLAGS	= -O -g
 
 JAVA		= $(JDK)/java
 JAVAC		= $(JDK)/javac
 JAVAH		= $(JDK)/javah
 JAVADOC		= $(JDK)/javadoc
 JAR		= $(JDK)/jar
+else
+JAVA		= :
+JAVAC		= :
+JAVAH		= :
+JAVADOC		= :
+JAR		= :
 endif
 
 
@@ -55,7 +61,7 @@ TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
 
-JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/jena-arq-2.10.1.jar:lib/jena-iri-0.9.6.jar:lib/jena-core-2.10.1.jar:lib/jena-core-2.10.1-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar:lib/jcl-over-slf4j-1.6.4.jar:lib/log4j-1.2.16.jar:lib/slf4j-api-1.6.4.jar:lib/slf4j-log4j12-1.6.4.jar:lib/xercesImpl-2.11.0.jar:lib/xml-apis-1.4.01.jar 
+JENA_CLASSPATH=.:lib/junit-4.5.jar:lib/jena-arq-2.12.0.jar:lib/jena-iri-1.1.0.jar:lib/jena-core-2.12.0.jar:lib/jena-core-2.12.0-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar:lib/jcl-over-slf4j-1.7.6.jar:lib/log4j-1.2.17.jar:lib/slf4j-api-1.7.6.jar:lib/slf4j-log4j12-1.7.6.jar:lib/xercesImpl-2.11.0.jar:lib/xml-apis-1.4.01.jar 
 
 all-am: $(TARGETS)
 
@@ -86,7 +92,7 @@ doc:
 #
 #  Run testsuite if WITH_JDK was found
 #
-if WITH_JDK4
+if WITH_JDK4_1
 run-tests: virt_jena2.jar
 	$(JAVAC) $(JDK_FLAGS) \
 		-classpath "$(JENA_CLASSPATH):./virt_jena2.jar" \

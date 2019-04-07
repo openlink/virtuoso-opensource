@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -46,7 +46,7 @@
 	      declare d1, d2, tz any;
               m := month (dt);
               y := year (dt);
-              tz := timezone (now());
+              tz := timezone (curdatetime_tz());
               d1 := stringdate (sprintf ('%i-%i-%i', y, m, 1));
 	      d2 := dateadd('month', 1, d1);
 

@@ -3,7 +3,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -105,7 +105,7 @@ This value reflects on ufl_value member of super class vspx_field.
   <example id="ex_vspx_url">
     <title>Simple example</title>
     <para>This is to draw an anchor in browser screen</para>
-    <screen><![CDATA[ <v:url name="url01" value="--'test'" url="--'http://localhost/'" format="%s" /> ]]>
+    <screen><![CDATA[ <v:url name="url01" value="--'test'" url="--'http://example.com/'" format="%s" /> ]]>
     </screen>
   </example>
 </refsect1>

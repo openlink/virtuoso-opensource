@@ -1,0 +1,533 @@
+<?vsp
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+
+  declare N, id integer;
+  declare sid, realm, vspx_user, action, subAction, node, nodePath varchar;
+  declare tmp, nodes, parts, returnData any;
+
+  set http_charset='utf-8';
+
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
+
+  vspx_user := connection_get ('vspx_user');
+  if (isnull (vspx_user) or (vspx_user = 'nobody'))
+  {
+    declare val_serviceId, val_uname varchar;
+    declare val_isRealUser integer;
+
+      val_uname := (select U.U_NAME
+                      from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
+                     where S.VS_REALM = realm
+                       and S.VS_SID   = sid
+                       and S.VS_UID   = U.U_NAME);
+      connection_set ('vspx_user', val_uname);
+  }
+
+  action := get_keyword ('a', params, '');
+  subAction := get_keyword ('sa', params, '');
+  if (action = 'search')
+  {
+    returnData := vector ();
+    if (subAction = 'metas')
+    {
+      declare predicateMetas, compareMetas any;
+
+      WEBDAV.DBA.dc_predicateMetas (predicateMetas);
+      WEBDAV.DBA.dc_compareMetas (compareMetas);
+      returnData := vector (predicateMetas, compareMetas);
+    }
+    if (subAction = 'schemas')
+    {
+      for (select RS_URI, RS_CATNAME from WS.WS.SYS_RDF_SCHEMAS order by RS_CATNAME) do
+      {
+        returnData := vector_concat (returnData, vector (RS_URI, RS_CATNAME));
+      }
+    }
+    else if (subAction = 'schemaProperties')
+    {
+      declare schemaURI any;
+
+      schemaURI := get_keyword ('schema', params, '');
+      for (select c0, c1 from WEBDAV.DBA.dav_rdf_schema_properties_short_rs (rs0)(c0 varchar, c1 varchar) rs where rs0 = schemaURI order by c1) do
+      {
+        returnData := vector_concat (returnData, vector (c0, c1));
+      }
+    }
+    else if (subAction = 'check')
+    {
+    	;
+    }
+    http_rewrite ();
+    http_header ('Content-Type: text/plain\r\n');
+    http (WEBDAV.DBA.obj2json (returnData, 5));
+  }
+  else if (action = 'cartridges')
+  {
+    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
+  }
+  else if (action = 'metaCartridges')
+  {
+    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
+  }
+  else if (action = 'mailVerify')
+  {
+    declare _error, _connection, _server, _port, _user, _password any;
+    declare exit handler for SQLSTATE '*'
+    {
+      _error := __SQL_MESSAGE;
+      goto _exit;
+    };
+
+    _connection := trim (get_keyword ('connection', params, 'none'));
+    _server     := trim (get_keyword ('server', params, ''));
+    _port       := trim (get_keyword ('port', params, '143'));
+    _user       := trim (get_keyword ('user', params, ''));
+    _password   := trim (get_keyword ('password', params, ''));
+    if (_password = '**********')
+      _password := DB.DBA.IMAP__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0);
+
+    _error      := DB.DBA.IMAP__verify (_connection, _server, _port, _user, _password);
+
+  _exit:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (_error);
+  }
+  else if (action = 'mailFolders')
+  {
+    declare _error, _server, _port, _user, _password varchar;
+    declare _connection, _folders, _folderParts, _folderPath, _list any;
+
+    _list := vector ();
+    _connection := trim (get_keyword ('connection', params));
+    _server := trim (get_keyword ('server', params));
+    if (is_empty_or_null (_server))
+      goto _exit_1;
+
+    _port := trim (get_keyword ('port', params));
+    if (is_empty_or_null (_port))
+      goto _exit_1;
+
+    _user := trim (get_keyword ('user', params));
+    if (is_empty_or_null (_user))
+      goto _exit_1;
+
+    _password := trim (get_keyword ('password', params));
+    if (is_empty_or_null (_password))
+      goto _exit_1;
+
+    if (_password = '**********')
+      _password := DB.DBA.IMAP__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0);
+
+    _connection := case when (_connection = 'ssl') then 1 else 0 end;
+    if (isnull (_port))
+    {
+      _port := '143';
+      if (_connection)
+        _port := '993';
+    }
+    {
+      declare exit handler for SQLSTATE '*'
+      {
+        goto _exit_1;
+      };
+      _folders := imap_get (sprintf ('%s:%s', _server, _port), _user, _password, 'list', '*', null, _connection);
+      foreach (any _folder in _folders) do
+      {
+        _folderParts := regexp_parse('\\((.*)\\)\\s\\"(.*)\\"\\s\\"?(.*)((\\r\\n)|\\")', _folder, 0);
+        if (length (_folderParts) > 7)
+        {
+          _folderPath := subseq (_folder, _folderParts[6], _folderParts[7]);
+          _folderPath := rtrim (rtrim (rtrim (_folderPath, '\n'), '\r'), '"');
+          _list := vector_concat (_list , vector (_folderPath));
+        }
+      }
+    }
+  _exit_1:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (WEBDAV.DBA.obj2json (_list, 5));
+  }
+  else if (action = 'driveBuckets')
+  {
+    declare _list any;
+    declare _drive any;
+
+    _list := null;
+    _drive := get_keyword ('drive', params);
+    if (__proc_exists ('DB.DBA.' || _drive || '__driveBuckets') is null)
+      goto _exit_2;
+
+    _list := call ('DB.DBA.' || _drive || '__driveBuckets') (params);
+
+  _exit_2:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (WEBDAV.DBA.obj2json (_list, 5));
+  }
+  else if (action = 'driveFolders')
+  {
+    declare _list, _result any;
+    declare _drive, _driveParams, _drivePath, _driveSid any;
+
+    _list := null;
+    _drive := get_keyword ('drive', params);
+    if (__proc_exists ('DB.DBA.' || _drive || '__driveFolders') is null)
+      goto _exit_3;
+
+    _list := vector ();
+    _driveSid := get_keyword ('sid', params);
+    if (_driveSid is not null)
+    {
+      _driveParams := vector ('access_timestamp', datestring (now ()), 'sid', _driveSid);
+      _result := WEBDAV.DBA.exec ('select TOP 1 cs_token, cs_refresh_token, cs_expire_time from OAUTH.DBA.CLI_SESSIONS where cs_sid = ?', vector (_driveSid));
+      if (length (_result))
+      {
+        _result := _result[0];
+        if (not isnull (_result[0]))
+          _driveParams := vector_concat (_driveParams, vector ('access_token', _result[0]));
+
+        if (not isnull (_result[1]))
+          _driveParams := vector_concat (_driveParams, vector ('refresh_token', _result[1]));
+
+        if (not isnull (_result[2]))
+          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), _result[2])));
+      }
+    }
+    else
+    {
+      _driveParams := call ('DB.DBA.' || _drive || '__params') (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'));
+    }
+    for (N := 0; N < length (_driveParams); N := N + 2)
+    {
+      if (not isnull (get_keyword (_driveParams[N], params)))
+      {
+        _driveParams[N+1] := get_keyword (_driveParams[N], params);
+      }
+    }
+    _list := call ('DB.DBA.' || _drive || '__driveFolders') (_driveParams);
+
+  _exit_3:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http (WEBDAV.DBA.obj2json (_list, 5));
+  }
+  else if (action = 'webdavVerify')
+  {
+    declare _error, _server, _params, _password, _oauthSid any;
+    declare exit handler for SQLSTATE '*'
+    {
+      _error := __SQL_MESSAGE;
+      goto _exit_4;
+    };
+
+    _server     := get_keyword ('server', params, '');
+    if (get_keyword ('type', params, 'Digest') = 'Digest')
+    {
+      _password   := get_keyword ('password', params);
+      if (_password = '**********')
+        _password := DB.DBA.WebDAV__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'password', 0, 1, 1);
+
+      _params     := vector ('authenticationType', 'Digest', 'user', get_keyword ('user', params, ''), 'password', _password);
+    }
+    else if (get_keyword ('type', params) = 'oauth')
+    {
+      _oauthSid := get_keyword ('oauthSid', params, get_keyword ('sid', params));
+      if (isnull (_oauthSid))
+        _oauthSid := DB.DBA.WebDAV__paramGet (DB.DBA.DAV_SEARCH_ID (get_keyword ('path', params), 'C'), 'C', 'oauthSid', 0, 1, 1);
+
+      _params := vector ('authenticationType', 'oauth', 'oauthSid', _oauthSid);
+    }
+    else
+    {
+      _params     := vector ('authenticationType', 'WebID', 'key', get_keyword ('key', params), 'keyOwner', (select VS_UID from DB.DBA.VSPX_SESSION where VS_SID = sid));
+    }
+    _error      := DB.DBA.WebDAV__verify (_server, _params);
+
+  _exit_4:;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (_error);
+  }
+  else if (action = 'progress')
+  {
+    declare progressID, progressIndex, data any;
+    declare _error, command any;
+
+    _error := '';
+    if      (subAction = 'validate')
+    {
+      command := get_keyword ('c', params);
+      if      ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp', params))))
+      {
+        _error := 'The expression contains no valid tag(s)!';
+      }
+      else if ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp2', params))))
+      {
+        _error := 'The expression contains no valid tag(s)!';
+      }
+      else if (command = 'share')
+      {
+        -- validate ACL rules
+        {
+          declare exit handler for sqlstate '*'
+          {
+            _error := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
+          	goto _end_share;
+          };
+          WEBDAV.DBA.aci_params (params);
+        }
+      _end_share:;
+      }
+      else if (command = 'properties')
+      {
+        -- validate ACL rules
+        if (not WEBDAV.DBA.check_admin ((select U_ID from DB.DBA.SYS_USERS where U_NAME = coalesce (WEBDAV.DBA.account (), 'nobody'))))
+        {
+          tmp := WEBDAV.DBA.user_id (trim (get_keyword ('prop_group', params, get_keyword ('prop_group2', params, ''))));
+          if (not WEBDAV.DBA.group_own (tmp))
+            _error := 'Only own groups or ''dba'' group are allowed!';
+        }
+      }
+      http_rewrite ();
+      http_header ('Access-Control-Allow-Origin: *\r\n');
+      http_header ('Content-Type: text/plain\r\n');
+      http (_error);
+    }
+    else
+    {
+      progressID := get_keyword ('id', params, uuid ());
+      if      (subAction = 'init')
+      {
+  	    registry_set ('progress_index_' || progressID, '0');
+
+  	    http_rewrite ();
+        http_header ('Access-Control-Allow-Origin: *\r\n');
+        http (DB.DBA.params2json (vector ('id', progressID, 'index', 0)));
+  	    http_flush ();
+
+        {
+          declare exit handler for sqlstate '*'
+          {
+          	goto _end;
+          };
+          command := get_keyword ('c', params);
+          WEBDAV.DBA.progress_start (progressID, command, params);
+        }
+  	  _end:;
+
+        delay (5);
+  	    registry_remove ('progress_index_'  || progressID);
+  	    registry_remove ('progress_action_' || progressID);
+  	    registry_remove ('progress_data_' || progressID);
+      }
+      else if (subAction = 'check')
+      {
+        progressIndex := registry_get ('progress_index_' || progressID);
+        -- dbg_obj_print ('rest', action, subAction, progressID, progressIndex, registry_get ('progress_data_' || progressID));
+        if (not (isinteger (progressIndex) and (progressIndex = 0)))
+        {
+          data := registry_get ('progress_data_' || progressID);
+          if (isinteger (data))
+            data := '[]';
+
+    	    http_rewrite ();
+          http_header ('Access-Control-Allow-Origin: *\r\n');
+          http (DB.DBA.params2json (vector ('id', progressID, 'index', progressIndex, 'data', data)));
+        }
+      }
+      else if (subAction = 'stop')
+      {
+  	    registry_set ('progress_action_' || progressID, 'stop');
+      }
+    }
+  }
+  else if (action = 'prefix')
+  {
+    declare prefix varchar;
+    declare head, content any;
+
+    prefix := get_keyword ('p', params);
+    returnData := DB.DBA.RDFData_std_pref (prefix, 1);
+    if (isnull (returnData))
+    {
+      commit work;
+      content := http_get (sprintf ('http://prefix.cc/%U.file.json', prefix), head);
+      if (head[0] like 'HTTP/1._ 20_ %')
+      {
+        returnData := get_keyword (prefix, DB.DBA.json2obj (content));
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
+  else if (action = 'prefixes')
+  {
+    declare _pos1, _pos2 integer;
+    declare _prefix, _msg varchar;
+    declare _graph, _content, _ns, _dictionary, _triples any;
+
+    returnData := vector ();
+    _content := get_keyword ('content', params, '');
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+
+    -- try load
+    {
+      declare exit handler for sqlstate '37000' {goto _again; };
+
+      _dictionary := dict_new ();
+      DB.DBA.RDF_TTL_LOAD_DICT (_content, _graph, _graph, _dictionary);
+
+      goto _exit_5;
+    }
+
+  _again:;
+    -- prepare new content with namespaces
+    _ns := string_output ();
+    for (select NS_PREFIX, NS_URL from DB.DBA.SYS_XML_PERSISTENT_NS_DECL) do
+    {
+      http (sprintf ('@prefix %s: <%s> . \t', NS_PREFIX, NS_URL), _ns);
+    }
+    http (_content, _ns);
+
+    -- try load again
+    {
+      declare exit handler for sqlstate '37000'
+      {
+        _msg := VALIDATE.DBA.clear (__SQL_MESSAGE);
+        if (isnull (strstr (_msg,  'Undefined namespace prefix')))
+        {
+          returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+          goto _exit_5;
+        }
+        else
+        {
+          _pos1 := strrchr (_msg, ' ');
+          _pos2 := strrchr (_msg, ':');
+          _prefix := subseq (_msg, _pos1+1, _pos2);
+          _ns := replace (http_get (WEBDAV.DBA.host_url () || http_path() || '?a=prefix&p=' || _prefix), '"', '');
+          if (_ns <> '')
+            returnData := vector ('prefixes', sprintf ('@prefix %s: <%s> . \n', _prefix, _ns));
+        }
+        goto _exit_5;
+      };
+      _dictionary := dict_new ();
+      DB.DBA.RDF_TTL_LOAD_DICT (_ns, _graph, _graph, _dictionary);
+    }
+
+    _triples := dict_list_keys (_dictionary, 1);
+    _ns := string_output ();
+    WS.WS.TTL_QUERY_PREFIXES (_triples, _ns);
+    returnData := vector ('prefixes', string_output_string(_ns));
+
+  _exit_5:;
+    SPARQL clear graph ?:_graph;
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
+  else if (action = 'verifyTurtle')
+  {
+    declare _graph, _content any;
+    declare exit handler for sqlstate '37000' {
+      returnData := vector ('state', __SQL_STATE, 'message', VALIDATE.DBA.clear (__SQL_MESSAGE));
+
+      goto _exit_6;
+    };
+
+    returnData := vector ();
+    _content := get_keyword ('content', params, '');
+    _graph := 'http://local.virt/dav/' || cast (rnd (1000) as varchar);
+    DB.DBA.TTLP (_content, _graph, _graph, 255);
+
+  _exit_6:;
+    SPARQL clear graph ?:_graph;
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.params2json (returnData));
+  }
+  else if (action = 'mimeTypeByExt')
+  {
+    declare fileName varchar;
+
+    fileName := get_keyword ('fileName', params, '');
+    returnData := http_mime_type (fileName);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (returnData);
+  }
+  else if (action = 'nameByMimeType')
+  {
+    declare fileName, mimeType varchar;
+
+    returnData := vector ();
+    fileName := get_keyword ('fileName', params, '');
+    if (not isnull (strrchr (fileName, '.')))
+    {
+      mimeType := get_keyword ('mimeType', params, '');
+      if (http_mime_type (fileName) <> mimeType)
+      {
+        declare name, ext varchar;
+
+        name := left (fileName, strrchr (fileName, '.'));
+        for (select T_EXT from WS.WS.SYS_DAV_RES_TYPES where T_TYPE = mimeType order by T_EXT) do
+        {
+          returnData := vector_concat (returnData, vector (name || '.' || T_EXT));
+        }
+      }
+    }
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json(returnData));
+  }
+  else if (action = 'imapFilter')
+  {
+    declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
+
+    MAIL.WA.dc_predicateMetas (predicateMetas);
+    MAIL.WA.dc_compareMetas (compareMetas);
+    MAIL.WA.dc_actionMetas (actionMetas);
+    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    headers := MAIL.WA.dc_headersList ();
+    triplets := MAIL.WA.dc_tripletList ();
+
+    returnData := vector (predicateMetas, compareMetas, actionMetas, folders, headers, triplets);
+
+    http_rewrite ();
+    http_header ('Access-Control-Allow-Origin: *\r\n');
+    http_header ('Content-Type: text/plain\r\n');
+    http (DB.DBA.obj2json (returnData));
+  }
+  return;
+?>

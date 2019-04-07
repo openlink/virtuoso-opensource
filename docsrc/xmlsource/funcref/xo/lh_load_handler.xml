@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@ Please do not load custom versions of 'x-any' and 'x-ftq-x-any' handlers.</para>
   </refsect1>
   <refsect1 id="params_lh_load_handler"><title>Parameters</title>
     <refsect2><title>new_handler</title>
-      <para></para></refsect2>
+      <para>A given handler.</para></refsect2>
   </refsect1>
   <refsect1 id="seealso_lh_load_handler"><title>See Also</title>
     <para><link linkend="fn_elh_get_handler">elh_get_handler()</link></para>

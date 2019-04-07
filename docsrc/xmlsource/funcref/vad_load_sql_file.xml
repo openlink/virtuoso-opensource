@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -71,8 +71,7 @@
   </refsect1>
   
   <refsect1 id="examples_vad_load_sql_file"><title>Examples</title>
-    <example id="ex_vad_load_sql_file_1"><title></title>
-      <para></para>
+    <example id="ex_vad_load_sql_file_1"><title>Simple Use</title>
 <programlisting><![CDATA[
 DB.DBA.VAD_LOAD_SQL_FILE ('./conductor/vdir_helper.sql', 1, 'report', 0);
 ]]></programlisting>

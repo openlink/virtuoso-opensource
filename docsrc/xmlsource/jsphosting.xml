@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,10 +78,10 @@ put it in the autoexec.isql init script.
 
 <para>Make a virtual directory for accessing JSP server, here is an example:</para>
 
-<programlisting><![CDATA[vhost_define (lpath=>'/tomcat',ppath=>'http://localhost:8080/');]]></programlisting>
+<programlisting><![CDATA[vhost_define (lpath=>'/tomcat',ppath=>'http://example.com:8080/');]]></programlisting>
 
 <para>Verify that your installations are correct by pointing your web browser 
-of choice to <computeroutput>http://localhost:8890/tomcat/</computeroutput> 
+of choice to <computeroutput>http://example.com:8890/tomcat/</computeroutput>
 (assuming you are working on your local machine).  Run some of JSP examples 
 provided with Tomcat distribution to verify that they are executed without errors.</para>
   

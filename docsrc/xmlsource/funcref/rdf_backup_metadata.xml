@@ -4,7 +4,7 @@
   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
   project.
   
-  Copyright (C) 1998-2013 OpenLink Software
+  Copyright (C) 1998-2019 OpenLink Software
   
   This project is free software; you can redistribute it and/or modify it
   under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ If the argument is null then the backup name will contain date and time of backu
   </refsect1>-->
   <refsect1 id="seealso_rdf_backup_metadata">
     <title>See Also</title>
-    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA</function></link></para>
-    <para><link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA</function></link></para>
+    <para><link linkend="fn_rdf_audit_metadata"><function>DB.DBA.RDF_AUDIT_METADATA()</function></link></para>
+    <para><link linkend="fn_rdf_restore_metadata"><function>DB.DBA.RDF_RESTORE_METADATA()</function></link></para>
   </refsect1>
 </refentry>

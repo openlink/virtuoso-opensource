@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC
+  "-//W3C//DTD XHTML 1.0 Strict//EN"
+  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>BBC demo queries</title>
+<link rel="stylesheet" type="text/css" href="styles/default.css"/>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+
+<!--
+
+FACET DEMO PAGE CUSTOMIZATION:
+
+Registry keys:
+
+'fct_demo_uri' controls generation of "Demo Queries" link on Facet Browser's front page. If not set, this page is used.
+See facet_view.sql.
+
+'sparql_demo_query_path' should point to a DAV collection with .isparql files to display. If not set,
+'/DAV/home/dav/sparql_demo_queries' will be used.
+
+'sparql_demo_xsl_uri' should point to XSL used to extract information and display entries in the list of queries.
+If not set, '/fct/isparql_describe.xsl' is used.
+
+-->
+
+
+<?vsp
+   declare uriqa_str varchar;
+   declare dav_pwd varchar;
+   declare demo_dav_path, demo_xsl_uri varchar;
+
+   uriqa_str := cfg_item_value( virtuoso_ini_path(), 'URIQA','DefaultHost');
+
+   if (uriqa_str is null)
+     {
+       if (server_http_port () <> '80')
+         uriqa_str := 'localhost:'||server_http_port ();
+       else
+         uriqa_str := 'localhost';
+     }
+
+   demo_dav_path := registry_get ('sparql_demo_query_path');
+
+   if (0 = demo_dav_path)
+     demo_dav_path := '/DAV/home/dav/sparql_demo_queries/';
+
+   demo_xsl_uri := registry_get ('sparql_demo_xsl_uri');
+
+   if (0 = demo_xsl_uri) demo_xsl_uri := 'http://' || uriqa_str || '/fct/isparql_describe.xsl';
+
+?>
+
+<script type="text/javascript">
+var featureList = ["","",""];
+
+var sparql_ep = 'http://<?=uriqa_str?>/sparql';
+var isparql_ep = 'http://<?=uriqa_str?>/isparql';
+
+function init() {  }
+
+function sparql_qry (q_elm) {
+
+  document.location = sparql_ep + '?query=' + get_and_encode_query (q_elm);
+}
+
+function isparql_qry (q_elm) {
+  document.location = sparql_ep + '?query=' + get_and_encode_query (q_elm);
+}
+
+function get_and_encode_query (q_elm)
+{
+  return encodeURIComponent (document.getElementById(q_elm).firstChild.data);
+}
+
+</script>
+</head>
+<body>
+  <div id="PG">
+    <div id="HD">
+      <a class="logo" href="/fct/facet.vsp">
+        <img id="opl_logo" alt="OpenLink Software" src="/fct/images/openlink_site_logo.png"/>
+      </a>
+      <h2>Demo SPARQL Queries</h2>
+    </div> <!-- #HD -->
+    <div id="MD">
+      <div id="demo_queries_ctr">
+        <table class="demo_qry_list">
+<?vsp
+  declare ct_tree,xst any;
+  declare num_r int;
+  num_r := 0;
+
+  for select res_content, res_name, res_full_path
+        from WS.WS.SYS_DAV_RES
+        where RES_FULL_PATH like demo_dav_path || '%.isparql' do
+    {
+
+	ct_tree := xml_tree_doc (xml_tree (res_content));
+	http_value (xslt (demo_xsl_uri,
+		    	  ct_tree,
+                     	  vector ('name', res_name, 'full_path', 'http://' || uriqa_str || res_full_path)));
+
+        num_r := num_r + 1;
+    }
+  if (0 = num_r)
+    {
+      http ('<tr><td colspan="3"><span class="advisory">No demo queries available on this server.</span></td></tr>');
+    }
+?>
+        </table>
+      </div> <!-- #demo_queries_ctr -->
+    </div> <!-- #MD -->
+    <div id="FT">
+      <a href="http://virtuoso.openlinksw.com/">
+        <img alt="Powered by OpenLink Virtuoso" src="/fct/images/virt_power_no_border.png"/>
+      </a>
+      <a href="http://linkeddata.org">
+        <img alt="Linked Data" src="/fct/images/LoDLogo.gif"/>
+      </a>
+      <br/>
+      <span class="copyright">Copyright &copy; 2009-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software</span>
+      <div id="FT_L"/>
+      <div id="FT_R"/>
+    </div> <!-- #FT -->
+  </div> <!-- #PG -->
+</body>
+</html>

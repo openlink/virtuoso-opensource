@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2012 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,67 +35,62 @@ import com.hp.hpl.jena.shared.*;
 
 import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
-public class VirtuosoUpdateRequest 
-{
-    private List requests = new ArrayList() ;
+public class VirtuosoUpdateRequest {
+    private List requests = new ArrayList();
     private VirtGraph graph;
     private String virt_query;
 
     java.sql.Statement stmt = null;
 
 
-    public VirtuosoUpdateRequest (VirtGraph _graph)
-    {
-	graph = _graph;
+    public VirtuosoUpdateRequest(VirtGraph _graph) {
+        graph = _graph;
     }
 
-    public VirtuosoUpdateRequest (String query, VirtGraph _graph)
-    {
+    public VirtuosoUpdateRequest(String query, VirtGraph _graph) {
         this(_graph);
         virt_query = query;
-	requests.add((Object)query);
+        requests.add((Object) query);
     }
 
-    public void exec()
-    { 
-	try
-	{
-	    stmt = graph.createStatement();
+    public void exec() {
+        try {
+            stmt = graph.createStatement();
 
-            for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
-            {
-                String query = "sparql\n "+ (String)iter.next();
-                stmt.execute(query);
+            for (Iterator iter = requests.iterator(); iter.hasNext(); ) {
+                StringBuilder sb = new StringBuilder("sparql\n");
+                graph.appendSparqlPrefixes(sb);
+                sb.append((String) iter.next());
+                stmt.addBatch(sb.toString());
             }
-
-	    stmt.close();
-	    stmt = null;
-	}
-	catch(Exception e)
-	{
+            stmt.executeBatch();
+            stmt.clearBatch();
+            requests.clear();
+            stmt.close();
+            stmt = null;
+        } catch (Exception e) {
             throw new UpdateException("Convert results are FAILED.:", e);
-	}
+        }
 
     }
 
 
-    public void addUpdate(String update) { 
-    	requests.add(update); 
+    public void addUpdate(String update) {
+        requests.add(update);
     }
 
-    public Iterator iterator() { 
-    	return requests.iterator(); 
+    public Iterator iterator() {
+        return requests.iterator();
     }
 
     public String toString() {
-      StringBuffer b = new StringBuffer();
+        StringBuffer b = new StringBuffer();
 
-      for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
-      {
-         b.append((String)iter.next());
-         b.append("\n");
-      }
-      return b.toString();
+        for (Iterator iter = requests.iterator(); iter.hasNext(); ) {
+            b.append((String) iter.next());
+            b.append("\n");
+        }
+        return b.toString();
     }
 
 }

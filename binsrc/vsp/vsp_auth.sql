@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2013 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -725,8 +725,8 @@ vsp_ua_app_cookie (in cook_str varchar,
 --!AWK PUBLIC
 create procedure
 vsp_auth_get (in realm varchar, in domain varchar,
-	      in nonce varchar, in opaque varchar,
-	      in stale varchar, inout lines any, in allow_basic integer)
+        in nonce varchar, in opaque varchar,
+        in stale varchar, inout lines any, in allow_basic integer)
 {
 
   declare hdr varchar;
@@ -743,24 +743,27 @@ vsp_auth_get (in realm varchar, in domain varchar,
   else
     require_encrypted := 1;
 
-  if (require_encrypted and ('True' = vsp_ua_get_prop ('has_digest_auth',
-				ua_id, vsp_ua_prop_init (),
-				vsp_ua_vec_init ()) or 0 = allow_basic))
-    {
---      dbg_printf ('Sending Digest challenge to %s', ua_id);
-      hdr := sprintf ('WWW-Authenticate: Digest realm="%s", domain="%s", nonce="%s", opaque="%s", stale="%s", qop="auth", algorithm="MD5"\r\n',
-		      coalesce (realm, ''),
-		      coalesce (domain, ''),
-		      coalesce (nonce, ''),
-		      coalesce (opaque, ''),
-		      coalesce (stale, ''));
+  if (trim (vsp_ua_match_hdr (lines, 'X-Requested-With: %'), '\r') <> 'XMLHttpRequest')
+  {
+    if (require_encrypted and ('True' = vsp_ua_get_prop ('has_digest_auth',
+          ua_id, vsp_ua_prop_init (),
+          vsp_ua_vec_init ()) or 0 = allow_basic))
+      {
+  --      dbg_printf ('Sending Digest challenge to %s', ua_id);
+        hdr := sprintf ('WWW-Authenticate: Digest realm="%s", domain="%s", nonce="%s", opaque="%s", stale="%s", qop="auth", algorithm="MD5"\r\n',
+            coalesce (realm, ''),
+            coalesce (domain, ''),
+            coalesce (nonce, ''),
+            coalesce (opaque, ''),
+            coalesce (stale, ''));
 
-      http_header(concat (coalesce (http_header_get (), ''), hdr));
-      return 0;
-    }
-  hdr := sprintf ('WWW-Authenticate: Basic realm="%s"\r\n', coalesce (realm, ''));
-  http_header (concat (coalesce (http_header_get (), ''), hdr));
-  return 0;
+        http_header(concat (coalesce (http_header_get (), ''), hdr));
+        return 0;
+      }
+    hdr := sprintf ('WWW-Authenticate: Basic realm="%s"\r\n', coalesce (realm, ''));
+    http_header (concat (coalesce (http_header_get (), ''), hdr));
+    return 0;
+  }
 }
 ;
 

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -48,28 +48,11 @@ wrapped into the specified root element.
   </refsect1>
   <refsect1 id="params"><title>Parameters</title>
     <refsect2><title>query</title>
-      <para></para></refsect2>
+      <para>XML View</para></refsect2>
     <refsect2><title>root_element</title>
-      <para></para></refsect2>
+      <para>Root element.</para></refsect2>
   </refsect1>
   <refsect1 id="ret"><title>Return Types</title><para>XML Schema</para></refsect1>
-<!--
-  <refsect1 id="errors"><title>Errors</title>
-    <table><title>Errors signalled by</title>
-      <tgroup cols="4">
-       <thead><row><entry>SQLState</entry><entry>Error Code</entry><entry>Error Text</entry><entry>Description</entry></row></thead>
-	<tbody>
-	  <row>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorcode></errorcode></entry>
-	    <entry><errorname></errorname></entry>
-	    <entry></entry>
-	  </row>
-	</tbody>
-      </tgroup>
-    </table>
-  </refsect1>
--->
   <refsect1 id="examples"><title>Examples</title>
     <example id="ex_xml_view_schema"><title>Creating an XML Schema</title>
 <programlisting>

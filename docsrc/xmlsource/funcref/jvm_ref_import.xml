@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2013 OpenLink Software
+ -  Copyright (C) 1998-2019 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -79,7 +79,7 @@ IMPORT_JAR (in files any, in classes any)
   -->
   <refsect1 id="examples_jvm_ref_import">
     <title>Examples</title>
-    <example id="ex_jvm_ref_import"><title></title>
+    <example id="ex_jvm_ref_import"><title>Simple Use</title>
       <screen><![CDATA[
 JVM_REF_IMPORT (NULL, vector ('java.lang.Object', 'java.lang.System'));
 ]]></screen>

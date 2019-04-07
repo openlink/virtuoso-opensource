@@ -1,25 +1,25 @@
---  
---  $Id$
---  
+--
+--  $Id: tfk.sql,v 1.15.10.2 2013/01/02 16:15:08 source Exp $
+--
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
---  
---  Copyright (C) 1998-2013 OpenLink Software
---  
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
 --  Free Software Foundation; only version 2 of the License, dated June 1991.
---  
+--
 --  This program is distributed in the hope that it will be useful, but
 --  WITHOUT ANY WARRANTY; without even the implied warranty of
 --  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
 --  General Public License for more details.
---  
+--
 --  You should have received a copy of the GNU General Public License along
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---  
---  
+--
+--
 echo BOTH "STARTED: FK constraint triggers tests\n";
 CONNECT;
 
@@ -1287,18 +1287,20 @@ CREATE TABLE USERS(
 
     UNDER ACCOUNTS
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table USERS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table USERS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 CREATE TABLE GROUPS(
     DESCRIPTION  LONG VARCHAR NOT NULL,
 
     UNDER ACCOUNTS
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table GROUPS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table GROUPS under ACCOUNTS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 CREATE TABLE MEMBERS(
     GROUP_ID  INTEGER NOT NULL,
@@ -1308,9 +1310,10 @@ CREATE TABLE MEMBERS(
     FOREIGN KEY(GROUP_ID) REFERENCES GROUPS(ID),
     FOREIGN KEY(USER_ID) REFERENCES USERS(ID)
     );
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3203: table MEMBERS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3203: table MEMBERS created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 use DB;
 
 -- suite for bug #3684
@@ -1325,9 +1328,10 @@ CREATE TABLE P2 (ID1 INT, UNDER P1);
 CREATE TABLE PKF1 (ID2 INT, ID3 INT, PRIMARY KEY (ID2, ID3));
 
 ALTER TABLE P2 ADD CONSTRAINT FK01 FOREIGN KEY (ID, ID1) REFERENCES PKF1 (ID2, ID3);
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": B3684: FK01 FOREIGN KEY created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- XXX: no under
+--ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+--SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+--ECHO BOTH ": B3684: FK01 FOREIGN KEY created STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 use DB;
 
 -- bug #2023
@@ -1432,5 +1436,52 @@ DROP VIEW B6804;
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG6804-3:  ALTER TABLE RENAME and foreign keys : STATE=" $STATE "MESSAGE=" $MESSAGE "\n";
+
+DROP TABLE B100;
+DROP TABLE A100;
+
+CREATE TABLE A100
+(
+  ID INTEGER IDENTITY,
+  PRIMARY KEY (ID)
+);
+
+CREATE TABLE B100
+(
+  ID INTEGER IDENTITY,
+  ID1 INTEGER,
+  ID2 INTEGER,
+  PRIMARY KEY (ID)
+);
+
+ALTER TABLE B100
+  ADD CONSTRAINT B_A_ID_ID1 FOREIGN KEY (ID1)
+    REFERENCES A100 (ID)
+    ON UPDATE CASCADE ON DELETE CASCADE;
+
+ALTER TABLE B100
+  ADD CONSTRAINT B_A_ID_ID2 FOREIGN KEY (ID2)
+    REFERENCES A100 (ID)
+    ON UPDATE CASCADE ON DELETE CASCADE;
+
+
+INSERT INTO A100(ID) VALUES(1);
+INSERT INTO A100(ID) VALUES(2);
+INSERT INTO B100(ID,ID1,ID2) VALUES(1,1,2);
+SELECT * FROM A100;
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table a100 contains " $ROWCNT " values after insert on a100\n";
+SELECT * FROM B100;
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table b100 contains " $ROWCNT " values after insert on a100\n";
+
+DELETE FROM A100;
+
+SELECT * FROM B100;
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Table b100 contains " $ROWCNT " values after delete on a100\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: FK constraint triggers tests\n";

@@ -6,7 +6,7 @@
  *
  * Based in part on rdf_storage_virtuoso
  *
- * Copyright (C) 2000-2008, Openlink Software,  http://www.openlinksw.com/
+ * Copyright (C) 2000-2019 OpenLink Software,  http://www.openlinksw.com/
  *
  * This package is Free Software and part of Redland http://librdf.org/
  *
