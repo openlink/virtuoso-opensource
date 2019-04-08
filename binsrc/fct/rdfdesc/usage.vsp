@@ -43,6 +43,7 @@
   declare ses_params varchar;
   declare pageUrl varchar;
   declare user_permissions int;
+  declare q_txt any;
 
   white_page := 1;
 
