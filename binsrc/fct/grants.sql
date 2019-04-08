@@ -1,5 +1,4 @@
 USER_SET_QUALIFIER ('SPARQL', 'DB');
-grant select on DB.DBA.SYS_HTTP_SPONGE to "SPARQL_SELECT";
 grant select on WS.WS.SYS_DAV_RES to "SPARQL_SELECT";
 grant insert,select,update,delete on DB.DBA.fct_state to "SPARQL_SELECT";
 grant insert,select,update,delete on DB.DBA.fct_log to "SPARQL_SELECT";

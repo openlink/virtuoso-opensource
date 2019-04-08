@@ -157,15 +157,20 @@ end_loop:;
 	  commit work;
 	  DB.DBA.SPARQL_RESULTS_WRITE (ses, metas, rset, accept, 1);
 
-	  for select HS_EXPIRATION, HS_LAST_MODIFIED, HS_LAST_ETAG
-	    from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = "url" and HS_PARSER = 'DB.DBA.RDF_LOAD_HTTP_RESPONSE' do
+          declare expinfo any;
+          expinfo := SPONGER_GET_EXPIRY_INFO ("url");
+	  foreach (any rec in expinfo) do
 	  {
-	    if (HS_LAST_MODIFIED is not null)
-	      http_header (http_header_get () || sprintf ('Last-Modified: %s\r\n', date_rfc1123 (HS_LAST_MODIFIED)));
-	    if (HS_LAST_ETAG is not null)
-	      http_header (http_header_get () || sprintf ('ETag: %s\r\n', HS_LAST_ETAG));
-	    if (HS_EXPIRATION is not null)
-	      http_header (http_header_get () || sprintf ('Expires: %s\r\n', date_rfc1123 (HS_EXPIRATION)));
+            declare last_modified, last_etag, expiration any;
+            expiration := rec[0];
+            last_modified := rec[1];
+            last_etag := rec[2];
+	    if (last_modified is not null)
+	      http_header (http_header_get () || sprintf ('Last-Modified: %s\r\n', date_rfc1123 (last_modified)));
+	    if (last_etag is not null)
+	      http_header (http_header_get () || sprintf ('ETag: %s\r\n', last_etag));
+	    if (expiration is not null)
+	      http_header (http_header_get () || sprintf ('Expires: %s\r\n', date_rfc1123 (expiration)));
 	  }
 	  http_header (http_header_get () || sprintf ('Content-Location: %s\r\n', "url"));
 	  http (ses);

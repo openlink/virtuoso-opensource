@@ -274,21 +274,16 @@ again:
       DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
-  -- else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
 	{
 	  refr := 0;
-	  if (exists (select 1 from SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+	  if (DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (doc))
 	    {
-	      -- Checks whether any Sponger ACLs will prevent sponging, even if the user's graph permissions allow it. 
-              -- if (SPONGING_ALLOWED())  -- only available on develop/7.x branch
-	      {
-		-- We're user SPARQL at this point
-		DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%s>', _G), 'dba');
-	      }
+              -- We're user SPARQL at this point
+              DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%s>', _G), 'dba');
             }
         }
       else
