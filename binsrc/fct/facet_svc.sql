@@ -61,7 +61,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
   declare start_time int;
   declare sqls, msg, qr, qr2, act varchar;
   declare ret, md, res, xmlout any;
-
+  http_rewrite ();
   xmlout := 1;
   if (accept like '%/sparql-results+%' or accept = 'application/json')
     xmlout := 0;
