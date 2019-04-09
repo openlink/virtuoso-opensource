@@ -236,9 +236,13 @@
 
               select U_ID into _u_id from SYS_USERS where U_NAME = self.soapuser;
               self.xml_grant_list := get_granted_xml_templates (_u_id, plist);
-              for (select P_NAME
-                     from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
-                    where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME and P_TYPE is null) do
+	      for (select a.P_NAME as P_NAME
+		       from DB.DBA.SYS_PROCEDURES a, DB.DBA.SYS_GRANTS g1
+		       where g1.G_USER = _u_id and g1.G_OP = 32 and g1.G_OBJECT = a.P_NAME and a.P_TYPE is null
+		       union all
+		       select g2.G_OBJECT as G_OBJECT from DB.DBA.SYS_GRANTS g2 where g2.G_USER = _u_id and g2.G_OP = 32 and
+		       not exists (select 1 from DB.DBA.SYS_PROCEDURES b where g2.G_OBJECT = b.P_NAME)
+		    ) do
               {
                 if (0 = position (P_NAME, plist))
                   self.roles_grant_list := vector_concat(self.roles_grant_list, vector(P_NAME));
@@ -638,9 +642,13 @@
 
                                     select U_ID into _u_id from SYS_USERS where U_NAME = self.soapuser;
 				    self.xml_grant_list := get_granted_xml_templates (_u_id, plist);
-                                        for (select P_NAME
-                                               from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
-                                              where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME and P_TYPE is null) do
+                                        for (select a.P_NAME as P_NAME
+                                               from DB.DBA.SYS_PROCEDURES a, DB.DBA.SYS_GRANTS g1
+					       where g1.G_USER = _u_id and g1.G_OP = 32 and g1.G_OBJECT = a.P_NAME and a.P_TYPE is null
+					       union all
+					       select g2.G_OBJECT as G_OBJECT from DB.DBA.SYS_GRANTS g2 where g2.G_USER = _u_id and g2.G_OP = 32 and
+					       not exists (select 1 from DB.DBA.SYS_PROCEDURES b where g2.G_OBJECT = b.P_NAME)
+					    ) do
                                     {
 				      if (0 = position (P_NAME, plist))
                                         self.roles_grant_list := vector_concat(self.roles_grant_list, vector(P_NAME));
@@ -959,7 +967,11 @@
                                     sql="select P_NAME
                                            from DB.DBA.SYS_PROCEDURES
                                           where self.browse_cat = name_part (P_NAME, 0) and p_name not like '%.vsp' and P_TYPE is null
-                                          order by P_NAME"
+				     union all
+				    select G_OBJECT from SYS_GRANTS where G_OP = 32 and self.browse_cat = name_part (G_OBJECT, 0) and
+				    G_USER = get_user_id_by_name (self.soapuser) and
+				    not exists (select 1 from SYS_PROCEDURES where G_OBJECT = P_NAME)
+				    order by 1"
                                     nrows="1000"
                                     scrollable="1"
                                     edit="1">

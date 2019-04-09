@@ -2639,7 +2639,7 @@ proc_find_in_grants (char * name, dk_set_t * qrs, char * soap_action)
 
       if (soap_action && soap_action[0] != 0)
 	{
-	  if ((op_name && !strcmp (op_name, name)) || !strcmp (n, name))
+	  if ((op_name && !CASEMODESTRCMP (op_name, name)) || !CASEMODESTRCMP (n, name))
 	    {
 	      if (action && !strcmp (action, soap_action))
 		{
@@ -2657,7 +2657,7 @@ proc_find_in_grants (char * name, dk_set_t * qrs, char * soap_action)
 	}
       else
 	{
-	  if ((op_name && !strcmp (op_name, name)) || !strcmp (n, name))
+	  if ((op_name && !CASEMODESTRCMP (op_name, name)) || !CASEMODESTRCMP (n, name))
 	    {
 	      if (!found)
 		res = proc;
@@ -11412,7 +11412,7 @@ ws_soap_http (ws_connection_t * ws)
       qrs = get_granted_qrs (cli, NULL, NULL, 0);
       if (!(qr = proc_find_in_grants (szMethod, &qrs, NULL)))
 	{
-	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure");
+	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure: %.500s", (szFullProcName ? szFullProcName : "(null)"));
 	  goto end;
 	}
     }
