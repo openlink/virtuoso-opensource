@@ -1095,6 +1095,18 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
 
   switch (Attribute)
     {
+    case SQL_ATTR_APP_WCHAR_ID:
+      {
+        SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;
+        cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_ID, ...) called\n"));
+        if (val == SQL_DM_CP_UTF16)
+          con->con_wide_as_utf16 = TRUE;
+        else if (val == SQL_DM_CP_UCS4)
+          con->con_wide_as_utf16 = FALSE;
+        else 
+          return SQL_ERROR;
+      }
+      break;
 
     case SQL_ATTR_ASYNC_ENABLE:
       cli_dbg_printf (("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));

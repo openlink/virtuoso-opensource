@@ -166,6 +166,15 @@
 #define SQL_RE_DEFAULT	SQL_RE_OFF
 
 
+#define SQL_ATTR_APP_WCHAR_ID		      1061
+#define SQL_ATTR_APP_UNICODE_ID               1064
+#define SQL_ATTR_DRIVER_UNICODE_ID            1065
+
+#define SQL_DM_CP_UCS4			0
+#define SQL_DM_CP_UTF16			1
+#define SQL_DM_CP_UTF8			2
+
+
 /*
  * IBM extensions for DB2
  */
