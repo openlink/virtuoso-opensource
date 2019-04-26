@@ -94,7 +94,7 @@ create procedure rdf_import (
     if (is_xml = 0 and is_ttl = 0) {
       if (not isnull (pFolder))
         DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
-      signal ('ODS10', 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store!');
+      signal ('ODS10', 'You have attempted to upload invalid data. You can only upload RDF/XML, Turtle, and N3 serializations of RDF Data to the RDF Data Store through this interface!');
     }
 
     if (is_ttl) {
