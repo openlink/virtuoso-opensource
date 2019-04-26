@@ -1775,8 +1775,6 @@ literal.
                       flags |= 7;
                     else if (s_type.equals("http://www.w3.org/2001/XMLSchema#decimal"))
                       flags |= 8;
-                    else if (s_type.equals("http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral"))
-                      flags |= 4;
                     else
                       flags |= 3;
                 }
