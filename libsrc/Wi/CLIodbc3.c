@@ -1095,6 +1095,7 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
 
   switch (Attribute)
     {
+#if !defined (WINDOWS)
     case SQL_ATTR_APP_WCHAR_ID:
       {
         SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;
@@ -1107,7 +1108,7 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
           return SQL_ERROR;
       }
       break;
-
+#endif
     case SQL_ATTR_ASYNC_ENABLE:
       cli_dbg_printf (("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));
       con->con_async_mode = (SQLUINTEGER) (ptrlong) ValuePtr;
