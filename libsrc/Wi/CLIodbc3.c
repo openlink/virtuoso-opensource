@@ -1095,7 +1095,7 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
 
   switch (Attribute)
     {
-#if !defined (WINDOWS)
+#if !defined (WIN32)
     case SQL_ATTR_APP_WCHAR_ID:
       {
         SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;

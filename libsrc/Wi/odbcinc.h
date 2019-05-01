@@ -163,7 +163,6 @@ typedef void * SQLHANDLE;
 #define IS_ORACLE_NATIVE_DRIVER(rcon) (IS_ORACLE(rcon) && \
     ((0 == strncmp(rcon->rc_driver_name, "SQORA", 5)) || \
      (0 == strncmp(rcon->rc_driver_name, "SQOCI", 5))))
-#endif
 
 
 /*
@@ -178,3 +177,19 @@ typedef void * SQLHANDLE;
 #define SQL_DESC_COL_LITERAL_LANG      1061L
 #define SQL_DESC_COL_LITERAL_TYPE      1062L
 #endif
+
+
+/*
+ *  Extension for setting size of SQLWCHAR (iodbcext.h)
+ */
+#ifndef SQL_ATTR_APP_WCHAR_ID
+#define SQL_ATTR_APP_WCHAR_ID		1061
+#define SQL_ATTR_APP_UNICODE_ID		1064
+#define SQL_ATTR_DRIVER_UNICODE_ID	1065
+
+#define SQL_DM_CP_UCS4			0
+#define SQL_DM_CP_UTF16			1
+#define SQL_DM_CP_UTF8			2
+#endif
+
+#endif /* __V_ODBCINC_H */
