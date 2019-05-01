@@ -1490,6 +1490,7 @@ ApplicationMain (int argc, char **argv)
       os_sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
+      txn_after_image_limit = 0;
       db_to_log ();
       viwin32_terminate (0);
     }

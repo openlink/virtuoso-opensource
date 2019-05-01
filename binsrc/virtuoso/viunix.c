@@ -636,6 +636,7 @@ main (int argc, char **argv)
       sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       sigh_action (SIGH_EXIT);
+      txn_after_image_limit = 0;
       db_to_log ();
       viunix_terminate (0);
     }
