@@ -1040,7 +1040,7 @@ main (int argc, char **argv)
   /*
    *  Don't execute maintenance commands running as a service
    */
-  if (f_backup_dump || f_crash_dump)
+  if (f_backup_dump || f_crash_dump || f_read_from_rebuilt_database)
     {
       f_cmd = CMD_NONE;
       f_foreground = 1;

@@ -588,7 +588,7 @@ main (int argc, char **argv)
   initialize_program (&argc, &argv);
 
   /* all of the below means foreground ! */
-  if (f_backup_dump || recover_file_prefix || f_crash_dump)
+  if (f_backup_dump || recover_file_prefix || f_crash_dump || f_read_from_rebuilt_database)
     f_foreground = 1;
 #ifdef V5UPGRADE
   if (!f_backup_dump && !f_read_from_rebuilt_database)
