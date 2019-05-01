@@ -187,7 +187,7 @@ sparp_preprocess_obys (sparp_t *sparp, SPART *root)
         {
           long i = (ptrlong)(oby_expn);
           if (0 >= rv_count)
-            spar_error (sparp, "SELECT query should contain explicit list of returned columns if ORDER BY refers to indexes of that columns");
+            spar_error (sparp, "SELECT query should contain explicit list of returned columns if ORDER BY refers to indexes of those columns");
           if ((0 >= i) || (rv_count < i))
             spar_error (sparp, "ORDER BY refers to resulting column index %ld, should be in range 1 to %d", i, rv_count );
         }
@@ -1375,7 +1375,7 @@ sparp_optimize_BOP_OR_filter (sparp_t *sparp, SPART *parent_gp, SPART *gp, int g
         spar_internal_error (sparp, "sparp_" "optimize_BOP_OR_filter(): weird NULL parent gp / WHERE_L gp subtype combination");
 #endif
       if (filt_idx >= BOX_ELEMENTS (gp->_.gp.filters) - gp->_.gp.glued_filters_count)
-        spar_error (sparp, "A special predicate, like bif:contains or bif:st_intersects, can not be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
+        spar_error (sparp, "A special predicate, like bif:contains or bif:st_intersects, cannot be used as an argument of '||' operator in a \"joining\" FILTER at line %ld of query; please re-phrase the query", (long)unbox (filt_ptr[0]->srcline));
       if (0 != gp->_.gp.subtype)
         {
           SPART **all_membs, *filt, *new_gp;
@@ -2789,7 +2789,7 @@ sparp_eq_restr_from_connected (sparp_t *sparp, SPART *req_top)
           if (NULL == ret_expn)
             {
               if (sparp->sparp_sg->sg_signal_void_variables)
-                spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but not in the query result set", var->_.var.vname);
+                spar_error (sparp, "Variable name '%.100s' is used in the BINDINGS clause but is not in the query result set", var->_.var.vname);
               SPARP_DEBUG_WEIRD(sparp,"conflict");
               var->_.var.rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
@@ -4666,7 +4666,7 @@ field_sff_isects_qmv_sff: ;
       if (SPART_VARR_IS_LIT & some_map_rvr->rvrRestrictions)
         spar_error (sparp, "Bad quap map: its declaration states that the prodicate is literal");
       if ((SPART_VARR_FIXED | SPART_VARR_SPRINTFF) & some_map_rvr->rvrRestrictions)
-        spar_error (sparp, "Property path can not be used if service uses quad map rules for some specific predicates");
+        spar_error (sparp, "Property path cannot be used if service uses quad map rules for some specific predicates");
       return SSG_QM_APPROX_MATCH; /* This may be true or not, we can't make anything better for a property path on a remote service. Let it be the problem of the service. */
     }
   spar_internal_error (sparp, "sparp_" "check_field_mapping_spo(): field is neither variable nor literal?");
@@ -5708,7 +5708,7 @@ int sparp_gp_trav_multiqm_to_unions (sparp_t *sparp, SPART *curr, sparp_trav_sta
             }
           END_DO_BOX_FAST_REV;
           if (NULL == ft_cond_to_relocate)
-            spar_error (sparp, "optimizer can not process a combination of quad map patterns and free-text condition for variable ?%.200s",
+            spar_error (sparp, "optimizer cannot process a combination of quad map patterns and free-text condition for variable ?%.200s",
               curr->_.triple.tr_object->_.var.vname );
         }
       if (0 == tc_count)
@@ -7038,7 +7038,7 @@ because both variable outside and variable inside will produce identical SQL cod
       sparp_gp_detach_member (sparp, opt, 0, NULL);
       o_p_idx = BOX_ELEMENTS(opt_parent->_.gp.members) - 1;
       if (opt_parent->_.gp.members [o_p_idx] != opt)
-        spar_internal_error (sparp, "sparp_" "try_reduce_trivial_optional_via_eq(): can not locate OPTIONAL in parent");
+        spar_internal_error (sparp, "sparp_" "try_reduce_trivial_optional_via_eq(): cannot locate OPTIONAL in parent");
       sparp_gp_detach_member (sparp, opt_parent, o_p_idx, NULL);
       if (recvd_field_count) /* If nothing is received from an optimizable OPTIONAL in question then the triple patterns is entirely useless */
         {
@@ -7403,7 +7403,7 @@ sparp_dig_and_glue_loj_filter_for_eq (sparp_t *sparp, sparp_equiv_t *eq)
         continue;
       good_recv_gp = good_recv_eq->e_gp;
       if ((UNION_L == good_recv_gp->_.gp.subtype) || (SPAR_UNION_WO_ALL == good_recv_gp->_.gp.subtype))
-        spar_error (sparp, "Variable '%.100s' is used in OPTIONAL inside UNION but not assigned in OPTIONAL, please rephrase the query", eq->e_varnames[0]);
+        spar_error (sparp, "Variable '%.100s' is used in OPTIONAL inside UNION but not assigned in OPTIONAL. Please rephrase the query", eq->e_varnames[0]);
       sparp_gp_detach_filter (sparp, gp, filter_ctr, NULL);
       sparp_gp_attach_filter (sparp, good_recv_gp, filt, BOX_ELEMENTS_0 (good_recv_gp->_.gp.filters) - good_recv_gp->_.gp.glued_filters_count, NULL);
       good_recv_gp->_.gp.glued_filters_count += 1;
@@ -7498,7 +7498,7 @@ sparp_rewrite_qm_optloop (sparp_t *sparp, SPART *req_top, int opt_ctr)
           if (++optimization_loop_ctr < optimization_loop_count)
             continue;
 #if 0
-          spar_internal_error (sparp, "SPARQL optimizer performed too many rounds of query rewriting, this looks like endless loop. Please rephrase the query.");
+          spar_internal_error (sparp, "SPARQL optimizer performed too many rounds of query rewriting; this looks like endless loop. Please rephrase the query.");
 #else
           break; /* Now our public endpoints are protected with timeouts, we can try SQL garbage */
 #endif
@@ -8050,9 +8050,9 @@ retry_after_reducing_optionals:
               eq->e_rvr.rvrRestrictions |= SPART_VARR_CONFLICT;
             }
           else if (eq->e_rvr.rvrRestrictions & SPART_VARR_EXPORTED)
-            spar_error (sparp, "Variable '%.100s' can not be bound due to mutually exclusive restrictions on its value", eq->e_varnames[0]);
+            spar_error (sparp, "Variable '%.100s' cannot be bound due to mutually exclusive restrictions on its value", eq->e_varnames[0]);
           else
-            spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but can not be assigned", eq->e_varnames[0]);
+            spar_error (sparp, "Variable '%.100s' is used in subexpressions of the query but cannot be assigned", eq->e_varnames[0]);
         }
 #ifdef DEBUG
       equivs[equiv_ctr]->e_dbg_saved_gp = (SPART **)t_box_num ((ptrlong)(equivs[equiv_ctr]->e_gp));
