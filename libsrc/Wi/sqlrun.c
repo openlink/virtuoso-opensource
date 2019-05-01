@@ -1959,9 +1959,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
-		  if (pct)
+		  if (pct < 1)
 		    pct = 1;
-		  if (pct >= 30)
+		  else if (pct > 30)
 		    pct = 30;
 		  order_itc->itc_st.sample_size = (((float) row_est) / 100) * pct;
 		  if (order_itc->itc_st.sample_size < 200)
