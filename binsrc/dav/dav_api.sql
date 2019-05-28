@@ -527,7 +527,7 @@ create function DAV_DIR_SINGLE_INT (
              where RES_ID = did );
 
    --                    0                        1    2  3             4       5          6          7          8            9                     10        11                                    12
-  return (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR)
+  return (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR)
             from WS.WS.SYS_DAV_COL
            where COL_ID = did );
 }
@@ -589,8 +589,8 @@ create function DAV_DIR_LIST_INT (
   }
   else if (rec_depth = -1)
   {
-    --                  0                        1    2  3             4       5          6          7          8            9                     10        11                                    12
-    for (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
+    --                  0              1    2  3             4       5          6          7          8            9                     10        11                                    12
+    for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
           from WS.WS.SYS_DAV_COL
          where COL_ID = did) do
     {
@@ -630,8 +630,8 @@ create function DAV_DIR_LIST_INT (
     {
       vectorbld_acc (res, i);
     }
-    --                  0                        1    2  3             4       5          6          7          8            9                    10        11                                    12
-    for (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
+    --                  0              1    2  3             4       5          6          7          8            9                    10        11                                    12
+    for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
            from WS.WS.SYS_DAV_COL
           where COL_PARENT = did) do
     {
@@ -725,10 +725,9 @@ else 1 end';
     }
   else if (rec_depth = -1)
     {
-      for select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME,
-            COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME) as i
-        from WS.WS.SYS_DAV_COL
-        where
+      for select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME) as i
+            from WS.WS.SYS_DAV_COL
+           where
 --      (COL_OWNER = uid or uid = http_dav_uid() or DAV_CHECK_PERM (COL_PERMS, '1__', uid, gid, COL_GROUP, COL_OWNER)) and
         COL_ID = did do
           {
@@ -805,8 +804,6 @@ create procedure DAV_SEARCH_PATH (
   in id any,
   in what char (1)) returns any
 {
-  declare res varchar;
-
   what := upper (what);
   if (isvector (id))
     return call (cast (id[0] as varchar) || '_DAV_SEARCH_PATH') (id, what);
@@ -821,11 +818,7 @@ create procedure DAV_SEARCH_PATH (
 
   if (what = 'C')
   {
-    res := WS.WS.COL_PATH (id);
-    if (res = '/')
-      return -23;
-
-    return res;
+    return coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id), -23);
   }
   if (what = 'R')
   {
@@ -836,72 +829,46 @@ create procedure DAV_SEARCH_PATH (
 }
 ;
 
-
 --!
 -- \brief Search the internal ID for a given path.
 --
 -- \b Warning: In the case of DET folders the ID is not an integer but a vector! FIXME: containing what exactly?
 --/
 --!AWK PUBLIC
-create function
-DAV_SEARCH_ID (in path any, in what char (1)) returns any
+create function DAV_SEARCH_ID (
+  in path any,
+  in what char (1)) returns any
 {
-  declare id integer;
+  --dbg_obj_princ ('DAV_SEARCH_ID (', path, what, ')');
+  declare id, len integer;
   declare par any;
-  id := -1;
-  what := upper (what);
-  -- dbg_obj_princ ('DAV_SEARCH_ID (', path, what, ')');
+
   if (isstring (path))
     {
-      -- dbg_obj_princ ('path is string, tag (', __tag(path), ')');
       par := split_and_decode (path, 0, '\0\0/');
-      -- dbg_obj_princ ('split_and_decode complete');
     }
   else
     {
-      -- dbg_obj_princ ('path is not string, tag (', __tag(path), ')');
       par := path;
     }
-  if (length (par) = 0)
+
+  len := length (par);
+  if ((len = 0) or (par[0] <> ''))
     {
-      -- dbg_obj_princ ('empty par');
       return -1;
     }
-  if (aref (par, 0) <> '')
-    {
-      -- dbg_obj_princ ('bad par[0]');
-      return -1;
-    }
-  if (what = 'P')
-    {
-      if (par [length (par) - 1] = '')
-        {
-          if (2 = length (par))
-            return -1;
-          if (3 = length (par))
-            return 0;
-          par := vector_concat (subseq (par, 0, length (par) - 2), vector (''));
-        }
-      else
-        {
-          if (2 = length (par))
-            return 0;
-          par := vector_concat (subseq (par, 0, length (par) - 1), vector (''));
-        }
-      path := null;
-      what := 'C';
-    }
 
-
+  id := -1;
+  what := upper (what);
   if (what = 'R')
+  -- Resources
     {
-      if (aref (par, length (par) - 1) = '')
-        {
-          -- dbg_obj_princ ('bad par[last()] for R');
-          return -1;
-        }
+      if (par [len-1] = '')
+        return -1;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
+
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
       if ((id <> -1) and (connection_get ('dav_store') is null))
       {
@@ -921,20 +888,38 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       }
     }
   else if (what = 'C')
+  -- Collections
     {
-      if (aref (par, length (par) - 1) <> '')
-        {
-          -- dbg_obj_princ ('bad par[last()] for C');
-          return -1;
-        }
+      if (par [len-1] <> '')
+        return -1;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
-      --id := coalesce ((select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = path), -1);
-      id := -1;
+    }
+  else  if (what = 'P')
+  -- Parent
+    {
+      if (par [len-1] = '')
+        {
+          if (2 = len)
+            return -1;
+
+          if (3 = len)
+            return 0;
+
+          par := subseq (par, 0, len-1);
+          len := len - 1;
+        }
+      else if (2 = len)
+        {
+          return 0;
+        }
+      par[len-1] := '';
+      path := DAV_CONCAT_PATH (par, null);
+      what := 'C';
     }
   else
     {
-      -- dbg_obj_princ ('-14 ???');
       return -14;
     }
   if (id = -1)
@@ -947,27 +932,38 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
 ;
 
 --!AWK PUBLIC
-create function
-DAV_SEARCH_SOME_ID (in path any, out what char (1)) returns any
+create function DAV_SEARCH_SOME_ID (
+  in path any,
+  out what char (1)) returns any
 {
-  declare id integer;
-  declare par any;
-  id := -1;
   -- dbg_obj_princ ('DAV_SEARCH_SOME_ID (', path, '... )\n');
+  declare id, len integer;
+  declare par any;
+
+  id := -1;
   if (isstring (path))
+  {
     par := split_and_decode (path, 0, '\0\0/');
+  }
   else
+  {
     par := path;
-  if (aref (par, 0) <> '')
+  }
+  len := length (par);
+  if (len = 0)
     {
-      -- dbg_obj_princ ('bad par[0]');
       return -1;
     }
-  if (aref (par, length (par) - 1) <> '')
+  if (par[0] <> '')
+    {
+      return -1;
+    }
+  if (par[len-1] <> '')
     {
       what := 'R';
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
+
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
     }
   else
@@ -975,9 +971,9 @@ DAV_SEARCH_SOME_ID (in path any, out what char (1)) returns any
       what := 'C';
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
-      id := DAV_SEARCH_ID (path, 'C');
+
+      id := coalesce ((select COL_ID from WS.WS.SYS_DAV_COL where COL_FULL_PATH = path), -1);
     }
-  -- dbg_obj_princ ('Found ', id, ' of type ', what);
   if (id = -1)
     {
       declare det_ret, detcol_id, detcol_path_parts, unreached_path_parts any;
@@ -1109,37 +1105,47 @@ create function DAV_CONCAT_PATH (
     }
   if (strg1 = '')
     return strg2;
+
   if (strg2 = '')
     return strg1;
+
   if (strg1 [length(strg1) - 1] = 47)
+  {
     if (strg2 [0] = 47)
       return strg1 || subseq (strg2, 1);
-    else
-      return strg1 || strg2;
-  else
-    if (strg2 [0] = 47)
-      return strg1 || strg2;
-    else
-      return strg1 || '/' || strg2;
+
+    return strg1 || strg2;
+  }
+
+  if (strg2 [0] = 47)
+    return strg1 || strg2;
+
+  return strg1 || '/' || strg2;
 }
 ;
 
 
-create function
-DAV_SEARCH_SOME_ID_OR_DET (inout path any, out what char (1), out det_ret varchar, out detcol_id integer, out detcol_path_parts any, out unreached_path_parts any) returns integer
+create function DAV_SEARCH_SOME_ID_OR_DET (
+  inout path any,
+  out what char (1),
+  out det_ret varchar,
+  out detcol_id integer,
+  out detcol_path_parts any,
+  out unreached_path_parts any) returns integer
 {
+  declare len integer;
+
   if (isstring (path))
     path := split_and_decode (path, 0, '\0\0/');
-  else
-    path := path;
-  if (length (path) < 2)
+
+  len := length (path);
+  if (len < 2)
     goto bad_path_arg;
+
   if (aref (path, 0) <> '')
     goto bad_path_arg;
-  if (path [length (path) - 1] = '')
-    what := 'C';
-  else
-    what := 'R';
+
+  what := case when (path [len-1] = '') then 'C' else 'R' end;
   return DAV_SEARCH_ID_OR_DET (path, what, det_ret, detcol_id, detcol_path_parts, unreached_path_parts);
 
 bad_path_arg:
@@ -1150,59 +1156,74 @@ bad_path_arg:
 }
 ;
 
-create function
-DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out detcol_id integer, out detcol_path_parts any, out unreached_path_parts any) returns integer
+create function DAV_SEARCH_ID_OR_DET (
+  in path any,
+  in what char (1),
+  out det_ret varchar,
+  out detcol_id integer,
+  out detcol_path_parts any,
+  out unreached_path_parts any) returns integer
 {
-  declare id integer;
-  declare par, left_par, right_par any;
+  -- dbg_obj_princ ('DAV_SEARCH_ID_OR_DET (', path, what,')');
+  declare id, len integer;
+  declare par any;
   declare cname, det varchar;
   declare inx, depth, cur_id, parent_id integer;
+
   id := -1;
   what := upper (what);
-  -- dbg_obj_princ ('DAV_SEARCH_ID_OR_DET (', path, what,')');
   if (isstring (path))
     par := split_and_decode (path, 0, '\0\0/');
   else
     par := path;
-  if (length (par) < 2)
+
+
+  len := length (par);
+  if (len < 2)
     goto bad_path_arg;
-  if (aref (par, 0) <> '')
+
+  if (par[0] <> '')
     goto bad_path_arg;
+
   if (what = 'P')
     {
-      if (par [length (par) - 1] = '')
+      if (par [len-1] = '')
         {
-          if (2 = length (par))
+          if (2 = len)
             goto bad_path_arg;
-          if (3 = length (par))
+
+          if (3 = len)
             {
               detcol_id := null;
               detcol_path_parts := null;
               unreached_path_parts := null;
               return 0;
             }
-          par := vector_concat (subseq (par, 0, length (par) - 2), vector (''));
+          par := subseq (par, 0, len-1);
+          len := len -1;
         }
       else
         {
-          if (2 = length (par))
+          if (2 = len)
             {
               detcol_id := null;
               detcol_path_parts := null;
               unreached_path_parts := null;
               return 0;
             }
-          par := vector_concat (subseq (par, 0, length (par) - 1), vector (''));
         }
+      par[len-1] := '';
       path := null;
       what := 'C';
     }
   if (what = 'R')
     {
-      if (aref (par, length (par) - 1) = '')
+      if (par[len-1] = '')
         goto bad_path_arg;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
+
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
       if ((id <> -1) and (connection_get ('dav_store') is null))
       {
@@ -1219,18 +1240,19 @@ DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out de
             detcol_path_parts := subseq (par, 0, inx + 1);
             par := subseq (par, inx + 1);
             unreached_path_parts := par;
+
             return call (cast (det_ret as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
           }
         }
       }
-     if (id > 0)
-      goto found_plain_id;
-
+      if (id > 0)
+        goto found_plain_id;
     }
   else if (what = 'C')
     {
-      if (aref (par, length (par) - 1) <> '')
+      if (par[len-1] <> '')
         goto bad_path_arg;
+
       goto descending_col_search;
     }
   else
@@ -1241,7 +1263,7 @@ descending_col_search:
   inx := 1;
   cur_id := 0;
   parent_id := 0;
-  depth := length (par) - 1;
+  depth := len - 1;
   -- dbg_obj_princ ('554: path=', path, ' par=', par);
   whenever not found goto not_found;
   while (inx < depth)
@@ -1272,22 +1294,21 @@ descending_col_search:
   goto found_plain_id;
 
 found_plain_id:
-  det_ret := NULL;
-  detcol_id := NULL;
+  det_ret := null;
+  detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
   return id;
 
 not_found:
-  det_ret := NULL;
+  det_ret := null;
   detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
   return -1;
 
 bad_path_arg:
-  -- dbg_obj_princ ('bad_path_arg');
-  det_ret := NULL;
+  det_ret := null;
   detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
@@ -1296,8 +1317,11 @@ bad_path_arg:
 ;
 
 
-create procedure
-DAV_OWNER_ID (in uid any, in gid any, out _uid integer, out _gid integer)
+create procedure DAV_OWNER_ID (
+  in uid any,
+  in gid any,
+  out _uid integer,
+  out _gid integer)
 {
   -- dbg_obj_princ ('DAV_OWNER_ID (', uid, gid, _uid, _gid, ')');
   if (uid is null)
@@ -1305,22 +1329,22 @@ DAV_OWNER_ID (in uid any, in gid any, out _uid integer, out _gid integer)
   else if (isinteger (uid))
     _uid := uid;
   else
-    _uid := coalesce (
-      (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uid),
-      case (uid) when 'anonymous' then http_nobody_uid () else -12 end);
+  {
+    _uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uid);
+    if (isnull (_uid))
+      _uid := case (uid) when 'anonymous' then http_nobody_uid () else -12 end;
+  }
 
   if (gid is null)
     _gid := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_ID = _uid), http_nogroup_gid ());
   else if (isinteger (gid))
     _gid := gid;
   else
-    _gid := coalesce (
-      (select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid),
-      (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = gid),
-      -12 );
--- This must be
---  _gid := coalesce ((select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid), -12);
-  -- dbg_obj_princ ('DAV_OWNER_ID translated ', uid, ' -> ', _uid, ', and ', gid, ' -> ', _gid);
+  {
+    _gid := (select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid);
+    if (isnull (_gid))
+      _gid := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = gid), -12);
+  }
 }
 ;
 
@@ -2115,7 +2139,7 @@ create function DAV_GET_UID_BY_SERVICE_ID (
   out a_uid int,
   out a_gid int,
   out a_uname varchar,
-  out a_perms int)
+  out a_perms varchar)
 {
   declare rows any;
 
@@ -3583,7 +3607,7 @@ create procedure DAV_DELETE_INT (
             return rrc;
           }
         }
-        for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+        for select COL_ID, COL_NAME, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id do
         {
           rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (COL_NAME not like '%,acl'))
@@ -4230,7 +4254,7 @@ create procedure DAV_MOVE_INT (
           else
             {
               declare pid, rldp, nldp integer;
-              declare rname, rpath, rldp, npath varchar;
+              declare rname, rpath, npath varchar;
 
               select RES_NAME
                 into rname
@@ -5809,8 +5833,8 @@ create trigger SYS_DAV_COL_WAC_U after update (COL_NAME, COL_PARENT) on WS.WS.SY
   if (aciContent is null)
     return;
 
-  oldPath := WS.WS.COL_PATH (O.COL_PARENT) || O.COL_NAME || '/';
-  newPath := WS.WS.COL_PATH (N.COL_PARENT) || N.COL_NAME || '/';
+  oldPath := O.COL_FULL_PATH;
+  newPath := N.COL_FULL_PATH;
   update_acl := 1;
 
   WS.WS.WAC_DELETE (oldPath, update_acl);
@@ -5826,7 +5850,7 @@ create trigger SYS_DAV_COL_WAC_D after delete on WS.WS.SYS_DAV_COL order 100 ref
   if (connection_get ('dav_acl_sync') = 1)
     return;
 
-  path := WS.WS.COL_PATH (O.COL_ID);
+  path := O.COL_FULL_PATH;
   update_acl := 1;
 
   WS.WS.WAC_DELETE (path, update_acl);
@@ -6019,7 +6043,7 @@ create procedure WS.WS.WAC_INSERT_PROP (
   }
   else
   {
-    select DAV_SEARCH_PATH (COL_ID, what), COL_OWNER, COL_GROUP
+    select COL_FULL_PATH, COL_OWNER, COL_GROUP
       into _path, _owner, _group
       from WS.WS.SYS_DAV_COL
      where COL_ID = id;
@@ -6557,15 +6581,15 @@ create procedure WS.WS.ACL_IS_GRANTED (
 
   ids := (select vector_concat (vector (uid), VECTOR_AGG (GI_SUB)) from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER = uid);
   or_acc := 0;
-  foreach (any acl in aAcl) do
+  foreach (any a in aAcl) do
   {
-    if (position (acl[0], ids))
+    if (position (a[0], ids))
     {
-      anded := bit_and (acl[3], bitmask);
+      anded := bit_and (a[3], bitmask);
       if (anded)
       {
         -- revoke of any single bit invalidates the permission.
-        if (not acl[1])
+        if (not a[1])
           return 0;
 
         or_acc := bit_or (or_acc, anded);
@@ -7447,14 +7471,14 @@ again:
 create procedure DAV_GET_RDF_SCHEMA_N3 (
   in schema_uri varchar)
 {
-  for (select RS_LOCATION, RS_LOCAL_ADDONS, RS_PRECOMPILED from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri) do
+  for (select RS_LOCATION, RS_LOCAL_ADDONS, RS_PRECOMPILED as _RS_PRECOMPILED from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri) do
   {
     declare std_schema, local_addon, mix any;
     declare schema_catname varchar;
     declare prop_list, prop_catnames, prop_catnames_hash any;
 
-    if (RS_PRECOMPILED is not null)
-      return RS_PRECOMPILED;
+    if (_RS_PRECOMPILED is not null)
+      return _RS_PRECOMPILED;
 
     if (RS_LOCATION is null)
     {
@@ -8277,7 +8301,7 @@ create function DAV_NOBODY_DIR_UPDATE ()
   if (isstring (registry_get ('DAV_NOBODY_DIR_UPDATE')))
     return;
 
-  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like '/DAV/home/nobody/%') do
+  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where COL_FULL_PATH like '/DAV/home/nobody/%') do
   {
     changed := 0;
     if (uid = http_nobody_uid())

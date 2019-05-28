@@ -392,7 +392,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
   -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT (', lpath, dirlist, append_name_to_href, ms_date, propnames, all_prop, add_not_found, _u_id, ')');
   declare dir_len, dir_ctr, dt_flag, iso_dt_flag, res_len, parent_col, id, found_cprop, found_sprop, mix integer;
   declare crt, modt datetime;
-  declare name, mime_type, prop, prop1, dt_ms, mis_prop varchar;
+  declare name, mime_type, prop1, dt_ms, mis_prop varchar;
   declare st char(1);
   declare diritm, prop_val, href any;
   declare perms, uid, gid any;
@@ -444,7 +444,7 @@ next_response:
   if (__tag (modt) <> 211)
     modt := now ();
 
-  href := case append_name_to_href when 0 then lpath else DAV_CONCAT_PATH (lpath, name) end;
+  href := case append_name_to_href when 0 then lpath else DB.DBA.DAV_CONCAT_PATH (lpath, name) end;
   if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
     href := href || '/';
 
@@ -520,14 +520,15 @@ next_response:
     {
       declare content, type_ any;
 
-      DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
+      DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
       http (concat('<C:calendar-data xmlns:C="urn:ietf:params:xml:ns:caldav">', content, '</C:calendar-data>\n'));
       found_sprop := 1;
     }
     else if (prop = 'urn:ietf:params:xml:ns:carddav:address-data')
     {
       declare content, type_ any;
-      DB.DBA.DAV_RES_CONTENT_INT (DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
+
+      DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
       http (concat('<C:address-data xmlns:C="urn:ietf:params:xml:ns:carddav">', content, '</C:address-data>\n'));
       found_sprop := 1;
     }
@@ -643,7 +644,7 @@ next_response:
     {
       declare locks any;
 
-      locks := DAV_LIST_LOCKS (id, st);
+      locks := DB.DBA.DAV_LIST_LOCKS (id, st);
       http ('<D:lockdiscovery>');
       foreach (any lock in locks) do
       {
@@ -701,7 +702,7 @@ next_response:
         mis_prop := concat (mis_prop, '<V:virtownergid />\n');
       }
     }
-    else if (all_prop = 0)
+    else if ((all_prop = 0) and (prop not in (':href')))
     {
       if (prop[0] = ascii (':'))
         prop1 := subseq (prop, 1);
@@ -709,7 +710,7 @@ next_response:
         prop1 := prop;
 
       found_cprop := 0;
-      prop_val := DAV_HIDE_ERROR (DAV_PROP_GET_INT (id, st, prop1, 0), null);
+      prop_val := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (id, st, prop1, 0), null);
       if (prop_val is not null)
       {
         WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop, prop1, prop_val);
@@ -741,7 +742,7 @@ next_response:
   {
     declare props any;
 
-    props := DAV_PROP_LIST_INT (id, st, '%', 0);
+    props := DB.DBA.DAV_PROP_LIST_INT (id, st, '%', 0);
     foreach (any prop in props) do
     {
       prop1 := prop[0];
@@ -853,9 +854,9 @@ create procedure WS.WS.PROPNAMES (
   {
     pns := cast (xpath_eval ('namespace-uri(.)', item) as varchar);
     pname := cast (xpath_eval ('local-name(.)', item) as varchar);
-    if (pns = 'DAV:')
+    if ((pns = 'DAV:') or (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/'))
       pname := concat (':', pname);
-    else if ((pns <> '') and (pns <> 'http://www.openlinksw.com/virtuoso/webdav/1.0/'))
+    else if (pns <> '')
       pname := concat (pns, ':', pname);
 
     rc := vector_concat (rc, vector (pname));
@@ -1104,7 +1105,6 @@ create procedure WS.WS.CUSTOM_PROP (
   declare N integer;
   declare props, prop_name, prop_value, prop_tree any;
   declare proot, pname, pns any;
-  declare p cursor for select PROP_NAME, PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_TYPE = st and PROP_PARENT_ID = id;
 
   -- there should be cycle
   http_request_status ('HTTP/1.1 207 Multi-Status');
@@ -1140,6 +1140,9 @@ create procedure WS.WS.CUSTOM_PROP (
       pns := cast (xpath_eval ('namespace-uri(.)', proot) as varchar);
       if (pns = 'DAV')
         http (sprintf ('<D:%s />\n', pname));
+
+      else if (pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/')
+        http (sprintf ('<V:%s />\n', pname));
 
       else if (length (pns) <> 0)
         http (sprintf ('<i%d:%s xmlns:i%d="%s"/>\n', N, pname, N, pns));
@@ -1206,7 +1209,7 @@ create procedure WS.WS.PROPPATCH_INT (
   in lines varchar,
   in id any,
   in st varchar,
-  in auth_uid varchar,
+  in auth_uid any,
   in auth_pwd varchar,
   in uid integer,
   in gid integer,
@@ -1250,6 +1253,9 @@ create procedure WS.WS.PROPPATCH_INT (
   if (mode = 'proppatch')
     http_request_status ('HTTP/1.1 207 Multi-Status');
 
+  if (isstring (auth_uid))
+    auth_uid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_uid);
+
   rc := string_output ();
   http ('<?xml version="1.0" encoding="utf-8" ?>\n', rc);
   http ('<D:multistatus xmlns:D="DAV:">\n', rc);
@@ -1282,7 +1288,7 @@ create procedure WS.WS.PROPPATCH_INT (
         {
           tmp := (select U_ID from DB.DBA.SYS_USERS where U_NAME = tmp);
         }
-        rc_prop := DAV_PROP_SET_INT (path, ':' || prop_name, tmp, null, null, 0, 0, 1, case when isstring (auth_uid) then (select U_ID from DB.DBA.SYS_USERS where U_NAME = auth_uid) else auth_uid end);
+        rc_prop := DAV_PROP_SET_INT (path, ':' || prop_name, tmp, null, null, 0, 0, 1, auth_uid);
       }
       else if ((pns = 'http://www.openlinksw.com/virtuoso/webdav/1.0/') and (prop_name = 'virtdet'))
       {
@@ -1531,14 +1537,14 @@ create procedure WS.WS.DELCHILDREN (in id integer, in lines varchar)
         http_header ('Content-type: text/xml; charset="utf-8"\r\n');
 	      http (concat (
 		    '<?xml version="1.0" encoding="utf-8" ?>',
-		    '<d:multistatus xmlns:d="DAV:">',
-		    '<d:response>',
-		    '<d:href>',
+		    '<D:multistatus xmlns:D="DAV:">',
+		    '<D:response>',
+		    '<D:href>',
 		    DB.DBA.DAV_HREF_URL (name),
-		    '</d:href>',
-		    '<d:status>HTTP/1.1 423 Locked</d:status>',
-		    '</d:response>',
-		    '</d:multistatus>'
+		    '</D:href>',
+		    '<D:status>HTTP/1.1 423 Locked</D:status>',
+		    '</D:response>',
+		    '</D:multistatus>'
 		    ));
 	      return 1;
 	    }
@@ -1563,14 +1569,14 @@ del_res_end:
         http_header ('Content-type: text/xml; charset="utf-8"\r\n');
 	      http (concat (
 		    '<?xml version="1.0" encoding="utf-8" ?>',
-		    '<d:multistatus xmlns:d="DAV:">',
-		    '<d:response>',
-		    '<d:href>',
+		    '<D:multistatus xmlns:D="DAV:">',
+		    '<D:response>',
+		    '<D:href>',
 		    DB.DBA.DAV_HREF_URL (cname),
-		    '</d:href>',
-		    '<d:status>HTTP/1.1 423 Locked</d:status>',
-		    '</d:response>',
-		    '</d:multistatus>'
+		    '</D:href>',
+		    '<D:status>HTTP/1.1 423 Locked</D:status>',
+		    '</D:response>',
+		    '</D:multistatus>'
 		    ));
 	      return 1;
 	    }
@@ -3708,7 +3714,7 @@ create procedure WS.WS.POST (
 
 create procedure WS.WS.SPARQL_QUERY_POST (
   in path varchar,
-  inout ses varchar,
+  inout ses any,
   in uname varchar,
   in dav_call integer := 0)
 {
@@ -5097,52 +5103,79 @@ create procedure WS.WS.DAV_VSP_DEF_REMOVE (
 }
 ;
 
-create function DAV_PERMS_SET_CHAR (in perms varchar, in ch any, in pos integer) returns varchar
+create function DAV_PERMS_SET_CHAR (
+  in perms varchar,
+  in ch any,
+  in pos integer) returns varchar
 {
   declare l integer;
+
   l := length (perms);
   if (l < 11)
     perms := perms || subseq ('000000000--', l);
+
   if (isinteger (ch))
-    perms [pos] := ch;
+    perms[pos] := ch;
   else
     perms[pos] := ch[0];
+
   return perms;
 }
 ;
 
-create procedure DAV_PERMS_FIX (inout perms varchar, in full_perms varchar)
+create procedure DAV_PERMS_FIX (
+  inout perms varchar,
+  in full_perms varchar)
 {
   declare l integer;
+
   l := length (perms);
   if (l < 11)
     perms := perms || subseq (full_perms, l);
+
   if (ascii('-') = perms [9])
     perms[9] := full_perms[9];
+
   if (ascii('-') = perms [10])
     perms[10] := full_perms[10];
 }
 ;
 
-create procedure DAV_PERMS_INHERIT (inout perms varchar, in parent_perms varchar, in force_parent integer := 0)
+create procedure DAV_PERMS_INHERIT (
+  inout perms varchar,
+  in parent_perms varchar,
+  in force_parent integer := 0)
 {
   declare l integer;
+
   l := length (perms);
   if (l < 11)
     perms := perms || subseq (parent_perms, l);
+
   if ((ascii('-') = perms [9]) or (force_parent and (ascii('T') <> parent_perms [9])))
     perms[9] := parent_perms[9];
+
   if ((ascii('-') = perms [10]) or (force_parent and (ascii('M') <> parent_perms [10])))
     perms[10] := parent_perms[10];
 }
 ;
 
 -- Triggers for full_path column
+create trigger SYS_DAV_RES_FULL_PATH_BI before insert on WS.WS.SYS_DAV_RES order 0 referencing new as N
+{
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_BI (', N.RES_ID, ')');
+
+  if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL))
+    signal ('37000', 'The parent collection doesn''t exist!');
+
+}
+;
+
 create trigger SYS_DAV_RES_FULL_PATH_I after insert on WS.WS.SYS_DAV_RES order 0 referencing new as N
 {
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_I (', N.RES_ID, ')');
-  declare full_path, name, _pflags, _rflags, _inh varchar;
-  declare parent_col, col, res integer;
+  declare _res_full_path, _col_full_path, _parent_perms, _res_perms, _parent_inherit, _new_replicate varchar;
+  declare _parent_id, _res_id integer;
 
   -- if (not WS.WS.DAV_CHECK_QUOTA ())
   -- {
@@ -5151,101 +5184,81 @@ create trigger SYS_DAV_RES_FULL_PATH_I after insert on WS.WS.SYS_DAV_RES order 0
   --
   --   signal ('VSPRT', 'Storage Limit exceeded');
   -- }
-  col := N.RES_COL;
-  res := N.RES_ID;
-  _rflags := N.RES_PERMS;
-  full_path := concat ('/', N.RES_NAME);
-  select COL_PERMS, COL_INHERIT into _pflags, _inh from WS.WS.SYS_DAV_COL where COL_ID = col;
-  if (_inh = 'R' or _inh = 'M')
-    _rflags := _pflags;
 
-  DAV_PERMS_FIX (_pflags, '000000000TM');
-  DAV_PERMS_INHERIT (_rflags, _pflags);
-  whenever not found goto not_found;
-  while (1)
-  {
-    select COL_NAME, COL_PARENT into name, parent_col from WS.WS.SYS_DAV_COL where COL_ID = col;
-    col := parent_col;
-    full_path := concat ('/', name, full_path);
-  }
+  _parent_id := N.RES_COL;
+  _res_id := N.RES_ID;
+  select COL_PERMS, COL_INHERIT, COL_FULL_PATH into _parent_perms, _parent_inherit, _col_full_path from WS.WS.SYS_DAV_COL where COL_ID = _parent_id;
+  _res_full_path := _col_full_path || N.RES_NAME;
+  _res_perms :=  case when (_parent_inherit = 'R' or _parent_inherit = 'M') then _parent_perms else N.RES_PERMS end;
 
-not_found:
-  DAV_SPACE_QUOTA_RES_INSERT (full_path, DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
+  DB.DBA.DAV_PERMS_FIX (_parent_perms, '000000000TM');
+  DB.DBA.DAV_PERMS_INHERIT (_res_perms, _parent_perms);
+
+  DB.DBA.DAV_SPACE_QUOTA_RES_INSERT (_res_full_path, DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE));
   set triggers off;
-  if (_rflags <> N.RES_PERMS)
+  if (_res_perms <> N.RES_PERMS)
   {
-    update WS.WS.SYS_DAV_RES set RES_FULL_PATH = full_path, RES_PERMS = _rflags where RES_ID = res;
-    N.RES_PERMS := _rflags;
+    update WS.WS.SYS_DAV_RES set RES_FULL_PATH = _res_full_path, RES_PERMS = _res_perms where RES_ID = _res_id;
+    N.RES_PERMS := _res_perms;
   }
   else
   {
-    update WS.WS.SYS_DAV_RES set RES_FULL_PATH = full_path where RES_ID = res;
+    update WS.WS.SYS_DAV_RES set RES_FULL_PATH = _res_full_path where RES_ID = _res_id;
   }
-  N.RES_FULL_PATH := full_path;
+  N.RES_FULL_PATH := _res_full_path;
   -- DAV_DEBUG_CHECK_SPACE_QUOTAS ();
 
 -- REPLICATION
-  declare pub varchar;
-  declare uname, gname varchar;
-
-  uname := ''; gname := '';
-  pub := WS.WS.ISPUBL (full_path);
-  if (isstring (pub))
+  _new_replicate := WS.WS.ISPUBL (_res_full_path);
+  if (isstring (_new_replicate))
   {
-    -- dbg_obj_princ ('RES INS: ', pub, ' -> ' , full_path);
-    whenever not found goto nfu;
-    select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = N.RES_OWNER;
-nfu:;
-    whenever not found goto nfg;
-    select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = N.RES_GROUP;
-nfg:;
-    repl_text (pub, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', full_path, N.RES_CR_TIME,
-      uname, gname, N.RES_PERMS, N.RES_TYPE, WS.WS.BODY_ARR (N.RES_CONTENT, null));
+    -- dbg_obj_princ ('RES INS: ', pub, ' -> ' , _res_full_path);
+    declare _res_uname, _res_gname varchar;
+
+    _res_uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = N.RES_OWNER), '');
+    _res_gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = N.RES_GROUP), '');
+    repl_text (_new_replicate, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', _res_full_path, N.RES_CR_TIME, _res_uname, _res_gname, N.RES_PERMS, N.RES_TYPE, WS.WS.BODY_ARR (N.RES_CONTENT, null));
   }
 -- END REPLICATION
 
   if (N.RES_TYPE = 'text/xsl')
-    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', N.RES_FULL_PATH));
+    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _res_full_path));
 
   -- Update parent collection modification date
-	update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = N.RES_COL;
+  update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = _parent_id;
 }
 ;
 
-create trigger SYS_DAV_RES_FULL_PATH_BU before update on WS.WS.SYS_DAV_RES referencing old as O, new as N
+create trigger SYS_DAV_RES_FULL_PATH_BU before update (RES_COL, RES_PERMS) on WS.WS.SYS_DAV_RES order 0 referencing old as O, new as N
 {
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_BU (', N.RES_ID, ')');
-  declare _pflags, _rflags, _inh varchar;
-  declare col integer;
+  declare _parent_perms, _res_perms, _parent_inherit varchar;
+  declare _parent_id integer;
 
-  _rflags := N.RES_PERMS;
-  if ((O.RES_COL <> N.RES_COL) or (O.RES_PERMS <> N.RES_PERMS))
-  {
-    col := N.RES_COL;
-    select COL_PERMS, COL_INHERIT into _pflags, _inh from WS.WS.SYS_DAV_COL where COL_ID = col;
-    if (_inh = 'M' or _inh = 'R')
-      _rflags := _pflags;
+  if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL))
+    signal ('37000', 'The parent collection doesn''t exist!');
 
-    DAV_PERMS_FIX (_pflags, '000000000TM');
-    DAV_PERMS_INHERIT (_rflags, _pflags, neq (O.RES_COL, N.RES_COL));
-  }
-  if (_rflags <> N.RES_PERMS)
+  _parent_id := N.RES_COL;
+  select COL_PERMS, COL_INHERIT into _parent_perms, _parent_inherit from WS.WS.SYS_DAV_COL where COL_ID = _parent_id;
+  _res_perms :=  case when (_parent_inherit = 'R' or _parent_inherit = 'M') then _parent_perms else N.RES_PERMS end;
+
+  DB.DBA.DAV_PERMS_FIX (_parent_perms, '000000000TM');
+  DB.DBA.DAV_PERMS_INHERIT (_res_perms, _parent_perms, neq (O.RES_COL, N.RES_COL));
+
+  if (_res_perms <> N.RES_PERMS)
   {
     set triggers off;
-    -- dbg_obj_princ ('old perms = ', O.RES_PERMS, ', new perms = ', N.RES_PERMS, ', patched perms = ', _rflags);
-    update WS.WS.SYS_DAV_RES set RES_PERMS = _rflags where RES_ID = N.RES_ID;
-    N.RES_PERMS := _rflags;
+    update WS.WS.SYS_DAV_RES set RES_PERMS = _res_perms where RES_ID = N.RES_ID;
+    N.RES_PERMS := _res_perms;
   }
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_BU (', N.RES_ID, ') done');
 }
 ;
 
 create trigger SYS_DAV_RES_FULL_PATH_U after update on WS.WS.SYS_DAV_RES referencing old as O, new as N
 {
   -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_U (', N.RES_ID, ')');
-  declare full_path, name varchar;
-  declare parent_col, col, res integer;
-  declare str, cont varchar;
+  declare _res_full_path, _old_replicate, _new_replicate varchar;
+  declare _parent_id, _res_id integer;
 
   -- if (not WS.WS.DAV_CHECK_QUOTA ())
   -- {
@@ -5255,385 +5268,467 @@ create trigger SYS_DAV_RES_FULL_PATH_U after update on WS.WS.SYS_DAV_RES referen
   --   signal ('VSPRT', 'Storage Limit exceeded');
   -- }
 
-  col := N.RES_COL;
-  res := N.RES_ID;
-  full_path := concat ('/', N.RES_NAME);
-  whenever not found goto not_found;
-  while (1)
-  {
-    select COL_NAME, COL_PARENT into name, parent_col from WS.WS.SYS_DAV_COL where COL_ID = col;
-    col := parent_col;
-    full_path := concat ('/', name, full_path);
-  }
+  _parent_id := N.RES_COL;
+  _res_id := N.RES_ID;
+  _res_full_path := (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = _parent_id) || N.RES_NAME;
 
-not_found:
   set triggers off;
-  DAV_SPACE_QUOTA_RES_UPDATE (O.RES_FULL_PATH, DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE), full_path, length (N.RES_CONTENT));
+  DAV_SPACE_QUOTA_RES_UPDATE (O.RES_FULL_PATH, DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE), _res_full_path, length (N.RES_CONTENT));
 
   -- delete all associated url entries
-  if (O.RES_FULL_PATH <> full_path)
+  if (O.RES_FULL_PATH <> _res_full_path)
   {
     update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = O.RES_ID;
   }
   -- end of urls removal
   WS.WS.DAV_VSP_DEF_REMOVE (O.RES_FULL_PATH);
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_U: set RES_FULL_PATH = ', full_path, ', triggers off');
-  update WS.WS.SYS_DAV_RES set RES_FULL_PATH = full_path where RES_ID = res;
-  N.RES_FULL_PATH := full_path;
+  if (O.RES_FULL_PATH <> _res_full_path)
+  {
+    update WS.WS.SYS_DAV_RES set RES_FULL_PATH = _res_full_path where RES_ID = _res_id;
+    N.RES_FULL_PATH := _res_full_path;
+  }
 
   -- DAV_DEBUG_CHECK_SPACE_QUOTAS ();
 
 -- REPLICATION
-  declare pub, pub1 varchar;
-  declare uname, gname varchar;
-  uname := '';
-  gname := '';
-  pub := WS.WS.ISPUBL (O.RES_FULL_PATH);
-  pub1 := WS.WS.ISPUBL (full_path);
-  if (isstring (pub))
+  _old_replicate := WS.WS.ISPUBL (O.RES_FULL_PATH);
+  if (isstring (_old_replicate))
   {
-    repl_text (pub, '"DB.DBA.DAV_RES_D" (?)', O.RES_FULL_PATH);
+    repl_text (_old_replicate, '"DB.DBA.DAV_RES_D" (?)', O.RES_FULL_PATH);
   }
 
-  if (isstring (pub1))
+  _new_replicate := WS.WS.ISPUBL (_res_full_path);
+  if (isstring (_new_replicate))
   {
-    whenever not found goto nfu;
-    select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = N.RES_OWNER;
-nfu:;
-    whenever not found goto nfg;
-    select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = N.RES_GROUP;
-nfg:;
-    repl_text (pub1, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', full_path, N.RES_MOD_TIME,
-      uname, gname, N.RES_PERMS, N.RES_TYPE, WS.WS.BODY_ARR (N.RES_CONTENT, null));
+    declare _res_uname, _res_gname varchar;
+
+    _res_uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = N.RES_OWNER), '');
+    _res_gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = N.RES_GROUP), '');
+    repl_text (_new_replicate, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', _res_full_path, N.RES_MOD_TIME, _res_uname, _res_gname, N.RES_PERMS, N.RES_TYPE, WS.WS.BODY_ARR (N.RES_CONTENT, null));
   }
 -- END REPLICATION
 
   if (N.RES_TYPE = 'text/xsl')
-    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', N.RES_FULL_PATH));
+    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _res_full_path));
 
   -- Update parent collection modification date
   if (
       (O.RES_COL <> N.RES_COL) or
       (O.RES_NAME <> N.RES_NAME) or
-      (DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE) <> DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE)) or
+      (DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE) <> DB.DBA.DAV_RES_LENGTH (N.RES_CONTENT, N.RES_SIZE)) or
       (O.RES_CONTENT <> N.RES_CONTENT)
      )
   {
     set triggers off;
     if (O.RES_COL <> N.RES_COL)
-  	  update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = O.RES_COL;
-
-  	update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = N.RES_COL;
+    {
+      update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = O.RES_COL;
+    }
+    update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = N.RES_COL;
   }
 }
 ;
 
-create trigger SYS_DAV_RES_FULL_PATH_D after delete on WS.WS.SYS_DAV_RES
+create trigger SYS_DAV_RES_FULL_PATH_D after delete on WS.WS.SYS_DAV_RES referencing old as O
 {
-  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_D (', RES_ID, ')');
+  -- dbg_obj_princ ('trigger SYS_DAV_RES_FULL_PATH_D (', O.RES_ID, ')');
+  declare _old_replicate varchar;
 
   set triggers off;
-  DAV_SPACE_QUOTA_RES_DELETE (RES_FULL_PATH, DAV_RES_LENGTH (RES_CONTENT, RES_SIZE));
+  DAV_SPACE_QUOTA_RES_DELETE (O.RES_FULL_PATH, DB.DBA.DAV_RES_LENGTH (O.RES_CONTENT, O.RES_SIZE));
   -- DAV_DEBUG_CHECK_SPACE_QUOTAS ();
-  WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
-  if (RES_TYPE = 'xml/persistent-view')
-    delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = RES_FULL_PATH;
+
+  WS.WS.DAV_VSP_DEF_REMOVE (O.RES_FULL_PATH);
+  if (O.RES_TYPE = 'xml/persistent-view')
+    delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = O.RES_FULL_PATH;
 
 -- REPLICATION
-  declare pub varchar;
-  pub := WS.WS.ISPUBL (RES_FULL_PATH);
-  if (isstring (pub))
+  _old_replicate := WS.WS.ISPUBL (O.RES_FULL_PATH);
+  if (isstring (_old_replicate))
   {
-    repl_text (pub, '"DB.DBA.DAV_RES_D" (?)', RES_FULL_PATH);
+    repl_text (_old_replicate, '"DB.DBA.DAV_RES_D" (?)', O.RES_FULL_PATH);
   }
 -- END REPLICATION
 
   -- delete all associated url entries
-  update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
-  if (RES_TYPE = 'text/xsl')
-    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', RES_FULL_PATH));
+  update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = O.RES_ID;
+  if (O.RES_TYPE = 'text/xsl')
+    xslt_stale (concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', O.RES_FULL_PATH));
 
   -- Properties of resource lives as it
-  delete from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = RES_ID;
-  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID;
-  delete from WS.WS.SYS_DAV_TAG where DT_RES_ID = RES_ID;
+  delete from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'R' and PROP_PARENT_ID = O.RES_ID;
+  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = O.RES_ID;
+  delete from WS.WS.SYS_DAV_TAG where DT_RES_ID = O.RES_ID;
 
   -- Update parent collection modification date
   set triggers off;
-	update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = RES_COL;
+  update WS.WS.SYS_DAV_COL set COL_MOD_TIME = now () where COL_ID = O.RES_COL;
 }
 ;
 
-create trigger SYS_DAV_COL_U after update on WS.WS.SYS_DAV_COL referencing old as O, new as N
+create trigger SYS_DAV_COL_BI before insert on WS.WS.SYS_DAV_COL order 0 referencing new as N
 {
-  declare full_path, name, _pflags, _cflags varchar;
-  declare old_col_path, new_col_path varchar;
-  declare res, col integer;
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_U (', N.COL_ID, ')');
-  col := N.COL_PARENT;
-  res := N.COL_ID;
-  full_path := concat ('/', N.COL_NAME,'/');
-  _cflags := N.COL_PERMS;
-  _pflags := coalesce ((select COL_PERMS from WS.WS.SYS_DAV_COL where COL_ID = col), '000000000TM');
-  if ((O.COL_PARENT <> N.COL_PARENT) or (O.COL_PERMS <> N.COL_PERMS))
-    {
-      DAV_PERMS_FIX (_pflags, '000000000TM');
-      DAV_PERMS_INHERIT (_cflags, _pflags);
-    }
-  whenever not found goto not_found;
-  while (1)
-    {
-      select COL_NAME, COL_PARENT into name, col from WS.WS.SYS_DAV_COL where COL_ID = col;
-      full_path := concat ('/', name, full_path);
-    }
-not_found:
-  set triggers off;
-  if (_cflags <> N.COL_PERMS)
-    {
-      -- dbg_obj_princ ('old perms = ', O.COL_PERMS, ', new perms = ', N.COL_PERMS, ', patched perms = ', _cflags);
-      update WS.WS.SYS_DAV_COL set COL_PERMS = _cflags where COL_ID = res;
-      N.COL_PERMS := _cflags;
-    }
-  old_col_path := concat (WS.WS.COL_PATH (O.COL_PARENT), O.COL_NAME, '/');
-  new_col_path := WS.WS.COL_PATH (N.COL_ID);
-  if (old_col_path <> new_col_path)
-    {
-      -- dbg_obj_princ ('trigger SYS_DAV_COL_U: CatFilter-related operations for move from ', old_col_path, ' to ', new_col_path);
-      for
-        select SUBCOL_ID, SUBCOL_FULL_PATH as old_subcol_path, SUBCOL_DET
-        from DAV_PLAIN_SUBMOUNTS
-        where root_id = O.COL_ID and root_path = old_col_path and recursive=1 and subcol_auth_uid = http_dav_uid()
-        and not (SUBCOL_DET like '%Filter')
-      do
-        {
-          declare new_subcol_path varchar;
-          new_subcol_path := new_col_path || subseq (old_subcol_path, length (old_col_path));
-          for
-            select CF_ID from WS.WS.SYS_DAV_CATFILTER
-            where (
-              ("LEFT" (old_subcol_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH) and
-              ("LEFT" (new_subcol_path, length (CF_SEARCH_PATH)) <> CF_SEARCH_PATH) )
-            do
-              {
-                delete from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_CF_ID = CF_ID and CFD_DET_SUBCOL_ID = SUBCOL_ID;
-              }
-          for
-            select CF_ID from WS.WS.SYS_DAV_CATFILTER
-            where (
-              ("LEFT" (old_subcol_path, length (CF_SEARCH_PATH)) <> CF_SEARCH_PATH) and
-              ("LEFT" (new_subcol_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH) )
-            do
-              {
-                insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET) values (CF_ID, SUBCOL_ID, SUBCOL_DET);
-              }
-        }
-    }
-  if (
-    (N.COL_DET is not null or O.COL_DET is not null) and
-    not (N.COL_DET is not null and O.COL_DET is not null and (N.COL_DET = O.COL_DET) and (N.COL_ID = O.COL_ID) and (N.COL_PARENT = O.COL_PARENT)))
-    {
-      -- dbg_obj_princ ('trigger SYS_DAV_COL_U: CatFilter-related operations for own record in WS.WS.SYS_DAV_CATFILTER_DETS');
-      delete from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_DET_SUBCOL_ID = O.COL_ID;
-      if (N.COL_DET is not null and not (N.COL_DET like '%Filter'))
-        {
-          for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (new_col_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
-            {
-              insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
-              values (CF_ID, N.COL_ID, N.COL_DET);
-            }
-        }
-    }
--- REPLICATION
-  declare repl varchar;
-  repl := null;
-  declare pub, pub1 varchar;
-  declare uname, gname varchar;
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_BI (', N.COL_ID, ')');
 
-  uname := ''; gname := '';
-  pub := WS.WS.ISPUBL (old_col_path);
-  pub1 := WS.WS.ISPUBL (new_col_path);
-  if (isstring (pub1))
-    {
-      whenever not found goto nfu;
-      select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = N.COL_OWNER;
-nfu:;
-      whenever not found goto nfg;
-      select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = N.COL_GROUP;
-nfg:;
-    }
-  if ((not isstring (pub) and isstring (pub1)) or (isstring (pub) and isstring (pub1) and pub <> pub1))
-    {
-      -- dbg_obj_princ ('COL INS: ', pub1, ' -> ' , new_col_path);
-      repl_text (pub1, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)',
-	    N.COL_NAME, new_col_path, N.COL_CR_TIME, uname, gname,
-	    N.COL_PERMS );
-      repl := pub1;
-    }
-  if (isstring (pub) and isstring (pub1) and pub = pub1)
-    {
-      -- dbg_obj_princ ('COL UPD: ', old_col_path, ' -> ' , new_col_path);
-      repl_text (pub1, '"DB.DBA.DAV_COL_U" (?, ?, ?, ?, ?, ?)',
-	    old_col_path, new_col_path, N.COL_CR_TIME, uname, gname,
-	    N.COL_PERMS );
-    }
-  if ((not isstring (pub1) and isstring (pub)) or (isstring (pub) and isstring (pub1) and pub <> pub1))
-    {
-      -- dbg_obj_princ ('COL DEL: ', pub, ' -> ' , old_col_path);
-      repl_text (pub, '"DB.DBA.DAV_COL_D" (?, 1)', old_col_path);
-    }
--- END REPLICATION
-  WS.WS.UPDCHILD (res, full_path, _pflags, repl);
-  set triggers on;
-  if (ascii('R') = _pflags[9])
-    update WS.WS.SYS_DAV_RES set RES_PERMS = DAV_PERMS_SET_CHAR (RES_PERMS, 'T', 9)
-	where (RES_FULL_PATH between full_path and DAV_COL_PATH_BOUNDARY (full_path))
-	      and RES_PERMS[9] = ascii ('N');
-  else
-    update WS.WS.SYS_DAV_RES set RES_PERMS = DAV_PERMS_SET_CHAR (RES_PERMS, _pflags[9], 9)
-	where RES_COL = res and (case (lt (length (RES_PERMS), 10)) when 1 then 0 else RES_PERMS[9] end) <> _pflags[9];
-  if (ascii('R') = _pflags[10])
-    update WS.WS.SYS_DAV_RES set RES_PERMS = DAV_PERMS_SET_CHAR (RES_PERMS, 'M', 10)
-	where (RES_FULL_PATH between full_path and DAV_COL_PATH_BOUNDARY (full_path))
-	      and RES_PERMS[10] = ascii ('N');
-  else
-    update WS.WS.SYS_DAV_RES set RES_PERMS = DAV_PERMS_SET_CHAR (RES_PERMS, _pflags[10], 10)
-	where RES_COL = res and (case (lt (length (RES_PERMS), 11)) when 1 then 0 else RES_PERMS[10] end) <> _pflags[10];
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_U (', N.COL_ID, ') done');
-}
-;
+  if (N.COL_ID = N.COL_PARENT)
+    signal ('37000', 'The new collection''s tree will have a loop!');
 
-create procedure WS.WS.UPDCHILD (in col integer, in root_path varchar, in _pflags varchar, in repl varchar)
-{
-  declare name, new_path, str varchar;
-  declare id integer;
-  declare c_cur cursor for select COL_ID, COL_NAME, COL_MOD_TIME, COL_PERMS, COL_OWNER, COL_GROUP
-      from WS.WS.SYS_DAV_COL where COL_PARENT = col;
-
-  for select RES_ID, RES_NAME, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = col do
-    {
-      -- WebRobot URLs update
-      update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
-      -- drop VSPs
-      if (RES_NAME like '%.vsp')
-        WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
-    }
-  -- dbg_obj_princ ('WS.WS.UPDCHILD (', col, root_path, _pflags, repl, ') updates RES_FULL_PATH');
-  update WS.WS.SYS_DAV_RES set RES_FULL_PATH = concat (root_path, RES_NAME) where RES_COL = col and ((RES_FULL_PATH <> concat (root_path, RES_NAME)) or RES_FULL_PATH is null);
-  if (ascii ('R') = _pflags[9])
-    update WS.WS.SYS_DAV_COL set COL_PERMS = DAV_PERMS_SET_CHAR (COL_PERMS, 'R', 9)
-	where COL_PARENT = col and ascii ('R') <> COL_PERMS[9];
-  if (ascii ('R') = _pflags[10])
-    update WS.WS.SYS_DAV_COL set COL_PERMS = DAV_PERMS_SET_CHAR (COL_PERMS, 'R', 10)
-	where COL_PARENT = col and ascii ('R') <> COL_PERMS[10];
-
--- REPLICATION
-   declare _grp, _uid integer;
-   declare cperms varchar;
-   declare ctime datetime;
-   declare uname, gname varchar;
-   declare rn, rt, rc, rp varchar;
-   declare ro, rg integer;
-   declare rmt datetime;
-   declare chr cursor for select RES_NAME, RES_TYPE, RES_CONTENT, RES_PERMS,
-                                 RES_OWNER, RES_GROUP, RES_MOD_TIME from WS.WS.SYS_DAV_RES
-                      where RES_COL = col;
-   if (repl is not null)
-     {
-       whenever not found goto er;
-       open chr;
-       while (1)
-	     {
-	       fetch chr into rn, rt, rc, rp, ro, rg, rmt;
-	       whenever not found goto nfu;
-	       select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = ro;
-nfu:;
-               whenever not found goto nfg;
-               select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = rg;
-nfg:;
-               repl_text (repl, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', concat (root_path, rn),
-		   rmt, uname, gname, rp, rt, WS.WS.BODY_ARR (rc, null));
-             }
-er:
-       close chr;
-
-     }
--- END REPLICATION
-  whenever not found goto not_col;
-  open c_cur;
-  while (1)
-    {
-      fetch c_cur into id, name, ctime, cperms, _uid, _grp;
-      new_path := concat (root_path, name, '/');
--- REPLICATION
-      if (repl is not null)
-	{
-	       whenever not found goto nfu1;
-	       select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = _uid;
-nfu1:;
-               whenever not found goto nfg1;
-               select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = _grp;
-nfg1:;
-          repl_text (repl, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)',
-	    name, new_path, ctime, uname, gname,
-	    cperms );
-	}
--- END REPLICATION
-      WS.WS.UPDCHILD (id, new_path, _pflags, repl);
-    }
-not_col:
-  close c_cur;
+  if (isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C'))))
+    signal ('37000', 'The parent collection doesn''t exist!');
 }
 ;
 
 create trigger SYS_DAV_COL_I after insert on WS.WS.SYS_DAV_COL referencing new as N
 {
-  declare _pflags, _cflags, col_path, _inh varchar;
-  declare _col, _p_col integer;
   -- dbg_obj_princ ('trigger SYS_DAV_COL_I (', N.COL_ID, ')');
-  _col := N.COL_ID;
-  _p_col := N.COL_PARENT;
-  col_path := WS.WS.COL_PATH (_p_col) || N.COL_NAME || '/';
+  declare _parent_perms, _col_perms, _parent_path, _col_path, _parent_inherit varchar;
+  declare _col_id, _parent_id integer;
+  declare _new_replicate varchar;
+
   set triggers off;
-  _cflags := N.COL_PERMS;
-  _pflags := '000000000NN';
-  _inh := 'N';
-  for select COL_PERMS, COL_INHERIT from WS.WS.SYS_DAV_COL where COL_ID = _p_col do
-    {
-      _pflags := COL_PERMS;
-      _inh := COL_INHERIT;
-    }
-  if (_inh = 'R')
-    _cflags := _pflags;
-  DAV_PERMS_FIX (_cflags, _pflags);
-  if (_cflags <> N.COL_PERMS)
-    update WS.WS.SYS_DAV_COL set COL_PERMS = _cflags where COL_ID = _col;
+
+  _col_id := N.COL_ID;
+  _parent_id := N.COL_PARENT;
+  if (_parent_id <> 0)
+  {
+    select COL_PERMS, COL_INHERIT, COL_FULL_PATH into _parent_perms, _parent_inherit, _parent_path from WS.WS.SYS_DAV_COL where COL_ID = _parent_id;
+  }
+  else
+  {
+    _parent_perms := '000000000TM';
+    _parent_inherit := 'N';
+    _parent_path := '/';
+  }
+  _col_path := _parent_path || N.COL_NAME || '/';
+  _col_perms :=  case when (_parent_inherit = 'R') then _parent_perms else N.COL_PERMS end;
+
+  DB.DBA.DAV_PERMS_FIX (_col_perms, _parent_perms);
+  if (_col_perms <> N.COL_PERMS)
+  {
+    update WS.WS.SYS_DAV_COL set COL_PERMS = _col_perms, COL_FULL_PATH = _col_path where COL_ID = _col_id;
+    N.COL_PERMS := _col_perms;
+    N.COL_FULL_PATH := _col_path;
+  }
+  else
+  {
+    update WS.WS.SYS_DAV_COL set COL_FULL_PATH = _col_path where COL_ID = _col_id;
+    N.COL_FULL_PATH := _col_path;
+  }
+
   if (N.COL_DET is not null and not (N.COL_DET like '%Filter'))
+  {
+    for (select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (_col_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH) do
     {
-      for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (col_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
-        {
-          insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
-          values (CF_ID, _col, N.COL_DET);
-        }
+      insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
+        values (CF_ID, _col_id, N.COL_DET);
     }
+  }
+
 -- REPLICATION
-  declare pub varchar;
-  declare uname, gname varchar;
-  uname := ''; gname := '';
-  pub := WS.WS.ISPUBL (col_path);
-  if (isstring (pub))
+  _new_replicate := WS.WS.ISPUBL (_col_path);
+  if (isstring (_new_replicate))
+  {
+    -- dbg_obj_princ ('COLL INS: ', pub, ' -> ' ,col_path);
+    declare _col_uname, _col_gname varchar;
+
+    _col_uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = N.COL_OWNER), '');
+    _col_gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = N.COL_GROUP), '');
+    repl_text (_new_replicate, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)', N.COL_NAME, _col_path, N.COL_CR_TIME, _col_uname, _col_gname, N.COL_PERMS);
+  }
+-- END REPLICATION
+}
+;
+
+create trigger SYS_DAV_COL_BU before update (COL_PARENT) on WS.WS.SYS_DAV_COL order 0 referencing old as O, new as N
+{
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_BU (', N.COL_ID, ')');
+  declare _id, _col_id, _parent_id integer;
+
+  if (isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C'))))
+    signal ('37000', 'The parent collection doesn''t exist!');
+
+  _id := N.COL_ID;
+  _col_id := N.COL_PARENT;
+  if (_id = _col_id)
+    goto _error;
+
+  while (_col_id > 0)
+  {
+    _parent_id := (select COL_PARENT from WS.WS.SYS_DAV_COL where COL_ID = _col_id);
+    if (isnull (_parent_id))
+      return;
+
+    if (_id = _parent_id)
+      goto _error;
+
+    _col_id := _parent_id;
+  }
+  return;
+
+_error:;
+  signal ('37000', 'The new collection''s tree will have a loop!');
+}
+;
+
+create trigger SYS_DAV_COL_U after update on WS.WS.SYS_DAV_COL referencing old as O, new as N
+{
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_U (', N.COL_ID, ')');
+  declare _parent_perms, _col_perms varchar;
+  declare _parent_path, _old_col_path, _new_col_path varchar;
+  declare _col_id integer;
+  declare _replicate, _old_replicate, _new_replicate varchar;
+  declare _col_uname, _col_gname varchar;
+
+  _col_id := N.COL_ID;
+  _col_perms := N.COL_PERMS;
+  _parent_perms := coalesce ((select COL_PERMS from WS.WS.SYS_DAV_COL where COL_ID = N.COL_PARENT), '000000000TM');
+  if ((O.COL_PARENT <> N.COL_PARENT) or (O.COL_PERMS <> N.COL_PERMS))
+  {
+    DB.DBA.DAV_PERMS_FIX (_parent_perms, '000000000TM');
+    DB.DBA.DAV_PERMS_INHERIT (_col_perms, _parent_perms);
+  }
+
+  set triggers off;
+  if (_col_perms <> N.COL_PERMS)
+  {
+    update WS.WS.SYS_DAV_COL set COL_PERMS = _col_perms where COL_ID = _col_id;
+    N.COL_PERMS := _col_perms;
+  }
+
+  if ((O.COL_PARENT = N.COL_PARENT) and (O.COL_NAME = N.COL_NAME))
+  {
+    _old_col_path := O.COL_FULL_PATH;
+    _new_col_path := N.COL_FULL_PATH;
+  }
+  else
+  {
+    -- update full path
+    _parent_path := coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = O.COL_PARENT), '/');
+    _old_col_path := _parent_path || O.COL_NAME || '/';
+    if (O.COL_PARENT = N.COL_PARENT)
     {
-      -- dbg_obj_princ ('COLL INS: ', pub, ' -> ' ,col_path);
-      whenever not found goto nfu;
-       select U_NAME into uname from WS.WS.SYS_DAV_USER where U_ID = N.COL_OWNER;
-nfu:;
-      whenever not found goto nfg;
-       select G_NAME into gname from WS.WS.SYS_DAV_GROUP where G_ID = N.COL_GROUP;
-nfg:;
-       repl_text (pub, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)',
-	    N.COL_NAME, col_path, N.COL_CR_TIME, uname, gname, N.COL_PERMS );
+      _new_col_path := _parent_path || N.COL_NAME || '/';
+    }
+    else
+    {
+      _new_col_path := coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = N.COL_PARENT), '/') || N.COL_NAME || '/';
+    }
+    update WS.WS.SYS_DAV_COL set COL_FULL_PATH = _new_col_path where COL_ID = _col_id;
+    N.COL_FULL_PATH := _new_col_path;
+
+    for (select SUBCOL_ID, SUBCOL_FULL_PATH as old_subcol_path, SUBCOL_DET
+           from DB.DBA.DAV_PLAIN_SUBMOUNTS
+          where root_id = O.COL_ID
+            and root_path = _old_col_path
+            and recursive = 1
+            and subcol_auth_uid = http_dav_uid ()
+            and not (SUBCOL_DET like '%Filter')) do
+    {
+      declare new_subcol_path varchar;
+
+      new_subcol_path := _new_col_path || subseq (old_subcol_path, length (_old_col_path));
+      for (select CF_ID
+             from WS.WS.SYS_DAV_CATFILTER
+            where ("LEFT" (old_subcol_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH)
+              and ("LEFT" (new_subcol_path, length (CF_SEARCH_PATH)) <> CF_SEARCH_PATH)) do
+      {
+        delete
+          from WS.WS.SYS_DAV_CATFILTER_DETS
+         where CFD_CF_ID = CF_ID
+           and CFD_DET_SUBCOL_ID = SUBCOL_ID;
+      }
+      for (select CF_ID
+             from WS.WS.SYS_DAV_CATFILTER
+            where ("LEFT" (old_subcol_path, length (CF_SEARCH_PATH)) <> CF_SEARCH_PATH)
+              and ("LEFT" (new_subcol_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH)) do
+      {
+        insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
+          values (CF_ID, SUBCOL_ID, SUBCOL_DET);
+      }
+    }
+  }
+
+  if (
+      (N.COL_DET is not null or O.COL_DET is not null) and
+      not (N.COL_DET is not null and O.COL_DET is not null and (N.COL_DET = O.COL_DET) and (N.COL_ID = O.COL_ID) and (N.COL_PARENT = O.COL_PARENT))
+     )
+  {
+    -- dbg_obj_princ ('trigger SYS_DAV_COL_U: CatFilter-related operations for own record in WS.WS.SYS_DAV_CATFILTER_DETS');
+    delete from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_DET_SUBCOL_ID = O.COL_ID;
+    if (N.COL_DET is not null and not (N.COL_DET like '%Filter'))
+    {
+      for (select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (_new_col_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH) do
+      {
+        insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
+          values (CF_ID, N.COL_ID, N.COL_DET);
+      }
+    }
+  }
+
+  _replicate := null;
+
+-- REPLICATION
+  _old_replicate := WS.WS.ISPUBL (_old_col_path);
+  _new_replicate := WS.WS.ISPUBL (_new_col_path);
+  if (isstring (_new_replicate))
+  {
+    _col_uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = N.COL_OWNER), '');
+    _col_gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = N.COL_GROUP), '');
+  }
+  else
+  {
+    _col_uname := '';
+    _col_gname := '';
+  }
+  if ((not isstring (_old_replicate) and isstring (_new_replicate)) or (isstring (_old_replicate) and isstring (_new_replicate) and _old_replicate <> _new_replicate))
+  {
+    -- dbg_obj_princ ('COL INS: ', _new_replicate, ' -> ' , new_col_path);
+    repl_text (_new_replicate, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)', N.COL_NAME, _new_col_path, N.COL_CR_TIME, _col_uname, _col_gname, N.COL_PERMS);
+    _replicate := _new_replicate;
+  }
+  if (isstring (_old_replicate) and isstring (_new_replicate) and _old_replicate = _new_replicate)
+  {
+    -- dbg_obj_princ ('COL UPD: ', _old_col_path, ' -> ' , new_col_path);
+    repl_text (_new_replicate, '"DB.DBA.DAV_COL_U" (?, ?, ?, ?, ?, ?)', _old_col_path, _new_col_path, N.COL_CR_TIME, _col_uname, _col_gname, N.COL_PERMS);
+  }
+  if ((isstring (_old_replicate) and not isstring (_new_replicate)) or (isstring (_old_replicate) and isstring (_new_replicate) and _old_replicate <> _new_replicate))
+  {
+    -- dbg_obj_princ ('COL DEL: ', _old_replicate, ' -> ' , _old_col_path);
+    repl_text (_old_replicate, '"DB.DBA.DAV_COL_D" (?, 1)', _old_col_path);
+  }
+-- END REPLICATION
+
+  WS.WS.UPDCHILD (_col_id, _new_col_path, _parent_perms, _replicate);
+  set triggers on;
+  if (ascii('R') = _parent_perms[9])
+    update WS.WS.SYS_DAV_RES
+       set RES_PERMS = DB.DBA.DAV_PERMS_SET_CHAR (RES_PERMS, 'T', 9)
+     where (RES_FULL_PATH between _new_col_path and DAV_COL_PATH_BOUNDARY (_new_col_path))
+       and RES_PERMS[9] = ascii ('N');
+  else
+    update WS.WS.SYS_DAV_RES
+       set RES_PERMS = DB.DBA.DAV_PERMS_SET_CHAR (RES_PERMS, _parent_perms[9], 9)
+     where RES_COL = _col_id
+       and (case (lt (length (RES_PERMS), 10)) when 1 then 0 else RES_PERMS[9] end) <> _parent_perms[9];
+
+  if (ascii('R') = _parent_perms[10])
+    update WS.WS.SYS_DAV_RES
+       set RES_PERMS = DB.DBA.DAV_PERMS_SET_CHAR (RES_PERMS, 'M', 10)
+     where (RES_FULL_PATH between _new_col_path and DAV_COL_PATH_BOUNDARY (_new_col_path))
+       and RES_PERMS[10] = ascii ('N');
+  else
+    update WS.WS.SYS_DAV_RES
+       set RES_PERMS = DB.DBA.DAV_PERMS_SET_CHAR (RES_PERMS, _parent_perms[10], 10)
+     where RES_COL = _col_id
+       and (case (lt (length (RES_PERMS), 11)) when 1 then 0 else RES_PERMS[10] end) <> _parent_perms[10];
+}
+;
+
+create trigger SYS_DAV_COL_D before delete on WS.WS.SYS_DAV_COL order 100 referencing old as O
+{
+  -- dbg_obj_princ ('trigger SYS_DAV_COL_D (', O.COL_ID, ')');
+  declare _old_replicate, _col_path varchar;
+
+  if (exists (select top 1 COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = O.COL_ID) or exists (select top 1 RES_ID from WS.WS.SYS_DAV_RES where RES_COL = O.COL_ID))
+    signal ('37000', 'The collection has subcollections and/or resources!');
+
+  _col_path := O.COL_FULL_PATH;
+  delete from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_DET_SUBCOL_ID = O.COL_ID;
+
+-- REPLICATION
+  _old_replicate := WS.WS.ISPUBL (_col_path);
+  if (isstring (_old_replicate))
+  {
+    -- dbg_obj_princ ('COLL DEL: ', pub, ' -> ' , _col_path);
+    repl_text (_old_replicate, '"DB.DBA.DAV_COL_D" (?, 0)', _col_path);
+  }
+-- END REPLICATION
+
+  -- Properties of collection lives as it
+  delete from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_PARENT_ID = O.COL_ID;
+  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = O.COL_ID;
+}
+;
+
+create procedure WS.WS.UPDCHILD (
+  in _col_id integer,
+  in _col_path varchar,
+  in _col_perms varchar,
+  in _replicate varchar)
+{
+  -- dbg_obj_princ ('WS.WS.UPDCHILD (', _col_id, _col_path, _col_perms, _replicate, ');
+  declare _id, _owner, _group integer;
+  declare _mod_time datetime;
+  declare _perms, _uname, _gname, _content, _type, _name, _new_path varchar;
+  declare c_cur cursor for select COL_ID, COL_NAME, COL_PERMS, COL_OWNER, COL_GROUP, COL_MOD_TIME
+                             from WS.WS.SYS_DAV_COL
+                            where COL_PARENT = _col_id;
+
+  for (select RES_ID, RES_NAME, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = _col_id) do
+  {
+    -- WebRobot URLs update
+    update WS.WS.VFS_URL set VU_ETAG = '' where VU_RES_ID = RES_ID;
+    -- drop VSPs
+    if (RES_NAME like '%.vsp')
+      WS.WS.DAV_VSP_DEF_REMOVE (RES_FULL_PATH);
+  }
+
+  -- Resources
+  update WS.WS.SYS_DAV_RES set RES_FULL_PATH = _col_path || RES_NAME where RES_COL = _col_id and ((RES_FULL_PATH <> _col_path || RES_NAME) or RES_FULL_PATH is null);
+  -- Collections
+  update WS.WS.SYS_DAV_COL set COL_FULL_PATH = _col_path || COL_NAME || '/' where COL_PARENT = _col_id and ((COL_FULL_PATH <> _col_path || COL_NAME || '/') or COL_FULL_PATH is null);
+
+  if (ascii ('R') = _col_perms[9])
+    update WS.WS.SYS_DAV_COL set COL_PERMS = DAV_PERMS_SET_CHAR (COL_PERMS, 'R', 9) where COL_PARENT = _col_id and ascii ('R') <> COL_PERMS[9];
+
+  if (ascii ('R') = _col_perms[10])
+    update WS.WS.SYS_DAV_COL set COL_PERMS = DAV_PERMS_SET_CHAR (COL_PERMS, 'R', 10) where COL_PARENT = _col_id and ascii ('R') <> COL_PERMS[10];
+
+-- REPLICATION
+   if (_replicate is not null)
+   {
+     declare r_cur cursor for select RES_TYPE, RES_CONTENT, RES_NAME, RES_PERMS, RES_OWNER, RES_GROUP, RES_MOD_TIME
+                                from WS.WS.SYS_DAV_RES
+                               where RES_COL = _col_id;
+     whenever not found goto r_error;
+
+     open r_cur;
+     while (1)
+     {
+       fetch r_cur into _type, _content, _name, _perms, _owner, _group, _mod_time;
+
+       _uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _owner), '');
+       _gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _group), '');
+
+       repl_text (_replicate, '"DB.DBA.DAV_RES_I" (?, ?, ?, ?, ?, ?, ?)', _col_path || _name, _mod_time, _uname, _gname, _perms, _type, WS.WS.BODY_ARR (_content, null));
+     }
+   r_error:;
+     close r_cur;
+   }
+-- END REPLICATION
+
+  whenever not found goto c_error;
+
+  open c_cur;
+  while (1)
+  {
+    fetch c_cur into _id, _name, _perms, _owner, _group, _mod_time;
+
+    _new_path := _col_path || _name || '/';
+-- REPLICATION
+    if (_replicate is not null)
+    {
+      _uname := coalesce ((select U_NAME from WS.WS.SYS_DAV_USER where U_ID = _owner), '');
+      _gname := coalesce ((select G_NAME from WS.WS.SYS_DAV_GROUP where G_ID = _group), '');
+
+      repl_text (_replicate, '"DB.DBA.DAV_COL_I" (?, ?, ?, ?, ?, ?)', _name, _new_path, _mod_time, _uname, _gname, _perms);
     }
 -- END REPLICATION
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_I (', N.COL_ID, ') done');
+    WS.WS.UPDCHILD (_id, _new_path, _perms, _replicate);
+  }
+
+c_error:;
+  close c_cur;
 }
 ;
 
@@ -5756,27 +5851,6 @@ create procedure WS.WS.EXPAND_INCLUDES (
     http (curr_file, stream);
 }
 ;
-
-create trigger SYS_DAV_COL_D before delete on WS.WS.SYS_DAV_COL order 100
-{
-  declare pub, col_path varchar;
-  col_path := WS.WS.COL_PATH (COL_ID);
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_D (', COL_ID, ')');
-  delete from WS.WS.SYS_DAV_CATFILTER_DETS where CFD_DET_SUBCOL_ID = COL_ID;
--- REPLICATION
-  pub := WS.WS.ISPUBL (col_path);
-  if (isstring (pub))
-    {
-      -- dbg_obj_princ ('COLL DEL: ', pub, ' -> ' ,col_path);
-      repl_text (pub, '"DB.DBA.DAV_COL_D" (?, 0)', col_path);
-    }
-  -- Properties of collection lives as it
-  delete from WS.WS.SYS_DAV_PROP where PROP_TYPE = 'C' and PROP_PARENT_ID = COL_ID;
-  delete from WS.WS.SYS_DAV_LOCK where LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID;
-  -- dbg_obj_princ ('trigger SYS_DAV_COL_D (', COL_ID, ') done');
-}
-;
--- END REPLICATION
 
 -- IvAn/XmlView/000810 procedure WS.WS.XML_VIEW_HEADER added
 create procedure WS.WS.XML_VIEW_HEADER
@@ -7363,10 +7437,36 @@ _break:;
 create procedure DB.DBA.DAV_HREF_URL (
   in href varchar)
 {
-  href := replace (href, ' ', '%20');
+  --href := replace (href, ' ', '%20');
 
-  return charset_recode (href, 'UTF-8', '_WIDE_');
+  -- return charset_recode (href, 'UTF-8', '_WIDE_');
 
+  -- declare ss any;
+  --
+  -- ss := string_output ();
+  -- http_dav_url (charset_recode (href, 'UTF-8', '_WIDE_'), null, ss);
+  --
+  -- return string_output_string (ss);
+  declare delimiter char;
+  declare ss, parts any;
+
+  ss := string_output ();
+  parts := split_and_decode (href, 0, '\0\0/');
+  delimiter := '';
+  foreach (any part in parts) do
+  {
+    if (part = '')
+    {
+      http ('/', ss);
+    }
+    else
+    {
+      http (delimiter, ss);
+      http_url (charset_recode (part, 'UTF-8', '_WIDE_'), null, ss);
+      delimiter := '/';
+    }
+  }
+  return string_output_string (ss);
 }
 ;
 

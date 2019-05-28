@@ -1,6 +1,4 @@
 --
---  $Id$
---
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
@@ -20,7 +18,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- Cleanup WebDAV DB
 use WS
 ;
 
@@ -37,24 +34,44 @@ create table WS.WS.SYS_DAV_COL
   COL_MOD_TIME        datetime,
   COL_ADD_TIME        datetime,
   COL_PERMS           char (11),
+  COL_FULL_PATH       varchar,
   COL_DET             varchar (64),
   COL_ACL             long varbinary,
   COL_IID             IRI_ID_8,
   COL_AUTO_VERSIONING char(1),
-  COL_FORK            integer not null default 0,
   COL_INHERIT         char(1) default 'N',     -- NMR flag denotes, none, members, recursive
-  primary key (COL_NAME, COL_PARENT)
+
+  primary key (COL_ID)
 )
-alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_PARENT int)
-create index SYS_DAV_COL_PARENT_ID on WS.WS.SYS_DAV_COL (COL_PARENT) partition (COL_PARENT int)
-create unique index SYS_DAV_COL_ID on WS.WS.SYS_DAV_COL (COL_ID) partition (COL_ID int)
+alter index SYS_DAV_COL on WS.WS.SYS_DAV_COL partition (COL_ID integer)
+create unique index SYS_DAV_COL_PARENT on WS.WS.SYS_DAV_COL (COL_PARENT, COL_NAME) partition (COL_PARENT integer)
+create index SYS_DAV_COL_FULL_PATH on WS.WS.SYS_DAV_COL (COL_FULL_PATH) partition (COL_FULL_PATH varchar (-10, 0hexffff))
 create not null index SYS_DAV_COL_IID on WS.WS.SYS_DAV_COL (COL_IID) partition (COL_IID int (0hexffff00))
 ;
 
+alter table WS.WS.SYS_DAV_COL add COL_DET varchar (64)
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_ACL long varbinary
+;
+
+alter table WS.WS.SYS_DAV_COL modify COL_PERMS char (11)
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_IID IRI_ID_8
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_INHERIT char(1) default 'N'
+;
+
+alter table WS.WS.SYS_DAV_COL add COL_ADD_TIME datetime
+;
 
 alter table WS.WS.SYS_DAV_COL add COL_CREATOR IRI_ID_8
 ;
 
+alter table WS.WS.SYS_DAV_COL add COL_FULL_PATH varchar
+;
 
 -- WebDAV Resource
 create table WS.WS.SYS_DAV_RES
@@ -77,9 +94,7 @@ create table WS.WS.SYS_DAV_RES
   RES_ACL             long varbinary,
   RES_IID             IRI_ID_8,
   RES_STATUS          varchar,
-  RES_VCR_ID          integer,
-  RES_VCR_CO_VERSION  integer,
-  RES_VCR_STATE       integer,
+
   primary key (RES_ID)
 )
 create unique index SYS_DAV_RES_COL on WS.WS.SYS_DAV_RES (RES_COL, RES_NAME) partition (RES_COL int)
@@ -88,12 +103,26 @@ alter index SYS_DAV_RES on WS.WS.SYS_DAV_RES partition (RES_ID int)
 create index SYS_DAV_RES_IID on WS.WS.SYS_DAV_RES (RES_IID) partition (RES_IID int (0hexffff00))
 ;
 
+alter table WS.WS.SYS_DAV_RES add ROWGUID varchar
+;
+
+alter table WS.WS.SYS_DAV_RES add RES_ACL long varbinary
+;
+
+alter table WS.WS.SYS_DAV_RES modify RES_PERMS char (11)
+;
+
+alter table WS.WS.SYS_DAV_RES add RES_IID IRI_ID_8
+;
+
+alter table WS.WS.SYS_DAV_RES add RES_SIZE integer
+;
+
+alter table WS.WS.SYS_DAV_RES add RES_ADD_TIME datetime
+;
 
 alter table WS.WS.SYS_DAV_RES add RES_CREATOR IRI_ID_8
 ;
-
---__ddl_changed ('WS.WS.SYS_DAV_RES')
---;
 
 create procedure WS.WS.SYS_DAV_RES_RES_CONTENT_HOOK (
   inout vtb any,
@@ -135,6 +164,7 @@ create table WS.WS.SYS_DAV_PROP
   PROP_TYPE           char (1),
   PROP_PARENT_ID      integer,
   PROP_VALUE          long varchar,
+
   primary key (PROP_PARENT_ID, PROP_TYPE, PROP_NAME)
 )
 alter index SYS_DAV_PROP on WS.WS.SYS_DAV_PROP partition (PROP_PARENT_ID int)
@@ -156,6 +186,7 @@ create table WS.WS.SYS_DAV_LOCK
   LOCK_TIMEOUT        integer not null,
   LOCK_OWNER          integer,
   LOCK_OWNER_INFO     varchar,
+
   primary key (LOCK_PARENT_ID, LOCK_PARENT_TYPE, LOCK_TOKEN)
 )
 alter index SYS_DAV_LOCK on WS.WS.SYS_DAV_LOCK partition (LOCK_PARENT_ID int)
@@ -191,6 +222,7 @@ create table WS.WS.SYS_DAV_RES_TYPES
   T_EXT               varchar not null,       -- File extension
   T_TYPE              varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
   T_DESCRIPTION       varchar,                -- NULL or a single-line text description of an extension if differs from generic MT_DESCRIPTION.
+
   primary key (T_EXT)
 )
 alter index SYS_DAV_RES_TYPES on WS.WS.SYS_DAV_RES_TYPES partition cluster replicated
@@ -202,6 +234,7 @@ create table WS.WS.SYS_MIME_TYPES (
   MT_DESCRIPTION        varchar not null,       -- Single-line text description of an extension, if differs from generic MT_DESCRIPTION.
   MT_DEFAULT_EXT        varchar not null,       -- Default file extension for resources.
   MT_BADMAGIC_IDENT     varchar,                -- MIME type that should be used if the content does not match magic data of the proclaimed MIME or NULL to use magic as best guess.
+
   primary key (MT_IDENT)
 )
 alter index SYS_MIME_TYPES on WS.WS.SYS_MIME_TYPES partition cluster replicated
@@ -219,6 +252,7 @@ create table WS.WS.SYS_RDF_SCHEMAS (
   RS_CATNAME            varchar,                -- A readable and unique label of an RDF schema that can act as collection name in category filter.
   RS_PROP_CATNAMES      long varchar,           -- The serialized vector of names and labels of all declared properties of top-level elements for category filter.
   RS_DEPRECATED         integer,                -- Flag if schema is deprecated.
+
   primary key (RS_URI)
 )
 alter index SYS_RDF_SCHEMAS on WS.WS.SYS_RDF_SCHEMAS partition cluster replicated
@@ -231,6 +265,7 @@ create table WS.WS.SYS_MIME_RDFS (
   MR_MIME_IDENT         varchar not null,       -- MIME type 'x/y' identifier, may be listed in WS.WS.SYS_MIME_TYPES maybe not
   MR_RDF_URI            varchar not null,       -- A URI of an RDF schema that can be used for this MIME, The URI may be listed in WS.WS.SYS_MIME_RDFS may be not.
   MR_DEPRECATED         integer,                -- Flags if UIs should display the RDF in the list of RDF schemas available for the type.
+
   primary key (MR_MIME_IDENT, MR_RDF_URI)
 )
 alter index SYS_MIME_RDFS on WS.WS.SYS_MIME_RDFS partition cluster replicated
@@ -263,6 +298,7 @@ create table WS.WS.SYS_DAV_CATFILTER_DETS
   CFD_CF_ID integer not null,
   CFD_DET_SUBCOL_ID integer not null,
   CFD_DET varchar not null,
+
   primary key (CFD_CF_ID, CFD_DET_SUBCOL_ID)
 )
 alter index SYS_DAV_CATFILTER_DETS on WS.WS.SYS_DAV_CATFILTER_DETS partition (CFD_CF_ID int)
@@ -276,6 +312,7 @@ create table WS.WS.SYS_DAV_RDF_INVERSE
   DRI_PROP_CATID integer not null,
   DRI_CATVALUE varchar not null,
   DRI_RES_ID integer not null,
+
   primary key (DRI_CATF_ID, DRI_PROP_CATID, DRI_CATVALUE, DRI_RES_ID)
 )
 alter index SYS_DAV_RDF_INVERSE on WS.WS.SYS_DAV_RDF_INVERSE partition (DRI_CATF_ID int)
@@ -494,32 +531,15 @@ not_found:
 ;
 
 
-create procedure WS.WS.COL_PATH (in _id any)
+create procedure WS.WS.COL_PATH (
+  in id any)
 {
-  declare _path, _name varchar;
-  declare _p_id integer;
-  _path := '/';
-  if (isarray (_id))
-    return call (cast (_id[0] as varchar) || '_DAV_SEARCH_PATH')(_id, 'C');
-  whenever not found goto nf;
-  while (_id > 0)
-    {
-      select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
-      if (_id = _p_id)
-	{
-	  log_message (sprintf ('DAV collection %d is its own parent', _id));
-	  _path := '**circular**/' || _path;
-	  return _path;
-	}
-      _id := _p_id;
-      _path := concat ('/', _name, _path);
-    }
-  return _path;
-nf:
-  return NULL;
+  if (isarray (id))
+    return call (cast (id[0] as varchar) || '_DAV_SEARCH_PATH')(id, 'C');
+
+  return (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id);
 }
 ;
-
 
 create function DB.DBA.DAV_CHANGED_FUNCTIONS () returns any
 {
@@ -984,7 +1004,8 @@ create procedure WS.WS.SYS_DAV_INIT ()
     return;
   };
   set triggers off;
-  insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS) values (1, 'DAV', 0, now (), now (), http_dav_uid (), http_admin_gid (), '110100000R');
+  insert soft WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_FULL_PATH, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS)
+    values (1, 'DAV', '/DAV/', 0, now (), now (), http_dav_uid (), http_admin_gid (), '110100000R');
   sequence_set ('__DAV_ID_SEQ_C', 1, 1);
   sequence_set ('__DAV_ID_SEQ_R', 1, 1);
   sequence_set ('__DAV_ID_SEQ_P', 1, 1);
@@ -1177,8 +1198,102 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
 WS.WS.SYS_DAV_INIT_RDF ()
 ;
 
-create procedure
-WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (inout vtb any, inout d_id integer, in mode integer)
+create procedure WS.WS.SYS_DAV_COL_LOST ()
+{
+  -- dbg_obj_print ('WS.WS.SYS_DAV_COL_LOST ()');
+  declare N, _lost_id integer;
+  declare _name varchar;
+
+  _lost_id := 0;
+  _name := '';
+  for (select COL_ID as _col_id, COL_NAME as _col_name, COL_PARENT as _col_parent from WS.WS.SYS_DAV_COL where COL_FULL_PATH is null order by COL_NAME) do
+  {
+    if (not exists (select 1 from WS.WS.SYS_DAV_COL where COL_ID = _col_parent))
+    {
+      if (_lost_id = 0)
+      {
+        _lost_id := DB.DBA.DAV_SEARCH_ID ('/DAV/.lost+found/', 'C');
+        if (isnull (DB.DBA.DAV_HIDE_ERROR (_lost_id)))
+          _lost_id := DB.DBA.DAV_COL_CREATE_INT ('/DAV/.lost+found/', '110100000R', http_dav_uid (), http_admin_gid (), null, null, 0, 0, 0);
+
+        if (isnull (DB.DBA.DAV_HIDE_ERROR (_lost_id)))
+          signal ('BADLOST', 'Error /DAV/.lost+found/ folder creation');
+      }
+
+      if (_name <> _col_name)
+      {
+        N := 0;
+        _name := _col_name;
+      }
+      update WS.WS.SYS_DAV_COL
+         set COL_NAME = case when (N) then sprintf ('%s - %d', _name, N) else _name end,
+             COL_PARENT = _lost_id
+       where COL_ID = _col_id;
+      N := N + 1;
+    }
+  }
+}
+;
+
+create procedure WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (
+  in id integer,
+  in path varchar,
+  in parents any := null)
+{
+  -- dbg_obj_print ('WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (', id, path, ')');
+
+  if (position (id, parents))
+  {
+    log_message (sprintf ('Folder path loop: parent path - %s, id - %d', path, id));
+    return;
+  }
+
+  parents := vector_concat (parents, vector (id));
+  set triggers off;
+  update WS.WS.SYS_DAV_COL
+     set COL_FULL_PATH = path || COL_NAME || '/'
+   where COL_PARENT = id;
+  commit work;
+
+  for (select COL_ID as _col_id, COL_FULL_PATH as _col_full_path from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
+  {
+    WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (_col_id, _col_full_path, parents);
+  }
+
+  return;
+}
+;
+
+create procedure WS.WS.SYS_DAV_COL_FULL_PATH (
+  in force integer := 0)
+{
+  if ((force = 0) and exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+    return;
+
+  if (not exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+    exec ('create index SYS_DAV_COL_FULL_PATH on WS.WS.SYS_DAV_COL (COL_FULL_PATH) partition (COL_FULL_PATH varchar (-10, 0hexffff))');
+
+  WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (0, '/', vector ());
+  WS.WS.SYS_DAV_COL_LOST ();
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_FULL_PATH is null))
+  {
+    log_message ('An error was found during the upgrade of the COL_FULL_PATH column.');
+    log_message ('For additional information please contact OpenLink Support <support@openlinksw.com>');
+
+    return;
+  }
+  log_message ('Successfully upgraded COL_FULL_PATH column.');
+}
+;
+
+--!AFTER
+WS.WS.SYS_DAV_COL_FULL_PATH ()
+;
+
+create procedure WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (
+  inout vtb any,
+  inout d_id integer,
+  in mode integer)
 {
   for select PROP_NAME as pn, PROP_VALUE as pv from WS.WS.SYS_DAV_PROP where PROP_ID = d_id do
     {
@@ -1210,15 +1325,17 @@ WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (inout vtb any, inout d_id integer, 
 }
 ;
 
-create procedure
-WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_PROP_PROP_VALUE_INDEX_HOOK (
+  inout vtb any,
+  inout d_id integer)
 {
   return WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (vtb, d_id, 0);
 }
 ;
 
-create procedure
-WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK (inout vtb any, inout d_id integer)
+create procedure WS.WS.SYS_DAV_PROP_PROP_VALUE_UNINDEX_HOOK (
+  inout vtb any,
+  inout d_id integer)
 {
   return WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (vtb, d_id, 1);
 }
@@ -2943,43 +3060,55 @@ create trigger SYS_DAV_RES_TYPES_D after delete on WS.WS.SYS_DAV_RES_TYPES refer
 }
 ;
 
-create procedure
-DB.DBA.DAV_PLAIN_SUBCOLS_P (in root_id integer, in root_path varchar := null, in recursive integer := 1, in subcol_auth_uid varchar, in subcol_auth_pwd varchar)
+create procedure DB.DBA.DAV_PLAIN_SUBCOLS_P (
+  in root_id integer,
+  in root_path varchar := null,
+  in recursive integer := 1,
+  in subcol_auth_uid varchar,
+  in subcol_auth_pwd varchar)
 {
+  -- dbg_obj_princ ('DB.DBA.DAV_PLAIN_SUBCOLS_P(',root_id,root_path,recursive,subcol_auth_uid,subcol_auth_pwd,')');
   declare SUBCOL_FULL_PATH, SUBCOL_NAME, SUBCOL_DET varchar;
   declare SUBCOL_PARENT, SUBCOL_ID, SUBCOL_DEPTH integer;
-  -- dbg_obj_princ ('DB.DBA.DAV_PLAIN_SUBCOLS_P(',root_id,root_path,recursive,subcol_auth_uid,subcol_auth_pwd,')');
+
   result_names (SUBCOL_FULL_PATH, SUBCOL_NAME, SUBCOL_PARENT, SUBCOL_ID, SUBCOL_DEPTH, SUBCOL_DET);
   if (root_id is null)
     root_id := DB.DBA.DAV_SEARCH_ID (root_path, 'C');
+
   if (not isinteger (root_id))
     return;
+
   if (root_id <= 0)
     return;
+
   if (root_path is null)
     root_path := DB.DBA.DAV_SEARCH_PATH (root_id, 'C');
+
   if (isinteger (root_path))
     return;
+
   for (select COL_NAME, COL_PARENT, COL_ID, COL_DET from WS.WS.SYS_DAV_COL where COL_ID = root_id) do
-    {
-      result (root_path, COL_NAME, COL_PARENT, COL_ID, 0, COL_DET);
-      if (recursive and COL_DET is null)
-        {
-          DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (root_id, root_path, 1, subcol_auth_uid, subcol_auth_pwd);
-        }
-    }
+  {
+    result (root_path, COL_NAME, COL_PARENT, COL_ID, 0, COL_DET);
+    if (recursive and COL_DET is null)
+      DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (root_id, root_path, 1, subcol_auth_uid, subcol_auth_pwd);
+  }
 }
 ;
 
-create procedure
-DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (in root_id integer, in root_path varchar, in depth integer, in subcol_auth_uid varchar, in subcol_auth_pwd varchar)
+create procedure DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (
+  in root_id integer,
+  in root_path varchar,
+  in depth integer,
+  in subcol_auth_uid varchar,
+  in subcol_auth_pwd varchar)
 {
   for (select COL_NAME, COL_ID, root_path || COL_NAME || '/' as full_path, COL_DET from WS.WS.SYS_DAV_COL where COL_PARENT = root_id) do
-    {
-      result (full_path, COL_NAME, root_id, COL_ID, depth, COL_DET);
-      if (COL_DET is null)
-        DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (COL_ID, full_path, depth + 1, subcol_auth_uid, subcol_auth_pwd);
-    }
+  {
+    result (full_path, COL_NAME, root_id, COL_ID, depth, COL_DET);
+    if (COL_DET is null)
+      DB.DBA.DAV_PLAIN_SUBCOLS_P_INT (COL_ID, full_path, depth + 1, subcol_auth_uid, subcol_auth_pwd);
+  }
 }
 ;
 
@@ -2988,44 +3117,57 @@ create procedure view DB.DBA.DAV_PLAIN_SUBCOLS as DB.DBA.DAV_PLAIN_SUBCOLS_P (ro
 ;
 
 
-create procedure
-DB.DBA.DAV_PLAIN_SUBMOUNTS_P (in root_id integer, in root_path varchar := null, in recursive integer := 1, in subcol_auth_uid varchar, in subcol_auth_pwd varchar)
+create procedure DB.DBA.DAV_PLAIN_SUBMOUNTS_P (
+  in root_id integer,
+  in root_path varchar := null,
+  in recursive integer := 1,
+  in subcol_auth_uid varchar,
+  in subcol_auth_pwd varchar)
 {
   declare SUBCOL_FULL_PATH, SUBCOL_NAME, SUBCOL_DET varchar;
   declare SUBCOL_PARENT, SUBCOL_ID, SUBCOL_DEPTH integer;
+
   result_names (SUBCOL_FULL_PATH, SUBCOL_NAME, SUBCOL_PARENT, SUBCOL_ID, SUBCOL_DEPTH, SUBCOL_DET);
   if (root_id is null)
     root_id := DB.DBA.DAV_SEARCH_ID (root_path, 'C');
+
   if (not isinteger (root_id))
     return;
+
   if (root_id <= 0)
     return;
+
   if (root_path is null)
     root_path := DB.DBA.DAV_SEARCH_PATH (root_id, 'C');
+
   if (not isstring (root_path))
     return;
+
   for (select COL_NAME, COL_PARENT, COL_ID, COL_DET from WS.WS.SYS_DAV_COL where COL_ID = root_id) do
-    {
-      if (COL_DET is not null)
-        result (root_path, COL_NAME, COL_PARENT, COL_ID, 0, COL_DET);
-      if (recursive and COL_DET is null)
-        {
-          DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (root_id, root_path, 1, subcol_auth_uid, subcol_auth_pwd);
-        }
-    }
+  {
+    if (COL_DET is not null)
+      result (root_path, COL_NAME, COL_PARENT, COL_ID, 0, COL_DET);
+
+    else if (recursive)
+      DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (root_id, root_path, 1, subcol_auth_uid, subcol_auth_pwd);
+  }
 }
 ;
 
-create procedure
-DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (in root_id integer, in root_path varchar, in depth integer, in subcol_auth_uid varchar, in subcol_auth_pwd varchar)
+create procedure DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (
+  in root_id integer,
+  in root_path varchar,
+  in depth integer,
+  in subcol_auth_uid varchar,
+  in subcol_auth_pwd varchar)
 {
-  for (select COL_NAME, COL_ID, root_path || COL_NAME || '/' as full_path, COL_DET from WS.WS.SYS_DAV_COL where COL_PARENT = root_id) do
-    {
-      if (COL_DET is not null)
-        result (full_path, COL_NAME, root_id, COL_ID, depth, COL_DET);
-      if (COL_DET is null)
-        DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (COL_ID, full_path, depth + 1, subcol_auth_uid, subcol_auth_pwd);
-    }
+  for (select COL_NAME, COL_ID, COL_FULL_PATH, COL_DET from WS.WS.SYS_DAV_COL where COL_PARENT = root_id) do
+  {
+    if (COL_DET is not null)
+      result (COL_FULL_PATH, COL_NAME, root_id, COL_ID, depth, COL_DET);
+    else
+      DB.DBA.DAV_PLAIN_SUBMOUNTS_P_INT (COL_ID, COL_FULL_PATH, depth + 1, subcol_auth_uid, subcol_auth_pwd);
+  }
 }
 ;
 
@@ -3035,37 +3177,41 @@ create procedure view DB.DBA.DAV_PLAIN_SUBMOUNTS as DB.DBA.DAV_PLAIN_SUBMOUNTS_P
 
 
 --!AWK PUBLIC
-create procedure
-DB.DBA.DAV_DIR_P (in path varchar := '/DAV/', in recursive integer := 0, in auth_uid varchar, in auth_pwd varchar)
+create procedure DB.DBA.DAV_DIR_P (
+  in path varchar := '/DAV/',
+  in recursive integer := 0,
+  in auth_uid varchar,
+  in auth_pwd varchar)
 {
-  declare arr any;
-  declare i, l integer;
+  declare items any;
   declare FULL_PATH, PERMS, MIME_TYPE, NAME varchar;
   declare TYPE char(1);
   declare RLENGTH, ID, GRP, OWNER integer;
-  declare MOD_TIME, CR_TIME datetime;
-  result_names (FULL_PATH, TYPE, RLENGTH, MOD_TIME, ID, PERMS, GRP, OWNER, CR_TIME, MIME_TYPE, NAME);
-  arr := DB.DBA.DAV_DIR_LIST (path, recursive, auth_uid, auth_pwd);
-  i := 0; l := length (arr);
-  while (i < l)
+  declare MOD_TIME, CR_TIME, ADD_TIME datetime;
+  declare CREATOR IRI_ID_8;
+
+  result_names (FULL_PATH, TYPE, RLENGTH, MOD_TIME, ID, PERMS, GRP, OWNER, CR_TIME, MIME_TYPE, NAME, ADD_TIME, CREATOR);
+  items := DB.DBA.DAV_DIR_LIST (path, recursive, auth_uid, auth_pwd);
+  foreach (any item in items) do
     {
-      result (arr[i][0],
-          arr[i][1],
-          arr[i][2],
-          arr[i][3],
-          arr[i][4],
-          arr[i][5],
-          arr[i][6],
-          arr[i][7],
-          arr[i][8],
-          arr[i][9],
-          arr[i][10]);
-      i := i + 1;
-    }
+    result (item[0],
+            item[1],
+            item[2],
+            item[3],
+            item[4],
+            item[5],
+            item[6],
+            item[7],
+            item[8],
+            item[9],
+            item[10],
+            case when length (item) < 11 then item[8] else item[10] end,
+            case when length (item) < 12 then null else item[11] end);
+  }
 }
 ;
 
-create procedure view DB.DBA.DAV_DIR as DB.DBA.DAV_DIR_P (path,recursive,auth_uid,auth_pwd) (FULL_PATH varchar, TYPE varchar, RLENGTH integer, MOD_TIME datetime, ID integer, PERMS varchar, GRP integer, OWNER integer, CR_TIME datetime, MIME_TYPE varchar, NAME varchar)
+create procedure view DB.DBA.DAV_DIR as DB.DBA.DAV_DIR_P (path, recursive, auth_uid, auth_pwd) (FULL_PATH varchar, TYPE varchar, RLENGTH integer, MOD_TIME datetime, ID integer, PERMS varchar, GRP integer, OWNER integer, CR_TIME datetime, MIME_TYPE varchar, NAME varchar, ADD_IME datetime, CREATOR IRI_ID_8)
 ;
 
 exec ('grant select on DB.DBA.DAV_DIR to PUBLIC')

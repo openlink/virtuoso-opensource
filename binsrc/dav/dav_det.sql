@@ -432,7 +432,7 @@ create function DB.DBA.DAV_DET_DAV_LIST (
     vectorbld_acc (retValue, i);
   }
 
-  for (select vector (WS.WS.COL_PATH (COL_ID),
+  for (select vector (COL_FULL_PATH,
                       'C',
                       0,
                       COL_MOD_TIME,
@@ -574,6 +574,9 @@ create function DB.DBA.DAV_DET_HTTP_ERROR (
   in _header any,
   in _silent integer := 0)
 {
+  if (not isvector (_header))
+    return 0;
+
   if ((_header[0] like 'HTTP/1._ 4__ %') or (_header[0] like 'HTTP/1._ 5__ %'))
   {
     if (not _silent)
@@ -588,6 +591,9 @@ create function DB.DBA.DAV_DET_HTTP_ERROR (
 create function DB.DBA.DAV_DET_HTTP_CODE (
   in _header any)
 {
+  if (not isvector (_header))
+    return 500;
+
   return subseq (_header[0], 9, 12);
 }
 ;
@@ -595,6 +601,9 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 create function DB.DBA.DAV_DET_HTTP_MESSAGE (
   in _header any)
 {
+  if (not isvector (_header))
+    return 'Server Error';
+
   return subseq (_header[0], 13);
 }
 ;
@@ -1559,11 +1568,12 @@ create function DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (
 {
   -- dbg_obj_princ ('DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (', id, ')');
 
-  for (select COL_ACL    as _acl,
-              COL_OWNER  as _owner,
-              COL_GROUP  as _group,
-              COL_PERMS  as _perms,
-              COL_PARENT as _parent_id
+  for (select COL_ACL       as _acl,
+              COL_OWNER     as _owner,
+              COL_GROUP     as _group,
+              COL_PERMS     as _perms,
+              COL_FULL_PATH as _path,
+              COL_PARENT    as _parent_id
          from WS.WS.SYS_DAV_COL
         where COL_ID = id) do
   {
@@ -1574,7 +1584,7 @@ create function DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (
     _newAcls := vector (_acl);
     DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (_parent_id, 'C', _oldAcls, _newAcls);
 
-    _rdfParams := vector ('graph', WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (id, 'C')));
+    _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path));
 
     -- check for graph
     DB.DBA.DAV_DET_GRAPH_UPDATE (
@@ -1778,19 +1788,16 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (
 
   if (what = 'C')
   {
-    for (select COL_ID     as _id,
-                COL_ACL    as _acl,
-                COL_OWNER  as _owner,
-                COL_GROUP  as _group,
-                COL_PERMS  as _perms,
-                COL_PARENT as _parent_id
+    for (select COL_ID        as _id,
+                COL_ACL       as _acl,
+                COL_OWNER     as _owner,
+                COL_GROUP     as _group,
+                COL_PERMS     as _perms,
+                COL_FULL_PATH as _path,
+                COL_PARENT    as _parent_id
            from WS.WS.SYS_DAV_COL
           where COL_ID = id) do
     {
-      declare _path varchar;
-
-      _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
-
       -- ACLs
       _oldAcls := vector (_acl);
       _newAcls := vector (_acl);
@@ -1878,14 +1885,11 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (
               COL_ACL   as _acl,
               COL_OWNER as _owner,
               COL_GROUP as _group,
-              COL_PERMS as _perms
+              COL_PERMS as _perms,
+              COL_FULL_PATH as _path
          from WS.WS.SYS_DAV_COL
         where COL_PARENT = id) do
   {
-    declare _path varchar;
-
-    _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
-
     -- ACLs
     if (length (_acl) > 8)
     {
@@ -1983,7 +1987,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_COL ord
   declare _acis, _rdfParams any;
 
   -- Paths
-  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+  _newPath := N.COL_FULL_PATH;
 
   -- ACLs
   _oldAcls := vector ();
@@ -2005,7 +2009,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_COL ord
 }
 ;
 
-create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
+create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_FULL_PATH, COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
 {
   -- dbg_obj_print ('SYS_DAV_COL_PRIVATE_GRAPH_U ---------------');
   declare _oldPath, _newPath varchar;
@@ -2013,8 +2017,8 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_OWNER, CO
   declare _acis, _oldRDFParams, _newRDFParams any;
 
   -- Pahs
-  _oldPath := DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C') || O.COL_NAME || '/';
-  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+  _oldPath := O.COL_FULL_PATH;
+  _newPath := N.COL_FULL_PATH;
 
   -- ACLs
   _oldAcls := vector (O.COL_ACL);
@@ -2055,7 +2059,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_D after delete on WS.WS.SYS_DAV_COL ord
   DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (
     O.COL_ID,
     'C',
-    WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (O.COL_ID, 'C')),
+    WS.WS.DAV_IRI (O.COL_FULL_PATH),
     O.COL_OWNER,
     O.COL_GROUP,
     _oldAcls
