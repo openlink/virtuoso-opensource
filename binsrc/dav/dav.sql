@@ -4044,7 +4044,7 @@ create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar
   params := vector ('query', string_output_string (content), 'default-graph-uri', WS.WS.DAV_IRI (full_path));
   WS.WS."/!sparql/" (path, params, lines);
   data := http_get_string_output ();
-  if (data not like '<sparql%')
+  if (data like 'Virtuoso %')
     return 0;
 
   return 1;
