@@ -731,15 +731,22 @@ create procedure "DynaRes_DAV_DIR_FILTER" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
-  declare st, qry_text, execstate, execmessage varchar;
+  declare N integer;
+  declare qry_text, execstate, execmessage varchar;
   declare res any;
   declare cond_list, execmeta, execrows any;
   declare condtext, cond_key varchar;
 
-  vectorbld_init (res);
   cond_list := get_keyword ('', compilation);
+  for (N := 0; N < length (cond_list); N := N + 1)
+  {
+    if (cond_list[N][0] in ('RES_TAGS', 'RES_PUBLIC_TAGS', 'RES_PRIVATE_TAGS'))
+      return vector ();
+  }
   condtext := "DynaRes_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
   compilation := vector_concat (compilation, vector (cond_key, condtext));
+
+  vectorbld_init (res);
   execstate := '00000';
   qry_text :=
     ' select DAV_CONCAT_PATH (?, _top.DR_NAME), ''R'', _top.DR_LAST_LENGTH, coalesce (_top.DR_MODIFIED_DT, now ()), vector (UNAME''DynaRes'', _top.DR_DETCOL_ID, null, _top.DR_RES_ID), _top.DR_PERMS, _top.DR_OWNER_GID, _top.DR_OWNER_UID, _top.DR_CREATED_DT, _top.DR_MIME, _top.DR_NAME' ||
@@ -763,7 +770,6 @@ create procedure "DynaRes_DAV_DIR_FILTER" (
 
   vectorbld_concat_acc (res, execrows);
 
-finalize:
   vectorbld_final (res);
   return res;
 }
