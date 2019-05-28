@@ -1730,12 +1730,36 @@ create procedure WS.WS.HEAD (in path varchar, inout params varchar, in lines var
 create procedure WS.WS.DAV_LINK (in p varchar)
 {
   declare def, h, s any;
+
   def := registry_get ('URIQADefaultHost');
   h := sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host (def));
   s := string_output ();
   http_dav_url (p, null, s);
   s := string_output_string (s);
-  return h || p;
+  return h || s;
+}
+;
+
+create procedure WS.WS.DAV_ACL (
+  in path varchar,
+  in deep integer := 1)
+{
+  -- dbg_obj_princ ('WS.WS.DAV_ACL (', path, ')');
+  declare rc varchar;
+
+  while (length (path) > 4)
+  {
+    rc := rtrim (path, '/') || ',acl';
+    if (not isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rc, 'R'))))
+      return rc;
+
+    if (deep = 0)
+      return null;
+
+    path := DB.DBA.DAV_DET_PATH_PARENT (path, 1);
+  }
+
+  return null;
 }
 ;
 
@@ -2500,7 +2524,7 @@ again:
 
   if (_res_id is null and _col_id is null)
   {
-    declare meta_path, meta_what varchar;
+    declare acl_path, meta_path, meta_what varchar;
     declare meta_id any;
     declare content_, type any;
 
@@ -2524,6 +2548,39 @@ again:
 
       rc := DAV_RES_CONTENT_META (meta_path, content_, type, 0, 0);
       if (DAV_HIDE_ERROR (rc) is null)
+        goto _500;
+
+      DB.DBA.DAV_SET_HTTP_STATUS (200);
+      http_header ('Content-Type: text/turtle\r\n');
+      server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
+      if (server_etag is not null)
+        http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
+
+      http (content_);
+    }
+    else if (meta_path like '%,acl')
+    {
+      meta_what := 'R';
+      meta_path := subseq (meta_path, 0, length (meta_path) - length (',acl'));
+      acl_path := WS.WS.DAV_ACL (meta_path);
+      if (acl_path is null)
+        goto _404;
+
+      meta_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (meta_path, meta_what));
+      if (meta_id is null)
+      {
+        meta_what := 'C';
+        meta_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH (meta_path, '/'), meta_what));
+      }
+      if (meta_id is null)
+        goto _404;
+
+      rc := DB.DBA.DAV_AUTHENTICATE_HTTP (meta_id, meta_what, '1__', 1, lines, uname, upwd, uid, gid, perms);
+      if ((rc < 0) and (rc <> -1))
+        goto _403;
+
+      rc := DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (acl_path, 'R'), content_, type, 0, 0);
+      if (DB.DBA.DAV_HIDE_ERROR (rc) is null)
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
@@ -3014,7 +3071,7 @@ again:
           if (hdr_path not like '%,meta')
             hdr_str := hdr_str || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', hdr_uri);
 
-          if (hdr_path not like '%,acl')
+          if ((hdr_path not like '%,acl') and not isnull (WS.WS.DAV_ACL (hdr_path)))
             hdr_str := hdr_str || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', hdr_uri);
 
           rdf_graph := (select PROP_VALUE from WS.WS.SYS_DAV_PROP where PROP_PARENT_ID = _col and PROP_TYPE = 'C' and PROP_NAME = 'virt:rdfSink-graph');
@@ -3336,7 +3393,7 @@ create procedure WS.WS.LDP_HDRS (
     if ((strcasestr (hdr_str, 'rel="meta"') is null) and (link not like '%,meta'))
       header := header || sprintf ('Link: <%s,meta>; rel="meta"; title="Metadata File"\r\n', link);
 
-    if ((strcasestr (hdr_str, 'rel="acl"') is null) and (link not like '%,acl'))
+    if ((strcasestr (hdr_str, 'rel="acl"') is null) and (link not like '%,acl') and not isnull (WS.WS.DAV_ACL (path)))
       header := header || sprintf ('Link: <%s,acl>; rel="acl"; title="Access Control File"\r\n', link);
   }
 
