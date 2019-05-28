@@ -192,6 +192,12 @@ create procedure WS.WS.PROPFIND (
     return;
   }
 
+  if (0 = http_map_get ('browseable'))
+  {
+    DB.DBA.DAV_SET_HTTP_STATUS (403, null, null, 'You are not permitted to view the directory index in this location: ' || sprintf ('%V', http_path ()), 1);
+    return;
+  }
+
   if (strstr (WS.WS.FINDPARAM (lines, 'User-Agent'), 'Microsoft') is not null)
     _ms_date := 1;
   else
