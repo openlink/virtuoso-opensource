@@ -29,6 +29,8 @@
 -- DAV_DIR_LIST         - simplest analog of dir command
 -- DAV_SEARCH_PATH      - return full path string from id
 -- DAV_SEARCH_ID        - return id from full path string
+-- DAV_LOCK             - lock item
+-- DAV_UNLOCK           - unlock item
 -- DAV_IS_LOCKED        - checks item for locks
 -- DAV_LIST_LOCKS       - list all locks of an item
 -- DAV_AUTHENTICATE     - checks authentication
@@ -48,7 +50,7 @@
 
 create procedure DAV_VERSION ()
 {
-  return '1.0';
+  return '1.1';
 }
 ;
 
@@ -429,7 +431,8 @@ create procedure DAV_DIR_LIST (
   in path varchar := '/DAV/',
   in recursive integer,
   in auth_uname varchar,
-  in auth_pwd varchar) returns any
+  in auth_pwd varchar,
+  in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST (', path, recursive, auth_uname, auth_pwd, auth_uid, ')');
   declare auth_uid integer;
@@ -438,7 +441,7 @@ create procedure DAV_DIR_LIST (
   if (auth_uid < 0)
     return -12;
 
-  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, '%', auth_uname, auth_pwd, auth_uid);
+  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, '%', auth_uname, auth_pwd, auth_uid, options);
 }
 ;
 
@@ -526,7 +529,7 @@ create function DAV_DIR_SINGLE_INT (
               from WS.WS.SYS_DAV_RES
              where RES_ID = did );
 
-   --                    0                        1    2  3             4       5          6          7          8            9                     10        11                                    12
+  --                     0              1    2  3             4       5          6          7          8            9                     10        11                                    12
   return (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR)
             from WS.WS.SYS_DAV_COL
            where COL_ID = did );
@@ -536,10 +539,12 @@ create function DAV_DIR_SINGLE_INT (
 
 create function DAV_DIR_LIST_INT (
   in path varchar := '/DAV/',
-  in rec_depth integer := 0, in name_mask varchar,
+  in rec_depth integer := 0,
+  in name_mask varchar,
   in auth_uname varchar := null,
   in auth_pwd varchar := null,
-  inout auth_uid integer := null) returns any
+  inout auth_uid integer := null,
+  in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST_INT (', path, rec_depth, name_mask, auth_uname, auth_pwd, auth_uid, ')');
   declare rc, t, id, l integer;
@@ -623,19 +628,69 @@ create function DAV_DIR_LIST_INT (
   }
   else if (det is null)
   {
-    --                  0              1    2                                       3             4       5          6          7          8            9         10        11                                    12
-    for (select vector (RES_FULL_PATH, 'R', DAV_RES_LENGTH (RES_CONTENT, RES_SIZE), RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME), RES_CREATOR) as i
-          from WS.WS.SYS_DAV_RES
-         where RES_NAME like name_mask and RES_COL = did) do
+    declare _st, _msg, _meta, _rows any;
+    declare _sql, _order, _direction, _limit, _order_sql, _limit_sql any;
+
+    _order := get_keyword ('order', options, '');
+    _direction := get_keyword ('direction', options, '');
+    _limit := get_keyword ('limit', options, '');
+    if ((_order = '') and (_limit = ''))
     {
-      vectorbld_acc (res, i);
+      --                  0              1    2                                       3             4       5          6          7          8            9         10        11                                    12
+      for (select vector (RES_FULL_PATH, 'R', DAV_RES_LENGTH (RES_CONTENT, RES_SIZE), RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME), RES_CREATOR) as i
+            from WS.WS.SYS_DAV_RES
+           where RES_NAME like name_mask and RES_COL = did) do
+      {
+        vectorbld_acc (res, i);
+      }
+      --                  0              1    2  3             4       5          6          7          8            9                     10        11                                    12
+      for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
+             from WS.WS.SYS_DAV_COL
+            where COL_PARENT = did) do
+      {
+        vectorbld_acc (res, i);
+      }
     }
-    --                  0              1    2  3             4       5          6          7          8            9                    10        11                                    12
-    for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
-           from WS.WS.SYS_DAV_COL
-          where COL_PARENT = did) do
+    else
     {
-      vectorbld_acc (res, i);
+      _limit_sql := '';
+      if (_limit <> '')
+        _limit_sql := 'top ' || _limit;
+
+      -- Resources
+      _order_sql := '';
+      if (_order <> '')
+      {
+        _order_sql := 'order by RES_' || _order;
+        if (_direction <> '')
+          _order_sql := _order_sql || ' ' || _direction;
+      }
+
+      _sql := 'select <LIMIT> RES_FULL_PATH, \'R\' as RES_KIND, DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as RES_LENGTH, RES_MOD_TIME, RES_ID, RES_PERMS, coalesce (b.U_NAME, \'\') as RES_GROUP, coalesce (a.U_NAME, \'\') as RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME) as RES_ADD_TIME, RES_CREATOR from WS.WS.SYS_DAV_RES left join DB.DBA.SYS_USERS a on RES_OWNER = a.U_ID left join DB.DBA.SYS_USERS b on RES_GROUP = b.U_ID where RES_NAME like ? and RES_COL = ? <ORDER>';
+      _sql := replace (_sql, '<LIMIT>', _limit_sql);
+      _sql := replace (_sql, '<ORDER>', _order_sql);
+
+      _st := '00000';
+      exec (_sql, _st, _msg, vector (name_mask, did), 0, _meta, _rows);
+      if (_st = '00000')
+        vectorbld_concat_acc (res, _rows);
+
+      -- Collections
+      _order_sql := '';
+      if (_order <> '')
+      {
+        _order_sql := 'order by COL_' || _order;
+        if (_direction <> '')
+          _order_sql := _order_sql || ' ' || _direction;
+      }
+
+      _sql := 'select <LIMIT> COL_FULL_PATH, \'C\' as COL_KIND, 0 as COL_LENGTH, COL_MOD_TIME, COL_ID, COL_PERMS, coalesce (b.U_NAME, \'\') as COL_GROUP, coalesce (a.U_NAME, \'\') as COL_OWNER, COL_CR_TIME, \'dav/unix-directory\' as COL_TYPE, COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME) as COL_ADD_TIME, COL_CREATOR from WS.WS.SYS_DAV_COL left join DB.DBA.SYS_USERS a on COL_OWNER = a.U_ID left join DB.DBA.SYS_USERS b on COL_GROUP = b.U_ID where COL_NAME like ? and COL_PARENT = ? <ORDER>';
+      _sql := replace (_sql, '<LIMIT>', _limit_sql);
+      _sql := replace (_sql, '<ORDER>', _order_sql);
+      _st := '00000';
+      exec (_sql, _st, _msg, vector (name_mask, did), 0, _meta, _rows);
+      if (_st = '00000')
+        vectorbld_concat_acc (res, _rows);
     }
   }
   else
