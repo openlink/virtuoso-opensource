@@ -35,7 +35,7 @@
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
 
       <v:variable persist="0" name="db_object_to_process" type="any" default="null"/>
-      <v:variable persist="0" name="vdb_used" type="int" default="0"/>
+    <v:variable persist="0" name="view_used" type="int" default="0"/>
       <v:variable persist="0" name="base_url" type="any" default="null" param-name="host"/>
       <v:variable persist="0" name="voidst" type="int" default="0" param-name="st"/>
       <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
@@ -154,7 +154,10 @@
                else
 	         self.db_object_to_process := deserialize(decode_base64(self.db_object_to_process));
 
-	       tbls := self.db_object_to_process;
+	      tbls := self.db_object_to_process;
+              if (exists (select 1 from SYS_VIEWS where V_NAME in (tbls)))
+                self.view_used := 1;
+
 	    }
 	  _base_url := get_keyword('host', self.vc_event.ve_params, NULL);
 
@@ -430,7 +433,7 @@
               {
             ?>
 	  <br />
-	  <v:template type="simple" condition="self.vdb_used = 0"> 
+            <v:template type="simple" condition="self.view_used = 0">
               <div class="fm">
                 <label style="width: 200px; text-align: left;">Default Physical Named Graph</label>
                 <v:text name="pgraph" value="--sprintf ('urn:%{URIQADefaultHost}s:%s', self.base_url)" xhtml_size="70" />
@@ -448,8 +451,8 @@
               </div>
           </v:template>
 
-	  <v:template type="simple" condition="self.vdb_used = 1">
-	      <div class="warning">RDB2RDF triggers cannot be generated on remote tables</div>
+            <v:template type="simple" condition="self.view_used = 1">
+              <div class="warning">Note: RDB2RDF triggers to syncronize with Physical Named Graph cannot be generated on SQL views</div>
           </v:template>
 
             <?vsp

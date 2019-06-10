@@ -108,6 +108,7 @@
                             <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>
                           </th>
                      <th>Name</th>
+                          <th>Type</th>
                           <th class="action">Action</th>
                   </tr>
                 </thead>
@@ -116,7 +117,7 @@
             <v:template name="temp_ds_tables_repeat" type="repeat">
               <v:template name="temp_ds_tables_empty" type="if-not-exists">
                   <tr>
-                    <td colspan="3" class="Attention">No tables match the criteria</td>
+                          <td colspan="4" class="Attention">No tables match the criteria</td>
                   </tr>
               </v:template>
 
@@ -129,6 +130,9 @@
                       <img src="images/icons/table_16.png" alt="Table" title="Table"/>
                       <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
                     </td>
+                          <td class="listing_col">
+                            <v:label name="l_table_type" value="--table_type ((control.vc_parent as vspx_row_template).te_rowset[0])" format="%s"/>
+                          </td>
                           <td class="action">
 		      <v:button name="b_table_def" value="Generate Single Mapping" action="simple" style="url">
                               <v:on-post>
