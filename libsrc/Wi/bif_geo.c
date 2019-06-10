@@ -1811,6 +1811,65 @@ bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   
 }
 
+int
+st_n_points (geo_t *g)
+{
+  if (NULL == g)
+    return 0;
+  if (g->geo_flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr, total = 0;
+      for (ctr = g->_.parts.len; ctr--; /* no step */) total += st_n_points (g->_.parts.items[ctr]);
+      return total;
+    }
+  switch (GEO_TYPE_CORE (g->geo_flags))
+    {
+    case GEO_NULL_SHAPE:	return 0;
+    case GEO_POINT:		return 1;
+    case GEO_LINESTRING:	return g->_.pline.len;
+    case GEO_BOX:		return 2;
+    case GEO_POINTLIST:		return g->_.pline.len;
+    case GEO_ARCSTRING:		return g->_.pline.len;
+    case GEO_GSOP:		return 1;
+    default:			return 0;
+    }
+}
+
+caddr_t
+bif_st_n_points (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NPoints", GEO_ARG_ANY_NULLABLE);
+  return box_num (st_n_points (g));
+}
+
+caddr_t
+bif_st_point_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_PointN", GEO_ARG_ANY_NULLABLE);
+  geo_flags_t g_type_nozm;
+  boxint idx = bif_long_arg (qst, args, 1, "ST_PointN");
+  geo_t *res;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  g_type_nozm = GEO_TYPE_NO_ZM (g->geo_flags);
+  if (!(((GEO_LINESTRING == g_type_nozm) || (GEO_ARCSTRING == g_type_nozm) || (GEO_POINTLIST == g_type_nozm) || (GEO_RING == g_type_nozm))))
+    return NEW_DB_NULL;
+  if ((0 == idx) || (idx > g->_.pline.len) || (-idx > g->_.pline.len))
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld and -%ld to -1", (boxint)idx, (long)(g->_.pline.len), (long)(g->_.pline.len));
+  if (0 > idx)
+    idx = (g->_.pline.len + idx);
+  else
+    idx--;
+  res = geo_alloc (GEO_POINT | (g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, g->geo_srcode);
+  res->XYbox.Xmin = res->XYbox.Xmax = g->_.pline.Xs[idx];
+  res->XYbox.Ymin = res->XYbox.Ymax = g->_.pline.Ys[idx];
+  if (g->geo_flags & GEO_A_Z)
+    res->_.point.point_ZMbox.Zmin = res->_.point.point_ZMbox.Zmax = g->_.pline.Zs[idx];
+  if (g->geo_flags & GEO_A_M)
+    res->_.point.point_ZMbox.Mmin = res->_.point.point_ZMbox.Mmax = g->_.pline.Ms[idx];
+  return (caddr_t)res;
+}
+
 caddr_t
 bif_st_num_geometries (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2132,6 +2191,8 @@ bif_geo_init ()
   bif_define_ex ("st_get_chainbox", bif_st_get_chainbox, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_dv_geo_length"	, bif_st_dv_geo_length						, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("geometrytype"			, bif_geometry_type		, BMD_ALIAS, "GeometryType"		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_npoints"			, bif_st_n_points		, BMD_ALIAS, "ST_NPoints"		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_pointn"			, bif_st_point_n		, BMD_ALIAS, "ST_PointN"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_numgeometries"		, bif_st_num_geometries		, BMD_ALIAS, "ST_NumGeometries"		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_geometryn"			, bif_st_geometry_n		, BMD_ALIAS, "ST_GeometryN"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_exteriorring"		, bif_st_exterior_ring		, BMD_ALIAS, "ST_ExteriorRing"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
