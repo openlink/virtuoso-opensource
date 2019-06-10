@@ -828,6 +828,7 @@ extern char * http_server_id_string;
 extern long http_ses_trap;
 extern unsigned long cfg_scheduler_period ;
 extern long callstack_on_exception;
+extern long public_debug;
 extern long pl_debug_all;
 extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;

@@ -1842,6 +1842,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", (long *)&ha_rehash_pct, SD_INT32},
     {"c_use_aio", (long *)&c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception, NULL},
+    {"public_debug", &public_debug, NULL},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"enable_qp", (long *)&enable_qp, SD_INT32},
     {"enable_mt_txn", (long *)&enable_mt_txn, SD_INT32},

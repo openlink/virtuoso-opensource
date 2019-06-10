@@ -394,6 +394,8 @@ extern int32 txs_max_terms;
 
 int32 c_callstack_on_exception = 0;
 extern long callstack_on_exception; /* from sqlintrp.c */
+int32 c_public_debug = 0;
+extern long public_debug; /* from sqlintrp.c */
 
 int32 c_pl_debug_all = 0;
 extern long pl_debug_all;
@@ -995,6 +997,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "CallstackOnException", &c_callstack_on_exception) == -1)
     c_callstack_on_exception = 0;
+
+  if (cfg_getlong (pconfig, section, "PublicDebug", &c_public_debug) == -1)
+    c_public_debug = 0;
 
   if (cfg_getlong (pconfig, section, "PLDebug", &c_pl_debug_all) == -1)
     c_pl_debug_all = 0;
@@ -2061,6 +2066,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 
 
   callstack_on_exception = c_callstack_on_exception;
+  public_debug = c_public_debug;
   log_file_line = c_log_file_line;
   pl_debug_all = c_pl_debug_all;
   pl_debug_cov_file = c_pl_debug_cov_file;

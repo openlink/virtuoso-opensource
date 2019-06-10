@@ -1687,6 +1687,7 @@ opt_set_test ()
 #endif
 
 long callstack_on_exception = 0;
+long public_debug = 0;
 void err_append_callstack_procname (caddr_t err, caddr_t proc_name, caddr_t file_name, int line_no)
 {
   if (0 >= callstack_on_exception)

@@ -528,7 +528,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
 
   dbe_auto_sql_stats = (long) (ptrlong) cfg_get_parm (wholefile, "\nauto_sql_stats:", 0);
   callstack_on_exception = (long) (ptrlong) cfg_get_parm (wholefile, "\ncallstack_on_exception:", 0);
-
+  public_debug = (long) (ptrlong) cfg_get_parm (wholefile, "\npublic_debug:", 0);
   pl_debug_all = (long) (ptrlong) cfg_get_parm (wholefile, "\npl_debug:", 0);
   pl_debug_cov_file = cfg_get_parm (wholefile, "\ntest_coverage:", 1);
 
