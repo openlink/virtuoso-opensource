@@ -2261,6 +2261,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	int n_args = BOX_ELEMENTS (dfe->dfe_tree->_.call.params);
 	df_elt_t ** args = (df_elt_t **) t_box_copy ((caddr_t) dfe->dfe_tree->_.call.params);
 	locus_t *arg_max_loc = NULL;
+	bif_t bif = bif_find (dfe->dfe_tree->_.call.name);
 
 	dfe->dfe_locus = pref_loc;
 	DO_BOX (ST *, arg, inx, dfe->dfe_tree->_.call.params)
@@ -2292,7 +2293,7 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	      placed = placed->dfe_prev;
 	  }
 	else if (!stricmp (dfe->dfe_tree->_.call.name, GROUPING_FUNC))
-  {
+	  {
 	    int cond = so->so_place_code_forr_cond;
             so->so_place_code_forr_cond = 1;
 	    placed = dfe_latest (so, n_args, args, 1);
@@ -2301,6 +2302,10 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	      placed = placed->dfe_prev;
 	    if (placed->dfe_type != DFE_GROUP)
 	      SQL_GPF_T1 (so->so_sc->sc_cc, GROUPING_FUNC " func without group by");
+	  }
+	else if (bif && bif_nofold (bif))
+	  {
+	    placed = so->so_gen_pt;
 	  }
 	else
 	  {

@@ -85,7 +85,8 @@ typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_o
 #define BMD_NO_CLUSTER			14	/*!< Flags that the function is not cluster friendly and can not be relocated from node to node without the change in semantics, no associated value */
 #define BMD_OUT_OF_PARTITION		15	/*!< Flags that the function makes a cross partition cluster operation */
 #define BMD_NEED_ENLIST			16	/*!< Flags that the query should get \c qr_need_enlist set to 1 if it contains any call of this function */
-#define COUNTOF__BMD_OPTIONs		17
+#define BMD_NO_FOLD			17
+#define COUNTOF__BMD_OPTIONs		18
 
 /*! \brief Metadata about single BIF or similar object.
 These metadata are created once, remains constant after the creation and never deleted.
@@ -107,6 +108,7 @@ typedef struct bif_metadata_s {
   ptrlong			bmd_is_dba_only;		/*!< see \c BMD_IS_DBA_ONLY */
   ptrlong			bmd_uses_index;			/*!< see \c BMD_USES_INDEX */
   ptrlong			bmd_no_cluster;			/*!< see \c BMD_NO_CLUSTER, \c BMD_OUT_OF_PARTITION and \c BMD_NEED_ENLIST */
+  ptrlong			bmd_no_fold;			/*!< see \c BMD_NO_FOLD */
 } bif_metadata_t;
 
 extern id_hash_t *name_to_bif_metadata_idhash;			/*!< Metadata of all known BIFs (except \c BMD_SPARQL_ONLY records); results of sqlp_box_id_upcase() as keys, pointers to \c bif_metadata_t as values */
@@ -123,6 +125,7 @@ EXE_EXPORT (bif_metadata_t *, bif_define_typed, (const char * name, bif_t bif, b
 EXE_EXPORT (void, bif_set_uses_index, (bif_t bif));
 EXE_EXPORT (bif_t, bif_find, (const char *name));
 int bif_is_aggregate (bif_t bif);
+int bif_nofold (bif_t bif);
 void bif_set_is_aggregate (bif_t  bif);
 bif_vec_t bif_vectored (bif_t bif);
 void bif_set_vectored (bif_t bif, bif_vec_t vectored);
