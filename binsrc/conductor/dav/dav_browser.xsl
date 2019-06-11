@@ -470,7 +470,7 @@
                   state := split_and_decode (state);
                   if (WEBDAV.DBA.isVector (state) and length(state))
                   {
-                    state := WEBDAV.DBA.json2obj (state[0]);
+                    state := DB.DBA.json2obj (state[0]);
                     columnName := get_keyword ('column', state, 'column_#4');
                     self.dir_direction := get_keyword ('direction', state, case when (columnName = 'column_#4') then 'desc' else 'asc' end);
                   }
@@ -1298,7 +1298,7 @@
                 json := trim (get_keyword ('dav_' || det || '_JSON', params, ''));
                 if (json <> '')
                 {
-                  retValue := vector_concat (retValue, subseq (WEBDAV.DBA.json2obj (json), 2));
+                  retValue := vector_concat (retValue, subseq (DB.DBA.json2obj (json), 2));
                   retValue := WEBDAV.DBA.set_keyword ('Authentication', retValue, 'Yes');
                   retValue := WEBDAV.DBA.set_keyword ('access_timestamp', retValue, self.detAccessTimestamp(retValue));
                   retValue := WEBDAV.DBA.set_keyword ('display_name', retValue, get_keyword ('dav_' || det || '_display_name', params, ''));

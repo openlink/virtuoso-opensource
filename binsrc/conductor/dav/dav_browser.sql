@@ -162,186 +162,6 @@ create procedure WEBDAV.DBA.exec (
 
 -----------------------------------------------------------------------------
 --
-create procedure WEBDAV.DBA.jsonObject ()
-{
-  return subseq (soap_box_structure ('x', 1), 0, 2);
-}
-;
-
------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.obj2json (
-  in o any,
-  in d integer := 10,
-  in nsArray any := null,
-  in attributePrefix varchar := null)
-{
-  declare N, M integer;
-  declare R, T any;
-  declare S, retValue any;
-
-  if (d = 0)
-    return '[maximum depth achieved]';
-
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f', '\r', '\\r', '"', '\\"', '\\', '\\\\');
-  retValue := '';
-  if (isnull (o))
-  {
-    retValue := 'null';
-  }
-  else if (isnumeric (o))
-  {
-    retValue := cast (o as varchar);
-  }
-  else if (isstring (o))
-  {
-    for (N := 0; N < length(o); N := N + 1)
-    {
-      R := chr (o[N]);
-      for (M := 0; M < length(T); M := M + 2)
-      {
-        if (R = T[M])
-          R := T[M+1];
-      }
-      retValue := retValue || R;
-    }
-    retValue := '"' || retValue || '"';
-  }
-  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
-  {
-    retValue := '{';
-    for (N := 2; N < length (o); N := N + 2)
-    {
-      S := o[N];
-      if (chr (S[0]) = attributePrefix)
-        S := subseq (S, length (attributePrefix));
-      if (not isnull (nsArray))
-      {
-        for (M := 0; M < length (nsArray); M := M + 1)
-        {
-          if (S like nsArray[M]||':%')
-            S := subseq (S, length (nsArray[M])+1);
-        }
-      }
-      retValue := retValue || '"' || S || '":' || WEBDAV.DBA.obj2json (o[N+1], d-1, nsArray, attributePrefix);
-      if (N <> length(o)-2)
-        retValue := retValue || ', ';
-    }
-    retValue := retValue || '}';
-  }
-  else if (isarray (o))
-  {
-    retValue := '[';
-    for (N := 0; N < length(o); N := N + 1)
-    {
-      retValue := retValue || WEBDAV.DBA.obj2json (o[N], d-1, nsArray, attributePrefix);
-      if (N <> length(o)-1)
-        retValue := retValue || ',\n';
-    }
-    retValue := retValue || ']';
-  }
-  return retValue;
-}
-;
-
------------------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.obj2xml (
-  in o any,
-  in d integer := 10,
-  in tag varchar := null,
-  in nsArray any := null,
-  in attributePrefix varchar := '')
-{
-  declare N, M integer;
-  declare R, T any;
-  declare S, nsValue, retValue any;
-
-  if (d = 0)
-    return '[maximum depth achieved]';
-
-  nsValue := '';
-  if (not isnull (nsArray))
-  {
-    for (N := 0; N < length(nsArray); N := N + 2)
-      nsValue := sprintf ('%s xmlns%s="%s"', nsValue, case when nsArray[N]='' then '' else ':'||nsArray[N] end, nsArray[N+1]);
-  }
-  retValue := '';
-  if (isnumeric (o))
-  {
-    retValue := cast (o as varchar);
-  }
-  else if (isstring (o))
-  {
-    retValue := sprintf ('%V', o);
-  }
-  else if (__tag (o) = 211)
-  {
-    retValue := datestring (o);
-  }
-  else if (isJsonObject (o))
-  {
-    for (N := 2; N < length(o); N := N + 2)
-    {
-      if (not isJsonObject (o[N+1]) and isarray (o[N+1]) and not isstring (o[N+1]))
-      {
-        retValue := retValue || obj2xml (o[N+1], d-1, o[N], nsArray, attributePrefix);
-      } else {
-        if (chr (o[N][0]) <> attributePrefix)
-        {
-          nsArray := null;
-          S := '';
-          if ((attributePrefix <> '') and isJsonObject (o[N+1]))
-          {
-            for (M := 2; M < length(o[N+1]); M := M + 2)
-            {
-              if (chr (o[N+1][M][0]) = attributePrefix)
-                S := sprintf ('%s %s="%s"', S, subseq (o[N+1][M], length (attributePrefix)), obj2xml (o[N+1][M+1]));
-            }
-          }
-          retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', o[N], S, nsValue, obj2xml (o[N+1], d-1, null, nsArray, attributePrefix), o[N]);
-        }
-      }
-    }
-  }
-  else if (isarray (o))
-  {
-    for (N := 0; N < length(o); N := N + 1)
-    {
-      if (isnull (tag))
-      {
-        retValue := retValue || obj2xml (o[N], d-1, tag, nsArray, attributePrefix);
-      } else {
-        nsArray := null;
-        S := '';
-        if (not isnull (attributePrefix) and isJsonObject (o[N]))
-        {
-          for (M := 2; M < length(o[N]); M := M + 2)
-          {
-            if (chr (o[N][M][0]) = attributePrefix)
-              S := sprintf ('%s %s="%s"', S, subseq (o[N][M], length (attributePrefix)), obj2xml (o[N][M+1]));
-          }
-        }
-        retValue := retValue || sprintf ('<%s%s%s>%s</%s>\n', tag, S, nsValue, obj2xml (o[N], d-1, null, nsArray, attributePrefix), tag);
-      }
-    }
-  }
-  return retValue;
-}
-;
-
-
------------------------------------------------------------------------------
---
-create procedure WEBDAV.DBA.json2obj (
-  in o any)
-{
-  return json_parse (o);
-}
-;
-
------------------------------------------------------------------------------
---
 create procedure WEBDAV.DBA.dc_xml ()
 {
   return '<?xml version="1.0" encoding="UTF-8"?><dc><base/><criteria/></dc>';
@@ -5597,15 +5417,15 @@ create procedure WEBDAV.DBA.aci_lines (
   {
     if (_mode = 'view')
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _tbl, _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: "Inherited"}});});', _tbl, _acl[N][2], DB.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
     else if (_mode = 'disabled')
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: ""}});});', _tbl, _acl[N][2], WEBDAV.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createViewRow("%s", {fld_1: {mode: 50, value: "%s"}, fld_2: {mode: 51, value: %s}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; white-space: nowrap; text-align: center;"}, fld_4: {value: ""}});});', _tbl, _acl[N][2], DB.DBA.obj2json (_acl[N][1]), _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
     else
     {
-      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("%s", null, {fld_1: {mode: 50, value: "%s", noAdvanced: %s, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _tbl, _acl[N][2], _advanced, WEBDAV.DBA.obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
+      http (sprintf ('OAT.MSG.attach(OAT, "PAGE_LOADED", function(){TBL.createRow("%s", null, {fld_1: {mode: 50, value: "%s", noAdvanced: %s, onchange: function(){TBL.changeCell50(this);}}, fld_2: {mode: 51, form: "F1", tdCssText: "white-space: nowrap;", className: "_validate_ _webid_", value: %s, readOnly: %s, imgCssText: "%s"}, fld_3: {mode: 52, value: [%d, %d, %d], execute: \'%s\', tdCssText: "width: 1%%; text-align: center;"}});});', _tbl, _acl[N][2], _advanced, DB.DBA.obj2json (_acl[N][1]), case when _acl[N][2] = 'public' then 'true' else 'false' end, case when _acl[N][2] = 'public' then 'display: none;' else '' end, _acl[N][3], _acl[N][4], _acl[N][5], _execute));
     }
   }
 }

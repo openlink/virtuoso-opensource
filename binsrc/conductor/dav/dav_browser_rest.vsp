@@ -78,15 +78,15 @@
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (WEBDAV.DBA.obj2json (returnData, 5));
+    http (DB.DBA.obj2json (returnData, 5));
   }
   else if (action = 'cartridges')
   {
-    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
+    http (DB.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
   }
   else if (action = 'metaCartridges')
   {
-    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
+    http (DB.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
   }
   else if (action = 'mailVerify')
   {
@@ -166,7 +166,7 @@
   _exit_1:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'driveBuckets')
   {
@@ -183,7 +183,7 @@
   _exit_2:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'driveFolders')
   {
@@ -230,7 +230,7 @@
   _exit_3:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'webdavVerify')
   {
