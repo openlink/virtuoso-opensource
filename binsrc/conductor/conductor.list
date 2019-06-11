@@ -352,7 +352,6 @@ conductor/logging_tab.vspx
 conductor/logging_tab.xsl
 conductor/logging_view.vspx
 conductor/logging.vspx
-conductor/login_keys.vspx
 conductor/main_tabs.vspx
 conductor/make.xsl
 conductor/mapped_schema_xml.vspx
@@ -411,7 +410,6 @@ conductor/sec_pki_3.vspx
 conductor/sec_pki_4.vspx
 conductor/sec_pki_download.vsp
 conductor/sec_pki_drop.vspx
-conductor/sec_pki_val.vspx
 conductor/site.vspx
 conductor/soap_del_path.vspx
 conductor/soap_options_edit.vspx

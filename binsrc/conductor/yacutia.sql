@@ -211,11 +211,8 @@ create procedure adm_menu_tree ()
       <node name="PKI Wizard" url="sec_pki_1.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_3.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
-      <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>',
-     case when __proc_exists ('VAL.DBA.setup_val_host') is not null then
-     '<node name="PKI Wizard" url="sec_pki_val.vspx" id="26" place="1" allowed="yacutia_acl_page"/>'
-     end,
-     '<node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_4.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
+      <node name="PKI Wizard" url="sec_pki_drop.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
       <node name="PKI Wizard" url="sec_pki_2_conf.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
      <node name="Access Control" url="sec_auth_serv.vspx" id="24" place="1" allowed="yacutia_acl_page">
@@ -430,25 +427,8 @@ create procedure adm_menu_tree ()
        <node name="Create" url="wsdl_service_create.vspx" id="129" place="1" allowed="yacutia_wsdl_page"/>
      </node>
    </node>
-   <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>',
-   case when check_package('VAL') then
-  '<node name="OAuth Service Binding" url="login_keys.vspx" id="281" allowed="yacutia_val">
-      <node name="OAuth Service Binding" url="login_keys.vspx" id="282" place="1"  allowed="yacutia_val"/>
-   </node>'
-   end,
---   <node name="UDDI Services" url="uddi_serv.vspx" id="130" allowed="yacutia_uddi_page">
---     <node name="Server" url="uddi_serv.vspx" id="131" place="1" allowed="yacutia_uddi_page"/>
---     <node name="Browse" url="uddi_serv_browse.vspx" id="132" place="1" allowed="yacutia_uddi_page"/>
---     <node name="Create" url="uddi_serv_create.vspx" id="133" place="1" allowed="yacutia_uddi_page"/>
---     <node name="Find" url="uddi_serv_find.vspx" id="134" place="1" allowed="yacutia_uddi_page"/>
---     <node name="Remove" url="uddi_remove.vspx" id="135" place="1" allowed="yacutia_uddi_page"/>
---   </node>',
---case wa_available
---when 1 then '<node name="Applications" url="site.vspx" id="136" allowed="yacutia_app_page">
---               <node name="edit" url="site.vspx" id="137" place="1" allowed="yacutia_app_page"/>
---             </node>'
---when 0 then '' end,
-'</node>
+   <node name="BPEL" url="bpel_service.vspx" id="165" allowed="yacutia_bpel_page"/>
+ </node>
  <node name="Linked Data" url="sparql_input.vspx" id="189" tip="Linked Data" allowed="yacutia_message">',
   '<node name="SPARQL" url="sparql_input.vspx" id="180" allowed="yacutia_sparql_page">
      <node name="SPARQL" url="sparql_load.vspx" id="181" place="1" allowed="yacutia_sparql_page" />
