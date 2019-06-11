@@ -74,7 +74,7 @@
     }
     else if (subAction = 'check')
     {
-    	;
+      ;
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
@@ -279,11 +279,11 @@
     if      (subAction = 'validate')
     {
       command := get_keyword ('c', params);
-      if      ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp', params))))
+      if      ((command = 'tag') and (not VALIDATE.DBA.validate_tags (get_keyword ('tp', params))))
       {
         _error := 'The expression contains no valid tag(s)!';
       }
-      else if ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp2', params))))
+      else if ((command = 'tag') and (not VALIDATE.DBA.validate_tags (get_keyword ('tp2', params))))
       {
         _error := 'The expression contains no valid tag(s)!';
       }
@@ -293,8 +293,8 @@
         {
           declare exit handler for sqlstate '*'
           {
-            _error := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
-          	goto _end_share;
+            _error := VALIDATE.DBA.clear (__SQL_MESSAGE);
+            goto _end_share;
           };
           WEBDAV.DBA.aci_params (params);
         }
@@ -320,27 +320,27 @@
       progressID := get_keyword ('id', params, uuid ());
       if      (subAction = 'init')
       {
-  	    registry_set ('progress_index_' || progressID, '0');
+        registry_set ('progress_index_' || progressID, '0');
 
-  	    http_rewrite ();
+        http_rewrite ();
         http_header ('Access-Control-Allow-Origin: *\r\n');
         http (DB.DBA.params2json (vector ('id', progressID, 'index', 0)));
-  	    http_flush ();
+        http_flush ();
 
         {
           declare exit handler for sqlstate '*'
           {
-          	goto _end;
+            goto _end;
           };
           command := get_keyword ('c', params);
           WEBDAV.DBA.progress_start (progressID, command, params);
         }
-  	  _end:;
+      _end:;
 
         delay (5);
-  	    registry_remove ('progress_index_'  || progressID);
-  	    registry_remove ('progress_action_' || progressID);
-  	    registry_remove ('progress_data_' || progressID);
+        registry_remove ('progress_index_'  || progressID);
+        registry_remove ('progress_action_' || progressID);
+        registry_remove ('progress_data_' || progressID);
       }
       else if (subAction = 'check')
       {
@@ -352,14 +352,14 @@
           if (isinteger (data))
             data := '[]';
 
-    	    http_rewrite ();
+          http_rewrite ();
           http_header ('Access-Control-Allow-Origin: *\r\n');
           http (DB.DBA.params2json (vector ('id', progressID, 'index', progressIndex, 'data', data)));
         }
       }
       else if (subAction = 'stop')
       {
-  	    registry_set ('progress_action_' || progressID, 'stop');
+        registry_set ('progress_action_' || progressID, 'stop');
       }
     }
   }

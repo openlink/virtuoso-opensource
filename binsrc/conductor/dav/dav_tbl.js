@@ -773,13 +773,14 @@ TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
       fld.type = fldParams[3];
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'folder')) {
-      OAT.Loader.load(["drag", "dav"], function(){OAT.WebDav.init(davOptions);});
       fld = OAT.Dom.create("input");
       fld.type = 'text';
+      if ($v('dirPath'))
+        fld.value = $v('dirPath');
       fldButton = OAT.Dom.create('img');
       fldButton.src = '/ods/images/select.gif';
       fldButton.className = "pointer";
-      fldButton.onclick = function(name){return function(){ WEBDAV.davFolderSelect (name);};}(fldName);
+      fldButton.onclick = function(name){return function(){ WEBDAV.davSelect (name, true);};}(fldName);
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'priority')) {
       fld = OAT.Dom.create("select");

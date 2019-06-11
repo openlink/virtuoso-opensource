@@ -715,6 +715,9 @@ WEBDAV.davSelect = function (fld, mode)
 {
   var callback = function() {
     var pathHome = $v(fld);
+    if (!pathHome)
+      pathHome = $v('dirPath');
+
     var options = {
       "mode": 'browser',
       "pathDefault": pathHome,

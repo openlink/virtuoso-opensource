@@ -1660,6 +1660,7 @@
           </v:after-data-bind>
           <?vsp
             http (sprintf ('<input type="hidden" name="tabNo" id="tabNo" value="%s" />', self.tabNo));
+            http (sprintf ('<input type="hidden" name="davPath" id="dirPath" value="%s" />', WEBDAV.DBA.real_path (self.dir_path)));
             http (sprintf ('<input type="hidden" name="retname" id="retname" value="%s" />', self.returnName));
             http (sprintf ('<input type="hidden" name="browse_type" id="browse_type" value="%s" />', self.returnType));
             if ((self.mode = 'webdav') and (self.command in (10, 14)) and (self.dav_action in ('new', 'upload', 'create', 'link', 'update', 'edit', 'imap')))
@@ -3429,9 +3430,9 @@
                     msg := '';
                     declare exit handler for SQLSTATE '*'
                     {
-                      if (__SQL_STATE = 'TEST')
+                      if ((__SQL_STATE like 'NV%') or (__SQL_STATE = 'TEST'))
                       {
-                        self.vc_error_message := concat (msg, WEBDAV.DBA.test_clear (__SQL_MESSAGE));
+                        self.vc_error_message := concat (msg, VALIDATE.DBA.clear (__SQL_MESSAGE));
                         self.vc_is_valid := 0;
                         return;
                       }
@@ -3480,7 +3481,7 @@
                         {
                           dav_filename := get_keyword ('dav_url', params, '');
                         }
-                        WEBDAV.DBA.test (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
+                        VALIDATE.DBA.validate (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
                         if (self.dav_source = 0)
                         {
                           if ((dav_filename like 'http://%') or (dav_filename like 'ftp://%'))
@@ -3502,7 +3503,7 @@
                         rdf_type := http_mime_type (dav_filename);
                       }
                       rdf_graph := trim (get_keyword ('dav_name_rdf', params));
-                      WEBDAV.DBA.test (rdf_graph, vector ('name', 'Graph', 'class', 'varchar', 'canEmpty', 0));
+                      VALIDATE.DBA.validate (rdf_graph, vector ('name', 'Graph', 'class', 'varchar', 'canEmpty', 0));
                       retValue := WEBDAV.DBA.DAV_RDF_UPLOAD (rdf_data, rdf_type, rdf_graph);
                       if (not retValue)
                       {
@@ -3590,7 +3591,7 @@
                         goto _test_2;
 
                       dav_link := trim (get_keyword ('dav_link', params));
-                      WEBDAV.DBA.test (dav_link, vector ('name', 'Link To', 'class', 'varchar', 'minLength', 1));
+                      VALIDATE.DBA.validate (dav_link, vector ('name', 'Link To', 'class', 'varchar', 'minLength', 1));
                       tmp := DB.DBA.DAV_SEARCH_ID (dav_link, 'R');
                       if (WEBDAV.DBA.DAV_ERROR (tmp))
                         signal('TEST', 'File with such name does not exist!<>');
@@ -3601,7 +3602,7 @@
                         goto _test_3;
 
                       self.dav_tags_public := trim (get_keyword ('f_tags_public', params, ''));
-                      if (not WEBDAV.DBA.validate_tags (self.dav_tags_public))
+                      if (not VALIDATE.DBA.validate_tags (self.dav_tags_public))
                         signal('TEST', 'The expression contains no valid tag(s)!<>');
 
                     _test_3:;
@@ -3610,7 +3611,7 @@
                         goto _test_4;
 
                       self.dav_tags_private := trim (get_keyword ('f_tags_private', params, ''));
-                      if (not WEBDAV.DBA.validate_tags (self.dav_tags_private))
+                      if (not VALIDATE.DBA.validate_tags (self.dav_tags_private))
                         signal('TEST', 'The expression contains no valid tag(s)!<>');
 
                     _test_4:;
@@ -3653,7 +3654,7 @@
                         {
                           dav_filename := get_keyword ('dav_rdf', params);
                         }
-                        WEBDAV.DBA.test (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
+                        VALIDATE.DBA.validate (dav_filename, vector ('name', 'Source', 'class', 'varchar', 'canEmpty', 0));
                         if (self.dav_source = 0)
                         {
                           dav_file := get_keyword ('dav_file', params);
@@ -3746,7 +3747,7 @@
 
                       dav_encryption_state := 1;
                       self.dav_encryption_pwd := get_keyword ('dav_encryption_password', params);
-                      WEBDAV.DBA.test (self.dav_encryption_pwd, vector ('name', 'SSE Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 32));
+                      VALIDATE.DBA.validate (self.dav_encryption_pwd, vector ('name', 'SSE Password', 'class', 'varchar', 'minLength', 1, 'maxLength', 32));
                       if ((self.command_mode = 10) and (self.dav_encryption_pwd = '**********') and (get_keyword ('dav_encryption_password2', params) = ''))
                         goto _test_10;
 
@@ -3768,7 +3769,7 @@
 
                       -- validate tags
                       self.dav_tags_public := trim (get_keyword ('f_tags_public', params, ''));
-                      if (not WEBDAV.DBA.validate_tags (self.dav_tags_public))
+                      if (not VALIDATE.DBA.validate_tags (self.dav_tags_public))
                         signal('TEST', 'The expression contains no valid tag(s)!<>');
 
                     _test_12:;
@@ -3776,14 +3777,14 @@
                         goto _test_13;
 
                       self.dav_tags_private := trim (get_keyword ('f_tags_private', params, ''));
-                      if (not WEBDAV.DBA.validate_tags (self.dav_tags_private))
+                      if (not VALIDATE.DBA.validate_tags (self.dav_tags_private))
                         signal('TEST', 'The expression contains no valid tag(s)!<>');
 
                     _test_13:;
                       if ((self.command_mode = 10) and not self.editField ('expireDate'))
                         goto _test_14;
 
-                      dav_expireDate := WEBDAV.DBA.test (get_keyword ('dav_expireDate', params), vector('name', 'Expire date', 'class', 'date-yyyy.mm.dd', 'canEmpty', 1));
+                      dav_expireDate := VALIDATE.DBA.validate (get_keyword ('dav_expireDate', params), vector('name', 'Expire date', 'class', 'date-yyyy.mm.dd', 'canEmpty', 1));
 
                     _test_14:;
                       if ((self.command_mode = 10) and not self.editField ('aci'))
@@ -4315,9 +4316,9 @@
                     declare retValue, content, item any;
                     declare exit handler for SQLSTATE '*'
                     {
-                      if (__SQL_STATE = 'TEST')
+                      if ((__SQL_STATE like 'NV%') or (__SQL_STATE = 'TEST'))
                       {
-                        self.vc_error_message := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
+                        self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
                         self.vc_is_valid := 0;
                         return;
                       }
@@ -5090,9 +5091,9 @@
                       declare tmp, imap_filterName, imap_filterActive, imap_filterMode, imap_filterCriteria, imap_filterActions any;
                       declare exit handler for SQLSTATE '*'
                       {
-                        if (__SQL_STATE = 'TEST')
+                        if ((__SQL_STATE like 'NV%') or (__SQL_STATE = 'TEST'))
                         {
-                          self.vc_error_message := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
+                          self.vc_error_message := VALIDATE.DBA.clear (__SQL_MESSAGE);
                           self.vc_is_valid := 0;
                           return;
                         }
@@ -5106,9 +5107,7 @@
                       C := MAIL.WA.filter_params_criteria ('search_', params, imap_filterCriteria, tmp);
                       A := MAIL.WA.filter_params_actions ('action_', params, imap_filterActions, tmp);
                       if ((A = 0) or (C = 0))
-                      {
-                        signal ('TEST', 'Filter must have at least one criteria and one action!');
-                      }
+                        signal ('NV999', 'Filter must have at least one criteria and one action!');
 
                       MAIL.WA.filter_save (_owner, self.imap_filterId, imap_filterName, imap_filterActive, DB.DBA.IMAP__mea_id (_owner), imap_filterMode, imap_filterCriteria, imap_filterActions);
 
