@@ -4415,7 +4415,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_LOG_IMAGE:
 	  err = srv_make_new_error ("40005", "SR325",
 	      "Transaction aborted because it's log after image size "
-	      "went above the limit%s%s",
+	      "went above the " OFF_T_PRINTF_FMT " bytes limit%s%s", (OFF_T_PRINTF_DTP)txn_after_image_limit,
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_OUT_OF_MEM:
