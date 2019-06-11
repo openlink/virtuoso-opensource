@@ -1217,7 +1217,7 @@ ns_xover (in arg varchar, in activ integer, in cur integer, in grp_type varchar)
     {
        fetch cr into _body, _head, _id, _nm_num_group;
        _head := deserialize (blob_to_string (_head));
-       if (__tag (_head) <> 193)
+       if (__tag (_head) <> __tag of vector)
 	 _head := mime_tree (blob_to_string (_body));
        _head := aref (_head, 0);
        _subj := coalesce (get_keyword_ucase ('Subject', _head), '');
@@ -1617,7 +1617,7 @@ ns_xover_group (in _group varchar)
     {
        fetch cr into _body, _head, _nm_id, _nm_read;
        _head := deserialize (_head);
-       if (__tag (_head) <> 193)
+       if (__tag (_head) <> __tag of vector)
 	 _head := mime_tree (blob_to_string (_body));
        _head := aref (_head, 0);
        _subj := coalesce (get_keyword_ucase ('Subject', _head), '');
@@ -1746,7 +1746,7 @@ ns_delete_message (in id varchar, in del_out any := NULL)
 	   if (isinteger (del_out))
 	     {
 		_head := deserialize (_head);
-		if (__tag (_head) <> 193)
+		if (__tag (_head) <> __tag of vector)
 		  _head := mime_tree (blob_to_string (_body));
 		_head := aref (_head, 0);
 		_subj := coalesce (get_keyword_ucase ('Subject', _head), '');

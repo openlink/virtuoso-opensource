@@ -49,7 +49,7 @@ create function "ResFilter_DAV_AUTHENTICATE" (in id any, in what char(1), in req
 create function "ResFilter_NORM" (in value any) returns varchar
 {
   value := blob_to_string (value);
-  if (('' = value) or (193 <> value[0]))
+  if (('' = value) or (__tag of vector <> value[0]))
     return value;
   value := deserialize (value)[1];
   if (isstring (value))
@@ -61,7 +61,7 @@ create function "ResFilter_NORM" (in value any) returns varchar
 
 create function "ResFilter_ENCODE_FILTER" (in filt any) returns varchar
 {
-  if (193 <> __tag (filt))
+  if (__tag of vector <> __tag (filt))
     signal ('.....', 'Invalid filter passed to ResFilter_ENCODE_FILTER');
   filt := serialize (filt);
   filt[0] := 2;
@@ -75,7 +75,7 @@ create function "ResFilter_DECODE_FILTER" (in value any) returns any
   value := blob_to_string (value);
   if (('' = value) or (value[0] <> 2))
     signal ('.....', 'Invalid filter serialization passed to ResFilter_DECODE_FILTER');
-  value [0] := 193;
+  value [0] := __tag of vector;
   return deserialize (value);
 }
 ;

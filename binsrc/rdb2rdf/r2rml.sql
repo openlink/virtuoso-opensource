@@ -250,7 +250,7 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
       all_metas := vector (null, null);
       if ("q" is not null)
         {
-	  if (__tag ("q") = 246)
+	  if (__tag ("q") = __tag of rdf_box)
 	    "q" := rdf_box_data ("q");
           while (("q" <> '') and strchr (' \t\r\n', chr ("q" [length ("q") - 1])) is not null)
             "q" := "LEFT" ("q", length ("q") - 1);
@@ -450,7 +450,7 @@ create function DB.DBA.R2RML_XSD_TYPE_OF_DTP (in dtp integer)
   if (__tag of double precision = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of numeric = dtp) return 'http://www.w3.org/2001/XMLSchema#double';
   if (__tag of real = dtp) return 'http://www.w3.org/2001/XMLSchema#float';
-  if (230) return 'http://www.w3.org/2001/XMLSchema#XMLLiteral';
+  if (__tag of XML) return 'http://www.w3.org/2001/XMLSchema#XMLLiteral';
   if (238) return default_geo_type();
   return 'http://www.w3.org/2001/XMLSchema#any';
 }

@@ -623,7 +623,7 @@ create function "HostFs_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, in
   declare rc integer;
   -- dbg_obj_princ ('HostFs_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   ospath := DAV_CONCAT_PATH ("HostFs_ID_TO_OSPATH" (detcol_id), path_parts);
-  if (__tag (content) = 126)
+  if (__tag (content) = __tag of long varchar handle)
     {
       declare p varchar;
       p := '[' || serialize (now()) || '][' || serialize (detcol_id) || '][' || serialize (path_parts) || ']';

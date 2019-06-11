@@ -537,7 +537,7 @@ UDDI_SAVE_BUSINESS (in uddi_req any)
   declare ress any;
   declare token, owner varchar;
 
-  if (__tag (uddi_req) <> 230)
+  if (__tag (uddi_req) <> __tag of XML)
     req := xml_tree_doc (uddi_req);
   else
     req := uddi_req;
@@ -3056,7 +3056,7 @@ UDDI_LOCAL (in req_l any)
 
   if (isstring (req_l))
     req := xml_tree_doc (req_l);
-  else if (__tag (req_l) = 230)
+  else if (__tag (req_l) = __tag of XML)
     {
       declare temp any;
       req := req_l;

@@ -1299,15 +1299,13 @@ create procedure WS.WS.SYS_DAV_PROP_PROP_VALUE_HOOK_INTERNAL (
     {
       declare doc any;
 
-      if (126 = __tag (pv))
-        {
+      if (__tag of long varchar handle = __tag (pv))
         pv := blob_to_string (pv);
-        }
       if ((not isstring (pv)) or (pv = ''))
         {
           return 1;
         }
-      if (193 <> pv[0])
+      if (__tag of vector <> pv[0])
         {
           vt_batch_feed (vtb, pv, mode, 0);
           return 1;

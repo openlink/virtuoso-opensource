@@ -2093,8 +2093,8 @@ create procedure REPL_COLTYPE_PS (
     in _col_dtp integer, in _col_prec integer, in _col_scale integer)
   returns varchar
 {
-  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
-       _col_dtp = 222 or _col_dtp = 225)
+  if ((_col_dtp = 181 or _col_dtp = __tag of varchar or _col_dtp = 192 or
+       _col_dtp = 222 or _col_dtp = __tag of nvarchar)
       and _col_prec is not null and _col_prec <> 0)
     {
       -- (length) for char or varchar
@@ -2112,7 +2112,7 @@ create procedure REPL_COLTYPE_PS (
           _coltype := concat (_prefix, _len_spec, _suffix);
         }
     }
-  else if (_col_dtp = 219)
+  else if (_col_dtp = __tag of decimal)
     {
       -- (prec, scale) for numeric
       if (_col_prec < _col_scale)
@@ -2130,7 +2130,7 @@ create procedure REPL_COLTYPE (in _col any) returns varchar
   _col_scale := aref (_col, 2);
   _col_prec := aref (_col, 3);
 
-  if (_col_dtp = 219)
+  if (_col_dtp = __tag of decimal)
     {
       if (_col_scale > 15)
 	_col_scale := 15;
@@ -2285,9 +2285,9 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
   _col_prec := aref (_col, 3);
 
   -- Oracle number(38, 0) becomes integer
-  --if (_col_dtp = 219 and
+  --if (_col_dtp = __tag of decimal and
   --    _col_prec = 38 and (_col_scale is null or _col_scale = 0))
-  --  _col_dtp := 189;
+  --  _col_dtp := __tag of integer;
   -- timestamp becomes datetime
   if (_col_dtp = 128)
     _col_dtp := 211;
@@ -2301,7 +2301,7 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
       _col_type := 'char';
       _col_prec := 255;
     }
-  if (_col_sql_type = 12 and _col_dtp not in (181, 182)) -- SQL_VARCHAR / DV_LONG_STRING / DV_SHORT_STRING_SERIAL
+  if (_col_sql_type = 12 and _col_dtp not in (181, __tag of varchar)) -- SQL_VARCHAR / DV_LONG_STRING / DV_SHORT_STRING_SERIAL
     { -- this is a catch-all type, so will map it to VARCHAR
       log_message (concat ('Changing column type ', dv_type_title (_col_dtp), ' to ', _col_type,
 		' when creating the destination snapshot replication table on ', _dbms_name));
@@ -2309,8 +2309,8 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
       _col_prec := 0;
     }
   -- specify length for char, varchar, nvarchar or varbinary without limit
-  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
-       _col_dtp = 222 or _col_dtp = 225) and
+  if ((_col_dtp = 181 or _col_dtp = __tag of varchar or _col_dtp = 192 or
+       _col_dtp = 222 or _col_dtp = __tag of nvarchar) and
       (_col_prec is null or _col_prec = 0))
     {
       if (strstr (_dbms_name, 'Virtuoso') is not null)
@@ -2326,7 +2326,7 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
               -- varbinary
               _col_prec := 8000;
             }
-          else if (_col_dtp = 225)
+          else if (_col_dtp = __tag of nvarchar)
             {
               -- nvarchar
               _col_prec := 4000;
@@ -2344,7 +2344,7 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
               -- raw
               _col_prec := 2000;
             }
-          else if (_col_dtp = 225)
+          else if (_col_dtp = __tag of nvarchar)
             {
               -- nvarchar2
               _col_prec := 4000;
@@ -2384,7 +2384,7 @@ create procedure REPL_REMOTE_COLTYPE (in _dbms_name varchar, in _col any, in _re
   if (_col_dtp = 222 and strstr (_dbms_name, 'Informix') is not null)
     _col_prec := null;
   -- decimal
-  if (_col_dtp = 219)
+  if (_col_dtp = __tag of decimal)
     {
       if (strstr (_dbms_name, 'Virtuoso') is not null)
         {
@@ -2528,7 +2528,7 @@ create procedure REPL_ENSURE_ROWGUID (
       from DB.DBA.SYS_KEY_COLUMNS
       where upper("KEY_TABLE") = upper(_tbl) and
       upper("COLUMN") = upper(_col_name);
-  if (_col_dtp <> 182)
+  if (_col_dtp <> __tag of varchar)
     {
       signal ('37000',
           sprintf ('Table already has %s column of incompatible data type',

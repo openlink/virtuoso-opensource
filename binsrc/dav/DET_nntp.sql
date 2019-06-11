@@ -691,7 +691,7 @@ create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type v
           }
      }
 
-   if (__tag (parsed_message) <> 193)
+   if (__tag (parsed_message) <> __tag of vector)
      parsed_message := mime_tree (_body);
 
    _head := parsed_message[0];

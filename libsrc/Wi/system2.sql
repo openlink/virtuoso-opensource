@@ -1361,7 +1361,7 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
         {
 	  declare tag int;
 	  tag := __tag (c[i]);
-	  if (tag = 246)
+	  if (tag = __tag of rdf_box)
 	    tag := __tag (rdf_box_data (c[i]));
 	  http (sprintf ('    <col dtp="%d">%V</col>\n', tag, cast (c[i] as varchar)), ss);
         }
@@ -1435,7 +1435,7 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
         {
 	  declare t any;
 	  t := cast (vals[i] as varchar);
-	  if (__tag(c[i]) in (191, 190, 219))
+	  if (__tag(c[i]) in (191, 190, __tag of decimal))
 	    {
 	      declare delta float;
 	      t := cast (t as double precision);
@@ -1576,9 +1576,9 @@ qt_make_array (inout arr any)
         {
 	  declare dtp int;
 	  dtp := cast (dtps[i] as int);
-	  if (dtp = 246)
-	    dtp := 182;
-	  if (dtp = 219)
+	  if (dtp = __tag of rdf_box)
+	    dtp := __tag of varchar;
+	  if (dtp = __tag of decimal)
 	    vals[i] := _cvt (vector (dtp, 40, 15), cast (vals[i] as varchar));
 	  else
 	    vals[i] := _cvt (vector (dtp, 0), cast (vals[i] as varchar));
@@ -1635,9 +1635,9 @@ qt_diff (in file varchar, in target varchar, out message varchar) returns int
 	  t2 := v2[i];
 	  dtp1 := __tag (t1);
 	  dtp2 := __tag (t2);
-	  if (dtp1 in (191, 190, 219) and dtp2 in (191, 190, 219))
+	  if (dtp1 in (191, 190, __tag of decimal) and dtp2 in (191, 190, __tag of decimal))
 	    dtp1 := dtp2 := __max (dtp1, dtp1);
-	  if (dtp1 = dtp2 and dtp1 in (191, 190, 219))
+	  if (dtp1 = dtp2 and dtp1 in (191, 190, __tag of decimal))
 	    {
 	      declare delta float;
 	      t1 := cast (t1 as double precision);

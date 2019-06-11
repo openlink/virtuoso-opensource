@@ -217,10 +217,10 @@ create procedure oledb_get_types (in type integer, in best_match_restrict intege
 
 create function oledb_dbtype(in dv integer) returns smallint
 {
-  if (dv = 188)	-- DV_SHORT_INT
+  if (dv = __tag of smallint)	-- DV_SHORT_INT
     return 2;	-- DBTYPE_I2
 
-  if (dv = 189) -- DV_LONG_INT
+  if (dv = __tag of integer) -- DV_LONG_INT
     return 3;   -- DBTYPE_I4
 
   if (dv = 190) -- DV_SINGLE_FLOAT
@@ -229,13 +229,13 @@ create function oledb_dbtype(in dv integer) returns smallint
   if (dv = 191) -- DV_DOUBLE_FLOAT
     return 5;   -- DBTYPE_R8
 
-  if (dv = 219) -- DV_NUMERIC
+  if (dv = __tag of decimal) -- DV_NUMERIC
     return 131; -- DBTYPE_NUMERIC
 
-  if (dv = 181 or dv = 182 or dv = 238 or dv = 125) -- DV_SHORT_STRING, DV_LONG_STRING, DV_STRICT_STRING, DV_BLOB
+  if (dv = 181 or dv = __tag of varchar or dv = 238 or dv = 125) -- DV_SHORT_STRING, DV_LONG_STRING, DV_STRICT_STRING, DV_BLOB
     return 129; -- DBTYPE_STR
 
-  if (dv = 225 or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
+  if (dv = __tag of nvarchar or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
     return 130; -- DBTYPE_WSTR
 
   if (dv = 222 or dv = 131) -- DV_BIN, DV_BLOB_BIN
@@ -269,8 +269,8 @@ create function oledb_dbflags(in dv integer, in nullable integer) returns intege
     }
   else
     {
-      if (dv = 188 or dv = 189 or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
-          dv = 191 or dv = 219 or dv = 129 or	-- DV_DOUBLE_FLOAT, DV_NUMERIC, DV_DATE
+      if (dv = __tag of smallint or dv = __tag of integer or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
+          dv = 191 or dv = __tag of decimal or dv = 129 or	-- DV_DOUBLE_FLOAT, DV_NUMERIC, DV_DATE
           dv = 210 or dv = 211)			-- DV_TIME, DV_DATETIME
         flags := 16 + 4;			-- DBCOLUMNFLAGS_ISFIXEDLENGTH, DBCOLUMNFLAGS_WRITE
       else if (dv = 125 or dv = 132 or dv = 131)	-- DV_BLOB, DV_BLOB_WIDE, DV_BLOB_BIN
@@ -288,11 +288,11 @@ create function oledb_dbflags(in dv integer, in nullable integer) returns intege
 
 create function oledb_char_max_len(in dv integer, in prec integer) returns integer
 {
-  if (dv = 188 or dv = 189 or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
-      dv = 191 or dv = 219 or dv = 129 or	-- DV_DOUBLE_FLOAT,  DV_NUMERIC, DV_DATE
+  if (dv = __tag of smallint or dv = __tag of integer or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
+      dv = 191 or dv = __tag of decimal or dv = 129 or	-- DV_DOUBLE_FLOAT,  DV_NUMERIC, DV_DATE
       dv = 210 or dv = 211)			-- DV_TIME, DV_DATETIME
     return null;
-  if (dv = 225 or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
+  if (dv = __tag of nvarchar or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
     {
       if (prec < 1073741823)
         return prec;
@@ -304,11 +304,11 @@ create function oledb_char_max_len(in dv integer, in prec integer) returns integ
 
 create function oledb_char_oct_len(in dv integer, in prec integer) returns integer
 {
-  if (dv = 188 or dv = 189 or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
-      dv = 191 or dv = 219 or dv = 129 or	-- DV_DOUBLE_FLOAT,  DV_NUMERIC, DV_DATE
+  if (dv = __tag of smallint or dv = __tag of integer or dv = 190 or	-- DV_SHORT_INT, DV_LONG_INT, DV_SINGLE_FLOAT
+      dv = 191 or dv = __tag of decimal or dv = 129 or	-- DV_DOUBLE_FLOAT,  DV_NUMERIC, DV_DATE
       dv = 210 or dv = 211)			-- DV_TIME, DV_DATETIME
     return null;
-  if (dv = 225 or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
+  if (dv = __tag of nvarchar or dv = 226 or dv = 132) -- DV_WIDE, DV_LONG_WIDE, DV_BLOB_WIDE
     {
       if (prec < 1073741823)
         return prec * 2;
@@ -320,15 +320,15 @@ create function oledb_char_oct_len(in dv integer, in prec integer) returns integ
 
 create function oledb_num_prec(in dv integer, in prec integer) returns smallint
 {
-  if (dv = 188)	-- DV_SHORT_INT
+  if (dv = __tag of smallint)	-- DV_SHORT_INT
     return 5;
-  if (dv = 189)	-- DV_LONG_INT
+  if (dv = __tag of integer)	-- DV_LONG_INT
     return 10;
   if (dv = 190)	-- DV_SINGLE_FLOAT
     return 7;
   if (dv = 191) -- DV_DOUBLE_FLOAT
     return 15;
-  if (dv = 219)	-- DV_NUMERIC
+  if (dv = __tag of decimal)	-- DV_NUMERIC
     {
       if (prec < 40)
         return prec;
@@ -340,7 +340,7 @@ create function oledb_num_prec(in dv integer, in prec integer) returns smallint
 
 create function oledb_num_scale(in dv integer, in scale integer) returns smallint
 {
-  if (dv = 219)	-- DV_NUMERIC
+  if (dv = __tag of decimal)	-- DV_NUMERIC
     return scale;
   return null;
 }

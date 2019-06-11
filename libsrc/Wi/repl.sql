@@ -811,7 +811,7 @@ create procedure DAV_COL_I (in _name varchar, in _path varchar, in _cr_time date
   declare _p_id, _p_path any;
   declare _own, _grp integer;
 --  dbg_obj_print ('COL INS: ', _path);
-  if (not isstring (_path) and __tag (_path) <> 193)
+  if (not isstring (_path) and __tag (_path) <> __tag of vector)
     signal ('22023', 'Function DAV_COL_I needs string or array as path', 'TR020');
 
   if (isstring (_path))
@@ -919,7 +919,7 @@ create procedure DAV_RES_I (in _ppath varchar, in _time datetime, in __own varch
 
   if (isstring (_content))
     _ses := _content;
-  else if (__tag (_content) = 193)
+  else if (__tag (_content) = __tag of vector)
     {
       _len := length (_content);
       _ses := string_output ();
@@ -934,7 +934,7 @@ create procedure DAV_RES_I (in _ppath varchar, in _time datetime, in __own varch
     _ses := null;
 
 --  dbg_obj_print ('RES INS: ', _ppath);
-  if (not isstring (_ppath) and __tag (_ppath) <> 193)
+  if (not isstring (_ppath) and __tag (_ppath) <> __tag of vector)
     signal ('22023', 'Function DAV_RES_I needs string or array as path', 'TR031');
   if (isstring (_ppath))
     _path := WS.WS.HREF_TO_ARRAY (_ppath, '');
@@ -1158,7 +1158,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updatable
               sprintf ('The table ''%s'' does not have primary key', src_table),
               'TR127');
         }
-      _pk_cols := vector (vector ('_IDN', 182, NULL, 10));
+      _pk_cols := vector (vector ('_IDN', __tag of varchar, NULL, 10));
       _len := length (_pk_cols);
     }
   while (_ix < _len)
@@ -1219,7 +1219,7 @@ create procedure REPL_PUB_TBL (in _pub varchar, in tbl varchar, in _is_updatable
 
       _all_cols:= concat (_all_cols, sprintf ('"%I"', _col_name));
       if (_col_dtp in (125, 131, 132, 134, -- DV_BLOB, DV_BLOB_BIN, DV_BLOB_WIDE, DV_BLOB_XPER
-	               126, 133, 135))     -- DV_BLOB_HANDLE, DV_BLOB_WIDE_HANDLE, DV_BLOB_XPER_HANDLE
+	               __tag of long varchar handle, __tag of long nvarchar handle, 135))     -- DV_BLOB_HANDLE, DV_BLOB_WIDE_HANDLE, DV_BLOB_XPER_HANDLE
 	_nall_cols:= concat (_nall_cols, sprintf ('blob_to_string_output (_N."%I")', _col_name));
       else
 	_nall_cols:= concat (_nall_cols, sprintf ('_N."%I"', _col_name));

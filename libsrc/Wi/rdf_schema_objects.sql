@@ -76,7 +76,7 @@ RDF_VIEW_TBL_PK_COLS (inout tbls any, out pkcols any)
     {
       for (i := 0; i < l; i := i + 2)
         {
-	  if (__tag (tbls[i+1]) = 193)
+	  if (__tag (tbls[i+1]) = __tag of vector)
 	    mixed := 1;
 	}
     }
@@ -90,7 +90,7 @@ RDF_VIEW_TBL_PK_COLS (inout tbls any, out pkcols any)
 	   declare cols any;
 	   declare j int;
 	   newtb[i/2] := tbls[i];
-	   if (__tag (tbls [i + 1]) = 193)
+	   if (__tag (tbls [i + 1]) = __tag of vector)
 	     {
 	       cols := make_array (length (tbls [i + 1]), 'any');
 	       j := 0;
@@ -677,17 +677,17 @@ RDF_VIEW_GET_PK_FK_REL (in pref varchar, in suffix varchar, in tbl varchar, in t
 create procedure
 RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv varchar, in sc int)
 {
-   if (_dv = 189 or _dv = 188) return '%d';
-   if (_dv = 247) return '%ld';
+  if (_dv = __tag of integer or _dv = __tag of smallint) return '%d';
+  if (_dv = __tag of bigint) return '%ld';
    if (_dv in (__tag of double precision, __tag of numeric) and sc = 0) return '%d';
-   if (_dv = 182 or _dv = 225) return '%U';
+  if (_dv = __tag of varchar or _dv = __tag of nvarchar) return '%U';
    if (__tag of double precision = _dv) return '%g';
    if (__tag of real = _dv) return '%f';
    if (__tag of numeric = _dv) return '%g';
    if (__tag of date = _dv) return '%1D';
    if (__tag of time = _dv) return '%1D';
    if (__tag of datetime = _dv or __tag of timestamp = _dv) return '%1D';
-   if (_dv in (__tag of IRI_ID, 244)) return '%s';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return '%s';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
@@ -695,8 +695,8 @@ RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv varchar, in sc int)
 create procedure
 RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188 or _dv = 247) return 'integer';
-   if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
+  if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'integer';
+  if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
    if (__tag of double precision = _dv) return 'numeric';
    if (__tag of real = _dv) return 'float';
    if (__tag of numeric = _dv) return 'numeric';
@@ -705,7 +705,7 @@ RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
    if (__tag of datetime = _dv) return 'datetime';
    if (__tag of timestamp = _dv) return 'timestamp';
    if (__tag of nvarchar = _dv) return 'nvarchar';
-   if (_dv in (__tag of IRI_ID, 244)) return 'IRI_ID';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return 'IRI_ID';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
@@ -713,8 +713,8 @@ RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
 create procedure
 DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188 or _dv = 247) return 'int';
-   if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
+  if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'int';
+  if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
    if (__tag of double precision = _dv) return 'numeric';
    if (__tag of real = _dv) return 'float';
    if (__tag of numeric = _dv) return 'numeric';
@@ -723,7 +723,7 @@ DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv varchar)
    if (__tag of datetime = _dv) return 'dateTime';
    if (__tag of timestamp = _dv) return 'dateTime';
    if (__tag of nvarchar = _dv) return 'string';
-   if (_dv in (__tag of IRI_ID, 244)) return 'anyURI';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return 'anyURI';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;

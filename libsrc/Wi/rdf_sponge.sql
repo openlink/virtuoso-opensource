@@ -1095,7 +1095,7 @@ resp_received:
       signal ('RDFXX', sprintf ('Content length %d is over the limit %d', new_download_size, max_sz));
     }
 
-  --if (__tag (ret_body) = 185)
+  --if (__tag (ret_body) = __tag of stream)
   --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
 
   {
@@ -1112,7 +1112,7 @@ resp_received:
   if (parser_rc is not null)
     {
       new_last_etag := ret_etag;
-      if (__tag (parser_rc) = 193 and eraser is not null and ret_content_type like '%html')
+      if (__tag (parser_rc) = __tag of vector and eraser is not null and ret_content_type like '%html')
         {
           declare sa any;
           sa := get_keyword ('seeAlso', parser_rc);
@@ -1934,14 +1934,14 @@ load_grddl:;
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
 	      dbg_obj_prin1 ('Return ', rc, RM_HOOK);
-	      if (__tag(rc) = 193 or rc < 0 or rc > 0)
+		  if (__tag(rc) = __tag of vector or rc < 0 or rc > 0)
                 dbg_obj_prin1 ('END of mappings');
 	    }
-	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
+	      if (__tag(rc) = __tag of vector or rc < 0 or rc > 0)
 	    {
 		  if (rc > 0 and __proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
-		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-              if (__tag(rc) = 193)
+		    call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+		  if (__tag(rc) = __tag of vector)
                 return rc;
 	      return (case when rc < 0 then 0 else 1 end);
 	    }

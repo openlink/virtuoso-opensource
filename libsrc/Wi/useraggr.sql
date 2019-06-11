@@ -790,7 +790,7 @@ create procedure DB.DBA.GROUP_CONCAT_ACC (inout _env any, in token varchar, in d
 --!AWK PUBLIC
 create procedure DB.DBA.GROUP_CONCAT_FIN (inout _env any)
 {
---  if (185 <> __tag (_env))
+--  if (__tag of stream <> __tag (_env))
 --    return '';
 --  return string_output_string (_env);
   if (__tag of varchar <> __tag (_env))

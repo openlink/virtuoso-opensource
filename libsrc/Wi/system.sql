@@ -122,8 +122,8 @@ create procedure REPL_COLTYPE_PS (
     in _col_dtp integer, in _col_prec integer, in _col_scale integer)
   returns varchar
 {
-  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
-       _col_dtp = 222 or _col_dtp = 225)
+  if ((_col_dtp = 181 or _col_dtp = __tag of varchar or _col_dtp = 192 or
+       _col_dtp = 222 or _col_dtp = __tag of nvarchar)
       and _col_prec is not null and _col_prec <> 0)
     {
       -- (length) for char or varchar
@@ -141,7 +141,7 @@ create procedure REPL_COLTYPE_PS (
           _coltype := concat (_prefix, _len_spec, _suffix);
         }
     }
-  else if (_col_dtp = 219)
+  else if (_col_dtp = __tag of decimal)
     {
       -- (prec, scale) for numeric
       if (_col_prec < _col_scale or _col_scale is null)
@@ -159,7 +159,7 @@ create procedure REPL_COLTYPE (in _col any) returns varchar
   _col_scale := aref (_col, 2);
   _col_prec := aref (_col, 3);
 
-  if (_col_dtp = 219)
+  if (_col_dtp = __tag of decimal)
     {
       if (_col_scale > 15)
 	_col_scale := 15;
@@ -398,11 +398,11 @@ create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varch
 {
   declare res any;
   -- dbg_obj_princ ('XML_URI_RESOLVE_LIKE_GET (', base_uri, rel_uri, ')');
-  if (__tag (base_uri) in (225, 226))
+  if (__tag (base_uri) in (__tag of nvarchar, 226))
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := coalesce (cast (base_uri as varchar), '');
-  if (__tag (rel_uri) in (225, 226))
+  if (__tag (rel_uri) in (__tag of nvarchar, 226))
     rel_uri := charset_recode (rel_uri, '_WIDE_', 'UTF-8');
   else
     rel_uri := coalesce (cast (rel_uri as varchar), '');
@@ -418,7 +418,7 @@ create function XML_URI_GET_AND_CACHE (in absolute_uri varchar)
   declare head, content any;
   whenever not found goto try_http_get;
    -- dbg_obj_princ ('XML_URI_GET_AND_CACHE (', absolute_uri, ')');
-  if (__tag (absolute_uri) in (225, 226))
+  if (__tag (absolute_uri) in (__tag of nvarchar, 226))
     absolute_uri := charset_recode (absolute_uri, '_WIDE_', 'UTF-8');
   else
     absolute_uri := charset_recode (absolute_uri, NULL, 'UTF-8');
@@ -481,7 +481,7 @@ create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
   -- dbg_obj_princ ('XML_URI_GET (', base_uri, rel_uri, ')');
   base_uri := XML_URI_RESOLVE_LIKE_GET (base_uri, rel_uri);
   -- dbg_obj_princ ('base URI after XML_URI_RESOLVE_LIKE_GET:', base_uri);
-  if (__tag (base_uri) in (225, 226))
+  if (__tag (base_uri) in (__tag of nvarchar, 226))
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := charset_recode (base_uri, NULL, 'UTF-8');
@@ -604,7 +604,7 @@ skip_auth:;
 	  whenever not found goto cl_err;
 	  open cl (prefetch 1);
 	  fetch cl into tp;
-	  if (tp = 189 or tp = 188)
+	  if (tp = __tag of integer or tp = __tag of smallint)
 	    path1 := cast (path as integer);
 	  else if (tp = 191 or tp = 190)
 	    path1 := cast (path as double precision);
@@ -2301,7 +2301,7 @@ scheduler_init ()
 ;
 
 --!AWK PUBLIC
-create procedure SYS_GENERATE_ALL_OPS (in col_name varchar, in col_dtp integer := 193)
+create procedure SYS_GENERATE_ALL_OPS (in col_name varchar, in col_dtp integer := __tag of vector)
 {
   declare func, args varchar;
   func :=
@@ -2904,7 +2904,7 @@ done:
 	  http (sprintf (' if (rate = 0 AND vals_%I <> 0 ) { rate := 1; }; \n', col_name), proc);
 	  http (sprintf (' if (n_dist_%I < 20) { ndist_rate := 1; } else {ndist_rate := rate; }; \n', col_name), proc);
 
-	  if (col_dtp = 189 or col_dtp = 247) -- DV_INT & DV_INT64
+	  if (col_dtp = __tag of integer or col_dtp = __tag of bigint) -- DV_INT & DV_INT64
 	    {
 	      http (sprintf (' if ((n_dist_%I * ndist_rate) > (max_%I - min_%I)) { ndist_rate := 1; n_dist_%I := max_%I - min_%I; } \n',
 	      	col_name, col_name, col_name, col_name, col_name, col_name), proc);
@@ -3443,7 +3443,7 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 	    {
 	      if (isentity (elm))
 		http_value (elm, null, ses);
-	      else if (isstring (elm) or __tag (elm) = 185)
+	      else if (isstring (elm) or __tag (elm) = __tag of stream)
 		http (elm, ses);
 	    }
 	}
@@ -4035,7 +4035,7 @@ create method existsNode (in _xpath varchar) returns integer for XMLType
 {
   declare _hit any;
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return 1;
   return 0;
 }
@@ -4050,7 +4050,7 @@ create method existsNode (in _xpath varchar, in _nsmap varchar) returns integer 
     else
       _xpath := concat ('[', _nsmap, ']', _xpath);
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return 1;
   return 0;
 }
@@ -4060,7 +4060,7 @@ create method extract (in _xpath varchar) returns any for XMLType
 {
   declare _hit any;
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4070,7 +4070,7 @@ create method query (in _xquery varchar) returns any for XMLType
 {
   declare _hit any;
   _hit := xquery_eval (_xquery, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4085,7 +4085,7 @@ create method extract (in _xpath varchar, in _nsmap varchar) returns any for XML
     else
       _xpath := concat ('[', _nsmap, ']', _xpath);
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag(_hit) = 230)
+  if (__tag(_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4284,9 +4284,9 @@ err:
 
 create constructor method XMLType (in _src any) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4297,9 +4297,9 @@ create constructor method XMLType (in _src any) for XMLType
 
 create constructor method XMLType (in _src any, in _schema varchar) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4310,9 +4310,9 @@ create constructor method XMLType (in _src any, in _schema varchar) for XMLType
 
 create constructor method XMLType (in _src any, in _schema varchar, in _validated integer) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4323,9 +4323,9 @@ create constructor method XMLType (in _src any, in _schema varchar, in _validate
 
 create constructor method XMLType (in _src any, in _schema varchar, in _validated integer, in _wellformed integer) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4336,7 +4336,7 @@ create constructor method XMLType (in _src any, in _schema varchar, in _validate
 
 create constructor method XMLType (in _src any, in _schema varchar := null, in _validated integer := 0, in _wellformed integer := 0) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
   else
     self.xt_ent := xtree_doc (_src);
@@ -5359,7 +5359,7 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return sprintf ('%f', v);
   else if (isnumeric (v))
     return cast (v as varchar);
-  else if (__tag (v) = 193)
+  else if (__tag (v) = __tag of vector)
     return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
   else if (__tag (v) = 211)
     return sprintf ('{ts ''%s''}', datestring (v));
@@ -5506,16 +5506,16 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
 
 create procedure view_dv_to_printf_str_type (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188) return '%d';
-   if (_dv = 182) return '%U';
+   if (_dv = __tag of integer or _dv = __tag of smallint) return '%d';
+   if (_dv = __tag of varchar) return '%U';
    signal ('XXXXX', sprintf ('Unknown DV %i in view_dv_to_printf_str_type', _dv));
 }
 ;
 
 create procedure view_dv_to_sql_str_type (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188) return 'integer';
-   if (_dv = 182) return 'varchar';
+   if (_dv = __tag of integer or _dv = __tag of smallint) return 'integer';
+   if (_dv = __tag of varchar) return 'varchar';
    signal ('XXXXX', sprintf ('Unknown DV %i', _dv));
 }
 ;

@@ -8146,7 +8146,7 @@ char * ws_def_2 =
 "  declare p_len, slash integer;\n"
 "  p1 := '';\n"
 "  --dbg_obj_print (lines);\n"
-"  if (__tag (path) = 193)\n"
+"  if (__tag (path) = __tag of vector)\n"
 "    p_len := length (path);\n"
 "  else p_len := 0;\n"
 #ifndef VIRTUAL_DIR

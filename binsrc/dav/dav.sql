@@ -2248,7 +2248,7 @@ create procedure WS.WS.PATCH (
     giid := iri_to_id (WS.WS.DAV_IRI (full_path));
     set_user_id ('dba');
     exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
-    if (not (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = 185))
+    if (not (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = __tag of stream))
       goto _skip;
 
     ses := data[0][0];
@@ -3249,7 +3249,7 @@ again:
                 _to_get := 65536;
 
               _chunk := subseq (content, _start, _start + _to_get);
-              if (__tag (_chunk) = 185)
+              if (__tag (_chunk) = __tag of stream)
                _chunk := string_output_string (_chunk);
 
               ses_write (_chunk, _ses);
@@ -3747,7 +3747,7 @@ create procedure WS.WS.SPARQL_QUERY_POST (
   if (stat <> '00000')
     signal (stat, msg);
 
-  if (length (data) > 0 and length (data[0]) and __tag (data[0][0]) = 214)
+  if (length (data) > 0 and length (data[0]) and __tag (data[0][0]) = __tag of dictionary reference)
   {
     declare dict, triples any;
 
@@ -4325,7 +4325,7 @@ create procedure WS.WS.PARENT_PATH (
 {
   declare len integer;
 
-  if (__tag (path) <> 193)
+  if (__tag (path) <> __tag of vector)
     return null;
 
   len := length (path) - 1;
@@ -6031,7 +6031,7 @@ create procedure WS.WS.BODY_ARR (inout __ses any, in __pcs integer)
   _res := null;
   _from := 1;
 
-  if (__tag (__ses) = 126 or __tag (__ses) = 133)
+  if (__tag (__ses) in (__tag of long varchar handle, __tag of long nvarchar handle))
     {
       _ses := string_output ();
       http (__ses, _ses);
@@ -6046,7 +6046,7 @@ create procedure WS.WS.BODY_ARR (inout __ses any, in __pcs integer)
 	  _from := _from + _pcs;
 	}
     }
-  else if (isstring (__ses) or __tag (__ses) = 185)
+  else if (isstring (__ses) or __tag (__ses) = __tag of stream)
     {
       _len := length (__ses);
       while (_from < _len)
@@ -6161,7 +6161,7 @@ create procedure WS.WS.HTTP_RESP (
   declare line, code varchar;
 
   descr := 'Bad Gateway';
-  if (hdr is null or __tag (hdr) <> 193)
+  if (hdr is null or __tag (hdr) <> __tag of vector)
     return (502);
 
   if (length (hdr) < 1)
@@ -6398,7 +6398,7 @@ create function WS.WS.DAV_DIR_LIST (
   if (http_request_get ('REQUEST_METHOD') = 'OPTIONS')
     return 0;
 
-  if ((length (params) = 4) and (__tag (params[1]) = 185) and (params[2] = 'attr-Content'))
+  if ((length (params) = 4) and (__tag (params[1]) = __tag of stream) and (params[2] = 'attr-Content'))
     params := __http_stream_params ();
 
   action := get_keyword ('a', params, '');

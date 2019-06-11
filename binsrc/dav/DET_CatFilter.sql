@@ -124,7 +124,7 @@ create function "CatFilter_ENCODE_CATVALUE" (
   if (val is null)
     return '! property is not set !';
 
-  if (__tag (val) = 230)
+  if (__tag (val) = __tag of XML)
     val := cast (val as varchar);
 
   len := length (val);
@@ -2261,7 +2261,7 @@ create function "CatFilter_FEED_DAV_RDF_INVERSE" (
   declare doc any;
   declare triplets any;
 
-  if (126 = __tag (propval))
+  if (__tag of long varchar handle = __tag (propval))
     {
       pv := blob_to_string (propval);
     }
@@ -2273,7 +2273,7 @@ create function "CatFilter_FEED_DAV_RDF_INVERSE" (
       pv := propval;
     }
 
-  if (193 <> pv[0])
+  if (__tag of vector <> pv[0])
     return;
 
   doc := null;

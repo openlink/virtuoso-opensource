@@ -1090,7 +1090,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
       else
         ro_id_dict := null;
     }
-  if (126 = __tag (v))
+  if (__tag of long varchar handle = __tag (v))
     v := blob_to_string (v);
   if (isstring (rdf_box_data (v)))
     need_digest := rdf_box_needs_digest (v, ro_id_dict);
@@ -1352,7 +1352,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
   declare llong, dt_and_lang int;
   declare dt_s, lang_s, chksm, sum64 varchar;
   declare digest, old_digest any;
-  if (126 = __tag (v))
+  if (__tag of long varchar handle = __tag (v))
     v := blob_to_string (v);
   dt_and_lang := bit_or (bit_shift (dt_twobyte, 16), lang_twobyte);
   if (not (isstring (v)))
@@ -1396,7 +1396,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1413,7 +1413,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
   declare t int;
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (', v, g_iid, p_iid, ro_id_dict, ')');
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1421,7 +1421,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
   if (not __rdf_obj_ft_rule_check (g_iid, p_iid))
     ro_id_dict := null;
@@ -1446,7 +1446,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1458,7 +1458,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (126 = t)
+  else if (__tag of long varchar handle = t)
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1479,7 +1479,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1491,7 +1491,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (__tag of UNAME = t or 126 = t)
+  else if (t in (__tag of UNAME, __tag of long varchar handle))
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1656,16 +1656,16 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
   t := __tag (longobj);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar, 133, 226)))
+      if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar, __tag of long nvarchar handle, 226)))
         return longobj;
-      if (t = 133)
+      if (t = __tag of long nvarchar handle)
 	{
 	  longobj := cast (longobj as nvarchar);
 	  t := __tag (longobj);
 	}
       if (__tag of nvarchar = t or t = 226)
         longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
-      else if (t = 126)
+      else if (t = __tag of long varchar handle)
         longobj := cast (longobj as varchar);
       else if (__tag of UNAME = t)
         return __i2id (longobj);
@@ -1683,7 +1683,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar)))
+  if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
         return DB.DBA.RDF_OBJ_ADD (257, v, 257);
@@ -1695,7 +1695,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1709,7 +1709,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1717,7 +1717,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (126 = t)
+  else if (__tag of long varchar handle = t)
     v := cast (v as varchar);
   res := rdf_box (v, 257, 257, 0, 1);
   return res;
@@ -2014,7 +2014,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -2022,7 +2022,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
 --  if ((t = __tag of varchar) and (v like 'http://%'))
 --    {
@@ -2103,7 +2103,7 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
         return 0;
       return 1;
     }
-  if (__tag (v) = 243)
+  if (__tag (v) = __tag of IRI_ID)
     {
       if (v < min_bnode_iri_id ())
         return 0;
@@ -2122,7 +2122,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
         return 1;
       return 0;
     }
-  if (__tag (v) = 243)
+  if (__tag (v) = __tag of IRI_ID)
     {
       if (v < min_bnode_iri_id ())
         return 1;
@@ -2135,7 +2135,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_REF (in v any) returns any
 {
-  if (__tag (v) in (__tag of UNAME, 243))
+  if (__tag (v) in (__tag of UNAME, __tag of IRI_ID))
     return 1;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 1;
@@ -2146,7 +2146,7 @@ create function DB.DBA.RDF_IS_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_LITERAL (in v any) returns any
 {
-  if (__tag (v) in (__tag of UNAME, 243))
+  if (__tag (v) in (__tag of UNAME, __tag of IRI_ID))
     return 0;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 0;
@@ -2577,18 +2577,18 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
   t := __tag (o_val);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 133, __tag of UNAME, __tag of nvarchar, 226)))
+      if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of long nvarchar handle, __tag of UNAME, __tag of nvarchar, 226)))
         {
           goto o_val_done;
         }
-      if (t = 133)
+      if (t = __tag of long nvarchar handle)
 	{
 	  o_val := cast (o_val as nvarchar);
 	  t := __tag (o_val);
 	}
       if (__tag of nvarchar = t or t = 226)
         o_val := charset_recode (o_val, '_WIDE_', 'UTF-8');
-      else if (t = 126)
+      else if (t = __tag of long varchar handle)
         o_val := cast (o_val as varchar);
       else if (t = __tag of UNAME)
         {
@@ -2843,7 +2843,7 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null);
   ret := rdf_load_turtle (strg, base, graph, flags,
@@ -2891,7 +2891,7 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null, iri_xlate_cbk, iri_xlate_env);
   return rdf_load_turtle (strg, base, graph, flags,
@@ -2911,7 +2911,7 @@ create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in grap
 {
   declare app_env any;
   declare old_log_mode int;
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
     vector ('', '', '', '', '', '', report_cbk),
@@ -2923,8 +2923,8 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
 {
   declare app_env any;
   declare old_log_mode int;
-  if (126 = __tag (strg))
-    strg := cast (strg as varchar);
+  if (__tag of long varchar handle = __tag (strg))
+     strg := cast (strg as varchar);
   return rdf_load_turtle_local_file (strg, base, graph, flags,
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
@@ -3051,7 +3051,7 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 {
   declare res any;
   res := dict_new ();
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
@@ -3070,9 +3070,9 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 
 create function DB.DBA.RDF_TTL_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, in dict any, in flags integer := 0) returns any
 {
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
@@ -3129,7 +3129,7 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
 {
   declare res any;
   res := dict_new ();
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
@@ -3226,7 +3226,7 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 
 create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in flag int := 0, in xml_parse_mode int := 0)
 {
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   if (flag = 0)
     xml_parse_mode := 0;
@@ -3248,7 +3248,7 @@ create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, 
 create procedure DB.DBA.RDFA_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0)
 {
   declare app_env any;
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa
     graph,
@@ -3269,7 +3269,7 @@ create procedure DB.DBA.RDFA_LOAD_DICT (in strg varchar, in base varchar, in gra
 create procedure DB.DBA.RDFA_LOAD_DICT_XLAT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0, in iri_xlate_cbk varchar, in iri_xlate_env any)
 {
   declare app_env any;
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa
     graph,
@@ -4426,7 +4426,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
       return;
     }
   env := vector (0, 0, 0, null);
-  if (214 <> __tag (ctx_dict))
+  if (__tag of dictionary reference <> __tag (ctx_dict))
     {
       if (bit_and (ctx_mode, 1))
         ctx_dict := dict_new (31);
@@ -4506,7 +4506,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
 skip_shortcut_calc: ;
         }
     }
-  if (214 <> __tag (ctx_dict))
+  if (__tag of dictionary reference <> __tag (ctx_dict))
     http ('{ "@graph": [\n    ', ses);
   else
     {
@@ -5759,7 +5759,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML (inout triples_dict an
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -5800,7 +5800,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6123,7 +6123,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
 {
   declare col_ctr, col_count integer;
   declare blank_ids any;
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
   http ('\n  rs:result [', _env);
   col_count := length (colnames);
@@ -6168,7 +6168,7 @@ end_of_binding: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
 
   http ('\n    ] .', _env);
@@ -6203,7 +6203,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
     {
       declare col_buf any;
       col_count := length (colnames);
-      if (185 <> __tag(_env))
+      if (__tag of stream <> __tag(_env))
         DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
       col_buf := make_array (col_count * 7, 'any');
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6244,7 +6244,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
   declare sol_id varchar;
   declare col_ctr, col_count integer;
   declare blank_ids any;
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
   sol_id := cast (length (_env) as varchar);
   http ('\n  <rs:result rdf:nodeID="sol' || sol_id || '">', _env);
@@ -6310,7 +6310,7 @@ end_of_binding: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
 
   http ('\n </rs:results>\n</rdf:RDF>', _env);
@@ -6335,7 +6335,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC (inout _env any, inout
   declare col_ctr, col_count, need_comma integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       http ('\n{ "head": { "link": [], "vars": [', _env);
@@ -6372,7 +6372,7 @@ end_of_val_print: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       http ('\n{ "head": { "link": [], "vars": [] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', _env);
@@ -6430,7 +6430,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout 
   declare col_ctr, col_count integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6456,7 +6456,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout 
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     return '';
   return string_output_string (_env);
 }
@@ -6473,7 +6473,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
   declare col_ctr, col_count integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6575,7 +6575,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_ACC (inout _env any, i
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
   if (isinteger (_env[1]))
     {
-      if (185 <> __tag(_env))
+      if (__tag of stream <> __tag(_env))
         DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
       _env[1] := colnames;
       ses := aref_set_0 (_env, 2);
@@ -6624,7 +6624,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6641,7 +6641,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NICE_TTL (inout triples_dict an
   if (2666 < dict_size (triples_dict)) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
     return DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (triples_dict);
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -6836,7 +6836,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TRIG (inout triples_dict any) r
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6851,7 +6851,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT (inout triples_dict any) ret
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6866,7 +6866,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6881,7 +6881,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6896,7 +6896,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6911,7 +6911,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX (inout triples_dict
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6926,7 +6926,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_UL (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6941,7 +6941,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_TR (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6956,7 +6956,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA (inout triples_d
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6971,7 +6971,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA (inout trip
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6986,7 +6986,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL (inout triples_di
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -6999,7 +6999,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON (inout trip
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -7012,7 +7012,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL (inout triples_
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -7087,7 +7087,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA (inout triples_d
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7102,7 +7102,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7117,7 +7117,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7132,7 +7132,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7150,7 +7150,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML (inout triples_dict any) r
   declare add_http_headers integer;
   add_http_headers := 0;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7168,7 +7168,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML_QRCODE (inout triples_dict
   declare add_http_headers integer;
   add_http_headers := 0;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -8999,7 +8999,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
 {
   declare triple_ctr integer;
   declare blank_ids any;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     {
       if (use_dict_limit)
         _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
@@ -9102,7 +9102,7 @@ end_of_adding_triple: ;
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_CONSTRUCT_FIN (inout _env any)
 {
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     _env := dict_new ();
   return _env;
 }
@@ -9126,7 +9126,7 @@ create procedure DB.DBA.SPARQL_DESC_AGG_ACC (inout _env any, in vars any)
 {
   declare var_ctr integer;
   declare blank_ids any;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     {
       _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
     }
@@ -9144,7 +9144,7 @@ create procedure DB.DBA.SPARQL_DESC_AGG_FIN (inout _env any)
 {
   declare subjects, options, res any;
   declare subj_ctr integer;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     return dict_new ();
   return _env;
 }
@@ -10722,7 +10722,7 @@ next_batch:
         return;
     }
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
---  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
+--  exec_result_names (vector (vector ('S', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -10768,7 +10768,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS (in dict any, in destru
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
   triples := dict_list_keys (dict, destructive);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 182, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0), vector ('O_TYPE', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0)));
+  exec_result_names (vector (vector ('S', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', __tag of varchar, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0), vector ('O_TYPE', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0)));
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -11395,7 +11395,7 @@ create function DB.DBA.JSO_DUMP_FLD (in v any, inout ses any)
   v_tag := __tag(v);
   if (v_tag = __tag of UNAME)
     DB.DBA.JSO_DUMP_IRI (cast (v as varchar), ses);
-  else if (v_tag = 243)
+  else if (v_tag = __tag of IRI_ID)
     DB.DBA.JSO_DUMP_IRI (id_to_iri (v), ses);
   else if (v_tag = 203)
     http (jso_dbg_dump_rtti (v), ses);
@@ -17355,7 +17355,7 @@ create procedure DB.DBA.RDF_QUAD_AUDIT ()
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_FLAGS')
-    and COL_DTP = 188 ) )
+    and COL_DTP = __tag of smallint ) )
     goto check_new_style;
   err_dict := dict_new ();
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
@@ -17642,7 +17642,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   commit work;
   if (1 <> sys_stat ('cl_run_local_only'))
     goto final_qm_reload;
-  if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
+  if (__tag of IRI_ID_8 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {
       __set_64bit_min_bnode_iri_id();
       sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
@@ -17654,7 +17654,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_FLAGS')
-    and COL_DTP = 188 ) )
+    and COL_DTP = __tag of smallint ) )
     goto final_qm_reload;
   exec ('DB.DBA.vt_create_text_index (
     fix_identifier_case (''DB.DBA.RDF_OBJ''),

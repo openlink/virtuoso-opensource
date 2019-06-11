@@ -3351,7 +3351,7 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
       xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
       -- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
       -- when no selection we stop processing when a given cartridge indicate to stop
-      if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+      if (not hasSelection and (__tag (xrc) = __tag of vector or xrc < 0 or xrc > 0))
         return 1;
     }
   _try_next:;
@@ -4914,7 +4914,7 @@ DAV_PROP_SET_RAW_INNER (
   if (not isstring (propname) or (propname in ('creationdate', 'getcontentlength', 'getcontenttype', 'getetag', 'getlastmodified', 'lockdiscovery', 'resourcetype', 'activelock', 'supportedlock')))
     return -10;
 
-  if (__tag (propvalue) = 193)
+  if (__tag (propvalue) = __tag of vector)
     propvalue := serialize (propvalue);
   else if (not isstring (propvalue))
     return -17;
@@ -6469,7 +6469,7 @@ create procedure WS.WS.ACL_SERIALIZE_INT (
 create procedure WS.WS.ACL_DESERIALIZE_INT (
   in _value any) returns integer
 {
-  if (__tag (_value) <> 189)
+  if (__tag (_value) <> __tag of integer)
     _value := cast (_value as varchar);
 
   _value := right (repeat ('\0', 4) || _value, 4);
@@ -6800,7 +6800,7 @@ ret_null:
 
 create function DAV_FC_CONST_AS_SQL (inout val any)
 {
-  if (193 = __tag (val))
+  if (__tag of vector = __tag (val))
     {
       declare res varchar;
       res := '';
@@ -6808,9 +6808,9 @@ create function DAV_FC_CONST_AS_SQL (inout val any)
         res := concat (res, ', ', DAV_FC_CONST_AS_SQL(item));
       return subseq (res, 2);
     }
-  if (182 = __tag (val))
+  if (__tag of varchar = __tag (val))
     return replace (WS.WS.STR_SQL_APOS (val), '^{', '\\136{');
-  if (189 = __tag (val))
+  if (__tag of integer = __tag (val))
     return sprintf ('%d', val);
   if (211 = __tag (val))
     return sprintf ('cast (''%s'' as datetime)', cast (val as varchar));
@@ -6943,17 +6943,17 @@ create function DAV_FC_PRINT_COMPARISON (inout pred any, inout pred_metas any, i
   pattern_sample := pred[2];
   if ('scalar' = cmp_meta[0])
     {
-      if (not (__tag (pattern_sample) in (182, 189, 211)))
+      if (not (__tag (pattern_sample) in (__tag of varchar, __tag of integer, 211)))
         goto bad_pattern_datatype;
     }
   else if ('vector' = cmp_meta[0])
     {
-      if (193 <> __tag (pattern_sample))
+      if (__tag of vector <> __tag (pattern_sample))
         goto bad_pattern_datatype;
       if (0 = length (pattern_sample))
         goto empty_array_pattern;
       pattern_sample := pattern_sample[0];
-      if (not (__tag (pattern_sample) in (182, 189, 211)))
+      if (not (__tag (pattern_sample) in (__tag of varchar, __tag of integer, 211)))
         goto bad_pattern_datatype;
       foreach (any itm in pred[2]) do
         {

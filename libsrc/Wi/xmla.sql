@@ -372,7 +372,7 @@ create procedure
 	res := exec (stmt, state, msg, vector (), 0, mdta, dta);
 	if (isinteger (dta))
 	  dta := vector (vector (dta));
-        if ((1 = length (dta)) and (1 = length (dta[0])) and (214 = __tag (dta[0][0])))
+        if ((1 = length (dta)) and (1 = length (dta[0])) and (__tag of dictionary reference = __tag (dta[0][0])))
 	  {
 	    declare triples, inx any;
 	    triples := dict_list_keys (dta[0][0], 1);
@@ -449,7 +449,7 @@ xmla_make_meta (in dta any)
       declare dtp any;
       dtp := __tag (dta[i+1]);
       aset (res, i1, vector (dta[i],
-	      case when dtp = 193 and length(dta[i+1]) = 2 then 'boolean' else dtp end
+	      case when dtp = __tag of vector and length(dta[i+1]) = 2 then 'boolean' else dtp end
 	    ));
       i1 := i1 + 1;
       i := i + 2;
@@ -769,17 +769,17 @@ xmla_make_xsd (inout mdta any)
           mdta[i][1] := 211;
         }
       -- IRI_ID
-      else if (isinteger(_type) and _type = 243)
+      else if (isinteger(_type) and _type = __tag of IRI_ID)
         {
-          _type := 182;
-          mdta[i][1] := 182;
+          _type := __tag of varchar;
+          mdta[i][1] := __tag of varchar;
         }
 
       if (length (mdta[i]) > 4)
         nill := mdta[i][4];
       else
         nill := 0;
-      if (_type <> 193)
+      if (_type <> __tag of vector)
 	{
 	  if (isstring (_type))
 	    _type_name := _type;
@@ -838,13 +838,13 @@ xmla_make_element (in mdta any, in dta any)
   while (i < l)
     {
       aset (res, i1, mdta[i][0]);
-      if (mdta[i][1] = 243)
+      if (mdta[i][1] = __tag of IRI_ID)
 	 aset (res, i2, cast (dta[i] as varchar));
       else if (mdta[i][1] = 125 and isentity(dta[i]))
 	 aset (res, i2, serialize_to_UTF8_xml(dta[i]));
       else if (mdta[i][1] = 131 and not isblob(dta[i]))
 	 aset (res, i2, cast (dta[i] as varbinary));
-      else if (mdta[i][1] = 219 and 219 <> __tag (dta[i]))
+      else if (mdta[i][1] = __tag of decimal and __tag of decimal <> __tag (dta[i]))
 	 aset (res, i2, cast (dta[i] as decimal));
       else
          aset (res, i2, dta[i]);

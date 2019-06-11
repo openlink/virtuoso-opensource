@@ -248,7 +248,7 @@ create procedure MIME_BODY (in _parts any)
   declare _part any;
 
   _bnd := concat ('-','-','-','-', md5 (cast (now () as varchar)));
-  if (__tag (_parts) = 193)
+  if (__tag (_parts) = __tag of vector)
     _c_type := sprintf ('multipart/mixed; boundary="%s"', _bnd);
   else if (isstring (_parts))
     _c_type := 'text/plain';

@@ -4184,11 +4184,11 @@ xs_fill (caddr_t * current, xmlsql_ugram_t ** xs, int where, caddr_t * err_ret, 
 		      /* Elements */
 		      for (ix = 1; ix < len; ix++)
 			{
-			  if (193 ==  DV_TYPE_OF((caddr_t *)current[ix]))
+			  if (DV_ARRAY_OF_POINTER ==  DV_TYPE_OF((caddr_t *)current[ix]))
 			    {
 			      lem = BOX_ELEMENTS ((caddr_t *)current[ix]);
 			      if (lem > 0
-				  && 193 == DV_TYPE_OF((((caddr_t *)current[ix])[0]))
+				  && DV_ARRAY_OF_POINTER == DV_TYPE_OF((((caddr_t *)current[ix])[0]))
 				  /*&& ((caddr_t *)current[ix])[1]*/)
 				{
 				  ename = ((caddr_t *)((caddr_t *)current[ix])[0])[0];
@@ -4384,7 +4384,7 @@ xs_parms (caddr_t * var, caddr_t * parms)
   id_hash_t *xs_var = NULL;
   int ix, ix1, found, vlen = 0, plen = 0;
   xs_var = id_str_hash_create (101);
-  if (var && parms && DV_TYPE_OF (var) == 193 && DV_TYPE_OF (parms) == 193)
+  if (var && parms && DV_TYPE_OF (var) == DV_ARRAY_OF_POINTER && DV_TYPE_OF (parms) == DV_ARRAY_OF_POINTER)
     {
       vlen = BOX_ELEMENTS (var);
       plen = BOX_ELEMENTS (parms);

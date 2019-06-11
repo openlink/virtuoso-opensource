@@ -152,7 +152,7 @@ char *sql_columns_text_casemode_2 =
 " c.\"COLUMN\" AS COLUMN_NAME VARCHAR(128),	\n"
 " cast (case ? when 1 then dv_to_sql_type3(c.COL_DTP) else dv_to_sql_type(c.COL_DTP) end as INTEGER) AS DATA_TYPE SMALLINT,\n"
 " case when (c.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (c.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(c.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
+" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
 " c.COL_PREC AS BUFFER_LENGTH INTEGER,\n"
 " c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,\n"
 " 2 AS NUM_PREC_RADIX SMALLINT,\n"
@@ -188,7 +188,7 @@ char *sql_columns_text_casemode_0 =
 " c.\"COLUMN\" AS COLUMN_NAME VARCHAR(128),	\n"
 " cast (case ? when 1 then dv_to_sql_type3(c.COL_DTP) else dv_to_sql_type(c.COL_DTP) end as SMALLINT) AS DATA_TYPE SMALLINT,\n"
 " case when (c.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (c.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(c.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
+" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
 " c.COL_PREC AS BUFFER_LENGTH INTEGER,\n"
 " c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,\n"
 " 2 AS NUM_PREC_RADIX SMALLINT,\n"
@@ -224,7 +224,7 @@ char *sql_columnsw_text_casemode_2 =
 " charset_recode (c.\"COLUMN\", 'UTF-8', '_WIDE_') AS COLUMN_NAME VARCHAR(128),	\n"
 " case ? when 1 then dv_to_sql_type3(c.COL_DTP) else dv_to_sql_type(c.COL_DTP) end AS DATA_TYPE SMALLINT,\n"
 " case when (c.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (c.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(c.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
+" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
 " c.COL_PREC AS BUFFER_LENGTH INTEGER,\n"
 " c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,\n"
 " 2 AS NUM_PREC_RADIX SMALLINT,\n"
@@ -260,7 +260,7 @@ char *sql_columnsw_text_casemode_0 =
 " charset_recode (c.\"COLUMN\", 'UTF-8', '_WIDE_') AS COLUMN_NAME VARCHAR(128),	\n"
 " case ? when 1 then dv_to_sql_type3(c.COL_DTP) else dv_to_sql_type(c.COL_DTP) end AS DATA_TYPE SMALLINT,\n"
 " case when (c.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (c.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(c.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
+" case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS COLUMN_SIZE INTEGER,\n"
 " c.COL_PREC AS BUFFER_LENGTH INTEGER,\n"
 " c.COL_SCALE AS DECIMAL_DIGITS SMALLINT,\n"
 " 2 AS NUM_PREC_RADIX SMALLINT,\n"
@@ -3548,7 +3548,7 @@ char *sql_special_columns1_casemode_0 =
 " SYS_COLS.\\COLUMN AS \\COLUMN_NAME VARCHAR(128),"	/* NOT NULL */
 " dv_to_sql_type(SYS_COLS.COL_DTP) AS \\DATA_TYPE SMALLINT,"/* NOT NULL */
 " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
 " SYS_COLS.COL_PREC AS \\LENGTH INTEGER,"
 " SYS_COLS.COL_SCALE AS \\SCALE SMALLINT,"
 " 1 AS \\PSEUDO_COLUMN SMALLINT "	/* = SQL_PC_NOT_PSEUDO */
@@ -3571,7 +3571,7 @@ char *sql_special_columns1_casemode_2 =
 " SYS_COLS.\\COLUMN AS \\COLUMN_NAME VARCHAR(128),"	/* NOT NULL */
 " dv_to_sql_type(SYS_COLS.COL_DTP) AS \\DATA_TYPE SMALLINT,"/* NOT NULL */
 " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
 " SYS_COLS.COL_PREC AS \\LENGTH INTEGER,"
 " SYS_COLS.COL_SCALE AS \\SCALE SMALLINT,"
 " 1 AS \\PSEUDO_COLUMN SMALLINT "	/* = SQL_PC_NOT_PSEUDO */
@@ -3594,7 +3594,7 @@ char *sql_special_columns2_casemode_0 =
       " \\COLUMN as \\COLUMN_NAME varchar(128),"	/* not null */
       " dv_to_sql_type(COL_DTP) as \\DATA_TYPE smallint,"	/* not null */
       " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-      " case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS \\PRECISION INTEGER,\n"
+      " case when (c.COL_PREC = 0 and c.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (c.COL_PREC = 0 and c.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else c.COL_PREC end AS \\PRECISION INTEGER,\n"
       " COL_PREC as \\LENGTH integer,"
       " COL_SCALE as \\SCALE smallint,"
       " 1 as \\PSEUDO_COLUMN smallint "	/* = sql_pc_not_pseudo */
@@ -3611,7 +3611,7 @@ char *sql_special_columns2_casemode_2 =
       " \\COLUMN as \\COLUMN_NAME varchar(128),"	/* NOT NULL */
       " dv_to_sql_type(COL_DTP) as \\DATA_TYPE smallint,"	/* NOT NULL */
       " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
       " COL_PREC as \\LENGTH integer,"
       " COL_SCALE as \\SCALE smallint,"
       " 1 as \\PSEUDO_COLUMN smallint "	/* = SQL_PC_NOT_PSEUDO */
@@ -3628,7 +3628,7 @@ char *sql_special_columnsw1_casemode_0 =
 " charset_recode (SYS_COLS.\\COLUMN, 'UTF-8', '_WIDE_') AS \\COLUMN_NAME NVARCHAR(128),"	/* NOT NULL */
 " dv_to_sql_type(SYS_COLS.COL_DTP) AS \\DATA_TYPE SMALLINT,"/* NOT NULL */
 " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
 " SYS_COLS.COL_PREC AS \\LENGTH INTEGER,"
 " SYS_COLS.COL_SCALE AS \\SCALE SMALLINT,"
 " 1 AS \\PSEUDO_COLUMN SMALLINT "	/* = SQL_PC_NOT_PSEUDO */
@@ -3651,7 +3651,7 @@ char *sql_special_columnsw1_casemode_2 =
 " charset_recode (SYS_COLS.\\COLUMN, 'UTF-8', '_WIDE_') AS \\COLUMN_NAME NVARCHAR(128),"	/* NOT NULL */
 " dv_to_sql_type(SYS_COLS.COL_DTP) AS \\DATA_TYPE SMALLINT,"/* NOT NULL */
 " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+" case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
 " SYS_COLS.COL_PREC AS \\LENGTH INTEGER,"
 " SYS_COLS.COL_SCALE AS \\SCALE SMALLINT,"
 " 1 AS \\PSEUDO_COLUMN SMALLINT "	/* = SQL_PC_NOT_PSEUDO */
@@ -3674,7 +3674,7 @@ char *sql_special_columnsw2_casemode_0 =
       " charset_recode (\\COLUMN, 'UTF-8', '_WIDE_') as \\COLUMN_NAME nvarchar(128),"	/* not null */
       " dv_to_sql_type(COL_DTP) as \\DATA_TYPE smallint,"	/* not null */
       " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
       " COL_PREC as \\LENGTH integer,"
       " COL_SCALE as \\SCALE smallint,"
       " 1 as \\PSEUDO_COLUMN smallint "	/* = sql_pc_not_pseudo */
@@ -3691,7 +3691,7 @@ char *sql_special_columnsw2_casemode_2 =
       " charset_recode (\\COLUMN, 'UTF-8', '_WIDE_') as \\COLUMN_NAME nvarchar(128),"	/* NOT NULL */
       " dv_to_sql_type(COL_DTP) as \\DATA_TYPE smallint,"	/* NOT NULL */
       " case when (SYS_COLS.COL_DTP in (125, 132) and get_keyword ('xml_col', coalesce (SYS_COLS.COL_OPTIONS, vector ())) is not null) then 'XMLType' else dv_type_title(SYS_COLS.COL_DTP) end AS TYPE_NAME VARCHAR(128),\n" /* DV_BLOB=125, DV_BLOB_WIDE=132 */
-      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = 225) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
+      " case when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP in (125, 132)) then " VARCHAR_UNSPEC_SIZE "  when (SYS_COLS.COL_PREC = 0 and SYS_COLS.COL_DTP = __tag of nvarchar) then " VARCHAR_UNSPEC_SIZE " else SYS_COLS.COL_PREC end AS \\PRECISION INTEGER,\n"
       " COL_PREC as \\LENGTH integer,"
       " COL_SCALE as \\SCALE smallint,"
       " 1 as \\PSEUDO_COLUMN smallint "	/* = SQL_PC_NOT_PSEUDO */

@@ -387,10 +387,10 @@ if (isstring (server_http_port ()))
      end
    , 0, ':=:');
 
-  if (__tag (varr) = 193 and length (varr) > 1)
+  if (__tag (varr) = __tag of vector and length (varr) > 1)
     vhost := varr[0];
 
-  if (__tag (lport) = 193 and length (lport) > 1)
+  if (__tag (lport) = __tag of vector and length (lport) > 1)
     lport := aref (lport, 1);
   else if (lhost = '*ini*')
     lport := server_http_port ();
@@ -562,9 +562,9 @@ if (isstring (server_http_port ()))
        else lhost
      end
    , 0, ':=:');
-  if (__tag (varr) = 193 and length (varr) > 1)
+  if (__tag (varr) = __tag of vector and length (varr) > 1)
     vhost := varr[0];
-  if (__tag (lport) = 193 and length (lport) > 1)
+  if (__tag (lport) = __tag of vector and length (lport) > 1)
     lport := aref (lport, 1);
   else if (lhost = '*ini*')
     lport := server_http_port ();

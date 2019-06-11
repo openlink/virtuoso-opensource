@@ -1089,14 +1089,14 @@ create procedure DB.DBA.SPARQL_RESULTS_XML_WRITE_ROW (inout ses any, in mdta any
 	  declare lang, dt varchar;
 	  declare is_xml_lit int;
 	  declare sql_val any;
-	  if (__tag (_val) = 185) -- string output
+	  if (__tag (_val) = __tag of stream)
 	    {
               http (sprintf ('\n   <binding name="%s"><literal>', _name), ses);
 	      http_value (_val, 0, ses);
               http ('</literal></binding>', ses);
               goto end_of_binding;
 	    }
-	  if (__tag (_val) = 230) -- XML entity
+	  if (__tag (_val) = __tag of XML)
 	    {
               http (sprintf ('\n   <binding name="%s"><literal datatype="http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral">', _name), ses);
 	      http_value (_val, 0, ses);
@@ -1239,14 +1239,14 @@ create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_ROW (inout ses any, in mdta 
           declare lang, dt varchar;
           declare val_tag integer;
           val_tag := __tag (_val);
-          if (val_tag = 185) -- string output
+          if (val_tag = __tag of stream)
             {
                      http ('>', ses);
               http_value (_val, 0, ses);
                      http ('</res:value></res:binding>', ses);
                      goto end_of_binding;
             }
-          if (val_tag = 230) -- XML entity
+          if (val_tag = __tag of XML)
             {
                      http (' rdf:parseType="Literal">', ses);
               http_value (_val, 0, ses);
@@ -1477,13 +1477,13 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
               http_escape (val, esc_mode, ses, 1, 1);
               http ('</pre>', ses);
             }
-	  else if (185 = __tag (val)) -- string output
+	  else if (__tag of stream = __tag (val))
 	    {
               http ('<pre>', ses);
               http_escape (cast (val as varchar), esc_mode, ses, 1, 1);
               http ('</pre>', ses);
 	    }
-	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
+	  else if (__tag of XML = rdf_box_data_tag (val))
 	    {
               --if (is_js)
                 --{
@@ -1602,12 +1602,12 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       http ('"type": "literal", "value": "', ses);
       http_escape (val, 14, ses, 0, 0);
     }
-  else if (185 = __tag (val))
+  else if (__tag of stream = __tag (val))
     {
       http ('"type": "literal", "value": "', ses);
       http_escape (cast (val as varchar), 14, ses, 1, 1);
     }
-  else if (230 = __tag (val))
+  else if (__tag of XML = __tag (val))
     {
       http ('"type": "literal", "value": "', ses);
       http_escape (serialize_to_UTF8_xml (val), 14, ses, 1, 1);
@@ -1793,13 +1793,13 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
               http_escape (val, 1, ses, 1, 1);
               http ('</pre>', ses);
             }
-	  else if (185 = __tag (val)) -- string output
+	  else if (__tag of stream = __tag (val))
 	    {
               http ('<pre>', ses);
               http_escape (cast (val as varchar), 1, ses, 1, 1);
               http ('</pre>', ses);
 	    }
-	  else if (__tag of XML = rdf_box_data_tag (val)) -- string output
+	  else if (__tag of XML = rdf_box_data_tag (val))
 	    {
               declare tmpses any;
               tmpses := string_output();
@@ -1976,7 +1976,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if ((1 = length (rset)) and
     (1 = length (rset[0])) and
-    (214 = __tag (rset[0][0])) )
+    (__tag of dictionary reference = __tag (rset[0][0])) )
     {
       declare triples any;
       triples := dict_list_keys (rset[0][0], 1);
@@ -3230,7 +3230,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
         {
 	  if (isstring (params[i+1]))
 	    dbg_printf ('%s=%s',params[i],params[i+1]);
-	  else if (__tag (params[i+1]) = 185)
+	  else if (__tag (params[i+1]) = __tag of stream)
 	    dbg_printf ('%s=%s',params[i],'<strses>');
 	  else
 	    dbg_printf ('%s=%s',params[i],'<box>');

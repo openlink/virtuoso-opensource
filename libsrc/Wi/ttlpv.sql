@@ -830,7 +830,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (o, 258, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }
@@ -844,7 +844,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	  else
 	    lid := rdf_lang_id (lower (o_type));
 	}
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       o := rdf_box (o, 257, lid, 0, 1);
       return;
@@ -890,7 +890,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 		tid := rdf_type_id (o_type);
 	    }
           o := rdf_box (o, tid, 257, 0, 1);
-	  if (is_text and 246 = __tag (o))
+          if (is_text and __tag of rdf_box = __tag (o))
 	    rdf_box_set_is_text (o, 1);
           return;
 	}
@@ -899,7 +899,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }
