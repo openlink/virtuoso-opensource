@@ -2098,19 +2098,43 @@ _exit:;
 create procedure WEBDAV.DBA.dav_lpath (
   in path varchar) returns varchar
 {
-  declare pref, ppref, lpath varchar;
+  declare path_domain, path_mounted varchar;
 
-  ppref := http_map_get ('mounted');
-  if (ppref = '/DAV/VAD/conductor/')
+  path_mounted := http_map_get ('mounted');
+  if (path_mounted = '/DAV/VAD/conductor/')
     return path;
 
-  if (path not like ppref || '%')
+  if (path_mounted like '/odrive/%')
     return path;
 
-  pref := http_map_get ('domain') || '/';
-  lpath := subseq (path, length (ppref));
-  lpath := pref || lpath;
-  return lpath;
+  if (path not like path_mounted || '%')
+    return path;
+
+  path_domain := http_map_get ('domain') || '/';
+
+  return path_domain || subseq (path, length (path_mounted));
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.dav_ppath (
+  in path varchar) returns varchar
+{
+  declare path_domain, path_mounted varchar;
+
+  path_mounted := http_map_get ('mounted');
+  if (path_mounted = '/DAV/VAD/conductor/')
+    return path;
+
+  if (path_mounted like '/odrive/%')
+    return path;
+
+  path_domain := http_map_get ('domain') || '/';
+  if (path not like path_domain || '%')
+    return path;
+
+  return path_mounted || subseq (path, length (path_domain));
 }
 ;
 

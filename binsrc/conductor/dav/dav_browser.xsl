@@ -59,7 +59,7 @@
       </xsl:when>
       <xsl:otherwise>
         <v:template type="simple">
-          <v:variable name="mode" persist="1" type="varchar">
+          <v:variable name="mode" type="varchar">
             <xsl:attribute name="default"><xsl:choose><xsl:when test="@mode='briefcase'">'briefcase'</xsl:when><xsl:when test="@mode='webdav'">'webdav'</xsl:when><xsl:otherwise>'conductor'</xsl:otherwise></xsl:choose></xsl:attribute>
           </v:variable>
           <script type="text/javascript">
@@ -1503,7 +1503,6 @@
               _params := self.vc_page.vc_event.ve_params;
 
               http_header (http_header_get () || 'X-XSS-Protection: 0\r\n');
-              self.mode := get_keyword ('mode', _params, self.mode);
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
               self.dir_columns := vector (
                 vector ('column_#1', 'c0', 'Name',          1, 0, vector (WEBDAV.DBA.settings_column (self.settings, 1), 1), 'width="50%"'),
@@ -1808,7 +1807,7 @@
                     else if (_action = 'go')
                     {
                       self.path.ufl_value := trim (self.path.ufl_value, '/');
-                      _tmp := WEBDAV.DBA.real_path (self.path.ufl_value);
+                      _tmp := WEBDAV.DBA.dav_ppath (WEBDAV.DBA.real_path (self.path.ufl_value));
                       if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (_tmp, 'C')))
                       {
                         self.vc_error_message := concat('Can not find the folder with name ', WEBDAV.DBA.refine_path (self.path.ufl_value));
@@ -5141,7 +5140,7 @@
             <div class="boxHeader" style="height: 22px;">
               <div style="float: left;">
               <b><vm:label for="path" value="' Path '" /></b>
-              <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide (WEBDAV.DBA.path_show (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
+              <v:text name="path" xhtml_id="path" value="--WEBDAV.DBA.utf2wide (WEBDAV.DBA.dav_lpath (self.dir_path))" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'go\')" xhtml_size="60" />
                 <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" style="margin-left: 5px; vertical-align:middle;" />
               </div>
               <div style="float: right;">
