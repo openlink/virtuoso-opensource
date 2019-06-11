@@ -319,6 +319,15 @@
               OAT.Dom.hide('ac_url_userinfo');
               OAT.Dom.show('a_name');
             }
+              if (obj.disabled) {
+                $('c_label').focus();
+              }
+              else {
+                if (obj.checked)
+                  $('c_name_custom').focus();
+                else
+                  $('c_name').focus();
+              }
           }
           customType($('a_type'));
         </script>

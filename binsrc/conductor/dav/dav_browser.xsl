@@ -2521,7 +2521,7 @@
                             </v:before-render>
                           </v:text>
                           <vm:if test="self.editField ('link') and self.dav_enable">
-                            <input type="button" onclick="javascript: WEBDAV.davSelect ('dav_link', false);" value="Select" disabled="disabled" class="button"/>
+                            <input type="button" onclick="javascript: WEBDAV.davSelect ('dav_link', false);" value="Select" disabled="disabled" class="button" tabindex="-1" />
                           </vm:if>
                         </td>
                       </tr>
@@ -2535,7 +2535,7 @@
                         <td>
                           <v:text name="rdfGraph_prefix" xhtml_id="rdfGraph_prefix" type="hidden" value="--self.detGraphUI2 ()" />
                           <v:text name="rdfBase_prefix"  xhtml_id="rdfBase_prefix" type="hidden" value="--WEBDAV.DBA.host_url () || WS.WS.FIXPATH (WEBDAV.DBA.real_path (self.dir_path))" />
-                          <v:text name="dav_name"        xhtml_id="dav_name" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
+                          <v:text name="dav_name"        xhtml_id="dav_name" xhtml_autofocus="" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, get_keyword ('TITLE', self.vc_page.vc_event.ve_params, WEBDAV.DBA.DAV_GET (self.dav_item, 'name')))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_onkeyup="javascript: WEBDAV.updateRdfGraph();" xhtml_onchange="javascript: WEBDAV.mimeTypeByExt();">
                             <v:before-render>
                               <![CDATA[
                                 control.vc_add_attribute ('class', 'field-short' || case when self.dav_enable and not self.editField ('name') then ' disabled' else '' end);
@@ -2568,7 +2568,7 @@
                               </script>
                             ]]>
                             <vm:if test="self.editField ('mime') and self.dav_enable and (self.dav_detClass <> 'SN')">
-                              <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=dav_mime:s1;') ?>');" disabled="disabled" class="button" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=dav_mime:s1;') ?>');" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -2787,7 +2787,7 @@
                               </v:after-data-bind>
                             </v:text>
                             <vm:if test="self.editField ('owner') and self.dav_enable and WEBDAV.DBA.check_admin (self.account_id)">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=dav_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -2832,7 +2832,7 @@
                               </v:before-render>
                             </v:text>
                             <vm:if test="self.editField ('group') and self.dav_enable">
-                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" />
+                              <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=dav_group:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" disabled="disabled" class="button" tabindex="-1" />
                             </vm:if>
                           </vm:if>
                           <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
@@ -3129,7 +3129,7 @@
                         <td>
                           <v:text name="dav_expireDate" xhtml_id="dav_expireDate" value="--self.get_fieldProperty ('dav_expireDate', self.dav_path, 'virt:expireDate', '')" xhtml_onclick="javascript: WEBDAV.datePopup(\'dav_expireDate\');" xhtml_disabled="disabled" xhtml_class="field-shorter" />
                           <vm:if test="self.editField ('expireDate') and self.dav_enable">
-                            <input type="button" value="Select" onclick="javascript: WEBDAV.datePopup('dav_expireDate'); return false;" disabled="disabled" class="button" />
+                            <input type="button" value="Select" onclick="javascript: WEBDAV.datePopup('dav_expireDate'); return false;" disabled="disabled" class="button" tabindex="-1" />
                           </vm:if>
                         </td>
                       </tr>
@@ -4234,9 +4234,12 @@
                 WEBDAV.initTab(17, 1);
                 destinationChange($('dav_turtleRedirect'), {'checked': {'show': ['ttl_enable_1', 'ttl_enable_2']}, 'unchecked': {'hide': ['ttl_enable_1', 'ttl_enable_2']}});
 
-                var v = $('dav_name').value;
-                $('dav_name_save').value = v;
-                $('dav_name_save_mime').value = v;
+                var v = $('dav_name');
+                if (!v.disabled)
+                  v.focus();
+
+                $('dav_name_save').value = v.value;
+                $('dav_name_save_mime').value = v.value;
               ]]>
             </script>
           </v:template>
@@ -4265,11 +4268,11 @@
             <div style="padding-right: 6px;">
               <v:template type="simple" name="template_20a" enabled="--case when (self.command = 20) and (self.mimeType = 'text/turtle') and __proc_exists ('WS.WS.TTL_PREFIXES_ENABLED') then 1 else 0 end">
                 <div class="boxHeader">
-                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" />
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixDialog();" value="Search prefix" tabindex="-1" />
                   &amp;nbsp;
-                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('f_content_plain');" value="Prefixes" />
+                  <input type="button" class="button" onclick="javascript: WEBDAV.prefixesDialog('f_content_plain');" value="Prefixes" tabindex="-1" />
                   &amp;nbsp;
-                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('f_content_plain');" value="Verify" />
+                  <input type="button" class="button" onclick="javascript: WEBDAV.verifyTurtleDialog('f_content_plain');" value="Verify" tabindex="-1" />
                   &amp;nbsp;
                   <label>
                     <?vsp
@@ -4301,7 +4304,7 @@
                   }
                   else
                   {
-                    http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
+                    http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" autofocus style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
                     http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
                     http ('</textarea>');
                   }
@@ -4392,7 +4395,7 @@
                     Destination folder
                   </th>
                   <td>
-                    <input name="f_folder" id="f_folder" value="<?V self.v_source ?>" class="field-short" />&amp;nbsp;
+                    <input name="f_folder" id="f_folder" autofocus="" value="<?V self.v_source ?>" class="field-short" />&amp;nbsp;
                     <input type="button" class="button" onclick="javascript: WEBDAV.davSelect ('f_folder', true);" value="Select" />
                   </td>
                 </tr>
@@ -4442,8 +4445,8 @@
                   </th>
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
-                      <v:text name="prop_mime" xhtml_id="prop_mime" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                      <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" />
+                      <v:text name="prop_mime" xhtml_id="prop_mime" xhtml_autofocus="" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
+                      <input type="button" value="Select" onclick="javascript: windowShow('<?V WEBDAV.DBA.url_fix ('/ods/mimes_select.vspx?params=prop_mime:s1;') ?>');" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:data-list name="prop_mime2" xhtml_id="prop_mime2" sql="select 'Do not change' as T_TYPE from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select distinct T_TYPE from WS.WS.SYS_DAV_RES_TYPES order by T_TYPE" key-column="T_TYPE" value-column="T_TYPE" xhtml_class="field-short">
@@ -4465,7 +4468,7 @@
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:text name="prop_owner" xhtml_id="prop_owner" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=u_set&amp;params=prop_owner:s1;&nrows=<?V WEBDAV.DBA.settings_rows (self.settings) ?>')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:data-list name="prop_owner2" xhtml_id="prop_owner2" sql="select -1 as U_ID, 'Do not change' as U_NAME from WS.WS.SYS_DAV_USER where U_NAME = 'dav' union all select TOP 100 U_ID, U_NAME from WS.WS.SYS_DAV_USER" key-column="U_NAME" value-column="U_NAME" xhtml_class="field-short" instantiate="--case when WEBDAV.DBA.VAD_CHECK ('Framework') then 0 else 1 end">
@@ -4487,7 +4490,7 @@
                   <td>
                     <vm:if test="WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:text name="prop_group" xhtml_id="prop_group" value="--'Do not change'" format="%s" xhtml_class="field-short" />&amp;nbsp;
-                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" />
+                      <input type="button" value="Select" onclick="javascript: windowShow('/ods/users_select.vspx?mode=g_set&amp;params=prop_group:s1;')" class="button" tabindex="-1" />
                     </vm:if>
                     <vm:if test="not WEBDAV.DBA.VAD_CHECK ('Framework')">
                       <v:data-list name="prop_group2" xhtml_id="prop_group2" sql="select -1 as G_ID, 'Do not change' as G_NAME from WS.WS.SYS_DAV_GROUP where G_NAME = 'administrators' union all select G_ID, G_NAME from WS.WS.SYS_DAV_GROUP" key-column="G_NAME" value-column="G_NAME" xhtml_class="field-short">
@@ -4672,10 +4675,8 @@
                     <v:label for="f_tagsPublic" value="Public tags (comma-separated)"/>
                   </th>
                   <td>
-                    <v:text name="f_tagsPublic" xhtml_id="f_tagsPublic" xhtml_class="field-short" />
-                    <v:template name="template_901" type="simple">
-                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPublic').value = ''" class="button" />
-                    </v:template>
+                    <v:text name="f_tagsPublic" xhtml_id="f_tagsPublic" xhtml_autofocus="" xhtml_class="field-short" />&amp;nbsp;
+                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPublic').value = ''" class="button" tabindex="-1" />
                   </td>
                 </tr>
                 <tr>
@@ -4683,10 +4684,8 @@
                     <v:label for="f_tagsPrivate" value="Private tags (comma-separated)"/>
                   </th>
                   <td>
-                    <v:text name="f_tagsPrivate" xhtml_id="f_tagsPrivate" xhtml_class="field-short"/>
-                    <v:template name="template_902" type="simple">
-                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPrivate').value = ''" class="button" />
-                    </v:template>
+                    <v:text name="f_tagsPrivate" xhtml_id="f_tagsPrivate" xhtml_class="field-short"/>&amp;nbsp;
+                    <input type="button" value="Clear" onclick="javascript: $('f_tagsPrivate').value = ''" class="button" tabindex="-1" />
                   </td>
                 </tr>
               </table>
@@ -5641,7 +5640,7 @@
                 </tr>
               </table>
             </div>
-            <v:template type="simple" name="Brouse_Footer" enabled="-- case when (self.returnName <> '') then 1 else 0 end">
+            <v:template type="simple" name="Browse_Footer" enabled="-- case when (self.returnName <> '') then 1 else 0 end">
               <div style="margin-bottom: 0.5em;">
                 <b> Resource Name </b>
                 <v:text type="simple" name="item_name" xhtml_id="item_name" value="--''">
@@ -5654,7 +5653,7 @@
                     ]]>
                   </v:after-data-bind>
                 </v:text>
-                <input type="button" name="b_return" value="Select" onClick="javascript:  WEBDAV.selectRow ('F1')" />
+                <input type="button" name="b_return" value="Select" onClick="javascript: WEBDAV.selectRow ('F1')" />
                 <v:button name="b_cancel" action="simple" value="Cancel" xhtml_onClick="javascript: if (opener != null) opener.focus(); window.close()"/>
               </div>
             </v:template>
@@ -6002,7 +6001,7 @@
               <v:label value="--sprintf ('Content is %s in Version Control', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), '', 'not'))" format="%s" />
             </th>
             <td>
-              <v:button name="template_vc" style="url" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="template_vc" style="url" action="simple" value="--sprintf ('%s VC', either(equ(WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'),1), 'Disable', 'Enable'))" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6042,7 +6041,7 @@
               File commands
             </th>
             <td>
-              <v:button name="tepmpate_lock" style="url" action="simple" value="Lock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 0 else 1 end" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="tepmpate_lock" style="url" action="simple" value="Lock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 0 else 1 end" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6064,7 +6063,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_unlock" style="url" action="simple" value="Unlock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="tepmpate_unlock" style="url" action="simple" value="Unlock" enabled="-- case when (WEBDAV.DBA.DAV_IS_LOCKED (self.dav_path)) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6093,7 +6092,7 @@
               Versioning commands
             </th>
             <td>
-              <v:button name="tepmpate_checkIn" style="url" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null (WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="tepmpate_checkIn" style="url" action="simple" value="Check-In" enabled="-- case when (is_empty_or_null (WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6115,7 +6114,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_checkOut" style="url" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="tepmpate_checkOut" style="url" action="simple" value="Check-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-out'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6137,7 +6136,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button name="tepmpate_uncheckOut" style="url" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0">
+              <v:button name="tepmpate_uncheckOut" style="url" action="simple" value="Uncheck-Out" enabled="-- case when (is_empty_or_null(WEBDAV.DBA.DAV_GET (self.dav_item, 'checked-in'))) then 1 else 0 end" xhtml_class="button" xhtml_style="padding-top: 0" xhtml_tabindex="-1">
                 <v:before-render>
                   <![CDATA[
                     if (not self.dav_enable_versioning)
@@ -6174,7 +6173,7 @@
               Root version
             </th>
             <td>
-              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s" xhtml_disabled="disabled">
+              <v:button style="url" action="simple" value="--WEBDAV.DBA.DAV_GET_VERSION_ROOT (self.dav_path)" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
                 <v:on-post>
                   <![CDATA[
                     declare _path varchar;
@@ -6228,7 +6227,7 @@
                     <table>
                       <tr>
                         <td nowrap="nowrap">
-                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled">
+                          <v:button name="button_versions_show" style="url" action="simple" value="--(control.vc_parent as vspx_row_template).te_column_value('c0')" format="%s" xhtml_disabled="disabled" xhtml_tabindex="-1">
                             <v:on-post>
                               <![CDATA[
                                 declare _path varchar;
@@ -6271,7 +6270,7 @@
                           </v:label>
                         </td>
                         <td nowrap="nowrap">
-                          <v:button name="button_versions_delete" action="simple" style="url" value="Version Delete" enabled="--(control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_disabled="disabled">
+                          <v:button name="button_versions_delete" action="simple" style="url" value="Version Delete" enabled="--(control.vc_parent as vspx_row_template).te_column_value('c1')" xhtml_disabled="disabled" xhtml_tabindex="-1">
                             <v:after-data-bind>
                               <![CDATA[
                                 control.ufl_value := '<img src="dav/image/trash_16.png" border="0" alt="Version Delete" title="Version Delete" onclick="javascript: if (!confirm(\'Are you sure you want to delete the chosen version and all previous versions?\')) { event.cancelBubble = true;};" />';
