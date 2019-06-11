@@ -103,9 +103,7 @@
 	      </td>
             </tr>
             <tr>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
-              <td>&nbsp;</td>
+              <td colspan="3">&amp;nbsp;</td>
             </tr>
 	  </table>
 	  <map name="conduct01_02">

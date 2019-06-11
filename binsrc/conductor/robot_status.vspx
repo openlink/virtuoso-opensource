@@ -31,122 +31,116 @@
     </vm:menu>
     <vm:header caption="Content Import Queues"/>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab_selected" align="center" nowrap="1">
-                        <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        &nbsp;
-                      </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-                        <v:form name="robot_form1" type="simple" method="POST" action="">
-                          <table>
-                            <tr>
-                              <td align="left" class="listing_col_action">
-                                <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()" xhtml_alt="Refresh page" xhtml_title="Refresh page" text="&nbsp;Refresh">
-                                  <v:before-render>
-                                   <![CDATA[
-                                      declare params any;
-                                      params := self.vc_event.ve_params;
-                                      control.bt_url := sprintf ('%s?host=%U&root=%U&url=%U',
-                                      http_path (),
-                                      get_keyword ('host', params, ''),
-                                      get_keyword ('root', params, ''),
-                                        get_keyword ('url', params, '')
-                                     );
-                                    ]]>
-                                  </v:before-render>
-                                </v:button>
-                              </td>
-                              <td>
-                                &nbsp;
-                              </td>
-                              <td align="right">
-                                <v:url value="Back" name="robot_button25" url="robot_queues.vspx"/>
-                              </td>
-                            </tr>
-                          </table>
-                        </v:form>
-                        <?vsp
-                          declare host, root varchar;
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_selected" align="center" nowrap="1">
+                  <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &amp:nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <v:form name="robot_form1" type="simple" method="POST" action="">
+                    <table>
+                      <tr>
+                        <td align="left" class="listing_col_action">
+                          <v:button style="image" action="simple" value="images/icons/ref_16.png" url="--http_path ()" xhtml_alt="Refresh page" xhtml_title="Refresh page" text="&nbsp;Refresh">
+                            <v:before-render>
+                             <![CDATA[
+                                declare params any;
+                                params := self.vc_event.ve_params;
+                                control.bt_url := sprintf ('%s?host=%U&root=%U&url=%U',
+                                  http_path (),
+                                  get_keyword ('host', params, ''),
+                                  get_keyword ('root', params, ''),
+                                  get_keyword ('url', params, '')
+                               );
+                              ]]>
+                            </v:before-render>
+                          </v:button>
+                        </td>
+                        <td>
+                          &nbsp;
+                        </td>
+                        <td align="right">
+                          <v:url value="Back" name="robot_button25" url="robot_queues.vspx"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:form>
+                  <?vsp
+                    declare host, root varchar;
 
-                          set isolation='uncommitted';
+                    set isolation = 'uncommitted';
 
-                          host := get_keyword ('host', params, '');
-                          root := get_keyword ('root', params, '');
+                    host := get_keyword ('host', params, '');
+                    root := get_keyword ('root', params, '');
 
-                          http(concat('<h4>Results for ', host,'</h4>'));
-                          if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and VQ_STAT = 'pending'))
-                          {
-                            http('<table class="listing"><tr><td>Top pending URLs</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>');
-                            for (select top 10 VQ_URL, VQ_TS, VQ_STAT
-                                   from WS.WS.VFS_QUEUE
-                                  where VQ_HOST = host and VQ_ROOT = root and VQ_STAT in ('waiting', 'pending')
-                                  order by VQ_HOST, VQ_ROOT, VQ_TS) do
-                           {
-                         ?>
-                         <tr>
-                           <td class="gendata"><?V VQ_URL ?></td>
-                           <td class="gendata"><?V adm_date_fmt(VQ_TS) ?></td>
-                           <td class="gendata">
-                             <font style="<?vsp if (VQ_STAT = 'pending') http ('color:red'); ?>">
-                               <?V VQ_STAT ?>
-                             </font>
-                           </td>
-                         </tr>
+                    http(concat('<h4>Results for ', host,'</h4>'));
+                    if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_ROOT = root and VQ_HOST = host and VQ_STAT = 'pending'))
+                    {
+                      http ('<table class="listing"><tr><td>Top pending URLs</td></tr><tr class="listing_header_row"><td>URL</td><td>Registered on</td><td>State</td></tr>');
+                      for (select top 10 VQ_URL, VQ_TS, VQ_STAT
+                             from WS.WS.VFS_QUEUE
+                            where VQ_HOST = host and VQ_ROOT = root and VQ_STAT in ('waiting', 'pending')
+                            order by VQ_HOST, VQ_ROOT, VQ_TS) do
+                     {
+                   ?>
+                   <tr>
+                     <td class="gendata"><?V VQ_URL ?></td>
+                     <td class="gendata"><?V adm_date_fmt(VQ_TS) ?></td>
+                     <td class="gendata">
+                       <font style="<?vsp if (VQ_STAT = 'pending') http ('color:red'); ?>">
+                         <?V VQ_STAT ?>
+                       </font>
+                     </td>
+                   </tr>
 
-                        <?vsp
-                          }
-                          http ('</table>');
+                  <?vsp
+                    }
+                    http ('</table>');
 
-                          http ('<table class="listing">');
-                          http('<tr class="listing_header_row"><th>Status</th><th>Count</th></tr>');
-                          for (select VQ_STAT, count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root) do
-                          {
-                        ?>
-                        <tr><td><?V VQ_STAT ?></td><td><?V cnt ?></td></tr>
-                        <?vsp
-                          }
-                          http ('</table>');
-                        }
-                        else
-                        {
-                          if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'error'))
-                            http (concat ('<p>errors while retrieving target. Select "reset" to return initial state</p>'));
-                        ?>
-                        <p>
-                          Total URLs processed : <?V coalesce ((select count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root), 0) ?>
-                        </p>
-                        <p>
-                          <b>Download finished</b>
-                        </p>
-                        <?vsp
-                          }
-                          http_header ('Refresh: 5\r\n');
-                        ?>
-                      </td>
-                    </tr>
-                  </table>
+                    http ('<table class="listing">');
+                    http('<tr class="listing_header_row"><th>Status</th><th>Count</th></tr>');
+                    for (select VQ_STAT, count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root) do
+                    {
+                  ?>
+                  <tr><td><?V VQ_STAT ?></td><td><?V cnt ?></td></tr>
+                  <?vsp
+                    }
+                    http ('</table>');
+                  }
+                  else
+                  {
+                    if (exists (select 1 from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root and VQ_STAT = 'error'))
+                      http (concat ('<p>errors while retrieving target. Select "reset" to return initial state</p>'));
+                  ?>
+                  <p>
+                    Total URLs processed : <?V coalesce ((select count(*) as cnt from WS.WS.VFS_QUEUE where VQ_HOST = host and VQ_ROOT = root), 0) ?>
+                  </p>
+                  <p>
+                    <b>Download finished</b>
+                  </p>
+                  <?vsp
+                    }
+                    http_header ('Refresh: 5\r\n');
+                  ?>
                 </td>
               </tr>
             </table>

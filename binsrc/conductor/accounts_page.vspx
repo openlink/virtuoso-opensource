@@ -20,7 +20,8 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:page name="databases" decor="yacutia_decor.vspx"
+<v:page name="accounts_page"
+        decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         fast-render="1"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
@@ -58,7 +59,7 @@
                   <v:url name="b_url14" value="LDAP Servers" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab_empty" align="center" width="100%">
-                  &nbsp;
+                  &amp;nbsp;
                 </td>
               </tr>
             </table>

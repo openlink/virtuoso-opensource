@@ -50,7 +50,7 @@
                     </v:button>
                   </td>
                   <td align="right">
-                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
                   </td>
                   <td align="right">
                     <v:button action="simple" value="Import Queues" name="robot_button3" format="%s">
@@ -148,21 +148,21 @@
                     value="images/icons/edit_16.png"
                     xhtml_alt="Edit"
                     xhtml_title="Edit"
-                    text="&nbsp;Edit"
+                    text="&amp;nbsp;Edit"
                     url="--sprintf ('robot_edit.vspx?mode=edit&EDIT=%U&url=%U&root=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])"
                     />
                   <v:button action="simple" style="image" name="url3"
                     value="images/icons/copy_16.png"
                     xhtml_alt="Copy"
                     xhtml_title="Copy"
-                    text="&nbsp;Copy"
+                    text="&amp;nbsp;Copy"
                     url="--sprintf ('robot_edit.vspx?mode=copy&EDIT=%U&url=%U&root=%U', (control.vc_parent as vspx_row_template).te_rowset[1], (control.vc_parent as vspx_row_template).te_rowset[2], (control.vc_parent as vspx_row_template).te_rowset[3])"
                     />
                   <v:button action="simple" style="image" name="data_set2_delete"
                     value="images/icons/trash_16.png"
                     xhtml_alt="Delete"
                     xhtml_title="Delete"
-                    text="&nbsp;Delete"
+                    text="&amp;nbsp;Delete"
                     >
                     <v:on-post>
                       <![CDATA[

@@ -79,30 +79,17 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab_selected" align="center">XQuery Basic</td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab_selected" align="center">XQuery Basic</td>
+                      <td class="page_tab" align="center">
+                         <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &amp;nbsp;
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">

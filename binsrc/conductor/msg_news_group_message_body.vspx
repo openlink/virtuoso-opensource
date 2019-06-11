@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,17 +19,15 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="msg_news_group_message_body_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
-    <v:script>
-      <![CDATA[
-if(self.nm_body_id = '') {
-  self.nm_body_id := cast(get_keyword('NM_BODY_ID', e.ve_params) as int);
-}
-      ]]>
-    </v:script>
+    <![CDATA[
+      if(self.nm_body_id = '')
+      {
+        self.nm_body_id := cast(get_keyword('NM_BODY_ID', e.ve_params) as int);
+      }
+    ]]>
   </v:on-init>
   <vm:pagetitle>Virtuoso NNTP Server Groups Subscriptions Management</vm:pagetitle>
   <vm:pagewrapper>
@@ -50,24 +46,14 @@ if(self.nm_body_id = '') {
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-		      <td class="page_tab_selected" align="center">NNTP servers
-		      </td>
-		      <td class="page_tab" align="center">
-			<v:url name="gsetup" value="General Setup" url="msg_news_conf_global.vspx"/>
+                      <td class="page_tab_selected" align="center">NNTP servers
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="gsetup" value="General Setup" url="msg_news_conf_global.vspx"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-			      <td width="100%">
-                              </td>
-                            </tr>
-                          </table>
+                        &amp;nbsp;
                       </td>
                     </tr>
                   </table>

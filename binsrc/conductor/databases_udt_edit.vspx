@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="databases_udt" decor="yacutia_decor.vspx"
@@ -40,92 +37,64 @@
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
-                    <tr>
-                      <v:template name="tabTemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null)  then 1 else 0 end">
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Create UDT
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url12" value="--'Create UDT from WSDL'" format="%s" url="--'databases_udt_edit.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url13" value="--'Create UDT from .NET Assembly or Java Class'" format="%s" url="--'databases_udt_edit.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url21" value="--'Create UDT'" format="%s" url="--'databases_udt_edit.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Create UDT from WSDL
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url23" value="--'Create UDT from .NET Assembly or Java Class'" format="%s" url="--'databases_udt_edit.vspx?page=3'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                      <v:template name="tabTemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3' )">
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url31" value="--'Create UDT'" format="%s" url="--'databases_udt_edit.vspx?page=1'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center" nowrap="1">
-                          <v:url name="b_url32" value="--'Create UDT from WSDL'" format="%s" url="--'databases_udt_edit.vspx?page=2'" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center" nowrap="1">
-                          Create UDT from .NET Assembly or Java Class
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
-                      </v:template>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-                        <v:template name="_tabtemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                          <v:include url="databases_udt_custom.vspx"/>
-                        </v:template>
-                        <v:template name="_tabtemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                          <v:include url="wsdltree.vspx"/>
-                        </v:template>
-                        <v:template name="_tabtemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
-                          <v:include url="hosted_import.vspx"/>
-                        </v:template>
-                      </td>
-                    </tr>
-                  </table>
+                <v:template name="tabTemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null)  then 1 else 0 end">
+                  <td class="page_tab_selected" align="center" nowrap="1">
+                    Create UDT
+                  </td>
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url12" value="--'Create UDT from WSDL'" format="%s" url="--'databases_udt_edit.vspx?page=2'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url13" value="--'Create UDT from .NET Assembly or Java Class'" format="%s" url="--'databases_udt_edit.vspx?page=3'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab_empty" align="center" width="100%">
+                    &amp;nbsp;
+                  </td>
+                </v:template>
+                <v:template name="tabTemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url21" value="--'Create UDT'" format="%s" url="--'databases_udt_edit.vspx?page=1'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab_selected" align="center" nowrap="1">
+                    Create UDT from WSDL
+                  </td>
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url23" value="--'Create UDT from .NET Assembly or Java Class'" format="%s" url="--'databases_udt_edit.vspx?page=3'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab_empty" align="center" width="100%">
+                    &amp;nbsp;
+                  </td>
+                </v:template>
+                <v:template name="tabTemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3' )">
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url31" value="--'Create UDT'" format="%s" url="--'databases_udt_edit.vspx?page=1'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab" align="center" nowrap="1">
+                    <v:url name="b_url32" value="--'Create UDT from WSDL'" format="%s" url="--'databases_udt_edit.vspx?page=2'" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab_selected" align="center" nowrap="1">
+                    Create UDT from .NET Assembly or Java Class
+                  </td>
+                  <td class="page_tab_empty" align="center" width="100%">
+                    &amp;nbsp;
+                  </td>
+                </v:template>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <v:template name="_tabtemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                    <v:include url="databases_udt_custom.vspx"/>
+                  </v:template>
+                  <v:template name="_tabtemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
+                    <v:include url="wsdltree.vspx"/>
+                  </v:template>
+                  <v:template name="_tabtemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
+                    <v:include url="hosted_import.vspx"/>
+                  </v:template>
                 </td>
               </tr>
             </table>

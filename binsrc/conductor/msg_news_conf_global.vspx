@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="msg_news_global_page"
@@ -58,24 +55,14 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-		      <td class="page_tab" align="center">
-			<v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
-		      </td>
-		      <td class="page_tab_selected" align="center">General Setup
+                      <td class="page_tab" align="center">
+                        <v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">General Setup
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-			      <td width="100%">
-                              </td>
-                            </tr>
-                          </table>
+                        &amp;nbsp;
                       </td>
                     </tr>
                   </table>

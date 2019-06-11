@@ -41,209 +41,197 @@
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-            <!-- tab -->
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
+                <td class="page_tab_selected" align="center" nowrap="1">
+                  <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx">Stylesheets</v:url>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &amp;nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <table cellpadding='10' cellspacing='0' border='0' width='100%'>
                     <tr>
-                      <td class="page_tab_selected" align="center" nowrap="1">
-                        <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx">Stylesheets</v:url>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-                        <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-                          <tr>
-                            <td>
-                              <v:form name="fm" type="simple" method="POST">
-                                <vm:if test="self.c_mode = 'C/browse'">
-                                  <v:button name="add1" value="Add" action="simple">
-                                    <v:on-post>
-                                      <![CDATA[
-                                        self.c_mode := 'C/add';
+                      <td>
+                        <v:form name="fm" type="simple" method="POST">
+                          <vm:if test="self.c_mode = 'C/browse'">
+                            <v:button name="add1" value="Add" action="simple">
+                              <v:on-post>
+                                <![CDATA[
+                                  self.c_mode := 'C/add';
 
-                                        self.desc1.ufl_value := '';
-                                        self.patt1.ufl_value := '';
-                                        self.tgt1.ufl_value := '';
+                                  self.desc1.ufl_value := '';
+                                  self.patt1.ufl_value := '';
+                                  self.tgt1.ufl_value := '';
 
-                                        self.c_id := null;
-                                        self.vc_data_bind (e);
-                                      ]]>
-                                    </v:on-post>
-                                  </v:button>
-								   <v:button name="back" value="Back" action="simple">
-									  <v:on-post>
-										<![CDATA[
-										  self.vc_redirect ('rdf_filters.vspx');
-										]]>
-									  </v:on-post>
-                                  </v:button>
-                                  <table class="listing" rules="groups">
-                                    <tr class="listing_header_row">
-                                      <th>Description</th>
-                                      <th>Pattern</th>
-                                      <th>Target</th>
-                                      <th width="1%">Action</th>
-                                    </tr>
-                                    <v:data-set name="maps" sql="select CSV_DESCRIPTION, CSV_PATTERN, CSV_TARGET, CSV_ID from DB.DBA.CSV_HEADER_PATTERNS order by CSV_ID" scrollable="1" editable="1" nrows="1000">
-                                      <v:template name="maps_rep" type="repeat">
-                                        <v:template name="maps_brows" type="browse">
-                                          <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
-                                            <td>
-                                              <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
-                                                <v:before-render>
-                                                  <![CDATA[
-                                                    control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
-                                                  ]]>
-                                                </v:before-render>
-                                                <v:on-post>
-                                                  <![CDATA[
-                                                    declare skey, _key, _uid, _opts any;
-                                                    declare i int;
-
-                                                    self.desc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
-                                                    self.patt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                                    self.tgt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
-                                                    self.c_id := (control.vc_parent as vspx_row_template).te_rowset[3];
-                                                    self.c_mode := 'C/edit';
-                                                    self.vc_data_bind (e);
-                                                  ]]>
-                                                </v:on-post>
-                                              </v:button>
-                                            </td>
-                                            <td>
-                                              <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
-                                            </td>
-                                            <td>
-                                              <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
-                                            </td>
-                                            <td nowrap="nowrap">
-                                              <v:button name="delete1" action="simple" style="url" value="''">
-                                                <v:before-render>
-                                                  <![CDATA[
-                                                    control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
-                                                  ]]>
-                                                </v:before-render>
-                                                <v:on-post>
-                                                  <![CDATA[
-                                                    delete from DB.DBA.CSV_HEADER_PATTERNS where CSV_ID = (control.vc_parent as vspx_row_template).te_rowset[3];
-                                                    self.vc_data_bind (e);
-                                                  ]]>
-                                                </v:on-post>
-                                              </v:button>
-                                            </td>
-                                          </tr>
-                                        </v:template>
-                                      </v:template>
-
-                                       <v:template name="maps_footer" type="simple">
-                                      </v:template>
-                                    </v:data-set>
-                                  </table>
-                                </vm:if>
-
-                                <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
-                                  <div class="fm">
-                                    <fieldset>
-                                      <label for="desc1">CSV Pattern</label>
-                                      <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="110" />
-                                      <span style="display: none">
-                                        (ID: <v:text name="mappingid1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="4" />)
-                                      </span>
-                                      <br />
-                                      <label for="patt1">Pattern</label>
-                                      <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_size="110" />
-                                      <br />
-                                      <label for="tgt1">Target</label>
-                                      <v:text name="tgt1" value="" xhtml_size="110" xhtml_id="tgt1" error-glyph="*" />
-                                      <br />
-                                      <span class="fm_ctl_btn">
-                                        <v:button name="cancel1" value="Cancel" action="simple">
+                                  self.c_id := null;
+                                  self.vc_data_bind (e);
+                                ]]>
+                              </v:on-post>
+                            </v:button>
+					   <v:button name="back" value="Back" action="simple">
+						  <v:on-post>
+							<![CDATA[
+							  self.vc_redirect ('rdf_filters.vspx');
+							]]>
+						  </v:on-post>
+                            </v:button>
+                            <table class="listing" rules="groups">
+                              <tr class="listing_header_row">
+                                <th>Description</th>
+                                <th>Pattern</th>
+                                <th>Target</th>
+                                <th width="1%">Action</th>
+                              </tr>
+                              <v:data-set name="maps" sql="select CSV_DESCRIPTION, CSV_PATTERN, CSV_TARGET, CSV_ID from DB.DBA.CSV_HEADER_PATTERNS order by CSV_ID" scrollable="1" editable="1" nrows="1000">
+                                <v:template name="maps_rep" type="repeat">
+                                  <v:template name="maps_brows" type="browse">
+                                    <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                      <td>
+                                        <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                                          <v:before-render>
+                                            <![CDATA[
+                                              control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                                            ]]>
+                                          </v:before-render>
                                           <v:on-post>
                                             <![CDATA[
-                                              self.c_mode := 'C/browse';
+                                              declare skey, _key, _uid, _opts any;
+                                              declare i int;
+
+                                              self.desc1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[0];
+                                              self.patt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+                                              self.tgt1.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[2];
+                                              self.c_id := (control.vc_parent as vspx_row_template).te_rowset[3];
+                                              self.c_mode := 'C/edit';
                                               self.vc_data_bind (e);
                                             ]]>
                                           </v:on-post>
                                         </v:button>
-
-                                        <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                      </td>
+                                      <td>
+                                        <v:label name="la1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]"/>
+                                      </td>
+                                      <td>
+                                        <v:label name="la2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]"/>
+                                      </td>
+                                      <td nowrap="nowrap">
+                                        <v:button name="delete1" action="simple" style="url" value="''">
+                                          <v:before-render>
+                                            <![CDATA[
+                                              control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                                            ]]>
+                                          </v:before-render>
                                           <v:on-post>
-                                            if (not self.vc_is_valid)
-                                              return;
-
-                                            declare exit handler for sqlstate '23000'
-                                            {
-                                              rollback work;
-                                              self.vc_is_valid := 0;
-                                              self.vc_error_message := 'The values entered conflict with other CSV patters. Please supply correct values.';
-                                              return;
-                                            };
-
-                                            self.desc1.ufl_value := trim (self.desc1.ufl_value);
-                                            self.patt1.ufl_value := trim (self.patt1.ufl_value);
-                                            self.tgt1.ufl_value := trim (self.tgt1.ufl_value);
-
-                                            if (not length (self.desc1.ufl_value) or not length (self.tgt1.ufl_value))
-                                            {
-                                              rollback work;
-                                              self.vc_is_valid := 0;
-                                              self.vc_error_message := 'The description value cannot be empty.';
-                                              return;
-                                            }
-
-                                            if (self.c_mode = 'C/add')
-                                            {
-                                              insert into DB.DBA.CSV_HEADER_PATTERNS (CSV_DESCRIPTION, CSV_PATTERN, CSV_TARGET, CSV_ID)
-                                                values (self.desc1.ufl_value, self.patt1.ufl_value, self.tgt1.ufl_value, sequence_next('DB.DBA.CSV_HEADER_PATTERNS.CSV_ID'));
-                                            }
-                                            else
-                                            {
-                                              update DB.DBA.CSV_HEADER_PATTERNS
-                                                 set CSV_DESCRIPTION = self.desc1.ufl_value,
-                                                     CSV_PATTERN = self.patt1.ufl_value,
-                                                     CSV_TARGET = self.tgt1.ufl_value
-                                               where CSV_ID = self.c_id;
-                                            }
-
-                                            self.c_mode := 'C/browse';
-                                            self.vc_data_bind (e);
+                                            <![CDATA[
+                                              delete from DB.DBA.CSV_HEADER_PATTERNS where CSV_ID = (control.vc_parent as vspx_row_template).te_rowset[3];
+                                              self.vc_data_bind (e);
+                                            ]]>
                                           </v:on-post>
                                         </v:button>
-                                      </span>
-                                    </fieldset>
-                                  </div>
-                               </vm:if>
-                              </v:form>
-                            </td>
-                          </tr>
-                        </table>
+                                      </td>
+                                    </tr>
+                                  </v:template>
+                                </v:template>
+
+                                 <v:template name="maps_footer" type="simple">
+                                </v:template>
+                              </v:data-set>
+                            </table>
+                          </vm:if>
+
+                          <vm:if test="(self.c_mode = 'C/add') or (self.c_mode = 'C/edit')">
+                            <div class="fm">
+                              <fieldset>
+                                <label for="desc1">CSV Pattern</label>
+                                <v:text name="desc1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="110" />
+                                <span style="display: none">
+                                  (ID: <v:text name="mappingid1" value="" xhtml_id="desc1" error-glyph="*" xhtml_size="4" />)
+                                </span>
+                                <br />
+                                <label for="patt1">Pattern</label>
+                                <v:text name="patt1" xhtml_id="patt1" error-glyph="*" value="" xhtml_size="110" />
+                                <br />
+                                <label for="tgt1">Target</label>
+                                <v:text name="tgt1" value="" xhtml_size="110" xhtml_id="tgt1" error-glyph="*" />
+                                <br />
+                                <span class="fm_ctl_btn">
+                                  <v:button name="cancel1" value="Cancel" action="simple">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        self.c_mode := 'C/browse';
+                                        self.vc_data_bind (e);
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
+
+                                  <v:button name="save1" value="--case when self.c_mode = 'C/add' then 'Add' else 'Update' end" action="simple">
+                                    <v:on-post>
+                                      if (not self.vc_is_valid)
+                                        return;
+
+                                      declare exit handler for sqlstate '23000'
+                                      {
+                                        rollback work;
+                                        self.vc_is_valid := 0;
+                                        self.vc_error_message := 'The values entered conflict with other CSV patters. Please supply correct values.';
+                                        return;
+                                      };
+
+                                      self.desc1.ufl_value := trim (self.desc1.ufl_value);
+                                      self.patt1.ufl_value := trim (self.patt1.ufl_value);
+                                      self.tgt1.ufl_value := trim (self.tgt1.ufl_value);
+
+                                      if (not length (self.desc1.ufl_value) or not length (self.tgt1.ufl_value))
+                                      {
+                                        rollback work;
+                                        self.vc_is_valid := 0;
+                                        self.vc_error_message := 'The description value cannot be empty.';
+                                        return;
+                                      }
+
+                                      if (self.c_mode = 'C/add')
+                                      {
+                                        insert into DB.DBA.CSV_HEADER_PATTERNS (CSV_DESCRIPTION, CSV_PATTERN, CSV_TARGET, CSV_ID)
+                                          values (self.desc1.ufl_value, self.patt1.ufl_value, self.tgt1.ufl_value, sequence_next('DB.DBA.CSV_HEADER_PATTERNS.CSV_ID'));
+                                      }
+                                      else
+                                      {
+                                        update DB.DBA.CSV_HEADER_PATTERNS
+                                           set CSV_DESCRIPTION = self.desc1.ufl_value,
+                                               CSV_PATTERN = self.patt1.ufl_value,
+                                               CSV_TARGET = self.tgt1.ufl_value
+                                         where CSV_ID = self.c_id;
+                                      }
+
+                                      self.c_mode := 'C/browse';
+                                      self.vc_data_bind (e);
+                                    </v:on-post>
+                                  </v:button>
+                                </span>
+                              </fieldset>
+                            </div>
+                         </vm:if>
+                        </v:form>
                       </td>
                     </tr>
                   </table>

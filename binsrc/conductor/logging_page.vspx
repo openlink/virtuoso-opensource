@@ -50,159 +50,153 @@
         <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
           <tr valign='top'>
             <td>
-              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '6' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '7' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '8' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '9' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" xhtml_class="uddi"/>
+                  </td>
+                  <td class="<?V case when self.page = '10' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
+                    <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" xhtml_class="uddi"/>
+                  </td>
+                  <td class="page_tab_empty" align="center" width="100%">
+                    &amp;nbsp;
+                  </td>
+                </tr>
+              </table>
+              <table class="tab_page">
                 <tr>
                   <td>
-                    <table cellpadding="0" cellspacing="0" border="0">
-                      <tr>
-                        <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '6' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '7' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '8' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '9' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" xhtml_class="uddi"/>
-                        </td>
-                        <td class="<?V case when self.page = '10' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                          <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          &nbsp;
-                        </td>
-                      </tr>
-                    </table>
-                    <table class="tab_page">
-                      <tr>
-                        <td>
-                          <span style="font-weight: normal;">&nbsp;Data Updated:</span>
-                          <span id="upd_time"><?V substring (cast (now() as varchar), 1, 19) ?></span>
-                        </td>
-                        <td align="right">
-                          <form>
-                            auto update interval:
-                            <input type="hidden" name="page" value="<?V self.page ?>"/>
-                            <input size="2" name="autorefresh" id="autorefresh" value="<?V self.autorefresh ?>" /> sec
-                            <input type="button" name="set" value="set" onclick="UpdateTab()"/>
-                          </form>
-                       </td>
-                      </tr>
-                      <tr>
-                        <td valign="top" colspan="2">
-                          <script language="Javascript">
-                            var autorefresh = document.getElementById('autorefresh');
-                            var timer = null;
-                            var url = '';
-                            if (autorefresh.value > 0)
-                              setTimeout("UpdateTab()",autorefresh.value * 1000);
+                    <span style="font-weight: normal;">&nbsp;Data Updated:</span>
+                    <span id="upd_time"><?V substring (cast (now() as varchar), 1, 19) ?></span>
+                  </td>
+                  <td align="right">
+                    <form>
+                      auto update interval:
+                      <input type="hidden" name="page" value="<?V self.page ?>"/>
+                      <input size="2" name="autorefresh" id="autorefresh" value="<?V self.autorefresh ?>" /> sec
+                      <input type="button" name="set" value="set" onclick="UpdateTab()"/>
+                    </form>
+                 </td>
+                </tr>
+                <tr>
+                  <td valign="top" colspan="2">
+                    <script language="Javascript">
+                      var autorefresh = document.getElementById('autorefresh');
+                      var timer = null;
+                      var url = '';
+                      if (autorefresh.value > 0)
+                        setTimeout("UpdateTab()",autorefresh.value * 1000);
 
-                            var params = null;
+                      var params = null;
 
-                            function UpdateTab() {
-                              /*document.forms[document.forms.length - 1].submit();
-                              return;*/
-                              var cnt = document.getElementById('monitor_tab');
-                              var xmlhttp = null;
-                              try {
-                                xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
-                              } catch (e) { }
+                      function UpdateTab() {
+                        /*document.forms[document.forms.length - 1].submit();
+                        return;*/
+                        var cnt = document.getElementById('monitor_tab');
+                        var xmlhttp = null;
+                        try {
+                          xmlhttp = new ActiveXObject("Msxml2.XMLHTTP");
+                        } catch (e) { }
 
-                              if (xmlhttp == null) {
-                                try {
-                                  xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
-                                } catch (e) { }
-                              } // if
+                        if (xmlhttp == null) {
+                          try {
+                            xmlhttp = new ActiveXObject("Microsoft.XMLHTTP");
+                          } catch (e) { }
+                        } // if
 
-                              var page = '';
+                        var page = '';
 
-                              /*switch ('<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>') {
-                              case '2': page = '_db'; break;
-                              case '3': page = '_disk'; document.forms[document.forms.length - 1].submit(); return; break;
-                              case '4': page = '_index'; document.forms[document.forms.length - 1].submit(); return; break;
-                              case '5': page = '_lock'; document.forms[document.forms.length - 1].submit(); return; break;
-                              case '6': page = '_space'; document.forms[document.forms.length - 1].submit(); return; break;
-                              case '7': page = '_http'; break;
-                              case '8': page = '_prof'; document.forms[document.forms.length - 1].submit(); return; break;
-                              case '9': page = '_view'; document.forms[document.forms.length - 1].submit(); return; break;
-                              }*/
+                        /*switch ('<?V get_keyword('page', control.vc_page.vc_event.ve_params) ?>') {
+                        case '2': page = '_db'; break;
+                        case '3': page = '_disk'; document.forms[document.forms.length - 1].submit(); return; break;
+                        case '4': page = '_index'; document.forms[document.forms.length - 1].submit(); return; break;
+                        case '5': page = '_lock'; document.forms[document.forms.length - 1].submit(); return; break;
+                        case '6': page = '_space'; document.forms[document.forms.length - 1].submit(); return; break;
+                        case '7': page = '_http'; break;
+                        case '8': page = '_prof'; document.forms[document.forms.length - 1].submit(); return; break;
+                        case '9': page = '_view'; document.forms[document.forms.length - 1].submit(); return; break;
+                        }*/
 
-                              // Gecko / Mozilla / Firefox
-                              if (xmlhttp == null)
-                                xmlhttp = new XMLHttpRequest();
+                        // Gecko / Mozilla / Firefox
+                        if (xmlhttp == null)
+                          xmlhttp = new XMLHttpRequest();
 
-                              page = '_tab';
-                              url = 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>';
-                              if (params)
-                              {
-                                for(var i = 0;i &lt; params.length;i = i+2)
-                                {
-                                  url += '&amp;' + params[i] + '=' + params[i + 1];
-                                }
-                              }
-                              xmlhttp.open("GET", url,false);
-                              xmlhttp.setRequestHeader("Pragma", "no-cache");
-                              xmlhttp.send("");
-                              cnt.innerHTML = xmlhttp.responseText;
-                              var upd_time = document.getElementById('upd_time');
-                              var new_upd_time = document.getElementById('new_upd_time');
-                              upd_time.innerHTML = new_upd_time.innerHTML;
+                        page = '_tab';
+                        url = 'logging' + page + '.vspx?page=<?V get_keyword('page', control.vc_page.vc_event.ve_params,'1') ?>&amp;sid=<?V self.sid ?>&amp;realm=<?V self.realm ?>';
+                        if (params)
+                        {
+                          for(var i = 0;i &lt; params.length;i = i+2)
+                          {
+                            url += '&amp;' + params[i] + '=' + params[i + 1];
+                          }
+                        }
+                        xmlhttp.open("GET", url,false);
+                        xmlhttp.setRequestHeader("Pragma", "no-cache");
+                        xmlhttp.send("");
+                        cnt.innerHTML = xmlhttp.responseText;
+                        var upd_time = document.getElementById('upd_time');
+                        var new_upd_time = document.getElementById('new_upd_time');
+                        upd_time.innerHTML = new_upd_time.innerHTML;
 
-                              if (autorefresh.value != '')
-                                timer = setTimeout("UpdateTab()", autorefresh.value * 1000);
+                        if (autorefresh.value != '')
+                          timer = setTimeout("UpdateTab()", autorefresh.value * 1000);
 
-                            }
-                          </script>
-                          <v:template name="template1" type="simple" instantiate="-- case when (get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                            <v:include url="logging.vspx"/>
-                          </v:template>
-                          <v:template name="template2" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                            <v:include url="logging_db.vspx"/>
-                          </v:template>
-                          <v:template name="template3" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
-                            <v:include url="logging_disk.vspx"/>
-                          </v:template>
-                          <v:template name="template4" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '4')">
-                            <v:include url="logging_index.vspx"/>
-                          </v:template>
-                          <v:template name="template5" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '5')">
-                            <v:include url="logging_lock.vspx"/>
-                          </v:template>
-                          <v:template name="template6" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '6')">
-                            <v:include url="logging_space.vspx"/>
-                          </v:template>
-                          <v:template name="template7" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '7')">
-                            <v:include url="logging_http.vspx"/>
-                          </v:template>
-                          <v:template name="template8" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '8')">
-                            <v:include url="logging_prof.vspx"/>
-                          </v:template>
-                          <v:template name="template9" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
-                            <v:include url="logging_view.vspx"/>
-                          </v:template>
-                          <v:template name="template10" type="simple" instantiate="-- equ(get_keyword('page', self.vc_event.ve_params), '10')">
-                            <v:include url="logging_cli.vspx"/>
-                          </v:template>
-                        </td>
-                      </tr>
-                    </table>
+                      }
+                    </script>
+                    <v:template name="template1" type="simple" instantiate="-- case when (get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                      <v:include url="logging.vspx"/>
+                    </v:template>
+                    <v:template name="template2" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
+                      <v:include url="logging_db.vspx"/>
+                    </v:template>
+                    <v:template name="template3" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
+                      <v:include url="logging_disk.vspx"/>
+                    </v:template>
+                    <v:template name="template4" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '4')">
+                      <v:include url="logging_index.vspx"/>
+                    </v:template>
+                    <v:template name="template5" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '5')">
+                      <v:include url="logging_lock.vspx"/>
+                    </v:template>
+                    <v:template name="template6" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '6')">
+                      <v:include url="logging_space.vspx"/>
+                    </v:template>
+                    <v:template name="template7" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '7')">
+                      <v:include url="logging_http.vspx"/>
+                    </v:template>
+                    <v:template name="template8" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '8')">
+                      <v:include url="logging_prof.vspx"/>
+                    </v:template>
+                    <v:template name="template9" type="simple" instantiate="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '9')">
+                      <v:include url="logging_view.vspx"/>
+                    </v:template>
+                    <v:template name="template10" type="simple" instantiate="-- equ(get_keyword('page', self.vc_event.ve_params), '10')">
+                      <v:include url="logging_cli.vspx"/>
+                    </v:template>
                   </td>
                 </tr>
               </table>

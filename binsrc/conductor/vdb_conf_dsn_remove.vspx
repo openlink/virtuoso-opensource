@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="databases" decor="yacutia_decor.vspx"
@@ -49,30 +46,17 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab" align="center">
-                          <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">Configure Data Sources</td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Data Sources" url="vdb_conn_dsn.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_selected" align="center">Configure Data Sources</td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &amp;nbsp;
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">

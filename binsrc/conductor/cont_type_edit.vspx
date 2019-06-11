@@ -49,218 +49,207 @@
       </h1>
     </vm:rawheader>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url41" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url42" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center" nowrap="1">
-                        <v:url name="b_url43" value="--'Text Indexing'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab_selected" align="center" nowrap="1">
-                        Resource Types
-                      </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
-                      </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-                      <td valign="top">
-                        <v:form name="event_form1" type="simple" method="POST" action="">
-                          <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
-                          <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
-                          <br />
-                          <table>
-                            <tr>
-                              <th>File Extension</th>
-                              <td>
-                                <v:text name="extension" xhtml_style="width:300">
-                                  <v:before-data-bind>
-                                    <v:script>
-                                      <![CDATA[
-                                        if (get_keyword('mode', params) = 'edit')
-                                        {
-                                          self.ename := cast(deserialize(decode_base64(get_keyword('name', params))) as varchar);
-                                          control.ufl_value := self.ename;
-                                          control.tf_style :=3;
-                                          control.vc_data_bound := 1;
-                                        }
-                                        else
-                                        {
-                                          declare ufn varchar;
-                                          ufn := get_keyword('extension', params);
-                                          if (ufn is not NULL)
-                                          {
-                                            control.ufl_value:= ufn;
-                                            control.vc_data_bound := 1;
-                                          }
-                                        }
-                                      ]]>
-                                    </v:script>
-                                  </v:before-data-bind>
-                                </v:text>
-                              </td>
-                            </tr>
-                            <tr>
-                              <th>MIME Type</th>
-                              <td>
-                                <v:text name="type" xhtml_style="width:300">
-                                  <v:before-data-bind>
-                                    <v:script>
-                                      <![CDATA[
-                                        declare _type varchar;
-                                        if (get_keyword('mode', params) = 'edit')
-                                        {
-                                          select T_TYPE into _type from WS.WS.SYS_DAV_RES_TYPES where T_EXT = self.ename;
-                                          control.ufl_value := _type;
-                                          control.vc_data_bound := 1;
-                                        }
-                                        else
-                                        {
-                                          _type := get_keyword('type', params);
-                                          if (_type is not NULL)
-                                          {
-                                            control.ufl_value:= _type;
-                                            control.vc_data_bound := 1;
-                                          }
-                                        }
-                                      ]]>
-                                    </v:script>
-                                  </v:before-data-bind>
-                                </v:text>
-                              </td>
-                            </tr>
-                            <tr>
-                              <th valign="top">Description</th>
-                              <td>
-                                <v:text name="descr" xhtml_style="width:300">
-                                  <v:before-data-bind>
-                                    <![CDATA[
-                                      declare _descr varchar;
-                                      if (get_keyword('mode', params) = 'edit')
-                                      {
-                                        select T_DESCRIPTION into _descr from WS.WS.SYS_DAV_RES_TYPES where T_EXT = self.ename;
-                                        control.ufl_value := _descr;
-                                        control.vc_data_bound := 1;
-                                      }
-                                      else
-                                      {
-                                        _descr := get_keyword('interval', params);
-                                        if (_descr is not NULL)
-                                        {
-                                          control.ufl_value:= _descr;
-                                          control.vc_data_bound := 1;
-                                        }
-                                      }
-                                    ]]>
-                                  </v:before-data-bind>
-                                </v:text>
-                              </td>
-                            </tr>
-                            <tr>
-                              <td colspan="2" align="center">
-                                <v:button action="simple" name="cancel1" value="Cancel">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      http_request_status('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
-                                      return;
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                                <?vsp
-                                  if (get_keyword('mode', self.vc_page.vc_event.ve_params) is NULL or get_keyword('mode', self.vc_page.vc_event.ve_params) <> 'edit')
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url41" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url42" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center" nowrap="1">
+                  <v:url name="b_url43" value="--'Text Indexing'" format="%s" url="--'cont_page.vspx?page=3'" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_selected" align="center" nowrap="1">
+                  Resource Types
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &amp;nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                  <v:form name="event_form1" type="simple" method="POST" action="">
+                    <input type="hidden" name="name" value="<?V get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+                    <input type="hidden" name="mode" value="<?V get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+                    <br />
+                    <table>
+                      <tr>
+                        <th>File Extension</th>
+                        <td>
+                          <v:text name="extension" xhtml_style="width:300">
+                            <v:before-data-bind>
+                              <v:script>
+                                <![CDATA[
+                                  if (get_keyword('mode', params) = 'edit')
                                   {
-                                ?>
-                                <input type="reset" name="Submit2" value="Reset"/>
-                                <?vsp
+                                    self.ename := cast(deserialize(decode_base64(get_keyword('name', params))) as varchar);
+                                    control.ufl_value := self.ename;
+                                    control.tf_style :=3;
+                                    control.vc_data_bound := 1;
                                   }
-                                ?>
-                                <v:button action="simple" name="save" value="Save">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      declare i, cnt, exist, u_ident, g_name, inter integer;
-                                      declare tmp, val, _extension, _type, _descr varchar;
-                                      if (get_keyword('cancel1', self.vc_page.vc_event.ve_params) <> '')
-                                      {
-                                        goto endp;
-                                      }
-                                      _extension := '';
-                                      _type := '';
-                                      _descr := '';
-                                      _extension := get_keyword('extension', params, '');
-                                      _extension := rtrim(_extension);
-                                      _extension := ltrim(_extension);
-                                      _type := get_keyword('type', params, '');
-                                      _descr := get_keyword('descr', params, '');
-                                      if (strchr(_extension, '*') is not null)
-                                      {
-                                        self.vc_error_message := 'Please, enter correct file extenstion (example: txt or doc)';
-                                        self.vc_is_valid := 0;
-                                        return;
-                                      }
-                                      if (_extension is null or _extension = '')
-                                      {
-                                        self.vc_error_message := 'Please, enter the File Extension';
-                                        self.vc_is_valid := 0;
-                                        return;
-                                      }
-                                      if (_type = '' or _type is null or _type = '*')
-                                      {
-                                        self.vc_error_message := 'Please, enter correct MIME Type';
-                                        self.vc_is_valid := 0;
-                                        return;
-                                      }
-                                      if (strchr(_extension, '.') = 0)
-                                        _extension := right(_extension, length(_extension) - 1);
-                                      if (get_keyword('mode', params) = 'create')
-                                      {
-                                        insert soft WS.WS.SYS_DAV_RES_TYPES (T_EXT, T_TYPE, T_DESCRIPTION) values (_extension, _type, _descr);
-                                      }
-                                      else if (get_keyword('mode', params) = 'edit')
-                                      {
-                                        if (exists(select 1 from WS.WS.SYS_DAV_RES_TYPES where T_EXT = _extension))
-                                        {
-                                          update WS.WS.SYS_DAV_RES_TYPES set T_TYPE = _type, T_DESCRIPTION = _descr where T_EXT = _extension;
-                                        }
-                                        else
-                                        {
-                                          insert soft WS.WS.SYS_DAV_RES_TYPES (T_EXT, T_TYPE, T_DESCRIPTION) values (_extension, _type, _descr);
-                                        }
-                                      }
-                                   endp:
-                                      self.vc_redirect ('cont_page.vspx?page=4');
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </td>
-                            </tr>
-                          </table>
+                                  else
+                                  {
+                                    declare ufn varchar;
+                                    ufn := get_keyword('extension', params);
+                                    if (ufn is not NULL)
+                                    {
+                                      control.ufl_value:= ufn;
+                                      control.vc_data_bound := 1;
+                                    }
+                                  }
+                                ]]>
+                              </v:script>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th>MIME Type</th>
+                        <td>
+                          <v:text name="type" xhtml_style="width:300">
+                            <v:before-data-bind>
+                              <v:script>
+                                <![CDATA[
+                                  declare _type varchar;
+                                  if (get_keyword('mode', params) = 'edit')
+                                  {
+                                    select T_TYPE into _type from WS.WS.SYS_DAV_RES_TYPES where T_EXT = self.ename;
+                                    control.ufl_value := _type;
+                                    control.vc_data_bound := 1;
+                                  }
+                                  else
+                                  {
+                                    _type := get_keyword('type', params);
+                                    if (_type is not NULL)
+                                    {
+                                      control.ufl_value:= _type;
+                                      control.vc_data_bound := 1;
+                                    }
+                                  }
+                                ]]>
+                              </v:script>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <th valign="top">Description</th>
+                        <td>
+                          <v:text name="descr" xhtml_style="width:300">
+                            <v:before-data-bind>
+                              <![CDATA[
+                                declare _descr varchar;
+                                if (get_keyword('mode', params) = 'edit')
+                                {
+                                  select T_DESCRIPTION into _descr from WS.WS.SYS_DAV_RES_TYPES where T_EXT = self.ename;
+                                  control.ufl_value := _descr;
+                                  control.vc_data_bound := 1;
+                                }
+                                else
+                                {
+                                  _descr := get_keyword('interval', params);
+                                  if (_descr is not NULL)
+                                  {
+                                    control.ufl_value:= _descr;
+                                    control.vc_data_bound := 1;
+                                  }
+                                }
+                              ]]>
+                            </v:before-data-bind>
+                          </v:text>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td colspan="2" align="center">
+                          <v:button action="simple" name="cancel1" value="Cancel">
+                            <v:on-post>
+                              <![CDATA[
+                                http_request_status('HTTP/1.1 302 Found');
+                                http_header(sprintf('Location: cont_page.vspx?page=4&sid=%s&realm=%s\r\n', self.sid, self.realm));
+                                return;
+                              ]]>
+                            </v:on-post>
+                          </v:button>
                           <?vsp
-                            if (self.error_str1 <> '' and self.error_str1 is not null)
-                              http(sprintf('<table class="Warning" border="1" align="center"><tr><td colspan="2">%s</td></tr>', self.error_str1));
-                            self.error_str1 := '';
+                            if (get_keyword('mode', self.vc_page.vc_event.ve_params) is NULL or get_keyword('mode', self.vc_page.vc_event.ve_params) <> 'edit')
+                            {
                           ?>
-                        </v:form>
-                      </td>
-                    </tr>
-                  </table>
+                          <input type="reset" name="Submit2" value="Reset"/>
+                          <?vsp
+                            }
+                          ?>
+                          <v:button action="simple" name="save" value="Save">
+                            <v:on-post>
+                              <![CDATA[
+                                declare i, cnt, exist, u_ident, g_name, inter integer;
+                                declare tmp, val, _extension, _type, _descr varchar;
+                                if (get_keyword('cancel1', self.vc_page.vc_event.ve_params) <> '')
+                                {
+                                  goto endp;
+                                }
+                                _extension := '';
+                                _type := '';
+                                _descr := '';
+                                _extension := get_keyword('extension', params, '');
+                                _extension := rtrim(_extension);
+                                _extension := ltrim(_extension);
+                                _type := get_keyword('type', params, '');
+                                _descr := get_keyword('descr', params, '');
+                                if (strchr(_extension, '*') is not null)
+                                {
+                                  self.vc_error_message := 'Please, enter correct file extenstion (example: txt or doc)';
+                                  self.vc_is_valid := 0;
+                                  return;
+                                }
+                                if (_extension is null or _extension = '')
+                                {
+                                  self.vc_error_message := 'Please, enter the File Extension';
+                                  self.vc_is_valid := 0;
+                                  return;
+                                }
+                                if (_type = '' or _type is null or _type = '*')
+                                {
+                                  self.vc_error_message := 'Please, enter correct MIME Type';
+                                  self.vc_is_valid := 0;
+                                  return;
+                                }
+                                if (strchr(_extension, '.') = 0)
+                                  _extension := right(_extension, length(_extension) - 1);
+                                if (get_keyword('mode', params) = 'create')
+                                {
+                                  insert soft WS.WS.SYS_DAV_RES_TYPES (T_EXT, T_TYPE, T_DESCRIPTION) values (_extension, _type, _descr);
+                                }
+                                else if (get_keyword('mode', params) = 'edit')
+                                {
+                                  if (exists(select 1 from WS.WS.SYS_DAV_RES_TYPES where T_EXT = _extension))
+                                  {
+                                    update WS.WS.SYS_DAV_RES_TYPES set T_TYPE = _type, T_DESCRIPTION = _descr where T_EXT = _extension;
+                                  }
+                                  else
+                                  {
+                                    insert soft WS.WS.SYS_DAV_RES_TYPES (T_EXT, T_TYPE, T_DESCRIPTION) values (_extension, _type, _descr);
+                                  }
+                                }
+                             endp:
+                                self.vc_redirect ('cont_page.vspx?page=4');
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                    </table>
+                    <?vsp
+                      if (self.error_str1 <> '' and self.error_str1 is not null)
+                        http(sprintf('<table class="Warning" border="1" align="center"><tr><td colspan="2">%s</td></tr>', self.error_str1));
+                      self.error_str1 := '';
+                    ?>
+                  </v:form>
                 </td>
               </tr>
             </table>

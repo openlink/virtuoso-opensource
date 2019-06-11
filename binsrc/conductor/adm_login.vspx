@@ -122,19 +122,19 @@
 	 <td>
 	   <label for="t_login_usr">Account</label>
 	 </td>
-	 <td>&nbsp;</td>
+          <td>&amp;nbsp;</td>
        </tr>
        <tr>
 	 <td>
             <v:text name="username" value="" xhtml_id="t_login_usr"/>
 	</td>
-	 <td>&nbsp;</td>
+          <td>&amp;nbsp;</td>
       </tr>
       <tr>
 	<td>
 	  <label for="t_login_pwd">Password</label>
 	</td>
-	 <td>&nbsp;</td>
+          <td>&amp;nbsp;</td>
       </tr>
       <tr>
 	<td>

@@ -237,24 +237,14 @@ if(self.first = 0) {
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-		      <td class="page_tab_selected" align="center">NNTP servers
-		      </td>
-		      <td class="page_tab" align="center">
-			<v:url name="gsetup" value="General Setup" url="msg_news_conf_global.vspx"/>
+                      <td class="page_tab_selected" align="center">NNTP servers
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="gsetup" value="General Setup" url="msg_news_conf_global.vspx"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-			      <td width="100%">
-                              </td>
-                            </tr>
-                          </table>
+                        &amp;nbsp;
                       </td>
                     </tr>
                   </table>

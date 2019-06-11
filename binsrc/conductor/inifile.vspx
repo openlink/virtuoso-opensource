@@ -82,130 +82,124 @@
           <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
             <tr valign='top'>
               <td>
-                <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                <table cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td>
-                      <table cellpadding="0" cellspacing="0" border="0">
+                    <?vsp
+                      declare i integer;
+
+                      for (i := 0; i < self.sections; i := i + 1)
+                      {
+                        declare sec_name varchar;
+                        sec_name := cfg_section_name(virtuoso_ini_path(), i);
+                    ?>
+                    <td class="<?V self.astyle (sec_name, self.sect) ?>" align="center">
+                      <a style="page_tab" href="#" onclick="javascript:postSect (document.virtini, '<?V i ?>')">
+                       <?vsp http(sec_name); ?>
+                      </a>
+                    </td>
+                    <?vsp
+                      }
+                    ?>
+                    <td class="page_tab_empty" width="100%">
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+
+                <table class="tab_page">
+                  <tr>
+                    <td valign="top">
+                      <!-- MAIN -->
+                      <table cellpadding="3" cellspacing="0" border="0">
                         <tr>
-                          <?vsp
-                            declare i integer;
+                          <td valign="top">
+                            <table cellpadding="3" cellspacing="0" border="0" width="600px">
+                              <thead>
+                                <tr class="listing_header_row">
+                                  <th>Name</th>
+                                  <th>Value</th>
+                                  <th>Action</th>
+                                </tr>
+                              </thead>
+                              <?vsp
+                                declare j integer;
+                                declare item, item_value varchar;
 
-                            for (i := 0; i < self.sections; i := i + 1)
-                            {
-                              declare sec_name varchar;
-                              sec_name := cfg_section_name(virtuoso_ini_path(), i);
-                          ?>
-                          <td class="<?V self.astyle (sec_name, self.sect) ?>" align="center">
-                            <a style="page_tab" href="#" onclick="javascript:postSect (document.virtini, '<?V i ?>')">
-                             <?vsp http(sec_name); ?>
-                            </a>
-                          </td>
-                          <?vsp
-                            }
-                          ?>
-                          <td class="page_tab_empty" width="100%">
-                            &nbsp;
-                        </td>
-                      </tr>
-                    </table>
+                                for (j := 0; j < self.items; j := j + 1)
+                                {
+                                  item := cfg_item_name (virtuoso_ini_path(), self.sect, j);
+                                  item_value := cfg_item_value (virtuoso_ini_path(), self.sect, item);
+                                  http ('<tr>');
+                                  if ((self.sect = 'Parameters') and (item in ('AllowOSCalls', 'SafeExecutables', 'DbaExecutables', 'DirsAllowed', 'DirsDenied')))
+                                  {
+                                    http (sprintf ('<td>%V</td>', item));
+                                    http (sprintf ('<td>%V</td>', item_value));
+                                    http ('<td>&nbsp;</td>');
+                                  }
+                                  else
+                                  {
+                                    http (sprintf ('<td><input type="hidden" name="n_%V" value="%V">%V</td>', item, item, item));
+                                    http (sprintf ('<td><input type="text" size="40" name="_ini_%V" value="%V" /></td>', item, item_value));
+                                    http (sprintf('<td class="listing_col_action"><a href="inifile.vspx?to_go=%s&delete=1&dd_sect=%i&update_ini=1&sid=%s&realm=%s"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&nbsp;Remove</a></td>', item, self.pos, self.sid, self.realm));
+                                  }
+                                  http ('</tr>');
+                                }
+                                if ('' <> get_keyword ('add', control.vc_page.vc_event.ve_params, ''))
+                                {
+                                  http ('<tr><td colspan="3" class="genlistheadt">New:</td></tr>');
+                                  http ('<tr><td><input type="text" name="_new_item" value="" /></td>');
+                                  http ('<td><input type="text" size="40" name="_new_value" value="" /></td><td /></tr>');
+                                }
+                              ?>
+                              <tr>
+                                <td colspan="3" align="left">
+                                  <v:button name="update_ini" action="simple" value="Save changes" enabled="--case when self.items or get_keyword('add', self.vc_event.ve_params) is not null then 1 else 0 end">
+                                    <v:on-post>
+                                      <![CDATA[
+                                        declare idx integer;
+                                        declare item, item_value varchar;
+                                        declare new_item, new_item_value varchar;
+                                        declare params any;
 
-                    <table class="tab_page">
-                      <tr>
-                        <td valign="top">
-                          <!-- MAIN -->
-                          <table cellpadding="3" cellspacing="0" border="0">
-                            <tr>
-                              <td valign="top">
-                                <table cellpadding="3" cellspacing="0" border="0" width="600px">
-                                  <thead>
-                                    <tr class="listing_header_row">
-                                      <th>Name</th>
-                                      <th>Value</th>
-                                      <th>Action</th>
-                                    </tr>
-                                  </thead>
+                                        params := control.vc_page.vc_event.ve_params;
+                                        for (idx := 0; idx < length (params); idx := idx + 2)
+                                        {
+                                          item := params[idx];
+                                          if ('_ini_' = left (item, 5))
+                                          {
+                                            item := ltrim (item, '_ini_');
+                                            new_item := get_keyword ('n_' || item, params, item);
+                                            new_item_value := params[idx + 1];
+                                            if (new_item <> item)
+                                              cfg_write (virtuoso_ini_path(), self.sect, item, '');
+
+                                            item_value := cfg_item_value (virtuoso_ini_path(), self.sect, item);
+                                            if (new_item_value <> item_value)
+                                              cfg_write (virtuoso_ini_path(), self.sect, new_item, new_item_value);
+                                          }
+                                        }
+                                        if ('' <> get_keyword ('_new_item', params, ''))
+                                        {
+                                          item := get_keyword ('_new_item', params);
+                                          item_value := get_keyword ('_new_value', params, '');
+                                          cfg_write (virtuoso_ini_path(), self.sect, item, item_value);
+                                        }
+                                        http_request_status ('HTTP/1.1 302 Found');
+                                        http_header (sprintf('Location: inifile.vspx?sid=%s&realm=%s&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
+                                      ]]>
+                                    </v:on-post>
+                                  </v:button>
                                   <?vsp
-                                    declare j integer;
-                                    declare item, item_value varchar;
-
-                                    for (j := 0; j < self.items; j := j + 1)
-                                    {
-                                      item := cfg_item_name (virtuoso_ini_path(), self.sect, j);
-                                      item_value := cfg_item_value (virtuoso_ini_path(), self.sect, item);
-                                      http ('<tr>');
-                                      if ((self.sect = 'Parameters') and (item in ('AllowOSCalls', 'SafeExecutables', 'DbaExecutables', 'DirsAllowed', 'DirsDenied')))
-                                      {
-                                        http (sprintf ('<td>%V</td>', item));
-                                        http (sprintf ('<td>%V</td>', item_value));
-                                        http ('<td>&nbsp;</td>');
-                                      }
-                                      else
-                                      {
-                                        http (sprintf ('<td><input type="hidden" name="n_%V" value="%V">%V</td>', item, item, item));
-                                        http (sprintf ('<td><input type="text" size="40" name="_ini_%V" value="%V" /></td>', item, item_value));
-                                        http (sprintf('<td class="listing_col_action"><a href="inifile.vspx?to_go=%s&delete=1&dd_sect=%i&update_ini=1&sid=%s&realm=%s"><img src="images/icons/del_16.png" border="0" alt="Remove" title="Remove"/>&nbsp;Remove</a></td>', item, self.pos, self.sid, self.realm));
-                                      }
-                                      http ('</tr>');
-                                    }
-                                    if ('' <> get_keyword ('add', control.vc_page.vc_event.ve_params, ''))
-                                    {
-                                      http ('<tr><td colspan="3" class="genlistheadt">New:</td></tr>');
-                                      http ('<tr><td><input type="text" name="_new_item" value="" /></td>');
-                                      http ('<td><input type="text" size="40" name="_new_value" value="" /></td><td /></tr>');
-                                    }
+                                    if ('' = get_keyword('add', control.vc_page.vc_event.ve_params, ''))
+                                      http ('<input type="submit" name="add" value="Add" />');
                                   ?>
-                                  <tr>
-                                    <td colspan="3" align="left">
-                                      <v:button name="update_ini" action="simple" value="Save changes" enabled="--case when self.items or get_keyword('add', self.vc_event.ve_params) is not null then 1 else 0 end">
-                                        <v:on-post>
-                                          <![CDATA[
-                                            declare idx integer;
-                                            declare item, item_value varchar;
-                                            declare new_item, new_item_value varchar;
-                                            declare params any;
-
-                                            params := control.vc_page.vc_event.ve_params;
-                                            for (idx := 0; idx < length (params); idx := idx + 2)
-                                            {
-                                              item := params[idx];
-                                              if ('_ini_' = left (item, 5))
-                                              {
-                                                item := ltrim (item, '_ini_');
-                                                new_item := get_keyword ('n_' || item, params, item);
-                                                new_item_value := params[idx + 1];
-                                                if (new_item <> item)
-                                                  cfg_write (virtuoso_ini_path(), self.sect, item, '');
-
-                                                item_value := cfg_item_value (virtuoso_ini_path(), self.sect, item);
-                                                if (new_item_value <> item_value)
-                                                  cfg_write (virtuoso_ini_path(), self.sect, new_item, new_item_value);
-                                              }
-                                            }
-                                            if ('' <> get_keyword ('_new_item', params, ''))
-                                            {
-                                              item := get_keyword ('_new_item', params);
-                                              item_value := get_keyword ('_new_value', params, '');
-                                              cfg_write (virtuoso_ini_path(), self.sect, item, item_value);
-                                            }
-                                            http_request_status ('HTTP/1.1 302 Found');
-                                            http_header (sprintf('Location: inifile.vspx?sid=%s&realm=%s&dd_sect=%i\r\n', self.sid , self.realm, self.pos));
-                                          ]]>
-                                        </v:on-post>
-                                      </v:button>
-                                      <?vsp
-                                        if ('' = get_keyword('add', control.vc_page.vc_event.ve_params, ''))
-                                          http ('<input type="submit" name="add" value="Add" />');
-                                      ?>
-                                    </td>
-                                    </tr>
-                                  </table>
                                 </td>
                               </tr>
                             </table>
-                            <!-- END -->
                           </td>
                         </tr>
                       </table>
+                      <!-- END -->
                     </td>
                   </tr>
                 </table>

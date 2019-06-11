@@ -77,15 +77,10 @@
                         <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>
-                </table>
+                        &amp;nbsp;
+                      </td>
+                    </tr>
+                  </table>
 
                 <table class="tab_page">
                   <tr>

@@ -46,13 +46,6 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
                     <v:template name="tabTemplate1" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
                       <td class="page_tab_selected" align="center">
@@ -63,12 +56,7 @@
                         <nobr>&nbsp;&nbsp;<v:url name="b_url13" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &amp;nbsp;
                       </td>
                     </v:template>
                     <v:template name="tabTemplate2" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2' ) then 1 else 0 end">
@@ -82,12 +70,7 @@
                         <nobr>&nbsp;&nbsp;<v:url name="b_url23" value="--'tModels'" format="%s" url="--'uddi_serv.vspx?page=3'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &amp;nbsp;
                       </td>
                     </v:template>
                     <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
@@ -99,12 +82,7 @@
                         <nobr>&nbsp;&nbsp;tModels&nbsp;&nbsp;</nobr>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        <table cellpadding="0" cellspacing="0">
-                          <tr>
-                            <td width="100%" >
-                            </td>
-                          </tr>
-                        </table>
+                        &amp;nbsp;
                       </td>
                     </v:template>
                   </tr>

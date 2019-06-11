@@ -65,7 +65,7 @@
                     url="--sprintf ('http_tcn.vspx?vhost=%U&lhost=%U&lpath=%U&rule_list=%U', self.vhost, self.lhost, self.lpath, self.rulelist)"/>
                 </td>
                 <td class="page_tab_empty" align="center" width="100%">
-                  &nbsp;
+                  &amp;nbsp;
                 </td>
               </tr>
             </table>

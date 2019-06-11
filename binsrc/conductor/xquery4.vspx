@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="account_remove_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_xquery_page" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
@@ -41,30 +38,17 @@
               <tr>
                 <td>
                   <table cellpadding="0" cellspacing="0" border="0">
-                    <colgroup>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                      <col/>
-                    </colgroup>
                     <tr>
-                        <td class="page_tab_selected" align="center">XQuery Basic</td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab" align="center">
-			  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
-                        </td>
-                        <td class="page_tab_empty" align="center" width="100%">
-                          <table cellpadding="0" cellspacing="0">
-                            <tr>
-                              <td width="100%" >
-                              </td>
-                            </tr>
-                          </table>
-                        </td>
+                      <td class="page_tab_selected" align="center">XQuery Basic</td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab" align="center">
+                        <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
+                      </td>
+                      <td class="page_tab_empty" align="center" width="100%">
+                        &amp;nbsp;
+                      </td>
                     </tr>
                   </table>
                   <table class="tab_page">
@@ -98,17 +82,17 @@
               http_request_status ('HTTP/1.1 302 Found');
               http_header (sprintf('Location: xquery.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
           ]]></v:script>
-                </v:on-post>
-                <tr>
-                  <td align="center">
-                    <v:button action="submit" name="apply" value="Ok"/>
-                  </td>
-                </tr>
-              </v:form>
-            </table>
-          </td>
-        </tr>
-      </table>
+                                  </v:on-post>
+                                  <tr>
+                                    <td align="center">
+                                      <v:button action="submit" name="apply" value="Ok"/>
+                                    </td>
+                                  </tr>
+                                </v:form>
+                              </table>
+                            </td>
+                          </tr>
+                        </table>
                       </td>
                     </tr>
                   </table>

@@ -56,7 +56,7 @@
                         <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
                       </td>
                       <td class="page_tab_empty" align="center" width="100%">
-                        &nbsp;
+                        &amp;nbsp;
                       </td>
                     </tr>
                   </table>

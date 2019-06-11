@@ -90,7 +90,7 @@
                   <v:url name="b_url15" value="LDAP Servers" format="%s" url="--'accounts_page.vspx?page=5'" xhtml_class="uddi"/>
                 </td>
                 <td class="page_tab_empty" align="center" width="100%">
-                  &nbsp;
+                  &amp;nbsp;
                 </td>
               </tr>
             </table>
