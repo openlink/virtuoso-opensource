@@ -1333,7 +1333,7 @@ create procedure WEBDAV.DBA.proc (
   in dir_options any := null) returns any
 {
   -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, dir_mode, dir_params, dir_hiddens, dir_account, dir_password, dir_options, ')');
-  declare dirListTmp, detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
+  declare dirListTmp, detCategory, dateAdded, dirFilter, dirLikeFilter, dirHiddens, dirList any;
   declare dir_account_name, creator_iri, user_name, group_name varchar;
   declare path_parent varchar;
   declare creator_id, user_id, group_id integer;
@@ -1341,7 +1341,7 @@ create procedure WEBDAV.DBA.proc (
   declare c0, c1, c3, c4, c5, c6, c7, c8, c9, c10, c11, c12 varchar;
   declare exit handler for SQLSTATE '*'
   {
-    -- dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
+    --dbg_obj_print ('', __SQL_STATE, __SQL_MESSAGE);
     result (__SQL_STATE, VALIDATE.DBA.clear (__SQL_MESSAGE), 0, '', '', '', '', '', '', '', '');
     return;
   };
@@ -1351,7 +1351,7 @@ create procedure WEBDAV.DBA.proc (
     return;
 
   dirList := vector ();
-  dirFilter := '%';
+  dirLikeFilter := '%';
   if ((dir_mode = 0) or (dir_mode = 1))
   {
     if (not isnull (dir_options))
@@ -1382,9 +1382,9 @@ create procedure WEBDAV.DBA.proc (
     if (dir_mode = 1)
   {
     -- standard list with filter
-    dirFilter := WEBDAV.DBA.dc_search_like_fix (dir_params);
+      dirLikeFilter := WEBDAV.DBA.dc_search_like_fix (dir_params);
   }
-    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password, dirFilter, dir_options);
+    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password, dirLikeFilter, dir_options);
   }
   else if (dir_mode = 2)
   {
@@ -1436,7 +1436,6 @@ create procedure WEBDAV.DBA.proc (
     path := WEBDAV.DBA.dc_get(dir_params, 'base', 'path', '/DAV/');
     dirFilter := WEBDAV.DBA.dc_filter (dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, dir_password);
-    dirFilter := '%';
   }
 
   -- Command error
@@ -1481,7 +1480,7 @@ create procedure WEBDAV.DBA.proc (
   {
     if (isarray(item) and not isnull (item[0]))
     {
-      if (((item[1] = 'C') or (item[10] like dirFilter)) and (WEBDAV.DBA.hiddens_check (dirHiddens, item[10]) = 0))
+      if (((item[1] = 'C') or (item[10] like dirLikeFilter)) and (WEBDAV.DBA.hiddens_check (dirHiddens, item[10]) = 0))
       {
         WEBDAV.DBA.proc_work (item, creator_id, creator_iri, user_id, user_name, group_id, group_name, detCategory, dateAdded);
         result (item[either (gte (dir_mode, 2),0,10)], item[1], item[2], left (cast (item[3] as varchar), 19), item[9], user_name, group_name, adm_dav_format_perms(item[5]), item[0], detCategory, left (cast (item[8] as varchar), 19), left (cast (dateAdded as varchar), 19), creator_iri);
