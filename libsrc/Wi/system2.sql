@@ -1805,7 +1805,7 @@ create procedure VALIDATE.DBA.validate_internal (
 
   if (propertyType = 'boolean')
   {
-    if (propertyValue not in ('Yes', 'No'))
+    if (lcase (propertyValue) not in ('yes', 'no', '1', '0', 'true', 'false'))
       goto _error;
   }
   else if (propertyType = 'integer')
@@ -1989,7 +1989,7 @@ create procedure VALIDATE.DBA.validate_tags (
     return 0;
 
   for (N := 0; N < length(V); N := N + 1)
-    if (not WEBDAV.DBA.validate_tag (V[N]))
+    if (not VALIDATE.DBA.validate_tag (V[N]))
       return 0;
 
   return 1;
