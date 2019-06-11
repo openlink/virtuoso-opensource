@@ -44,7 +44,7 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
     }
     if (_det = UNAME'CardDAV')
     {
-      WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, 3, access-control, addressbook');
+      WS.WS.OPTIONS_DET (allow=>'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT', dav=>'1, 2, access-control, addressbook');
       return;
     }
     else if (not isvector (_path_id))
@@ -258,13 +258,14 @@ create procedure WS.WS.PROPFIND (
 
   full_path := '/' || DAV_CONCAT_PATH (path, '/');
   path_id := DAV_SEARCH_ID (full_path, 'C');
-  if (DB.DBA.DAV_DET_NAME (path_id) = 'CalDAV')
-    http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
-
-  else if (DB.DBA.DAV_DET_NAME (path_id) = 'CardDAV')
-    http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
 
   http_header ('Content-type: text/xml; charset="utf-8"\r\n');
+  if (DB.DBA.DAV_DET_NAME (path_id) = 'CalDAV')
+    http_header (http_header_get () || 'DAV: 1, 2, access-control, calendar-access\r\n');
+
+  else if (DB.DBA.DAV_DET_NAME (path_id) = 'CardDAV')
+    http_header (http_header_get () || 'DAV: 1, 2, access-control, addressbook\r\n');
+
   http ('<?xml version="1.0" encoding="utf-8"?>\n');
   http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
   if (-13 = WS.WS.PROPFIND_RESPONSE (_lpath, _ppath, _depth, st, _ms_date, _props, _uid))
@@ -390,11 +391,11 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
   in _u_id integer)
 {
   -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT (', lpath, dirlist, append_name_to_href, ms_date, propnames, all_prop, add_not_found, _u_id, ')');
-  declare dir_len, dir_ctr, dt_flag, iso_dt_flag, res_len, parent_col, id, found_cprop, found_sprop, mix integer;
+  declare dir_ctr, dt_flag, iso_dt_flag, res_len, parent_col, id, found_cprop, found_sprop, mix integer;
   declare crt, modt datetime;
   declare name, mime_type, prop1, dt_ms, mis_prop varchar;
   declare st char(1);
-  declare diritm, prop_val, href any;
+  declare prop_val, href any;
   declare perms, uid, gid any;
 
   if (ms_date)
@@ -409,369 +410,360 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
     iso_dt_flag := 0;
     dt_ms := '';
   }
-  dir_ctr := 0;
-  dir_len := length (dirlist);
 
-next_response:
-  if (dir_ctr >= dir_len)
-    return;
-
-  diritm := dirlist[dir_ctr];
-  st := diritm[1];
-  if (('R' <> st) and resources_only)
+  foreach (any diritm in dirlist) do
   {
-    dir_ctr := dir_ctr + 1;
-    goto next_response;
-  }
+    st := diritm[1];
+    if (('R' <> st) and resources_only)
+      goto _continue;
 
-  res_len := diritm[2];
-  modt := diritm[3];
-  id := diritm[4];
-  crt := diritm[8];
-  mime_type := diritm[9];
-  name := diritm[10];
-  perms := diritm[5];
-  uid := diritm[7];
-  gid := diritm[6];
+    res_len := diritm[2];
+    modt := diritm[3];
+    id := diritm[4];
+    crt := diritm[8];
+    mime_type := diritm[9];
+    name := diritm[10];
+    perms := diritm[5];
+    uid := diritm[7];
+    gid := diritm[6];
 
-  found_sprop := 0;
-  mis_prop := '';
-  mix := 0;
+    found_sprop := 0;
+    mis_prop := '';
+    mix := 0;
 
-  if (__tag (crt) <> 211)
-    crt := now ();
+    if (__tag (crt) <> 211)
+      crt := now ();
 
-  if (__tag (modt) <> 211)
-    modt := now ();
+    if (__tag (modt) <> 211)
+      modt := now ();
 
-  href := case append_name_to_href when 0 then lpath else DB.DBA.DAV_CONCAT_PATH (lpath, name) end;
-  if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
-    href := href || '/';
+    href := case append_name_to_href when 0 then lpath else DB.DBA.DAV_CONCAT_PATH (lpath, name) end;
+    if (st = 'C' and href not like '%/' and href not like '%.ics' and href not like '%.vcf')
+      href := href || '/';
 
-  parent_col := DAV_SEARCH_ID (href, 'P');
-  http ('<D:response xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
-  http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (href)));
-  http ('<D:propstat>\n');
-  http ('<D:prop>\n');
+    parent_col := DAV_SEARCH_ID (href, 'P');
+    http ('<D:response xmlns:D="DAV:" xmlns:V="http://www.openlinksw.com/virtuoso/webdav/1.0/">\n');
+    http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (href)));
+    http ('<D:propstat>\n');
+    http ('<D:prop>\n');
 
-  foreach (any prop in propnames) do
-  {
-    if (prop = ':acl')
+    foreach (any prop in propnames) do
     {
-      http ('<D:acl />');
-      found_sprop := 1;
-    }
-    else if (prop = ':displayname')
-    {
-      http (sprintf ('<D:displayname>%V</D:displayname>\n', name));
-      found_sprop := 1;
-    }
-    else if (prop = ':getlastmodified')
-    {
-      http (sprintf ('<D:getlastmodified%s>%V</D:getlastmodified>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
-      found_sprop := 1;
-    }
-    else if (prop = ':creationdate')
-    {
-      http (sprintf ('<D:creationdate%s>%V</D:creationdate>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (crt, '', iso_dt_flag)));
-      found_sprop := 1;
-    }
-    else if (prop = ':lastaccessed')
-    {
-      http (sprintf ('<D:lastaccessed%s>%V</D:lastaccessed>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
-      found_sprop := 1;
-    }
-    else if (prop = ':getetag' and st = 'R')
-    {
-      http (sprintf ('<D:getetag>"%V"</D:getetag>\n', WS.WS.ETAG (name, parent_col, modt)));
-      found_sprop := 1;
-    }
-    else if (prop = ':getcontenttype')
-    {
-      http (sprintf ('<D:getcontenttype>%V</D:getcontenttype>\n', mime_type));
-      found_sprop := 1;
-    }
-    else if (prop = ':getcontentlength')
-    {
-      http (sprintf ('<D:getcontentlength>%d</D:getcontentlength>\n', case when (st = 'R') then res_len else 0 end));
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:caldav:supported-calendar-component-set')
-    {
-      http ('<C:supported-calendar-component-set xmlns:C="urn:ietf:params:xml:ns:caldav"><C:comp name="VEVENT"/><C:comp name="VTODO"/></C:supported-calendar-component-set>\r\n');
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:carddav:supported-address-data')
-    {
-      http ('<C:supported-address-data xmlns:C="urn:ietf:params:xml:ns:carddav"><C:address-data-type content-type="text/vcard" version="3.0"/></C:supported-address-data>\r\n');
-      found_sprop := 1;
-    }
-    else if (prop = ':getetag' and st = 'C')
-    {
-      http (sprintf ('<D:getetag>"%V"</D:getetag>\n', WS.WS.ETAG (name, parent_col, modt)));
-      found_sprop := 1;
-    }
-    else if (prop = 'http://calendarserver.org/ns/:getctag')
-    {
-      http (concat('<CS:getctag xmlns:CS="http://calendarserver.org/ns/">', WS.WS.ETAG (name, parent_col, modt), '</CS:getctag>\n'));
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-data')
-    {
-      declare content, type_ any;
-
-      DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
-      http (concat('<C:calendar-data xmlns:C="urn:ietf:params:xml:ns:caldav">', content, '</C:calendar-data>\n'));
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:carddav:address-data')
-    {
-      declare content, type_ any;
-
-      DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), content, type_, 0, 0);
-      http (concat('<C:address-data xmlns:C="urn:ietf:params:xml:ns:carddav">', content, '</C:address-data>\n'));
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
-    {
-      http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
-      found_sprop := 1;
-    }
-    else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
-    {
-      http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
-      found_sprop := 1;
-    }
-    else if (prop = ':principal-URL')
-    {
-      http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', DB.DBA.DAV_HREF_URL (lpath)));
-      found_sprop := 1;
-    }
-    else if (prop = ':current-user-privilege-set')
-    {
-      if (mime_type = 'text/vcard' or mime_type = 'text/calendar')
+      if (prop = ':acl')
       {
-        http ('<D:current-user-privilege-set><D:privilege><D:all/></D:privilege></D:current-user-privilege-set>');
+        http ('<D:acl />');
         found_sprop := 1;
       }
-    }
-    else if (prop = ':supported-report-set')
-    {
-      if (mime_type = 'text/vcard')
+      else if (prop = ':displayname')
       {
-        http (
-          '<D:supported-report-set>'||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <C:addressbook-query xmlns:C="urn:ietf:params:xml:ns:carddav"/>' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <C:addressbook-multiget xmlns:C="urn:ietf:params:xml:ns:carddav"/>' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <D:expand-property />' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <D:principal-property-search />' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <D:principal-search-property-set />' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '</D:supported-report-set>\n'
-        );
+        http (sprintf ('<D:displayname>%V</D:displayname>\n', name));
         found_sprop := 1;
       }
-      else if (mime_type = 'text/calendar')
+      else if (prop = ':getlastmodified')
       {
-        http (
-          '<D:supported-report-set>'||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <C:calendar-multiget xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
-          '    </D:report>' ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <D:principal-match/>' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '  <D:supported-report>'  ||
-          '    <D:report>'          ||
-          '      <C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
-          '    </D:report>'         ||
-          '  </D:supported-report>' ||
-          '</D:supported-report-set>\n'
-        );
+        http (sprintf ('<D:getlastmodified%s>%V</D:getlastmodified>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
         found_sprop := 1;
       }
-    }
-    else if (prop = ':resource-id')
-    {
-      http (sprintf ('<D:resource-id>%V</D:resource-id>\n', WS.WS.DAV_LINK (lpath)));
-    }
-    else if (prop = ':resourcetype')
-    {
-      if (st = 'C')
+      else if (prop = ':creationdate')
+      {
+        http (sprintf ('<D:creationdate%s>%V</D:creationdate>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (crt, '', iso_dt_flag)));
+        found_sprop := 1;
+      }
+      else if (prop = ':lastaccessed')
+      {
+        http (sprintf ('<D:lastaccessed%s>%V</D:lastaccessed>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
+        found_sprop := 1;
+      }
+      else if (prop = ':getetag')
+      {
+        http (sprintf ('<D:getetag>"%V"</D:getetag>\n', WS.WS.ETAG (name, parent_col, modt)));
+        found_sprop := 1;
+      }
+      else if (prop = ':getcontenttype')
+      {
+        http (sprintf ('<D:getcontenttype>%V</D:getcontenttype>\n', mime_type));
+        found_sprop := 1;
+      }
+      else if (prop = ':getcontentlength')
+      {
+        http (sprintf ('<D:getcontentlength>%d</D:getcontentlength>\n', case when (st = 'R') then res_len else 0 end));
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:caldav:supported-calendar-component-set')
+      {
+        http ('<C:supported-calendar-component-set xmlns:C="urn:ietf:params:xml:ns:caldav"><C:comp name="VEVENT"/><C:comp name="VTODO"/></C:supported-calendar-component-set>\r\n');
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:carddav:supported-address-data')
+      {
+        http ('<C:supported-address-data xmlns:C="urn:ietf:params:xml:ns:carddav"><C:address-data-type content-type="text/vcard" version="3.0"/></C:supported-address-data>\r\n');
+        found_sprop := 1;
+      }
+      else if (prop = ':getetag' and st = 'C')
+      {
+        http (sprintf ('<D:getetag>"%V"</D:getetag>\n', WS.WS.ETAG (name, parent_col, modt)));
+        found_sprop := 1;
+      }
+      else if (prop = 'http://calendarserver.org/ns/:getctag')
+      {
+        http (sprintf ('<CS:getctag xmlns:CS="http://calendarserver.org/ns/">%V</CS:getctag>\n', WS.WS.ETAG (name, parent_col, modt)));
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-data')
+      {
+        declare x_content, x_type any;
+
+        DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), x_content, x_type, 0, 0);
+        http ('<C:calendar-data xmlns:C="urn:ietf:params:xml:ns:caldav">' || x_content || '</C:calendar-data>\n');
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:carddav:address-data')
+      {
+        declare x_content, x_type any;
+
+        DB.DBA.DAV_RES_CONTENT_INT (DB.DBA.DAV_SEARCH_ID (lpath, 'R'), x_content, x_type, 0, 0);
+        http ('<C:address-data xmlns:C="urn:ietf:params:xml:ns:carddav">' || x_content || '</C:address-data>\n');
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:caldav:calendar-home-set')
+      {
+        http (sprintf ('<C:calendar-home-set xmlns:C="urn:ietf:params:xml:ns:caldav"><D:href>%V</D:href></C:calendar-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
+        found_sprop := 1;
+      }
+      else if (prop = 'urn:ietf:params:xml:ns:carddav:addressbook-home-set')
+      {
+        http (sprintf ('<C:addressbook-home-set xmlns:C="urn:ietf:params:xml:ns:carddav"><D:href>%V</D:href></C:addressbook-home-set>\n', DB.DBA.DAV_HREF_URL (lpath)));
+        found_sprop := 1;
+      }
+      else if (prop = ':principal-URL')
+      {
+        http (sprintf ('<D:principal-URL><D:href>%V</D:href></D:principal-URL>\n', DB.DBA.DAV_HREF_URL (lpath)));
+        found_sprop := 1;
+      }
+      else if (prop = ':current-user-privilege-set')
+      {
+        if (mime_type = 'text/vcard' or mime_type = 'text/calendar')
+        {
+          http ('<D:current-user-privilege-set><D:privilege><D:all/></D:privilege></D:current-user-privilege-set>');
+          found_sprop := 1;
+        }
+      }
+      else if (prop = ':supported-report-set')
       {
         if (mime_type = 'text/vcard')
-          http ('<D:resourcetype><D:collection/><C:addressbook xmlns:C="urn:ietf:params:xml:ns:carddav" /></D:resourcetype>\n');
+        {
+          http (
+            '<D:supported-report-set>'||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <C:addressbook-query xmlns:C="urn:ietf:params:xml:ns:carddav"/>' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <C:addressbook-multiget xmlns:C="urn:ietf:params:xml:ns:carddav"/>' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <D:expand-property />' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <D:principal-property-search />' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <D:principal-search-property-set />' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '</D:supported-report-set>\n'
+          );
+          found_sprop := 1;
+        }
         else if (mime_type = 'text/calendar')
-          http ('<D:resourcetype><D:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav" /></D:resourcetype>\n');
-        else
-          http ('<D:resourcetype><D:collection/></D:resourcetype>\n');
-      }
-      else
-      {
-        http ('<D:resourcetype/>\n');
-      }
-      found_sprop := 1;
-    }
-    else if (prop = ':lockdiscovery')
-    {
-      declare locks any;
-
-      locks := DB.DBA.DAV_LIST_LOCKS (id, st);
-      http ('<D:lockdiscovery>');
-      foreach (any lock in locks) do
-      {
-        http ('<D:activelock>\n');
-        http ('<D:locktype><D:write/></D:locktype>\n');
-        if (lock[1] = 'X')
-          http ('<D:lockscope><D:exclusive/></D:lockscope>\n');
-        else
-          http ('<D:lockscope><D:shared/></D:lockscope>\n');
-        http ('<D:depth>infinity</D:depth>\n');
-        http (sprintf ('%s<D:timeout>Second-%d</D:timeout>\n', coalesce (lock[5], ''), lock[3]));
-        http (sprintf ('<D:locktoken><D:href>opaquelocktoken:%s</D:href></D:locktoken>\n', lock[2]));
-        http ('</D:activelock>\n');
-      }
-      http ('</D:lockdiscovery>');
-      found_sprop := 1;
-    }
-    else if (prop = ':supportedlock')
-    {
-      http ('<D:supportedlock>\n<D:lockentry>\n<D:lockscope><D:exclusive/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n<D:lockentry>\n<D:lockscope><D:shared/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n</D:supportedlock>\n');
-      found_sprop := 1;
-    }
-    else if (prop = ':virtpermissions')
-    {
-      perms := trim (perms, '\r\n ');
-      http (concat('<V:virtpermissions>', perms, '</V:virtpermissions>\n'));
-      found_sprop := 1;
-    }
-    else if (prop = ':virtowneruid')
-    {
-      declare tmp varchar;
-
-      tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
-      if (tmp is not null)
-      {
-        http (sprintf ('<V:virtowneruid>%U</V:virtowneruid>\n', tmp));
-        found_sprop := 1;
-      }
-      else
-      {
-        mis_prop := concat (mis_prop, '<V:virtowneruid />\n');
-      }
-    }
-    else if (prop = ':virtownergid')
-    {
-      declare tmp varchar;
-      tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = gid);
-      if (tmp is not null)
-      {
-        http (sprintf ('<V:virtownergid>%U</V:virtownergid>\n', tmp));
-        found_sprop := 1;
-      }
-      else
-      {
-        mis_prop := concat (mis_prop, '<V:virtownergid />\n');
-      }
-    }
-    else if ((all_prop = 0) and (prop not in (':href')))
-    {
-      if (prop[0] = ascii (':'))
-        prop1 := subseq (prop, 1);
-      else
-        prop1 := prop;
-
-      found_cprop := 0;
-      prop_val := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (id, st, prop1, 0), null);
-      if (prop_val is not null)
-      {
-        WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop, prop1, prop_val);
-
-        found_cprop := 1;
-        found_sprop := 1;
-      }
-      if (add_not_found and not found_cprop)
-      {
-        declare names, namep varchar;
-        declare colon any;
-
-        colon := strrchr (prop, ':');
-        if (colon > 0)
         {
-          namep := substring (prop, colon + 1, length (prop));
-          names := substring (prop, 1, colon);
-          mix := mix + 1;
-          mis_prop := concat (mis_prop, sprintf ('<i%d%s xmlns:i%d="%s" />\n', mix, namep, mix, names));
+          http (
+            '<D:supported-report-set>'||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <C:calendar-multiget xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
+            '    </D:report>' ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <C:calendar-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <D:principal-match/>' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '  <D:supported-report>'  ||
+            '    <D:report>'          ||
+            '      <C:free-busy-query xmlns:C="urn:ietf:params:xml:ns:caldav"/>' ||
+            '    </D:report>'         ||
+            '  </D:supported-report>' ||
+            '</D:supported-report-set>\n'
+          );
+          found_sprop := 1;
+        }
+      }
+      else if (prop = ':resource-id')
+      {
+        http (sprintf ('<D:resource-id>%V</D:resource-id>\n', WS.WS.DAV_LINK (lpath)));
+      }
+      else if (prop = ':resourcetype')
+      {
+        if (st = 'C')
+        {
+          if (mime_type = 'text/vcard')
+            http ('<D:resourcetype><D:collection/><C:addressbook xmlns:C="urn:ietf:params:xml:ns:carddav" /></D:resourcetype>\n');
+          else if (mime_type = 'text/calendar')
+            http ('<D:resourcetype><D:collection/><C:calendar xmlns:C="urn:ietf:params:xml:ns:caldav" /></D:resourcetype>\n');
+          else
+            http ('<D:resourcetype><D:collection/></D:resourcetype>\n');
         }
         else
         {
-          mis_prop := concat (mis_prop, sprintf ('<D%s />\n', prop));
+          http ('<D:resourcetype/>\n');
+        }
+        found_sprop := 1;
+      }
+      else if (prop = ':lockdiscovery')
+      {
+        declare locks any;
+
+        locks := DB.DBA.DAV_LIST_LOCKS (id, st);
+        http ('<D:lockdiscovery>');
+        foreach (any lock in locks) do
+        {
+          http ('<D:activelock>\n');
+          http ('<D:locktype><D:write/></D:locktype>\n');
+          if (lock[1] = 'X')
+            http ('<D:lockscope><D:exclusive/></D:lockscope>\n');
+          else
+            http ('<D:lockscope><D:shared/></D:lockscope>\n');
+          http ('<D:depth>infinity</D:depth>\n');
+          http (sprintf ('%s<D:timeout>Second-%d</D:timeout>\n', coalesce (lock[5], ''), lock[3]));
+          http (sprintf ('<D:locktoken><D:href>opaquelocktoken:%s</D:href></D:locktoken>\n', lock[2]));
+          http ('</D:activelock>\n');
+        }
+        http ('</D:lockdiscovery>');
+        found_sprop := 1;
+      }
+      else if (prop = ':supportedlock')
+      {
+        http ('<D:supportedlock>\n<D:lockentry>\n<D:lockscope><D:exclusive/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n<D:lockentry>\n<D:lockscope><D:shared/></D:lockscope>\n<D:locktype><D:write/></D:locktype>\n</D:lockentry>\n</D:supportedlock>\n');
+        found_sprop := 1;
+      }
+      else if (prop = ':virtpermissions')
+      {
+        perms := trim (perms, '\r\n ');
+        http (concat('<V:virtpermissions>', perms, '</V:virtpermissions>\n'));
+        found_sprop := 1;
+      }
+      else if (prop = ':virtowneruid')
+      {
+        declare tmp varchar;
+
+        tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = uid);
+        if (tmp is not null)
+        {
+          http (sprintf ('<V:virtowneruid>%U</V:virtowneruid>\n', tmp));
+          found_sprop := 1;
+        }
+        else
+        {
+          mis_prop := concat (mis_prop, '<V:virtowneruid />\n');
+        }
+      }
+      else if (prop = ':virtownergid')
+      {
+        declare tmp varchar;
+        tmp := (select U_NAME from DB.DBA.SYS_USERS where U_ID = gid);
+        if (tmp is not null)
+        {
+          http (sprintf ('<V:virtownergid>%U</V:virtownergid>\n', tmp));
+          found_sprop := 1;
+        }
+        else
+        {
+          mis_prop := concat (mis_prop, '<V:virtownergid />\n');
+        }
+      }
+      else if ((all_prop = 0) and (prop not in (':href')))
+      {
+        if (prop[0] = ascii (':'))
+          prop1 := subseq (prop, 1);
+        else
+          prop1 := prop;
+
+        found_cprop := 0;
+        prop_val := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (id, st, prop1, 0), null);
+        if (prop_val is not null)
+        {
+          WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop, prop1, prop_val);
+
+          found_cprop := 1;
+          found_sprop := 1;
+        }
+        if (add_not_found and not found_cprop)
+        {
+          declare names, namep varchar;
+          declare colon any;
+
+          colon := strrchr (prop, ':');
+          if (colon > 0)
+          {
+            namep := substring (prop, colon + 1, length (prop));
+            names := substring (prop, 1, colon);
+            mix := mix + 1;
+            mis_prop := concat (mis_prop, sprintf ('<i%d%s xmlns:i%d="%s" />\n', mix, namep, mix, names));
+          }
+          else
+          {
+            mis_prop := concat (mis_prop, sprintf ('<D%s />\n', prop));
+          }
         }
       }
     }
-  }
-  if (all_prop = 1)
-  {
-    declare props any;
-
-    props := DB.DBA.DAV_PROP_LIST_INT (id, st, '%', 0);
-    foreach (any prop in props) do
+    if (all_prop = 1)
     {
-      prop1 := prop[0];
-      if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
-        goto _skip2;
+      declare props any;
 
-      WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop1, prop1, prop[1]);
-    _skip2:;
+      props := DB.DBA.DAV_PROP_LIST_INT (id, st, '%', 0);
+      foreach (any prop in props) do
+      {
+        prop1 := prop[0];
+        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
+          goto _skip2;
+
+        WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop1, prop1, prop[1]);
+      _skip2:;
+      }
     }
-  }
-  if (found_sprop)
-  {
-    http ('</D:prop>\n');
-    http ('<D:status>HTTP/1.1 200 OK</D:status>\n');
-    http ('</D:propstat>\n');
-  }
-  if (mis_prop <> '')
-  {
     if (found_sprop)
-      http ('<D:propstat>\n<D:prop>\n');
+    {
+      http ('</D:prop>\n');
+      http ('<D:status>HTTP/1.1 200 OK</D:status>\n');
+      http ('</D:propstat>\n');
+    }
+    if (mis_prop <> '')
+    {
+      if (found_sprop)
+        http ('<D:propstat>\n<D:prop>\n');
 
-    http (mis_prop);
-    http ('</D:prop>\n<D:status>HTTP/1.1 404 Not Found</D:status>\n</D:propstat>\n');
+      http (mis_prop);
+      http ('</D:prop>\n<D:status>HTTP/1.1 404 Not Found</D:status>\n</D:propstat>\n');
 
+    }
+    http ('</D:response>\n');
+  _continue:;
   }
-  http ('</D:response>\n');
-
-  dir_ctr := dir_ctr + 1;
-  goto next_response;
 }
 ;
 
@@ -883,6 +875,7 @@ create procedure WS.WS.REPORT (
   inout params varchar,
   in lines varchar)
 {
+  -- dbg_obj_princ ('WS.WS.REPORT (', path, params, lines, ')');
   declare _depth integer;
   declare st, _temp varchar;
   declare _ms_date integer;
@@ -956,6 +949,7 @@ create procedure WS.WS.REPORT (
       DB.DBA.DAV_SET_HTTP_STATUS (400);
       return;
     };
+
     if (length (_body) > 0)
       test_tree := xml_tree (_body);
   }
@@ -981,12 +975,12 @@ create procedure WS.WS.REPORT (
   {
     declare urls any;
     urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:caldav:"] //calendar-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
-    http_header ('DAV: 1, calendar-access, calendar-schedule, calendar-proxy\r\nContent-type: application/xml; charset="utf-8"\r\n');
+    http_header ('DAV: 1, 2, access-control, calendar-access \r\nContent-type: text/xml; charset="utf-8"\r\n');
     http ('<?xml version="1.0" encoding="utf-8"?>\n');
     http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
     foreach (any prop in urls) do
     {
-      if (-13 = WS.WS.REPORT_RESPONSE (cast(prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
+      if (-13 = WS.WS.REPORT_RESPONSE (cast (prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
       {
         _u_id := null;
         _g_id := null;
@@ -1002,12 +996,12 @@ create procedure WS.WS.REPORT (
   {
     declare urls any;
     urls := xpath_eval ('[xmlns:D="DAV:" xmlns="urn:ietf:params:xml:ns:carddav:"] //addressbook-multiget/D:href/text()', xml_tree_doc (xml_expand_refs (xml_tree (_body))), 0);
-    http_header ('DAV: 1, addressbook\r\nContent-type: application/xml; charset="utf-8"\r\n');
+    http_header ('DAV: 1, 2, access-control, addressbook\r\nContent-type: text/xml; charset="utf-8"\r\n');
     http ('<?xml version="1.0" encoding="utf-8"?>\n');
     http ('<D:multistatus xmlns:D="DAV:" xmlns:M="urn:uuid:c2f41010-65b3-11d1-a29f-00aa00c14882/">\n');
     foreach (any prop in urls) do
     {
-      if (-13 = WS.WS.REPORT_RESPONSE (cast(prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
+      if (-13 = WS.WS.REPORT_RESPONSE (cast (prop as varchar), _ppath, _depth, st, _ms_date, _props, _u_id))
       {
         _u_id := null;
         _g_id := null;
@@ -1038,7 +1032,7 @@ create procedure WS.WS.REPORT (
 }
 ;
 
-create function WS.WS.REPORT_RESPONSE (
+create procedure WS.WS.REPORT_RESPONSE (
   in lpath varchar,
   in ppath varchar,
   in depth integer,
@@ -1047,12 +1041,14 @@ create function WS.WS.REPORT_RESPONSE (
   in propnames any,
   in u_id integer) returns integer
 {
+  -- dbg_obj_princ ('WS.WS.REPORT_RESPONSE (', lpath, ppath, depth, st, ms_date, propnames, ')');
   declare N, all_prop, add_not_found integer;
   declare items any;
 
   if (not isstring (lpath) or not isstring (ppath))
     return -28;
 
+  lpath := split_and_decode(lpath)[0];
   if (st = 'C' and aref (ppath, length (ppath) - 1) <> ascii ('/'))
     ppath := concat (ppath, '/');
 
@@ -1064,7 +1060,7 @@ create function WS.WS.REPORT_RESPONSE (
     {
       add_not_found := 0;
       propnames := vector (':getlastmodified', ':creationdate', ':lastaccessed', ':getcontentlength', ':resourcetype', ':supportedlock');
-   }
+    }
     else
     {
       propnames := vector (':getlastmodified', ':getcontentlength', ':resourcetype');
