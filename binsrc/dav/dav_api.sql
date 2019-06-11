@@ -1419,6 +1419,7 @@ create function DAV_IS_LOCKED_INT (
   in check_token varchar := '',
   in strict_mode integer := 0)
 {
+  --
   -- dbg_obj_princ ('DAV_IS_LOCKED_INT (', id, st, check_token, strict_mode, ')');
   declare first integer;
   declare rc varchar;
@@ -3564,7 +3565,8 @@ create procedure DAV_DELETE_INT (
   in auth_uname varchar,
   in auth_pwd varchar,
   in extern integer := 1,
-  in check_locks any := 1
+  in check_locks integer := 1,
+  in check_token varchar := ''
 )
 {
   declare id, id_meta, rc integer;
@@ -3593,7 +3595,7 @@ create procedure DAV_DELETE_INT (
     auth_uid := http_nobody_uid ();
 
 
-  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_locks))))
+  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_token))))
     return rc;
 
   if (isarray (id))

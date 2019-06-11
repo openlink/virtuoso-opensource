@@ -1601,13 +1601,11 @@ create procedure WS.WS."DELETE" (
   in lines varchar)
 {
   -- dbg_obj_princ ('WS.WS.DELETE (', path, params, lines, ')');
-  declare depth, len integer;
   declare src_id any;
   declare uname, upwd, _perms varchar;
   declare rc integer;
-  declare res integer;
   declare u_id, g_id integer;
-  declare what, full_path varchar;
+  declare what, if_token, full_path varchar;
 
   uname := null;
   upwd := null;
@@ -1648,8 +1646,17 @@ create procedure WS.WS."DELETE" (
       return;
     }
 
+  if_token := WS.WS.FINDPARAM (lines, 'If');
+  if (if_token <> '')
+  {
+    declare tmp any;
+
+    tmp := WS.WS.IF_HEADER_PARSE (path, if_token);
+    if (not isnull (tmp) and length (tmp))
+      if_token := tmp[0][1][0][1];
+  }
   full_path := DAV_CONCAT_PATH ('/', path);
-  rc := DAV_DELETE_INT (full_path, 1, null, null, 0);
+  rc := DAV_DELETE_INT (full_path, 1, null, null, 0, 1, if_token);
   if (rc >= 0)
   {
     http_header (WS.WS.LDP_HDRS (equ (what, 'C'), 0, 0, 0, full_path));
@@ -1993,7 +2000,7 @@ create procedure WS.WS.PUT (
   }
   if ((res_id_ is not null) and isinteger (res_id_) and (length (client_etag) = 0))
   {
-    if (DB.DBA.LDP_ENABLED (_col_parent_id))
+    if ((_method = 'PUT') and (registry_get ('LDP_strict_put') = '1') and DB.DBA.LDP_ENABLED (_col_parent_id))
     {
       DB.DBA.DAV_SET_HTTP_STATUS (428);
       DB.DBA.DAV_SET_HTTP_LDP_STATUS (_col_parent_id, 428);
@@ -2001,8 +2008,8 @@ create procedure WS.WS.PUT (
     }
     select RES_OWNER, RES_GROUP, RES_PERMS into o_uid, o_gid, o_perms from WS.WS.SYS_DAV_RES where RES_ID = res_id_;
   }
-  if (registry_get ('LDP_strict_put') = '1' and _method = 'PUT'
-      and (res_id_ is not null or _col is not null) and content_type = 'text/turtle' and length (client_etag) = 0)
+  if ((_method = 'PUT') and (registry_get ('LDP_strict_put') = '1') and
+      (res_id_ is not null or _col is not null) and (content_type = 'text/turtle') and (length (client_etag) = 0))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (428);
     DB.DBA.DAV_SET_HTTP_LDP_STATUS (_col_parent_id, 428);
@@ -4245,7 +4252,8 @@ create procedure WS.WS."LOCK" (
 	'<D:lockdiscovery>',
 	'<D:activelock>',
 	'<D:locktype><D:write/></D:locktype>',
-	'<D:lockscope>'));  if (scope = 'X') http ('<D:exclusive/>'); else http ('<D:shared/>');
+	'<D:lockscope>'));
+	if (scope = 'X') http ('<D:exclusive/>'); else http ('<D:shared/>');
 	http (sprintf ('</D:lockscope><D:depth>%s</D:depth>', depth));
 	http (owner_name);
 	http (concat (
