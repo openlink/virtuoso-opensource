@@ -191,6 +191,23 @@
           <v:variable persist="0" name="account_password" type="varchar" default="null"/>
           <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
           <vm:dav_browser mode="webdav" />
+          <script type="text/javascript">
+            <![CDATA[
+              document.onkeydown = function(e) {
+                e = e || window.event;
+                if (e.keyCode == 27) {
+                  var v = $$('WEBDAV_formFooter', 'RC', 'div');
+                  for (var i = 0; i < v.length; i++) {
+                    var vv = v[i].getElementsByTagName('input');
+                    for (var j = 0; j < vv.length; j++) {
+                      if (vv[j].value == 'Cancel')
+                        vv[j].click();
+                    }
+                  }
+                }
+              };
+            ]]>
+          </script>
         </v:form>
       </vm:popup_page_wrapper>
     </body>

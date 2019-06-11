@@ -73,6 +73,20 @@
           setFooter();
           window.onresize = function() {setFooter();}
         }
+
+        document.onkeydown = function(e) {
+          e = e || window.event;
+          if (e.keyCode == 27) {
+            var v = $$('WEBDAV_formFooter', 'RC', 'div');
+            for (var i = 0; i < v.length; i++) {
+              var vv = v[i].getElementsByTagName('input');
+              for (var j = 0; j < vv.length; j++) {
+                if (vv[j].value == 'Cancel')
+                  vv[j].click();
+              }
+            }
+          }
+        };
      ]]>
     </script>
   </v:form>
