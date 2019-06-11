@@ -995,7 +995,7 @@ create procedure WEBDAV.DBA.dt_reformat(
 create procedure WEBDAV.DBA.dt_rfc1123 (
   in dt datetime)
 {
-  return soap_print_box (dt, '', 1);
+  return soap_print_box (WEBDAV.DBA.dt_timezone_set (dt), '', 1);
 }
 ;
 
@@ -1004,7 +1004,22 @@ create procedure WEBDAV.DBA.dt_rfc1123 (
 create procedure WEBDAV.DBA.dt_iso8601 (
   in dt datetime)
 {
-  return soap_print_box (dt, '', 0);
+  return soap_print_box (WEBDAV.DBA.dt_timezone_set (dt), '', 0);
+}
+;
+
+-----------------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.dt_timezone_set (
+  in dt datetime)
+{
+  declare tz integer;
+
+  if (not is_timezoneless (dt))
+    return dt;
+
+  tz := timezone (curdatetime_tz (), 1);
+  return dt_set_tz  (dateadd ('minute', -tz, dt), tz);
 }
 ;
 
