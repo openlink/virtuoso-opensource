@@ -4430,70 +4430,101 @@ create procedure WEBDAV.DBA.ui_image (
   in itemType varchar,
   in itemMimeType varchar) returns varchar
 {
+  declare imageFile varchar;
+
   if (itemType = 'C')
   {
     declare det_type varchar;
 
+    imageFile := 'foldr_16.png';
     det_type := WEBDAV.DBA.det_type (itemPath, itemType);
-    if (det_type = 'CatFilter')
-      return 'dav/image/dav/category_16.png';
-    if (det_type = 'PropFilter')
-      return 'dav/image/dav/property_16.png';
-    if (det_type = 'HostFs')
-      return 'dav/image/dav/hostfs_16.png';
-    if (det_type = 'Versioning')
-      return 'dav/image/dav/versions_16.png';
-    if (det_type = 'News3')
-      return 'dav/image/dav/enews_16.png';
-    if (det_type = 'Blog')
-      return 'dav/image/dav/blog_16.png';
-    if (det_type = 'oMail')
-      return 'dav/image/dav/omail_16.png';
-    if (det_type = 'CalDAV')
-      return 'dav/image/dav/calendar_16.png';
-    if (det_type = 'calendar')
-      return 'dav/image/dav/calendar_16.png';
-    if (det_type = 'Bookmark')
-      return 'dav/image/dav/bookmarks_16.png';
-    if (det_type = 'nntp')
-      return 'dav/image/dav/discussion_16.png';
-    if (det_type = 'CardDAV')
-      return 'dav/image/dav/addressbook_16.png';
-    return 'dav/image/dav/foldr_16.png';
+    if (det_type <> '')
+    {
+      if (det_type = 'CatFilter')
+        imageFile := 'category_16.png';
+
+      else if (det_type = 'PropFilter')
+        imageFile := 'property_16.png';
+
+      else if (det_type = 'HostFs')
+        imageFile := 'hostfs_16.png';
+
+      else if (det_type = 'Versioning')
+        imageFile := 'versions_16.png';
+
+      else if (det_type = 'News3')
+        imageFile := 'enews_16.png';
+
+      else if (det_type = 'Blog')
+        imageFile := 'blog_16.png';
+
+      else if (det_type = 'oMail')
+        imageFile := 'omail_16.png';
+
+      else if (det_type = 'CalDAV')
+        imageFile := 'calendar_16.png';
+
+      else if (det_type = 'calendar')
+        imageFile := 'calendar_16.png';
+
+      else if (det_type = 'Bookmark')
+        imageFile := 'bookmarks_16.png';
+
+      else if (det_type = 'nntp')
+        imageFile := 'discussion_16.png';
+
+      else if (det_type = 'CardDAV')
+        imageFile := 'addressbook_16.png';
+    }
   }
-  if (itemPath like '%.txt')
-    return 'dav/image/dav/text.gif';
-  if (itemPath like '%.pdf')
-    return 'dav/image/dav/pdf.gif';
-  if (itemPath like '%.html')
-    return 'dav/image/dav/html.gif';
-  if (itemPath like '%.htm')
-    return 'dav/image/dav/html.gif';
-  if (itemPath like '%.wav')
-    return 'dav/image/dav/wave.gif';
-  if (itemPath like '%.ogg')
-    return 'dav/image/dav/wave.gif';
-  if (itemPath like '%.flac')
-    return 'dav/image/dav/wave.gif';
-  if (itemPath like '%.wma')
-    return 'dav/image/dav/wave.gif';
-  if (itemPath like '%.wmv')
-    return 'dav/image/dav/video.gif';
-  if (itemPath like '%.doc')
-    return 'dav/image/dav/msword.gif';
-  if (itemPath like '%.dot')
-    return 'dav/image/dav/msword.gif';
-  if (itemPath like '%.xls')
-    return 'dav/image/dav/xls.gif';
-  if (itemPath like '%.zip')
-    return 'dav/image/dav/zip.gif';
-  if (itemMimeType like 'audio/%')
-    return 'dav/image/dav/wave.gif';
-  if (itemMimeType like 'video/%')
-    return 'dav/image/dav/video.gif';
-  if (itemMimeType like 'image/%')
-    return 'dav/image/dav/image.gif';
-  return 'dav/image/dav/generic_file.png';
+  else
+  {
+    if (itemMimeType = 'text/plain')
+      imageFile := 'text.gif';
+
+    else if (itemMimeType like 'image/%')
+      imageFile := 'image.gif';
+
+    else if (itemMimeType like 'audio/%')
+      imageFile := 'wave.gif';
+
+    else if (itemMimeType like 'video/%')
+      imageFile := 'video.gif';
+
+    else
+    {
+      declare itemExtension varchar;
+
+      itemExtension := lcase (WEBDAV.DBA.path_extension (itemPath));
+      if (itemExtension = 'txt')
+        imageFile := 'text.gif';
+
+      else if (itemExtension in ('html', 'htm', 'xhtml'))
+        imageFile := 'html.gif';
+
+      else if (itemExtension in ('wav', 'mp3', 'ogg', 'aac', 'flac', 'm4a', 'wma'))
+        imageFile := 'wave.gif';
+
+      else if (itemExtension in ('wmv', 'mov', 'avi', 'mp4', 'm4v', 'ogv'))
+        imageFile := 'video.gif';
+
+      else if (itemExtension in ('doc', 'dot', 'odt'))
+        imageFile := 'msword.gif';
+
+      else if (itemExtension in ('xls', 'ods'))
+        imageFile := 'xls.gif';
+
+      else if (itemExtension = 'pdf')
+        imageFile := 'pdf.gif';
+
+      else if (itemExtension in ('zip', 'rar', '7z', 'tar'))
+        imageFile := 'zip.gif';
+
+      else
+        imageFile := 'generic_file.png';
+    }
+  }
+  return 'dav/image/dav/' || imageFile;
 }
 ;
 
