@@ -468,17 +468,17 @@ next_response:
     }
     else if (prop = ':getlastmodified')
     {
-      http (sprintf ('<D:getlastmodified%s>%V</D:getlastmodified>\n', dt_ms, soap_print_box (modt, '', dt_flag)));
+      http (sprintf ('<D:getlastmodified%s>%V</D:getlastmodified>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
       found_sprop := 1;
     }
     else if (prop = ':creationdate')
     {
-      http (sprintf ('<D:creationdate%s>%V</D:creationdate>\n', dt_ms, soap_print_box (crt, '', iso_dt_flag)));
+      http (sprintf ('<D:creationdate%s>%V</D:creationdate>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (crt, '', iso_dt_flag)));
       found_sprop := 1;
     }
     else if (prop = ':lastaccessed')
     {
-      http (sprintf ('<D:lastaccessed%s>%V</D:lastaccessed>\n', dt_ms, soap_print_box (modt, '', dt_flag)));
+      http (sprintf ('<D:lastaccessed%s>%V</D:lastaccessed>\n', dt_ms, DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', dt_flag)));
       found_sprop := 1;
     }
     else if (prop = ':getetag' and st = 'R')
@@ -3070,7 +3070,7 @@ again:
             hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
 
           if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
-            hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', soap_print_box (modt, '', 1));
+            hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', 1));
 
           hdr_path := DAV_CONCAT_PATH ('/', full_path);
           hdr_uri := sprintf ('%s://%s%s', case when is_https_ctx () then 'https' else 'http' end, http_request_header (lines, 'Host', NULL, NULL), hdr_path);
@@ -6431,8 +6431,8 @@ create function WS.WS.DAV_DIR_LIST (
     http ('<opml version="2.0">');
 	  http ('<head>');
 		http (sprintf ('<title>WebDAV Directory %s"</title>', cast (full_path as varchar)));
-		http (sprintf ('<dateCreated>%s</dateCreated>', soap_print_box (_dir_entry[8], '', 1)));
-		http (sprintf ('<dateModified>%s</dateModified>', soap_print_box (_dir_entry[3], '', 1)));
+		http (sprintf ('<dateCreated>%s</dateCreated>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[8], '', 1)));
+		http (sprintf ('<dateModified>%s</dateModified>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[3], '', 1)));
 		http (sprintf ('<ownerName>%s</ownerName>', coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _dir_entry[7]), 'nobody')));
     http ('</head>');
 	  http ('<body>');
@@ -6494,11 +6494,11 @@ create function WS.WS.DAV_DIR_LIST (
           _group_id := coalesce (_dir_item[6], -1);
           _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
         }
-  	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', soap_print_box (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
+  	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
   	    http_value (_name, null, _xml );
   	    http ('"', _xml );
         if (feedAction)
-          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[8], '', 1)), _xml);
+          http (sprintf (' pubDate="%s"', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[8], '', 1)), _xml);
 
   	    http (' />\n', _xml );
   	  }
@@ -6539,11 +6539,11 @@ create function WS.WS.DAV_DIR_LIST (
           _group_id := coalesce (_dir_item[6], -1);
           _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
         }
-        http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', soap_print_box (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
+        http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
   	    http_value (_name, null, _xml );
   	    http ('"', _xml );
         if (feedAction)
-          http (sprintf (' pubDate="%s"', soap_print_box (_dir_item[8], '', 1)), _xml);
+          http (sprintf (' pubDate="%s"', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[8], '', 1)), _xml);
 
   	    http (' />\n', _xml );
   	  }
@@ -6662,8 +6662,8 @@ create procedure WS.WS.DAV_ATOM_ENTRY (
   http (sprintf ('  <id>%V</id>', entry[0]));
   http (sprintf ('  <category term="%V" />', case when what = 'R' then 'resource' else 'collection' end));
   http (sprintf ('  <author><name>%V</name></author>', (select U_NAME from DB.DBA.SYS_USERS where U_ID = entry[7])));
-  http (sprintf ('  <updated>%V</updated>', soap_print_box (entry[3], '', 0)));
-  http (sprintf ('  <published>%V</published>', soap_print_box (entry[8], '', 0)));
+  http (sprintf ('  <updated>%V</updated>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (entry[3], '', 0)));
+  http (sprintf ('  <published>%V</published>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (entry[8], '', 0)));
   http (         '</entry>');
 }
 ;
@@ -6686,8 +6686,8 @@ create procedure WS.WS.DAV_ATOM_ENTRY_LIST (
   http (sprintf ('  <id>%V</id>', entry[0]));
   http (sprintf ('  <category term="%V" />', case when what = 'R' then 'resource' else 'collection' end));
   http (sprintf ('  <author><name>%V</name></author>', (select U_NAME from DB.DBA.SYS_USERS where U_ID = entry[7])));
-  http (sprintf ('  <updated>%V</updated>', soap_print_box (entry[3], '', 0)));
-  http (sprintf ('  <published>%V</published>', soap_print_box (entry[8], '', 0)));
+  http (sprintf ('  <updated>%V</updated>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (entry[3], '', 0)));
+  http (sprintf ('  <published>%V</published>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (entry[8], '', 0)));
 
   dir := DB.DBA.DAV_DIR_LIST_INT (DB.DBA.DAV_SEARCH_PATH (id, what), 0, '%', null, null, http_dav_uid ());
   for (N := 0; N < length (dir); N := N + 1)
@@ -7475,5 +7475,21 @@ create procedure DB.DBA.DAV_MAC_METAFILE (
   in path varchar)
 {
   return case when (DB.DBA.DAV_DET_PATH_NAME (path) like '._%') then 1 else 0 end;
+}
+;
+
+create procedure DB.DBA.DAV_RESPONSE_FORMAT_DATE (
+  in dt datetime,
+  in enclosing_tag varchar,
+  in date_encoding_type integer) -- 0 - ISO 8601, 1 - RFC 1123
+{
+  declare tz integer;
+
+  if (is_timezoneless (dt))
+  {
+    tz := timezone (curdatetime_tz (), 1);
+    dt := dt_set_tz  (dateadd ('minute', -tz, dt), tz);
+  }
+  return soap_print_box (dt, enclosing_tag, date_encoding_type);
 }
 ;
