@@ -2530,13 +2530,20 @@ again:
 
   if (_res_id is null and _col_id is null)
   {
-    declare acl_path, meta_path, meta_what varchar;
+    declare acl_path, meta_path, meta_what, meta_accept varchar;
     declare meta_id any;
     declare content_, type any;
 
     meta_path := DAV_CONCAT_PATH ('/', full_path);
     if (meta_path like '%,meta')
     {
+      meta_accept := HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'), 'text/turtle');
+      if (meta_accept not in ('*/*', 'text/turtle'))
+      {
+        DB.DBA.DAV_SET_HTTP_STATUS (406, '406 Not Acceptable', '406 Not Acceptable', sprintf ('<p>An appropriate representation of the requested resource %s could not be found on this server.</p>', meta_path));
+        return;
+      }
+
       meta_what := 'R';
       meta_path := subseq (meta_path, 0, length (meta_path) - length (',meta'));
       meta_id := DAV_HIDE_ERROR (DAV_SEARCH_ID (meta_path, meta_what));
