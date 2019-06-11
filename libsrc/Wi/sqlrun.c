@@ -2236,6 +2236,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
   QNCAST (query_instance_t, qi, inst);
   int k;
   dbe_table_t *tb = ins->ins_table;
+  int non_txn_insert;
 
   it_cursor_t auto_itc;
   it_cursor_t *itc;
@@ -2307,6 +2308,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  qi->qi_set_mask = mask_save;
 	  qi->qi_n_sets = n_sets;
 	}
+      non_txn_insert = qi->qi_non_txn_insert;
       for (k = 0; k < BOX_ELEMENTS_INT (ins->ins_keys); k++)
 	{
 	  if (qi->qi_client->cli_row_autocommit)
@@ -2317,6 +2319,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  itc_col_free (itc);
 	}
 	}
+      qi->qi_non_txn_insert = non_txn_insert;
       qi->qi_set_mask = save_sets;
       qi->qi_n_sets = n_sets;
       if (itc->itc_siblings)
