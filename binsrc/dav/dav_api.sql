@@ -987,58 +987,6 @@ create function DAV_SEARCH_ID (
 ;
 
 --!AWK PUBLIC
-create function DAV_SEARCH_SOME_ID (
-  in path any,
-  out what char (1)) returns any
-{
-  -- dbg_obj_princ ('DAV_SEARCH_SOME_ID (', path, '... )\n');
-  declare id, len integer;
-  declare par any;
-
-  id := -1;
-  if (isstring (path))
-  {
-    par := split_and_decode (path, 0, '\0\0/');
-  }
-  else
-  {
-    par := path;
-  }
-  len := length (par);
-  if (len = 0)
-    {
-      return -1;
-    }
-  if (par[0] <> '')
-    {
-      return -1;
-    }
-  if (par[len-1] <> '')
-    {
-      what := 'R';
-      if (not isstring (path))
-        path := DAV_CONCAT_PATH (par, null);
-
-      id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
-    }
-  else
-    {
-      what := 'C';
-      if (not isstring (path))
-        path := DAV_CONCAT_PATH (par, null);
-
-      id := coalesce ((select COL_ID from WS.WS.SYS_DAV_COL where COL_FULL_PATH = path), -1);
-    }
-  if (id = -1)
-    {
-      declare det_ret, detcol_id, detcol_path_parts, unreached_path_parts any;
-      return DAV_SEARCH_ID_OR_DET (par, what, det_ret, detcol_id, detcol_path_parts, unreached_path_parts);
-    }
-  return id;
-}
-;
-
---!AWK PUBLIC
 create function DAV_HIDE_ERROR (
   in res any,
   in dflt any := null) returns any
@@ -1571,7 +1519,10 @@ create function DAV_LOCK_INT (
 
   p_st := 'C';
   if (id is null)
-    id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+  {
+    st := DB.DBA.DAV_WHAT (path);
+    id := DB.DBA.DAV_SEARCH_ID (path, st);
+  }
 
   if (DB.DBA.DAV_HIDE_ERROR (id) is null)
   {
@@ -1744,7 +1695,8 @@ create function DAV_UNLOCK (
   declare id any;
   declare st char (1);
 
-  id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+  st := DB.DBA.DAV_WHAT (path);
+  id := DB.DBA.DAV_SEARCH_ID (path, st);
   if (DB.DBA.DAV_HIDE_ERROR (id) is null)
     return -1;
 
@@ -3552,8 +3504,7 @@ create procedure DAV_DELETE (
   in path varchar,
   in silent integer := 0,
   in auth_uname varchar,
-  in auth_pwd varchar
-)
+  in auth_pwd varchar)
 {
   return DAV_DELETE_INT (path, silent, auth_uname, auth_pwd);
 }
@@ -3577,11 +3528,11 @@ create procedure DAV_DELETE_INT (
   whenever sqlstate 'HT509' goto disabled_home;
 
   par := split_and_decode (path, 0, '\0\0/');
-  if (aref (par, 0) <> '')
+  if (par[0] <> '')
     return -1;
 
-  what := case when (aref (par, length (par) - 1) = '') then 'C' else 'R' end;
-  id := DAV_SEARCH_ID (par, what);
+  what := DB.DBA.DAV_WHAT (par);
+  id := DB.DBA.DAV_SEARCH_ID (par, what);
   if (isinteger (id) and (0 > id))
     return (case when silent then 1 else id end);
 
@@ -3592,8 +3543,9 @@ create procedure DAV_DELETE_INT (
       return (case when silent then 1 else auth_uid end);
   }
   else
+  {
     auth_uid := http_nobody_uid ();
-
+  }
 
   if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_token))))
     return rc;
@@ -3602,6 +3554,7 @@ create procedure DAV_DELETE_INT (
   {
     declare det varchar;
     declare detcol_id, detcol_path, unreached_path any;
+
     DAV_SEARCH_ID_OR_DET (par, what, det, detcol_id, detcol_path, unreached_path);
     return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, what, silent, auth_uid);
   }
@@ -3813,15 +3766,12 @@ create procedure DAV_COPY_INT (
   if (aref (sar, 0) <> '')
     return -1;
 
-  if (aref (sar, length (sar) - 1) = '')
-    st := 'C';
-  else
-    st := 'R';
+  st := DB.DBA.DAV_WHAT (sar);
 
   if (aref (dar, 0) <> '')
     return -2;
 
-  if (aref (dar, length (dar) - 1) = '')
+  if (DB.DBA.DAV_WHAT (dar) = 'C')
     {
       if (st = 'R')
         {
@@ -3919,7 +3869,7 @@ create procedure DAV_COPY_INT (
         }
     }
 
-  if (isarray (dp_id))
+  if (isvector (dp_id))
   {
     dp_det := dp_id[0];
   }
@@ -3942,7 +3892,7 @@ create procedure DAV_COPY_INT (
 
       if (d_id is not null) -- do update
         {
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -4046,8 +3996,10 @@ create procedure DAV_COPY_INT (
 
 insufficient_storage:
   return -41;
+
 disabled_owner:
   return -42;
+
 disabled_home:
   return -43;
 }
@@ -4167,15 +4119,11 @@ create procedure DAV_MOVE_INT (
   if (aref (sar, 0) <> '')
     return -1;
 
-  if (aref (sar, length (sar) - 1) = '')
-    st := 'C';
-  else
-    st := 'R';
-
+  st := DB.DBA.DAV_WHAT (sar);
   if (aref (dar, 0) <> '')
     return -2;
 
-  if (aref (dar, length (dar) - 1) = '')
+  if (DB.DBA.DAV_WHAT (dar) = 'C')
     {
       if (st = 'R')
         {
@@ -4255,7 +4203,7 @@ create procedure DAV_MOVE_INT (
         return (case when rc = -8 then -9 else rc end);
     }
 
-  if (isarray (dp_id))
+  if (isvector (dp_id))
   {
     dp_det := dp_id[0];
   }
@@ -4278,7 +4226,7 @@ create procedure DAV_MOVE_INT (
       if (d_id is not null) -- do update of destination and delete of source
         {
           -- dbg_obj_princ ('DAV_MOVE_INT has a resource');
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -4346,7 +4294,7 @@ create procedure DAV_MOVE_INT (
           if (rname = '')
             return -3;
 
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -4422,7 +4370,7 @@ create procedure DAV_MOVE_INT (
             }
         }
 
-      if (isarray (id))
+      if (isvector (id))
         {
           declare dirsingle any;
 
@@ -5096,10 +5044,8 @@ DAV_PROP_GET (
     in auth_pwd varchar := null) returns any
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_PROP_GET_INT (DAV_SEARCH_ID (path, st), st, propname, 1, auth_uname, auth_pwd);
 }
 ;
@@ -5348,10 +5294,8 @@ DAV_PROP_LIST (
     in auth_pwd varchar := null)
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_PROP_LIST_INT (DAV_SEARCH_ID (path, st), st, propmask, 1, auth_uname, auth_pwd);
 }
 ;
@@ -5720,6 +5664,19 @@ create function DAV_RES_LENGTH (
 }
 ;
 
+create function DAV_WHAT (
+  in path any)
+{
+  if (isvector (path) and length (path))
+    return case when (path[length (path)-1] = '') then 'C' else 'R' end;
+
+  if (isstring (path) and length (path))
+    return case when (path[length (path)-1] = 47) then 'C' else 'R' end;
+
+  return null;
+}
+;
+
 create function DAV_COL_IS_ANCESTOR_OF (in a_id integer, in d_id integer) returns integer
 {
   declare p_id integer;
@@ -5740,10 +5697,7 @@ again:
 create function DAV_COL_PATH_BOUNDARY (
   in path varchar) returns varchar
 {
-  declare len integer;
-
-  len := length (path);
-  if ((len = 0) or (path[len-1] <> 47))
+  if (DB.DBA.DAV_WHAT (path) <> 'C')
     signal ('.....', sprintf ('Bad path in DAV_COL_PATH_BOUNDARY: %s', path));
 
   return path || '\377\377\377\377';
@@ -7719,10 +7673,8 @@ create procedure DAV_RDF_PROP_GET (
   in auth_pwd varchar := null) returns any
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_RDF_PROP_GET_INT (DAV_SEARCH_ID (path, st), st, single_schema, 1, auth_uname, auth_pwd);
 }
 ;

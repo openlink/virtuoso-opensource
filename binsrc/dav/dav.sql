@@ -4424,6 +4424,7 @@ create procedure WS.WS.COPY_OR_MOVE (
   in lines varchar,
   in is_copy integer)
 {
+  declare tmp any;
   declare st, _dst_url, if_header varchar;
   declare _host varchar;
   declare _overwrite char;
@@ -4442,10 +4443,14 @@ create procedure WS.WS.COPY_OR_MOVE (
     DB.DBA.DAV_SET_HTTP_STATUS (403);
     return;
   }
-  src_id := DB.DBA.DAV_HIDE_ERROR (DAV_SEARCH_SOME_ID (vector_concat (vector(''), path), st));
-  if (src_id is null)
+  tmp := vector_concat (vector(''), path);
+  st := DB.DBA.DAV_WHAT (tmp);
+  src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, st));
+  if (src_id is null and (st <> 'C'))
   {
-    src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_SOME_ID (vector_concat (vector(''), path, vector('')), st));
+    tmp := vector_concat (tmp, vector(''));
+    st := DB.DBA.DAV_WHAT (tmp);
+    src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, st));
     if (src_id is not null)
     {
       path := vector_concat (path, vector(''));

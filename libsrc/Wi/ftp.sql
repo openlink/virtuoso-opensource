@@ -316,27 +316,26 @@ create procedure FTP_RNTO (
   {
     new_name := cur_dir || new_name;
   }
-  old_id := DAV_SEARCH_SOME_ID (old_name, st);
-  if (DAV_HIDE_ERROR (old_id) is null and ("RIGHT" (old_name, 1) <> '/'))
+  st := DB.DBA.DAV_WHAT (old_name);
+  old_id := DB.DBA.DAV_SEARCH_ID (old_name, st);
+  if (DB.DBA.DAV_HIDE_ERROR (old_id) is null and (st <> 'C'))
   {
-    old_id := DAV_SEARCH_SOME_ID (old_name || '/', st);
-    if (DAV_HIDE_ERROR (old_id) is not null)
-    {
-      old_name := old_name || '/';
-    }
-    else
+    st := 'C';
+    old_id := DB.DBA.DAV_SEARCH_ID (old_name || '/', st);
+    if (DB.DBA.DAV_HIDE_ERROR (old_id) is null)
     {
       FTP_WRITE (_user, '550 The path (' || old_name || ') is not valid', in_str);
       return;
     }
+    old_name := old_name || '/';
   }
 
   if ('C' = st)
   {
-    if ("RIGHT" (old_name, 1) <> '/')
+    if (DB.DBA.DAV_WHAT (old_name) <> 'C')
       old_name := old_name || '/';
 
-    if ("RIGHT" (new_name, 1) <> '/')
+    if (DB.DBA.DAV_WHAT (new_name) <> 'C')
       new_name := new_name || '/';
   }
 
@@ -696,7 +695,7 @@ create procedure FTP_RETR (
   in auth_pwd varchar,
   inout r_pos integer)
 {
-  dbg_obj_princ ('FTP_RETR (', in_str, d_addr, f_name, wanted_faile, listen, auth_uid, auth_pwd, r_pos, ')');
+  --dbg_obj_princ ('FTP_RETR (', in_str, d_addr, f_name, wanted_faile, listen, auth_uid, auth_pwd, r_pos, ')');
   declare full_cont, sub_cont, data_ses any;
   declare id any;
   declare scrc, rc, uid, int_res, len, writen_size integer;
@@ -1609,7 +1608,7 @@ create procedure FTP_MAKE_PORT_COMMAND (
   if (mode)
     return 'PORT ' || _ip || ',' || _port2 || ',' || _port1;
 
-   return '227 (' || _ip || ',' || _port2 || ',' || _port1 || ')';
+  return '227 (' || _ip || ',' || _port2 || ',' || _port1 || ')';
 }
 ;
 
