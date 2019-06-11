@@ -56,8 +56,12 @@ conductor/dav/image/bmklet_32.png
 conductor/dav/image/c.gif
 conductor/dav/image/close_16.png
 conductor/dav/image/copy_32.png
+conductor/dav/image/dav/addressbook_16.png
 conductor/dav/image/dav/blog_16.png
+conductor/dav/image/dav/bookmarks_16.png
+conductor/dav/image/dav/calendar_16.png
 conductor/dav/image/dav/category_16.png
+conductor/dav/image/dav/discussion_16.png
 conductor/dav/image/dav/enews_16.png
 conductor/dav/image/dav/foldr_16.png
 conductor/dav/image/dav/generic_file.png
