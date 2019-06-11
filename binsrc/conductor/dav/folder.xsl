@@ -12,12 +12,12 @@
   </xsl:template>
 
   <xsl:template name="formatDate">
-    <xsl:param name="dateString" />
+    <xsl:param name="date" />
 
-    <xsl:variable name="startTail" select="substring-before($size, ' ')" />
-    <xsl:variable name="endTail" select="substring-after($size, ' ')" />
+    <xsl:variable name="startTail" select="substring-before($date, 'T')" />
+    <xsl:variable name="endTail" select="substring-before(substring-after($date, 'T'), '.')" />
     <xsl:value-of select="$startTail"/>
-    <span style="font-family: Monospace; font-size: 80%;">&nbsp;<xsl:value-of select="$endTail"/></span>
+    <span style="font-family: Monospace; font-size: 90%;">&nbsp;<xsl:value-of select="$endTail"/></span>
 
   </xsl:template>
 
@@ -100,7 +100,7 @@
       <td>
         <xsl:attribute name="value"><xsl:value-of select="@modify" /></xsl:attribute>
         <xsl:call-template name="formatDate">
-          <xsl:with-param name="size" select="@modify" />
+          <xsl:with-param name="date" select="@modify" />
         </xsl:call-template>
       </td>
       <td></td>
@@ -128,12 +128,14 @@
       </td>
       <td align="right">
         <xsl:attribute name="value"><xsl:value-of select="@length" /></xsl:attribute>
-        <xsl:call-template name="formatSize"><xsl:with-param name="size" select="@hs" /></xsl:call-template>
+        <xsl:call-template name="formatSize">
+          <xsl:with-param name="size" select="@hs" />
+        </xsl:call-template>
       </td>
       <td>
         <xsl:attribute name="value"><xsl:value-of select="@modify" /></xsl:attribute>
         <xsl:call-template name="formatDate">
-          <xsl:with-param name="size" select="@modify" />
+          <xsl:with-param name="date" select="@modify" />
         </xsl:call-template>
       </td>
       <td>
