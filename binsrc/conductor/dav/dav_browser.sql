@@ -4614,6 +4614,16 @@ create procedure WEBDAV.DBA.ui_image (
       return 'dav/image/dav/blog_16.png';
     if (det_type = 'oMail')
       return 'dav/image/dav/omail_16.png';
+    if (det_type = 'CalDAV')
+      return 'dav/image/dav/calendar_16.png';
+    if (det_type = 'calendar')
+      return 'dav/image/dav/calendar_16.png';
+    if (det_type = 'Bookmark')
+      return 'dav/image/dav/bookmarks_16.png';
+    if (det_type = 'nntp')
+      return 'dav/image/dav/discussion_16.png';
+    if (det_type = 'CardDAV')
+      return 'dav/image/dav/addressbook_16.png';
     return 'dav/image/dav/foldr_16.png';
   }
   if (itemPath like '%.txt')
