@@ -30,7 +30,7 @@
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/
 /*%lex-param {sql_comp_context_t* scs_arg}*/
-%expect 18
+%expect 19
 
 
 %{
@@ -81,7 +81,6 @@
   sqlp_join_t join;
 }
 
-%expect 18
 %token <box> NAME
 %token <box> STRING
 %token <box> WSTRING
@@ -176,6 +175,7 @@
 %type <box> cursor
 %type <box> literal
 %type <box> signed_literal
+%type <box> tail_of_tag_of
 %type <tree> column_ref
 %type <tree> aggregate_ref
 
@@ -550,7 +550,7 @@
 %token <box> MODIFIES INPUT CALLED ADA C_L3 COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
+%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING HANDLE_L STREAM_L
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -584,6 +584,7 @@
 
 /* Extensions */
 %token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
+%token DICTIONARY_L REFERENCE_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -653,8 +654,9 @@
 %token WS_PRAGMA_C_ESC WS_PGRAGMA_UTF8_ESC WS_PRAGMA_PL_DEBUG WS_PRAGMA_SRC
 %token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG __COST
 
+
 /* Important! Do NOT add meaningful SQL tokens at the end of this list!
-Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE is
+Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE are
 treated as garbage by sql_split_text(). */
 
 %%
@@ -746,6 +748,7 @@ identifier
 	| SQL_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| GENERAL		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DETERMINISTIC		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | DICTIONARY_L          { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NO_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DISABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NOVALIDATE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -769,6 +772,7 @@ identifier
 	| JAVA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| INOUT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| REMOTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | REFERENCE_L           { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| KEYSET		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VALUE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| PARAMETER		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -811,6 +815,8 @@ identifier
 	| RDF_BOX_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VECTOR_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| UNAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| HANDLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| STREAM_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 opt_with_data
@@ -2907,11 +2913,7 @@ literal
 	| BINARYNUM
 	| IRI_LIT
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
-	| __TAG_L OF data_type { $$ = ((caddr_t *)$3)[0]; }
-	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
-	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
-	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
-	| __TAG_L OF UNAME_L { $$ = (caddr_t) DV_UNAME; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
 	;
 
 signed_literal
@@ -2939,6 +2941,24 @@ signed_literal
 	| '+' APPROXNUM %prec UMINUS { $$ = $2; }
 	| BINARYNUM
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
+	;
+
+tail_of_tag_of
+	: data_type { $$ = ((caddr_t *)$1)[0]; }
+	| data_type HANDLE_L
+		{
+		  $$ = ((caddr_t *)$1)[0];
+		  if (!IS_BLOB_DTP($$))
+		    yyerror (scanner, "__TAG OF ... HANDLE is valid only for LONG datatypes");
+		  $$ = DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP($$);
+		}
+	| DICTIONARY_L REFERENCE_L { $$ = (caddr_t) DV_DICT_ITERATOR; }
+	| STREAM_L { $$ = (caddr_t) DV_STRING_SESSION; }
+	| XML { $$ = (caddr_t) DV_XML_ENTITY; }
+	| RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
+	| VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
+	| UNAME_L { $$ = (caddr_t) DV_UNAME; }
 	;
 
 /* miscellaneous */
