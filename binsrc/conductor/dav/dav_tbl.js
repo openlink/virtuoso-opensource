@@ -569,7 +569,7 @@ TBL.createCell70Ext = function (obj, fldOptions, fldUnlink)
   span.id = 'span_' + fldName;
   if (predicate[2] == 'sparql') {
     if (!fldOptions)
-      fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix nmo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#>\nprefix nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>\nASK\nWHERE\n  {\n    <%item_iri%> nmo:messageFrom \'value\'\n  }'};
+      fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix nmo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#>\nprefix nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>\nASK\nWHERE\n  {\n    <%item_iri%> nmo:messageFrom <mailto:someone@example.com>\n  }'};
 
     var fld = OAT.Dom.create('textarea');
     fld.id = fldName;
