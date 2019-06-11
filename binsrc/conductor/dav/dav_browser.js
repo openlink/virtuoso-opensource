@@ -386,6 +386,24 @@ WEBDAV.updateLabel = function(value)
   } else {
     OAT.Dom.show('tr_dav_ldp');
   }
+  if ($('dav_det')) {
+    if (['', 'Versioning'].indexOf(value) === -1) {
+      OAT.Dom.hide('davRow_version');
+    } else {
+      OAT.Dom.show('davRow_version');
+      var av = $('dav_autoversion');
+      var o = av.options;
+      if ((value == 'Versioning') && (o.length !== 4)) {
+        o.remove(0);
+      }
+      else if ((value !== 'Versioning') && (o.length == 4)) {
+        var item = document.createElement('option');
+        item.text = 'No';
+        item.value = '';
+        o.add(item, 0);
+      }
+    }
+  }
 
   if (!value)
     return;

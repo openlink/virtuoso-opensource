@@ -2533,7 +2533,7 @@ create procedure WEBDAV.DBA.settings_chars (
 create procedure WEBDAV.DBA.settings_rows (
   inout settings any)
 {
-  return cast (get_keyword ('rows', settings, '100') as integer);
+  return cast (get_keyword ('rows', settings, '10') as integer);
 }
 ;
 
@@ -2687,16 +2687,13 @@ create procedure WEBDAV.DBA.det_type (
     if (what = 'R')
       path := WEBDAV.DBA.path_parent (path, 1);
 
-    if (WEBDAV.DBA.path_name (path) = 'Attic')
+    if (WEBDAV.DBA.path_name (path) = 'VVC')
       detType := 'Versioning';
 
-    else if (WEBDAV.DBA.path_name (path) = 'VVC')
-      detType := 'Versioning';
-
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
+    else if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_PROP_GET_INT (id, 'C', 'virt:rdfSink-rdf', 0)))
       detType := 'rdfSink';
 
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
+    else if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_PROP_GET_INT (id, 'C', 'virt:Versioning-History', 0)))
       detType := 'UnderVersioning';
 
     else if (WEBDAV.DBA.syncml_detect (path))
@@ -2731,6 +2728,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'DynaRes',    'Dynamic Resources',
     'SyncML',     'SyncML',
     'Versioning', 'Version Control',
+    'UnderVersioning', 'Under Version Control',
     'S3',         'Amazon S3',
     'GDrive',     'Google Drive',
     'Dropbox',    'Dropbox',
@@ -2795,10 +2793,6 @@ create procedure WEBDAV.DBA.det_ownClass (
   else if (isarray (id))
     retValue := cast (id[0] as varchar);
 
-
-  else if (WEBDAV.DBA.path_name (path) = 'Attic')
-    retValue := 'Versioning';
-
   else if (WEBDAV.DBA.path_name (path) = 'VVC')
     retValue := 'Versioning';
 
@@ -2828,19 +2822,16 @@ create procedure WEBDAV.DBA.det_subClass (
     if (WEBDAV.DBA.DAV_ERROR (id))
       retValue := null;
 
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:version-history', '') <> '')
-      retValue := 'UnderVersioning';
-
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-History', '') <> '')
-      retValue := 'UnderVersioning';
-
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:Versioning-Collection', '') <> '')
+    else if (WEBDAV.DBA.path_name (path) = 'VVC')
       retValue := 'Versioning';
 
-    else if (WEBDAV.DBA.path_name (path) = 'Attic')
+    else if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_PROP_GET_INT (id, 'C', 'virt:Versioning-History', 0)))
+      retValue := 'UnderVersioning';
+
+    else if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_PROP_GET_INT (id, 'C', 'virt:Versioning-Collection', 0)))
       retValue := 'Versioning';
 
-    else if (WEBDAV.DBA.DAV_PROP_GET (path, 'virt:rdfSink-rdf', '') <> '')
+    else if (not WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_PROP_GET_INT (id, 'C', 'virt:rdfSink-rdf', 0)))
       retValue := 'rdfSink';
 
     else if (WEBDAV.DBA.syncml_detect (path))
@@ -2947,29 +2938,34 @@ create procedure WEBDAV.DBA.DAV_GET_INFO (
 
   if (info = 'vc')
   {
-    if (WEBDAV.DBA.DAV_GET_VERSION_CONTROL(path, auth_name, auth_pwd))
+    if (WEBDAV.DBA.DAV_GET_VERSION_CONTROL (path, auth_name, auth_pwd))
       return 'ON';
+
     return 'OFF';
   }
   if (info = 'avcState')
   {
-    tmp := WEBDAV.DBA.DAV_GET_AUTOVERSION(path, auth_name, auth_pwd);
+    tmp := WEBDAV.DBA.DAV_GET_AUTOVERSION (path, auth_name, auth_pwd);
     if (tmp <> '')
-      return replace (WEBDAV.DBA.auto_version_full(tmp), 'DAV:', '');
+      return replace (WEBDAV.DBA.auto_version_full (tmp), 'DAV:', '');
+
     return 'OFF';
   }
   if (info = 'vcState')
   {
-    if (not is_empty_or_null(WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-in', '', auth_name, auth_pwd)))
+    if (not is_empty_or_null (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-in', '', auth_name, auth_pwd)))
       return 'Check-In';
-    if (not is_empty_or_null(WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-out', '', auth_name, auth_pwd)))
+
+    if (not is_empty_or_null (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-out', '', auth_name, auth_pwd)))
       return 'Check-Out';
+
     return 'Standard';
   }
   if (info = 'lockState')
   {
     if (WEBDAV.DBA.DAV_IS_LOCKED (path))
       return 'ON';
+
     return 'OFF';
   }
   return '';
@@ -3022,11 +3018,20 @@ create procedure WEBDAV.DBA.DAV_VERSION_CONTROL (
 --
 create procedure WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (
   in path varchar,
+  in what varchar := 'C',
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
+  declare id any;
+
   WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_REMOVE_VERSION_CONTROL (path, auth_name, auth_pwd);
+  if (what = 'C')
+    return DB.DBA.DAV_REMOVE_VERSIONING_CONTROL_INT (path, auth_name, auth_pwd);
+
+  id := DB.DBA.DAV_SEARCH_ID (path, what);
+  delete from WS.WS.SYS_DAV_RES_DIFF where RD_RES_ID = id;
+  delete from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = id;
+  return DB.DBA.Versioning_REMOVE_V_PROPERTIES (path);
 }
 ;
 
@@ -3073,18 +3078,17 @@ create procedure WEBDAV.DBA.DAV_GET_AUTOVERSION (
   in auth_name varchar := null,
   in auth_pwd varchar := null)
 {
-  --declare exit handler for SQLSTATE '*' {return '';};
-
   if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
   {
     declare id integer;
 
-    id := DAV_SEARCH_ID (path, 'C');
-    if (not isinteger (id))
+    id := DB.DBA.DAV_SEARCH_ID (path, 'C');
+    if (WEBDAV.DBA.DAV_ERROR (id))
       return '';
-    return coalesce ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = DAV_SEARCH_ID (path, 'C')), '');
+
+    return coalesce ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = id), '');
   }
-  return WEBDAV.DBA.auto_version_short(WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:auto-version'));
+  return WEBDAV.DBA.auto_version_short (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:auto-version', '', auth_name, auth_pwd));
 }
 ;
 
@@ -3099,10 +3103,13 @@ create procedure WEBDAV.DBA.DAV_GET_VERSION_CONTROL (
 
   if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
     return 0;
+
   if (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-in', '', auth_name, auth_pwd) <> '')
     return 1;
+
   if (WEBDAV.DBA.DAV_PROP_GET (path, 'DAV:checked-out', '', auth_name, auth_pwd) <> '')
     return 1;
+
   return 0;
 }
 ;
@@ -3205,9 +3212,12 @@ create procedure WEBDAV.DBA.DAV_GET_VERSION_ROOT (
   declare retValue any;
 
   retValue := WEBDAV.DBA.DAV_PROP_GET (WEBDAV.DBA.DAV_GET_VERSION_HISTORY_PATH (path), 'DAV:root-version', '');
-  if (WEBDAV.DBA.DAV_ERROR (retValue)) {
+  if (WEBDAV.DBA.DAV_ERROR (retValue))
+  {
     retValue := '';
-  } else {
+  }
+  else
+  {
     retValue := cast (xpath_eval ('/href', xml_tree_doc(retValue)) as varchar);
   }
   return WEBDAV.DBA.show_text (retValue, 'root');
@@ -3244,28 +3254,38 @@ create procedure WEBDAV.DBA.DAV_GET_VERSION_SET (
 --
 create procedure WEBDAV.DBA.DAV_SET_AUTOVERSION (
   in path varchar,
-  in value any)
+  in value any,
+  in auth_name varchar := null,
+  in auth_pwd varchar := null)
 {
+  --dbg_obj_princ ('WEBDAV.DBA.DAV_SET_AUTOVERSION (', path, value, ')');
   declare retValue any;
 
   retValue := 0;
   if (WEBDAV.DBA.DAV_ERROR (DB.DBA.DAV_SEARCH_ID (path, 'R')))
   {
-    retValue := WEBDAV.DBA.DAV_SET_VERSIONING_CONTROL (path, value);
+    if (value = '')
+    {
+      retValue := WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (path, 'C', auth_name, auth_pwd);
+    }
+    else
+    {
+      retValue := WEBDAV.DBA.DAV_SET_VERSIONING_CONTROL (path, value, auth_name, auth_pwd);
+    }
   }
   else
   {
     value := WEBDAV.DBA.auto_version_full (value);
     if (value = '')
     {
-      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'DAV:auto-version');
+      retValue := WEBDAV.DBA.DAV_PROP_REMOVE (path, 'DAV:auto-version', auth_name, auth_pwd);
     }
     else
     {
-      if (not WEBDAV.DBA.DAV_GET_VERSION_CONTROL (path))
-        WEBDAV.DBA.DAV_VERSION_CONTROL (path);
+      if (not WEBDAV.DBA.DAV_GET_VERSION_CONTROL (path, auth_name, auth_pwd))
+        WEBDAV.DBA.DAV_VERSION_CONTROL (path, auth_name, auth_pwd);
 
-      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'DAV:auto-version', value);
+      retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'DAV:auto-version', value, auth_name, auth_pwd);
     }
   }
   return retValue;
@@ -3555,6 +3575,7 @@ create procedure WEBDAV.DBA.DAV_ERROR (in code any)
 {
   if (isinteger (code) and (code < 0))
     return 1;
+
   return 0;
 }
 ;
@@ -3611,7 +3632,7 @@ create procedure WEBDAV.DBA.DAV_SET (
     return WEBDAV.DBA.DAV_PROP_TAGS_SET (path, ':virtpublictags', value, auth_name, auth_pwd);
 
   if (property = 'autoversion')
-    return WEBDAV.DBA.DAV_SET_AUTOVERSION (path, value);
+    return WEBDAV.DBA.DAV_SET_AUTOVERSION (path, value, auth_name, auth_pwd);
 
   if (property = 'permissions-inheritance')
   {
@@ -4767,7 +4788,7 @@ create procedure WEBDAV.DBA.acl_share_create (
   if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_PARENT = DAV_SEARCH_ID (_home, 'C') and COL_DET = 'Share'))
     return;
 
-  if (exists (select 1 from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like (_home || '%') and COL_DET = 'Share'))
+  if (exists (select 1 from WS.WS.SYS_DAV_COL where DB.DBA.DAV_SEARCH_PATH (COL_ID, 'C') like (_home || '%') and COL_DET = 'Share'))
     return;
 
   for (select U_ID, U_PWD, U_GROUP, U_DEF_PERMS, U_HOME from WS.WS.SYS_DAV_USER where U_NAME = _user_name) do
@@ -5369,6 +5390,7 @@ create procedure WEBDAV.DBA.VAD_CHECK (
 {
   if (isnull (VAD_CHECK_VERSION (vad_name)))
     return 0;
+
   return 1;
 }
 ;

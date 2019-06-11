@@ -647,10 +647,10 @@
               declare retValue any;
 
               if      (detClass in ('', 'UnderVersioning'))
-                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
+                retValue := vector ('destination', 'source', 'name', 'mime', 'link', 'folderType', 'autoversion', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
               else if      (detClass = 'Versioning')
-                retValue := vector ('name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'properties');
+                retValue := vector ('name', 'mime', 'folderType', 'autoversion', 'owner', 'group', 'permissions', 'properties');
 
               else if (detClass = 'rdfSink')
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
@@ -1766,7 +1766,6 @@
                     declare _tmp, _action, _path, _item, _det any;
 
                     _action := get_keyword ('_cmd', params, '');
-
                     if (_action = 'refresh')
                     {
                       _det := cast (WEBDAV.DBA.DAV_PROP_GET (WEBDAV.DBA.real_path (self.dir_path), ':virtdet') as varchar);
@@ -2316,6 +2315,7 @@
                 self.dav_is_redirect := 0;
                 parent_path := WEBDAV.DBA.real_path_int (self.dir_path, 1, 'C');
                 self.dav_enable := 1;
+                self.dav_enable_versioning := 0;
                 if (self.command_mode = 10)
                 {
                   mode := 'edit';
@@ -2632,10 +2632,7 @@
                         </td>
                       </tr>
                     </v:template>
-                    <v:template name="tf_7" type="simple" enabled="-- case when (self.dav_ownClass in ('', 'UnderVersioning')) and (self.dav_subClass in ('', 'UnderVersioning')) and (self.command_mode = 10) and (self.dav_type = 'C') then 1 else 0 end">
-                      <vm:autoVersion />
-                    </v:template>
-                    <v:template name="tf_8" type="simple" enabled="-- case when self.viewField ('folderType') and (self.dav_type = 'C') then 1 else 0 end">
+                    <v:template name="tf_7" type="simple" enabled="-- case when self.viewField ('folderType') and (self.dav_type = 'C') then 1 else 0 end">
                       <tr>
                         <th width="30%">
                           <vm:label for="dav_det" value="--'Folder type'" />
@@ -2667,7 +2664,6 @@
                                               1, 'RDFData',    'RDF Data',
                                               1, 'DynaRes',    'Dynamic Resources',
                                               2, 'SyncML',     'SyncML',
-                                              1, 'Versioning', 'Version Control',
                                               1, 'S3',         'Amazon S3',
                                               1, 'GDrive',     'Google Drive',
                                               1, 'Dropbox',    'Dropbox',
@@ -2729,6 +2725,9 @@
                           </select>
                         </td>
                       </tr>
+                    </v:template>
+                    <v:template name="tf_8" type="simple" enabled="-- case when self.viewField ('autoversion') and (self.dav_type = 'C') then 1 else 0 end">
+                      <vm:autoVersion />
                     </v:template>
                     <v:template name="tf_8a" type="simple" enabled="-- case when self.viewField ('fileSize') and (self.dav_type = 'R') and (self.command_mode = 10) then 1 else 0 end">
                       <tr id="davRow_fileSize">
@@ -4149,17 +4148,11 @@
 
                     _exec_14:;
                       -- Auto versioning
-                      if ((self.dav_type = 'C') and (self.command_mode <> 10))
+                      if (WEBDAV.DBA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', params, ''))
                       {
-                        if (WEBDAV.DBA.DAV_GET_AUTOVERSION (dav_fullPath) <> get_keyword ('dav_autoversion', params, ''))
-                        {
-                          retValue := WEBDAV.DBA.DAV_SET (dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', params, ''), self.account_name, self.account_password);
-                          if (WEBDAV.DBA.DAV_ERROR (retValue))
-                            signal ('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
-
-                          if ((self.dav_type = 'R') and (WEBDAV.DBA.DAV_GET_AUTOVERSION (dav_fullPath) = ''))
-                            WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (dav_fullPath);
-                        }
+                        retValue := WEBDAV.DBA.DAV_SET (dav_fullPath, 'autoversion', get_keyword ('dav_autoversion', params, ''), self.account_name, self.account_password);
+                        if (WEBDAV.DBA.DAV_ERROR (retValue))
+                          signal ('TEST', concat(WEBDAV.DBA.DAV_PERROR (retValue), '<>'));
                       }
 
                     _exec_15:;
@@ -5990,10 +5983,10 @@
           </th>
           <td>
             <?vsp
-              http (sprintf ('Lock is <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
-              http (sprintf ('Version Control is <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
-              http (sprintf ('Auto Versioning is <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
-              http (sprintf ('Version State is <b>%s</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
+              http (sprintf ('Lock: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'lockState')));
+              http (sprintf ('Version Control: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vc')));
+              http (sprintf ('Auto Versioning: <b>%s</b>, ', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'avcState')));
+              http (sprintf ('Version State: <b>%s</b>', WEBDAV.DBA.DAV_GET_INFO (self.dav_path, 'vcState')));
             ?>
           </td>
         </tr>
@@ -6016,8 +6009,10 @@
 
                     if (WEBDAV.DBA.DAV_GET (self.dav_item, 'versionControl'))
                     {
-                      retValue := WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (self.dav_path);
-                    } else {
+                      retValue := WEBDAV.DBA.DAV_REMOVE_VERSION_CONTROL (self.dav_path, 'R');
+                    }
+                    else
+                    {
                       retValue := WEBDAV.DBA.DAV_VERSION_CONTROL (self.dav_path);
                     }
 
@@ -7472,8 +7467,7 @@
         <?vsp
           declare tmp, tmp2 any;
 
-          tmp := case when (self.dav_type = 'R') and (self.command_mode = 10) then 'onchange="javascript: window.document.F1.submit();"' else '' end;
-          tmp2 := case when self.dav_enable_versioning then '' else 'disabled="disabled' end;
+          tmp2 := case when self.dav_enable_versioning and self.dav_enable then '' else 'disabled="disabled' end;
           http (sprintf ('<select name="dav_autoversion" id="dav_autoversion" %s %s class="field-short">', tmp, tmp2));
 
           tmp := WEBDAV.DBA.DAV_GET (self.dav_item, 'autoversion');
