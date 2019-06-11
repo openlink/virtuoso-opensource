@@ -385,12 +385,10 @@ th
   clear: both;
 }
 
-#copyright_ctr
-{
-  /*clear: both;*/
+#copyright_ctr {
   font-size: x-small;
   text-align: right;
-  margin-right: 5px;
+  padding-right: 5px;
   border-top: 1px solid silver;
 }
 

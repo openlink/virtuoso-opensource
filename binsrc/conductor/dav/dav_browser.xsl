@@ -161,20 +161,26 @@
 
           <v:method name="webdav_redirect" arglist="in path varchar, in mode integer, in parts varchar">
             <![CDATA[
-              declare params any;
+              declare sid varchar;
+              declare cookies any;
 
               if (mode)
                 path := WEBDAV.DBA.dav_lpath (path);
 
               path := WEBDAV.DBA.path_escape (path);
-              params := self.vc_page.vc_event.ve_params;
-              if (get_keyword ('sid', params, '') <> '')
-                parts := parts || '&sid=' || get_keyword ('sid', params);
+              sid := get_keyword ('sid', self.vc_page.vc_event.ve_params, '');
+              if (sid <> '')
+              {
+                cookies := DB.DBA.vsp_ua_get_cookie_vec (self.vc_event.ve_lines);
+                if (sid <> get_keyword ('sid', cookies, ''))
+                  parts := parts || case when (parts = '') then '' else '&' end || 'sid=' || sid;
+              }
 
               if (parts <> '')
                 path := path || '?' || parts;
 
-              self.vc_redirect (path);
+              http_request_status ('HTTP/1.1 302 Found');
+              http_header (sprintf ('Location: %s\r\n', path));
               return;
             ]]>
           </v:method>
