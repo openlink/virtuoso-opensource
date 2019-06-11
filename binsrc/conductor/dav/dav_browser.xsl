@@ -356,7 +356,7 @@
               }
               else if (cmd = 'up')
               {
-                if (isnull (WEBDAV.DBA.dav_parentPath (WEBDAV.DBA.real_path (self.dir_path), WEBDAV.DBA.account_name (self.account_id))))
+                if (isnull (WEBDAV.DBA.dav_parentPath (WEBDAV.DBA.real_path (self.dir_path), self.account_name)))
                   return 0;
 
                 return 1;
@@ -781,7 +781,7 @@
               }
               else if (detClass in ('WebDAV', 'LDP'))
               {
-                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'oauth', 'graph'));
+                retValue := vector (1, 1, vector ('activity', 'checkInterval', 'path', 'authenticationType', 'user', 'password', 'key', 'onBehalfOf', 'oauth', 'graph'));
               }
               else if (detClass = 'FTP')
               {
@@ -1365,7 +1365,7 @@
               }
               if (det = 'oMail')
               {
-                retValue := WEBDAV.DBA.set_keyword ('UserName', retValue, WEBDAV.DBA.account_name (self.account_id));
+                retValue := WEBDAV.DBA.set_keyword ('UserName', retValue, self.account_name);
               }
               else if (det = 'PropFilter')
               {
@@ -1373,7 +1373,7 @@
               }
               else if (det in ('WebDAV', 'LDP'))
               {
-                retValue := WEBDAV.DBA.set_keyword ('keyOwner', retValue, WEBDAV.DBA.account_name (self.account_id));
+                retValue := WEBDAV.DBA.set_keyword ('keyOwner', retValue, self.account_name);
               }
               else if (det in ('ResFilter', 'CatFilter'))
               {
@@ -3797,7 +3797,7 @@
 
                         -- ACI (Web Access)
                       dav_aci := WEBDAV.DBA.aci_params (params);
-                      --DB.DBA.ACL_VALIDATE (dav_aci);
+                      DB.DBA.ACL_VALIDATE (dav_aci);
 
                     _test_15:;
 
@@ -5541,9 +5541,9 @@
                                          (rowset[1] = 'R')
                                          and
                                          (
-                                           (__tag (id) <> 193)
+                                           isinteger (id)
                                            or
-                                           (cast (id[0] as varchar) in ('Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
+                                           DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id))
                                            or
                                            (rowset[0] like '%,acl')
                                            or
@@ -6924,17 +6924,20 @@
           </th>
           <td>
             <?vsp
-              declare _uname varchar;
+              declare _keys, _oauth integer;
 
-              _uname := WEBDAV.DBA.account_name (self.account_id);
-              if (WEBDAV.DBA.keys_exist (_uname) or WEBDAV.DBA.oauth_exist ())
+              _keys := WEBDAV.DBA.keys_exist (self.account_name);
+              _oauth := WEBDAV.DBA.oauth_exist ();
+              if (_keys or _oauth)
               {
-                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_0" value="Digest" %s onchange="javascript: destinationChange(this, {checked: {show: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password''], hide: [''tr_dav_WebDAV_key'', ''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_display_name'', ''tr_dav_WebDAV_email'', ''tr_dav_WebDAV_authenticate'']}});" title="Digest" /> <b>Digest</b></label>', case when _value not in ('WebID', 'oauth') then 'checked="checked"' else '' end));
-                if (WEBDAV.DBA.keys_exist (_uname))
-                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_1" value="WebID" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password'', ''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_display_name'', ''tr_dav_WebDAV_email'', ''tr_dav_WebDAV_authenticate''], show: [''tr_dav_WebDAV_key'']}});"  title="WebID" /> <b>WebID</b></label>', case when _value = 'WebID' then 'checked="checked"' else '' end));
-
-                if (WEBDAV.DBA.oauth_exist ())
-                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_2" value="oauth" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password'', ''tr_dav_WebDAV_key''], show: [''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_authenticate''], exec: [''oauthShowData'']}});" title="OAuth" /> <b>OAuth</b></label>', case when _value = 'oauth' then 'checked="checked"' else '' end));
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_0" value="Digest" %s onchange="javascript: destinationChange(this, {checked: {show: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password''], hide: [''tr_dav_WebDAV_key'', ''tr_dav_WebDAV_onBehalfOf'', ''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_display_name'', ''tr_dav_WebDAV_email'', ''tr_dav_WebDAV_authenticate'']}});" title="Digest" /> <b>Digest</b></label>', case when _value not in ('webid', 'webid-tls', 'webid-tls+delegation', 'oauth') then 'checked="checked"' else '' end));
+                if (_keys)
+                {
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_1" value="WebID" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password'', ''tr_dav_WebDAV_onBehalfOf'', ''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_display_name'', ''tr_dav_WebDAV_email'', ''tr_dav_WebDAV_authenticate''], show: [''tr_dav_WebDAV_key'']}});"  title="WebID-TLS" /> <b>WebID-TLS</b></label>', case when _value in ('webid', 'webid-tls') then 'checked="checked"' else '' end));
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_2" value="WebID-TLS+Delegation" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password'', ''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_display_name'', ''tr_dav_WebDAV_email'', ''tr_dav_WebDAV_authenticate''], show: [''tr_dav_WebDAV_key'', ''tr_dav_WebDAV_onBehalfOf'']}});"  title="WebID-TLS+Delegation" /> <b>WebID-TLS+Delegation</b></label>', case when _value = 'webid-tls+delegation' then 'checked="checked"' else '' end));
+                }
+                if (_oauth)
+                http (sprintf ('<label><input type="radio" name="dav_WebDAV_authenticationType" id="dav_WebDAV_authenticationType_3" value="oauth" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_WebDAV_user'', ''tr_dav_WebDAV_password'', ''tr_dav_WebDAV_key'', ''tr_dav_WebDAV_onBehalfOf''], show: [''tr_dav_WebDAV_oauth'', ''tr_dav_WebDAV_authenticate''], exec: [''oauthShowData'']}});" title="OpenID Connect" /> <b>OpenID Connect</b></label>', case when _value = 'oauth' then 'checked="checked"' else '' end));
               }
               else
               {
@@ -6954,7 +6957,7 @@
                 declare _keys any;
 
                 _key := self.get_fieldProperty ('dav_WebDAV_key', self.dav_path, 'virt:WebDAV-key', '');
-                _keys := WEBDAV.DBA.keys_list (WEBDAV.DBA.account_name (self.account_id));
+                _keys := WEBDAV.DBA.keys_list (self.account_name);
                 foreach (any _k in _keys) do
                 {
                   http (self.option_prepare(_k, _k, _key));
@@ -6963,9 +6966,23 @@
             </select>
           </td>
         </tr>
+        <tr id="tr_dav_WebDAV_onBehalfOf" style="display: none;">
+          <th>
+            <v:label for="dav_WebDAV_onBehalfOf" value="On Behalf Of (WebID)" />
+          </th>
+          <td>
+            <v:text name="dav_WebDAV_onBehalfOf" xhtml_id="dav_WebDAV_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_WebDAV_onBehalfOf', self.dav_path, 'virt:WebDAV-onBehalfOf', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
         <tr id="tr_dav_WebDAV_oauth" valign="top" style="display: none;">
           <th>
-            <v:label for="dav_WebDAV_oauth" value="OAuth key/secret" />
+            <v:label for="dav_WebDAV_oauth" value="OpenID Connect Service" />
           </th>
           <td>
             <select name="dav_WebDAV_oauth" id="dav_WebDAV_oauth">
@@ -7039,9 +7056,10 @@
       </table>
       <![CDATA[
         <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_0'), {checked: {show: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password'], hide: ['tr_dav_WebDAV_key', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate']}})});
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_1'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate'], show: ['tr_dav_WebDAV_key']}})});
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_2'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_key'], show: ['tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_authenticate'], exec: [oauthShowData]}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_0'), {checked: {show: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password'], hide: ['tr_dav_WebDAV_key', 'tr_dav_WebDAV_onBehalfOf', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_1'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_onBehalfOf', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate'], show: ['tr_dav_WebDAV_key']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_2'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_display_name', 'tr_dav_WebDAV_email', 'tr_dav_WebDAV_authenticate'], show: ['tr_dav_WebDAV_key', 'tr_dav_WebDAV_onBehalfOf']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_WebDAV_authenticationType_3'), {checked: {hide: ['tr_dav_WebDAV_user', 'tr_dav_WebDAV_password', 'tr_dav_WebDAV_key', 'tr_dav_WebDAV_onBehalfOf'], show: ['tr_dav_WebDAV_oauth', 'tr_dav_WebDAV_authenticate'], exec: [oauthShowData]}})});
           function oauthShowData (obj) {
             if (obj.checked)
             {
@@ -7325,21 +7343,24 @@
         </tr>
         <tr>
           <th>
-            <v:label for="dav_LDP_authenticationType" value="Authentication Type" />
+            <vm:label for="dav_LDP_authenticationType" value="Authentication Type" />
           </th>
           <td>
             <?vsp
-              declare _uname varchar;
+              declare _keys, _oauth integer;
 
-              _uname := WEBDAV.DBA.account_name (self.account_id);
-              if (WEBDAV.DBA.keys_exist (_uname) or WEBDAV.DBA.oauth_exist ())
+              _keys := WEBDAV.DBA.keys_exist (self.account_name);
+              _oauth := WEBDAV.DBA.oauth_exist ();
+              if (_keys or _oauth)
               {
-                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_0" value="Digest" %s onchange="javascript: destinationChange(this, {checked: {show: [''tr_dav_LDP_user'', ''tr_dav_LDP_password''], hide: [''tr_dav_LDP_key'', ''tr_dav_LDP_oauth'', ''tr_dav_LDP_display_name'', ''tr_dav_LDP_email'', ''tr_dav_LDP_authenticate'']}});" title="Digest" /> <b>Digest</b></label>', case when _value not in ('WebID', 'oauth') then 'checked="checked"' else '' end));
-                if (WEBDAV.DBA.keys_exist (_uname))
-                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_1" value="WebID" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_LDP_user'', ''tr_dav_LDP_password'', ''tr_dav_LDP_oauth'', ''tr_dav_LDP_display_name'', ''tr_dav_LDP_email'', ''tr_dav_LDP_authenticate''], show: [''tr_dav_LDP_key'']}});"  title="WebID" /> <b>WebID</b></label>', case when _value = 'WebID' then 'checked="checked"' else '' end));
-
-                if (WEBDAV.DBA.oauth_exist ())
-                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_2" value="oauth" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_LDP_user'', ''tr_dav_LDP_password'', ''tr_dav_LDP_key''], show: [''tr_dav_LDP_oauth'', ''tr_dav_LDP_authenticate''], exec: [''oauthShowData'']}});" title="OAuth" /> <b>OAuth</b></label>', case when _value = 'oauth' then 'checked="checked"' else '' end));
+                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_0" value="Digest" %s onchange="javascript: destinationChange(this, {checked: {show: [''tr_dav_LDP_user'', ''tr_dav_LDP_password''], hide: [''tr_dav_LDP_key'', ''tr_dav_LDP_onBehalfOf'', ''tr_dav_LDP_oauth'', ''tr_dav_LDP_display_name'', ''tr_dav_LDP_email'', ''tr_dav_LDP_authenticate'']}});" title="Digest" /> <b>Digest</b></label>', case when _value not in ('webid', 'webid-tls', 'webid-tls+delegation', 'oauth') then 'checked="checked"' else '' end));
+                if (_keys)
+                {
+                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_1" value="WebID" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_LDP_user'', ''tr_dav_LDP_password'', ''tr_dav_LDP_onBehalfOf'', ''tr_dav_LDP_oauth'', ''tr_dav_LDP_display_name'', ''tr_dav_LDP_email'', ''tr_dav_LDP_authenticate''], show: [''tr_dav_LDP_key'']}});"  title="WebID-TLS" /> <b>WebID</b></label>', case when _value in ('webid', 'webid-tls') then 'checked="checked"' else '' end));
+                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_2" value="WebID-TLS+Delegation" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_LDP_user'', ''tr_dav_LDP_password'', ''tr_dav_LDP_oauth'', ''tr_dav_LDP_display_name'', ''tr_dav_LDP_email'', ''tr_dav_LDP_authenticate''], show: [''tr_dav_LDP_key'', ''tr_dav_LDP_onBehalfOf'']}});"  title="WebID-TLS+Delegation" /> <b>WebID-TLS+Delegation</b></label>', case when _value = 'webid-tls+delegation' then 'checked="checked"' else '' end));
+                }
+                if (_oauth)
+                http (sprintf ('<label><input type="radio" name="dav_LDP_authenticationType" id="dav_LDP_authenticationType_3" value="oauth" %s onchange="javascript: destinationChange(this, {checked: {hide: [''tr_dav_LDP_user'', ''tr_dav_LDP_password'', ''tr_dav_LDP_key'', ''tr_dav_LDP_onBehalfOf''], show: [''tr_dav_LDP_oauth'', ''tr_dav_LDP_authenticate''], exec: [''oauthShowData'']}});" title="OpenID Connect" /> <b>OpenID Connect</b></label>', case when _value = 'oauth' then 'checked="checked"' else '' end));
               }
               else
               {
@@ -7359,7 +7380,7 @@
                 declare _keys any;
 
                 _key := self.get_fieldProperty ('dav_LDP_key', self.dav_path, 'virt:LDP-key', '');
-                _keys := WEBDAV.DBA.keys_list (WEBDAV.DBA.account_name (self.account_id));
+                _keys := WEBDAV.DBA.keys_list (self.account_name);
                 foreach (any _k in _keys) do
                 {
                   http (self.option_prepare(_k, _k, _key));
@@ -7368,9 +7389,23 @@
             </select>
           </td>
         </tr>
+        <tr id="tr_dav_LDP_onBehalfOf" style="display: none;">
+          <th>
+            <vm:label for="dav_LDP_onBehalfOf" value="On Behalf Of (WebID)" />
+          </th>
+          <td>
+            <v:text name="dav_LDP_onBehalfOf" xhtml_id="dav_LDP_onBehalfOf" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_LDP_onBehalfOf', self.dav_path, 'virt:LDP-onBehalfOf', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
         <tr id="tr_dav_LDP_oauth" valign="top" style="display: none;">
           <th>
-            <v:label for="dav_LDP_oauth" value="OAuth key/secret" />
+            <v:label for="dav_LDP_oauth" value="OpenID Connect Service" />
           </th>
           <td>
             <select name="dav_LDP_oauth" id="dav_LDP_oauth">
@@ -7444,9 +7479,10 @@
       </table>
       <![CDATA[
         <script type="text/javascript">
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_0'), {checked: {show: ['tr_dav_LDP_user', 'tr_dav_LDP_password'], hide: ['tr_dav_LDP_key', 'tr_dav_LDP_oauth', 'tr_dav_LDP_display_name', 'tr_dav_LDP_email', 'tr_dav_LDP_authenticate']}})});
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_1'), {checked: {hide: ['tr_dav_LDP_user', 'tr_dav_LDP_password', 'tr_dav_LDP_oauth', 'tr_dav_LDP_display_name', 'tr_dav_LDP_email', 'tr_dav_LDP_authenticate'], show: ['tr_dav_LDP_key']}})});
-          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_2'), {checked: {hide: ['tr_dav_LDP_user', 'tr_dav_LDP_password', 'tr_dav_LDP_key'], show: ['tr_dav_LDP_oauth', 'tr_dav_LDP_authenticate'], exec: [oauthShowData]}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_0'), {checked: {show: ['tr_dav_LDP_user', 'tr_dav_LDP_password'], hide: ['tr_dav_LDP_key', 'tr_dav_LDP_onBehalfOf', 'tr_dav_LDP_oauth', 'tr_dav_LDP_display_name', 'tr_dav_LDP_email', 'tr_dav_LDP_authenticate']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_1'), {checked: {hide: ['tr_dav_LDP_user', 'tr_dav_LDP_password', 'tr_dav_LDP_onBehalfOf', 'tr_dav_LDP_oauth', 'tr_dav_LDP_display_name', 'tr_dav_LDP_email', 'tr_dav_LDP_authenticate'], show: ['tr_dav_LDP_key']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('da v_LDP_authenticationType_2'), {checked: {hide: ['tr_dav_LDP_user', 'tr_dav_LDP_password', 'tr_dav_LDP_oauth', 'tr_dav_LDP_display_name', 'tr_dav_LDP_email', 'tr_dav_LDP_authenticate'], show: ['tr_dav_LDP_key', 'tr_dav_LDP_onBehalfOf']}})});
+          OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('dav_LDP_authenticationType_3'), {checked: {hide: ['tr_dav_LDP_user', 'tr_dav_LDP_password', 'tr_dav_LDP_key', 'tr_dav_LDP_onBehalfOf'], show: ['tr_dav_LDP_oauth', 'tr_dav_LDP_authenticate'], exec: [oauthShowData]}})});
           function oauthShowData (obj) {
             if (obj.checked)
             {

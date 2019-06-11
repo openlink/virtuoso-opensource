@@ -5666,7 +5666,7 @@ create procedure WEBDAV.DBA.oauth_exist ()
 {
   declare retValue any;
 
-  retValue := WEBDAV.DBA.exec ('select 1 from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  retValue := WEBDAV.DBA.exec ('select TOP 1 1 from OAUTH.DBA.APP_REG where A_TYPE = 1');
   if (WEBDAV.DBA.isVector (retValue) and (length (retValue) = 1))
     return 1;
 
@@ -5681,7 +5681,7 @@ create procedure WEBDAV.DBA.oauth_list ()
   declare retValue, items any;
 
   retValue := vector ();
-  items := WEBDAV.DBA.exec ('select OOI_NAME, OOI_LABEL from VAL.DBA.ODS_OAUTH_INSTANCES, OAUTH.DBA.APP_REG where A_NAME = OOI_NAME');
+  items := WEBDAV.DBA.exec ('select A_NAME, A_DESCR from OAUTH.DBA.APP_REG where A_TYPE = 1 order by A_NAME');
   foreach (any item in items) do
   {
     retValue := vector_concat (retvalue, vector (vector (item[0], item[1])));

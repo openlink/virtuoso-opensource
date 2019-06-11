@@ -31,15 +31,14 @@
   vspx_user := connection_get ('vspx_user');
   if (isnull (vspx_user) or (vspx_user = 'nobody'))
   {
-    declare val_serviceId, val_uname varchar;
-    declare val_isRealUser integer;
+    declare  val_uname varchar;
 
-      val_uname := (select U.U_NAME
-                      from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
-                     where S.VS_REALM = realm
-                       and S.VS_SID   = sid
-                       and S.VS_UID   = U.U_NAME);
-      connection_set ('vspx_user', val_uname);
+    val_uname := (select U.U_NAME
+                    from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
+                   where S.VS_REALM = realm
+                     and S.VS_SID   = sid
+                     and S.VS_UID   = U.U_NAME);
+    connection_set ('vspx_user', val_uname);
   }
 
   action := get_keyword ('a', params, '');
@@ -211,7 +210,7 @@
           _driveParams := vector_concat (_driveParams, vector ('refresh_token', _result[1]));
 
         if (not isnull (_result[2]))
-          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), _result[2])));
+          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curutcdatetime (), _result[2])));
       }
     }
     else
@@ -296,7 +295,7 @@
             _error := VALIDATE.DBA.clear (__SQL_MESSAGE);
             goto _end_share;
           };
-          WEBDAV.DBA.aci_params (params);
+          DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params), 1);
         }
       _end_share:;
       }
@@ -513,12 +512,14 @@
   }
   else if (action = 'imapFilter')
   {
+    declare owner varchar;
     declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
 
     MAIL.WA.dc_predicateMetas (predicateMetas);
     MAIL.WA.dc_compareMetas (compareMetas);
-    MAIL.WA.dc_actionMetas (actionMetas);
-    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    MAIL.WA.dc_actionMetas (actionMetas, 1);
+    owner := get_keyword ('owner', params);
+    folders := MAIL.WA.external_account_folders (owner, DB.DBA.IMAP__mea_id (owner));
     headers := MAIL.WA.dc_headersList ();
     triplets := MAIL.WA.dc_tripletList ();
 
