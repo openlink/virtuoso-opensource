@@ -3520,7 +3520,7 @@ create procedure DAV_DELETE_INT (
   in check_token varchar := ''
 )
 {
-  declare id, id_meta, rc integer;
+  declare id, id_meta, rc, rrc integer;
   declare what char;
   declare auth_uid integer;
   declare par, path_meta any;
@@ -3575,7 +3575,6 @@ create procedure DAV_DELETE_INT (
   }
   else if (what = 'C')
   {
-    declare rrc integer;
     declare items any;
     declare det, proc, graph varchar;
 
@@ -3590,11 +3589,7 @@ create procedure DAV_DELETE_INT (
         {
           rrc := call (det || '_DAV_DELETE') (id, split_and_decode (item[10] || case when (item[1] = 'C') then '/' else '' end, 0, '\0\0/'), item[1], silent, auth_uid);
           if (rrc <> 1)
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+            goto delete_error;
         }
         if (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null)
         {
@@ -3607,25 +3602,18 @@ create procedure DAV_DELETE_INT (
         if (det <> '')
           connection_set ('dav_store', 1);
 
-        for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
+        for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
         {
           rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+            goto delete_error;
         }
-        for select COL_ID, COL_NAME, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+
+        for (select COL_NAME, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
         {
-          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern, check_locks);
-          if ((rrc <> 1) and (COL_NAME not like '%,acl'))
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+          rrc := DAV_DELETE_INT (COL_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
+          if ((rrc <> 1) and not ((rrc = -1) and (COL_NAME = 'Attic')))
+            goto delete_error;
         }
         if (det <> '')
           connection_set ('dav_store', null);
@@ -3655,6 +3643,11 @@ create procedure DAV_DELETE_INT (
 
   return 1;
 
+delete_error:
+  connection_set ('dav_store', null);
+  rollback work;
+  return rrc;
+
 disabled_owner:
   return -42;
 
@@ -3662,7 +3655,6 @@ disabled_home:
   return -43;
 }
 ;
-
 
 create procedure DAV_TAG_LIST (
   in id any,
