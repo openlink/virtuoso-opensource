@@ -1329,9 +1329,10 @@ create procedure WEBDAV.DBA.proc (
   in dir_params any := null,
   in dir_hiddens any := null,
   in dir_account any := null,
-  in dir_password any := null) returns any
+  in dir_password any := null,
+  in dir_options any := null) returns any
 {
-  -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, dir_mode, dir_params, dir_hiddens, dir_account, dir_password, ')');
+  -- dbg_obj_princ ('WEBDAV.DBA.proc (', path, dir_mode, dir_params, dir_hiddens, dir_account, dir_password, dir_options, ')');
   declare dirListTmp, detCategory, dateAdded, dirFilter, dirHiddens, dirList any;
   declare dir_account_name, creator_iri, user_name, group_name varchar;
   declare path_parent varchar;
@@ -1350,35 +1351,54 @@ create procedure WEBDAV.DBA.proc (
     return;
 
   dirList := vector ();
-  if (dir_mode = 0)
+  dirFilter := '%';
+  if ((dir_mode = 0) or (dir_mode = 1))
   {
-    -- standard list
+    if (not isnull (dir_options))
+    {
+      declare dir_order, dir_order_ndx, dir_fields any;
+
+      dir_order := get_keyword ('order', dir_options, '');
+      if (dir_order <> '')
+      {
+        dir_order_ndx := atoi (subseq (dir_order, 1));
+        dir_order := '';
+        dir_fields := vector ('FULL_PATH', 'KIND', 'LENGTH', 'MOD_TIME', 'ID', 'PERMS', 'GROUP', 'OWNER', 'CR_TIME', 'TYPE', 'NAME', 'ADD_TIME', 'CREATOR');
+        if (dir_order_ndx < length (dir_fields))
+          dir_order := dir_fields[dir_order_ndx];
+
+        if (dir_order = '')
+        {
+          dir_options := WEBDAV.DBA.remove_keyword ('order', dir_options);
+        }
+        else
+        {
+          dir_options := WEBDAV.DBA.set_keyword ('order', dir_options, dir_order);
+        }
+      }
+    }
+
     path := WEBDAV.DBA.real_path (path);
-    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
-    dirFilter := '%';
-  }
-  else if (dir_mode = 1)
+    if (dir_mode = 1)
   {
     -- standard list with filter
-    path := WEBDAV.DBA.real_path (path);
-    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password);
     dirFilter := WEBDAV.DBA.dc_search_like_fix (dir_params);
+  }
+    dirList := WEBDAV.DBA.DAV_DIR_LIST (path, 0, dir_account, dir_password, dirFilter, dir_options);
   }
   else if (dir_mode = 2)
   {
     -- simple search
     path := WEBDAV.DBA.real_path (path);
     dirFilter := vector (vector ('RES_NAME', 'like', WEBDAV.DBA.dc_search_like_fix (dir_params)));
-    dirList := WEBDAV.DBA.DAV_DIR_FILTER(path, 1, dirFilter);
-    dirFilter := '%';
+    dirList := WEBDAV.DBA.DAV_DIR_FILTER (path, 1, dirFilter);
   }
   else if (dir_mode = 3)
   {
     -- advanced search
     path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (dir_params, 'base', 'path', '/DAV/'));
     dirFilter := WEBDAV.DBA.dc_filter (dir_params);
-    dirList := WEBDAV.DBA.DAV_DIR_FILTER(path, 1, dirFilter);
-    dirFilter := '%';
+    dirList := WEBDAV.DBA.DAV_DIR_FILTER (path, 1, dirFilter);
   }
   else if (dir_mode = 4)
   {
@@ -1398,21 +1418,18 @@ create procedure WEBDAV.DBA.proc (
       }
     }
     dir_mode := 0;
-    dirFilter := '%';
   }
   else if (dir_mode = 10)
   {
     dirFilter := vector ();
     WEBDAV.DBA.dc_subfilter(dirFilter, 'RES_NAME', 'like', dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, dir_password);
-    dirFilter := '%';
   }
   else if (dir_mode = 11)
   {
     path := WEBDAV.DBA.real_path (WEBDAV.DBA.dc_get (dir_params, 'base', 'path', '/DAV/'));
     dirFilter := WEBDAV.DBA.dc_filter (dir_params);
     dirList := DB.DBA.DAV_DIR_FILTER (path, 1, dirFilter, dir_account, dir_password);
-    dirFilter := '%';
   }
   else if (dir_mode = 20)
   {
@@ -1487,18 +1504,36 @@ create procedure WEBDAV.DBA.proc_work (
 {
   declare tmp any;
 
+  -- user
+  if (isinteger (item[7]))
+  {
   tmp := coalesce (item[7], -1);
   if (user_id <> tmp)
   {
     user_id := tmp;
     user_name := WEBDAV.DBA.user_name (user_id, '');
   }
+  }
+  else
+  {
+    user_name := item[7];
+  }
+
+  -- group
+  if (isinteger (item[6]))
+  {
   tmp := coalesce (item[6], -1);
   if (group_id <> tmp)
   {
     group_id := tmp;
     group_name := WEBDAV.DBA.user_name (group_id, '');
   }
+  }
+  else
+  {
+    group_name := item[6];
+  }
+
   tmp := coalesce (item[either (lte (length (item), 12),7,12)], coalesce (item[7], -1));
   if (creator_id <> tmp)
   {
@@ -1513,7 +1548,7 @@ create procedure WEBDAV.DBA.proc_work (
     }
     else
     {
-      creator_iri := WEBDAV.DBA.user_iri (user_id);
+      creator_iri := WEBDAV.DBA.user_iri (user_name);
     }
   }
   detCategory := WEBDAV.DBA.det_category (item[4], item[0], item[1], item[9]);
@@ -1816,9 +1851,12 @@ create procedure WEBDAV.DBA.user_id (
 -----------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.user_iri (
-  in user_id integer) returns varchar
+  in usr any) returns varchar
 {
-  return sprintf ('http://%s/dataspace/person/%s#this',  WEBDAV.DBA.host_url (0), WEBDAV.DBA.user_name (user_id, ''));
+  if (isinteger (user))
+    usr := WEBDAV.DBA.user_name (usr, '');
+
+  return sprintf ('http://%s/dataspace/person/%s#this',  WEBDAV.DBA.host_url (0), usr);
 }
 ;
 
@@ -2456,6 +2494,7 @@ create procedure WEBDAV.DBA.settings_init (
 {
   WEBDAV.DBA.set_keyword ('chars', settings, WEBDAV.DBA.settings_chars (settings));
   WEBDAV.DBA.set_keyword ('rows', settings, WEBDAV.DBA.settings_rows (settings));
+  WEBDAV.DBA.set_keyword ('browserLines', settings, WEBDAV.DBA.settings_browserLines (settings));
   WEBDAV.DBA.set_keyword ('tbLabels', settings, WEBDAV.DBA.settings_tbLabels (settings));
   WEBDAV.DBA.set_keyword ('hiddens', settings, WEBDAV.DBA.settings_hiddens (settings));
   WEBDAV.DBA.set_keyword ('fileSize', settings, WEBDAV.DBA.settings_fileSize (settings));
@@ -2495,7 +2534,16 @@ create procedure WEBDAV.DBA.settings_chars (
 create procedure WEBDAV.DBA.settings_rows (
   inout settings any)
 {
-  return cast (get_keyword ('rows', settings, '10') as integer);
+  return cast (get_keyword ('rows', settings, '100') as integer);
+}
+;
+
+-------------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.settings_browserLines (
+  inout settings any)
+{
+  return cast (get_keyword ('browserLines', settings, '100') as integer);
 }
 ;
 
@@ -3688,16 +3736,21 @@ create procedure WEBDAV.DBA.DAV_DIR_LIST (
   in path varchar := '/DAV/',
   in recursive integer := 0,
   in auth_name varchar := null,
-  in auth_pwd varchar := null)
+  in auth_pwd varchar := null,
+  in filter varchar := '%',
+  in options any := null)
 {
   declare auth_uid integer;
 
   auth_uid := null;
   WEBDAV.DBA.DAV_API_PARAMS (auth_name, auth_pwd);
-  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, '%', auth_name, auth_pwd, auth_uid);
+
+  if (WEBDAV.DBA.DAV_REQUIRE_VERSION ('1.1'))
+    return DB.DBA.DAV_DIR_LIST_INT (path, recursive, filter, auth_name, auth_pwd, auth_uid, options);
+
+  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, filter, auth_name, auth_pwd, auth_uid);
 }
 ;
-
 -------------------------------------------------------------------------------
 --
 create procedure WEBDAV.DBA.DAV_DIR_FILTER (

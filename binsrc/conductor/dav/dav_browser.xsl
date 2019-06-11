@@ -5167,6 +5167,10 @@
               <v:data-source name="dsrc_items" expression-type="sql" nrows="0" initial-offset="0">
                 <v:before-data-bind>
                   <![CDATA[
+                    declare dir_options, dir_rows, limit_sql any;
+
+                    dir_rows := cast (WEBDAV.DBA.settings_browserLines (self.settings) as varchar);
+
                     self.sortChange (get_keyword ('sortColumn', self.vc_page.vc_event.ve_params, ''));
                     control.ds_parameters := null;
                     -- Path
@@ -5211,23 +5215,39 @@
                     control.add_parameter (self.account_name);
                     control.add_parameter (self.account_password);
 
+                    -- List options
+                    limit_sql := '';
+                    dir_options := vector ();
+                    if (dir_rows <> '0')
+                    {
+                      limit_sql := 'TOP ' || dir_rows;
+                      dir_options := vector ('limit', dir_rows);
+                    }
 
-                    control.ds_sql := 'select rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4, rs5)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar, c12 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ?';
+                    control.ds_sql := 'select <LIMIT> rs.* from WEBDAV.DBA.proc (rs0, rs1, rs2, rs3, rs4, rs5, rs6)(c0 varchar, c1 varchar, c2 integer, c3 varchar, c4 varchar, c5 varchar, c6 varchar, c7 varchar, c8 varchar, c9 varchar, c10 varchar, c11 varchar, c12 varchar) rs where rs0 = ? and rs1 = ? and rs2 = ? and rs3 = ? and rs4 = ? and rs5 = ? and rs6 = ?';
+                    control.ds_sql := replace (control.ds_sql, '<LIMIT>', limit_sql);
                     if (self.dir_details = 0)
                     {
                       declare dir_order, dir_grouping any;
 
-                      dir_order := self.getColumn(self.dir_order);
-                      dir_grouping := self.getColumn(self.dir_grouping);
-                      if (not is_empty_or_null(dir_grouping))
-                        control.ds_sql := concat(control.ds_sql, ', ', dir_grouping[1]);
+                      dir_order := self.getColumn (self.dir_order);
+                      dir_grouping := self.getColumn (self.dir_grouping);
+                      if (not is_empty_or_null (dir_grouping))
+                        control.ds_sql := concat (control.ds_sql, ', ', dir_grouping[1]);
+
                       if (not is_empty_or_null(dir_order))
-                        control.ds_sql := concat(control.ds_sql, ' order by ', dir_order[1], ' ', self.dir_direction);
+                      {
+                        control.ds_sql := concat (control.ds_sql, ' order by ', dir_order[1], ' ', self.dir_direction);
+                        dir_options := vector_concat (dir_options, vector ('order', dir_order[1], 'direction', self.dir_direction));
+                      }
                     }
                     else
                     {
                       control.ds_sql := control.ds_sql || ' order by c0';
+                      dir_options := vector_concat (dir_options, vector ('order', 'c0'));
                     }
+                    control.add_parameter (dir_options);
+
                     self.dir_tags := vector ();
                     if (self.dir_cloud = 1)
                     {
