@@ -12315,10 +12315,17 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
   qi->qi_trx->lt_replicate = ((flag & 1) ? (caddr_t *) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate) : REPL_NO_LOG);
+  qi->qi_client->cli_log_mode = flag;
 
   return box_num (old_value);
 }
 
+caddr_t
+bif_cli_log_mode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  return box_num (qi->qi_client->cli_log_mode);
+}
 
 caddr_t
 print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret, int flags)
@@ -17004,6 +17011,7 @@ sql_bif_init (void)
   bif_define ("repl_is_raw", bif_repl_is_raw);
   bif_define ("log_enable", bif_log_enable);
   bif_set_vectored (bif_log_enable, (bif_vec_t)bif_log_enable);
+  bif_define ("cli_log_mode", bif_cli_log_mode);
   bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__serial_length", bif_serial_length, BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);

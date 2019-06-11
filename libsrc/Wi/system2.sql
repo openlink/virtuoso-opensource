@@ -593,6 +593,7 @@ create procedure SYS_CREATE_TABLE_AS (
    declare _cols any;
    declare _n_cols, _inx integer;
    declare _stmt varchar;
+   declare old_log_mode int;
 -- MI: no more need as sql_ddl_node always set flag to replicate, thus tbdef & insert will be logged separately
 --   declare log_is_on integer;
 --   log_is_on := client_attr ('transaction_log');
@@ -659,7 +660,14 @@ create procedure SYS_CREATE_TABLE_AS (
 		);
                 aref_set_0 (_insert_stmt, 2);
                 aref_set_0 (_insert_stmt, 4);
+		declare exit handler for sqlstate '*' {
+		  rollback work;
+		  log_enable (old_log_mode, 1);
+		  resignal;
+		};
+		old_log_mode := log_enable (cli_log_mode (), 1);
 		exec (_insert_stmt);
+		log_enable (old_log_mode, 1);
 		--dbg_obj_print ('after insert');
 	      }
         }

@@ -1793,7 +1793,8 @@ typedef struct client_connection_s
     bitf_t		cli_log_qi_stats:1;
     bitf_t		cli_keep_csl:1;
     bitf_t		cli_cl_dae_blob;
-    char		cli_row_autocommit;
+    char		cli_row_autocommit; /* can be reset from many places eg. ddl_node_input */
+    char		cli_log_mode; /* keeps value from log_enable call, set only there */
     slice_id_t 		cli_slice;
     int			cli_n_to_autocommit;
     cl_slice_t *	cli_csl;

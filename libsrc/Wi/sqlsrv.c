@@ -449,6 +449,7 @@ client_connection_create (void)
       wi_inst.wi_master->dbs_log_name ? REPL_LOG : REPL_NO_LOG;
   else
     cli->cli_replicate = REPL_NO_LOG;
+  cli->cli_log_mode = 1;
   cli->cli_qualifier = box_string ("DB");
 #ifdef SERIAL_CLI
   cli->cli_test_mtx = mutex_allocate ();
