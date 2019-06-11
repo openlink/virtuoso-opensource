@@ -6095,7 +6095,7 @@ create procedure y_registries (
 {
   declare N integer;
   declare V, v0, v1 any;
-  declare c0, c1 varchar;
+  declare c0, c1 long varchar;
 
   result_names (c0, c1);
 
@@ -6103,7 +6103,7 @@ create procedure y_registries (
   for (N := 0; N < length (V); N := N + 2)
   {
     v0 := cast (V[N] as varchar);
-    v1 := V[N+1];
+    v1 := subseq (V[N+1], 0, 1024);
     if ((_filter <> '') and (v0 not like _filter))
       goto _skip;
 
