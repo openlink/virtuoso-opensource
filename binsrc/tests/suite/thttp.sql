@@ -430,7 +430,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Created new folder with admin account : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 meth ('http://localhost:$U{HTTPPORT1}/user/', 'MKCOL', 'dav:dav', null);
-ECHO BOTH $IF $EQU $STATE 'HT409' "PASSED" "***FAILED";
+ECHO BOTH $IF $EQU $STATE 'HT405' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Access to / denied with user account : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
