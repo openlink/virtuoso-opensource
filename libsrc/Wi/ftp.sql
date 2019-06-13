@@ -1598,8 +1598,10 @@ create procedure FTP_MAKE_PORT_COMMAND (
 {
   declare _ip, _port1, _port2 varchar;
 
-  _ip := identify_self();
-  _ip := _ip[2];
+  _ip := sys_connected_server_address (1);
+  _ip := split_and_decode (_ip,0,'\0\0:');
+  _ip := _ip[0];
+  _ip := tcpip_gethostbyname (_ip);
   _ip := replace (_ip, '.', ',');
 
   _port1 := cast (mod (_port, 256) as varchar);
