@@ -4620,120 +4620,126 @@ extern id_hash_t *name_to_pl_name;
 /* Note dirty hack in sqlpfn.c, sqlp_proc_name(): the function expectes that unsafe names begins with "RDF_", "SPARQL", "SPARUL" or "TTLP".
 Add more prefixes there if needed */
 static const char *spar_unsafe_sql_names[] = {
-    "RDF_DELETE_TRIPLES",
-    "RDF_DELETE_TRIPLES_AGG",
-    "RDF_GLOBAL_RESET",
-    "RDF_GRAPH_GROUP_LIST_GET",
-    "RDF_INSERT_TRIPLES",
-    "RDF_LOAD_RDFXML",
-    "RDF_LOAD_RDFXML_MT",
-    "RDF_MODIFY_TRIPLES",
-    "RDF_QM_ADD_MAPPING_TO_STORAGE",
-    "RDF_QM_APPLY_CHANGES",
-    "RDF_QM_ASSERT_JSO_TYPE",
-    "RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING",
-    "RDF_QM_ASSERT_STORAGE_FLAG",
-    "RDF_QM_ATTACH_MACRO_LIBRARY",
-    "RDF_QM_ATTACH_MAPPING",
-    "RDF_QM_ATTACH_SPIN_LIBRARY",
-    "RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
-    "RDF_QM_CBD_OF_IRI_CLASS",
-    "RDF_QM_CHANGE",
-    "RDF_QM_CHANGE_OPT",
-    "RDF_QM_CHECK_CLASS_FUNCTION_HEADERS",
-    "RDF_QM_CHECK_COLUMNS_FORM_KEY",
-    "RDF_QM_DEFINE_IRI_CLASS_FORMAT",
-    "RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
-    "RDF_QM_DEFINE_LITERAL_CLASS_FORMAT",
-    "RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
-    "RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG",
-    "RDF_QM_DEFINE_MAPPING",
-    "RDF_QM_DEFINE_MAP_VALUE",
-    "RDF_QM_DEFINE_QUAD_STORAGE",
-    "RDF_QM_DEFINE_SUBCLASS",
-    "RDF_QM_DELETE_MAPPING_FROM_STORAGE",
-    "RDF_QM_DETACH_MACRO_LIBRARY",
-    "RDF_QM_DETACH_SPIN_LIBRARY",
-    "RDF_QM_DROP_CLASS",
-    "RDF_QM_DROP_MAPPING",
-    "RDF_QM_DROP_QUAD_STORAGE",
-    "RDF_QM_DROP_SUBJ",
-    "RDF_QM_END_ALTER_QUAD_STORAGE",
-    "RDF_QM_FT_USAGE",
-    "RDF_QM_GC_MAPPING_SUBTREE",
-    "RDF_QM_GC_SUBTREE",
-    "RDF_QM_MACROEXPAND_TEMPLATE",
-    "RDF_QM_NN_PUT_VECTOR",
-    "RDF_QM_NORMALIZE_QMV",
-    "RDF_QM_SET_DEFAULT_MAPPING",
-    "RDF_QM_STORE_ATABLES",
-    "RDF_REPL_DELETE_TRIPLES",
-    "RDF_REPL_GRAPH_DEL",
-    "RDF_REPL_GRAPH_INS",
-    "RDF_REPL_INSERT_TRIPLES",
-    "RDF_REPL_START",
-    "RDF_REPL_STOP",
-    "RDF_REPL_SYNC",
-    "RDF_SPONGE_UP",
-    "SPARQL_DELETE_CTOR",
-    "SPARQL_DELETE_DICT_CONTENT",
-    "SPARQL_DELETE_QUAD_DICT_CONTENT",
-    "SPARQL_DESC_AGG",
-    "SPARQL_DESC_AGG_ACC",
-    "SPARQL_DESC_AGG_FIN",
-    "SPARQL_DESC_AGG_INIT",
-    "SPARQL_DESC_DICT",
-    "SPARQL_DESC_DICT_CBD",
-    "SPARQL_DESC_DICT_CBD_PHYSICAL",
-    "SPARQL_DESC_DICT_SPO",
-    "SPARQL_DESC_DICT_SPO_PHYSICAL",
-    "SPARQL_INSERT_CTOR",
-    "SPARQL_INSERT_DICT_CONTENT",
-    "SPARQL_INSERT_QUAD_DICT_CONTENT",
-    "SPARQL_MODIFY_BY_DICT_CONTENTS",
-    "SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS",
-    "SPARQL_SELECT_KNOWN_GRAPHS",
-    "SPARUL_ADD",
-    "SPARUL_CLEAR",
-    "SPARUL_COPY",
-    "SPARUL_CREATE",
-    "SPARUL_DROP",
-    "SPARUL_LOAD",
-    "SPARUL_MOVE",
-    "SPARUL_RUN",
-    "TTLP",
-    "TTLP_EV_COMMIT",
-    "TTLP_EV_CL_GS_TRIPLE",
-    "TTLP_EV_CL_GS_TRIPLE_L",
-    "TTLP_EV_CL_TRIPLE",
-    "TTLP_EV_CL_TRIPLE_L",
-    "TTLP_EV_GET_IID",
-    "TTLP_EV_NEW_BLANK",
-    "TTLP_EV_NEW_GRAPH",
-    "TTLP_EV_NEW_GRAPH_A",
-    "TTLP_EV_TRIPLE",
-    "TTLP_EV_TRIPLE_A",
-    "TTLP_EV_TRIPLE_L",
-    "TTLP_EV_TRIPLE_L_A",
-    "TTLP_EV_TRIPLE_L_W",
-    "TTLP_EV_TRIPLE_W",
-    "TTLP_EV_TRIPLE_XLAT",
-    "TTLP_EV_TRIPLE_XLAT_L",
-    "TTLP_MT",
-    "TTLP_MT_LOCAL_FILE" };
+  "RDF_DELETE_TRIPLES",
+  "RDF_DELETE_TRIPLES_AGG",
+  "RDF_GLOBAL_RESET",
+  "RDF_GRAPH_GROUP_LIST_GET",
+  "RDF_INSERT_TRIPLES",
+  "RDF_LOAD_RDFXML",
+  "RDF_LOAD_RDFXML_MT",
+  "RDF_MODIFY_TRIPLES",
+  "RDF_QM_ADD_MAPPING_TO_STORAGE",
+  "RDF_QM_APPLY_CHANGES",
+  "RDF_QM_ASSERT_JSO_TYPE",
+  "RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING",
+  "RDF_QM_ASSERT_STORAGE_FLAG",
+  "RDF_QM_ATTACH_MACRO_LIBRARY",
+  "RDF_QM_ATTACH_MAPPING",
+  "RDF_QM_ATTACH_SPIN_LIBRARY",
+  "RDF_QM_BEGIN_ALTER_QUAD_STORAGE",
+  "RDF_QM_CBD_OF_IRI_CLASS",
+  "RDF_QM_CHANGE",
+  "RDF_QM_CHANGE_OPT",
+  "RDF_QM_CHECK_CLASS_FUNCTION_HEADERS",
+  "RDF_QM_CHECK_COLUMNS_FORM_KEY",
+  "RDF_QM_DEFINE_IRI_CLASS_FORMAT",
+  "RDF_QM_DEFINE_IRI_CLASS_FUNCTIONS",
+  "RDF_QM_DEFINE_LITERAL_CLASS_FORMAT",
+  "RDF_QM_DEFINE_LITERAL_CLASS_FUNCTIONS",
+  "RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG",
+  "RDF_QM_DEFINE_MAPPING",
+  "RDF_QM_DEFINE_MAP_VALUE",
+  "RDF_QM_DEFINE_QUAD_STORAGE",
+  "RDF_QM_DEFINE_SUBCLASS",
+  "RDF_QM_DELETE_MAPPING_FROM_STORAGE",
+  "RDF_QM_DETACH_MACRO_LIBRARY",
+  "RDF_QM_DETACH_SPIN_LIBRARY",
+  "RDF_QM_DROP_CLASS",
+  "RDF_QM_DROP_MAPPING",
+  "RDF_QM_DROP_QUAD_STORAGE",
+  "RDF_QM_DROP_SUBJ",
+  "RDF_QM_END_ALTER_QUAD_STORAGE",
+  "RDF_QM_FT_USAGE",
+  "RDF_QM_GC_MAPPING_SUBTREE",
+  "RDF_QM_GC_SUBTREE",
+  "RDF_QM_MACROEXPAND_TEMPLATE",
+  "RDF_QM_NN_PUT_VECTOR",
+  "RDF_QM_NORMALIZE_QMV",
+  "RDF_QM_SET_DEFAULT_MAPPING",
+  "RDF_QM_STORE_ATABLES",
+  "RDF_REPL_DELETE_TRIPLES",
+  "RDF_REPL_GRAPH_DEL",
+  "RDF_REPL_GRAPH_INS",
+  "RDF_REPL_INSERT_TRIPLES",
+  "RDF_REPL_START",
+  "RDF_REPL_STOP",
+  "RDF_REPL_SYNC",
+  "RDF_SPONGE_UP",
+  "SPARQL_DELETE_CTOR",
+  "SPARQL_DELETE_DICT_CONTENT",
+  "SPARQL_DELETE_QUAD_DICT_CONTENT",
+  "SPARQL_DESC_AGG",
+  "SPARQL_DESC_AGG_ACC",
+  "SPARQL_DESC_AGG_FIN",
+  "SPARQL_DESC_AGG_INIT",
+  "SPARQL_DESC_DICT",
+  "SPARQL_DESC_DICT_CBD",
+  "SPARQL_DESC_DICT_CBD_PHYSICAL",
+  "SPARQL_DESC_DICT_SPO",
+  "SPARQL_DESC_DICT_SPO_PHYSICAL",
+  "SPARQL_INSERT_CTOR",
+  "SPARQL_INSERT_DICT_CONTENT",
+  "SPARQL_INSERT_QUAD_DICT_CONTENT",
+  "SPARQL_MODIFY_BY_DICT_CONTENTS",
+  "SPARQL_MODIFY_BY_QUAD_DICT_CONTENTS",
+  "SPARQL_SELECT_KNOWN_GRAPHS",
+  "SPARUL_ADD",
+  "SPARUL_CLEAR",
+  "SPARUL_COPY",
+  "SPARUL_CREATE",
+  "SPARUL_DROP",
+  "SPARUL_LOAD",
+  "SPARUL_MOVE",
+  "SPARUL_RUN",
+  "TTLP",
+  "TTLP_EV_CL_GS_TRIPLE",
+  "TTLP_EV_CL_GS_TRIPLE_L",
+  "TTLP_EV_CL_TRIPLE",
+  "TTLP_EV_CL_TRIPLE_L",
+  "TTLP_EV_COMMIT",
+  "TTLP_EV_GET_IID",
+  "TTLP_EV_NEW_BLANK",
+  "TTLP_EV_NEW_GRAPH",
+  "TTLP_EV_NEW_GRAPH_A",
+  "TTLP_EV_TRIPLE",
+  "TTLP_EV_TRIPLE_A",
+  "TTLP_EV_TRIPLE_L",
+  "TTLP_EV_TRIPLE_L_A",
+  "TTLP_EV_TRIPLE_L_W",
+  "TTLP_EV_TRIPLE_W",
+  "TTLP_EV_TRIPLE_XLAT",
+  "TTLP_EV_TRIPLE_XLAT_L",
+  "TTLP_MT",
+  "TTLP_MT_LOCAL_FILE"
+};
+
+static const int spar_unsafe_sql_names__count = sizeof (spar_unsafe_sql_names)/sizeof(spar_unsafe_sql_names[0]);
 
 static const char *spar_unsafe_bif_names[] = {
-    "BACKUP",
-    "CONNECTION_SET",
-    "CONNECTION_SWAP",
-    "CONNECTION_VARS_SET",
-    "EXEC",
-    "FILE_TO_STRING",
-    "FILE_TO_STRING_OUTPUT",
-    "REGISTRY_SET",
-    "REGISTRY_SET_ALL",
-    "STRING_TO_FILE",
-    "SYSTEM" };
+  "BACKUP",
+  "CONNECTION_SET",
+  "CONNECTION_SWAP",
+  "CONNECTION_VARS_SET",
+  "EXEC",
+  "FILE_TO_STRING",
+  "FILE_TO_STRING_OUTPUT",
+  "REGISTRY_SET",
+  "REGISTRY_SET_ALL",
+  "STRING_TO_FILE",
+  "SYSTEM"
+};
+
+static const int spar_unsafe_bif_names__count = sizeof (spar_unsafe_bif_names)/sizeof(spar_unsafe_bif_names[0]);
 
 static const char *sparql11_agg_names[] = {
     "AVG",		"SPECIAL::bif:AVG",
@@ -4744,11 +4750,20 @@ static const char *sparql11_agg_names[] = {
     "SAMPLE",		"sql:SAMPLE",
     "SUM",		"SPECIAL::bif:SUM" };
 
-int sparp_sql_function_name_is_unsafe (const char *buf)
+
+int
+sparp_sql_function_name_is_unsafe (const char *buf)
 {
-  return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_sql_names,
-    sizeof (spar_unsafe_sql_names)/sizeof(spar_unsafe_sql_names[0]), sizeof (caddr_t) ) );
+  return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_sql_names, spar_unsafe_sql_names__count, sizeof (caddr_t)));
 }
+
+
+int
+sparp_bif_function_name_is_unsafe (const char *buf)
+{
+  return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names, spar_unsafe_bif_names__count, sizeof (caddr_t)));
+}
+
 
 void
 spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fname_ptr, SPART **args)
@@ -4803,8 +4818,7 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     {
       if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
         goto restricted; /* see below */
-      if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names,
-          sizeof (spar_unsafe_bif_names)/sizeof(spar_unsafe_bif_names[0]), sizeof (caddr_t) ) ) )
+      if ((U_ID_DBA != uid) && sparp_bif_function_name_is_unsafe (buf))
         goto restricted; /* see below */
       if (NULL != name_to_pl_name)
         {
@@ -4817,8 +4831,7 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
               strncpy (buf, full_sql_name_ptr[0]+7, sizeof(buf)-1);
               buf[sizeof(buf)-1] = '\0';
               strupr (buf);
-              if ((U_ID_DBA != uid) && (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_sql_names,
-                  sizeof (spar_unsafe_sql_names)/sizeof(spar_unsafe_sql_names[0]), sizeof (caddr_t) ) ) )
+              if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
                 goto restricted; /* see below */
               strcpy (buf, "sql:");
               strncpy (buf+4, full_sql_name_ptr[0]+7, sizeof(buf)-5);
