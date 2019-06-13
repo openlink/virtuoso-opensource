@@ -5421,7 +5421,7 @@
                                 ?>
                                 <td nowrap="nowrap">
                                   <?vsp
-                                    declare id, typeName, click any;
+                                    declare id, typeName, detType, click any;
 
                                     id := case when (rowset[1] = 'R') then sprintf ('id="%V"', path) else '' end;
                                     typeName := case when (rowset[1] = 'R') then 'File' else 'Folder' end;
@@ -5533,6 +5533,7 @@
                                 <td class="action">
                                   <?vsp
                                     id := DB.DBA.DAV_SEARCH_ID (path, rowset[1]);
+                                    detType := DB.DBA.DAV_DET_NAME (id);
                                     if ((permission <> '') or (self.mode = 'webdav'))
                                     {
                                       http (sprintf( ' <img class="pointer" border="0" alt="Update Properties" title="Update Properties"" src="%s" onclick="javascript: vspxUpdate(\'%V\');" />', self.image_src ('dav/image/dav/item_prop.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
@@ -5543,7 +5544,11 @@
                                          (
                                            isinteger (id)
                                            or
-                                           DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id))
+                                           DB.DBA.DAV_DET_IS_WEBDAV_BASED (detType)
+                                           or
+                                           (detType = 'CalDAV')
+                                           or
+                                           (detType = 'CardDAV')
                                            or
                                            (rowset[0] like '%,acl')
                                            or
@@ -5571,7 +5576,7 @@
                                          not DB.DBA.IS_REDIRECT_REF (path)
                                        )
                                     {
-                                      if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')))
+                                      if ((rowset[0] like '%,acl') or (rowset[0] like '%,meta') or ((permission = 'R') and (self.mode <> 'webdav')) or (detType in ('CalDAV', 'CardDAV')))
                                       {
                                         http (sprintf( ' <img class="pointer" border="0" alt="View Content" title="View Content" src="%s" onclick="javascript: vspxView(\'%V\');" />', self.image_src ('dav/image/docs_16.png'), WEBDAV.DBA.utf2wide (replace (path, '\'', '\\\''))));
                                       }
