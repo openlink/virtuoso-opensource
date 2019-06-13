@@ -5438,11 +5438,11 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		if (dfe->dfe_tree)
 		  {
 		    caddr_t name = dfe->dfe_tree->_.call.name;
-		  if (DV_STRINGP (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
+		    if (DV_STRING_TYPE (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
 		      {
 		        ptrlong bitmap = 0;
 			dfe->dfe_tree->_.call.params[2] = (ST*) t_box_num (so->so_sc->sc_grouping->ssl_index);
-		      make_grouping_bitmap_set (NULL, dfe->dfe_tree->_.call.params[0], so->so_sc->sc_groupby_set, &bitmap);
+                        make_grouping_bitmap_set (NULL, dfe->dfe_tree->_.call.params[0], so->so_sc->sc_groupby_set, &bitmap);
 			dfe->dfe_tree->_.call.params[1] = (ST*) t_box_num (bitmap);
 		      }
 		  }

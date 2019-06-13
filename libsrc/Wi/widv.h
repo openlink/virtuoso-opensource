@@ -291,6 +291,8 @@ User-level object is of type DV_XML_ENTITY. */
 #define DV_WIDESTRINGP(q) \
   (IS_BOX_POINTER (q) && (DV_WIDE == box_tag (q) || DV_LONG_WIDE == box_tag (q)))
 
+#define DV_STRING_TYPE(q) \
+  (IS_BOX_POINTER (q) && ((DV_STRING == box_tag (q)) || (DV_UNAME == box_tag (q)) || (DV_SYMBOL == box_tag (q))))
 
 
 #define DV_LONG_INT_PREC 10
