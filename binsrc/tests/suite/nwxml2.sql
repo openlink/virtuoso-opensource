@@ -66,28 +66,29 @@ create procedure xml_text_load (in f varchar)
     insert into XML_TEXT (XT_ID, XT_FILE, XT_TEXT)
       values (sequence_next ('XML_TEXT'), f, file_to_string (f));
 }
+;
 
 create procedure xml_text_load_r (in f varchar)
 {
   declare str any;
-  declare ni int;
+
   str := file_to_string (f);
   if (exists (select 1 from XML_TEXT where XT_FILE = f))
-    update XML_TEXT set XT_TEXT = file_to_string (f) where XT_FILE = f;
+    update XML_TEXT set XT_TEXT = str where XT_FILE = f;
   else
     {
-      ni := coalesce ((select xt_id + 1 from xml_text order by xt_id desc), 1);
       insert into XML_TEXT (XT_ID, XT_FILE, XT_TEXT)
-	values (ni, f, str);
+        values (sequence_next ('XML_TEXT'), f, str);
     }
 }
-
+;
 
 create procedure xml_text_insert (in f varchar)
 {
 	    insert into XML_TEXT (XT_ID, XT_FILE, XT_TEXT)
       values (sequence_next ('XML_TEXT'), NULL,  f);
 }
+;
 
 create procedure xml_html_load (in f varchar)
 {
@@ -110,8 +111,7 @@ create procedure xml_html_load (in f varchar)
   rollback work;
   goto again;
 }
-
-
+;
 
 create procedure pxml_html_load (in f varchar)
 {
@@ -135,6 +135,7 @@ create procedure pxml_html_load (in f varchar)
   rollback work;
   goto again;
 }
+;
 
 xml_text_load ('docsrc/dbconcepts.xml');
 xml_text_load ('docsrc/intl.xml');
