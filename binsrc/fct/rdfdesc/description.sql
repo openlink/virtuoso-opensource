@@ -514,7 +514,7 @@ b3s_render_inf_clause ()
 ;
 
 create procedure
-b3s_render_ses_params (in with_graph int := 1) 
+b3s_render_ses_params (in with_graph int := 1, in with_ses int := 1)
 {
   declare i,s,ifp,sid varchar;
   declare grs any;
@@ -527,12 +527,12 @@ b3s_render_ses_params (in with_graph int := 1)
 
   if (i is not null) http (sprintf ('&inf=%U', i), ses);
   if (s is not null) http (sprintf ('&sas=%V', s), ses);
-  if (sid is not null) http (sprintf ('&sid=%V', sid), ses);
+  if (with_ses and sid is not null) http (sprintf ('&sid=%V', sid), ses);
   if (grs is not null and with_graph)
     {
       foreach (any x in grs) do
         http (sprintf ('&graph=%U', x), ses);
-	}
+    }
   return string_output_string (ses);
 }
 ;
