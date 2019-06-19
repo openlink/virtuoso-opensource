@@ -244,6 +244,16 @@ then
 fi
 
 
+LOG + running sql script tclforvec
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclforvec.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED:  -- tclforvec.sql"
+    exit 1
+fi
+
+
+
 
 # suite for bug #1092 - commented out for now
 if [ "x$SQLOPTIMIZE" = "x" ]

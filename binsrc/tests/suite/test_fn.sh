@@ -489,13 +489,15 @@ MAKECFG_FILE ()
   _testcfgfile=$1
   _port=$2
   _cfgfile=$3
+  _repl=${4-virt1111}
   cat $_testcfgfile | sed -e \
     "s/PORT/$_port/g" \
     -e "s/SQLOPTIMIZE/$SQLOPTIMIZE/g" \
     -e "s/PLDBG/$PLDBG/g" \
     -e "s/CASE_MODE/$CASE_MODE/g" \
     -e "s/LITEMODE/$LITEMODE/g" \
-    -e "s/TIMEZONELESS/$TIMEZONELESS/g" > $_cfgfile
+    -e "s/TIMEZONELESS/$TIMEZONELESS/g" \
+    -e "s/REPLNAME/$_repl/g" > $_cfgfile
 }
 
 MAKECFG_FILE_WITH_HTTP()

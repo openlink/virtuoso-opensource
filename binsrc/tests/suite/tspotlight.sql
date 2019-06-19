@@ -59,7 +59,7 @@ create procedure check_res (in dav_path varchar, in _what varchar)
    return 0;
 }
 
-select check_res ('/DAV/u1/Image.jpg', 'JPEG image');
+select check_res ('/DAV/u1/Image.jpg', 'JPEG Image');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": /DAV/u1/Image.jpg : JPEG Image $LAST[1]=" $LAST[1] " MESSAGE=" $MESSAGE "\n";

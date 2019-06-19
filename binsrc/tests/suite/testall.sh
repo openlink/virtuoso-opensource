@@ -133,7 +133,10 @@ twcopy \
 txslt \
 trecov \
 tlubm \
-rtest"
+rtest \
+trepl_rdf \
+tsoap12 \
+tvspxex "
 
 QUICKTEST=1
 TPCDMODE=local

@@ -866,7 +866,7 @@ ECHO BOTH ": ins func call casting narrow string into nvarchar column STATE=" $S
 update  WIDEZTEST set data =  cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar);
 select bin2hex(DATA) from WIDEZTEST where ID = 3;
 select length (DATA) from WIDEZTEST where ID = 3;
-ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** SKIPPED";
+ECHO BOTH $IF $EQU $LAST[1] 9 "PASSED" "*** FAILED";
 ECHO BOTH ": update casting narrow string into nvarchar column STATE=" $STATE " MESSAGE=" $MESSAGE " DATA LENGTH=" $LAST[1] ", must be 9\n";
 
 update  WIDEZTEST set data =  ff (cast ('\x5\xfc\x1\xfd\x2\xfe\x3\xff\x4' as nvarchar));

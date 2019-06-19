@@ -21,6 +21,7 @@
 --
 --
 
+-- SET ECHO ON;
 connect;
 ECHO BOTH "DSNs for subscriber: " $U{ds2} " publisher: " $U{ds1} "\n";
 
@@ -35,22 +36,30 @@ DB.DBA.RDF_REPL_START();
 
 select registry_get ('DB.DBA.RDF_REPL');
 
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_mt_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_mt_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_ff_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://ttlp_ff_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://rdfxml_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://rdfxml_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://rdfxml_mt_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://rdfxml_mt_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://sparul_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://sparul_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://manip_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://manip_1/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://geo_0/');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://geo_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_0_norepl/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_1_norepl/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/trig_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/trig_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/trig_mt_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/trig_mt_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_0_norepl/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_mt_1_norepl/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_ff_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/ttlp_ff_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/rdfxml_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/rdfxml_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/rdfxml_mt_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/rdfxml_mt_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/sparul_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/sparul_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/manip_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/manip_1/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/geo_0/');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/geo_1/');
 checkpoint;
 
 -- SUBSCRIBER
@@ -66,69 +75,111 @@ set DSN=$U{ds1};
 reconnect;
 ECHO BOTH "----- Reconnected to PUBLISHER " $U{ds1} ", will add RDF data by different methods\n";
 
-DB.DBA.TTLP ('<s_ttlp_0> <p_ttlp_0> <o_ttlp_0> , "plain_ttlp_0" , 100 , "qq_ttlp_0"^^<dt_ttlp_0> , "рус_ttlp_0"@ru , [ rdf:type <t_ttlp_0> ] .', 'http://ttlp_0/', 'http://ttlp_0/');
-DB.DBA.TTLP ('<s_ttlp_1> <p_ttlp_1> <o_ttlp_1> , "plain_ttlp_1" , 101 , "qq_ttlp_1"^^<dt_ttlp_1> , "рус_ttlp_1"@ru , [ rdf:type <t_ttlp_1> ] .', 'http://ttlp_1/', 'http://ttlp_1/');
-DB.DBA.TTLP_MT ('<s_ttlp_mt_0> <p_ttlp_mt_0> <o_ttlp_mt_0> , "plain_ttlp_mt_0" , 100 , "qq_ttlp_mt_0"^^<dt_ttlp_mt_0> , "рус_ttlp_mt_0"@ru , [ rdf:type <t_ttlp_mt_0> ] .', 'http://ttlp_mt_0/', 'http://ttlp_mt_0/', log_mode=>1);
-DB.DBA.TTLP_MT ('<s_ttlp_mt_1> <p_ttlp_mt_1> <o_ttlp_mt_1> , "plain_ttlp_mt_1" , 101 , "qq_ttlp_mt_1"^^<dt_ttlp_mt_1> , "рус_ttlp_mt_1"@ru , [ rdf:type <t_ttlp_mt_1> ] .', 'http://ttlp_mt_1/', 'http://ttlp_mt_1/', log_mode=>1);
+DB.DBA.TTLP ('<s_ttlp_0> <p_ttlp_0> <o_ttlp_0> , "plain_ttlp_0" , 100 , "qq_ttlp_0"^^<dt_ttlp_0> , "рус_ttlp_0"@ru , [ rdf:type <t_ttlp_0> ] .', 'http://trepl_rdf/ttlp_0/', 'http://trepl_rdf/ttlp_0/');
+DB.DBA.TTLP ('<s_ttlp_1> <p_ttlp_1> <o_ttlp_1> , "plain_ttlp_1" , 101 , "qq_ttlp_1"^^<dt_ttlp_1> , "рус_ttlp_1"@ru , [ rdf:type <t_ttlp_1> ] .', 'http://trepl_rdf/ttlp_1/', 'http://trepl_rdf/ttlp_1/');
+DB.DBA.TTLP ('<s_ttlp_8> <p_ttlp_8> <o_ttlp_8> , "plain_ttlp_8" , 109 , "qq_ttlp_', 'http://trepl_rdf/ttlp_8/', 'http://trepl_rdf/ttlp_8/'); -- Intentionally wrong, to check the recovery
+DB.DBA.TTLP ('<s_ttlp_9> <p_ttlp_9> <o_ttlp_9> , "plain_ttlp_9" , 109 , "qq_ttlp_9"^^<dt_ttlp_9> , "рус_ttlp_9"@ru , [ rdf:type <t_ttlp_9> ] .', 'http://trepl_rdf/ttlp_9/', 'http://trepl_rdf/ttlp_9/');
+DB.DBA.TTLP_MT ('<s_ttlp_mt_0> <p_ttlp_mt_0> <o_ttlp_mt_0> , "plain_ttlp_mt_0" , 100 , "qq_ttlp_mt_0"^^<dt_ttlp_mt_0> , "рус_ttlp_mt_0"@ru , [ rdf:type <t_ttlp_mt_0> ] .', 'http://trepl_rdf/ttlp_mt_0_norepl/', 'http://trepl_rdf/ttlp_mt_0_norepl/', log_mode => 0);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_1> <p_ttlp_mt_1> <o_ttlp_mt_1> , "plain_ttlp_mt_1" , 101 , "qq_ttlp_mt_1"^^<dt_ttlp_mt_1> , "рус_ttlp_mt_1"@ru , [ rdf:type <t_ttlp_mt_1> ] .', 'http://trepl_rdf/ttlp_mt_1_norepl/', 'http://trepl_rdf/ttlp_mt_1_norepl/', log_mode => 0);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_9> <p_ttlp_mt_9> <o_ttlp_mt_9> , "plain_ttlp_mt_9" , 109 , "qq_ttlp_mt_9"^^<dt_ttlp_mt_9> , "рус_ttlp_mt_9"@ru , [ rdf:type <t_ttlp_mt_9> ] .', 'http://trepl_rdf/ttlp_mt_9_norepl/', 'http://trepl_rdf/ttlp_mt_9_norepl/', log_mode => 0);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_0> <p_ttlp_mt_0> <o_ttlp_mt_0> , "plain_ttlp_mt_0" , 100 , "qq_ttlp_mt_0"^^<dt_ttlp_mt_0> , "рус_ttlp_mt_0"@ru , [ rdf:type <t_ttlp_mt_0> ] .', 'http://trepl_rdf/ttlp_mt_0/', 'http://trepl_rdf/ttlp_mt_0/', log_mode => 1);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_1> <p_ttlp_mt_1> <o_ttlp_mt_1> , "plain_ttlp_mt_1" , 101 , "qq_ttlp_mt_1"^^<dt_ttlp_mt_1> , "рус_ttlp_mt_1"@ru , [ rdf:type <t_ttlp_mt_1> ] .', 'http://trepl_rdf/ttlp_mt_1/', 'http://trepl_rdf/ttlp_mt_1/', log_mode => 1);
+DB.DBA.TTLP_MT ('<s_ttlp_mt_9> <p_ttlp_mt_9> <o_ttlp_mt_9> , "plain_ttlp_mt_9" , 109 , "qq_ttlp_mt_9"^^<dt_ttlp_mt_9> , "рус_ttlp_mt_9"@ru , [ rdf:type <t_ttlp_mt_9> ] .', 'http://trepl_rdf/ttlp_mt_9/', 'http://trepl_rdf/ttlp_mt_9/', log_mode => 1);
+
+DB.DBA.TTLP ('
+<http://trepl_rdf/trig_0/> { <s_trig_0> <p_trig_0> <o_trig_0> , "plain_trig_0" , 100 , "qq_trig_0"^^<dt_trig_0> , "рус_trig_0"@ru , [ rdf:type <t_trig_0> ] . }
+<http://trepl_rdf/trig_1/> { <s_trig_1> <p_trig_1> <o_trig_1> , "plain_trig_1" , 101 , "qq_trig_1"^^<dt_trig_1> , "рус_trig_1"@ru , [ rdf:type <t_trig_1> ] . }
+<http://trepl_rdf/trig_9/> { <s_trig_9> <p_trig_9> <o_trig_9> , "plain_trig_9" , 109 , "qq_trig_9"^^<dt_trig_9> , "рус_trig_9"@ru , [ rdf:type <t_trig_9> ] . }
+', 'http://trepl_rdf/trig_XXX/', 'http://qq/', 256);
+DB.DBA.TTLP_MT ('
+<http://trepl_rdf/trig_mt_0_norepl/> { <s_trig_mt_0> <p_trig_mt_0> <o_trig_mt_0> , "plain_trig_mt_0" , 100 , "qq_trig_mt_0"^^<dt_trig_mt_0> , "рус_trig_mt_0"@ru , [ rdf:type <t_trig_mt_0> ] . }
+<http://trepl_rdf/trig_mt_1_norepl/> { <s_trig_mt_1> <p_trig_mt_1> <o_trig_mt_1> , "plain_trig_mt_1" , 101 , "qq_trig_mt_1"^^<dt_trig_mt_1> , "рус_trig_mt_1"@ru , [ rdf:type <t_trig_mt_1> ] . }
+<http://trepl_rdf/trig_mt_9_norepl/> { <s_trig_mt_9> <p_trig_mt_9> <o_trig_mt_9> , "plain_trig_mt_9" , 109 , "qq_trig_mt_9"^^<dt_trig_mt_9> , "рус_trig_mt_9"@ru , [ rdf:type <t_trig_mt_9> ] . }
+', 'http://trepl_rdf/trig_mt_9_norepl/', 'http://qq/', 256, log_mode => 0);
+DB.DBA.TTLP_MT ('
+<http://trepl_rdf/trig_mt_0/> { <s_trig_mt_0> <p_trig_mt_0> <o_trig_mt_0> , "plain_trig_mt_0" , 100 , "qq_trig_mt_0"^^<dt_trig_mt_0> , "рус_trig_mt_0"@ru , [ rdf:type <t_trig_mt_0> ] . }
+<http://trepl_rdf/trig_mt_1/> { <s_trig_mt_1> <p_trig_mt_1> <o_trig_mt_1> , "plain_trig_mt_1" , 101 , "qq_trig_mt_1"^^<dt_trig_mt_1> , "рус_trig_mt_1"@ru , [ rdf:type <t_trig_mt_1> ] . }
+<http://trepl_rdf/trig_mt_9/> { <s_trig_mt_9> <p_trig_mt_9> <o_trig_mt_9> , "plain_trig_mt_9" , 109 , "qq_trig_mt_9"^^<dt_trig_mt_9> , "рус_trig_mt_9"@ru , [ rdf:type <t_trig_mt_9> ] . }
+', 'http://trepl_rdf/trig_mt_9/', 'http://qq/', 256, log_mode => 1);
+
 string_to_file ('ttlp_ff_0.ttl', '<s_ttlp_ff_0> <p_ttlp_ff_0> <o_ttlp_ff_0> , "plain_ttlp_ff_0" , 100 , "qq_ttlp_ff_0"^^<dt_ttlp_ff_0> , "рус_ttlp_ff_0"@ru , [ rdf:type <t_ttlp_ff_0> ] .', -2);
 string_to_file ('ttlp_ff_1.ttl', '<s_ttlp_ff_1> <p_ttlp_ff_1> <o_ttlp_ff_1> , "plain_ttlp_ff_1" , 101 , "qq_ttlp_ff_1"^^<dt_ttlp_ff_1> , "рус_ttlp_ff_1"@ru , [ rdf:type <t_ttlp_ff_1> ] .', -2);
-DB.DBA.TTLP (file_open ('ttlp_ff_0.ttl'), 'http://ttlp_ff_0/', 'http://ttlp_ff_0/');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": TTLP : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-DB.DBA.TTLP (file_open ('ttlp_ff_1.ttl'), 'http://ttlp_ff_1/', 'http://ttlp_ff_1/');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-ECHO BOTH ": TTLP : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+string_to_file ('ttlp_ff_9.ttl', '<s_ttlp_ff_9> <p_ttlp_ff_9> <o_ttlp_ff_9> , "plain_ttlp_ff_9" , 109 , "qq_ttlp_ff_9"^^<dt_ttlp_ff_9> , "рус_ttlp_ff_9"@ru , [ rdf:type <t_ttlp_ff_9> ] .', -2);
+DB.DBA.TTLP_MT (file_to_string_output ('ttlp_ff_0.ttl'), 'http://trepl_rdf/ttlp_ff_0/', 'http://trepl_rdf/ttlp_ff_0/');
+DB.DBA.TTLP_MT (file_to_string_output ('ttlp_ff_1.ttl'), 'http://trepl_rdf/ttlp_ff_1/', 'http://trepl_rdf/ttlp_ff_1/');
+DB.DBA.TTLP_MT (file_to_string_output ('ttlp_ff_9.ttl'), 'http://trepl_rdf/ttlp_ff_9/', 'http://trepl_rdf/ttlp_ff_9/');
 
 DB.DBA.RDF_LOAD_RDFXML ('<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="s_rdfxml_0" p="plain_rdfxml_0" />
   <rdf:Description rdf:nodeID="rdfxml_0" rdf:type="t_rdfxml_0" />
-</rdf:RDF>', 'http://rdfxml_0/', 'http://rdfxml_0/' );
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_0/', 'http://trepl_rdf/rdfxml_0/' );
 
 DB.DBA.RDF_LOAD_RDFXML ('<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="s_rdfxml_1" p="plain_rdfxml_1" />
   <rdf:Description rdf:nodeID="rdfxml_1" rdf:type="t_rdfxml_1" />
-</rdf:RDF>', 'http://rdfxml_1/', 'http://rdfxml_1/' );
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_1/', 'http://trepl_rdf/rdfxml_1/' );
+
+DB.DBA.RDF_LOAD_RDFXML ('<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="s_rdfxml_9" p="plain_rdfxml_9" />
+  <rdf:Description rdf:nodeID="rdfxml_9" rdf:type="t_rdfxml_9" />
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_9/', 'http://trepl_rdf/rdfxml_9/' );
 
 DB.DBA.RDF_LOAD_RDFXML_MT ('<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="s_rdfxml_mt_0" p="plain_rdfxml_mt_0" />
   <rdf:Description rdf:nodeID="rdfxml_mt_0" rdf:type="t_rdfxml_mt_0" />
-</rdf:RDF>', 'http://rdfxml_mt_0/', 'http://rdfxml_mt_0/' );
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_mt_0/', 'http://trepl_rdf/rdfxml_mt_0/' );
 
 DB.DBA.RDF_LOAD_RDFXML_MT ('<?xml version="1.0"?>
 <rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:about="s_rdfxml_mt_1" p="plain_rdfxml_mt_1" />
   <rdf:Description rdf:nodeID="rdfxml_mt_1" rdf:type="t_rdfxml_mt_1" />
-</rdf:RDF>', 'http://rdfxml_mt_1/', 'http://rdfxml_mt_1/' );
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_mt_1/', 'http://trepl_rdf/rdfxml_mt_1/' );
 
-sparql base <http://sparul_0/> insert in <http://sparul_0/> {
+DB.DBA.RDF_LOAD_RDFXML_MT ('<?xml version="1.0"?>
+<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
+  <rdf:Description rdf:about="s_rdfxml_mt_9" p="plain_rdfxml_mt_9" />
+  <rdf:Description rdf:nodeID="rdfxml_mt_9" rdf:type="t_rdfxml_mt_9" />
+</rdf:RDF>', 'http://trepl_rdf/rdfxml_mt_9/', 'http://trepl_rdf/rdfxml_mt_9/' );
+
+sparql base <http://trepl_rdf/sparul_0/> insert in <http://trepl_rdf/sparul_0/> {
   <s_sparul_0> <p_sparul_0> <o_sparul_0> , "plain_sparul_0" , 100 , "qq_sparul_0"^^<dt_sparul_0> , "\u0440\u0443\u0441_sparul_0"@ru , [ rdf:type <t_sparul_0> ] . };
 
-sparql base <http://sparul_1/> insert in <http://sparul_1/> {
-  <s_sparul_1> <p_sparul_1> <o_sparul_1> , "plain_sparul_1" , 100 , "qq_sparul_1"^^<dt_sparul_1> , "\u0440\u0443\u0441_sparul_1"@ru , [ rdf:type <t_sparul_1> ] . };
+sparql base <http://trepl_rdf/sparul_1/> insert in <http://trepl_rdf/sparul_1/> {
+  <s_sparul_1> <p_sparul_1> <o_sparul_1> , "plain_sparul_1" , 101 , "qq_sparul_1"^^<dt_sparul_1> , "\u0440\u0443\u0441_sparul_1"@ru , [ rdf:type <t_sparul_1> ] . };
 
-DB.DBA.RDF_QUAD_URI ('http://manip_0/', 'http://manip_0/s_manip_0', 'http://manip_0/p_manip_0', 'http://manip_0/o_manip_0');
-DB.DBA.RDF_QUAD_URI_L ('http://manip_0/', 'http://manip_0/s_manip_0', 'http://manip_0/p_manip_0', 'plain_manip_0');
-DB.DBA.RDF_QUAD_URI_L_TYPED ('http://manip_0/', 'http://manip_0/s_manip_0', 'http://manip_0/p_manip_0', 'qq_manip_0', 'http://manip_0/t_manip_0', null);
-DB.DBA.RDF_QUAD_URI_L_TYPED ('http://manip_0/', 'http://manip_0/s_manip_0', 'http://manip_0/p_manip_0', N'рус_manip_0', null, 'ru');
+sparql base <http://trepl_rdf/sparul_9/> insert in <http://trepl_rdf/sparul_9/> {
+  <s_sparul_9> <p_sparul_9> <o_sparul_9> , "plain_sparul_9" , 109 , "qq_sparul_9"^^<dt_sparul_9> , "\u0440\u0443\u0441_sparul_9"@ru , [ rdf:type <t_sparul_9> ] . };
 
-DB.DBA.RDF_QUAD_URI ('http://manip_1/', 'http://manip_1/s_manip_1', 'http://manip_1/p_manip_1', 'http://manip_1/o_manip_1');
-DB.DBA.RDF_QUAD_URI_L ('http://manip_1/', 'http://manip_1/s_manip_1', 'http://manip_1/p_manip_1', 'plain_manip_1');
-DB.DBA.RDF_QUAD_URI_L_TYPED ('http://manip_1/', 'http://manip_1/s_manip_1', 'http://manip_1/p_manip_1', 'qq_manip_1', 'http://manip_1/t_manip_1', null);
-DB.DBA.RDF_QUAD_URI_L_TYPED ('http://manip_1/', 'http://manip_1/s_manip_1', 'http://manip_1/p_manip_1', N'рус_manip_1', null, 'ru');
+DB.DBA.RDF_QUAD_URI ('http://trepl_rdf/manip_0/', 'http://trepl_rdf/manip_0/s_manip_0', 'http://trepl_rdf/manip_0/p_manip_0', 'http://trepl_rdf/manip_0/o_manip_0');
+DB.DBA.RDF_QUAD_URI_L ('http://trepl_rdf/manip_0/', 'http://trepl_rdf/manip_0/s_manip_0', 'http://trepl_rdf/manip_0/p_manip_0', 'plain_manip_0');
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_0/', 'http://trepl_rdf/manip_0/s_manip_0', 'http://trepl_rdf/manip_0/p_manip_0', 'qq_manip_0', 'http://trepl_rdf/manip_0/t_manip_0', null);
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_0/', 'http://trepl_rdf/manip_0/s_manip_0', 'http://trepl_rdf/manip_0/p_manip_0', N'рус_manip_0', null, 'ru');
 
-DB.DBA.TTLP ('@prefix geo: <http://ww.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_0> geo:lat 45 ; geo:long 135 .', 'http://geo_0/', 'http://geo_0/');
-DB.DBA.TTLP ('@prefix geo: <http://ww.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_1> geo:lat 45 ; geo:long 135 .', 'http://geo_1/', 'http://geo_1/');
-rdf_geo_fill_single ();
+DB.DBA.RDF_QUAD_URI ('http://trepl_rdf/manip_1/', 'http://trepl_rdf/manip_1/s_manip_1', 'http://trepl_rdf/manip_1/p_manip_1', 'http://trepl_rdf/manip_1/o_manip_1');
+DB.DBA.RDF_QUAD_URI_L ('http://trepl_rdf/manip_1/', 'http://trepl_rdf/manip_1/s_manip_1', 'http://trepl_rdf/manip_1/p_manip_1', 'plain_manip_1');
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_1/', 'http://trepl_rdf/manip_1/s_manip_1', 'http://trepl_rdf/manip_1/p_manip_1', 'qq_manip_1', 'http://trepl_rdf/manip_1/t_manip_1', null);
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_1/', 'http://trepl_rdf/manip_1/s_manip_1', 'http://trepl_rdf/manip_1/p_manip_1', N'рус_manip_1', null, 'ru');
 
---sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+DB.DBA.RDF_QUAD_URI ('http://trepl_rdf/manip_9/', 'http://trepl_rdf/manip_9/s_manip_9', 'http://trepl_rdf/manip_9/p_manip_9', 'http://trepl_rdf/manip_1/o_manip_9');
+DB.DBA.RDF_QUAD_URI_L ('http://trepl_rdf/manip_9/', 'http://trepl_rdf/manip_9/s_manip_9', 'http://trepl_rdf/manip_9/p_manip_9', 'plain_manip_9');
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_9/', 'http://trepl_rdf/manip_9/s_manip_9', 'http://trepl_rdf/manip_9/p_manip_9', 'qq_manip_9', 'http://trepl_rdf/manip_9/t_manip_9', null);
+DB.DBA.RDF_QUAD_URI_L_TYPED ('http://trepl_rdf/manip_9/', 'http://trepl_rdf/manip_9/s_manip_9', 'http://trepl_rdf/manip_9/p_manip_9', N'рус_manip_9', null, 'ru');
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
+DB.DBA.TTLP ('@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_0> geo:lat 45 ; geo:long 135 .', 'http://trepl_rdf/geo_0/', 'http://trepl_rdf/geo_0/');
+DB.DBA.TTLP ('@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_1> geo:lat 45 ; geo:long 135 .', 'http://trepl_rdf/geo_1/', 'http://trepl_rdf/geo_1/');
+DB.DBA.TTLP ('@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> . <s_geo_9> geo:lat 45 ; geo:long 135 .', 'http://trepl_rdf/geo_9/', 'http://trepl_rdf/geo_9/');
+DB.DBA.RDF_GEO_FILL_SINGLE ();
 
-ECHO BOTH $IF $EQU $LAST[1] 76 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples on publisher after all inserts\n";
+sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") };
+
+ECHO BOTH $IF $EQU $LAST[1] 204 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 204 triples on publisher after all inserts\n";
 
 checkpoint;
 
@@ -140,34 +191,34 @@ ECHO BOTH "----- Reconnected to SUBSCRIBER " $U{ds2}", will sync and check what 
 commit work;
 
 DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
+
 status ('r');
 
---sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") };
 
-ECHO BOTH $IF $EQU $LAST[1] 76 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples on subscriber after all inserts\n";
-checkpoint;
+ECHO BOTH $IF $EQU $LAST[1] 92 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 92 triples on subscriber after all inserts\n";
 
 -- PUBLISHER
 set DSN=$U{ds1};
 reconnect;
 ECHO BOTH "----- Reconnected to PUBLISHER " $U{ds1}", will delete RDF data  by different methods\n";
 
-sparql clear graph <http://ttlp_1/> ;
+sparql clear graph <http://trepl_rdf/ttlp_1/> ;
 
-sparql base <http://sparul_1/> delete from <http://sparul_1/> {
-  <s_sparul_1> <p_sparul_1> <o_sparul_1> , "plain_sparul_1" , 100 , "qq_sparul_1"^^<dt_sparul_1> , "\u0440\u0443\u0441_sparul_1"@ru , ?bn .
+sparql base <http://trepl_rdf/sparul_1/> delete from <http://trepl_rdf/sparul_1/> {
+  <s_sparul_1> <p_sparul_1> <o_sparul_1> , "plain_sparul_1" , 101 , "qq_sparul_1"^^<dt_sparul_1> , "\u0440\u0443\u0441_sparul_1"@ru , ?bn .
   ?bn rdf:type <t_sparul_1> . }
-from <http://sparul_1/> where { ?bn rdf:type <t_sparul_1> . };
+from <http://trepl_rdf/sparul_1/> where { ?bn rdf:type <t_sparul_1> . };
 
---sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") };
 
-ECHO BOTH $IF $EQU $LAST[1] 62 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " triples on publisher after removals\n";
+ECHO BOTH $IF $EQU $LAST[1] 190 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " returned, expected: 190 triples on publisher after removals\n";
 
 checkpoint;
 
@@ -180,20 +231,22 @@ commit work;
 
 DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
 
---sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())) } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
+status('r');
 
-sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (?g != iri (sql:JSO_SYS_GRAPH ())  && !(str(?g) like 'http://%/DAV/%') && ?g != <http://www.w3.org/ns/ldp#> && !(str(?g) like 'http://%/sparql')) };
+sparql select ?g ?s ?p ?o where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") } order by asc (bif:replace(bif:concat(str(?g), ' ', str(?p), ' ', str(?o)), 'nodeID://', '_:rr'));
 
-ECHO BOTH $IF $EQU $LAST[1] 62 "PASSED" "***FAILED";
-ECHO BOTH ": " $LAST[1] " triples on subscriber after removals\n";
+sparql select (count(1)) where { graph ?g { ?s ?p ?o } . filter (str(?g) like "http://trepl_rdf/%") };
+
+ECHO BOTH $IF $EQU $LAST[1] 78 "PASSED" "***FAILED";
+ECHO BOTH ": " $LAST[1] " returned, expected: 78 triples on subscriber after removals\n";
 
 -- PUBLISHER
 set DSN=$U{ds1};
 reconnect;
 ECHO BOTH "----- Reconnected to PUBLISHER " $U{ds1}", will declare RDB2RDF and try all procedures and triggers\n";
 
-DB.DBA.RDF_REPL_GRAPH_INS ('http://sys');
-DB.DBA.RDF_REPL_GRAPH_INS ('http://sys/user?id=5');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/sys');
+DB.DBA.RDF_REPL_GRAPH_INS ('http://trepl_rdf/sys/user?id=5');
 
 create table ZYZ_USERS (
     U_ID 		integer,
@@ -239,7 +292,7 @@ insert soft ZYZ_ROLE_GRANTS select * from SYS_ROLE_GRANTS
 where (GI_SUB <= 6 or GI_SUB between 100 and 106)
   and (GI_SUPER <= 6 or GI_SUPER between 100 and 106);
 
-sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:TPCD using storage virtrdf:DefaultQuadStorage };
+--sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:TPCD using storage virtrdf:DefaultQuadStorage };
 
 create function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer)
 {
@@ -524,32 +577,31 @@ create function DB.DBA.RDF_DF_MN_NUM_INV_2 (in mn_num integer) returns integer
 
 grant execute on DB.DBA.RDF_DF_MN_NUM_INV_2 to SPARQL_SELECT;
 
-sparql drop quad map graph iri("http://sys");
+sparql drop quad map graph iri("http://trepl_rdf/sys");
 sparql drop quad map virtrdf:SysUsers;
 sparql create quad storage virtrdf:sys { };
 
 sparql drop quad storage virtrdf:sys;
 
---'
 DB.DBA.RDF_QM_END_ALTER_QUAD_STORAGE ( UNAME'http://www.openlinksw.com/schemas/virtrdf#sys' );
 
 sparql
 prefix oplsioc: <http://www.openlinksw.com/schemas/oplsioc#>
 prefix sioc: <http://rdfs.org/sioc/ns#>
-drop quad map graph iri("http://sys") .
-create iri class oplsioc:user_iri  "http://sys/user?id=%d" (in uid integer not null) .
-create iri class oplsioc:user_name_iri  "http://sys/user?name=%U" (in uname varchar not null) .
-create iri class oplsioc:grp_iri "http://sys/group?id=%d" (in gid integer not null) .
-create iri class oplsioc:grp_name_iri "http://sys/group?name=%U" (in gname varchar not null) .
-create iri class oplsioc:membership_iri "http://sys/membersip?super=%d&sub=%d" (in super integer not null, in sub integer not null) .
-create iri class oplsioc:membership_names_iri "http://sys/membersip?supername=%U&subname=%U" (in super varchar not null, in sub varchar not null) .
-create iri class oplsioc:dav_iri "http://sys/%s" (in path varchar) .
+drop quad map graph iri("http://trepl_rdf/sys") .
+create iri class oplsioc:user_iri  "http://trepl_rdf/sys/user?id=%d" (in uid integer not null) .
+create iri class oplsioc:user_name_iri  "http://trepl_rdf/sys/user?name=%U" (in uname varchar not null) .
+create iri class oplsioc:grp_iri "http://trepl_rdf/sys/group?id=%d" (in gid integer not null) .
+create iri class oplsioc:grp_name_iri "http://trepl_rdf/sys/group?name=%U" (in gname varchar not null) .
+create iri class oplsioc:membership_iri "http://trepl_rdf/sys/membersip?super=%d&sub=%d" (in super integer not null, in sub integer not null) .
+create iri class oplsioc:membership_names_iri "http://trepl_rdf/sys/membersip?supername=%U&subname=%U" (in super varchar not null, in sub varchar not null) .
+create iri class oplsioc:dav_iri "http://trepl_rdf/sys/%s" (in path varchar) .
 create iri class oplsioc:grantee_iri using
   function DB.DBA.RDF_DF_GRANTEE_ID_URI (in id integer) returns varchar ,
   function DB.DBA.RDF_DF_GRANTEE_ID_URI_INVERSE (in id_iri varchar) returns integer
   option ( bijection ,
-    returns	"http://sys/group?id=%d"
-    union	"http://sys/user?id=%d" ) .
+    returns	"http://trepl_rdf/sys/group?id=%d"
+    union	"http://trepl_rdf/sys/user?id=%d" ) .
 make oplsioc:user_iri subclass of oplsioc:grantee_iri .
 make oplsioc:grp_iri subclass of oplsioc:grantee_iri .
 create iri class oplsioc:mn_iri using
@@ -557,8 +609,8 @@ create iri class oplsioc:mn_iri using
   function DB.DBA.RDF_DF_MN_URI_INV_1 (in mn_iri varchar) returns integer ,
   function DB.DBA.RDF_DF_MN_URI_INV_2 (in mn_iri varchar) returns integer
   option ( bijection ,
-    returns	"http://sys/mn?group=%d&role=%d"
-    union	"http://sys/mn?user=%d&role=%d" ) .
+    returns	"http://trepl_rdf/sys/mn?group=%d&role=%d"
+    union	"http://trepl_rdf/sys/mn?user=%d&role=%d" ) .
 
 create literal class oplsioc:grantee_lit using
   function DB.DBA.RDF_DF_GRANTEE_ID_LIT (in id integer) returns varchar ,
@@ -618,7 +670,7 @@ from DB.DBA.ZYZ_ROLE_GRANTS as super_role_grant
             oplsioc:name user.U_FULL_NAME
                     as virtrdf:SysUsersFullName-p .
       } .
-    create virtrdf:SysUsers as graph iri ("http://sys") option (exclusive)
+    create virtrdf:SysUsers as graph iri ("http://trepl_rdf/sys") option (exclusive)
       {
         oplsioc:user_iri (active_user.U_ID)
             a oplsioc:active-user
@@ -682,7 +734,7 @@ from DB.DBA.ZYZ_ROLE_GRANTS as super_role_grant
       } }
 ;
 
-sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:TPCD using storage virtrdf:DefaultQuadStorage };
+--sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:TPCD using storage virtrdf:DefaultQuadStorage };
 sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:SysUsers using storage virtrdf:sys };
 sparql alter quad storage virtrdf:SyncToQuads { create virtrdf:SysUsers-p using storage virtrdf:sys };
 
@@ -695,13 +747,13 @@ create procedure codegen_for_table (in tbl varchar)
   for (ctr := 0; ctr <= 4; ctr := ctr+1 )
     {
       outs[ctr] := sparql_rdb2rdf_codegen (tbl, ctr);
---      if (__tag of vector = __tag (outs[ctr]))
---        {
---          string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%d.sql', tbl, ctr), string_output_string (outs[ctr][0]) || '\n;\n', -2);
---          string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%dp.sql', tbl, ctr), string_output_string (outs[ctr][1]) || '\n;\n', -2);
---        }
---      else
---        string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%d.sql', tbl, ctr), string_output_string (outs[ctr]) || '\n;\n', -2);
+      if (__tag of vector = __tag (outs[ctr]))
+        {
+           string_to_file (sprintf ('Rdb2Rdf.%s.%d.sql', tbl, ctr), string_output_string (outs[ctr][0]) || '\n;\n', -2);
+           string_to_file (sprintf ('Rdb2Rdf.%s.%dp.sql', tbl, ctr), string_output_string (outs[ctr][1]) || '\n;\n', -2);
+        }
+      else
+        string_to_file (sprintf ('Rdb2Rdf.%s.%d.sql', tbl, ctr), string_output_string (outs[ctr]) || '\n;\n', -2);
     }
   for (ctr := 1; ctr <= 4; ctr := ctr+1 )
     {
@@ -712,13 +764,13 @@ create procedure codegen_for_table (in tbl varchar)
           exec (string_output_string (outs[ctr][0]), stat, msg);
           if ('00000' <> stat)
             signal (stat, sprintf ('codegen_for_table, ctr %d, 1/2', ctr) || msg);
---            string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%d.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
+          string_to_file (sprintf ('Rdb2Rdf.%s.%d.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
           stat := '00000';
           msg := '';
           exec (string_output_string (outs[ctr][1]), stat, msg);
           if ('00000' <> stat)
             signal (stat, sprintf ('codegen_for_table, ctr %d, 2/2', ctr) || msg);
---            string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%dp.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
+          string_to_file (sprintf ('Rdb2Rdf.%s.%dp.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
         }
       else
         {
@@ -727,7 +779,7 @@ create procedure codegen_for_table (in tbl varchar)
           exec (string_output_string (outs[ctr]), stat, msg);
           if ('00000' <> stat)
             signal (stat, sprintf ('codegen_for_table, ctr %d, 1/1', ctr) || msg);
---            string_to_file (sprintf ('outputs/Rdb2Rdf.%s.%d.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
+          string_to_file (sprintf ('Rdb2Rdf.%s.%d.sql', tbl, ctr), '\n-----8<----- ' || stat || ' ' || msg, -1);
         }
     }
 }
@@ -736,13 +788,13 @@ create procedure codegen_for_table (in tbl varchar)
 codegen_for_table ('DB.DBA.ZYZ_USERS');
 codegen_for_table ('DB.DBA.ZYZ_ROLE_GRANTS');
 
-sparql clear graph <http://sys>;
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys', null, 'Rdb2Rdf.sql');
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=5', null, 'Rdb2Rdf.sql');
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=1001', null, 'Rdb2Rdf.sql');
-DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://sys/user?id=1002', null, 'Rdb2Rdf.sql');
-DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_USERS" (1);
-DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_ROLE_GRANTS" (1);
+sparql clear graph <http://trepl_rdf/sys>;
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://trepl_rdf/sys', null, 'Rdb2Rdf.sql');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://trepl_rdf/sys/user?id=5', null, 'Rdb2Rdf.sql');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://trepl_rdf/sys/user?id=1001', null, 'Rdb2Rdf.sql');
+DB.DBA.RDF_OBJ_FT_RULE_ADD ('http://trepl_rdf/sys/user?id=1002', null, 'Rdb2Rdf.sql');
+DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_USERS" (3);
+DB.DBA."RDB2RDF_FILL__DB~DBA~ZYZ_ROLE_GRANTS" (3);
 
 
 insert into ZYZ_USERS (U_ID, U_NAME) values (1001, 'u1001');
@@ -751,25 +803,25 @@ insert into ZYZ_USERS (U_ID, U_NAME) values (1003, 'u1003');
 insert into ZYZ_USERS (U_ID, U_NAME) values (1011, 'u1011');
 insert into ZYZ_USERS (U_ID, U_NAME) values (1012, 'u1012');
 insert into ZYZ_USERS (U_ID, U_NAME) values (1013, 'u1013');
-sparql describe <http://sys/user?id=1001>;
+sparql describe <http://trepl_rdf/sys/user?id=1001>;
 DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ();
-sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administrator" } ;
-sparql describe ?s from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administrator" };
-sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "nobody" } ;
-sparql describe ?s from <http://sys/user?id=5> where { ?s ?p ?o . ?o bif:contains "nobody" };
---update ZYZ_USERS set U_FULL_NAME = replace (U_FULL_NAME, 'Administrator', 'Adm') where U_FULL_NAME like '%Administrator%';
+sparql select * from <http://trepl_rdf/sys> where { ?s ?p ?o . ?o bif:contains "Administrator" } ;
+sparql describe ?s from <http://trepl_rdf/sys> where { ?s ?p ?o . ?o bif:contains "Administrator" };
+sparql select * from <http://trepl_rdf/sys> where { ?s ?p ?o . ?o bif:contains "nobody" } ;
+sparql describe ?s from <http://trepl_rdf/sys/user?id=5> where { ?s ?p ?o . ?o bif:contains "nobody" };
+update ZYZ_USERS set U_FULL_NAME = replace (U_FULL_NAME, 'Administrator', 'Adm') where U_FULL_NAME like '%Administrator%';
 DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ();
-sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Administrator" } ;
-sparql select * from <http://sys> where { ?s ?p ?o . ?o bif:contains "Adm" } ;
+sparql select * from <http://trepl_rdf/sys> where { ?s ?p ?o . ?o bif:contains "Administrator" } ;
+sparql select * from <http://trepl_rdf/sys> where { ?s ?p ?o . ?o bif:contains "Adm" } ;
 
---update ZYZ_USERS set U_E_MAIL='u1001@qq' where U_ID=1001;
---update ZYZ_USERS set U_E_MAIL='u1002@qq' where U_ID=1002;
---update ZYZ_USERS set U_E_MAIL='u1011@qq' where U_ID=1011;
---update ZYZ_USERS set U_E_MAIL='u1012@qq' where U_ID=1012;
---update ZYZ_USERS set U_NAME='u1003_new' where U_ID=1003;
---update ZYZ_USERS set U_NAME='u1013_new' where U_ID=1013;
---delete from ZYZ_USERS where U_ID=1002;
---delete from ZYZ_USERS where U_ID=1012;
+update ZYZ_USERS set U_E_MAIL='u1001@qq' where U_ID=1001;
+update ZYZ_USERS set U_E_MAIL='u1002@qq' where U_ID=1002;
+update ZYZ_USERS set U_E_MAIL='u1011@qq' where U_ID=1011;
+update ZYZ_USERS set U_E_MAIL='u1012@qq' where U_ID=1012;
+update ZYZ_USERS set U_NAME='u1003_new' where U_ID=1003;
+update ZYZ_USERS set U_NAME='u1013_new' where U_ID=1013;
+delete from ZYZ_USERS where U_ID=1002;
+delete from ZYZ_USERS where U_ID=1012;
 
 select top 5 __ro2sq("mapg"), __ro2sq("maps"), __ro2sq("mapp"), __ro2sq("mapo")
 from (sparql define output:valmode "LONG" define input:storage virtrdf:sys select * where { graph ?mapg { ?maps ?mapp ?mapo }}) as map
@@ -777,59 +829,71 @@ where not exists (sparql select (1) where { graph ?:mapg { ?:maps ?:mapp ?:mapo 
 ;
 
 select top 5 __ro2sq("phys"), __ro2sq("phyp"), __ro2sq("phyo")
-from (sparql define output:valmode "LONG" select * from <http://sys> where { ?phys ?phyp ?phyo }) as phy
-where not exists (sparql define input:storage virtrdf:sys select (1) from <http://sys> where { ?:phys ?:phyp ?:phyo })
+from (sparql define output:valmode "LONG" select * from <http://trepl_rdf/sys> where { ?phys ?phyp ?phyo }) as phy
+where not exists (sparql define input:storage virtrdf:sys select (1) from <http://trepl_rdf/sys> where { ?:phys ?:phyp ?:phyo })
 ;
 
 select top 5 __ro2sq("phys"), __ro2sq("phyp"), __ro2sq("phyo")
-from (sparql define output:valmode "LONG" select * from <http://sys/user?id=5> where { ?phys ?phyp ?phyo }) as phy
-where not exists (sparql define input:storage virtrdf:sys select (1) from <http://sys/user?id=5> where { ?:phys ?:phyp ?:phyo })
+from (sparql define output:valmode "LONG" select * from <http://trepl_rdf/sys/user?id=5> where { ?phys ?phyp ?phyo }) as phy
+where not exists (sparql define input:storage virtrdf:sys select (1) from <http://trepl_rdf/sys/user?id=5> where { ?:phys ?:phyp ?:phyo })
 ;
 
 select top 5 __ro2sq("phys"), __ro2sq("phyp"), __ro2sq("phyo")
-from (sparql define output:valmode "LONG" select * from <http://sys> where { ?phys ?phyp ?phyo }) as phy
-where not exists (sparql define input:storage virtrdf:sys select (1) from <http://sys> where { ?ms ?mp ?mo . filter (str(?ms) = str(?:phys) && str(?mp) = str(?:phyp) && str(?mo) = str(?:phyo)) })
+from (sparql define output:valmode "LONG" select * from <http://trepl_rdf/sys> where { ?phys ?phyp ?phyo }) as phy
+where not exists (sparql define input:storage virtrdf:sys select (1) from <http://trepl_rdf/sys> where { ?ms ?mp ?mo . filter (str(?ms) = str(?:phys) && str(?mp) = str(?:phyp) && str(?mo) = str(?:phyo)) })
 ;
 
 select top 5 __ro2sq("phys"), __ro2sq("phyp"), __ro2sq("phyo")
-from (sparql define output:valmode "LONG" select * from <http://sys/user?id=5> where { ?phys ?phyp ?phyo }) as phy
-where not exists (sparql define input:storage virtrdf:sys select (1) from <http://sys/user?id=5> where { ?ms ?mp ?mo . filter (str(?ms) = str(?:phys) && str(?mp) = str(?:phyp) && str(?mo) = str(?:phyo)) })
+from (sparql define output:valmode "LONG" select * from <http://trepl_rdf/sys/user?id=5> where { ?phys ?phyp ?phyo }) as phy
+where not exists (sparql define input:storage virtrdf:sys select (1) from <http://trepl_rdf/sys/user?id=5> where { ?ms ?mp ?mo . filter (str(?ms) = str(?:phys) && str(?mp) = str(?:phyp) && str(?mo) = str(?:phyo)) })
 ;
 
-sparql clear graph <http://sys_copy>;
-sparql define input:storage virtrdf:sys insert in <http://sys_copy> { ?maps ?mapp ?mapo } where { ?maps ?mapp ?mapo }
+sparql clear graph <http://trepl_rdf/sys_copy>;
+sparql define input:storage virtrdf:sys insert in <http://trepl_rdf/sys_copy> { ?maps ?mapp ?mapo } where { ?maps ?mapp ?mapo }
 ;
 
-sparql select ?s ?p ?o where { graph <http://sys> { ?s ?p ?o } optional { graph <http://sys_copy> { ?s2 ?p ?o . filter (?s2 = ?s0) } } . filter (!bound(?s2)) };
-sparql select ?s ?p ?o where { graph <http://sys_copy> { ?s ?p ?o } optional { graph <http://sys> { ?s2 ?p ?o . filter (?s2 = ?s0) } } . filter (!bound(?s2)) };
+sparql select ?s ?p ?o where { graph <http://trepl_rdf/sys> { ?s ?p ?o } optional { graph <http://trepl_rdf/sys_copy> { ?s2 ?p ?o . filter (?s2 = ?s0) } } . filter (!bound(?s2)) };
+sparql select ?s ?p ?o where { graph <http://trepl_rdf/sys_copy> { ?s ?p ?o } optional { graph <http://trepl_rdf/sys> { ?s2 ?p ?o . filter (?s2 = ?s0) } } . filter (!bound(?s2)) };
 
-sparql select (count(1)) from <http://sys> where { ?s ?p ?o };
+sparql select (count(1)) from <http://trepl_rdf/sys> where { ?s ?p ?o };
 
-ECHO BOTH $IF $EQU $LAST[1] 169 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples in http://sys on publisher after all rdb2rdf operations\n";
+ECHO BOTH $IF $EQU $LAST[1] 157 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 157 triples in http://trepl_rdf/sys on publisher after all rdb2rdf operations\n";
 
-sparql select (count(1)) from <http://sys/user?id=5> where { ?s ?p ?o };
+sparql select (count(1)) from <http://trepl_rdf/sys/user?id=5> where { ?s ?p ?o };
 
 ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples in http://sys/user?id=5 on publisher after all all rdb2rdf operations\n";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 4 triples in default http://trepl_rdf/sys/user?id=5 on publisher after all rdb2rdf operations\n";
+
+sparql select (count(1)) where { graph <http://trepl_rdf/sys/user?id=5> { ?s ?p ?o }};
+
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 4 triples in named http://trepl_rdf/sys/user?id=5 on publisher after all rdb2rdf operations\n";
 
 checkpoint;
 
 -- SUBSCRIBER
 set DSN=$U{ds2};
 reconnect;
-ECHO BOTH "----- Reconnected to SUBSCRIBER " $U{ds2}", will sync chd check what hsa been made by replication inside RDB2RDF triggers\n";
+ECHO BOTH "----- Reconnected to SUBSCRIBER " $U{ds2}", will sync and check what has been made by replication inside RDB2RDF triggers\n";
 
 commit work;
 
 DB.DBA.RDF_REPL_SYNC ('trepl_rdf_1', 'dba', 'dba');
 
-sparql select (count(1)) from <http://sys> where { ?s ?p ?o };
+status('r');
 
-ECHO BOTH $IF $EQU $LAST[1] 169 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples in http://sys on subscriber after all rdb2rdf operations\n";
+sparql select (count(1)) from <http://trepl_rdf/sys> where { ?s ?p ?o };
 
-sparql select (count(1)) from <http://sys/user?id=5> where { ?s ?p ?o };
+ECHO BOTH $IF $EQU $LAST[1] 175 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 175 triples in http://trepl_rdf/sys on subscriber after all rdb2rdf operations\n";
+
+sparql select (count(1)) from <http://trepl_rdf/sys/user?id=5> where { ?s ?p ?o };
 
 ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
-ECHO BOTH ": "  $LAST[1] " triples in http://sys/user?id=5 on subscriber after all all rdb2rdf operations\n";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 4 triples in default http://trepl_rdf/sys/user?id=5 on subscriber after all rdb2rdf operations\n";
+
+sparql select (count(1)) where { graph <http://trepl_rdf/sys/user?id=5> { ?s ?p ?o }};
+
+ECHO BOTH $IF $EQU $LAST[1] 4 "PASSED" "***FAILED";
+ECHO BOTH ": "  $LAST[1] " returned, expected: 4 triples in named http://trepl_rdf/sys/user?id=5 on subscriber after all rdb2rdf operations\n";

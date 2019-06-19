@@ -19,11 +19,15 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
-create procedure INSERT_RESOURCE (in _stmt varchar, in _name varchar, in _root varchar, in _sty varchar, in _refresh integer)
+
+create procedure INSERT_RESOURCE (
+  in _stmt varchar,
+  in _name varchar,
+  in _root varchar,
+  in _sty varchar,
+  in _refresh integer)
 {
-  declare _col_id, _r_id integer;
-  declare ses any;
+  declare _ses any;
   declare _res varchar;
 
   _name := concat (_name, '.xml');
@@ -33,15 +37,16 @@ create procedure INSERT_RESOURCE (in _stmt varchar, in _name varchar, in _root v
 
   if (_refresh = -1)
     {
-      ses := '';
+      _ses := '';
     }
   else
     {
-      ses := string_output ();
-      xml_auto (_stmt, vector(), ses);
-      ses := string_output_string ();
+      _ses := string_output ();
+      xml_auto (_stmt, vector(), _ses);
+      _ses := string_output_string ();
       if (_root <> '')
-        ses := concat ('<', _root, '>\n', ses, '</', _root, '>\n');
+        _ses := concat ('<', _root, '>\n', _ses, '</', _root, '>\n');
+
       if (_refresh > 0)
         insert replacing DB.DBA.SYS_SCHEDULED_EVENT (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
              values (_res, now (), sprintf ('WS.WS.XML_AUTO_SCHED (''%s'')', _res), _refresh);
@@ -49,118 +54,83 @@ create procedure INSERT_RESOURCE (in _stmt varchar, in _name varchar, in _root v
         delete from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = _res;
     }
 
-  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res;
-  WS.WS.FINDCOL (vector ('DAV', 'xmlsql'), _col_id);
-  _r_id := WS.WS.GETID ('R');
-        insert into WS.WS.SYS_DAV_RES
-                    (RES_ID,
-                     RES_NAME,
-                     RES_COL,
-                     RES_TYPE,
-                     RES_CONTENT,
-                     RES_CR_TIME,
-                     RES_MOD_TIME,
-                     RES_OWNER,
-                     RES_GROUP,
-                     RES_PERMS)
-               values (_r_id,
-                       _name,
-                       _col_id,
-                       'text/xml',
-                       ses,
-                       now (),
-                       now (),
-                       http_dav_uid(),
-                       http_dav_uid()+1,
-                       '110100100N');
+  DB.DBA.DAV_DELETE_INT (_res, 1, null, null, 1);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_res, _ses, 'text/xml', '110100100N', http_dav_uid (), http_dav_uid () + 1, null, null, 0);
+
         if (_sty <> '' and exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sty))
-          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-               values (WS.WS.GETID ('P'), 'xml-stylesheet', 'R', _r_id,
-                   concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _sty));
+    DB.DBA.DAV_PROP_SET_INT (_res, 'xml-stylesheet', 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _sty, null, null, 0, 0, 1, http_dav_uid ());
+
         if (_stmt <> '')
-          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-              values (WS.WS.GETID ('P'), 'xml-sql', 'R', _r_id, _stmt);
+    DB.DBA.DAV_PROP_SET_INT (_res, 'xml-sql', _stmt, null, null, 0, 0, 1, http_dav_uid ());
+
         if (_root <> '')
-          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-               values (WS.WS.GETID ('P'), 'xml-sql-root', 'R', _r_id, _root);
+    DB.DBA.DAV_PROP_SET_INT (_res, 'xml-sql-root', _root, null, null, 0, 0, 1, http_dav_uid ());
 }
 ;
-create procedure INSERT_XSLT_REF (in _name varchar, in _sty varchar)
+
+create procedure INSERT_XSLT_REF (
+  in _name varchar,
+  in _sty varchar)
 {
-  declare _col_id, _r_id integer;
   declare _res varchar;
+  declare _ses any;
 
   _name := concat (_name, '.xml');
   _res := concat ('/DAV/docsrc/', _name);
   _sty := coalesce (_sty, '');
+  _ses := (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/docsrc/virtdocs.xml');
 
-  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res;
-  WS.WS.FINDCOL (vector ('DAV', 'docsrc'), _col_id);
-  _r_id := WS.WS.GETID ('R');
-        insert into WS.WS.SYS_DAV_RES
-                    (RES_ID,
-                     RES_NAME,
-                     RES_COL,
-                     RES_TYPE,
-                     RES_CONTENT,
-                     RES_CR_TIME,
-                     RES_MOD_TIME,
-                     RES_OWNER,
-                     RES_GROUP,
-                     RES_PERMS)
+  DB.DBA.DAV_DELETE_INT (_res, 1, null, null, 1);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_res, _ses, 'text/xml', '110100100N', http_dav_uid (), http_dav_uid () + 1, null, null, 0);
 
-               values (_r_id,
-                       _name,
-                       _col_id,
-                       'text/xml',
-                       (select RES_CONTENT from WS.WS.SYS_DAV_RES where RES_FULL_PATH = '/DAV/docsrc/virtdocs.xml'),
-                       now (),
-                       now (),
-                       http_dav_uid(),
-                       http_dav_uid() + 1,
-                       '110100100N');
         if (_sty <> '' and exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _sty))
-          insert replacing WS.WS.SYS_DAV_PROP (PROP_ID, PROP_NAME, PROP_TYPE, PROP_PARENT_ID, PROP_VALUE)
-               values (WS.WS.GETID ('P'), 'xml-stylesheet', 'R', _r_id,
-                   concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', _sty));
+    DB.DBA.DAV_PROP_SET_INT (_res, 'xml-stylesheet', 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || _sty, null, null, 0, 0, 1, http_dav_uid ());
 }
 ;
 
-create procedure PUTFILE (in _file varchar, in _name varchar)
+create procedure PUTFILE (
+  in _file varchar,
+  in _name varchar)
 {
-  declare _col_id, _r_id integer;
   declare _res varchar;
+  declare _ses any;
+
   _res := concat ('/DAV/xmlsql/', _name);
-  delete from WS.WS.SYS_DAV_RES where RES_FULL_PATH = _res;
-  WS.WS.FINDCOL (vector ('DAV', 'xmlsql'), _col_id);
-  _r_id := WS.WS.GETID ('R');
-        insert into WS.WS.SYS_DAV_RES
-                    (RES_ID,
-                     RES_NAME,
-                     RES_COL,
-                     RES_TYPE,
-                     RES_CONTENT,
-                     RES_CR_TIME,
-                     RES_MOD_TIME,
-                     RES_OWNER,
-                     RES_GROUP,
-                     RES_PERMS)
-               values (_r_id,
-                       _name,
-                       _col_id,
-                       'text/xsl',
-                       file_to_string (_file),
-                       now (),
-                       now (),
-                       http_dav_uid(),
-                       http_dav_uid()+1,
-                       '110100100N');
+  _ses := file_to_string (_file);
+
+  DB.DBA.DAV_DELETE_INT (_res, 1, null, null, 1);
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT (_res, _ses, 'text/xsl', '110100100N', http_dav_uid (), http_dav_uid () + 1, null, null, 0);
 }
 ;
 
+create procedure DELETE_FOLDER (
+  in _res varchar)
+{
+  declare N integer;
+  declare _ret any;
 
-delete from WS.WS.SYS_DAV_COL where COL_NAME = 'xmlsql';
-insert into WS.WS.SYS_DAV_COL (COL_ID, COL_NAME, COL_PARENT, COL_CR_TIME, COL_MOD_TIME, COL_OWNER, COL_GROUP, COL_PERMS) values (WS.WS.GETID ('C'), 'xmlsql', 1, now(), now(),http_dav_uid(),http_dav_uid()+1, '110100100N');
+  _ret := DB.DBA.DAV_DIR_LIST (_res, 0, auth_uname=>'dav', auth_pwd=>DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()));
+  if (not isnull (DB.DBA.DAV_HIDE_ERROR (_ret)))
+  {
+    for (N := 0; N < length (_ret); N := N + 1)
+    {
+      if (_ret[N][1] = 'R')
+      {
+        DB.DBA.DAV_DELETE_INT (_ret[N][0], 1, null, null, 0, 0);
+        commit work;
+      }
+      else
+      {
+        DELETE_FOLDER (_ret[N][0]);
+      }
+    }
+  }
+  DB.DBA.DAV_DELETE_INT (_res, 1, null, null, 0, 0);
+}
+;
+
+DELETE_FOLDER ('/DAV/xmlsql/');
+DB.DBA.DAV_COL_CREATE ('/DAV/xmlsql/', '110100100N', auth_uid=>'dav', auth_pwd=>DB.DBA.DAV_DET_PASSWORD (http_dav_uid ()));
 
 INSERT_RESOURCE ('SELECT CustomerID,ContactName FROM Demo.demo.Customers FOR XML RAW', 'URLSimpleQuery', NULL, NULL, -1);
 --select xml_uri_get ('http://localhost:6666/DAV/xmlsql', 'URLSimpleQuery.xml');
@@ -188,7 +158,8 @@ create procedure CATEGORY_INFO ()
   result_names (CategoryName);
   for select CategoryName from Demo..Categories do
     result (CategoryName);
-};
+}
+;
 
 --- NOT SUPPORTED : INSERT_RESOURCE ('CATEGORY_INFO() FOR XML AUTO', 'URLProc', NULL, NULL, -1);
 

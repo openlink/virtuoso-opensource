@@ -19,30 +19,31 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
---
 
 create procedure xml_text_load (in f varchar)
 {
+  declare str any;
+
+  str := DB.DBA.get_blob_from_dav (concat('/DAV/', f));
   if (exists (select 1 from XML_TEXT where XT_FILE = f))
-    update XML_TEXT set XT_TEXT = DB.DBA.get_blob_from_dav (concat('/DAV/' , f)) where XT_FILE = f;
+    update XML_TEXT set XT_TEXT = str where XT_FILE = f;
   else
     insert into XML_TEXT (XT_ID, XT_FILE, XT_TEXT)
-      values (sequence_next ('XML_TEXT'), f, DB.DBA.get_blob_from_dav (concat('/DAV/' , f)));
+      values (sequence_next ('XML_TEXT'), f, str);
 }
 ;
 
 create procedure xml_text_load_r (in f varchar)
 {
   declare str any;
-  declare ni int;
+
   str := file_to_string (f);
   if (exists (select 1 from XML_TEXT where XT_FILE = f))
-    update XML_TEXT set XT_TEXT = file_to_string (f) where XT_FILE = f;
+    update XML_TEXT set XT_TEXT = str where XT_FILE = f;
   else
     {
-      ni := coalesce ((select xt_id + 1 from xml_text order by xt_id desc), 1);
       insert into XML_TEXT (XT_ID, XT_FILE, XT_TEXT)
-        values (ni, f, str);
+        values (sequence_next ('XML_TEXT'), f, str);
     }
 }
 ;
