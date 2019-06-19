@@ -824,7 +824,7 @@ http_cli_set_proxy (http_cli_ctx * ctx, caddr_t target)
 }
 
 HC_RET
-http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
+http_cli_set_ua_id (http_cli_ctx * ctx, ccaddr_t ua_id)
 {
   if (ctx)
     {
@@ -1051,7 +1051,7 @@ http_cli_set_method (http_cli_ctx * ctx, int method)
   return (HC_RET_OK);
 }
 
-char*
+const char*
 http_cli_get_method_string (http_cli_ctx * ctx)
 {
   return (http_get_method_string (ctx->hcctx_method));
@@ -2429,14 +2429,14 @@ All arguments except the URL can be db NULLs in bif call, NULL pointers in _impl
 */
 
 caddr_t
-bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
+bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char * me,
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
     int follow_redirects)
 {
   http_cli_ctx * ctx;
-  char* ua_id = http_client_id_string;
+  const char* ua_id = http_client_id_string;
   caddr_t ret = NULL;
   caddr_t _err_ret;
   int meth = HC_METHOD_GET;

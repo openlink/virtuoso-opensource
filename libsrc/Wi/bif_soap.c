@@ -299,7 +299,7 @@ static caddr_t
 ws_uddi_error (dk_session_t * ses, char *state, char *message, int soap_version)
 {
   char tmp[4096];
-  char * uddi_error = NULL, * uddi_code = uddi_errors[0];
+  const char * uddi_error = NULL, * uddi_code = uddi_errors[0];
   int ix = 0;
   caddr_t uddi_operator = NULL;
   strses_flush (ses);
@@ -493,7 +493,7 @@ ws_soap12_error (dk_session_t *ses, char *code, char *state, char *message, int 
   int len = code ? (int) strlen (code) : 0;
   int mcode = (len > 0 ? code[0] : '3') - '0';
   int scode = (len > 1 ? code[1] : '0') - '0';
-  char * code1 = soap12_errors[mcode], *code2 = soap12_sub_errors[scode];
+  const char * code1 = soap12_errors[mcode], *code2 = soap12_sub_errors[scode];
 
   if (http_resp_code)
     {
@@ -761,7 +761,7 @@ xml_find_child (caddr_t *entity, const char *szSearchName, const char *szURI, in
 caddr_t *
 xml_find_one_child (caddr_t *entity, char *szSearchName, char **szURIs, int nth, int *start_inx)
 {
-  char **urls = szURIs;
+  const char **urls = szURIs;
   caddr_t * rc = NULL;
   for (; urls[0]; urls++)
     {
@@ -2895,7 +2895,7 @@ soap12_custom_error (dk_session_t * ses, client_connection_t * cli, soap_ctx_t *
   int len = code ? (int) strlen (code) : 0;
   int mcode = (len > 0 ? code[0] : '3') - '0';
   int scode = (len > 1 ? code[1] : '0') - '0';
-  char * code1 = soap12_errors[0], *code2 = soap12_sub_errors[0];
+  const char * code1 = soap12_errors[0], *code2 = soap12_sub_errors[0];
 
   if (mcode >= 0 && mcode < (sizeof (soap12_errors) / sizeof (char*)))
     code1 = soap12_errors[mcode];
@@ -4333,7 +4333,7 @@ bif_soap_call (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef _SSL
   SSL * ssl = NULL;
   SSL_CTX* ssl_ctx = NULL;
-  SSL_METHOD *ssl_meth = NULL;
+  const SSL_METHOD *ssl_meth = NULL;
 #endif
   soap_ctx_t ctx;
   query_instance_t *qi = (query_instance_t *) qst;
@@ -10209,7 +10209,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
    caddr_t type_name;
    caddr_t *e_ptr;
    caddr_t *schema_tree = NULL, new_box = NULL;
-   dtp_t proposed_type;
+   dtp_t proposed_type = '\0';
    char temp[1024];
    int is_in_schema;
    sql_class_t *check_udt = check_sqt ? check_sqt->sqt_class : NULL;
@@ -11412,7 +11412,7 @@ ws_soap_http (ws_connection_t * ws)
       qrs = get_granted_qrs (cli, NULL, NULL, 0);
       if (!(qr = proc_find_in_grants (szMethod, &qrs, NULL)))
 	{
-	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure: %.500s", (szFullProcName ? szFullProcName : "(null)"));
+	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure: %.500s", szFullProcName);
 	  goto end;
 	}
     }
