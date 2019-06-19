@@ -663,6 +663,8 @@ http_cli_ssl_cert (http_cli_ctx * ctx, caddr_t val)
     return (HC_RET_ERR_ABORT);
 
   ctx->hcctx_pkcs12_file = val;
+  if (NULL != val && 1 == strlen (val) && 1 == atoi (val))
+    ctx->hcctx_ssl_insecure = '\1';
   return (HC_RET_OK);
 }
 
