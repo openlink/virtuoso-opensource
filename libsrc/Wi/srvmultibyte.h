@@ -30,8 +30,7 @@
 
 void row_print_wide (caddr_t thing, dk_session_t * ses, dbe_column_t * col,
     caddr_t * err_ret, dtp_t dtp, wcharset_t *wcharset);
-dk_set_t bh_string_list_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh,
-    long get_chars, int omit); /* if omit!=0, it just run through blob part */
+dk_set_t bh_string_list_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh, long get_chars, int omit); /* if omit!=0, it just run through blob part */
 dk_session_t *bh_string_output_w (/* this was before 3.0: index_space_t * isp, */ lock_trx_t * lt, blob_handle_t * bh, int omit); /* if omit!=0, it just run through blob part */
 int compare_wide_to_utf8 (caddr_t utf8_data, long utf8_len, caddr_t wide_data, long wide_len, collation_t *collation);
 int compare_utf8_with_collation (caddr_t dv1, long n1, caddr_t dv2, long n2, collation_t *collation);

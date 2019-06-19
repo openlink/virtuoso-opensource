@@ -593,6 +593,10 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
 	if (filled >= PAGE_DATA_SZ)
 	  {
 	    size_t old_n_pages = BL_N_PAGES(ctx_bh->bh_length); /* number of new pages is old_n_pages + 1 */
+#ifndef NDEBUG
+            if (filled > PAGE_DATA_SZ)
+              GPF_T1("Page buffer overflow in xper_blob_append_data()");
+#endif
 	    buf = it_new_page (ctx->xpc_itc->itc_tree, ctx->xpc_itc->itc_page,
 		DPF_BLOB, 0, 0);
 #ifdef DEBUG
@@ -604,8 +608,8 @@ xper_blob_append_data (xper_ctx_t * ctx, const char *data, size_t len)
 	    if (!buf)
 	      {
 		xper_destroy_ctx (ctx);
-		log_error ("Out of disk space for database");
-		sqlr_new_error ("XE000", "XP9A7", "Out of disk space for database while parsing XML");
+		log_error ("Out of disk space for database while storing persistent XML");
+		sqlr_new_error ("XE000", "XP9A7", "Out of disk space for database while storing persistent XML");
 		return;
 	      }
 	    LONG_SET/*_NA*/ (ctx->xpc_buf->bd_buffer + DP_BLOB_LEN, PAGE_DATA_SZ);

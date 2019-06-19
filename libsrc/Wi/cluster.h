@@ -1553,8 +1553,8 @@ caddr_t  cl_msg_string (int64 bytes);
 int cm_read_in_string (cl_message_t * cm);
 int cl_trx_check (int64 trx_no, int retry, int ask_host);
 void cls_blob_send (cl_thread_t * clt, cl_message_t * cm);
-int  cl_get_blob (lock_trx_t * lt, blob_handle_t * bh, int64 n, int64 skip, dk_session_t ** ses_ret);
-dk_set_t  cl_bh_string_list (lock_trx_t * lt, blob_handle_t * bh, int64 n, int64 skip);
+int  cl_get_blob (lock_trx_t * lt, blob_handle_t * bh, int64 get_bytes, int64 skip, dk_session_t ** ses_ret);
+dk_set_t  cl_bh_string_list (lock_trx_t * lt, blob_handle_t * bh, int64 get_bytes, int64 skip);
 void  cls_timeouts (int flags);
 #define CL_TIMEOUT_ALL 1 /* cls_timeouts will mark all as timed out to recover from arbitrary hang */
 void cu_dispatch (cucurbit_t * cu, value_state_t * vs, cu_func_t * cf, caddr_t val);

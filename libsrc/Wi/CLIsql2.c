@@ -4714,8 +4714,9 @@ stmt_bhid_place (cli_stmt_t * stmt, long bhid)
 	  stmt && stmt->stmt_compilation && stmt->stmt_compilation->sc_columns
 	  && BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >=
 	  ((uint32) BHID_COL (bhid))
-	  && BHID_COL (bhid) >
-	  0 ? ((dtp_t) ((col_desc_t *) stmt->stmt_compilation->sc_columns[BHID_COL (bhid) - 1])->cd_dtp) : DV_LONG_STRING;
+	  && ((BHID_COL (bhid) > 0) ?
+            ((dtp_t) ((col_desc_t *) stmt->stmt_compilation->sc_columns[BHID_COL (bhid) - 1])->cd_dtp) :
+            DV_LONG_STRING );
 
       stmt->stmt_next_putdata_translate_char_bin = (c_type == SQL_C_CHAR && col_dtp == DV_BLOB_BIN);
 #endif
@@ -5332,11 +5333,9 @@ virtodbc__SQLGetData (
   caddr_t *val;
   caddr_t *row;
   caddr_t col;
-#ifdef SAFE_SQLGETDATA
   unsigned char *rgbValue_end;
-#endif
+  int data_are_binary = 0;
 #ifndef MAP_DIRECT_BIN_CHAR
-  col_desc_t *col_desc = NULL;
   int is_blob_to_char = 0;
 #endif
   int rlen;
@@ -5368,16 +5367,15 @@ virtodbc__SQLGetData (
 
   col = row[icol];
 
-#ifndef MAP_DIRECT_BIN_CHAR
   if (stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select && BOX_ELEMENTS (stmt->stmt_compilation->sc_columns) >= icol)
     {
-      col_desc = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol - 1];
-      is_blob_to_char = (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR) && col_desc->cd_dtp == DV_BLOB_BIN;
-    }
+      col_desc_t *col_desc = (col_desc_t *) stmt->stmt_compilation->sc_columns[icol - 1];
+      data_are_binary = (col_desc->cd_dtp == DV_BLOB_BIN);
+#ifndef MAP_DIRECT_BIN_CHAR
+      is_blob_to_char = data_are_binary && (fCType == SQL_C_CHAR || fCType == SQL_C_WCHAR);
 #endif
-
+    }
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
-
 /* IvAn/DvBlobXper/001212 Case for XPER added */
   if (IS_BOX_POINTER (col) && IS_BLOB_HANDLE_DTP (DV_TYPE_OF (col)))
     {				/* it's a blob? */
@@ -5431,16 +5429,9 @@ virtodbc__SQLGetData (
 	{
 	  if (cbValueMax % wchar_size)
 	    cbValueMax = ((int) (cbValueMax / wchar_size)) * wchar_size;
-
-#ifdef SAFE_SQLGETDATA
-	  rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
-#endif
-	  cbValueMax = cbValueMax / wchar_size - 1;
+	  cbValueMax -= wchar_size;
 	}
-#ifdef SAFE_SQLGETDATA
-      else
-	rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
-#endif
+      rgbValue_end = ((unsigned char *) (rgbValue)) + cbValueMax;
       if (stmt->stmt_connection->con_autocommit
 	  || (stmt->stmt_compilation &&
 	      stmt->stmt_compilation->sc_is_select == QT_PROC_CALL)
@@ -5707,9 +5698,10 @@ virtodbc__SQLGetData (
 	    }
 
 #ifdef SAFE_SQLGETDATA
+          if (rgbvale_tail < rgbValue_end)
+            {
 	  if (is_nts)
 	    ((char *) rgbValue_tail)[0] = '\x0';
-
 	  if (is_wnts)
 	    {
 	      if (wide_as_utf16)
@@ -5717,10 +5709,10 @@ virtodbc__SQLGetData (
 	      else
 	        ((wchar_t *) rgbValue_tail)[0] = L'\x0';
 	    }
+            }
 #else
 	  if (is_nts)
-	    ((char *) rgbValue)[fill] = 0;
-
+            ((unsigned char *) rgbValue)[fill] = 0;
 	  if (is_wnts)
 	    {
 	      if (wide_as_utf16)

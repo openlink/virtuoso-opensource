@@ -233,7 +233,6 @@ bh_fill_page_generic (
 	  case vNARROW:
 	    {
 	      int page_end = 0, oblom = 0;
-	      int readbytes = 0;
 	      *nin = 0;
 	      *noutbytes = 0;
 	      *noutchars = 0;
@@ -242,8 +241,8 @@ bh_fill_page_generic (
 		  unsigned char cin[VIRT_MB_CUR_MAX];
 		  int nl, len;
 		  page_end = 0;
-		  readbytes = wide_blob_buffered_read (proc_arg, cin, 1, &bh->bh_state, &page_end, &len, get_data_proc);
-		  nl = bh->bh_state.count;
+                  wide_blob_buffered_read (proc_arg, cin, 1, &bh->bh_state, &page_end, &len, get_data_proc);
+		  nl = bh->bh_state.bs_utf8_tail_count;
 		  if (!page_end)
 		    {
 		      *((char *) buffer + *noutbytes) = cin[0];
@@ -389,7 +388,7 @@ GPF_T1 ("Default read ready not off in blob read");
 
 
 static void bh_fill_pagedir_buffer (blob_handle_t * bh, buffer_desc_t * buf, it_cursor_t * itc_from, int *at_end, size_t *position);
-static long bh_fill_data_buffer (blob_handle_t * bh, buffer_desc_t * buf, it_cursor_t * itc_from, int *status_ret, size_t *data_len_in_bytes);
+static long bh_fill_data_buffer (blob_handle_t * source_bh, buffer_desc_t * dest_buf, it_cursor_t * itc_from, int *status_ret, size_t *data_len_in_bytes);
 static void __blob_chain_delete (it_cursor_t * it, dp_addr_t start, dp_addr_t first, int npages, blob_handle_t * bh);
 static void blob_delete_via_dir (it_cursor_t * it, blob_layout_t * bl);
 /* static int dk_set_blob_del_remove (dk_set_t * set, dp_addr_t addr); */
@@ -458,15 +457,18 @@ bh_set_it_fields (blob_handle_t *bh)
 static int
 get_data_from_client (void *arg, unsigned char *buf, int pos, int len)
 {
-  int ret = session_buffered_read ((dk_session_t*)arg, (caddr_t)buf, len);
-  return pos = ret;
+  return session_buffered_read ((dk_session_t*)arg, (caddr_t)buf, len);
 }
 
 
 static int
 get_data_from_box (void *arg, unsigned char *buf, int pos, int len)
 {
-  assert (pos + len <= (int)box_length (arg));
+  int rest_len = (int)box_length (arg) - pos;
+  if (rest_len <= 0)
+    return rest_len;
+  if (len > rest_len)
+    len = rest_len;
   memcpy (buf, ((caddr_t)arg) + pos, len);
   return len;
 }
@@ -481,10 +483,9 @@ get_data_from_strses (void *arg, unsigned char *buf, int pos, int len)
 }
 
 typedef struct bh_get_layout_s {
-	blob_handle_t * bh;
-	it_cursor_t * itc_from;
-	buffer_desc_t * buf;
-	int *at_end;
+  blob_handle_t *	bgl_bh;
+  it_cursor_t *		bgl_itc_from;
+  buffer_desc_t *	bgl_buf;
 } bh_get_layout_t;
 
 
@@ -541,45 +542,71 @@ errexit:
   return 0;
 }
 
-#define BLOB_AT_END_ERROR 2
+void
+bh_reset_read (blob_handle_t * bh)
+{
+  bh->bh_state.bs_utf8_char = '\0';
+  bh->bh_state.bs_utf8_tail_count = 0;
+  if (NULL == bh->bh_state.bs_buffer)
+    {
+      bh->bh_state.bs_buffer = dk_alloc_box (PAGE_DATA_SZ + 1, DV_BIN);
+      bh->bh_state.bs_bufpos = 0;
+      bh->bh_state.bs_buflen = 0;
+      bh->bh_state.bs_buffered_page = 0;
+      bh->bh_state.bs_next_of_buffered_page = 0;
+    }
+  bh->bh_current_page = bh->bh_page;
+  bh->bh_position = 0;
+  bh->bh_state.bs_status = BLOB_BEFORE_READ;
+}
 
-
-static int
-bh_pickup_page (blob_handle_t * bh, it_cursor_t * itc_from, int *at_end)
+/* This copies the content of a blob page to the bh_state.buffer and advances to the next page, if there's such. */
+int
+bh_pickup_page (blob_handle_t * bh, it_cursor_t * itc_from)
 {
   buffer_desc_t *buf_from;
   long next;
   long pagelen;
-
+  if (BLOB_AT_END == bh->bh_state.bs_status)
+    {
+      bh->bh_state.bs_status = BLOB_AT_END_AGAIN;
+      return 0;
+    }
+  if (0 == bh->bh_current_page)
+    {
+      bh->bh_state.bs_bufpos = bh->bh_state.bs_buflen;
+      bh->bh_state.bs_status = BLOB_AT_END_AGAIN;
+      return 0;
+    }
+  if (bh->bh_state.bs_buffered_page == bh->bh_current_page)
+    { /* If buffered page is picked up already then no re-read. Blobs are not record pages, they can be replaced entirely but not changed so what's cached is not obsoleted during a transaction */
+      bh->bh_state.bs_bufpos = 0;
+      bh->bh_current_page = bh->bh_state.bs_next_of_buffered_page;
+      bh->bh_state.bs_status = bh->bh_current_page ? BLOB_AT_MIDDLE : BLOB_AT_END;
+      return bh->bh_state.bs_buflen;
+    }
   if (!page_wait_blob_access (itc_from, bh->bh_current_page, &buf_from, PA_READ, bh, 1))
     {
-      *at_end = BLOB_AT_END_ERROR;
-      bh->bh_current_page = bh->bh_page;	/* ready for reuse */
-      bh->bh_state.bufpos = 0;
-      bh->bh_state.buflen = 0;
+      bh->bh_current_page = 0;
+      bh->bh_state.bs_bufpos = 0;
+      bh->bh_state.bs_buflen = 0;
+      bh->bh_state.bs_status = BLOB_AT_END_AGAIN;
       return 0;
     }
   pagelen = LONG_REF (buf_from->bd_buffer + DP_BLOB_LEN);
   if (PAGE_DATA_SZ < pagelen)
     GPF_T1 ("Abnormal length of BLOB data in database page");
-
-  assert (NULL != bh->bh_state.buffer);
-  memcpy (bh->bh_state.buffer, buf_from->bd_buffer + DP_DATA, pagelen);
-  next = LONG_REF (buf_from->bd_buffer + DP_OVERFLOW);
+  assert (NULL != bh->bh_state.bs_buffer);
+  memcpy (bh->bh_state.bs_buffer, buf_from->bd_buffer + DP_DATA, pagelen);
+  bh->bh_state.bs_bufpos = 0;
+  bh->bh_state.bs_buflen = pagelen;
+  bh->bh_state.bs_buffered_page = bh->bh_current_page;
+  bh->bh_state.bs_next_of_buffered_page = next = LONG_REF (buf_from->bd_buffer + DP_OVERFLOW);
   ITC_IN_KNOWN_MAP (itc_from, buf_from->bd_page);
   page_leave_inner (buf_from);
   ITC_LEAVE_MAP_NC (itc_from);
-  bh->bh_state.bufpos = 0;
-  bh->bh_state.buflen = pagelen ;
-  if (!next)
-    {
-      *at_end = 1;
-      bh->bh_current_page = bh->bh_page;	/* ready for reuse */
-    }
-  else
-    {
-      bh->bh_current_page = next;
-    }
+  bh->bh_current_page = next;
+  bh->bh_state.bs_status = next ? BLOB_AT_MIDDLE : BLOB_AT_END;
   return pagelen;
 }
 
@@ -588,41 +615,37 @@ static int
 get_data_from_blob (void *arg, unsigned char *buf, int pos, int len)
 {
   struct bh_get_layout_s *pbl = (struct bh_get_layout_s *)arg;
-  blob_handle_t * bh = pbl->bh;
-  it_cursor_t * itc_from = pbl->itc_from;
-  int *at_end = pbl->at_end;
+  blob_handle_t * bh = pbl->bgl_bh;
+  it_cursor_t * itc_from = pbl->bgl_itc_from;
   int copybytes = 0;
-
-  if (NULL == bh->bh_state.buffer)
-    {
-      bh->bh_state.buffer = dk_alloc_box (PAGE_DATA_SZ + 1, DV_BIN);
-      bh->bh_state.bufpos = 0;
-      bh->bh_state.buflen = 0;
-    }
+  assert (NULL != bh->bh_state.bs_buffer);
+  if (BLOB_BEFORE_READ == bh->bh_state.bs_status)
+    bh_pickup_page (bh, itc_from);
 
 again:
-  if (bh->bh_state.bufpos < bh->bh_state.buflen)
+  if (bh->bh_state.bs_bufpos < bh->bh_state.bs_buflen)
     {
-      int l = MIN (len, bh->bh_state.buflen - bh->bh_state.bufpos);
-      assert (bh->bh_state.buflen <= PAGE_DATA_SZ && bh->bh_state.bufpos <= PAGE_DATA_SZ && len <= PAGE_DATA_SZ);
-      memcpy (buf, bh->bh_state.buffer + bh->bh_state.bufpos, l);
-      bh->bh_state.bufpos += l;
-      assert (bh->bh_state.buflen <= PAGE_DATA_SZ &&
-		bh->bh_state.bufpos <= PAGE_DATA_SZ &&
-		bh->bh_state.bufpos <= bh->bh_state.buflen &&
+      int l = MIN (len, bh->bh_state.bs_buflen - bh->bh_state.bs_bufpos);
+      assert (bh->bh_state.bs_buflen <= PAGE_DATA_SZ && bh->bh_state.bs_bufpos <= PAGE_DATA_SZ && len <= PAGE_DATA_SZ);
+      memcpy (buf, bh->bh_state.bs_buffer + bh->bh_state.bs_bufpos, l);
+      bh->bh_state.bs_bufpos += l;
+      assert (bh->bh_state.bs_buflen <= PAGE_DATA_SZ &&
+		bh->bh_state.bs_bufpos <= PAGE_DATA_SZ &&
+		bh->bh_state.bs_bufpos <= bh->bh_state.bs_buflen &&
 		len <= PAGE_DATA_SZ);
       len -= l;
       copybytes += l;
     }
-  if (len && bh->bh_state.bufpos == bh->bh_state.buflen)
+  if (len && bh->bh_state.bs_bufpos == bh->bh_state.bs_buflen)
     {
-      bh_pickup_page (bh, itc_from, at_end);
-      if (BLOB_AT_END_ERROR == *at_end)
-	return 0;
+      if (BLOB_AT_MIDDLE != bh->bh_state.bs_status)
+        return copybytes;
+      bh_pickup_page (bh, itc_from);
+      if ((BLOB_AT_MIDDLE != bh->bh_state.bs_status) && (BLOB_AT_END != bh->bh_state.bs_status))
+        return copybytes;
       goto again;
     }
-
-  return pos = copybytes;
+  return copybytes;
 }
 
 
@@ -636,32 +659,32 @@ bh_tag_modify (blob_handle_t * bh, dtp_t tag, dtp_t ask_tag)
     {
     case DV_BLOB_WIDE:
     case DV_BLOB_WIDE_HANDLE:
-      bh->bh_state.ask_tag = DV_BLOB_WIDE;
+      bh->bh_state.bs_ask_tag = DV_BLOB_WIDE;
       break;
     case DV_BLOB_BIN:
     case DV_BIN:
-      bh->bh_state.ask_tag = DV_BIN;
+      bh->bh_state.bs_ask_tag = DV_BIN;
       break;
     default:
-      bh->bh_state.ask_tag = DV_BLOB;
+      bh->bh_state.bs_ask_tag = DV_BLOB;
       break;
     }
   switch (tag)
     {
     case DV_BLOB_WIDE:
-      bh->bh_state.need_tag = DV_BLOB_WIDE;
+      bh->bh_state.bs_need_tag = DV_BLOB_WIDE;
       box_tag_modify (bh, DV_BLOB_WIDE_HANDLE);
       break;
     case DV_BLOB_BIN:
-      bh->bh_state.need_tag = DV_BLOB_BIN;
+      bh->bh_state.bs_need_tag = DV_BLOB_BIN;
       box_tag_modify (bh, DV_BLOB_HANDLE);
       break;
     case DV_BLOB:
-      bh->bh_state.need_tag = DV_BLOB;
+      bh->bh_state.bs_need_tag = DV_BLOB;
       box_tag_modify (bh, DV_BLOB_HANDLE);
       break;
     case DV_BLOB_XPER:
-      bh->bh_state.need_tag = DV_BLOB_BIN;
+      bh->bh_state.bs_need_tag = DV_BLOB_BIN;
       box_tag_modify (bh, DV_BLOB_XPER_HANDLE);
     break;
     default:
@@ -670,13 +693,78 @@ bh_tag_modify (blob_handle_t * bh, dtp_t tag, dtp_t ask_tag)
   return 0;
 }
 
+blob_cvt_type_t
+bh_flout (blob_handle_t * source_bh)
+{
+  switch (source_bh->bh_state.bs_need_tag)
+    {
+    case DV_BLOB_WIDE:	return vUTF;
+    case DV_BLOB_BIN:	return vBINARY;
+    case DV_BLOB:	return vNARROW;
+    default:
+      switch (DV_TYPE_OF (source_bh))
+        {
+        case DV_BLOB_XPER_HANDLE:	return vBINARY;
+        case DV_BLOB_HANDLE:		return vNARROW;
+        case DV_BLOB_WIDE_HANDLE:	return vUTF;
+        }
+      return vBINARY;
+    }
+}
+
+void
+bh_read_header_of_user_data (blob_handle_t * bh, dk_session_t *ses_from)
+{
+  bh->bh_state.bs_ask_tag = session_buffered_read_char (ses_from);
+  switch (bh->bh_state.bs_ask_tag)
+    {
+    case DV_WIDE:
+      bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB_WIDE;
+      break;
+    case DV_SHORT_STRING_SERIAL:
+      bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB;
+      break;
+    case DV_BLOB_WIDE:
+    case DV_LONG_WIDE:
+      bh->bh_bytes_coming = read_long (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB_WIDE;
+      break;
+    case DV_BLOB_BIN:
+      bh->bh_bytes_coming = read_long (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB_BIN;
+      break;
+    case DV_BIN:
+      bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB_BIN;
+      break;
+    case DV_BLOB:
+    case DV_LONG_STRING:
+      bh->bh_bytes_coming = read_long (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB;
+      break;
+    case DV_BLOB_XPER:
+      box_tag_modify (bh, DV_BLOB_XPER_HANDLE);
+      bh->bh_bytes_coming = read_long (ses_from);
+      bh->bh_state.bs_ask_tag = DV_BLOB;
+      bh->bh_state.bs_need_tag = DV_BLOB;
+      break;
+    case DV_DB_NULL:
+      bh->bh_all_received = BLOB_NULL_RECEIVED;
+      bh->bh_bytes_coming = 0;
+      break;
+    default:
+      bh->bh_all_received = BLOB_ALL_RECEIVED;
+      break;
+    }
+}
 
 long
 bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
     db_buf_t to, int max_bytes)
 {
   /* Read blob contents from client or log (in roll forward) */
-  dtp_t bh_tag = (dtp_t)box_tag (bh);
   dk_session_t *ses_from = cli->cli_session;
   volatile int to_go = max_bytes, n_in = 0;
 
@@ -717,54 +805,9 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 
       CATCH_READ_FAIL (ses_from)
       {
-	bh->bh_state.ask_tag = session_buffered_read_char (ses_from);
-	switch (bh->bh_state.ask_tag)
+        bh_read_header_of_user_data (bh, ses_from);
+	if ((BLOB_ALL_RECEIVED == bh->bh_all_received) || (BLOB_NULL_RECEIVED == bh->bh_all_received))
 	  {
-	  case DV_WIDE:
-	    /*box_tag_modify (bh, DV_BLOB_WIDE_HANDLE);*/
-	    bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB_WIDE;
-	    break;
-	  case DV_SHORT_STRING_SERIAL:
-	    /*box_tag_modify (bh, DV_BLOB_HANDLE);*/
-	    bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB;
-	    break;
-
-	  case DV_BLOB_WIDE:
-	  case DV_LONG_WIDE:
-	    /*box_tag_modify (bh, DV_BLOB_WIDE_HANDLE);*/
-	    bh->bh_bytes_coming = read_long (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB_WIDE;
-	    break;
-	  case DV_BLOB_BIN:
-	    bh->bh_bytes_coming = read_long (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB_BIN;
-	    break;
-	  case DV_BIN:
-	    bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB_BIN;
-	    break;
-	  case DV_BLOB:
-	  case DV_LONG_STRING:
-	    /*box_tag_modify (bh, DV_BLOB_HANDLE);*/
-	    bh->bh_bytes_coming = read_long (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB;
-	    break;
-	  case DV_BLOB_XPER:
-	    box_tag_modify (bh, DV_BLOB_XPER_HANDLE);
-	    bh->bh_bytes_coming = read_long (ses_from);
-	    bh->bh_state.ask_tag = DV_BLOB;
-	    bh_tag = DV_BLOB_HANDLE;
-	    break;
-	  case DV_DB_NULL:
-	    bh->bh_all_received = BLOB_NULL_RECEIVED;
-	    bh->bh_bytes_coming = 0;	/* No data expected in the future */
-	    END_READ_FAIL (ses_from);
-	    cli_end_blob_read (cli);
-	    return n_in;
-	  default:
-	    bh->bh_all_received = BLOB_ALL_RECEIVED;
 	    END_READ_FAIL (ses_from);
 	    cli_end_blob_read (cli);
 	    return n_in;
@@ -796,10 +839,9 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 	    long readbytes = MIN (bh->bh_bytes_coming, to_go);
 #endif
 	    int page_end = 0;
-#if 1
 	    int nin = 0, nout = 0, ncout = 0;
-	    blob_cvt_type_t flin = vBINARY, flout = vBINARY;
-	    switch (bh->bh_state.ask_tag) {
+	    blob_cvt_type_t flin = vBINARY, flout = bh_flout (bh);
+	    switch (bh->bh_state.bs_ask_tag) {
 	      case DV_BLOB_WIDE:
 		flin = vUTF;
 		break;
@@ -810,34 +852,6 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 		flin = vBINARY;
 		break;
 	    };
-	    switch (bh->bh_state.need_tag) {
-	      case DV_BLOB_WIDE:
-		flout= vUTF;
-		break;
-	      case DV_BLOB_BIN:
-		flout = vBINARY;
-		break;
-	      case DV_BLOB:
-		flout = vNARROW;
-		break;
-	      default:
-		{
-		  switch (bh_tag) {
-		    case DV_BLOB_XPER_HANDLE:
-		      flout= vBINARY;
-		      break;
-		    case DV_BLOB_HANDLE:
-		      flout= vNARROW;
-		      break;
-		    case DV_BLOB_WIDE_HANDLE:
-		      flout= vUTF;
-		      break;
-		  };
-		  break;
-		}
-	    };
-
-
 	    page_end = bh_fill_page_generic (
 		bh,
 		cli->cli_charset,
@@ -858,91 +872,6 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 	    n_in += nout;
 
 	    assert (0 != readbytes);
-#else
-	    if (bh_tag == DV_BLOB_WIDE_HANDLE && DV_BLOB_WIDE == bh->bh_state.ask_tag)
-	      {
- 		readbytes = wide_blob_buffered_read (ses_from, (char *) to + n_in, readbytes, &bh->bh_state, &page_end);
-	        if (readbytes < 0)
-		  {
-		    END_READ_FAIL (ses_from);
-		    cli_end_blob_read (cli);
-		    return n_in;
-		  }
-
-		bh->bh_bytes_coming -= readbytes;
-		to_go -= readbytes;
-		n_in += readbytes;
-	      }
-	    else if (bh_tag == DV_BLOB_HANDLE && DV_BLOB_WIDE == bh->bh_state.ask_tag)
-	      {
-		while (to_go > 0 && bh->bh_bytes_coming > 0)
-		  {
-		    char cin[VIRT_MB_CUR_MAX];
-		    int nl, len;
-		    page_end = 0;
-		    readbytes = wide_blob_buffered_read (ses_from, cin, 1, &bh->bh_state, &page_end);
-		    nl = bh->bh_state.count;
-		    if (!page_end)
-		      {
-			*((char *) to + n_in) = cin[0];
-			to_go --;
-			n_in ++;
-			bh->bh_bytes_coming --;
-			continue;
-		      }
-		    if (nl + 1 < to_go)
-		      len = wide_blob_buffered_read (ses_from, cin, nl + 1, &bh->bh_state, &page_end);
-		    else
-		      break;
-
-		    cli_utf8_to_narrow ((wcharset_t*)cli->cli_charset, cin, nl + 1, ((char *) to + n_in), 1);
-
-		    to_go --;
-		    n_in ++;
-		    bh->bh_bytes_coming -= nl + 1;
-		    assert (bh->bh_bytes_coming>=0);
-		  }
-	      }
-	    else if (bh_tag == DV_BLOB_WIDE_HANDLE && DV_BLOB == bh->bh_state.ask_tag)
-	      {
-		int len = 0;
-		while (to_go >= VIRT_MB_CUR_MAX && bh->bh_bytes_coming > 0)
-		  {
-		    char cin;
-		    cin = session_buffered_read_char (ses_from);
-		    len = cli_narrow_to_utf8 (cli->cli_charset, &cin, 1, ((char *) to + n_in), VIRT_MB_CUR_MAX);
-		    assert (len>0);
-		    to_go -= len;
-		    n_in += len;
-		    bh->bh_bytes_coming --;
-		  }
-		if (to_go < VIRT_MB_CUR_MAX)
-	          to_go = 0;
-	      }
-	    else /*if (bh_tag == DV_BLOB_HANDLE && DV_BLOB == bh->ask_tag)*/
-	      {
-		session_buffered_read (ses_from, (char *) to + n_in, readbytes);
-		bh->bh_bytes_coming -= readbytes;
-		to_go -= readbytes;
-		n_in += readbytes;
-	      }
-/*	    long readbytes = MIN (bh->bh_bytes_coming, to_go);
-	    int page_end = 0;
-	    if ( DV_TYPE_OF(bh) == DV_BLOB_WIDE_HANDLE)
-	      {
- 		readbytes = wide_blob_buffered_read (ses_from, (char *) to + n_in, readbytes, &bh->bh_wb_state, &page_end);
-	      }
-	    else
-	    session_buffered_read (ses_from, (char *) to + n_in, readbytes);
-	    bh->bh_bytes_coming -= readbytes;
-	    to_go -= readbytes;
-	    n_in += readbytes;
-	    if (page_end)
-	      {
-		END_READ_FAIL (ses_from);
-		return n_in;
-	      }*/
-#endif
 	    if (page_end)
 	      {
 		END_READ_FAIL (ses_from);
@@ -951,57 +880,7 @@ bh_get_data_from_user (blob_handle_t * bh, client_connection_t * cli,
 	  }
 
 	if (0 == bh->bh_bytes_coming)
-	  {
-	    bh->bh_state.ask_tag = session_buffered_read_char (ses_from);
-	    switch (bh->bh_state.ask_tag)
-	      {
-	      case DV_WIDE:
-		/*box_tag_modify (bh, DV_BLOB_WIDE_HANDLE);*/
-		bh->bh_bytes_coming =
-		    (dtp_t) session_buffered_read_char (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB_WIDE;
-		break;
-	      case DV_SHORT_STRING_SERIAL:
-		/*box_tag_modify (bh, DV_BLOB_HANDLE);*/
-		bh->bh_bytes_coming =
-		    (dtp_t) session_buffered_read_char (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB;
-		break;
-	      case DV_BLOB_WIDE:
-	      case DV_LONG_WIDE:
-		/*box_tag_modify (bh, DV_BLOB_WIDE_HANDLE);*/
-		bh->bh_bytes_coming = read_long (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB_WIDE;
-		break;
-	      case DV_BLOB_BIN:
-		bh->bh_bytes_coming = read_long (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB_BIN;
-		break;
-	      case DV_BIN:
-		bh->bh_bytes_coming = (dtp_t) session_buffered_read_char (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB_BIN;
-		break;
-	      case DV_BLOB:
-	      case DV_LONG_STRING:
-		/*box_tag_modify (bh, DV_BLOB_HANDLE);*/
-		bh->bh_state.ask_tag = DV_BLOB;
-		bh->bh_bytes_coming = read_long (ses_from);
-		break;
-	      case DV_BLOB_XPER:
-		box_tag_modify (bh, DV_BLOB_XPER_HANDLE);
-		bh->bh_bytes_coming = read_long (ses_from);
-		bh->bh_state.ask_tag = DV_BLOB;
-		bh_tag = DV_BLOB_HANDLE;
-		break;
-	      case DV_DB_NULL:
-		bh->bh_all_received = BLOB_NULL_RECEIVED;
-		bh->bh_bytes_coming = 0;	/* No data expected in the future */
-		break;
-	      default:
-		bh->bh_all_received = BLOB_ALL_RECEIVED;
-		break;
-	      }
-	  }
+          bh_read_header_of_user_data (bh, ses_from);
 	if (!to_go)
 	  {
 	    END_READ_FAIL (ses_from);
@@ -1045,173 +924,121 @@ bh_fill_pagedir_buffer (blob_handle_t * bh, buffer_desc_t * buf, it_cursor_t * i
     }
 }
 
-
 static long
-bh_fill_data_buffer (blob_handle_t * bh, buffer_desc_t * buf, it_cursor_t * itc_from, int *status_ret, size_t *data_len_in_bytes)
+bh_fill_data_buffer (blob_handle_t * source_bh, buffer_desc_t * dest_buf, it_cursor_t * itc_from, int *status_ret, size_t *data_len_in_bytes)
 {
+  blob_cvt_type_t flout = bh_flout (source_bh);
   /* Buffer is empty. Read from blob and set status_ret to BLOB_ALL_RECEIVED if at end or to BLOB_NULL_RECEIVED if NULL value found. Return bytes read */
-
-  if (bh->bh_string)
+  if (source_bh->bh_string)
     {
-      dtp_t string_tag = (dtp_t)DV_TYPE_OF (bh->bh_string);
-      dtp_t bh_tag = (dtp_t)DV_TYPE_OF (bh);
-      int page_end = 0, nin = 0, nout = 0, ncout = 0;
-      long len = box_length (bh->bh_string);
+      dtp_t string_tag = (dtp_t)DV_TYPE_OF (source_bh->bh_string);
+      int nin = 0, nout = 0, ncout = 0;
+      long source_byte_count = box_length (source_bh->bh_string);
       get_data_generic_proc proc = get_data_from_box;
-      void *arg = bh->bh_string;
-      blob_cvt_type_t flin = vBINARY, flout = vBINARY;
-      switch (string_tag) {
-	case DV_WIDE: case DV_LONG_WIDE:
-	  flin = vWIDE;
-	  len -= sizeof(wchar_t);
-	break;
-        case DV_STRING:
-	  flin = vNARROW;
-	  len --;
-	break;
+      void *arg = source_bh->bh_string;
+      blob_cvt_type_t flin = vBINARY;
+      switch (string_tag)
+        {
+        case DV_WIDE: case DV_LONG_WIDE:	flin = vWIDE; source_byte_count -= sizeof(wchar_t);	break;
+        case DV_STRING:				flin = vNARROW; source_byte_count --;			break;
         case DV_STRING_SESSION:
-	  len = strses_length ((dk_session_t *) bh->bh_string);
-	  proc = get_data_from_strses;
-        default:
-	  flin = vBINARY;
-	break;
-      };
-      switch (bh->bh_state.need_tag) {
-	case DV_BLOB_WIDE:
-	  flout= vUTF;
-	  break;
-	case DV_BLOB_BIN:
-	  flout = vBINARY;
-	  break;
-	case DV_BLOB:
-	  flout = vNARROW;
-	  break;
-	default:
-	  {
-	    switch (bh_tag) {
-	      case DV_BLOB_XPER_HANDLE:
-		flout = vBINARY;
-	        break;
-	      case DV_BLOB_HANDLE:
-	        flout= vNARROW;
-	        break;
-	      case DV_BLOB_WIDE_HANDLE:
-	        flout= vUTF;
-	        break;
-	    };
-	    break;
-	  }
-      };
-      page_end = bh_fill_page_generic (
-		bh,
-		itc_from->itc_ltrx->lt_client->cli_charset,
-		flin,
-		flout,
-		buf->bd_buffer + DP_DATA,
-		len - bh->bh_position,
-		PAGE_DATA_SZ,
-		&nin,
-		&nout,
-		&ncout,
-		proc,
-		arg,
-		bh->bh_position);
-      bh->bh_position += nin;
-      if (bh->bh_position == len)
+         source_byte_count = strses_length ((dk_session_t *) source_bh->bh_string);
+         proc = get_data_from_strses;
+         flin = vBINARY;
+         break;
+        default: flin = vBINARY;	break;
+        }
+      bh_fill_page_generic (
+        source_bh,
+        itc_from->itc_ltrx->lt_client->cli_charset,
+        flin,
+        flout,
+        dest_buf->bd_buffer + DP_DATA,
+        source_byte_count - source_bh->bh_position,
+        PAGE_DATA_SZ,
+        &nin,
+        &nout,
+        &ncout,
+        proc,
+        arg,
+        source_bh->bh_position );
+      source_bh->bh_position += nin;
+      if (source_bh->bh_position == source_byte_count)
 	{
-	  bh->bh_position = 0;
+	  source_bh->bh_position = 0;
 	  status_ret[0] = BLOB_ALL_RECEIVED;
 	}
-      LONG_SET (buf->bd_buffer + DP_BLOB_LEN, nout);
-      *data_len_in_bytes = nout;
-      return ncout;
-	}
-  if (bh->bh_current_page && !BH_FROM_CLUSTER (bh))
-    {
-      int page_end = 0, nin = 0, nout = 0, ncout = 0, __at_end = 0;
-      blob_cvt_type_t flin = vBINARY, flout = vBINARY;
-      struct bh_get_layout_s bl;
-      dtp_t bh_tag = (dtp_t)DV_TYPE_OF (bh);
-      bl.bh = bh;
-      bl.itc_from = itc_from;
-      bl.buf = buf;
-      bl.at_end = &__at_end;
-
-      switch (bh->bh_state.ask_tag) {
-	case DV_BLOB_WIDE:
-	    flin = vUTF;
-	    break;
-	case DV_BLOB:
-	    flin = vNARROW;
-	    break;
-	default:
-	    flin = vBINARY;
-	    break;
-      };
-      switch (bh->bh_state.need_tag) {
-	case DV_BLOB_WIDE:
-	    flout= vUTF;
-	    break;
-	case DV_BLOB_BIN:
-	    flout = vBINARY;
-	    break;
-	case DV_BLOB:
-	    flout = vNARROW;
-	    break;
-	default:
-	      {
-		switch (bh_tag) {
-		  case DV_BLOB_XPER_HANDLE:
-		      flout = vBINARY;
-		      break;
-		  case DV_BLOB_HANDLE:
-		      flout= vNARROW;
-		      break;
-		  case DV_BLOB_WIDE_HANDLE:
-		      flout= vUTF;
-		      break;
-		};
-		break;
-	      }
-      };
-      page_end = bh_fill_page_generic (
-	  bh,
-	  default_charset,
-	  flin,
-	  flout,
-	  buf->bd_buffer + DP_DATA,
-	  (int) (bh->bh_diskbytes - bh->bh_position),
-	  PAGE_DATA_SZ,
-	  &nin,
-	  &nout,
-	  &ncout,
-	  get_data_from_blob,
-	  &bl,
-	  0);
-      bh->bh_position += nin;
-      if (bh->bh_diskbytes <= (unsigned)bh->bh_position)
-	{
-	  bh->bh_position = 0;
-	  status_ret[0] = BLOB_ALL_RECEIVED;
-	}
-      if (BLOB_AT_END_ERROR == __at_end)
-	*status_ret = BLOB_ALL_RECEIVED;
-      LONG_SET (buf->bd_buffer + DP_BLOB_LEN, nout);
+      LONG_SET (dest_buf->bd_buffer + DP_BLOB_LEN, nout);
       *data_len_in_bytes = nout;
       return ncout;
     }
-  if (bh->bh_ask_from_client || BH_FROM_CLUSTER (bh))
+  if (source_bh->bh_page && !BH_FROM_CLUSTER (source_bh))
     {
-      long n_in = bh_get_data_from_user (bh, itc_from->itc_ltrx->lt_client,
-	  buf->bd_buffer + DP_DATA, PAGE_DATA_SZ);
-      LONG_SET (buf->bd_buffer + DP_BLOB_LEN, n_in);
-      if ((BLOB_ALL_RECEIVED == bh->bh_all_received) || (BLOB_NULL_RECEIVED == bh->bh_all_received))
+      int nin = 0, nout = 0, ncout = 0;
+      blob_cvt_type_t flin = vBINARY;
+      struct bh_get_layout_s bl;
+      bl.bgl_bh = source_bh;
+      bl.bgl_itc_from = itc_from;
+      bl.bgl_buf = dest_buf;
+      switch (source_bh->bh_state.bs_ask_tag)
+        {
+        case DV_BLOB_WIDE:  flin = vUTF;    break;
+        case DV_BLOB:	    flin = vNARROW; break;
+        default:	    flin = vBINARY; break;
+        }
+      bh_fill_page_generic (
+        source_bh,
+        default_charset,
+        flin,
+        flout,
+        dest_buf->bd_buffer + DP_DATA,
+        (int) MAX_UTF8_CHAR * PAGE_DATA_SZ /* was (source_bh->bh_diskbytes - source_bh->bh_position */,
+        PAGE_DATA_SZ,
+        &nin,
+        &nout,
+        &ncout,
+        get_data_from_blob,
+        &bl,
+        0 );
+      /*source_bh->bh_position += nin;
+      if (page_end && (0 != source_bh->bh_position % PAGE_DATA_SZ))
+        source_bh->bh_position = ((source_bh->bh_position / PAGE_DATA_SZ) + 1) * PAGE_DATA_SZ;
+      if (source_bh->bh_diskbytes <= (unsigned)source_bh->bh_position)
 	{
-	  status_ret[0] = bh->bh_all_received;
+	  source_bh->bh_position = 0;
+	  status_ret[0] = BLOB_ALL_RECEIVED;
+	}*/
+      switch (source_bh->bh_state.bs_status)
+        {
+        case BLOB_AT_MIDDLE: break;
+        case BLOB_AT_END:
+          if (source_bh->bh_state.bs_bufpos >= source_bh->bh_state.bs_buflen)
+            *status_ret = BLOB_ALL_RECEIVED;
+          break;
+        case BLOB_AT_END_ERROR:
+          *status_ret = BLOB_ALL_RECEIVED;
+          break;
+        default:
+          GPF_T1 ("Blob handle is in unexpacted state after reading");
+          *status_ret = BLOB_ALL_RECEIVED;
+          break;
+        }
+      LONG_SET (dest_buf->bd_buffer + DP_BLOB_LEN, nout);
+      *data_len_in_bytes = nout;
+      return ncout;
+    }
+  if (source_bh->bh_ask_from_client || BH_FROM_CLUSTER (source_bh))
+    {
+      long n_in = bh_get_data_from_user (source_bh, itc_from->itc_ltrx->lt_client,
+	  dest_buf->bd_buffer + DP_DATA, PAGE_DATA_SZ);
+      LONG_SET (dest_buf->bd_buffer + DP_BLOB_LEN, n_in);
+      if ((BLOB_ALL_RECEIVED == source_bh->bh_all_received) || (BLOB_NULL_RECEIVED == source_bh->bh_all_received))
+	{
+	  status_ret[0] = source_bh->bh_all_received;
 	}
       *data_len_in_bytes = n_in;
-      return (DV_TYPE_OF (bh) == DV_BLOB_WIDE_HANDLE ?
-	  (long) wide_char_length_of_utf8_string (buf->bd_buffer + DP_DATA, n_in) :
+      return (DV_TYPE_OF (source_bh) == DV_BLOB_WIDE_HANDLE ?
+	  (long) wide_char_length_of_utf8_string (dest_buf->bd_buffer + DP_DATA, n_in) :
 	  n_in);
     }
   GPF_T1 ("Blob handle is totally empty");
@@ -1901,7 +1728,6 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
   it_cursor_t *blob_itc = &blob_itc_auto;
   dp_addr_t first_page = 0;
   int read_status = BLOB_NONE_RECEIVED;
-  size_t pos;
   size_t data_len = 0;
   dtp_t volatile dtp = (dtp_t)DV_TYPE_OF (data);
   buffer_desc_t *blob_buf = NULL, *next_blob_buf = NULL, *volatile first_buf = NULL;
@@ -1981,7 +1807,6 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
   if (IS_BLOB_HANDLE_DTP (dtp))
     {
       source_bh = (blob_handle_t *) data;
-      source_bh->bh_current_page = source_bh->bh_page;
       if (source_bh->bh_ask_from_client)
 	{
 	  blob_handle_t * ready_dae = cli_ready_dae (row_itc->itc_ltrx->lt_client, source_bh);
@@ -2000,6 +1825,7 @@ itc_set_blob_col (it_cursor_t * row_itc, db_buf_t col,
       else
 	target_bh = bh_alloc ((dtp_t)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP (col_dtp));
       bh_tag_modify (source_bh, col_dtp, dtp);
+      bh_reset_read (source_bh);
       goto bh_is_ready;		/* see below */
     }
 #ifdef BIF_XML
@@ -2079,8 +1905,6 @@ bh_is_ready:
   ITC_INIT (blob_itc, NULL, row_itc->itc_ltrx);
   itc_from_it (blob_itc, source_bh->bh_it ? source_bh->bh_it : row_itc->itc_tree);
 
-  source_bh->bh_state.utf8_chr = '\0';
-  source_bh->bh_state.count = '\0';
   if (BH_FROM_CLUSTER (source_bh))
     source_bh->bh_all_received = BLOB_NONE_RECEIVED; /* if going to assign blob from cluster, might assign many times and each time is a fresh copy */
 
@@ -2093,7 +1917,6 @@ bh_is_ready:
     first_page = blob_buf->bd_page;
     dk_set_push ((dk_set_t *) &pages, DP_ADDR2VOID (first_page));
     n_pages++;
-    pos = 0;
     target_bh->bh_diskbytes = 0;
     target_bh->bh_length = 0;
     blob_str_head_len (str_head_len, first_buf, target_bh);
@@ -2760,7 +2583,7 @@ bh_string_output_n (lock_trx_t * lt, blob_handle_t * bh, int omit, int free_buff
 
 #define bh_string_list(lt, bh, get_bytes, omit) \
 ((box_tag (bh) == DV_BLOB_WIDE_HANDLE) ? \
-    bh_string_list_w (lt, bh, get_bytes, omit) : \
+    bh_string_list_w (lt, bh, get_bytes / sizeof (wchar_t), omit) : \
     bh_string_list_n (lt, bh, get_bytes, omit))
 
 
@@ -3087,23 +2910,25 @@ blob_check (blob_handle_t * bh)
   if (bh->bh_pages)
     {
       int inx, n = box_length ((caddr_t) bh->bh_pages) / sizeof (dp_addr_t);
+      int expected_n_of_pages = ((bh->bh_diskbytes - 1) / PAGE_DATA_SZ) + 1;
       dp_addr_t dp = bh->bh_dir_page;
       if (!dp && n > BL_DPS_ON_ROW)
 	{
 	  error = 1;
 	  log_info ("blob handle L=%d with no dir but over VL_DPS_ON_ROW_PAGES", bh->bh_page);
 	}
-      if (bh->bh_diskbytes && n != (((bh->bh_diskbytes - 1) / PAGE_DATA_SZ) + 1))
+      if (bh->bh_diskbytes && n != expected_n_of_pages)
 	{
 	  error = 1;
-	  log_info ("Blob disk bytes and page dir length disagree L=%d  bytes= %d dir pages=%d ", bh->bh_page, n, bh->bh_diskbytes);
+	  log_info ("Blob disk bytes and page dir length disagree: start page %lu, dir page %lu, diskbytes=%ld, expected %d pages, actually %d pages",
+            (long)(bh->bh_page), (long)(bh->bh_dir_page), bh->bh_diskbytes, expected_n_of_pages, n);
 	}
       if (!bh->bh_page_dir_complete && n > BL_DPS_ON_ROW)
 	n = BL_DPS_ON_ROW;
       if (dp && (dp < 3 || dp > it->it_storage->dbs_n_pages))
 	{
 	  error = 1;
-	  log_info ("Out of range  blob dir page refd start = %d L=%d ", bh->bh_page, dp);
+	  log_info ("Out of range blob dir page refd start=%d, L=%d ", bh->bh_page, dp);
 	}
       else if (dp && dbs_is_free_page (it->it_storage, dp))
 	{
@@ -3161,10 +2986,12 @@ bl_check (blob_layout_t * bl)
     {
       int inx, n = box_length ((caddr_t) bl->bl_pages) / sizeof (dp_addr_t);
       dp_addr_t dp = bl->bl_dir_start;
-      if (bl->bl_diskbytes && n != (((bl->bl_diskbytes - 1) / PAGE_DATA_SZ) + 1))
+      int expected_n_of_pages = ((bl->bl_diskbytes - 1) / PAGE_DATA_SZ) + 1;
+      if (bl->bl_diskbytes && n != expected_n_of_pages)
 	{
 	  error = 1;
-	  log_info ("Blob disk bytes and page dir length disagree L=%d  bytes= %d dir pages=" BOXINT_FMT, bl->bl_start, n, bl->bl_diskbytes);
+	  log_info ("Blob layout disk bytes and page dir length disagree: start page %lu, dir page %lu, diskbytes=%ld, expected %d pages, actually %d pages",
+            (long)(bl->bl_start), (long)(bl->bl_dir_start), bl->bl_diskbytes, expected_n_of_pages, n);
 	}
       if (!dp && n > BL_DPS_ON_ROW)
 	{
@@ -3273,8 +3100,7 @@ blob_send_bytes (lock_trx_t * lt, caddr_t bhp, long get_bytes,
 {
   blob_handle_t *bh = (blob_handle_t *) bhp;
   caddr_t arr;
-  dk_set_t string_list =
-  bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0);
+  dk_set_t string_list = bh_string_list (/*NULL,*/ lt, (blob_handle_t *) bhp, get_bytes, 0);
 
   if (BH_DIRTYREAD == string_list)
     {
@@ -3494,7 +3320,10 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
       MAKE_TRX_ERROR (lt->lt_error, err, LT_ERROR_DETAIL (lt));
       sqlr_resignal (err);
     }
-
+  if (isWide)
+    ((wchar_t *) out)[bytes / sizeof (wchar_t)] = 0;
+  else
+    out[bytes] = 0;
   while (NULL != string_list)
   {
     caddr_t fragment = (box_t) dk_set_pop(&string_list);
@@ -3508,14 +3337,8 @@ blob_to_string_isp (lock_trx_t * lt, caddr_t bhp)
     fill += len;
     dk_free_box (fragment);
   }
-
   if (fill != bytes)
     goto stub_for_corrupted_blob;	/* see below */
-
-  if (isWide)
-    ((wchar_t *) out)[bytes / sizeof (wchar_t)] = 0;
-  else
-    out[bytes] = 0;
   return out;
 
 /* If blob handle references to a field of deleted row, or in case of internal error, we should return empty string */
@@ -3537,6 +3360,8 @@ blob_to_string (lock_trx_t * lt, caddr_t bhp)
 {
 #ifdef DEBUG
   blob_handle_t * bh = (blob_handle_t *) bhp;
+  if (!IS_BLOB_HANDLE_DTP (DV_TYPE_OF (bh)))
+    log_info ("Attempt to convert a BLOB to a string, but the argument is not a BLOB handle");
 #endif
   return blob_to_string_isp (lt, bhp);
 }
@@ -3547,6 +3372,8 @@ blob_to_string_output (lock_trx_t * lt, caddr_t bhp)
 {
 #ifdef DEBUG
   blob_handle_t * bh = (blob_handle_t *) bhp;
+  if (!IS_BLOB_HANDLE_DTP (DV_TYPE_OF (bh)))
+    log_info ("Attempt to convert a BLOB to a string session, but the argument is not a BLOB handle");
 #endif
   return blob_to_string_output_isp (lt, bhp);
 }
@@ -3878,76 +3705,67 @@ wide_blob_buffered_read (
 	get_data_generic_proc get_data_proc)
 {
   unsigned char* buf_to = to;
+  int tail_count;
   int readbytes = 0;
   int readchars = 0;
-  unsigned char utf8_char = state->utf8_chr;
+  unsigned char utf8_char = state->bs_utf8_char;
   while (req_chars)
     {
       if (!utf8_char)
-	get_data_proc (ses_from, &utf8_char, 0, 1); /*   there was: utf8_char = session_buffered_read_char (ses_from);*/
-
-      if (utf8_char < 0x80)
-	{
-	  /* One byte sequence.  */
-	  state->count = 0;
-	}
+        {
+          int fetched_byte_count = get_data_proc (ses_from, &utf8_char, 0, 1);
+          if (0 >= fetched_byte_count) /* No more source data */
+            goto done; /* see below */
+        }
+      if (utf8_char < 0x80) /* One byte sequence.  */
+        tail_count = 0;
       else if ((utf8_char & 0xe0) == 0xc0)
-	{
-	  state->count = 1;
-	}
+        tail_count = 1;
       else if ((utf8_char & 0xf0) == 0xe0)
-	{
-	  /* We expect three bytes.  */
-	  state->count = 2;
-	}
+        tail_count = 2;
       else if ((utf8_char & 0xf8) == 0xf0)
-	{
-	  /* We expect four bytes.  */
-	  state->count = 3;
-	}
+        tail_count = 3;
       else if ((utf8_char & 0xfc) == 0xf8)
-	{
-	  /* We expect five bytes.  */
-	  state->count = 4;
-	}
+        tail_count = 4;
       else if ((utf8_char & 0xfe) == 0xfc)
-	{
-	  /* We expect six bytes.  */
-	  state->count = 5;
-	}
+        tail_count = 5;
       else
-	{
-	  /* This is an illegal encoding.  */
-	  /* errno = (EILSEQ); */
-	  /*GPF_T1 ("Received bad UTF8 string");*/
-	  /*return -1;*/
-          state->count = 0;
+        {
+          tail_count = 0;
           log_error ("Invalid UTF-8 char (%02X) read in filling up a BLOB. The wide blob data may be garbled.",
               utf8_char);
           utf8_char = '?';
-	}
-
-      if (state->count > req_chars - 1)
-	{ /* not enough space */
-	  state->utf8_chr = utf8_char;
-	  page_end[0] = 1;
-	  *preadchars = readchars;
-	  return readbytes;
-	}
-
+        }
+      state->bs_utf8_tail_count = tail_count;
+      if (tail_count > req_chars - 1)
+        { /* not enough space */
+          state->bs_utf8_char = utf8_char;
+          page_end[0] = 1;
+          *preadchars = readchars;
+          return readbytes;
+        }
       *buf_to++ = utf8_char;
-      if (state->count)
-	get_data_proc (ses_from, buf_to, 0, state->count);  /*there was: session_buffered_read (ses_from, buf_to, state->count);*/
-      buf_to += state->count;
-      readbytes += state->count + 1;
+      if (tail_count)
+        {
+          int fetched_byte_count = get_data_proc (ses_from, buf_to, 0, tail_count);
+          if (fetched_byte_count < tail_count)
+            {
+              log_error ("Incomplete UTF-8 sequence beginning with (%02X) and only %d out of %d bytes fetched after it. The wide blob data may be garbled.",
+                  utf8_char, fetched_byte_count, tail_count );
+              goto done; /* see below */
+            }
+        }
+      buf_to += tail_count;
+      readbytes += tail_count + 1;
       readchars ++;
-      req_chars -= state->count + 1;
+      req_chars -= tail_count + 1;
       if (req_chars < 0)
-	GPF_T;
+        GPF_T;
       utf8_char = 0;
     }
-  state->utf8_chr = 0;
-  state->count = 0;
+done:
+  state->bs_utf8_char = 0;
+  state->bs_utf8_tail_count = 0;
   *preadchars = readchars;
   return readbytes;
 }
@@ -3984,19 +3802,16 @@ bh_dp_list_n (lock_trx_t * lt, blob_handle_t * bh)
 {
   /* take current page at current place and make string of
      n bytes from the place and return as string list */
-  caddr_t page_string;
   dk_set_t list = NULL;
   dp_addr_t start = bh->bh_current_page;
   buffer_desc_t *buf = NULL;
-  long from_byte = bh->bh_position;
-  long bytes_filled = 0, bytes_on_page;
   it_cursor_t *tmp_itc;
   tmp_itc = itc_create (NULL, lt);
   itc_from_it (tmp_itc, bh->bh_it);
   dk_set_push (&list, box_num (bh->bh_dir_page));
   while (start)
     {
-      long len, next;
+      long next;
       uint32 timestamp;
       int type;
 
