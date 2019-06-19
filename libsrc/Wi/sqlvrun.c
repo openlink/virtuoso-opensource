@@ -463,7 +463,11 @@ DBG_NAME(qi_vec_init) (DBG_PARAMS query_instance_t * qi, int n_sets)
   if (!(mp = qi->qi_mp))
     {
       not_inited = 1;
+#ifdef MALLOC_DEBUG
       mp = qi->qi_mp = DBG_NAME(mem_pool_alloc) (DBG_ARGS_0);
+#else
+      mp = qi->qi_mp = mem_pool_alloc ();
+#endif
       if (qr->qr_vec_ssls)
 	{
 	  int ign;
