@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -1437,29 +1435,25 @@
     <v:variable name="photopath_size2" type="any" default="null" persist="temp"/>
     <v:before-data-bind>
       <![CDATA[
-
-        declare exit handler for not found
-        {
-          signal ('22023', sprintf ('The user "%s" does not exist.', self.fname));
-        };
-
         if (self.fname is null)
           self.fname := self.u_name;
 
-        select U_ID into self.ufid from SYS_USERS where U_NAME = self.fname;
-
-        if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
+        self.ufid := coalesce ((select U_ID from SYS_USERS where U_NAME = self.fname), -1);
+        if (self.ufid <> -1)
         {
-          insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
+          if (not exists (select 1 from WA_USER_INFO where WAUI_U_ID = self.ufid))
+            insert into WA_USER_INFO (WAUI_U_ID) values (self.ufid);
+
+          self.visb := WA_USER_VISIBILITY (self.fname);
+
+          if (self.ufid = self.u_id)
+            self.isowner := 1; --user is the owner of the page.
+
+          self.arr := WA_GET_USER_INFO (self.u_id, self.ufid, self.visb, self.isowner);
         }
-
-        self.visb := WA_USER_VISIBILITY(self.fname);
-
-        if ( self.ufid = self.u_id)
-          self.isowner := 1; --user is the owner of the page.
-        self.arr := WA_GET_USER_INFO (self.u_id, self.ufid, self.visb, self.isowner);
       ]]>
     </v:before-data-bind>
+    <v:template name="my_user_profile" type="simple" enabled="--neq (self.ufid, -1)">
     <div class="widget w_my_profile">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
@@ -1562,6 +1556,7 @@
         <vm:user-info-edit-link title="Edit..."/>
       </div>
     </div>
+    </v:template>
   </xsl:template>
 
   <xsl:template match="vm:dash-my-blog">
@@ -1858,30 +1853,37 @@
     <v:variable name="uf_u_id" type="integer" default="null" persist="temp"/>
 
     <v:on-init>
-       self.base_url := HTTP_REQUESTED_URL ();
+      <![CDATA[
+        self.base_url := HTTP_REQUESTED_URL ();
+      ]]>
     </v:on-init>
 
-     <v:after-data-bind>
-       declare id any;
-       if (self.isowner)
-         id := self.u_name;
-       else
-         id := self.fname;
-       self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
-       if (not length (self.friends_name)) self.friends_name := id;
-        select sne_id into self.sne_id from sn_entity where sne_name = id;
+    <v:after-data-bind>
+      <![CDATA[
+        declare id any;
 
+        if (self.ufid <> -1)
+        {
+          id := case when (self.isowner) then self.u_name else self.fname end;
+          self.friends_name := (select coalesce (u_full_name, u_name) from sys_users where u_name = id);
+          if (not length (self.friends_name))
+            self.friends_name := id;
 
-       if (is_empty_or_null (self.ufname))
-         {
-           self.ufname := self.u_name;
-           self.uf_u_id := self.u_id;
-         }
-       else
-         self.uf_u_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = self.ufname), self.u_id);
+          select sne_id into self.sne_id from sn_entity where sne_name = id;
+          if (is_empty_or_null (self.ufname))
+          {
+            self.ufname := self.u_name;
+            self.uf_u_id := self.u_id;
+          }
+          else
+          {
+            self.uf_u_id := coalesce ((select U_ID from DB.DBA.SYS_USERS where U_NAME = self.ufname), self.u_id);
+          }
+        }
+      ]]>
+    </v:after-data-bind>
 
-      </v:after-data-bind>
-
+    <v:template name="my_friends_profile" type="simple" enabled="--neq (self.ufid, -1)">
     <div class="widget w_my_friends">
       <div class="w_title_bar">
         <div class="w_title_text_ctr">
@@ -2007,6 +2009,7 @@
         </vm:if>
       </div>
     </div> <!-- widget -->
+    </v:template>
   </xsl:template>
 
   <xsl:template match="vm:dash-my-community">
