@@ -2104,6 +2104,9 @@ extern int enable_vec;
 extern FILE *query_log;
 extern void log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...);
 extern void log_query_event (query_t *qr, int print_full_content, const char *fmt, ...);
+#else
+#define log_cli_event(cli,print_full_content,fmt,...) do { ; } while (0)
+#define log_query_event (qr,print_full_content,fmt,...) do { ; } while (0)
 #endif
 
 #endif /* _SQLNODE_H */
