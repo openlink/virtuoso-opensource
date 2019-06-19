@@ -218,4 +218,8 @@ char *strtok_r ();
 #endif
 #endif
 
+#ifdef WIN32
+#define strcasecmp _stricmp
+#endif
+
 #endif
