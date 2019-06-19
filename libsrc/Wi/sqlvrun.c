@@ -872,7 +872,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	      value = qst_get (inst, (state_slot_t *) source);
 	    }
 	  dtp = DV_TYPE_OF (value);
-	  if (dtp == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
+	  if (dtp_canonical[dtp] == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
 	    {
 	      switch (dtp)
 		{
@@ -890,6 +890,13 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		  break;
 		case DV_STRING:
 		  if ((cl->cl_sqt.sqt_precision && box_length (value) - 1 > cl->cl_sqt.sqt_precision)
+		      || box_length (value) > 4095)
+		    goto general;
+		  dc_append_box (target_dc, value);
+		  break;
+		case DV_WIDE:
+		case DV_LONG_WIDE:
+		  if ((cl->cl_sqt.sqt_precision && (box_length (value) / sizeof (wchar_t)) - 1 > cl->cl_sqt.sqt_precision)
 		      || box_length (value) > 4095)
 		    goto general;
 		  dc_append_box (target_dc, value);
