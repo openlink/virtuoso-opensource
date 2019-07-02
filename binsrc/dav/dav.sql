@@ -772,6 +772,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (
   in prop1 varchar,
   in prop_value any)
 {
+  -- dbg_obj_princ ('WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (', prop, prop1, prop_value, ')');
   declare tree, tree_error, item, pname, pns any;
 
   tree_error := 1;
@@ -787,8 +788,13 @@ _skip:;
     item := xpath_eval ('/*', tree, 1);
     pname := cast (xpath_eval ('local-name(.)', item) as varchar);
     pns := cast (xpath_eval ('namespace-uri(.)', item) as varchar);
-    if ((length (pns) <> 0) and (pns <> 'DAV') and (pns <> 'http://www.openlinksw.com/virtuoso/webdav/1.0/'))
+    if ((length (pns) <> 0) and (pns <> 'http://www.openlinksw.com/virtuoso/webdav/1.0/'))
+    {
+      if ((prop like 'DAV:%') and (pns = 'D'))
+        pns := 'DAV';
+
       pname := concat (pns, ':', pname);
+    }
 
     if (pname = prop)
     {
@@ -801,7 +807,18 @@ _skip:;
   }
   else
   {
-    http (concat ('<V:',prop1,'/>\n'));
+    if (prop1 like 'DAV:%')
+    {
+      http (sprintf ('<%s><![CDATA[%s]]></%s>\n', prop1, prop_value, prop1));
+    }
+    else if (prop1 like 'oWiki:%')
+    {
+      http (sprintf ('<%s><![CDATA[%s]]></%s>\n', prop1, deserialize (prop_value), prop1));
+    }
+    else
+    {
+      http (concat ('<V:', prop1, '/>\n'));
+    }
   }
 }
 ;
