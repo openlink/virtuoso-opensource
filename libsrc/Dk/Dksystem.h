@@ -80,9 +80,6 @@
 # ifdef	HAVE_MEMORY_H
 #  include <memory.h>
 # endif
-#endif
-
-#if !defined(__FreeBSD__)
 #ifdef HAVE_MALLOC_H
 # include <malloc.h>
 #elif !defined (__cplusplus)
