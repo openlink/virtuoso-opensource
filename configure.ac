@@ -589,6 +589,7 @@ AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(getrusage)
 AC_CHECK_FUNCS(memmove memmem memcpy)
+AC_CHECK_FUNCS(mkstemp64 mkstemp)
 AC_CHECK_FUNCS(strftime stpcpy)
 AC_CHECK_FUNCS(clock_gettime gethrtime)
 
