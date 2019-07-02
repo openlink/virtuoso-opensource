@@ -1852,7 +1852,7 @@ create procedure WEBDAV.DBA.user_id (
 create procedure WEBDAV.DBA.user_iri (
   in usr any) returns varchar
 {
-  if (isinteger (user))
+  if (isinteger (usr))
     usr := WEBDAV.DBA.user_name (usr, '');
 
   return sprintf ('http://%s/dataspace/person/%s#this',  WEBDAV.DBA.host_url (0), usr);
