@@ -3083,7 +3083,7 @@ create procedure WEBDAV.DBA.DAV_GET_AUTOVERSION (
     declare id integer;
 
     id := DB.DBA.DAV_SEARCH_ID (path, 'C');
-    if (WEBDAV.DBA.DAV_ERROR (id))
+    if (WEBDAV.DBA.DAV_ERROR (id) or not isinteger (id))
       return '';
 
     return coalesce ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = id), '');
