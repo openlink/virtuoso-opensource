@@ -999,74 +999,83 @@ create function "Versioning_DAV_DIR_FILTER" (in detcol_id any, in path_parts any
 ;
 
 --| When DAV_PROP_GET_INT or DAV_DIR_LIST_INT calls DET function, authentication is performed before the call.
-create function "Versioning_DAV_SEARCH_ID" (in detcol_id any, in path_parts any, in what char(1)) returns any
+create function "Versioning_DAV_SEARCH_ID" (
+  in detcol_id any,
+  in path_parts any,
+  in what char(1)) returns any
 {
+  -- dbg_obj_princ ('Versioning_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
   declare base_path varchar;
+
   base_path := "Versioning_GET_BASE_PATH" (detcol_id);
   if (base_path is null)
     return -20;
-   -- dbg_obj_princ ('Versioning_DAV_SEARCH_ID (', detcol_id, path_parts, what, ')');
-  if ('C' = what) {
-    if ( (length (path_parts) = 3) )
-      return -1;
-    declare base_id int;
-    base_id := DAV_SEARCH_ID (base_path, 'C');
-    if (base_id > 0) {
-      declare _res_id int;
-      _res_id :=  (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = base_id
-          and RES_NAME = aref (path_parts, 0) );
-       -- dbg_obj_princ ('Versioning_DAV_SEARCH_ID = ', _res_id);
-      if (_res_id is not null) {
-        if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-in', 0)) is null
-          and DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-out', 0)) is null)
+
+  if (('C' = what) and (length (path_parts) <> 3))
+  {
+    declare base_id integer;
+
+    base_id := DB.DBA.DAV_SEARCH_ID (base_path, 'C');
+    if (base_id > 0)
+    {
+      declare _res_id integer;
+
+      _res_id :=  (select RES_ID from WS.WS.SYS_DAV_RES where RES_COL = base_id and RES_NAME = aref (path_parts, 0));
+      if (_res_id is not null)
+      {
+        if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-in', 0)) is null and
+            DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-out', 0)) is null)
           return -1;
+
         return vector (UNAME'Versioning', cast (detcol_id as integer), _res_id);
       }
     }
-    return -1;
   }
-  else if ('R' = what) {
-    if (length (path_parts) = 2) {
-      declare _res_id, _ver_id, _id int;
-      _res_id := DAV_SEARCH_ID (base_path || path_parts[0], 'R');
-       -- dbg_obj_princ ('res id == ', _res_id);
-      if (_res_id < 0)
-        return -1;
-      if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-in', 0)) is null
-            and DAV_HIDE_ERROR (DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-out', 0)) is null)
-        return -1;
-      if (path_parts[1] = 'history.xml')
-        _ver_id := -1;
-      else if (path_parts[1] = 'last')
-        _ver_id := -2;
-      else if (path_parts[1] like '%.diff') {
-        _ver_id := atoi (path_parts[1]);
-        return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id, 'diff');
-      }
-      else {
-        _ver_id := cast (path_parts[1] as integer);
-        if (not exists (select 1 from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id and RV_ID = _ver_id))
-          return -1;
-      }
-      return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id);
+  else if (('R' = what) and (length (path_parts) = 2))
+  {
+    declare _res_id, _ver_id, _id integer;
+
+    _res_id := DB.DBA.DAV_SEARCH_ID (base_path || path_parts[0], 'R');
+    if (_res_id < 0)
+      return -1;
+
+    if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-in', 0)) is null and DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_PROP_GET_INT (_res_id, 'R', 'DAV:checked-out', 0)) is null)
+      return -1;
+
+    if (path_parts[1] = 'history.xml')
+      _ver_id := -1;
+    else if (path_parts[1] = 'last')
+      _ver_id := -2;
+    else if (path_parts[1] like '%.diff')
+    {
+      _ver_id := atoi (path_parts[1]);
+      return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id, 'diff');
     }
-    return -1;
+    else
+    {
+      _ver_id := atoi (path_parts[1]);
+      if (not exists (select 1 from WS.WS.SYS_DAV_RES_VERSION where RV_RES_ID = _res_id and RV_ID = _ver_id))
+        return -1;
+    }
+    return vector (UNAME'Versioning', detcol_id, _res_id, _ver_id);
   }
-  else
-    return -1;
+  return -1;
 }
 ;
 
 --| When DAV_SEARCH_PATH_INT calls DET function, authentication is performed before the call.
-create function "Versioning_DAV_SEARCH_PATH" (in id any, in what char(1)) returns any
+create function "Versioning_DAV_SEARCH_PATH" (
+  in id any,
+  in what char(1)) returns any
 {
   -- dbg_obj_princ ('Versioning_DAV_SEARCH_PATH (', id, what, ')');
-  if (what = 'C' and isarray (id) and length (id) = 3) {
+  if (what = 'C' and isarray (id) and length (id) = 3)
+  {
     declare base_coll varchar;
+
     base_coll := DAV_PROP_GET_INT (id[1], 'C','virt:Versioning-Collection', 0);
-    if (isinteger (base_coll))
-      return -1;
-    return base_coll || (select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = id[2]) || '/';
+    if (not isinteger (base_coll))
+      return base_coll || (select RES_NAME from WS.WS.SYS_DAV_RES where RES_ID = id[2]) || '/';
   }
   return -1;
 }
