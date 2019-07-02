@@ -244,6 +244,10 @@ caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, char * deflt);
 #define ws_get_packed_hf(ws,path1,deflt) NULL
 #endif
 
+#define WS_NOT_HDR(ws,h) \
+    (!(ws)->ws_header || \
+     (NULL == nc_strstr ((unsigned char *) (ws)->ws_header, (unsigned char *)h)))
+
 caddr_t
 ws_gethostbyaddr (const char * ip)
 {
@@ -2051,7 +2055,7 @@ ws_get_mime_variant (char * mime, char ** found)
 
 
 static const char *
-ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
+ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
   static char *fmt =
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
@@ -2244,13 +2248,14 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      ach[strlen (ach) - 1] = 0;
 	      strcat_ck (ach, "\r\n");
 	    }
-	  if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Headers:")))
+	  if (WS_NOT_HDR (ws, "Access-Control-Allow-Headers:"))
 	    {
 	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
 	      strcat_ck (ach, "\r\n");
 	    }
 	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      ret_origin ? ret_origin : "*", ret_origin ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	      ret_origin ? ret_origin : "*",
+	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
 	}
       if (orgs != WS_CORS_STAR)
 	dk_free_tree (orgs);
@@ -2421,7 +2426,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:"))))
+      if (ws->ws_status_code != 101 && WS_NOT_HDR (ws, "Content-Type:"))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2464,7 +2469,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 
       /* timestamp */
-      if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Date:"))
+      if (WS_NOT_HDR (ws, "Date:"))
 	{
 	  char dt [DT_LENGTH];
 	  char last_modify[100];
@@ -2476,7 +2481,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  SES_PRINT (ws->ws_session, "\r\n");
 	}
 
-      if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Origin:"))
+      if (WS_NOT_HDR (ws, "Access-Control-Allow-Origin:"))
 	{
 	  tmp[0] = 0;
 	  if (0 == ws_cors_check (ws, tmp, sizeof (tmp)))
@@ -2506,7 +2511,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))) /* plain body */
+      else if (ws->ws_status_code != 101 && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -2532,7 +2537,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    {
 	      strses_write_out_gz (ws->ws_strses, ws->ws_session, &gzctx);
 	    }
-	  else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))
+	  else if (WS_NOT_HDR (ws, "Content-Length:"))
 	    {
 	      strses_write_out (ws->ws_strses, ws->ws_session);
 	    }
@@ -12012,19 +12017,22 @@ is_internal_user (client_connection_t *cli)
 }
 
 
-char * srv_http_port ()
+char *
+srv_http_port ()
 {
    return http_port;
 }
 
 
-char * srv_www_root ()
+const char *
+srv_www_root ()
 {
    return www_root;
 }
 
 
-caddr_t srv_dns_host_name ()
+caddr_t
+srv_dns_host_name ()
 {
    return dns_host_name;
 }

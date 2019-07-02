@@ -47,7 +47,7 @@ char lines_0[2048] = "";
 char server_signature[2048] = "";
 char *php_ini_admin;
 char * srv_http_port ();
-char * srv_www_root ();
+const char * srv_www_root ();
 caddr_t srv_dns_host_name ();
 char * srv_st_dbms_name ();
 char * srv_st_dbms_ver ();
