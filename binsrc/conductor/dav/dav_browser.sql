@@ -3159,6 +3159,21 @@ create procedure WEBDAV.DBA.path_type (
 
 -------------------------------------------------------------------------------
 --
+create procedure WEBDAV.DBA.path_extension (
+  in path varchar)
+{
+  declare pos integer;
+
+  pos := strrchr (path, '.');
+  if (not isnull (pos))
+    return right (path, length (path)-pos-1);
+
+  return '';
+}
+;
+
+-------------------------------------------------------------------------------
+--
 create procedure WEBDAV.DBA.DAV_GET_VERSION_PATH (
   in path varchar)
 {
