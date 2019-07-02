@@ -1384,7 +1384,7 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
 
 
 create procedure
-qt_check (in file varchar, out message varchar, in record_new integer := 0) returns int
+qt_check (in file varchar, out message varchar, in record_new integer := 0, in skip_comment int := 0) returns int
 {
   declare xt, qr, xp_test, expl, da any;
   declare stat, msg, meta, data, r, check_order, cnt any;
@@ -1399,6 +1399,8 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
 
   xt := qt_source (file);
   message := xpath_eval ('/test/comment/text()', xt);
+  if (skip_comment)
+    message := '';
   qr := charset_recode (xpath_eval ('string (/test/query)', xt), '_WIDE_', 'UTF-8');
   check_order := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/@result-order', xt), '_WIDE_', 'UTF-8'));
   xp_test := charset_recode (xpath_eval ('/test/plans/plan/verify/@plan-xpath', xt), '_WIDE_', 'UTF-8');
@@ -1423,7 +1425,7 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
   if (check_order = 0)
     gvector_sort (data, 1, 0, 1);
   if (cnt <> length (data))
-      message := message || ' : result count differs';
+      message := message || sprintf (' : result count differs %d<>%d', cnt, length (data));
   refs := xpath_eval ('/test/result/row', xt, 0);
   idx := 0;
   foreach (any rr in refs) do
@@ -1452,15 +1454,15 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
 		delta := -1 * delta;
 	      if (delta > 1e-6)
 		{
-		  message := message || sprintf (' : value at #%d %s <> %s', i,
+		  message := message || sprintf (' : value at #%d [%s] <> [%s]', i,
 		  	cast (t as varchar),  cast (c[i] as varchar));
-		  return 0;
+		  goto err_ret;
 		}
 	    }
 	  else if (t <>  cast (c[i] as varchar) or cast (dtps[i] as int) <> __tag(c[i]))
 	    {
-	      message := message || sprintf (' : value at %d #%d %s <> %s', idx + 1, i, t,  cast (c[i] as varchar));
-	      return 0;
+	      message := message || sprintf (' : value at %d #%d [%s] <> [%s]', idx + 1, i, t,  cast (c[i] as varchar));
+	      goto err_ret;
 	    }
 	}
       idx := idx + 1;
@@ -1470,20 +1472,24 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
       qt_record (file || '.new', qr, comment => message, check_order => check_order);
     }
   return 1;
+err_ret:
+  qt_record (regexp_replace (file, '\.xml\x24', '.err'), qr, comment => message, check_order => check_order);
+  return 0;
 }
 ;
 
 create procedure
-qt_check_dir (in dir varchar, in file_mask varchar := '%', in record_new integer := 0)
+qt_check_dir (in dir varchar, in file_mask varchar := '%', in record_new integer := 0, in skip_comment int := 0)
 {
   declare ls, inx, f, msg, stat, file, report any;
   ls := sys_dirlist (dir, 1);
   result_names (stat, file, report);
+  gvector_sort (ls, 1, 0, 1);
   for (inx := 0; inx < length (ls); inx := inx + 1)
     {
       if (ls[inx] like '%.xml' and ls[inx] like file_mask)
 	{
-	  f := qt_check (dir || '/' || ls[inx], msg, record_new);
+	  f := qt_check (dir || '/' || ls[inx], msg, record_new, skip_comment);
 	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
 	}
     }
