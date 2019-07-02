@@ -164,6 +164,9 @@ sqlc_decl_variable_list_1 (sql_comp_t * sc, ST ** params, int is_arg_list, dk_se
   query_t * qr = sc->sc_cc->cc_query;
   int inx;
 
+  if (BOX_ELEMENTS_0 (params) > MAX_STATE_SLOTS)
+    SQL_GPF_T1 (sc->sc_cc, "Query too large, variables in state over the limit");
+
   DO_BOX (ST *, decl, inx, params)
   {
     state_slot_t *var;

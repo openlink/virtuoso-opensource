@@ -61,7 +61,7 @@ cc_new_instance_slot (comp_context_t * cc)
 {
   cc = cc->cc_super_cc;
   if (cc->cc_instance_fill > MAX_STATE_SLOTS)
-    GPF_T1 ("qi with state slots over the limit.");
+    SQL_GPF_T1 (cc, "Query too large, variables in state over the limit");
   return (cc->cc_instance_fill++);
 }
 
