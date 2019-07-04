@@ -188,7 +188,7 @@ nf_opt:
 
   commit work;
 
-  if (_dav_method = 'checked' and _upd = 0 and _opage <> 'checked')
+  if (_dav_method = 'checked' and _opage <> 'checked')
   {
     declare dav_urls, _dav_opts, _url any;
     declare lev integer;
@@ -2000,21 +2000,33 @@ create procedure WS.WS.DAV_PUT (
 }
 ;
 
+
+-- /* get urls from dav response */
 create procedure WS.WS.DAV_PROP (
   inout _url varchar,
   in _d_imgs varchar,
   in _auth varchar)
 {
-  declare _res any;
+  declare _res, _tree any;
   declare _resp, _body varchar;
 
-  _body := http_get (_url, _res, 'PROPFIND', 'Content-Type: text/xml\r\nDepth: 1\r\n' || case when (isstring (_auth) and _auth <> '') then _auth else '' end, '<D:propfind xmlns:D="DAV:"><D:prop><D:resourcetype/><D:getcontenttype/></D:prop></D:propfind>');
---  _tree := xpath_eval ('//*/@href', xml_tree_doc (xml_tree (_body), 0), 0);
--- DELME after fix in xpath_eval
+  _body := http_get (_url, _res, 'PROPFIND',
+  	'Content-Type: text/xml\r\nDepth: 1\r\n' ||
+	case when (isstring (_auth) and _auth <> '') then _auth else '' end,
+	'<D:propfind xmlns:D="DAV:"><D:prop><D:resourcetype/><D:getcontenttype/></D:prop></D:propfind>');
+  _tree := xpath_eval ('//href/text()', xtree_doc (_body), 0);
   _resp := WS.WS.VFS_HTTP_RESP_CODE (_res);
-  if (_resp = '200')
-    return WS.WS.GET_HREF_FROM_XML (_body, _d_imgs);
-
+  if (_resp = '207')
+    {
+      declare len, inx, ret any;
+      len := length (_tree);
+      ret := make_array (len, 'any');
+      for (inx := 0; inx < len; inx := inx + 1)
+        {
+	  ret [inx] := cast (_tree[inx] as varchar);
+        }
+      return ret;
+    }
   return null;
 }
 ;
