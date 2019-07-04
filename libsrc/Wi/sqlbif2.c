@@ -700,9 +700,13 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (!stricmp ("client_ssl", mode))
     {
 #ifdef _SSL
-      SSL *ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws ?
-	  qi->qi_client->cli_ws->ws_session->dks_session :
-	     qi->qi_client->cli_session->dks_session);
+      SSL *ssl = NULL;
+      session_t * ses = (qi->qi_client->cli_ws ?
+	  qi->qi_client->cli_ws->ws_session->dks_session : (qi->qi_client->cli_session ?
+	  qi->qi_client->cli_session->dks_session : NULL));
+
+      if (ses)
+	ssl = (SSL *) tcpses_get_ssl (ses);
       if (ssl)
 	return box_num (1);
 #else
@@ -715,11 +719,15 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef _SSL
       caddr_t ret = NULL;
       char *ptr;
-      SSL *ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws ?
-	  qi->qi_client->cli_ws->ws_session->dks_session :
-	     qi->qi_client->cli_session->dks_session);
+      SSL *ssl = NULL;
       X509 *cert = NULL;
       BIO *in = NULL;
+      session_t * ses = (qi->qi_client->cli_ws ?
+	  qi->qi_client->cli_ws->ws_session->dks_session : (qi->qi_client->cli_session ?
+	  qi->qi_client->cli_session->dks_session : NULL));
+
+      if (ses)
+	ssl = (SSL *) tcpses_get_ssl (ses);
 
       if (ssl)
         cert = SSL_get_peer_certificate (ssl);
