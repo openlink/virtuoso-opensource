@@ -279,7 +279,7 @@ CREATE TRIGGER "Versioning_DAV_RES_UPDATE" BEFORE UPDATE ON WS.WS.SYS_DAV_RES OR
     "Versioning_AUTO_VERSION_PROP" ((select COL_AUTO_VERSIONING from WS.WS.SYS_DAV_COL where COL_ID = N.RES_COL and COL_AUTO_VERSIONING is not null)),
     DAV_HIDE_ERROR(DAV_PROP_GET_INT (N.RES_ID, 'R', 'DAV:auto-version', 0)));
 
-  if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (N.RES_ID,'R','DAV:checked-out')) is null and _auto_version_type is not null) {
+  if (DAV_HIDE_ERROR (DAV_PROP_GET_INT (N.RES_ID,'R','DAV:checked-out', 0)) is null and _auto_version_type is not null) {
     if ((length (N.RES_CONTENT) < 10000000) and (length (O.RES_CONTENT) < 10000000)) {
       if (cast (N.RES_CONTENT as varchar) = cast (O.RES_CONTENT as varchar)) {
         if (N.RES_NAME <> O.RES_NAME) { -- move
