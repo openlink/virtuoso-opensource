@@ -5670,7 +5670,7 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
       http ('insert soft WS.WS.VFS_SITE_RDF_MAP (VM_HOST, VM_ROOT, VM_RDF_MAP, VM_RDF_MAP_TYPE) values (', ses);
       http (DB.DBA.SYS_SQL_VAL_PRINT (VM_HOST),ses); http (',', ses);
       http (DB.DBA.SYS_SQL_VAL_PRINT (VM_ROOT),ses); http (',', ses);
-      if (coalesce (VM_RDF_MAP_TYPE, 0) = 0)
+      if ((coalesce (VM_RDF_MAP_TYPE, 0) = 0) and not isnull (VAD_CHECK_VERSION ('cartridges')))
       {
         http ('(select RM_PID from DB.DBA.SYS_RDF_MAPPERS where RM_PID = ', ses);
         http (DB.DBA.SYS_SQL_VAL_PRINT (VM_RDF_MAP), ses);
@@ -5682,8 +5682,8 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
         http (DB.DBA.SYS_SQL_VAL_PRINT (VM_RDF_MAP), ses);
         http (')', ses);
       }
-      http (');\n', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (coalesce (VM_RDF_MAP_TYPE, 0)),ses); http ('\n', ses);
+      http (',', ses);
+      http (DB.DBA.SYS_SQL_VAL_PRINT (coalesce (VM_RDF_MAP_TYPE, 0)),ses); 
       http (');\n', ses);
     }
     http ('\n', ses);
