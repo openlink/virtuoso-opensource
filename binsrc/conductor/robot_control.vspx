@@ -182,6 +182,7 @@
                         delete from WS.WS.VFS_SITE where VS_HOST = _host and VS_ROOT = _root;
                         delete from WS.WS.VFS_QUEUE where VQ_HOST = _host and VQ_ROOT = _root;
                         delete from WS.WS.VFS_URL where VU_HOST = _host and VU_ROOT = _root;
+                        delete from WS.WS.VFS_SITE_RDF_MAP where VM_HOST = _host and VM_ROOT = _root;
                         delete from SYS_SCHEDULED_EVENT where SE_SQL = concat('WS.WS.SERV_QUEUE_TOP(\'',_host,'\',\'',_root,'\', 1, 0, null, null)');
                         log_enable (old_mode, 1);
                         self.data_set2.vc_data_bind(e);
