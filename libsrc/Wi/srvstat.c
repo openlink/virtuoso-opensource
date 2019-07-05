@@ -1260,6 +1260,8 @@ get_total_sys_mem ()
 }
 
 extern int process_is_swapping;
+extern double curr_cpu_pct;
+extern unsigned long curr_mem_rss;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
