@@ -751,16 +751,6 @@ class VirtuosoInputStream extends BufferedInputStream
         if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE)){
             is_complete = true;
             box = read_object ();
-            if (type == VirtuosoRdfBox.RDF_BOX_GEO_TYPE) {
-                if (box instanceof String && ((String)box).length()>5  && ((String)box).substring(0,5).equalsIgnoreCase("point")) {
-                    String data = ((String)box).substring(6);
-                    try {
-                        box = new VirtuosoPoint(data.substring(0, data.length()-1));
-                    } catch (Exception e){
-                        throw new VirtuosoException(e, VirtuosoException.IOERROR);
-                    }
-                }
-            }
         }
 
       } else {
