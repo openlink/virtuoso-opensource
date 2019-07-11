@@ -1940,16 +1940,12 @@ public class VirtuosoDatabaseMetaData implements DatabaseMetaData
    private static final String getSchemasText =
 	"select distinct" +
 	" name_part(KEY_TABLE, 1) AS \\TABLE_SCHEM VARCHAR(128)" +
-#if 1
 	", name_part(KEY_TABLE, 0) AS \\TABLE_CAT VARCHAR(128)" +
-#endif
 	"from DB.DBA.SYS_KEYS";
    private static final String getWideSchemasText =
 	"select distinct" +
 	" charset_recode (name_part(KEY_TABLE, 1), 'UTF-8', '_WIDE_') AS \\TABLE_SCHEM NVARCHAR(128)" +
-#if 1
 	", charset_recode (name_part(KEY_TABLE, 0), 'UTF-8', '_WIDE_') AS \\TABLE_CAT NVARCHAR(128)" +
-#endif
 	"from DB.DBA.SYS_KEYS";
 ***********/
    private static final String getSchemasText =
