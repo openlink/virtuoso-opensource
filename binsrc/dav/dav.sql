@@ -3676,6 +3676,22 @@ create procedure WS.WS.POST (
   }
   else if (_content_type = 'application/sparql-query')
   {
+    declare full_path, procname varchar;
+    declare pars, ses any;
+    full_path := http_physical_path ();
+    procname := sprintf ('%s.%s.%s', http_map_get ('vsp_qual'), http_map_get ('vsp_proc_owner'), full_path);
+    if ( __proc_exists (procname) and
+	(cast (registry_get (full_path) as varchar) = 'no_vsp_recompile') and
+	(http_map_get ('noinherit') = 1))
+      {
+	ses := WS.WS.GET_BODY (params);
+	pars := vector_concat(params, vector ('query', string_output_string (ses)));
+        commit work;
+        __set_user_id (http_map_get ('vsp_uid'));
+        call (procname)(path, pars, lines);
+        __pop_user_id ();
+        return;
+      }
     WS.WS.PUT (path, params, lines);
   }
   else if (position (_content_type, DB.DBA.LDP_RDF_TYPES ()) or (length (slug) > 0))
