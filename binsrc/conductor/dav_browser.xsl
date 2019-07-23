@@ -1046,7 +1046,7 @@ self.vc_data_bind (e);
                             if ((is_ttl + is_xml) = 0)
                   			    {
                   				    self.vc_is_valid := 0;
-                  				    self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
+                  				    self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF/XML, Turtle, and N3 serializations of RDF Data to the RDF Data Store through this interface.';
                   				    return;
                   				  }
 
