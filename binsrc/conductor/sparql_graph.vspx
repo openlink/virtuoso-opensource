@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="sparql_graph"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:variable persist="0" name="graph_name" type="varchar" default="''" />
+  <v:before-data-bind>
+    <![CDATA[
+      self.graph_name := get_keyword ('graph_name', self.vc_event.ve_params);
+    ]]>
+  </v:before-data-bind>
+  <?vsp
+    if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'delete')
+    {
+  ?>
+  <v:form name="delete_form" type="simple" method="POST" action="graphs_page.vspx?page=1">
+    <div class="confirm_dialog">
+      <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="stop"/>
+      <div class="confirm_text">
+        <div>
+          The graph
+          <?vsp http(sprintf('<b> %s </b>', self.graph_name)); ?>
+          will be removed permanently and there is no way to restore it. <br/>
+          Are you sure you want to remove this graph?
+        </div>
+      </div>
+      <div class="dialog_buttons">
+        <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
+        <v:on-post>
+          <![CDATA[
+            if (get_keyword ('remove', self.vc_page.vc_event.ve_params, '') <> '' )
+            {
+              declare _graph any;
+
+              _graph := self.graph_name;
+              SPARQL DEFINE sql:log-enable 3 CLEAR GRAPH (?:_graph) ;
+              SPARQL DROP SILENT GRAPH iri (?:_graph) ;
+              for (select "s"
+                     from (sparql
+                           define input:storage ""
+                           select ?s
+                             from virtrdf: { ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:_graph)` ; virtrdf:qmUserSubMaps ?t }) x) do
+              {
+                exec (sprintf ('SPARQL drop silent quad map <%s> . ', "s"));
+              }
+            }
+          ]]>
+        </v:on-post>
+        <v:button action="submit" name="remove" value="Yes" />
+        <v:button action="submit" name="cancel" value="No" />
+      </div>
+    </div>
+  </v:form>
+  <?vsp
+    }
+    else if (get_keyword ('mode', self.vc_page.vc_event.ve_params) = 'edit')
+    {
+  ?>
+  <v:form name="rename_form" type="simple" method="POST" action="graphs_page.vspx?page=1">
+    <div class="dialog_buttons">
+      <input type="text" name="new_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" size="100" />
+    </div>
+    <div class="dialog_buttons">
+      <input type="hidden" name="graph_name" value="<?= get_keyword ('graph_name', self.vc_page.vc_event.ve_params) ?>" />
+      <v:on-post>
+        <![CDATA[
+          if (get_keyword ('rename', self.vc_page.vc_event.ve_params, '') <> '' )
+          {
+            update DB.DBA.RDF_QUAD
+               set G = DB.DBA.RDF_MAKE_IID_OF_QNAME (get_keyword ('new_name', self.vc_page.vc_event.ve_params))
+             where G = DB.DBA.RDF_MAKE_IID_OF_QNAME (self.graph_name);
+          }
+        ]]>
+      </v:on-post>
+      <v:button action="submit" name="rename" value="Rename"/>
+      <v:button action="submit" name="cancel2" value="Cancel"/>
+    </div>
+  </v:form>
+  <?vsp
+    }
+    else
+    {
+  ?>
+  <v:form name="frm1" method="POST" type="simple" action="graphs_page.vspx?page=1">
+    <table class="listing">
+      <thead>
+        <tr class="listing_header_row">
+          <th>Graph</th>
+          <th width="1%">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+      <?vsp
+        for (select GRAPH_IRI from DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS_T) do
+        {
+      ?>
+        <tr>
+          <td><?V GRAPH_IRI ?></td>
+          <td nowrap="nowrap">
+            <v:url value='<img src="images/icons/edit_16.png" hspace="3" border="0"/>Rename'
+                   format="%s"
+                   name="uedit"
+                   url="--sprintf ('graphs_page.vspx?page=1&mode=edit&graph_name=%U', GRAPH_IRI)"
+                   render-only="1"
+                   xhtml_title="Rename"
+                   xhtml_alt="Rename"
+            />
+            <v:url value='<img src="images/icons/trash_16.png" hspace="3" border="0"/>Delete'
+                   format="%s"
+                   name="udel"
+                   url="--sprintf ('graphs_page.vspx?page=1&mode=delete&graph_name=%U', GRAPH_IRI)"
+                   render-only="1"
+                   xhtml_title="Delete"
+                   xhtml_alt="Delete"
+            />
+          </td>
+        </tr>
+        <?vsp
+          }
+        ?>
+      </tbody>
+    </table>
+  </v:form>
+  <?vsp
+    }
+  ?>
+</v:page>

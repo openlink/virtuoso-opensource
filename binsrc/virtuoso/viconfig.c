@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -120,6 +120,9 @@ extern char *https_port;
 extern char *https_cert;
 extern char *https_key;
 extern char *https_extra;
+extern char *https_dhparam;
+extern char *https_ecdh_curve;
+extern int32 https_hsts_max_age;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;
@@ -136,6 +139,8 @@ extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
 extern char *ssl_server_cipher_list;
 extern char *ssl_server_protocols;
+extern char *ssl_server_dhparam;
+extern char *ssl_server_ecdh_curve;
 #endif
 extern int spotlight_integration;
 #ifdef BIF_XML
@@ -194,7 +199,7 @@ extern int c_compress_mode;
 
 char * http_log_file_check (struct tm *now); /* http log name checking */
 
-int32 c_txn_after_image_limit;
+size_t c_txn_after_image_limit;
 int32 c_n_fds_per_file;
 int32 c_syslog = 0;
 char *c_syslog_facility = NULL;
@@ -389,6 +394,8 @@ extern int32 txs_max_terms;
 
 int32 c_callstack_on_exception = 0;
 extern long callstack_on_exception; /* from sqlintrp.c */
+int32 c_public_debug = 0;
+extern long public_debug; /* from sqlintrp.c */
 
 int32 c_pl_debug_all = 0;
 extern long pl_debug_all;
@@ -477,7 +484,7 @@ extern int32 mon_enable;
 
 
 extern int timezoneless_datetimes;
-long c_timezoneless_datetimes;
+int32 c_timezoneless_datetimes;
 
 /* for use in bif_servers */
 int
@@ -686,6 +693,7 @@ cfg_setup (void)
   char *section;
   char *tmp_str;
   int32 long_helper;
+  size_t size_t_helper;
 
   if (f_config_file == NULL)
     f_config_file = "virtuoso.ini";
@@ -819,6 +827,12 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSL_PROTOCOLS", &ssl_server_protocols) == -1)
     ssl_server_protocols = "default";
+
+  if (cfg_getstring (pconfig, section, "SSL_DHPARAM", &ssl_server_dhparam) == -1)
+      ssl_server_dhparam = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &ssl_server_ecdh_curve) == -1)
+      ssl_server_ecdh_curve = NULL;
 #endif
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
@@ -985,6 +999,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "CallstackOnException", &c_callstack_on_exception) == -1)
     c_callstack_on_exception = 0;
 
+  if (cfg_getlong (pconfig, section, "PublicDebug", &c_public_debug) == -1)
+    c_public_debug = 0;
+
   if (cfg_getlong (pconfig, section, "PLDebug", &c_pl_debug_all) == -1)
     c_pl_debug_all = 0;
 
@@ -1011,10 +1028,10 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "DecryptionAccess", &c_pwd_magic_users_list) == -1)
     c_pwd_magic_users_list = NULL;
 
-  if (cfg_getlong (pconfig, section, "TransactionAfterImageLimit", &c_txn_after_image_limit) == -1)
-    c_txn_after_image_limit = 50000000;
-  if (c_txn_after_image_limit != 0 && c_txn_after_image_limit < 10000)
-    c_txn_after_image_limit = 10000;
+  if (cfg_getsize (pconfig, section, "TransactionAfterImageLimit", &c_txn_after_image_limit) == -1)
+    c_txn_after_image_limit = 50000000L;
+  if (c_txn_after_image_limit != 0 && (int64) c_txn_after_image_limit < 10000L)
+    c_txn_after_image_limit = 10000L;
 
   if (cfg_getlong (pconfig, section, "FDsPerFile", &c_n_fds_per_file) == -1)
     c_n_fds_per_file = 1;
@@ -1027,10 +1044,10 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "StopCompilerWhenXOverRunTime", &sqlo_compiler_exceeds_run_factor) == -1)
     sqlo_compiler_exceeds_run_factor = 0;
 
-  if (cfg_getlong (pconfig, section, "MaxMemPoolSize", &long_helper) == -1)
+  if (cfg_getsize (pconfig, section, "MaxMemPoolSize", &size_t_helper) == -1)
     sqlo_max_mp_size = 200000000;
   else
-    sqlo_max_mp_size = (uint32)long_helper;
+    sqlo_max_mp_size = size_t_helper;
 #ifdef POINTER_64
   if (sqlo_max_mp_size >= 0x40000000)
     sqlo_max_mp_size = INT32_MAX;
@@ -1067,29 +1084,19 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "ColumnStoreAll", &c_col_by_default) == -1)
     c_col_by_default = 0;
-
   if (c_col_by_default > 0)
     log_warning ("Setting ColumnStoreAll = 1 is not recommended in a production environment");
 
   if (0 != cfg_getsize (pconfig, section, "MaxQueryMem", &c_max_large_vec))
     c_max_large_vec = 0;
 
-  if (0 != cfg_getsize (pconfig, section, "HashJoinSpace", &chash_space_avail))
+  if (0 != cfg_getsize (pconfig, section, "HashJoinSpace", &size_t_helper))
     chash_space_avail = MAX (1000000000, main_bufs * 1000);
+  else
+    chash_space_avail = ((MIN (size_t_helper, 10000000) >> 1) << 1);
 
   if (cfg_getlong (pconfig, section, "UseAIO", &c_c_use_aio) == -1)
     c_c_use_aio = 0;
-
-#if 0
-  /* Disable AIO for now */
-  if (c_c_use_aio) {
-    log_warning ("Setting UseAIO = 1 is not supported in this build");
-    c_c_use_aio = 0;
-  }
-#endif
-
-  if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
-    c_aq_max_threads = 48;
 
   if (cfg_getlong (pconfig, section, "BuffersAllocation", &malloc_bufs) == -1)
     malloc_bufs = 0;
@@ -1109,8 +1116,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
-
-  if (cfg_getlong (pconfig, section, "PageCompress", (int32 *) &c_compress_mode) == -1)
+  if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
     c_compress_mode = 0;
 
 
@@ -1283,6 +1289,9 @@ cfg_setup (void)
       enable_qp = 16;
     }
 
+  if (cfg_getlong (pconfig, section, "AsyncQueueMaxThreads", &c_aq_max_threads) == -1)
+    c_aq_max_threads = enable_qp * 2;
+
   if (cfg_getlong (pconfig, section, "MaxVectorSize", &dc_max_q_batch_sz) == -1)
     dc_max_q_batch_sz = 1000000;
   /*
@@ -1300,6 +1309,7 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "EnableMonitor", &mon_enable) == -1)
     mon_enable = 1;
+
   if (cfg_getlong (pconfig, section, "TimezonelessDatetimes", &c_timezoneless_datetimes) == -1)
     c_timezoneless_datetimes = -1; /* temporary value to be reset on reading database config page or before writing it */
   else if ((c_timezoneless_datetimes < 0) || (c_timezoneless_datetimes > 4))
@@ -1436,6 +1446,15 @@ cfg_setup (void)
 
   if (cfg_getstring (pconfig, section, "SSLExtraChainCertificate", &https_extra) == -1)
     https_extra = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_DHPARAM", &https_dhparam) == -1)
+      https_dhparam = NULL;
+
+  if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &https_ecdh_curve) == -1)
+      https_ecdh_curve = NULL;
+
+  if (cfg_getlong (pconfig, section, "HSTS_MaxAge", &https_hsts_max_age) == -1)
+      https_hsts_max_age = -1;
 
   if (cfg_getstring (pconfig, section, "SSLPrivateKey", &c_https_key) == -1)
     c_https_key = NULL;
@@ -2041,6 +2060,7 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
 
 
   callstack_on_exception = c_callstack_on_exception;
+  public_debug = c_public_debug;
   log_file_line = c_log_file_line;
   pl_debug_all = c_pl_debug_all;
   pl_debug_cov_file = c_pl_debug_cov_file;

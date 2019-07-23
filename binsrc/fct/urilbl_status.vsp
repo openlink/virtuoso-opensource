@@ -1,0 +1,71 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<?vsp
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+  set http_charset='utf-8';
+?>
+    <head>
+	<title>Entity Lookup Table Status</title>
+    </head>
+    <body>
+	<h1 id="title">Entity Lookup Table Status</h1>
+
+	<h2>Status</h2>
+	<p>
+	<?vsp urilbl_ac_init_state(0); ?>
+	</p>
+
+	<h2>Log</h2>
+	<?vsp
+	    declare cnt integer;
+	    cnt := (SELECT COUNT(1) FROM URILBL_CPL_LOG);
+	    if (cnt = 0) {
+		http('<p>There are no entries in the log<p>\n');
+	    } else {
+		http('<p>Most recent entries in log (in descending order):</p>\n');
+		http('<table class="tableresult" border="1">\n');
+		http('<tr><th>Date</th><th>Message</th></tr>\n');
+		for (SELECT TOP 10 ULLOG_TS, ULLOG_MSG FROM URILBL_CPL_LOG ORDER BY 1 DESC) do {
+		    http (sprintf ('    <tr><td>%V</td><td>%V</td></tr>\n', ULLOG_TS, ULLOG_MSG));
+		}
+		http('</table>\n');
+	    }
+	?>
+	<p>
+	<strong>Note:</strong>The function <code>urilbl_ac_init_db()</code> should be run periodically as the data grows to regenerate the lookup table.
+	</p>
+
+	<p>
+	<b>See also:</b>
+	<ul>
+	<li><a href="http://docs.openlinksw.com/virtuoso/virtuosospongerfacetinstallposinst/">Faceted Browser Post Installation Guide</a></li>
+	</ul>
+	</p>
+
+	<div>
+	  <p>To close this page, press 
+	  <button type="button" name="back" value="Back" onclick="javascript:history.go(-1);">Back</button>
+	  or use the &quot;back&quot; button of the browser.
+	  </p>
+	</div>
+
+    </body>
+</html>

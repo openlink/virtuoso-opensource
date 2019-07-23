@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -626,6 +626,18 @@ bif_long_low_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char
   return arg;
 }
 
+boxint
+bif_boxint_range_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, boxint low, boxint hi)
+{
+  boxint arg = bif_long_arg (qst, args, nth, func);
+  if (arg < low)
+    sqlr_new_error ("22023", "SR339", "Function %s needs an integer not less than " BOXINT_FMT " as argument %d, but called with " BOXINT_FMT,
+  func, low, nth + 1, arg);
+  if (arg > hi)
+    sqlr_new_error ("22023", "SR340", "Function %s needs an integer not greater than than " BOXINT_FMT " as argument %d, but called with " BOXINT_FMT,
+  func, hi, nth + 1, arg);
+  return arg;
+}
 
 boxint
 bif_long_or_null_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull)
@@ -1843,6 +1855,7 @@ bif_define_ex (const char *raw_name, bif_t bif, ...)
         case BMD_NO_CLUSTER:		bmd->bmd_no_cluster |= BIF_NO_CLUSTER; break;
         case BMD_OUT_OF_PARTITION:	bmd->bmd_no_cluster |= BIF_OUT_OF_PARTITION; break;
         case BMD_NEED_ENLIST:		bmd->bmd_no_cluster |= BIF_ENLIST; break;
+	case BMD_NO_FOLD:		bmd->bmd_no_fold = 1; break;
         default: GPF_T1 ("invalid option in bif_define_ex");
         }
     }
@@ -12302,10 +12315,17 @@ bif_log_enable (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   qi->qi_client->cli_row_autocommit = ((flag & 2) ? 1 : 0);
   qi->qi_trx->lt_replicate = ((flag & 1) ? (caddr_t *) box_copy_tree ((caddr_t) qi->qi_client->cli_replicate) : REPL_NO_LOG);
+  qi->qi_client->cli_log_mode = flag;
 
   return box_num (old_value);
 }
 
+caddr_t
+bif_cli_log_mode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  return box_num (qi->qi_client->cli_log_mode);
+}
 
 caddr_t
 print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret, int flags)
@@ -13394,31 +13414,61 @@ caddr_t
 bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  int32 old_cp_interval;
-  int atomic = srv_have_global_lock  (THREAD_CURRENT_THREAD);
-  c_checkpoint_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
-  old_cp_interval = cfg_autocheckpoint / 60000L;
+  int32 old_interval, new_interval;
+  int atomic = srv_have_global_lock (THREAD_CURRENT_THREAD);
+
+  old_interval = c_checkpoint_interval;
+  new_interval = (int32) bif_long_arg (qst, args, 0, "checkpoint_interval");
 
   sec_check_dba (qi, "checkpoint_interval");
 
   if (!atomic)
     {
-    IN_CPT (((query_instance_t *) qst)->qi_trx);
+      IN_CPT (((query_instance_t *) qst)->qi_trx);
     }
-  if (-1 > c_checkpoint_interval)
-  c_checkpoint_interval = -1;
-  cfg_autocheckpoint = 60000L * c_checkpoint_interval;
-#if 0
-  /*
-   * PMN: THIS SHOULD NEVER BE WRITTEN BACK INTO THE .INI FILE !!!!
-   */
-  cfg_set_checkpoint_interval (c_checkpoint_interval);
-#endif
+
+  if (-1 > new_interval)
+    new_interval = -1;
+
+  c_checkpoint_interval = new_interval;
+  cfg_autocheckpoint = new_interval > 0 ? (60000L * new_interval) : 0L;
+
   if (!atomic)
     {
-    LEAVE_CPT(((query_instance_t *) qst)->qi_trx);
+      LEAVE_CPT (((query_instance_t *) qst)->qi_trx);
     }
-  return box_num (old_cp_interval);
+
+  return box_num (old_interval);
+}
+
+
+caddr_t
+bif_scheduler_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  boxint old_period, new_period;
+  int atomic = srv_have_global_lock (THREAD_CURRENT_THREAD);
+
+  new_period = (boxint) bif_long_arg (qst, args, 0, "scheduler_interval");
+  old_period = (boxint) (cfg_scheduler_period / 60000L);
+
+  sec_check_dba (qi, "scheduler_interval");
+
+  if (!atomic)
+    {
+      IN_CPT (((query_instance_t *) qst)->qi_trx);
+    }
+
+  if (0 > new_period)
+    new_period = 0;
+  cfg_scheduler_period = 60000L * new_period;
+
+  if (!atomic)
+    {
+      LEAVE_CPT (((query_instance_t *) qst)->qi_trx);
+    }
+
+  return box_num (old_period);
 }
 
 
@@ -13698,7 +13748,7 @@ bif_exec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t cache_b = get_keyword_ucase_int (options, "use_cache", NULL);
       if ((DV_LONG_INT == DV_TYPE_OF (cache_b)) && unbox (cache_b))
         {
-          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), box_num (qi->qi_u_id), box_num (qi->qi_g_id)), 0, qi, NULL, &err);
+          shc = shcompo_get_or_compile (&shcompo_vtable__qr, list (3, box_copy_tree (text), qi->qi_u_id, qi->qi_g_id), 0, qi, NULL, &err);
           if (NULL == err)
             {
               shcompo_recompile_if_needed (&shc);
@@ -16533,7 +16583,7 @@ bif_sparql_init (void)
 {
   bif_define ("rdf_ceil_impl", bif_rdf_ceil_impl);
   bif_define ("rdf_floor_impl", bif_rdf_floor_impl);
-  bif_define_ex ("rdf_rand_impl", bif_rdf_rand_impl, BMD_RET_TYPE, &bt_double, BMD_DONE);
+  bif_define_ex ("rdf_rand_impl", bif_rdf_rand_impl, BMD_RET_TYPE, &bt_double, BMD_NO_FOLD, BMD_DONE);
   bif_define ("rdf_round_impl", bif_rdf_round_impl);
   bif_define_ex ("rdf_strlen_impl", bif_rdf_strlen_impl, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("rdf_substr_impl", bif_rdf_substr_impl, BMD_RET_TYPE, &bt_string, BMD_DONE);
@@ -16834,7 +16884,7 @@ sql_bif_init (void)
   bif_define_ex ("pi"			, bif_pi	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("round"		, bif_round	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
 
-  bif_define_ex ("rnd", bif_rnd, BMD_ALIAS, "rand"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/, BMD_DONE);
+  bif_define_ex ("rnd", bif_rnd, BMD_ALIAS, "rand"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1				/*, BMD_IS_PURE*/,  BMD_NO_FOLD, BMD_DONE);
   bif_define ("randomize", bif_randomize);
   bif_define_ex ("hash"			, bif_hash	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("md5_box", bif_md5_box, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
@@ -16961,6 +17011,7 @@ sql_bif_init (void)
   bif_define ("repl_is_raw", bif_repl_is_raw);
   bif_define ("log_enable", bif_log_enable);
   bif_set_vectored (bif_log_enable, (bif_vec_t)bif_log_enable);
+  bif_define ("cli_log_mode", bif_cli_log_mode);
   bif_define_ex ("serialize", bif_serialize, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__serial_length", bif_serial_length, BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("deserialize", bif_deserialize, BMD_RET_TYPE, &bt_any, BMD_DONE);
@@ -17030,6 +17081,7 @@ sql_bif_init (void)
   bif_define_ex ("\x01__reset_temp" /* was "__reset_temp" */, bif_clear_temp, BMD_MAX_ARGCOUNT, 0, BMD_IS_DBA_ONLY, BMD_DONE);
   bif_define ("__trx_disk_log_length", bif_trx_disk_log_length);
   bif_define ("checkpoint_interval", bif_checkpoint_interval);
+  bif_define ("scheduler_interval", bif_scheduler_interval);
   bif_define ("sql_lex_analyze", bif_sql_lex_analyze);
   bif_define ("sql_split_text", bif_sql_split_text);
 
@@ -17275,6 +17327,14 @@ bif_set_vectored (bif_t bif, bif_vec_t vectored)
   bmd->bmd_vector_impl = vectored;
 }
 
+int
+bif_nofold (bif_t bif)
+{
+  bif_metadata_t *bmd = find_bif_metadata_by_bif (bif);
+  if (NULL == bmd)
+    return 0;
+  return bmd->bmd_no_fold;
+}
 
 const char * bpel_run_check_proc = "RESTART_ALL_BPEL_INSTANCES ()";
 

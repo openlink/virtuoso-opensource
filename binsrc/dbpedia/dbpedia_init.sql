@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -303,7 +303,7 @@ create procedure DB.DBA.DBP_LINK_HDR (in in_path varchar)
       exp := sprintf ('Expires: %s\r\n', date_rfc1123 (dateadd ('day', 7, now ())));
     }
   lic := '<http://creativecommons.org/licenses/by-sa/3.0/>;rel="license",';
-  return sprintf ('%s%sLink: %s%s<http://mementoarchive.lanl.gov/dbpedia/timegate/http://%s%s>; rel="timegate"', exp, loc, lic, alt, host, in_path);
+  return sprintf ('%s%sLink: %s%s<http://dbpedia.mementodepot.org/timegate/http://%s%s>; rel="timegate"', exp, loc, lic, alt, host, in_path);
 }
 ;
 

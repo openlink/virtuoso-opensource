@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,11 @@ int last_errno;
 #include "http_client.h"
 #include "http.h"
 #include "xmlenc.h"
+
+#ifdef _SSL
+int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char * ca);
+int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret);
+#endif
 
 #define XML_VERSION		"1.0"
 
@@ -658,6 +663,8 @@ http_cli_ssl_cert (http_cli_ctx * ctx, caddr_t val)
     return (HC_RET_ERR_ABORT);
 
   ctx->hcctx_pkcs12_file = val;
+  if (NULL != val && 1 == strlen (val) && 1 == atoi (val))
+    ctx->hcctx_ssl_insecure = '\1';
   return (HC_RET_OK);
 }
 
@@ -817,7 +824,7 @@ http_cli_set_proxy (http_cli_ctx * ctx, caddr_t target)
 }
 
 HC_RET
-http_cli_set_ua_id (http_cli_ctx * ctx, caddr_t ua_id)
+http_cli_set_ua_id (http_cli_ctx * ctx, ccaddr_t ua_id)
 {
   if (ctx)
     {
@@ -841,8 +848,46 @@ http_cli_get_err (http_cli_ctx * ctx)
 
 /* XXX: TODO: proxies, proxy auth, http redirect */
 #ifdef _SSL
-int ssl_client_use_pkcs12 (SSL *ssl, char *pkcs12file, char *passwd, char * ca);
-int ssl_client_use_db_key (SSL * ssl, char *key, caddr_t * err_ret)
+static void
+http_client_load_ssl_ca_certs (SSL * ssl, const char *certs_pem)
+{
+  BIO *in = NULL;
+  int i;
+  STACK_OF (X509_INFO) * ca_list = NULL;
+  SSL_CTX *ssl_ctx = SSL_get_SSL_CTX (ssl);
+
+  if (NULL == certs_pem) /* no CA list is given */
+    goto end;
+
+  if ((in = BIO_new (BIO_s_mem())) == NULL)
+    goto end;
+
+  if (BIO_write (in, certs_pem, strlen (certs_pem)) <= 0)
+    goto end;
+
+  ca_list = sk_X509_INFO_new_null ();
+  if (!ca_list)
+    goto end;
+
+  ca_list = PEM_X509_INFO_read_bio (in, NULL, (pem_password_cb *) NULL, NULL);
+  for (i = 0; i < sk_X509_INFO_num (ca_list); i++)
+    {
+      X509_INFO *ca = (X509_INFO *) sk_X509_INFO_value (ca_list, i);
+      if (ca->x509)
+	{
+	  SSL_add_client_CA (ssl, ca->x509);
+	  X509_STORE_add_cert (SSL_CTX_get_cert_store (ssl_ctx), ca->x509);
+	}
+    }
+end:
+  if (ca_list)
+    sk_X509_INFO_pop_free (ca_list, X509_INFO_free);
+  if (in != NULL)
+    BIO_free (in);
+  return;
+}
+
+int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret)
 {
   char err_buf [1024];
   if (strstr (key, "db:") == key)
@@ -877,6 +922,7 @@ int ssl_client_use_db_key (SSL * ssl, char *key, caddr_t * err_ret)
 	  *err_ret = srv_make_new_error ("22023", "HTS03", "Invalid X509 private key file %s : %s", key, err_buf);
 	  return -1;
 	}
+      http_client_load_ssl_ca_certs (ssl, ca);
       return 1;
     }
   return 0;
@@ -945,10 +991,15 @@ http_cli_connect (http_cli_ctx * ctx)
 	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
-	  if (pkcs12_file && 0 == atoi(pkcs12_file))
+	  if (ctx->hcctx_ssl_insecure)
+	    SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_NONE, NULL);
+	  else
+	    SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
+
+	  if (NULL != pkcs12_file && 0 == atoi (pkcs12_file))
 	    {
 	      int session_id_context = 12;
-	      if (0 != ssl_client_use_db_key (ctx->hcctx_ssl, pkcs12_file, &(ctx->hcctx_err)))
+	      if (0 != ssl_client_use_db_key (ctx->hcctx_ssl, pkcs12_file, ctx->hcctx_ca_certs, &(ctx->hcctx_err)))
 		{
 		  if (ctx->hcctx_err != NULL)
 		    goto error_in_ssl;
@@ -959,10 +1010,6 @@ http_cli_connect (http_cli_ctx * ctx)
 		  goto error_in_ssl;
 		}
 
-	      if (ctx->hcctx_ssl_insecure)
-		SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_NONE, NULL);
-	      else
-		SSL_set_verify (ctx->hcctx_ssl, SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT, NULL);
 	      SSL_set_verify_depth (ctx->hcctx_ssl, -1);
 	      SSL_CTX_set_session_id_context(ctx->hcctx_ssl_ctx,
 		  (const unsigned char *)&session_id_context, sizeof session_id_context);
@@ -1004,7 +1051,7 @@ http_cli_set_method (http_cli_ctx * ctx, int method)
   return (HC_RET_OK);
 }
 
-char*
+const char*
 http_cli_get_method_string (http_cli_ctx * ctx)
 {
   return (http_get_method_string (ctx->hcctx_method));
@@ -2382,14 +2429,14 @@ All arguments except the URL can be db NULLs in bif call, NULL pointers in _impl
 */
 
 caddr_t
-bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
+bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char * me,
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
     int follow_redirects)
 {
   http_cli_ctx * ctx;
-  char* ua_id = http_client_id_string;
+  const char* ua_id = http_client_id_string;
   caddr_t ret = NULL;
   caddr_t _err_ret;
   int meth = HC_METHOD_GET;
@@ -2448,13 +2495,16 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, ch
       http_cli_ssl_cert (ctx, cert);
       http_cli_ssl_cert_pass (ctx, pk_pass);
       http_cli_ssl_ca_certs (ctx, ca_certs);
+      if (1 == strlen (cert) && 1 == atoi (cert))
+	ctx->hcctx_ssl_insecure = '\1';
+      else
       ctx->hcctx_ssl_insecure = (char) insecure;
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
-      ctx->hcctx_ssl_insecure = (char) insecure;
+      ctx->hcctx_ssl_insecure = '\1';
       RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
 #endif

@@ -1,0 +1,699 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="uddi_remove_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+				vm:owner="yacutia_uddi_page"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <vm:pagetitle>UDDI Resource remove</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="uuid_value" default="null" type="varchar" persist="1"/>
+      <v:variable name="contact_value" default="null" type="varchar" persist="1"/>
+      <v:variable name="page_return" default="null" type="varchar" persist="1"/>
+      <v:variable name="data_owner" default="null" type="varchar" persist="1"/>
+      <v:variable name="tmodel_is_reffered" default="null" type="integer" persist="1"/>
+    </vm:variables>
+
+    <vm:menu>
+      <vm:menuitem value="UDDI Service Services"/>
+      <vm:menuitem name="roles_url" value="UDDI Service Browse"/>
+      <vm:menuitem name="caps_url" value="UDDI Service Find"/> <!--  url="uddi_serv_find.vspx"-->
+    </vm:menu>
+    <vm:rawheader caption="Business Entity Create">
+    <td>
+    <?vsp
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='entity' )
+        http('Remove Business');
+      if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='service')
+        http('Remove Service');
+      if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='tmodel')
+        http('Remove the Tecnical Model');
+      if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='contact')
+        http('Remove the Contact');
+      if (  get_keyword('page', control.vc_page.vc_event.ve_params) ='email')
+        http('Remove  the E-Mail entry');
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='phone' )
+        http('Remove the Phone entry');
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='address' )
+        http('Remove the Address entry');
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='description' ) {
+        http('Remove the Description entry');
+        if ( get_keyword('owner', params) = 'businessEntity' )
+          http(' for business');
+        else if (get_keyword('owner', params) = 'businessService')
+          http(' for service');
+        else if (get_keyword('owner', params) = 'contacts')
+          http(' for contact');
+      }
+
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='discovery' )
+        http('Remove the Discovery URL entry');
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='identify' )
+        http('Remove the Indentification entry');
+      if ( get_keyword('page', control.vc_page.vc_event.ve_params) ='category' ) {
+        http('Specify the Category parameters');
+        if ( get_keyword('owner', params) = 'businessEntity' )
+          http(' for business');
+        else if (get_keyword('owner', params) = 'businessService')
+          http(' for service');
+      }
+     ?>
+    </td>
+    </vm:rawheader>
+    <vm:pagebody>
+<!-- Business Remove-->
+          <v:template name="business_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='entity' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Business </span>
+            <?vsp
+              declare b_name varchar;
+              if ( get_keyword('business_key', control.vc_page.vc_event.ve_params) is not null ) {
+                select  BE_NAME into b_name from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY = get_keyword('business_key', control.vc_page.vc_event.ve_params);
+                http(b_name);
+              }
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this business?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="business_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="business_key" value="<?= get_keyword('business_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('business_remove', params) is not null) {
+                    for select CO_CONTACT_KEY as  contact_key from  UDDI..CONTACTS where  CO_BUSINESS_ID = get_keyword('business_key', params) do {
+                      delete  from UDDI..EMAIL where EM_CONTACT_KEY = contact_key;
+                      delete  from UDDI..PHONE where PH_CONTACT_KEY =contact_key;
+                      delete  from UDDI..ADDRESS_LINE where AL_PARENT_ID = contact_key;
+                      delete from UDDI..DESCRIPTION  where UD_PARENT_ID = contact_key and UD_TYPE = 'contacts';
+                    }
+                    delete from UDDI..CONTACTS where  CO_BUSINESS_ID = get_keyword('business_key', params);
+                    for select BS_SERVICE_KEY as service_key from UDDI..BUSINESS_SERVICE  where BS_BUSINESS_KEY = get_keyword('business_key', params) do {
+                      for select   BT_BINDING_KEY as binding_key from UDDI..BINDING_TEMPLATE where  BT_SERVICE_KEY = service_key do {
+                        delete from UDDI..INSTANCE_DETAIL  where ID_BINDING_KEY = binding_key;
+                        delete from UDDI..DESCRIPTION  where UD_PARENT_ID = binding_key and UD_TYPE = 'bindingTemplate';
+                      }
+                      delete from UDDI..BINDING_TEMPLATE where BT_SERVICE_KEY = service_key;
+                      delete from UDDI..CATEGORY_BAG where   CB_PARENT_ID = service_key;
+                      delete from UDDI..DESCRIPTION  where UD_PARENT_ID = service_key and UD_TYPE = 'businessService';
+                    }
+                    delete from UDDI..BUSINESS_SERVICE  where BS_BUSINESS_KEY = get_keyword('business_key', params);
+                    delete from UDDI..DESCRIPTION  where UD_PARENT_ID = get_keyword('business_key', params)  and UD_TYPE = 'businessEntity';
+                    delete from UDDI..CATEGORY_BAG where   CB_PARENT_ID = get_keyword('business_key', params);
+                    -- identifier
+                    delete from UDDI..IDENTIFIER_BAG where   IB_PARENT_ID = get_keyword('business_key', params);
+                    -- discovery
+                    delete from UDDI..DISCOVERY_URL   where DU_PARENT_ID = get_keyword('business_key', params);
+                    delete from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY = get_keyword('business_key', params);
+
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv.vspx?page=1&sid=%s&realm=%s\r\n',  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="business_remove" value="Remove"/>
+        <v:button action="submit" name="business_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+           </v:template>
+<!-- Service Remove-->
+           <v:template name="service_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='service' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Service </span>
+            <?vsp
+              declare s_name varchar;
+              if (get_keyword('service_key', control.vc_page.vc_event.ve_params)) {
+                select BS_NAME into s_name from UDDI..BUSINESS_SERVICE  where  BS_SERVICE_KEY = get_keyword('service_key', control.vc_page.vc_event.ve_params);
+                http(s_name);
+              }
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this service?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="service_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="service_key" value="<?= get_keyword('service_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('service_remove', params) is not null) {
+                    for select   BT_BINDING_KEY as binding_key from UDDI..BINDING_TEMPLATE where  BT_SERVICE_KEY = get_keyword('service_key', params) do {
+                      delete from UDDI..INSTANCE_DETAIL  where ID_BINDING_KEY = binding_key;
+                      delete from UDDI..DESCRIPTION  where UD_PARENT_ID = binding_key and UD_TYPE = 'bindingTemplate';
+                    }
+                    delete from UDDI..BINDING_TEMPLATE where BT_SERVICE_KEY = get_keyword('service_key', params);
+                    delete from UDDI..CATEGORY_BAG where   CB_PARENT_ID = get_keyword('service_key', params);
+                    delete from UDDI..DESCRIPTION  where UD_PARENT_ID = get_keyword('service_key', params)  and UD_TYPE = 'businessService';
+
+                    delete from UDDI..BUSINESS_SERVICE  where BS_SERVICE_KEY = get_keyword('service_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="service_remove" value="Remove"/>
+        <v:button action="submit" name="service_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+           </v:template>
+  <!--  Model Remove-->
+           <v:template name="model_remove_template" type="simple" enabled="--case when  ( get_keyword('page', control.vc_page.vc_event.ve_params) ='tmodel' ) then 1 else 0 end">
+          <v:before-data-bind>
+            <v:script><![CDATA[
+            declare model_key varchar;
+            self.tmodel_is_reffered := 0;
+            if (get_keyword('model_key', params) is not null) {
+              model_key := get_keyword('model_key', params);
+              if (exists(select 1 from UDDI..IDENTIFIER_BAG  where  IB_TMODEL_KEY_ID =model_key) or
+                  exists(select 1 from  UDDI..CATEGORY_BAG where  CB_TMODEL_KEY_ID = model_key) or
+                  exists(select 1 from  UDDI..INSTANCE_DETAIL   where   ID_TMODEL_KEY = model_key) ) {
+                    self.tmodel_is_reffered := 1;
+                  }
+            }
+
+             ]]></v:script>
+            </v:before-data-bind>
+
+
+
+
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Model </span>
+            <?vsp
+              declare model_name varchar;
+              select TM_NAME into model_name from UDDI..TMODEL  where TM_TMODEL_KEY= get_keyword('model_key', control.vc_page.vc_event.ve_params);
+              http('<b>');
+              http(model_name);
+              http('</b>');
+             if ( self.tmodel_is_reffered =1) {
+              http('<span style="{color:red}"> may not be removed because there are references on it.</span>');
+             } else {
+              http('<span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/><b>Are you sure you want to remove this model?</b>');
+             }
+            ?></p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="model_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="model_key" value="<?= get_keyword('model_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('model_remove', params) is not null) {
+                      delete  from UDDI..TMODEL  where TM_TMODEL_KEY= get_keyword('model_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                  return;
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="model_remove" value="Remove" xhtml_style="{width:64pt}">
+             <v:before-render>
+            <v:script><![CDATA[
+              if ( self.tmodel_is_reffered =0)
+                control.vc_enabled := 1;
+              else
+                control.vc_enabled := 0;
+            ]]></v:script>
+             </v:before-render>
+        </v:button>
+        <v:button action="submit" name="model_cancel" value="Cancel" xhtml_style="{width:64pt}">
+             <v:before-render>
+            <v:script><![CDATA[
+              if ( self.tmodel_is_reffered =0)
+                control.ufl_value := 'Cancel';
+              else
+                control.ufl_value := 'Back';
+            ]]></v:script>
+             </v:before-render>
+        </v:button>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+           </v:template>
+<!-- Contact Remove -->
+          <v:template name="contact_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='contact') then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Contact </span>
+            <?vsp
+              declare c_name varchar;
+              if (get_keyword('contact_key', control.vc_page.vc_event.ve_params)) {
+                select  CO_PERSONAL_NAME  into c_name from UDDI..CONTACTS where CO_CONTACT_KEY  = get_keyword('contact_key', control.vc_page.vc_event.ve_params);
+                http(c_name);
+              }
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this contact?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="contact_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('contact_remove', params) is not null) {
+                      delete  from UDDI..EMAIL where EM_CONTACT_KEY = get_keyword('contact_key', params);
+                      delete  from UDDI..PHONE where PH_CONTACT_KEY = get_keyword('contact_key', params);
+                      delete  from UDDI..ADDRESS_LINE where AL_PARENT_ID = get_keyword('contact_key', params);
+                      delete from UDDI..DESCRIPTION
+                      where UD_PARENT_ID =  get_keyword('contact_key', params) and UD_TYPE = 'contacts';
+                      delete from UDDI..CONTACTS
+                        where  CO_CONTACT_KEY = get_keyword('contact_key', params) ;
+
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="contact_remove" value="Remove"/>
+        <v:button action="submit" name="contact_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+
+<!-- E-Mail Remove -->
+        <v:template name="email_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='email' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The e-mail address </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this e-mail address?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="email_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('email_remove', params) is not null) {
+                      delete  from UDDI..EMAIL where EM_EMAIL_KEY = get_keyword('contact_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="email_remove" value="Remove"/>
+        <v:button action="submit" name="email_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+    </v:template>
+
+<!-- Phone Remove-->
+          <v:template name="phone_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='phone' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The phone entry </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this phone entry?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="phone_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('phone_remove', params) is not null) {
+                      delete  from UDDI..PHONE where PH_PHONE_KEY = get_keyword('contact_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="phone_remove" value="Remove"/>
+        <v:button action="submit" name="phone_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+        </v:template>
+<!-- Address Line Remove-->
+          <v:template name="address_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='address' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The  address line </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this address line?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="address_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="contact_key" value="<?= get_keyword('contact_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('address_remove', params) is not null) {
+                      delete  from UDDI..ADDRESS_LINE where AL_ADDRESS_KEY = get_keyword('contact_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n', get_keyword('page_back', params), self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="address_remove" value="Remove"/>
+        <v:button action="submit" name="address_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+        </v:template>
+<!-- Description  Remove-->
+          <v:template name="description_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='description' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The description </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this description?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="description_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('description_remove', params) is not null) {
+                      delete from UDDI..DESCRIPTION
+                      where UD_DESCRIPTION_KEY = get_keyword('uuid_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="description_remove" value="Remove"/>
+        <v:button action="submit" name="description_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+<!-- Discovery URL Remove-->
+          <v:template name="discovery_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='discovery' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The discovery url </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this discovery URL?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="discovery_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('discovery_remove', params) is not null) {
+                      delete from UDDI..DISCOVERY_URL
+                      where DU_DISCOVERY_KEY = get_keyword('uuid_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="discovery_remove" value="Remove"/>
+        <v:button action="submit" name="discovery_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+          </v:template>
+  <!--Indetify Remove -->
+          <v:template name="identify_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='identify' ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The account </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this account?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="identity_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('identity_remove', params) is not null) {
+                      delete from UDDI..IDENTIFIER_BAG
+                      where IB_IDENTIFIER_KEY = get_keyword('uuid_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="identity_remove" value="Remove"/>
+        <v:button action="submit" name="identity_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+  <!--Category Remove -->
+          <v:template name="category_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='category'  ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The category </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this category?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="category_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="uuid_key" value="<?= get_keyword('uuid_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('category_remove', params) is not null) {
+                      delete from UDDI..CATEGORY_BAG
+                      where CB_CATEGORY_KEY = get_keyword('uuid_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="category_remove" value="Remove"/>
+        <v:button action="submit" name="category_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+
+  <!--Service Binding  Remove -->
+          <v:template name="binding_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='binding'  ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Service Binding  </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it. All binding instance infos will be removed too.</span> <br/>
+            <b>Are you sure you want to remove this binding?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="binding_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="binding_key" value="<?= get_keyword('binding_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('binding_remove', params) is not null) {
+                      delete from UDDI..INSTANCE_DETAIL
+                      where ID_BINDING_KEY = get_keyword('binding_key', params);
+                      delete from UDDI..DESCRIPTION
+                      where UD_PARENT_ID =  get_keyword('binding_key', params) and UD_TYPE = 'bindingTemplate';
+                      delete from UDDI..BINDING_TEMPLATE
+                      where BT_BINDING_KEY = get_keyword('binding_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="binding_remove" value="Remove"/>
+        <v:button action="submit" name="binding_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+
+
+
+  <!--Binding Instance Remove -->
+          <v:template name="instance_remove_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='instance_info'  ) then 1 else 0 end">
+<table width="100%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData"  align="center">
+  <tr> <td bgcolor="#83BFE8">
+            <p><span style="{color:red}">The Instance Info </span>
+            <?vsp
+              http('');
+            ?><span style="{color:red}"> will be removed permanently and there is no way to restore it.</span> <br/>
+            <b>Are you sure you want to remove this instance info?</b> </p>
+              </td></tr><tr><td  class="MainData">
+      <table width="100%" border="0" cellspacing="0" cellpadding="5">
+      <v:form name="instance_remove_form" type="simple" method="POST" action="">
+            <input type="hidden" name="instance_key" value="<?= get_keyword('instance_key', control.vc_page.vc_event.ve_params) ?>"/>
+            <input type="hidden" name="page_back" value="<?= get_keyword('page_back', self.vc_page.vc_event.ve_params) ?>"/>
+              <v:on-post>
+                <script><![CDATA[
+                {
+                  if (get_keyword('instance_remove', params) is not null) {
+                      delete from UDDI..INSTANCE_DETAIL
+                      where ID_KEY = get_keyword('instance_key', params);
+                  }
+                          http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: uddi_serv_browse.vspx?page=%s&sid=%s&realm=%s\r\n',get_keyword('page_back', params),  self.sid ,self.realm));
+                }
+                ]]></script>
+            </v:on-post>
+
+        <tr>   <td align="center">
+        <v:button action="submit" name="instance_remove" value="Remove"/>
+        <v:button action="submit" name="instance_cancel" value="Cancel"/>
+        </td>
+        </tr>
+      </v:form>
+      </table>
+    </td>
+  </tr>
+ </table>
+
+        </v:template>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+
+

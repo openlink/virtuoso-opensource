@@ -1,0 +1,425 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_sub_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="error_str" persist="1" type="varchar" default="''"/>
+      <v:variable name="acct" persist="1" type="varchar" default="''"/>
+      <v:variable name="srv" persist="1" type="varchar" default="''"/>
+      <v:variable name="stage" persist="1" type="integer" default="0"/>
+      <v:variable name="errors" persist="1" type="any" default="0"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="subs" value="Transactional (subscribe)"/>
+    </vm:menu>
+    <vm:header caption="Subscription Parameters"/>
+    <vm:pagebody vdb_check="1">
+      <table class="form_layout">
+        <colgroup>
+          <col/>
+          <col/>
+          <col/>
+        </colgroup>
+        <tr>
+          <td class="page_tab">
+            <v:url name="b_url13" value="Publications" url="db_repl_trans.vspx?page=1"/>
+          </td>
+          <td class="page_tab_selected">Subscriptions
+          </td>
+        <td class="page_tab_empty"></td>
+      </tr>
+    </table>
+    <table class="tab_page">
+      <tr>
+        <td>
+      <?vsp
+        if (not(get_keyword('acct', control.vc_page.vc_event.ve_params, '') = ''))
+          self.stage := 0;
+      ?>
+      <v:template name="edit_sub_template" type="simple" enabled="-- equ(self.stage, 0)">
+        <?vsp
+          adm_config_purger_actions(self.srv, self.acct, control.vc_page.vc_event.ve_params);
+        ?>
+        <v:form name="edit_sub_frm" method="POST" type="simple">
+          <input type="hidden" name="srv" value="<?V self.srv ?>"/>
+          <input type="hidden" name="acct" value="<?V self.acct ?>"/>
+          <?vsp
+            self.acct := get_keyword('acct', control.vc_page.vc_event.ve_params, '');
+            self.srv := get_keyword('srv', control.vc_page.vc_event.ve_params, '');
+            if (repl_is_pushback (self.srv, self.acct) = 0)
+            {
+          ?>
+	  <div class="scroll_area">
+          <table cellspacing="0" cellpadding="3" class="listing">
+            <tr class="listing_header_row">
+              <th>Select</th>
+              <th>Item</th>
+              <th>Type</th>
+              <th>Is Copy</th>
+              <th>Mode <small>(procedures only)</small></th>
+            </tr>
+            <?vsp
+              declare _mode varchar;
+              declare _mod integer;
+              declare _itype, _sched, _cp, _opt varchar;
+              declare _popt, idx1 integer;
+              _mode := '';
+              self.acct := get_keyword('acct', control.vc_page.vc_event.ve_params, '');
+              self.srv := get_keyword('srv', control.vc_page.vc_event.ve_params, '');
+              idx1 := 0;
+              declare _sync_user varchar;
+              _sync_user := null;
+              whenever not found goto sync_user_nf;
+              select SYNC_USER into _sync_user
+                  from DB.DBA.SYS_REPL_ACCOUNTS where SERVER = self.srv and ACCOUNT = self.acct;
+sync_user_nf:
+              if (_sync_user is null or _sync_user = '')
+                _sync_user := 'dba';
+              _sched := coalesce((select SE_INTERVAL from SYS_SCHEDULED_EVENT where SE_NAME = concat('repl_', self.srv, '_', self.acct)), 'No');
+              for select TI_ITEM, TI_TYPE as _itp, TI_IS_COPY as cp , TI_OPTIONS as opt from DB.DBA.SYS_TP_ITEM where TI_SERVER = self.srv and TI_ACCT = self.acct do
+              {
+                idx1 := idx1 +1;
+                if (_itp = 1)
+                  _itype := 'DAV Collection';
+                else if (_itp = 2)
+                  _itype := 'Table';
+                else if (_itp = 3)
+                  _itype := 'PL/SQL Procedure';
+                _opt := 'None';
+                _cp := 'None';
+                if (cp = 0)
+                  _cp := 'No';
+                else if (cp = 1)
+                  _cp := 'Yes';
+                if (isstring (opt))
+                  _popt := atoi (opt);
+                else
+                  _popt := opt;
+                if (_popt = 1)
+                  _opt := 'Calls';
+                else if (_popt = 2)
+                  _opt := 'Definition';
+                else if (_popt = 3)
+                  _opt := 'Both';
+            ?>
+	    <tr class="<?V case when mod (idx1,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+              <td><input type="checkbox" name="CB_<?V TI_ITEM ?>"/></td>
+              <td><?V TI_ITEM ?></td>
+              <td><?V _itype ?></td>
+              <td><?V _cp ?></td>
+              <td><?V _opt ?></td>
+            </tr>
+            <?vsp
+              }
+              if (idx1 = 0)
+              {
+            ?>
+            <td class="SubAction" colspan="5" align="center">There are no item in publication</td>
+            <?vsp
+              }
+            ?>
+	  </table>
+	</div>
+          <p class="helptext">Sync user: <b><?V _sync_user ?></b></p>
+          <p class="helptext">Scheduled update: <b><?V _sched ?></b></p>
+          <hr/>
+          <p class="helptext">To change the schedule on the Subscription, input <b>Scheduled interval</b> and click <b>Add schedule</b>.</p>
+          <p class="helptext">To remove the Subscription schedule, input <b>"0"</b> in <b>Scheduled interval</b> and click <b>Add schedule</b>.</p>
+          <table border="0" cellspacing="0" cellpadding="3" class="MainData">
+            <tr>
+              <td>Sync User</td>
+              <td>
+          <select name="sync_user">
+                  <?vsp
+                    for select U_NAME from DB.DBA.SYS_USERS
+                        where U_IS_ROLE = 0 and U_SQL_ENABLE = 1
+                        order by U_NAME do
+                      {
+                        declare _sel varchar;
+                        if (U_NAME = _sync_user)
+                          _sel := ' selected="true"';
+                        else
+                          _sel := '';
+                        http (sprintf ('<option value="%V"%V>%V</option>',
+                            U_NAME, _sel, U_NAME));
+                     }
+                  ?>
+          </select>
+              </td>
+              <td>
+                <v:button action="simple" value="Set" name="set_sync_user">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _sync_user varchar;
+                        _sync_user := get_keyword ('sync_user', params);
+                        REPL_SYNC_USER(self.srv, self.acct, _sync_user);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+            <tr>
+              <td>Scheduled interval</td>
+              <td>
+                <input type="text" name="int" value="<?V _sched ?>"/>
+              </td>
+              <td>
+                <v:button action="simple" value="Add schedule" name="sched">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _sched integer;
+                        _sched := atoi(get_keyword('int', control.vc_page.vc_event.ve_params, '0'));
+                        DB.DBA.SUB_SCHEDULE(self.srv, self.acct, _sched);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+          <hr/>
+          <p class="helptext">To load initial data, click here: &nbsp;&nbsp;&nbsp;&nbsp;
+            <v:button action="simple" value="Load data" name="loaddata">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.errors := REPL_INIT_COPY(self.srv, self.acct, 1);
+                    if (isarray(self.errors))
+                      self.stage := 1;
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <br/>
+            (Only click here if you have not yet synchronized this Subscription.)
+          </p>
+          <hr/>
+          <p class="helptext">
+            To change the copy mode of item(s) in the Subscription, select the item(s) you <br/>
+            want, choose the appropriate <b>Copy mode</b>, and click the <b>Change mode</b> button.
+          </p>
+          <table border="0" cellspacing="0" cellpadding="3" class="MainData">
+            <tr>
+              <td>Copy mode</td>
+              <td>
+                <select name="mode">
+                  <option value="0">Leave local copy</option>
+                  <option value="1">Remove local copy</option>
+                </select>
+              </td>
+              <td>
+                <v:button action="simple" value="Change mode" name="chmod">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare ix, _mod integer;
+                        declare _item varchar;
+                        ix := 0;
+                        _mod := atoi(get_keyword('mode', control.vc_page.vc_event.ve_params, '0'));
+                        while (_item := adm_next_checkbox('CB_', control.vc_page.vc_event.ve_params, ix))
+                        {
+                          update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = _mod where TI_SERVER = self.srv and TI_ITEM = _item and TI_ACCT = self.acct;
+                        }
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+          <?vsp
+            }
+            else
+            {
+          ?>
+          <table>
+            <tr>
+              <th>Purger configuration</th>
+            </tr>
+            <tr>
+              <td>
+                <?vsp
+                  adm_config_purger_form (self.srv, self.acct);
+                ?>
+              </td>
+            </tr>
+          </table>
+          <hr/>
+          <table border="0" cellpadding="3" cellspacing="0" class="MainData">
+            <?vsp
+              declare _num integer;
+              _num := 0;
+              declare _is_valid integer;
+              _is_valid := 1;
+              whenever not found goto nf;
+              select RS_VALID into _is_valid from SYS_REPL_SUBSCRIBERS where RS_SERVER = self.srv and RS_ACCOUNT = self.acct and RS_SUBSCRIBER = self.srv;
+            nf:
+              if (_is_valid <> 0)
+                http('<tr><td>This pushback account is valid.</td></tr>');
+              else
+                http('<tr><td>This pushback account is invalid.</td></tr>');
+            ?>
+          </table>
+          <table>
+            <tr>
+              <td>
+                <v:button name="set_valid" action="simple" value="Set Valid">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare state, msg, m_dta, res varchar;
+                        state := '00000';
+                        if (not exists (select 1 from SYS_REPL_SUBSCRIBERS where RS_SERVER = self.srv and RS_ACCOUNT = self.acct and RS_SUBSCRIBER = self.srv))
+                        {
+                          exec('repl_add_subscriber(?, ?, ?)', state, msg, vector(self.srv, self.acct, self.srv), m_dta, res);
+                          if (state <> '00000')
+                          {
+                            self.error_str := msg;
+                            return;
+                          }
+                        }
+                        else
+                        {
+                          exec('update SYS_REPL_SUBSCRIBERS set RS_VALID = ? where RS_SERVER = ? and RS_ACCOUNT = ? and RS_SUBSCRIBER = ?', state, msg, vector(1, self.srv, self.acct, self.srv), m_dta, res);
+                          if (state <> '00000')
+                          {
+                            self.error_str := msg;
+                            return;
+                          }
+                        }
+                        state := '00000';
+                        exec('repl_changed()', state, msg, vector(), m_dta, res);
+                        if (state <> '00000')
+                          self.error_tr := msg;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+              <td>
+                <v:button name="set_invalid" action="simple" value="Set Invalid">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _item varchar;
+                        declare _idx integer;
+                        declare state, msg, m_dta, res varchar;
+                        if (not exists (select 1 from SYS_REPL_SUBSCRIBERS where RS_SERVER = self.srv and RS_ACCOUNT = self.acct and RS_SUBSCRIBER = self.srv))
+                        {
+                          state := '00000';
+                          exec('repl_add_subscriber', state, msg, vector(self.srv,self.acct, self.srv), m_dta, res);
+                          if (state <> '00000')
+                          {
+                            self.error_str := msg;
+                            return;
+                          }
+                        }
+                        state := '00000';
+                        exec('update SYS_REPL_SUBSCRIBERS set RS_VALID = ? where RS_SERVER = ? and RS_ACCOUNT = ? and RS_SUBSCRIBER = ?', state, msg, vector(0, self.srv,self.acct, self.srv), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.error_str := msg;
+                          return;
+                        }
+                        state := '00000';
+                        exec('repl_changed()', state, msg, vector(), m_dta, res);
+                        if (state <> '00000')
+                          self.error_str := msg;
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+          <?vsp
+              if (self.error_str <> '')
+              {
+          ?>
+          <br/>
+          <table class="warning">
+            <tr>
+              <td>
+                <?V self.error_str ?>
+              </td>
+            </tr>
+          </table>
+          <?vsp
+                self.error_str := '';
+              }
+            }
+          ?>
+        </v:form>
+      </v:template>
+      <v:template name="erior_template" type="simple" enabled="-- equ(self.stage, 1)">
+        <table class="MainData" border="1" cellpadding="3" cellspacing="0">
+         <v:form name="link4_form" action="db_repl_sub_edit.vspx" method="POST" type="simple">
+           <?vsp
+             self.stage := 0;
+             declare _ix, _len integer;
+             _ix := 0;
+             _len := length(self.errors);
+             while (_ix < _len)
+             {
+           ?>
+           <tr>
+             <td class="SubAction">&nbsp;</td>
+           </tr>
+           <tr>
+             <td class="SubAction" COLSPAN="2">Error on: <b><?V self.errors[_ix] ?></b></td>
+           </tr>
+           <tr>
+             <td class="SubAction">SQL state</td>
+             <td class="SubAction"><?V self.errors[_ix+1] ?></td>
+           </tr>
+           <tr>
+             <td class="SubAction">Message</td>
+             <td class="SubAction"><?V self.errors[_ix+2] ?></td></tr>
+           <?vsp
+               _ix := _ix + 3;
+             }
+             self.stage := 0;
+           ?>
+         </v:form>
+       </table>
+     </v:template>
+    <table>
+       <tr>
+        <td class="SubInfo">
+          <vm:url name="db_repl_sub_ref" format="%s" value="--'Back to Transactional Replications'" url="--'db_repl_trans.vspx?page=2'" />
+        </td>
+       </tr>
+    </table>
+        </td>
+      </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

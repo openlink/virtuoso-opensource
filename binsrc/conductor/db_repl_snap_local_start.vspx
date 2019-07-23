@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  vm:owner="yacutia_db_repl_page"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="repl_snap_local_dsn" type="varchar" persist="1" default="''"/>
+      <v:variable name="repl_snap_local_result_str" type="varchar" persist="1" default="''"/>
+      <v:variable name="repl_snap_local_tables" type="varchar" persist="1" default="''"/>
+      <v:variable name="repl_snap_local_running" type="integer" persist="1" default="0"/>
+    </vm:variables>
+    <vm:pagebody vdb_check="1">
+    <v:after-data-bind>
+      <v:script>
+        <![CDATA[
+
+          http_request_status('HTTP/1.1 302 Found');
+          http_header(sprintf('Location: db_repl_snap_local_create.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+          http_flush();
+
+          declare continue handler for SQLSTATE '*' {
+            ROLLBACK WORK;
+            self.repl_snap_local_running := 0;
+            self.repl_snap_local_result_str := concat(__SQL_STATE,__SQL_MESSAGE);
+            COMMIT WORK;
+          };
+
+          declare _idx integer;
+
+          declare _tables any;
+          declare _tbl,_local_qual, _local_owner, _local_name, _local_full_name varchar;
+
+          _tables := self.repl_snap_local_tables;
+
+          _idx := 0;
+
+          while (_idx < length(_tables))
+          {
+            declare continue handler for SQLSTATE '*' {
+              ROLLBACK WORK;
+              registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),__SQL_STATE || ' ' || __SQL_MESSAGE);
+              goto next_tbl;
+            };
+            _tbl := _tables[_idx][0];
+            declare _rc integer;
+            declare _pk_names any;
+            declare _stmt, _stat, _msg, _rpk_col_names, _col_name, _col_type, _fq_tbl varchar;
+            declare _local_create integer;
+            _local_qual := _tables[_idx][1];
+            _local_owner := _tables[_idx][2];
+            _local_name := _tables[_idx][3];
+            _local_create := _tables[_idx][4];
+            _local_full_name := sprintf ('%s.%s.%s', _local_qual, _local_owner, _local_name);
+            _tbl := complete_table_name(_tbl, 1);
+            _fq_tbl := sprintf ('"%I"."%I"."%I"', name_part (_tbl, 0), name_part (_tbl, 1), name_part (_tbl, 2));
+
+            declare _cols, _col any;
+            declare _ix, _len integer;
+
+            _cols := REPL_PK_COLS (_tbl);
+            if (length (_cols) = 0)
+            {
+              signal('Error',' The table doesn''t have primary key');
+              --  registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),'Error: The table doesn''t have primary key');
+              goto next_tbl;
+            }
+            _ix := 0;
+            _len := length (_cols);
+            _rpk_col_names := '';
+            _pk_names := vector ();
+            while (_ix < _len)
+            {
+              _col := aref (_cols, _ix);
+              _col_name := aref (_col, 0);
+              _rpk_col_names := concat(_rpk_col_names, _col_name);
+              _pk_names := vector_concat (_pk_names, vector (_col_name));
+              if (_ix + 1 < _len)
+                _rpk_col_names := concat(_rpk_col_names, ', ');
+              _ix := _ix + 1;
+            }
+            _stat := '00000';
+            _msg := '';
+            _cols := REPL_ALL_COLS (_tbl);
+            _ix := 0;
+            _len := length(_cols);
+            _stmt := sprintf('create table %s (', _local_full_name);
+            while (_ix < _len)
+            {
+              _col := aref(_cols, _ix);
+              _col_name := aref(_col, 0);
+              if (aref(_col, 1) = 254) {
+                _col_type := null;
+                _col_type := (SELECT get_keyword('sql_class',COL_OPTIONS) FROM DB.DBA.SYS_COLS
+                               WHERE "TABLE" = _tbl AND "COLUMN" = _col_name);
+                if (isnull(_col_type)) signal('Error',sprintf('Counld not find column type for column: %s',_col_name));
+              }
+              else
+                _col_type := REPL_COLTYPE (_col);
+
+              _stmt := concat (_stmt, _col_name, ' ', _col_type);
+              if (position (_col_name, _pk_names) <> 0)
+                _stmt := concat (_stmt, ' not null');
+              if (_ix + 1 < _len)
+                _stmt:= concat(_stmt, ', ');
+              _ix := _ix + 1;
+            }
+            _stmt := concat(_stmt, sprintf(', primary key(%s))', _rpk_col_names));
+            _stat := '00000';
+            _msg := '';
+            if (_local_create = 1)
+              exec (_stmt, _stat, _msg);
+
+            if (_stat <> '00000')
+            {
+              signal(_stat,_msg);
+              --registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),_stat || ' ' || _msg);
+              goto next_tbl;
+            }
+            if (not exists (select 1 from sys_keys
+              where name_part (key_table, 2) = concat ('RLOG_', name_part (_tbl, 2))
+              and name_part (key_table, 1) = name_part (_tbl, 1)
+              and name_part (key_table, 0) = name_part (_tbl, 0)))
+            {
+              _stmt := sprintf ('create snapshot log for %s', _fq_tbl);
+              _stat := '00000'; _msg := '';
+              _rc := exec (_stmt, _stat, _msg);
+              if (_rc <> 0)
+              {
+                signal(_stat,_msg);
+                --registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),_stat || ' ' || _msg);
+                goto next_tbl;
+              }
+            }
+            _stmt := sprintf ('create snapshot "%I"."%I"."%I" from %s',
+            _local_qual, _local_owner, _local_name, _fq_tbl);
+            _stat := '00000';
+            _msg := '';
+            if (0 <> exec (_stmt, _stat, _msg))
+            {
+              signal(_stat,_msg);
+              --registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),_stat || ' ' || _msg);
+              goto next_tbl;
+            }
+	    declare cmpl any;
+	    cmpl := y_get_tbl_row_count (_local_qual,_local_owner,_local_name);
+
+	    registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),
+	    	sprintf ('Completed %d Records', cmpl));
+
+            next_tbl: ;
+            COMMIT WORK;
+            _idx := _idx + 1;
+          }
+
+          self.repl_snap_local_running := 0;
+       ]]>
+      </v:script>
+    </v:after-data-bind>
+
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="event_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="0" name="_proc" type="varchar" default="''"/>
+      <v:variable persist="0" name="_item" type="varchar" default="''"/>
+      <v:variable persist="0" name="_item_type" type="integer" default="0"/>
+      <v:variable persist="0" name="_stmt" type="varchar" default="''"/>
+      <v:variable persist="1" name="error_str198" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Bidirectional Snapshot Replication"/>
+    </vm:menu>
+    <vm:header caption="Edit Conflict Resolver"/>
+    <vm:pagebody vdb_check="1">
+      <v:form name="event_form1" type="simple" method="POST" action="">
+        <v:before-data-bind>
+          <v:script>
+            <![CDATA[
+              declare _item, _stmt, _proc varchar;
+              _item := get_keyword('item', self.vc_page.vc_event.ve_params);
+              if (_item)
+                self._item := cast(deserialize(decode_base64(_item)) as varchar);
+              self._item_type := atoi(get_keyword ('item_type', self.vc_page.vc_event.ve_params, '0'));
+              _proc := get_keyword('proc', self.vc_page.vc_event.ve_params, '');
+              if (_proc)
+                self._proc := cast(deserialize(decode_base64(_proc)) as varchar);
+              if ('' <> self._proc)
+                select coalesce(p_text, blob_to_string(p_more)) into _stmt from sys_procedures where p_name = self._proc;
+              else
+                _stmt := get_keyword('stmt', self.vc_page.vc_event.ve_params, '');
+              self._stmt := _stmt;
+            ]]>
+          </v:script>
+        </v:before-data-bind>
+        <input type="hidden" name="item" value="<?V get_keyword('item', self.vc_page.vc_event.ve_params) ?>"/>
+        <input type="hidden" name="item_type" value="<?V get_keyword('item_type', self.vc_page.vc_event.ve_params) ?>"/>
+        <input type="hidden" name="proc" value="<?V get_keyword('proc', self.vc_page.vc_event.ve_params) ?>"/>
+        <table class="ctl_grp">
+          <tr>
+            <td class="ctl_ctr">
+              <textarea name="stmt" rows="25" cols="70"><?V coalesce(self._stmt, '') ?></textarea>
+            </td>
+          </tr>
+          <tr class="form_cmd_row">
+            <td>
+              <v:button action="simple" name="cancel3" value="Cancel">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" name="save" value="Save">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      declare _state, _msg, _stmt varchar;
+                      _stmt := get_keyword ('stmt', self.vc_page.vc_event.ve_params, '');
+                      _state := '00000';
+                      _msg := '';
+                      exec(_stmt, _state, _msg);
+                      if (_state <> '00000')
+                      {
+                         self.error_str198 := _msg;
+                         return;
+                      }
+                      self.vc_redirect(sprintf('db_repl_bi_cr.vspx?item=%s&item_type=%s', encode_base64(serialize(self._item)), cast(self._item_type as varchar)));
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+      </v:form>
+      <?vsp
+        if (self.error_str198 <> '' and self.error_str198 is not null)
+          http(sprintf('<table class="warning"><tr><td>%s</td></tr></table>', self.error_str198));
+        self.error_str198 := '';
+      ?>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

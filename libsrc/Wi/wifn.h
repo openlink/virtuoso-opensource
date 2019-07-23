@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -377,7 +377,7 @@ extern int rn_n_col_leaves;
 /* disk.c */
 
 dbe_storage_t * dbs_open_slice (dbe_storage_t * top_dbs, disk_segment_t * seg, int slice_no, int create);
-void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int delete);
+void dbs_slice_close  (cluster_map_t * clm, dbe_storage_t * top_dbs, dbe_storage_t * dbs, int unlink_files);
 void cl_dbs_read_cfg (dbe_storage_t * dbs);
 void dbs_slice_init (dbe_storage_t * top_dbs, dbe_storage_t * dbs, int exists);
 int word_free_bit (dp_addr_t w);
@@ -767,7 +767,7 @@ void sch_split_name (const char *q_default, const char *name, char *q, char *o, 
 dbe_key_t * sch_table_key (dbe_schema_t * sc, const char *table, const char *key, int non_primary);
 
 
-struct query_s * sch_proc_def (dbe_schema_t * sch, const char * name);
+EXE_EXPORT (struct query_s * ,sch_proc_def, (dbe_schema_t * sch, const char * name));
 struct query_s * sch_partial_proc_def (dbe_schema_t * sc, caddr_t name, char *q_def, char *o_def);
 struct query_s * sch_proc_exact_def (dbe_schema_t * sch, const char * name);
 struct query_s * sch_module_def (dbe_schema_t * sch, const char * name);
@@ -828,6 +828,7 @@ extern char * http_server_id_string;
 extern long http_ses_trap;
 extern unsigned long cfg_scheduler_period ;
 extern long callstack_on_exception;
+extern long public_debug;
 extern long pl_debug_all;
 extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
@@ -1371,6 +1372,7 @@ void dv_geo_length (db_buf_t dv, long * hl, long * l);
 int  cmpf_geo (buffer_desc_t * buf, int irow, it_cursor_t * itc);
 void  itc_geo_insert (it_cursor_t * itc, buffer_desc_t * buf, row_delta_t * rd);
 caddr_t geo_wkt (caddr_t g);
+caddr_t geo_wkb (caddr_t g);
 extern dk_mutex_t * geo_reg_mtx;
 void itc_geo_unregister (it_cursor_t * itc);
 caddr_t geo_parse_wkt (char * str, caddr_t * err_ret);

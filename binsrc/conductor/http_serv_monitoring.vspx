@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+
+  <head>
+    <title>Virtuoso HTTP Server Logs</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <style type="text/css">
+<![CDATA[
+.WhiteText {  font-family: Verdana, Arial, Helvetica, sans-serif; font-weight: bold; color: #FFFFFF}
+.VerdanaPlain {  font-family: Verdana, Arial, Helvetica, sans-serif}
+.VerdanaPlainSmall { font-family: Verdana, Arial, Helvetica, sans-serif ; font-size: smaller}
+.VerdanaItal { font-family: Verdana, Arial, Helvetica, sans-serif ; font-style: italic}
+.VerdanaPlainSmallWhite { font-family: Verdana, Arial, Helvetica, sans-serif ; font-size: smaller ; color: #FFFFFF}
+.VerdanaPlainSmallActive { font-family: Verdana, Arial, Helvetica, sans-serif ; font-size: smaller ; color: #FFFF99}
+.yellow {  color: #FFFF99}
+.redstar {  font-family: Arial, Helvetica, sans-serif; color: #FF0033; font-size: smaller}
+.VerdanaPlainWhite { font-family: Verdana, Arial, Helvetica, sans-serif ; color: #FFFFFF }
+.VerdanaLgWhite { font-family: Verdana, Arial, Helvetica, sans-serif ; color: #FFFFFF ; font-size: 12pt}
+        ]]>
+</style>
+  </head>
+  <body bgcolor="#FFFFFF">
+        <v:page name="HttpLogPage" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+           xmlns:xhtml="http://www.w3.org/1999/xhtml">
+          <v:form name="frm_http_log" type="simple" action="" method="POST">
+    <v:variable name="log_file_name" type="varchar" default="''" />
+    <v:variable name="pattern" type="varchar" default="''" />
+    <v:variable name="radio_sel" type="varchar" default="''" />
+    <v:variable name="col_sel" type="varchar" default="''" />
+    <table width="100%" border="0" cellspacing="0" cellpadding="0">
+      <tr>
+        <td rowspan="99" align="center" valign="top" height="551">
+          <table width="100%" border="0" cellspacing="0" cellpadding="0">
+            <tr align="left">
+              <td class="VerdanaPlain" colspan="2" width="20%">
+                <p>Access Log for<br />
+                   /doc/html</p>
+              </td>
+              <td class="VerdanaPlain" width="35%">
+                  <table class="VerdanaPlainSmall" border="0" cellspacing="0" cellpadding="5" bgcolor="53BFE8">
+                    <tr>
+                      <td colspan="6">
+<v:radio-button name="radio_all" group-name="radio_gr" value="--'all'" initial-checked="1">Show All
+  <v:after-data-bind>
+    <v:script>
+      <![CDATA[ if (control.ufl_selected) self.radio_sel := control.ufl_value; ]]>
+    </v:script>
+  </v:after-data-bind>
+</v:radio-button>
+<v:radio-button name="radio_secc" group-name="radio_gr" value="--'succ'">Show Successful
+  <v:after-data-bind>
+    <v:script>
+      <![CDATA[ if (control.ufl_selected) self.radio_sel := control.ufl_value; ]]>
+    </v:script>
+  </v:after-data-bind>
+</v:radio-button>
+<v:radio-button name="radio_fail" group-name="radio_gr" value="--'fail'">Show Failures
+  <v:after-data-bind>
+    <v:script>
+      <![CDATA[ if (control.ufl_selected) self.radio_sel := control.ufl_value; ]]>
+    </v:script>
+  </v:after-data-bind>
+</v:radio-button>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td></td>
+                      <td>with <v:text name="_pattern" value="" /></td>
+                      <td></td>
+                      <td>in
+<v:select-list name="sel_in">
+    <v:item name="" value="0" />
+    <v:item name="host" value="1" />
+    <v:item name="name" value="3" />
+    <v:item name="user" value="2" />
+    <v:item name="datetime" value="4" />
+    <v:item name="request" value="5" />
+    <v:item name="status" value="6" />
+    <v:item name="bytes" value="7" />
+    <v:item name="referrer" value="8" />
+    <v:item name="user agent" value="9" />
+  <v:data-bind>
+    <v:script>
+     <![CDATA[
+--        XXX REMOVE XXX NOT WORK !!!
+     ]]>
+    </v:script>
+  </v:data-bind>
+</v:select-list>
+                      </td>
+                      <td></td>
+                      <td>
+<v:button name="_redispl" action="simple" value="Redisplay">
+<v:on-post>
+    <v:script>
+     <![CDATA[
+
+       declare temp_field vspx_field;
+       declare grid vspx_data_grid;
+       declare sl vspx_select_list;
+       declare params any;
+
+       temp_field := control.vc_parent.vc_find_control('_pattern');
+       self.pattern := temp_field.ufl_value;
+       params := e.ve_params;
+
+       sl := control.vc_parent.vc_find_control ('sel_in');
+       self.col_sel := sl.vsl_item_values [sl.vsl_selected_inx];
+
+       grid := control.vc_parent.vc_find_control ('dg');
+       grid.vc_data_bind (e);
+
+     ]]>
+    </v:script>
+  </v:on-post>
+</v:button>
+                      </td>
+                    </tr>
+                  </table>
+
+
+              </td>
+              <td width="5%" />
+              <td class="VerdanaPlain" width="45%"><a href="HTTP-Services-monitoring-errlog.htm">Error Log</a></td>
+            </tr>
+            <tr align="left" valign="top" bgcolor="#00A0DD">
+              <td colspan="5">
+                <table class="VerdanaPlainSmall" width="100%" border="0" cellspacing="0" cellpadding="3">
+
+<v:data-grid name="dg" nrows="20" data='--yacutia_pars_http_log_file(self.log_file_name, self.pattern, self.radio_sel, self.col_sel)' meta="--yacutia_http_log_ui_labels()" scrollable="1">
+  <v:before-data-bind>
+    <v:script>
+     <![CDATA[
+--        XXX Fix this. !!!
+          self.log_file_name := 'http05082002.log';
+     ]]>
+    </v:script>
+  </v:before-data-bind>
+
+<v:template name="dg_frame" type="frame">
+<p>
+<font style="color:red"><v:error-summary /></font>
+</p>
+<table WIDTH="30%" BORDER="1" CELLPADDING="0" CELLSPACING="0">
+  <tr>
+    <th><v:label name="label0h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[0]" format="%s"/></th>
+    <th><v:label name="label1h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[1]" format="%s"/></th>
+    <th><v:label name="label2h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[2]" format="%s"/></th>
+    <th><v:label name="label3h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[3]" format="%s"/></th>
+    <th><v:label name="label4h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[4]" format="%s"/></th>
+    <th><v:label name="label5h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[5]" format="%s"/></th>
+    <th><v:label name="label6h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[6]" format="%s"/></th>
+    <th><v:label name="label7h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[7]" format="%s"/></th>
+    <th><v:label name="label8h" value="--(control.vc_parent as vspx_data_grid).dg_row_meta[8]" format="%s"/></th>
+  </tr>
+  <v:rowset />
+  <tr>
+    <td colspan="2" align="center"  class="listing_col_action">
+      <vm:ds-navigation data-set="dg" type="grid"/>
+    </td>
+  </tr>
+</table>
+</v:template>
+
+<v:template name="dg_rows" type="row">
+<tr>
+  <td nowrap="nowrap"><v:label name="label0" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label2" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label3" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[3], 21)" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label4" value="--(control.vc_parent as vspx_row_template).te_rowset[4]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label5" value="--(control.vc_parent as vspx_row_template).te_rowset[5]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label6" value="--(control.vc_parent as vspx_row_template).te_rowset[6]" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label7" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[7], 27)" format="%s"/></td>
+  <td nowrap="nowrap"><v:label name="label8" value="--LEFT((control.vc_parent as vspx_row_template).te_rowset[8], 27)" format="%s"/></td>
+</tr>
+</v:template>
+
+<v:template name="dg_empty" type="if-not-exists">
+<tr>
+  <td colspan="2">No rows selected</td>
+</tr>
+</v:template>
+
+</v:data-grid>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+          </v:form>
+        </v:page>
+  </body>
+</html>

@@ -1,0 +1,147 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<html>
+  <head>
+    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link type="text/css" rel="stylesheet" href="syntax/SyntaxHighlighter.css"></link>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Interactive SQL</title>
+  </head>
+  <body>
+    <v:page name="isql"
+            style="yacutia_style.xsl"
+            doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+            fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+            xmlns:xhtml="http://www.w3.org/1999/xhtml"
+            xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <vm:popup_page_wrapper>
+        <vm:variables>
+          <v:variable name="is_popup" persist="0" type="integer" default="1" />
+        </vm:variables>
+<?vsp http('<script type="text/javascript" src="md5.js"></script>\n'); ?>
+        <script type="text/javascript">
+          <![CDATA[
+  function adm_post (f, btn)
+  {
+    var s = f.password_plain.value;
+    f.__submit_func.value = '__submit__';
+    f.__submit_func.name = btn.name;
+    f.password.value = hex_md5 (f.nonce.value + f.password_plain.value);
+    f.password_plain.value = "";
+    f.submit ();
+    f.password_plain.value = s;
+  }
+          ]]>
+        </script>
+        <h1 class="page_title">Interactive SQL</h1>
+	<div class="lc_box">
+        <v:login name="admin_login_isql" realm="virtuoso_admin"
+                 mode="url" user-password="y_sql_user_password"
+                 user-password-check="y_sql_user_password_check"
+                 >
+		 <v:template name='inl' type="if-no-login" />
+		 <v:login-form name="admin_login_form"
+		   required="1"
+		   title="Login"
+		   user-title="name"
+		   password-title="pass"
+		   submit-title="Login">
+		   <table class="login_fm_ctr">
+                <tr>
+                  <th colspan="2">Login into Database</th>
+                </tr>
+		     <tr>
+		       <td colspan="2">
+			 <v:template type="simple" name="login_not_valid" enabled="1">
+                      <v:after-data-bind>
+                        <![CDATA[
+                          if (e.ve_is_post and
+			     e.ve_button is not null and
+			     e.ve_button.vc_name = 'login'
+			     )
+			     control.vc_enabled := 1;
+			     else
+			     control.vc_enabled := 0;
+                        ]]>
+                      </v:after-data-bind>
+			   <div class="error_msg">Invalid credentials</div>
+			 </v:template>
+		       </td>
+		     </tr>
+		     <tr>
+		       <td>
+			 <label for="t_login_usr">Account</label>
+		       </td>
+		       <td>&nbsp;</td>
+		     </tr>
+		     <tr>
+		       <td>
+			 <v:text name="username" value="" xhtml_id="t_login_usr"/>
+		       </td>
+		       <td>&nbsp;</td>
+		     </tr>
+		     <tr>
+		       <td>
+			 <label for="t_login_pwd">Password</label>
+		       </td>
+		       <td>&nbsp;</td>
+		     </tr>
+		     <tr>
+		       <td>
+			 <v:text name="password_plain"
+			   value=""
+			   type="password"
+			   xhtml_id="t_login_pwd"/>
+                    <v:text name="password" value="" type="hidden" />
+		       </td>
+		     </tr>
+		     <tr>
+		       <td colspan="2" align="right">
+			 <v:button action="simple"
+			   name="login"
+			   value="Login"
+			   xhtml_id="login_btn"
+			   xhtml_onclick="javascript: adm_post (this.form, this); return false"/>
+		       </td>
+		     </tr>
+		   </table>
+		   <script type="text/javascript">document.admin_login_isql.username.focus();</script>
+		 </v:login-form>
+	       </v:login>
+	     </div>
+	     <v:template name="template_auth"
+	       type="simple"
+	       enabled="-- case when (self.sid is not null) then 1 else 0 end">
+          <v:template type="simple" condition="not self.vc_is_valid">
+		 <div class="warning">
+		   <v:error-summary/>
+		 </div>
+	       </v:template>
+	       <div style="clear:left;">
+	       <v:include url="isql_main_inc.vspx"/>
+	       </div>
+	     </v:template>
+	   </vm:popup_page_wrapper>
+    </v:page>
+  </body>
+</html>

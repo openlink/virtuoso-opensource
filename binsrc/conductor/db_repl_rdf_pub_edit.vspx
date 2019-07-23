@@ -1,0 +1,170 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_pub_create_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  vm:owner="yacutia_repl_pub_create_page"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="acct" persist="0" type="varchar" default="''"/>
+      <v:variable name="db_pub_stage" persist="0" type="integer" default="0"/>
+      <v:variable name="table_qual" persist="1" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="publ" value="Transactional (publish)"/>
+    </vm:menu>
+    <vm:header caption="Edit Transactional Publication"/>
+    <vm:pagebody vdb_check="1">
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+            if (get_keyword('acct', control.vc_page.vc_event.ve_params, '') <> '')
+            {
+              self.db_pub_stage := 0;
+              self.acct := get_keyword('acct', control.vc_page.vc_event.ve_params, '');
+            }
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+
+      <script language="JavaScript">
+        function dav_post(col, pcol, name, pname, dwn )
+        {
+          document.dav_pub_frm.col.value = col;
+          document.dav_pub_frm.pcol.value = pcol;
+          document.dav_pub_frm.name.value = name;
+          document.dav_pub_frm.pname.value = pname;
+          document.dav_pub_frm.dwn.value = dwn;
+          document.dav_pub_frm.action = 'db_repl_pub_edit.vspx';
+          document.dav_pub_frm.submit();
+        };
+      </script>
+      <table class="form_layout">
+        <tr>
+          <td class="page_tab_selected">
+            Publications
+          </td>
+          <td class="page_tab">
+            <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+          </td>
+        <td class="page_tab_empty"></td>
+      </tr>
+    </table>
+    <table class="tab_page">
+      <tr>
+        <td>
+        <v:form name="create_pub_frm" method="POST" type="simple">
+	  <h4>RDF Graphs published for replication</h4>
+	  <div class="scroll_area">
+          <table class="listing" rules="groups">
+            <colgroup/><colgroup/>
+            <thead>
+	      <tr class="listing_header_row">
+                <th>Graph IRI</th>
+              </tr>
+            </thead>
+            <?vsp
+              declare _len integer;
+              _len := 0;
+	      for select __id2i (RGGM_MEMBER_IID) as gr from RDF_GRAPH_GROUP_MEMBER 
+	         where RGGM_GROUP_IID = __i2id ('http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group') do
+              {
+                _len := _len + 1;
+
+                http (sprintf ('<tr class="%s">', case when mod (_len, 2) then 'listing_row_odd' else 'listing_row_even' end));
+            ?>
+              <td class="listing_col">
+                <input type="checkbox" name="CB_<?V gr ?>"/>
+              <?vsp http_value (gr, null); ?></td>
+            <?vsp
+                http('</tr>');
+              }
+              if (_len = 0)
+                http ('<tr><td colspan="1" align="center">No items added to this publication</td></tr>');
+            ?>
+	  </table>
+	</div>
+	<div>
+	    <label>Graph IRI: </label><v:text name="gr" value="" xhtml_size="100" /> 
+            <v:button name="add" action="simple" value="Add New">
+		<v:on-post>
+		    if (not length (self.gr.ufl_value))
+		      {
+		        self.vc_is_valid := 0;
+			self.vc_error_message := 'Invalid Graph IRI';
+			return;
+		      }
+		    DB.DBA.RDF_REPL_GRAPH_INS (self.gr.ufl_value);
+                    self.gr.ufl_value := '';
+              </v:on-post>
+	    </v:button>
+	<!--/div>
+	<div class="listing_bot_ctl_grp"-->
+            <v:button name="cancel11" action="simple" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+                  http_request_status('HTTP/1.1 302 Found');
+                  http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button name="del" action="simple" value="Remove">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 0;
+                    declare idx integer;
+                    declare item, state, msg, m_dta, res varchar;
+                    state := '00000';
+                    idx := 0;
+		    declare exit handler for sqlstate '*' 
+		    {
+                          self.vc_error_message := __SQL_MESSAGE;
+                          self.vc_is_valid := 0;
+                          return;
+		       
+		    };
+                    while (item := adm_next_checkbox('CB_', control.vc_page.vc_event.ve_params, idx))
+		      {
+                        DB.DBA.RDF_REPL_GRAPH_DEL (item);
+                      }
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:form>
+        </td>
+      </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

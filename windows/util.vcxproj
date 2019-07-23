@@ -13,6 +13,7 @@
   <PropertyGroup Label="Globals">
     <ProjectGuid>{031DB868-5294-4738-90BA-F80BB2CEA9DC}</ProjectGuid>
     <RootNamespace>util</RootNamespace>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -49,6 +50,9 @@
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
     <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ShortPlatform)\$(Configuration)\$(ProjectName)\</IntDir>
   </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
+    <ExecutablePath>$(VC_ExecutablePath_x64);$(WindowsSDK_ExecutablePath);$(VS_ExecutablePath);$(MSBuild_ExecutablePath);$(FxCopDir);c:\cygwin64\bin;$(PATH)</ExecutablePath>
+  </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <Midl>
       <TargetEnvironment>X64</TargetEnvironment>
@@ -58,7 +62,7 @@
       <Optimization>Full</Optimization>
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>..\libsrc\Xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\langfunc;..\libsrc\plugin;..\SDK\$(ShortPlatform)\sslsdk\inc32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>DLDAPI_WINDOWS;_SSL;YYTOKENTYPE;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;IN_LIBUTIL;_LIBC;_GNU_SOURCE;SUPPORT_UTF8;GLOBALREF=extern;__WITH_LIBDK;PCRE_STATIC;WIN32_LEAN_AND_MEAN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -250,7 +254,6 @@ cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)\export_gate_virtuoso.c;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
-set PATH=/usr/bin:%PATH% 
 bash gen_all_gates.sh
 cd $(ProjectDir)
 </Command>

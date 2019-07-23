@@ -1,0 +1,65 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+?>
+<?vsp declare xsl_sheet, xml_src, src_xslt, rel_path, xml_file, xsl_file, save_path  varchar;
+declare xml_tree, xslt_tree, pars,  xml_tree_doc, ses, res  any;
+declare n, len, result  integer;
+
+xsl_sheet := get_keyword('xsl_sheet',params);
+xml_src := get_keyword('xml_src',params);
+save_path:= get_keyword('file_loc',params);
+
+rel_path:='/';
+len:= length(path)-1;
+n:=0;
+ while (n < len) {
+    rel_path := concat(rel_path,aref(path,n),'/');
+     n:= n+1;
+ }
+
+select blob_to_string (RES_CONTENT) into xml_file from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xml_src;
+xml_tree := xml_tree (xml_file );
+
+select blob_to_string (RES_CONTENT) into src_xslt  from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xsl_sheet;
+xslt_sheet(src_xslt, xml_tree_doc (src_xslt));
+
+ses := string_output();
+
+xml_tree_doc:= xml_tree_doc (xml_tree);
+-- pars  := vector('section_name', '','ext_doc',concat('file:', path));
+res := xslt (src_xslt, xml_tree_doc);
+http_value(res,0,ses);
+
+	result :=0;
+--	if  (not (save_path = '') )
+--		 result :=  DAV_RES_UPLOAD (save_path, string_output_string(ses), 'text/html','110100000R', 'dav', 'dav','dav','dav');
+
+	string_to_file(concat(http_root(),rel_path,'tmp_xslt.html'),string_output_string(ses),-2);
+	http_request_status ('HTTP/1.1 302 Found');
+	http_header (sprintf('Location: %s\r\n', 'tmp_xslt.html'));
+
+?>
+<!--
+   <a href="javascript:self.close()">Close</a>
+-->

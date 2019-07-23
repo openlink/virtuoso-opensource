@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_pub"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    <vm:variables>
+      <v:variable persist="0" name="mode" type="varchar" default="''"/>
+      <v:variable persist="0" name="cat" type="varchar" default="''"/>
+      <v:variable persist="0" name="sch" type="varchar" default="''"/>
+      <v:variable persist="0" name="name" type="varchar" default="''"/>
+      <v:variable persist="0" name="type" type="varchar" default="'procedure'"/>
+      <v:variable persist="temp" name="err_msg" type="varchar" default="''"/>
+    </vm:variables>
+    <v:before-data-bind><v:script><![CDATA[
+        self.cat := get_keyword('cat', self.vc_event.ve_params, self.cat);
+        self.sch := get_keyword('sch', self.vc_event.ve_params, self.sch);
+        self.name := get_keyword('name', self.vc_event.ve_params, self.name);
+        self.type := get_keyword('type', self.vc_event.ve_params, self.type);
+    ]]></v:script></v:before-data-bind>
+    <v:template name="err_tmp" type="simple" enabled="-- case when (length(self.err_msg) > 0) then 1 else 0 end">
+        <v:form name="err_form" type="simple" method="POST" action="">
+          <table width="100%" cellspacing="0" cellpadding="5" class="Warning"  align="center">
+             <tr>
+               <td>
+                 Error occurred. <br/>
+                 <?V self.err_msg ?>
+               </td>
+             </tr>
+             <tr>
+               <td>
+                 <v:button action="simple" name="ok" value="OK"/>
+               </td>
+             </tr>
+          </table>
+        </v:form>
+      </v:template>
+        <v:template name="err_tmp2" type="simple" enabled="-- equ(self.err_msg, '')">
+        <v:form name="proc_create_form" type="simple" method="POST" action="">
+         <table align="left" border="0" cellspacing="0" cellpadding="5" class="SubAction">
+           <tr align="center">
+             <td>
+               <v:textarea name="crproc_textfield" xhtml_cols="80" xhtml_rows="25"
+                 value="--'create type ' || case when self.cat='%' then 'DB' else self.cat end || '.' || case when self.sch='%' then 'DBA' else self.sch end || '.[NAME]\n[UNDER type_name]\n[LANGUAGE language_name [EXTERNAL NAME literal]]\n[AS (type_memeber, ...)]\n[type_option[type option]...]\nmethod_specification,...]\n'"
+               >
+               </v:textarea>
+             </td>
+           </tr>
+           <tr align="center">
+             <td>
+              <v:button action="simple" name="crproc_cancel" value="Cancel" >
+                <v:on-post><v:script><![CDATA[
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crproc_reset" value="Clear" >
+                <v:on-post><v:script><![CDATA[
+                  self.crproc_textfield.ufl_value := '';
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crproc_save" value="Save" >
+                <v:on-post><v:script><![CDATA[
+                  declare stat, msg varchar;
+                  stat := '00000';
+                  commit work;
+                  if( length(self.crproc_textfield.ufl_value)=0)
+                    return;
+                  __set_user_id (connection_get ('vspx_user'), 1);
+                  exec (self.crproc_textfield.ufl_value, stat, msg);
+                  __set_user_id (user);
+                  if (stat = '00000') {
+                    http_request_status ('HTTP/1.1 302 Found');
+                    http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                  }
+                  else {
+                    self.err_msg := 'State:' || stat || ' Message:' || msg;
+                  }
+                ]]></v:script></v:on-post>
+              </v:button>
+             </td>
+           </tr>
+         </table>
+        </v:form>
+      </v:template>
+</v:page>

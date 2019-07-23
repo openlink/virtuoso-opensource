@@ -1,0 +1,1255 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_pub_create_page"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  vm:owner="yacutia_repl_pub_create_page"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="acct" persist="0" type="varchar" default="''"/>
+      <v:variable name="db_pub_stage" persist="0" type="integer" default="0"/>
+      <v:variable name="table_qual" persist="1" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="publ" value="Transactional (publish)"/>
+    </vm:menu>
+    <vm:header caption="Edit Transactional Publication"/>
+    <vm:pagebody vdb_check="1">
+      <v:before-data-bind>
+        <v:script>
+          <![CDATA[
+            if (get_keyword('acct', control.vc_page.vc_event.ve_params, '') <> '')
+            {
+              self.db_pub_stage := 0;
+              self.acct := get_keyword('acct', control.vc_page.vc_event.ve_params, '');
+            }
+          ]]>
+        </v:script>
+      </v:before-data-bind>
+
+      <script language="JavaScript">
+        function dav_post(col, pcol, name, pname, dwn )
+        {
+          document.dav_pub_frm.col.value = col;
+          document.dav_pub_frm.pcol.value = pcol;
+          document.dav_pub_frm.name.value = name;
+          document.dav_pub_frm.pname.value = pname;
+          document.dav_pub_frm.dwn.value = dwn;
+          document.dav_pub_frm.action = 'db_repl_pub_edit.vspx';
+          document.dav_pub_frm.submit();
+        };
+      </script>
+      <table class="form_layout">
+        <colgroup>
+          <col/>
+          <col/>
+          <col/>
+        </colgroup>
+        <tr>
+          <td class="page_tab_selected">
+            Publications
+          </td>
+          <td class="page_tab">
+            <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+          </td>
+        <td class="page_tab_empty"></td>
+      </tr>
+    </table>
+    <table class="tab_page">
+      <tr>
+        <td>
+      <v:template name="tree_db_template" type="simple" enabled="-- equ(self.db_pub_stage, 0)">
+        <v:form name="create_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
+	  <h4>Publication "<?V self.acct ?>"</h4>
+	  <div class="scroll_area">
+          <table class="listing" rules="groups">
+            <thead>
+	      <tr class="listing_header_row">
+                <th class="checkbox"/>
+                <th width="16px"/>
+                <th>Item</th>
+                <th>Type</th>
+                <th>Default copy mode</th>
+                <th>Replication Mode</th>
+              </tr>
+            </thead>
+            <?vsp
+              declare _len integer;
+              declare _is_updateable integer;
+              _len := 0;
+              _is_updateable := REPL_IS_UPDATABLE(repl_this_server(), self.acct);
+              for select TI_ITEM, TI_TYPE, TI_IS_COPY, TI_OPTIONS from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = self.acct do
+              {
+                _len := _len + 1;
+            ?>
+            <tr>
+              <td class="listing_col">
+                <input type="checkbox" name="CB<?V TI_TYPE ?>_<?V TI_ITEM ?>"/>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_TYPE = 1)
+                    http('<img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>');
+                  else if (TI_TYPE = 2)
+                    http('<img src="images/icons/table_16.png" alt="Table" title="Table"/>');
+                  else if (TI_TYPE = 3)
+                    http('<img src="images/icons/script_16.png" alt="Procedure" title="Procedure"/>');
+                ?>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_TYPE = 2)
+                    http(sprintf('<a href=\"db_repl_pub_cr.vspx?item=%s&acct=%s&sid=%s&realm=%s\">%s</a>', encode_base64(serialize(TI_ITEM)), self.acct, self.sid, self.realm, TI_ITEM));
+                  else
+                    http(TI_ITEM);
+                ?>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_TYPE = 1)
+                    http('WebDAV Collection');
+                  else if (TI_TYPE = 2)
+                    http('Table');
+                  else if (TI_TYPE = 3)
+                    http('PL/SQL Procedure');
+                ?>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_IS_COPY = 0 or TI_IS_COPY = '0')
+                    http ('Keep');
+                  else if (TI_IS_COPY = 1 or TI_IS_COPY = '1')
+                    http ('Drop');
+                ?>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_OPTIONS = 1 or TI_OPTIONS = '1')
+                    http ('Calls');
+                  else if (TI_OPTIONS = 2 or TI_OPTIONS = '2')
+                    http ('Definitions');
+                  else if (TI_OPTIONS = 3 or TI_OPTIONS = '3')
+                    http ('Calls&amp;Definition');
+                  else
+                    http ('N/A');
+                ?>
+              </td>
+            </tr>
+            <?vsp
+              }
+              if (_len = 0)
+                http ('<tr><td colspan="6" align="center">No items added to this publication</td></tr>');
+            ?>
+	  </table>
+	</div>
+          <div class="listing_bot_ctl_grp">
+            <v:button name="cancel11" action="simple" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+                  http_request_status('HTTP/1.1 302 Found');
+                  http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button name="dav" action="simple" value="Add collections">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 1;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="tbl" action="simple" value="Add Tables">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 2;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="proc" action="simple" value="Add Procedures">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 3;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="adv" action="simple" value="Advanced Options">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 4;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="del" action="simple" value="Remove">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 0;
+                    declare idx integer;
+                    declare item, state, msg, m_dta, res varchar;
+                    state := '00000';
+                    idx := 0;
+                    while (item := adm_next_checkbox('CB1_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        exec('REPL_PUB_REMOVE(?, ?, 1, 1)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                    idx := 0;
+                    while (item := adm_next_checkbox('CB2_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        exec('REPL_PUB_REMOVE(?, ?, 2, 1)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                    idx := 0;
+                    while (item := adm_next_checkbox('CB3_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        exec('REPL_PUB_REMOVE(?, ?, 3, 1)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:form>
+      </v:template>
+      <v:template name="sync_user_template" type="simple" enabled="-- case when (self.db_pub_stage = 0 and REPL_IS_UPDATABLE(repl_this_server(), self.acct) <> 0) then 1 else 0 end">
+        <v:form name="sync_user_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
+          <table class="ctl_grp">
+            <tr>
+              <td class="ctl_lbl_ctr">Sync User</td>
+              <td class="ctl_ctr">
+                <select name="sync_user">
+                  <?vsp
+                    declare _sync_user varchar;
+                    _sync_user := null;
+                    whenever not found goto sync_user_nf;
+                    select SYNC_USER into _sync_user
+                          from DB.DBA.SYS_REPL_ACCOUNTS
+                          where SERVER = repl_this_server()
+                          and ACCOUNT = self.acct;
+                    sync_user_nf:
+                    if (_sync_user is null or _sync_user = '')
+                      _sync_user := 'dba';
+                    for select U_NAME from DB.DBA.SYS_USERS
+                        where U_IS_ROLE = 0 and U_SQL_ENABLE = 1
+                        order by U_NAME do
+                      {
+                        declare _sel varchar;
+                        if (U_NAME = _sync_user)
+                          _sel := ' selected="true"';
+                        else
+                          _sel := '';
+                        http (sprintf ('<option value="%V"%V>%V</option>',
+                            U_NAME, _sel, U_NAME));
+                     }
+                  ?>
+                </select>
+              </td>
+              <td>
+                <v:button action="simple" value="Set" name="set_sync_user">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _sync_user varchar;
+                        _sync_user := get_keyword ('sync_user', params);
+                        REPL_SYNC_USER(repl_this_server(), self.acct, _sync_user);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+      <v:template name="grant_template" type="simple" enabled="-- equ(self.db_pub_stage, 0)">
+        <v:form name="grant_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
+          <table class="listing" rules="groups">
+            <thead>
+              <tr class="listing_header_row">
+                <th>Select</th>
+                <th>Grantee</th>
+              </tr>
+            </thead>
+            <tr class="listing_row_odd">
+              <td>always</td>
+              <td>DBA</td>
+            </tr>
+            <?vsp
+              declare num integer;
+              num := 0;
+              for select TPG_GRANTEE from SYS_TP_GRANT where TPG_ACCT = self.acct do
+              {
+                http (sprintf ('<tr class="%s">', case when mod (num, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                if (TPG_GRANTEE is not null)
+                  http(concat('<td class="listing_col"><input type=checkbox name="CBG_', TPG_GRANTEE, '"/></td><td class="listing_col">', TPG_GRANTEE, '</td>'));
+                else
+                  http('<td class="listing_col"><input type=checkbox name="CBG_<DB_NULL>"/></td><td class="listing_col">public</td>');
+                num := num + 1;
+                http('</tr>');
+              }
+            ?>
+          </table>
+          <div class="listing_bot_ctl_grp">
+            <v:button name="cancel131" action="simple" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+                  http_request_status('HTTP/1.1 302 Found');
+                  http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                ]]>
+              </v:on-post>
+            </v:button>
+            <v:button name="grnt" action="simple" value="Add Grantees">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 5;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <?vsp
+              if (num > 0)
+              {
+            ?>
+              <v:button name="revoke" action="simple" value="Revoke">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      declare item varchar;
+                      declare _idx varchar;
+                      _idx := 0;
+                      while (item := adm_next_checkbox ('CBG_', control.vc_page.vc_event.ve_params, _idx))
+                      {
+                        declare state, msg, m_dta, res varchar;
+                        state := '00000';
+                        exec('REPL_REVOKE(?, ?)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            <?vsp
+              }
+            ?>
+          </div>
+        </v:form>
+      </v:template>
+      <v:template name="dav_template" type="simple" enabled="-- equ(self.db_pub_stage, 1)">
+        <v:form name="dav_pub_frm" action="" method="POST" type="simple">
+          <?vsp
+            declare col, pcol, _idx integer;
+            declare name, pname, nname, parent varchar;
+            col := atoi(get_keyword('col', control.vc_page.vc_event.ve_params, '1'));
+            name := get_keyword('name', control.vc_page.vc_event.ve_params, '/');
+            if (get_keyword ('dwn', control.vc_page.vc_event.ve_params, '') = '')
+            {
+              pcol := atoi(get_keyword('pcol', control.vc_page.vc_event.ve_params, '1'));
+              pname := get_keyword('pname', control.vc_page.vc_event.ve_params,'/');
+            }
+            else
+            {
+              select COL_PARENT into pcol from WS.WS.SYS_DAV_COL where COL_ID = col;
+              if (pcol = 0 or pcol is null)
+                pcol := 1;
+              if (name <> '/')
+                pname := subseq(name, 0, strrchr(subseq(name, 0, length(name) - 1), '/') + 1);
+              else
+                pname := '/';
+            }
+          ?>
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <td colspan="2">
+                Select WebDAV collection for <b><?V self.acct ?></b> publication
+              </td>
+            </tr>
+            <tr>
+              <td class="ctl_lbl_ctr">
+                Collection name:
+              </td>
+              <td class="ctl_ctr">
+                <v:text name="col_name" xhtml_size="40"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="col_name"/>
+              </td>
+            </tr>
+            <tr class="form_cmd_row">
+              <td colspan="3">
+                <v:button name="davcan" action="simple" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.db_pub_stage := 0;
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button name="davcol" action="simple" value="Add to Publication">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _item varchar;
+                        declare _idx, _exist integer;
+                        declare err_items any;
+                        _idx := 0;
+                        err_items := vector();
+                        _item := get_keyword('col_name', self.vc_event.ve_params);
+                        _exist := 0;
+                          for select TI_ITEM from DB.DBA.SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = self.acct and TI_TYPE = 1 do
+                          {
+                            declare _item1, _item2 varchar;
+                            _item1 := _item;
+                            _item2 := TI_ITEM;
+                            if (isstring(_item) and length(_item) > 0 and aref(_item, length(_item) - 1) <> ascii('/'))
+                              _item1 := concat(_item, '/');
+                            if (isstring(_item2) and length(_item2) > 0 and aref(_item2, length(_item2) - 1) <> ascii('/'))
+                              _item2 := concat(_item2, '/');
+                            if (_item2 like concat(_item1, '%'))
+                            {
+                              err_items := vector_concat(err_items, vector(sprintf('The selected collection "%s" conflicts with the "%s"', _item, TI_ITEM)));
+                              _exist := 1;
+                            }
+                            else if (_item1 like concat(_item2, '%'))
+                            {
+                              err_items := vector_concat (err_items, vector(sprintf('The selected collection "%s" conflicts with the "%s"', _item, TI_ITEM)));
+                              _exist := 1;
+                            }
+                          }
+                          if (not _exist)
+                          {
+                            declare item, state, msg, m_dta, res varchar;
+                            state := '00000';
+                            exec('REPL_PUB_ADD(?, ?, 1, 1, 0)', state, msg, vector(cast(self.acct as varchar), cast(_item as varchar)), m_dta, res);
+			    if (state <> '00000')
+			    {
+			      self.vc_error_message := msg;
+			      self.vc_is_valid := 0;
+			      return;
+			    }
+                          }
+                          self.db_pub_stage := 0;
+                          self.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+      <v:template name="table_template" type="simple" enabled="-- case when(self.db_pub_stage = 2 or self.db_pub_stage = 3) then 1 else 0 end">
+        <v:form name="table_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
+          <h4>
+            <?vsp
+              if (self.db_pub_stage = 2)
+              {
+            ?>
+            Select tables for <b><?V self.acct ?></b> publication
+            <?vsp
+              }
+              else
+              {
+            ?>
+            Select procedures for <b><?V self.acct ?></b> publication
+            <?vsp
+              }
+            ?>
+          </h4>
+          <table>
+            <v:tree name="tree2" multi-branch="0" orientation="vertical" root="db_root_1" start-path="." child-function="db_child" show-root="1">
+              <v:node-template name="db_tree_node_tmpl">
+                <tr>
+                  <td>
+                    <v:button action="simple" name="tree2_toggle" style="image" value="--case (control.vc_parent as vspx_tree_node).tn_open when 0 then control.bt_close_img else control.bt_open_img end">
+                      <v:on-post>
+                        <![CDATA[
+                          self.table_qual := (control.vc_parent as vspx_tree_node).tn_value;
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                  <td valign="middle" width="99%" colspan="3">
+                    <v:label name="label21" value="--(control.vc_parent as vspx_tree_node).tn_value" />
+                  </td>
+                </tr>
+                <v:node/>
+              </v:node-template>
+              <v:leaf-template name="leaf_tmpl">
+                <v:template name="tables_template" type="simple" enabled="-- equ(self.db_pub_stage, 2)">
+                  <tr>
+                    <td>&nbsp;</td>
+                    <td valign="top">
+                      <v:label name="label12" value="--(control.vc_parent.vc_parent as vspx_tree_node).tn_value" />
+                    </td>
+		    <td>
+		      <?vsp
+		        declare tbls any;
+			tbls := cast (xpath_eval ('@tables', (control.vc_parent as vspx_tree_node).tn_element) as int);
+		      ?>
+		      <div class="<?V case when tbls then 'scroll_area' else '' end ?>">
+                      <table class="listing" rules="groups">
+                        <thead>
+                          <tr class="listing_header_row">
+                            <th class="checkbox">Add</th>
+                            <th width="16px"/>
+                            <th>Table</th>
+                          </tr>
+                        </thead>
+                        <?vsp
+                          declare len integer;
+                          declare qual, _s,sch varchar;
+                          _s := '';
+                          qual := cast(self.table_qual as varchar);
+                          sch  := (control.vc_parent as vspx_tree_node).tn_value;
+                          len := 0;
+                          repl_this_server();
+                          for select distinct key_table as tblname from sys_keys where name_part (key_table, 0) = qual and name_part (key_table, 1) = sch and not exists (select 1 from sys_views where v_name = key_table) and name_part (key_table, 2) not like 'RLOG_%' and name_part (key_table, 2) not like 'SYS_%' do
+                          {
+                            if (not exists(select 1 from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ITEM = tblname and TI_TYPE = 2));
+                            {
+                              len := len + 1;
+                              http('<tr>');
+                              http(sprintf('<td class="listing_col"><input type="checkbox" name="TB_%V" %s></td>\n', tblname, _s));
+                              http ('<td class="listing_col"><img src="images/icons/table_16.png" alt="Table" title="Table"/></td>');
+                              http(sprintf('<td class="listing_col">%V</td>', tblname));
+                              http('</tr>');
+                            }
+                          }
+                          if (0 = len)
+                            http(sprintf('<tr><td colspan="3" class="Attention">No tables for select</td></tr></table>', qual));
+                          else
+                          {
+                        ?>
+		        </table>
+		        </div>
+                        <div class="listing_bot_ctl_grp">
+                          <v:button name="new_repl" action="simple" value="Add to Publication">
+                            <v:on-post>
+                              <![CDATA[
+                                declare idx integer;
+                                declare item integer;
+                                idx := 0;
+                                while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                                {
+                                  declare state, msg, m_dta, res varchar;
+                                  state := '00000';
+                                  exec('REPL_PUB_ADD(?, ?, 2, 1, 0)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+				  if (state <> '00000')
+				  {
+				    self.vc_error_message := msg;
+				    self.vc_is_valid := 0;
+				    return;
+				  }
+                                }
+                                self.db_pub_stage := 0;
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </div>
+                      <?vsp
+                        }
+                      ?>
+                    </td>
+                  </tr>
+                </v:template>
+                <v:template name="procedure_template" type="simple" enabled="-- equ(self.db_pub_stage, 3)">
+                  <tr>
+                    <td>&nbsp;</td>
+                    <td valign="top">
+                      <v:label name="label13" value="--(control.vc_parent.vc_parent as vspx_tree_node).tn_value" />
+                    </td>
+                    <td>
+		      <?vsp
+		        declare tbls any;
+			tbls := cast (xpath_eval ('@procs', (control.vc_parent as vspx_tree_node).tn_element) as int);
+		      ?>
+		      <div class="<?V case when tbls then 'scroll_area' else '' end ?>">
+                      <table class="listing" rules="groups">
+                        <thead>
+                          <tr class="listing_header_row">
+                            <th>Add</th>
+                            <th/>
+                            <th>Procedure</th>
+                          </tr>
+                        </thead>
+                        <?vsp
+                          declare len integer;
+                          declare qual, _s,sch varchar;
+                          _s := '';
+                          qual := cast(self.table_qual as varchar);
+                          sch  := (control.vc_parent as vspx_tree_node).tn_value;
+                          len := 0;
+                          for select P_QUAL as pq, P_NAME as proc from SYS_PROCEDURES where 0 = casemode_strcmp(name_part (P_NAME, 0), qual)  and name_part (P_NAME, 1) = sch order by P_NAME do
+                          {
+                            if (not exists (select 1 from SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ITEM = proc and TI_TYPE = 3))
+                            {
+                              len := len + 1;
+                              http (sprintf ('<tr class="%s">', case when mod (len, 2) then 'listing_row_odd' else 'listing_row_even' end));
+                              http(sprintf('<td class="listing_col"><input type="checkbox" name="PR_%V" %s></td>',proc, _s));
+                              http ('<td class="listing_col"><img src="images/icons/script_16.png" alt="Procedure" title="Procedure"/></td>');
+                              http(sprintf('<td class="listing_col">%V</td>\n', proc));
+                            }
+                          }
+                          if (0 = len)
+                            http(sprintf('<tr><td colspan="3" class="Attention">No procedures for select</td></tr></table>', qual));
+                          else
+                          {
+                        ?>
+                        </table>
+		      </div>
+                        <div class="listing_bot_ctl_grp">
+                          <v:button name="add_proc_but" action="simple" value="Add to Publication">
+                            <v:on-post>
+                              <![CDATA[
+                                declare idx integer;
+                                declare item integer;
+                                idx := 0;
+                                while (item := adm_next_checkbox('PR_', control.vc_page.vc_event.ve_params, idx))
+                                {
+                                  declare state, msg, m_dta, res varchar;
+                                  state := '00000';
+                                  exec('REPL_PUB_ADD(?, ?, 3, 1, 1)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+				  if (state <> '00000')
+				  {
+				    self.vc_error_message := msg;
+				    self.vc_is_valid := 0;
+				    return;
+				  }
+                                }
+                                self.db_pub_stage := 0;
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </div>
+                      <?vsp
+                        }
+                      ?>
+                    </td>
+                  </tr>
+                </v:template>
+              </v:leaf-template>
+              <v:on-post>
+                <![CDATA[
+                  declare e vspx_event;
+                  declare but vspx_button;
+                  declare but_name varchar;
+                  e := self.vc_event;
+                  but_name := '';
+                  if (e.ve_button is not null)
+                  {
+                    but := e.ve_button;
+                    but_name := but.vc_name;
+                  }
+                ]]>
+              </v:on-post>
+            </v:tree>
+	  </table>
+          <v:button name="back_but" action="simple" value="Back">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  self.db_pub_stage := 0;
+                  self.vc_data_bind(e);
+                ]]>
+              </v:script>
+            </v:on-post>
+          </v:button>
+        </v:form>
+      </v:template>
+      <v:template name="adv_add_template" type="simple" enabled="-- equ(self.db_pub_stage, 4)">
+        <?vsp
+          adm_config_purger_actions(repl_this_server(), self.acct, control.vc_page.vc_event.ve_params);
+        ?>
+        <v:form name="adv_pub_frm" type="simple" method="POST" action="db_repl_pub_edit.vspx">
+          <h3>Advanced Options of "<?V self.acct ?>" publication</h3>
+          <table class="ctl_grp">
+            <tr>
+              <td colspan="2">
+                To create a backup of this Publication as an image file,<br/>
+                enter the directory and File name and file Split size.<br/>
+                Then press Create image to export content. The Image file<br/>
+                will be created as splices with Split size designating<br/>
+                the splice cutoff in bytes.
+              </td>
+            </tr>
+            <tr>
+              <td class="ctl_lbl_ctr">File name</td>
+              <td class="ctl_ctr">
+                <input type="text" name="exp_file" size="50" value="<?V self.acct ?>.img"/>
+              </td>
+            </tr>
+            <tr>
+              <td class="ctl_lbl_ctr">Split size</td>
+              <td class="ctl_ctr">
+                <input type="text" name="split" size="50" value="1000000"/>
+              </td>
+            </tr>
+            <tr class="form_cmd_row">
+              <td colspan="2">
+                <v:button name="backa_but" action="simple" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.db_pub_stage := 0;
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button name="cr_image" action="simple" value="Create Image">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _file varchar;
+                      declare _split integer;
+                      _file := get_keyword('exp_file', self.vc_event.ve_params, '');
+                      _split := atoi(get_keyword('split', self.vc_event.ve_params, '0'));
+                      if (_file <> '' and _split > 0)
+                      {
+                        commit work;
+                        declare state, msg, m_dta, res varchar;
+                        state := '00000';
+                        exec('DB.DBA.REPL_PUB_INIT_IMAGE(?, ?, ?)', state, msg, vector(cast(self.acct as varchar), cast(_file as varchar), _split), m_dta, res);
+                        if (state = '00000')
+                          self.db_pub_stage := 0;
+                        else
+                        {
+                          self.db_pub_stage := 4;
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                        }
+                       }
+                       else
+                       {
+                          self.db_pub_stage := 4;
+                          self.vc_error_message := 'Please, enter correct File name and Split size';
+                          self.vc_is_valid := 0;
+                       }
+                       self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+          <br/>
+          <table class="listing" rules="groups">
+            <thead>
+              <tr class="listing_header_row">
+                <th/>
+                <th>Item name</th>
+                <th>Type</th>
+                <th>Default copy mode</th>
+                <th>Replication mode</th>
+              </tr>
+            </thead>
+            <?vsp
+              declare _opt, _tp, _md varchar;
+              declare _ll integer;
+              _ll := 0;
+              for select TI_ITEM, TI_OPTIONS as opt, TI_TYPE, TI_IS_COPY from DB.DBA.SYS_TP_ITEM where TI_SERVER = repl_this_server() and TI_ACCT = self.acct  do
+              {
+                 _ll := _ll + 1;
+                 if (opt = 1)
+                   _opt := 'Calls';
+                 else if (opt = 2)
+                   _opt := 'Definition';
+                 else if (opt = 3)
+                   _opt := 'Both';
+                 else
+                   _opt := 'N/A';
+                 if (TI_TYPE = 1)
+                   _tp := 'WebDAV Collection';
+                 else if (TI_TYPE = 2)
+                   _tp := 'Table';
+                 else if (TI_TYPE = 3)
+                   _tp := 'PL/SQL Procedure';
+                 if (TI_IS_COPY = 0 or TI_IS_COPY = '0')
+                   _md := 'Keep';
+                 else if (TI_IS_COPY = 1 or TI_IS_COPY = '1')
+                   _md := 'Drop';
+            ?>
+            <tr>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_TYPE = 1)
+                    http('<img src="images/icons/foldr_16.png" alt="Collection" title="Collection"/>');
+                  else if (TI_TYPE = 2)
+                    http('<img src="images/icons/table_16.png" alt="Table" title="Table"/>');
+                  else if (TI_TYPE = 3)
+                    http('<img src="images/icons/script_16.png" alt="Procedure" title="Procedure"/>');
+                ?>
+              </td>
+              <td class="listing_col">
+                <?V TI_ITEM ?>
+              </td>
+              <td class="listing_col">
+                <?V _tp ?>
+              </td>
+              <td class="listing_col">
+                <select name="copy_mode_<?V TI_ITEM ?>">
+                  <option value="1" selected="<?V select_if('Drop', _md)?>">Drop</option>
+                  <option value="0" selected="<?V select_if('Keep', _md)?>">Keep</option>
+                </select>
+              </td>
+              <td class="listing_col">
+                <?vsp
+                  if (TI_TYPE = 3)
+                  {
+                ?>
+                <select name="proc_mode_<?=TI_ITEM?>">
+                  <option value="1" selected="<?V select_if('Calls', _opt) ?>">Calls</option>
+                  <option value="2" selected="<?V select_if('Definition', _opt) ?>">Definition</option>
+                  <option value="3" selected="<?V select_if('Both', _opt) ?>">Both</option>
+                </select>
+                <?vsp
+                  }
+                  else
+                    http('N/A');
+                ?>
+              </td>
+            </tr>
+            <?vsp
+              }
+              if (_ll = 0)
+                http('<tr><td colspan="5" class="Attention">No items to change</td></tr></table>');
+              else
+              {
+            ?>
+            </table>
+            <div class="listing_bot_ctl_grp">
+              <v:button name="apply_adv" action="simple" value="Apply">
+                <v:on-post>
+                  <![CDATA[
+                    declare _rc integer;
+                    declare t_mode, t_copy, it_mode, it_copy, it_type integer;
+                    declare it_item varchar;
+                    declare ti cursor for select TI_ITEM, TI_OPTIONS, TI_IS_COPY, TI_TYPE from DB.DBA.SYS_TP_ITEM where TI_SERVER = repl_this_server () and TI_ACCT = self.acct;
+                    declare exit handler for not found;
+                    open ti (exclusive, prefetch 1);
+                    while (__SQL_STATE = 0)
+                    {
+                      fetch ti into it_item, it_mode, it_copy, it_type;
+                      if (it_type <> 3)
+                        it_mode := 0;
+                      t_mode := atoi(cast(get_keyword(concat('proc_mode_', it_item), self.vc_event.ve_params, 0) as varchar));
+                      t_copy := atoi(cast(get_keyword(concat('copy_mode_', it_item), self.vc_event.ve_params, 0) as varchar));
+                      if (t_copy <> it_copy)
+                        update DB.DBA.SYS_TP_ITEM set TI_IS_COPY = t_copy where current of ti;
+                      if (it_type = 3 and t_mode <> it_mode)
+                      {
+                        _rc := DB.DBA.REPL_PROC_MODE(self.acct, it_item, t_mode);
+                        if (_rc > 0)
+                        {
+                          update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = t_mode where current of ti;
+                          repl_text(self.acct, 'update DB.DBA.SYS_TP_ITEM set TI_OPTIONS = ? where TI_ITEM = ? and TI_SERVER = ? and TI_ACCT = ? and TI_TYPE = 3', t_mode, it_item, repl_this_server(), self.acct);
+                        }
+                      }
+                    }
+                    close ti;
+                    self.db_pub_stage := 0;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+            <?vsp
+              }
+            ?>
+          <br/>
+          <table class="ctl_grp">
+            <tr class="ctl_grp_title">
+              <th>Purger configuration</th>
+            </tr>
+            <tr>
+              <td>
+                <?vsp
+                  adm_config_purger_form (repl_this_server(), self.acct);
+                ?>
+              </td>
+            </tr>
+          </table>
+          <br/>
+          <table class="listing" rules="groups">
+            <thead>
+              <tr class="listing_header_row">
+                <th/>
+                <th>Subscriber</th>
+                <th>Valid</th>
+              </tr>
+            </thead>
+            <?vsp
+              declare _num integer;
+              _num := 0;
+              for select RS_SERVER, RS_SUBSCRIBER, RS_VALID from SYS_REPL_SUBSCRIBERS where RS_SERVER = repl_this_server() and RS_ACCOUNT = self.acct do
+              {
+                declare _valid varchar;
+                if (RS_VALID <> 0)
+                  _valid := 'Yes';
+                else
+                  _valid := 'No';
+
+                http (sprintf ('<tr class="%s">', case when mod (_num, 2) then 'listing_row_odd' else 'listing_row_even' end));
+            ?>
+              <td class="listing_col"><input type="checkbox" name="CB_<?V _num ?>"/></td>
+              <td class="listing_col"><?V RS_SUBSCRIBER ?></td>
+              <td class="listing_col"><?V _valid ?></td>
+              <input type="hidden" name="CB_SUB_<?V _num?>" value="<?V RS_SUBSCRIBER ?>"/>
+            <?vsp
+              http ('</tr>');
+              _num := _num + 1;
+              }
+            ?>
+          </table>
+          <div class="listing_bot_ctl_grp">
+            <v:button action="simple" name="add221" value="Add">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    self.db_pub_stage := 6;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="set_valid" action="simple" value="Set Valid">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    declare _item varchar;
+                    declare _idx integer;
+                    declare state, msg, m_dta, res varchar;
+                    _idx := 0;
+                    while (_item := adm_next_checkbox('CB_', self.vc_event.ve_params, _idx))
+                    {
+                      declare _subscriber varchar;
+                      _subscriber := get_keyword(concat('CB_SUB_', _item), self.vc_event.ve_params, '');
+                      if (not exists(select 1 from SYS_REPL_SUBSCRIBERS where RS_SERVER = repl_this_server() and RS_ACCOUNT = self.acct and RS_SUBSCRIBER = _subscriber))
+                      {
+                        exec('repl_add_subscriber(?, ?, ?)', state, msg, vector(repl_this_server(), self.acct, _subscriber), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                      else
+                      {
+                        state := '00000';
+                        exec('update SYS_REPL_SUBSCRIBERS set RS_VALID = ? where RS_SERVER = ? and RS_ACCOUNT = ? and RS_SUBSCRIBER = ?', state, msg, vector(1, repl_this_server(),self.acct, _subscriber), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                    }
+                    state := '00000';
+                    exec('repl_changed()', state, msg, vector(), m_dta, res);
+                    if (state <> '00000')
+                    {
+                      self.vc_error_message := msg;
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="set_invalid" action="simple" value="Set Invalid">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    declare _item varchar;
+                    declare _idx integer;
+                    declare state, msg, m_dta, res varchar;
+                    _idx := 0;
+                    while (_item := adm_next_checkbox('CB_', self.vc_event.ve_params, _idx))
+                    {
+                      declare _subscriber varchar;
+                      _subscriber := get_keyword(concat('CB_SUB_', _item), self.vc_event.ve_params, '');
+                      if (not exists (select 1 from SYS_REPL_SUBSCRIBERS where RS_SERVER = repl_this_server() and RS_ACCOUNT = self.acct and RS_SUBSCRIBER = _subscriber))
+                      {
+                        state := '00000';
+                        exec('repl_add_subscriber', state, msg, vector(repl_this_server(),self.acct, _subscriber), m_dta, res);
+                        if (state <> '00000')
+                        {
+                          self.vc_error_message := msg;
+                          self.vc_is_valid := 0;
+                          return;
+                        }
+                      }
+                      state := '00000';
+                      exec('update SYS_REPL_SUBSCRIBERS set RS_VALID = ? where RS_SERVER = ? and RS_ACCOUNT = ? and RS_SUBSCRIBER = ?', state, msg, vector(0, repl_this_server(),self.acct, _subscriber), m_dta, res);
+                      if (state <> '00000')
+                      {
+                        self.vc_error_message := msg;
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                    }
+                    state := '00000';
+                    exec('repl_changed()', state, msg, vector(), m_dta, res);
+                    if (state <> '00000')
+                    {
+                      self.vc_error_message := msg;
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+            <v:button name="remove_subscriber" action="simple" value="Remove">
+              <v:on-post>
+                <v:script>
+                  <![CDATA[
+                    declare _item varchar;
+                    declare _idx integer;
+                    declare state, msg, m_dta, res varchar;
+                    _idx := 0;
+                    while (_item := adm_next_checkbox('CB_', self.vc_event.ve_params, _idx))
+                    {
+                      declare _subscriber varchar;
+                      _subscriber := get_keyword(concat ('CB_SUB_', _item), self.vc_event.ve_params, '');
+                      state := '00000';
+                      exec('delete from SYS_REPL_SUBSCRIBERS where RS_SERVER = ? and RS_ACCOUNT = ? and RS_SUBSCRIBER = ?', state, msg, vector(repl_this_server(), self.acct, _subscriber), m_dta, res);
+                      if (state <> '00000')
+                      {
+                        self.vc_error_message := msg;
+                        self.vc_is_valid := 0;
+                        return;
+                      }
+                    }
+                    state := '00000';
+                    exec('repl_changed()', state, msg, vector(), m_dta, res);
+                    if (state <> '00000')
+                    {
+                      self.vc_error_message := msg;
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  ]]>
+                </v:script>
+              </v:on-post>
+            </v:button>
+          </div>
+        </v:form>
+      </v:template>
+      <v:template name="tree_db_template4646" type="simple" enabled="-- equ(self.db_pub_stage, 6)">
+        <v:form name="event_form1" type="simple" method="POST" action="">
+          <table class="ctl_grp">
+            <tr>
+              <td class="ctl_lbl_ctr">Subscriber Name</td>
+              <td class="ctl_ctr"><input type="text" name="subscriber"/></td>
+            </tr>
+            <tr class="form_cmd_row">
+              <td colspan="2">
+                <v:button action="simple" name="cancel" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.db_pub_stage := 4;
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="add2321" value="Add">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        declare _subscriber varchar;
+                        _subscriber := get_keyword('subscriber', control.vc_page.vc_event.ve_params, '');
+                        if (_subscriber = '')
+			  {
+			    self.vc_is_valid := 0;
+			    self.vc_error_message := 'The Subscriber Name is not specified';
+			    return;
+			  }
+			declare exit handler for sqlstate '*'
+			{
+			  self.vc_is_valid := 0;
+			  self.vc_error_message := __SQL_MESSAGE;
+			  return;
+		        };
+                        repl_add_subscriber(repl_this_server(), self.acct, _subscriber);
+                        repl_changed();
+                        www:
+                        self.db_pub_stage := 4;
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+      </v:template>
+      <v:template name="grant_add_template" type="simple" enabled="-- equ(self.db_pub_stage, 5)">
+        <v:form name="grante_pub_frm" action="db_repl_pub_edit.vspx" method="POST" type="simple">
+          <h4>Select users to grant subscribe to publication <b><?V self.acct ?></b></h4>
+          <table class="listing" rules="groups">
+            <thead>
+              <tr class="listing_header_row">
+                <th class="checkbox">Select</th>
+                <th width="16px"></th>
+                <th>User Name</th>
+              </tr>
+            </thead>
+            <?vsp
+              declare ulen integer;
+              ulen := 0;
+
+              -- Changed to match admin UI
+              --for select U_NAME from SYS_USERS where U_ID <> 0 and (not exists(select 1 from SYS_TP_GRANT where TPG_ACCT = self.acct and TPG_GRANTEE = U_NAME)) order by U_NAME do
+              for select U_NAME from SYS_USERS where U_ID <> 0 and U_SQL_ENABLE = 1 and U_IS_ROLE = 0 and (not exists (select 1 from SYS_TP_GRANT where TPG_ACCT = self.acct and TPG_GRANTEE = U_NAME)) order by U_NAME do
+              {
+                ulen := ulen + 1;
+            ?>
+            <tr>
+              <td class="listing_col">
+                <input type="checkbox" name="GR_<?V U_NAME ?>"/>
+              </td>
+              <td class="listing_col">
+                <img src="images/icons/user_16.png" alt="User" title="User"/>
+              </td>
+              <td class="listing_col">
+                <?V U_NAME ?>
+              </td>
+            </tr>
+            <?vsp
+              }
+	      if (ulen = 0)
+	        {
+	  	  http('<tr><td colspan="3" class="Attention">No users defined</td></tr></table>');
+		?>
+            <div class="listing_ctl_grp">
+              <v:button name="grant_back_but1" action="simple" value="Back">
+                <v:on-post>
+                  <v:script>
+                    <![CDATA[
+                      self.db_pub_stage := 0;
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:script>
+                </v:on-post>
+              </v:button>
+            </div>
+		<?vsp
+		}
+              else
+              {
+            ?>
+            </table>
+            <div class="listing_bot_ctl_grp">
+              <v:button name="add_grant" action="simple" value="Grant">
+                <v:on-post>
+                  <![CDATA[
+                    declare idx integer;
+                    declare item integer;
+                    idx := 0;
+                    while (item := adm_next_checkbox('GR_', control.vc_page.vc_event.ve_params, idx))
+                    {
+                      declare state, msg, m_dta, res varchar;
+                      state := '00000';
+                      exec('REPL_GRANT(?, ?)', state, msg, vector(cast(self.acct as varchar), cast(item as varchar)), m_dta, res);
+		      if (state <> '00000')
+		      {
+			self.vc_error_message := msg;
+			self.vc_is_valid := 0;
+			return;
+		      }
+                    }
+                    self.db_pub_stage := 0;
+                    self.vc_data_bind(e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+
+              <v:button name="grant_back_but" action="simple" value="Back">
+                <v:on-post>
+                    <![CDATA[
+                      self.db_pub_stage := 0;
+                      self.vc_data_bind(e);
+                    ]]>
+                </v:on-post>
+              </v:button>
+
+            </div>
+          <?vsp
+            }
+          ?>
+        </v:form>
+      </v:template>
+        </td>
+      </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

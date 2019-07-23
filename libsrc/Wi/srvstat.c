@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -643,7 +643,7 @@ dbms_status_report (void)
   char mem[100];
   char rpc[200];
   char col_ac_str[100];
-  char w_rate[20];
+  char w_rate[40];
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
@@ -1260,6 +1260,8 @@ get_total_sys_mem ()
 }
 
 extern int process_is_swapping;
+extern double curr_cpu_pct;
+extern unsigned long curr_mem_rss;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
@@ -1842,6 +1844,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", (long *)&ha_rehash_pct, SD_INT32},
     {"c_use_aio", (long *)&c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception, NULL},
+    {"public_debug", &public_debug, NULL},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"enable_qp", (long *)&enable_qp, SD_INT32},
     {"enable_mt_txn", (long *)&enable_mt_txn, SD_INT32},
@@ -2694,8 +2697,8 @@ dbg_print_d_id_aux (FILE *out, d_id_t *d_id_buf_ptr)
     goto print_d_id_as_binary;
   for (ctr = 0; ctr < 4; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
-    return;
-  print_d_id_as_binary:
+  return;
+print_d_id_as_binary:
   for (ctr = 0; ctr < 32; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
 }
@@ -3537,7 +3540,7 @@ dbg_page_structure_error (buffer_desc_t * buf, db_buf_t ptr)
   trace [0] = 0;
   for (inx = 0, p = trace; inx < 32; inx++, p += 3)
     {
-       char buf [3];
+       char buf [5];
        snprintf (buf, sizeof (buf), "%02x ", ptr[inx]);
        strcat_ck (trace, buf);
     }

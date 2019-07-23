@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -130,6 +130,7 @@ create procedure "DynaRes_DAV_AUTHENTICATE" (
   declare pacl any;
   declare _perms, a_gid any;
   declare webid, serviceId varchar;
+  declare a_cert any;
   whenever not found goto _exit;
 
   select DR_PERMS, DR_OWNER_UID, DR_OWNER_GID, DR_ACL into pperms, puid, pgid, pacl from WS.WS.DYNA_RES where DR_DETCOL_ID = id[1] and DR_RES_ID = id[3];
@@ -150,8 +151,9 @@ create procedure "DynaRes_DAV_AUTHENTICATE" (
       return a_uid;
   }
 
-  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+  if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
     return a_uid;
+
 
   -- Both DAV_AUTHENTICATE_SSL and DAV_AUTHENTICATE_WITH_VAL only check IRI ACLs
   -- However, service ids may map to ODS user accounts. This is what we check here
@@ -204,6 +206,7 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
   declare pacl any;
   declare u_password, pperms varchar;
   declare allow_anon integer;
+  declare a_cert any;
 
   -- used for error reporting in case of NetID or OAuth login
   declare webid, serviceId varchar;
@@ -229,8 +232,9 @@ create procedure "DynaRes_DAV_AUTHENTICATE_HTTP" (
 
     if (rc < 0)
     {
-      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid))
+      if (DAV_AUTHENTICATE_SSL (id, what, null, req, a_uid, a_gid, _perms, webid, a_cert))
         return a_uid;
+
 
       -- Normalize the service variables for error handling in VAL
       if (not webid is null and serviceId is null)
@@ -727,15 +731,22 @@ create procedure "DynaRes_DAV_DIR_FILTER" (
   in auth_uid integer) returns any
 {
   -- dbg_obj_princ ('DynaRes_DAV_DIR_FILTER (', detcol_id, path_parts, detcol_path, compilation, recursive, auth_uid, ')');
-  declare st, qry_text, execstate, execmessage varchar;
+  declare N integer;
+  declare qry_text, execstate, execmessage varchar;
   declare res any;
   declare cond_list, execmeta, execrows any;
   declare condtext, cond_key varchar;
 
-  vectorbld_init (res);
   cond_list := get_keyword ('', compilation);
+  for (N := 0; N < length (cond_list); N := N + 1)
+  {
+    if (cond_list[N][0] in ('RES_TAGS', 'RES_PUBLIC_TAGS', 'RES_PRIVATE_TAGS'))
+      return vector ();
+  }
   condtext := "DynaRes_DAV_FC_PRINT_WHERE" (cond_list, auth_uid);
   compilation := vector_concat (compilation, vector (cond_key, condtext));
+
+  vectorbld_init (res);
   execstate := '00000';
   qry_text :=
     ' select DAV_CONCAT_PATH (?, _top.DR_NAME), ''R'', _top.DR_LAST_LENGTH, coalesce (_top.DR_MODIFIED_DT, now ()), vector (UNAME''DynaRes'', _top.DR_DETCOL_ID, null, _top.DR_RES_ID), _top.DR_PERMS, _top.DR_OWNER_GID, _top.DR_OWNER_UID, _top.DR_CREATED_DT, _top.DR_MIME, _top.DR_NAME' ||
@@ -759,7 +770,6 @@ create procedure "DynaRes_DAV_DIR_FILTER" (
 
   vectorbld_concat_acc (res, execrows);
 
-finalize:
   vectorbld_final (res);
   return res;
 }

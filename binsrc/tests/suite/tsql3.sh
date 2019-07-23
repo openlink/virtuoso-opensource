@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -242,6 +242,16 @@ then
     LOG "***ABORTED: rdf inference -- ttrans2.sql"
     exit 1
 fi
+
+
+LOG + running sql script tclforvec
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tclforvec.sql 
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED:  -- tclforvec.sql"
+    exit 1
+fi
+
 
 
 

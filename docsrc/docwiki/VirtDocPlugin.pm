@@ -2,7 +2,7 @@
 #
 # Copyright (C) 2000-2003 Andrea Sterbini, a.sterbini@flashnet.it
 # Copyright (C) 2001-2003 Peter Thoeny, peter@thoeny.com
-# Copyright (C) 2005-2018 OpenLink Software
+# Copyright (C) 2005-2019 OpenLink Software
 #
 # This program is free software; you can redistribute it and/or
 # modify it under the terms of the GNU General Public License

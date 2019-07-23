@@ -1,0 +1,5 @@
+testsuite4.jar
+*.pdf
+doc/
+virtuoso/jdbc2/
+testsuite_4.0/testsuite

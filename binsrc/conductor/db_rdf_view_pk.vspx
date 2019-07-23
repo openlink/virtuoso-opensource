@@ -1,0 +1,318 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="databases" decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="sel_pk" persist="0" type="any" default="null" param-name="pk"/>
+      <v:variable name="pkeys" persist="0" type="any" default="null" />
+      <v:variable name="avail" persist="0" type="any" default="null" />
+      <v:variable name="tbl" persist="0" type="varchar" default="null" param-name="tb"/>
+      <v:variable persist="0" name="objects" type="any" default="null" param-name="list"/>
+      <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="base" type="any" default="null" param-name="host"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="External Data Sources"/>
+    </vm:menu>
+    <vm:header caption="External Data Sources">
+    </vm:header>
+    <vm:pagebody>
+      <script language="JavaScript">
+      function selectAllCheckboxes (form, btn)
+      {
+	var i;
+	for (i = 0; i &lt; form.length; i++)
+	  {
+	    var contr = form.elements[i];
+	    if (contr != null &amp;&amp; contr.type == "checkbox")
+	      {
+		contr.focus();
+		if (btn.value == 'Select All')
+		  contr.checked = true;
+		else
+		  contr.checked = false;
+	      }
+	  }
+	if (btn.value == 'Select All')
+	  btn.value = 'Unselect All';
+	else
+	  btn.value = 'Select All';
+	btn.focus();
+      }
+      </script>
+      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+              <tr>
+                <td>
+                  <table class="tab_page">
+                    <tr>
+		      <td valign="top">
+			<!-- MAIN -->
+			<h3><v:label name="tbl_tit" value="--ltrim (self.tbl, '.')"/></h3>
+			<v:form name="link_options_form" type="simple" method="POST" action="">
+			  <v:on-init><![CDATA[
+			    if (self.pkeys is null)
+			      {
+			        declare cols, avail any;
+
+				if (self.sel_pk is not null)
+				  {
+				    self.sel_pk := deserialize (decode_base64 (self.sel_pk));
+				    if (isarray (self.sel_pk))
+				      self.pkeys := get_keyword (self.tbl, self.sel_pk);
+                                    else
+				      self.sel_pk := null;
+				  }
+				if (self.pkeys is null)
+                                  {
+				    cols := rdf_view_get_primary_key (self.tbl);
+				    self.pkeys := vector ();
+				    foreach (any x in cols) do
+				      {
+				        self.pkeys := vector_concat (self.pkeys, vector (x[0]));
+				      }
+				  }
+
+				avail := vector ();
+				for select "COLUMN" from SYS_COLS where "TABLE" = self.tbl and not position ("COLUMN", self.pkeys) and "COLUMN" <> '_IDN' order by COL_ID do
+				   {
+                                     avail := vector_concat (avail, vector ("COLUMN"));
+				   }
+				self.avail := avail;
+			      }
+			  ]]></v:on-init>
+			  <table class="ctl_grp">
+			    <tr><td>Available Columns</td><td> </td><td>Selected Columns</td></tr>
+			    <tr>
+			      <td>
+				<v:select-list name="av_cols" multiple="1" xhtml_size="15">
+				  <v:after-data-bind>
+				    control.vsl_items := self.avail;
+				    control.vsl_item_values := self.avail;
+				    control.vs_set_selected ();
+				  </v:after-data-bind>
+				</v:select-list>
+			      </td>
+			      <td>
+				<v:button name="add_to_all" value="&gt;&gt;&gt;" action="simple" >
+				  <v:on-post>
+				    self.pkeys := vector_concat (self.pkeys, self.avail);
+				    self.avail := vector ();
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
+				<v:button name="add_to" value="&gt;" action="simple" >
+				  <v:on-post>
+				    declare av, se, sel, nav any;
+
+				    sel := self.av_cols.ufl_value;
+				    if (not length (sel))
+				      return;
+				    av := self.avail;
+				    se := self.pkeys;
+
+				    se := vector_concat (se, sel);
+				    self.pkeys := se;
+                                    nav := vector ();
+
+				    foreach (any c in av) do
+				      {
+				        if (not position (c, sel))
+					  nav := vector_concat (nav, vector (c));
+				      }
+				    self.avail := nav;
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+				</v:button>
+				<br/>
+				<v:button name="remove_from" value="&lt;" action="simple" >
+				  <v:on-post>
+				    declare av, se, sel, nav any;
+
+				    sel := self.se_cols.ufl_value;
+				    if (not length (sel))
+				      return;
+				    av := self.avail;
+				    se := self.pkeys;
+
+				    av := vector_concat (av, sel);
+				    self.avail := av;
+                                    nav := vector ();
+
+				    foreach (any c in se) do
+				      {
+				        if (not position (c, sel))
+					  nav := vector_concat (nav, vector (c));
+				      }
+				    self.pkeys := nav;
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+			        </v:button><br />
+				<v:button name="remove_from_all" value="&lt;&lt;&lt;" action="simple" >
+				  <v:on-post>
+				    self.avail := vector_concat (self.avail, self.pkeys);
+				    self.pkeys := vector ();
+				    self.av_cols.vc_data_bind (e);
+				    self.se_cols.vc_data_bind (e);
+				  </v:on-post>
+				</v:button>
+			      </td>
+			      <td>
+				<v:select-list name="se_cols" multiple="1" xhtml_size="15">
+				  <v:after-data-bind>
+				    control.vsl_items := self.pkeys;
+				    control.vsl_item_values := self.pkeys;
+				    control.vs_set_selected ();
+				  </v:after-data-bind>
+				</v:select-list>
+			      </td>
+			      <td>
+				<v:button name="up1" value="Up" action="simple" >
+				  <v:on-post><![CDATA[
+				    declare se, sel, nav any;
+				    declare arr, new_arr, to_move any;
+				    declare tmp any;
+				    declare inx, i int;
+				    tmp := null;
+
+				    sel := self.se_cols.ufl_value;
+				    if (not length (sel))
+				      return;
+
+				    to_move := sel[0];
+				    arr := self.pkeys;
+
+				    foreach (any elm in arr) do
+				      {
+					if (elm = to_move)
+					  {
+					    goto swap_it;
+					  }
+					tmp := elm;
+					i := i + 1;
+				      }
+				    swap_it:
+				    if (tmp is not null)
+				      {
+					arr[i-1] := to_move;
+					arr[i] := tmp;
+				      }
+
+				    self.pkeys := arr;
+				    self.se_cols.vc_data_bind (e);
+				    ]]></v:on-post>
+				</v:button>
+				<br />
+				<v:button name="down1" value="Down" action="simple" >
+				  <v:on-post><![CDATA[
+				    declare se, sel, nav any;
+				    declare arr, new_arr, to_move any;
+				    declare tmp any;
+				    declare inx, i int;
+				    tmp := null;
+
+				    sel := self.se_cols.ufl_value;
+				    if (not length (sel))
+				      return;
+
+				    to_move := sel[0];
+				    arr := self.pkeys;
+
+				    foreach (any elm in arr) do
+				      {
+					if (elm = to_move)
+					  {
+					    tmp := elm;
+					    inx := i;
+					  }
+					else if (tmp is not null)
+					  {
+					    arr[inx] := elm;
+					    arr[i] := tmp;
+					    goto swap_it;
+					  }
+					i := i + 1;
+				      }
+				    swap_it:
+
+				    self.pkeys := arr;
+				    self.se_cols.vc_data_bind (e);
+				    ]]></v:on-post>
+				</v:button>
+			      </td>
+			    </tr>
+			    <tr>
+			      <td colspan="3">
+				<v:button name="back" value="Finish" action="simple">
+				  <v:on-post><![CDATA[
+				    if (not isarray (self.sel_pk) or not length (self.sel_pk))
+				      self.sel_pk := vector (self.tbl, self.pkeys);
+				    else if (not position (self.tbl, self.sel_pk))
+				      self.sel_pk := vector_concat (self.sel_pk, vector (self.tbl, self.pkeys));
+				    else
+				      {
+				        declare o, pos any;
+					o := self.sel_pk;
+					pos := position (self.tbl, o);
+					o[pos] := self.pkeys;
+					self.sel_pk := o;
+				      }
+				      self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?host=%U&list=%U&cols=%U&pk=%U',
+						self.base,
+						self.objects,
+						self.cols,
+						encode_base64 (serialize (self.sel_pk))
+				      		));
+				    ]]></v:on-post>
+				</v:button>
+			      </td>
+			    </tr>
+			  </table>
+			</v:form>
+			<!-- END -->
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_rdf_view_table"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+    </vm:menu>
+    <vm:variables>
+      <v:variable name="is_popup" persist="0" type="integer" default="0" />
+
+      <v:variable persist="0" name="objects" type="any" default="null" param-name="list"/>
+      <v:variable persist="0" name="cols" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="base" type="any" default="null" param-name="host"/>
+      <v:variable persist="0" name="pklist" type="any" default="''" param-name="pk"/>
+    </vm:variables>
+
+    <vm:header caption="Linked Data View definition"/>
+    <vm:pagebody>
+      <br style="clear: both;"/>
+      <h2>Column Selection</h2>
+      <table>
+        <v:form name="account_form" type="simple" method="POST" action="">
+          <tr>
+            <td>
+              <table class="listing">
+                <thead>
+                  <tr class="listing_header_row">
+                    <th>Table Name</th>
+                    <th class="action">Action</th>
+                  </tr>
+                </thead>
+                <?vsp
+                  declare tbls, cols any;
+
+                  tbls := deserialize (decode_base64 (self.objects));
+                  cols := self.cols;
+                  if (self.cols is null)
+                    cols := encode_base64(serialize(null));
+
+                  for (declare i,l int, i := 0, l := length (tbls); i < l; i := i + 1)
+                  {
+                ?>
+                <tr>
+                  <td><?V tbls[i] ?></td>
+                  <td class="action">
+                    <v:url render-only="1" url="--sprintf ('db_rdf_view_cols.vspx?host=%U&list=%U&tb=%U&cols=%U&pk=%U', self.base, self.objects, tbls[i], cols, self.pklist)" value="Edit" name="ur1"/>
+                      <![CDATA[&nbsp;]]>
+                    <v:url render-only="1" url="--sprintf ('db_rdf_view_pk.vspx?host=%U&list=%U&tb=%U&cols=%U&pk=%U', self.base, self.objects, tbls[i], cols, self.pklist)" value="Primary Key Selection" name="ur2"/>
+                  </td>
+                </tr>
+                <?vsp
+                  }
+                ?>
+              </table>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:button action="simple" name="cncl" value="Back">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect ('db_rdf_objects.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+
+              <v:button action="simple" name="exec" value="Next">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect (sprintf ('db_rdf_view_1.vspx?list=%U&host=%U&cols=%U&pk=%U',
+                      self.objects, self.base,
+                      self.cols,
+                      self.pklist
+                    ));
+                  ]]>
+                </v:on-post>
+              </v:button>
+
+              <v:button action="simple" name="exec1" value="Prepare to Execute">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=1&view=1&st=1&owl_vd=1&view_vd=1&cols=%U&pk=%U',
+                      self.objects, self.base, self.cols, self.pklist
+                    ));
+                  ]]>
+                </v:on-post>
+              </v:button>
+
+              <v:button action="simple" name="exec2" value="Generate">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect (sprintf ('db_rdf_view_3.vspx?list=%U&host=%U&&owl=1&view=1&st=1&owl_vd=1&view_vd=1&cols=%U&exec=1&pk=%U',
+                      self.objects, self.base, self.cols, self.pklist
+                    ));
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </v:form>
+
+        <v:template type="simple" name="sc_1" enabled="0">
+          <tr>
+            <td>
+              <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
+            </td>
+          </tr>
+        </v:template>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

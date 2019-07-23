@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -531,7 +531,8 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-
+  if (is_atomic ())
+    signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
   declare exit handler for sqlstate '37000' {
     if (app_env <> 0)
       {
@@ -829,7 +830,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (o, 258, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }
@@ -843,7 +844,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	  else
 	    lid := rdf_lang_id (lower (o_type));
 	}
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       o := rdf_box (o, 257, lid, 0, 1);
       return;
@@ -889,7 +890,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 		tid := rdf_type_id (o_type);
 	    }
           o := rdf_box (o, tid, 257, 0, 1);
-	  if (is_text and 246 = __tag (o))
+          if (is_text and __tag of rdf_box = __tag (o))
 	    rdf_box_set_is_text (o, 1);
           return;
 	}
@@ -898,7 +899,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }

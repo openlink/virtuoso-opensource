@@ -1,0 +1,106 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<html>
+ <head>
+	<link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+	<title>XSLT Transformation Tool</title>
+ </head>
+ <body class="MainSubData">
+   <v:page name="trans_sql" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+       <v:login name="admin_login"
+         realm="virtuoso_admin"
+         mode="url"
+         user-password="y_sql_user_password"
+         user-password-check="y_sql_user_password_check"
+         >
+	 <v:template name="ifnl" type="if-no-login" redirect="main_tabs.vspx"/>
+       </v:login>
+   </v:page>
+ </body>
+</html><![CDATA[
+<?vsp
+  declare xsl_sheet, xml_src, src_xslt, rel_path, xml_file, xsl_file, save_path  varchar;
+  declare xml_tree, xslt_tree, pars,  xml_tree_doc, ses, res, trf  any;
+  declare n, len, result  integer;
+
+  xsl_sheet := get_keyword('xsl_sheet', params);
+  xml_src := get_keyword('xml_src', params);
+  save_path := get_keyword('file_loc', params);
+  trf := get_keyword('clitrf1', params);
+
+  declare exit handler for sqlstate '*'
+  {
+    rollback work;
+    goto error_state;
+  };
+
+
+  declare state, msg, m_dta, res varchar;
+  if (xsl_sheet = '') {
+     msg := 'Stylesheet file was not  specified.';
+     goto error_state;
+  } else if (not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xsl_sheet) ) {
+    msg := 'Stylesheet file specified does not exist.';
+     goto error_state;
+  }
+  if (xml_src = '') {
+   msg := 'Source XML file was not specified.';
+     goto error_state;
+  } else if (not exists(select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xml_src) ) {
+    msg := 'Source XML file specified does not exist.';
+     goto error_state;
+  }
+
+
+  state := '00000';
+  select blob_to_string (RES_CONTENT) into xml_file from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xml_src;
+  if (trf = '1')
+    {
+      http_rewrite ();
+      http_header ('Content-Type: text/xml\r\n');
+      http ('<?xml version="1.0" ?>\n');
+      http (sprintf ('<?xml-stylesheet href="%U" type="text/xsl" ?>\n', xsl_sheet));
+      if (xml_file like '<?xml%')
+        xml_file := regexp_replace (xml_file, '<?[^>]+?>');
+      http (xml_file);
+      return;
+    }
+  xml_tree := xml_tree (xml_file);
+  xml_tree_doc := xml_tree_doc(xml_tree);
+  http_rewrite ();
+  http_value (xml_tree_doc);
+  http_xslt ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:'||xsl_sheet);
+  return;
+
+error_state:
+
+		http('<table width="100%" height="90%"><tr><td align="center" valign="center"><h3>');
+		http(msg);
+		http('</h3></td></tr></table>');
+		return;
+?>
+]]>

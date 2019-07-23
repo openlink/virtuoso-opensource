@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_repl_pub"
+  fast-render="1"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    <v:variable persist="0" name="browse_cat" type="varchar" default="'%'"/>
+    <v:variable persist="0" name="browse_sch" type="varchar" default="'%'"/>
+    <v:variable persist="0" name="browse_mask" type="varchar" default="'%'"/>
+      <v:form name="space_filter_form" type="simple" method="POST" action="logging_page.vspx?page=6">
+      <v:on-init><![CDATA[
+        declare v_params any;
+        v_params := control.vc_page.vc_event.ve_params;
+        if (get_keyword('cat', v_params ,'') <> '')
+          self.browse_cat := get_keyword('cat', v_params ,'');
+        if (get_keyword('sch', v_params ,'') <> '')
+          self.browse_sch := get_keyword('sch', v_params ,'');
+        if (get_keyword('mask', v_params ,'') <> '')
+          self.browse_mask := get_keyword('mask', v_params ,'');
+    	]]></v:on-init>
+        <v:on-post>
+          <v:script>
+            <![CDATA[
+              if( self.browse_cat <> self.dl_catalog1.ufl_value)
+                self.dl_schema1.ufl_value := '%';
+              self.browse_cat := self.dl_catalog1.ufl_value;
+              self.browse_sch := self.dl_schema1.ufl_value;
+              self.browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
+              if (get_keyword('clear_filter', self.vc_page.vc_event.ve_params))
+              {
+                self.dl_catalog1.ufl_value := '%';
+                self.dl_schema1.ufl_value := '%';
+                self.t_mask.ufl_value := '%';
+                self.browse_cat := '%';
+                self.browse_sch := '%';
+                self.browse_mask := '%';
+              }
+              self.dl_catalog1.vc_data_bind(e);
+              self.dl_schema1.vc_data_bind(e);
+              self.data_set14.vc_data_bind(e);
+            ]]>
+          </v:script>
+        </v:on-post>
+      <table>
+        <tr class="listing_header_row">
+          <th>Catalog</th>
+          <th>Schema</th>
+          <th>Table</th>
+          <th/>
+        </tr>
+        <tr>
+          <td>
+            <v:data-list name="dl_catalog1"
+              sql="select '%' AS cat_name FROM DB.DBA.SYS_INDEX_SPACE_STATS UNION
+              SELECT distinct name_part (ISS_KEY_TABLE, 0) from DB.DBA.SYS_INDEX_SPACE_STATS
+              ORDER BY cat_name"
+              key-column="cat_name" value-column="cat_name" defvalue="--self.browse_cat"
+              xhtml_onchange="javascript:doPost(\'space_filter_form\', \'apply_filter\');" />
+          </td>
+          <td>
+            <v:data-list name="dl_schema1"
+              sql="select '%' AS sch_name FROM DB.DBA.SYS_INDEX_SPACE_STATS UNION
+              SELECT distinct name_part (ISS_KEY_TABLE, 1) from DB.DBA.SYS_INDEX_SPACE_STATS WHERE name_part (ISS_KEY_TABLE, 0) LIKE self.browse_cat
+              ORDER BY sch_name"
+              key-column="sch_name" value-column="sch_name" defvalue="--self.browse_sch"
+              xhtml_onchange="javascript:doPost(\'space_filter_form\', \'apply_filter\');" />
+          </td>
+          <td>
+            <v:text name="t_mask" value="--self.browse_mask"/>
+          </td>
+          <td>
+            <v:button action="simple" name="apply_filter" value="Filter"/>
+            <v:button action="simple" name="clear_filter" value="Clear"/>
+        	  <script language="JavaScript">
+        	    <?vsp http(sprintf('params = new Array(\'cat\',\'%U\',\'sch\',\'%U\',\'mask\',\'%U\');',self.browse_cat,self.browse_sch,self.browse_mask)); ?>
+        	  </script>
+        </td>
+        </tr>
+      </table>
+    </v:form>
+    <div class="scroll_area">
+      <div id="monitor_tab">
+      <v:data-set name="data_set14" sql="select ISS_KEY_TABLE, ISS_KEY_NAME, ISS_NROWS, ISS_PAGES, ISS_ROW_PAGES, ISS_BLOB_PAGES, ISS_ROW_BYTES from DB.DBA.SYS_INDEX_SPACE_STATS WHERE upper(name_part(ISS_KEY_TABLE, 0)) LIKE upper(self.browse_cat) and upper(name_part(ISS_KEY_TABLE, 1)) LIKE upper(self.browse_sch) and upper(name_part(ISS_KEY_TABLE, 2)) like upper(self.browse_mask) order by ISS_PAGES desc" nrows="0" scrollable="0" cursor-type="static" edit="1">
+        <input type="hidden" name="page" value="6"/>
+        <v:column name="ISS_KEY_TABLE" />
+        <v:column name="ISS_KEY_NAME" />
+        <v:column name="ISS_NROWS" />
+        <v:column name="ISS_PAGES" />
+        <v:column name="ISS_ROW_PAGES" />
+        <v:column name="ISS_BLOB_PAGES" />
+        <v:column name="ISS_ROW_BYTES" />
+        <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set14_header_template">
+          <table class="listing" showme="1">
+            <tr class="listing_header_row">
+              <th>Table</th>
+              <th>Index name</th>
+              <th>Rows</th>
+              <th>Pages</th>
+              <th>Row pages</th>
+              <th>Blob pages</th>
+              <th>Size</th>
+            </tr>
+          </table>
+        </v:template>
+        <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set14_repeat_template">
+          <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set14_if_not_exists_template">
+            <table> <!-- dummy -->
+              <tr class="listing_count">
+                <td class="listing_row_count" colspan="7">
+                  No data available
+                </td>
+              </tr>
+            </table>
+          </v:template>
+          <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set14_browse_template">
+            <table> <!-- dummy -->
+ <?vsp
+              self.r_count := self.r_count + 1;
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+?>
+             <!-- tr -->
+                <td align="left">
+                  <?V ((control as vspx_row_template).te_rowset[0]) ?>
+                </td>
+                <td align="left">
+                  <?V ((control as vspx_row_template).te_rowset[1]) ?>
+                </td>
+                <td align="right">
+                  <?V ((control as vspx_row_template).te_rowset[2]) ?>
+                </td>
+                <td align="right">
+                  <?V ((control as vspx_row_template).te_rowset[3])?>
+                </td>
+                <td align="right">
+                  <?V ((control as vspx_row_template).te_rowset[4])?>
+                </td>
+                <td align="right">
+		  <?V ((control as vspx_row_template).te_rowset[5])?>
+                </td>
+                <td align="right">
+                  <v:label format="%s" name="data_set14_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset[6])" fmt-function="space_fmt"/>
+                </td>
+<?vsp
+              http ('</tr>');
+?>
+              <!-- /tr -->
+            </table>
+          </v:template>
+        </v:template>
+        <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set14_footer_template">
+          <table>
+<!--            <tr>
+              <td colspan="7" align="center"  class="listing_col_action">
+		<vm:ds-navigation data-set="data_set14"/>
+              </td>
+            </tr>-->
+          </table>
+        </v:template>
+      </v:data-set>
+      </div>
+    </div>
+</v:page>

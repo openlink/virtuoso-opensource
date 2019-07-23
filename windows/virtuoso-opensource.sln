@@ -1,6 +1,6 @@
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26430.16
+VisualStudioVersion = 15.0.27703.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "blobs", "blobs.vcxproj", "{72ABF3AE-CF7A-11DA-85E2-A4E5714C712A}"
 EndProject
@@ -384,7 +384,6 @@ Global
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release|Win32.ActiveCfg = Release|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release|Win32.Build.0 = Release|Win32
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release|x64.ActiveCfg = Release|x64
-		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release|x64.Build.0 = Release|x64
 		{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}.Release|x86.ActiveCfg = Release|x64
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Debug|Any CPU.ActiveCfg = Release|x64
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Debug|Win32.ActiveCfg = Release|x64
@@ -394,7 +393,6 @@ Global
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Release|Any CPU.ActiveCfg = Release|x64
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Release|Win32.ActiveCfg = Release|Win32
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Release|x64.ActiveCfg = Release|x64
-		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Release|x64.Build.0 = Release|x64
 		{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}.Release|x86.ActiveCfg = Release|x64
 		{0E838FA8-CF7B-11DA-85E2-A4E5714C712A}.Debug|Any CPU.ActiveCfg = Release|x64
 		{0E838FA8-CF7B-11DA-85E2-A4E5714C712A}.Debug|Win32.ActiveCfg = Release|x64
@@ -554,6 +552,6 @@ Global
 		HideSolutionNode = FALSE
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
-		SolutionGuid = {B157B88D-A07E-4CEB-81E2-EC5F3EFC4E1D}
+		SolutionGuid = {2864A46E-F5DE-417C-8C5F-FDC186C9D4C7}
 	EndGlobalSection
 EndGlobal

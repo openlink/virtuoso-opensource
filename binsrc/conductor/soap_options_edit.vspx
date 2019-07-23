@@ -1,0 +1,423 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="soap_options_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso SOAP Service Options</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="referer" persist="1" type="varchar" default="''" />
+      <v:variable name="_errmsg" persist="1" type="varchar" default="''" />
+      <v:variable name="edit_host" persist="1" type="varchar" default="''" />
+      <v:variable name="edit_port" persist="1" type="varchar" default="''" />
+      <v:variable name="edit_httphost" persist="1" type="varchar" default="''" />
+      <v:variable name="_host" persist="1" type="varchar" default="''" />
+      <v:variable name="_httphost" persist="1" type="varchar" default="''" />
+
+      <v:variable name="lpath" persist="1" type="varchar" default="''" />
+
+      <v:variable name="soapuser" persist="1" type="varchar" default="''" />
+      <v:variable name="soap_opt" persist="1" type="varchar" default="''" />
+
+      <v:variable name="browse_cat" persist="1" type="varchar" default="'DB'"/>
+      <v:variable name="roles_grant_list" persist="1" type="any" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="HTTP Virtual Directory"/>
+    </vm:menu>
+    <vm:header caption="HTTP Virtual Directory">
+    </vm:header>
+    <vm:pagebody>
+
+        <v:form name="frm_edit_soap" action="soap_options_edit.vspx" method="POST" type="simple">
+          <v:before-data-bind>
+            <?vsp
+              if( get_keyword('_host', self.vc_page.vc_event.ve_params, '') <> '' ) {
+                declare i integer;
+                i := 0;
+                while( i < length(self.vc_event.ve_lines) ) {
+                    if( 'Referer: ' = left(self.vc_event.ve_lines[i],9) )
+                        self.referer := subseq(self.vc_event.ve_lines[i],9);
+                    i := i + 1;
+                }
+                self.edit_host := get_keyword('_host', self.vc_page.vc_event.ve_params, self.edit_host);
+                self.edit_port := get_keyword('_port', self.vc_page.vc_event.ve_params, self.edit_port);
+                self.edit_httphost := get_keyword('_httphost', self.vc_page.vc_event.ve_params, self.edit_httphost);
+
+                self._host := concat(self.edit_host, case when length(self.edit_port)>0 then ':' else '' end, self.edit_port);
+                self._httphost := concat(self.edit_httphost, case when length(self.edit_port)>0 then ':' else '' end, self.edit_port);
+
+                self.roles_grant_list := vector();
+                self.browse_cat := 'DB';
+
+                self.lpath := get_keyword('path', self.vc_page.vc_event.ve_params, self.lpath);
+
+                -- load settings from choosen path
+                declare _soapuser, _soap_opt varchar;
+
+                select HP_RUN_SOAP_AS, deserialize (HP_SOAP_OPTIONS) into _soapuser, _soap_opt
+                from DB.DBA.HTTP_PATH
+                where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath;
+
+                self.soapuser    := _soapuser   ;
+                self.soap_opt    := _soap_opt   ;
+
+                if( isstring(_soapuser) ) {
+                  declare _u_id integer;
+                  select U_ID into _u_id from SYS_USERS where U_NAME = _soapuser;
+                  for( select P_NAME from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
+                       where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME
+                     ) do {
+                    self.roles_grant_list := vector_concat(self.roles_grant_list, vector(P_NAME));
+                  }
+                }
+                --load controls
+                if( isarray(self.soap_opt) ) {
+                  declare idx integer;
+                  declare opts varchar;
+                  opts := '';
+                  idx := 0;
+                  while( idx < length (self.soap_opt) ) {
+                    opts := concat( opts, sprintf ('%s=%s;\r\n', cast(self.soap_opt[idx] as varchar), cast(self.soap_opt[idx+1] as varchar)));
+                    idx := idx + 2;
+                  }
+                  (control.vc_parent.vc_find_descendant_control('t_soap_opt') as vspx_field).ufl_value := opts;
+                }
+              }
+            ?>
+          </v:before-data-bind>
+          <table class="MainSubData" align="left" border="0" cellspacing="0" cellpadding="3" >
+            <tr>
+              <td>
+                <table class="SubData" width="100%">
+                  <tr>
+                    <td>Host</td>
+                    <td><v:label name="l_host" value="--self._httphost"/></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>Interface</td>
+                    <td><v:label name="l_iface" value="--self._host"/></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>Path</td>
+                    <td><v:label name="l_lpath" value="--self.lpath"/></td>
+                    <td></td>
+                  </tr>
+                  <tr>
+                    <td>SOAP User</td>
+                    <td><v:label name="l_soapuser" value="--self.soapuser"/>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+            <tr>
+              <th align="left">Web Service Options</th>
+            </tr>
+            <tr>
+              <td>
+                <table class="SubData" width="100%">
+                    <tr>
+                      <td>Available Procedures</td>
+                      <td/>
+                      <td>Published Procedures</td>
+                    </tr>
+                    <tr>
+                      <td>
+                        <table>
+                          <tr>
+                            <td>
+                        <v:select-list name="sl_catalog" xhtml_style="width:200" xhtml_onchange="javascript:doPost(\'frm_edit_soap\', \'reload2\');">
+                          <v:after-data-bind>
+                            <v:script><![CDATA[
+                              -- select distinct name_part (key_table, 0) as  Q_NAME from sys_keys
+                              declare indx integer;
+                              indx :=0;
+                              (control as vspx_select_list).vsl_items:= vector();
+                              (control as vspx_select_list).vsl_item_values:= vector();
+                              (control as vspx_select_list).vsl_selected_inx :=0;
+                              for select distinct (name_part (p_name, 0)) as  Q_NAME  from sys_procedures order by 1
+                              do {
+                                if( Q_NAME = self.browse_cat and self.vc_event.ve_is_post = 0 )
+                                  (control as vspx_select_list).vsl_selected_inx :=indx;
+                                (control as vspx_select_list).vsl_items :=
+                                  vector_concat ((control as vspx_select_list).vsl_items, vector(Q_NAME));
+                                (control as vspx_select_list).vsl_item_values :=
+                                  vector_concat ((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
+                                indx := indx +1;
+                              }
+                            ]]></v:script>
+                          </v:after-data-bind>
+                        </v:select-list>
+                        <v:button action="simple" name="reload2" value="Reload">
+                          <v:on-post>
+                            <![CDATA[
+                              self.browse_cat :=  get_keyword('sl_catalog', params);
+                              control.vc_parent.vc_find_control('sl_all_procedures').vc_data_bind(e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>
+                        <v:select-list name="sl_all_procedures" xhtml_size="12" xhtml_style="width:300" xhtml_multiple="TRUE">
+                          <v:before-data-bind>
+                            <v:script><![CDATA[
+                            (control as vspx_select_list).vsl_items:= vector();
+                            (control as vspx_select_list).vsl_item_values:= vector();
+                            (control as vspx_select_list).vsl_selected_inx :=0;
+                            for( select distinct p_name from DB.DBA.SYS_PROCEDURES
+                                 where (self.browse_cat = name_part (p_name, 0) ) order by p_name) do {
+                              (control as vspx_select_list).vsl_items :=
+                                vector_concat ((control as vspx_select_list).vsl_items, vector(p_name));
+                              (control as vspx_select_list).vsl_item_values :=
+                                vector_concat ((control as vspx_select_list).vsl_item_values, vector(p_name));
+                            }
+                            ]]></v:script>
+                          </v:before-data-bind>
+                        </v:select-list>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td>
+                        <table border="0">
+                          <tr>
+                            <td>
+                              <v:button action="simple" name="grant" value=">>">
+                                <v:on-post>
+                                  <![CDATA[
+                                    declare cnt, i, indx, flag_ integer;
+                                    cnt:= length(params);
+                                    i:=0;
+                                    while(i < cnt ) {
+                                      if (aref(params,i) = 'sl_all_procedures' ) {
+                                        cnt := length(self.roles_grant_list);
+                                        indx:=0;
+                                        flag_:=0;
+                                        while(indx < cnt ) {
+                                          if(self.roles_grant_list[indx] = aref(params,i+1))
+                                            flag_ := 1;
+                                          indx := indx+1;
+                                        }
+                                        if( flag_ = 0 )
+                                          self.roles_grant_list:= vector_concat (self.roles_grant_list, vector(aref(params,i+1)));
+                                      }
+                                      i:= i+2;
+                                    }
+                                    control.vc_parent.vc_find_control('sl_exposed_procedures').vc_data_bind(e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+
+                            </td>
+                          </tr>
+                          <tr>
+                            <td>
+                              <v:button action="simple" name="revoke" value="<<">
+                                <v:on-post>
+                                  <![CDATA[
+                                    declare cnt, i, size, indx , flag_ integer;
+                                    declare roles any;
+                                    roles := vector();
+                                    cnt := length(self.roles_grant_list);
+                                    size:= length(params);
+                                    i:=0;
+                                    while(i < cnt ) {
+                                       indx :=0;
+                                       flag_:=0;
+                                       while (indx < size) {
+                                         if (aref(params,indx) = 'sl_exposed_procedures'  and self.roles_grant_list[i] = aref(params,indx+1))
+                                           flag_:=1;
+                                         indx := indx +2;
+                                       }
+                                       if (flag_ = 0)
+                                         roles:= vector_concat (roles, vector(self.roles_grant_list[i]));
+                                       i:= i+1;
+                                    }
+                                    self.roles_grant_list:= roles;
+                                    /* vector();
+                                    cnt:= length(roles);
+                                    i:=0;
+                                    while(i < cnt ) {
+                                      self.roles_grant_list:= vector_concat (self.roles_grant_list, vector(roles[i]));
+                                      i:= i+1;
+                                    }
+                                    */
+                                    control.vc_parent.vc_find_control('sl_exposed_procedures').vc_data_bind(e);
+                                  ]]>
+                                </v:on-post>
+                              </v:button>
+                            </td>
+                          </tr>
+                        </table>
+                      </td>
+                      <td>
+                        <v:select-list name="sl_exposed_procedures" xhtml_size="14" xhtml_style="width:300">
+                          <v:before-data-bind>
+                            <v:script><![CDATA[
+                               declare inx, len integer;
+                               (control as vspx_select_list).vsl_items:= vector();
+                               (control as vspx_select_list).vsl_item_values:= vector();
+                               inx := 0; len := length (self.roles_grant_list);
+                               while (inx< len) {
+                                 (control as vspx_select_list).vsl_items :=
+                                   vector_concat ((control as vspx_select_list).vsl_items, vector(self.roles_grant_list[inx]));
+                                 (control as vspx_select_list).vsl_item_values :=
+                                   vector_concat ((control as vspx_select_list).vsl_item_values, vector(self.roles_grant_list[inx]));
+                                 inx := inx + 1;
+                                }
+                               (control as vspx_select_list).vsl_selected_inx :=0;
+                            ]]></v:script>
+                          </v:before-data-bind>
+                        </v:select-list>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td colspan="3">
+                        <table>
+                          <tr>
+                            <td>Advanced</td>
+                            <td>
+                              <v:textarea name="t_soap_opt" xhtml_cols="40" xhtml_rows="5"/>
+                            </td>
+                            <td></td>
+                          </tr>
+                        </table>
+                      </td>
+                    </tr>
+                  </table>
+                <!--/v:template-->
+              </td>
+            </tr>
+            <tr class="Attention">
+              <td><?V self._errmsg ?></td>
+              <?vsp
+               self._errmsg := '';
+              ?>
+            </tr>
+            <tr>
+              <td align="center">
+                <v:button action="simple" name="cancel" value="Cancel">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                      http_request_status ('HTTP/1.1 302 Found');
+                        if( self.referer <> '' )
+                          http_header (sprintf('Location: %s', self.referer));
+                        else
+                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="save" value="Save Changes">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                      declare st, msg varchar;
+                      msg := '';
+
+                      self.soap_opt := self.t_soap_opt.ufl_value;
+                      if (self.soap_opt = '' or self.soap_opt = 0)
+                        self.soap_opt := NULL;
+                      else if( isstring (self.soap_opt) ) {
+                        declare spath any;
+                        spath := WS.WS.HREF_TO_ARRAY (self.lpath,'');
+                        if( length(spath) < 1 )
+                          spath := vector ('SOAP');
+                        self.soap_opt := replace (self.soap_opt, '\r', '');
+                        self.soap_opt := replace (self.soap_opt, '\n', '');
+                        self.soap_opt := trim (self.soap_opt);
+                        self.soap_opt := replace (self.soap_opt, ';', '&');
+
+                        if( "RIGHT"(self.soap_opt, 1) = '&' )
+                          self.soap_opt := "LEFT"(self.soap_opt, length (self.soap_opt) - 1);
+
+                        self.soap_opt := replace (self.soap_opt, '<SERVICE_NAME>', spath[0]);
+                        self.soap_opt := split_and_decode (self.soap_opt);
+                      }
+
+                      declare _ppath, _defpage, _vspuser, _soapuser, _security, _auth_realm, _auth_func, _after_func, _sesvars, _soap_opt, _auth_opt, _global_opts varchar;
+                      declare _dirbrowsing, _is_dav, _defdir integer;
+
+                      select HP_PPATH, HP_DEFAULT, HP_DIR_BROWSEABLE, HP_RUN_VSP_AS, HP_RUN_SOAP_AS,
+                             HP_SECURITY, HP_REALM, HP_AUTH_FUNC, HP_POSTPROCESS_FUNC, HP_PERSIST_SES_VARS,
+                             HP_STORE_AS_DAV, deserialize (HP_SOAP_OPTIONS), deserialize (HP_AUTH_OPTIONS),
+                             HP_IS_DEFAULT_HOST, deserialize(HP_OPTIONS)
+                      into _ppath, _defpage, _dirbrowsing, _vspuser, _soapuser,
+                           _security, _auth_realm, _auth_func, _after_func, _sesvars,
+                           _is_dav, _soap_opt, _auth_opt,
+                           _defdir, _global_opts
+                      from DB.DBA.HTTP_PATH
+                      where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath;
+
+                      declare _u_id integer;
+                      select U_ID into _u_id from SYS_USERS where U_NAME = _soapuser;
+                      for( select P_NAME from DB.DBA.SYS_PROCEDURES, DB.DBA.SYS_GRANTS
+                           where G_USER = _u_id and G_OP = 32 and G_OBJECT = P_NAME ) do {
+                        exec(sprintf('revoke execute on %s from %s',P_NAME, _soapuser));
+                      }
+
+                      VHOST_REMOVE (self._httphost, self._host, self.lpath, 0);
+
+                      exec( 'VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
+                            vector( self._httphost, self._host, self.lpath, _ppath,
+                            _is_dav, _dirbrowsing, _defpage, _auth_func, _auth_realm, _after_func,
+                            _vspuser, _soapuser, _security, _sesvars, self.soap_opt,
+                            _auth_opt, _global_opts, _defdir));
+
+                      if (msg <> '') {
+                        self._errmsg := msg;
+                      }
+                      else {
+                        if( not isnull(self.soapuser) ) {
+                          declare inx integer;
+                          inx := 0;
+                          while( inx < length(self.roles_grant_list) ) {
+                            exec(sprintf('grant execute on %s to %s', self.roles_grant_list[inx], self.soapuser));
+                            inx := inx + 1;
+                          }
+                        }
+
+                        http_request_status ('HTTP/1.1 302 Found');
+                        if( self.referer <> '' )
+                          http_header (sprintf('Location: %s', self.referer));
+                        else
+                          http_header (sprintf('Location: soap_services.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      }
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+          </table>
+        </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

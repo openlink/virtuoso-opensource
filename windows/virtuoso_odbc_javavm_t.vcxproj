@@ -15,6 +15,7 @@
     <ProjectGuid>{02AD88A0-CF7B-11DA-85E2-A4E5714C712A}</ProjectGuid>
     <RootNamespace>virtuoso_javavm_t</RootNamespace>
     <Keyword>Win32Proj</Keyword>
+    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3732,16 +3732,16 @@ itc_page_split_search_1 (it_cursor_t * it, buffer_desc_t * buf,
 	    case DVC_MATCH:
 	    case DVC_LESS:
 	      {
-		row = page + map->pm_entries[at_or_above];
-	      it->itc_map_pos = at_or_above;
-	      kv = IE_KEY_VERSION (row);
-	      if (KV_LEAF_PTR == kv)
-		*leaf_ret = LONG_REF (row + it->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
-	      else if (KV_LEFT_DUMMY == kv)
-		*leaf_ret = LONG_REF (row + LD_LEAF);
-	      else
-		*leaf_ret = 0;
-		return at_or_above_res;
+                row = page + map->pm_entries[at_or_above];
+                it->itc_map_pos = at_or_above;
+                kv = IE_KEY_VERSION (row);
+                if (KV_LEAF_PTR == kv)
+                  *leaf_ret = LONG_REF (row + it->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
+                else if (KV_LEFT_DUMMY == kv)
+                  *leaf_ret = LONG_REF (row + LD_LEAF);
+                else
+                  *leaf_ret = 0;
+                return at_or_above_res;
 	      }
 	    case DVC_GREATER:
 	      {

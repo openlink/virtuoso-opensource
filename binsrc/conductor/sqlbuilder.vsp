@@ -1,0 +1,1170 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+?>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+  <style type="text/css">
+  <!--
+    BODY
+    {
+      font-family: tahoma, verdana, arial, helvetica, sans-serif;
+      font-size: 8pt
+    }
+
+    TD
+    {
+      font-family: tahoma, verdana, arial, helvetica, sans-serif;
+      font-size: 8pt
+    }
+
+    TH
+    {
+      font-family: tahoma, verdana, arial, helvetica, sans-serif;
+      font-size: 8pt
+    }
+  -->
+  </style>
+  <title>Virtuoso SQL Builder</title>
+  <script type="text/javascript">
+    <!--
+    var isDOM=document.getElementById?true:false
+    var isOpera=window.opera && isDOM
+    var isOpera5=window.opera && isDOM
+    var isOpera6=(isOpera && window.print)?true:false
+    var isOpera7=isOpera && navigator.userAgent.indexOf("Opera 7") > 0 || navigator.userAgent.indexOf("Opera/7") >= 0
+    var isMSIE=document.all && document.all.item && !isOpera
+    var isIE=document.all && document.all.item && !isOpera
+    var isStrict=document.compatMode=='CSS1Compat'
+    var isNN=navigator.appName=="Netscape"
+    var isNC=navigator.appName=="Netscape"
+    var isNN4=isNN && !isDOM
+    var isNC4=isNN && !isDOM
+    var isMozilla=isNN6=isNN && isDOM
+
+    var tables = new Array();
+    var selected_tables = new Array();
+    var filtered_tables = new Array();
+    var selected_columns = new Array();
+    var categories = new Array();
+    var procedures = new Array();
+    var from_expression = "";
+    var joins = new Array();
+    var t = null;
+    var c = null;
+    var ctg = null;
+    var func = null;
+    var proc = null;
+    var table_filter = '';
+
+    var last_range;
+
+    function init_data() {
+
+  /* This part should be generated */
+  <?vsp
+    declare prows, trows, crows, i, j, k, ccount integer;
+    declare state, state, message, tmeta, cmeta, tresult, cresult, fresult, cparams, pmeta, presult any;
+    declare gettables, getcolumns, getfunctions, getparameters, getprocedures varchar;
+    declare categories any;
+    declare stream, str_stream any;
+    gettables := concat('select ',
+                        '  name_part(KEY_TABLE, 0) as TABLE_CATALOG NVARCHAR(128), ',
+                        '  name_part(KEY_TABLE, 1) as TABLE_SCHEMA NVARCHAR(128), ',
+                        '  name_part(KEY_TABLE, 2) as TABLE_NAME NVARCHAR(128), ',
+                        '  table_type(KEY_TABLE) as TABLE_TYPE NVARCHAR(128) ',
+                        'from ',
+                        '  DB.DBA.SYS_KEYS ',
+                        'where ',
+                        '  __any_grants(KEY_TABLE) and ',
+                        '  KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is null ',
+                        'order by ',
+                        '  KEY_TABLE');
+    getcolumns := concat('select ',
+                         '  "COLUMN" as COLUMN_NAME NVARCHAR(128), ',
+                         '  internal_type_name(COL_DTP) as COL_TYPE, ',
+                         '  COL_PREC, ',
+                         '  COL_SCALE, ',
+                         '  (select count(*) from DB.DBA.SYS_COLS where "TABLE" = KEY_TABLE and COL_ID <= c.COL_ID and "COLUMN" <> ''_IDN'') as ORDINAL_POSITION INTEGER, ',
+                         '  case when deserialize(COL_DEFAULT) is null then 0 else -1 end as COLUMN_HASDEFAULT SMALLINT, ',
+                         '  deserialize(COL_DEFAULT) as COLUMN_DEFAULT NVARCHAR(254), ',
+                         '  case COL_NULLABLE when 1 then -1 else 0 end as IS_NULLABLE SMALLINT ',
+                         'from ',
+                         '  DB.DBA.SYS_KEYS, ',
+                         '  DB.DBA.SYS_KEY_PARTS, ',
+                         '  DB.DBA.SYS_COLS c ',
+                         'where ',
+                         '  __any_grants(KEY_TABLE) and ',
+                         '  "COLUMN" <> ''_IDN'' and ',
+                         '  KEY_IS_MAIN = 1 and ',
+                         '  KEY_MIGRATE_TO is null and ',
+                         '  KP_KEY_ID = KEY_ID and ',
+                         '  COL_ID = KP_COL and (KEY_TABLE = ? or KEY_TABLE = ?) ',
+                         'order by ',
+                         '  5');
+    stream := string_output();
+    state := '00000';
+    exec(gettables, state, message, vector(), 0, tmeta, tresult);
+    if(state <> '00000') goto tables_done;
+    trows := length(tresult);
+    j := 0;
+    while(j < trows) {
+      http('var t = new Object();\n', stream);
+      http(sprintf('t.name = \'"%I"."%I"."%I"\';\n',
+              cast(aref(aref(tresult,j),0) as varchar),
+              cast(aref(aref(tresult,j),1) as varchar),
+              cast(aref(aref(tresult,j),2) as varchar)), stream);
+      cparams := vector(concat(cast(aref(aref(tresult,j),0) as varchar), '.',
+                               cast(aref(aref(tresult,j),1) as varchar), '.',
+                               cast(aref(aref(tresult,j),2) as varchar)),
+                        cast(aref(aref(tresult,j),2) as varchar)
+                       );
+      http('t.columns = new Array();\n', stream);
+      state := '00000';
+      exec(getcolumns, state, message, cparams, 0, cmeta, cresult);
+      if(state <> '00000') {
+        goto tables_done;
+      }
+      crows := length(cresult);
+      i := 0;
+      while(i < crows) {
+        http('c = new Object();\n', stream);
+        http('c.table = t;\n', stream);
+        http(sprintf('c.name = \'"%I"\';\n', cast(aref(aref(cresult,i),0) as varchar)), stream);
+        http(sprintf('c.type = \'%s\';\n', cast(aref(aref(cresult,i),1) as varchar)), stream);
+        http(sprintf('c.prec = \'%s\';\n', cast(aref(aref(cresult,i),2) as varchar)), stream);
+        http(sprintf('c.scale = \'%s\';\n', cast(aref(aref(cresult,i),3) as varchar)), stream);
+        http(sprintf('c.order = \'%s\';\n', cast(aref(aref(cresult,i),4) as varchar)), stream);
+        http(sprintf('c.hasdefault = \'%s\';\n', cast(aref(aref(cresult,i),5) as varchar)), stream);
+        http(sprintf('c[\'default\'] = \'%s\';\n', cast(aref(aref(cresult,i),6) as varchar)), stream);
+        http(sprintf('c.nullable = \'%s\';\n', cast(aref(aref(cresult,i),7) as varchar)), stream);
+        http('t.columns[t.columns.length] = c;\n', stream);
+        i := i + 1;
+      }
+      if(crows > 0) {
+        http(sprintf('t.idx = %d;\n', j), stream);
+        http('tables[tables.length] = t;\n', stream);
+      }
+      j := j + 1;
+    }
+tables_done:
+    categories := vector('date', 'number', 'string', 'time', 'type');
+    ccount := length(categories);
+    k := 0;
+    getfunctions := 'HELP_BIF_FUNCTIONS(?)';
+    while(k < ccount) {
+      state := '00000';
+      cparams := vector(aref(categories, k));
+      exec(getfunctions, state, message, cparams, 0, tmeta, fresult);
+      if(state <> '00000') goto func_done;
+      if(isarray(fresult)) {
+        http('ctg = new Object;\n', stream);
+        http('ctg.functions = new Array;\n', stream);
+        http(sprintf('ctg.name = \'%s\';\n', aref(categories, k)), stream);
+        trows := length(fresult);
+        j := 0;
+        while(j < trows) {
+          http('func = new Object;\n', stream);
+          http(sprintf('func.name = \'%s\';\n', cast(aref(aref(fresult,j),2) as varchar)), stream);
+          {
+            declare encoded1, encoded2 varchar;
+            encoded1 := replace(cast(aref(aref(fresult,j),4) as varchar), '\n', '\\n');
+            encoded1 := replace(encoded1, '\r', '\\r');
+            encoded1 := replace(encoded1, '\'', '\\\'');
+            encoded2 := replace(cast(aref(aref(fresult,j),5) as varchar), '\n', '\\n');
+            encoded2 := replace(encoded2, '\r', '\\r');
+            encoded2 := replace(encoded2, '\'', '\\\'');
+            http(sprintf('func.descr1 = \'%s\';\n', encoded1), stream);
+            http(sprintf('func.descr2 = \'%s\';\n', encoded2), stream);
+          }
+          http('ctg.functions[ctg.functions.length] = func;\n', stream);
+          j := j + 1;
+        }
+        http('categories[categories.length] = ctg;\n', stream);
+      }
+      k := k + 1;
+    }
+func_done:
+--    goto done;
+    getprocedures := 'select P_NAME from SYS_PROCEDURES';
+    state := '00000';
+    exec(getprocedures, state, message, vector(), 0, pmeta, presult);
+    if(state <> '00000') goto done;
+    prows := length(presult);
+    j := 0;
+    while(j < prows) {
+      http('proc = new Object;\n', stream);
+      http(sprintf('proc.name = \'%s\';\n', replace(cast(aref(aref(presult,j),0) as varchar), '\'', '\\\'')), stream);
+      http('procedures[procedures.length] = proc;\n', stream);
+      j := j + 1;
+    }
+done:
+      str_stream := string_output_string(stream);
+      http(str_stream);
+  ?>
+  /* End of generated part */
+  }
+
+  function on_body_load() {
+    init_data();
+    div_table_selector_fill_tables_list();
+    div_table_selector_fill_selected_tables_list();
+    tables_selector_enter();
+  }
+
+  function layerStyle(layerObject) {
+    if(layerObject["style"]) {
+      return layerObject["style"];
+    }
+    return layerObject;
+  }
+
+  function remember() {
+    if(isMSIE) {
+      if(document.selection) {
+        last_range = document.selection.createRange();
+      }
+    }
+  }
+
+  function sql_expression_replace_selected(newval) {
+    if(isMozilla) {
+      var from = document.form_final.sql_expression.selectionStart;
+      var to = document.form_final.sql_expression.selectionStart;
+      if(from != undefined && to != undefined) {
+        var sql = document.form_final.sql_expression.value;
+        var sql_new = sql.substring(0, from) + newval + sql.substring(from);
+        document.form_final.sql_expression.value = sql_new;
+        return;
+      }
+    }
+    if(isMSIE) {
+      if(last_range) {
+        last_range.text=newval;
+        return;
+      }
+    }
+    alert('This feature is not supported by your web browser.');
+  }
+
+  function table_left() {
+    var newval = filtered_tables[document.form_final.final_tables_list.selectedIndex].name;
+    sql_expression_replace_selected(newval);
+  }
+
+  function column_left() {
+    var columns = filtered_tables[document.form_final.final_tables_list.selectedIndex].columns;
+    var newval = columns[document.form_final.final_columns_list.selectedIndex].name;
+    sql_expression_replace_selected(newval);
+  }
+
+  function function_left() {
+    var functions = categories[document.form_final.ctg_list.selectedIndex].functions;
+    var newval = functions[document.form_final.functions_list.selectedIndex].name;
+    sql_expression_replace_selected(newval);
+  }
+
+  function procedure_left() {
+    var newval = procedures[document.form_final.procedures_list.selectedIndex].name;
+    sql_expression_replace_selected(newval);
+  }
+
+  function layer(layerName) {
+    // DOM1
+    if(document.getElementById) return document.getElementById(layerName);
+    // MSIE4
+    if(document.all) return document.all[LayerName];
+    // Netscape4
+    if(document.layers) return document.layers[LayerName];
+    // Others
+    alert("Your browser doesn't support layers.");
+    return null;
+  }
+
+  function format_column(column) {
+    if (column != null)
+      return "" + column.name + " (" + column.type + ") ";
+    return null;
+  }
+
+  function div_column_selector_fill_columns_list() {
+    while(document.form_column_selector.columns_list.length > 0) {
+      document.form_column_selector.columns_list.options[0] = null;
+    }
+    if(document.form_column_selector.tables_list.selectedIndex >= 0) {
+      columns = selected_tables[document.form_column_selector.tables_list.selectedIndex].columns;
+      for(idx = 0; idx < columns.length; idx++) {
+        if (columns[idx] != null)
+          {
+        name = format_column(columns[idx]);
+        document.form_column_selector.columns_list.options[document.form_column_selector.columns_list.length] = new Option(name, name, false, false);
+          }
+      }
+    }
+  }
+
+   function div_final_fill_columns_list() {
+     while(document.form_final.final_columns_list.length > 0) {
+       document.form_final.final_columns_list.options[0] = null;
+     }
+     if(document.form_final.final_tables_list.selectedIndex >= 0) {
+       columns = filtered_tables[document.form_final.final_tables_list.selectedIndex].columns;
+       for(idx = 0; idx < columns.length; idx++) {
+        if (columns[idx] != null)
+          {
+         name = format_column(columns[idx]);
+         document.form_final.final_columns_list.options[document.form_final.final_columns_list.length] = new Option(name, name, false, false);
+          }
+       }
+     }
+     document.form_final.final_columns_list.selectedIndex = 0;
+   }
+
+    function div_final_fill_sql() {
+      var sql = "select ";
+      for(var idx=0; idx<selected_columns.length; idx++) {
+        var col = selected_columns[idx];
+        if(idx > 0) sql += ", ";
+        sql += (col.table.name + "." + col.name);
+      }
+      sql += " from " + from_expression;
+      document.form_final.sql_expression.value = sql;
+    }
+
+    function div_final_fill_procedures_list() {
+    while(document.form_final.procedures_list.length > 0) {
+      document.form_final.procedures_list.options[0] = null;
+    }
+    for(idx = 0; idx < procedures.length; idx++) {
+      name = procedures[idx].name;
+      document.form_final.procedures_list.options[document.form_final.procedures_list.length] = new Option(name, name, false, false);
+    }
+    document.form_final.procedures_list.selectedIndex = 0;
+  }
+
+   function div_final_fill_ctg_list() {
+     while(document.form_final.ctg_list.length > 0) {
+       document.form_final.ctg_list.options[0] = null;
+     }
+     for(idx = 0; idx < categories.length; idx++) {
+       name = categories[idx].name;
+       document.form_final.ctg_list.options[document.form_final.ctg_list.length] = new Option(name, name, false, false);
+     }
+     document.form_final.ctg_list.selectedIndex = 0;
+   }
+
+   function div_final_fill_functions_list() {
+     while(document.form_final.functions_list.length > 0) {
+       document.form_final.functions_list.options[0] = null;
+     }
+     if(document.form_final.ctg_list.selectedIndex >= 0) {
+       var functions = categories[document.form_final.ctg_list.selectedIndex].functions;
+       for(idx = 0; idx < functions.length; idx++) {
+         name = functions[idx].name;
+         document.form_final.functions_list.options[document.form_final.functions_list.length] = new Option(name, name, false, false);
+       }
+     }
+     document.form_final.functions_list.selectedIndex = 0;
+   }
+
+  function div_final_function_help() {
+    if(document.form_final.ctg_list.selectedIndex >= 0 && document.form_final.functions_list.selectedIndex >=0) {
+      var functions = categories[document.form_final.ctg_list.selectedIndex].functions;
+      var func = functions[document.form_final.functions_list.selectedIndex];
+      alert('Function description:\n\n' + func.descr1 + '\n\n' + func.descr2);
+    }
+  }
+
+  function format_join(j) {
+    var formated_name = "" + j.left_column.table.name + " " + j.kind + " " + j.right_column.table.name + " on " + j.left_column.table.name + "." + j.left_column.name + " = " + j.right_column.table.name + "." + j.right_column.name;
+    if(formated_name.length > 50) {
+      formated_name = formated_name.substring(0, 46) + " ...";
+    }
+    return formated_name;
+  }
+
+  function format_recursively_join_expression(obj) {
+    var left = "";
+    var j = obj.thejoin;
+    if(j.left_join) {
+      left = format_recursively_join_expression(j.left_join);
+    }
+    else {
+      left = j.left_column.table.name;
+    }
+    var right = "";
+    if(j.right_join) {
+      right = format_recursively_join_expression(j.right_join);
+    }
+    else {
+      right = j.right_column.table.name;
+    }
+    return "( " + left + " " + j.kind + " " + right +
+      " on " + j.left_column.table.name + "." + j.left_column.name +
+      " = " + j.right_column.table.name + "." + j.right_column.name + " )";
+  }
+
+  function retrieve_obj_contained_table(j, t1, t2) {
+    if(j.left_join) {
+      var retval = retrieve_obj_contained_table(j.left_join.thejoin, t1, t2);
+      if(retval) return retval;
+    }
+    else {
+      if(j.left_column.table.name == t1 || j.left_column.table.name == t2) {
+        return j;
+      }
+    }
+    if(j.right_join) {
+      var retval = retrieve_obj_contained_table(j.right_join.thejoin, t1, t2);
+      if(retval) return retval;
+    }
+    else {
+      if(j.right_column.table.name == t1 || j.right_column.table.name == t2) {
+        return j;
+      }
+    }
+    return null;
+  }
+
+  function get_join_contained_table(top, t1, t2) {
+    for(i = 0; i < top.length; i++) {
+      obj = top[i];
+      if(obj.thejoin) {
+        var result = retrieve_obj_contained_table(obj.thejoin, t1, t2);
+        if(result) return result;
+      }
+    }
+    return null;
+  }
+
+  function format_from_expression() {
+    var from_objects = new Array();
+    for(var i = 0; i < selected_tables.length; i++) {
+      var exists = 0;
+      var tname = selected_tables[i].name;
+      for(var j = 0; j < joins.length; j++) {
+        var t1 = joins[j].left_column.table.name;
+        var t2 = joins[j].right_column.table.name;
+        if(tname == t1 || tname == t2) {
+          exists = 1;
+          break;
+        }
+      }
+      if(exists == 0) {
+        var obj = new Object();
+        obj.table = selected_tables[i];
+        from_objects[from_objects.length] = obj;
+      }
+    }
+    // Here need take into account joins
+    for(var i = 0; i < joins.length; i++) {
+      // Add new join expression
+      var jn = new Object;
+      jn.left_column = joins[i].left_column;
+      jn.right_column = joins[i].right_column;
+      jn.kind = joins[i].kind;
+      var obj = new Object();
+      obj.thejoin = jn;
+      var result = null;
+      res = get_join_contained_table(from_objects, t1, t2);
+      if(res) {
+        if(res.left_column.table.name == t1 || res.right_column.table.name == t1) {
+          res.left_join = obj;
+        }
+        else {
+          if(res.left_column.table.name == t2 || res.right_column.table.name == t2) {
+            res.right_join = obj;
+          }
+        }
+      }
+      else {
+        // If not
+        from_objects[from_objects.length] = obj;
+      }
+    }
+    // Here build resulting expression
+    from_expression = "";
+    for(i = 0; i < from_objects.length; i++) {
+      if(i > 0) {
+        from_expression += ", ";
+      }
+      var obj = from_objects[i];
+      if(obj.table) {
+        from_expression += obj.table.name;
+      }
+      else {
+        if(obj.thejoin) {
+          from_expression += format_recursively_join_expression(obj);
+        }
+      }
+    }
+    document.form_join_selector.from_expression.value = "... from "  + from_expression + " ... ";
+  }
+
+  function div_join_selector_fill_joins_list() {
+    while(document.form_join_selector.joins_list.length > 0) {
+      document.form_join_selector.joins_list.options[0] = null;
+    }
+    for(idx = 0; idx < joins.length; idx++) {
+      name = format_join(joins[idx]);
+      opt = new Option(name, name, false, false);
+      opt.title = name;
+      document.form_join_selector.joins_list.options[document.form_join_selector.joins_list.length] = opt;
+    }
+  }
+
+  function div_join_selector_left() {
+    var idx = document.form_join_selector.joins_list.selectedIndex;
+    if(idx > -1) {
+      joins = deleteFromArray(joins, idx);
+      div_join_selector_fill_joins_list();
+      format_from_expression();
+    }
+  }
+
+  function div_join_selector_right() {
+    var left_columns = selected_tables[document.form_join_selector.left_tables_list.selectedIndex].columns;
+    var left_column = left_columns[document.form_join_selector.left_columns_list.selectedIndex];
+    var right_columns = selected_tables[document.form_join_selector.right_tables_list.selectedIndex].columns;
+    var right_column = right_columns[document.form_join_selector.right_columns_list.selectedIndex];
+    var kind = '';
+    for(idx = 0; idx < document.form_join_selector.join_type.length; idx++) {
+      if(document.form_join_selector.join_type[idx].checked) {
+        kind = document.form_join_selector.join_type[idx].value;
+        break;
+      }
+    }
+    var thejoin = new Object();
+    thejoin.left_column = left_column;
+    thejoin.right_column = right_column;
+    thejoin.kind = kind;
+    joins[joins.length] = thejoin;
+    div_join_selector_fill_joins_list();
+    format_from_expression();
+  }
+
+  function div_join_selector_fill_left_columns_list() {
+    while(document.form_join_selector.left_columns_list.length > 0) {
+      document.form_join_selector.left_columns_list.options[0] = null;
+    }
+    columns = selected_tables[document.form_join_selector.left_tables_list.selectedIndex].columns;
+    for(idx = 0; idx < columns.length; idx++) {
+        if (columns[idx] != null)
+          {
+      name = format_column(columns[idx]);
+      document.form_join_selector.left_columns_list.options[document.form_join_selector.left_columns_list.length] = new Option(name, name, false, false);
+          }
+    }
+    document.form_join_selector.left_columns_list.selectedIndex = 0;
+  }
+
+  function div_join_selector_fill_right_columns_list() {
+    while(document.form_join_selector.right_columns_list.length > 0) {
+      document.form_join_selector.right_columns_list.options[0] = null;
+    }
+    columns = selected_tables[document.form_join_selector.right_tables_list.selectedIndex].columns;
+    for(idx = 0; idx < columns.length; idx++) {
+        if (columns[idx] != null)
+          {
+      name = format_column(columns[idx]);
+      document.form_join_selector.right_columns_list.options[document.form_join_selector.right_columns_list.length] = new Option(name, name, false, false);
+          }
+    }
+    document.form_join_selector.right_columns_list.selectedIndex = 0;
+  }
+
+  function div_column_selector_fill_selected_columns_list() {
+    while(document.form_column_selector.selected_columns_list.length > 0) {
+      document.form_column_selector.selected_columns_list.options[0] = null;
+    }
+    for(idx = 0; idx < selected_columns.length; idx++) {
+        if (columns[idx] != null)
+          {
+      name = format_column(selected_columns[idx]);
+      document.form_column_selector.selected_columns_list.options[document.form_column_selector.selected_columns_list.length] = new Option(name, name, false, false);
+          }
+    }
+  }
+
+  function div_table_selector_fill_tables_list() {
+    while(document.form_table_selector.tables_list.length > 0) {
+      document.form_table_selector.tables_list.options[0] = null;
+    }
+    filtered_tables = new Array();
+    for(idx = 0; idx < tables.length; idx++) {
+      var name = tables[idx].name;
+      if(table_filter.length != 0) {
+        if(name.indexOf(table_filter) == 0) {
+          filtered_tables[filtered_tables.length] = tables[idx];
+          document.form_table_selector.tables_list.options[document.form_table_selector.tables_list.length] = new Option(name, name, false, false);
+        }
+      }
+      else {
+        filtered_tables[filtered_tables.length] = tables[idx];
+        document.form_table_selector.tables_list.options[document.form_table_selector.tables_list.length] = new Option(name, name, false, false);
+      }
+    }
+  }
+
+   function div_final_fill_tables_list() {
+     while(document.form_final.final_tables_list.length > 0) {
+       document.form_final.final_tables_list.options[0] = null;
+     }
+     for(idx = 0; idx < filtered_tables.length; idx++) {
+       var name = filtered_tables[idx].name;
+       document.form_final.final_tables_list.options[document.form_final.final_tables_list.length] = new Option(name, name, false, false);
+     }
+     document.form_final.final_tables_list.selectedIndex = 0;
+   }
+
+  function div_table_selector_fill_selected_tables_list() {
+    while(document.form_table_selector.selected_tables_list.length > 0) {
+      document.form_table_selector.selected_tables_list.options[0] = null;
+    }
+    for(idx = 0; idx < selected_tables.length; idx++) {
+      name = selected_tables[idx].name;
+      document.form_table_selector.selected_tables_list.options[document.form_table_selector.selected_tables_list.length] = new Option(name, name, false, false);
+    }
+  }
+
+  function remove_table_selected_columns(tname) {
+    tmp = new Array();
+    for(i = 0; i < selected_columns.length; i++) {
+      if(selected_columns[i].table.name != tname) {
+        tmp[tmp.length] = selected_columns[i];
+      }
+    }
+    selected_columns = tmp;
+  }
+
+  function div_join_selector_fill_left_tables_list() {
+    while(document.form_join_selector.left_tables_list.length > 0) {
+      document.form_join_selector.left_tables_list.options[0] = null;
+    }
+    for(idx = 0; idx < selected_tables.length; idx++) {
+      name = selected_tables[idx].name;
+      document.form_join_selector.left_tables_list.options[document.form_join_selector.left_tables_list.length] = new Option(name, name, false, false);
+    }
+    document.form_join_selector.left_tables_list.selectedIndex = 0;
+    div_join_selector_fill_left_columns_list();
+  }
+
+  function div_join_selector_fill_right_tables_list() {
+    while(document.form_join_selector.right_tables_list.length > 0) {
+      document.form_join_selector.right_tables_list.options[0] = null;
+    }
+    for(idx = 0; idx < selected_tables.length; idx++) {
+      name = selected_tables[idx].name;
+      document.form_join_selector.right_tables_list.options[document.form_join_selector.right_tables_list.length] = new Option(name, name, false, false);
+    }
+    document.form_join_selector.right_tables_list.selectedIndex = 1;
+    div_join_selector_fill_right_columns_list();
+  }
+
+  function div_columns_selector_fill_tables_list() {
+    while(document.form_column_selector.tables_list.length > 0) {
+      document.form_column_selector.tables_list.options[0] = null;
+    }
+    for(idx = 0; idx < selected_tables.length; idx++) {
+      name = selected_tables[idx].name;
+      document.form_column_selector.tables_list.options[document.form_column_selector.tables_list.length] = new Option(name, name, false, false);
+    }
+    document.form_column_selector.tables_list.selectedIndex = 0;
+  }
+
+  function div_columns_selector_right() {
+    var opts = document.form_column_selector.columns_list.options;
+    var columns = selected_tables[document.form_column_selector.tables_list.selectedIndex].columns;
+    var i = 0;
+    var flag = 0;
+    for(i = 0; i < opts.length; i++) {
+      if(opts[i].selected) {
+        var column = columns[i];
+        selected_columns[selected_columns.length] = column;
+        flag = 1;
+      }
+    }
+    if(flag) {
+      div_column_selector_fill_selected_columns_list();
+    }
+  }
+
+  function div_columns_selector_left() {
+    if(document.form_column_selector.selected_columns_list.selectedIndex >= 0 ) {
+      selected_columns = deleteFromArray(selected_columns, document.form_column_selector.selected_columns_list.selectedIndex);
+      div_column_selector_fill_selected_columns_list();
+    }
+  }
+
+  function div_table_selector_right() {
+    var opts = document.form_table_selector.tables_list.options;
+    var i = 0;
+    var flag = 0;
+    for(i = 0; i < opts.length; i++) {
+      if(opts[i].selected) {
+        var table = filtered_tables[i];
+        selected_tables[selected_tables.length] = table;
+        flag = 1;
+      }
+    }
+    if(flag) {
+      div_table_selector_fill_selected_tables_list();
+    }
+  }
+
+  function div_table_selector_left() {
+    if(document.form_table_selector.selected_tables_list.selectedIndex >= 0 ) {
+      var tname = selected_tables[document.form_table_selector.selected_tables_list.selectedIndex].name;
+      selected_tables = deleteFromArray(selected_tables, document.form_table_selector.selected_tables_list.selectedIndex);
+      div_table_selector_fill_selected_tables_list();
+      remove_table_selected_columns(tname);
+    }
+  }
+
+  function div_table_selector_filter() {
+    table_filter = document.form_table_selector.text_tables_filter.value;
+    div_table_selector_fill_tables_list();
+  }
+
+  function deleteFromArray(array_var, idx) {
+    var new_array = new Array();
+    for(i=0; i<array_var.length; i++) {
+      if(i != idx) {
+        new_array[new_array.length] = array_var[i];
+      }
+    }
+    array_var = new_array;
+    return new_array;
+  }
+
+  function swapInArray(array_var, idx1, idx2) {
+    if(array_var.length < idx1 + 1) return array_var;
+    if(array_var.length < idx2 + 1) return array_var;
+    var temp = array_var[idx1];
+    array_var[idx1] = array_var[idx2];
+    array_var[idx2] = temp;
+    return array_var;
+  }
+
+  function div_columns_selector_up() {
+    if(document.form_column_selector.selected_columns_list.length > 1 ) {
+      var idx = document.form_column_selector.selected_columns_list.selectedIndex;
+      if(idx > 0) {
+        selected_columns = swapInArray(selected_columns, idx, idx - 1);
+        div_column_selector_fill_selected_columns_list();
+        document.form_column_selector.selected_columns_list.selectedIndex = idx - 1;
+      }
+    }
+  }
+
+  function div_columns_selector_down() {
+    if(document.form_column_selector.selected_columns_list.length > 1 ) {
+      var idx = document.form_column_selector.selected_columns_list.selectedIndex;
+      if(idx >= 0 && idx < document.form_column_selector.selected_columns_list.length - 1) {
+        selected_columns = swapInArray(selected_columns, idx, idx + 1);
+        div_column_selector_fill_selected_columns_list();
+        document.form_column_selector.selected_columns_list.selectedIndex = idx + 1;
+      }
+    }
+  }
+
+  function tables_selector_enter() {
+    layerStyle(layer("div_table_selector")).visibility=isNN4?"show":"visible";
+    layerStyle(layer("div_columns_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_join_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_final")).visibility=isNN4?"hide":"hidden";
+  }
+
+  function columns_selector_enter() {
+    if(selected_tables.length == 0) {
+      alert('At least one table should be selected.\n\nPlease, try again.');
+      return;
+    }
+    layerStyle(layer("div_table_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_columns_selector")).visibility=isNN4?"show":"visible";
+    layerStyle(layer("div_join_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_final")).visibility=isNN4?"hide":"hidden";
+    div_columns_selector_fill_tables_list();
+    div_column_selector_fill_columns_list();
+    div_column_selector_fill_selected_columns_list();
+    format_from_expression();
+  }
+
+  function join_selector_enter() {
+    if(selected_columns.length == 0) {
+      alert('At least one column should be selected.\n\nPlease, try again.');
+      return;
+    }
+    if(selected_tables.length == 1) {
+      joins = new Array ();
+      format_from_expression();
+      final_selector_enter();
+      return;
+    }
+    layerStyle(layer("div_table_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_columns_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_join_selector")).visibility=isNN4?"show":"visible";
+    layerStyle(layer("div_final")).visibility=isNN4?"hide":"hidden";
+    div_join_selector_fill_left_tables_list();
+    div_join_selector_fill_right_tables_list();
+    div_join_selector_fill_joins_list();
+    format_from_expression();
+  }
+
+  function final_selector_enter() {
+    layerStyle(layer("div_table_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_columns_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_join_selector")).visibility=isNN4?"hide":"hidden";
+    layerStyle(layer("div_final")).visibility=isNN4?"show":"visible";
+    div_final_fill_tables_list();
+    div_final_fill_columns_list();
+    div_final_fill_ctg_list();
+    div_final_fill_functions_list();
+    div_final_fill_procedures_list();
+    div_final_fill_sql();
+  }
+
+  // -->
+  </script>
+</head>
+<body onload="javascript: on_body_load(); return false;">
+  <!--
+  <div id="div_table_selector" style="display:block; position:absolute; left:10px; top:20px; right:10px; bottom:10px">
+  -->
+  <div id="div_table_selector" style="display:block; position:absolute">
+    <h2>Virtuoso SQL Builder (Wizard)</h2>
+    <h3>Select tables list:</h3>
+    <form name="form_table_selector" method="POST">
+      <table border="0" width="100%">
+        <tr>
+          <th>
+            Enter filter for tables:
+            <input name="text_tables_filter" type="text"/>
+            <input style="width:80px" name="btn_tables_filter" value="Filter" type="button" onclick="javascript: div_table_selector_filter(); return false;" />
+          </th>
+          <th>
+            &nbsp;
+          </th>
+          <th>
+            Selected tables:
+          </th>
+        </tr>
+        <tr>
+          <td width="45%">
+            <select name="tables_list" size="10" multiple="multiple" style="width:100%">
+              <option>One</option>
+            </select>
+          </td>
+          <td width="10%" valign="center" align="center">
+            <input style="width:60px" name="btn_tables_right" value=">>" type="button" onclick="javascript: div_table_selector_right(); return false;"/>
+            <br/>
+            <input style="width:60px" name="btn_tables_right" value="&lt;&lt;" type="button" onclick="javascript: div_table_selector_left(); return false;"/>
+          </td>
+          <td width="45%">
+            <select name="selected_tables_list" size="10" style="width:100%">
+              <option>One</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" align="right">
+            <input style="width:80px" name="btn_tables_next" value="Continue" type="button" onclick="javascript: columns_selector_enter(); return false;"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+  <div id="div_columns_selector" style="display:block; position:absolute">
+    <h2>Virtuoso SQL Builder (Wizard)</h2>
+    <h3>Select columns list:</h3>
+    <form name="form_column_selector" method="POST">
+      <table border="0" width="100%">
+        <tr>
+          <th>
+            Select Table:
+          </th>
+          <th>
+            Select Column:
+          </th>
+          <th>
+            &nbsp;
+          </th>
+          <th>
+            Selected Column (in output order):
+          </th>
+        </tr>
+        <tr>
+          <td width="30%">
+            <select name="tables_list" size="10" style="width:100%" onchange="javascript: div_column_selector_fill_columns_list(); return false;">
+              <option>One</option>
+            </select>
+          </td>
+          <td width="30%">
+            <select name="columns_list" multiple="multiple" size="10" style="width:100%">
+              <option>One</option>
+            </select>
+          </td>
+          <td width="10%" valign="center" align="center">
+            <input style="width:60px" name="btn_columns_right" value=">>" type="button" onclick="javascript: div_columns_selector_right(); return false;"/>
+            <br/>
+            <input style="width:60px" name="btn_columns_right" value="&lt;&lt;" type="button" onclick="javascript: div_columns_selector_left(); return false;"/>
+            <br/>
+            <br/>
+            <input style="width:60px" name="btn_columns_up" value="Up" type="button" onclick="javascript: div_columns_selector_up(); return false;"/>
+            <br/>
+            <input style="width:60px" name="btn_columns_down" value="Down" type="button" onclick="javascript: div_columns_selector_down(); return false;"/>
+          </td>
+          <td width="30%">
+            <select name="selected_columns_list" size="10" style="width:100%">
+              <option>One</option>
+            </select>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="4" align="right">
+            <input style="width:80px" name="btn_columns_prev" value="Back" type="button" onclick="javascript: tables_selector_enter(); return false;"/>
+            <input style="width:80px" name="btn_columns_next" value="Continue" type="button" onclick="javascript: join_selector_enter(); return false;"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+  <div id="div_join_selector" style="display:block; position:absolute">
+    <h2>Virtuoso SQL Builder (Wizard)</h2>
+    <h3>Select table joins rules:</h3>
+    <form name="form_join_selector" method="POST">
+      <table border="0" width="100%">
+        <tr>
+          <th>
+            Enter join rule for tables:
+          </th>
+          <th>
+            &nbsp;
+          </th>
+          <th>
+            List of join rules:
+          </th>
+        </tr>
+        <tr>
+          <td width="45%">
+            <table border="0" width="100%">
+              <tr>
+                <td width="50%">
+                  Left table:<br/>
+                  <select name="left_tables_list" style="width:100%" onchange="javascript: div_join_selector_fill_left_columns_list(); return false;">
+                    <option>One</option>
+                  </select>
+                </td>
+                <td width="50%">
+                  Right table:<br/>
+                  <select name="right_tables_list" style="width:100%" onchange="javascript: div_join_selector_fill_right_columns_list(); return false;">
+                    <option>One</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  Left table column:<br/>
+                  <select name="left_columns_list" style="width:100%">
+                    <option>One</option>
+                  </select>
+                </td>
+                <td>
+                  Right table column:<br/>
+                  <select name="right_columns_list" style="width:100%">
+                    <option>One</option>
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  <table border="0" width="100%">
+                    <tr>
+                      <td valign="baseline">
+                        <input value="join" checked="cheched" type="radio" name="join_type"/>
+                      </td>
+                      <td valign="top">
+                        Association only those records in which the connected fields of both tables coincide
+                      </td>
+                    </tr>
+                  </table>
+                  <table border="0" cellspacing="3" width="100%">
+                    <tr>
+                      <td valign="baseline">
+                        <input value="left outer join" type="radio" name="join_type"/>
+                      </td>
+                      <td valign="top">
+                        Association of all records from the left table and only those records from right in which the connected fields of both tables coincide
+                      </td>
+                    </tr>
+                  </table>
+                  <table border="0" width="100%">
+                    <tr>
+                      <td valign="baseline">
+                        <input value="right outer join" type="radio" name="join_type"/>
+                      </td>
+                      <td valign="top">
+                        Association of all records from the right table and only those records from left in which the connected fields of both tables coincide
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td width="10%" valign="center" align="center">
+            <input style="width:60px" name="btn_joins_right" value=">>" type="button" onclick="javascript: div_join_selector_right(); return false;"/>
+            <br/>
+            <input style="width:60px" name="btn_joins_right" value="&lt;&lt;" type="button" onclick="javascript: div_join_selector_left(); return false;"/>
+          </td>
+          <td width="45%">
+            <select name="joins_list" size="5" style="width:100%">
+              <option>One</option>
+            </select>
+            <br/>
+            Resulted FROM expression:
+            <br/>
+            <textarea name="from_expression" readonly="readonly" rows="5" style="width:100%">
+            </textarea>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="3" align="right">
+            <input style="width:80px" name="btn_joins_prev" value="Back" type="button" onclick="javascript: columns_selector_enter(); return false;"/>
+            <input style="width:80px" name="btn_joins_next" value="Continue" type="button" onclick="javascript: final_selector_enter(); return false;"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+  <div id="div_final" style="display:block; position:absolute">
+    <h2>Virtuoso SQL Builder (Wizard)</h2>
+    <h3>Here you can customize your sql expression by adding filters ('where' clause) and additional calculated fields:</h3>
+    <form name="form_final" method="POST">
+      <table border="0" width="100%">
+        <tr>
+          <th width="50%">
+            Use following for SQL customization:
+          </th>
+          <th width="50%">
+            Resulting SQL expression (you can change it manually or by using left screen side tools).
+          </th>
+        </tr>
+        <tr>
+          <td width="50%">
+            <table border="0" width="100%">
+              <tr>
+                <td colspan="2">
+                  Table:
+                </td>
+              </tr>
+              <tr>
+                <td width="100%">
+                  <select name="final_tables_list" style="width:100%" onchange="javascript: div_final_fill_columns_list(); return false;">
+                    <option>One</option>
+                  </select>
+                </td>
+                <td>
+                  <input style="width:24px" name="btn_final_table_left" value=">>" type="button" onclick="javascript: table_left(); return false;"/>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  Column:
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <select name="final_columns_list" style="width:100%">
+                    <option>One</option>
+                  </select>
+                </td>
+                <td>
+                  <input style="width:24px" name="btn_final_column_left" value=">>" type="button" onclick="javascript: column_left(); return false;"/>
+                </td>
+              </tr>
+              <tr style="display:none;">
+                <td colspan="2">
+                  Functions:
+                </td>
+              </tr>
+              <tr style="display:none;">
+                <td>
+                  <table border="0" width="100%">
+                    <tr>
+                      <td width="30%" align="right">
+                        <select name="ctg_list" style="width:100%" onchange="javascript: div_final_fill_functions_list(); return false;">
+                          <option>One</option>
+                        </select>
+                      </td>
+                      <td width="70%" align="right">
+                        <select name="functions_list" style="width:100%">
+                          <option>One</option>
+                        </select>
+                      </td>
+                      <td width="24px" align="right">
+                        <input style="width:24px" name="btn_final_function_help" value="?" type="button" onclick="javascript: div_final_function_help(); return false;"/>
+                      </td>
+                    </tr>
+                  </table>
+                </td>
+                <td>
+                  <input style="width:24px" name="btn_final_function_left" value=">>" type="button" onclick="javascript: function_left(); return false;"/>
+                </td>
+              </tr>
+              <tr>
+                <td colspan="2">
+                  Procedures:
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <select name="procedures_list" style="width:100%">
+                    <option>One</option>
+                  </select>
+                </td>
+                <td>
+                  <input style="width:24px" name="btn_final_procedures_left" value=">>" type="button" onclick="javascript: procedure_left(); return false;"/>
+                </td>
+              </tr>
+            </table>
+          </td>
+          <td width="50%">
+            <br/>
+            <textarea name="sql_expression" rows="11" style="width:100%" onMouseDown="remember()" onFocus="remember()" onChange="remember()">
+            </textarea>
+          </td>
+        </tr>
+        <tr>
+          <td colspan="2" align="right">
+            <input  style="width:80px" name="btn_final_prev" value="Back" type="button" onclick="javascript: if(selected_tables.length == 1) columns_selector_enter(); else join_selector_enter(); return false;"/>
+            <input  style="width:80px" name="btn_final_cancel" value="Cancel" type="button" onClick="javascript: if(opener != null) opener.focus(); window.close();"/>
+            <input  style="width:80px" name="btn_final_ok" value="Finish" type="button" onclick="javascript: this.isql_c_text_ = opener.isql_c_text_; this.isql_c_text_.value = document.form_final.sql_expression.value; if(opener != null) opener.focus(); window.close();"/>
+          </td>
+        </tr>
+      </table>
+    </form>
+  </div>
+</body>
+</html>

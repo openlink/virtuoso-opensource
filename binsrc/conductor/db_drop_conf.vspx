@@ -1,0 +1,115 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="ldap_import_directory"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Remove Database Object</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable persist="1" name="db_object_to_drop" type="any" default="null"/>
+      <v:variable persist="1" name="db_object_errs" type="any" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Remove Database Object"/>
+    </vm:menu>
+    <vm:header caption="Remove Database Object"/>
+    <vm:pagebody>
+      	<v:form name="drop_obj" method="POST" type="simple">
+          <div class="confirm_dialog">
+            <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+            <div class="confirm_text">
+	      The listed database objects will be removed permanently and there is no way to restore it.<br/>
+              How do we proceed from here?
+	    </div>
+            <div class="dialog_buttons">
+	      <v:button action="simple" name="remove" value="Delete">
+		<v:on-post><![CDATA[
+	        declare i, l int;
+		declare t, stat, msg, q, o, n, errs any;
+		t := self.db_object_to_drop[0];
+		l := length (self.db_object_to_drop);
+		errs := vector ();
+	        for (i := 1; i < l; i := i + 1)
+		   {
+		     stat := '00000';
+		     exec (sprintf ('drop %s %s', t, Y_SQL_ESC_NAME (self.db_object_to_drop[i])), stat, msg);
+		     if (stat <> '00000')
+		       {
+		         errs := vector_concat (errs, vector (vector (self.db_object_to_drop[i], stat, msg)));
+		       }
+		   }
+		self.db_object_to_drop := null;
+		if (length (errs))
+		  {
+		    self.db_object_errs := errs;
+		    self.vc_redirect ('db_drop_errs.vspx');
+		  }
+		else
+		  self.vc_redirect ('databases.vspx');
+		  ]]></v:on-post>
+              </v:button>
+              <v:button action="simple" name="cancel" value="Go back">
+                <v:on-post>
+		  self.vc_redirect ('databases.vspx');
+                </v:on-post>
+              </v:button>
+	    </div>
+	  </div>
+	    <table class="listing">
+	      <?vsp
+	        declare i, l int;
+		declare t any;
+
+		if (self.db_object_to_drop[0] = 'table')
+		  t := 'table_16.png';
+		else if (self.db_object_to_drop[0] = 'procedure')
+		  t := 'script_16.png';
+		else if (self.db_object_to_drop[0] = 'type')
+		  t := 'apps_16.png';
+		else if (self.db_object_to_drop[0] = 'view')
+		  t := 'view_16.png';
+		else
+		  t := '';
+		l := length (self.db_object_to_drop);
+	        for (i := 1; i < l; i := i + 1)
+		   {
+	       ?>
+	       <tr>
+		 <td><img src="images/icons/<?V t ?>" border="0"/></td>
+		 <td><?V self.db_object_to_drop[i] ?></td>
+	       </tr>
+	      <?vsp
+	           }
+ 	      ?>
+	    </table>
+	</v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

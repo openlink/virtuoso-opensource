@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -227,6 +227,9 @@ extern char * https_port;
 extern char * https_cert;
 extern char * https_key;
 extern char * https_extra;
+extern char * https_dhparam;
+extern char * https_ecdh_curve;
+extern int32 https_hsts_max_age;
 extern int32 https_client_verify;
 extern int32 https_client_verify_depth;
 extern char * https_client_verify_file;

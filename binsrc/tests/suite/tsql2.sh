@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2019 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -27,6 +27,7 @@
 
 SCROLL=${SCROLL-$VIRTUOSO_TEST/../scroll}
 GETDATA=${GETDATA-$VIRTUOSO_TEST/../getdata}
+BLOBS=${BLOBS-$VIRTUOSO_TEST/../blobs}
 LOGFILE=tsql2.output
 export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
@@ -87,7 +88,7 @@ then
     exit 1
 fi
 
-$VIRTUOSO_TEST/../blobs $PORT
+$BLOBS $PORT >> $LOGFILE
 
 LOG + running sql script terror
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/terror.sql

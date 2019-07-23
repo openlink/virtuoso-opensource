@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -664,11 +664,6 @@ create table DB.DBA.SYS_HTTP_SPONGE_REFRESH_DEFAULTS (
 )
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_HTTP_SPONGE add HS_FROM_IRI varchar
-;
---#ENDIF
 
 create table DB.DBA.RDF_WEBID_ACL_GROUPS (
 	AG_WEBID varchar,
@@ -759,9 +754,6 @@ create procedure DB.DBA.SYS_HTTP_SPONGE_GET_CACHE_PARAMS
 }
 ;
 
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_HTTP_SPONGE HS_FROM_IRI !
---#ENDIF
 create procedure DB.DBA.SYS_HTTP_SPONGE_DEP_URL_NOT_CHANGED (in local_iri varchar, in parser varchar, in explicit_refresh int)
 {
 
@@ -1103,7 +1095,7 @@ resp_received:
       signal ('RDFXX', sprintf ('Content length %d is over the limit %d', new_download_size, max_sz));
     }
 
-  --if (__tag (ret_body) = 185)
+  --if (__tag (ret_body) = __tag of stream)
   --  ret_body := string_output_string (subseq (ret_body, 0, 10000000));
 
   {
@@ -1120,7 +1112,7 @@ resp_received:
   if (parser_rc is not null)
     {
       new_last_etag := ret_etag;
-      if (__tag (parser_rc) = 193 and eraser is not null and ret_content_type like '%html')
+      if (__tag (parser_rc) = __tag of vector and eraser is not null and ret_content_type like '%html')
         {
           declare sa any;
           sa := get_keyword ('seeAlso', parser_rc);
@@ -1374,39 +1366,6 @@ create index SYS_RDF_MAPPERS_I1 on DB.DBA.SYS_RDF_MAPPERS (RM_ID) partition clus
 create index SYS_RDF_MAPPERS_I2 on DB.DBA.SYS_RDF_MAPPERS (RM_PID) partition cluster replicated
 ;
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_ENABLED integer default 1
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_OPTIONS any
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-alter table DB.DBA.SYS_RDF_MAPPERS add RM_PID integer identity
-;
-
---!AFTER
-create procedure DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-{
-  declare id int;
-  update DB.DBA.SYS_RDF_MAPPERS set RM_PID = RM_ID where RM_PID is null;
-  if (row_count() = 0)
-    return;
-  id := (select max (RM_PID) from DB.DBA.SYS_RDF_MAPPERS) + 1;
-  DB.DBA.SET_IDENTITY_COLUMN ('DB.DBA.SYS_RDF_MAPPERS', 'RM_PID', id);
-}
-;
-
---!AFTER
-DB.DBA.SYS_RDF_MAPPERS_UPGRADE ()
-;
---#ENDIF
 
 create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr any,
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)
@@ -1975,14 +1934,14 @@ load_grddl:;
           if (registry_get ('__sparql_mappers_debug') = '1')
 	    {
 	      dbg_obj_prin1 ('Return ', rc, RM_HOOK);
-	      if (__tag(rc) = 193 or rc < 0 or rc > 0)
+		  if (__tag(rc) = __tag of vector or rc < 0 or rc > 0)
                 dbg_obj_prin1 ('END of mappings');
 	    }
-	  if (__tag(rc) = 193 or rc < 0 or rc > 0)
+	      if (__tag(rc) = __tag of vector or rc < 0 or rc > 0)
 	    {
 		  if (rc > 0 and __proc_exists ('DB.DBA.RDF_LOAD_POST_PROCESS')) -- optional step, by default skip
-		call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
-              if (__tag(rc) = 193)
+		    call ('DB.DBA.RDF_LOAD_POST_PROCESS') (graph_iri, new_origin_uri, dest, ret_body, ret_content_type, options);
+		  if (__tag(rc) = __tag of vector)
                 return rc;
 	      return (case when rc < 0 then 0 else 1 end);
 	    }

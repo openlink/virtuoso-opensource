@@ -267,9 +267,7 @@
     <Compile Include="VirtuosoConnection.cs">
       <SubType>Component</SubType>
     </Compile>
-    <Compile Include="VirtuosoDataAdapter.cs">
-      <SubType>Component</SubType>
-    </Compile>
+    <Compile Include="VirtuosoDataAdapter.cs" />
     <Compile Include="VirtuosoDataReader.cs">
       <SubType>Code</SubType>
     </Compile>

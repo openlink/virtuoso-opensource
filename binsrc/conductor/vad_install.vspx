@@ -1,0 +1,156 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="vad_install_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Application Deployment</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="pack_path" persist="0" type="varchar" default="''" param-name="path" />
+      <v:variable name="pack_name" persist="0" type="varchar" default="''" />
+      <v:variable name="pack_vers" persist="0" type="varchar" default="''" />
+      <v:variable name="pack_fullname" persist="0" type="varchar" default="''" />
+      <v:variable name="pack_ready" persist="0" type="integer" default="0" />
+      <v:variable name="pack_mode" persist="0" type="integer" default="1" param-name="mode" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Virtuoso Application Deployment"/>
+    </vm:menu>
+    <vm:header caption="Install new package"/>
+    <vm:pagebody>
+      <v:on-init>
+          <![CDATA[
+            declare state, msg, pack_name, pack_vers, pack_fullname, pkg_date varchar;
+            declare exit handler for sqlstate '*', not found
+            {
+              self.pack_ready := 0;
+              self.pack_name := pack_name;
+              self.pack_vers := pack_vers;
+              self.pack_fullname := pack_fullname;
+              state := __SQL_STATE;
+              msg := regexp_match ('[^\r\n]*', __SQL_MESSAGE);
+              self.vc_error_message := msg;
+              self.vc_is_valid := 0;
+              return;
+	    };
+            VAD.DBA.VAD_TEST_READ(self.pack_path, pack_name, pack_vers, pack_fullname, pkg_date, self.pack_mode);
+            self.pack_ready := 1;
+            self.pack_name := pack_name;
+            self.pack_vers := pack_vers;
+            self.pack_fullname := pack_fullname;
+          ]]>
+      </v:on-init>
+
+      <v:template type="simple" enabled= "--case when (self.pack_ready = 1) then 1 else 0 end">
+      <div class="clear">
+	<img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+          Installing a VAD package will put the database in atomic mode, halting other client threads
+          <br/>
+          for duration of the installation. If the installation encounters a fatal error such as running
+          <br/>
+          out of disk, you will get an error message and the server will exit. If this happens:
+          <br/>
+	    <ul>
+	      <li>Virtuoso server will have to be restarted manually</li>
+	      <li>the Virtuoso Conductor will not be available until the server has restarted</li>
+	      <li>after server has restarted it will be in the state it was in before VAD installation was started</li>
+	    </ul>
+
+      </div>
+      </v:template>
+      <v:form name="install_form" type="simple" method="POST" action="">
+	<table class="<?V case when (self.pack_ready = 1) then 'ctl_grp' else '' end ?>">
+	  <v:template type="simple" enabled= "--case when (self.pack_ready = 1) then 1 else 0 end">
+
+        <tr>
+          <th>Application title: </th>
+          <td><?V self.pack_fullname ?></td>
+        </tr>
+        <tr>
+              <th>New version: </th>
+          <td><?V self.pack_vers ?></td>
+        </tr>
+        <tr>
+              <th>Old version: </th>
+              <td><?V coalesce (DB.DBA.VAD_CHECK_VERSION (self.pack_name), 'N/A') ?></td>
+            </tr>
+            <tr>
+          <th>Short name: </th>
+          <td><?V self.pack_name ?></td>
+	</tr>
+        </v:template>
+        <tr>
+          <td colspan="2">
+            <v:template type="simple" enabled="--case when (self.pack_ready = 1) then 1 else 0 end">
+            <v:button action="simple" value="Proceed">
+              <v:on-post>
+                <![CDATA[
+                  declare state, message, meta, result any;
+                  declare res varchar;
+
+                  exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(self.pack_path, self.pack_mode, 1), 0, meta, result);
+		  set_qualifier ('DB');
+                    res := case when (result[0][0] <> '00000') then result[0][1] else 'Installation complete' end;
+                    if (result[length(result)-2][1] = 'FATAL')
+		  {
+		    http_rewrite ();
+		    http_header ('Content-Type: text/plain\r\n');
+		    foreach (any elm in result) do
+		    {
+		      declare stat, msg any;
+
+                        stat := case when (not isstring (elm[0])) then '' else elm[0] end;
+                        msg := case when  (not isstring (elm[1])) then '' else elm[1] end;
+		      http (sprintf ('%5s', stat) || ' ' || msg || '\r\n');
+		    }
+		    http_flush();
+		    -- already in atomic mode
+                    raw_exit(1);
+                  }
+		  else
+		  {
+                    self.vc_redirect (sprintf('vad_status.vspx?res=%U', res));
+		  }
+		  return;
+                ]]>
+              </v:on-post>
+            </v:button>
+            </v:template>
+            <v:button action="simple" value="Cancel">
+              <v:on-post>
+                <![CDATA[
+		  self.vc_redirect ('vad.vspx');
+                ]]>
+              </v:on-post>
+            </v:button>
+          </td>
+        </tr>
+      </table>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

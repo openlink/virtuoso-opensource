@@ -1,0 +1,139 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="db_view_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Create or Edit View"/>
+    </vm:menu>
+    <vm:variables>
+      <v:variable persist="0" name="mode" type="varchar" default="''"/>
+      <v:variable persist="0" name="cat" type="varchar" default="''"/>
+      <v:variable persist="0" name="sch" type="varchar" default="''"/>
+      <v:variable persist="0" name="name" type="varchar" default="''"/>
+      <v:variable persist="temp" name="err_msg" type="varchar" default="''"/>
+    </vm:variables>
+    <vm:rawheader>
+      <h1 class="page_title"><?vsp
+        http( case self.mode
+              when 'create' then 'Create New View'
+              when 'edit' then 'Edit View ' || self.name
+              else 'View details' end );
+      ?></h1>
+    </vm:rawheader>
+    <vm:pagebody>
+      <v:before-data-bind><v:script><![CDATA[
+        self.mode := get_keyword('mode', self.vc_event.ve_params, self.mode);
+        self.cat := get_keyword('cat', self.vc_event.ve_params, self.cat);
+        self.sch := get_keyword('sch', self.vc_event.ve_params, self.sch);
+        self.name := get_keyword('name', self.vc_event.ve_params, self.name);
+      ]]></v:script></v:before-data-bind>
+      <v:template name="err_tmp2" type="simple">
+        <v:form name="view_create_form" type="simple" method="POST" action="databases_view_edit.vspx">
+         <table align="left" border="0" cellspacing="0" cellpadding="5" class="SubAction">
+           <tr align="center">
+             <td>
+               <v:textarea name="crview_textfield" xhtml_cols="80" xhtml_rows="25"
+                 value="--case self.mode
+                 when 'create' then 'create view ' || case when self.cat='%' then 'DB' else self.cat end || '.' || case when self.sch='%' then 'DBA' else self.sch end || '.[NAME]\nAS\nSELECT\nFROM'
+                 when 'edit' then blob_to_string(coalesce((select coalesce (V_TEXT, V_EXT) from SYS_VIEWS where V_NAME = self.name),''))
+                 else '' end"
+               >
+               </v:textarea>
+             </td>
+           </tr>
+           <tr align="center">
+             <td>
+              <v:button action="simple" name="crview_cancel" value="Cancel" >
+                <v:on-post><v:script><![CDATA[
+                  http_request_status ('HTTP/1.1 302 Found');
+                  http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crview_reset" value="Clear" >
+                <v:on-post><v:script><![CDATA[
+                  self.crview_textfield.ufl_value := '';
+                ]]></v:script></v:on-post>
+              </v:button>
+              <v:button action="simple" name="crview_save" value="Save" >
+                <v:on-post><v:script><![CDATA[
+                  declare stat, msg, old_view varchar;
+                  stat := '00000';
+                  if( length(self.crview_textfield.ufl_value)=0)
+                    return;
+		  old_view := (select coalesce (V_TEXT, V_EXT) from DB.DBA.SYS_VIEWS where V_NAME = self.name);
+                  commit work;
+                  if( self.mode = 'edit' ) {
+                    if( exists (select 1 from DB.DBA.SYS_VIEWS where V_NAME = self.name) ) {
+                      __set_user_id (connection_get ('vspx_user'), 1);
+                      exec( 'drop view ' || self.name, stat, msg);
+                      __set_user_id (user);
+                      if (stat <> '00000') {
+		        self.vc_is_valid := 0;
+		        self.vc_error_message := msg;
+                        return;
+                      }
+                    }
+                  }
+                  __set_user_id (connection_get ('vspx_user'), 1);
+		  exec (self.crview_textfield.ufl_value, stat, msg);
+		  if (stat = '00000')
+		    {
+		      declare x any;
+		      x := sql_parse (self.crview_textfield.ufl_value);
+		      if (isvector (x) and length (x) > 0 and x[0] = 508)
+		        self.name := x[1][0][1];
+		      exec (sprintf ('select top 1 1 from "%I"."%I"."%I"',
+		        name_part (self.name,0),name_part (self.name,1), name_part (self.name,2)), stat, msg);
+		      if (stat = 'S0002')
+		        {
+			  msg := 'The specified statement is not a valid view definition.';
+		        }
+		    }
+                  __set_user_id (user);
+                  if (stat = '00000') {
+                    commit work;
+                    http_request_status ('HTTP/1.1 302 Found');
+                    http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                  }
+                  else {
+		    __set_user_id (connection_get ('vspx_user'), 1);
+		    exec (old_view, stat, msg);
+		    __set_user_id (user);
+		    self.vc_is_valid := 0;
+		    self.vc_error_message := msg;
+		    return;
+                  }
+                ]]></v:script></v:on-post>
+              </v:button>
+             </td>
+           </tr>
+         </table>
+        </v:form>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

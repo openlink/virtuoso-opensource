@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -698,7 +698,8 @@ spar_prefix_decls_opt	/* ::=  PrefixDecl*	*/
 
 spar_prefix_decl	/* [4]	PrefixDecl	 ::=  'PREFIX' QNAME_NS Q_IRI_REF	*/
 	: PREFIX_L QNAME_NS Q_IRI_REF	{
-		if ((!strcmp ("sql:", $2) && strcmp ("sql:", $3)) || (!strcmp ("bif:", $2) && strcmp ("bif:", $3)))
+                if ((!strcmp ("sql:", $2) && strcmp ("sql:", $3) && strcmp (OPENLINKSW_SQL_NS_URI, $3))
+                  || (!strcmp ("bif:", $2) && strcmp ("bif:", $3) && strcmp (OPENLINKSW_BIF_NS_URI, $3)))
 		  sparyyerror (sparp_arg, "Prefixes 'sql:' and 'bif:' are reserved for SQL names");
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), sparp_expand_q_iri_ref (sparp_arg, $3));
 		t_set_push (&(sparp_env()->spare_namespace_prefixes), t_box_dv_short_nchars ($2, box_length ($2)-2)); }

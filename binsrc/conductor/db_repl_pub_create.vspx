@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_pub_create_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Transactional Replication"/>
+    </vm:menu>
+    <vm:header caption="Create new replication publication"/>
+    <vm:pagebody vdb_check="1">
+      <table class="form_layout">
+        <tr>
+          <td class="page_tab_selected">
+            Publications
+          </td>
+          <td class="page_tab">
+            <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+          </td>
+        <td class="page_tab_empty"></td>
+      </tr>
+    </table>
+    <table class="tab_page">
+      <tr>
+        <td>
+      <v:form name="create_pub_frm" action="db_repl_pub_create.vspx" method="POST" type="simple">
+        <table class="ctl_grp">
+          <tr>
+                  <th class="ctl_lbl_ctr">Name</th>
+            <td class="ctl_ctr">
+              <v:text name="crpub_textfield" xhtml_rows="10"/>
+            </td>
+          </tr>
+          <tr>
+                  <th class="ctl_lbl_ctr">Sync user</th>
+            <td class="ctl_ctr">
+              <select name="sync_user">
+                <?vsp
+                  for select U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 0 and U_SQL_ENABLE = 1 order by U_NAME do
+                  {
+                    declare _sel varchar;
+                    if (U_NAME = 'dba')
+                      _sel := ' selected="true"';
+                    else
+                      _sel := '';
+                          http (sprintf ('<option value="%V"%V>%V</option>', U_NAME, _sel, U_NAME));
+                  }
+                ?>
+              </select>
+            </td>
+          </tr>
+          <tr>
+                  <td />
+                  <td class="ctl_ctr">
+                    <label><input type="checkbox" name="is_updateable" value="" id="is_updateable"/>Updateable</label>
+            </td>
+          </tr>
+          <tr class="form_cmd_row">
+            <td colspan="2">
+              <v:button action="simple" name="create_can_but" value="Cancel">
+                <v:on-post>
+                  <![CDATA[
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" name="create_pub_but" value="Create">
+                <v:on-post>
+                  <![CDATA[
+                    declare text vspx_field;
+                    declare _acct, _log varchar;
+                    text := control.vc_parent.vc_find_control('crpub_textfield');
+                    _acct := text.ufl_value;
+                    if (_acct <> '')
+                    {
+                      declare _is_updateable_kw varchar;
+                      _is_updateable_kw := get_keyword('is_updateable', control.vc_page.vc_event.ve_params, null);
+                      declare _is_updateable integer;
+                      if (_is_updateable_kw is not null)
+                        _is_updateable := 1;
+                      else
+                        _is_updateable := 0;
+                      declare _sync_user varchar;
+                      _sync_user := get_keyword ('sync_user', control.vc_page.vc_event.ve_params);
+                      declare acct_len, ix, _c integer;
+                      _acct := ucase(_acct);
+                      acct_len := length(_acct);
+                      while (ix < acct_len)
+                      {
+                        _c := aref(_acct, ix);
+                        if (not((_c >= ascii('A') and _c <= ascii('Z')) or (_c >= ascii('0') and _c <= ascii('9'))))
+                          aset(_acct, ix, ascii('_'));
+                        ix := ix + 1;
+                      }
+                      _log := concat(_acct, '.log');
+
+                      declare _sql_state, _sql_msg varchar;
+                      _sql_state := '00000';
+                      exec('REPL_PUBLISH(?, ?, ?, ?)', _sql_state, _sql_msg, vector(_acct, _log, _is_updateable, _sync_user)  );
+                            if ( _sql_state <> '00000')
+                            {
+                        self.vc_error_message := _sql_state || ': ' || _sql_msg;
+                        self.vc_is_valid := 0;
+                        return;
+                      };
+
+                      REPL_PUBLISH(_acct, _log, _is_updateable, _sync_user);
+                      http_request_status('HTTP/1.1 302 Found');
+                      http_header(sprintf('Location: db_repl_trans.vspx?page=1&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                    }
+                    else
+                    {
+                      self.vc_error_message := 'Please specify publication name';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </table>
+        <span class="listing_hdr_qual">
+          Type name of publication and click <b>Create</b><br/>
+          to continue. Note: Any lowercase characters will be transformed<br/>
+          to uppercase. Any spaces will become underscores.
+        </span>
+      </v:form>
+        </td>
+      </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

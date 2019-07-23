@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,6 +208,8 @@ void * tcpses_get_sslctx (session_t * ses);
 void tcpses_set_sslctx (session_t * ses, void * ssl_ctx);
 extern int ssl_ctx_set_cipher_list (SSL_CTX *ctx, char *cipher_list);
 extern int ssl_ctx_set_protocol_options (SSL_CTX *ctx, char *protocols);
+extern int ssl_ctx_set_dhparam (SSL_CTX *ctx, char *dhparam);
+extern int ssl_ctx_set_ecdh_curve (SSL_CTX *ctx, char *curve);
 #endif
 
 #ifdef _IMSG
@@ -241,6 +243,10 @@ caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, char * deflt);
 #define IS_DAV_DOMAIN(ws, path1) (dav_root != NULL && (!strcmp (path1, dav_root) || !strcmp ("/", dav_root)))
 #define ws_get_packed_hf(ws,path1,deflt) NULL
 #endif
+
+#define WS_NOT_HDR(ws,h) \
+    (!(ws)->ws_header || \
+     (NULL == nc_strstr ((unsigned char *) (ws)->ws_header, (unsigned char *)h)))
 
 caddr_t
 ws_gethostbyaddr (const char * ip)
@@ -1397,7 +1403,8 @@ ws_check_caps (ws_connection_t * ws)
     return 1;
   end = expect + strlen (expect) - 1;
   while (isspace (*expect)) expect++;
-  while (isspace (*end)) end--; end ++;
+  while (isspace (*end)) end--;
+  end ++;
   /* 100 continue is supported */
   if ((end - expect) == 12 && 0 == strnicmp (expect, "100-continue", 12))
     return 1;
@@ -1920,6 +1927,16 @@ char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
 char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 
+static char hsts_header_buf[128];
+
+static char *
+hsts_header_line (ws_connection_t * ws)
+{
+  if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
+    return hsts_header_buf;
+  return "";
+}
+
 #define IS_CHUNKED_OUTPUT(ws) \
 	((ws) && strses_is_ws_chunked_output ((ws)->ws_strses))
 
@@ -2038,7 +2055,7 @@ ws_get_mime_variant (char * mime, char ** found)
 
 
 static const char *
-ws_check_accept (ws_connection_t * ws, char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
+ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
   static char *fmt =
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
@@ -2231,13 +2248,14 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      ach[strlen (ach) - 1] = 0;
 	      strcat_ck (ach, "\r\n");
 	    }
-	  if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Headers:")))
+	  if (WS_NOT_HDR (ws, "Access-Control-Allow-Headers:"))
 	    {
 	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
 	      strcat_ck (ach, "\r\n");
 	    }
 	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      ret_origin ? ret_origin : "*", ret_origin ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+	      ret_origin ? ret_origin : "*",
+	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
 	}
       if (orgs != WS_CORS_STAR)
 	dk_free_tree (orgs);
@@ -2408,7 +2426,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Type:"))))
+      if (ws->ws_status_code != 101 && WS_NOT_HDR (ws, "Content-Type:"))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2451,7 +2469,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 
       /* timestamp */
-      if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Date:"))
+      if (WS_NOT_HDR (ws, "Date:"))
 	{
 	  char dt [DT_LENGTH];
 	  char last_modify[100];
@@ -2463,7 +2481,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  SES_PRINT (ws->ws_session, "\r\n");
 	}
 
-      if (!ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Origin:"))
+      if (WS_NOT_HDR (ws, "Access-Control-Allow-Origin:"))
 	{
 	  tmp[0] = 0;
 	  if (0 == ws_cors_check (ws, tmp, sizeof (tmp)))
@@ -2478,6 +2496,8 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       if (ws->ws_status_code != 101)
       SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 
+      SES_PRINT (ws->ws_session, hsts_header_line(ws));
+
       if (ws->ws_header) /* user-defined headers */
 	{
 	  SES_PRINT (ws->ws_session, ws->ws_header);
@@ -2491,7 +2511,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (ws->ws_status_code != 101 && (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))) /* plain body */
+      else if (ws->ws_status_code != 101 && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -2517,7 +2537,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    {
 	      strses_write_out_gz (ws->ws_strses, ws->ws_session, &gzctx);
 	    }
-	  else if (!ws->ws_header || (NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Content-Length:")))
+	  else if (WS_NOT_HDR (ws, "Content-Length:"))
 	    {
 	      strses_write_out (ws->ws_strses, ws->ws_session);
 	    }
@@ -2826,6 +2846,7 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       "Date: %s\r\n"
       "Server: %.1000s\r\n"
       "Connection: %s\r\n"
+      "%s"
       "\r\n"
       "--THIS_STRING_SEPARATES\r\n"
       ,
@@ -2834,7 +2855,8 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       last_modify,
       date_now,
       http_server_id_string,
-      ws->ws_try_pipeline ? "Keep-Alive" : "close");
+      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+      hsts_header_line (ws));
   SES_PRINT (ws->ws_session, head);
   fprintf (stdout, "Head_mp = %s\n", head);
 
@@ -3114,6 +3136,7 @@ ws_file (ws_connection_t * ws)
 	      "Connection: %s\r\n"
 	      "%s"
 	      "%s"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -3123,6 +3146,7 @@ ws_file (ws_connection_t * ws)
 	      date_now,
 	      http_server_id_string,
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
+	      hsts_header_line(ws),
 	      (MAINTENANCE) ? "Retry-After: 1800\r\n" : "",
 	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
@@ -4348,8 +4372,7 @@ void
 http_set_client_address (ws_connection_t * ws)
 {
   caddr_t xfwd;
-  if (!IS_GATEWAY_PROXY (ws))
-    return;
+
   if (ws && ws->ws_lines && NULL != (xfwd = ws_mime_header_field (ws->ws_lines, "X-Forwarded-For", NULL, 1)))
     {
       dk_free_box (ws->ws_client_ip);
@@ -8128,7 +8151,7 @@ char * ws_def_2 =
 "  declare p_len, slash integer;\n"
 "  p1 := '';\n"
 "  --dbg_obj_print (lines);\n"
-"  if (__tag (path) = 193)\n"
+"  if (__tag (path) = __tag of vector)\n"
 "    p_len := length (path);\n"
 "  else p_len := 0;\n"
 #ifndef VIRTUAL_DIR
@@ -8199,8 +8222,8 @@ char * ws_def_2 =
 "       p3 := concat (substring (p1, 1, dot), \'.vsp\'); \n"
 "       if (0 = file_stat (concat (http_root (), p2))) \n"
 " 	goto err_exit; \n"
-"       _doc_uri := concat (\'file://\', p1); \n"
-"       _xslt_uri := WS.WS.EXPAND_URL (_doc_uri, p2); \n"
+"       _doc_uri := concat (\'file:/\', p1); \n"
+"       _xslt_uri := concat (\'file:/\', p2); \n"
 "       _xml := DB.DBA.XML_URI_GET (\'\', _doc_uri); \n"
 "       result := xslt (_xslt_uri, xml_tree_doc (_xml, _doc_uri)); \n"
 "       http_output_flush (); \n"
@@ -8933,6 +8956,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char *skey = NULL;
   char *ciphers = https_cipher_list;
   char *protocols = https_protocols;
+  char *curve = https_ecdh_curve;
+  char *dhparam = https_dhparam;
   long https_cvdepth = -1;
   int i, len, https_client_verify = -1;
   ssl_meth = SSLv23_server_method ();
@@ -8966,6 +8991,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	    https_client_verify = unbox (https_opts[i + 1]);
 	  else if (!stricmp (https_opts [i], "https_extra_chain_certificates") && DV_STRINGP (https_opts [i + 1]))  /* private key */
 	    extra = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_dhparam") && DV_STRINGP (https_opts [i + 1]))  /* DH param */
+	    dhparam = https_opts [i + 1];
+	  else if (!stricmp (https_opts [i], "https_ecdh_curve") && DV_STRINGP (https_opts [i + 1]))  /* ECDH curve */
+	    curve = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_cipher_list") && DV_STRINGP (https_opts [i + 1]))  /* Ciphers */
 	    ciphers = https_opts [i + 1];
 	  else if (!stricmp (https_opts [i], "https_protocols") && DV_STRINGP (https_opts [i + 1]))  /* Protocols */
@@ -8989,13 +9018,28 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (!ssl_ctx_set_protocol_options (ssl_ctx, protocols))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error setting SSL Protocols options: %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Protocols [%s]: %s", protocols, err_buf);
       goto err_exit;
     }
+
   if (!ssl_ctx_set_cipher_list (ssl_ctx, ciphers))
     {
       cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+      log_error ("HTTPS: Error setting SSL Cipher list [%s]: %s", ciphers, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_dhparam (ssl_ctx, dhparam))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL DH param [%s]: %s", dhparam, err_buf);
+      goto err_exit;
+    }
+
+  if (!ssl_ctx_set_ecdh_curve (ssl_ctx, curve))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", curve, err_buf);
       goto err_exit;
     }
 
@@ -9949,7 +9993,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-      ssl->state = SSL_ST_ACCEPT;
+      SSL_in_accept_init (ssl);
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
 	  timeout_t to = { 0, 1000 };
@@ -11468,6 +11512,8 @@ http_init_part_one ()
       http_server_id_string = http_server_id_string_buf;
     }
 
+  snprintf (hsts_header_buf, sizeof (hsts_header_buf), "Strict-Transport-Security: max-age=%d\r\n", https_hsts_max_age);
+
   dns_host_name = get_qualified_host_name ();
   return 1;
 }
@@ -11651,7 +11697,21 @@ http_init_part_two ()
       if (!ssl_ctx_set_cipher_list (ssl_ctx, https_cipher_list))
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Error settings SSL Cipher list : %s", err_buf);
+	  log_error ("HTTPS: Error setting SSL Cipher list : %s", err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_dhparam (ssl_ctx, https_dhparam))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL DH param [%s]: %s", https_dhparam, err_buf);
+	  goto init_ssl_exit;
+	}
+
+      if (!ssl_ctx_set_ecdh_curve (ssl_ctx, https_ecdh_curve))
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+	  log_error ("HTTPS: Error setting SSL ECDH curve [%s]: %s", https_ecdh_curve, err_buf);
 	  goto init_ssl_exit;
 	}
 
@@ -11957,19 +12017,22 @@ is_internal_user (client_connection_t *cli)
 }
 
 
-char * srv_http_port ()
+char *
+srv_http_port ()
 {
    return http_port;
 }
 
 
-char * srv_www_root ()
+const char *
+srv_www_root ()
 {
    return www_root;
 }
 
 
-caddr_t srv_dns_host_name ()
+caddr_t
+srv_dns_host_name ()
 {
    return dns_host_name;
 }

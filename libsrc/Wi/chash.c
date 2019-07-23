@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1858,7 +1858,7 @@ cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
 }
 
 index_tree_t *
-DBG_NAME(cha_allocate) (setp_node_t * setp, caddr_t * inst, int64 card)
+DBG_NAME(cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 card)
 {
   hash_area_t *ha = setp->setp_ha;
   int n_slots = BOX_ELEMENTS (ha->ha_slots), inx;

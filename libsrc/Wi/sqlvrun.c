@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -463,7 +463,11 @@ DBG_NAME(qi_vec_init) (DBG_PARAMS query_instance_t * qi, int n_sets)
   if (!(mp = qi->qi_mp))
     {
       not_inited = 1;
+#ifdef MALLOC_DEBUG
       mp = qi->qi_mp = DBG_NAME(mem_pool_alloc) (DBG_ARGS_0);
+#else
+      mp = qi->qi_mp = mem_pool_alloc ();
+#endif
       if (qr->qr_vec_ssls)
 	{
 	  int ign;
@@ -868,7 +872,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	      value = qst_get (inst, (state_slot_t *) source);
 	    }
 	  dtp = DV_TYPE_OF (value);
-	  if (dtp == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
+	  if (dtp_canonical[dtp] == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
 	    {
 	      switch (dtp)
 		{
@@ -886,6 +890,13 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		  break;
 		case DV_STRING:
 		  if ((cl->cl_sqt.sqt_precision && box_length (value) - 1 > cl->cl_sqt.sqt_precision)
+		      || box_length (value) > 4095)
+		    goto general;
+		  dc_append_box (target_dc, value);
+		  break;
+		case DV_WIDE:
+		case DV_LONG_WIDE:
+		  if ((cl->cl_sqt.sqt_precision && (box_length (value) / sizeof (wchar_t)) - 1 > cl->cl_sqt.sqt_precision)
 		      || box_length (value) > 4095)
 		    goto general;
 		  dc_append_box (target_dc, value);
@@ -2458,7 +2469,8 @@ ts_handle_aq (table_source_t * ts, caddr_t * inst, buffer_desc_t ** order_buf_re
 	SRC_IN_STATE (ts, inst) = NULL;
 	ts_aq_result (ts, inst);
 	if (qi->qi_client->cli_activity.da_anytime_result)
-	  cli_anytime_timeout (qi->qi_client);return 1;
+	  cli_anytime_timeout (qi->qi_client);
+        return 1;
       }
     }
   return 0;

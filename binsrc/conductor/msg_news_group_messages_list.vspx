@@ -1,0 +1,153 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:data-set xmlns:v="http://www.openlinksw.com/vspx/" name="group_messages" nrows="10" scrollable="1" cursor-type="keyset" edit="1" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <!--
+when NG_STAT = 1 then 'OK'
+when NG_STAT is NULL then 'New'
+when NG_STAT = 3 then 'OK*'
+when NG_STAT = 7 then 'Pending'
+when NG_STAT = 9 then 'Updating'
+  -->
+  <v:sql>
+    <![CDATA[
+select
+  NM_ID,
+  get_keyword_ucase('From', article) as SENDER,
+  case when length(get_keyword_ucase('Subject', article)) > 30 then concat(substring(get_keyword_ucase('Subject', article), 1, 26), ' ...') else get_keyword_ucase('Subject', article) end as SUBJECT,
+  NM_READ,
+  NM_REC_DATE,
+  get_keyword_ucase('Date', article) as SENT,
+  SIZE,
+  NM_BODY_ID
+from
+  (select
+    NM_ID,
+    NM_READ,
+    NM_REC_DATE,
+    mime_tree(blob_to_string(NM_BODY))[0] as article,
+    length(blob_to_string(NM_BODY)) as SIZE,
+    NM_BODY_ID
+  from
+    DB.DBA.NEWS_MESSAGES
+  where
+    NM_GROUP = self.ng_id) as A
+order by
+  6
+    ]]>
+  </v:sql>
+  <v:column name="NM_ID" />
+  <v:column name="SENDER" />
+  <v:column name="SUBJECT" />
+  <v:column name="NM_READ" />
+  <v:column name="NM_REC_DATE" />
+  <v:column name="SENT" />
+  <v:column name="SIZE" />
+  <v:column name="NM_BODY_ID" />
+  <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="group_messages_header_template">
+    <table class="listing" align="left" border="0" cellspacing="0" cellpadding="3" width="100%">
+      <tr class="listing_header_row">
+        <th>From</th>
+        <th>Subject</th>
+        <!--
+        <th>Read</th>
+        <th>Received</th>
+        -->
+        <th>Sent</th>
+        <th>Size</th>
+        <th>Action</th>
+      </tr>
+    </table>
+  </v:template>
+  <v:template type="repeat" name-to-remove="" set-to-remove="" name="group_messages_repeat_template">
+    <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="group_messages_if_not_exists_template">
+      <table class="data_set_container" width="100%" border="2" cellspacing="0" cellpadding="0" id="ds_group_messages">
+        <tr>
+          <td colspan="7">
+            <b>No messages downloaded</b>
+          </td>
+        </tr>
+      </table>
+    </v:template>
+    <v:template type="browse" name-to-remove="table" set-to-remove="both" name="group_messages_browse_template">
+      <table class="listing" width="100%" border="2" cellspacing="0" cellpadding="0" id="ds_group_messages"> <!-- dummy -->
+<?vsp
+              self.r_count := self.r_count + 1;
+              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
+?>
+        <!-- tr -->
+          <td align="left" nowrap="1">
+            <v:label width="80" format="%s" name="group_messages_browse_label_0" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))" />
+          </td>
+          <td align="left" nowrap="1">
+<!--
+            <v:label width="80" format="%s" name="group_messages_browse_label_1" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" />
+-->
+            <v:url value="--(cast((control.vc_parent as vspx_row_template).te_rowset[2] as varchar))" format="%s" width="80" active="--(1)" name="data_set_browse_mesage_url" url="--(concat('msg_news_group_message_body.vspx?NM_BODY_ID=', cast((control.vc_parent as vspx_row_template).te_rowset[7] as varchar)))" />
+          </td>
+          <!--
+          <td align="left" nowrap="1">
+            <v:label width="80" format="%s" name="group_messages_browse_label_2" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[3] as varchar))" />
+          </td>
+          <td align="left" nowrap="1">
+            <v:label width="80" format="%s" name="group_messages_browse_label_3" value="--(case when (control.vc_parent as vspx_row_template).te_rowset[4] is null then '' else sprintf('%02d-%02d-%04d', month((control.vc_parent as vspx_row_template).te_rowset[4]), dayofmonth((control.vc_parent as vspx_row_template).te_rowset[4]), year((control.vc_parent as vspx_row_template).te_rowset[4])) end)" />
+          </td>
+          -->
+          <td align="left" nowrap="1">
+            <v:label width="80" format="%s" name="group_messages_browse_label_4" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[5] as varchar))" />
+          </td>
+          <td align="left" nowrap="1">
+            <v:label width="80" format="%s" name="group_messages_browse_label_5" value="--(cast((control.vc_parent as vspx_row_template).te_rowset[6] as varchar))" />
+          </td>
+          <td align="right" nowrap="1" class="listing_col_action">
+		    <v:button action="simple" style="image" name="group_messages_delete"
+		      value="images/icons/del_16.png"
+		      xhtml_alt="Cancel"
+		      xhtml_title="Cancel"
+		      text="&nbsp;Cancel"
+		      >
+              <v:on-post>
+                <v:script><![CDATA[
+          ns_delete_message (self.group_messages.ds_current_row.te_rowset[0]);
+          self.group_messages.vc_data_bind(e);
+      ]]></v:script>
+              </v:on-post>
+            </v:button>
+          </td>
+<?vsp
+              http('</tr>');
+?>
+        <!-- /tr -->
+      </table>
+    </v:template>
+  </v:template>
+  <v:template type="simple" name-to-remove="table" set-to-remove="top" name="group_messages_footer_template">
+    <table class="data_set_container" width="100%" border="1" cellspacing="2" cellpadding="0" id="ds_group_messages">
+      <tr class="browse_button_row">
+        <td colspan="5" align="center"  class="listing_col_action">
+	  <vm:ds-navigation data-set="group_messages"/>
+        </td>
+        <td />
+      </tr>
+    </table>
+  </v:template>
+</v:data-set>

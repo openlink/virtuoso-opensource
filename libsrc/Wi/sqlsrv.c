@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -449,6 +449,7 @@ client_connection_create (void)
       wi_inst.wi_master->dbs_log_name ? REPL_LOG : REPL_NO_LOG;
   else
     cli->cli_replicate = REPL_NO_LOG;
+  cli->cli_log_mode = 1;
   cli->cli_qualifier = box_string ("DB");
 #ifdef SERIAL_CLI
   cli->cli_test_mtx = mutex_allocate ();
@@ -4415,7 +4416,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_LOG_IMAGE:
 	  err = srv_make_new_error ("40005", "SR325",
 	      "Transaction aborted because it's log after image size "
-	      "went above the limit%s%s",
+	      "went above the " OFF_T_PRINTF_FMT " bytes limit%s%s", (OFF_T_PRINTF_DTP)txn_after_image_limit,
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_OUT_OF_MEM:

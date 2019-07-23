@@ -1,0 +1,330 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<v:page name="custom_condition" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable name="wsdl_str" type="any" default="null"/>
+  <v:variable name="catalog_str" type="any" default="null"/>
+  <v:variable name="schema_str" type="any" default="null"/>
+  <v:variable name="user_name" type="any" default="null"/>
+  <v:variable name="user_pass" type="any" default="null"/>
+  <v:variable name="res_src" type="any" default="null"/>
+  <v:variable name="store_in_dav" persist="1" type="integer" default="0" />
+  <script language="JavaScript">
+    <![CDATA[
+    function do_new_window(target)
+    {
+      window._result = document.wsdl_import_form[''];
+      target = '/vsmx/vsmx.vspx?wsdl=' + target;
+      window.open( target , 'window',
+                  'scrollbars=yes, resizable=yes, menubar=no');
+    }
+    ]]>
+  </script>
+  <v:form name="wsdl_import_form" type="simple" method="POST" action="">
+    <v:on-post>
+    if (e.ve_button = control and e.ve_initiator = self.src_type)
+      {
+	self.store_in_dav := 0;
+	if (get_keyword ('src_type', e.ve_params))
+	  self.store_in_dav := 1;
+      }
+    </v:on-post>
+
+    <v:template name="step1" enabled="--equ(length (self.crproc_textfield1.ufl_value), 0)" type="simple">
+  <table class="main_page_area">
+    <tr class="form_row">
+      <td class="ctl_lbl_ctr">
+        <label for="wsdl_src">WSDL URL to import<span class="attention_marker">*</span></label>
+      </td>
+      <td class="ctl_ctr">
+	<v:text name="wsdl_src" xhtml_size="40" xhtml_id="wsdl_src" value=""/>
+	<input type="button" name="test_wsdl" value="Test..." onClick="javascript: do_new_window(document.wsdl_import_form.wsdl_src.value)" />
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_lbl_ctr"><label for="wsdl_tgt_cat">Target Catalog <span class="attention_marker">*</span></label></td>
+      <td class="ctl_ctr">
+        <v:select-list name="target_catalog" xhtml_id="wsdl_tgt_cat">
+          <v:after-data-bind>
+            <v:script>
+              <![CDATA[
+                declare indx integer;
+                indx := 0;
+                control.vsl_items := vector();
+                control.vsl_item_values := vector();
+                for select distinct(name_part (p_name, 0)) as  Q_NAME  from sys_procedures order by 1 do
+                {
+                  control.vsl_items := vector_concat(control.vsl_items, vector(Q_NAME));
+                  control.vsl_item_values := vector_concat(control.vsl_item_values, vector(Q_NAME));
+                  indx := indx + 1;
+                }
+	        control.vs_set_selected ();
+              ]]>
+            </v:script>
+          </v:after-data-bind>
+        </v:select-list>
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_lbl_ctr"><label for="dl_soapuser">Target Schema:<span class="attention_marker">*</span></label></td>
+      <td class="ctl_ctr">
+	<v:data-list xhtml_id="dl_soapuser" name="targer_schema" sql="select U_NAME from DB.DBA.SYS_USERS
+	  where U_IS_ROLE = 0 and U_SQL_ENABLE = 1 order by U_NAME"
+          key-column="U_NAME" value-column="U_NAME" />
+      </td>
+    </tr>
+    <tr><th colspan="2">HTTP Authentication credentials</th></tr>
+    <tr>
+      <td class="ctl_lbl_ctr"><label for="wsdl_user_list">User</label></td>
+      <td class="ctl_ctr">
+	<v:text name="user_list" xhtml_id="wsdl_user_list" />
+          <!--v:after-data-bind>
+            <v:script>
+              <![CDATA[
+                declare indx integer;
+                indx := 0;
+                (control as vspx_select_list).vsl_items := vector();
+                (control as vspx_select_list).vsl_item_values := vector();
+                (control as vspx_select_list).vsl_selected_inx := 0;
+                for select U_NAME from SYS_USERS where U_IS_ROLE = 0 do
+                {
+                  (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items, vector(U_NAME));
+                  (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values, vector(U_NAME));
+                  indx := indx + 1;
+                }
+              ]]>
+            </v:script>
+          </v:after-data-bind>
+        </v:select-list-->
+      </td>
+    </tr>
+    <tr>
+      <td class="ctl_lbl_ctr"><label for="wsdl_user_pass">Password</label></td>
+      <td class="ctl_ctr">
+	<v:text name="t_user_password" type="password" xhtml_id="wsdl_user_pass" xhtml_size="10" value=""/>
+      </td>
+    </tr>
+    <tr class="form_cmd_row">
+      <td>
+        <input type="reset" name="Submit2" value="Reset"/>
+        <v:button action="simple" name="import" value="Import">
+          <v:on-post>
+            <v:script><![CDATA[
+	      declare url, h any;
+	      url := trim ((control.vc_parent.vc_find_control('wsdl_src') as vspx_field).ufl_value);
+	      h := WS.WS.PARSE_URI (url);
+	      if (not length (url))
+	        {
+		  self.vc_error_message := 'The URL is not supplied';
+		  self.vc_is_valid := 0;
+		  return;
+		}
+	      if (h[0] = '' and length (url))
+	        {
+		  url := 'http://' || url;
+		}
+	      else if (h[0] not in ('http', 'https', 'file', 'virt'))
+	        {
+		  self.vc_error_message := 'The URL supplied is invalid, missing protocol identifier';
+		  self.vc_is_valid := 0;
+		  return;
+		}
+
+              self.wsdl_str := url;
+              self.catalog_str := (control.vc_parent.vc_find_control('target_catalog') as vspx_field).ufl_value;
+              self.schema_str := (control.vc_parent.vc_find_control('targer_schema') as vspx_field).ufl_value;
+              self.user_name := (control.vc_parent.vc_find_control('user_list') as vspx_field).ufl_value;
+	      self.user_pass := (control.vc_parent.vc_find_control('t_user_password') as vspx_field).ufl_value;
+	      connection_set ('HTTP_CLI_UID', self.user_name);
+	      connection_set ('HTTP_CLI_PWD', self.user_pass);
+	      self.crproc_textfield1.ufl_value := DB.DBA.WSDL_IMPORT_UDT(self.wsdl_str);
+              self.vc_data_bind(e);
+            ]]></v:script>
+          </v:on-post>
+	</v:button>
+      </td>
+    </tr>
+  </table>
+</v:template>
+  <v:template name="template1" type="simple" enabled="--case when (self.wsdl_str is not null) and (self.catalog_str is not null) and (self.schema_str is not null) then 1 else 0 end" >
+    <table>
+      <?vsp
+       if (self.vc_event.ve_button = self.execute_src and self.vc_is_valid)
+         {
+      ?>
+      <tr>
+	<td colspan="3">
+	  <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+	  The User Defined type was created successfully.
+	</td>
+      </tr>
+
+      <?vsp
+         }
+      ?>
+      <tr>
+	<td colspan="3">
+	  <v:textarea name="crproc_textfield1" xhtml_cols="90" xhtml_rows="25" value=""/>
+	</td>
+      </tr>
+      <tr>
+	<td>
+    	<v:button action="simple" name="execute_src" value="Create User Defined Type">
+          <v:on-post>
+            <v:script><![CDATA[
+		 declare ses, text_t any;
+		 ses := string_output ();
+		 text_t := (control.vc_parent.vc_find_control('crproc_textfield1') as vspx_field).ufl_value;
+		 http (text_t, ses);
+
+		 declare exit handler for sqlstate '*'
+		 {
+		   rollback work;
+		   set_qualifier ('DB');
+		   self.vc_error_message := __SQL_MESSAGE;
+		   self.vc_is_valid := 0;
+		   return;
+		 };
+
+		 set_user_id (self.schema_str);
+		 set_qualifier (self.catalog_str);
+		 DB.DBA.EXECUTE_SCRIPT (ses);
+		 set_qualifier ('DB');
+            ]]></v:script>
+          </v:on-post>
+        </v:button>
+    	<v:button action="simple" name="save" value="Save To File">
+          <v:on-post>
+            <![CDATA[
+  declare text_t, f_name any;
+  text_t := (control.vc_parent.vc_find_control('crproc_textfield1') as vspx_field).ufl_value;
+  f_name := (control.vc_parent.vc_find_control('f_name') as vspx_field).ufl_value;
+  commit work;
+  declare exit handler for sqlstate '*'
+    {
+      if (__SQL_STATE = '42000' and left (__SQL_MESSAGE, 5) = 'FA023')
+        self.vc_error_message := concat ('Current Virtuoso configuration does not allow write access to',
+                                         'given filesystem path. Please see documentation for DirsAllowed directive',
+                                         'in virtuoso ini file.');
+      else
+        self.vc_error_message := __SQL_MESSAGE;
+        self.vc_is_valid := 0;
+        return;
+    };
+  if (not length (f_name))
+    {
+      self.vc_is_valid := 0;
+      self.vc_error_message := 'The path to the file to save must not be empty.';
+      return;
+    }
+  if (self.store_in_dav)
+    {
+      declare own, grp, perms, msg any;
+      if (dav_path_validate (f_name, own, grp, perms, msg) <> 1)
+        {
+          self.vc_error_message := msg;
+          self.vc_is_valid := 0;
+          return;
+        }
+      if (dav_check_permissions(connection_get('vspx_user'), perms, '110', own, grp, msg) <> 1)
+        {
+          self.vc_error_message := msg;
+          self.vc_is_valid := 0;
+          return;
+        }
+      YAC_DAV_RES_UPLOAD (f_name, text_t, 'text/plain', '110100000N',
+        connection_get('vspx_user'), null, connection_get('vspx_user'));
+    }
+  else
+   {
+     declare _u_id, _u_group int;
+     _u_id := -1; _u_group := -1;
+     whenever not found goto nfuser;
+     select U_ID, U_GROUP into _u_id, _u_group from DB.DBA.SYS_USERS where U_NAME = connection_get ('vspx_user');
+     nfuser:
+     if (not (_u_id = 0 or _u_group = 0))
+       {
+         self.vc_is_valid := 0;
+         self.vc_error_message := 'Saving in the file system is allowed to dba only.';
+         return;
+       }
+     string_to_file (f_name, text_t, -2 );
+   }
+]]></v:on-post>
+	</v:button>
+      </td>
+	<td>
+	  <v:check-box xhtml_id="t_src" name="src_type" value="1" auto-submit="1">
+	    <v:before-render>
+	      control.ufl_selected := self.store_in_dav;
+	    </v:before-render>
+	  </v:check-box>
+	  <label for="t_src">WebDAV source</label>
+	</td>
+	<td>
+	  <v:text name="f_name" xhtml_id="f_name" xhtml_size="35" value=""/>
+		              <?vsp
+			        if (self.store_in_dav)
+				  {
+		              ?>
+			      <vm:dav_browser
+				ses_type="yacutia"
+				render="popup"
+				list_type="details"
+				flt="yes" flt_pat="*.sql"
+				path="DAV"
+				browse_type="res"
+				w_title="DAV Browser"
+				title="DAV Browser"
+				advisory="Choose script for loading."
+				lang="en" return_box="f_name"/>
+			      <?vsp
+				  }
+				else
+				  {
+		              ?>
+                              <vm:file_browser ses_type="yacutia"
+                                               render="popup"
+                                               list_type="details"
+                                               flt="yes"
+                                               flt_pat=""
+                                               path="."
+                                               browse_type="file"
+                                               w_title="DAV Browser"
+                                               title="DAV Browser"
+                                               advisory="Choose script for loading."
+                                               lang="en"
+					       return_box="f_name"/>
+			      <?vsp
+			          }
+		              ?>
+	</td>
+      </tr>
+  </table>
+  </v:template>
+  </v:form>
+</v:page>

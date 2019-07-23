@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+-->
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<?vsp set http_charset='utf-8'; ?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+<head>
+<title>Entity Search, Find, and Explore - Documentation</title>
+<link rel="stylesheet" media="screen" type="text/css" href="styles/default.css"/>
+<script type="text/javascript" >
+    var featureList=["map", "combolist"];
+</script>
+<script type="text/javascript" src="oat/toolkit/loader.js"></script>
+</head>
+<body>
+<div id="PG">
+  <div id="HD">
+    <div id="hd_l">
+      <h1>
+        <div id="logo">
+          <a href="/fct/facet.vsp">
+            <img src="/fct/images/openlink_site_logo.png"
+                 alt="OpenLink Software"/>
+          </a>
+        </div>
+      </h1>
+    <div id="homelink"></div>
+  </div> <!-- hd_l -->
+  <div id="hd_r">
+    <a href="http://data.openlinksw.com/about/html/http://data.openlinksw.com/oplweb/product_family/virtuoso"
+       title="OpenLink Virtuoso">
+      <img class="powered_by" src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/>
+    </a>
+  </div> <!-- hd_r -->
+</div> <!-- #HD -->
+<div id="MD">
+  <div class="doc_ctr">
+    <h1>Entity Search, Find, and Explore - Documentation</h1>
+    <p></p>
+    <h2>Text Search</h2>
+    <p>Enter a text pattern to look for. Finder will show a listing of entities with the text
+       occurring in any literal property value or label. You may then continue to refine your search
+       by filtering by type, property value, etc.</p>
+    <h2>Entity URI (ID) Lookup</h2>
+    <p>You can lookup an Entity URI using the autocomplete feature which performs lookups as you type.
+       The OpenLink Finder recognizes some well-known namespace prefixes. For example: "dbpedia:"</p>
+    <h2>Results Order &amp; Ranking</h2>
+    <p>On some listings, results are sorted using a combination of text match score and entity-attribute-value
+       link coefficients. Thus, a small indicator graphic (horizontal bars in leftmost column) is used to unveil
+       metrics for both rankings per entity; the top bar indicates the text score while the bottom covers the entity
+       ranking. Hovering on either will reveal the actual value.</p>
+    <h3>Text Scores</h3>
+    <p>These are proportional to the frequency of the search terms in the match and if many terms are present,
+       the score weight is increased by a proximity factor.
+    <h3>Entity Rank</h3>
+    <p>Entity matches are ranked based on how frequently they are referenced by other entities. Rankings
+       are increased as a function of the score of the referencing entity.</p>
+    <a name="timeout"></a><h2>Timeouts</h2>
+    <p>The Virtuoso 6.x engine includes a new "Anytime Query" feature that enables the optional use of a configurable
+       response time threshold (timeout) when executing queries over large
+       datasets. This feature protects against deliberate or inadvertent denial-of-service style resource-hogging
+       that can arise from badly written or complex queries.
+       When enabled, this feature lets you to set hard limit for resource usage per query associated with
+       unauthenticated users. Queries execute until the response time limit threshold is reached, and, if partial
+       results are available, they are returned with additional result set diagnostics flagging the partial nature
+       of the result set. All query handling is partitioned thereby protecting against cross-client resource
+       contention.</p>
+       <p>This service currently enforces a 20 second hard time limit for queries. Each query is first run with a 2 second timeout -
+       if only a partial result or no results are received, the user is prompted to retry with double the previous time limit until
+       the hard limit is reached.</p>
+    <h2>OpenSearch</h2>
+    <p>You can add this service as a search engine plugin in OpenSearch capable browsers. You can do this in Firefox by using the pulldown
+    next to the search text input in Facet search main page.</p>
+    <h3>More Information</h3>
+    <ul>
+      <li><a href="http://www.opensearch.org">OpenSearch.org</a></li>
+    </ul>
+    <h2>Available datasets</h2>
+    <p>
+    The <a href="/void/Dataset">VoiD graph</a> contains information about <a href="/fct/images/lod-datasets_2009-03-27_colored.png">Linked Open Data Cloud</a> datasets hosted by this instance.
+    </p>
+    <h2>More Information</h2>
+    <ul>
+      <li><a href="http://docs.openlinksw.com/virtuoso/">OpenLink Virtuoso Documentation Main Page</a></li>
+      <li><a href="http://virtuoso.openlinksw.com/dataspace/dav/wiki/Main/VirtuosoFacetsWebService">Virtuoso Facets Web Service Documentation</a></li>
+    </ul>
+    <p>
+      <a href="javascript:history.back()">Go Back</a>
+    </p>
+  </div> <!-- .doc_ctr -->
+</div><!-- #MD -->
+<div id="FT">
+  <a href="http://virtuoso.openlinksw.com/"><img src="/fct/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>
+  <a href="http://linkeddata.org"><img src="/fct/images/LoDLogo.gif" alt="Linked Data"/></a><br/>
+  <span class="copyright">Copyright &copy; 2009-2019 OpenLink Software</span>
+  <div id="FT_L"></div>
+  <div id="FT_R"></div>
+</div>
+</div> <!-- #PG -->
+</body>
+</html>

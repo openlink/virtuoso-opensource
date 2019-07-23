@@ -1,0 +1,535 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page
+  name="graphs_users_security"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1"
+  xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:method name="args" arglist="">
+    <![CDATA[
+      declare retValue varchar;
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      retValue := '';
+      if (get_keyword ('users_by_group', params, '') <> '')
+        retValue := retValue || sprintf ('&users_by_group=%U', get_keyword ('users_by_group', params));
+
+      if (get_keyword ('users_by_like', params, '') <> '')
+        retValue := retValue || sprintf ('&users_by_like=%U', get_keyword ('users_by_like', params));
+
+      if (get_keyword ('graphs_by_group', params, '') <> '')
+        retValue := retValue || sprintf ('&graphs_by_group=%U', get_keyword ('graphs_by_group', params));
+
+      if (get_keyword ('graphs_by_like', params, '') <> '')
+        retValue := retValue || sprintf ('&graphs_by_like=%U', get_keyword ('graphs_by_like', params));
+
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:method name="checkbox" arglist="in r integer, in c integer, in value integer, in disabled integer">
+    <![CDATA[
+      declare S varchar;
+
+      S := '';
+      if (disabled or (c > 3))
+        S := S || ' onclick="return false;"';
+
+      if (value)
+        S := S || ' checked="checked"';
+
+      return sprintf ('<input name="cb_%d%d" type="checkbox" value="1" %s />', r, c, S);
+    ]]>
+  </v:method>
+
+  <v:method name="permissions" arglist="in params any, in r integer">
+    <![CDATA[
+      declare N, retValue integer;
+
+      retValue := 0;
+      for (N := 0; N < 10; N := N + 1)
+      {
+        retValue := bit_xor (retValue, bit_shift (atoi (get_keyword (sprintf ('cb_%d%d', r, N), params, '0')), N));
+      }
+      return retValue;
+    ]]>
+  </v:method>
+
+  <v:variable name="vu_mode" type="varchar" default="''" param-name="mode" />
+  <v:variable name="vu_users_by_group" type="varchar" default="''" param-name="users_by_group" />
+  <v:variable name="vu_users_by_like" type="varchar" default="''" param-name="users_by_like" />
+  <v:variable name="vu_graphs_by_group" type="varchar" default="''" param-name="graphs_by_group" />
+  <v:variable name="vu_graphs_by_like" type="varchar" default="''" param-name="graphs_by_like" />
+  <v:variable name="vu_user_name" type="varchar" default="null" param-name="c_user_name" />
+  <v:variable name="vu_graph_iid" type="varchar" default="null" param-name="c_graph_iid" />
+
+  <vm:if test="self.vu_mode = 'edit'">
+    <v:form name="u_page_form" type="simple" method="POST" action="graphs_page.vspx?page=2">
+      <div class="fm">
+        <?vsp
+          declare c_graph_iid IRI_ID;
+          declare c_user_name, c_graph_iri, needed_role varchar;
+          declare disabled, c_user_disabled, c_user_id, c_user_is_active, c_graph_is_dflt, c_graph_is_private, bit, bitctr, perms, sql_perms, gl_perms integer;
+          declare params any;
+
+          params := self.vc_page.vc_event.ve_params;
+          c_user_name := get_keyword ('c_user_name', params, 'nobody');
+          c_graph_iid := iri_id_from_num (cast (get_keyword ('c_graph_iid', params, 0) as integer));
+          if (c_graph_iid = #i0)
+          {
+            c_graph_is_dflt := 1;
+            c_graph_is_private := 0;
+            c_graph_iri := 'Default for "World" Graphs';
+          }
+          else if (c_graph_iid = #i8192)
+          {
+            c_graph_is_dflt := 1;
+            c_graph_is_private := 1;
+            c_graph_iri := 'Default for "Private" Graphs';
+          }
+          else
+          {
+            c_graph_is_dflt := 0;
+            c_graph_is_private := isnotnull (dict_get (__rdf_graph_group_of_privates_dict(), c_graph_iid, null));
+            c_graph_iri := id_to_iri (c_graph_iid);
+          }
+          http ('<h2>Access Permissions of "' || c_user_name || '" on ' || c_graph_iri || '</h2>');
+          http ('This page contains all information related to permissions of one specific user at one specific RDF graph.');
+          if (USER = 'dba')
+          {
+            http ('You are logged in as ' || USER || ', so you can configure the access if needed.');
+          }
+          else
+          {
+            http ('You are logged in as ' || USER || ', so you can only browse the permissions but not change them.');
+          }
+          c_user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = c_user_name);
+          if (c_user_id is null)
+          {
+            http ('<h3>User account "' || c_user_name || '" does not exist.</h3>There is nothing more to say about it, sorry.');
+            sql_perms := 0;
+            c_user_disabled := 1;
+          }
+          else if ((select U_IS_ROLE from DB.DBA.SYS_USERS where U_ID = c_user_id))
+          {
+            http ('<h3>Account "' || c_user_name || '", ID=' || c_user_id || ' belongs to role, not to a user.</h3>Role can not access any data like user, there is no security for it.');
+            sql_perms := 0;
+            c_user_disabled := 1;
+          }
+          else
+          {
+            http ('<h3>Basic information about user account "' || c_user_name || '"</h3>');
+            if ('nobody' = c_user_name)
+            {
+              http ('<p>User account "nobody" is a special account used to describe default access permissions, not a real user.</p>');
+            }
+            else if ('SPARQL' = c_user_name)
+            {
+              http ('<p>User account "SPARQL" is a special account used for all anonymous web users of SPARQL web service endpoint, not a real user.</p>');
+            }
+            for (select U_E_MAIL, U_FULL_NAME, U_ACCOUNT_DISABLED, U_DAV_ENABLE, U_SQL_ENABLE from DB.DBA.SYS_USERS where U_ID = c_user_id) do
+            {
+              http ('<p>User ID: ' || c_user_id || '<br/>');
+              http ('Full Name: ' || U_FULL_NAME || '<br/>');
+              http ('E-mail: ' || U_E_MAIL || '<br/>');
+              if (U_ACCOUNT_DISABLED)
+              {
+                http ('This account is DISABLED and can not perform any operations.');
+                sql_perms := 0;
+                c_user_disabled := 1;
+              }
+              else
+              {
+                c_user_disabled := case when U_SQL_ENABLE then 0 else 1 end;
+                http ('This account is ENABLED, stored procedures of this account can be executed, ' ||
+                  case (U_SQL_ENABLE) when 1 then 'the user can log in as SQL client' else 'but the user can not log in as SQL client' end || '. ' ||
+                  case (U_DAV_ENABLE) when 1 then 'The user has DAV access so he can edit RDF files that will be automatically loaded to DAV storage.'
+                  else 'The user does not have DAV access.' end );
+                sql_perms := 0hexFFFF;
+              }
+            }
+          }
+          http ('<h3>Basic information about RDF graph "' || c_graph_iri || '"</h3>');
+          http ('<table class="listing">');
+          http ('<thead>\n');
+          http ('  <tr style="background-color: #99B3C5;">');
+          http ('    <th rowspan="2"> </th>');
+          http ('    <th colspan="10" style="text-align: center;">Permission bits</th>');
+          http ('  </tr>');
+          http ('  <tr style="background-color: #99B3C5;">');
+          http ('    <th>1=Read</th>');
+          http ('    <th>2=Write</th>');
+          http ('    <th>4=Sponge</th>');
+          http ('    <th>8=List</th>');
+          http ('    <th>16</th>');
+          http ('    <th>32</th>');
+          http ('    <th>64</th>');
+          http ('    <th>128</th>');
+          http ('    <th>256</th>');
+          http ('    <th>512</th>');
+          http ('  </tr>');
+          http ('</thead>\n');
+
+          -- 1
+          disabled := 1;
+          http ('<tr>');
+          http ('<th align="left">Should the user have some SQL role to use this permission?</th>');
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 0, 1, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 1, 1, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 2, 1, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 3, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 4, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 5, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 6, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 7, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 8, 0, disabled)));
+          http (sprintf ('<td>%s</td>', self.checkbox (1, 9, 0, disabled)));
+          http ('</tr>');
+
+          -- 2
+          declare needed_roles any;
+          needed_roles := vector ('SPARQL_SELECT', 'SPARQL_UPDATE', 'SPARQL_SPONGE', null, null, null, null, null, null, null);
+          http ('<tr><th align="left">What is the name of this SQL role?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http ('<td>' || coalesce (needed_roles[bitctr], '-') || '</td>');
+          }
+          http ('</tr>');
+
+          -- 3
+          disabled := 1;
+          http ('<tr><th align="left">Is the role granted to the user?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            needed_role := needed_roles[bitctr];
+            if (needed_role is not null)
+            {
+              declare drct integer;
+              drct := (select GI_DIRECT from DB.DBA.SYS_ROLE_GRANTS join DB.DBA.SYS_USERS on (U_ID = GI_SUB) where U_NAME = needed_role and GI_SUPER = c_user_id);
+              if (drct is null)
+              {
+                http (sprintf ('<td>%s</td>', self.checkbox (3, bitctr, 0, disabled)));
+                sql_perms := bit_and (sql_perms, bit_not (bit_shift (1, bitctr)));
+              }
+              else if (drct)
+              {
+                http (sprintf ('<td>%s (directly)</td>', self.checkbox (3, bitctr, 1, disabled)));
+              }
+              else
+              {
+                http (sprintf ('<td>%s (indirectly)</td>', self.checkbox (3, bitctr, 1, disabled)));
+              }
+            }
+            else
+            {
+              http (sprintf ('<td>%s (not need)</td>', self.checkbox (3, bitctr, 0, disabled)));
+            }
+          }
+          http ('</tr>');
+
+          -- 4
+          disabled := case when (c_user_name = 'nobody') and not c_user_disabled then 0 else 1 end;
+          gl_perms := 0;
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (case (c_graph_is_private) when 0 then #i0 else #i8192 end, http_nobody_uid ());
+          gl_perms := bit_or (gl_perms, perms);
+          http ('<tr>');
+          http ('<th align="left">Is the bit set for all users on all ' || case (c_graph_is_private) when 0 then '"world"' else '"private"' end || ' graphs?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http (sprintf ('<td>%s</td>', self.checkbox (4, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+          }
+          http ('</tr>');
+
+          -- 5
+          disabled := case when (c_user_name <> 'nobody') and not c_user_disabled then 0 else 1 end;
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (case (c_graph_is_private) when 0 then #i0 else #i8192 end, c_user_id);
+          gl_perms := bit_or (gl_perms, perms);
+          http ('<tr><th align="left">Is the bit set for this specific user on all ' || case (c_graph_is_private) when 0 then '"world"' else '"private"' end || ' graphs?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http (sprintf ('<td>%s</td>', self.checkbox (5, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+          }
+          http ('</tr>');
+
+          -- 6
+          disabled := case when (c_user_name = 'nobody') and not c_user_disabled then 0 else 1 end;
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (c_graph_iri, http_nobody_uid ());
+          gl_perms := bit_or (gl_perms, perms);
+          http ('<tr>');
+          http ('<th align="left">Is the bit set for all users on this specific graph?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http (sprintf ('<td>%s</td>', self.checkbox (6, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+          }
+          http ('</tr>');
+
+          -- 7
+          disabled := case when (c_user_name <> 'nobody') and not c_user_disabled then 0 else 1 end;
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (c_graph_iri, c_user_id);
+          gl_perms := bit_or (gl_perms, perms);
+          http ('<tr>');
+          http ('<th align="left">Is the bit set for this specific user on this specific graph?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http (sprintf ('<td>%s</td>', self.checkbox (7, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+          }
+          http ('</tr>');
+
+          -- 8
+          disabled := 1;
+          perms := bit_and (sql_perms, gl_perms);
+          http ('<tr>');
+          http ('<th align="left">So, can the user use this permission?</th>');
+          for (bitctr := 0; bitctr < 10; bitctr := bitctr + 1)
+          {
+            http (sprintf ('<td>%s</td>', self.checkbox (8, bitctr, bit_and (perms, bit_shift (1, bitctr)), disabled)));
+          }
+          http ('</tr>');
+
+          http ('</table');
+        ?>
+
+        <input type="hidden" id="mode" name="mode" value="edit" />
+        <input type="hidden" id="users_by_group" name="users_by_group" value="<?V self.vu_users_by_group ?>" />
+        <input type="hidden" id="users_by_like" name="users_by_like" value="<?V self.vu_users_by_like ?>" />
+        <input type="hidden" id="graphs_by_group" name="graphs_by_group" value="<?V self.vu_graphs_by_group ?>" />
+        <input type="hidden" id="graphs_by_like" name="graphs_by_like" value="<?V self.vu_graphs_by_like ?>" />
+        <input type="hidden" id="c_user_name" name="c_user_name" value="<?V self.vu_user_name ?>" />
+        <input type="hidden" id="c_graph_iid" name="c_graph_iid" value="<?V self.vu_graph_iid ?>" />
+        <br />
+        <v:button name="u_cancel" action="simple" value="Back">
+          <v:on-post>
+            <![CDATA[
+              self.vc_redirect ('graphs_page.vspx?page=2' || self.args ());
+            ]]>
+          </v:on-post>
+        </v:button>
+        <vm:if test="not c_user_disabled">
+          <v:button name="u_save" action="simple" value="Save">
+            <v:on-post>
+              <![CDATA[
+                declare c_graph_iid IRI_ID;
+                declare c_user_name, c_graph_iri varchar;
+                declare c_user_id, c_graph_is_private, old_perms, perms integer;
+                declare params any;
+
+                params := self.vc_page.vc_event.ve_params;
+                c_user_name := get_keyword ('c_user_name', params, 'nobody');
+                c_graph_iid := iri_id_from_num (cast (get_keyword ('c_graph_iid', params, 0) as integer));
+                if (c_graph_iid = #i0)
+                {
+                  c_graph_is_private := 0;
+                }
+                else if (c_graph_iid = #i8192)
+                {
+                  c_graph_is_private := 1;
+                }
+                else
+                {
+                  c_graph_is_private := isnotnull (dict_get (__rdf_graph_group_of_privates_dict(), c_graph_iid, null));
+                }
+                c_graph_iri := id_to_iri (c_graph_iid);
+                if (c_user_name = 'nobody')
+                {
+                  perms := self.permissions (params, 4);
+                  old_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (case when c_graph_is_private then #i8192 else #i0 end, http_nobody_uid ());
+                  if (perms <> old_perms)
+                    DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('nobody', perms, c_graph_is_private);
+
+                  if (not isnull (c_graph_iri))
+                  {
+                    perms := self.permissions (params, 6);
+                    old_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (c_graph_iid, http_nobody_uid ());
+                    if (perms <> old_perms)
+                      DB.DBA.RDF_GRAPH_USER_PERMS_SET (c_graph_iri, 'nobody', perms);
+                  }
+                }
+                else
+                {
+                  c_user_id := (select U_ID from DB.DBA.SYS_USERS where U_NAME = c_user_name);
+                  perms := self.permissions (params, 5);
+                  old_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (case (c_graph_is_private) when 0 then #i0 else #i8192 end, c_user_id);
+                  if (perms <> old_perms)
+                    DB.DBA.RDF_DEFAULT_USER_PERMS_SET (c_user_name, perms, c_graph_is_private);
+
+                  if (not isnull (c_graph_iri))
+                  {
+                    perms := self.permissions (params, 7);
+                    old_perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (c_graph_iid, c_user_id);
+                    if (perms <> old_perms)
+                      DB.DBA.RDF_GRAPH_USER_PERMS_SET (c_graph_iri, c_user_name, perms);
+                  }
+                }
+                self.vc_redirect ('graphs_page.vspx?page=2' || self.args ());
+              ]]>
+            </v:on-post>
+          </v:button>
+        </vm:if>
+      </div>
+    </v:form>
+  </vm:if>
+  <vm:if test="self.vu_mode &lt;&gt; 'edit'">
+    <h2>Permissions of Users</h2>
+    <vm:if test="USER = 'dba'">
+      <i>Your own security is not shown because you are the DBA almighty</i>
+    </vm:if>
+
+    <v:form name="u_page_form2" type="simple" method="POST" action="graphs_page.vspx?page=2">
+      <div class="fm">
+        <i>Empty string or single % means no filter</i>
+        <br />
+        <h2>Filter columns of users</h2>
+
+        <label style="width: 300px;">Show only users with role</label>
+        <input id="users_by_group" name="users_by_group" value="<?V self.vu_users_by_group ?>" style="width: 300px;" />
+        <br />
+        <vm:if test="(self.vu_users_by_group <> '') and (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vu_users_by_group and U_IS_ROLE) is null">
+          <i style="padding-left: 310px;">Note that the role name "<?V self.vu_users_by_group ?> specified last time does not exist. It is ignored by current filtering.</i>
+          <br />
+        </vm:if>
+
+        <label style="width: 300px;">Show only users with names LIKE</label>
+        <input id="users_by_like" name="users_by_like" value="<?V self.vu_users_by_like ?>" style="width: 300px;" />
+        <br />
+
+        <h2>Filter rows of graphs</h2>
+
+        <label style="width: 300px;">Show only graphs belonging to graph group</label>
+        <input id="graphs_by_group" name="graphs_by_group" value="<?V self.vu_graphs_by_group ?>" style="width: 300px;" />
+        <br />
+
+        <label style="width: 300px;">Show only graphs with names LIKE</label>
+        <input id="graphs_by_like" name="graphs_by_like" value="<?V self.vu_graphs_by_like ?>" style="width: 300px;" />
+        <br />
+        <input type="submit" id="filter" name="filter" value="Filter" style="margin-left: 310px;" />
+        <v:button name="u_clear" action="simple" value="Clear">
+          <v:on-post>
+            <![CDATA[
+              self.vc_redirect ('graphs_page.vspx?page=2');
+            ]]>
+          </v:on-post>
+        </v:button>
+      </div>
+    </v:form>
+    <?vsp
+      declare selected_users, selected_graphs, meta any;
+      declare qry, stat, msg varchar;
+      declare users_by_group_gid integer;
+      declare params any;
+
+      params := self.vc_page.vc_event.ve_params;
+      qry :=
+        'select u.U_ID, u.U_NAME      \n' ||
+        '  from DB.DBA.SYS_USERS as u \n' ||
+        ' where u.U_ID <> 0           \n' ||
+        '   and ((u.U_ID = http_nobody_uid()) or (exists (select 1 from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID = u.U_ID) \n';
+      if (self.vu_users_by_group <> '')
+      {
+        users_by_group_gid := (select U_ID from DB.DBA.SYS_USERS where U_NAME = self.vu_users_by_group and U_IS_ROLE);
+        if (users_by_group_gid is not null)
+          qry := qry || sprintf (' and exists (select 1 from DB.DBA.SYS_ROLE_GRANTS ug where ug.GI_SUPER = u.U_ID and ug.GI_SUB = %d)', users_by_group_gid);
+      }
+      if (not (self.vu_users_by_like in ('', '%')))
+      {
+        qry := qry || sprintf (' and (u.U_NAME like ''%S'')', self.vu_users_by_like);
+      }
+      qry := qry || ')) order by U_ID';
+
+      stat := '00000';
+      msg := '';
+      exec (qry, stat, msg, vector(), 1000, meta, selected_users );
+      if (stat <> '00000')
+      {
+        http ('<xmp>' || qry || '\nresults in\n' || stat || ': ' || msg || '</xmp>');
+        return;
+      }
+      -- Querying (optionally filtered) graphs
+      self.rgs_query_graphs (params, stat, msg, selected_graphs);
+      if (stat <> '00000')
+      {
+        http ('<xmp>' || qry || '\nresults in\n' || stat || ': ' || msg || '</xmp>');
+        return;
+      }
+      -- Rendering the table
+      self.rgs_pagination_for_users_or_roles (params, selected_users, 'user', 10);
+      self.rgs_pagination_for_graphs (params, selected_graphs, 20);
+      http ('<table class="listing">\n');
+      http ('<thead>\n');
+      http ('<tr style="background-color: #99B3C5;">\n');
+      http ('<th colspan="2" rowspan="2" style="text-align: center;">Graphs</th>\n');
+      http (sprintf ('<th colspan="%d" style="text-align: center;">Users</th>\n', length (selected_users)));
+      http ('</tr>\n');
+      http ('<tr style="background-color: #99B3C5;">\n');
+      foreach (any sel_u in selected_users) do
+      {
+        declare sel_uid integer;
+        declare sel_name varchar;
+
+        sel_uid := sel_u[0];
+        sel_name := sel_u[1];
+        http (sprintf ('<th valign="top" style="text-align: center;">%s', sel_name));
+        http ('<div style="padding-left: 1em; text-align: left;">');
+        for (select ug.GI_DIRECT as gdirect, u.U_NAME as gname from DB.DBA.SYS_ROLE_GRANTS ug join DB.DBA.SYS_USERS u on (ug.GI_SUB=u.U_ID) where ug.GI_SUPER = sel_uid order by 2) do
+        {
+          declare link_params any;
+
+          link_params := tweak_by_keywords (params, 'set', 'users_by_group', gname, 'delete', 'mode', '', 'delete', 'users_by_like', '', 'delete', 'uors_page', '');
+          http (sprintf ('<font size="1">has <a href="%s">%s</a>%s</font><br />\n', self.rgs_uri (link_params) , gname, case (gdirect) when 0 then '' else ' directly' end));
+        }
+        http ('</div>');
+        http ('</th>\n');
+      }
+      http ('</tr>\n');
+      http ('</thead>\n');
+      http ('<tbody>\n');
+      foreach (any sel_g in selected_graphs) do
+      {
+        declare sel_iid IRI_ID;
+        declare sel_iri varchar;
+        sel_iid := sel_g[1];
+        sel_iri := sel_g[2];
+        http ('<tr>\n');
+        self.rgs_row_of_graph_begin (params, sel_g[0], sel_iid, sel_iri);
+        foreach (any sel_u in selected_users) do
+        {
+          declare link_params any;
+          declare sel_uid integer;
+          declare perms integer;
+
+          sel_uid := sel_u[0];
+          link_params := tweak_by_keywords (params, 'set', 'mode', 'edit', 'set', 'c_user_name', sel_u[1], 'set', 'c_graph_iid', iri_id_num (sel_iid));
+          perms := DB.DBA.RDF_GRAPH_USER_PERMS_GET (sel_iid, sel_uid);
+          http (sprintf ('<td><a href="%s">%s</a></td>\n', self.rgs_uri (link_params), self.rgs_pexplain (perms)));
+        }
+        http ('</tr>\n');
+      }
+      http ('</tbody>\n');
+      http ('</table>\n');
+    ?>
+  </vm:if>
+</v:page>

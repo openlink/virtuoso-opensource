@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="hosted_modules1_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Hosted Modules</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variable>
+      <v:variable name="file" type="varchar" default="null" />
+      <v:variable name="view_state" type="varchar" default="1" />
+    </vm:variable>
+    <vm:menu>
+      <vm:menuitem value="Loaded Modules" url="hosted_modules.vspx"/>
+      <vm:menuitem value="Import Files" url="hosted_import.vspx"/>
+      <vm:menuitem value="Modules Grant" url="hosted_grant.vspx"/>
+    </vm:menu>
+    <vm:header caption="Load Modules"/>
+    <vm:pagebody>
+      <table border="1" cellspacing="0" cellpadding="3">
+        <tr>
+          <td>
+            <?vsp
+              if ({?'cancel'} <> '')
+              {
+            ?>
+            <script language="JavaScript">
+              location.replace ('hosted_modules_select.vspx');
+            </script>
+            <?vsp
+              }
+              if (not adm_is_hosted ())
+              {
+                http('<br/><table cellpadding="3" cellspacing="0" border="1" class="Warning"><tr><td>This service requires mono/clr or java extension servers</td></tr></table><br/>');
+                return;
+              }
+              declare idx, fl integer;
+              declare mtd_name, file_name integer;
+              file_name := self.file;
+              idx := 0;
+              fl := 0;
+              if ({?'load'} <> '')
+              {
+                http('<table border="1" cellpadding="3" cellspacing="0" class="SubAction"');
+                http('<tr>');
+                http('<th>Class</th><th>Module Name</th><th>Status</th></tr>');
+                while (idx < (length (control.vc_page.vc_event.ve_params) - 2))
+                {
+                  if (control.vc_page.vc_event.ve_params[idx] = 'cb')
+                  {
+                    fl := 1;
+                    mtd_name := params[idx + 1];
+                    http ('<tr>');
+                    http (sprintf ('<td>%s</td><td>%s</td>',
+                    mtd_name, file_name));
+                    http (sprintf ('<td>%s</td>',  import_file (mtd_name, file_name)));
+                    http ('</tr>');
+                  }
+                  idx := idx + 2;
+                }
+                http ('</table></td></tr><tr><td>');
+              }
+            ?>
+            <v:data-grid name="dg" nrows="15" sql="select _class from class_list where _in = mask" scrollable="1" cursor-type="static" edit="1" initial-enable="--self.view_state">
+              <v:column name="_class" />
+              <v:param name="mask" value="--self.file" />
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    declare file_name integer;
+                    file_name := {?'file'};
+                    if (self.file is NULL)
+                    {
+                      self.file := file_name;
+                      self.view_state := '1';
+                    }
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+              <v:template name="dg_frame" type="frame">
+                <p>
+                  <font style="color:red">
+                    <v:error-summary />
+                  </font>
+                </p>
+                <table border="1" cellspacing="0" cellpadding="3" class="SubAction">
+                  <tr>
+                    <th>Name</th>
+                    <th>&amp;nbsp;</th>
+                  </tr>
+                  <v:rowset />
+                  <v:form type="add"/>
+                  <tr>
+                    <td colspan="2" align="center"  class="listing_col_action">
+		       <vm:ds-navigation data-set="dg" type="grid"/>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td colspan="2">
+                      <v:button name="cancel" action="simple" value="Cancel" />
+                      <v:button name="load" action="simple" value="Load Selected">
+                        <v:on-post>
+                          <v:script>
+                            <![CDATA[
+                              if (self.view_state = '1')
+                              {
+                                self.view_state := 0;
+                                self.vc_find_control('dg').vc_enabled := 0;
+                              }
+                            ]]>
+                          </v:script>
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </table>
+              </v:template>
+              <v:template name="dg_rows" type="row">
+                <tr>
+                  <td nowrap="nowrap">
+                    <v:label name="label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                  </td>
+                  <td nowrap="nowrap">
+                    <v:check-box name="cb" value="--sprintf ('%V', (control.vc_parent as vspx_row_template).te_rowset[0])" initial-checked="0" width="184" height="24" />
+                  </td>
+                </tr>
+              </v:template>
+              <v:template name="dg_empty" type="if-not-exists">
+                <tr>
+                  <td colspan="2">No rows selected</td>
+                </tr>
+              </v:template>
+            </v:data-grid>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

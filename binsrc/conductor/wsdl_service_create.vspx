@@ -1,0 +1,337 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="wsdl_service_create"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable persist="1" name="browse_cat1" type="varchar" default="'DB'"/>
+  <v:variable persist="1" name="module_name" type="varchar" default="''"/>
+  <v:variable persist="1" name="file_name" type="varchar" default="''"/>
+  <v:variable persist="1" name="res1" type="varchar" default="''"/>
+  <v:variable persist="1" name="res2" type="integer" default="''"/>
+  <v:variable persist="1" name="mode1" type="integer" default="''"/>
+  <?vsp
+    if (self.template2.vc_enabled = 0)
+    {
+  ?>
+  <div class="">
+    <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+    <div class="confirm_text">
+      <h4>No PL Modules are defined</h4>
+    </div>
+  </div>
+  <?vsp
+    }
+  ?>
+  <v:template name="template2" type="simple">
+    <v:before-data-bind>
+      if (not exists (select 1 from SYS_PROCEDURES where P_TYPE = 3))
+      {
+        control.vc_enabled := 0;
+        return 1;
+      }
+    </v:before-data-bind>
+    <vm:form name="wsdl_export_form" type="simple" method="POST" action="wsdl_services.vspx?page=3">
+      <vm:attrs border="0" class="MainSubData" width="70%" cellspacing="0" cellpadding="5" align="center" />
+      <vm:events>
+        <v:on-post>
+          <![CDATA[
+            {
+              declare result,doc_base, doc, xml_schema,xml_doc, valid_declaration  varchar;
+              if (get_keyword('reload', params) is not null)
+              {
+                self.browse_cat1 :=  get_keyword('catalog1', params);
+                http_request_status ('HTTP/1.1 302 Found');
+                http_header (sprintf('Location: wsdl_services.vspx?page=3&sid=%s&realm=%s\r\n', self.sid ,self.realm));
+              }
+              else if (get_keyword('export', params) is not null)
+              {
+                declare cnt, i, inx, len integer;
+                declare service_name varchar;
+
+                inx := 0;
+                cnt:= length(params);
+                i := 0;
+                self.module_name := '';
+                self.file_name := '';
+                self.res2 := 1;
+                while (i < cnt)
+                {
+                  if (aref(params,i) = 'all_procedures')
+                  {
+                    self.module_name := aref(params, i + 1);
+                    self.res1 := SOAP_WSDL(sprintf('%s', self.module_name), sprintf('//%s/wsdl_service_create.vspx', http_request_header (lines, 'Host')));
+                    declare _mode1 varchar;
+                    _mode1 := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                    if (_mode1 = 0)
+                    {
+                      self.mode1 := 0;
+                      declare user_name, def_grp, auth_uname, auth_pwd, def_perms, homedir varchar;
+                      declare _u_id, _u_group integer;
+                      user_name := username();
+                      select u_id, u_group, u_def_perms, u_home into _u_id, _u_group, def_perms, homedir from SYS_USERS where U_NAME = user_name;
+                      select U_NAME into def_grp from DB.DBA.SYS_USERS where U_ID=_u_group;
+                      self.file_name := get_keyword('filename', params);
+                      if (self.file_name = '')
+                      {
+                        self.res2 := -120;
+                        return;
+                      }
+                      -- self.res2 := DB.DBA.DAV_RES_UPLOAD(self.file_name, self.res1, 'text/plain',def_perms,user_name,def_grp,'dav','dav');
+
+                      declare where_to_go, resname varchar;
+                      declare pos1, current_col_id integer;
+                      declare item, state, msg, m_dta, res varchar;
+                      state := '00000';
+                      pos1 := strrchr(self.file_name, '/');
+                      where_to_go := substring(self.file_name, 1, pos1);
+                      resname := substring(self.file_name, pos1 + 2, length(self.file_name) - pos1);
+
+                      if (where_to_go <> '/')
+                        where_to_go := WS.WS.EXPAND_URL(WS.WS.COL_PATH (current_col_id), where_to_go);
+                      if (where_to_go not like '%/')
+                        where_to_go := concat (where_to_go, '/');
+                      select COL_ID into current_col_id from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = where_to_go;
+                      exec('insert into WS.WS.SYS_DAV_RES(RES_COL, RES_CONTENT, RES_CR_TIME, RES_FULL_PATH,
+                        RES_GROUP, RES_ID, RES_MOD_TIME, RES_NAME, RES_OWNER, RES_PERMS, RES_TYPE)
+                        values(?, ?, now(), ?, ?, ?, now (), ?, ?, ?, ?)', state, msg,
+                        vector(current_col_id, self.res1, self.file_name, _u_group, WS.WS.GETID('R'),
+                        resname, _u_id, def_perms, 'text/xml'), m_dta, res);
+                      if (state <> '00000')
+                        self.res2 := -12;
+                    }
+                    else
+                      self.mode1 := 1;
+                  }
+                  i := i + 2;
+                }
+                if (self.module_name = '')
+                  self.res2 := -121;
+              }
+            }
+            self.vc_data_bind(e);
+          ]]>
+        </v:on-post>
+      </vm:events>
+
+      <vm:row>
+        <vm:raw>
+          <td align="left" width="10%">Catalog:<span class="attention_marker">*</span></td>
+          <td>
+            <table border="0">
+              <tr>
+                <td>
+                  <v:select-list name="catalog1" xhtml_style="width:300" xhtml_onchange="javascript:doPost(\'wsdl_export_form\', \'reload\'); return false">
+                    <v:after-data-bind>
+                      <![CDATA[
+                        declare indx integer;
+
+                        indx := 0;
+                        (control as vspx_select_list).vsl_items := vector();
+                        (control as vspx_select_list).vsl_item_values := vector();
+                        (control as vspx_select_list).vsl_selected_inx := 0;
+                        for (select distinct (name_part (p_name, 0)) as  Q_NAME  from sys_procedures where p_type = 3) do
+                        {
+                          if (Q_NAME = self.browse_cat1)
+                            (control as vspx_select_list).vsl_selected_inx := indx;
+
+                          (control as vspx_select_list).vsl_items := vector_concat((control as vspx_select_list).vsl_items, vector(Q_NAME));
+                          (control as vspx_select_list).vsl_item_values := vector_concat((control as vspx_select_list).vsl_item_values, vector(Q_NAME));
+                          indx := indx + 1;
+                        }
+                      ]]>
+                    </v:after-data-bind>
+                  </v:select-list>
+                </td>
+                <td>
+                  <v:button action="submit" name="reload" value="Reload"/>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </vm:raw>
+      </vm:row>
+
+      <vm:row>
+        <vm:raw>
+          <td align="left" valign="top">PL Modules:<span class="attention_marker">*</span></td>
+          <td>
+            <v:select-list name="all_procedures" xhtml_size="7" xhtml_style="width:400">
+              <v:before-data-bind>
+                <![CDATA[
+                  (control as vspx_select_list).vsl_items:= vector();
+                  (control as vspx_select_list).vsl_item_values:= vector();
+                  (control as vspx_select_list).vsl_selected_inx :=0;
+                  for select distinct p_name from DB.DBA.SYS_PROCEDURES where (self.browse_cat1=name_part(p_name, 0)  and p_type=3) order by p_name do
+                  {
+                    (control as vspx_select_list).vsl_items := vector_concat ((control as vspx_select_list).vsl_items, vector(p_name));
+                    (control as vspx_select_list).vsl_item_values := vector_concat ((control as vspx_select_list).vsl_item_values, vector(p_name));
+                  }
+                ]]>
+              </v:before-data-bind>
+            </v:select-list>
+          </td>
+        </vm:raw>
+      </vm:row>
+
+      <vm:row colspan="10">
+        <vm:row colspan="10">
+          <td align="left" nowrap="1">
+            <v:radio-button name="persist_enable" value="0" group-name="choice_source">
+              <v:before-data-bind>
+                <v:script>
+                  <![CDATA[
+                    control.ufl_selected:= 1;
+                    control.vc_data_bound := 1;
+                  ]]>
+                </v:script>
+              </v:before-data-bind>
+            </v:radio-button>
+          </td>
+          <td>
+            <v:label width="100" format="%s" name="label1" value="--('DAV resource name:')"/>
+            <v:text width="200" type="simple" value="" name="filename" />
+            <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="filename"/>
+          </td>
+        </vm:row>
+
+        <vm:row>
+          <td>
+            <v:radio-button name="realtime_enable" value="1" group-name="choice_source">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_selected:= 0;
+                  control.vc_data_bound := 1;
+                ]]>
+              </v:before-data-bind>
+            </v:radio-button>
+          </td>
+          <td>
+            Download to browser
+          </td>
+        </vm:row>
+      </vm:row>
+
+      <vm:row>
+        <vm:raw>
+          <td/>
+          <vm:bgroup>
+            <v:button action="submit" name="export" value="Export"/>
+          </vm:bgroup>
+        </vm:raw>
+      </vm:row>
+    </vm:form>
+  </v:template>
+
+  <v:template name="template3" type="simple" enabled="--case when ( get_keyword('export', control.vc_page.vc_event.ve_params) is not null) then 1 else 0 end">
+    <P/>
+    <table width="98%" border="1" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainSubData" align="center">
+      <tr>
+        <?vsp
+          if (self.res2 > 0 and self.mode1 = 0)
+          {
+        ?>
+        <td bgcolor="#83BFE8" align="center">
+          <p>WSDL description of <?V self.module_name ?> exported as DAV resource <?V self.file_name ?>.</p>
+        </td>
+        <?vsp
+          }
+          else if (self.mode1 = 0)
+          {
+            declare str_error_desc varchar;
+
+            if (self.res2 = -1 )
+              str_error_desc := 'The path (target of operation) is not valid';
+            else if (self.res2 = -2 )
+              str_error_desc := 'The destination (path) is not valid';
+            else if (self.res2 = -3)
+              str_error_desc := 'Overwrite flag is not set and destination exists';
+            else if (self.res2 = -4)
+              str_error_desc := 'The target is resource, but source is collection (in copy move operations)';
+            else if (self.res2 = -5)
+              str_error_desc := 'Permissions are not valid';
+            else if (self.res2 = -6)
+              str_error_desc := 'uid is not valid';
+            else if (self.res2 = -7)
+              str_error_desc := 'gid is not valid';
+            else if (self.res2 = -8)
+              str_error_desc := 'Target is locked';
+            else if (self.res2 = -9)
+              str_error_desc := 'Destination is locked';
+            else if (self.res2 = -10)
+              str_error_desc := 'Property name is reserved (protected or private)';
+            else if (self.res2 = -11)
+              str_error_desc := 'Property does not exist';
+            else if (self.res2 = -12)
+              str_error_desc := 'Authentication failed';
+            else if (self.res2 = -13)
+              str_error_desc := 'Operation is forbidden (the authenticated user does not have permission for the action)';
+            else if (self.res2 = -14)
+              str_error_desc := 'the target type is not valid';
+            else if (self.res2 = -15)
+              str_error_desc := 'The umask is not valid';
+            else if (self.res2 = -16)
+              str_error_desc := 'The property already exists';
+            else if (self.res2 = -17)
+              str_error_desc := 'Invalid property value';
+            else if (self.res2 = -18)
+              str_error_desc := 'no such user';
+            else if (self.res2 = -19)
+              str_error_desc := 'no home directory';
+            else if (self.res2 = -120)
+              str_error_desc := 'Please, specify output WSDL filename';
+            else if (self.res2 = -121)
+              str_error_desc := 'Please, specify correct PL module name';
+        ?>
+        <td bgcolor="#83BFE8" align="center">
+          <p><?V str_error_desc ?></p>
+        </td>
+        <?vsp
+          }
+        ?>
+      </tr>
+    </table>
+    <P/>
+  </v:template>
+
+  <v:template name="template4" type="simple" enabled="--case when (self.mode1 = 1) then 1 else 0 end">
+    <table>
+      <tr class="SubAction">
+        <td bgcolor="#83BFE8" align="center">
+          <p>WSDL description of <?V self.module_name ?></p>
+        </td>
+      </tr>
+      <tr class="SubAction">
+        <td>
+          <?V self.res1 ?>
+        </td>
+      </tr>
+    </table>
+    <?vsp
+      self.mode1 := 0;
+      self.res1 := '';
+    ?>
+  </v:template>
+</v:page>

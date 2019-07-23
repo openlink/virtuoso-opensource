@@ -1,0 +1,62 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+?>
+<!DOCTYPE html
+     PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<?vsp
+  declare path, file, sid, realm, command, title varchar;
+  path := get_keyword ('path', params, '');
+  sid := get_keyword ('sid', params, '');
+  realm := get_keyword ('realm', params, '');
+  file := get_keyword ('file', params, '');
+  command := get_keyword ('command', params, '');
+  title := get_keyword ('title', params, '');
+?>
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
+  <head>
+    <title>Browser</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+  </head>
+  <frameset rows="13%,*"
+            frameborder="NO"
+            border="0" framespacing="0">
+    <frame name="file_list"
+           src="back_nav.vspx?realm=<?/realm?>&sid=<?/sid?>&path=<?/path?>&file=<?/file?>&title=<?/title?>" />
+    <frame name="bottom_frame"
+           scrolling="YES"
+           noresize="noresize"
+           src="view.vspx?realm=<?/realm?>&sid=<?/sid?>&path=<?/path?>&file=<?/file?>&title=<?/title?>" />
+  </frameset>
+  <noframes>
+    <body>
+      <h1>No frames support</h1>
+      <p>This application uses frames. Unfortunately your browser does not support them.
+         The application is designed run on <a href="http://www.mozilla.org">Mozilla</a> %gt; 0.9,
+         <a href="http://www.netscape.com">Netscape</a> &gt; 4 and
+         <a href="http://www.microsoft.com">Microsoft</a> Internet Explorer &gt; 4.
+      </p>
+    </body>
+  </noframes>
+</html>

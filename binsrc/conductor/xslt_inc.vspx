@@ -1,0 +1,192 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="xslt_incling" fast-render="1">
+  <table border="0" width="100%" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData" align="center" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <tr>
+      <td class="MainData">
+        <table width="100%" border="0" cellspacing="0" cellpadding="5">
+          <v:form name="xslt_form" type="simple" method="POST" action="">
+            <v:on-post>
+              <v:script>
+                <![CDATA[
+                  declare xsl_sheet, xml_src, src_xslt, rel_path, xml_file, xsl_file, save_path  varchar;
+                  declare xml_tree, xslt_tree, pars,  xml_tree_doc, ses, res  any;
+                  declare n, len, result  integer;
+                  if (get_keyword('save',params) is null) return;
+                  xsl_sheet := get_keyword('xsl_sheet',params);
+                  xml_src := get_keyword('xml_src',params);
+                  save_path:= get_keyword('file_loc',params);
+                  if (xsl_sheet ='')
+                  {
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: xslt_result.vspx?result=error&error=%s&sid=%s&realm=%s\r\n','Stylesheet file was not  specified.',self.sid ,self.realm));
+                    return;
+                  }
+                  if (xml_src ='')
+                  {
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: xslt_result.vspx?result=error&error=%s&sid=%s&realm=%s\r\n','Stylesheet file was not  specified.',self.sid ,self.realm));
+                    return;
+                  }
+                  rel_path:='/';
+                  len:= length(path)-1;
+                  n:=0;
+                  while (n < len)
+                  {
+                    rel_path := concat(rel_path,aref(path,n),'/');
+                    n:= n+1;
+                  }
+                  select blob_to_string(RES_CONTENT) into xml_file from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xml_src;
+                  xml_tree := xml_tree(xml_file);
+                  select blob_to_string(RES_CONTENT) into src_xslt  from WS.WS.SYS_DAV_RES where RES_FULL_PATH = xsl_sheet;
+                  xslt_sheet(src_xslt, xml_tree_doc (src_xslt));
+                  ses := string_output();
+                  xml_tree_doc:= xml_tree_doc(xml_tree);
+                  -- pars  := vector('section_name', '','ext_doc',concat('file:', path));
+                  res := xslt(src_xslt, xml_tree_doc);
+                  http_value(res,0,ses);
+                  result :=0;
+                  if  (not(save_path = ''))
+                    result := DAV_RES_UPLOAD(save_path, string_output_string(ses), 'text/html','110100000R', 'dav', 'dav','dav','dav');
+                  else
+                  {
+                    http_request_status('HTTP/1.1 302 Found');
+                    http_header(sprintf('Location: xslt_result.vspx?result=error&error=%s&sid=%s&realm=%s\r\n','File to save to is not specified.',self.sid ,self.realm));
+                    return;
+                  }
+                  http_request_status('HTTP/1.1 302 Found');
+                  http_header(sprintf('Location: xslt_result.vspx?result=ok&sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                  return;
+                ]]>
+              </v:script>
+            </v:on-post>
+            <tr>
+              <td>XML Source<span class="attention_marker">*</span></td>
+              <td>
+                <v:text name="xml_src" xhtml_size="40">
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if (get_keyword('xml_src', control.vc_page.vc_event.ve_params) is not null)
+                          control.ufl_value := get_keyword('xml_src', control.vc_page.vc_event.ve_params);
+                        control.vc_data_bound := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </v:text>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="xml_src"/>
+              </td>
+              <td/>
+              <td>
+                <v:radio-button name="on_screen" group-name="save_mode" value="0"  xhtml_onclick="javascript: parent.document.forms[\'xslt_form\'].submit();">
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        control.ufl_selected:= 0;
+                        if ( get_keyword('save_mode', control.vc_page.vc_event.ve_params) ='0' )
+                          control.ufl_selected:= 1;
+                        control.vc_data_bound := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </v:radio-button>
+              </td>
+              <td>Screen output </td>
+              <td/>
+            </tr>
+            <tr>
+              <td>XSL Sheet<span class="attention_marker">*</span>
+              </td>
+              <td>
+                <v:text name="xsl_sheet" xhtml_size="40">
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if (get_keyword('xsl_sheet', control.vc_page.vc_event.ve_params) is not null)
+                          control.ufl_value := get_keyword('xsl_sheet', control.vc_page.vc_event.ve_params);
+                        control.vc_data_bound := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </v:text>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="xsl_sheet"/>
+              </td>
+              <td/>
+              <td>
+                <v:radio-button name="on_file" group-name="save_mode" value="1"  xhtml_onclick="javascript: parent.document.forms[\'xslt_form\'].submit();">
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        control.ufl_selected:= 0;
+                        if (get_keyword('save_mode', control.vc_page.vc_event.ve_params) = '1'  or get_keyword('save_mode', control.vc_page.vc_event.ve_params) is null)
+                          control.ufl_selected:= 1;
+                        control.vc_data_bound := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </v:radio-button>
+              </td>
+              <td>File output</td>
+              <td/>
+              <td/>
+            </tr>
+            <tr>
+              <td colspan="4"/>
+              <td colspan="2">
+                <v:text name="file_loc" xhtml_size="40">
+                  <v:before-data-bind>
+                    <v:script>
+                      <![CDATA[
+                        if (get_keyword('file_loc', control.vc_page.vc_event.ve_params) is not null)
+                          control.ufl_value := get_keyword('file_loc', control.vc_page.vc_event.ve_params);
+                        control.vc_data_bound := 1;
+                      ]]>
+                    </v:script>
+                  </v:before-data-bind>
+                </v:text>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="file_loc"/>
+              </td>
+            </tr>
+            <tr>
+              <td align="center">
+                <v:template name="screen_result_template" type="simple" enabled="--case when ( get_keyword('save_mode', control.vc_page.vc_event.ve_params) ='0' ) then 1 else 0 end">
+                  <v:browse-button name="trx" action="browse" value="Translate" selector="xslt_res.vsp" child-window-options="resizable=yes, scrollbars=yes, menubar=no, height=630, width=600">
+                    <v:field name="xml_src"/>
+                    <v:field name="xsl_sheet"/>
+                    <v:field name="file_loc"/>
+                  </v:browse-button>
+                </v:template>
+                <v:template name="file_result_template" type="simple" enabled="--case when ( get_keyword('save_mode', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('save_mode', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+                  <v:button action="simple" name="save" value="Translate"/>
+                </v:template>
+              </td>
+            </tr>
+          </v:form>
+        </table>
+      </td>
+    </tr>
+  </table>
+</v:page>

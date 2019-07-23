@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -301,10 +301,16 @@ rdf_loader_run (in max_files integer := null, in log_enable int := 2)
       if (log_enable = 2 and cl_this_host () = 1)
 	{
 	  cl_exec ('checkpoint_interval (0)');
+	  cl_exec ('scheduler_interval (0)');
 	  cl_exec ('__dbf_set (''cl_non_logged_write_mode'', 1)');
 	}
       if (cl_this_host () = 1)
 	cl_exec('__dbf_set(''cl_max_keep_alives_missed'',3000)');
+    }
+  else
+    {
+      checkpoint_interval(0);
+      scheduler_interval(0);
     }
   tx_mode := bit_and (1, log_enable);
   log_message ('Loader started');

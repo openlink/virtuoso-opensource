@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@
 #  include <odbcinst.h>
 #  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # else
-#  define ERR_STRING	"[OpenLink][Virtuoso iODBC Driver]"
+#  define ERR_STRING	"[OpenLink][Virtuoso ODBC Driver]"
 # endif
 
 # ifndef SQL_COPT_SS_BASE
@@ -163,7 +163,6 @@ typedef void * SQLHANDLE;
 #define IS_ORACLE_NATIVE_DRIVER(rcon) (IS_ORACLE(rcon) && \
     ((0 == strncmp(rcon->rc_driver_name, "SQORA", 5)) || \
      (0 == strncmp(rcon->rc_driver_name, "SQOCI", 5))))
-#endif
 
 
 /*
@@ -178,3 +177,19 @@ typedef void * SQLHANDLE;
 #define SQL_DESC_COL_LITERAL_LANG      1061L
 #define SQL_DESC_COL_LITERAL_TYPE      1062L
 #endif
+
+
+/*
+ *  Extension for setting size of SQLWCHAR (iodbcext.h)
+ */
+#ifndef SQL_ATTR_APP_WCHAR_ID
+#define SQL_ATTR_APP_WCHAR_ID		1061
+#define SQL_ATTR_APP_UNICODE_ID		1064
+#define SQL_ATTR_DRIVER_UNICODE_ID	1065
+
+#define SQL_DM_CP_UCS4			0
+#define SQL_DM_CP_UTF16			1
+#define SQL_DM_CP_UTF8			2
+#endif
+
+#endif /* __V_ODBCINC_H */

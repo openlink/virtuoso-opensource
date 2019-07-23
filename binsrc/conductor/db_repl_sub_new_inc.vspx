@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<table width="98%" border="0" cellspacing="0" cellpadding="5" class="MainSubData" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <v:variable persist="0" name="ename" type="varchar" default="''"/>
+  <v:form name="event_form" type="simple" method="POST" action="sys_queues_edit.vspx">
+    <input type="hidden" name="name" value="<?= get_keyword('name', self.vc_page.vc_event.ve_params) ?>"/>
+    <input type="hidden" name="mode" value="<?= get_keyword('mode', self.vc_page.vc_event.ve_params) ?>"/>
+    <v:on-post>
+      <v:script><![CDATA[
+        declare i, cnt, exist, u_ident, g_name integer;
+        declare tmp, val, name varchar;
+        if (get_keyword('cancel', params) <> '' or self.vc_is_valid = 0)
+        {
+success:
+          http_request_status ('HTTP/1.1 302 Found');
+          http_header(sprintf('Location: sys_queues.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
+          return;
+        }
+        name := (control.vc_find_control ('name1') as vspx_field).ufl_value;
+        --get_keyword('name', params, get_keyword('name_edit', params));
+
+        select count(*) into exist from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = name;
+        if (get_keyword('mode', params) = 'create')
+        {
+          insert into DB.DBA.SYS_SCHEDULED_EVENT
+            (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+            values(
+            (control.vc_find_control('name1') as vspx_field).ufl_value,
+            stringdate((control.vc_find_control('start_time') as vspx_field).ufl_value),
+            cast((control.vc_find_control('sql_value') as vspx_field).ufl_value as varchar),
+            atoi((control.vc_find_control('interval_value') as vspx_field).ufl_value));
+        }
+        else if(get_keyword('mode', params) = 'edit')
+        {
+          if (exists(select 1 from DB.DBA.SYS_SCHEDULED_EVENT where SE_NAME = name))
+          {
+            update DB.DBA.SYS_SCHEDULED_EVENT
+              set SE_START = stringdate((control.vc_find_control ('start_time') as vspx_field).ufl_value),
+              SE_SQL = (control.vc_find_control ('sql_value') as vspx_field).ufl_value,
+              SE_INTERVAL = atoi((control.vc_find_control ('interval_value') as vspx_field).ufl_value)
+              where SE_NAME = name;
+          }
+          else
+          {
+            insert into DB.DBA.SYS_SCHEDULED_EVENT
+              (SE_NAME, SE_START, SE_SQL, SE_INTERVAL)
+              values(
+              (control.vc_find_control ('name1') as vspx_field).ufl_value,
+              stringdate((control.vc_find_control ('start_time') as vspx_field).ufl_value),
+              (control.vc_find_control ('sql_value') as vspx_field).ufl_value,
+              atoi((control.vc_find_control ('interval_value') as vspx_field).ufl_value));
+          }
+        }
+        goto success;
+      ]]></v:script>
+    </v:on-post>
+    <tr align="left">
+      <td width="20%" align="left" valign="left">Data Source</td>
+      <td valign="left">
+        <v:text name="name12">
+          <v:before-data-bind>
+            <v:script><![CDATA[
+              if (get_keyword('mode', params) = 'edit')
+              {
+                self.ename := cast(deserialize(decode_base64(get_keyword('name', params))) as varchar);
+                control.ufl_value := self.ename;
+                control.tf_style :=3;
+                control.vc_data_bound := 1;
+              }
+              else
+              {
+                declare ufn varchar;
+                ufn := get_keyword('name', params);
+                if (ufn is not NULL)
+                {
+                  control.ufl_value:= ufn;
+                  control.vc_data_bound := 1;
+                }
+              }
+            ]]></v:script>
+          </v:before-data-bind>
+        </v:text>
+      </td>
+    </tr>
+    <tr align="left">
+      <td width="20%" align="left" valign="left">Data Source</td>
+      <td valign="left">
+        <v:select-list name="howto">
+          <v:item name="starting with" value="1" />
+          <v:item name="containing" value="2" />
+          <v:item name="ending with" value="3" />
+          <v:before-data-bind>
+            <v:script><![CDATA[
+              if (get_keyword('mode', params) = 'edit')
+              {
+                self.ename := cast(deserialize(decode_base64(get_keyword('name', params))) as varchar);
+                control.ufl_value := self.ename;
+                control.tf_style :=3;
+                control.vc_data_bound := 1;
+              }
+              else
+              {
+                declare ufn varchar;
+                ufn := get_keyword('name', params);
+                if (ufn is not NULL)
+                {
+                  control.ufl_value:= ufn;
+                  control.vc_data_bound := 1;
+                }
+              }
+            ]]></v:script>
+          </v:before-data-bind>
+        </v:select-list>
+      </td>
+    </tr>
+    <tr align="left">
+      <td width="20%" align="left" valign="top">User Name</td>
+      <td valign="top">
+        <v:text name="start_time">
+          <v:before-data-bind>
+            <v:script>
+              <![CDATA[
+              declare start_time varchar;
+              if (get_keyword('mode', params) = 'edit')
+              {
+                select adm_date_fmt(se_start) into start_time from sys_scheduled_event where se_name = self.ename;
+                control.ufl_value := start_time;
+                control.vc_data_bound := 1;
+              }
+              else
+              {
+                start_time := get_keyword('start_time', params);
+                if (start_time is not NULL)
+                {
+                  control.ufl_value:= start_time;
+                  control.vc_data_bound := 1;
+                }
+              }
+              ]]>
+            </v:script>
+          </v:before-data-bind>
+        </v:text>
+      </td>
+    </tr>
+    <tr align="left">
+      <td width="20%" align="left" valign="top">Password</td>
+      <td valign="top">
+        <v:text name="interval_value">
+          <v:validator name="interval_value_val1" min="1" max="999999999" empty-allowed="1" test="value" regexp="" message="Wrong value! " />
+          <v:validator name="interval_value_val2" min="0" max="0" empty-allowed="0" test="regexp" regexp="^[0-9]+$" message="Wrong value! must be a number" />
+          <v:before-data-bind>
+            <v:script><![CDATA[
+              declare ufn integer;
+              if (get_keyword('mode', params) = 'edit')
+              {
+                select se_interval into ufn from SYS_SCHEDULED_EVENT where SE_NAME = self.ename;
+                control.ufl_value := cast(ufn as varchar);
+                control.vc_data_bound := 1;
+              }
+              else
+              {
+                declare pwd varchar;
+                pwd := get_keyword('interval', params);
+                if (pwd is not NULL)
+                {
+                  control.ufl_value:= pwd;
+                  control.vc_data_bound := 1;
+                }
+              }
+            ]]></v:script>
+          </v:before-data-bind>
+        </v:text>
+      </td>
+    </tr>
+    <tr align="left">
+      <td/>
+      <td colspan="3">
+        <v:button action="submit" name="cancel" value="Cancel" />
+        <v:button action="submit" name="save" value="Open Connection"/>
+      </td>
+    </tr>
+  </v:form>
+</table>

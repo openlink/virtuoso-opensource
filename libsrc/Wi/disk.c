@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1567,7 +1567,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 }
 
 int enable_buf_mprotect = 0;
-#ifdef PAGE_DEBUG
+#if defined(PAGE_DEBUG) || defined(MTX_DEBUG)
 void
 buf_prot_read (buffer_desc_t * buf)
 {

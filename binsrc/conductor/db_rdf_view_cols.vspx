@@ -1,0 +1,298 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_rdf_class"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+    </vm:menu>
+    <vm:variables>
+      <v:variable name="is_popup" persist="0" type="integer" default="0" />
+
+      <v:variable persist="0" name="objects" type="any" default="null" param-name="list"/>
+      <v:variable persist="0" name="base" type="any" default="null" param-name="host"/>
+      <v:variable persist="0" name="cols1" type="any" default="null" param-name="cols"/>
+      <v:variable persist="0" name="tbls" type="any" default="null"/>
+      <v:variable persist="0" name="cols" type="any" default="null"/>
+      <v:variable persist="0" name="tbl" type="any" default="null" param-name="tb"/>
+      <v:variable persist="0" name="owl_iri" type="any" default="null"/>
+      <v:variable persist="0" name="cls_iri" type="any" default="null"/>
+      <v:variable persist="0" name="pklist" type="any" default="null" param-name="pk"/>
+    </vm:variables>
+
+    <vm:header caption="Linked Data View definition"/>
+    <vm:pagebody>
+      <v:on-init>
+        <![CDATA[
+          declare pos int;
+          declare cols, all_cols any;
+
+          if (self.tbls is null)
+          {
+            self.tbls := deserialize (decode_base64 (self.objects));
+          }
+          if (self.cols is null)
+          {
+            self.cols := deserialize (decode_base64 (self.cols1));
+            if (length (self.cols) <> length (self.tbls))
+              self.cols := make_array (length (self.tbls), 'any');
+          }
+          pos := position (self.tbl, self.tbls);
+          cols := self.cols [pos - 1];
+          if (self.cls_iri is null and self.owl_iri is null and isarray (cols))
+          {
+            self.cls_iri := cols[0];
+            self.owl_iri := (sparql
+                             define input:storage ""
+                             define input:inference <http://www.w3.org/2002/07/owl#>
+                             select ?g
+                               from <local:/schemas/> { graph ?g { ?:self.cls_iri a rdfs:Class . }}
+                            );
+          }
+          if (not isarray (cols))
+          {
+            declare i int;
+
+            i := 0;
+            cols := make_array ((select count(*) from TABLE_COLS where "TABLE" = self.tbl), 'any');
+            for select "COLUMN" as colname, COL_DTP from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
+            {
+              cols [i] := vector (0, '');
+              i := i + 1;
+            }
+            cols := vector ('', cols);
+            all_cols := self.cols;
+            all_cols [pos - 1] := cols;
+            self.cols := all_cols;
+          }
+        ]]>
+      </v:on-init>
+      <script type="text/javascript">
+        <![CDATA[
+          function hideshow (t,m)
+          {
+            if (t.value != 2)
+              OAT.Dom.hide ($(m));
+            else
+              OAT.Dom.show ($(m));
+          }
+
+          function cleanothers(t)
+          {
+            var i;
+            for (i = 0; i < t.form.elements.length;i++)
+            {
+              var contr = t.form.elements[i];
+              if (contr != null && contr.type == "checkbox" && contr.name != t.name)
+              {
+                contr.checked = false;
+              }
+            }
+          }
+        ]]>
+      </script>
+      <br style="clear: both;"/>
+      <h2>Choose Mapping Options for "<?V self.tbl ?>"</h2>
+      <table>
+        <v:form name="account_form" type="simple" method="POST" action="">
+          <v:on-post>
+            <![CDATA[
+              if (e.ve_button = control)
+              {
+                if (e.ve_initiator = self.d_owl_iri)
+                {
+                  self.owl_iri := self.d_owl_iri.ufl_value;
+                  self.d_cls_iri.vc_data_bind (e);
+                }
+                 if (e.ve_initiator = self.d_cls_iri)
+                {
+                  self.cls_iri := self.d_cls_iri.ufl_value;
+                }
+              }
+            ]]>
+          </v:on-post>
+          <tr>
+            <td>
+              <span class="fm_label" style="width: 100px"><strong>Base Ontology&amp;nbsp;</strong></span>
+              <v:data-list sql="select top 1 'none' as graph from SYS_KEYS
+                                union all
+                                select id_to_iri (RGGM_MEMBER_IID) from RDF_GRAPH_GROUP_MEMBER
+                                where RGGM_GROUP_IID = iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#schemas')"
+                           key-column="graph"
+                           value-column="graph"
+                           name="d_owl_iri"
+                           auto-submit="1"
+                           value="--self.owl_iri"/>
+              <br/>
+              <span class="fm_label" style="width: 100px"><strong>Base Class&amp;nbsp;</strong></span>
+              <v:data-list sql="select top 1 '' as cls, 'auto' as curie from SYS_KEYS
+                                union all
+                                select cls, yac_uri_curie(cls) from (sparql define input:storage ''
+                                                                     define input:inference <http://www.w3.org/2002/07/owl#>
+                                                                     select distinct ?cls { graph ?:self.owl_iri { ?cls a rdfs:Class . }}) x"
+                           key-column="cls"
+                           value-column="curie"
+                           name="d_cls_iri"
+                           auto-submit="1"
+                           value="--self.cls_iri"/>
+              <br/>
+              <br/>
+              <table class="listing">
+                <thead>
+                  <tr class="listing_header_row">
+                    <th>Column Name *</th>
+                    <th>Property</th>
+                    <th>Binding/MIME Type</th>
+                  </tr>
+                </thead>
+                <?vsp
+                  declare i int;
+                  declare pos int;
+                  declare cols, tps, props any;
+                  declare cls, owl any;
+
+                  pos := position (self.tbl, self.tbls);
+                  cols := self.cols [pos - 1][1];
+                  tps := self.cols [pos - 1][0];
+                  cls := self.cls_iri;
+                  owl := self.owl_iri;
+                  props := (select vector_agg (vector (prop, yac_uri_curie (prop)))
+                              from (sparql
+                                    define input:storage ""
+                                    select distinct ?prop { graph ?:owl { ?prop rdfs:domain ?cls .  }}) x);
+                  for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
+                  {
+                ?>
+                <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                  <td>
+                    <?vsp
+                      http (sprintf ('<input type="checkbox" name="cb_%d" value="1" onclick="javascript:cleanothers(this)" %s" />', COL_ID, case when cols[i][0] = 4 then 'checked="true"' else '' end));
+                    ?>
+                    <?V col ?>
+                  </td>
+                  <td>
+                    <select name="prop_<?V COL_ID ?>" id="prop_<?V COL_ID ?>">
+                    <?vsp
+                      http (sprintf('<option value="" >auto</option>'));
+                      foreach (any p in props) do
+                      {
+                        http (sprintf('<option value="%V" %s>%V</option>', p[0], case when cols[i][1] = p[0] then 'selected="true"' else '' end, p[1]));
+                      }
+                    ?>
+                    </select>
+                  </td>
+                  <td>
+                    <select name="sel_<?V COL_ID ?>" id="sel_<?V COL_ID ?>" onchange="javascript:hideshow(this, 'mime_<?V COL_ID ?>')">
+                      <?vsp
+                        http (sprintf('<option value="0" %s>literal</option>', case when cols[i][0] in (0,4) then 'selected' else '' end));
+                        http (sprintf('<option value="1" %s>skip</option>', case when cols[i][0] = 1 then 'selected' else '' end));
+                        http (sprintf('<option value="2" %s>binary object</option>',  case when isstring (cols[i][0]) then 'selected' else '' end));
+                      ?>
+                    </select>
+                    <input type="text"
+                           value="<?V case when isstring (cols[i][0]) then cols[i][0] else 'application/octet-stream' end ?>"
+                           name="mime_<?V COL_ID ?>"
+                           id="mime_<?V COL_ID ?>"
+                           style="<?V case when isstring (cols[i][0]) then '' else 'display:none;' end ?>"/>
+                  </td>
+                </tr>
+                <?vsp
+                    i := i + 1;
+                  }
+                ?>
+              </table>
+              <div>*To designate one column for subject label, check the box.</div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <v:button action="simple" name="cncl" value="Cancel">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U&pk=%U', self.objects, self.base, self.cols1, self.pklist));
+                  ]]>
+                </v:on-post>
+              </v:button>
+
+              <v:button action="simple" name="exec" value="Save">
+                <v:on-post>
+                  <![CDATA[
+                    declare i int;
+                    declare pos int;
+                    declare cols, all_cols any;
+                    declare x, lab int;
+                    declare prop varchar;
+
+                    -- check if at least one is selected
+                    if (0)
+                    {
+                      self.vc_error_message := 'Must select at least one column';
+                      self.vc_is_valid := 0;
+                      return;
+                    }
+                    pos := position (self.tbl, self.tbls);
+                    cols := self.cols [pos - 1][1];
+                    for select "COLUMN" as col, COL_ID from TABLE_COLS where "TABLE" = self.tbl and "COLUMN" <> '_IDN' order by COL_ID do
+                    {
+                      x := atoi (get_keyword (sprintf ('sel_%d', COL_ID), e.ve_params, '0'));
+                      if (x = 2)
+                      {
+                        x := get_keyword (sprintf ('mime_%d', COL_ID), e.ve_params);
+                        if (length (x) = 0)
+                          x := 'application/octet-stream';
+                      }
+                      lab := atoi (get_keyword (sprintf ('cb_%d', COL_ID), e.ve_params, '0'));
+                      if (lab)
+                        x := 4;
+
+                      prop := get_keyword (sprintf ('prop_%d', COL_ID), e.ve_params, '');
+                      cols[i] := vector (x, prop);
+                      i := i + 1;
+                    }
+                    all_cols := self.cols;
+                    all_cols [pos - 1] := vector (self.cls_iri, cols);
+                    self.vc_redirect (sprintf ('db_rdf_view_tb.vspx?list=%U&host=%U&cols=%U&pk=%U', self.objects, self.base, encode_base64 (serialize (all_cols)), self.pklist));
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </td>
+          </tr>
+        </v:form>
+
+        <v:template type="simple" name="sc_1" enabled="0">
+          <tr>
+            <td>
+              <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
+            </td>
+          </tr>
+        </v:template>
+
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

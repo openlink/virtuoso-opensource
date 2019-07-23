@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2324,7 +2324,7 @@ err:;
 ?>
 </TD></TR></TABLE>
 </DIV>
-<DIV class="foot"><SPAN class="foot">Virtuoso Universal Server <?=sys_stat('st_dbms_ver')?> - Copyright&copy; 1998-2018 OpenLink Software.</SPAN></DIV>
+<DIV class="foot"><SPAN class="foot">Virtuoso Universal Server <?=sys_stat('st_dbms_ver')?> - Copyright&copy; 1998-2019 OpenLink Software.</SPAN></DIV>
  </BODY>
 </HTML>
 <?vsp

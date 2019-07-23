@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="logging_view"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+    <v:variable persist="0" name="dday" type="varchar" default="null" />
+    <v:variable persist="0" name="dmon" type="varchar" default="null" />
+    <v:variable persist="0" name="dyear" type="varchar" default="null" />
+    <v:variable persist="1" name="dyears" type="any" default="null" />
+    <v:variable persist="0" name="log_file" type="varchar" default="null" />
+    <v:form type="simple" method="POST" name="lform" action="logging_page.vspx?page=9">
+      <v:on-init><![CDATA[
+      declare v_params any;
+      v_params := control.vc_page.vc_event.ve_params;
+	self.log_file := cfg_item_value(virtuoso_ini_path(), 'Database', 'ErrorLogFile');
+  self.dday := sprintf ('%02d', dayofmonth (now()));
+	self.dmon := sprintf ('%03.03s', monthname (now()));
+  self.dyear := sprintf ('%04d', year (now()));
+  if (get_keyword('dday', v_params ,'') <> '')
+    self.dday := get_keyword('dday', v_params ,'');
+  if (get_keyword('dmon', v_params ,'') <> '')
+    self.dmon := get_keyword('dmon', v_params ,'');
+  if (get_keyword('dyear', v_params ,'') <> '')
+    self.dyear := get_keyword('dyear', v_params ,'');
+	]]></v:on-init>
+      <v:before-data-bind><![CDATA[
+	declare ses any;
+	declare line, years, y any;
+
+	years := vector (cast (year (now()) as varchar));
+	if (self.dyears is null)
+	  self.dyears := vector ();
+	if (self.log_file = 0)
+	  {
+	    self.vc_is_valid := 0;
+	    self.vc_error_message := 'Cannot determine log file name. Maybe you need to define ErrorLogFile in Database section of Virtuoso ini file.';
+	    self.dyears := years;
+	    return;
+	  }
+	if (length (self.dyears) > 0)
+      	  goto noscan;
+	declare exit handler for sqlstate '*'
+	{
+	  self.vc_is_valid := 0;
+	  self.vc_error_message := 'Cannot open the log file, please check the DirsAllowed setting in the Virtuoso ini file.';
+	  self.dyears := years;
+	  return;
+        };
+	ses := file_to_string_output (self.log_file);
+	while (1)
+          {
+	    line := ses_read_line (ses, 0, 0, 1);
+	    if (not isstring (line))
+	      goto endr;
+	    line := trim (line, ' \t\n\r');
+	    if (regexp_match ('[A-Z][a-z][a-z] [A-Z][a-z][a-z] [0-9][0-9] [0-9][0-9][0-9][0-9]', line))
+	      {
+	        y := substring (line, 12, length (line));
+		if (not position (y, years))
+		  years := vector_concat (years, vector (y));
+	      }
+	  }
+	endr:;
+	self.dyears := years;
+	noscan:;
+	]]></v:before-data-bind>
+      <table class="ctl_grp" id="control">
+	  <tr>
+	    <td colspan="2"><img src="images/icons/filter_32.png"/></td>
+	  </tr>
+	  <tr>
+	    <td>
+	      <v:select-list name="dday1" value="--coalesce (control.ufl_value, self.dday)">
+		<v:item name="*" value="[0-9][0-9]"/>
+		<v:item name="01" value="01"/>
+		<v:item name="02" value="02"/>
+		<v:item name="03" value="03"/>
+		<v:item name="04" value="04"/>
+		<v:item name="05" value="05"/>
+		<v:item name="06" value="06"/>
+		<v:item name="07" value="07"/>
+		<v:item name="08" value="08"/>
+		<v:item name="09" value="09"/>
+		<v:item name="10" value="10"/>
+		<v:item name="11" value="11"/>
+		<v:item name="12" value="12"/>
+		<v:item name="13" value="13"/>
+		<v:item name="14" value="14"/>
+		<v:item name="15" value="15"/>
+		<v:item name="16" value="16"/>
+		<v:item name="17" value="17"/>
+		<v:item name="18" value="18"/>
+		<v:item name="19" value="19"/>
+		<v:item name="20" value="20"/>
+		<v:item name="21" value="21"/>
+		<v:item name="22" value="22"/>
+		<v:item name="23" value="23"/>
+		<v:item name="24" value="24"/>
+		<v:item name="25" value="25"/>
+		<v:item name="26" value="26"/>
+		<v:item name="27" value="27"/>
+		<v:item name="28" value="28"/>
+		<v:item name="29" value="29"/>
+		<v:item name="30" value="30"/>
+		<v:item name="31" value="31"/>
+	      </v:select-list>
+	      <v:select-list name="dmon1" value="--coalesce (control.ufl_value, self.dmon)">
+		<v:item name="*" value="[A-Z][a-z][a-z]"/>
+		<v:item name="Jan" value="Jan"/>
+		<v:item name="Feb" value="Feb"/>
+		<v:item name="Mar" value="Mar"/>
+		<v:item name="Apr" value="Apr"/>
+		<v:item name="May" value="May"/>
+		<v:item name="Jun" value="Jun"/>
+		<v:item name="Jul" value="Jul"/>
+		<v:item name="Aug" value="Aug"/>
+		<v:item name="Sep" value="Sep"/>
+		<v:item name="Oct" value="Oct"/>
+		<v:item name="Nov" value="Nov"/>
+		<v:item name="Dec" value="Dec"/>
+	      </v:select-list>
+	      <v:select-list name="dyear1" value="--coalesce (control.ufl_value, self.dyear)">
+		<v:before-data-bind>
+		  if (control.ufl_value is null)
+		    control.ufl_value := self.dyear;
+		  control.vsl_items := self.dyears;
+		  control.vsl_item_values := self.dyears;
+		  control.vs_set_selected ();
+		</v:before-data-bind>
+	      </v:select-list>
+	    </td>
+	    <td>
+	      <v:button name="filt" action="simple" value="Apply filter"/>
+    	  <script language="JavaScript">
+    	    <?vsp http(sprintf('var params = new Array(\'dday\',\'%U\',\'dmon\',\'%U\',\'dyear\',\'%U\');',self.dday1.ufl_value,self.dmon1.ufl_value,self.dyear1.ufl_value)); ?>
+    	  </script>
+	    </td>
+	  </tr>
+      </table>
+    </v:form>
+    <v:template type="simple" name="rend" condition="not (self.log_file = 0)">
+      <div id="monitor_tab">
+      <table class="listing" showme="1">
+	<?vsp
+	declare ses, line, test any;
+	declare i, disp any;
+	if (not self.vc_is_valid)
+	  goto endr;
+
+	declare exit handler for sqlstate '*'
+	{
+	  goto endr;
+        };
+	ses := file_to_string_output (self.log_file);
+	disp := 0;
+	while (1)
+          {
+	    line := ses_read_line (ses, 0, 0, 1);
+	    if (not isstring (line))
+	      goto endr;
+	    test := trim (line, ' \t\r\n');
+	    if (regexp_match ('[A-Z][a-z][a-z] [A-Z][a-z][a-z] [0-9][0-9] [0-9][0-9][0-9][0-9]', test))
+	      {
+	        if (regexp_match (sprintf ('[A-Z][a-z][a-z] %s %s %s',
+	          self.dmon1.ufl_value,
+	          self.dday1.ufl_value,
+	          self.dyear1.ufl_value
+	          ), test))
+	          {
+		    disp := 1;
+		    i := i + 1;
+		    ?>
+		    <tr class="listing_header_row"><th><?V line ?></th></tr>
+		    <?vsp
+		    goto nextl;
+		  }
+		else
+		  {
+		    disp := 0;
+		  }
+		}
+		if (disp)
+	          {
+		    i := i + 1;
+		    ?>
+		    <tr class="<?V case when mod (i, 2) then 'listing_row_odd' else 'listing_row_even' end ?>"><td><?V line ?></td></tr>
+		    <?vsp
+		  }
+             nextl:;
+          }
+	endr:;
+        ?>
+      </table>
+      </div>
+    </v:template>
+</v:page>

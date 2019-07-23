@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -691,7 +691,7 @@ create function "nntp_DAV_RES_CONTENT" (in id any, inout content any, out type v
           }
      }
 
-   if (__tag (parsed_message) <> 193)
+   if (__tag (parsed_message) <> __tag of vector)
      parsed_message := mime_tree (_body);
 
    _head := parsed_message[0];

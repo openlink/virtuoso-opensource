@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="vdb_error_page_inc" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+    <v:variable name="return_path" persist="0" type="varchar" default="''" />
+    <v:variable name="sql_stt" persist="1" type="varchar" default="''" />
+    <v:variable name="sql_msg" persist="1" type="varchar" default="''" />
+  <table class="Warning" width="100%" border="0" cellspacing="0" cellpadding="3">
+  <v:form name="error_form1" type="simple" method="POST" action="--self.return_path">
+      <tr><td><?V get_keyword('message', self.vc_page.vc_event.ve_params, 'Error occurred') ?></td></tr>
+      <tr><td>
+        <table width="100%" border="0" cellspacing="0" cellpadding="3">
+          <tr><td>SQL_STATE:</td><td><?V self.sql_stt ?></td></tr>
+          <tr><td>SQL_MESSAGE:</td><td><?V self.sql_msg ?></td></tr>
+        </table>
+      </td></tr>
+      <tr><td align="center">
+        <v:button action="simple" name="OK" value="OK">
+    <v:on-post>
+      <v:script><![CDATA[
+--      http_request_status ('HTTP/1.1 302 Found');
+--      http_header (sprintf('Location: %s\r\n', self.return_path));
+      self.sql_stt := '';
+      self.sql_msg := '';
+      --self.return_path := '';
+      return;
+      ]]></v:script>
+    </v:on-post>
+        </v:button>
+      </td></tr>
+    </v:form>
+  </table>
+<?vsp
+?>
+</v:page>

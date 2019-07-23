@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1321,13 +1321,13 @@ key_part_in_layout_order (dbe_key_t * key)
     {
       dbe_col_loc_t * cl = key_find_cl (key, col->col_id);
       if (!key->key_n_significant)
-	break;
-	if (dtp_is_fixed (col->col_sqt.sqt_dtp))
-	  arr[inx] = cl - key->key_key_fixed;
-	else
-	  arr[inx] = key_n_fixed + (cl - key->key_key_var);
+        break;
+      if (dtp_is_fixed (col->col_sqt.sqt_dtp))
+        arr[inx] = cl - key->key_key_fixed;
+      else
+        arr[inx] = key_n_fixed + (cl - key->key_key_var);
       if (++inx == key->key_n_significant)
-	break;
+        break;
     }
   END_DO_SET();
   inx = 0;

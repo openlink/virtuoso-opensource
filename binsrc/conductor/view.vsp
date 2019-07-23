@@ -1,0 +1,60 @@
+<?vsp
+--
+--  $Id$
+--
+--  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+--  project.
+--
+--  Copyright (C) 1998-2019 OpenLink Software
+--
+--  This project is free software; you can redistribute it and/or modify it
+--  under the terms of the GNU General Public License as published by the
+--  Free Software Foundation; only version 2 of the License, dated June 1991.
+--
+--  This program is distributed in the hope that it will be useful, but
+--  WITHOUT ANY WARRANTY; without even the implied warranty of
+--  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+--  General Public License for more details.
+--
+--  You should have received a copy of the GNU General Public License along
+--  with this program; if not, write to the Free Software Foundation, Inc.,
+--  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+--
+--
+
+  declare sid, realm, auth_uid, auth_pwd, file, uri, req_header, res_header, content, contentType varchar;
+
+  file := get_keyword('file', params);
+
+  declare exit handler for not found
+  {
+    signal ('42000', 'Session expired');
+  };
+
+  select U_ID into auth_uid from VSPX_SESSION, SYS_USERS where VS_SID = {?'sid'} and VS_REALM = {?'realm'} and VS_UID = U_NAME;
+  connection_set ('DAVUserID', auth_uid);
+
+  select RES_TYPE into contentType from WS.WS.SYS_DAV_RES where RES_FULL_PATH = file;
+  file := concat ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:', file);
+  content := DB.DBA.XML_URI_GET ('', file);
+
+  http_rewrite();
+  if (contentType = 'text/plain') {
+    http_header (sprintf('Content-Type: %s\r\n', 'text/html'));
+    http('<html><body><pre>\r\n');
+    http(content);
+    http('\r\n</pre></body></html>');
+  } else if ((contentType = 'text/xml') or (contentType = 'text/html')) {
+    http_header (sprintf('Content-Type: %s\r\n', contentType));
+    http(content);
+  } else {
+    declare pos integer;
+
+    pos := strrchr (file, '/');
+    if (pos is not null)
+      file := subseq (file, pos + 1);
+    http_header (sprintf ('Content-type: %s\r\nContent-Disposition: inline; filename="%s"\r\n', contentType, file));
+    http(content);
+  }
+  http_flush();
+?>

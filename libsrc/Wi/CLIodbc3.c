@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1095,6 +1095,20 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
 
   switch (Attribute)
     {
+#if !defined (WIN32)
+    case SQL_ATTR_APP_WCHAR_ID:
+      {
+        SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;
+        cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_ID, ...) called\n"));
+        if (val == SQL_DM_CP_UTF16)
+          con->con_wide_as_utf16 = TRUE;
+        else if (val == SQL_DM_CP_UCS4)
+          con->con_wide_as_utf16 = FALSE;
+        else 
+          return SQL_ERROR;
+      }
+      break;
+#endif
 
     case SQL_ATTR_ASYNC_ENABLE:
       cli_dbg_printf (("SQLSetConnectAttr(..., ASYNC_ENABLE, ...) called\n"));

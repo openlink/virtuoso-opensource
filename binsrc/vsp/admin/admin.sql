@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2019 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -4282,7 +4282,7 @@ adm_page_footer()
   http('<TR><TD CLASS="CopyrightBorder" COLSPAN="2"><IMG SRC="/admin/images/1x1.gif" WIDTH="1" HEIGHT="2" ALT=""></TD></TR>');
   http('<TR><TD ALIGN="right" COLSPAN="2"><P CLASS="Copyright">Virtuoso Universal Server ');
   http(sys_stat('st_dbms_ver'));
-  http(' - Copyright&copy; 1998-2018 OpenLink Software.</P></TD></TR>');
+  http(' - Copyright&copy; 1998-2019 OpenLink Software.</P></TD></TR>');
   http('</TABLE>\n</BODY>');
 }
 ;

@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="vdb_dsn_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+   vm:owner="yacutia_vdb_dsns_page"
+   doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+   fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+   xmlns:xhtml="http://www.w3.org/1999/xhtml"
+   xmlns:vm="http://www.openlinksw.com/vspx/macro"
+   >
+
+  <vm:pagetitle>Virtuoso Remote Datasources</vm:pagetitle>
+  <vm:pagewrapper>
+
+    <vm:menu>
+    <vm:menuitem value="Known Datasources" />
+    <vm:menuitem name="linked_url" type="hot" value="Known Remote Resources" format="%s" url="vdb_resources.vspx" />
+    <vm:menuitem name="link_url" type="hot" value="Link Remote Resources" format="%s" url="vdb_link.vspx?mode=1" />
+    <vm:menuitem name="main_url" type="hot" value="Main Remote Resources" format="%s" url="vdb_main.vspx" />
+    </vm:menu>
+
+    <vm:rawheader>
+      <td>Data Sources</td>
+      <td><a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=create&dsn_name=">Add Source Credentials</a></td>
+    </vm:rawheader>
+
+    <vm:pagebody vdb_check="1">
+      <table class="MainSubData" align="center" border="0" cellspacing="0" cellpadding="4">
+      <tr>
+        <th align="left">Data Source Name</th><th align="left">UserName</th><th align="left">State</th><th>&nbsp;</th>
+        <th align="left">
+          <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=remove">Remove All</a>
+        </th>
+        <th align="left">
+          <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=test">Test All</a>
+        </th>
+      </tr>
+
+      <?vsp
+          declare mode, ds_name varchar;
+          declare _err_code, _err_message varchar;
+          declare _cnt integer;
+          declare exit handler for sqlstate '*'
+          { _err_code := __SQL_STATE; _err_message := __SQL_MESSAGE; goto error; };
+          mode := get_keyword('mode', params, '');
+          ds_name := get_keyword('dsn_name', params, '');
+
+          for (select ds_dsn, ds_uid from sys_data_source) do {
+              _cnt := _cnt + 1;
+      ?>
+        <tr>
+          <td class="MainData"><?V ds_dsn?></td>
+          <td class="MainData"><?V ds_uid?></td>
+          <?vsp
+            if( mode = 'test' and ( ds_name = '' or ds_name = ds_dsn ) ) {
+              http('<td class="MainData">');
+              declare state, msg, m_dta, res varchar;
+
+              state := '00000';
+
+              exec( '_sql_tables( ?, ?, ?, ?, ? )', state, msg, vector (ds_dsn, '', '', '','TABLE'), m_dta, res);
+              if ('00000' = state) {
+                http('OK');
+              }
+              else {
+                http('<span class="attention_text">Failed</span>');
+              }
+              http('</td>');
+            }
+            else {
+              http('<td class="MainData">Not tested</td>');
+            }
+          ?>
+          <td class="MainData">
+            <a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=edit&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Edit</a>
+          </td>
+          <td class="MainData">
+            <a href="vdb_dsn_edit.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=remove&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Remove</a>
+          </td>
+          <td class="MainData">
+            <a href="vdb_dsns.vspx?sid=<?V self.sid ?>&realm=<?V self.realm ?>&mode=test&dsn_name=<?V ds_dsn ?>&login=<?V ds_uid ?>">Test</a>
+          </td>
+        </tr>
+      <?vsp
+          }
+          if (0 = _cnt) {
+              http('<tr><td class="MainData">No Data Sources</td></tr>');
+          }
+          goto next;
+      error:
+      ?>
+         <tr><td colspan="6">
+         <table class="MainData" border="0" cellpadding="0" align="left" width="60%">
+         <tr><td class="attention_text" colspan="2">Error</td></tr>
+         <tr><td class="MainData">SQL State</td><td class="MainData"><?V _err_code ?></td></tr>
+         <tr><td class="MainData">Error Message</td><td class="MainData"><?V _err_message ?></td></tr>
+         </table></td></tr>
+      <?vsp
+      next:
+          ;
+      ?>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

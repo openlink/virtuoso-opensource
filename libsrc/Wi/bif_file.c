@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2019 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -44,6 +44,14 @@
 
 #ifndef P_tmpdir
 # ifdef _P_tmpdir               /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
+#endif
+
+#ifndef P_tmpdir
+# ifdef _P_tmpdir /* native Windows */
 #  define P_tmpdir _P_tmpdir
 # else
 #  define P_tmpdir "/tmp"
@@ -7475,7 +7483,7 @@ bif_file_init (void)
   bif_define_ex ("md5_update", bif_md5_update, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("md5_final", bif_md5_final, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__vector_sort", bif_vector_sort, BMD_RET_TYPE, &bt_any, BMD_DONE);
-  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_NO_FOLD, BMD_DONE);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
   bif_define_ex ("file_stat", bif_file_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);

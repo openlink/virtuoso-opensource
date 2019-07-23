@@ -1,0 +1,1154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<v:page name="uddi_browse_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" vm:owner="yacutia_uddi_page"  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:on-init>
+  <v:script><![CDATA[
+
+     ]]></v:script>
+  </v:on-init>
+
+  <vm:pagetitle>UDDI</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="uuid_value" default="null" type="varchar" persist="1"/>
+      <v:variable name="contact_ident" default="null" type="varchar" persist="1"/>
+      <v:variable name="service_ident" default="null" type="varchar" persist="1"/>
+      <v:variable name="business_name" default="null" type="varchar" persist="1"/>
+      <v:variable name="contact_name" default="null" type="varchar" persist="1"/>
+      <v:variable name="service_name" default="null" type="varchar" persist="1"/>
+      <v:variable name="binding_ident" default="null" type="varchar" persist="1"/>
+      <v:variable name="binding_name" default="null" type="varchar" persist="1"/>
+    </vm:variables>
+
+    <vm:menu>
+      <vm:menuitem value="UDDI Service Servers"/>
+      <vm:menuitem name="roles_url" value="UDDI Service Browse"/>
+      <vm:menuitem name="caps_url" value="UDDI Service Find"/> <!--  url="uddi_serv_find.vspx"-->
+    </vm:menu>
+    <vm:rawheader>
+      <td>
+              <?vsp
+               if ( atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 10 ) {
+                http('Business Details');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 20 )  {
+                http('Contact Details');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 30 )  {
+                http('Service Details');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 40 )  {
+                http('Binding Details');
+               }
+      ?>
+      </td>
+    </vm:rawheader>
+    <vm:pagebody><!-- width="100%" -->
+    <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+         <tr> <td><table border="0" cellpadding="2" cellspacing="0">
+              <?vsp
+               if ( atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 10 ) {
+                http('<tr><td><img src="images/business.gif" width="16" height="16"/></td><td class="SubInfo" align="left"><nobr><b>');
+                http(self.business_name);
+                http('</b><nobr></td></tr>');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 20 )  {
+                http(sprintf('<tr><td><a class="uddi"  href="uddi_serv_browse.vspx?page=3&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
+                http(self.business_name);
+                http('</b></nobr></td></tr>');
+                http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/contact.gif" width="16" height="16"/></td><td  class="SubInfo" aligh="left"><nobr><b>');
+                http(self.contact_name);
+                http('</b><nobr>');
+                http('</td></tr>');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 30 )  {
+                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="2" align="left"><nobr><b>', self.sid ,self.realm));
+                http(self.business_name);
+                http('</b><nobr></td></tr>');
+                http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/service.gif" width="16" height="16"/></td><td  class="SubInfo"  aligh="left"><b>');
+                http(self.service_name);
+                http('</b>');
+                http('</td></tr>');
+               } else if (atoi(get_keyword('page', control.vc_page.vc_event.ve_params)) < 40 )  {
+                http(sprintf('<tr><td><a class="uddi" href="uddi_serv_browse.vspx?page=2&sid=%s&realm=%s\r\n"><img src="images/business.gif" width="16" height="16" border="0" /></a></td><td  class="SubInfo" colspan="3" align="left"><nobr><b>', self.sid ,self.realm));
+                http(self.business_name);
+                http('</b><nobr></td></tr>');
+                http('<tr><td><img src="" width="16" height="1"/></td><td><img src="images/service.gif" width="16" height="16"/></td><td  class="SubInfo" colspan="2" aligh="left"><b>');
+                http(self.service_name);
+                http('</b>');
+                http('</td></tr>');
+                http('<tr><td colspan="2"/><td><img src="images/binding.gif" width="16" height="16"/></td><td  class="SubInfo"  aligh="left"><b>');
+                http(self.binding_name);
+                http('</b>');
+                http('</td></tr>');
+
+               }
+
+              ?>
+            </table></td></tr>
+
+
+        <tr valign='top'>
+            <td>
+
+                <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+                    <tr>
+                        <td width="100%">
+                            <table cellpadding="0" cellspacing="0" border="0">
+                                <colgroup>
+                                <col/>
+                                <col/>
+                                <col/>
+                                <col/>
+                                <col/>
+                                <col/>
+                                <col/>
+                                <col width="1000"/>
+                                </colgroup>
+                            <tr>
+              <v:template name="tabTemplate0" type="simple" enabled="1">
+                <v:before-data-bind>
+                  <v:script><![CDATA[
+
+  declare business_name, contact_name, service_name  varchar;
+   if (get_keyword('business_key', self.vc_event.ve_params) is not null) {
+    self.uuid_value := get_keyword('business_key', self.vc_event.ve_params);
+          select  BE_NAME  into  business_name  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY = self.uuid_value;
+          self.business_name := business_name;
+  }
+   if (get_keyword('contact_key', self.vc_event.ve_params) is not null) {
+    self.contact_ident := get_keyword('contact_key', self.vc_event.ve_params);
+          select  CO_PERSONAL_NAME  into  contact_name  from UDDI..CONTACTS  where  CO_CONTACT_KEY = self.contact_ident;
+          self.contact_name := contact_name;
+
+  }
+   if (get_keyword('service_key', self.vc_event.ve_params) is not null) {
+    self.service_ident := get_keyword('service_key', self.vc_event.ve_params);
+          select BS_NAME into service_name  from UDDI..BUSINESS_SERVICE   where  BS_SERVICE_KEY  = self.service_ident;
+          self.service_name := service_name;
+  }
+  if (get_keyword('binding_key', self.vc_event.ve_params) is not null) {
+    declare access_point, redirector varchar;
+    self.binding_ident := get_keyword('binding_key', self.vc_event.ve_params);
+    select BT_ACCESS_POINT ,  BT_HOSTING_REDIRECTOR  into access_point, redirector  from UDDI..BINDING_TEMPLATE where   BT_BINDING_KEY = get_keyword('binding_key', self.vc_event.ve_params);
+    if (redirector is not null) {
+        declare binding_value varchar;
+        select BS_NAME into binding_value  from  UDDI..BUSINESS_SERVICE   where BS_SERVICE_KEY = redirector;
+         self.binding_name :=  binding_value;
+    } else if (access_point is not null) {
+        self.binding_name :=  access_point;
+    }
+
+
+  }
+                   ]]></v:script>
+                  </v:before-data-bind>
+
+</v:template>
+<v:template name="tabTemplate1" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or  get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
+      <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url12" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url13" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url14" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url15" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url16" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!-- td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url17" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td -->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back1" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+</v:template>
+<v:template name="tabTemplate2" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url21" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Services&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url23" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url24" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url25" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url26" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url27" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back2" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate3" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url31" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url32" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Contacts&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url34" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url35" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url36" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url37" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back3" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate4" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='4' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url41" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url42" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url43" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Identifiers&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url45" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url46" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url47" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back4" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate5" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='5' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url51" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url52" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url53" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url54" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Categories&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url56" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url57" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back5" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate6" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='6' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url61" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url62" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url63" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url64" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url65" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Discovery URLs&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url67" value="--'Relationships'" format="%s" url="--'uddi_serv_browse.vspx?page=7'"/>&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back6" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate7" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='7' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url71" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url72" value="--'Services'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url73" value="--'Contacts'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url74" value="--'Identifiers'" format="%s" url="--'uddi_serv_browse.vspx?page=4'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url75" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=5'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url76" value="--'Discovery URLs'" format="%s" url="--'uddi_serv_browse.vspx?page=6'"/>&nbsp;&nbsp;</nobr></td>
+                                 <!--td class="tabSelected" align="center"><nobr>&nbsp;&nbsp;Relationships&nbsp;&nbsp;</nobr></td-->
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back7" value="--'Back'" format="%s" url="--'uddi_serv.vspx?page=1'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+<!-- This is the contact items-->
+              <v:template name="tabTemplate11" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='11') then 1 else 0 end">
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url112" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url113" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url114" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back11" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate12" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='12' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url121" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;E-Mail&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url123" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url124" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back12" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate13" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='13' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url131" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url132" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Phone&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url134" value="--'Address'" format="%s" url="--'uddi_serv_browse.vspx?page=14'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back13" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate14" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='14' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url141" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=11'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url142" value="--'E-Mail'" format="%s" url="--'uddi_serv_browse.vspx?page=12'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url143" value="--'Phone'" format="%s" url="--'uddi_serv_browse.vspx?page=13'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Address&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back14" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=3'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+<!-- Service -->
+              <v:template name="tabTemplate21" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='21') then 1 else 0 end">
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url212" value="--'Bindings'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url213" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back21" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate22" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='22' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url221" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Bindings&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url223" value="--'Categories'" format="%s" url="--'uddi_serv_browse.vspx?page=23'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back22" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate23" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='23' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url231" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=21'"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url232" value="--'Bindings'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                 <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Categories&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back23" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=2'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+
+              <v:template name="tabTemplate31" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='31') then 1 else 0 end">
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Summary&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url312" value="--'Instance Info'" format="%s" url="--'uddi_serv_browse.vspx?page=32'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back31" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                                </v:template>
+              <v:template name="tabTemplate32" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='32' ) then 1 else 0 end">
+                                  <td class="page_tab" align="center"><nobr>&nbsp;&nbsp;<v:url name="b_url321" value="--'Summary'" format="%s" url="--'uddi_serv_browse.vspx?page=31'" xhtml_class="uddi"/>&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_selected" align="center"><nobr>&nbsp;&nbsp;Instance Info&nbsp;&nbsp;</nobr></td>
+                                  <td class="page_tab_empty" align="right" width="100%"><nobr>&nbsp;&nbsp;<v:url xhtml_class="uddi" name="b_url_back32" value="--'Back'" format="%s" url="--'uddi_serv_browse.vspx?page=22'"/>&nbsp;&nbsp;</nobr></td>
+                               </v:template>
+                            </tr>
+                    </table>
+                <table cellpadding="10" cellspacing="0" width="100%" class="tab_page">
+                       <tr height="32">
+                            <td valign="top">
+<!-- Business Details-->
+            <v:template name="det_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='1'  or  get_keyword('page', control.vc_page.vc_event.ve_params) is null ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  Summary provides you  the  business name, business owner, and a brief description of this business.
+                 </td></tr>
+               </table>
+              <br/>
+
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id, auth_name, business_name, provider_name, owner_name , u_name, u_full_name varchar;
+                  declare owner_id, cnt integer;
+                  business_id := self.uuid_value;
+                  -- get_keyword('id', control.vc_page.vc_event.ve_params);
+                  select BE_AUTHORIZED_NAME, BE_OPERATOR,  BE_NAME , BE_OWNER  into auth_name, provider_name, business_name, owner_id  from UDDI..BUSINESS_ENTITY where  BE_BUSINESS_KEY = business_id;
+                  select U_NAME, U_FULL_NAME   into u_name, u_full_name from SYS_USERS  where  U_ID=owner_id;
+
+                      if (u_full_name  is not null )
+                        owner_name:= u_full_name;
+                      else
+                        owner_name:= u_name;
+
+                    http('<tr><td class="SubInfo"><b>Business Name</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(business_name);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                    http('<tr><td class="SubInfo"><b>Business UUID Key</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(business_id);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                    http('<tr><td class="SubInfo"><b>Owner name</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(owner_name);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                    http('<tr><td class="SubInfo"><b>Business service provider</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(provider_name);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a  class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=create&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', business_id, self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo" ><table border="0" width="100%" cellpadding="2" cellspacing="2">');
+                    cnt := 0;
+                    for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  business_id and UD_TYPE = 'businessEntity' do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(UD_DESC);
+                        http('</td>');
+                        http('<td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td><td  class="listing_col_action">');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessEntity&mode=edit&page_back=1&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  description(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No descriptions found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+            </v:template>
+            <v:template name="service_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='2'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  View service details, categorizations, and access points.
+                 </td></tr>
+               </table>
+              <br/>
+
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id varchar;
+                  declare owner_id, cnt integer;
+                  business_id := self.uuid_value;
+
+                  http('<tr><td class="SubInfo"><table border="0" width="100%"  cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Services</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=service&mode=create&page_back=2&business_key=%s&sid=%s&realm=%s\r\n">Add</a>', business_id, self.sid ,self.realm));
+
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+                    for select  BS_NAME , BS_OWNER, BS_SERVICE_KEY   from UDDI..BUSINESS_SERVICE where BS_BUSINESS_KEY =business_id  do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(BS_NAME );
+
+                      http('</td><td class="SubInfo"><a  class="uddi" href="');
+                      http(sprintf('uddi_remove.vspx?page=service&page_back=2&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http('">Delete</a></td>');
+                      http('</td><td class="SubInfo"><a  class="uddi" href="');
+                      http(sprintf('uddi_serv_create.vspx?page=service&mode=edit&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http('">Edit</a></td>');
+
+                      http('<td class="SubInfo"><a class="uddi" href="');
+                      http(sprintf('uddi_serv_browse.vspx?page=21&service_key=%s&sid=%s&realm=%s\r\n', BS_SERVICE_KEY, self.sid ,self.realm ));
+                      http('">Details</a></td>');
+
+
+                        http('</tr>');
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  Services(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No Services found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+            </v:template>
+
+            <v:template name="contact_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='3'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo" width="100%">
+                  Contacts provide you  the  number of the ways in order to contact with provider.
+                 </td></tr>
+               </table>
+              <br/>
+
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                  <tr><td class="ListHeader" width="50%"><b>Contact to:</b></td>
+                      <td class="ListHeader" width="50%" colspan="3"/>
+                      <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_contact_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=contact&mode=create&business_key=%s',self.uuid_value)"/>
+                      </td>
+                  </tr>
+              <?vsp
+
+              for select  CO_CONTACT_KEY, CO_USE_TYPE,  CO_PERSONAL_NAME from UDDI..CONTACTS where CO_BUSINESS_ID = self.uuid_value  do {
+                http('<tr>');
+                http('<td class="SubInfo" width="50%">');
+                http(CO_PERSONAL_NAME);
+                http('</td>');
+
+                http('<td class="SubInfo" width="50%">');
+                http(CO_USE_TYPE);
+                http('</td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_remove.vspx?page=contact&page_back=3&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http('">Delete</a></td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_serv_create.vspx?page=contact&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http('">Edit</a></td>');
+
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_serv_browse.vspx?page=11&contact_key=%s&sid=%s&realm=%s\r\n', CO_CONTACT_KEY, self.sid ,self.realm ));
+                http('">Details</a></td>');
+
+                http('</tr>');
+              }
+              ?>
+              </table>
+                 <?vsp
+                   if ( not exists (select 1  from UDDI..CONTACTS where CO_BUSINESS_ID = self.uuid_value ) )  {
+                  http('No Contacts found');
+                 }
+                 ?>
+
+            </v:template>
+
+            <v:template name="ident_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='4'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                    An identifier is a reference to a company-wide identification scheme that logically groups providers using a common form of identification,
+                    such as a cost code or D-U-N-S Number. Identifiers are optional descriptions intended to enhance the discovery of business providers.
+                </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id, tmodel_name   varchar;
+                  declare  cnt integer;
+                  business_id := self.uuid_value;
+
+                    -- http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Identifiers</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&owner=businessEntity&mode=create&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+
+
+                    for select  IB_IDENTIFIER_KEY, IB_TMODEL_KEY_ID, IB_KEY_NAME, IB_KEY_VALUE from UDDI..IDENTIFIER_BAG  where  IB_PARENT_ID  =  business_id and  IB_PARENT_TYPE = 'businessEntity' do {
+                        select  TM_NAME into tmodel_name from UDDI..TMODEL where TM_TMODEL_KEY = IB_TMODEL_KEY_ID;
+                        http('<tr><td class="SubInfo" width="100%">Identification Scheme: ');
+                        http(tmodel_name);
+                        http('</td><td class="SubInfo">');
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=identify&mode=delete&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=identify&mode=edit&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  IB_IDENTIFIER_KEY , self.sid ,self.realm));
+                        http('</td></tr>');
+                        http('<tr><td class="SubInfo" width="100%">Key Name: ');
+                        http(IB_KEY_NAME);
+                        http('</td></tr>');
+
+                        http('<tr><td class="SubInfo" width="100%">Key Value: ');
+                        http(IB_KEY_VALUE);
+                        http('</td></tr>');
+
+
+                        http('<tr><td><br/></td></tr>');
+
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  identifier(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No identifiers found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+
+            <v:template name="category_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='5'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  A categorization scheme is a predefined set of categories, derived from an internal or external hierarchy, that can be used to classify a business provider.
+                </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id, tmodel_name   varchar;
+                  declare  cnt integer;
+                  business_id := self.uuid_value;
+
+                    -- http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Categories</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessEntity&mode=create&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+
+
+                    for select  CB_CATEGORY_KEY, CB_TMODEL_KEY_ID, CB_KEY_NAME, CB_KEY_VALUE from UDDI..CATEGORY_BAG   where  CB_PARENT_ID  =  business_id and  CB_PARENT_TYPE = 'businessEntity' do {
+                        select  TM_NAME into tmodel_name from UDDI..TMODEL where TM_TMODEL_KEY = CB_TMODEL_KEY_ID;
+                        http('<tr><td class="SubInfo" width="100%">Categorization Scheme: ');
+                        http(tmodel_name);
+                        http('</td><td class="SubInfo">');
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=5&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http('</td></tr>');
+                        http('<tr><td class="SubInfo" width="100%">Key Name: ');
+                        http(CB_KEY_NAME);
+                        http('</td></tr>');
+
+                        http('<tr><td class="SubInfo" width="100%">Key Value: ');
+                        http(CB_KEY_VALUE);
+                        http('</td></tr>');
+
+
+                        http('<tr><td><br/></td></tr>');
+
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  category(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No categories found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+            </v:template>
+
+            <v:template name="discovery_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='6'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                    A discovery URL points to an HTTP-accessible resource that provides additional technical or descriptive information about a business provider.
+                </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id varchar;
+                  declare  cnt integer;
+                  business_id := self.uuid_value;
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Discovery URLs</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&owner=businessEntity&mode=create&page_back=4&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  business_id , self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+
+                    for select   DU_DISCOVERY_KEY, DU_URL, DU_USE_TYPE  from UDDI..DISCOVERY_URL where  DU_PARENT_ID  =  business_id and  DU_PARENT_TYPE = 'businessEntity' do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(sprintf('<a class="uddi" href="http://%s">%s</a>',DU_URL, DU_URL));
+                        http('</td><td class="SubInfo">');
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=discovery&mode=delete&page_back=6&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=discovery&mode=edit&page_back=6&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  DU_DISCOVERY_KEY , self.sid ,self.realm));
+                        http('</td></tr>');
+                        http('<tr><td class="SubInfo" width="100%">Use type:');
+                        http(DU_USE_TYPE);
+                        http('</td></tr>');
+
+                        http('<tr><td><br/></td></tr>');
+
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  URL(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No URLs found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+            </v:template>
+
+            <v:template name="relations_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='7'  ) then 1 else 0 end">
+            </v:template>
+
+            <v:template name="contact_summary_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='11'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  Summary provides  the name and a brief description of this contact.
+                  The  type of use specifies the type of support this contact is intended to provide.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare contact_id, contact_name, use_type  varchar;
+                  declare owner_id, cnt integer;
+                  contact_id := self.contact_ident;
+                  select CO_PERSONAL_NAME, CO_USE_TYPE into contact_name, use_type  from UDDI..CONTACTS  where  CO_CONTACT_KEY = contact_id;
+
+                    http('<tr><td class="SubInfo"><b>Contact Name</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(contact_name);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                    http('<tr><td class="SubInfo"><b>Contact type</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(use_type );
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=create&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', contact_id, self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+                    for select  UD_LANG ,   UD_DESC , UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  contact_id and UD_TYPE = 'contacts' do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(UD_DESC);
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=contacts&mode=edit&page_back=11&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  description(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No descriptions found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+            <v:template name="contact_email_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='12'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  Contact E-Mail Addresses.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="ListHeader" width="100%" colspan="4" ><b>E-Mails</b></td>
+                  <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_contact_email_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=email&mode=create&contact_key=%s',self.contact_ident)"/>
+                  </td>
+                </tr>
+              <?vsp
+                { declare contact_id  varchar;
+                  declare cnt  integer;
+
+                  contact_id := self.contact_ident;
+                    cnt:=0;
+                  for select EM_EMAIL_KEY, EM_ADDR as email_addr,  EM_USE_TYPE as use_type from UDDI..EMAIL  where  EM_CONTACT_KEY = contact_id do {
+
+                        http('<tr><td class="SubInfo">');
+                        http(sprintf('<a class="uddi" href=mailto:%s>%s</a>',email_addr,email_addr));
+                        http('</td>');
+                        http('<td class="SubInfo">');
+                        http(use_type );
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=email&page_back=12&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', EM_EMAIL_KEY, self.sid ,self.realm));
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=email&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', EM_EMAIL_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt+1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  E-Mail(s)  found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No E-Mails found</td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+
+            <v:template name="contact_phone_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='13'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  This provides  the number of phones  to contact.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="ListHeader" width="100%" colspan="4"><b>Phones</b></td>
+                  <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_contact_phone_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=phone&mode=create&contact_key=%s',self.contact_ident)"/>
+                  </td>
+                </tr>
+              <?vsp
+                { declare contact_id, phone, use_type  varchar;
+                  declare cnt  integer;
+
+                  contact_id := self.contact_ident;
+                    cnt:=0;
+
+                  for select PH_PHONE_KEY, PH_PHONE as phone, PH_USE_TYPE  as use_type from UDDI..PHONE  where  PH_CONTACT_KEY = contact_id do {
+
+                        http('<tr><td class="SubInfo">');
+                        http(phone);
+                        http('</td>');
+                        http('<td class="SubInfo">');
+                        http(use_type );
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=phone&page_back=13&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', PH_PHONE_KEY, self.sid ,self.realm));
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=phone&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', PH_PHONE_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt+1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  Phone(s)  found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No Phones were found</td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+
+            <v:template name="contact_address_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='14'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  This provides  the address to  contact.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="ListHeader" width="100%" colspan="4" ><b>Addresses</b></td>
+                  <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_contact_address_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=address&mode=create&contact_key=%s',self.contact_ident)"/>
+                  </td>
+                </tr>
+              <?vsp
+                { declare contact_id, address, use_type  varchar;
+                  declare cnt  integer;
+
+                  contact_id := self.contact_ident;
+                    cnt:=0;
+
+                  for select AL_ADDRESS_KEY, AL_LINE   as address, AL_USE_TYPE as use_type from UDDI..ADDRESS_LINE  where  AL_PARENT_ID  = contact_id do {
+                        http('<tr><td class="SubInfo">');
+                        http(address);
+                        http('</td>');
+                        http('<td class="SubInfo">');
+                        http(use_type );
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=address&page_back=14&contact_key=%s&sid=%s&realm=%s\r\n">Delete</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
+                        http('</td><td>');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=address&mode=edit&contact_key=%s&sid=%s&realm=%s\r\n">Edit</a>', AL_ADDRESS_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt+1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  Address line(s)  found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No Address lines were found</td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+<!-- Service Summary-->
+            <v:template name="service_summary_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='21'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  Summary provides the name and a brief description of this service.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare service_id, service_name  varchar;
+                  declare owner_id, cnt integer;
+                  service_id := self.service_ident;
+                  select BS_NAME into service_name  from UDDI..BUSINESS_SERVICE   where  BS_SERVICE_KEY  = service_id;
+
+                    http('<tr><td class="SubInfo"><b>Service Name</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                    http(service_name);
+                    http('</td></tr>');
+
+                    http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=create&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', service_id, self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+                    for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  service_id and UD_TYPE = 'businessService' do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(UD_DESC);
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=businessService&mode=edit&page_back=21&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  description(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No descriptions found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+<!-- Service Binding-->
+            <v:template name="service_binding_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='22'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  View one or more access points for this service by clicking a binding name. You can then view interfaces and instance information published for that binding.
+                </td></tr>
+               </table><br/>
+
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                  <tr><td class="ListHeader" width="50%"><b>Bounded services</b></td>
+                      <td class="ListHeader" width="50%" colspan="3"/>
+                      <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_binding_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=binding&mode=create&binding_service_key=%s', self.service_ident )"/>
+                      </td>
+                  </tr>
+              <?vsp
+              declare  cnt integer;
+              declare service_bound_name, business_bound_name  varchar;
+              cnt:=0;
+              for select   BT_BINDING_KEY,  BT_ACCESS_POINT,  BT_HOSTING_REDIRECTOR, BT_URL_TYPE from UDDI..BINDING_TEMPLATE where  BT_SERVICE_KEY = self.service_ident  do {
+                http('<tr>');
+                http('<td class="SubInfo" width="50%">');
+                if (BT_ACCESS_POINT is not null) {
+                http(BT_ACCESS_POINT);
+                } else if (BT_HOSTING_REDIRECTOR is not null) {
+                  select BS_NAME, BE_NAME  into service_bound_name, business_bound_name  from UDDI..BUSINESS_SERVICE  join UDDI..BUSINESS_ENTITY on  BE_BUSINESS_KEY = BS_BUSINESS_KEY  where BS_SERVICE_KEY    = BT_HOSTING_REDIRECTOR;
+                  http(service_bound_name);
+                }
+                http('</td>');
+
+                http('<td class="SubInfo" width="50%">');
+                if (BT_ACCESS_POINT is not null and BT_URL_TYPE is not null ) {
+                  http(BT_URL_TYPE);
+                }
+                http('</td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_remove.vspx?page=binding&page_back=22&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http('">Delete</a></td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_serv_create.vspx?page=binding&mode=edit&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http('">Edit</a></td>');
+
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_serv_browse.vspx?page=31&binding_key=%s&sid=%s&realm=%s\r\n', BT_BINDING_KEY, self.sid ,self.realm ));
+                http('">Details</a></td>');
+                cnt := cnt +1;
+                http('</tr>');
+                if (BT_HOSTING_REDIRECTOR is not null) {
+                  http('<tr><td class="SubInfo">of ');
+                  http(business_bound_name);
+                  http(' business</td></tr>');
+                }
+              }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  binding(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No bindings found</td></tr>');
+
+
+              ?>
+              </table>
+            </v:template>
+
+<!-- Service Categories-->
+            <v:template name="service_category_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='23'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  A categorization scheme is a predefined set of categories, derived from an internal or external hierarchy, that can be used to classify a  service.
+                </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare business_id, tmodel_name   varchar;
+                  declare  cnt integer;
+                  business_id := self.uuid_value;
+
+                    -- http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Categories</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&owner=businessService&mode=create&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>',  self.service_ident , self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+
+
+                    for select  CB_CATEGORY_KEY, CB_TMODEL_KEY_ID, CB_KEY_NAME, CB_KEY_VALUE from UDDI..CATEGORY_BAG   where  CB_PARENT_ID  =  self.service_ident  and  CB_PARENT_TYPE = 'businessService' do {
+                        select  TM_NAME into tmodel_name from UDDI..TMODEL where TM_TMODEL_KEY = CB_TMODEL_KEY_ID;
+                        http('<tr><td class="SubInfo" width="100%">Categorization Scheme: ');
+                        http(tmodel_name);
+                        http('</td><td class="SubInfo">');
+                        http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=category&mode=delete&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                      http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=category&mode=edit&page_back=23&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>',  CB_CATEGORY_KEY , self.sid ,self.realm));
+                        http('</td></tr>');
+                        http('<tr><td class="SubInfo" width="100%">Key Name: ');
+                        http(CB_KEY_NAME);
+                        http('</td></tr>');
+
+                        http('<tr><td class="SubInfo" width="100%">Key Value: ');
+                        http(CB_KEY_VALUE);
+                        http('</td></tr>');
+
+
+                        http('<tr><td><br/></td></tr>');
+
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  category(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No categories found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+            </v:template>
+
+<!-- Binding Summary-->
+            <v:template name="binding_summary_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='31'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  Summary present the access point, protocol supported, and a brief description of the binding.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+              <?vsp
+                { declare binding_id, access_point, url_type, redirector, service_bound_name , business_bound_name  varchar;
+                  declare owner_id, cnt integer;
+                  binding_id := self.binding_ident;
+                  select BT_ACCESS_POINT, BT_URL_TYPE ,  BT_HOSTING_REDIRECTOR  into access_point, url_type, redirector  from UDDI..BINDING_TEMPLATE where  BT_BINDING_KEY =binding_id;
+                  if (access_point is not null) {
+                      http('<tr><td class="SubInfo"><b>Access Point:</b></td></tr>');
+                      http('<tr><td class="SubInfo">');
+                      http(access_point);
+                      http('</td></tr>');
+                      http('<tr><td class="SubInfo"><b>URL type</b></td></tr>');
+                      http('<tr><td class="SubInfo">');
+                      http(url_type);
+                      http('</td></tr>');
+                  } else if (redirector is not null) {
+                  select BS_NAME, BE_NAME  into service_bound_name, business_bound_name  from UDDI..BUSINESS_SERVICE  join UDDI..BUSINESS_ENTITY on  BE_BUSINESS_KEY = BS_BUSINESS_KEY  where BS_SERVICE_KEY    = redirector;
+                    http('<tr><td class="SubInfo"><b>Bounded to Business Name:</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                  http(business_bound_name);
+                    http('</td></tr>');
+
+
+                    http('<tr><td class="SubInfo"><b>Service Name</b></td></tr>');
+                    http('<tr><td class="SubInfo">');
+                  http(service_bound_name);
+                    http('</td></tr>');
+                  }
+                    http('<tr><td><br/></td></tr>');
+
+                  http('<tr><td class="SubInfo"><table border="0"  width="100%" cellpadding="2" cellspacing="0">');
+                    http('<tr><td class="ListHeader" width="100%"><b>Descriptions</b></td> <td class="HeaderButton" align="right">');
+                    http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=create&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Add</a>', binding_id, self.sid ,self.realm));
+                    http('</td></tr>');
+                    http('<tr><td class="SubInfo"><table border="0" width="100%" cellpadding="2" cellspacing="0">');
+                    cnt := 0;
+                    for select  UD_LANG ,   UD_DESC, UD_DESCRIPTION_KEY  from UDDI..DESCRIPTION  where UD_PARENT_ID =  binding_id and UD_TYPE = 'bindingTemplate' do {
+                        http('<tr><td class="SubInfo" width="100%">');
+                        http(UD_DESC);
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_remove.vspx?page=description&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Delete</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td><td class="SubInfo">');
+                          http(sprintf('<a class="uddi" href="uddi_serv_create.vspx?page=description&owner=bindingTemplate&mode=edit&page_back=31&uuid_key=%s&sid=%s&realm=%s\r\n">Edit</a>', UD_DESCRIPTION_KEY, self.sid ,self.realm));
+                        http('</td></tr>');
+                        cnt := cnt + 1;
+                    }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  description(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No descriptions found</td></tr>');
+
+                    http('</table></td></tr>');
+                    http('</table></td></tr>');
+                 }
+              ?>
+              </table>
+
+            </v:template>
+<!-- Binding Infos-->
+            <v:template name="binding_infos_template" type="simple" enabled="--case when ( get_keyword('page', control.vc_page.vc_event.ve_params) ='32'  ) then 1 else 0 end">
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                <tr><td class="SubInfo">
+                  An Instance Info typically references an interface tModel and can include technical information such as instance parameters and interface specifications.
+                 </td></tr>
+               </table>
+              <br/>
+               <table border="0"  width="100%" cellpadding='2' cellspacing='0' >
+                  <tr><td class="ListHeader" width="50%"><b>Instance Infos</b></td>
+                      <td class="ListHeader" width="50%" colspan="4"/>
+                      <td class="HeaderButton" align="center">
+                        <v:url xhtml_class="uddi" name="b_url_instance_info_create" value="--'Add'" format="%s" url="--sprintf('uddi_serv_create.vspx?page=instance_info&mode=create&binding_key=%s', self.binding_ident )"/>
+                      </td>
+                  </tr>
+              <?vsp
+              declare  cnt integer;
+              declare tmodel_name  varchar;
+              cnt:=0;
+              for select   ID_KEY, ID_TMODEL_KEY,  ID_PARMS from  UDDI..INSTANCE_DETAIL  where  ID_BINDING_KEY = self.binding_ident  do {
+                select TM_NAME   into tmodel_name from UDDI..TMODEL   where  TM_TMODEL_KEY   = ID_TMODEL_KEY;
+                http('<tr>');
+                http('<td class="SubInfo">');
+                http(ID_PARMS);
+                http('</td>');
+
+                http('<td class="SubInfo">');
+                http(tmodel_name);
+                http('</td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_remove.vspx?page=instance_info&page_back=32&instance_key=%s&sid=%s&realm=%s\r\n', ID_KEY, self.sid ,self.realm ));
+                http('">Delete</a></td>');
+
+                http('<td class="SubInfo"><a  class="uddi" href="');
+                http(sprintf('uddi_serv_create.vspx?page=instance_info&mode=edit&instance_key=%s&sid=%s&realm=%s\r\n', ID_KEY, self.sid ,self.realm ));
+                http('">Edit</a></td>');
+                cnt := cnt +1;
+                http('</tr>');
+              }
+                    if  (cnt > 0) {
+                      http('<tr><td class="SubInfo">');
+                      http(sprintf('%d  instance info(s) found</td></tr>',cnt));
+                    } else
+                      http('<tr><td class="SubInfo">No instance infos found</td></tr>');
+
+
+              ?>
+              </table>
+
+            </v:template>
+
+
+
+                          </td>
+                        </tr>
+                  </table>
+              </td>
+          </tr>
+        </table>
+  </td>
+    </tr>
+    </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

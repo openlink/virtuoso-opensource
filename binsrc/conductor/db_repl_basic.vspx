@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_basic" decor="yacutia_decor.vspx" style="yacutia_style.xsl" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="repl_basic_error_str" type="varchar" persist="1" default="null"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="Basic" value="Basic Snapshot"/>
+    </vm:menu>
+    <vm:header caption="Basic Snapshot Replication"/>
+    <vm:pagebody vdb_check="1">
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="page_tab_selected" align="center">Query(Table select) to Remote</td>
+          <td class="page_tab" align="center">
+            <v:url name="b_url31" value="Query(Table select) to Local" url="db_repl_basic_local.vspx"/>
+          </td>
+          <td class="page_tab_empty"></td>
+        </tr>
+      </table>
+      <table class="tab_page">
+        <tr>
+          <td>
+            <v:form name="db_repl_snap_frm1" action="db_repl_basic.vspx" method="POST" type="simple">
+              <div class="listing_top_ctl_grp">
+                <v:button action="simple" value="Create New Snapshot" name="ds_set1_cr">
+                  <v:on-post>
+                    <v:script>
+                      <![CDATA[
+                        self.vc_redirect('db_repl_basic_create.vspx');
+                      ]]>
+                    </v:script>
+                  </v:on-post>
+                </v:button>
+              </div>
+              <div class="scroll_area">
+                <table class="listing" rules="groups">
+                  <thead>
+                    <tr class="listing_header_row">
+                      <th class="checkbox">
+                        <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this)"/>
+                      </th>
+                      <th width="16px" />
+                      <th>Source Query</th>
+                      <th>Destination Attached Table</th>
+                      <th>Replicated on</th>
+                      <th>Interval</th>
+                    </tr>
+                  </thead>
+                  <?vsp
+                    declare _ex integer;
+                    declare _sch varchar;
+
+                    _ex := 0;
+                    for select SN_QUERY as qry, SN_NAME as dst, SN_LAST_TS as ts, RT_DSN from SYS_SNAPSHOT, SYS_REMOTE_TABLE where SN_NAME = RT_NAME and SN_IS_INCREMENTAL is null do
+                    {
+                      _sch := coalesce ((select yac_hum_min_to_dur(SE_INTERVAL) from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT ' || dst), 'none');
+                      _ex := _ex + 1;
+                  ?>
+                  <tr>
+                    <td class="listing_col">
+                      <input type="checkbox" name="TB_<?V dst ?>" />
+                    </td>
+                    <td class="listing_col">
+                      <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                    </td>
+                    <td class="listing_col">
+                      <?V qry ?>
+                    </td>
+                    <td class="listing_col">
+                      <?V dst ?>
+                    </td>
+                    <td class="listing_col">
+                      <?V RT_DSN ?>
+                    </td>
+                    <td class="listing_col">
+                      <?V _sch ?>
+                    </td>
+                  </tr>
+                  <?vsp
+                    }
+                    if (_ex = 0)
+                    {
+                      http ('<tr><td colspan="6" class="Attention">No snapshot replications</td></tr>');
+                    }
+                  ?>
+                 </table>
+              </div>
+              <?vsp
+                if (_ex <> 0)
+                {
+              ?>
+              <div class="listing_bot_ctl_grp">
+                <label for="interval">Schedule Interval</label>
+                <input type="text" name="interval" value="10" size="5" id="interval"/>
+                <v:button action="simple" value="Schedule" name="sch_but">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _int integer;
+                      declare idx integer;
+                      declare item varchar;
+                      _int := atoi(get_keyword('interval', params, '10'));
+                      while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        if (_int > 0)
+                          insert replacing SYS_SCHEDULED_EVENT(SE_NAME, SE_START, SE_INTERVAL, SE_SQL) values('UPDATE SNAPSHOT ' || item, now (), _int,  sprintf ('UPDATE SNAPSHOT "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)));
+                        else
+                          delete from SYS_SCHEDULED_EVENT where SE_NAME = 'UPDATE SNAPSHOT ' || item;
+                      }
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <br/>
+                <v:button action="simple" value="Synchronize" name="synch_but">
+                  <v:on-post>
+                    <![CDATA[
+                      declare idx, _cnt integer;
+                      declare item, m_dta, _stat, _msg varchar;
+                      _stat := '00000';
+                      while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        exec (sprintf ('update snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                      }
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Remove" name="remove_but">
+                  <v:on-post>
+                    <![CDATA[
+                      declare idx, _cnt integer;
+                      declare item, m_dta, _tbl, _stat, _msg, n_done varchar;
+                      _stat := '00000';
+                      n_done := 0;
+                      idx := 0;
+                      while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        commit work;
+                        exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        n_done := n_done + 1;
+                      }
+                      if (n_done = 0)
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'There are no queries selected to perform operation.';
+                      }
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" value="Remove & Drop Remote" name="drop_but">
+                  <v:on-post>
+                    <![CDATA[
+                      declare idx, _cnt integer;
+                      declare item, m_dta, _tbl, _stat, _msg, n_done varchar;
+                      _stat := '00000';
+                      idx := 0;
+                      n_done := 0;
+                      while (item := adm_next_checkbox('TB_', control.vc_page.vc_event.ve_params, idx))
+                      {
+                        for select RT_DSN as __dsn,RT_REMOTE_NAME as _tbl from SYS_REMOTE_TABLE where RT_NAME = item do
+                        {
+                          declare stmt varchar;
+                          stmt := sprintf('drop table %s', quote_dotted (__dsn, name_part (_tbl, 2)));
+                          rexecute(__dsn, stmt, _stat, _msg);
+                          if (_stat <> '00000')
+                            self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        }
+                        exec(sprintf('drop snapshot "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        commit work;
+                        exec (sprintf ('drop table "%I"."%I"."%I"', name_part(item, 0), name_part(item, 1), name_part(item, 2)), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        exec (sprintf('delete from SYS_SCHEDULED_EVENT where SE_NAME = ''%S''', 'UPDATE SNAPSHOT ' || item), _stat, _msg);
+                        if (_stat <> '00000')
+                          self.repl_basic_error_str := concat(self.repl_basic_error_str, sprintf('%s%s%s%s%s', '<tr><td>', cast(_stat as varchar), '</td><td>', cast(_msg as varchar), '</td></tr>'));
+                        n_done := n_done + 1;
+                      }
+                      if (n_done = 0)
+                      {
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := 'There are no queries selected to perform operation.';
+                      }
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+              <?vsp
+                }
+              ?>
+            </v:form>
+          </td>
+        </tr>
+      </table>
+
+      <v:template name="error_template" type="simple">
+        <?vsp
+          if (length(self.repl_basic_error_str) > 1)
+          {
+        ?>
+        <table class="warning">
+          <tr>
+            <th colspan="2">
+              Error during last changes
+            </th>
+          </tr>
+          <tr>
+            <th>
+              SQL State
+            </th>
+            <th>
+              Error Message
+            </th>
+          </tr>
+          <?vsp
+            http(self.repl_basic_error_str);
+          ?>
+        </table>
+        <?vsp
+          }
+          self.repl_basic_error_str := '';
+        ?>
+      </v:template>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

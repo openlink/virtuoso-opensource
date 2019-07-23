@@ -1,0 +1,116 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  $Id$
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
+-->
+<html>
+  <head>
+    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+    <title>Get FB session</title>
+  </head>
+  <body>
+    <v:page name="fb_popup" style="yacutia_style.xsl"
+      fast-render="1"
+      doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+      xmlns:v="http://www.openlinksw.com/vspx/"
+      xmlns:xhtml="http://www.w3.org/1999/xhtml"
+      xmlns:vm="http://www.openlinksw.com/vspx/macro">
+      <v:variable name="pageno" default="1" type="int" />
+      <v:variable name="sess" default="''" type="varchar" />
+      <h1>FB permanent session generation</h1>
+      <v:template type="simple" condition="not self.vc_is_valid">
+	  <div class="validator_err_ctr">
+	      <h2>Invalid data entered</h2>
+	      <p><v:error-summary/></p>
+	  </div>
+      </v:template>
+      <v:template condition="self.pageno = 2 and length (self.api_key.ufl_value)" type="simple">
+	  <h2>In the frame bellow follow instructions and when one-time access code is shown enter in the form bellow</h2>
+	  <iframe src="http://www.facebook.com/code_gen.php?v=1.0&api_key=<?U self.api_key.ufl_value ?>" height="480" width="800">
+	      Your browser does not support IFRAMEs
+	  </iframe>
+      </v:template>
+      <v:form type="simple" method="POST" action="">
+	  <v:template condition="self.pageno = 1" type="simple">
+	      <div>Enter your FaceBook API key:</div>
+	      <label>API key</label>
+	      <v:text name="api_key" value="" xhtml_size="70"/><br/>
+	      <v:button action="simple" name="bt1" value="Get token">
+		  <v:on-post>
+		      if (not length (self.api_key.ufl_value))
+		        {
+			  self.vc_is_valid := 0;
+			  self.vc_error_message := 'The API key is empty';
+			}
+	              else
+                        {
+		          self.pageno := 2;
+			}
+		  </v:on-post>
+	      </v:button>
+	  </v:template>
+
+	  <v:template condition="self.pageno = 3 and self.vc_is_valid" type="simple">
+	      <div>Your permanent FB session key is: <?V self.sess ?></div>
+	      <div>Copy an paste the shown code in the FB RDF Mapper 'session' option, then can close this window</div>
+	  </v:template>
+
+	  <v:template condition="self.pageno = 2 and length (self.api_key.ufl_value)" type="simple">
+	      <label>Authentication Token</label>
+	      <v:text name="auth_key" value=""/><br/>
+	      <label>Secret</label>
+	      <v:text name="secret" value=""  xhtml_size="70"/><br/>
+	      <v:button action="simple" name="bt" value="Generate session">
+		  <v:on-post><![CDATA[
+		      declare url, sig, pars, rc, auth_tok any;
+		      declare myurl varchar;
+
+		      if (length (self.auth_key.ufl_value) = 0 or length (self.secret.ufl_value) = 0)
+		        {
+			  self.vc_is_valid := 0;
+			  self.vc_error_message := 'You must enter the token and secret';
+			  return;
+		        }
+
+		      self.pageno := 3;
+
+		      url := 'http://api.facebook.com/restserver.php?';
+		      pars := 'method=facebook.auth.getSession&api_key=' || self.api_key.ufl_value ||
+		      '&v=1.0&auth_token=' || self.auth_key.ufl_value;
+		      sig := FB_SIG (pars, self.secret.ufl_value);
+		      url := url || pars || '&sig=' || sig;
+		      rc := http_get (url);
+		      self.sess := xpath_eval ('string(/auth_getSession_response/session_key)', xtree_doc (rc));
+		      if (not length (self.sess))
+		        {
+			  self.vc_is_valid := 0;
+		          self.vc_error_message := 'Invalid tokens are entered, please close this window and try again';
+			}
+		      ]]></v:on-post>
+	      </v:button>
+	  </v:template>
+      </v:form>
+    </v:page>
+  </body>
+</html>

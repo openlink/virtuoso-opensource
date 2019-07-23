@@ -1,0 +1,972 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2019 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="db_repl_basic_local_create"
+  decor="yacutia_decor.vspx"
+  style="yacutia_style.xsl"
+  vm:owner="yacutia_db_repl_page"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="template_to_open" type="any" default="null"/>
+      <v:variable name="qual" type="any" persist="0" default="null"/>
+      <v:variable name="own" type="any" persist="0" default="null"/>
+      <v:variable name="repl_basic_local_result_str" type="varchar" persist="1" default="''"/>
+      <v:variable name="repl_basic_local_sources" type="any" persist="1" default="null"/>
+      <v:variable name="repl_basic_local_destinations" type="any" persist="1" default="null"/>
+      <v:variable name="repl_basic_local_stage" type="integer" persist="1" default="0"/>
+      <v:variable name="repl_basic_local_running" type="integer" persist="1" default="0"/>
+      <v:variable name="repl_basic_local_autorefresh" type="integer" persist="1" default="5"/>
+      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
+      <v:variable persist="1" name="repl_basic_local_browse_cat" type="varchar" default="'DB'"/>
+      <v:variable persist="1" name="repl_basic_local_browse_sch" type="varchar" default="'DBA'"/>
+      <v:variable persist="1" name="repl_basic_local_browse_mask" type="varchar" default="'%'"/>
+      <v:variable persist="1" name="repl_basic_local_browse_table" type="integer" default="1"/>
+      <v:variable persist="temp" name="row_count" type="integer" default="1"/>
+
+      <v:variable name="sql_text" type="varchar" persist="1" default="''"/>
+
+      <v:variable name="open_edit_templ" type="integer" default="null"/>
+
+      <!-- keep the previous page rows -->
+      <v:variable name="dsrws" type="any" default="null" />
+      <v:variable name="dsbks" type="any" default="null" />
+      <!-- keep the selection -->
+      <v:variable name="selcust" type="any" default="null" />
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="vers" value="Snapshot"/>
+    </vm:menu>
+    <vm:header caption="Create Basic Snapshot Replication"/>
+    <vm:pagebody vdb_check="1">
+
+      <v:method name="check_query" arglist="in source varchar,inout state varchar, inout message varchar" returns="integer">
+        declare src_comp any;
+
+        if (-1 = exec(source, state, message, vector(), 1, src_comp, null))
+        {
+          message := sprintf('Checking source query : %s', message);
+          return 0;
+  			}
+        if (not(src_comp) or aref(src_comp, 1) = 0)
+        {
+  			  state := 'CRSN1';
+          message := 'The source query is not an select statement';
+          return 0;
+        }
+  			return 1;
+      </v:method>
+
+    <v:on-init>
+      if (self.repl_basic_local_sources is null)
+        self.repl_basic_local_sources := vector ();
+      if (self.repl_basic_local_destinations is null)
+        self.repl_basic_local_destinations := vector ();
+    </v:on-init>
+
+      <!-- Stage 0 -->
+      <table cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td class="page_tab" align="center">
+            <v:url name="b_url31" value="Query(Table select) to Remote" url="db_repl_basic.vspx"/>
+          </td>
+          <td class="page_tab_selected" align="center">Query(Table select) to Local</td>
+          <td class="page_tab_empty"></td>
+        </tr>
+      </table>
+
+      <table class="tab_page">
+        <tr>
+          <td>
+      <v:template name="scr_list_template" type="simple" enabled="-- equ(self.repl_basic_local_stage, 0)">
+        <h3>Step 1: Add Source Queries</h3>
+        <v:form name="frm2" action="db_repl_basic_local_create.vspx" method="POST" type="simple">
+          <v:data-set name="ds_src_list" data="--self.repl_basic_local_sources" meta="--vector()" nrows="1000" scrollable="1" edit="1">
+            <v:template name="temp_ds_src_list_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+              <div class="listing_top_ctl_grp">
+                <v:button action="simple" value="Add queries from tables" name="add_src_tables">
+                  <v:on-post>
+                      <![CDATA[
+                        self.selcust := vector();
+                        self.dsrws  := vector();
+                        self.repl_basic_local_stage := 11;
+                        self.vc_data_bind(e);
+                      ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button action="simple" value="Add custom query" name="add_src_query">
+                  <v:on-post>
+                      <![CDATA[
+                        self.open_edit_templ := -1;
+                        self.vc_data_bind(e);
+                      ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+	      <?vsp http('<div class="scroll_area">'); ?>
+		<table class="listing" rules="groups">
+                <thead>
+                  <tr class="listing_header_row">
+                     <th>Source Queries</th>
+                          <th class="action">Action</th>
+                  </tr>
+                </thead>
+
+                <v:template name="query_add" type="simple" name-to-remove="" set-to-remove="" enabled="--equ(self.open_edit_templ,-1)">
+                  <tr class="listing_row_odd">
+                    <td class="listing_col">
+                      <v:textarea name="row_add_query" xhtml_id="isql_query_return" value="--self.sql_text" xhtml_cols="80" xhtml_rows="5">
+                      </v:textarea>
+
+                      <?vsp
+                        http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
+                                     self.sid ,self.realm));
+                      ?>
+                    </td>
+                    <td class="listing_col_action">
+                      <v:button name="ds_src_add_cancel" action="simple" value="cancel">
+                        <v:on-post>
+                          self.open_edit_templ := null;
+                          self.vc_data_bind(e);
+                        </v:on-post>
+                      </v:button>
+                      <v:button name="ds_src_add" action="simple" value="add">
+                        <v:on-post>
+                          declare _arr any;
+                          declare _sql_query,state,message varchar;
+
+                                _sql_query := self.row_add_query.ufl_value;
+                                if (self.check_query(_sql_query,state,message))
+                                {
+                            _arr := self.repl_basic_local_sources;
+                            _arr := vector_concat(_arr,vector(_sql_query));
+                            self.repl_basic_local_sources := _arr;
+                            self.open_edit_templ := null;
+                            self.vc_data_bind(e);
+                                }
+                                else
+                                {
+                            self.vc_is_valid := 0;
+                            self.vc_error_message := message;
+                                }
+                        </v:on-post>
+                      </v:button>
+                    </td>
+                  </tr>
+                </v:template>
+	      </table>
+            </v:template>
+            <v:template name="temp_ds_src_list_repeat" type="repeat" name-to-remove="" set-to-remove="">
+              <v:template name="temp_ds_src_list_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                  <tr>
+                          <td colspan="2" class="Attention">No sources</td>
+                  </tr>
+                </table>
+              </v:template>
+
+              <v:template name="temp_ds_src_list_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                        <tr>
+                    <v:template name="query_edit" type="simple" name-to-remove="" set-to-remove="" enabled="--equ(self.open_edit_templ,self.ds_src_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr)">
+                      <td class="listing_col">
+                        <v:textarea name="row_edit_query" xhtml_id="isql_query_return" value="--(control.vc_parent.vc_parent as vspx_row_template).te_rowset" xhtml_cols="80" xhtml_rows="5">
+                        </v:textarea>
+
+                        <?vsp
+                          http (sprintf ('<input type="button" value="Use ISQL" class="" onclick="javascript: window.open (\'isql.vspx?sid=%s&realm=%s&load_sql=\' + escape(this.form.isql_query_return.value), \'browse_button1_window\', \'scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800\')"/>',
+                                       self.sid ,self.realm));
+                        ?>
+                      </td>
+                      <td class="listing_col_action">
+                        <v:button name="ds_src_list_cancel" action="simple" value="cancel">
+                          <v:on-post>
+                            self.open_edit_templ := null;
+                            self.vc_data_bind(e);
+                          </v:on-post>
+                        </v:button>
+                        <v:button name="ds_src_list_update" action="simple" value="update">
+                          <v:on-post>
+                            declare _inx integer;
+                            _inx := self.ds_src_list.ds_prev_bookmark + (control.vc_parent.vc_parent as vspx_row_template).te_ctr;
+
+                            declare _arr any;
+                            declare _sql_query,state,message varchar;
+                            _sql_query := (control.vc_parent.vc_parent.vc_find_control('query_edit').vc_find_control('row_edit_query') as vspx_textarea).ufl_value;
+
+                                  if (self.check_query(_sql_query,state,message))
+                                  {
+                              _arr := self.repl_basic_local_sources;
+                              aset(_arr,_inx,_sql_query);
+                              self.repl_basic_local_sources := _arr;
+                              self.open_edit_templ := null;
+                              self.vc_data_bind(e);
+                                  }
+                                  else
+                                  {
+                              self.vc_is_valid := 0;
+                              self.vc_error_message := message;
+                                  }
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </v:template>
+                    <v:template name="query_view" type="simple" name-to-remove="" set-to-remove="" enabled="--neq(self.open_edit_templ,self.ds_src_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr)">
+                      <td class="listing_col">
+                        <v:label name="l_src_item" value="--(control.vc_parent.vc_parent as vspx_row_template).te_rowset" format="%s"/>
+                      </td>
+                      <td class="listing_col_action">
+                        <v:button name="ds_src_list_oedit" action="simple" value="edit" style="url">
+                          <v:on-post>
+                            self.open_edit_templ := self.ds_src_list.ds_prev_bookmark + (control.vc_parent.vc_parent as vspx_row_template).te_ctr;
+                            self.vc_data_bind(e);
+                          </v:on-post>
+                        </v:button>
+                        <v:button name="ds_delete" action="simple" value="remove" style="url" >
+                          <v:on-post>
+                            declare _inx integer;
+                            _inx := self.ds_src_list.ds_prev_bookmark + (control.vc_parent.vc_parent as vspx_row_template).te_ctr;
+                            self.repl_basic_local_sources := vector_concat(
+                                                        subseq(self.repl_basic_local_sources,0,_inx),
+                                                        subseq(self.repl_basic_local_sources,_inx + 1,length(self.repl_basic_local_sources))
+                                                      );
+                            self.vc_data_bind(e);
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </v:template>
+
+                        </tr>
+                </table>
+              </v:template>
+
+            </v:template>
+
+            <v:template name="temp_ds_src_list_footer" type="simple" name-to-remove="table" set-to-remove="top">
+              <table>
+                <tr>
+                        <td colspan="2"  class="listing_col_action">
+            		    <vm:ds-navigation data-set="ds_src_list"/>
+                  </td>
+                </tr>
+	      </table>
+
+	      <?vsp http ('</div>'); ?>
+
+              <div class="listing_bot_ctl_grp">
+                <v:button name="can1_basic_local" action="simple" value="Cancel">
+                  <v:on-post>
+                    <![CDATA[
+                      self.repl_basic_local_stage := 0;
+                      self.repl_basic_local_sources  := vector();
+                      self.vc_redirect('db_repl_basic_local.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="rem_all1_basic_local" action="simple" value="Remove All">
+                  <v:on-post>
+                    <![CDATA[
+                      self.repl_basic_local_stage := 0;
+                      self.repl_basic_local_sources  := vector();
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="next1_basic_local" action="simple" value="Next">
+                  <v:on-post>
+                    <![CDATA[
+                      declare _val, _tbname, ltbq, ltbo, ltbn, _fqb_name varchar;
+
+                      self.repl_basic_local_destinations := vector();
+                            for (declare i any, i := 0; i < length(self.repl_basic_local_sources) ; i := i + 1)
+                            {
+		        _tbname := y_get_first_table_name (self.repl_basic_local_sources[i]);
+		        if (_tbname is null)
+			  _tbname := '';
+                        --rtbn := trim(quote_dotted (self.repl_basic_local_dsn, name_part (_tbname, 2)),'"');
+                        _fqb_name := complete_table_name(_tbname,1);
+                        ltbq := trim (name_part(_fqb_name,0), '"');
+                        ltbo := trim (name_part(_fqb_name,1), '"');
+                        ltbn := trim (name_part(_fqb_name,2), '"');
+
+                        self.repl_basic_local_destinations := vector_concat(self.repl_basic_local_destinations,vector(vector(1,'',ltbq,ltbo,ltbn)));
+                      }
+
+            		      if (length(self.repl_basic_local_destinations) < 1)
+          		        {
+          		          self.vc_is_valid := 0;
+                			  self.vc_error_message := 'There are no source queries';
+                			}
+                		  else
+                      {
+                        self.repl_basic_local_stage := 2;
+                        self.vc_data_bind(e);
+                        --self.repl_basic_local_sources  := vector();
+                        --self.vc_redirect('db_repl_basic_local.vspx');
+                      };
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+	  </v:data-set>
+        </v:form>
+      </v:template>
+
+      <!-- Stage 11 -->
+
+      <v:template name="tree_db_template" type="simple" enabled="-- equ(self.repl_basic_local_stage, 11)">
+        <h3>Step 1: Add Source Queries - Add Queries From Tables</h3>
+        <v:form name="db_filter_form" type="simple" method="POST" action="db_repl_basic_local_create.vspx">
+          <v:on-post>
+              <![CDATA[
+              self.repl_basic_local_stage := 11;
+
+if (self.repl_basic_local_browse_cat <> self.dl_catalog.ufl_value)
+  self.dl_schema.ufl_value := '%';
+
+self.repl_basic_local_browse_cat := self.dl_catalog.ufl_value;
+self.repl_basic_local_browse_sch := self.dl_schema.ufl_value;
+self.repl_basic_local_browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
+self.selcust := vector();
+self.dsrws  := vector();
+self.dl_schema.vc_data_bind(e);
+self.ds_tables.vc_reset();
+self.ds_tables.vc_data_bind(e);
+self.vc_data_bind(e);
+              ]]>
+          </v:on-post>
+          <table class="ctl_grp">
+            <tr>
+              <td>
+                <img src="images/icons/filter_32.png" alt="Filter" title="Filter"/>
+              </td>
+              <td>
+                Catalog
+              </td>
+              <td>
+                <v:data-list name="dl_catalog"
+                             sql="select '%' AS cat_name FROM DB.DBA.SYS_KEYS UNION
+                                  SELECT distinct name_part (KEY_TABLE, 0) from DB.DBA.SYS_KEYS
+                                   ORDER BY cat_name"
+                             key-column="cat_name" value-column="cat_name" defvalue="--self.repl_basic_local_browse_cat"
+                             xhtml_onchange="javascript:doPost(\'db_filter_form\', \'apply_filter\');"
+                />
+              </td>
+              <td align="right">
+                <v:button action="simple" name="apply_filter" value="Update Display">
+                </v:button>
+              </td>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                Schema
+              </td>
+              <td>
+                <v:data-list name="dl_schema"
+                             sql="select '%' AS sch_name FROM DB.DBA.SYS_KEYS UNION
+                                  SELECT distinct name_part (KEY_TABLE, 1) from DB.DBA.SYS_KEYS WHERE name_part (KEY_TABLE, 0) LIKE self.repl_basic_local_browse_cat
+                                   ORDER BY sch_name"
+                             key-column="sch_name" value-column="sch_name" defvalue="--self.repl_basic_local_browse_sch"
+                             xhtml_onchange="javascript:doPost(\'db_filter_form\', \'apply_filter\');"
+                />
+              </td>
+              <td/>
+            </tr>
+            <tr>
+              <td/>
+              <td>
+                Name mask
+              </td>
+              <td>
+                <v:text name="t_mask" value="--self.repl_basic_local_browse_mask"/>
+              </td>
+              <td/>
+            </tr>
+          </table>
+        </v:form>
+
+	<v:form name="frm1" action="db_repl_basic_local_create.vspx" method="POST" type="simple">
+	  <div class="scroll_area">
+          <v:data-set name="ds_tables"
+              sql="select distinct KEY_TABLE as table_name from SYS_KEYS
+              where upper(name_part (KEY_TABLE, 0)) like upper(:self.repl_basic_local_browse_cat) and upper(name_part (KEY_TABLE, 1)) like upper(:self.repl_basic_local_browse_sch) and upper(name_part (KEY_TABLE, 2)) like upper(:self.repl_basic_local_browse_mask)
+              and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL
+              order by 1"
+              nrows="1000" scrollable="1" cursor-type="keyset" edit="0" width="80" initial-enable="1">
+    	      <v:on-init>
+      	      if (self.selcust is null)
+      	        self.selcust := vector ();
+    	      </v:on-init>
+      	    <v:before-render>
+      	      -- we save here the rowset
+      	      self.dsrws := self.ds_tables.ds_row_data;
+      	    </v:before-render>
+      	    <v:on-post>
+      	      <![CDATA[
+        	      declare rows, pars, sel, i, l any;
+        	      pars := e.ve_params;
+        	      rows := self.dsrws;
+        	      l := length (rows);
+        	      sel := self.selcust;
+        	      -- 1-st we take out from rowset in the selection list
+        	      for (i := 0; i < l; i := i + 1)
+      	        {
+      	          declare elm, pos, lef, rig any;
+            		  elm := rows[i];
+            		  pos := position (elm[0], sel);
+            		  if (pos)
+          		    {
+          		      lef := subseq (sel, 0, pos - 1);
+          		      rig := subseq (sel, pos, length (sel));
+          		      sel := vector_concat (lef, rig);
+          		    }
+            		}
+        	      l := length (pars);
+        	      -- secondly we put all that are selected in the selection list
+        	      for (i := 0; i < l; i := i + 2)
+      	        {
+            		  if (pars[i] = 'tbl' and not(position(pars[i+1],sel)))
+          		      sel := vector_concat (sel, vector (pars[i+1]));
+            		}
+        	      self.selcust := sel;
+      	      ]]>
+      	    </v:on-post>
+
+            <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+              <table class="listing" rules="groups">
+                <thead>
+                  <tr class="listing_header_row">
+                           <th class="checkbox">
+                       <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)"/>
+                     </th>
+                           <th width="16px"/>
+                     <th>Name</th>
+                  </tr>
+                </thead>
+              </table>
+            </v:template>
+            <v:template name="temp_ds_tables_repeat" type="repeat" name-to-remove="" set-to-remove="">
+              <v:template name="temp_ds_tables_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                  <tr>
+                          <td colspan="3" class="Attention">No tables match the criteria</td>
+                  </tr>
+                </table>
+              </v:template>
+
+              <v:template name="temp_ds_tables_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                        <tr>
+                    <td class="listing_col">
+                			<v:check-box name="cb01" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" group-name="tbl">
+                			  <v:before-render>
+                			    -- this is needed because 'checked' attribute is set via post
+                			    -- but we need to set it explicitly
+                			    -- this is also could be done via xhtml_checked="--(..)"
+                			    control.ufl_selected := case when position ((control.vc_parent as vspx_row_template).te_rowset[0], self.selcust) then 1 else 0 end;
+                			  </v:before-render>
+                			</v:check-box>
+                    </td>
+                    <td class="listing_col">
+                      <img src="images/icons/table_16.png" alt="Table" title="Table"/>
+                    </td>
+                    <td class="listing_col">
+                      <v:label name="l_table_name" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+                    </td>
+                        </tr>
+                </table>
+              </v:template>
+            </v:template>
+            <v:template name="temp_ds_tables_footer" type="simple" name-to-remove="table" set-to-remove="top">
+              <table>
+                <tr>
+                  <td colspan="3"  class="listing_col_action">
+            		    <vm:ds-navigation data-set="ds_tables"/>
+                  </td>
+                </tr>
+              </table>
+            </v:template>
+	  </v:data-set>
+	</div>
+              <div class="listing_bot_ctl_grp">
+                <v:button name="can1_repl" action="simple" value="Cancel">
+                  <v:on-post>
+                    <![CDATA[
+                      self.repl_basic_local_stage := 0;
+                      self.repl_basic_local_result_str := '';
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="add_sel" action="simple" value="Add selected to snapshot">
+                  <v:on-post>
+		    <![CDATA[
+		      self.ds_tables.vc_focus := 1;
+                      self.vc_user_post_ds_tables (self.ds_tables, e);
+            		      if (length(self.selcust) < 1)
+          		        {
+          		          self.vc_is_valid := 0;
+                			  self.vc_error_message := 'No tables selected';
+                			}
+                		  else
+                      {
+                        foreach(varchar tb in self.selcust) do {
+                          self.repl_basic_local_sources  := vector_concat(self.repl_basic_local_sources,vector('SELECT * FROM  '|| y_escape_local_name (tb)));
+                        };
+                        self.repl_basic_local_stage := 0;
+                        self.vc_data_bind(e);
+                      };
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button name="add_all" action="simple" value="Add all filtered to snapshot">
+                  <v:on-post>
+                    <![CDATA[
+                      self.selcust := vector();
+                      self.dsrws  := vector();
+
+                      for(select distinct KEY_TABLE as table_name from SYS_KEYS
+                           where upper(name_part (KEY_TABLE, 0)) like upper(self.repl_basic_local_browse_cat)
+                             and upper(name_part (KEY_TABLE, 1)) like upper(self.repl_basic_local_browse_sch)
+                             and upper(name_part (KEY_TABLE, 2)) like upper(self.repl_basic_local_browse_mask)
+                             and KEY_IS_MAIN = 1 and KEY_MIGRATE_TO is NULL
+                          order by 1) do
+                      {
+                  		  self.selcust := vector_concat (self.selcust, vector (table_name));
+                      };
+
+            		      if (length(self.selcust) < 1)
+          		        {
+          		          self.vc_is_valid := 0;
+                			  self.vc_error_message := 'No tables selected';
+                			}
+                		  else
+                		  {
+                        foreach(varchar tb in self.selcust) do {
+                          self.repl_basic_local_sources  := vector_concat(self.repl_basic_local_sources,vector('SELECT * FROM  '|| y_escape_local_name (tb)));
+                        };
+                        self.repl_basic_local_stage := 0;
+                        self.vc_data_bind(e);
+                      };
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+        </v:form>
+
+      </v:template>
+
+      <!-- Stage 2 -->
+
+      <v:template name="link_template" type="simple" enabled="-- equ(self.repl_basic_local_stage, 2)">
+        <h3>Step 2: Choose Destinations Parameters</h3>
+        <v:form name="link2_form" action="db_repl_basic_local_create.vspx" method="POST" type="simple">
+          <v:before-render>
+      	    self.dsbks := vector(self.ds_dst_list.ds_prev_bookmark,self.ds_dst_list.ds_last_bookmark);
+          </v:before-render>
+    	    <v:on-post>
+    	      <![CDATA[
+      	      if (self.mass_tbq.ufl_value = '' and self.mass_tbo.ufl_value = '') {
+        	      declare i, l,dst_arr,tmp_arr any;
+        	      if (not(isnull(self.dsbks))) {
+          	      i := self.dsbks[0];
+          	      l := self.dsbks[1];
+          	      dst_arr := self.repl_basic_local_destinations;
+          	      while (i < l) {
+          	        tmp_arr := dst_arr[i];
+          	        if (get_keyword('cb_crt_' || cast(i as varchar),e.ve_params))
+          	          aset(tmp_arr,0,1);
+          	        else
+          	          aset(tmp_arr,0,0);
+          	        if (get_keyword('tb_rtbn_' || cast(i as varchar),e.ve_params))
+          	          aset(tmp_arr,1,get_keyword('tb_rtbn_' || cast(i as varchar),e.ve_params));
+          	        if (get_keyword('tb_ltbq_' || cast(i as varchar),e.ve_params))
+          	          aset(tmp_arr,2,get_keyword('tb_ltbq_' || cast(i as varchar),e.ve_params));
+          	        if (get_keyword('tb_ltbo_' || cast(i as varchar),e.ve_params))
+          	          aset(tmp_arr,3,get_keyword('tb_ltbo_' || cast(i as varchar),e.ve_params));
+          	        if (get_keyword('tb_ltbn_' || cast(i as varchar),e.ve_params))
+          	          aset(tmp_arr,4,get_keyword('tb_ltbn_' || cast(i as varchar),e.ve_params));
+
+          	        aset(dst_arr,i,tmp_arr);
+          	        i:= i + 1;
+          	      };
+          	      self.repl_basic_local_destinations := dst_arr;
+        	      };
+      	      };
+    	        self.mass_tbq.ufl_value := '';
+    	        self.mass_tbo.ufl_value := '';
+    	      ]]>
+    	    </v:on-post>
+          <v:data-set name="ds_dst_list" data="--self.repl_basic_local_sources" meta="--vector()" nrows="1000" scrollable="1" edit="1">
+            <v:template name="temp_ds_dst_list_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+              <div class="listing_top_ctl_grp">
+          			<v:text name="mass_tbq" xhtml_size="3" value="">
+          			  <v:before-render>
+          			    control.ufl_value := '';
+          			  </v:before-render>
+          			</v:text>.
+          			<v:text name="mass_tbo" xhtml_size="15" value="">
+          			  <v:before-render>
+          			    control.ufl_value := '';
+          			  </v:before-render>
+          			</v:text>.[TABLE]
+                <v:button name="mass_set" action="simple" value="Set To All">
+                  <v:on-post>
+                    <![CDATA[
+              	      declare i, l,dst_arr,tmp_arr any;
+              	      if (self.mass_tbq.ufl_value <> '' or self.mass_tbo.ufl_value <> '') {
+                	      i := 0;
+                	      dst_arr := self.repl_basic_local_destinations;
+                	      l := length(dst_arr);
+                	      while (i < l) {
+                	        tmp_arr := dst_arr[i];
+                	        if (self.mass_tbq.ufl_value <> '')
+                	          aset(tmp_arr,2,self.mass_tbq.ufl_value);
+                	        if (self.mass_tbo.ufl_value <> '')
+                	          aset(tmp_arr,3,self.mass_tbo.ufl_value);
+
+                	        aset(dst_arr,i,tmp_arr);
+                	        i:= i + 1;
+                	      };
+                	      self.repl_basic_local_destinations := dst_arr;
+                        self.vc_data_bind(e);
+              	      };
+                    ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+	      <?vsp http('<div class="scroll_area">'); ?>
+              <table class="listing" rules="groups">
+                <thead>
+                        <tr class="listing_header_row">
+                    <th>Source Query</th>
+                    <th>
+                      <input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this)" checked="checked"/>
+                      [Create] Local Destination Table Name</th>
+                  </tr>
+                </thead>
+              </table>
+            </v:template>
+            <v:template name="temp_ds_dst_list_repeat" type="repeat" name-to-remove="" set-to-remove="">
+              <v:template name="temp_ds_dst_list_empty" type="if-not-exists" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                  <tr>
+                          <td colspan="2" class="Attention">No sources</td>
+                  </tr>
+                </table>
+              </v:template>
+
+              <v:template name="temp_ds_dst_list_browse" type="browse" name-to-remove="table" set-to-remove="both">
+                <table> <!-- dummy -->
+                        <tr>
+                    <td class="listing_col">
+                      <v:label name="l_dst_item" value="--(control.vc_parent as vspx_row_template).te_rowset" format="%s"/>
+                    </td>
+                    <td class="listing_col_action">
+                			<v:check-box name="cb02" value="on">
+                			  <v:before-render>
+                          declare _inx integer;
+                          _inx := self.ds_dst_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr;
+                          control.vc_instance_name := 'cb_crt_' || cast(_inx as varchar);
+
+                			    control.ufl_selected := self.repl_basic_local_destinations[_inx][0];
+                			  </v:before-render>
+                			</v:check-box>
+                			<v:text name="ltbq" xhtml_size="3">
+                			  <v:before-render>
+                          declare _inx integer;
+                          _inx := self.ds_dst_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr;
+                          control.vc_instance_name := 'tb_ltbq_' || cast(_inx as varchar);
+
+                			    control.ufl_value := self.repl_basic_local_destinations[_inx][2];
+                			  </v:before-render>
+                			</v:text>.
+                			<v:text name="ltbo" xhtml_size="15">
+                			  <v:before-render>
+                          declare _inx integer;
+                          _inx := self.ds_dst_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr;
+                          control.vc_instance_name := 'tb_ltbo_' || cast(_inx as varchar);
+
+                			    control.ufl_value := self.repl_basic_local_destinations[_inx][3];
+                			  </v:before-render>
+                			</v:text>.
+                			<v:text name="ltbn" xhtml_size="30">
+                			  <v:before-render>
+                          declare _inx integer;
+                          _inx := self.ds_dst_list.ds_prev_bookmark + (control.vc_parent as vspx_row_template).te_ctr;
+                          control.vc_instance_name := 'tb_ltbn_' || cast(_inx as varchar);
+
+                			    control.ufl_value := self.repl_basic_local_destinations[_inx][4];
+                			  </v:before-render>
+                			</v:text>
+                    </td>
+                        </tr>
+                </table>
+              </v:template>
+
+            </v:template>
+
+            <v:template name="temp_ds_dst_list_footer" type="simple" name-to-remove="table" set-to-remove="top">
+              <table>
+                <tr>
+                        <td colspan="2" class="listing_col_action">
+            		    <vm:ds-navigation data-set="ds_dst_list"/>
+                  </td>
+                </tr>
+              </table>
+
+	      <?vsp http ('</div>'); ?>
+              <div class="listing_bot_ctl_grp">
+                <v:button name="can3_basic_local" action="simple" value="Cancel">
+                  <v:on-post>
+                    <![CDATA[
+                      self.repl_basic_local_stage := 0;
+                      self.vc_data_bind(e);
+                    ]]>
+                  </v:on-post>
+                </v:button>
+
+                <v:button action="simple" value="Create" name="snap">
+                  <v:on-post>
+                      <![CDATA[
+                        self.vc_user_post_link2_form (self.ds_dst_list, e);
+                        declare _idx integer;
+                        declare _tables any;
+                        declare _error, _chk_idx integer;
+                        declare _tbl,_local_qual, _local_owner, _local_name, _local_fqtb varchar;
+                        declare _local_create integer;
+                        declare i,l integer;
+
+                        _tables := vector();
+                        _idx := 0;
+                        _error := 0;
+                        i := 0;
+                        l := length (self.repl_basic_local_sources);
+                        while (i < l)
+                        {
+                          _local_qual := self.repl_basic_local_destinations[i][2];
+                          _local_owner := self.repl_basic_local_destinations[i][3];
+                          _local_name := self.repl_basic_local_destinations[i][4];
+
+                          _local_fqtb := sprintf('%s.%s.%s',_local_qual,_local_owner,_local_name);
+                          _local_fqtb := complete_table_name(_local_fqtb,1);
+
+                          _local_qual := (select top 1 name_part(KEY_TABLE,0) FROM DB.DBA.SYS_KEYS WHERE upper(name_part(KEY_TABLE,0)) = upper(name_part(_local_fqtb,0)));
+                          if (isnull(_local_qual))
+                            _local_qual := name_part(_local_fqtb,0);
+
+                          _local_owner := (select top 1 name_part(KEY_TABLE,1) FROM DB.DBA.SYS_KEYS WHERE upper(name_part(KEY_TABLE,1)) = upper(name_part(_local_fqtb,1)));
+                          if (isnull(_local_owner))
+                            _local_owner := name_part(_local_fqtb,1);
+
+                          _local_name := name_part(_local_fqtb,2);
+
+                          if (self.repl_basic_local_destinations[i][0])
+                            _local_create := 1;
+                          else
+                            _local_create := 0;
+
+                          -- Check for dublicates
+                          _chk_idx := 0;
+                          while (_chk_idx < length(_tables))
+                          {
+                            if (_tables[_chk_idx][1] = _local_qual and _tables[_chk_idx][2] = _local_owner and _tables[_chk_idx][3] = _local_name)
+                            {
+                              self.vc_error_message := 'Local table name dublicate found: ' || _local_fqtb || '. ' ||
+                                                        'Please correct the error and try again.';
+                              self.vc_is_valid := 0;
+                              _error := 1;
+                              goto _start;
+                            };
+                            _chk_idx := _chk_idx + 1;
+                              }
+
+                          if (exists(select 1 from SYS_SNAPSHOT where SN_NAME = _local_fqtb))
+                          {
+                            self.vc_error_message := sprintf('Snapshot for target %s already exists', _local_fqtb) || '. ' ||
+                                                      'Please correct the error and try again.';
+                              self.vc_is_valid := 0;
+                              _error := 1;
+                              goto _start;
+                              }
+
+                          _tables := vector_concat(_tables,vector(vector('',_local_qual,_local_owner,_local_name)));
+                          registry_set(sprintf('REPL_COUNT_%s_%s_%s',_local_qual,_local_owner,_local_name),'Pending');
+                          i := i + 1;
+                            }
+
+                        _start:;
+                        if (_error = 1)
+                            {
+                          self.vc_data_bind(e);
+                            }
+                        else
+                        {
+                          self.repl_basic_local_stage := 3;
+                          self.repl_basic_local_running := 1;
+                          self.vc_page.vc_data_bind(e);
+                          self.vc_redirect('db_repl_basic_local_start.vspx');
+                            }
+                      ]]>
+                  </v:on-post>
+                </v:button>
+              </div>
+            </v:template>
+          </v:data-set>
+        </v:form>
+      </v:template>
+
+      <!-- Stage 3 -->
+
+      <v:template name="result_template" type="simple" enabled="-- equ(self.repl_basic_local_stage, 3)">
+        <v:form name="link3_form" action="db_repl_basic_local_create.vspx" method="POST" type="simple">
+          <v:before-render>
+            <![CDATA[
+              if (self.repl_basic_local_autorefresh > 0 and self.repl_basic_local_running = 1)
+              {
+                declare _header, _line varchar;
+                _header := http_header_get();
+                _line := sprintf('Refresh: %d;URL=db_repl_basic_local_create.vspx?sid=%s&realm=%s&\r\n', self.repl_basic_local_autorefresh , self.sid ,self.realm);
+                if(_header is null)
+                  {
+                    _header := _line;
+                  }
+                else
+                  {
+                    _header := concat(_header, _line);
+                      }
+                http_header(_header);
+                    }
+            ]]>
+          </v:before-render>
+          <?vsp
+            if (self.repl_basic_local_running = 1) {
+              http('<div class="attention_box">');
+              http('Replication in progress. This process can not be stopped. Please wait');
+              http('</div><br/>');
+            }
+
+            if (self.repl_basic_local_result_str <> '') {
+              http('<span class="error_summary">');
+              http(self.repl_basic_local_result_str);
+              http('</span>');
+              self.repl_basic_local_result_str := '';
+            };
+          ?>
+          <div class="listing_top_ctl_grp">
+            <v:template name="result_template_ok" type="simple" enabled="-- equ(self.repl_basic_local_running, 0)">
+              <?vsp self.repl_basic_local_stage := 0;?>
+              Replication done.
+              <v:button action="simple" value="OK" name="ok" enabled="-- equ(self.repl_basic_local_running , 0)">
+                <v:on-post>
+                    <![CDATA[
+                      self.vc_redirect('db_repl_basic_local.vspx');
+                    ]]>
+                </v:on-post>
+              </v:button>
+            </v:template>
+            <v:template name="result_template_refresh" type="simple" enabled="-- equ(self.repl_basic_local_running, 1)">
+                autorefresh:
+                <v:select-list name="autorefresh_list" auto-submit="1">
+                  <v:on-post>
+                      <![CDATA[
+                        self.repl_basic_local_autorefresh := cast(control.ufl_value as integer);
+                        self.vc_data_bind(e);
+                      ]]>
+                  </v:on-post>
+                  <v:after-data-bind>
+                      <![CDATA[
+                        control.ufl_value := self.repl_basic_local_autorefresh;
+                        control.vs_set_selected ();
+                      ]]>
+                  </v:after-data-bind>
+                  <v:item name="no refresh" value="0"/>
+                  <v:item name="5" value="5"/>
+                  <v:item name="15" value="15"/>
+                  <v:item name="30" value="30"/>
+                  <v:item name="60" value="60"/>
+                </v:select-list>
+                <v:button action="simple" value="Manual Refresh" name="manual_refresh"/>
+            </v:template>
+          </div>
+
+          <table class="listing" rules="groups">
+          <thead>
+                    <tr class="listing_header_row">
+              <th>Source Query</th>
+              <th>Destination Table</th>
+              <th>State</th>
+            </tr>
+          </thead>
+            <?vsp
+              declare _tables any;
+              declare _state varchar;
+
+                    _tables := self.repl_basic_local_sources;
+                    if (_tables)
+                    {
+                      for (declare _i any, _i := 0; _i < length(_tables) ; _i := _i + 1)
+                      {
+                        http('<tr>');
+                    _state := cast(registry_get(sprintf('REPL_COUNT_%s_%s_%s',self.repl_basic_local_destinations[_i][2],self.repl_basic_local_destinations[_i][3],self.repl_basic_local_destinations[_i][4])) as varchar);
+                    if (regexp_match('^[0-9]*$',_state))
+                      _state := _state || ' record processed.';
+                    http(sprintf('<td>%V</td>',_tables[_i]));
+                    http(sprintf('<td>%V</td>', sprintf('%s.%s.%s',self.repl_basic_local_destinations[_i][2],self.repl_basic_local_destinations[_i][3],self.repl_basic_local_destinations[_i][4])));
+                    http(sprintf('<td>%V</td>', _state));
+                    http('</tr>');
+                      }
+                    }
+                    else
+                    {
+                      http ('<tr><td colspan="3">No Tables in list.</td></tr>');
+                    }
+                    if (equ(self.repl_basic_local_running , 0))
+                    {
+                self.repl_basic_local_sources := vector();
+                self.repl_basic_local_destinations := vector();
+                    }
+            ?>
+          </table>
+
+        </v:form>
+
+      </v:template>
+
+            <div>
+              <hr />
+	    <vm:url name="db_repl_basic_local_ref" format="%s" value="Back to Snapshot Replication List" url="--'db_repl_basic_local.vspx'"/>
+            </div>
+
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+
