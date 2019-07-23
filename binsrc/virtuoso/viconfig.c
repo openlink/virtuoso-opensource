@@ -870,7 +870,7 @@ cfg_setup (void)
     cp_unremap_quota = 0;
   else 
     cp_unremap_quota_is_set = 1;
-#if 0 /*GK: obosolete */
+#if 0 /*GK: obsolete */
   if (cfg_getlong (pconfig, section, "AtomicDive", &c_atomic_dive) == -1)
     c_atomic_dive = 1;
 #endif
@@ -1992,8 +1992,8 @@ new_cfg_set_checkpoint_interval (int32 f)
 }
 
 /*
- *  Called from DBMS to build the main dbs.
- *  Simply passes all configuration to the dbs.
+ *  Called from DBMS to build the main db.
+ *  Simply passes all configuration to the db.
  */
 void
 new_db_read_cfg (dbe_storage_t * ignore, char *mode)
@@ -2654,7 +2654,7 @@ db_lck_lock_fd (int fd, char *name)
 
       /* we could not get a lock, so who owns it? */
       fcntl (fd, F_GETLK, &fl);
-      log (L_ERR, "Virtuoso is already runnning (pid %ld)", fl.l_pid);
+      log (L_ERR, "Virtuoso is already running (pid %ld)", fl.l_pid);
       return -1;
     }
 #elif defined (HAVE_FLOCK_IN_SYS_FILE)
