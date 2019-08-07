@@ -3739,7 +3739,8 @@ create procedure DAV_COPY_INT (
   in extern integer := 1,
   in check_locks any := 1,
   in ouid integer := null,
-  in ogid integer := null )
+  in ogid integer := null,
+  in depth varchar := 'infinity' )
 {
   declare id, d_id, dp_id, rc integer;
   declare auth_uid integer;
@@ -3821,12 +3822,12 @@ create procedure DAV_COPY_INT (
       auth_uid := ouid;
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;
@@ -3967,7 +3968,7 @@ create procedure DAV_COPY_INT (
       if (isarray (id) and (id[0] like '%CatFilter'))
         return -39;
 
-      if (d_id is not null) -- do delete first
+      if (d_id is not null and depth = 'infinity') -- do delete first
         {
           declare rrc integer;
 
@@ -3977,14 +3978,19 @@ create procedure DAV_COPY_INT (
               rollback work;
               return rrc;
             }
+          d_id := null;
         }
+      if (d_id is null)
+        {
       newid := DAV_COL_CREATE_INT (destination, permissions, uid, gid, auth_uname, auth_pwd, 0, 0, 0, ouid, ogid);
       if (DAV_HIDE_ERROR (newid) is null)
         {
           rollback work;
           return newid;
         }
+        }
       DB.DBA.DAV_COPY_PROPS (0, id, 'C', destination, auth_uname, auth_pwd, extern, auth_uid);
+      if (depth = 'infinity')
       DB.DBA.DAV_COPY_SUBTREE (id , newid, sar, destination, 1, ouid, ogid, auth_uname, auth_pwd, extern, check_locks, auth_uid);
     }
   return 1;
@@ -4126,10 +4132,9 @@ create procedure DAV_MOVE_INT (
           dar := split_and_decode (destination, 0, '\0\0/');
         }
     }
-  else
+  else if (st = 'C')
     {
-      if (st = 'C')
-        return -4;
+      return -4;
     }
 
   id := DAV_SEARCH_ID (sar, st);
@@ -4171,12 +4176,12 @@ create procedure DAV_MOVE_INT (
       auth_uid := http_nobody_uid ();
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and (0 = overwrite) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;

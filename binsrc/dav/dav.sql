@@ -4458,16 +4458,14 @@ create procedure WS.WS.COPY_OR_MOVE (
   in is_copy integer)
 {
   declare tmp any;
-  declare st, _dst_url, if_header varchar;
-  declare _host varchar;
-  declare _overwrite char;
-  declare _len integer;
-  declare id integer;
+  declare if_header, depth varchar;
+  declare overwrite_flag integer;
   declare uname, upwd, _perms varchar;
   declare _uid, _gid integer;
   declare rc, check_locks integer;
-  declare target_path, overwrite_path, location varchar;
-  declare src_id, dst_id, dst_host, dst_parent_id, overwrite_id any;
+  declare location varchar;
+  declare src_id, src_host, src_st any;
+  declare dst_id, dst_host, dst_st, dst_path, dst_url, dst_parent_id any;
 
   set isolation = 'serializable';
   WS.WS.IS_REDIRECT_REF (path, lines, location);
@@ -4477,13 +4475,13 @@ create procedure WS.WS.COPY_OR_MOVE (
     return;
   }
   tmp := vector_concat (vector(''), path);
-  st := DB.DBA.DAV_WHAT (tmp);
-  src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, st));
-  if (src_id is null and (st <> 'C'))
+  src_st := DB.DBA.DAV_WHAT (tmp);
+  src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, src_st));
+  if (src_id is null and (src_st <> 'C'))
   {
     tmp := vector_concat (tmp, vector(''));
-    st := DB.DBA.DAV_WHAT (tmp);
-    src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, st));
+    src_st := DB.DBA.DAV_WHAT (tmp);
+    src_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (tmp, src_st));
     if (src_id is not null)
     {
       path := vector_concat (path, vector(''));
@@ -4499,13 +4497,14 @@ create procedure WS.WS.COPY_OR_MOVE (
   upwd := null;
   _uid := null;
   _gid := null;
-  rc := DB.DBA.DAV_AUTHENTICATE_HTTP (src_id, st, case (is_copy) when 1 then '1__' else '11_' end, 1, lines, uname, upwd, _uid, _gid, _perms);
-  -- dbg_obj_princ ('Source authentication in WS.WS.', case (is_copy) when 1 then 'COPY' else 'MOVE' end, ' gives ', rc, uname, upwd, _uid, _gid, _perms);
+  rc := DB.DBA.DAV_AUTHENTICATE_HTTP (src_id, src_st, case (is_copy) when 1 then '1__' else '11_' end, 1, lines, uname, upwd, _uid, _gid, _perms);
   if (rc < 0)
   {
     DB.DBA.DAV_SET_AUTHENTICATE_HTTP_STATUS (rc);
     return;
   }
+
+  -- Check lock for MOVE
   if (not is_copy)
   {
     rc := WS.WS.ISLOCKED (vector_concat (vector (''), path), WS.WS.FINDPARAM (lines, 'If'));
@@ -4521,29 +4520,29 @@ create procedure WS.WS.COPY_OR_MOVE (
     }
   }
 
-  _dst_url := WS.WS.FIXPATH (WS.WS.FINDPARAM (lines, 'Destination'));
-  _host := WS.WS.FINDPARAM (lines, 'Host');
-  dst_host := rfc1808_parse_uri (_dst_url)[1];
+  src_host := WS.WS.FINDPARAM (lines, 'Host');
+  dst_url := WS.WS.FIXPATH (WS.WS.FINDPARAM (lines, 'Destination'));
+  dst_host := rfc1808_parse_uri (dst_url)[1];
   dst_host := split_and_decode (dst_host, 0, '%');
 
   -- perform gateway functions
-  if (_host <> ''
+  if (src_host <> ''
       and dst_host <> ''
-      and _dst_url <> ''
-      and (lower (substring (_dst_url, 1, 7)) = 'http://' or lower (substring (_dst_url, 1, 8)) = 'https://')
-      and lower (dst_host) <> lower (_host))
+      and dst_url <> ''
+      and (lower (substring (dst_url, 1, 7)) = 'http://' or lower (substring (dst_url, 1, 8)) = 'https://')
+      and lower (dst_host) <> lower (src_host))
   {
     if (is_copy)
     {
-      -- dbg_obj_princ (sprintf ('Copy a WebDAV resource from %s to %s', _host, _dst_url));
-      log_message (sprintf ('Copy a WebDAV resource from %s to %s', _host, _dst_url));
-      WS.WS.COPY_TO_OTHER (path, params, lines, _dst_url);
+      -- dbg_obj_princ (sprintf ('Copy a WebDAV resource from %s to %s', _host, dst_url));
+      log_message (sprintf ('Copy a WebDAV resource from %s to %s', src_host, dst_url));
+      WS.WS.COPY_TO_OTHER (path, params, lines, dst_url);
     }
     else
     {
-      -- dbg_obj_princ (sprintf ('Moving a WebDAV resource from %s to %s', _host, _dst_url));
-      log_message (sprintf ('Moving a WebDAV resource from %s to %s', _host, _dst_url));
-      if (1 = WS.WS.COPY_TO_OTHER (path, params, lines, _dst_url))
+      -- dbg_obj_princ (sprintf ('Moving a WebDAV resource from %s to %s', _host, dst_url));
+      log_message (sprintf ('Moving a WebDAV resource from %s to %s', src_host, dst_url));
+      if (1 = WS.WS.COPY_TO_OTHER (path, params, lines, dst_url))
       {
         rc := DAV_DELETE_INT (DAV_CONCAT_PATH ('/', path), 0, uname, upwd, 0);
         if (rc <> 1)
@@ -4556,10 +4555,10 @@ create procedure WS.WS.COPY_OR_MOVE (
     return;
   }
 
-  _overwrite := WS.WS.FINDPARAM (lines, 'Overwrite');
-  target_path := WS.WS.HREF_TO_PATH_ARRAY (_dst_url);
+  overwrite_flag := case (WS.WS.FINDPARAM (lines, 'Overwrite')) when 'T' then 1 else 0 end;
+  dst_path := WS.WS.HREF_TO_PATH_ARRAY (dst_url);
   if_header := WS.WS.FINDPARAM (lines, 'If');
-  rc := WS.WS.ISLOCKED (target_path, if_header);
+  rc := WS.WS.ISLOCKED (dst_path, if_header);
   if (isnull (rc))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (412);
@@ -4574,39 +4573,36 @@ create procedure WS.WS.COPY_OR_MOVE (
   if (if_header <> '')
     check_locks := 0;
 
+  dst_st := 'R';
+  dst_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (rtrim (DB.DBA.DAV_CONCAT_PATH ('/', dst_path), '/'), dst_st));
+  if (isnull (dst_id))
+  {
+    dst_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (DB.DBA.DAV_CONCAT_PATH (DB.DBA.DAV_CONCAT_PATH ('/', dst_path), '/'), 'C'));
+    dst_st := case when isnull (dst_id) then null else 'C' end;
+    }
 
-  if ('C' = st)
+  if (not isnull (dst_id) and not overwrite_flag)
   {
-    if (target_path[length (target_path) - 1] = '')
-    {
-      dst_parent_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (target_path, 'P'));
-    }
-    else
-    {
-      if (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (target_path, 'R')) is not null)
-      {
-        DB.DBA.DAV_SET_HTTP_STATUS (409);
-        return;
-      }
-      target_path := vector_concat (target_path, vector (''));
-      dst_parent_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (target_path, 'P'));
-    }
-    overwrite_path := target_path;
+    DB.DBA.DAV_SET_HTTP_STATUS (412);
+    return;
   }
-  else
+
+  if (('C' = src_st) and (DAV_WHAT (dst_path) <> 'C'))
   {
-    overwrite_path := target_path;
-    if (target_path[length (target_path) - 1] = '')
-    {
-      overwrite_path[length (overwrite_path) - 1] := path[length (path) - 1];
-    }
-    dst_parent_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (target_path, 'P'));
+    dst_path := vector_concat (dst_path, vector (''));
   }
-  if (not DB.DBA.DAV_PATH_CHECK (overwrite_path) or DB.DBA.DAV_PATH_COMPARE (DB.DBA.DAV_CONCAT_PATH ('/', path), overwrite_path))
+  else if (('R' = src_st) and (DAV_WHAT (dst_path) = 'C'))
+  {
+    dst_path[length (dst_path) - 1] := path[length (path) - 1];
+  }
+
+  if (not DB.DBA.DAV_PATH_CHECK (dst_path) or DB.DBA.DAV_PATH_COMPARE (DB.DBA.DAV_CONCAT_PATH ('/', path), dst_path))
   {
     DB.DBA.DAV_SET_HTTP_STATUS (403);
     return;
   }
+
+  dst_parent_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (dst_path, 'P'));
   if (dst_parent_id is null)
   {
     DB.DBA.DAV_SET_HTTP_STATUS (409);
@@ -4620,18 +4616,24 @@ create procedure WS.WS.COPY_OR_MOVE (
     return;
   }
 
-  overwrite_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (overwrite_path, st));
+  -- overwrite_id := DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_ID (overwrite_path, src_st));
+  path := DB.DBA.DAV_CONCAT_PATH ('/', path);
+  dst_path :=  DB.DBA.DAV_CONCAT_PATH ('/', dst_path);
   if (is_copy)
   {
-    rc := DB.DBA.DAV_COPY_INT (DB.DBA.DAV_CONCAT_PATH ('/', path), DB.DBA.DAV_CONCAT_PATH ('/', target_path), case (_overwrite) when 'T' then 1 else 0 end, _perms, uname, null, uname, upwd, 0, check_locks=>check_locks);
+    depth := WS.WS.FINDPARAM (lines, 'Depth');
+    if (depth = '')
+      depth := 'infinity';
+
+    rc := DB.DBA.DAV_COPY_INT (path, dst_path, overwrite_flag, _perms, uname, null, uname, upwd, 0, check_locks=>check_locks, depth=>depth);
   }
   else
   {
-    rc := DB.DBA.DAV_MOVE_INT (DB.DBA.DAV_CONCAT_PATH ('/', path), DB.DBA.DAV_CONCAT_PATH ('/', target_path), case (_overwrite) when 'T' then 1 else 0 end, uname, upwd, 0, check_locks=>check_locks);
+    rc := DB.DBA.DAV_MOVE_INT (path, dst_path, overwrite_flag, uname, upwd, 0, check_locks=>check_locks);
   }
   if (DB.DBA.DAV_HIDE_ERROR (rc) is not null)
   {
-    if (overwrite_id is null)
+    if (dst_id is null)
     {
       DB.DBA.DAV_SET_HTTP_STATUS (201);
     }
