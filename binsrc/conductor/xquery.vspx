@@ -285,7 +285,7 @@
 		  }
 		else if (ctx = 4)
 		  {
-		    if (not exists(SELECT 1 FROM WS..SYS_DAV_COL WHERE WS.WS.COL_PATH (COL_ID) = dav_path))
+		    if (not exists (SELECT 1 FROM WS..SYS_DAV_COL WHERE COL_FULL_PATH = dav_path))
 		      {
 			self.vc_is_valid := 0;
 			self.vc_error_message := 'Incorrect PATH for a WebDAV collection';

@@ -904,7 +904,7 @@ create function "HostFs_DAV_SEARCH_PATH" (in id any, in what char(1)) returns an
   -- dbg_obj_princ ('HostFs_DAV_SEARCH_PATH (', id, what, ')');
   ospath := id[2];
   slash_pos := strchr (ospath, '/');
-  detcol_fullpath := coalesce ((select WS.WS.COL_PATH (COL_ID) from WS.WS.SYS_DAV_COL where COL_ID = id[1] and COL_DET='HostFs'));
+  detcol_fullpath := coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id[1] and COL_DET = 'HostFs'));
   if (detcol_fullpath is null)
     return -23;
   if (not isstring (file_stat (ospath)))

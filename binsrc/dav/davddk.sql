@@ -1107,9 +1107,9 @@ props_done:
   -- dbg_obj_princ ('WS.WS.SYS_DAV_INIT-status is equal to "', dav_status, '"');
   if (strstr (dav_status, '(WS.WS.SYS_DAV_CATFILTER)') is null)
     {
-      for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
+      for (select COL_ID, COL_DET, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
         {
-          for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (_c_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
+          for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (COL_FULL_PATH, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
             {
               insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
               values (CF_ID, COL_ID, COL_DET);

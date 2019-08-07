@@ -1597,7 +1597,7 @@ create function DAV_LOCK_INT (
 
   if ((scope <> 'R') and (old_scope = '') and (st ='C'))
   {
-    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where WS.WS.COL_PATH (COL_ID) between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
+    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where COL_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
       return -1;
 
     if (exists (select 1 from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_LOCK where RES_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID))
