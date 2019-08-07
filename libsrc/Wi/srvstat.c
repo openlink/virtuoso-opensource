@@ -1406,6 +1406,7 @@ caddr_t
 bif_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   const char * mode = BOX_ELEMENTS (args) > 0 ? bif_string_arg (qst, args, 0, "status") : "dhrcl";
+  sec_check_dba ((query_instance_t*)qst, "status");
 /*  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   if (!cli_ws)
     {*/
