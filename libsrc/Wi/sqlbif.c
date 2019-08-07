@@ -12863,6 +12863,22 @@ bif_table_exists (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (0);
 }
 
+caddr_t
+bif_key_exists (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char * fn = "key_exists";
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t tb_name = bif_string_arg (qst, args, 0, fn);
+  caddr_t key_name = bif_string_arg (qst, args, 1, fn);
+  dbe_table_t *tb = qi_name_to_table (qi, tb_name);
+
+  if (!tb)
+    {
+      sqlr_new_error ("42S02", "SR243", "No table %s in %s", tb_name, fn);
+    }
+  return (NULL != tb_find_key (tb, key_name, 0) ? box_num(1) : box_num(0));
+}
+
 #if 0
 caddr_t
 bif_ddl_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -17029,6 +17045,7 @@ sql_bif_init (void)
   bif_define ("txn_killall", bif_txn_killall);
 
   bif_define ("table_exists", bif_table_exists);
+  bif_define ("key_exists", bif_key_exists);
   bif_define ("__ddl_changed", bif_ddl_change);
   /*bif_define ("__ddl_table_renamed", bif_ddl_table_renamed);*/
   bif_define ("__ddl_index_def", bif_ddl_index_def);

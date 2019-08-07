@@ -2177,9 +2177,9 @@ caddr_t
 bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
-  caddr_t stat_name = bif_string_arg (qst, args, 2, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_stat");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_stat");
+  caddr_t stat_name = bif_string_arg (qst, args, 2, "key_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {
@@ -4283,8 +4283,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
   dbe_key_t * key = NULL;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_estimate");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_estimate");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {
