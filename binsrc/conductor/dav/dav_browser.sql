@@ -5533,8 +5533,8 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
   in enabled integer := 0)
 {
   -- dbg_obj_princ ('WEBDAV.DBA.ldp_recovery_aq (', path, ')');
-  declare id, work_id any;
-  declare det, uri, ruri varchar;
+  declare id integer;
+  declare uri, ruri, aciContent any;
 
   id := DB.DBA.DAV_SEARCH_ID (path, 'C');
   if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
@@ -5543,11 +5543,11 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
   if (isarray (id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
     return;
 
-  work_id := DB.DBA.DAV_DET_DAV_ID (id);
+  id := DB.DBA.DAV_DET_DAV_ID (id);
   if (not enabled)
-    enabled := DB.DBA.LDP_ENABLED (work_id);
+    enabled := DB.DBA.LDP_ENABLED (id);
 
-  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = work_id) do
+  for (select COL_NAME as _COL_NAME, COL_OWNER as _COL_OWNER, COL_GROUP as _COL_GROUP from WS.WS.SYS_DAV_COL where COL_ID = id) do
   {
     uri := WS.WS.DAV_IRI (path);
     if (enabled)
@@ -5577,14 +5577,14 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
         DB.DBA.LDP_DELETE (RES_FULL_PATH);
       }
     }
-    for (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
+    for (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
     {
       ruri := WS.WS.DAV_IRI (COL_FULL_PATH);
       TTLP (sprintf ('<%s> <http://www.w3.org/ns/ldp#contains> <%s> .', uri, ruri), uri, uri);
     }
   }
 
-  for (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = work_id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
+  for (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id and (COL_DET is null or DB.DBA.DAV_DET_IS_WEBDAV_BASED (COL_DET))) do
   {
     commit work;
     WEBDAV.DBA.ldp_recovery_aq (COL_FULL_PATH, enabled);
