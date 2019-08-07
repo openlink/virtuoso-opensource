@@ -10639,6 +10639,7 @@ isql_main (int argc,
 	  if (!isqlt_tcsncmp (argv[i], _T("-D"), 2))
 	    {
 	      virtuoso_debug = 1;
+	      continue;
 	    }
 #endif
 #endif
@@ -10729,6 +10730,8 @@ isql_main (int argc,
 #ifdef PLDBG
   if (virtuoso_debug)
     {
+      if (!password)
+	password = username;
       debug_session = pldbg_connect (datasource, username, password);
 
       if (!debug_session)
