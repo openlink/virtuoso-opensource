@@ -2151,6 +2151,9 @@ create function DAV_GET_UID_BY_SERVICE_ID (
 {
   declare rows any;
 
+  if (table_exists ('DB.DBA.WA_USER_OL_ACCOUNTS') = 0)
+    return 0;
+
   rows := DB.DBA.DAV_EXEC_SQL ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', vector (serviceId));
   if (length (rows) = 0)
   {
