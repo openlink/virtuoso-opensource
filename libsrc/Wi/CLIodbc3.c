@@ -230,6 +230,11 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
       cli_dbg_printf (("SQLGetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = (env->env_output_nts ? SQL_TRUE : SQL_FALSE);
       break;
+    case SQL_ATTR_DRIVER_UNICODE_TYPE:
+      if (ValuePtr)
+        *((SQLINTEGER *) ValuePtr) = (sizeof(wchar_t) == 4) 
+        				? SQL_DM_CP_UCS4 : SQL_DM_CP_UTF16;
+      break;
     }
   return (SQL_SUCCESS);
 }
