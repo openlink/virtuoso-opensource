@@ -274,8 +274,17 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	break;
 	case DV_BIN:
 	  {
-	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
+	    uint32 inx;
+	    snprintf (tmp, sizeof (tmp), " LEN %d [", box_length (box));
 	    SES_PRINT (ses, tmp);
+	    for (inx = 0; inx < box_length (box) && inx < 1000 /*print elements*/; inx++)
+	      {
+		snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) ((caddr_t) box)[inx]);
+		SES_PRINT (ses, tmp);
+	      }
+	    if (inx >= 1000)
+	      SES_PRINT (ses, "...");
+	    SES_PRINT (ses, "]");
 	  }
 	break;
         case DV_RDF:
