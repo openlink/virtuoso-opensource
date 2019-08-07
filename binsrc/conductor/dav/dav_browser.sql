@@ -5693,13 +5693,17 @@ create procedure WEBDAV.DBA.oauth_exist ()
 --
 create procedure WEBDAV.DBA.oauth_list ()
 {
-  declare retValue, items any;
+  declare retValue, items, tmp any;
 
   retValue := vector ();
   items := WEBDAV.DBA.exec ('select A_NAME, A_DESCR from OAUTH.DBA.APP_REG where A_TYPE = 1 order by A_NAME');
   foreach (any item in items) do
   {
-    retValue := vector_concat (retvalue, vector (vector (item[0], item[1])));
+    tmp := trim (item[1]);
+    if (length (tmp) = 0)
+      tmp := trim (item[0]);
+
+    retValue := vector_concat (retvalue, vector (vector (trim (item[0]), tmp)));
   }
 
   return retValue;
