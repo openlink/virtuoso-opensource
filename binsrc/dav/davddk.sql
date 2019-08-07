@@ -1186,10 +1186,10 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
 
      as:items owl:equivalentProperty ldp:contains .
      as:Collection owl:equivalentClass ldp:Container .',
-     'xx',
-     'asEquivalent'
+     '',
+     'urn:activitystreams-owl:map'
   );
-  DB.DBA.rdfs_rule_set ('asEquivalent', 'asEquivalent');
+  DB.DBA.rdfs_rule_set ('asEquivalent', 'urn:activitystreams-owl:map');
   DB.DBA.XML_SET_NS_DECL ('as', 'http://www.w3.org/ns/activitystreams#', 2);
 }
 ;
