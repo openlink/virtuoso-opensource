@@ -1506,8 +1506,6 @@
             <![CDATA[
               declare _params, tmp any;
 
-              _params := self.vc_page.vc_event.ve_params;
-
               http_header (http_header_get () || 'X-XSS-Protection: 0\r\n');
               self.chars := WEBDAV.DBA.settings_chars (self.settings);
               self.dir_columns := vector (
@@ -1528,7 +1526,7 @@
               self.dir_direction := get_keyword ('ts_direction', params, WEBDAV.DBA.settings_orderDirection (self.settings));
               self.dir_fileSize := WEBDAV.DBA.settings_fileSize (self.settings);
 
-              self.dir_path := get_keyword ('dir', _params, self.dir_path);
+              self.dir_path := get_keyword ('dir', params, self.dir_path);
               if (self.dir_path = '__root__')
                 self.dir_path := self.dir_spath;
 
@@ -1540,37 +1538,37 @@
                   self.dir_path := WEBDAV.DBA.dav_home2 (self.owner_id, self.account_role);
 
               self.dir_spath := self.dir_path;
-              self.dir_details := cast (get_keyword ('list_type_internal', _params, self.dir_details) as integer);
-              tmp := get_keyword ('list_type', _params);
+              self.dir_details := cast (get_keyword ('list_type_internal', params, self.dir_details) as integer);
+              tmp := get_keyword ('list_type', params);
               if (not isnull (tmp))
                 self.dir_details := case when (tmp = 'details') then 0 else 1 end;
 
               if ((self.command = 0) and (self.command_mode = 2))
-                self.search_simple := trim (get_keyword ('simple', _params, self.search_simple));
+                self.search_simple := trim (get_keyword ('simple', params, self.search_simple));
 
-              tmp := get_keyword ('filter', _params, '');
+              tmp := get_keyword ('filter', params, '');
               if (tmp <> '')
               {
                 self.command_set (0, 1);
                 self.search_filter := tmp;
               }
 
-              if (get_keyword ('mode', _params) = 'simple')
+              if (get_keyword ('mode', params) = 'simple')
               {
                 self.command_set (0, 2);
                 if (self.dir_path = '')
                   self.dir_path := '/DAV/';
 
-                self.search_simple := trim (get_keyword ('keywords', _params));
+                self.search_simple := trim (get_keyword ('keywords', params));
               }
-              else if (get_keyword ('mode', _params) = 'advanced')
+              else if (get_keyword ('mode', params) = 'advanced')
               {
                 self.command_set (0, 3);
                 if (self.dir_path = '')
                   self.dir_path := '/DAV/';
 
                 WEBDAV.DBA.dc_set_base (self.search_dc, 'path', WEBDAV.DBA.real_path (self.dir_path));
-                tmp := trim (get_keyword ('keywords', _params));
+                tmp := trim (get_keyword ('keywords', params));
                 if (tmp = '')
                   tmp := trim (self.simple.ufl_value);
 
@@ -1579,7 +1577,7 @@
 
                 self.simple.ufl_value := '';
               }
-              else if (get_keyword ('URI', _params, '') <> '')
+              else if (get_keyword ('URI', params, '') <> '')
               {
                 self.dir_path := WEBDAV.DBA.dav_home2 (self.owner_id, 'public');
                 self.command_push (10, 5);
@@ -1638,9 +1636,9 @@
                   }
                 }
               }
-              self.dir_right := WEBDAV.DBA.permission(concat(WEBDAV.DBA.path_show (self.dir_path), '/'));
-              self.returnName := get_keyword ('retname', self.vc_page.vc_event.ve_params, self.returnName);
-              self.returnType := get_keyword ('browse_type', self.vc_page.vc_event.ve_params, self.returnType);
+              self.dir_right := WEBDAV.DBA.permission (concat (WEBDAV.DBA.path_show (self.dir_path), '/'));
+              self.returnName := get_keyword ('retname', params, self.returnName);
+              self.returnType := get_keyword ('browse_type', params, self.returnType);
             ]]>
           </v:before-data-bind>
 
