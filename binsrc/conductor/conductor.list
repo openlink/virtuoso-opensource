@@ -122,7 +122,6 @@ conductor/dav/image/tag_32.png
 conductor/dav/image/trash_16.png
 conductor/dav/image/up_32.png
 conductor/dav/image/upld_32.png
-conductor/dav_post.js
 conductor/dav/rss2atom.xsl
 conductor/dav/rss2rdf.xsl
 conductor/dav/sorttable.js
