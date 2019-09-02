@@ -46,6 +46,10 @@ ODBC_Connect (char *dsn, char *usr, char *pwd)
 
       if (retcode == SQL_SUCCESS || retcode == SQL_SUCCESS_WITH_INFO)
 	{
+
+          SQLSetEnvAttr (henv, SQL_ATTR_APP_UNICODE_TYPE, (SQLPOINTER) SQL_DM_CP_UCS4,
+            SQL_IS_UINTEGER);
+
 	  /* Allocate connection handle */
 	  retcode = SQLAllocHandle(SQL_HANDLE_DBC, henv, &hdbc);
 

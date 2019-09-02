@@ -1086,6 +1086,9 @@ librdf_storage_virtuoso_get_handle(librdf_storage* storage)
   SQLSetEnvAttr (connection->henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3,
       SQL_IS_UINTEGER);
 
+  SQLSetEnvAttr (henv, SQL_ATTR_APP_UNICODE_TYPE, (SQLPOINTER) SQL_DM_CP_UCS4,
+      SQL_IS_UINTEGER);
+
   rc = SQLAllocHandle (SQL_HANDLE_DBC, connection->henv, &connection->hdbc);
   if (!SQL_SUCCEEDED(rc))
     {

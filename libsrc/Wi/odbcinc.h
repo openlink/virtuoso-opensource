@@ -182,14 +182,14 @@ typedef void * SQLHANDLE;
 /*
  *  Extension for setting size of SQLWCHAR (iodbcext.h)
  */
-#ifndef SQL_ATTR_APP_WCHAR_ID
-#define SQL_ATTR_APP_WCHAR_ID		1061
-#define SQL_ATTR_APP_UNICODE_ID		1064
-#define SQL_ATTR_DRIVER_UNICODE_ID	1065
+#ifndef SQL_ATTR_APP_WCHAR_TYPE
+#define SQL_ATTR_APP_WCHAR_TYPE		1061
+#define SQL_ATTR_APP_UNICODE_TYPE	1064
+#define SQL_ATTR_DRIVER_UNICODE_TYPE	1065
 
-#define SQL_DM_CP_UCS4			0
 #define SQL_DM_CP_UTF16			1
 #define SQL_DM_CP_UTF8			2
+#define SQL_DM_CP_UCS4			3
 #endif
 
 #endif /* __V_ODBCINC_H */

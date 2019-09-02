@@ -1101,10 +1101,10 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
   switch (Attribute)
     {
 #if !defined (WIN32)
-    case SQL_ATTR_APP_WCHAR_ID:
+    case SQL_ATTR_APP_WCHAR_TYPE:
       {
         SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;
-        cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_ID, ...) called\n"));
+	cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_TYPE, ...) called\n"));
         if (val == SQL_DM_CP_UTF16)
           con->con_wide_as_utf16 = TRUE;
         else if (val == SQL_DM_CP_UCS4)

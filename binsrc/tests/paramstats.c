@@ -107,6 +107,9 @@ main(int argc, char *argv[])
       return 1;
     }
 
+  SQLSetEnvAttr (henv, SQL_ATTR_APP_UNICODE_TYPE, (SQLPOINTER) SQL_DM_CP_UCS4,
+    SQL_IS_UINTEGER);
+
   rc = SQLAllocHandle(SQL_HANDLE_DBC, (SQLHANDLE) henv, (SQLHANDLE *) &hdbc);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
     {

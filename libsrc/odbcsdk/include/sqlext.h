@@ -853,6 +853,7 @@ extern "C" {
 #define SQL_DDL_INDEX				170
 #define SQL_DM_VER				171
 #define SQL_INSERT_STATEMENT			172
+#define SQL_CONVERT_GUID			173
 #define SQL_UNION_STATEMENT			SQL_UNION
 
 #endif	/* ODBCVER >= 0x0300 */
