@@ -8497,7 +8497,7 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
   declare dummy any;
 
   retValue := 0;
-  if (is_atomic ())
+  if (is_atomic () or sys_stat ('srv_init'))
   {
     retValue := 1;
   }
@@ -8545,6 +8545,10 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   declare N, L, waited, threads integer;
   declare retValue, error any;
   declare aq, item, items, threadsArray any;
+
+  if (is_atomic () or sys_stat ('srv_init'))
+    return;
+
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
