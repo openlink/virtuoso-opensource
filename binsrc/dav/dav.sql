@@ -109,9 +109,13 @@ not_found: ;
   acceptPatch := WS.WS.FINDPARAM (headers, 'Accept-Patch');
   if (acceptPatch <> '')
     acceptPatch := sprintf ('Accept-Patch: %s\r\n', acceptPatch);
-
-  acceptPost := sprintf ('Accept-Post: %s\r\n', http_request_header (headers, 'Accept-Post', null, 'text/turtle, text/html, application/xhtml+xml, application/ld+json'));
-  msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
+ 
+  acceptPost := WS.WS.FINDPARAM (headers, 'Accept-Post');
+  if (acceptPost <> '')
+    acceptPost := sprintf ('Accept-Post: %s\r\n', http_request_header (headers, 'Accept-Post', null, 'text/turtle, text/html, application/xhtml+xml, application/ld+json'));
+  msAuthor := WS.WS.FINDPARAM (headers, 'MS-Author-Via');
+  if (msAuthor <> '')
+    msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
 
   DB.DBA.DAV_SET_HTTP_STATUS (204);
   http_header (
