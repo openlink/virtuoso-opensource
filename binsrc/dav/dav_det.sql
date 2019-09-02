@@ -495,7 +495,7 @@ create function DB.DBA.DAV_DET_ACTIVITY (
   declare parentPath varchar;
   declare activity_id integer;
   declare activity, activityName, activityPath, activityContent, activityType varchar;
-  declare davEntry any;
+  declare davEntry, activitySize any;
   declare _errorCount integer;
   declare exit handler for sqlstate '*'
   {
@@ -546,9 +546,14 @@ _start:;
 
     activityContent := cast (activityContent as varchar);
     -- .log file size < 100KB
-    if (length (activityContent) > 1024)
+    activitySize := registry_get ('DETActivitySize');
+    if (activitySize = 0)
+      activitySize := '2048';
+
+    activitySize := atoi (activitySize);
+    if (length (activityContent) > activitySize)
     {
-      activityContent := right (activityContent, 1024);
+      activityContent := right (activityContent, activitySize);
       pos := strstr (activityContent, '\r\n20');
       if (not isnull (pos))
         activityContent := subseq (activityContent, pos+2);
