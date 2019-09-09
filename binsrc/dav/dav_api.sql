@@ -547,7 +547,7 @@ create function DAV_DIR_LIST_INT (
   in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST_INT (', path, rec_depth, name_mask, auth_uname, auth_pwd, auth_uid, ')');
-  declare rc, t, id, l integer;
+  declare rc, id integer;
   declare path_string, st, det varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
 
@@ -707,7 +707,7 @@ create function DAV_DIR_LIST_INT (
 create function
 DAV_DIR_FILTER_INT (in path varchar := '/DAV/', in rec_depth integer := 0, in compilation any, in auth_uname varchar := null, in auth_pwd varchar := null, in auth_uid integer := null) returns any
 {
-  declare rc, t, id, uid, gid, l integer;
+  declare rc, id, uid, gid integer;
   declare path_string, st, det, qry_text varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
   -- dbg_obj_princ ('DAV_DIR_FILTER_INT (', path, rec_depth, compilation, auth_uname, auth_pwd, auth_uid, ')');
@@ -8379,7 +8379,7 @@ create table WS.WS.SYS_DAV_QUEUE (
 
   PRIMARY KEY (DQ_ID)
 )
-create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE)
+create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE, DQ_PRIORITY)
 ;
 
 create table WS.WS.SYS_DAV_QUEUE_LCK (DQL_ID int primary key)
@@ -8464,6 +8464,7 @@ create procedure DB.DBA.DAV_QUEUE_CLEAR ()
 create procedure DB.DBA.DAV_QUEUE_GET (
   in _count integer)
 {
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_GET (', _count, ')');
   declare dummy, items any;
 
   if (_count <= 0)
@@ -8496,7 +8497,6 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
   declare dt datetime;
   declare dummy any;
 
-  retValue := 0;
   if (is_atomic () or sys_stat ('srv_init'))
   {
     retValue := 1;
@@ -8522,18 +8522,34 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
 }
 ;
 
+create procedure DB.DBA.DAV_QUEUE_REQUEST (
+  in aq any,
+  in delayNumber integer,
+  in item any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_REQUEST ()');
+  declare exit handler for sqlstate '*'
+  {
+    delay (delayNumber);
+    return -1;
+  };
+
+  return aq_request (aq, item[1], vector_concat (vector (item[0]), item[2]));
+}
+;
+
 create procedure DB.DBA.DAV_QUEUE_INIT (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_INIT ()');
   declare aq any;
 
-  if (not DB.DBA.DAV_QUEUE_ACTIVE ())
-  {
-    set_user_id ('dba');
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
-  }
+  if (DB.DBA.DAV_QUEUE_ACTIVE ())
+    return;
+
+  set_user_id ('dba');
+  aq := async_queue (1, 4);
+  aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
 }
 ;
 
@@ -8542,18 +8558,17 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, L, waited, threads integer;
+  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount integer;
   declare retValue, error any;
-  declare aq, item, items, threadsArray any;
-
-  if (is_atomic () or sys_stat ('srv_init'))
-    return;
-
+  declare aq, items, threadsArray any;
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     resignal;
   };
+
+  if (is_atomic () or sys_stat ('srv_init'))
+    return;
 
   if (_delay)
     delay (_delay);
@@ -8562,71 +8577,86 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
 
-  aq := null;
-  threads := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
-  if (threads <= 0)
-    threads := 1;
+  threadsCount := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
+  if (threadsCount <= 0)
+    threadsCount := 1;
 
-_new_batch:;
-  items := DB.DBA.DAV_QUEUE_GET (threads);
-  L := length (items);
-  if (not L)
+  items := DB.DBA.DAV_QUEUE_GET (threadsCount);
+  itemsCount := length (items);
+  if (not itemsCount)
     goto _exit;
 
+  if (itemsCount < threadsCount)
+    threadsCount := itemsCount;
 
-  if (isnull (aq))
+  threadsArray := make_array (threadsCount, 'any');
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (L + 1 < threads)
-    {
-      threads := length (items) + 1;
-    }
-    aq := async_queue (threads, 4);
+    threadsArray[N] := -1;
   }
 
-  threadsArray := make_array (threads, 'any');
-  for (N := 0; N < threads; N := N + 1)
+  aq := async_queue (threadsCount, 4);
+
+  delayNumber := 1;
+  maxDelayNumber := 10;
+
+_start:;
+  newThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (N < L)
+    if ((threadsArray[N] < 0) and itemsCount)
     {
-      threadsArray[N] := aq_request (aq, items[N][1], vector_concat (vector (items[N][0]), items[N][2]));
-    }
-    else
-    {
-      threadsArray[N] := -1;
+      threadsArray[N] := DB.DBA.DAV_QUEUE_REQUEST (aq, delayNumber, items[0]);
+      if (threadsArray[N] >= 0)
+      {
+        items := subseq (items, 1);
+        itemsCount := itemsCount - 1;
+        newThreads := newThreads + 1;
+      }
     }
   }
 
 _again:;
-  commit work;
-
-  waited := 0;
-  for (N := 0; N < threads; N := N + 1)
+  freeThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
     if (threadsArray[N] >= 0)
-	  {
+    {
       error := 0;
-	    retValue := aq_wait (aq, threadsArray[N], 0, error);
-	    if (retValue = 100 or error = 100) -- done
+      retValue := aq_wait (aq, threadsArray[N], 0, error);
+      if (retValue = 100 or error = 100) -- done
         threadsArray[N] := -1;
     }
     if (threadsArray[N] < 0)
-	  {
-      item := DB.DBA.DAV_QUEUE_GET (1);
-      if (length (item) = 1)
-     	  threadsArray[N] := aq_request (aq, item[0][1], vector_concat (vector (item[0][0]), item[0][2]));
-    }
-    if (threadsArray[N] >= 0)
-    {
-      waited := 1;
-    }
+      freeThreads := freeThreads + 1;
   }
-  if (waited)
+
+  delay (delayNumber);
+  if (freeThreads and itemsCount and (newThreads = 0))
   {
-    delay (1);
+    delayNumber := delayNumber + 1;
+    if (delayNumber > maxDelayNumber)
+    {
+      log_message ('WS.WS.SYS_DAV_QUEUE - exit: no free threads');
+      goto _exit;
+    }
+
+    goto _again;
+  }
+  else if (freeThreads = 0)
+  {
+    delay (delayNumber);
     goto _again;
   }
 
-  goto _new_batch;
+  if (not length (items))
+    items := DB.DBA.DAV_QUEUE_GET (freeThreads);
+
+  itemsCount := length (items);
+  if (not itemsCount)
+    goto _exit;
+
+  goto _start;
 
 _exit:;
   DB.DBA.DAV_QUEUE_CLEAR ();
