@@ -370,6 +370,8 @@ dc_boxes_to_anies (data_col_t * dc, caddr_t * boxes, int n)
 int64
 dv_to_int (db_buf_t dv, dtp_t * nf)
 {
+  if (!IS_BOX_POINTER (dv))
+    return (int64) (ptrlong) dv;
   if (DV_LONG_INT == *dv)
     return LONG_REF_NA (dv + 1);
   if (DV_SHORT_INT == *dv)
