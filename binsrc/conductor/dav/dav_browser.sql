@@ -17,6 +17,9 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
+
+use DB;
+
 -------------------------------------------------------------------------------
 --
 -- User Functions
@@ -28,12 +31,12 @@ create procedure WEBDAV.DBA.check_admin (
   declare grp integer;
 
   if (isstring(usr))
-    usr := (select U_ID from SYS_USERS where U_NAME = usr);
+    usr := (select U_ID from DB.DBA.SYS_USERS where U_NAME = usr);
 
   if ((usr = 0) or (usr = http_dav_uid ()))
     return 1;
 
-  grp := (select U_GROUP from SYS_USERS where U_ID = usr);
+  grp := (select U_GROUP from DB.DBA.SYS_USERS where U_ID = usr);
   if ((grp = 0) or (grp = http_dav_uid ()) or (grp = http_dav_uid()+1))
     return 1;
 
@@ -5558,7 +5561,7 @@ create procedure WEBDAV.DBA.ldp_recovery_aq (
     {
       DB.DBA.LDP_DELETE (path, 1);
     }
-    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = work_id) do
+    for (select RES_CONTENT, RES_TYPE, RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
     {
       if (enabled)
       {
@@ -5604,7 +5607,7 @@ create procedure WEBDAV.DBA.user_keys (
   declare arr any;
 
   result_names (xenc_name, xenc_type);
-  if (not exists (select 1 from SYS_USERS where U_NAME = username))
+  if (not exists (select 1 from DB.DBA.SYS_USERS where U_NAME = username))
     return;
 
   arr := USER_GET_OPTION (username, 'KEYS');
@@ -5865,9 +5868,13 @@ create procedure WEBDAV.DBA.progress_start (
           {
             -- unmount only
             declare _detType, _path varchar;
-            declare _properties any;
+            declare _properties, _detParams any;
 
             _detType := WEBDAV.DBA.DAV_GET (item, 'detType');
+            _detParams := null;
+            if ((_detType <> '') and __proc_exists ('DB.DBA.' || _detType || '__params') and __proc_exists ('DB.DBA.' || _detType || '_REVOKE'))
+              _detParams := call ('DB.DBA.' || _detType || '__params') (WEBDAV.DBA.DAV_GET (item, 'id'));
+
             WEBDAV.DBA.DAV_SET (itemPath, 'detType', null);
             for (select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_FULL_PATH like (itemPath || '%')) do
             {
@@ -5887,6 +5894,9 @@ create procedure WEBDAV.DBA.progress_start (
                 WEBDAV.DBA.DAV_PROP_REMOVE (_path, _properties[L][0]);
               }
             }
+
+            if (not isnull (_detParams))
+              call ('DB.DBA.' || _detType || '_REVOKE') (_detParams);
           }
         }
         else if (command = 'tag')
@@ -6026,5 +6036,23 @@ create procedure WEBDAV.DBA.progress_start (
     }
   }
   return results;
+}
+;
+
+-----------------------------------------------------------------------------
+--
+create procedure WEBDAV.DBA.ods_postInstall (
+  in path varchar := '/DAV/VAD/wa/dav/dav_browser.xsl')
+{
+  declare id integer;
+  declare content, contentType any;
+
+  id := DB.DBA.DAV_SEARCH_ID (path, 'R');
+  if (DB.DBA.DAV_HIDE_ERROR (id) is not null)
+  {
+    DB.DBA.DAV_RES_CONTENT_INT (id, content, contentType, 0, 0);
+    content := replace (cast (content as varchar), '"http://www.openlinksw.com/vspx/macro"', '"http://www.openlinksw.com/vspx/ods/"');
+    DB.DBA.DAV_RES_UPLOAD_STRSES_INT (path, content, contentType, '110100100RR', 'dav', 'administrators', extern=>0, check_locks=>0);
+  }
 }
 ;

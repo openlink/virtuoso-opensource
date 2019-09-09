@@ -161,19 +161,31 @@
 
           <v:method name="webdav_redirect" arglist="in path varchar, in mode integer, in parts varchar">
             <![CDATA[
-              declare sid varchar;
-              declare cookies any;
+              declare tmp, delimiter, sid varchar;
+              declare cookies, params any;
 
               if (mode)
                 path := WEBDAV.DBA.dav_lpath (path);
 
+              params := self.vc_page.vc_event.ve_params;
               path := WEBDAV.DBA.path_escape (path);
-              sid := get_keyword ('sid', self.vc_page.vc_event.ve_params, '');
+              sid := get_keyword ('sid', params, '');
               if (sid <> '')
               {
                 cookies := DB.DBA.vsp_ua_get_cookie_vec (self.vc_event.ve_lines);
                 if (sid <> get_keyword ('sid', cookies, ''))
                   parts := parts || case when (parts = '') then '' else '&' end || 'sid=' || sid;
+              }
+
+              tmp := get_keyword ('retname', params, '');
+              if (tmp <> '')
+              {
+                delimiter := case when (parts <> '') then '&' else '' end;
+                parts := parts || delimiter || sprintf ('retname=%s', tmp);
+                delimiter := '&';
+                tmp := get_keyword ('browse_type', params, '');
+                if (tmp <> '')
+                  parts := parts || delimiter || sprintf ('browse_type=%s', tmp);
               }
 
               if (parts <> '')
@@ -5139,18 +5151,18 @@
                 <img class="pointer" border="0" alt="Browse Path" title="Browse Path" src="<?V self.image_src ('dav/image/go_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'go');" style="margin-left: 5px; vertical-align:middle;" />
               </div>
               <div style="float: right;">
-              <b><v:label for="list_type_internal" value=" View " /></b>
-              <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
-                <v:item name="Details" value="0" />
-                <v:item name="List" value="1" />
-              </v:select-list>
-              <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
+                <b><v:label for="list_type_internal" value=" View " /></b>
+                <v:select-list name="list_type_internal" xhtml_id="list_type_internal" value="--self.dir_details" xhtml_onchange="javascript: doPost(\'F1\', \'reload\'); return false">
+                  <v:item name="Details" value="0" />
+                  <v:item name="List" value="1" />
+                </v:select-list>
+                <v:template type="simple" enabled="-- case when ((self.command in (0)) and (self.command_mode in (0,1))) then 1 else 0 end">
                   &amp;nbsp;
-                <b><v:label for="filters" value=" Filter Pattern " /></b>
+                  <b><v:label for="filters" value=" Filter Pattern " /></b>
                   <v:text name="filters" xhtml_id="filters" value="--self.search_filter" xhtml_onkeypress="return submitEnter(event, \'F1\', \'action\', \'filter\')" />
                   <img class="pointer" border="0" alt="Filter" title="Filter" src="<?V self.image_src ('dav/image/filter_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'filter');" style="margin-left: 5px; vertical-align:middle;" />
                   <img class="pointer" border="0" alt="Cancel Filter" title="Cancel Filter" src="<?V self.image_src ('dav/image/close_16.png') ?>" onclick="javascript: vspxPost('action', '_cmd', 'cancelFilter');" style="vertical-align:middle;" />
-              </v:template>
+                </v:template>
               </div>
             </div>
           </v:template>
@@ -7555,6 +7567,19 @@
       <td>w</td>
       <td class="right">x</td>
     </tr>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <xsl:template match="vm:tabCaption2">
+    <div>
+      <xsl:if test="@hide">
+        <xsl:attribute name="style">display: none;</xsl:attribute>
+      </xsl:if>
+      <xsl:attribute name="id"><xsl:value-of select="concat('tab_', @tab)"/></xsl:attribute>
+      <xsl:attribute name="class">ODS_tabLabel <xsl:if test="@activeTab = @tab">ODS_tabLabelActive</xsl:if></xsl:attribute>
+      <xsl:attribute name="onclick">javascript: WEBDAV.showTab(<xsl:value-of select="@tab"/>, <xsl:value-of select="@tabs"/>)</xsl:attribute>
+      <xsl:value-of select="@caption"/>
+    </div>
   </xsl:template>
 
 </xsl:stylesheet>

@@ -103,6 +103,7 @@
       <v:before-data-bind>
         <![CDATA[
           declare vspx_user varchar;
+          declare cookies any;
 
           vspx_user := connection_get ('vspx_user');
           if (isnull (vspx_user) or (vspx_user = 'nobody'))

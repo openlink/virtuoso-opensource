@@ -3579,7 +3579,7 @@ create procedure DAV_DELETE_INT (
   else if (what = 'C')
   {
     declare items any;
-    declare det, proc, graph varchar;
+    declare det, det_params, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
     if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
@@ -3629,6 +3629,10 @@ create procedure DAV_DELETE_INT (
         DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
       }
     }
+    det_params := null;
+    if ((det <> '') and __proc_exists ('DB.DBA.' || det || '__params') and __proc_exists ('DB.DBA.' || det || '_REVOKE'))
+      det_params := call ('DB.DBA.' || det || '__params') (id);
+
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
     DB.DBA.LDP_DELETE (path, 1);
 
@@ -3638,6 +3642,8 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta, 1);
     }
+    if (not isnull (det_params))
+      call ('DB.DBA.' || det || '_REVOKE') (det_params);
   }
   else if (not silent)
   {
