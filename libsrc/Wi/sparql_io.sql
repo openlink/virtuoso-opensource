@@ -3073,11 +3073,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('	<fieldset>\n');
     http('		<label for="default-graph-uri">Default Data Set Name (Graph IRI)</label><br />\n');
     http('		<input type="text" name="default-graph-uri" id="default-graph-uri"');
-    http(sprintf (' value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
+    http(sprintf (' value="%V" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
     http('		<br /><br />\n');
 
     http('		<label for="query">Query Text</label><br />\n');
-    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">'|| def_qry ||'</textarea>\n');
+    http(sprintf('             <textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">%V</textarea>\n', charset_recode (def_qry, 'UTF-8', '_WIDE_')));
 
     http('		<br /><br />\n');
     if (can_sponge)
@@ -3116,7 +3116,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
 
     http('		<label for="timeout" class="n">Execution timeout</label>\n');
-    http('		<input name="timeout" id="timeout" type="text" value="' || coalesce (cast (timeout as varchar), '') || '" /> milliseconds\n');
+    http(sprintf('             <input name="timeout" id="timeout" type="text" value="%d" /> milliseconds\n', timeout, ''));
     http('		<span class="info"><i>(values less than 1000 are ignored)</i></span>');
     http('		<br />\n');
 
@@ -3486,7 +3486,7 @@ execute_query:
       else if ('timeout' = pname and length (pvalue))
         {
           declare t integer;
-          t := cast (pvalue as integer);
+          t := atoi (pvalue);
           if (t is not null and t >= 1000)
             {
               if (hard_timeout >= 1000)
