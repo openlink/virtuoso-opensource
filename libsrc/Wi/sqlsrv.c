@@ -3764,7 +3764,28 @@ futures_object_space_clear (caddr_t b, future_request_t *f)
   if (cli && cli->cli_trx && cli->cli_trx->lt_is_excl)
     {
       while (srv_have_global_lock (THREAD_CURRENT_THREAD))
-	srv_global_unlock (cli, cli->cli_trx);
+	{
+	  if (CLI_TERMINATE == cli->cli_terminate_requested)
+	    {
+	      char *new_name;
+
+	      log_error ("An atomic transaction cannot be committed due to a client");
+	      log_error ("disconnect. The transaction will be rolled back to restore");
+	      log_error ("the database to its previous state.");
+
+	      new_name = setext (wi_inst.wi_master->dbs_log_name, "atomic-trx", EXT_SET);
+	      rename (wi_inst.wi_master->dbs_log_name, new_name);
+
+	      log_error ("The old transaction file has been renamed");
+	      log_error ("from : %s", wi_inst.wi_master->dbs_log_name);
+	      log_error ("to   : %s", new_name);
+
+	      log_error ("The database engine will need to be restarted");
+
+	      call_exit (0);
+	    }
+	  srv_global_unlock (cli, cli->cli_trx);
+	}
     }
 }
 
