@@ -213,6 +213,7 @@ extern long tc_log_write_clocks;
 
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
+extern int32 enable_g_inf_opt;
 extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
@@ -1812,6 +1813,7 @@ stat_desc_t dbf_descs [] =
     {"cl_res_buffer_bytes", (long *)&cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", (long *)&cl_batches_per_rpc, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
+    {"enable_g_inf_opt", (long *)&enable_g_inf_opt, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
