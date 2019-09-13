@@ -2244,6 +2244,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
 	    return (box_num (key->key_ac_out));
+	  if (0 == strcmp (stat_name, "key_count"))
+	    return (box_num (key->key_count));
 	  if (0 == strcmp (stat_name, "n_est_rows"))
 	    {
 	      return box_num (tb->tb_count_estimate + tb->tb_count_delta);
