@@ -473,7 +473,7 @@ typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation m
 #define GEO_DE9IM_BE		2
 #define GEO_DE9IM_EI		1
 #define GEO_DE9IM_EB		0
-#define GEO_DE9IM_EE		-1 /* EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
+#define GEO_DE9IM_EE		-1	/*!< EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
 #define GEO_DE9IM_TOTALBITS	64
 
 /* Hex notation of a mask code is readed left to right, two hex digits per cell.

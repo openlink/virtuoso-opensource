@@ -13,6 +13,7 @@
 #include <geos/geom/CoordinateSequence.h>
 #include <geos/geom/PrecisionModel.h>
 
+#define IGNORE_SERVER_IMP_TOKEN
 #include "geos_plugin.h"
 
 geo_t *

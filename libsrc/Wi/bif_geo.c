@@ -1031,7 +1031,9 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
         return 0;
       }
     }
+#ifdef __SOMETHING_SOMETHING__
   sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
+#endif
   return 0;
 }
 
@@ -1529,7 +1531,9 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
       }
     }
 unsupported_intersects:
+#ifdef __SOMETHING_SOMETHING__
   sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, some shape types (e.g., polygon rings and curves) are not yet supported");
+#endif
   return 0;
 }
 
