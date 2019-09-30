@@ -7412,10 +7412,14 @@ create procedure DB.DBA.LDP_REFRESH (
   if (isnull (DB.DBA.DAV_HIDE_ERROR (id)))
     return;
 
+  if (isarray (id) and not DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (id)))
+    return;
+
+  id := DB.DBA.DAV_DET_DAV_ID (id);
   if (not enabled)
     enabled := DB.DBA.LDP_ENABLED (id);
 
-  for (select COL_NAME as _COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = id) do
+  for (select COL_NAME as _COL_NAME, COL_OWNER as _COL_OWNER, COL_GROUP as _COL_GROUP from WS.WS.SYS_DAV_COL where COL_ID = id) do
   {
     uri := WS.WS.DAV_IRI (path);
     if (enabled)
