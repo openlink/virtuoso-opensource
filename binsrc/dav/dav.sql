@@ -5428,6 +5428,9 @@ create trigger SYS_DAV_COL_BI before insert on WS.WS.SYS_DAV_COL order 0 referen
   if (N.COL_ID = N.COL_PARENT)
     signal ('37000', 'The new collection''s tree will have a loop!');
 
+  if ((N.COL_PARENT = 0) and (N.COL_NAME <> 'DAV'))
+    signal ('37000', 'The root collection can be only ''DAV''!');
+
   if (isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C'))))
     signal ('37000', 'The parent collection doesn''t exist!');
 }
@@ -5501,6 +5504,9 @@ create trigger SYS_DAV_COL_BU before update (COL_PARENT) on WS.WS.SYS_DAV_COL or
 
   if (isnull (DB.DBA.DAV_HIDE_ERROR (DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C'))))
     signal ('37000', 'The parent collection doesn''t exist!');
+
+  if ((N.COL_PARENT = 0) and (N.COL_NAME <> 'DAV'))
+    signal ('37000', 'The root collection can be only ''DAV''!');
 
   _id := N.COL_ID;
   _col_id := N.COL_PARENT;
