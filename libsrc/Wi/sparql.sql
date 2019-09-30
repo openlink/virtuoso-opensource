@@ -8032,9 +8032,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
           repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d clear graph iri ( ?? )', lm), g_iri);
         }
       declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-      exec (sprintf ('
-      delete from DB.DBA.RDF_QUAD
-      where G = __i2id (''%S'') ', g_iri));
+      delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0)  option (index_only, index RDF_QUAD_GS);
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)
