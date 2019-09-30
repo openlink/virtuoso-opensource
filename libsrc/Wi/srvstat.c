@@ -319,6 +319,7 @@ long tws_disconnect_while_check_in;
 long tws_done_while_check_in;
 long tws_cancel;
 long tws_bad_request;
+long tws_max_connects;
 
 long tws_cached_connection_hits;
 long tws_cached_connection_miss;
@@ -1635,6 +1636,7 @@ stat_desc_t stat_descs [] =
     {"tws_cached_connection_hits", &tws_cached_connection_hits , NULL},
     {"tws_cached_connection_miss", &tws_cached_connection_miss , NULL},
     {"tws_bad_request", &tws_bad_request , NULL},
+    {"tws_max_connects", &tws_max_connects , NULL},
 
     {"vt_batch_size_limit", &vt_batch_size_limit, NULL},
 

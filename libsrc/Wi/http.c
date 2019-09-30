@@ -4816,6 +4816,8 @@ ws_init_func (ws_connection_t * ws)
     }
 }
 
+extern long tws_max_connects;
+
 void
 ws_ready (dk_session_t * accept)
 {
@@ -4834,6 +4836,8 @@ ws_ready (dk_session_t * accept)
       mutex_enter (ws_queue_mtx);
     }
   ws = (ws_connection_t *) resource_get (ws_dbcs);
+  if (tws_max_connects < (ws_dbcs->rc_size - ws_dbcs->rc_fill))
+    tws_max_connects = ws_dbcs->rc_size - ws_dbcs->rc_fill;
 
   if (!ws)
     {

@@ -6289,6 +6289,7 @@ const char * wsst =
 "  __tc_no ('tws_cached_connection_hits');\n"
 "  __tc_no ('tws_cached_connection_miss');\n"
 "  __tc_no ('tws_bad_request');\n"
+"  __tc_no ('tws_max_connects');\n"
 "}\n";
 
 
