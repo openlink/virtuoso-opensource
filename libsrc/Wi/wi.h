@@ -1939,6 +1939,9 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 #define NUM_COMPARE(n1,n2) \
   (n1 < n2 ? DVC_LESS : (n1 == n2 ? DVC_MATCH : DVC_GREATER))
 
+#define NUM_COMPARE_DBL(n1,n2) \
+  (isnan(n1) && isnan(n2) ? DVC_MATCH : (isnan(n2) || n1 < n2 ? DVC_LESS : (n1 == n2 ? DVC_MATCH : DVC_GREATER)))
+
 #define IS_NUM_DTP(dtp) \
   (DV_LONG_INT == dtp || \
    DV_SHORT_INT == dtp || \

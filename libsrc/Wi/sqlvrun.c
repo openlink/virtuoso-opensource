@@ -92,7 +92,7 @@ dc_double_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i1 = ((double*)dc->dc_values)[r1];
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -102,7 +102,7 @@ dc_float_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i1 = ((float *) dc->dc_values)[r1];
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 int
@@ -142,7 +142,7 @@ dc_double_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -153,7 +153,7 @@ dc_float_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
