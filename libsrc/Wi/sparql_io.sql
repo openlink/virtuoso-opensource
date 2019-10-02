@@ -849,20 +849,20 @@ post_done: ;
       declare feats any;
       feats := vector (
 --      qtype bits        qtxt
-        '-' , 0hex0001	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o } } limit 1'																			,
+        '-' , 0hex0001	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o } } limit 1'																			,
         '+' , 0hex0001	, 'prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> select ?s where { quad map virtrdf:DefaultQuadMap { ?s ?p ?o } } limit 1'													,
-        '+' , 0hex0002	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'															,
-        '+' , 0hex0004	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (BREAKUP) } } limit 1'																,
-        '+' , 0hex0008	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (PKSELFJOIN) } } limit 1'																,
-        '+' , 0hex0010	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (RVR) } } limit 1'																	,
-        '+' , 0hex0020	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'															,
-        '+' , 0hex0040	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o . filter (?o like "%qaz%") } } limit 1'															,
-        '+' , 0hex0080	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?:oglobal } } limit 1'																		,
-        '+' , 0hex0100	, 'select (str(?s) as ?str) where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o } } group by ?s limit 1'															,
-        '+' , 0hex0200	, 'define input:storage "" select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o } } limit 1'																,
-        '+' , 0hex0400	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o } . service <http://dbpedia.org/sparql> { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?t } } limit 1'										,
-        '+' , 0hex1000	, 'select ?s where { graph <info:improving-sparql-fed-for-a-virtuoso> { ?s <info:improving-sparql-fed-for-a-virtuoso2> <info:improving-sparql-fed-for-a-virtuoso-o> OPTION (TRANSITIVE) } } limit 1'														,
-        '+' , 0hex2000	, 'select (strdt (group_concat (?o), datatype (max(?o))) as ?gc) where { graph <info:improving-sparql-fed-for-a-virtuoso> { { ?s <info:improving-sparql-fed-for-a-virtuoso2> ?o } MINUS { ?s <info:improving-sparql-fed-for-a-virtuoso2> <info:improving-sparql-fed-for-a-virtuoso-o> } } } group by ?s having (sample(?o) > 1) limit 1'	 );
+        '+' , 0hex0002	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (TABLE_OPTION "ORDER") } } limit 1'															,
+        '+' , 0hex0004	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (BREAKUP) } } limit 1'																,
+        '+' , 0hex0008	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (PKSELFJOIN) } } limit 1'																,
+        '+' , 0hex0010	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o OPTION (RVR) } } limit 1'																	,
+        '+' , 0hex0020	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o . filter (?o in ( 1, 2, 3)) } } limit 1'															,
+        '+' , 0hex0040	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o . filter (?o like "%qaz%") } } limit 1'															,
+        '+' , 0hex0080	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?:oglobal } } limit 1'																		,
+        '+' , 0hex0100	, 'select (str(?s) as ?str) where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o } } group by ?s limit 1'															,
+        '+' , 0hex0200	, 'define input:storage "" select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o } } limit 1'																,
+        '+' , 0hex0400	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o } . service <http://dbpedia.org/sparql> { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?t } } limit 1'										,
+        '+' , 0hex1000	, 'select ?s where { graph <example:improving-sparql-fed-for-a-virtuoso> { ?s <example:improving-sparql-fed-for-a-virtuoso2> <example:improving-sparql-fed-for-a-virtuoso-o> OPTION (TRANSITIVE) } } limit 1'														,
+        '+' , 0hex2000	, 'select (strdt (group_concat (?o), datatype (max(?o))) as ?gc) where { graph <example:improving-sparql-fed-for-a-virtuoso> { { ?s <example:improving-sparql-fed-for-a-virtuoso2> ?o } MINUS { ?s <example:improving-sparql-fed-for-a-virtuoso2> <example:improving-sparql-fed-for-a-virtuoso-o> } } } group by ?s having (sample(?o) > 1) limit 1'	 );
       len := length (feats) / 3;
       for (ctr := 0; ctr < len; ctr := ctr + 1)
         {
@@ -872,7 +872,7 @@ post_done: ;
           bits := feats[ctr * 3 + 1];
           qtxt := feats[ctr * 3 + 2];
           if (bit_and (langex_bits, 1))
-            qtxt := replace (qtxt, 'graph <info:improving-sparql-fed-for-a-virtuoso>', '');
+            qtxt := replace (qtxt, 'graph <example:improving-sparql-fed-for-a-virtuoso>', '');
           whenever sqlstate '*' goto no_such_feat;
           result ('00000', sprintf ('Test query %d/%d: %s %d (hex %08x)...', ctr, len, case qtype when '+' then 'define lang:dialect' else 'define lang:exception' end, bits, bits));
           DB.DBA.SPARQL_REXEC_TO_ARRAY (service_iri, qtxt, null, null, null, 1, null);
