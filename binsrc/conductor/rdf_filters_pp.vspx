@@ -140,7 +140,7 @@
                               </v:on-post>
                             </v:button>
 
-                            <table class="listing" rules="groups">
+                            <table class="listing">
                               <tr class="listing_header_row">
                                 <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
                                 <th width="1%">Seq#</th>
@@ -158,7 +158,7 @@
                                 <v:template name="maps_rep" type="repeat">
 
                                   <v:template name="maps_brows" type="browse">
-                                    <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                    <tr>
                                       <td>
                                         <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" />
                                       </td>
@@ -351,8 +351,9 @@
                                 <?vsp if (strstr (self.desc1.ufl_value, 'Graph API') is not null) { ?>
                                 <a href="/sponger/fb_access_token_popup.vsp" target="_blank">Get Facebook access token</a>
                                 <?vsp } ?>
-                                <br />
-                                <span class="fm_ctl_btn">
+                                <br /><br />
+                                <label>&amp;nbsp;</label>
+                                <span>
                                   <v:button name="cancel1" value="Cancel" action="simple">
                                     <v:on-post>
                                       <![CDATA[

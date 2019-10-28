@@ -261,7 +261,7 @@
         <v:form name="inx_form2" type="simple" method="POST" action="" >
           <table class="ctl_grp">
             <tr class="ctl_grp_title">
-              <th><h3>Select parse options</h3></th>
+              <th colspan="2"><h3>Select parse options</h3></th>
             </tr>
             <tr>
               <th>Mode</th>

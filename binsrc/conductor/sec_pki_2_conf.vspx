@@ -1,8 +1,6 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,13 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="pki_1" decor="yacutia_decor.vspx" style="yacutia_style.xsl"
+<v:page name="pki_2"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-	fast-render="1" 
-	xmlns:v="http://www.openlinksw.com/vspx/" 
-	xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
@@ -43,125 +42,117 @@
     <vm:header caption="Public Key Infrastructure">
     </vm:header>
     <vm:pagebody>
-        <v:on-init>
-	  declare pos int;
-	  if (self.chost is null or self.clhost is null)
-	    return;
-	  if (self.clhost = '*ini*')
-            {
-	      self.clhost := server_http_port ();
-              if (strrchr (self.clhost, ':') is null)
-	        self.clhost := ':' || self.clhost;
-	    }
-	  else if (self.clhost = '*sslini*')
-            {
-              self.clhost := coalesce (server_https_port (), '');
-              if (strrchr (self.clhost, ':') is null)
-	        self.clhost := ':' || self.clhost;
-	    }
+      <v:on-init>
+        declare pos int;
+        if (self.chost is null or self.clhost is null)
+          return;
 
-	  pos := strrchr (self.clhost, ':');
-	  if (pos is not null)
-	    {
-	      self.lhost1 := substring (self.clhost, 1, pos);
-	      self.port1 := substring (self.clhost, pos + 2, length (self.clhost));
-	    }
-	  else
-	    self.lhost1 := self.clhost;
+        if (self.clhost = '*ini*')
+        {
+          self.clhost := server_http_port ();
+          if (strrchr (self.clhost, ':') is null)
+            self.clhost := ':' || self.clhost;
+        }
+        else if (self.clhost = '*sslini*')
+        {
+          self.clhost := coalesce (server_https_port (), '');
+          if (strrchr (self.clhost, ':') is null)
+            self.clhost := ':' || self.clhost;
+        }
+        pos := strrchr (self.clhost, ':');
+        if (pos is not null)
+        {
+          self.lhost1 := substring (self.clhost, 1, pos);
+          self.port1 := substring (self.clhost, pos + 2, length (self.clhost));
+        }
+        else
+          self.lhost1 := self.clhost;
 
-	  if (length (self.lhost1) = 0)
-	    self.lhost1 := '0.0.0.0';
+        if (length (self.lhost1) = 0)
+          self.lhost1 := '0.0.0.0';
 
-	  pos := strrchr (self.chost, ':');
-	  if (pos is not null)
-	    self.vhost1 := substring (self.chost, 1, pos);
-	  else
-	    self.vhost1 := self.chost;
+        pos := strrchr (self.chost, ':');
+        if (pos is not null)
+          self.vhost1 := substring (self.chost, 1, pos);
+        else
+          self.vhost1 := self.chost;
+      </v:on-init>
+      <vm:help id="sec_pki" sect="" />
+      <v:form name="form1" type="simple" method="POST">
+        <!-- top of security layout -->
+        <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
+          <tr valign='top'>
+            <td>
+              <table cellpadding="0" cellspacing="0" border="0">
+                <tr>
+                  <td class="page_tab_selected" align="center">
+                    Public Key Infrastructure
+                  </td>
+                  <td class="page_tab" align="center">
+                    <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+                  </td>
+                  <td class="page_tab_empty" align="right" width="100%">
+                    &amp;nbsp;
+                  </td>
+                </tr>
+              </table>
 
-	</v:on-init>
-    <vm:help id="sec_pki" sect=""/>
-    <v:form name="form1" type="simple" method="POST">
-	<!-- top of security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-		      <td class="page_tab_selected" align="center">
-			  Public Key Infrastructure	
-		      </td>
-		      <td class="page_tab" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-		      </td>
-			<td class="page_tab_empty" align="right" width="100%">
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-			<td valign="top">
-		   <!-- end of top security layout -->
-      <v:form name="frm_confirm" action="http_serv_mgmt.vspx" method="POST" type="simple">
-        <div class="confirm_dialog">
-          <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
-          <div class="confirm_text">
-             <p>You are requesting of deletion of listener at interface <b><?V self.lhost1 ?></b>, listening at port <b><?V self.port1 ?></b>, for connections to <b><?V self.chost ?></b>.<br/>
-              Additionally, these Virtual directories shall be deleted:<br/>
-              <?vsp
-  for select HP_LPATH
-        from DB.DBA.HTTP_PATH
-        where HP_HOST = self.chost and
-              HP_LISTEN_HOST = self.clhost
-        order by HP_LPATH do
-    {
-      http ('<b>');
-      http (HP_LPATH);
-      http('</b><br/>');
-    }
-              ?>
-             </p>
-          </div>
-          <div class="confirm_buttons">
-            <v:button name="conf_cancel" action="simple" value="Cancel">
-              <v:on-post>
-                <v:script>
-		    <![CDATA[
-		    self.vc_redirect ('sec_pki_2.vspx');
-                  ]]>
-                </v:script>
-              </v:on-post>
-            </v:button>
-            <v:button name="conf_proceed" action="simple" value="Delete">
-              <v:on-post>
-                <v:script>
-                  <![CDATA[
-  for (select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PERSIST_SES_VARS
-         from DB.DBA.HTTP_PATH
-         where HP_HOST = self.chost and HP_LISTEN_HOST = self.clhost) do
-    VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
-		    self.vc_redirect ('sec_pki_2.vspx');
-                  ]]>
-                </v:script>
-              </v:on-post>
-            </v:button>
-          </div>
-        </div>
+              <table class="tab_page">
+                <tr>
+                  <td valign="top">
+                  <!-- end of top security layout -->
+                    <v:form name="frm_confirm" action="http_serv_mgmt.vspx" method="POST" type="simple">
+                      <div class="confirm_dialog">
+                        <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+                        <div class="confirm_text">
+                          <p>You are requesting of deletion of listener at interface <b><?V self.lhost1 ?></b>, listening at port <b><?V self.port1 ?></b>, for connections to <b><?V self.chost ?></b>.<br/>
+                          Additionally, these Virtual directories shall be deleted:<br/>
+                          <?vsp
+                            for select HP_LPATH
+                                  from DB.DBA.HTTP_PATH
+                                  where HP_HOST = self.chost and
+                                        HP_LISTEN_HOST = self.clhost
+                                  order by HP_LPATH do
+                            {
+                              http ('<b>');
+                              http (HP_LPATH);
+                              http ('</b><br/>');
+                            }
+                          ?>
+                          </p>
+                        </div>
+                        <div class="confirm_buttons">
+                          <v:button name="conf_cancel" action="simple" value="Cancel">
+                            <v:on-post>
+                              <![CDATA[
+                                self.vc_redirect ('sec_pki_2.vspx');
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:button name="conf_proceed" action="simple" value="Delete">
+                            <v:on-post>
+                              <![CDATA[
+                                for (select HP_HOST, HP_LISTEN_HOST, HP_LPATH, HP_PERSIST_SES_VARS
+                                       from DB.DBA.HTTP_PATH
+                                       where HP_HOST = self.chost and HP_LISTEN_HOST = self.clhost) do
+                                  VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
+
+                                self.vc_redirect ('sec_pki_2.vspx');
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </div>
+                      </div>
+                    </v:form>
+                    <!-- bottom of security layout -->
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+      <!-- end of bottom security layout -->
       </v:form>
-		   <!-- bottom of security layout -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
-	<!-- end of bottom security layout -->
-    </v:form>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

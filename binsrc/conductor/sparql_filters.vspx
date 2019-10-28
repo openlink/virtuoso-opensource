@@ -90,7 +90,7 @@
                                 ]]>
                               </v:on-post>
                             </v:button>
-                            <table class="listing" rules="groups">
+                            <table class="listing">
                               <tr class="listing_header_row">
                                 <th colspan="2">Profile</th>
                                 <th>Profile URI</th>
@@ -106,7 +106,7 @@
                                 <v:template name="maps_rep" type="repeat">
 
                                   <v:template name="maps_brows" type="browse">
-                                    <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                    <tr>
                                       <td>
                                         <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
                                           <v:before-render>
@@ -173,8 +173,9 @@
                                 <label for="xslt1">XSL-T style</label>
                                 <v:text name="xslt1" value="" xhtml_size="110" xhtml_id="xslt1" error-glyph="*">
                                 </v:text>
-                                <br />
-                                <span class="fm_ctl_btn">
+                                <br /><br />
+                                <label>&amp;nbsp;</label>
+                                <span>
                                   <v:button name="cancel1" value="Cancel" action="simple">
                                     <v:on-post>
                                       <![CDATA[

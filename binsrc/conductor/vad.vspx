@@ -113,7 +113,7 @@
         </v:form>
       </div>
       <v:form name="vad_list1" method="POST" type="simple">
-        <table class="listing" rules="groups">
+        <table class="listing">
           <v:data-set name="ds_items1"
                       sql="select PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST from VAD.DBA.VAD_LIST where dir = :self.src_folder and fs_type = :self.src_folder_type order by 1"
                       nrows="1000"
@@ -141,7 +141,7 @@
               </v:template>
 
               <v:template name="template41" type="browse" >
-                <tr class="<?V case when mod (control.te_ctr, 2) = 0 then 'listing_row_even' else 'listing_row_odd' end ?>">
+                <tr>
                   <td class="listing_col">
                     <input type="checkbox" value="<?U control.te_ctr ?>" name="cb<?V case when (control as vspx_row_template).te_rowset[5] is not null and (control as vspx_row_template).te_rowset[2] is not null and gt (control.te_rowset[5], control.te_rowset[2]) then '2' else '1' end ?>"/>
                     <?vsp if (control.te_rowset[7] is not null) { ?>

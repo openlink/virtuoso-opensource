@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,51 +19,51 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_repl_pub"
-  fast-render="1"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
-    <v:variable persist="0" name="browse_cat" type="varchar" default="'%'"/>
-    <v:variable persist="0" name="browse_sch" type="varchar" default="'%'"/>
-    <v:variable persist="0" name="browse_mask" type="varchar" default="'%'"/>
-      <v:form name="space_filter_form" type="simple" method="POST" action="logging_page.vspx?page=6">
-      <v:on-init><![CDATA[
-        declare v_params any;
-        v_params := control.vc_page.vc_event.ve_params;
-        if (get_keyword('cat', v_params ,'') <> '')
-          self.browse_cat := get_keyword('cat', v_params ,'');
-        if (get_keyword('sch', v_params ,'') <> '')
-          self.browse_sch := get_keyword('sch', v_params ,'');
-        if (get_keyword('mask', v_params ,'') <> '')
-          self.browse_mask := get_keyword('mask', v_params ,'');
-    	]]></v:on-init>
-        <v:on-post>
-          <v:script>
-            <![CDATA[
-              if( self.browse_cat <> self.dl_catalog1.ufl_value)
-                self.dl_schema1.ufl_value := '%';
-              self.browse_cat := self.dl_catalog1.ufl_value;
-              self.browse_sch := self.dl_schema1.ufl_value;
-              self.browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
-              if (get_keyword('clear_filter', self.vc_page.vc_event.ve_params))
-              {
-                self.dl_catalog1.ufl_value := '%';
-                self.dl_schema1.ufl_value := '%';
-                self.t_mask.ufl_value := '%';
-                self.browse_cat := '%';
-                self.browse_sch := '%';
-                self.browse_mask := '%';
-              }
-              self.dl_catalog1.vc_data_bind(e);
-              self.dl_schema1.vc_data_bind(e);
-              self.data_set14.vc_data_bind(e);
-            ]]>
-          </v:script>
-        </v:on-post>
+<v:page name="logging_space"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable persist="0" name="browse_cat" type="varchar" default="'%'"/>
+  <v:variable persist="0" name="browse_sch" type="varchar" default="'%'"/>
+  <v:variable persist="0" name="browse_mask" type="varchar" default="'%'"/>
+    <v:form name="space_filter_form" type="simple" method="POST" action="logging_page.vspx?page=6">
+      <v:on-init>
+        <![CDATA[
+          declare v_params any;
+          v_params := control.vc_page.vc_event.ve_params;
+          if (get_keyword('cat', v_params ,'') <> '')
+            self.browse_cat := get_keyword('cat', v_params ,'');
+          if (get_keyword('sch', v_params ,'') <> '')
+            self.browse_sch := get_keyword('sch', v_params ,'');
+          if (get_keyword('mask', v_params ,'') <> '')
+            self.browse_mask := get_keyword('mask', v_params ,'');
+    	  ]]>
+    	</v:on-init>
+      <v:on-post>
+        <![CDATA[
+          if( self.browse_cat <> self.dl_catalog1.ufl_value)
+            self.dl_schema1.ufl_value := '%';
+
+          self.browse_cat := self.dl_catalog1.ufl_value;
+          self.browse_sch := self.dl_schema1.ufl_value;
+          self.browse_mask := case when self.t_mask.ufl_value='' then '%' else self.t_mask.ufl_value end;
+          if (get_keyword('clear_filter', self.vc_page.vc_event.ve_params))
+          {
+            self.dl_catalog1.ufl_value := '%';
+            self.dl_schema1.ufl_value := '%';
+            self.t_mask.ufl_value := '%';
+            self.browse_cat := '%';
+            self.browse_sch := '%';
+            self.browse_mask := '%';
+          }
+          self.dl_catalog1.vc_data_bind(e);
+          self.dl_schema1.vc_data_bind(e);
+          self.data_set14.vc_data_bind(e);
+        ]]>
+      </v:on-post>
       <table>
         <tr class="listing_header_row">
           <th>Catalog</th>
@@ -139,11 +137,7 @@
           </v:template>
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set14_browse_template">
             <table> <!-- dummy -->
- <?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-?>
-             <!-- tr -->
+              <tr>
                 <td align="left">
                   <?V ((control as vspx_row_template).te_rowset[0]) ?>
                 </td>
@@ -160,28 +154,20 @@
                   <?V ((control as vspx_row_template).te_rowset[4])?>
                 </td>
                 <td align="right">
-		  <?V ((control as vspx_row_template).te_rowset[5])?>
+                  <?V ((control as vspx_row_template).te_rowset[5])?>
                 </td>
                 <td align="right">
                   <v:label format="%s" name="data_set14_browse_label_7" value="--((control.vc_parent as vspx_row_template).te_rowset[6])" fmt-function="space_fmt"/>
                 </td>
-<?vsp
-              http ('</tr>');
-?>
-              <!-- /tr -->
+              </tr>
             </table>
           </v:template>
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set14_footer_template">
           <table>
-<!--            <tr>
-              <td colspan="7" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set14"/>
-              </td>
-            </tr>-->
           </table>
         </v:template>
       </v:data-set>
-      </div>
     </div>
+  </div>
 </v:page>

@@ -90,7 +90,7 @@
                               </v:on-post>
                             </v:button>
 
-                            <table class="listing" rules="groups">
+                            <table class="listing">
                               <tr class="listing_header_row">
                                 <th>Cartridge</th>
                                 <th>Source URL pattern</th>
@@ -101,7 +101,7 @@
                               <v:data-set name="maps" sql="select cartridgehookfn, urlsrcpattern, urldestpattern, defaultmode, mappingid from DB.DBA.RDF_ENTITY_URI_CARTRIDGE_MODES order by cartridgehookfn" scrollable="1" editable="1" nrows="1000">
                                 <v:template name="maps_rep" type="repeat">
                                   <v:template name="maps_brows" type="browse">
-                                    <tr class="<?V case when mod(control.te_ctr, 2) then 'listing_row_odd' else 'listing_row_even' end ?>">
+                                    <tr>
                                       <td style="display: none">
                                         <v:label name="mappingid1" value="--(control.vc_parent as vspx_row_template).te_rowset[4]"/>
                                       </td>
@@ -184,8 +184,9 @@
                                 <br />
                                 <label for="entityfunc1">Entity URI value/function</label>
                                 <v:text name="entityfunc1" value="" xhtml_size="110" xhtml_id="entityfunc1" error-glyph="*" />
-                                <br />
-                                <span class="fm_ctl_btn">
+                                <br /><br />
+                                <label>&amp;nbsp;</label>
+                                <span>
                                   <v:button name="cancel1" value="Cancel" action="simple">
                                     <v:on-post>
                                       <![CDATA[

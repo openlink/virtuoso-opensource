@@ -30,68 +30,63 @@
     </vm:menu>
     <vm:header caption="Result of Xquery execution"/>
     <vm:pagebody>
-    <vm:help id="xquery" sect=""/>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+      <vm:help id="xquery" sect=""/>
+      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
+            <table cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
+                <td class="page_tab_selected" align="center">XQuery Basic</td>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab" align="center">
+                  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
+                </td>
+                <td class="page_tab_empty" align="center" width="100%">
+                  &amp;nbsp;
+                </td>
+              </tr>
+            </table>
+            <table class="tab_page">
+              <tr>
+                <td valign="top">
+                <!-- MAIN AREA -->
+                  <table width="100%" border="0" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData" align="center">
                     <tr>
-                      <td class="page_tab_selected" align="center">XQuery Basic</td>
-                      <td class="page_tab" align="center">
-                        <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab" align="center">
-                        <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
-                      </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        &amp;nbsp;
+                      <td>
+                        <p>The xquery
+                        <?vsp
+                          if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'ok' )
+                            http('executed successfully');
+                          else
+                            http(' <span style="{color:red}">executed unsuccessfully</span>. Error message is:');
+                        ?>
+                        </p>
+                        <?vsp
+                          if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'error' )
+                            http(sprintf( ' <span style="{color:red}">%s</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
+                        ?>
+                        <p>
+                        </p>
                       </td>
                     </tr>
-                  </table>
-                  <table class="tab_page">
                     <tr>
-		      <td valign="top">
-			<!-- MAIN AREA -->
-      <table width="100%" border="0" border-color="#FF0033" cellspacing="0" cellpadding="5" class="MainData" align="center">
-        <tr>
-          <td>
-            <p>The xquery
-            <?vsp
-              if ( get_keyword('result', control.vc_page.vc_event.ve_params) = 'ok' )
-                  http('executed successfully');
-              else
-                  http(' <span style="{color:red}">executed unsuccessfully</span>. Error message is:');
-            ?>
-            </p>
-            <?vsp if (get_keyword('result', control.vc_page.vc_event.ve_params) = 'error' )
-                  http(sprintf( ' <span style="{color:red}">%s</span>', get_keyword('error', control.vc_page.vc_event.ve_params)));
-            ?>
-            <p>
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td class="MainData">
-            <table width="100%" border="0" cellspacing="0" cellpadding="5">
-              <v:form name="account_form" type="simple" method="POST" action="">
-                <v:on-post>
-                  <v:script><![CDATA[
-              http_request_status ('HTTP/1.1 302 Found');
-              http_header (sprintf('Location: xquery.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
-          ]]></v:script>
-                                  </v:on-post>
-                                  <tr>
-                                    <td align="center">
-                                      <v:button action="submit" name="apply" value="Ok"/>
-                                    </td>
-                                  </tr>
-                                </v:form>
-                              </table>
-                            </td>
-                          </tr>
+                      <td class="MainData">
+                        <table width="100%" border="0" cellspacing="0" cellpadding="5">
+                          <v:form name="account_form" type="simple" method="POST" action="">
+                            <v:on-post>
+                              <![CDATA[
+                                http_request_status ('HTTP/1.1 302 Found');
+                                http_header (sprintf('Location: xquery.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                              ]]>
+                            </v:on-post>
+                            <tr>
+                              <td align="center">
+                                <v:button action="submit" name="apply" value="Ok"/>
+                              </td>
+                            </tr>
+                          </v:form>
                         </table>
                       </td>
                     </tr>

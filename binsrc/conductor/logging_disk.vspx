@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,18 +19,17 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
-    <v:variable persist="1" name="sql_str" type="integer" default="3"/>
-    <v:variable persist="1" name="caption_str" type="varchar" default="'Disk Statistics (by Table)'"/>
-    <v:variable persist="temp" name="r_count" type="integer" default="0"/>
-    <div class="scroll_area">
-      <div id="monitor_tab">
+<v:page name="logging_disk"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable persist="1" name="sql_str" type="integer" default="3"/>
+  <v:variable persist="1" name="caption_str" type="varchar" default="'Disk Statistics (by Table)'"/>
+  <div class="scroll_area">
+    <div id="monitor_tab">
       <v:data-set name="data_set1" data='--disk_stat(3)' meta="--disk_stat_meta(self.sql_str)" nrows="0" scrollable="0" cursor-type="static" edit="0">
         <input type="hidden" name="page" value="3"/>
         <v:column name="KEY_TABLE" />
@@ -40,8 +37,9 @@
         <v:column name="TOUCHES" />
         <v:column name="READS" />
         <v:column name="READ_PCT" />
+
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
-          <table showme="1">
+          <table class="listing" showme="1">
             <tr class="listing_header_row">
               <th>Table</th>
               <th>Index name</th>
@@ -51,6 +49,7 @@
             </tr>
           </table>
         </v:template>
+
         <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
             <table> <!-- dummy -->
@@ -61,18 +60,15 @@
               </tr>
             </table>
           </v:template>
+
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
             <table> <!-- dummy -->
- <?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-?>
-             <!-- tr -->
+              <tr>
                 <td align="left">
                   <?V ((control as vspx_row_template).te_rowset[0]) ?>
                 </td>
                 <td align="left">
-		  <?V ((control as vspx_row_template).te_rowset[1]) ?>
+                  <?V ((control as vspx_row_template).te_rowset[1]) ?>
                 </td>
                 <td align="right">
                   <?V ((control as vspx_row_template).te_rowset[2]) ?>
@@ -83,23 +79,16 @@
                 <td align="right">
                   <?V ((control as vspx_row_template).te_rowset[4]) ?>
                 </td>
-<?vsp
-              http ('</tr>');
-?>
-              <!-- /tr -->
+              </tr>
             </table>
           </v:template>
         </v:template>
+
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
           <table>
-<!--            <tr>
-              <td colspan="5" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set1"/>
-              </td>
-            </tr>        -->
           </table>
         </v:template>
       </v:data-set>
-      </div>
     </div>
+  </div>
 </v:page>

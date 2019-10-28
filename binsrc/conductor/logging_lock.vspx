@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,13 +19,13 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_repl_pub"
-  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-  fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
-  xmlns:xhtml="http://www.w3.org/1999/xhtml"
-  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:page name="logging_lock"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <div class="scroll_area">
     <div id="monitor_tab">
       <!-- Temporary patch due to bug #10696, Just removed the where... We'll put it back later -->
@@ -54,6 +52,7 @@
             </tr>
           </table>
         </v:template>
+
         <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set13_repeat_template">
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set13_if_not_exists_template">
             <table> <!-- dummy -->
@@ -66,11 +65,7 @@
           </v:template>
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set13_browse_template">
             <table>
-<?vsp
-              self.r_count := self.r_count + 1;
-              http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-?>
-              <!-- tr -->
+              <tr>
                 <td class="listing_col">
                   <?V ((control as vspx_row_template).te_rowset[0]) ?>
                 </td>
@@ -92,23 +87,15 @@
                 <td class="listing_col_num">
                   <?V ((control as vspx_row_template).te_rowset[6]) ?>
                 </td>
-<?vsp
-              http ('</tr>');
-?>
-              <!-- /tr-->
+              </tr>
             </table>
           </v:template>
         </v:template>
         <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set13_footer_template">
           <table>
-<!--            <tr class="browse_button_row">
-	      <td colspan="7" align="center"  class="listing_col_action">
-		<vm:ds-navigation data-set="data_set13"/>
-              </td>
-            </tr>-->
           </table>
         </v:template>
       </v:data-set>
     </div>
-    </div>
+  </div>
 </v:page>
