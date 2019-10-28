@@ -210,7 +210,7 @@
                           {
                             control.vc_enabled := 0;
                           };
-                          fullname := DB.DBA.VAD_CHECK_UNINSTALLABILITY(fullname);
+                          DB.DBA.VAD_CHECK_UNINSTALLABILITY(fullname);
                         ]]>
                       </v:before-render>
                     </v:button>
@@ -456,43 +456,43 @@
           </tr>
           <tr>
             <td>
-              <v:radio-button
-                name="rb_upload"
-                xhtml_id="rb_upload"
-                value="0"
-                group-name="choice_source"
-                auto-submit="1"
-                initial-checked="1"/>
-              <label for="rb_upload">Upload package</label>
+              <label>
+                <v:radio-button name="rb_upload" xhtml_id="rb_upload" value="0" group-name="choice_source" initial-checked="1" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_1\'], \'hide\': [\'div_choice_2\', \'div_choice_3\']}});" />
+                Upload package
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_upload.ufl_selected or not self.vc_event.ve_is_post) { ?>
-              <input type="file" name="package_path1" size="70"></input>
-              <?vsp } ?>
+              <div id="div_choice_1">
+                <input type="file" name="package_path1" size="70"></input>
+              </div>
             </td>
           </tr>
           <tr>
             <td>
-              <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source" auto-submit="1" />
-              <label for="rb_dav">DAV resource</label>
+              <label>
+                <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_2\'], \'hide\': [\'div_choice_1\', \'div_choice_3\']}});" />
+                DAV resource
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_dav.ufl_selected) { ?>
-              <v:text name="package_path" xhtml_size="70"/>
-              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
-              <?vsp }  ?>
+              <div id="div_choice_2" style="display: none;">
+                <v:text name="package_path" xhtml_size="70"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
+              </div>
             </td>
           </tr>
           <tr>
             <td>
-              <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="2" group-name="choice_source" auto-submit="1" />
-              <label for="rb_fs">Server-side file</label>
+              <label>
+                <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="2" group-name="choice_source" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_3\'], \'hide\': [\'div_choice_1\', \'div_choice_2\']}});" />
+                Server-side file
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_fs.ufl_selected) { ?>
-              <v:text name="fs_package_path" xhtml_size="70"/>
-              <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
-              <?vsp } ?>
+              <div id="div_choice_3" style="display: none;">
+                <v:text name="fs_package_path" xhtml_size="70"/>
+                <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+              </div>
             </td>
           </tr>
           <tr>
@@ -506,7 +506,7 @@
                       return;
 
                     path := '';
-                    mode := atoi (get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                    mode := atoi (get_keyword('choice_source', params));
                     if (mode = 0)
                     {
                       if (self.upl_file is not null)
@@ -524,11 +524,11 @@
                     }
                     else if (mode = 1)
                     {
-                      path := get_keyword('package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword('package_path', params);
                     }
                     else if (mode = 2)
                     {
-                      path := get_keyword('fs_package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword('fs_package_path', params);
                     }
                     if (path = '' or path is null)
                     {
