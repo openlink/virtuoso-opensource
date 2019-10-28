@@ -2564,9 +2564,12 @@ create procedure DAV_COL_CREATE_INT (
       -- dbg_obj_princ ('conflict');
       return -25;
     }
-  if ((0 = return_error_if_already_exists) and (rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
+  if ((rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
     {
       -- dbg_obj_princ ('not overwrite and exists', rc);
+      if (return_error_if_already_exists)
+        return -3;
+      else
         return rc;
     }
   if (check_locks and 0 <> (rc := DAV_IS_LOCKED (pid , 'C', check_locks)))
