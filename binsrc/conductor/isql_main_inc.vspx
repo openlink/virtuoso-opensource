@@ -112,7 +112,7 @@
       if (e.ve_button = control and e.ve_initiator = self.src_type)
       {
         self.is_dav_src := 0;
-        if (get_keyword ('src_type', e.ve_params))
+        if (get_keyword ('src_type', params))
         {
           self.is_dav_src := 1;
           self.local_src := 0;
@@ -121,8 +121,11 @@
       else if (e.ve_button = control and e.ve_initiator = self.src_utype)
       {
         self.local_src := 0;
-        if (get_keyword ('src_utype', e.ve_params))
+        if (get_keyword ('src_utype', params))
+        {
           self.local_src := 1;
+          self.is_dav_src := 0;
+        }
       }
     </v:on-post>
     <v:text type="hidden" name="fsave" value="--concat ('/INLINEFILE/script.sql?VSP=', WS.WS.EXPAND_URL (http_path(), 'file_save.vsp'))"/>
@@ -199,14 +202,25 @@
                             if (self.local_src)
                             {
                           ?>
-                          <label for="t_loadpath">Local script</label>
-                          <v:text name="t_file" type="file" />
+                          <label for="t_file">Local script</label>
+                          <v:text name="t_file" xhtml_id="t_file" type="file" />
+                          <?vsp
+                            }
+                            else
+                            {
+                            if (self.is_dav_src)
+                            {
+                          ?>
+                          <label for="t_loadpath">WebDAV script</label>
                           <?vsp
                             }
                             else
                             {
                           ?>
                           <label for="t_loadpath">Server-side script</label>
+                          <?vsp
+                            }
+                          ?>
                           <v:text name="t_loadpath" xhtml_id="t_loadpath"/>
                           <?vsp
                             if (self.is_dav_src)
@@ -243,9 +257,7 @@
                             }
                           }
                           ?>
-                          <v:button action="simple"
-                                    name="b_isql_load"
-                                    value="Load">
+                          <v:button action="simple" name="b_isql_load" value="Load">
                             <v:on-post>
                               <![CDATA[
                                 commit work;
@@ -332,8 +344,9 @@
                                                                      'in virtuoso ini file.');
                                   else
                                     self.vc_error_message := __SQL_MESSAGE;
-                                    self.vc_is_valid := 0;
-                                    return;
+
+                                  self.vc_is_valid := 0;
+                                  return;
                                 };
                                 if (not length (self.t_loadpath.ufl_value))
                                 {
@@ -402,21 +415,20 @@
                           <label>
                             <v:check-box name="src_type" value="1" auto-submit="1">
                               <v:before-render>
-                                control.ufl_selected := self.is_dav_src;
+                                if (not self.local_src)
+                                  control.ufl_selected := self.is_dav_src;
                               </v:before-render>
                             </v:check-box>
                             WebDAV source
                           </label>
-                          <v:template name="locsrc" type="simple" condition="equ(self.is_dav_src,0)">
-                            <label>
-                              <v:check-box name="src_utype" value="1" auto-submit="1">
-                                <v:before-render>
-                                  control.ufl_selected := self.local_src;
-                                </v:before-render>
-                              </v:check-box>
-                              Local file
-                            </label>
-                          </v:template>
+                          <label>
+                            <v:check-box name="src_utype" value="1" auto-submit="1">
+                              <v:before-render>
+                                control.ufl_selected := self.local_src;
+                              </v:before-render>
+                            </v:check-box>
+                            Local file
+                          </label>
                         </td>
                       </tr>
                       <v:template type="simple" enabled="--equ (self.adv_mode, 1)" name="adv_tmpl">
