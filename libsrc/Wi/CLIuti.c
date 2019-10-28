@@ -208,7 +208,7 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
       return SQL_LONGVARCHAR;
 
     case DV_INT64:
-      return SQL_INTEGER;
+      return SQL_BIGINT;
 
     case DV_IRI_ID:
       return SQL_VARCHAR;
