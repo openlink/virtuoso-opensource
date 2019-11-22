@@ -2679,7 +2679,7 @@ bif_make_bin_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_make_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ptrlong n = bif_long_range_arg (qst, args, 0, "make_array", 0, 10000000);
+  ptrlong n = bif_long_range_arg (qst, args, 0, "make_array", 0, MAX_BOX_ELEMENTS);
   caddr_t tp = bif_string_arg (qst, args, 1, "make_array");
   dtp_t dtp = 0;
   caddr_t arr;
