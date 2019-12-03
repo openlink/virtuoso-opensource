@@ -131,9 +131,11 @@
                 </tr>
               </thead>
             </v:template>
+
             <v:template name="rows1" type="repeat">
+
               <v:template type="if-not-exists" name="ds_items1_if_not_exists_template">
-                <tr class="listing_row_even">
+                <tr>
                   <td align="center" colspan="6">
                     <b>No packages are installed</b>
                   </td>
@@ -142,7 +144,7 @@
 
               <v:template name="template41" type="browse" >
                 <tr>
-                  <td class="listing_col">
+                  <td>
                     <input type="checkbox" value="<?U control.te_ctr ?>" name="cb<?V case when (control as vspx_row_template).te_rowset[5] is not null and (control as vspx_row_template).te_rowset[2] is not null and gt (control.te_rowset[5], control.te_rowset[2]) then '2' else '1' end ?>"/>
                     <?vsp if (control.te_rowset[7] is not null) { ?>
                     <input type="hidden" name="f_<?V control.te_ctr ?>" value="<?V control.te_rowset[7] ?>" />
@@ -152,7 +154,7 @@
                     <?vsp } ?>
                     <?V (control as vspx_row_template).te_rowset[0] ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if (control.te_rowset[8])
                         http ('dav');
@@ -160,7 +162,7 @@
                         http ('fs');
                     ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if ((control as vspx_row_template).te_rowset[2] is null)
                       {
@@ -175,7 +177,7 @@
                       }
                     ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if ((control as vspx_row_template).te_rowset[5] is null)
                       {
@@ -189,18 +191,18 @@
                     <?vsp
                       }
                     ?>
-                    </td>
-                    <td class="listing_col">
-                      <?V (control as vspx_row_template).te_rowset[4] ?>
-                    </td>
-                    <td class="listing_col_action">
-                      <v:button action="simple" style="image" name="delete1"
-                        value="images/icons/del_16.png"
-                        url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[0], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
-                        xhtml_alt="Uninstall"
-                        xhtml_title="Uninstall"
-                        text="&nbsp;Uninstall"
-                        >
+                  </td>
+                  <td>
+                    <?V (control as vspx_row_template).te_rowset[4] ?>
+                  </td>
+                  <td class="listing_col_action">
+                    <v:button action="simple" style="image" name="delete1"
+                      value="images/icons/del_16.png"
+                      url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[0], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
+                      xhtml_alt="Uninstall"
+                      xhtml_title="Uninstall"
+                      text="&nbsp;Uninstall"
+                      >
                       <v:before-render>
                         <![CDATA[
                           declare fullname varchar;
@@ -294,15 +296,17 @@
                 </tr>
               </v:template>
             </v:template>
+
             <v:template name="template31" type="simple">
               <tr>
-                <td colspan="6" align="center"  class="listing_col_action">
-                  <vm:ds-navigation data-set="ds_items1"/>
+                <td colspan="6" align="center" class="listing_col_action">
+                  <vm:ds-navigation data-set="ds_items1" />
                 </td>
               </tr>
             </v:template>
           </v:data-set>
-        </table><br/>
+        </table>
+        <br/>
         <script type="text/javascript">
           <![CDATA[
             function select_all ()

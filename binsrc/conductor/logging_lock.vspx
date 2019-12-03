@@ -66,10 +66,10 @@
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set13_browse_template">
             <table>
               <tr>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[0]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[1]) ?>
                 </td>
                 <td class="listing_col_num">

@@ -62,7 +62,7 @@
           <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set20_if_not_exists_template">
             <table>
               <tr class="listing_count">
-              <td class="listing_count" colspan="6">No ODBC/SQL connections.</td>
+                <td class="listing_count" colspan="10">No ODBC/SQL connections.</td>
               </tr>
             </table>
           </v:template>
@@ -70,22 +70,22 @@
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set20_browse_template">
             <table>
               <tr>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[6]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[0]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[7]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[8]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[10]) ?>
                 </td>
-                <td class="listing_col">
+                <td>
                   <?V ((control as vspx_row_template).te_rowset[1]) ?>
                 </td>
                 <td class="listing_col_num">

@@ -74,13 +74,13 @@
         <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
           <table>
             <tr>
-              <td class="listing_col">
+              <td>
                 <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
               </td>
-              <td class="listing_col">
+              <td>
                 <v:label format="%s" name="data_set1_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
               </td>
-              <td class="listing_col">
+              <td>
                 <v:label format="%s" name="data_set1_browse_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
               </td>
               <td class="listing_col_action">
@@ -106,7 +106,7 @@
       <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
         <table>
           <tr class="browse_button_row">
-            <td colspan="4" align="center"  class="listing_col_action">
+            <td colspan="4" align="center" class="listing_col_action">
               <vm:ds-navigation data-set="data_set1"/>
             </td>
           </tr>
