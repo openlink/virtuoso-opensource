@@ -782,6 +782,8 @@ bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int
 geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *b, double prec)
 {
+  if ((geoc_FARAWAY <= pX) || (geoc_FARAWAY <= b->Xmin))
+    return 0;
   if (0 < prec)
     {
       geoc boxproximaX = ((pX > b->Xmax) ? b->Xmax : ((pX < b->Xmin) ? b->Xmin : pX));
@@ -795,6 +797,8 @@ geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *
 int
 geo_point_intersects_line (geo_srcode_t srcode, geoc pX, geoc pY, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, double prec)
 {
+  if ((geoc_FARAWAY <= pX) || (geoc_FARAWAY <= p1X))
+    return 0;
   if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
     {
       double lat_prec_deg, lon_to_lat;
@@ -967,6 +971,8 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
     }
   switch (GEO_TYPE_NO_ZM (g2->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return 0;
     case GEO_BOX:
       return 1;
     case GEO_LINESTRING:
@@ -1032,7 +1038,7 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
       }
     }
 #ifdef __SOMETHING_SOMETHING__
-  sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
+  sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, and a given point, supported types of second argument are EMPTY, POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
 #endif
   return 0;
 }
@@ -1090,6 +1096,8 @@ geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y
     }
   switch (GEO_TYPE_NO_ZM (g2->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return 0;
     case GEO_BOX:
       return 1;
     case GEO_LINESTRING:
@@ -1332,6 +1340,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           }
         switch (GEO_TYPE_NO_ZM (g1->geo_flags))
           {
+          case GEO_NULL_SHAPE:
+            return 0;
           case GEO_LINESTRING:
             if (GEO_IS_CHAINBOXED & g1->geo_flags)
               {
@@ -1472,6 +1482,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
           || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
           return 0;
+        if (GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g1->geo_flags))
+          return 0;
         return 1;
       }
     case GSOP_CONTAINS:
@@ -1492,6 +1504,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
               return 1;
             return geo_point_intersects (g2->geo_srcode, Xkey(g2), Ykey(g2), g1, prec);
           }
+        if ((GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g1->geo_flags)) || (GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g2->geo_flags)))
+          return 0;
         sqlr_new_error ("42000", "GEO..", "for geo contains, only \"shape contains point\" case is supported in current version");
         break;
       }

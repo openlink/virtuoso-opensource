@@ -2586,7 +2586,7 @@ geo_print_as_dxf_entity (geo_t *g, caddr_t *attrs, dk_session_t *ses)
   switch (flags_no_zm)
     {
     case GEO_NULL_SHAPE:
-      break;
+      return;
     case GEO_POINT:
       SES_DXF_ID (ses, 0, "POINT");
       SES_DXF_XYZ (ses, 10, g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin, g->geo_flags);
@@ -3117,6 +3117,8 @@ geo_deserialize_one (int srcode /* -1 for topmost */ , dk_session_t * ses)
     {
     case GEO_NULL_SHAPE:
         g = geo_alloc_safe (flags, 0, srcode, ses);
+        g->XYbox.Xmin = g->XYbox.Xmax = geoc_FARAWAY;
+        g->XYbox.Ymin = g->XYbox.Ymax = geoc_FARAWAY;
       return g;
     case GEO_POINT:
         g = geo_alloc_safe (flags, 0, srcode, ses);
@@ -3522,7 +3524,9 @@ geo_modify_by_translate (geo_t *g, geoc dX, geoc dY, geoc dZ)
     }
   switch (GEO_TYPE_CORE (flags))
     {
-    case GEO_NULL_SHAPE: case GEO_BOX:
+    case GEO_NULL_SHAPE:
+      return;
+    case GEO_BOX:
       if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
         {
           XYBOX_TRANSLATE(g->XYbox);
@@ -3610,7 +3614,9 @@ geo_modify_by_transscale (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor
     }
   switch (GEO_TYPE_CORE (flags))
     {
-    case GEO_NULL_SHAPE: case GEO_BOX:
+    case GEO_NULL_SHAPE:
+      return;
+    case GEO_BOX:
       if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
         {
           XYBOX_TRANSSCALE(g->XYbox);
@@ -3690,7 +3696,9 @@ geo_modify_by_affine2d (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc X
     }
   switch (GEO_TYPE_CORE (flags))
     {
-    case GEO_NULL_SHAPE: case GEO_BOX:
+    case GEO_NULL_SHAPE:
+      return;
+    case GEO_BOX:
       if (!GEO_XYBOX_IS_EMPTY_OR_FARAWAY(g->XYbox))
         {
           XYBOX_AFFINE2D(g->XYbox);
