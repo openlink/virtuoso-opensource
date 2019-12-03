@@ -313,12 +313,17 @@ table.WEBDAV_grid th.action, table.WEBDAV_grid td.action {
   white-space: nowrap;
 }
 
+table.WEBDAV_grid td.normalWrap {
+  white-space: normal;
+}
+
 table.WEBDAV_grid tbody tr:hover {
  	background-color: #eec;
 }
 
 table.WEBDAV_grid td {
   padding: 2px 3px;
+  white-space: nowrap;
 }
 
 table.WEBDAV_grid tfoot td {

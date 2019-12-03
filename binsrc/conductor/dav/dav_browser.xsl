@@ -1435,12 +1435,12 @@
                 if (not WEBDAV.DBA.DAV_ERROR (item))
                 {
                   http ('    <tr>');
-                  http (sprintf ('<td nowrap="nowrap" valign="top"><img src="%s" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
-                  http (sprintf ('<td nowrap="nowrap" valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
+                  http (sprintf ('<td valign="top"><img src="%s" alt="%s"><input type="hidden" id="item" name="item" value="%V" />&nbsp;&nbsp;%s</td>', self.image_src (WEBDAV.DBA.ui_image (WEBDAV.DBA.DAV_GET (item, 'fullPath'), WEBDAV.DBA.DAV_GET (item, 'type'), WEBDAV.DBA.DAV_GET (item, 'mimeType'))), WEBDAV.DBA.ui_alt (WEBDAV.DBA.DAV_GET (item, 'name'), WEBDAV.DBA.DAV_GET (item, 'type')), WEBDAV.DBA.utf2wide (path), path));
+                  http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.ui_date (WEBDAV.DBA.DAV_GET (item, 'modificationTime'))));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'ownerName')));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'groupName')));
                   http (sprintf ('<td valign="top">%s</td>', WEBDAV.DBA.DAV_GET (item, 'permissionsName')));
-                  http (sprintf ('<td style="color: red;">%s</td>', self.items[i+1]));
+                  http (sprintf ('<td class="normalWrap" style="color: red;">%s</td>', self.items[i+1]));
                   http ('    </tr>');
                 }
               }
@@ -3192,13 +3192,15 @@
                             <tr>
                               <td width="600px">
                                 <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
-                                  <tr>
-                                    <th width="50%">Property</th>
-                                    <th width="50%">Value</th>
-                                    <vm:if test="self.viewField ('properties')">
-                                      <th>Action</th>
-                                    </vm:if>
-                                  </tr>
+                                  <thead>
+                                    <tr>
+                                      <th width="50%">Property</th>
+                                      <th width="50%">Value</th>
+                                      <vm:if test="self.viewField ('properties')">
+                                        <th>Action</th>
+                                      </vm:if>
+                                    </tr>
+                                  </thead>
                                   <tbody id="c_tbody">
                                     <![CDATA[
                                       <script type="text/javascript">
@@ -3252,13 +3254,15 @@
                           <tr>
                             <td width="100%">
                               <table id="f_tbl" class="WEBDAV_formList" style="width: 100%;" cellspacing="0">
-                                <tr>
-                                  <th nowrap="nowrap">User/Group (WebID)</th>
-                                  <th width="1%">Inheritance</th>
-                                  <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
-                                  <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
-                                  <th width="1%">Action</th>
-                                </tr>
+                                <thead>
+                                  <tr>
+                                    <th nowrap="nowrap">User/Group (WebID)</th>
+                                    <th width="1%">Inheritance</th>
+                                    <th width="1%" align="center" nowrap="nowrap">Allow<br />(R)ead, (W)rite, e(X)ecute</th>
+                                    <th width="1%" align="center" nowrap="nowrap">Deny<br />(R)ead, (W)rite, e(X)ecute</th>
+                                    <th width="1%">Action</th>
+                                  </tr>
+                                </thead>
                                 <tbody id="f_tbody">
                                   <tr id="f_tr_no"><td colspan="5"><b>No Security</b></td></tr>
                                   <![CDATA[
@@ -4590,12 +4594,14 @@
                       <tr>
                         <td width="600px">
                           <table id="c_tbl" class="WEBDAV_formList" cellspacing="0">
-                            <tr>
-                              <th width="50%">Property</th>
-                              <th width="50%">Value</th>
-                              <th>Action</th>
-                              <th>&amp;nbsp;</th>
-                            </tr>
+                            <thead>
+                              <tr>
+                                <th width="50%">Property</th>
+                                <th width="50%">Value</th>
+                                <th>Action</th>
+                                <th>&amp;nbsp;</th>
+                              </tr>
+                            </thead>
                             <tr id="c_tr_no"><td colspan="4"><b>No Properties</b></td></tr>
                           </table>
                         </td>
@@ -4807,7 +4813,7 @@
                           <th class="checkbox">
                             <input type="checkbox" onclick="WEBDAV.selectAllCheckboxes(this, 'cb_item')" value="Select All" name="cb_all" />
                           </th>
-                          <th width="100%">Filter</th>
+                          <th>Filter</th>
                           <th class="action">Action</th>
                         </tr>
                       </thead>
@@ -5429,7 +5435,7 @@
                                     http (         '</td>');
                                   }
                                 ?>
-                                <td nowrap="nowrap">
+                                <td>
                                   <?vsp
                                     declare id, typeName, detType, click any;
 
@@ -5451,7 +5457,7 @@
                                   </v:template>
                                 </td>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#2')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <?vsp
                                       declare N integer;
                                       declare tags any;
@@ -5485,7 +5491,7 @@
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#3')">
-                                  <td class="number" nowrap="nowrap">
+                                  <td class="number">
                                     <v:label>
                                       <v:before-data-bind>
                                         <![CDATA[
@@ -5496,47 +5502,47 @@
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#10')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <?vsp http (WEBDAV.DBA.ui_date ((control.vc_parent as vspx_row_template).te_rowset[10])); ?>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#4')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <?vsp http (WEBDAV.DBA.ui_date ((control.vc_parent as vspx_row_template).te_rowset[3])); ?>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#11')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <?vsp http (WEBDAV.DBA.ui_date ((control.vc_parent as vspx_row_template).te_rowset[11])); ?>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#5')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <v:label value="--either (equ ((((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[1], 'R'), (((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[4], ' ')" />
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#6')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[9]" />
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#12')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <?vsp http (WEBDAV.DBA.ui_creator ((control.vc_parent as vspx_row_template).te_rowset[12])); ?>
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#7')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[5]" />
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#8')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[6]" />
                                   </td>
                                 </v:template>
                                 <v:template type="simple" enabled="-- self.enabledColumn('column_#9')">
-                                  <td nowrap="nowrap">
+                                  <td>
                                     <v:label value="--(((control.vc_parent).vc_parent) as vspx_row_template).te_rowset[7]" />
                                   </td>
                                 </v:template>
@@ -6218,13 +6224,15 @@
 
                 <v:template name="ds_versions_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                   <table class="WEBDAV_formList" style="width: auto;" id="versions" cellspacing="0">
-                    <tr>
-                      <th>Path</th>
-                      <th>Number</th>
-                      <th>Size</th>
-                      <th>Modified</th>
-                      <th>Action</th>
-                    </tr>
+                    <thead>
+                      <tr>
+                        <th>Path</th>
+                        <th>Number</th>
+                        <th>Size</th>
+                        <th>Modified</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
                   </table>
                 </v:template>
 
