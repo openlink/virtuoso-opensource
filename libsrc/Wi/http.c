@@ -10089,7 +10089,7 @@ bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dk_session_t * out = http_session_no_catch_arg (qst, args, 2, "http_escape");
   caddr_t text = bif_arg (qst, args, 0, "http_escape");
-  int box_len = box_length (text);
+  int box_len = text ? box_length (text) : 0;
   int mode = (int) bif_long_arg (qst, args, 1, "http_escape");
   wcharset_t *src_charset;
   wcharset_t *tgt_charset = (((BOX_ELEMENTS (args) < 5) || bif_long_arg (qst, args, 4, "http_escape")) ? CHARSET_UTF8 : default_charset);
