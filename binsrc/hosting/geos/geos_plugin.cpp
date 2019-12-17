@@ -21,7 +21,7 @@
  *
  */
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 #include <stdio.h>
 #include <iostream>
@@ -943,9 +943,9 @@ bif_geos_relate1 (caddr_t * qst, caddr_t * err, state_slot_t ** args, const char
 }
 
 static caddr_t bif_geos_sf_eq		(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*F**FFF*"	, "GEOS SF equals"	); }
-static caddr_t bif_geos_eh_overlap	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*T***T**"	, "GEOS Egenohofer overlap"	); }
-static caddr_t bif_geos_eh_inside	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "TFF*FFT**"	, "GEOS Egenohofer inside"	); }
-static caddr_t bif_geos_eh_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*TFF*FF*"	, "GEOS Egenohofer contains"	); }
+static caddr_t bif_geos_eh_overlap	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*T***T**"	, "GEOS Egenhofer overlap"	); }
+static caddr_t bif_geos_eh_inside	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "TFF*FFT**"	, "GEOS Egenhofer inside"	); }
+static caddr_t bif_geos_eh_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*TFF*FF*"	, "GEOS Egenhofer contains"	); }
 
 static caddr_t
 bif_geos_rcc8 (caddr_t * qst, caddr_t * err, state_slot_t ** args, const char *de9im_pattern, int disjoin_always_false, const char *bifname)
@@ -1288,9 +1288,9 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS OGC equals"	, bif_geos_sf_eq		, BMD_ALIAS, "GEOS-OGC-equals", DF_DR_GS_ALIASES("sfEquals"), DF_DR_GS_ALIASES("ehEquals"), BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS SF touches"	, bif_geos_sf_touches			, BMD_ALIAS, "GEOS-SF-touches", BMD_ALIAS, "GEOS Egenhofer meet", BMD_ALIAS, "GEOS-Egenhofer-meet"	, DF_DR_GS_ALIASES("sfTouches"), DF_DR_GS_ALIASES("ehMeet")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS SF crosses"	, bif_geos_sf_crosses			, BMD_ALIAS, "GEOS-SF-crosses", DF_DR_GS_ALIASES("sfCrosses")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer overlap"	, bif_geos_eh_overlap		, BMD_ALIAS, "GEOS-Egenohofer-overlap"	, DF_DR_GS_ALIASES("ehOverlap")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer inside"	, bif_geos_eh_inside		, BMD_ALIAS, "GEOS-Egenohofer-inside"	, DF_DR_GS_ALIASES("ehInside")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer contains"	, bif_geos_eh_contains	, BMD_ALIAS, "GEOS-Egenohofer-contains"	, DF_DR_GS_ALIASES("ehContains")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer overlap"	, bif_geos_eh_overlap		, BMD_ALIAS, "GEOS-Egenhofer-overlap"	, DF_DR_GS_ALIASES("ehOverlap")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer inside"	, bif_geos_eh_inside		, BMD_ALIAS, "GEOS-Egenhofer-inside"	, DF_DR_GS_ALIASES("ehInside")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer contains"	, bif_geos_eh_contains	, BMD_ALIAS, "GEOS-Egenhofer-contains"	, DF_DR_GS_ALIASES("ehContains")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS Egenhofer covers"	, bif_geos_eh_covers			, BMD_ALIAS, "GEOS-Egenhofer-covers", DF_DR_GS_ALIASES("ehCovers")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS Egenhofer coveredBy"	, bif_geos_eh_covered_by		, BMD_ALIAS, "GEOS-Egenhofer-coveredBy", DF_DR_GS_ALIASES("ehCoveredBy")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
 
