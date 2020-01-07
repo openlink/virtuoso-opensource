@@ -3059,10 +3059,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('    </div>\n\n');
 
     http('    <div id="menu">\n');
-    http('	  <a href="/sparql?help=intro">About</a>\n');
-    http('	| <a href="/sparql?help=nsdecl">Namespace Prefixes</a>\n');
-    http('	| <a href="/sparql?help=rdfinf">Inference rules</a>\n');
-    http('	| <a href="/sparql?help=views">RDF views</a>\n');
+    http('	  <a href="?help=intro">About</a>\n');
+    http('	| <a href="?help=nsdecl">Namespace Prefixes</a>\n');
+    http('	| <a href="?help=rdfinf">Inference rules</a>\n');
+    http('	| <a href="?help=views">RDF views</a>\n');
     if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is not null)
 	    http('	| <a href="/isparql">iSPARQL</a>\n');
     http('    </div>\n\n');
@@ -3089,7 +3089,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
     else
     {
-	    http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="/sparql?help=enable_sponge">details</a>.)</i></span>\n');
+	    http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="?help=enable_sponge">details</a>.)</i></span>\n');
     }
 
     http('		<br />\n');
@@ -3100,9 +3100,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     if (sys_stat('st_has_vdb'))
     {
 	    if (not can_cxml)
-	      http('		<span class="info"><i>(The CXML output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	      http('		<span class="info"><i>(The CXML output is disabled, see <a href="?help=enable_cxml">details</a>)</i></span>\n');
 	    else if (not can_qrcode)
-	      http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	      http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="?help=enable_cxml">details</a>)</i></span>\n');
     }
     http('		<br />\n');
 
@@ -3171,7 +3171,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     if (save_dir is null)
     {
-    	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="/sparql?help=enable_det">details</a>)</i></span>\n');
+    	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="?help=enable_det">details</a>)</i></span>\n');
       http('		<br />\n');
     }
 
@@ -4179,7 +4179,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
 	  http('	In order to use it, ask the site admin to install the iSPARQL package (isparql_dav.vad).</p>\n');
       else
 	  http('	You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
-      http('	<p>For your convenience we have a set of <a href="/sparql?help=nsdecl">predefined name space prefixes</a> and <a href="/sparql?help=rdfinf">inference rules</a></p>\n');
+      http('	<p>For your convenience we have a set of <a href="?help=nsdecl">predefined name space prefixes</a> and <a href="?help=rdfinf">inference rules</a></p>\n');
 
       http('	<h3>What is SPARQL?</h3>\n');
       http('	<p>SPARQL is the W3C''s declaritive query-language for Graph Model Databases and Stores.</p>\n');
