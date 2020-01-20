@@ -67,7 +67,10 @@ int LEVEL_VAR = 4;
 #include <openssl/asn1.h>
 #include <openssl/pkcs12.h>
 #include <openssl/rand.h>
+#include <openssl/ec.h>
 #include <openssl/dh.h>
+
+#include "util/ssl_compat.h"
 
 static void ssl_server_init ();
 
@@ -5230,6 +5233,20 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
     SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_3);
 #endif
 
+
+/*
+ *  On OpenSSL 1.1.0 and above set min/max proto
+ */
+#ifdef SSL_CTX_set_min_proto_version
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+#endif
+
+#ifdef TLS1_3_VERSION
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
+#endif
+
   /*
    *  Disable compression on OpenSSL >= 1.0 to fix "CRIME" attack
    */
@@ -5369,15 +5386,20 @@ ssl_ctx_set_dhparam (SSL_CTX * ctx, char *dh_file)
       static unsigned char dh2048_g[] = {
 	0x02
       };
+      BIGNUM *p, *g;
 
       if ((dh = DH_new ()) == NULL)
 	goto cleanup;
 
-      dh->p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
-      dh->g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
+      p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
+      g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
 
-      if (dh->p == NULL || dh->g == NULL)
-        goto cleanup;
+      if (p == NULL || g == NULL || !DH_set0_pqg (dh, p, NULL, g))
+	{
+	  BN_free (p);
+	  BN_free (g);
+	  goto cleanup;
+	}
     }
 #endif
 

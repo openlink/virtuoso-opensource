@@ -872,6 +872,10 @@ then
 	*-sunos*)
 		LIBS="$LIBS -lsocket"
 		;;
+
+	*-linux*)
+		LIBS="$LIBS -ldl -lpthread"
+		;;
 	esac
 
 	AC_MSG_CHECKING([OpenSSL version])
@@ -893,13 +897,15 @@ then
 	],[
 	#ifdef LIBRESSL_VERSION_NUMBER
 	/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
-	#elif OPENSSL_VERSION_NUMBER >= 0x1010000fL
+	#elif OPENSSL_VERSION_NUMBER < 0x1020000fL
+	/* OpenSSL versions 0.9.8e - 1.1.1 are supported */
+	#else
 	#error OpenSSL version too new
 	#endif
 	    ],[
-	      AC_MSG_RESULT([< 1.1.0])
+	      AC_MSG_RESULT([<= 1.1.1])
 	    ],[
-	      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
+	      AC_MSG_ERROR([OpenSSL version 1.2.0 or greater is currently not supported.])
 	    ])
 
 	AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])

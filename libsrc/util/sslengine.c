@@ -29,10 +29,18 @@
 #include "util/sslengine.h"
 #include <openssl/err.h>
 
+
+/*
+ *  Backward compatibility
+ */
+#ifndef OPENSSL_malloc_init
+#define OPENSSL_malloc_init    CRYPTO_malloc_init
+#endif
+
 int
 ssl_engine_startup (void)
 {
-  CRYPTO_malloc_init ();
+  OPENSSL_malloc_init ();
   ERR_load_crypto_strings();
   OpenSSL_add_all_algorithms();
 
