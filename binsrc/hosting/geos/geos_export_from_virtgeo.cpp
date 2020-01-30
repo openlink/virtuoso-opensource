@@ -46,6 +46,27 @@ geo_exporter_to_geos::export_one (geo_t *g)
         case GEO_MULTI_LINESTRING:	result = export_MultiLineString (g);	break;
         case GEO_MULTI_POLYGON:	result = export_MultiPolygon (g);	break;
         case GEO_COLLECTION:	result = export_GeometryCollection (g);	break;
+        case GEO_RING:
+          {
+            geos::geom::LinearRing *shell = NULL;
+            std::vector<geos::geom::Geometry *>*holes = NULL;
+            try
+              {
+                if (2 >= g->_.pline.len)
+                  result = factory.createEmptyGeometry ();
+                else
+                  {
+                    shell = export_LinearRing (g);
+                    result = factory.createPolygon(shell, NULL);
+                  }
+              }
+            catch (...)
+              {
+                delete shell;
+                throw;
+              }
+            break;
+          }
         case GEO_BOX:
           {
             geoc Xs[5], Ys[5];
@@ -53,7 +74,7 @@ geo_exporter_to_geos::export_one (geo_t *g)
             Xs[0] = Xs[3] = Xs[4] = g->XYbox.Xmin;
             Xs[1] = Xs[2] = g->XYbox.Xmax;
             Ys[0] = Ys[1] = Ys[4] = g->XYbox.Ymin;
-            Ys[2] = Xs[3] = g->XYbox.Ymax;
+            Ys[2] = Ys[3] = g->XYbox.Ymax;
             memcpy (&stub_ring, g, box_length_inline (g));
             stub_ring.geo_flags &= ~GEO_BOX; stub_ring.geo_flags |= GEO_RING;
             stub_ring._.pline.len = 5;
@@ -156,7 +177,7 @@ geo_exporter_to_geos::export_Polygon (geo_t *g)
     }
   catch (...)
     {
-      if (NULL != shell)
+      if (NULL != holes)
         {
           for (unsigned int i=0; i<holes->size(); i++)
             delete holes[0][i];

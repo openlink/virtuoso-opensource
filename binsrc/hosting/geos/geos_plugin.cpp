@@ -65,6 +65,7 @@ extern "C" {
 
 dk_mutex_t *srid2GeometryFactory_mtx;
 static dk_hash_t *srid2GeometryFactory;
+extern int Geometry_auto_ptr_argpair_int (caddr_t * qst, geo_t *arg1, geo_t *arg2, const char * f, int tp, int adjust_arg2_srid, int nulls_if_not_may_intersect, std::auto_ptr<geos::geom::Geometry> *arg1_ret, std::auto_ptr<geos::geom::Geometry> *arg2_ret);
 
 geos::geom::GeometryFactory *
 get_GeometryFactory_by_srid (int srcode)
@@ -99,7 +100,7 @@ export_geo_as_Geometry (geo_t *g)
       return gf->createPoint (geos::geom::Coordinate (g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin));
     case GEO_BOX: /* but not case GEO_BOX_Z: */
     case GEO_LINESTRING: case GEO_LINESTRING_Z:
-    case GEO_POLYGON: case GEO_POLYGON_Z:
+    case GEO_RING: case GEO_RING_Z: case GEO_POLYGON: case GEO_POLYGON_Z:
     case GEO_POINTLIST: case GEO_POINTLIST_Z:
     case GEO_MULTI_LINESTRING: case GEO_MULTI_LINESTRING_Z: case GEO_MULTI_POLYGON: case GEO_MULTI_POLYGON_Z: case GEO_COLLECTION: case GEO_COLLECTION_Z:
       {
@@ -166,6 +167,12 @@ bif_Geometry_auto_ptr_argpair (caddr_t * qst, state_slot_t ** args, int inx1, in
 {
   geo_t *arg1 = bif_geo_arg (qst, args, inx1, f, tp);
   geo_t *arg2 = bif_geo_arg (qst, args, inx2, f, tp);
+  return Geometry_auto_ptr_argpair_int (qst, arg1, arg2, f, tp, adjust_arg2_srid, nulls_if_not_may_intersect, arg1_ret, arg2_ret);
+}
+
+int
+Geometry_auto_ptr_argpair_int (caddr_t * qst, geo_t *arg1, geo_t *arg2, const char * f, int tp, int adjust_arg2_srid, int nulls_if_not_may_intersect, std::auto_ptr<geos::geom::Geometry> *arg1_ret, std::auto_ptr<geos::geom::Geometry> *arg2_ret)
+{
   geo_t *arg2_cvt = NULL;
   arg2_ret->reset ();
   QR_RESET_CTX
@@ -177,6 +184,8 @@ bif_Geometry_auto_ptr_argpair (caddr_t * qst, state_slot_t ** args, int inx1, in
           if (srid2 != srid1)
             {
               caddr_t err = NULL;
+              if (NULL == qst)
+                sqlr_new_error ("42000", "GEO..", "%s has got a pair of shapes with different SRIDs (%d and %d) but no context for SRID transformation", f, srid1, srid2);
               arg2_cvt = geo_get_default_srid_transform_cbk() (qst, arg2, srid1, &err);
               if (NULL != err)
                 sqlr_resignal (err);
@@ -907,6 +916,35 @@ static caddr_t bif_geos_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** 
 static caddr_t bif_geos_overlaps	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::overlaps		, 1, "GEOS overlaps"	); }
 static caddr_t bif_geos_equals	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::equals		, 1, "GEOS equals"	); }
 
+int
+geo_geos_pred (geo_t * g1, geo_t * g2, int op, double prec)
+{
+  if (GSOP_NEGATION & op)
+    return (geo_geos_pred (g1, g2, op & ~GSOP_NEGATION, prec) ? 0 : 1);
+  Geometry_g2g_relation_membptr_t op_membptr = NULL;
+  switch (op)
+    {
+    case GSOP_CONTAINS: op_membptr = &geos::geom::Geometry::contains; break;
+    case GSOP_INTERSECTS: op_membptr = &geos::geom::Geometry::intersects; break;
+    case GSOP_MAY_INTERSECT: return 1;
+    case GSOP_MAY_CONTAIN: return 1;
+    default: sqlr_new_error ("22023", "GEO..", "GEOS fallback for ST_xxx spatial predicates is called for unsupported predicate, opcode %d (outdated GEOS plugin? Plugin version " PLUGIN_VERSION "." DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR, op);
+    }
+  if (0 < prec)
+    sqlr_new_error ("22023", "GEO..", "GEOS fallback for ST_xxx spatial predicates does not support precision greater than 0");
+  int disjoin_always_false = 0;
+  const char *bifname = "GEOS fallback for ST_xxx spatial predicates";
+  std::auto_ptr<geos::geom::Geometry>arg1, arg2;
+  int argfail = Geometry_auto_ptr_argpair_int (NULL, g1, g2, bifname, GEO_ARG_ANY_NONNULL, 1, 1 /* for disjoin_always_false */, &arg1, &arg2);
+  if (argfail & GEO_ARGPAIR_NOT_MAY_INTERSECT)
+    return 0;
+  const caddr_t * qst = NULL; /* fake, for CATCH_BIF_GEXXX, to not check for quietgeo etc. */
+  int res;
+  try { res = ((arg1.get())->*op_membptr)(arg2.get()); }
+  CATCH_BIF_GEXXX((arg1.reset(), arg2.reset()), bifname)
+  return res;
+}
+    
 static caddr_t
 bif_geos_g2g_silent_relation (caddr_t * qst, caddr_t * err, state_slot_t ** args, Geometry_g2g_relation_membptr_t op_membptr, int disjoin_always_false, const char *bifname)
 {
@@ -1308,6 +1346,7 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS silent symDifference"	, bif_geos_s_sym_difference	, BMD_ALIAS, "GEOS-silent-symDifference"	, BMD_ALIAS, OPENGIS_DEF_FUNCTION_GS_NS_URI "symDifference"	,BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
   srid2GeometryFactory_mtx = mutex_allocate ();
   srid2GeometryFactory = hash_table_allocate (5000);
+  geo_set_fallback_pred_cbk (geo_geos_pred);
 }
 
 
