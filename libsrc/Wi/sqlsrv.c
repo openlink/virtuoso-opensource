@@ -61,6 +61,10 @@
 #include "ltrx.h"
 #include "uname_const_decl.h"
 
+#ifdef _SSL
+#include <openssl/opensslv.h>
+#endif
+
 #ifdef WIN32
 #include <windows.h>
 #define HAVE_DIRECT_H
@@ -3966,7 +3970,11 @@ srv_global_init (char *mode)
   log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
       build_thread_model, build_opsys_id, build_date);
 
-  log_info ("uses parts of OpenSSL, PCRE, Html Tidy");
+#ifdef _SSL
+  log_info ("uses " OPENSSL_VERSION_TEXT);
+#endif
+  log_info ("uses parts of PCRE, Html Tidy");
+
 
   mode_pass_change = 0;
   in_srv_global_init = 1;
