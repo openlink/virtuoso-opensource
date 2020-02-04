@@ -207,10 +207,8 @@ sqlg_non_local (sqlo_t * so, df_elt_t * dfe)
 
 
 
-
-
 data_source_t *
-sqlg_locus_rts (sqlo_t * so, df_elt_t * first_dfe, dk_set_t pre_code)
+sqlg_locus_rts (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * first_dfe, dk_set_t pre_code)
 {
   NO_VDB;
   return NULL;

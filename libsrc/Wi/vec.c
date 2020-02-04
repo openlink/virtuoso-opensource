@@ -1284,7 +1284,11 @@ dc_elt_size (data_col_t * dc)
 }
 
 extern int dbf_explain_level;
+#ifdef NDEBUG
 int32 enable_sslr_check = 0;
+#else
+int32 enable_sslr_check = 1;
+#endif
 
 caddr_t
 sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
@@ -2340,7 +2344,7 @@ vc_anynn (data_col_t * target, data_col_t * source, int row, caddr_t * err_ret)
   dtp_t tmp[10];
   if (DCT_BOXES & source->dc_type)
     {
-      caddr_t box = ((caddr_t *) source->dc_values)[row];
+      box = ((caddr_t *) source->dc_values)[row];
       dtp_t dtp = DV_TYPE_OF (box);
       if (DV_DB_NULL == dtp)
 	return 0;

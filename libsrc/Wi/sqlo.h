@@ -718,7 +718,7 @@ void sqlo_table_locus (sqlo_t * so, df_elt_t * tb_dfe,
 		  dk_set_t col_preds, dk_set_t * after_test, dk_set_t after_join_test, dk_set_t * vdb_join_test);
 int sqlo_fits_in_locus (sqlo_t * so, locus_t * loc, df_elt_t * dfe);
 locus_t * sqlo_dfe_preferred_locus (sqlo_t * so, df_elt_t * super, df_elt_t * dfe);
-data_source_t * sqlg_locus_rts (sqlo_t * so, df_elt_t * first_dfe, dk_set_t pre_code);
+data_source_t *sqlg_locus_rts (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * first_dfe, dk_set_t pre_code);
 locus_t * sqlo_dt_locus  (sqlo_t * so, op_table_t * ot, locus_t * outer_loc);
 void dfe_loc_result (locus_t * loc_from, df_elt_t * requiring, df_elt_t * required);
 df_elt_t * sqlo_df_elt (sqlo_t * so, ST * tree);

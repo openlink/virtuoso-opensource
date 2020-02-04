@@ -130,6 +130,7 @@ name (caddr_t data, caddr_t * err_ret, MP_T * ap, int ser_flags)
   {
       if (DKS_TO_DC & ser_flags)
 	return box_to_any_long (data, err_ret, ser_flags);
+      box2anyerr ();
     *err_ret = srv_make_new_error ("22026", "SR477", "Error serializing the value into an ANY column");
     return NULL;
   }
