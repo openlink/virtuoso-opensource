@@ -808,6 +808,9 @@ create procedure DB.DBA.virt_proxy_init ()
   DB.DBA.VHOST_REMOVE (lpath=>'/proxy');
   DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/proxy');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
   registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
 ;
