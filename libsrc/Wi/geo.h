@@ -385,7 +385,7 @@ EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ)
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
 EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
 
-typedef int geo_pred_t (geo_t * g1, geo_t * g2, int op, double prec);
+typedef caddr_t geo_pred_t (geo_t * g1, geo_t * g2, int op, double prec);
 extern geo_pred_t *geo_fallback_pred_cbk;
 EXE_EXPORT (void, geo_set_fallback_pred_cbk, (geo_pred_t *cbk));
 

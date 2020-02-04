@@ -1039,7 +1039,7 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
     }
   if (NULL != geo_fallback_pred_cbk)
     {
-      int res;
+      caddr_t res;
       char point_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
       geo_t *g1;
       BOX_AUTO_TYPED (geo_t *, g1, &point_buf, sizeof (geo_t), DV_GEO);
@@ -1047,7 +1047,9 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
       g1->XYbox.Xmax = g1->XYbox.Xmin = pX;
       g1->XYbox.Ymax = g1->XYbox.Ymin = pY;
       res = geo_fallback_pred_cbk (g1, g2, GSOP_INTERSECTS, prec);
-      return res;
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO4S", "Generic error in after check of geo intersects with a given point");
+      return unbox (res);
     }
   sqlr_new_error ("42000", "GEO4S", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
 }
@@ -1203,7 +1205,7 @@ geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y
 unsupported:
   if (NULL != geo_fallback_pred_cbk)
     {
-      int res;
+      caddr_t res;
       geoc Xs[2], Ys[2];
       char point_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
       geo_t *g1;
@@ -1213,9 +1215,11 @@ unsupported:
       g1->_.pline.Xs = Xs; Xs[0] = p1X; Xs[1] = p2X; if (p1X < p2X) { g1->XYbox.Xmin = p1X; g1->XYbox.Xmax = p2X; } else { g1->XYbox.Xmin = p2X; g1->XYbox.Xmax = p1X; }
       g1->_.pline.Ys = Ys; Ys[0] = p1Y; Ys[1] = p2Y; if (p1Y < p2Y) { g1->XYbox.Ymin = p1Y; g1->XYbox.Ymax = p2Y; } else { g1->XYbox.Ymin = p2Y; g1->XYbox.Ymax = p1Y; }
       res = geo_fallback_pred_cbk (g1, g2, GSOP_INTERSECTS, prec);
-      return res;
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO4S", "Generic error in spatial intersection of a line and a shape of type %d", (int)(g2->geo_flags));
+      return unbox (res);
     }
-  sqlr_new_error ("42000", "GEO4S", "The check for spatial intersection is not implemented for a line and a shape of type %d", g2->geo_srcode);
+  sqlr_new_error ("42000", "GEO4S", "The check for spatial intersection is not implemented for a line and a shape of type %d", (int)(g2->geo_flags));
   return 0;
 }
 
@@ -1577,9 +1581,11 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
 unsupported_intersects:
   if (NULL != geo_fallback_pred_cbk)
     {
-      int res;
+      caddr_t res;
       res = geo_fallback_pred_cbk (g1, g2, op, prec);
-      return res;
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO..", "Generic error in geo intersection");
+      return unbox (res);
     }
   sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, some shape types (e.g., polygon rings and curves) are not yet supported");
 }

@@ -916,18 +916,23 @@ static caddr_t bif_geos_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** 
 static caddr_t bif_geos_overlaps	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::overlaps		, 1, "GEOS overlaps"	); }
 static caddr_t bif_geos_equals	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::equals		, 1, "GEOS equals"	); }
 
-int
+caddr_t
 geo_geos_pred (geo_t * g1, geo_t * g2, int op, double prec)
 {
   if (GSOP_NEGATION & op)
-    return (geo_geos_pred (g1, g2, op & ~GSOP_NEGATION, prec) ? 0 : 1);
+    {
+      caddr_t negated = geo_geos_pred (g1, g2, op & ~GSOP_NEGATION, prec);
+      if (IS_BOX_POINTER (negated))
+        return negated;
+      return negated ? box_num(0) : box_num(1);
+    }
   Geometry_g2g_relation_membptr_t op_membptr = NULL;
   switch (op)
     {
     case GSOP_CONTAINS: op_membptr = &geos::geom::Geometry::contains; break;
     case GSOP_INTERSECTS: op_membptr = &geos::geom::Geometry::intersects; break;
-    case GSOP_MAY_INTERSECT: return 1;
-    case GSOP_MAY_CONTAIN: return 1;
+    case GSOP_MAY_INTERSECT: return box_num(1);
+    case GSOP_MAY_CONTAIN: return box_num(1);
     default: sqlr_new_error ("22023", "GEO..", "GEOS fallback for ST_xxx spatial predicates is called for unsupported predicate, opcode %d (outdated GEOS plugin? Plugin version " PLUGIN_VERSION "." DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR, op);
     }
   if (0 < prec)
@@ -937,14 +942,15 @@ geo_geos_pred (geo_t * g1, geo_t * g2, int op, double prec)
   std::auto_ptr<geos::geom::Geometry>arg1, arg2;
   int argfail = Geometry_auto_ptr_argpair_int (NULL, g1, g2, bifname, GEO_ARG_ANY_NONNULL, 1, 1 /* for disjoin_always_false */, &arg1, &arg2);
   if (argfail & GEO_ARGPAIR_NOT_MAY_INTERSECT)
-    return 0;
+    return box_num(0);
   const caddr_t * qst = NULL; /* fake, for CATCH_BIF_GEXXX, to not check for quietgeo etc. */
-  int res;
-  try { res = ((arg1.get())->*op_membptr)(arg2.get()); }
+  caddr_t res;
+  try { res = (caddr_t)((ptrlong)(((arg1.get())->*op_membptr)(arg2.get()))); }
   CATCH_BIF_GEXXX((arg1.reset(), arg2.reset()), bifname)
   return res;
 }
-    
+
+
 static caddr_t
 bif_geos_g2g_silent_relation (caddr_t * qst, caddr_t * err, state_slot_t ** args, Geometry_g2g_relation_membptr_t op_membptr, int disjoin_always_false, const char *bifname)
 {
