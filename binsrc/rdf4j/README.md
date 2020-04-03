@@ -16,3 +16,6 @@ and then install it into the local Maven repository using (assuming the file `vi
 
 Note that the provider is made as lightweight as possible. Therefore, only the minimum required RDF4J dependencies are
 used. This, for example, means that Rio parsers are not included in the provider and have to be imported separately if needed.
+
+For convenience (and to keep the Git repository structure similar), the provider JAR (`virt_rdf4j.jar`) is available also in the project
+root folder.
