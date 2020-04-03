@@ -1,7 +1,6 @@
 
 package com.openlink.virtuoso.rdf4j.driver;
 
-import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.model.*;
 import org.eclipse.rdf4j.model.impl.LinkedHashModel;
 import org.eclipse.rdf4j.query.*;
@@ -39,7 +38,6 @@ public class VirtuosoTest extends TestBase {
         String strUrl = "https://protege.stanford.edu/ontologies/pizza/pizza.owl";
         url = new URL(strUrl);
     }
-
 
     @Test
     public void test1() {
@@ -305,34 +303,19 @@ public class VirtuosoTest extends TestBase {
 
     @Test
     public void test6() {
-        RepositoryConnection con = null;
-        try {
-            // test add data to the repository
-            IRI context = repository.getValueFactory().createIRI(ctx);
-
-            con = repository.getConnection();
+        try (RepositoryConnection con = repository.getConnection()) {
 
             // test getNamespace
-            Namespace testns = null;
             RepositoryResult<Namespace> namespaces;
 
             namespaces = con.getNamespaces();
+            assertTrue(namespaces.hasNext());
             while (namespaces.hasNext()) {
-                // LOG("Namespace found: (" + ns.getName() + " " + ns.getPrefix() + ")");
-                testns = namespaces.next();
-            }
-
-
-            // test getNamespaces and RepositoryResult implementation
-            log("Retrieving namespaces");
-            if (testns != null) {
-                // LOG("Retrieving namespace (" + testns.getName() + " " + testns.getPrefix() + ")");
+                Namespace testns = namespaces.next();
                 String ns = con.getNamespace(testns.getPrefix());
                 assertNotNull(ns, "con.getNamespace('" + testns.getPrefix() + "') doesn't return Namespace");
+                assertEquals(testns.getName(), ns);
             }
-        } finally {
-            if (con != null)
-                con.close();
         }
     }
 
@@ -382,28 +365,8 @@ public class VirtuosoTest extends TestBase {
         while (statements.hasNext()) {
             Statement pairs = statements.next();
             model.add(pairs);
-//			List<String> names = statements.getBindingNames();
-//			Value[] rv = new Value[names.size()];
-//			for (int i = 0; i < names.size(); i++) {
-//				String name = names.get(i);
-//				Value value = pairs.getValue(name);
-//				rv[i] = value;
-//			}
-//			results.add(rv);
         }
-//		return (Value[][]) results.toArray(new Value[0][0]);
         return model;
-    }
-
-    @Test
-    void testMpp() {
-        try (final RepositoryConnection connection = repository.getConnection()) {
-            final TupleQuery tq = connection.prepareTupleQuery("SELECT * WHERE { ?x a <http://www.w3.org/2004/02/skos/core#Concept> . }");
-            final TupleQueryResult result = tq.evaluate();
-            final List<BindingSet> resultList = Iterations.asList(result);
-            assertFalse(resultList.isEmpty());
-            assertEquals(67, resultList.size());
-        }
     }
 }
 
