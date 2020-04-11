@@ -25,8 +25,8 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <windows.h>
 #include "plugin.h"
+#include <windows.h>
 
 static char *get_win_error (void)
 {
