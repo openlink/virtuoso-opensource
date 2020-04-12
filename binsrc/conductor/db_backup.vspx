@@ -341,13 +341,13 @@
 
               <v:data-set name="db_dirs" nrows="15" scrollable="1" sql="select bd_id, bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id">
                 <tbody>
-                  <v:template name="db_dirs_empty" type="if-not-exists">
-                    <tr>
-                      <td class="listing_empty" colspan="2">No backup directories specified. Backup will go to server's working directory.</td>
-                    </tr>
-                  </v:template>
-
                   <v:template name="db_dirs_repeat" type="repeat">
+
+                    <v:template name="db_dirs_empty" type="if-not-exists">
+                      <tr>
+                        <td class="listing_empty" colspan="2">No backup directories specified. Backup will go to server's working directory.</td>
+                      </tr>
+                    </v:template>
 
                     <v:template name="db_dirs_browse" type="browse">
                       <tr>
@@ -369,7 +369,6 @@
                         </td>
                       </tr>
                     </v:template>
-
 
                     <v:template name="temp_db_dir_add" type="add">
                       <v:form name="_add_dir" type="update">

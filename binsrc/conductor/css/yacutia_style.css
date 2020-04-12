@@ -66,6 +66,7 @@ div.heading_right {
 
 div.container {
   position: relative;
+  min-height: 255px;
   margin: 0 auto;
   width: 100%;
   font-size: 10pt;
@@ -794,11 +795,6 @@ div.attention_box {
 
 
 /* XXX: deprecated */
-
-.ButtonBar {
-  background-color: #8d2175;
-  border: 5px solid green
-}
 
 .page_header_area {
   border: 1pt solid silver;

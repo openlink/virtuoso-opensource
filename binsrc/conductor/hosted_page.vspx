@@ -38,34 +38,30 @@
     <vm:header caption="User Defined Types">
     </vm:header>
     <vm:pagebody>
-      <table border="0" width="100%" cellpadding="10" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url11" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" />
-            </div>
-            <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url12" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" />
-            </div>
-            <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url13" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" />
-            </div>
+      <div class="main_tab_page">
+        <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url11" value="--'Loaded Modules'" format="%s" url="--'hosted_page.vspx?page=1'" />
+        </div>
+        <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url12" value="--'Import Files'" format="%s" url="--'hosted_page.vspx?page=2'" />
+        </div>
+        <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url13" value="--'Modules Grant'" format="%s" url="--'hosted_page.vspx?page=3'" />
+        </div>
 
-            <div class="tab_page_new">
-              <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
-                <v:include url="hosted_modules.vspx"/>
-              </v:template>
-              <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
-                <v:include url="hosted_import.vspx"/>
-              </v:template>
-              <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
-                <v:include url="hosted_grant.vspx"/>
-              </v:template>
-              <br />
-            </div>
-          </td>
-        </tr>
-      </table>
+        <div class="tab_page_new">
+          <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
+            <v:include url="hosted_modules.vspx"/>
+          </v:template>
+          <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
+            <v:include url="hosted_import.vspx"/>
+          </v:template>
+          <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
+            <v:include url="hosted_grant.vspx"/>
+          </v:template>
+          <br />
+        </div>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

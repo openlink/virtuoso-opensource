@@ -403,7 +403,7 @@
   <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
     <v:before-render>
       <![CDATA[
-        control.ufl_value := '<img src="/ods/images/skin/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+        control.ufl_value := '<img src="/conductor/images/pager/p_first.png" border="0" alt="First" title="First"/> First ';
       ]]>
     </v:before-render>
   </v:button>
@@ -411,7 +411,7 @@
   <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[
-        control.ufl_value := '<img src="/ods/images/skin/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+        control.ufl_value := '<img src="/conductor/images/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
       ]]>
     </v:before-render>
   </v:button>
@@ -419,7 +419,7 @@
   <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[
-        control.ufl_value := '<img src="/ods/images/skin/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+        control.ufl_value := '<img src="/conductor/images/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
       ]]>
     </v:before-render>
   </v:button>
@@ -427,7 +427,7 @@
   <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[
-        control.ufl_value := '<img src="/ods/images/skin/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+        control.ufl_value := '<img src="/conductor/images/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
       ]]>
     </v:before-render>
   </v:button>

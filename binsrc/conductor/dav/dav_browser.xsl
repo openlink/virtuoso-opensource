@@ -79,7 +79,7 @@
               };
             ]]>
           </script>
-          <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then '/ods/js/tbl.js' else '/conductor/tbl.js' end ?>"><xsl:text> </xsl:text></script>
+          <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then '/ods/js/tbl.js' else '/conductor/js/tbl.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_tbl.js' else '/conductor/dav/dav_tbl.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript" src="<?V case when self.mode = 'briefcase' then 'dav/dav_browser.js' else '/conductor/dav/dav_browser.js' end ?>"><xsl:text> </xsl:text></script>
           <script type="text/javascript">

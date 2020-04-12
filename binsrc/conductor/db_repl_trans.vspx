@@ -24,7 +24,7 @@
   <vm:pagetitle>Virtuoso HTTP Database Replication</vm:pagetitle>
   <vm:pagewrapper>
     <vm:variables>
-      <v:variable name="page" persist="0" type="integer" default="1"/>
+      <v:variable name="page" persist="0" type="varchar" default="'1'"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem value="Transactional Replication"/>
@@ -33,46 +33,27 @@
     <vm:pagebody vdb_check="1">
       <v:before-data-bind>
           <![CDATA[
-            if (get_keyword('page', control.vc_page.vc_event.ve_params, '') <> '')
-            {
-              self.page := cast(get_keyword('page', control.vc_page.vc_event.ve_params, '') as integer);
-              if (self.page <> 2) self.page := 1;
-            }
+          self.page := get_keyword ('page', control.vc_page.vc_event.ve_params, '1');
+          if (self.page <> '2')
+            self.page := '1';
           ]]>
       </v:before-data-bind>
-      <table class="form_layout">
-        <tr>
-        <v:template name="tabTemplate1" type="simple" enabled="--equ(self.page,1)">
-          <td class="page_tab_selected">
-            Publications
-          </td>
-          <td class="page_tab">
-            <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
-          </td>
-        </v:template>
-        <v:template name="tabTemplate4" type="simple" enabled="--equ(self.page,2)">
-          <td class="page_tab">
-            <v:url name="b_url31" value="--'Publications'" format="%s" url="--'db_repl_trans.vspx?page=1'"/>
-          </td>
-          <td class="page_tab_selected">
-            Subscriptions
-          </td>
-        </v:template>
-        <td class="page_tab_empty"></td>
-      </tr>
-    </table>
-    <table class="tab_page">
-      <tr>
-        <td>
-          <v:template name="ent_template" type="simple" enabled="--equ(self.page,1)">
+      <div class="main_tab_page">
+        <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url31" value="--'Publications'" format="%s" url="--'db_repl_trans.vspx?page=1'"/>
+        </div>
+        <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url13" value="--'Subscriptions'" format="%s" url="--'db_repl_trans.vspx?page=2'"/>
+        </div>
+        <div class="tab_page_new">
+          <v:template name="ent_template" type="simple" enabled="--equ (self.page, '1')">
             <v:include url="db_repl_pub.vspx"/>
           </v:template>
-          <v:template name="tmodel_template" type="simple" enabled="--equ(self.page,2)">
+          <v:template name="tmodel_template" type="simple" enabled="--equ (self.page, '2')">
             <v:include url="db_repl_sub.vspx"/>
           </v:template>
-        </td>
-      </tr>
-    </table>
+      </div>
+    </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

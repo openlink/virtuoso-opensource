@@ -45,7 +45,7 @@
     <vm:header caption="Registry Keys &amp; Values">
     </vm:header>
     <vm:pagebody>
-      <div class="clear"></div>
+      <br class="clear"></br>
       <v:form name="frm1" method="POST" type="simple">
 
         <vm:if test="self.c_mode = 'C/browse'">
@@ -73,7 +73,7 @@
               <v:button action="simple" value="Clear" xhtml_class="button">
                 <v:on-post>
                   <![CDATA[
-                    self.f_how := '4';
+                    self.f_how := '1';
                     self.f_value := '';
 
                     self.ds.vc_reset ();
@@ -97,12 +97,13 @@
               </v:button>
             </div>
           </div>
+
           <table class="listing">
             <thead>
               <tr class="listing_header_row">
-                <th width="50%">Prefix</th>
-                <th width="50%">URI</th>
-                <th width="1%">Action</th>
+                <th width="50%">Key</th>
+                <th width="50%">Value</th>
+                <th class="action">Action</th>
               </tr>
             </thead>
 
@@ -163,7 +164,7 @@
                       <td>
                         <?V control.te_rowset[1] ?>
                       </td>
-                      <td valign="top" nowrap="nowrap">
+                      <td class="action">
                         <v:button name="delete" action="simple" style="url" value="''">
                           <v:before-render>
                             <![CDATA[

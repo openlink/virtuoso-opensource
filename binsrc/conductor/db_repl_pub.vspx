@@ -89,7 +89,7 @@
       <?vsp
         }
         if (_lpu = 0)
-          http('<tr><td colspan="4" class="Attention">No publications defined</td></tr>');
+            http('<tr><td colspan="4" class="listing_empty">No publications defined</td></tr>');
       ?>
     </table>
   </div>

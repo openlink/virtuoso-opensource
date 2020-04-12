@@ -55,7 +55,6 @@
     <?vsp
       http('<script type="text/javascript" src="js/md5.js"></script>\n');
       http('<script type="text/javascript" src="js/cond_common.js"></script>\n');
-      -- http('<script type="text/javascript" src="cond_help.js"></script>\n');
     ?>
   </body>
 </html>

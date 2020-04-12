@@ -44,7 +44,7 @@
     <vm:header caption="Persistent Namespaces &amp; Prefixes">
     </vm:header>
     <vm:pagebody>
-      <div class="clear"></div>
+      <br class="clear" />
       <v:form name="frm1" method="POST" type="simple">
         <vm:if test="self.c_mode = 'C/browse'">
 
@@ -135,7 +135,7 @@
 
                   <v:template type="if-not-exists" name="ds_empty">
                     <tr>
-                      <td align="center" colspan="3">No rows selected</td>
+                      <td class="listing_empty" colspan="3">No rows selected</td>
                     </tr>
                   </v:template>
 
@@ -162,7 +162,7 @@
                       <td>
                         <?V y_utf2wide (control.te_rowset[1]) ?>
                       </td>
-                      <td nowrap="nowrap">
+                      <td class="action">
                         <v:button name="delete" action="simple" style="url" value="''">
                           <v:before-render>
                             <![CDATA[

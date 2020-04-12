@@ -98,7 +98,6 @@
           </div>
 
           <div class="tab_page_new">
-            <!-- end of top security layout -->
             <div id="pki_form">
               <h3>CA Root Certificate Details</h3>
               <label>Country</label>

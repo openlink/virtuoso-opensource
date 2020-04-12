@@ -322,177 +322,173 @@
       ]]>
     </v:method>
 
-    <div class="table_area">
-      <v:form name="sf2" type="simple" action="" method="POST">
-        <div class="search_area">Show roles
-          <v:select-list name="howto2" value="--self.pattern_where2">
-            <v:item name="Starting with" value="1" />
-            <v:item name="Containing" value="2" />
-            <v:item name="Ending with" value="3" />
-            <v:item name="Exact match" value="4" />
-          </v:select-list>
-          <v:text name="pattern_text2" value="--self.pattern_value2"/>
-          <v:button name="submit2" action="simple" value="Filter">
-            <v:on-post>
-              <![CDATA[
-                self.pattern_where2 := self.howto2.ufl_value;
-                self.pattern_value2 := self.pattern_text2.ufl_value;
-                self.search_mask2 :=
-                  case self.pattern_where2
-                    when '1' then self.pattern_value2 || '%'
-                    when '2' then '%' || self.pattern_value2 || '%'
-                    when '3' then '%' || self.pattern_value2
-                    else self.pattern_value2
-                  end;
+    <v:form name="sf2" type="simple" action="" method="POST">
+      <div class="search_area">Show roles
+        <v:select-list name="howto2" value="--self.pattern_where2">
+          <v:item name="Starting with" value="1" />
+          <v:item name="Containing" value="2" />
+          <v:item name="Ending with" value="3" />
+          <v:item name="Exact match" value="4" />
+        </v:select-list>
+        <v:text name="pattern_text2" value="--self.pattern_value2"/>
+        <v:button name="submit2" action="simple" value="Filter">
+          <v:on-post>
+            <![CDATA[
+              self.pattern_where2 := self.howto2.ufl_value;
+              self.pattern_value2 := self.pattern_text2.ufl_value;
+              self.search_mask2 :=
+                case self.pattern_where2
+                  when '1' then self.pattern_value2 || '%'
+                  when '2' then '%' || self.pattern_value2 || '%'
+                  when '3' then '%' || self.pattern_value2
+                  else self.pattern_value2
+                end;
 
-                if (self.search_mask2 = '')
-                  self.search_mask2 := '%';
-
-                self.ds2.vc_reset ();
-                self.vc_data_bind (e);
-              ]]>
-             </v:on-post>
-           </v:button>
-          <v:button name="reset2" action="simple" value="Clear">
-            <v:on-post>
-              <![CDATA[
-                self.pattern_where2 := '1';
-                self.pattern_value2 := '%';
+              if (self.search_mask2 = '')
                 self.search_mask2 := '%';
-                self.howto2.vc_data_bind (e);
-                self.pattern_text2.ufl_value := '';
 
-                self.ds2.vc_reset ();
-                self.vc_data_bind (e);
-              ]]>
-            </v:on-post>
-          </v:button>
-        </div>
-      </v:form>
+              self.ds2.vc_reset ();
+              self.vc_data_bind (e);
+            ]]>
+           </v:on-post>
+         </v:button>
+        <v:button name="reset2" action="simple" value="Clear">
+          <v:on-post>
+            <![CDATA[
+              self.pattern_where2 := '1';
+              self.pattern_value2 := '%';
+              self.search_mask2 := '%';
+              self.howto2.vc_data_bind (e);
+              self.pattern_text2.ufl_value := '';
 
-      <div class="scroll_area scroll_area37">
-        <table class="listing" cellspacing="1">
-          <v:data-source
-              name="dsrc2"
-              expression-type="sql"
-              nrows="20"
-              initial-offset="0">
-            <v:before-data-bind>
-              <![CDATA[
-                if (e.ve_is_post and e.ve_button is not null)
-                {
-                  declare ord_button varchar;
-
-                  ord_button := e.ve_button.vc_name;
-                  if (ord_button like 'ord_%')
-                  {
-                    ord_button := subseq (ord_button, 5);
-                    self.ord2_set (ord_button, e, self.ds2);
-                  }
-                }
-                control.ds_sql := 'select U_NAME, coalesce (U_FULL_NAME, \'\') U_FULL_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_NAME like ?';
-                if (self.ord2 <> '')
-                  control.ds_sql := control.ds_sql || ' order by ' || self.ord2 || ' ' || self.ord2_seq;
-
-                control.ds_parameters := null;
-                control.add_parameter (self.search_mask2);
-              ]]>
-            </v:before-data-bind>
-            <v:after-data-bind>
-              control.ds_make_statistic ();
-            </v:after-data-bind>
-          </v:data-source>
-
-          <v:data-set name="ds2" data-source="self.dsrc2" scrollable="1">
-
-            <v:template name="ds2_header" type="simple">
-              <thead>
-                <tr class="listing_header_row">
-                  <th>
-                    <v:button action="simple" name="ord2_1" value="Account Name" style="url" />
-                    <?vsp http (self.ord_show (self.ord2, self.ord2_seq, '1')); ?>
-                  </th>
-                  <th>
-                    <v:button action="simple" name="ord2_2" value="Description" style="url" />
-                    <?vsp http (self.ord_show (self.ord2, self.ord2_seq, '2')); ?>
-                  </th>
-                  <th width="1%" nowrap="nowrap" class="action new_item">
-                    <v:url name="new_role2" url="accounts_page.vspx?page=2&mode=create" value="Create Role" />
-                  </th>
-                </tr>
-              </thead>
-            </v:template>
-
-            <v:template name="ds2_repeat" type="repeat">
-              <tbody>
-                <v:template name="ds2_empty" type="if-not-exists">
-                  <tr>
-                    <td class="listing_empty" colspan="3">
-                      No role names match given pattern
-                    </td>
-                  </tr>
-                </v:template>
-
-                <v:template name="ds2_browse" type="browse">
-                  <tr>
-                    <td nowrap="1">
-                      <img src="images/icons/group_16.png" alt="User" title="User"/>
-                      <v:label name="ds2_label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
-                   </td>
-                    <td nowrap="1">
-                      <v:label name="ds2_label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
-                   </td>
-                   <td nowrap="1">
-                     <v:button action="simple"
-                               style="image"
-                               name="edit2"
-                               value="images/icons/edit_16.png"
-                               url="--concat ('accounts_page.vspx?page=2&mode=edit&role_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
-                               xhtml_alt="Edit"
-                               xhtml_title="Edit"
-                               text="&nbsp;Edit"
-                     />
-                     <v:button action="simple"
-                               style="image"
-                               name="delete2"
-                               value="images/icons/trash_16.png"
-                               url="--concat('role_remove.vspx?mode=delete&role_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
-                               xhtml_alt="Delete"
-                               xhtml_title="Delete"
-                               text="&nbsp;Delete"
-                     />
-                    </td>
-                  </tr>
-                </v:template>
-
-              </tbody>
-            </v:template>
-
-            <v:template name="ds2_remain" type="simple">
-              <?vsp
-                declare n, n_remain integer;
-
-                n_remain := self.ds2.ds_data_source.ds_nrows - self.ds2.ds_data_source.ds_rows_fetched;
-                for (n := 0; n < n_remain; n := n + 1)
-                {
-                  http ('<tr style="height: 21px;"><td colspan="3">&nbsp;</td></tr>');
-                }
-             ?>
-            </v:template>
-
-            <v:template name="ds2_footer" type="simple">
-              <tfoot>
-                <tr>
-                  <td colspan="3" class="navigation">
-                    <vm:ds-navigation-new data-set="ds2"/>
-                  </td>
-                </tr>
-              </tfoot>
-            </v:template>
-
-          </v:data-set>
-        </table>
+              self.ds2.vc_reset ();
+              self.vc_data_bind (e);
+            ]]>
+          </v:on-post>
+        </v:button>
       </div>
-    </div>
+    </v:form>
+
+    <table class="listing" cellspacing="1">
+      <v:data-source
+          name="dsrc2"
+          expression-type="sql"
+          nrows="20"
+          initial-offset="0">
+        <v:before-data-bind>
+          <![CDATA[
+            if (e.ve_is_post and e.ve_button is not null)
+            {
+              declare ord_button varchar;
+
+              ord_button := e.ve_button.vc_name;
+              if (ord_button like 'ord_%')
+              {
+                ord_button := subseq (ord_button, 5);
+                self.ord2_set (ord_button, e, self.ds2);
+              }
+            }
+            control.ds_sql := 'select U_NAME, coalesce (U_FULL_NAME, \'\') U_FULL_NAME from DB.DBA.SYS_USERS where U_IS_ROLE = 1 and U_NAME like ?';
+            if (self.ord2 <> '')
+              control.ds_sql := control.ds_sql || ' order by ' || self.ord2 || ' ' || self.ord2_seq;
+
+            control.ds_parameters := null;
+            control.add_parameter (self.search_mask2);
+          ]]>
+        </v:before-data-bind>
+        <v:after-data-bind>
+          control.ds_make_statistic ();
+        </v:after-data-bind>
+      </v:data-source>
+
+      <v:data-set name="ds2" data-source="self.dsrc2" scrollable="1">
+
+        <v:template name="ds2_header" type="simple">
+          <thead>
+            <tr class="listing_header_row">
+              <th>
+                <v:button action="simple" name="ord2_1" value="Account Name" style="url" />
+                <?vsp http (self.ord_show (self.ord2, self.ord2_seq, '1')); ?>
+              </th>
+              <th>
+                <v:button action="simple" name="ord2_2" value="Description" style="url" />
+                <?vsp http (self.ord_show (self.ord2, self.ord2_seq, '2')); ?>
+              </th>
+              <th width="1%" nowrap="nowrap" class="action new_item">
+                <v:url name="new_role2" url="accounts_page.vspx?page=2&mode=create" value="Create Role" />
+              </th>
+            </tr>
+          </thead>
+        </v:template>
+
+        <v:template name="ds2_repeat" type="repeat">
+          <tbody>
+            <v:template name="ds2_empty" type="if-not-exists">
+              <tr>
+                <td class="listing_empty" colspan="3">
+                  No role names match given pattern
+                </td>
+              </tr>
+            </v:template>
+
+            <v:template name="ds2_browse" type="browse">
+              <tr>
+                <td nowrap="1">
+                  <img src="images/icons/group_16.png" alt="User" title="User"/>
+                  <v:label name="ds2_label1" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"/>
+               </td>
+                <td nowrap="1">
+                  <v:label name="ds2_label2" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+               </td>
+               <td nowrap="1">
+                 <v:button action="simple"
+                           style="image"
+                           name="edit2"
+                           value="images/icons/edit_16.png"
+                           url="--concat ('accounts_page.vspx?page=2&mode=edit&role_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                           xhtml_alt="Edit"
+                           xhtml_title="Edit"
+                           text="&nbsp;Edit"
+                 />
+                 <v:button action="simple"
+                           style="image"
+                           name="delete2"
+                           value="images/icons/trash_16.png"
+                           url="--concat('role_remove.vspx?mode=delete&role_name=', (control.vc_parent as vspx_row_template).te_rowset[0])"
+                           xhtml_alt="Delete"
+                           xhtml_title="Delete"
+                           text="&nbsp;Delete"
+                 />
+                </td>
+              </tr>
+            </v:template>
+
+          </tbody>
+        </v:template>
+
+        <v:template name="ds2_remain" type="simple">
+          <?vsp
+            declare n, n_remain integer;
+
+            n_remain := self.ds2.ds_data_source.ds_nrows - self.ds2.ds_data_source.ds_rows_fetched;
+            for (n := 0; n < n_remain; n := n + 1)
+            {
+              http ('<tr style="height: 21px;"><td colspan="3">&nbsp;</td></tr>');
+            }
+         ?>
+        </v:template>
+
+        <v:template name="ds2_footer" type="simple">
+          <tfoot>
+            <tr>
+              <td colspan="3" class="navigation">
+                <vm:ds-navigation-new data-set="ds2"/>
+              </td>
+            </tr>
+          </tfoot>
+        </v:template>
+
+      </v:data-set>
+    </table>
   </vm:if>
 </v:page>

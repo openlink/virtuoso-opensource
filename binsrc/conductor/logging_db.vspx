@@ -28,19 +28,18 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:before-data-bind>
     <![CDATA[
-      declare _state, _msg, _stmt varchar;
+      declare _state, _msg varchar;
       exec('status (''rhck'')', _state, _msg);
       status();
     ]]>
   </v:before-data-bind>
   <div id="monitor_tab">
-    <table class="main_page_area" showme="1">
+    <table class="main_page_area">
       <tr class="page_section_head">
         <td colspan="2">Server Status</td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
-        <td>
+        <td colspan="2">
           <table class="listing">
             <tr>
               <td>Served sessions</td>
@@ -65,8 +64,7 @@
         <td colspan="2">Lock Status</td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
-        <td>
+        <td colspan="2">
           <table class="listing">
             <tr>
               <td>Deadlocks</td>
@@ -91,8 +89,7 @@
         <td colspan="2">Committed Log Space</td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
-        <td>
+        <td colspan="2">
           <table class="listing">
             <tr>
               <td>Pages changed</td>
@@ -109,8 +106,7 @@
         <td colspan="2">Last Checkpoint</td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
-        <td>
+        <td colspan="2">
           <table class="listing">
             <tr>
               <td>Remap pages</td>
@@ -131,8 +127,7 @@
         <td colspan="2">Database Status</td>
       </tr>
       <tr>
-        <td>&nbsp;</td>
-        <td>
+        <td colspan="2">
           <table class="listing">
             <tr>
               <td>File size (bytes)</td>
@@ -226,12 +221,29 @@
               <td>Maximum concurrent clients since startup</td>
               <td class="listing_col_num"><?V sys_stat('st_cli_max_connected') ?></td>
             </tr>
-	          <?vsp if (sys_stat('st_has_vdb') = 1) { ?>
+            <?vsp
+              declare lconnections varchar;
+
+              lconnections := 'Undefined';
+              if (sys_stat('st_has_vdb') = 1)
+              {
+                declare continue handler for SQLSTATE '*'
+                {
+                  goto _skip;
+                };
+                lconnections := sys_stat('st_lic_max_connections');
+              _skip:;
+              }
+              if (sys_stat('st_has_vdb') = 1)
+              {
+            ?>
             <tr>
               <td>Maximum licensed client connections</td>
-              <td class="listing_col_num"><?V sys_stat('st_lic_max_connections') ?></td>
+              <td class="listing_col_num"><?V lconnections ?></td>
             </tr>
-	          <?vsp } ?>
+            <?vsp
+              }
+            ?>
             <!--tr>
               <td colspan="2">RPC statistics</td>
             </tr-->
