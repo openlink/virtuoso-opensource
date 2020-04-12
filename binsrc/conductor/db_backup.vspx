@@ -331,102 +331,102 @@
               </tr>
             </table>
             <h3>Backup Directories</h3>
-            <v:data-set name="db_dirs" nrows="15" scrollable="1" width="80" sql="select bd_id, bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id">
+            <table class="listing">
+              <thead>
+                <tr class="listing_header_row">
+                  <th>Directory</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
 
-              <v:template name="header1" type="simple" name-to-remove="table" set-to-remove="bottom">
-                <table class="listing" rules="groups">
-                  <thead>
-                    <tr class="listing_header_row">
-                      <th>Directory</th><th>Action</th>
-                    </tr>
-                  </thead>
-                </table>
-              </v:template>
-
-              <v:template name="rows" type="repeat">
-                <v:template name="temp_db_dirs_browse" type="browse" name-to-remove="table" set-to-remove="both">
-                  <tr>
-                    <td class="listing_col">
-                      <img src="dav/image/dav/foldr_16.png" alt="folder"/>
-                      &amp;nbsp;
-                      <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
-                    </td>
-                    <td>
-                      <v:button name="db_dir_remove" value="Remove" action="simple">
-                        <v:on-post>
-                          <![CDATA[
-                            delete from DB.DBA.SYS_BACKUP_DIRS where bd_id = (control.vc_parent as vspx_row_template).te_rowset[0];
-
-                            self.vc_data_bind(e);
-                          ]]>
-                        </v:on-post>
-                      </v:button>
-                    </td>
-                  </tr>
-                </v:template>
-
-                <v:template name="no_dirs" type="if-not-exists" name-to-remove="table" set-to-remove="both">
-                  <table>
+              <v:data-set name="db_dirs" nrows="15" scrollable="1" sql="select bd_id, bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id">
+                <tbody>
+                  <v:template name="db_dirs_empty" type="if-not-exists">>
                     <tr>
                       <td colspan="2" class="attention_marker">No backup directories specified. Backup will go to server's working directory.</td>
                     </tr>
-                  </table>
-                </v:template>
+                  </v:template>
 
-                <v:template name="temp_db_dir_add" type="add" name-to-remove="" set-to-remove="">
-                  <v:form name="_add_dir" type="update">
-                    <v:on-post>
-                      <![CDATA[
-                        declare dir1 any;
+                  <v:template name="db_dirs_repeat" type="repeat">
 
-                        if (not self.vc_is_valid)
-                          return;
+                    <v:template name="db_dirs_browse" type="browse">
+                      <tr>
+                        <td class="listing_col">
+                          <img src="dav/image/dav/foldr_16.png" alt="folder"/>
+                          &amp;nbsp;
+                          <v:label name="l_db_dir_name" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s"/>
+                        </td>
+                        <td>
+                          <v:button name="db_dir_remove" value="Remove" action="simple">
+                            <v:on-post>
+                              <![CDATA[
+                                delete from DB.DBA.SYS_BACKUP_DIRS where bd_id = (control.vc_parent as vspx_row_template).te_rowset[0];
 
-                        -- clsuter operation
-                        if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
-                        {
-                          declare exit handler for sqlstate '22023'
-                          {
-                            self.vc_error_message := sprintf ('The directory %s does not exist on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
-                            self.vc_is_valid := 0;
-                            return;
-                          };
-                          cl_exec ('select case when file_stat (?) = 0 then signal (\'22023\', \'No such directory\') else \'\' end', vector (self.t_dir.ufl_value));
-                        }
+                                self.vc_data_bind(e);
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                        </td>
+                      </tr>
+                    </v:template>
 
-                        if (not isstring (file_stat (self.t_dir.ufl_value)))
-                        {
-                          self.vc_error_message := 'Non-existing directory, please select correct path.';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
 
-                        dir1 := trim (self.t_dir.ufl_value,' /');
-                        if (exists (select 1 from DB.DBA.SYS_BACKUP_DIRS where bd_dir = dir1))
-                        {
-                          self.vc_error_message := 'The directory is already added, please select another path.';
-                          self.vc_is_valid := 0;
-                          return;
-                        }
-                        insert into DB.DBA.SYS_BACKUP_DIRS values (self.max_id + 1, dir1);
-                        self.vc_data_bind(e);
-                      ]]>
-                    </v:on-post>
-                    <tr>
-                      <td colspan="2">
-                        <br />
-                        <v:text name="t_dir" error-glyph="*">
-                          <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
-                        </v:text>
-                        <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
-                        <v:button name="dir_add" action="simple" value="Add" />
-                        <br /><br />
-                      </td>
-                    </tr>
-                  </v:form>
-                </v:template>
-              </v:template>
-            </v:data-set>
+                    <v:template name="temp_db_dir_add" type="add">
+                      <v:form name="_add_dir" type="update">
+                        <v:on-post>
+                          <![CDATA[
+                            declare dir1 any;
+
+                            if (not self.vc_is_valid)
+                              return;
+
+                            -- clsuter operation
+                            if (self.cl_op and sys_stat ('cl_run_local_only') <> 1)
+                            {
+                              declare exit handler for sqlstate '22023'
+                              {
+                                self.vc_error_message := sprintf ('The directory %s does not exist on all cluster nodes, please select correct path.', self.t_dir.ufl_value);
+                                self.vc_is_valid := 0;
+                                return;
+                              };
+                              cl_exec ('select case when file_stat (?) = 0 then signal (\'22023\', \'No such directory\') else \'\' end', vector (self.t_dir.ufl_value));
+                            }
+
+                            if (not isstring (file_stat (self.t_dir.ufl_value)))
+                            {
+                              self.vc_error_message := 'Non-existing directory, please select correct path.';
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+
+                            dir1 := trim (self.t_dir.ufl_value,' /');
+                            if (exists (select 1 from DB.DBA.SYS_BACKUP_DIRS where bd_dir = dir1))
+                            {
+                              self.vc_error_message := 'The directory is already added, please select another path.';
+                              self.vc_is_valid := 0;
+                              return;
+                            }
+                            insert into DB.DBA.SYS_BACKUP_DIRS values (self.max_id + 1, dir1);
+                            self.vc_data_bind(e);
+                          ]]>
+                        </v:on-post>
+                        <tr>
+                          <td colspan="2">
+                            <br />
+                            <v:text name="t_dir" error-glyph="*">
+                              <v:validator test="regexp" regexp="^[^ \t\n\r]+$" message="Please select a directory"/>
+                            </v:text>
+                            <input type="button" name="browsepath" value="Browse..." onClick="javascript: doBrowse('?sid=<?V self.sid ?>&realm=<?V self.realm ?>', 't_dir', '<?V replace('.', '\\','/') ?>', 1, 0)" />
+                            <v:button name="dir_add" action="simple" value="Add" />
+                            <br /><br />
+                          </td>
+                        </tr>
+                      </v:form>
+                    </v:template>
+                  </v:template>
+                </tbody>
+              </v:data-set>
+            </table>
 
             <v:form type="simple" method="POST" name="bkp_f">
               <table class="ctl_grp" style="min-width: 540px;">

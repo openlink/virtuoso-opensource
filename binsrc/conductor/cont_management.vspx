@@ -58,14 +58,14 @@
             var wDims = OAT.Dom.getViewport()
             var hDims = OAT.Dom.getWH('FT')
             var cPos = OAT.Dom.position(content)
-            $(content).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
+            $(content).style.height = (wDims[1] - hDims[1] - cPos[1] - 25) + 'px';
           }
           var lc = $('LC');
           if (lc) {
             var wDims = OAT.Dom.getViewport()
             var hDims = OAT.Dom.getWH('FT')
             var cPos = OAT.Dom.position(lc)
-            $(lc).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
+            $(lc).style.height = (wDims[1] - hDims[1] - cPos[1] - 15) + 'px';
           }
         }
 

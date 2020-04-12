@@ -48,28 +48,21 @@
       </h1>
     </vm:rawheader>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
+      <table border="0" width="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_selected" align="center" nowrap="1">
-                  <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab">
+              <v:url name="b_url41" value="Repository" url="cont_page.vspx?page=1" />
+            </div>
+            <div class="page_tab_selected">
+              <v:url name="b_url45" value="Content Imports" url="cont_page.vspx?page=2" />
+            </div>
+            <div class="page_tab">
+              <v:url name="b_url43" value="Text Indexing" format="%s" url="cont_page.vspx?page=3" />
+            </div>
+            <div class="page_tab">
+              <v:url name="b_url42" value="Resource Types" format="%s" url="cont_page.vspx?page=4" />
+            </div>
             <table class="tab_page">
               <tr>
                 <td valign="top">
@@ -77,32 +70,24 @@
                     <tr>
                       <td align="right">
                         <v:form name="robot_form1" type="simple" method="POST" action="">
-                          <table>
-                            <tr>
-                              <td align="right">
-                                <v:button action="simple" value="Import Queues" name="robot_button36" format="%s">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      http_request_status('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                                      return;
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </td>
-                              <td align="right">
-                                <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%s">
-                                  <v:on-post>
-                                    <![CDATA[
-                                      http_request_status ('HTTP/1.1 302 Found');
-                                      http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                                      return;
-                                    ]]>
-                                  </v:on-post>
-                                </v:button>
-                              </td>
-                            </tr>
-                          </table>
+                          <v:button action="simple" value="Import Queues" name="robot_button36" format="%s">
+                            <v:on-post>
+                              <![CDATA[
+                                http_request_status('HTTP/1.1 302 Found');
+                                http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                return;
+                              ]]>
+                            </v:on-post>
+                          </v:button>
+                          <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%s">
+                            <v:on-post>
+                              <![CDATA[
+                                http_request_status ('HTTP/1.1 302 Found');
+                                http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                                return;
+                              ]]>
+                            </v:on-post>
+                          </v:button>
                         </v:form>
                       </td>
                     </tr>

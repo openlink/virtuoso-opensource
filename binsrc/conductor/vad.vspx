@@ -454,9 +454,9 @@
 
       <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
         <h3>Install package</h3>
-        <table class="ctl_grp">
+        <table class="ctl_grp" style="width: auto">
           <tr class="ctl_grp_title">
-            <th>Install from</th>
+            <td colspan="2"><strong>Install from</strong></td>
           </tr>
           <tr>
             <td>

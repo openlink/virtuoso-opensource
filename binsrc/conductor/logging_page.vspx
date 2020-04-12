@@ -50,43 +50,36 @@
         <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
           <tr valign='top'>
             <td>
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '6' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '7' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '8' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '9' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" xhtml_class="uddi"/>
-                  </td>
-                  <td class="<?V case when self.page = '10' then 'page_tab_selected' else 'page_tab' end ?>" align="center" nowrap="1">
-                    <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" xhtml_class="uddi"/>
-                  </td>
-                  <td class="page_tab_empty" align="center" width="100%">
-                    &amp;nbsp;
-                  </td>
-                </tr>
-              </table>
+              <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url21" value="Version &amp; License Information" format="%s" url="logging_page.vspx?page=1" />
+              </div>
+              <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url12" value="DB Server" format="%s" url="logging_page.vspx?page=2" />
+              </div>
+              <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url13" value="Disk" format="%s" url="logging_page.vspx?page=3" />
+              </div>
+              <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url14" value="Index" format="%s" url="logging_page.vspx?page=4" />
+              </div>
+              <div class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url15" value="Locks" format="%s" url="logging_page.vspx?page=5" />
+              </div>
+              <div class="<?V case when self.page = '6' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url16" value="Space" format="%s" url="logging_page.vspx?page=6" />
+              </div>
+              <div class="<?V case when self.page = '7' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url17" value="HTTP Server" format="%s" url="logging_page.vspx?page=7" />
+              </div>
+              <div class="<?V case when self.page = '8' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url18" value="Profiling" format="%s" url="logging_page.vspx?page=8" />
+              </div>
+              <div class="<?V case when self.page = '9' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url19" value="Log Viewer" format="%s" url="logging_page.vspx?page=9" />
+              </div>
+              <div class="<?V case when self.page = '10' then 'page_tab_selected' else 'page_tab' end ?>">
+                <v:url name="b_url20" value="Client Sessions" format="%s" url="logging_page.vspx?page=10" />
+              </div>
               <table class="tab_page">
                 <tr>
                   <td>

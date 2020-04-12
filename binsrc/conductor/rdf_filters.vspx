@@ -45,35 +45,28 @@
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab_selected" align="center" nowrap="1">
-                  Extractor Cartridges
-                </td>
-                <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
-                </td>
-                <?vsp } ?>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab_selected">
+              Extractor Cartridges
+            </div>
+            <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
+            <div class="page_tab">
+              <v:url name="url2" value="Meta Cartridges" format="%s" url="rdf_filters_pp.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url1" value="Stylesheets" format="%s" url="sparql_filters.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" />
+            </div>
+            <?vsp } ?>
 
-            <div style="background-color: white; padding: 10px;">
+            <div class="tab_page_new">
               <v:form name="fm" type="simple" method="POST">
                 <vm:if test="self.c_mode = 'C/browse'">
                   <v:button name="add1" value="Add" action="simple">

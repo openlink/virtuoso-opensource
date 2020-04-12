@@ -32,7 +32,7 @@
     <vm:variables>
       <v:variable name="c_mode" type="varchar" default="'C/browse'"/>
 
-      <v:variable name="f_how" type="varchar" default="4"/>
+      <v:variable name="f_how" type="varchar" default="1"/>
       <v:variable name="f_value" type="varchar" default="''"/>
       <v:variable name="f_filter" type="varchar" default="''"/>
 
@@ -47,24 +47,10 @@
     <vm:pagebody>
       <div class="clear"></div>
       <v:form name="frm1" method="POST" type="simple">
+
         <vm:if test="self.c_mode = 'C/browse'">
-          <div style="padding-bottom: 1em; width: 100%;">
+          <div class="search_area" style="padding-bottom: 1.8em; width: 100%;">
             <div style="float: left; display: inline;">
-              <v:button name="add1" value="Add" action="simple">
-                <v:on-post>
-                  <![CDATA[
-                    self.c_mode := 'C/add';
-
-                    self.r_key := '';
-                    self.r_value := '';
-
-                    self.vc_data_bind (e);
-                  ]]>
-                </v:on-post>
-              </v:button>
-            </div>
-
-            <div style="float: right; display: inline;">
               Show
               <v:select-list name="how" xhtml_id="how" value="--self.f_how">
                 <v:item name="Starting with" value="1" />
@@ -79,7 +65,7 @@
                     self.f_how := self.how.ufl_value;
                     self.f_value := self.value.ufl_value;
 
-                    self.ds1.vc_reset ();
+                    self.ds.vc_reset ();
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
@@ -90,20 +76,35 @@
                     self.f_how := '4';
                     self.f_value := '';
 
-                    self.ds1.vc_reset ();
+                    self.ds.vc_reset ();
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+            </div>
+            <div style="float: right; display: inline;">
+              <v:button name="add1" value="Add Registry" action="simple" xhtml_style="margin-right: 0.5em;">
+                <v:on-post>
+                  <![CDATA[
+                    self.c_mode := 'C/add';
+
+                    self.r_key := '';
+                    self.r_value := '';
+
                     self.vc_data_bind (e);
                   ]]>
                 </v:on-post>
               </v:button>
             </div>
           </div>
-          <br />
           <table class="listing">
-            <tr class="listing_header_row">
-              <th width="50%">Prefix</th>
-              <th width="50%">URI</th>
-              <th width="1%">Action</th>
-            </tr>
+            <thead>
+              <tr class="listing_header_row">
+                <th width="50%">Prefix</th>
+                <th width="50%">URI</th>
+                <th width="1%">Action</th>
+              </tr>
+            </thead>
 
             <v:data-source name="dsrc" expression-type="sql" nrows="20" initial-offset="0">
               <v:before-data-bind>
@@ -129,64 +130,81 @@
               </v:after-data-bind>
             </v:data-source>
 
-            <v:data-set name="ds1" data-source="self.dsrc" scrollable="1">
-              <v:template type="repeat" name="dst1">
+            <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+              <tbody>
+                <v:template type="repeat" name="ds_repeat">
 
-                <v:template type="if-not-exists" name="dst2">
-                  <tr>
-                    <td align="center" colspan="3">No rows selected</td>
-                  </tr>
+                  <v:template type="if-not-exists" name="ds_empty">
+                    <tr>
+                      <td align="center" colspan="3">No rows selected</td>
+                    </tr>
+                  </v:template>
+
+                  <v:template type="browse" name="ds_browse">
+                    <tr>
+                      <td valign="top">
+                        <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
+                            ]]>
+                          </v:before-render>
+                          <v:on-post>
+                            <![CDATA[
+                              self.r_key := (control.vc_parent as vspx_row_template).te_rowset[0];
+                              self.r_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+
+                              self.c_mode := 'C/edit';
+                              self.vc_data_bind (e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                      <td>
+                        <?V control.te_rowset[1] ?>
+                      </td>
+                      <td valign="top" nowrap="nowrap">
+                        <v:button name="delete" action="simple" style="url" value="''">
+                          <v:before-render>
+                            <![CDATA[
+                              control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
+                            ]]>
+                          </v:before-render>
+                          <v:on-post>
+                            <![CDATA[
+                              registry_remove ((control.vc_parent as vspx_row_template).te_rowset[0]);
+                              self.vc_data_bind (e);
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                      </td>
+                    </tr>
+                  </v:template>
                 </v:template>
 
-                <v:template type="browse" name="dst3">
-                  <tr>
-                    <td valign="top">
-                      <v:button name="edit1" action="simple" style="url" value="''" xhtml_title="Edit" xhtml_alt="Edit">
-                        <v:before-render>
-                          <![CDATA[
-                            control.ufl_value := '<img src="images/icons/edit_16.png" hspace="3" border="0"/>' || (control.vc_parent as vspx_row_template).te_rowset[0];
-                          ]]>
-                        </v:before-render>
-                        <v:on-post>
-                          <![CDATA[
-                            self.r_key := (control.vc_parent as vspx_row_template).te_rowset[0];
-                            self.r_value := (control.vc_parent as vspx_row_template).te_rowset[1];
+                <v:template type="simple" name="ds_remain">
+                  <?vsp
+                    declare n, n_remain integer;
 
-                            self.c_mode := 'C/edit';
-                            self.vc_data_bind (e);
-                          ]]>
-                        </v:on-post>
-                      </v:button>
-                    </td>
-                    <td>
-                      <?V control.te_rowset[1] ?>
-                    </td>
-                    <td valign="top" nowrap="nowrap">
-                      <v:button name="delete" action="simple" style="url" value="''">
-                        <v:before-render>
-                          <![CDATA[
-                            control.ufl_value := '<img src="images/icons/trash_16.png" border="0" alt="Delete" title="Delete"/> Delete';
-                          ]]>
-                        </v:before-render>
-                        <v:on-post>
-                          <![CDATA[
-                            registry_remove ((control.vc_parent as vspx_row_template).te_rowset[0]);
-                            self.vc_data_bind (e);
-                          ]]>
-                        </v:on-post>
-                      </v:button>
+                    n_remain := self.ds.ds_data_source.ds_nrows - self.ds.ds_data_source.ds_rows_fetched;
+                    for (n := 0; n < n_remain; n := n + 1)
+                    {
+                      http ('<tr style="height: 21px;"><td colspan="3">&nbsp;</td></tr>');
+                    }
+                 ?>
+                </v:template>
+              </tbody>
+
+              <v:template type="simple" name="ds_footer">
+                <tfoot>
+                  <tr>
+                    <td colspan="3" class="navigation">
+                      <vm:ds-navigation-new data-set="ds"/>
                     </td>
                   </tr>
-                </v:template>
+                </tfoot>
               </v:template>
 
-              <v:template type="simple" name="dst4">
-                <tr class="browse_button_row">
-                  <td colspan="3" align="center"  class="listing_col_action">
-                    <vm:ds-navigation data-set="ds1"/>
-                  </td>
-                </tr>
-              </v:template>
             </v:data-set>
           </table>
         </vm:if>

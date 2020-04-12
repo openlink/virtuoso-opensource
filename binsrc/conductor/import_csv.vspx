@@ -77,8 +77,6 @@
 
   <vm:pagetitle>CSV Import</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:menu>
-    </vm:menu>
     <vm:variables>
       <v:variable name="csv_step" type="varchar" default="'1'" />
       <v:variable name="upl_file" type="varchar" default="null" />
