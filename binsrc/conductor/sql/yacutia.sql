@@ -4434,7 +4434,7 @@ create procedure y_base_uri (in p any)
   if (path like '/DAV/%')
     path := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || path;
   else
-    path := 'file:' || path;
+    path := 'file:/' || path;
   return path;
 }
 ;
