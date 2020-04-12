@@ -169,10 +169,6 @@
         }
       </v:after-data-bind>
 
-      <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
-
       <table class="page_cmd_row">
         <tr class="page_cmd_row">
           <td class="page_cmd_col">
@@ -382,7 +378,7 @@ ORDER BY sch_name"
                         <v:template name="temp_ds_tables_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                           <table class="listing">
                             <tr>
-                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/></th>
+                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_tables_select')"/></th>
                               <th>Name</th>
                               <th>Action</th>
                             </tr>
@@ -554,7 +550,7 @@ ORDER BY sch_name"
                         <v:template name="temp_ds_views_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                           <table class="listing">
                             <tr>
-                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_views_select')"/></th>
+                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_views_select')"/></th>
                               <th>Name</th>
                               <th>Action</th>
                             </tr>
@@ -772,7 +768,7 @@ ORDER BY sch_name"
                         <v:template name="temp_ds_procs_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                           <table class="listing">
                             <tr>
-                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_procedures_select')"/></th>
+                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_procedures_select')"/></th>
                               <th>Name</th>
                               <th>Type</th>
                               <th>Action</th>
@@ -922,7 +918,7 @@ ORDER BY sch_name"
                         <v:template name="temp_ds_udt_header" type="simple" name-to-remove="table" set-to-remove="bottom">
                           <table class="listing">
                             <tr>
-                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_types_select')"/></th>
+                              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_types_select')"/></th>
                               <th>Name</th>
                               <th>Type</th>
                               <th>Action</th>

@@ -26,7 +26,7 @@
   xmlns="http://www.w3.org/1999/xhtml">
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css" />
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css" />
     <link type="text/css" rel="stylesheet" href="syntax/SyntaxHighlighter.css"></link>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
@@ -53,8 +53,8 @@
     </v:on-init>
     <v:placeholder />
     <?vsp
-      http('<script type="text/javascript" src="md5.js"></script>\n');
-      http('<script type="text/javascript" src="cond_common.js"></script>\n');
+      http('<script type="text/javascript" src="js/md5.js"></script>\n');
+      http('<script type="text/javascript" src="js/cond_common.js"></script>\n');
       -- http('<script type="text/javascript" src="cond_help.js"></script>\n');
     ?>
   </body>

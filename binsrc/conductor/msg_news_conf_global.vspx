@@ -51,52 +51,43 @@
     </vm:menu>
     <vm:header caption="NNTP Server Global Management"></vm:header>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab" align="center">
+      <div class="main_tab_page">
+        <div class="page_tab">
                   <v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
-                </td>
-                <td class="page_tab_selected" align="center">General Setup
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
-            <table class="tab_page">
-              <tr>
-                <td valign="top">
+        </div>
+        <div class="page_tab_selected">
+          General Setup
+        </div>
+
+        <div class="tab_page_new">
                   <!-- MAIN -->
                   <v:form type="simple" method="POST" action="msg_news_conf.vspx">
-                    <table class="ctl_grp">
+            <table class="ctl_form">
                       <tr>
-                        <td colspan="2">
+                <td align="center" colspan="2">
                           <h3>Headers</h3>
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                <th>
                           Default value for Organization header
-                        </td>
+                </th>
                         <td>
                           <v:text xhtml_size="80" type="simple" value="--self.org" name="org_head"/>
                         </td>
                       </tr>
                       <tr>
-                        <td>
+                <th>
                           Optional node-name for Path header
-                        </td>
+                </th>
                         <td>
                           <v:text xhtml_size="80" type="simple" value="--self._from" name="from_head"/>
                         </td>
                       </tr>
                       <tr>
-                        <td>
-                          Post retrieve
-                        </td>
+                <th>
+                  Post retrive
+                </th>
                         <td>
                           <v:text xhtml_size="80" type="simple" value="--self._retr" name="retrive"/>
                         </td>
@@ -108,20 +99,11 @@
                           <v:button action="submit" value="Update" name="upd" style="button" xhtml_style="width:60px"/>
                         </td>
                       </tr>
-                      <tr>
-                        <td colspan="2">
-                          <!--v:url value="Access Control List" url="--'sec_acl_edit.vspx?mode=edit&edit=NEWS'" enabled="--self.vc_authenticated" /-->
-                        </td>
-                      </tr>
                     </table>
                   </v:form>
                   <!-- END -->
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+        </div>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

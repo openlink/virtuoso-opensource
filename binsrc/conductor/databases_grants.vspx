@@ -36,15 +36,15 @@
       <h1 class="page_title">Privileges for <?V self.name ?></h1>
     </vm:rawheader>
     <vm:pagebody>
-      <v:before-data-bind><v:script><![CDATA[
-        self.name := get_keyword('name', self.vc_event.ve_params, self.name);
-        if (exists(SELECT 1 FROM DB.DBA.SYS_KEYS where KEY_TABLE = self.name))
-          self.type := 1;
-        else
-          self.type := 0;
-      ]]></v:script></v:before-data-bind>
-      <script language="JavaScript" src="admin_utils.js">
-      </script>
+      <v:before-data-bind>
+        <![CDATA[
+          self.name := get_keyword('name', self.vc_event.ve_params, self.name);
+          if (exists(SELECT 1 FROM DB.DBA.SYS_KEYS where KEY_TABLE = self.name))
+            self.type := 1;
+          else
+            self.type := 0;
+        ]]>
+      </v:before-data-bind>
       <v:data-set name="ds_indx" nrows="1024" scrollable="0" cursor-type="static" edit="0" initial-enable="1"
         sql="select U_ID, U_NAME, U_IS_ROLE from db.dba.SYS_USERS WHERE U_SQL_ENABLE = 1 order by U_NAME" >
         <v:template name="temp_ds_indx_header" type="simple" name-to-remove="table" set-to-remove="bottom">
@@ -52,12 +52,12 @@
             <tr class="listing_header_row">
               <th>Username</th>
               <?vsp if (self.type) { ?>
-                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_select_')"/>Select</th>
-                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_insert_')"/>Insert</th>
-                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_update_')"/>Update</th>
-                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_delete_')"/>Delete</th>
+                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_perm_select_')"/>Select</th>
+                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_perm_insert_')"/>Insert</th>
+                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_perm_update_')"/>Update</th>
+                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_perm_delete_')"/>Delete</th>
               <?vsp } else { ?>
-                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_perm_execute_')"/>Execute</th>
+                <th><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_perm_execute_')"/>Execute</th>
               <?vsp } ?>
             </tr>
           </table>

@@ -39,9 +39,6 @@
     </vm:menu>
     <vm:header caption="Extractor Cartridges"/>
     <vm:pagebody>
-      <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
@@ -126,7 +123,7 @@
                   </v:button>
                   <table class="listing">
                     <tr class="listing_header_row">
-                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/></th>
                       <th width="1%">Seq#</th>
                       <th colspan="2">Description</th>
                       <th>Pattern</th>

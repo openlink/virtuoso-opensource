@@ -29,12 +29,6 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:scripts>
-      <?vsp
-        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
-      ?>
-    </vm:scripts>
-
     <vm:variables>
       <v:variable name="current_dsn" type="varchar" default="null" param-name="dsn"/>
       <v:variable name="current_dsn_desc" type="varchar" default="null" param-name="desc"/>
@@ -75,20 +69,13 @@
       <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab" align="center">
-                  <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_selected" align="center">Data Sources</td>
-                <td class="page_tab" align="center">
-                  <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab">
+              <v:url name="b_url31" value="External Linked Objects" url="vdb_linked_obj.vspx" />
+            </div>
+            <div class="page_tab_selected">Data Sources</div>
+            <div class="page_tab">
+              <v:url name="b_url32" url="vdb_config_dsn.vspx" value="Configure Data Sources" />
+            </div>
 
             <table class="tab_page">
               <tr>

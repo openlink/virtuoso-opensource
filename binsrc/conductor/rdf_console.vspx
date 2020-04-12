@@ -41,9 +41,6 @@
     </vm:menu>
     <vm:header caption="Debug Console"/>
     <vm:pagebody>
-      <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
       <v:on-init>
         <![CDATA[
           if (self.del is not null)
@@ -105,7 +102,7 @@
 
                 <table class="listing">
                   <tr class="listing_header_row">
-                    <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                    <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/></th>
                     <th>Session</th>
                     <th>Seq</th>
                     <th>Cartridge</th>

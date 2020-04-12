@@ -29,12 +29,6 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:scripts>
-      <?vsp
-        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
-      ?>
-    </vm:scripts>
-
     <vm:variables>
       <v:variable name="current_dsn" type="varchar" default="null" param-name="dsn"/>
       <v:variable name="s_stables" persist="1" type="any" default="null" />

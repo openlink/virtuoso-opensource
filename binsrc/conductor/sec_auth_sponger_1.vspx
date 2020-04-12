@@ -45,8 +45,7 @@
       <vm:menuitem name="HTTP" value="Access Control Lists"/>
     </vm:menu>
     <vm:header caption="Access Control Lists">
-      <script type="text/javascript" src="tbl.js">;</script>
-     <!--vm:help id="sec_auth_serv_sp" sect=""/-->
+      <script type="text/javascript" src="js/tbl.js">;</script>
     </vm:header>
     <vm:pagebody>
       <v:method name="astyle" arglist="in cmp varchar">

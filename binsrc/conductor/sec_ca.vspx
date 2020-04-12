@@ -39,9 +39,6 @@
     <vm:header caption="Public Key Infrastructure">
     </vm:header>
     <vm:pagebody>
-      <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
       <v:form name="form1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
       <!-- top of security layout -->
         <table border="0" width="100%" cellpadding="10" cellspacing="0">
@@ -111,7 +108,7 @@
                     <thead>
                       <tr class="listing_header_row">
                         <th class="checkbox">
-                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'cb_select')"/>
+                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
                         </th>
                         <th>Name</th>
                       </tr>

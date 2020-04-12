@@ -60,9 +60,7 @@
               self.base_start := self.browse_cat;
 		]]>
 	</v:on-post>
-        <![CDATA[
-	<script language="JavaScript" src="admin_utils.js"></script>
-        ]]>
+
       <v:form name="f1" method="POST" type="simple">
     <table class="listing">
       <tr>
@@ -105,7 +103,7 @@
                 <thead>
                         <tr class="listing_header_row">
                           <th class="checkbox">
-                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'cb_tables_select')"/>
+                            <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_tables_select')"/>
                           </th>
                      <th>Name</th>
                           <th>Type</th>

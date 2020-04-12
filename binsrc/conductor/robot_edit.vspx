@@ -91,7 +91,6 @@
     </vm:rawheader>
     <vm:pagebody>
       <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
         <script type="text/javascript">
           function toggleMeta (btn, div_id)
           {
@@ -535,7 +534,7 @@
                                 <table class="listing">
                                   <tr class="listing_header_row">
                                     <th>
-                                      <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'mapper')"/>
+                                      <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'mapper')"/>
                                       RDF Cartridge
                                     </th>
                                   </tr>
@@ -582,7 +581,7 @@
                                 <table class="listing">
                                   <tr class="listing_header_row">
                                     <th>
-                                      <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'metaMapper')"/>
+                                      <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'metaMapper')"/>
                                        Meta Cartridge
                                     </th>
                                   </tr>
