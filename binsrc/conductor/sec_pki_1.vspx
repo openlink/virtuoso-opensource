@@ -70,11 +70,10 @@
               if (self.uri1 = '' or self.uri1 like 'email:%')
               {
                 declare rc, res, gr any;
-                res := make_cert_iri ('id_rsa');
-                gr := sprintf ('http://%{WSHost}s/pki');
-                rc := coalesce ((sparql ask where { graph `iri(?:gr)` { `iri(?:res)` ?p ?o }}), 0);
-                if (rc)
-                  self.uri1 := res;
+                res := __i2idn (make_cert_iri ('id_rsa'));
+                gr := __i2idn (sprintf ('http://%{WSHost}s/pki'));
+                if (exists (select 1 from DB.DBA.RDF_QUAD where G = gr and S = res))
+                  self.uri1 := make_cert_iri ('id_rsa');
                 else
                   self.uri1 := '';
               }
