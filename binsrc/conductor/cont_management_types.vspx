@@ -81,114 +81,112 @@
            </v:button>
         </div>
       </div>
-     </v:form>
-    <table class="listing" cellspacing="1">
-      <v:data-source
-          name="dsrc3"
-          expression-type="sql"
-          nrows="20"
-          initial-offset="0">
-        <v:before-data-bind>
-          <![CDATA[
-            self.f_filter := case self.f_how
-                               when '1' then self.f_value || '%'
-                               when '2' then '%' || self.f_value || '%'
-                               when '3' then '%' || self.f_value
-                               else self.f_value
-                             end;
-            if (self.f_filter = '')
-              self.f_filter := '%';
+    </v:form>
 
-            self.f_filter := replace (self.f_filter, '%%', '%');
-            control.ds_sql := 'select T_TYPE, T_EXT, coalesce (T_DESCRIPTION, \'\') as T_DESCRIPTION from WS.WS.SYS_DAV_RES_TYPES where (T_TYPE like ?) or (T_EXT like ?) order by T_TYPE';
-            control.ds_parameters := null;
-            control.add_parameter (self.f_filter);
-            control.add_parameter (self.f_filter);
-          ]]>
-        </v:before-data-bind>
-        <v:after-data-bind>
-          control.ds_make_statistic ();
-        </v:after-data-bind>
-      </v:data-source>
+    <v:data-source
+        name="dsrc3"
+        expression-type="sql"
+        nrows="20"
+        initial-offset="0">
+      <v:before-data-bind>
+        <![CDATA[
+          self.f_filter := case self.f_how
+                             when '1' then self.f_value || '%'
+                             when '2' then '%' || self.f_value || '%'
+                             when '3' then '%' || self.f_value
+                             else self.f_value
+                           end;
+          if (self.f_filter = '')
+            self.f_filter := '%';
 
-      <v:data-set name="ds3" data-source="self.dsrc3" scrollable="1">
-        <input type="hidden" name="page" value="4"/>
+          self.f_filter := replace (self.f_filter, '%%', '%');
+          control.ds_sql := 'select T_TYPE, T_EXT, coalesce (T_DESCRIPTION, \'\') as T_DESCRIPTION from WS.WS.SYS_DAV_RES_TYPES where (T_TYPE like ?) or (T_EXT like ?) order by T_TYPE';
+          control.ds_parameters := null;
+          control.add_parameter (self.f_filter);
+          control.add_parameter (self.f_filter);
+        ]]>
+      </v:before-data-bind>
+      <v:after-data-bind>
+        control.ds_make_statistic ();
+      </v:after-data-bind>
+    </v:data-source>
 
-        <v:template type="simple" name="ds3_header_template">
+    <v:data-set name="ds3" data-source="self.dsrc3" scrollable="1">
+      <input type="hidden" name="page" value="4"/>
+
+      <div class="navigation">
+        <vm:ds-navigation-new data-set="ds3"/>
+      </div>
+
+      <v:template type="simple" name="ds3_header" name-to-remove="table" set-to-remove="bottom">
+        <table class="listing">
           <thead>
-            <tr class="listing_header_row">
+            <tr>
               <th>MIME Type</th>
               <th>File extension</th>
               <th>Description</th>
-              <th width="1%">Action</th>
+              <th class="action">Action</th>
             </tr>
           </thead>
+        </table>
+      </v:template>
+
+      <v:template type="repeat" name="ds3_repeat">
+        <v:template type="if-not-exists" name="ds3_empty">
+          <tr>
+            <td class="listing_empty" colspan="4">
+              No rows selected
+            </td>
+          </tr>
         </v:template>
 
-        <tbody>
-          <v:template type="repeat" name="ds3_repeat">
-            <v:template type="if-not-exists" name="ds3_empty">
-              <tr>
-                <td class="listing_empty" colspan="4">
-                  No rows selected
-                </td>
-              </tr>
-            </v:template>
-
-            <v:template type="browse" name="ds3_browse">
-              <tr>
-                <td>
-                  <v:label format="%s" name="ds3_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
-                </td>
-                <td>
-                  <v:label format="%s" name="ds3_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
-                </td>
-                <td>
-                  <v:label format="%s" name="ds3_browse_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
-                </td>
-                <td class="listing_col_action">
-                  <v:button action="simple" style="image" name="url1_edit"
-                    value="images/icons/edit_16.png"
-                    xhtml_alt="Edit"
-                    xhtml_title="Edit"
-                    text="&nbsp;Edit"
-                    url="--concat('cont_type_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[1])))"/>
-                  <v:button action="simple" style="image" name="url2_del"
-                    value="images/icons/trash_16.png"
-                    xhtml_alt="Delete"
-                    xhtml_title="Delete"
-                    text="&nbsp;Delete"
-                    url="--concat('cont_type_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[1])))"/>
-                </td>
-              </tr>
-            </v:template>
-
-          </v:template>
-
-          <v:template name="ds_remain" type="simple">
-            <?vsp
-              declare n, n_remain integer;
-
-              n_remain := self.ds3.ds_data_source.ds_nrows - self.ds3.ds_data_source.ds_rows_fetched;
-              for (n := 0; n < n_remain; n := n + 1)
-              {
-                http ('<tr style="height: 21px;"><td colspan="4">&nbsp;</td></tr>');
-              }
-           ?>
-          </v:template>
-        </tbody>
-
-        <v:template type="simple" name="ds3_footer">
-          <tfoot>
-            <tr class="browse_button_row">
-              <td colspan="4" class="navigation">
-                <vm:ds-navigation-new data-set="ds3"/>
-              </td>
-            </tr>
-          </tfoot>
+        <v:template type="browse" name="ds3_browse">
+          <tr>
+            <td>
+              <v:label format="%s" name="ds3_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
+            </td>
+            <td>
+              <v:label format="%s" name="ds3_browse_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" />
+            </td>
+            <td>
+              <v:label format="%s" name="ds3_browse_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" />
+            </td>
+            <td class="action">
+              <v:button action="simple" style="image" name="url1_edit"
+                value="images/icons/edit_16.png"
+                xhtml_alt="Edit"
+                xhtml_title="Edit"
+                text="&nbsp;Edit"
+                url="--concat('cont_type_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[1])))"/>
+              <v:button action="simple" style="image" name="url2_del"
+                value="images/icons/trash_16.png"
+                xhtml_alt="Delete"
+                xhtml_title="Delete"
+                text="&nbsp;Delete"
+                url="--concat('cont_type_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[1])))"/>
+            </td>
+          </tr>
         </v:template>
 
-      </v:data-set>
-    </table>
+      </v:template>
+
+      <v:template name="ds_remain" type="simple">
+        <?vsp
+          declare n, n_remain integer;
+
+          n_remain := self.ds3.ds_data_source.ds_nrows - self.ds3.ds_data_source.ds_rows_fetched;
+          for (n := 0; n < n_remain; n := n + 1)
+          {
+            http ('<tr><td colspan="4">&nbsp;</td></tr>');
+          }
+       ?>
+      </v:template>
+
+      <v:template name="ds_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+        <table>
+        </table>
+      </v:template>
+
+    </v:data-set>
   </vm:pagebody>
 </v:page>

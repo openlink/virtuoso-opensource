@@ -78,145 +78,142 @@
       </v:method>
 
       <div class="scroll_area scroll_area37">
-        <table class="listing">
-          <v:data-source
-              name="dsrc"
-              expression-type="sql"
-              nrows="0"
-              initial-offset="0">
-            <v:before-data-bind>
-              <![CDATA[
-                if (e.ve_is_post and e.ve_button is not null)
+        <v:data-source
+            name="dsrc"
+            expression-type="sql"
+            nrows="0"
+            initial-offset="0">
+          <v:before-data-bind>
+            <![CDATA[
+              if (e.ve_is_post and e.ve_button is not null)
+              {
+                declare ord_button varchar;
+
+                ord_button := e.ve_button.vc_name;
+                if (ord_button like 'ord_%')
                 {
-                  declare ord_button varchar;
-
-                  ord_button := e.ve_button.vc_name;
-                  if (ord_button like 'ord_%')
-                  {
-                    ord_button := subseq (ord_button, 4);
-                    self.ord_set (ord_button, e, self.ds);
-                  }
+                  ord_button := subseq (ord_button, 4);
+                  self.ord_set (ord_button, e, self.ds);
                 }
-                control.ds_sql := 'select SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR, SE_NEXT from Y_SYS_SCHEDULED_EVENT where ord = ? and seq = ?';
-                control.ds_parameters := null;
-                control.add_parameter (self.ord);
-                control.add_parameter (self.ord_seq);
-              ]]>
-            </v:before-data-bind>
-            <v:after-data-bind>
-              control.ds_make_statistic ();
-            </v:after-data-bind>
-          </v:data-source>
+              }
+              control.ds_sql := 'select SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR, SE_NEXT from Y_SYS_SCHEDULED_EVENT where ord = ? and seq = ?';
+              control.ds_parameters := null;
+              control.add_parameter (self.ord);
+              control.add_parameter (self.ord_seq);
+            ]]>
+          </v:before-data-bind>
+          <v:after-data-bind>
+            control.ds_make_statistic ();
+          </v:after-data-bind>
+        </v:data-source>
 
-          <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
+        <v:data-set name="ds" data-source="self.dsrc" scrollable="1">
 
-          <v:template type="simple" name="ds_header">
-            <thead>
-              <tr class="listing_header_row">
-                <th>
-                  <v:button action="simple" name="ord_name" value="Event Name" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'name')); ?>
-                </th>
-                <th>
-                  <v:button action="simple" name="ord_error" value="Status" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'error')); ?>
-                </th>
-                <th>
-                  <v:button action="simple" name="ord_start" value="Start" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'start')); ?>
-                </th>
-                <th>
-                  <v:button action="simple" name="ord_last" value="Last time" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'last')); ?>
-                </th>
-                <th>
-                  <v:button action="simple" name="ord_next" value="Next" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'next')); ?>
-                </th>
-                <th>
-                  <v:button action="simple" name="ord_interval" value="Interval" style="url" />
-                  <?vsp http (self.ord_show (self.ord, self.ord_seq, 'interval')); ?>
-                </th>
-                <th class="action new_item">
-                  <v:url name="cr_new_ev1" value="Create Event" url="sys_queues_edit.vspx?mode=create"/>
-                </th>
-              </tr>
-            </thead>
+          <div class="navigation">
+            <vm:ds-navigation-new data-set="ds"/>
+          </div>
+
+          <v:template name="ds_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+            <table class="listing">
+              <thead>
+                <tr>
+                  <th>
+                    <v:button action="simple" name="ord_name" value="Event Name" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'name')); ?>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="ord_error" value="Status" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'error')); ?>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="ord_start" value="Start" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'start')); ?>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="ord_last" value="Last time" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'last')); ?>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="ord_next" value="Next" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'next')); ?>
+                  </th>
+                  <th>
+                    <v:button action="simple" name="ord_interval" value="Interval" style="url" />
+                    <?vsp http (self.ord_show (self.ord, self.ord_seq, 'interval')); ?>
+                  </th>
+                  <th class="action new_item">
+                    <v:url name="cr_new_ev1" value="Create Event" url="sys_queues_edit.vspx?mode=create"/>
+                  </th>
+                </tr>
+              </thead>
+            </table>
           </v:template>
 
           <v:template type="repeat" name="ds_repeat">
-            <tbody>
-              <v:template type="if-not-exists" name="ds_empty">
-                <tr>
-                  <td class="listing_empty" colspan="7">
-                    No rows selected
-                  </td>
-                </tr>
-              </v:template>
-
-              <v:template type="browse" name="ds_browse">
-                <tr>
-                  <td class="listing_col"><img class="listing_icon" src="images/icons/alarm_16.png" alt="Event" title="Event"/>
-                    <v:label format="%s" name="ds_label_1" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
-                  </td>
-                  <td class="listing_col">
-                    <?vsp
-                      if (control.te_rowset[4] is not null)
-                      {
-                        http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%s&realm=%s&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>', self.sid, self.realm, control.te_rowset[0]));
-                      }
-                      else
-                      {
-                        http ('OK');
-                      }
-                    ?>
-                  </td>
-                  <td class="listing_col">
-                    <v:label format="%s" name="ds_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" fmt-function="yac_hum_datefmt" />
-                  </td>
-                  <td class="listing_col">
-                    <v:label format="%s" name="ds_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt" />
-                  </td>
-                  <td class="listing_col">
-                    <v:label format="%s" name="ds_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset[5])" fmt-function="yac_hum_min_to_dur" />
-                  </td>
-                  <td class="listing_col">
-                    <v:label format="%s" name="ds_label_5" value="--((yac_hum_min_to_dur ((control.vc_parent as vspx_row_template).te_rowset[3])))" />
-                  </td>
-                  <td class="listing_col_action">
-                    <v:button action="simple" style="image" name="url1"
-                              text="&nbsp;Edit"
-                              value="images/icons/edit_16.png"
-                              url="--concat ('sys_queues_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
-                              xhtml_alt="Edit"
-                              xhtml_title="Edit"
-                    />
-                    <v:button action="simple" style="image" name="url2"
-                              value="images/icons/trash_16.png"
-                              url="--concat('sys_queues_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
-                              xhtml_alt="Delete"
-                              xhtml_title="Delete"
-                              text="&nbsp;Delete"
-                     />
-                  </td>
-                 </tr>
-              </v:template>
-            </tbody>
-          </v:template>
-
-          <v:template type="simple" name="ds_footer_template">
-            <tfoot>
+            <v:template type="if-not-exists" name="ds_empty">
               <tr>
-                <td colspan="7" class="navigation">
-                  <vm:ds-navigation-new data-set="ds"/>
+                <td class="listing_empty" colspan="7">
+                  No rows selected
                 </td>
               </tr>
-            </tfoot>
+            </v:template>
+
+            <v:template type="browse" name="ds_browse">
+              <tr>
+                <td class="listing_col"><img class="listing_icon" src="images/icons/alarm_16.png" alt="Event" title="Event"/>
+                  <v:label format="%s" name="ds_label_1" value="--y_trunc_uri ((control.vc_parent as vspx_row_template).te_rowset[0])" />
+                </td>
+                <td class="listing_col">
+                  <?vsp
+                    if (control.te_rowset[4] is not null)
+                    {
+                      http (sprintf ('<a target="_blank" href="sys_queues_error.vspx?sid=%s&realm=%s&ev=%U"><img src="images/icons/stop_16.png" border="0"/></a>', self.sid, self.realm, control.te_rowset[0]));
+                    }
+                    else
+                    {
+                      http ('OK');
+                    }
+                  ?>
+                </td>
+                <td class="listing_col">
+                  <v:label format="%s" name="ds_label_2" value="--((control.vc_parent as vspx_row_template).te_rowset[1])" fmt-function="yac_hum_datefmt" />
+                </td>
+                <td class="listing_col">
+                  <v:label format="%s" name="ds_label_3" value="--((control.vc_parent as vspx_row_template).te_rowset[2])" fmt-function="yac_hum_datefmt" />
+                </td>
+                <td class="listing_col">
+                  <v:label format="%s" name="ds_label_4" value="--((control.vc_parent as vspx_row_template).te_rowset[5])" fmt-function="yac_hum_min_to_dur" />
+                </td>
+                <td class="listing_col">
+                  <v:label format="%s" name="ds_label_5" value="--((yac_hum_min_to_dur ((control.vc_parent as vspx_row_template).te_rowset[3])))" />
+                </td>
+                <td class="listing_col_action">
+                  <v:button action="simple" style="image" name="url1"
+                            text="&nbsp;Edit"
+                            value="images/icons/edit_16.png"
+                            url="--concat ('sys_queues_edit.vspx?mode=edit&name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
+                            xhtml_alt="Edit"
+                            xhtml_title="Edit"
+                  />
+                  <v:button action="simple" style="image" name="url2"
+                            value="images/icons/trash_16.png"
+                            url="--concat('sys_queues_remove.vspx?name=', encode_base64 (serialize ((control.vc_parent as vspx_row_template).te_rowset[0])))"
+                            xhtml_alt="Delete"
+                            xhtml_title="Delete"
+                            text="&nbsp;Delete"
+                   />
+                </td>
+               </tr>
+            </v:template>
+          </v:template>
+
+          <v:template name="ds_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+            <table>
+            </table>
           </v:template>
 
         </v:data-set>
-      </table>
-    </div>
+      </div>
       <span class="error_summary">
         <v:error-summary />
       </span>

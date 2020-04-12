@@ -536,6 +536,15 @@ table.listing tfoot td.navigation {
   padding: 3px 0;
 }
 
+table.listing thead tr {
+  background-image: url(../images/stl_blu1_grad.gif);
+  background-repeat: repeat-x;
+}
+
+table.listing thead tr th {
+  white-space: nowrap;
+}
+
 tr.listing_header_row {
   background-image: url(../images/stl_blu1_grad.gif);
   background-repeat: repeat-x;
@@ -545,6 +554,11 @@ tr.listing_header_row th {
   white-space: nowrap;
 }
 
+div.navigation {
+  text-align: right;
+  font-size: 10pt;
+  padding-bottom: 6px;
+}
 
 /* Listing-related commands - top and bottom */
 
@@ -587,13 +601,9 @@ tr.listing_row_selected {
   background-color: green!important;
 }
 
-td.listing_column {}
-
 td.listing_col_label {
   font-weight: bold;
 }
-
-td.listing_col {}
 
 td.listing_col_num {
   text-align: right;
@@ -1246,11 +1256,13 @@ table.stat_table {
 }
 
 table.stat_table td {
+  vertical-align: top;
   font-weight: bold;
   font-size: 80%;
 }
 
 table.stat_table th {
+  vertical-align: top;
   border-color: #99B3C5;
   border-style: solid;
   border-width: 0px 0px 1px 0px;
@@ -1559,7 +1571,7 @@ div.contents {
   color: #ffffff;
   font-weight: bold;
   text-decoration: none;
-  margin-right: 0.5em;
+  margin-left: 0.5em;
   padding: 0.1em 0.3em 0.1em 0.3em;
   border: solid 1px;
   border-color: #7f94a5;

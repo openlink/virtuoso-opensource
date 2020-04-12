@@ -43,17 +43,11 @@
           <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
           <div class="confirm_text">
             <h4>An error has occurred when processing task <b>"<?V self.evname ?>"</b>.</h4>
-            <table>
-              <tr>
-                <td>
-                  <pre><?vsp for select SE_LAST_ERROR from SYS_SCHEDULED_EVENT where SE_NAME = self.evname do
-                  {
-                    http_value (SE_LAST_ERROR, null);
-                  } ?>
-                  </pre>
-                </td>
-              </tr>
-            </table>
+            <pre><?vsp for select SE_LAST_ERROR from SYS_SCHEDULED_EVENT where SE_NAME = self.evname do
+            {
+              http_value (SE_LAST_ERROR, null);
+            } ?>
+            </pre>
           </div>
           <div class="dialog_buttons">
             <v:button action="simple" name="cancel" value="Go back" xhtml_onclick="javascript:window.close();return false;" />

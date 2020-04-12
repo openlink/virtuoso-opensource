@@ -101,54 +101,69 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <br /><br />
-              <table class="listing">
-                <thead>
-                  <tr class="listing_header_row">
-                    <th class="checkbox">
-                      <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
-                    </th>
-                    <th>Name</th>
-                  </tr>
-                </thead>
+              <br />
 
-                <v:data-set name="ds1" sql="select C_ID, C_NAME from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 order by C_NAME" nrows="20" scrollable="1" edit="1">
+              <v:data-source name="dsrc1" expression-type="sql" nrows="20" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_sql := 'select C_ID, C_NAME from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 order by C_NAME';
+                    control.ds_parameters := null;
+                  ]]>
+                </v:before-data-bind>
+                <v:after-data-bind>
+                  control.ds_make_statistic ();
+                </v:after-data-bind>
+              </v:data-source>
 
-                  <v:template type="repeat" name="ds1_repeat">
-                    <v:template type="if-not-exists" name="ds1_empty">
+              <v:data-set name="ds1" data-source="self.dsrc1" scrollable="1">
+                <div class="navigation">
+                  <vm:ds-navigation-new data-set="ds1"/>
+                </div>
+
+                <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="listing">
+                    <thead>
                       <tr>
-                        <td class="listing_empty" colspan="2">No CA Roots</td>
+                        <th class="checkbox">
+                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
+                        </th>
+                        <th>Name</th>
                       </tr>
-                    </v:template>
+                    </thead>
+                  </table>
+                </v:template>
 
-                    <v:template type="browse" name="ds1_browse">
-                      <tr>
-                        <td class="checkbox">
-                          <v:check-box name="cb_select" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-                        </td>
-                        <td><?V control.te_rowset[1] ?></td>
-                      </tr>
-                    </v:template>
+                <v:template type="repeat" name="ds1_repeat">
+
+                  <v:template type="if-not-exists" name="ds1_empty">
+                    <tr>
+                      <td class="listing_empty" colspan="2">No CA Roots</td>
+                    </tr>
                   </v:template>
 
-                  <v:template type="simple" name="ds1_footer">
-                    <tfoot>
-                      <tr>
-                        <td colspan="2" class="navigation">
-                          <vm:ds-navigation-new data-set="ds1"/>
-                        </td>
-                      </tr>
-                    </tfoot>
+                  <v:template type="browse" name="ds1_browse">
+                    <tr>
+                      <td class="checkbox">
+                        <v:check-box name="cb_select" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                      </td>
+                      <td><?V control.te_rowset[1] ?></td>
+                    </tr>
                   </v:template>
-                </v:data-set>
-              </table>
+                </v:template>
+
+                <v:template name="ds1_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
             </vm:if>
 
             <vm:if test="self.ca_mode = 'import'">
               <h3>Import certificates</h3>
               <table>
                 <tr>
-                  <th>CA Roots File:</th>
+                  <th>CA Roots File</th>
                   <td>
                     <input type="file" name="ca_file" />
                   </td>
@@ -186,7 +201,7 @@
               <h3>Export certificates</h3>
               <table>
                 <tr>
-                  <th>CA Roots File:</th>
+                  <th>CA Roots File</th>
                   <td>
                     <input type="text" name="ca_export_file" />
                   </td>

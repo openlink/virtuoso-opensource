@@ -89,35 +89,37 @@
         ]]>
       </v:on-init>
       <v:template type="simple" name="list_tmpl" condition="self.pack_ready = 1">
-      <div class="clear">
-        <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
-        Installing a VAD package will put the database in atomic mode, halting other client threads
-        <br/>
-        for duration of the installation. If the installation encounters a fatal error such as running
-        <br/>
-        out of disk, you will get an error message and the server will exit. If this happens:
-        <br/>
-        <ul>
-          <li>Virtuoso server will have to be restarted manually</li>
-          <li>the Virtuoso Conductor will not be available until the server has restarted</li>
-          <li>after server has restarted it will be in the state it was in before VAD installation was started</li>
-        </ul>
-      </div>
+        <div class="clear">
+          <img class="dialog_icon" src="images/icons/about_32.png" alt="Stop" title="Stop"/>
+          Installing a VAD package will put the database in atomic mode, halting other client threads
+          <br/>
+          for duration of the installation. If the installation encounters a fatal error such as running
+          <br/>
+          out of disk, you will get an error message and the server will exit. If this happens:
+          <br/>
+          <ul>
+            <li>Virtuoso server will have to be restarted manually</li>
+            <li>the Virtuoso Conductor will not be available until the server has restarted</li>
+            <li>after server has restarted it will be in the state it was in before VAD installation was started</li>
+          </ul>
+        </div>
       </v:template>
 
       <v:form name="install_form" type="simple" method="POST">
         <table class="listing">
           <v:template type="simple" condition="self.pack_ready = 1">
+            <thead>
+              <tr>
+                <th nowrap="nowrap" width="25%">Application title</th>
+                <th width="25%">New Version</th>
+                <th width="25%">Old Version</th>
+                <th nowrap="nowrap">Short name</th>
+              </tr>
+            </thead>
+            <?vsp for (declare i, l int, i := 0, l := length (self.packs_arr); i < l; i := i + 1) { ?>
             <tr>
-              <th nowrap="nowrap" width="25%">Application title</th>
-              <th nowrap="nowrap" width="25%">New Version</th>
-              <th nowrap="nowrap" width="25%">Old Version</th>
-              <th nowrap="nowrap">Short name</th>
-            </tr>
-            <?vsp for (declare i,l int, i := 0, l := length (self.packs_arr); i < l; i := i + 1) { ?>
-            <tr class="<?V case when mod(i,2) then 'listing_row_odd' else 'listing_row_even' end ?>">
               <td nowrap="nowrap"><?V self.packs_arr[i][2] ?></td>
-              <td><?V self.packs_arr[i][1] ?></td>
+              <td><?V self.packs_arr[i][1] ?> / <?V self.packs_arr[i][3] ?></td>
               <td><?V coalesce (DB.DBA.VAD_CHECK_VERSION (self.packs_arr[i][0]), 'N/A') ?></td>
               <td><?V self.packs_arr[i][0] ?></td>
             </tr>

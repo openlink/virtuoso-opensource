@@ -92,12 +92,12 @@
 
 <xsl:template match="vm:pagewrapper">
   <v:variable name="page_owner" persist="0" type="varchar">
-      <xsl:attribute name="default">
-	  <xsl:choose>
-	      <xsl:when  test="../@vm:owner">'<xsl:value-of select="../@vm:owner"/>'</xsl:when>
-	      <xsl:otherwise>null</xsl:otherwise>
-	  </xsl:choose>
-      </xsl:attribute>
+    <xsl:attribute name="default">
+      <xsl:choose>
+        <xsl:when test="../@vm:owner">'<xsl:value-of select="../@vm:owner"/>'</xsl:when>
+        <xsl:otherwise>null</xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
   </v:variable>
   <v:variable name="nav_pos_fixed" type="int" default="0"/>
   <v:variable name="nav_top" type="int" default="0"/>
@@ -1002,58 +1002,89 @@ http(sprintf('<xsl:for-each select="text">
 </xsl:template>
 
 <xsl:template name="st-lic">
-   <?vsp
-   declare bits any;
-   bits := self.bits;
-   if (isnull (self.pname) or bits[1] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="1" %s /></td>', self.tp, y_check_if_bit (bits, 1)));
-	?>
-	<td class="stat_col_label">Server</td>
-	<td><?V sys_stat ('st_dbms_name') ?></td>
-    </tr>
+  <?vsp
+  declare bits any;
+  bits := self.bits;
+  if (isnull (self.pname) or bits[1] = ascii ('1')) {
+  ?>
+  <tr>
+  <?vsp
+    if (isnull (self.pname))
+      http (sprintf ('<td><input type="checkbox" name="%s" value="1" %s /></td>', self.tp, y_check_if_bit (bits, 1)));
+  ?>
+    <td class="stat_col_label">Server</td>
+    <td><?V sys_stat ('st_dbms_name') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if (isnull (self.pname) or bits[2] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="2" %s /></td>', self.tp, y_check_if_bit (bits, 2)));
-	?>
-	<td class="stat_col_label">Platform</td>
-	<td><?V sys_stat ('st_build_opsys_id') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="2" %s /></td>', self.tp, y_check_if_bit (bits, 2)));
+    ?>
+    <td class="stat_col_label">Platform</td>
+    <td><?V sys_stat ('st_build_opsys_id') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if ((isnull (self.pname) or bits[3] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="3" %s /></td>', self.tp, y_check_if_bit (bits, 3)));
-	?>
-	<td class="stat_col_label">Maximum Licensed <br />Client Connections</td>
-	<td><?V sys_stat ('st_lic_max_connections') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="3" %s /></td>', self.tp, y_check_if_bit (bits, 3)));
+    ?>
+    <td class="stat_col_label">Maximum Licensed<br />Client Connections</td>
+    <td>
+      <?vsp
+        declare lconnections varchar;
+
+        lconnections := 'Undefined';
+        {
+          declare continue handler for SQLSTATE '*'
+          {
+            goto _skip;
+          };
+          lconnections := sys_stat('st_lic_max_connections');
+        _skip:;
+        }
+        http (lconnections);
+      ?>
+    </td>
+  </tr>
   <?vsp } ?>
   <?vsp if (isnull (self.pname) or bits[4] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="4" %s /></td>', self.tp, y_check_if_bit (bits, 4)));
-	?>
-	<td class="stat_col_label">Build Date</td>
-	<td><?V sys_stat ('st_build_date') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="4" %s /></td>', self.tp, y_check_if_bit (bits, 4)));
+    ?>
+    <td class="stat_col_label">Build Date</td>
+    <td><?V sys_stat ('st_build_date') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if ((isnull (self.pname) or bits[5] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="5" %s /></td>', self.tp, y_check_if_bit (bits, 5)));
-	?>
-	<td class="stat_col_label">License Owner</td>
-	<td><?V sys_stat ('st_lic_owner') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="5" %s /></td>', self.tp, y_check_if_bit (bits, 5)));
+    ?>
+    <td class="stat_col_label">License Owner</td>
+    <td>
+      <?vsp
+        declare lowner varchar;
+
+        lowner := 'Undefined';
+        {
+          declare continue handler for SQLSTATE '*'
+          {
+            goto _skip2;
+          };
+          lowner := sys_stat('st_lic_owner');
+        _skip2:;
+        }
+        http (lowner);
+      ?>
+    </td>
+  </tr>
   <?vsp } ?>
 </xsl:template>
 
