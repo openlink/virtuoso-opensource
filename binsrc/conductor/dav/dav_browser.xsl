@@ -2674,7 +2674,7 @@
                                               1, 'ResFilter',  'Smart Folder',
                                               1, 'CatFilter',  'Category Folder',
                                               1, 'PropFilter', 'Property Filter',
-                                              1, 'HostFs',     'Host FS',
+                                              1, 'HostFS',     'Host FS',
                                               0, 'rdfSink',    'Linked Data Import',
                                               1, 'LDP',        'Linked Data Protocol',
                                               1, 'RDFData',    'RDF Data',
@@ -3971,7 +3971,7 @@
                         {
                           detParams := vector ();
                         }
-                        if (not isnull (detParams))
+                        if (not isnull (detParams) or (dav_detType = 'HostFS'))
                         {
                           tmp := null;
                           if (__proc_exists ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') is not null)
