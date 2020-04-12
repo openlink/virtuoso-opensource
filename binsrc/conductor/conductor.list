@@ -312,6 +312,12 @@ conductor/images/icons/web_16.png
 conductor/images/Open-folder.gif
 conductor/images/open_folder.gif
 conductor/images/opl.jpg
+conductor/images/pager/p_down.png
+conductor/images/pager/p_first.png
+conductor/images/pager/p_last.png
+conductor/images/pager/p_next.png
+conductor/images/pager/p_prev.png
+conductor/images/pager/p_up.png
 conductor/images/sel_nav2_grad2.gif
 conductor/images/sel_nav_grad2.gif
 conductor/images/service.gif

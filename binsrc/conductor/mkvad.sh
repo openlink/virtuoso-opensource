@@ -429,6 +429,7 @@ mkdir vad/vsp/conductor/dav/image/dav
 mkdir vad/vsp/conductor/help
 mkdir vad/vsp/conductor/images
 mkdir vad/vsp/conductor/images/icons
+mkdir vad/vsp/conductor/images/pager
 mkdir vad/vsp/conductor/syntax
 mkdir vad/vsp/conductor/toolkit
 mkdir vad/vsp/conductor/toolkit/images
@@ -450,6 +451,7 @@ cp -f dav/image/* vad/vsp/conductor/dav/image
 cp -f dav/image/dav/* vad/vsp/conductor/dav/image/dav
 cp -f images/* vad/vsp/conductor/images
 cp -f images/icons/* vad/vsp/conductor/images/icons
+cp -f images/pager/* vad/vsp/conductor/images/pager
 cp -f syntax/* vad/vsp/conductor/syntax
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
 cp -f $HOME/binsrc/oat/images/* vad/vsp/conductor/toolkit/images
