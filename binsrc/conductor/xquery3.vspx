@@ -78,20 +78,16 @@
       <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab_selected" align="center">XQuery Basic</td>
-                <td class="page_tab" align="center">
-                   <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center">
-                  <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab_selected">
+              XQuery Basic
+            </div>
+            <div class="page_tab">
+               <v:url name="b_url32" value="XQuery Advanced" url="xquery_adv.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="b_url31" value="Stored XQuery Templates" url="xquery_templates.vspx" />
+            </div>
+
             <table class="tab_page">
               <tr>
                 <td valign="top">

@@ -515,7 +515,7 @@
       </v:template>
       <v:template name="t_template2" type="simple" enabled="-- case when (self.mode<>'add1') then 1 else 0 end">
         <v:form name="frm_edit_path" action="http_add_path.vspx" method="POST" type="simple">
-          <table class="ctl_grp" align="left" border="0" cellspacing="0" cellpadding="3">
+          <table class="ctl_grp">
             <tr>
               <th align="left">Virtual Directory Information</th>
               <td/>

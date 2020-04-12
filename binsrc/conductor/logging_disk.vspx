@@ -28,8 +28,17 @@
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:variable persist="1" name="sql_str" type="integer" default="3"/>
   <v:variable persist="1" name="caption_str" type="varchar" default="'Disk Statistics (by Table)'"/>
+
   <div class="scroll_area">
-    <div id="monitor_tab">
+    <table class="listing">
+      <tr class="listing_header_row">
+        <th>Table</th>
+        <th>Index name</th>
+        <th>Touches</th>
+        <th>Reads</th>
+        <th>Read %</th>
+      </tr>
+
       <v:data-set name="data_set1" data='--disk_stat(3)' meta="--disk_stat_meta(self.sql_str)" nrows="0" scrollable="0" cursor-type="static" edit="0">
         <input type="hidden" name="page" value="3"/>
         <v:column name="KEY_TABLE" />
@@ -38,57 +47,37 @@
         <v:column name="READS" />
         <v:column name="READ_PCT" />
 
-        <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
-          <table class="listing" showme="1">
-            <tr class="listing_header_row">
-              <th>Table</th>
-              <th>Index name</th>
-              <th>Touches</th>
-              <th>Reads</th>
-              <th>Read %</th>
+        <v:template type="repeat" name="data_set1_repeat">
+          <v:template type="if-not-exists" name="data_set1_empty">
+            <tr>
+              <td class="listing_row_count" colspan="5">
+                No data available
+              </td>
             </tr>
-          </table>
-        </v:template>
-
-        <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
-          <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
-            <table> <!-- dummy -->
-              <tr>
-                <td class="listing_row_count" colspan="5">
-                  No data available
-                </td>
-              </tr>
-            </table>
           </v:template>
 
-          <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
-            <table> <!-- dummy -->
-              <tr>
-                <td align="left">
-                  <?V ((control as vspx_row_template).te_rowset[0]) ?>
-                </td>
-                <td align="left">
-                  <?V ((control as vspx_row_template).te_rowset[1]) ?>
-                </td>
-                <td align="right">
-                  <?V ((control as vspx_row_template).te_rowset[2]) ?>
-                </td>
-                <td align="right">
-                  <?V ((control as vspx_row_template).te_rowset[3]) ?>
-                </td>
-                <td align="right">
-                  <?V ((control as vspx_row_template).te_rowset[4]) ?>
-                </td>
-              </tr>
-            </table>
+          <v:template type="browse" name="data_set1_browse">
+            <tr>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[0]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[1]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[2]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[3]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[4]) ?>
+              </td>
+            </tr>
           </v:template>
         </v:template>
 
-        <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
-          <table>
-          </table>
-        </v:template>
       </v:data-set>
-    </div>
+    </table>
   </div>
 </v:page>

@@ -35,7 +35,7 @@
     <vm:menu>
       <vm:menuitem value="Virtuoso Application Deployment"/>
     </vm:menu>
-    <vm:header caption="Installation Status"/>
+    <vm:header caption="VAD Installation Status"/>
     <vm:pagebody>
       <v:on-init>
         <![CDATA[
@@ -52,9 +52,7 @@
               <v:button action="simple" value="Back to Packages">
                 <v:on-post>
                   <![CDATA[
-                    http_request_status('HTTP/1.1 302 Found');
-                    http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));
-                    return;
+                    self.vc_redirect ('vad.vspx');
                   ]]>
                 </v:on-post>
               </v:button>

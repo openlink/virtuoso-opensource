@@ -1,8 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
@@ -21,9 +19,14 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="db_table_edit_page" decor="yacutia_decor.vspx" style="yacutia_style.xsl" fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro" doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+<v:page name="db_table_edit_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
   <vm:pagetitle>Virtuoso Database Management</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
@@ -41,119 +44,153 @@
     </vm:variables>
     <vm:rawheader>
       <h1 class="page_title">
-      <?vsp
-        http( case self.mode
-              when 'create' then 'Create New Table'
-              when 'edit' then 'Edit ' || self.name
-              else '' end );
-      ?>
+        <?vsp
+          http( case self.mode
+                when 'create' then 'Create New Table'
+                when 'edit' then 'Edit ' || self.name
+                else '' end );
+        ?>
       </h1>
     </vm:rawheader>
     <vm:pagebody>
-      <v:before-data-bind><v:script><![CDATA[
-        self.mode := get_keyword('mode', self.vc_event.ve_params, self.mode);
-        self.cat := get_keyword('cat', self.vc_event.ve_params, self.cat);
-        self.sch := get_keyword('sch', self.vc_event.ve_params, self.sch);
-        self.name := get_keyword('name', self.vc_event.ve_params, self.name);
-      ]]></v:script></v:before-data-bind>
-      <v:template name="err_tmp2" type="simple">
-        <v:template name="temp_create" type="simple" enabled="-- equ(self.mode, 'create')">
-          <v:form name="table_create_form" type="simple" method="POST" action="databases_table_edit.vspx">
-           <table class="ctl_grp">
-             <!--tr><th>Create New Table</th></tr-->
-             <tr align="center">
-               <td>
-                 <v:textarea name="crtab_textfield" xhtml_cols="80" xhtml_rows="20" value="--concat('create table ', self.cat, '.', self.sch, '.[NAME]\n(\n\n)')"/>
-               </td>
-             </tr>
-             <tr align="center">
-               <td>
+      <v:before-data-bind>
+        <![CDATA[
+          self.mode := get_keyword('mode', self.vc_event.ve_params, self.mode);
+          self.cat := get_keyword('cat', self.vc_event.ve_params, self.cat);
+          self.sch := get_keyword('sch', self.vc_event.ve_params, self.sch);
+          self.name := get_keyword('name', self.vc_event.ve_params, self.name);
+        ]]>
+      </v:before-data-bind>
+      <v:template name="temp_create" type="simple" enabled="-- equ(self.mode, 'create')">
+        <v:form name="table_create_form" type="simple" method="POST" action="databases_table_edit.vspx">
+          <table class="ctl_grp">
+            <tr align="center">
+              <td>
+                <v:textarea name="crtab_textfield" xhtml_cols="80" xhtml_rows="20" value="--concat('create table ', self.cat, '.', self.sch, '.[NAME]\n(\n\n)')"/>
+              </td>
+            </tr>
+            <tr align="center">
+              <td>
                 <v:button action="simple" name="crtab_cancel" value="Cancel" >
-                  <v:on-post><v:script><![CDATA[
-                    http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                  ]]></v:script></v:on-post>
-                </v:button>
-                <v:button action="simple" name="crtab_reset" value="Clear" >
-                  <v:on-post><v:script><![CDATA[
-                    self.crtab_textfield.ufl_value := '';
-                  ]]></v:script></v:on-post>
-                </v:button>
-                <v:button action="simple" name="crtab_save" value="Save" >
-                  <v:on-post><v:script><![CDATA[
-                    declare stat, msg varchar;
-                    stat := '00000';
-                    commit work;
-                    __set_user_id (connection_get ('vspx_user'), 1);
-                    exec (self.crtab_textfield.ufl_value, stat, msg);
-                    __set_user_id (user);
-                    if (stat = '00000') {
+                  <v:on-post>
+                    <![CDATA[
                       http_request_status ('HTTP/1.1 302 Found');
                       http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                    }
-                    else {
-		      rollback work;
-		      self.vc_is_valid := 0;
-		      self.vc_error_message := msg;
-                    }
-                  ]]></v:script></v:on-post>
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="crtab_reset" value="Clear" >
+                  <v:on-post>
+                    <![CDATA[
+                      self.crtab_textfield.ufl_value := '';
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="crtab_save" value="Save">
+                  <v:on-post>
+                    <![CDATA[
+                      declare stat, msg varchar;
+
+                      stat := '00000';
+                      commit work;
+                      __set_user_id (connection_get ('vspx_user'), 1);
+                      exec (self.crtab_textfield.ufl_value, stat, msg);
+                      __set_user_id (user);
+                      if (stat = '00000')
+                      {
+                        http_request_status ('HTTP/1.1 302 Found');
+                        http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                      }
+                      else
+                      {
+                        rollback work;
+                        self.vc_is_valid := 0;
+                        self.vc_error_message := msg;
+                      }
+                    ]]>
+                  </v:on-post>
                 </v:button>
                </td>
              </tr>
            </table>
           </v:form>
         </v:template>
+
         <v:template name="temp_table_exist" type="simple" enabled="-- case when (self.mode <> 'create') then 1 else 0 end">
           <v:form name="tab_navigation_form" type="simple" method="POST" action="databases_table_edit.vspx">
-            <table class="page_tab_row" align="left" border="0" cellspacing="0" cellpadding="6">
+            <table class="page_tab_row" border="0" cellspacing="0" cellpadding="6">
               <tr>
                 <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_brw" value="Table Browse" style="url">
-                    <v:on-post><v:script><![CDATA[
-                      declare ex_q varchar;
-	     				        ex_q := construct_table_sql (self.name);
-				            
-                      http_request_status ('HTTP/1.1 302 Found');
-                      http_header (sprintf('Location: isql_main.vspx?sid=%s&realm=%s&load_sql=%s\r\n',self.sid ,self.realm, ex_q));
-                    
-                    ]]></v:script></v:on-post>
+                    <v:on-post>
+                      <![CDATA[
+                        declare ex_q varchar;
+
+                        ex_q := construct_table_sql (self.name);
+                        http_request_status ('HTTP/1.1 302 Found');
+                        http_header (sprintf('Location: isql_main.vspx?sid=%s&realm=%s&load_sql=%s\r\n',self.sid ,self.realm, ex_q));
+                      ]]>
+                    </v:on-post>
                   </v:button>
                 </td>
                 <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_def" value="Show Columns" style="url">
-                    <v:on-post><v:script><![CDATA[ self.mode:='definition'; self.vc_data_bind(e);]]></v:script></v:on-post>
+                    <v:on-post>
+                      <![CDATA[
+                        self.mode:='definition';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
                   </v:button>
                 </td>
                 <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_sql" value="Show SQL" style="url">
-                    <v:on-post><v:script><![CDATA[ self.mode:='sql'; self.vc_data_bind(e);]]></v:script></v:on-post>
+                    <v:on-post>
+                      <![CDATA[
+                        self.mode:='sql'; self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
                   </v:button>
                 </td>
                 <td width="10%" nowrap="nowrap">
-		<v:button action="browse" name="tb_edit_ddl" value="Edit" style="url"
-		  selector="isql.vspx"
-		  child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=800">
-		    <v:before-render><![CDATA[
-		      if (table_type (self.name) = 'SYSTEM TABLE' or self.mode = 'create')
-		         control.vc_enabled := 0;
-		      else
-		        {
-			  declare pars, dropt any;
-			  dropt := sprintf ('drop table "%I"."%I"."%I";\r\n', name_part (self.name, 0), name_part(self.name, 1), name_part (self.name, 2));
-			  pars := sprintf ('load_sql=%U%U', dropt, create_table_sql(self.name));
-		          control.vcb_selector := vspx_uri_add_parameters (control.vcb_selector, pars);
-			}
-		      ]]></v:before-render>
+                  <v:button action="browse" name="tb_edit_ddl" value="Edit" style="url" selector="isql.vspx"
+                    child-window-options="scrollbars=yes, resizable=yes, menubar=no, height=630, width=800">
+                    <v:before-render>
+                      <![CDATA[
+                        if (table_type (self.name) = 'SYSTEM TABLE' or self.mode = 'create')
+                        {
+                          control.vc_enabled := 0;
+                        }
+                        else
+                        {
+                          declare pars, dropt any;
+
+                          dropt := sprintf ('drop table "%I"."%I"."%I";\r\n', name_part (self.name, 0), name_part(self.name, 1), name_part (self.name, 2));
+                          pars := sprintf ('load_sql=%U%U', dropt, create_table_sql(self.name));
+                          control.vcb_selector := vspx_uri_add_parameters (control.vcb_selector, pars);
+                        }
+                      ]]>
+                    </v:before-render>
                   </v:button>
                 </td>
                 <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_indx" value="Edit Indexes" style="url">
-                    <v:on-post><v:script><![CDATA[ self.mode:='indexes'; self.vc_data_bind(e);]]></v:script></v:on-post>
+                    <v:on-post>
+                      <![CDATA[
+                        self.mode:='indexes';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
                   </v:button>
                 </td>
                 <td width="10%" nowrap="nowrap">
                   <v:button action="simple" name="tb_trig" value="Edit Triggers" style="url">
-                    <v:on-post><v:script><![CDATA[ self.mode:='triggers'; self.vc_data_bind(e);]]></v:script></v:on-post>
+                    <v:on-post>
+                      <![CDATA[
+                        self.mode:='triggers';
+                        self.vc_data_bind(e);
+                      ]]>
+                    </v:on-post>
                   </v:button>
                 </td>
               </tr>
@@ -170,10 +207,10 @@
                        <th>Identity</th>
                        <th>Indexed</th>
                      </tr>
-		     <?vsp
-		     declare r_c integer;
-		     declare c_more varchar;
-		     r_c := 0;
+         <?vsp
+         declare r_c integer;
+         declare c_more varchar;
+         r_c := 0;
     for SELECT c."COLUMN" as COL_NAME, dv_type_title (c."COL_DTP") as COL_TYPE, c."COL_PREC" as "COL_PREC",
            c."COL_SCALE" as "COL_SCALE", c."COL_NULLABLE" as "COL_NULLABLE", c.COL_CHECK as COL_CHECK
       from  DB.DBA.SYS_KEYS k, DB.DBA.SYS_KEY_PARTS kp, "SYS_COLS" c
@@ -187,13 +224,13 @@
         and k.KEY_MIGRATE_TO is null
         and kp.KP_KEY_ID = k.KEY_ID
         and c.COL_ID = kp.KP_COL
-	order by kp.KP_NTH do {
-			   r_c := r_c + 1;
-	                   c_more := 'No';
-			   if (strchr (coalesce (COL_CHECK, ''), 'I') is not null)
-			     {
-			       c_more := 'Yes';
-			     }
+  order by kp.KP_NTH do {
+         r_c := r_c + 1;
+                     c_more := 'No';
+         if (strchr (coalesce (COL_CHECK, ''), 'I') is not null)
+           {
+             c_more := 'Yes';
+           }
                      http (sprintf ('<tr class="%s">', case when mod (r_c, 2) then 'listing_row_odd' else 'listing_row_even' end));
                      ?>
                        <td class="listing_col"><?V COL_NAME ?></td>
@@ -212,6 +249,7 @@
                  </td>
                 </tr>
               </v:template>
+
               <v:template name="temp_sql" type="simple" enabled="-- equ(self.mode, 'sql')">
                 <tr>
                   <td class="code_listing" colspan="4">
@@ -221,6 +259,7 @@
                   </td>
                 </tr>
               </v:template>
+
               <v:template name="temp_idx" type="simple" enabled="-- equ(self.mode, 'indexes')">
                 <v:template name="crindx_temp2" type="simple" enabled="-- case when (self.m_create <> 0) then 1 else 0 end">
                   <tr>
@@ -229,42 +268,41 @@
                        <tr><th>Create New Index</th></tr>
                        <tr>
                          <td>
-                           <v:textarea name="cridx_textfield" xhtml_cols="80" xhtml_rows="15"
-                                       value="-- 'create [CLUSTERED|UNIQUE] index [NAME] on ' || self.name || '\n(\n\n)'"/>
+                           <v:textarea name="cridx_textfield" xhtml_cols="80" xhtml_rows="15" value="-- 'create [CLUSTERED|UNIQUE] index [NAME] on ' || self.name || '\n(\n\n)'" />
                          </td>
                        </tr>
                        <tr align="center">
                          <td>
                           <v:button action="simple" name="cridx_cancel" value="Cancel" >
-			    <v:on-post><v:script>
-				<![CDATA[
-				   self.m_create := 0;
-				   self.crindx_temp2.vc_data_bind (e);
-				]]></v:script></v:on-post>
+          <v:on-post>
+        <![CDATA[
+           self.m_create := 0;
+           self.crindx_temp2.vc_data_bind (e);
+        ]]></v:on-post>
                           </v:button>
                           <v:button action="simple" name="cridx_reset" value="Clear" >
-                            <v:on-post><v:script><![CDATA[ self.cridx_textfield.ufl_value := ''; ]]></v:script></v:on-post>
+                            <v:on-post><![CDATA[ self.cridx_textfield.ufl_value := ''; ]]></v:on-post>
                           </v:button>
                           <v:button action="simple" name="cridx_save" value="Save" >
-                            <v:on-post><v:script><![CDATA[
+                            <v:on-post><![CDATA[
                               declare stat, msg varchar;
                               stat := '00000';
                               commit work;
                               __set_user_id (connection_get ('vspx_user'), 1);
                               exec (self.cridx_textfield.ufl_value, stat, msg);
                               __set_user_id (user);
-			      if (stat = '00000')
-			        self.m_create := 0;
-		              else
-			        {
-				  rollback work;
-				  self.vc_is_valid := 0;
-				  self.vc_error_message := msg;
-				  return;
-				}
+            if (stat = '00000')
+              self.m_create := 0;
+                  else
+              {
+          rollback work;
+          self.vc_is_valid := 0;
+          self.vc_error_message := msg;
+          return;
+        }
                               self.ds_indx.vc_data_bind(e);
-			      self.crindx_temp2.vc_data_bind (e);
-                            ]]></v:script></v:on-post>
+            self.crindx_temp2.vc_data_bind (e);
+                            ]]></v:on-post>
                           </v:button>
                          </td>
                        </tr>
@@ -286,11 +324,11 @@
                             <th>
                               <v:template name="crindx_temp1" type="simple" enabled="-- equ(self.m_create, 0)">
                                 <v:button action="simple" name="crnidx" value="New Index" style="url">
-                                 <v:on-post><v:script><![CDATA[
+                                 <v:on-post><![CDATA[
                                    self.m_create := 1;
-				   self.cridx_textfield.ufl_value := 'create [CLUSTERED|UNIQUE] index [NAME] on ' || self.name || '\n(\n\n)';
-				   self.crindx_temp2.vc_data_bind (e);
-                                 ]]></v:script></v:on-post>
+           self.cridx_textfield.ufl_value := 'create [CLUSTERED|UNIQUE] index [NAME] on ' || self.name || '\n(\n\n)';
+           self.crindx_temp2.vc_data_bind (e);
+                                 ]]></v:on-post>
                                 </v:button>
                               </v:template>
                             </th>
@@ -314,12 +352,12 @@
                               <td class="listing_col"><?V (control as vspx_row_template).te_rowset[4] ?></td>
                               <td class="listing_col">
                                 <v:button name="indx_delete" value="Drop" style="url" action="simple" url="databases_drop.vspx">
-				  <v:before-render><![CDATA[
-				    control.bt_url := sprintf ('databases_drop.vspx?type=index&name=%U&tb=%U&page=%U',
-				    (control.vc_parent as vspx_row_template).te_rowset[1], self.name,
-				     sprintf ('databases_table_edit.vspx?mode=indexes&name=%U', self.name));
-				    ]]></v:before-render>
-                                  <!--v:on-post><v:script><![CDATA[
+          <v:before-render><![CDATA[
+            control.bt_url := sprintf ('databases_drop.vspx?type=index&name=%U&tb=%U&page=%U',
+            (control.vc_parent as vspx_row_template).te_rowset[1], self.name,
+             sprintf ('databases_table_edit.vspx?mode=indexes&name=%U', self.name));
+            ]]></v:before-render>
+                                  <!--v:on-post><![CDATA[
                                      declare txt, stat, msg varchar;
                                      stat := '00000';
                                      txt := 'drop index ' || (control.vc_parent as vspx_row_template).te_rowset[1] || ' ' || self.name;
@@ -331,7 +369,7 @@
                                        self.ds_indx.vc_data_bind (e);
                                      else
                                        self.err_msg := 'State:' || stat || ' Message:' || msg;
-                                  ]]></v:script></v:on-post-->
+                                  ]]></v:on-post-->
                                 </v:button>
                               </td>
                             <?vsp http ('</tr>'); ?>
@@ -340,8 +378,8 @@
                       </v:template>
                       <v:template name="temp_ds_indx_footer" type="simple" name-to-remove="table" set-to-remove="top">
                         <table><tr>
-			    <td colspan="5" align="center"  class="listing_col_action">
-			      <vm:ds-navigation data-set="ds_indx"/>
+          <td colspan="5" align="center"  class="listing_col_action">
+            <vm:ds-navigation data-set="ds_indx"/>
                             </td>
                           </tr></table>
                       </v:template>
@@ -368,15 +406,15 @@
                        <tr align="center">
                          <td>
                           <v:button action="simple" name="crtrig_cancel" value="Cancel" >
-			    <v:on-post><v:script><![CDATA[ self.m_create := 0; self.trig_name := '';
-				self.crtrig_temp2.vc_data_bind (e);
-				]]></v:script></v:on-post>
+          <v:on-post><![CDATA[ self.m_create := 0; self.trig_name := '';
+        self.crtrig_temp2.vc_data_bind (e);
+        ]]></v:on-post>
                           </v:button>
                           <v:button action="simple" name="crtrig_reset" value="Clear" >
-                            <v:on-post><v:script><![CDATA[ self.crtrig_textfield.ufl_value := ''; ]]></v:script></v:on-post>
+                            <v:on-post><![CDATA[ self.crtrig_textfield.ufl_value := ''; ]]></v:on-post>
                           </v:button>
                           <v:button action="simple" name="crtrig_save" value="Save" >
-                            <v:on-post><v:script><![CDATA[
+                            <v:on-post><![CDATA[
                               declare stat, msg varchar;
                               stat := '00000';
                               commit work;
@@ -386,16 +424,16 @@
                               if (stat = '00000') {
                                 self.m_create := 0;
                                 self.trig_name := '';
-				self.ds_trig.vc_data_bind(e);
-				self.crtrig_temp2.vc_data_bind (e);
+        self.ds_trig.vc_data_bind(e);
+        self.crtrig_temp2.vc_data_bind (e);
                               }
-			      else
-			        {
-				  self.vc_is_valid := 0;
-				  self.vc_error_message := msg;
-				  return;
-				}
-                            ]]></v:script></v:on-post>
+            else
+              {
+          self.vc_is_valid := 0;
+          self.vc_error_message := msg;
+          return;
+        }
+                            ]]></v:on-post>
                           </v:button>
                          </td>
                        </tr>
@@ -414,11 +452,11 @@
                             <th align="left">Text (excerpt)</th>
                             <th align="left" nowrap="true">
                                 <v:button action="simple" name="crntrig" value="New Trigger" style="url">
-                                 <v:on-post><v:script><![CDATA[
+                                 <v:on-post><![CDATA[
                                    self.m_create := 1;
-				   self.trig_name := '';
-				   self.crtrig_temp2.vc_data_bind (e);
-                                 ]]></v:script></v:on-post>
+           self.trig_name := '';
+           self.crtrig_temp2.vc_data_bind (e);
+                                 ]]></v:on-post>
                                 </v:button>
                             </th>
                           </tr>
@@ -439,20 +477,20 @@
                               <td class="listing_col"><?V subseq((control as vspx_row_template).te_rowset[1], 0, 255) ?></td>
                               <td  class="listing_col_action">
                                 <v:button name="trig_edit" value="Edit" style="url" action="simple">
-                                  <v:on-post><v:script><![CDATA[
+                                  <v:on-post><![CDATA[
                                      self.trig_name := (control.vc_parent as vspx_row_template).te_rowset[0];
                                      self.m_create := 1;
-				     self.crtrig_temp2.vc_data_bind (e);
+             self.crtrig_temp2.vc_data_bind (e);
                                      self.crtrig_textfield.ufl_value := (control.vc_parent as vspx_row_template).te_rowset[1];
-                                  ]]></v:script></v:on-post>
+                                  ]]></v:on-post>
                                 </v:button>
-				<v:button name="trig_delete" value="Drop" style="url" action="simple" url="databases_drop.vspx">
-				  <v:before-render><![CDATA[
-				    control.bt_url := sprintf ('databases_drop.vspx?type=trigger&name=%U&tb=%U&page=%U',
-				    (control.vc_parent as vspx_row_template).te_rowset[0], self.name,
-				     sprintf ('databases_table_edit.vspx?mode=triggers&name=%U', self.name));
-				    ]]></v:before-render>
-                                  <!--v:on-post><v:script><![CDATA[
+        <v:button name="trig_delete" value="Drop" style="url" action="simple" url="databases_drop.vspx">
+          <v:before-render><![CDATA[
+            control.bt_url := sprintf ('databases_drop.vspx?type=trigger&name=%U&tb=%U&page=%U',
+            (control.vc_parent as vspx_row_template).te_rowset[0], self.name,
+             sprintf ('databases_table_edit.vspx?mode=triggers&name=%U', self.name));
+            ]]></v:before-render>
+                                  <!--v:on-post><![CDATA[
                                      declare txt, stat, msg varchar;
                                      stat := '00000';
                                      txt := 'drop trigger ' || name_part((control.vc_parent as vspx_row_template).te_rowset[0], 2);
@@ -464,7 +502,7 @@
                                        self.ds_trig.vc_data_bind (e);
                                      else
                                        self.err_msg := 'State:' || stat || ' Message:' || msg;
-                                  ]]></v:script></v:on-post-->
+                                  ]]></v:on-post-->
                                 </v:button>
                               </td>
                             <?vsp http('</tr>'); ?>
@@ -473,29 +511,30 @@
                       </v:template>
                       <v:template name="temp_ds_trig_footer" type="simple" name-to-remove="table" set-to-remove="top">
                         <table><tr>
-			    <td colspan="5" align="center"  class="listing_col_action">
-			      <vm:ds-navigation data-set="ds_trig"/>
+          <td colspan="5" align="center"  class="listing_col_action">
+            <vm:ds-navigation data-set="ds_trig"/>
                             </td>
-                          </tr></table>
+                          </tr>
+                        </table>
                       </v:template>
                     </v:data-set>
                   </td>
                 </tr>
-
-              </v:template>
-              <tr align="center">
-               <td colspan="4">
+            </v:template>
+            <tr align="center">
+              <td colspan="4">
                 <v:button action="simple" name="b_def_ok" value="Back to tables list" >
-                  <v:on-post><v:script><![CDATA[
-                    http_request_status ('HTTP/1.1 302 Found');
-                    http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
-                  ]]></v:script></v:on-post>
+                  <v:on-post>
+                    <![CDATA[
+                      http_request_status ('HTTP/1.1 302 Found');
+                      http_header (sprintf('Location: databases.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                    ]]>
+                  </v:on-post>
                 </v:button>
-               </td>
-              </tr>
-            </table>
-          </v:form>
-        </v:template>
+              </td>
+            </tr>
+          </table>
+        </v:form>
       </v:template>
     </vm:pagebody>
   </vm:pagewrapper>

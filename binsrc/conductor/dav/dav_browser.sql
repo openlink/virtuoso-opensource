@@ -1905,36 +1905,26 @@ create procedure WEBDAV.DBA.host_url (
   in addProtocol integer := 1)
 {
   declare host varchar;
-  declare exit handler for sqlstate '*' { goto _default; };
 
   if (is_http_ctx ())
   {
     host := http_request_header (http_request_header ( ) , 'Host' , null , sys_connected_server_address ());
-    if (isstring (host) and strchr (host , ':') is null)
-    {
-      declare hp varchar;
-      declare hpa any;
-
-      hp := sys_connected_server_address ();
-      hpa := split_and_decode ( hp , 0 , '\0\0:');
-      if (hpa [1] <> '80')
-        host := host || ':' || hpa [1];
-    }
-    goto _exit;
   }
-
-_default:;
-  host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
-  if (host is null)
+  else
   {
-    host := sys_stat ('st_host_name');
-    if (server_http_port () <> '80')
-      host := host || ':' || server_http_port ();
+    host := cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost');
+    if (host is null)
+    {
+      host := sys_stat ('st_host_name');
+      if (server_http_port () <> '80')
+        host := host || ':' || server_http_port ();
+    }
   }
 
-_exit:;
   if (addProtocol and (host not like WEBDAV.DBA.host_protocol () || '%'))
+  {
     host := WEBDAV.DBA.host_protocol () || host;
+  }
 
   return host;
 }

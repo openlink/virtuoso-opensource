@@ -22,7 +22,7 @@
 -->
 <html>
   <head>
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css"/>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>WebDAV Repository</title>
   <script type="text/javascript">
@@ -34,7 +34,7 @@
   </script>
   </head>
   <body>
-    <v:page name="dav_browser"
+    <v:page name="css/dav_browser"
       style="yacutia_style.xsl"
       fast-render="1"
       doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"

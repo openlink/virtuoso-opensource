@@ -99,20 +99,15 @@
       <script type="text/javascript"><![CDATA[
       ]]></script>
       <vm:help id="sparql" sect="" />
-      <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
+      <table border="0" width="100%" cellpadding="10" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab_selected" align="center">Query</td>
-                <td class="page_tab" align="center">
-                  <v:url name="b_url31" value="Saved Queries" url="sparql_load.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab_selected">
+              Query
+            </div>
+            <div class="page_tab">
+              <v:url name="b_url31" value="Saved Queries" url="sparql_load.vspx" />
+            </div>
             <table class="tab_page">
               <tr>
                 <td valign="top">
@@ -121,20 +116,21 @@
                     <v:form name="edit_form" type="simple" method="POST">
                       <table border="0" cellspacing="0" class="ctl_grp" cellpadding="5" align="center">
                         <tr>
-                          <td>Default Graph IRI</td>
+                          <th>Default Graph IRI</th>
                           <td>
                             <!--v:data-list name="default_graph" sql="select DB.DBA.RDF_QNAME_OF_IID(G) as graph_uri from (select distinct G from RDF_QUAD) quad" key-column="graph_uri" value-column="graph_uri" xhtml_id="default_graph" xhtml_style="width: 320px;" /-->
                             <v:text name="default_graph" value="" xhtml_size="70" xhtml_id="default_graph" default_value="--coalesce (cfg_item_value (virtuoso_ini_path (), 'SPARQL', 'DefaultGraph'), '')" />
                           </td>
                         </tr>
                         <tr>
-                          <td colspan="2">
-                            <label>Query</label><br/>
+                          <th valign="top">Query</th>
+                          <td>
                             <v:textarea name="qr" value="" xhtml_cols="70" xhtml_rows="15" xhtml_id="qr"/>
                           </td>
                         </tr>
                         <tr>
-                          <td colspan="2">
+                          <th />
+                          <td>
                             <input type="button"  onclick="javascript: callSparql ('default_graph', 'qr', 'rdf_result'); return false" name="exec1" value="Execute"/>
                             <v:button action="simple" name="sav1" value="Save">
                               <v:on-post>

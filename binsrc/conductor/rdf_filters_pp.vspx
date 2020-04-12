@@ -40,41 +40,31 @@
     </vm:menu>
     <vm:header caption="Meta Cartridges"/>
     <vm:pagebody>
-      <![CDATA[
-        <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_selected" align="center" nowrap="1">
-                  Meta Cartridges
-                </td>
-                <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url2" value="Stylesheets" format="%s" url="sparql_filters.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab" align="center" nowrap="1">
-                  <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" xhtml_class="uddi"/>
-                </td>
-                <?vsp } ?>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
+            <div class="page_tab">
+              <v:url name="url1" value="Extractor Cartridges" format="%s" url="rdf_filters.vspx" />
+            </div>
+            <div class="page_tab_selected">
+              Meta Cartridges
+            </div>
+            <?vsp if (check_package('rdf_mappers') or check_package ('cartridges')) { ?>
+            <div class="page_tab">
+              <v:url name="url2" value="Stylesheets" format="%s" url="sparql_filters.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url1" value="Entity URIs" format="%s" url="entity_uri_patterns.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url3" value="Console" format="%s" url="rdf_console.vspx" />
+            </div>
+            <div class="page_tab">
+              <v:url name="url4" value="Configuration" format="%s" url="rdf_conf.vspx" />
+            </div>
+            <?vsp } ?>
 
-            <div style="background-color: white; padding: 10px;">
+            <div class="tab_page_new">
               <v:form name="fm" type="simple" method="POST">
                 <vm:if test="self.c_mode = 'C/browse'">
                   <v:button name="add1" value="Add" action="simple">
@@ -106,6 +96,7 @@
                         declare cb vspx_check_box;
                         declare ds vspx_data_set;
 
+                        params := e.ve_params;
                         checked := vector();
                         for (N := 0; N < length(params); N := N + 2)
                         {
@@ -136,7 +127,7 @@
 
                   <table class="listing">
                     <tr class="listing_header_row">
-                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask(this.form, this, 'cb_item')"/></th>
+                      <th style="width:5px;"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes(this.form, this, 'cb_item')"/></th>
                       <th width="1%">Seq#</th>
                       <th width="1%">ID</th>
                       <th colspan="2">Description</th>
@@ -148,10 +139,18 @@
                                 sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
                                 scrollable="1"
                                 editable="1"
-                                nrows="1000">
-                      <v:template name="maps_rep" type="repeat">
+                                nrows="0">
+                      <v:template name="maps_repeat" type="repeat">
 
-                        <v:template name="maps_brows" type="browse">
+                        <v:template name="maps_empty" type="if-not-exists">
+                          <tr>
+                            <td class="listing_empty" colspan="7">
+                              No cartridges found
+                            </td>
+                          </tr>
+                        </v:template>
+
+                        <v:template name="maps_browse" type="browse">
                           <tr>
                             <td style="width:5px; padding: 0 3px;">
                               <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" />
@@ -302,8 +301,7 @@
                           </tr>
                         </v:template>
                       </v:template>
-                      <v:template name="maps_footer" type="simple">
-                      </v:template>
+
                     </v:data-set>
                   </table>
                 </vm:if>

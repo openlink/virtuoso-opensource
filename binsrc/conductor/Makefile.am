@@ -48,11 +48,11 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.css \
+	css/*.css \
 	*.htm \
 	*.html \
-	*.js \
-	*.sql \
+	js/*.js \
+	sql/*.sql \
 	*.vsp \
 	*.vspx \
 	*.xml \

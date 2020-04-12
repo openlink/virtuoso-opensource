@@ -334,17 +334,17 @@ echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
 #echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/dav/dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"WEBDAV\".\"DBA\".\"xsl_upload\"($ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
 echo "      vhost_remove (lpath=>'/vspx');" >> $STICKER
 echo "      vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');" >> $STICKER
-echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
+echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');" >> $STICKER
+echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
 echo "      if ($ISDAV = 1) " >> $STICKER
 echo "      { " >> $STICKER
 echo "      for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/conductor/%.xsl') do " >> $STICKER
@@ -415,21 +415,19 @@ curpwd=`pwd`
 cd $curpwd
 
 mkdir vad
-mkdir vad/code
 mkdir vad/vsp
-mkdir vad/vsp/vspx
-mkdir vad/vsp/vspx/browser
-mkdir vad/vsp/vspx/browser/images
-mkdir vad/vsp/vspx/browser/images/16x16
-mkdir vad/code/conductor
 mkdir vad/vsp/conductor
+mkdir vad/vsp/conductor/css
 mkdir vad/vsp/conductor/dav
 mkdir vad/vsp/conductor/dav/image
 mkdir vad/vsp/conductor/dav/image/dav
 mkdir vad/vsp/conductor/help
 mkdir vad/vsp/conductor/images
 mkdir vad/vsp/conductor/images/icons
+mkdir vad/vsp/conductor/images/pager
+mkdir vad/vsp/conductor/js
 mkdir vad/vsp/conductor/syntax
+mkdir vad/vsp/conductor/sql
 mkdir vad/vsp/conductor/toolkit
 mkdir vad/vsp/conductor/toolkit/images
 mkdir vad/vsp/conductor/toolkit/styles
@@ -440,21 +438,25 @@ cp -f $HOME/binsrc/xddl/xddl_exec.xsl .
 cp -f $HOME/binsrc/xddl/xddl_procs.xsd .
 cp -f $HOME/binsrc/xddl/xddl_views.xsd .
 cp -f $HOME/binsrc/xddl/xddl_tables.xsd .
-cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
-cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
-cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
+cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor/sql
+cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor/sql
+cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor/sql
 
 cp -f * vad/vsp/conductor
+cp -f css/* vad/vsp/conductor/css
 cp -f dav/* vad/vsp/conductor/dav
 cp -f dav/image/* vad/vsp/conductor/dav/image
 cp -f dav/image/dav/* vad/vsp/conductor/dav/image/dav
 cp -f images/* vad/vsp/conductor/images
 cp -f images/icons/* vad/vsp/conductor/images/icons
+cp -f images/pager/* vad/vsp/conductor/images/pager
+cp -f js/* vad/vsp/conductor/js
 cp -f syntax/* vad/vsp/conductor/syntax
+cp -f sql/* vad/vsp/conductor/sql
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
 cp -f $HOME/binsrc/oat/images/* vad/vsp/conductor/toolkit/images
 cp -f $HOME/binsrc/oat/styles/* vad/vsp/conductor/toolkit/styles
-cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor
+cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor/sql
 cp -f help/*.xml vad/vsp/conductor/help
 
 VERSION_INIT

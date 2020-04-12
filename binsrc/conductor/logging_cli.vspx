@@ -26,8 +26,22 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:xhtml="http://www.w3.org/1999/xhtml"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
   <div class="scroll_area">
-    <div id="monitor_tab">
+    <table class="listing">
+      <tr class="listing_header_row">
+        <th>Client ID</th>
+        <th>Account</th>
+        <th>PID</th>
+        <th>OS type</th>
+        <th>IP Address</th>
+        <th>Input bytes</th>
+        <th>Output bytes</th>
+        <th>Threads</th>
+        <th>Locks</th>
+        <th>Transaction status</th>
+      </tr>
+
       <v:data-set name="data_set20" sql="select name, bin, bout, threads, locks, trx_status, cli_id, pid, os, app, ip from CLI_STATUS_REPORT" nrows="0" scrollable="0" cursor-type="static" edit="0">
         <input type="hidden" name="page" value="4"/>
         <v:column name="name" />
@@ -41,75 +55,52 @@
         <v:column name="os" />
         <v:column name="app" />
         <v:column name="ip" />
-        <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set20_header_template">
-          <table class="listing" showme="1">
-            <tr class="listing_header_row">
-              <th>Client ID</th>
-              <th>Account</th>
-              <th>PID</th>
-              <th>OS type</th>
-              <th>IP Address</th>
-              <th>Input bytes</th>
-              <th>Output bytes</th>
-              <th>Threads</th>
-              <th>Locks</th>
-              <th>Transaction status</th>
+
+        <v:template type="repeat" name="data_set20_repeat">
+
+          <v:template type="if-not-exists" name="data_set20_empty">
+            <tr>
+              <td class="listing_empty" colspan="10">No ODBC/SQL connections.</td>
             </tr>
-          </table>
-        </v:template>
-
-        <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set20_repeat_template">
-          <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set20_if_not_exists_template">
-            <table>
-              <tr class="listing_count">
-                <td class="listing_count" colspan="10">No ODBC/SQL connections.</td>
-              </tr>
-            </table>
           </v:template>
 
-          <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set20_browse_template">
-            <table>
-              <tr>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[6]) ?>
-                </td>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[0]) ?>
-                </td>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[7]) ?>
-                </td>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[8]) ?>
-                </td>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[10]) ?>
-                </td>
-                <td>
-                  <?V ((control as vspx_row_template).te_rowset[1]) ?>
-                </td>
-                <td class="listing_col_num">
-                  <?V ((control as vspx_row_template).te_rowset[2]) ?>
-                </td>
-                <td class="listing_col_num">
-                  <?V ((control as vspx_row_template).te_rowset[3]) ?>
-                </td>
-                <td class="listing_col_num">
-                  <?V ((control as vspx_row_template).te_rowset[4]) ?>
-                </td>
-                <td class="listing_col_num">
-                  <?V ((control as vspx_row_template).te_rowset[5]) ?>
-                </td>
-              </tr>
-            </table>
+          <v:template type="browse" name="data_set20_browse">
+            <tr>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[6]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[0]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[7]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[8]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[10]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[1]) ?>
+              </td>
+              <td class="listing_col_num">
+                <?V ((control as vspx_row_template).te_rowset[2]) ?>
+              </td>
+              <td class="listing_col_num">
+                <?V ((control as vspx_row_template).te_rowset[3]) ?>
+              </td>
+              <td class="listing_col_num">
+                <?V ((control as vspx_row_template).te_rowset[4]) ?>
+              </td>
+              <td class="listing_col_num">
+                <?V ((control as vspx_row_template).te_rowset[5]) ?>
+              </td>
+            </tr>
           </v:template>
         </v:template>
 
-        <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set20_footer_template">
-          <table>
-          </table>
-        </v:template>
       </v:data-set>
-    </div>
+    </table>
   </div>
 </v:page>

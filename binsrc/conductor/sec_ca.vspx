@@ -39,223 +39,223 @@
     <vm:header caption="Public Key Infrastructure">
     </vm:header>
     <vm:pagebody>
-      <![CDATA[
-  	    <script language="JavaScript" src="admin_utils.js"></script>
-      ]]>
       <v:form name="form1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
       <!-- top of security layout -->
-        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-          <tr valign='top'>
-            <td>
-              <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-                <tr>
-                  <td>
-                    <table cellpadding="0" cellspacing="0" border="0">
+        <div class="main_tab_page">
+          <div class="page_tab">
+            <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
+          </div>
+          <div class="page_tab_selected">
+            CA Root Certificates
+          </div>
+          <div class="page_tab">
+            <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+          </div>
+          <div class="tab_page_new">
+            <vm:if test="self.ca_mode = 'browse'">
+              <v:button action="simple" value="Delete" name="delete_select">
+                <v:on-post>
+                  <![CDATA[
+                    declare N integer;
+                    declare params, item, inx any;
+
+                    params := self.vc_event.ve_params;
+                    for (N := 0; N < length (params); N := N + 4)
+                    {
+                      if (params[N] like '%cb_select%')
+                      {
+                        delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = params[N+1];
+                      }
+                    }
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Import" name="import_select">
+                <v:on-post>
+                  <![CDATA[
+                    self.ca_mode := 'import';
+
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Export" name="export_select">
+                <v:on-post>
+                  <![CDATA[
+                    declare N integer;
+                    declare params any;
+
+                    params := self.vc_event.ve_params;
+                    self.ca_certs := vector ();
+                    for (N := 0; N < length (params); N := N + 4)
+                    {
+                      if (params[N] like '%cb_select%')
+                      {
+                        self.ca_certs := vector_concat (self.ca_certs, vector(params[N+1]));
+                      }
+                    }
+                    self.ca_mode := 'export';
+
+                    self.vc_data_bind (e);
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <br />
+
+              <v:data-source name="dsrc1" expression-type="sql" nrows="20" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_sql := 'select C_ID, C_NAME from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 order by C_NAME';
+                    control.ds_parameters := null;
+                  ]]>
+                </v:before-data-bind>
+                <v:after-data-bind>
+                  control.ds_make_statistic ();
+                </v:after-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds1" data-source="self.dsrc1" scrollable="1">
+                <div class="navigation">
+                  <vm:ds-navigation-new data-set="ds1"/>
+                </div>
+
+                <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="listing">
+                    <thead>
                       <tr>
-                        <td class="page_tab" align="center">
-			                    <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-                        </td>
-                        <td class="page_tab_selected" align="center">
-                          CA Root Certificates
-                        </td>
-                        <td class="page_tab" align="center">
-                          <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-                        </td>
-                        <td class="page_tab_empty" align="right" width="100%">
-                        </td>
-                      </tr>
-                    </table>
-                    <!-- end of top security layout -->
-                    <br />
-                    <vm:if test="self.ca_mode = 'browse'">
-            	      <v:button action="simple" value="Delete" name="delete_select">
-                		  <v:on-post>
-                			  <![CDATA[
-                			    declare N integer;
-                          declare params, item, inx any;
-
-                          params := self.vc_event.ve_params;
-                          for (N := 0; N < length (params); N := N + 4)
-                          {
-                            if (params[N] like '%cb_select%')
-                            {
-                              delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = params[N+1];
-                            }
-                          }
-             					      self.vc_data_bind (e);
-                  			  ]]>
-          		          </v:on-post>
-  	                  </v:button>
-              	      <v:button action="simple" value="Import" name="import_select">
-                  		  <v:on-post>
-                  			  <![CDATA[
-                            self.ca_mode := 'import';
-
-                            self.vc_data_bind (e);
-                  			  ]]>
-          		          </v:on-post>
-  	                  </v:button>
-              	      <v:button action="simple" value="Export" name="export_select">
-                  		  <v:on-post>
-                  			  <![CDATA[
-                  			    declare N integer;
-                            declare params any;
-
-                            params := self.vc_event.ve_params;
-                            self.ca_certs := vector ();
-                            for (N := 0; N < length (params); N := N + 4)
-                            {
-                              if (params[N] like '%cb_select%')
-                              {
-                                self.ca_certs := vector_concat (self.ca_certs, vector(params[N+1]));
-                              }
-                            }
-                            self.ca_mode := 'export';
-
-           					      self.vc_data_bind (e);
-                			  ]]>
-        		          </v:on-post>
-	                  </v:button>
-                    <br /><br />
-                    <table class="listing">
-                      <tr class="listing_header_row">
-    		                <th style="width: 5px; text-align: center;">
-    		                  <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes_mask(this.form, this, 'cb_select')"/>
-    		                </th>
+                        <th class="checkbox">
+                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
+                        </th>
                         <th>Name</th>
                       </tr>
-                      <v:data-set name="ds1" sql="select C_ID, C_NAME from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 order by C_NAME" nrows="20" scrollable="1" edit="1">
+                    </thead>
+                  </table>
+                </v:template>
 
-                        <v:template type="repeat" name="dst1">
-                          <v:template type="if-not-exists" name="dst2">
-                            <tr>
-                              <td align="center" colspan="2">No CA Roots</td>
-                            </tr>
-                          </v:template>
+                <v:template type="repeat" name="ds1_repeat">
 
-                          <v:template type="browse" name="dst3">
-                            <tr>
-                              <td style="width: 5px; text-align: center;">
-                                <v:check-box name="cb_select" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
-                              </td>
-                              <td><?V control.te_rowset[1] ?></td>
-                            </tr>
-                          </v:template>
-                        </v:template>
+                  <v:template type="if-not-exists" name="ds1_empty">
+                    <tr>
+                      <td class="listing_empty" colspan="2">No CA Roots</td>
+                    </tr>
+                  </v:template>
 
-                        <v:template type="simple" name="dst4">
-                          <tr class="browse_button_row">
-                            <td colspan="2" align="center"  class="listing_col_action">
-                              <vm:ds-navigation data-set="ds1"/>
-                            </td>
-                          </tr>
-                        </v:template>
-                      </v:data-set>
-                    </table>
-                    </vm:if>
-                    <vm:if test="self.ca_mode = 'import'">
-                      <h3>Import certificates</h3>
-                      <table>
-                        <tr>
-                          <th>CA Roots File:</th>
-                          <td>
-                            <input type="file" name="ca_file" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <th></th>
-                          <td>
-                            <v:button action="simple" name="import" value="Import">
-                              <v:on-post>
-                                <![CDATA[
-                                  declare ca_content varchar;
+                  <v:template type="browse" name="ds1_browse">
+                    <tr>
+                      <td class="checkbox">
+                        <v:check-box name="cb_select" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" initial-checked="0" />
+                      </td>
+                      <td><?V control.te_rowset[1] ?></td>
+                    </tr>
+                  </v:template>
+                </v:template>
 
-                                  ca_content := get_keyword ('ca_file', self.vc_event.ve_params, '');
-                                  X509_CERTIFICATES_ADD (ca_content);
-                                  self.ca_mode := 'browse';
+                <v:template name="ds1_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
 
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-                            <v:button action="simple" name="cancel" value="Cancel">
-                              <v:on-post>
-                                <![CDATA[
-                                  self.ca_mode := 'browse';
+              </v:data-set>
+            </vm:if>
 
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-                          </td>
-                        </tr>
-                      </table>
-                    </vm:if>
-                    <vm:if test="self.ca_mode = 'export'">
-                      <h3>Export certificates</h3>
-                      <table>
-                        <tr>
-                          <th>CA Roots File:</th>
-                          <td>
-                            <input type="text" name="ca_export_file" />
-                          </td>
-                        </tr>
-                        <tr>
-                          <th></th>
-                          <td>
-                            <v:button action="simple" name="export" value="Export">
-                              <v:on-post>
-                                <![CDATA[
-                                  declare N integer;
-                                  declare params, content any;
+            <vm:if test="self.ca_mode = 'import'">
+              <h3>Import certificates</h3>
+              <table>
+                <tr>
+                  <th>CA Roots File</th>
+                  <td>
+                    <input type="file" name="ca_file" />
+                  </td>
+                </tr>
+                <tr>
+                  <th></th>
+                  <td>
+                    <v:button action="simple" name="import" value="Import">
+                      <v:on-post>
+                        <![CDATA[
+                          declare ca_content varchar;
 
-                                  params := e.ve_params;
+                          ca_content := get_keyword ('ca_file', self.vc_event.ve_params, '');
+                          X509_CERTIFICATES_ADD (ca_content);
 
-                                  http_rewrite ();
-                                  http_request_status ('HTTP/1.1 200 OK');
-                                  http_header (sprintf ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword ('ca_export_file', params)));
-
-                                  content := '';
-                                  for (N := 0; N < length (self.ca_certs); N := N + 1)
-                                  {
-                                    for (select C_NAME, C_DATA from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = self.ca_certs[N]) do
-                                    {
-                                      content := concat (content, C_NAME);
-                                      content := concat (content, '\n');
-                                      content := concat (content, repeat ('=', length (C_NAME)));
-                                      content := concat (content, '\n');
-                                      content := concat (content, C_DATA);
-                                      content := concat (content, '\n');
-                                    }
-                                  }
-                                  http (content);
-                                  http_flush ();
-
-                                  self.ca_mode := 'browse';
-
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-                            <v:button action="simple" name="cancel2" value="Cancel">
-                              <v:on-post>
-                                <![CDATA[
-                                  self.ca_mode := 'browse';
-
-                                  self.vc_data_bind (e);
-                                ]]>
-                              </v:on-post>
-                            </v:button>
-                          </td>
-                        </tr>
-                      </table>
-                    </vm:if>
+                          self.ca_mode := 'browse';
+                          self.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="cancel" value="Cancel">
+                      <v:on-post>
+                        <![CDATA[
+                          self.ca_mode := 'browse';
+                          self.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
                   </td>
                 </tr>
               </table>
-            </td>
-          </tr>
-        </table>
+            </vm:if>
+
+            <vm:if test="self.ca_mode = 'export'">
+              <h3>Export certificates</h3>
+              <table>
+                <tr>
+                  <th>CA Roots File</th>
+                  <td>
+                    <input type="text" name="ca_export_file" />
+                  </td>
+                </tr>
+                <tr>
+                  <th></th>
+                  <td>
+                    <v:button action="simple" name="export" value="Export">
+                      <v:on-post>
+                        <![CDATA[
+                          declare N integer;
+                          declare params, content any;
+
+                          params := e.ve_params;
+
+                          http_rewrite ();
+                          http_request_status ('HTTP/1.1 200 OK');
+                          http_header (sprintf ('Content-Type: application/x-download\r\nContent-Disposition: inline; filename="%s"\r\n', get_keyword ('ca_export_file', params)));
+
+                          content := '';
+                          for (N := 0; N < length (self.ca_certs); N := N + 1)
+                          {
+                            for (select C_NAME, C_DATA from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 and C_ID = self.ca_certs[N]) do
+                            {
+                              content := concat (content, C_NAME);
+                              content := concat (content, '\n');
+                              content := concat (content, repeat ('=', length (C_NAME)));
+                              content := concat (content, '\n');
+                              content := concat (content, C_DATA);
+                              content := concat (content, '\n');
+                            }
+                          }
+                          http (content);
+                          http_flush ();
+
+                          self.ca_mode := 'browse';
+                          self.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="cancel2" value="Cancel">
+                      <v:on-post>
+                        <![CDATA[
+                          self.ca_mode := 'browse';
+                          self.vc_data_bind (e);
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </vm:if>
+          </div>
+        </div>
         <!-- end of bottom security layout -->
       </v:form>
     </vm:pagebody>
