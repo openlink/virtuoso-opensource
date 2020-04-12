@@ -111,7 +111,7 @@
                         <td>
                           Catalog
                           <v:data-list name="dl_catalog"
-                                       sql="select distinct ucase (name_part (KEY_TABLE, 0)) as cat_name from DB.DBA.SYS_KEYS union select distinct ucase (name_part (P_NAME, 0)) as cat_name from DB.DBA.SYS_PROCEDURES order by 1"
+                                       sql="select distinct name_part (KEY_TABLE, 0) as cat_name from DB.DBA.SYS_KEYS union select distinct name_part (P_NAME, 0) as cat_name from DB.DBA.SYS_PROCEDURES order by 1"
                                        key-column="cat_name" value-column="cat_name" defvalue="--self.browse_cat"/>
                         </td>
                         <td>
