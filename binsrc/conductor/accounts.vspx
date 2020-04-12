@@ -164,8 +164,8 @@
             <v:template name="ds_repeat" type="repeat">
               <v:template name="ds_empty" type="if-not-exists">
                 <tr>
-                  <td align="center" colspan="5">
-                    <font color="red"><b>No user names match given pattern</b></font>
+                  <td class="listing_empty" colspan="5">
+                    No user names match given pattern
                   </td>
                 </tr>
               </v:template>

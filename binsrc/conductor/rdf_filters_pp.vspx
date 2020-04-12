@@ -141,10 +141,18 @@
                                 sql="select MC_PATTERN, MC_TYPE, MC_DESC, MC_ID, MC_HOOK, MC_KEY, MC_ENABLED, MC_OPTIONS, MC_SEQ, MC_API_TYPE from DB.DBA.RDF_META_CARTRIDGES order by MC_SEQ"
                                 scrollable="1"
                                 editable="1"
-                                nrows="1000">
-                      <v:template name="maps_rep" type="repeat">
+                                nrows="0">
+                      <v:template name="maps_repeat" type="repeat">
 
-                        <v:template name="maps_brows" type="browse">
+                        <v:template name="maps_empty" type="if-not-exists">
+                          <tr>
+                            <td class="listing_empty" colspan="7">
+                              No cartridges found
+                            </td>
+                          </tr>
+                        </v:template>
+
+                        <v:template name="maps_browse" type="browse">
                           <tr>
                             <td style="width:5px; padding: 0 3px;">
                               <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]" />

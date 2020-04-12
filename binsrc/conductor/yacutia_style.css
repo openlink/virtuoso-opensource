@@ -688,6 +688,13 @@ td.listing_col_action a
   font-family: courier, fixed;
 }
 
+.listing_empty {
+  color: red;
+  text-align: center;
+  font-weight: bold;
+  padding: 0.5em;
+}
+
 /* accounts.vspx, sys_queues.vspx, etc. unhide the "Add New Item" */
 
 th.new_item

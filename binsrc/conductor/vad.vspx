@@ -114,30 +114,28 @@
       </div>
       <v:form name="vad_list1" method="POST" type="simple">
         <table class="listing">
+          <thead>
+            <tr class="listing_header_row">
+              <th>Name</th>
+              <th>Target</th>
+              <th>Installed Version</th>
+              <th>New Version</th>
+              <th>Last Update</th>
+              <th width="1%">Action</th>
+            </tr>
+          </thead>
           <v:data-set name="ds_items1"
                       sql="select PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST from VAD.DBA.VAD_LIST where dir = :self.src_folder and fs_type = :self.src_folder_type order by 1"
                       nrows="1000"
                       scrollable="1"
                       enabled="--isnull(self.upl_file)">
-            <v:template name="header11" type="simple">
-              <thead>
-                <tr class="listing_header_row">
-                  <th>Name</th>
-                  <th>Target</th>
-                  <th>Installed Version</th>
-                  <th>New Version</th>
-                  <th>Last Update</th>
-                  <th width="1%">Action</th>
-                </tr>
-              </thead>
-            </v:template>
 
             <v:template name="rows1" type="repeat">
 
               <v:template type="if-not-exists" name="ds_items1_if_not_exists_template">
                 <tr>
-                  <td align="center" colspan="6">
-                    <b>No packages are installed</b>
+                  <td class="listing_empty" colspan="6">
+                    No packages are installed
                   </td>
                 </tr>
               </v:template>

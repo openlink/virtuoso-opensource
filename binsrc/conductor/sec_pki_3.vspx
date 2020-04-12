@@ -110,8 +110,8 @@
 
                           <v:template type="repeat">
                             <v:template type="if-not-exists">
-                              <tr class="listing_count">
-                                <td class="listing_count" colspan="3">
+                              <tr>
+                                <td class="listing_empty" colspan="3">
                                   No Endpoints for Data Space Applications
                                 </td>
                               </tr>

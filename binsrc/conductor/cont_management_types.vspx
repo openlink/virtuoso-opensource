@@ -129,8 +129,8 @@
           <v:template type="repeat" name="ds3_repeat">
             <v:template type="if-not-exists" name="ds3_empty">
               <tr>
-                <td align="center" colspan="4">
-                  <b>No rows selected</b>
+                <td class="listing_empty" colspan="4">
+                  No rows selected
                 </td>
               </tr>
             </v:template>

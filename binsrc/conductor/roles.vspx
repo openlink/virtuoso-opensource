@@ -427,8 +427,8 @@
               <tbody>
                 <v:template name="ds2_empty" type="if-not-exists">
                   <tr>
-                    <td align="center" colspan="3">
-                      <font color="red"><b>No role names match given pattern</b></font>
+                    <td class="listing_empty" colspan="3">
+                      No role names match given pattern
                     </td>
                   </tr>
                 </v:template>

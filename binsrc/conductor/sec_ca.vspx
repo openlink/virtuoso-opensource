@@ -122,7 +122,7 @@
                       <v:template type="repeat" name="ds1_repeat">
                         <v:template type="if-not-exists" name="ds1_empty">
                           <tr>
-                            <td align="center" colspan="2">No CA Roots</td>
+                            <td class="listing_empty" colspan="2">No CA Roots</td>
                           </tr>
                         </v:template>
 

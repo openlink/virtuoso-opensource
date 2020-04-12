@@ -78,7 +78,7 @@
       </v:method>
 
       <div class="scroll_area scroll_area37">
-        <table class="listing" cellspacing="1">
+        <table class="listing">
           <v:data-source
               name="dsrc"
               expression-type="sql"
@@ -148,8 +148,8 @@
             <tbody>
               <v:template type="if-not-exists" name="ds_empty">
                 <tr>
-                  <td align="center" colspan="7">
-                    <b>No rows selected</b>
+                  <td class="listing_empty" colspan="7">
+                    No rows selected
                   </td>
                 </tr>
               </v:template>

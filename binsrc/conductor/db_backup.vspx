@@ -341,9 +341,9 @@
 
               <v:data-set name="db_dirs" nrows="15" scrollable="1" sql="select bd_id, bd_dir from DB.DBA.SYS_BACKUP_DIRS order by bd_id">
                 <tbody>
-                  <v:template name="db_dirs_empty" type="if-not-exists">>
+                  <v:template name="db_dirs_empty" type="if-not-exists">
                     <tr>
-                      <td colspan="2" class="attention_marker">No backup directories specified. Backup will go to server's working directory.</td>
+                      <td class="listing_empty" colspan="2">No backup directories specified. Backup will go to server's working directory.</td>
                     </tr>
                   </v:template>
 

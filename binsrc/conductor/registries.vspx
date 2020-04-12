@@ -136,7 +136,7 @@
 
                   <v:template type="if-not-exists" name="ds_empty">
                     <tr>
-                      <td align="center" colspan="3">No rows selected</td>
+                      <td class="listing_empty" colspan="3">No rows selected</td>
                     </tr>
                   </v:template>
 

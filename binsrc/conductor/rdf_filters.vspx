@@ -132,7 +132,7 @@
                       <th>Pattern</th>
                       <th width="1%">Action</th>
                     </tr>
-                    <v:data-source name="ds_maps" expression-type="sql" nrows="1000" initial-offset="0">
+                    <v:data-source name="ds_maps" expression-type="sql" nrows="0" initial-offset="0">
                       <v:before-data-bind>
                         <![CDATA[
                           control.ds_sql := 'select RM_PATTERN, RM_TYPE, RM_DESCRIPTION, RM_ID, RM_HOOK, RM_KEY, RM_ENABLED, RM_OPTIONS from DB.DBA.SYS_RDF_MAPPERS order by 4';
@@ -142,9 +142,17 @@
 
                     <v:data-set name="maps" data-source="self.ds_maps"  scrollable="1">
 
-                      <v:template name="maps_rep" type="repeat">
+                      <v:template name="maps_repeat" type="repeat">
 
-                        <v:template name="maps_brows" type="browse">
+                        <v:template name="maps_empty" type="if-not-exists">
+                          <tr>
+                            <td class="listing_empty" colspan="5">
+                              No cartridges found
+                            </td>
+                          </tr>
+                        </v:template>
+
+                        <v:template name="maps_browse" type="browse">
                           <tr>
                             <td style="width:5px; padding: 0 3px;">
                               <v:check-box name="cb_item" value="--(control.vc_parent as vspx_row_template).te_rowset[3]" initial-checked="--(control.vc_parent as vspx_row_template).te_rowset[6]"/>
@@ -290,9 +298,6 @@
                           </tr>
                         </v:template>
 
-                      </v:template>
-
-                      <v:template name="maps_footer" type="simple">
                       </v:template>
 
                     </v:data-set>
