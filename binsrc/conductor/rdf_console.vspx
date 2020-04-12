@@ -91,7 +91,7 @@
                   for (N := 0; N < length(params); N := N + 2)
                   {
                     if (params[N] like '%cb_item%')
-                      delete from DB.DBA.RDF_CARTRIDGES_LOG where ML_SESSION = cast (params[N+1] as integer);
+                      delete from DB.DBA.RDF_CARTRIDGES_LOG where ML_SESSION = params[N+1];
                   }
                   control.vc_data_bind (e);
                 ]]>
@@ -107,7 +107,7 @@
                 <th width="1%">Action</th>
                </tr>
                <?vsp
-                 for select mses from (select distinct ML_SESSION as mses from DB.DBA.RDF_CARTRIDGES_LOG) x do
+                 for (select distinct ML_SESSION as mses from DB.DBA.RDF_CARTRIDGES_LOG) do
                  {
                ?>
                <tr>
