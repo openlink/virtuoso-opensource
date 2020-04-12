@@ -94,6 +94,7 @@
                         declare cb vspx_check_box;
                         declare ds vspx_data_set;
 
+                        params := e.ve_params;
                         checked := vector();
                         for (N := 0; N < length(params); N := N + 2)
                         {
