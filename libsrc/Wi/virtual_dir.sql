@@ -1657,6 +1657,8 @@ create procedure WS.WS.host_meta_init ()
 
   DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
   DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
 }
 ;
 
@@ -1843,10 +1845,9 @@ create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH referencing ne
 ;
 
 -- Default WebDAV mapping for all future http listeners
-insert soft DB.DBA.HTTP_PATH_DEFAULT
-(
-HPD_LPATH, HPD_PPATH, HPD_STORE_AS_DAV, HPD_DIR_BROWSEABLE, HPD_DEFAULT,
-HPD_REALM, HPD_AUTH_FUNC, HPD_POSTPROCESS_FUNC, HPD_RUN_VSP_AS, HPD_RUN_SOAP_AS, HPD_PERSIST_SES_VARS)
-values ( '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, 'dba', NULL, 0
-)
+DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, is_brws=>1, vsp_user=>'dba', ses_vars=>0, overwrite=>1)
+;
+
+-- Default /.well-known mapping for all future http listeners
+DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta', overwrite=>1)
 ;
