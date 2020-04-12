@@ -64,9 +64,10 @@
           text-align: center;
         }
 
-        #copyright_ctr {
-          font-size: x-small;
+        div.footer {
+          font-size: 0.9em;
           text-align: right;
+          padding-top: 3px;
           padding-right: 5px;
           border-top: 1px solid silver;
       }

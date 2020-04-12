@@ -41,38 +41,34 @@
     <vm:header caption="WebDAV Content">
     </vm:header>
     <vm:pagebody>
-      <table border="0" width="100%" cellpadding="10" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <div class="<?V case when self.page = '1' or self.page is null then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" />
-            </div>
-            <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" />
-            </div>
-            <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" />
-            </div>
-            <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" />
-            </div>
-            <div class="tab_page_new">
-              <v:template name="_tabtemplate1" type="simple" enabled="-- case when (self.page = '1' or self.page is null) then 1 else 0 end ">
-                <v:include url="cont_management.vspx"/>
-              </v:template>
-              <v:template name="_tabtemplate2" type="simple" enabled="-- equ (self.page, '2')">
-                <v:include url="robot_control.vspx"/>
-              </v:template>
-              <v:template name="_tabtemplate3" type="simple" enabled="-- equ (self.page, '3')">
-                <v:include url="text_triggers.vspx"/>
-              </v:template>
-              <v:template name="_tabtemplate4" type="simple" enabled="-- equ (self.page, '4')">
-                <v:include url="cont_management_types.vspx"/>
-              </v:template>
-            </div>
-          </td>
-        </tr>
-      </table>
+      <div class="main_tab_page">
+        <div class="<?V case when self.page = '1' or self.page is null then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url21" value="--'Repository'" format="%s" url="--'cont_page.vspx?page=1'" />
+        </div>
+        <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url12" value="Content Imports" format="%s" url="--'cont_page.vspx?page=2'" />
+        </div>
+        <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url13" value="--'Settings'" format="%s" url="--'cont_page.vspx?page=3'" />
+        </div>
+        <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url14" value="--'Resource Types'" format="%s" url="--'cont_page.vspx?page=4'" />
+        </div>
+        <div class="tab_page_new">
+          <v:template name="_tabtemplate1" type="simple" enabled="-- case when (self.page = '1' or self.page is null) then 1 else 0 end ">
+            <v:include url="cont_management.vspx"/>
+          </v:template>
+          <v:template name="_tabtemplate2" type="simple" enabled="-- equ (self.page, '2')">
+            <v:include url="robot_control.vspx"/>
+          </v:template>
+          <v:template name="_tabtemplate3" type="simple" enabled="-- equ (self.page, '3')">
+            <v:include url="text_triggers.vspx"/>
+          </v:template>
+          <v:template name="_tabtemplate4" type="simple" enabled="-- equ (self.page, '4')">
+            <v:include url="cont_management_types.vspx"/>
+          </v:template>
+        </div>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
