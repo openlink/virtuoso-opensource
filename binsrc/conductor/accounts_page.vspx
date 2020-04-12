@@ -58,44 +58,40 @@
     </vm:menu>
     <vm:header caption="User Accounts" />
     <vm:pagebody>
-      <table width="100%" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url21" value="Users" url="--'accounts_page.vspx?page=1'" />
-            </div>
-            <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url12" value="Roles" url="--'accounts_page.vspx?page=2'" />
-            </div>
-            <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url13" value="Grants" url="--'accounts_page.vspx?page=3'" />
-            </div>
-            <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url14" value="LDAP Import" url="--'accounts_page.vspx?page=4'" />
-            </div>
-            <div class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>">
-              <v:url name="b_url14" value="LDAP Servers" url="--'accounts_page.vspx?page=5'" />
-            </div>
-            <div class="tab_page_new">
-              <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
-                <v:include url="accounts.vspx" />
-              </v:template>
-              <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
-                <v:include url="roles.vspx" />
-              </v:template>
-              <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
-                <v:include url="capabilities.vspx" />
-              </v:template>
-              <v:template name="template4" type="simple" enabled="--equ (self.page, '4')">
-                <v:include url="ldap_import.vspx" />
-              </v:template>
-              <v:template name="template5" type="simple" enabled="--equ (self.page, '5')">
-                <v:include url="ldap_server.vspx" />
-              </v:template>
-            </div>
-          </td>
-        </tr>
-      </table>
+      <div class="main_tab_page">
+        <div class="<?V case when self.page = '1' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url21" value="Users" url="--'accounts_page.vspx?page=1'" />
+        </div>
+        <div class="<?V case when self.page = '2' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url12" value="Roles" url="--'accounts_page.vspx?page=2'" />
+        </div>
+        <div class="<?V case when self.page = '3' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url13" value="Grants" url="--'accounts_page.vspx?page=3'" />
+        </div>
+        <div class="<?V case when self.page = '4' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url14" value="LDAP Import" url="--'accounts_page.vspx?page=4'" />
+        </div>
+        <div class="<?V case when self.page = '5' then 'page_tab_selected' else 'page_tab' end ?>">
+          <v:url name="b_url14" value="LDAP Servers" url="--'accounts_page.vspx?page=5'" />
+        </div>
+        <div class="tab_page_new">
+          <v:template name="template1" type="simple" enabled="--equ (self.page, '1')">
+            <v:include url="accounts.vspx" />
+          </v:template>
+          <v:template name="template2" type="simple" enabled="--equ (self.page, '2')">
+            <v:include url="roles.vspx" />
+          </v:template>
+          <v:template name="template3" type="simple" enabled="--equ (self.page, '3')">
+            <v:include url="capabilities.vspx" />
+          </v:template>
+          <v:template name="template4" type="simple" enabled="--equ (self.page, '4')">
+            <v:include url="ldap_import.vspx" />
+          </v:template>
+          <v:template name="template5" type="simple" enabled="--equ (self.page, '5')">
+            <v:include url="ldap_server.vspx" />
+          </v:template>
+        </div>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
