@@ -53,11 +53,9 @@ extern "C" {
 #ifdef _SSL
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
-#define MD5Init MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final MD5_Final
+#include <openssl/md5.h>
 #else
-#include "../util/md5.h"
+#include "util/md5.h"
 #endif /* _SSL */
 #include "mhash.h"
 
@@ -2246,9 +2244,9 @@ iri_shorten (char * iri, char * buf, size_t buf_len, int * ret_len)
 
   memcpy (buf, iri, buf_len - 33); /* hex md5 + zero byte */
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, strlen (str));
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, strlen (str));
+  MD5_Final (digest, &ctx);
   while (tail < end)
     {
       unsigned c = (unsigned) digest[inx++];

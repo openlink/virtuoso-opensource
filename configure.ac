@@ -831,7 +831,7 @@ AC_HELP_STRING([--disable-openssl], [disable OpenSSL support])dnl
 ], [
      case "${enableval}" in
        yes)	openssl_dir="/usr" ;;
-       no)	AC_MSG_ERROR(OpenSSL required for Virtuoso) ;;
+       no)	openssl_dir="no" ;;
        /*)	openssl_dir="${enableval}" ;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
      esac
@@ -839,7 +839,11 @@ AC_HELP_STRING([--disable-openssl], [disable OpenSSL support])dnl
   [ openssl_dir="/usr" ]
 )
 
-if test "x$openssl_dir" = "x/usr"
+if test "x$openssl_dir" = "xno"
+then
+    openssl_CFLAGS=""
+    openssl_LDFLAGS=""
+elif test "x$openssl_dir" = "x/usr"
 then
     openssl_CFLAGS=""
     openssl_LDFLAGS="-lssl -lcrypto"
@@ -853,106 +857,110 @@ then
   openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
 fi
 
-save_CFLAGS="$CFLAGS"
-save_LIBS="$LIBS"
+if test "x$openssl_dir" != "xno"
+then
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
 
-CFLAGS="$CFLAGS $openssl_CFLAGS"
-LIBS="$LIBS $openssl_LDFLAGS"
-case $host in
-*-solaris*)
-	LIBS="$LIBS -lsocket"
-	;;
+	CFLAGS="$CFLAGS $openssl_CFLAGS"
+	LIBS="$LIBS $openssl_LDFLAGS"
+	case $host in
+	*-solaris*)
+		LIBS="$LIBS -lsocket"
+		;;
 
-*-sunos*)
-	LIBS="$LIBS -lsocket"
-	;;
-esac
+	*-sunos*)
+		LIBS="$LIBS -lsocket"
+		;;
+	esac
 
-AC_MSG_CHECKING([OpenSSL version])
-AC_TRY_COMPILE([
-#include <openssl/opensslv.h>
-], [
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#error OpenSSL version too old 
-#endif
-    ],[
-      AC_MSG_RESULT([>= 0.9.8e])
-    ],[
-      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
-    ])
+	AC_MSG_CHECKING([OpenSSL version])
+	AC_TRY_COMPILE([
+	#include <openssl/opensslv.h>
+	], [
+	#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+	#error OpenSSL version too old 
+	#endif
+	    ],[
+	      AC_MSG_RESULT([>= 0.9.8e])
+	    ],[
+	      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
+	    ])
 
-AC_MSG_CHECKING([OpenSSL version])
-AC_TRY_COMPILE([
-#include <openssl/opensslv.h>
-],[
-#ifdef LIBRESSL_VERSION_NUMBER
-/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
-#elif OPENSSL_VERSION_NUMBER >= 0x1010000fL
-#error OpenSSL version too new
-#endif
-    ],[
-      AC_MSG_RESULT([< 1.1.0])
-    ],[
-      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
-    ])
+	AC_MSG_CHECKING([OpenSSL version])
+	AC_TRY_COMPILE([
+	#include <openssl/opensslv.h>
+	],[
+	#ifdef LIBRESSL_VERSION_NUMBER
+	/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
+	#elif OPENSSL_VERSION_NUMBER >= 0x1010000fL
+	#error OpenSSL version too new
+	#endif
+	    ],[
+	      AC_MSG_RESULT([< 1.1.0])
+	    ],[
+	      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
+	    ])
 
-AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
-AC_TRY_RUN([
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/asn1.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
-#include <stdio.h>
-#include <string.h>
-int
-main ()
-{
-    SSL_METHOD *ssl_server_method = NULL;
-    SSL_CTX *ssl_server_ctx = NULL;
-    unsigned char tmp[1024];
+	AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
+	AC_TRY_RUN([
+	#include <openssl/rsa.h>
+	#include <openssl/crypto.h>
+	#include <openssl/x509.h>
+	#include <openssl/pem.h>
+	#include <openssl/ssl.h>
+	#include <openssl/err.h>
+	#include <openssl/bio.h>
+	#include <openssl/asn1.h>
+	#include <openssl/pkcs12.h>
+	#include <openssl/rand.h>
+	#include <stdio.h>
+	#include <string.h>
+	int
+	main ()
+	{
+	    SSL_METHOD *ssl_server_method = NULL;
+	    SSL_CTX *ssl_server_ctx = NULL;
+	    unsigned char tmp[1024];
 
-    SSL_load_error_strings();
-    ERR_load_X509_strings();
-    ERR_load_PKCS12_strings();
-#ifndef WIN32
-    RAND_bytes (tmp, sizeof(tmp));
-    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-#endif
-    SSLeay_add_ssl_algorithms();
-    PKCS12_PBE_add ();
+	    SSL_load_error_strings();
+	    ERR_load_X509_strings();
+	    ERR_load_PKCS12_strings();
+	#ifndef WIN32
+	    RAND_bytes (tmp, sizeof(tmp));
+	    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+	#endif
+	    SSLeay_add_ssl_algorithms();
+	    PKCS12_PBE_add ();
 
-    ssl_server_method = SSLv23_client_method();
-    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
+	    ssl_server_method = SSLv23_client_method();
+	    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
 
-    if (!ssl_server_ctx)
-    {
-	ERR_print_errors_fp(stderr);
-	return(-1);
-    }
+	    if (!ssl_server_ctx)
+	    {
+		ERR_print_errors_fp(stderr);
+		return(-1);
+	    }
 
-  return 0;
-}],
-[
- AC_MSG_RESULT(good)
- BUILD_OPTS="$BUILD_OPTS ssl"
- ccincl="$ccincl $openssl_CFLAGS"
- srvrlibs="$srvrlibs $openssl_LDFLAGS"
- clntlibs="$clntlibs $openssl_LDFLAGS"
- AC_DEFINE(_SSL, 1, [OpenSSL])
-],
-[
- AC_MSG_ERROR([bad. Check config.log for details])
-])
-LIBS="$save_LIBS"
-CFLAGS="$save_CFLAGS"
+	  return 0;
+	}],
+	[
+	 AC_MSG_RESULT(good)
+	 BUILD_OPTS="$BUILD_OPTS ssl"
+	 ccincl="$ccincl $openssl_CFLAGS"
+	 srvrlibs="$srvrlibs $openssl_LDFLAGS"
+	 clntlibs="$clntlibs $openssl_LDFLAGS"
+	 AC_DEFINE(_SSL, 1, [OpenSSL])
+	],
+	[
+	 AC_MSG_ERROR([bad. Check config.log for details])
+	])
+	LIBS="$save_LIBS"
+	CFLAGS="$save_CFLAGS"
+fi
 AC_SUBST(openssl_CFLAGS)
 AC_SUBST(openssl_LDFLAGS)
+
 
 
 ##########################################################################

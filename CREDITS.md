@@ -98,6 +98,17 @@ MD5 Java
     Public License (LGPL): <http://www.gnu.org/licenses/lgpl.html>.
 
 
+MS5 C
+<http://openwall.info/wiki/people/solar/software/public-domain-source-code/md5>
+
+    Virtuoso uses a C implementation of an OpenSSL-compatible MD5
+    hash algorithm as defined in RDF1231, written by Alexander
+    Peslyak aka Solar Designer
+
+    md5.c and md5.h have been placed in the public domain.
+    There is absolutely no warranty.
+
+
 DocBook stylesheets
 <http://sourceforge.net/projects/docbook/>
 

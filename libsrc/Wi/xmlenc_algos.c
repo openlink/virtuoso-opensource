@@ -1162,17 +1162,15 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       case DSIG_KEY_RAW:
 	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
 	    return 0;
@@ -1234,17 +1232,15 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       default:
 	  return 0;
     }
@@ -1599,17 +1595,15 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       case DSIG_KEY_RAW:
 	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
 	    return 0;
@@ -1671,17 +1665,15 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       default:
 	  return 0;
     }
@@ -1753,7 +1745,6 @@ int xenc_write_cbc_buffer (unsigned char* buf, long len, dk_session_t * out)
   return len;
 }
 
-#ifdef AES_ENC_ENABLE
 int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
 			   xenc_key_t * key, xenc_try_block_t * t)
 {
@@ -1932,7 +1923,6 @@ int xenc_aes_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
 #endif
   return 1;
 }
-#endif
 int
 xenc_dsa_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out_base64,
 			xenc_key_t * key, xenc_try_block_t * t)
@@ -2516,7 +2506,6 @@ void xenc_alloc_cbc_box_test()
 
 void xenc_aes_enctest_1 (const char * data)
 {
-#ifdef AES_ENC_ENABLE
   unsigned char key_data[16] = "0123456789ABCDEF";
   xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data);
   dk_session_t *in, *out;
@@ -2549,7 +2538,6 @@ void xenc_aes_enctest_1 (const char * data)
   strses_free (out);
   strses_free (in);
   xenc_key_remove (k, 1);
-#endif
 }
 
 void xenc_aes_enctest ()

@@ -301,9 +301,9 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
     {
       ses->dks_read_block_timeout.to_sec = time_out;
     }
-#ifdef _SSL
   if (cert)
     {
+#ifdef _SSL
       int ssl_err = 0;
       int fd = tcpses_get_fd (ses->dks_session);
       ssl_method = SSLv23_client_method ();
@@ -322,12 +322,12 @@ imap_get (char *host, caddr_t * err_ret, caddr_t user, caddr_t pass,
 	}
       else
 	tcpses_to_sslses (ses->dks_session, ssl);
-    }
 #else
-  strcpy_ck (err_code, "08006");
-  strcpy_ck (err_text, "imap_get() cannot connect via SSL because Virtuoso is compiled without SSL support");
-  goto error_end;
+      strcpy_ck (err_code, "08006");
+      strcpy_ck (err_text, "imap_get() cannot connect via SSL because Virtuoso is compiled without SSL support");
+      goto error_end;
 #endif
+    }
 
   /* send AUTHORIZATION, when no session */
 

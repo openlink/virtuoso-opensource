@@ -26,11 +26,6 @@
 #ifndef XMLENC_ALGO_H
 #define XMLENC_ALGO_H
 #include <openssl/opensslv.h>
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-/*#warning aes is not supported*/
-#else
-#define AES_ENC_ENABLE
-#endif
 
 #define OPENSSL_DISABLE_OLD_DES_SUPPORT
 
@@ -39,9 +34,7 @@
 #include <openssl/rsa.h>
 #include <openssl/des.h>
 
-#ifdef AES_ENC_ENABLE
 #include <openssl/aes.h>
-#endif
 
 #include <openssl/x509.h>
 #include <openssl/rand.h>
@@ -326,7 +319,6 @@ struct xenc_key_s
 #define PKCS5_SALT_LEN			8
       unsigned char salt[PKCS5_SALT_LEN];
     } triple_des;
-#ifdef AES_ENC_ENABLE
     struct dsig_aes_keyinfo_s
     {
       /* key */
@@ -334,7 +326,6 @@ struct xenc_key_s
       int		bits;
       unsigned char	iv[16];
     } aes;
-#endif
 #ifdef _KERBEROS
     struct dsig_kerberos_s
     {

@@ -72,6 +72,11 @@
 #endif
 #ifdef _SSL
 #include "util/sslengine.h"
+
+#if OPENSSL_VERSION_NUMBER < 0x1000100FL
+#define SSL_set_state(s, v)	(s)->state = (v);
+#endif
+
 #endif
 
 #define XML_VERSION		"1.0"
@@ -1932,8 +1937,10 @@ static char hsts_header_buf[128];
 static char *
 hsts_header_line (ws_connection_t * ws)
 {
+#ifdef _SSL
   if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
     return hsts_header_buf;
+#endif
   return "";
 }
 
@@ -8748,9 +8755,7 @@ https_cert_verify_callback (int ok, void *_ctx)
   if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	  || errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -8803,9 +8808,7 @@ https_ssl_verify_callback (int ok, void *_ctx)
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -9997,7 +10000,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-      SSL_in_accept_init (ssl);
+      SSL_set_state (ssl, SSL_ST_ACCEPT);
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
 	  timeout_t to = { 0, 1000 };
@@ -11671,8 +11674,6 @@ http_init_part_two ()
   /* SSL support */
 #ifdef _SSL
   /*    CRYPTO_malloc_init();*/
-  SSL_load_error_strings();
-  SSLeay_add_ssl_algorithms();
   if (!https_key) /* when key & certificate are in same file */
     https_key = https_cert;
   if (https_port && https_cert && https_key)

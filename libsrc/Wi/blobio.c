@@ -34,13 +34,9 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
-
 
 void
 bh_free (blob_handle_t * bh)
@@ -634,11 +630,11 @@ xx_encrypt_passwd (char *thing, int thing_len, char *user_name)
   MD5_CTX ctx;
   calculate_pass ();
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   if (user_name && *user_name)
-    MD5Update (&ctx, (unsigned char *) user_name, (unsigned) strlen (user_name));
-  MD5Update (&ctx, (unsigned char *) the_pass, sizeof (the_pass));
-  MD5Final (md5, &ctx);
+    MD5_Update (&ctx, (unsigned char *) user_name, (unsigned) strlen (user_name));
+  MD5_Update (&ctx, (unsigned char *) the_pass, sizeof (the_pass));
+  MD5_Final (md5, &ctx);
   for (md5_inx = 0, thing_ptr = (unsigned char *) thing; thing_ptr - ((unsigned char *)thing) < thing_len;
       thing_ptr++, md5_inx = (md5_inx+1) % MD5_SIZE)
     *thing_ptr = *thing_ptr ^ md5[md5_inx];

@@ -1505,9 +1505,9 @@ http_cli_calc_md5 (caddr_t str,
   int inx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, str, len);
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, str, len);
+  MD5_Final (digest, &ctx);
 
   for (inx = 0; inx < sizeof (digest); inx++)
     {
