@@ -1863,10 +1863,8 @@ bif_smime_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 bif_crypto_init (void)
 {
-  bif_define_ex ("smime_verify", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("smime_sign", bif_smime_verify, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
-  bif_define_ex ("pem_certificates_to_array", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
-  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("smime_verify", bif_smime_verify, BMD_ALIAS, "smime_sign", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("get_certificate_info", bif_get_certificate_info, BMD_ALIAS, "pem_certificates_to_array", BMD_RET_TYPE, &bt_any, BMD_DONE);
 }
 #endif
 

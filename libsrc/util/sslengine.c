@@ -22,7 +22,10 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+
 #include "libutil.h"
+
+#ifdef _SSL
 #include "util/sslengine.h"
 #include <openssl/err.h>
 
@@ -86,3 +89,5 @@ ssl_load_x509 (const char *filename)
 
   return x509;
 }
+
+#endif /* _SSL */

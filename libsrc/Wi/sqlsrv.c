@@ -3972,6 +3972,8 @@ srv_global_init (char *mode)
 
 #ifdef _SSL
   log_info ("uses " OPENSSL_VERSION_TEXT);
+#else
+  log_info ("build without SSL support");
 #endif
   log_info ("uses parts of PCRE, Html Tidy");
 
