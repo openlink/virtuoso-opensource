@@ -1192,12 +1192,10 @@ void xenc_key_remove (xenc_key_t * key, int lock)
 	id_hash_remove (xenc_certificates, (caddr_t) & key->xek_x509_ref_str);
       dk_free_box (key->xek_x509_ref_str);
     }
-#ifdef AES_ENC_ENABLE
   if (key->xek_type == DSIG_KEY_AES)
     {
       dk_free (key->ki.aes.k, key->ki.aes.bits / 8 /* number of bits in byte */);
     }
-#endif
   if (key->xek_type == DSIG_KEY_RAW)
     {
       dk_free_box (key->ki.raw.k);
@@ -1385,15 +1383,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (type == CERT_TYPE_PEM_FORMAT) /* PEM format */
     {
-#if OPENSSL_VERSION_NUMBER >= 0x00908000L
-      x509 = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509,
-					PEM_STRING_X509,
-					b, NULL, NULL, NULL);
-#else
-      x509 = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509,
-					PEM_STRING_X509,
-					b, NULL, NULL, NULL);
-#endif
+      x509 = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509, PEM_STRING_X509, b, NULL, NULL, NULL);
     }
   else if (type == CERT_TYPE_PKCS12_FORMAT) /* PKCS12 format */
     {
@@ -1426,14 +1416,7 @@ xenc_key_t * xenc_key_create_from_x509_cert (char * name, char * certificate, ch
 
   if (b_priv)
     {
-#if OPENSSL_VERSION_NUMBER >= 0x00908000L
       private_key = PEM_read_bio_PrivateKey(b_priv, NULL, pass_cb, (void *) private_key_passwd);
-#else
-      private_key = (EVP_PKEY*)PEM_ASN1_read_bio ((char *(*)())d2i_PrivateKey,
-					     PEM_STRING_EVP_PKEY,
-					     b_priv,
-					     NULL, pass_cb, (void *) private_key_passwd);
-#endif
       if (!private_key)
 	{
 #if 0
@@ -1884,7 +1867,6 @@ xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
 	      memcpy (key->ki.triple_des.k3, &_key[2], sizeof (DES_cblock));
 	      break;
 	    }
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	    {
 	      key->ki.aes.k = (unsigned char *) dk_alloc (key_len / 8);
@@ -1892,7 +1874,6 @@ xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
 	      memcpy (key->ki.aes.k, &_key[0], key_len / 8);
 	      break;
 	    }
-#endif
       default:
 	  return NULL;
     }
@@ -2725,7 +2706,6 @@ caddr_t bif_xenc_x509_cert_serialize (caddr_t * qst, caddr_t * err_r, state_slot
   return ret;
 }
 
-#ifdef AES_ENC_ENABLE
 xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd)
 {
   char _key[KEYSIZB+1];
@@ -2801,7 +2781,6 @@ caddr_t bif_xenc_key_aes_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
 
   return box_dv_short_string (k->xek_name);
 }
-#endif
 
 #ifdef _KERBEROS
 
@@ -4306,7 +4285,6 @@ void xenc_serialize_key (query_instance_t * qi, xenc_key_t * key, dk_session_t *
 	}
       END_WRITE_FAIL (ses);
       break;
-#ifdef AES_ENC_ENABLE
     case DSIG_KEY_AES:
       CATCH_WRITE_FAIL (ses)
 	{
@@ -4317,7 +4295,6 @@ void xenc_serialize_key (query_instance_t * qi, xenc_key_t * key, dk_session_t *
 	}
       END_WRITE_FAIL (ses);
       break;
-#endif
     case DSIG_KEY_RAW:
       /* */
       CATCH_WRITE_FAIL (ses)
@@ -7666,7 +7643,6 @@ void bif_xmlenc_init ()
 			  xenc_dsa_decryptor,
 			  DSIG_KEY_DSA);
 
-#ifdef AES_ENC_ENABLE
   xenc_algorithms_create (XENC_AES128_ALGO, "aes 128 cbc encoding algorithm",
 			  xenc_aes_encryptor,
 			  xenc_aes_decryptor,
@@ -7679,7 +7655,6 @@ void bif_xmlenc_init ()
 			  xenc_aes_encryptor,
 			  xenc_aes_decryptor,
 			  DSIG_KEY_AES);
-#endif
 
   xenc_algorithms_create (XENC_DH_ALGO, "dh encoding algorithm",
 			  xenc_dh_encryptor,
@@ -7712,10 +7687,8 @@ void bif_xmlenc_init ()
 
   bif_define ("dsig_template_ext", bif_dsig_template_ext);
 
-#ifdef AES_ENC_ENABLE
   bif_define ("xenc_key_AES_create", bif_xenc_key_aes_create);
   bif_define ("xenc_key_AES_rand_create", bif_xenc_key_aes_rand_create);
-#endif
 
   bif_define ("xenc_key_3DES_read", bif_xenc_key_3des_read);
   bif_define ("xenc_key_RSA_read", bif_xenc_key_rsa_read);

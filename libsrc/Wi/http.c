@@ -8750,9 +8750,7 @@ https_cert_verify_callback (int ok, void *_ctx)
   if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	  || errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -8805,9 +8803,7 @@ https_ssl_verify_callback (int ok, void *_ctx)
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -11673,8 +11669,6 @@ http_init_part_two ()
   /* SSL support */
 #ifdef _SSL
   /*    CRYPTO_malloc_init();*/
-  SSL_load_error_strings();
-  SSLeay_add_ssl_algorithms();
   if (!https_key) /* when key & certificate are in same file */
     https_key = https_cert;
   if (https_port && https_cert && https_key)

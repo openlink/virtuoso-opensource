@@ -1920,7 +1920,6 @@ xenc_key_t * xenc_build_encrypted_key (const char * carried_name, dk_session_t *
 	}
       xenc_key_3des_init (key, key_raw_data, key_raw_data + 8, key_raw_data + 16);
       break;
-#ifdef AES_ENC_ENABLE
     case DSIG_KEY_AES:
       /* len = decode_base64 (key_raw_data, key_raw_data + box_length (key_raw_data) - 1); */
       len = strses_length (in);
@@ -1944,7 +1943,6 @@ xenc_key_t * xenc_build_encrypted_key (const char * carried_name, dk_session_t *
       memset (key->ki.aes.iv, 0, sizeof (key->ki.aes.iv));
       memcpy (key->ki.aes.k, key_raw_data, key->ki.aes.bits / 8 /* bits in one byte */);
       break;
-#endif
     default:;
       /* do nothing */
     }

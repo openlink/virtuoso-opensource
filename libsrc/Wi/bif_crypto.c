@@ -1246,11 +1246,7 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
     mem_bio = BIO_new_mem_buf (ca, box_length (ca) - 1);
     if (NULL != strstr (ca, PEM_STRING_X509))
       {
-#if OPENSSL_VERSION_NUMBER >= 0x00908000L
 	cacert = (X509 *)PEM_ASN1_read_bio ((d2i_of_void *)d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
-#else
-	cacert = (X509 *)PEM_ASN1_read_bio ((char *(*)())d2i_X509, PEM_STRING_X509, mem_bio, NULL, NULL, NULL);
-#endif
       }
     else
       cacert = d2i_X509_bio (mem_bio, NULL);
@@ -1270,15 +1266,11 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       goto err_ret;
     }
 
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-  X509_STORE_CTX_init (csc, cert_ctx, cert, uchain);
-#else
   if (!X509_STORE_CTX_init (csc, cert_ctx, cert, uchain))
     {
       *err_ret = srv_make_new_error ("22023", "CR018", "Can not initialize X509 verification context");
       goto err_ret;
     }
-#endif
 
   X509_STORE_CTX_set_app_data (csc, (void *) opts);
 

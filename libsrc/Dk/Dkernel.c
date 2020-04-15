@@ -4901,9 +4901,7 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && ssl_server_verify == 3)
     {
@@ -5414,9 +5412,7 @@ ssl_server_init ()
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
-#endif
 
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
@@ -5448,7 +5444,6 @@ ssl_server_init ()
   }
   while (!RAND_status ());
 
-  SSLeay_add_all_algorithms ();
   PKCS12_PBE_add ();		/* stub */
 
 #ifdef NO_THREAD
