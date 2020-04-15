@@ -31,9 +31,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -253,9 +250,9 @@ _cfg_refresh (PCONFIG pconfig)
   /*
    *  Check the MD5 sum to see if the file has changed
    */
-  MD5Init (&md5ctx);
-  MD5Update (&md5ctx, (unsigned char *) mem, (unsigned int) sb.st_size);
-  MD5Final (digest, &md5ctx);
+  MD5_Init (&md5ctx);
+  MD5_Update (&md5ctx, (unsigned char *) mem, (unsigned int) sb.st_size);
+  MD5_Final (digest, &md5ctx);
 
   if (!memcmp (digest, pconfig->digest, sizeof (digest_t)))
     {
@@ -995,7 +992,7 @@ _cfg_digestprintf (MD5_CTX *pMd5, FILE *fd, const char *fmt, ...)
   vsprintf (buf, fmt, ap);
   length = strlen (buf);
   retValue = fwrite (buf, 1, length, fd) == length ? 0 : -1;
-  MD5Update (pMd5, (unsigned char *) buf, (unsigned int) length);
+  MD5_Update (pMd5, (unsigned char *) buf, (unsigned int) length);
   return retValue;
 }
 
@@ -1015,7 +1012,7 @@ _cfg_outputformatted (PCONFIG pconfig, FILE *fd)
   int skip = 0;
   MD5_CTX md5ctx;
 
-  MD5Init (&md5ctx);
+  MD5_Init (&md5ctx);
   while (i--)
     {
       if (e->section)
@@ -1110,7 +1107,7 @@ _cfg_outputformatted (PCONFIG pconfig, FILE *fd)
       _cfg_digestprintf (&md5ctx, fd, "\n");
       e++;
     }
-  MD5Final (pconfig->digest, &md5ctx);
+  MD5_Final (pconfig->digest, &md5ctx);
 }
 
 

@@ -65,9 +65,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -3837,16 +3834,16 @@ dbs_init_id (char * str)
   char buf[100];
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   DO_BOX (caddr_t, val, inx, local_interfaces)
     {
-      MD5Update (&ctx, (unsigned char *) val, box_length (val) - 1);
+      MD5_Update (&ctx, (unsigned char *) val, box_length (val) - 1);
     }
   END_DO_BOX;
-  MD5Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
+  MD5_Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
   snprintf (buf, sizeof (buf), "%ld,%p", srv_pid, &str);
-  MD5Update (&ctx, (unsigned char *) buf, strlen (buf));
-  MD5Final ((unsigned char*)str, &ctx);
+  MD5_Update (&ctx, (unsigned char *) buf, strlen (buf));
+  MD5_Final ((unsigned char*)str, &ctx);
 }
 
 void

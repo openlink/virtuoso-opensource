@@ -42,9 +42,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -71,7 +68,7 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
       /* an unboxed num will have ck sum identical to the same boxed value */
       box_img[0] = (dtp_t)(DV_LONG_INT);
       memcpy (&box_img[1], &box, sizeof (long));
-      MD5Update (ctx, (unsigned char *) &box_img, sizeof (long) + 1);
+      MD5_Update (ctx, (unsigned char *) &box_img, sizeof (long) + 1);
       return;
     }
   dtp = box_tag (box);
@@ -90,21 +87,21 @@ box_md5_1 (caddr_t box, MD5_CTX * ctx)
 #if 0 /* It's redundant now, because DV_SHORT_STRING == DV_LONG_STRING */
     case DV_STRING:
       box_tag_modify (box, DV_STRING);
-      MD5Update (ctx, (unsigned char *) box - 1, len + 1);
+      MD5_Update (ctx, (unsigned char *) box - 1, len + 1);
       box_tag_modify (box, dtp);
       break;
 #endif
     case DV_NUMERIC:
 	{
 	  unsigned int numeric_len = len - NUMERIC_MAX_DATA_BYTES + numeric_precision ((numeric_t) box);
-	  MD5Update (ctx, (unsigned char *) box - 1, numeric_len + 1);
+	  MD5_Update (ctx, (unsigned char *) box - 1, numeric_len + 1);
 	}
       break;
     case DV_DB_NULL: /* special case since NULLs has zero len */
-      MD5Update (ctx, (unsigned char *) box - 1, 1);
+      MD5_Update (ctx, (unsigned char *) box - 1, 1);
       break;
     default:
-      MD5Update (ctx, (unsigned char *) box - 1, len + 1);
+      MD5_Update (ctx, (unsigned char *) box - 1, len + 1);
       break;
     }
 }
@@ -116,9 +113,9 @@ box_md5 (caddr_t box)
   caddr_t res = dk_alloc_box (MD5_SIZE + 1, DV_SHORT_STRING);
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   box_md5_1 (box, &ctx);
-  MD5Final ((unsigned char *) res, &ctx);
+  MD5_Final ((unsigned char *) res, &ctx);
   res[MD5_SIZE] = 0;
   return res;
 }

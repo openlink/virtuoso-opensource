@@ -65,9 +65,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -2335,7 +2332,7 @@ get_random_info (unsigned char seed[16])
   } r;
 
   memset (&r, 0, sizeof (r));
-  MD5Init (&c);			/* memory usage stats */
+  MD5_Init (&c);			/* memory usage stats */
   GlobalMemoryStatus (&r.m);	/* random system stats */
   GetSystemInfo (&r.s);		/* 100ns resolution (nominally) time of day */
   GetSystemTimeAsFileTime (&r.t);	/* high resolution performance counter */
@@ -2344,8 +2341,8 @@ get_random_info (unsigned char seed[16])
   r.l = MAX_COMPUTERNAME_LENGTH + 1;
 
   GetComputerName (r.hostname, &r.l);
-  MD5Update (&c, (unsigned char *) &r, sizeof (r));
-  MD5Final (seed, &c);
+  MD5_Update (&c, (unsigned char *) &r, sizeof (r));
+  MD5_Final (seed, &c);
 }
 
 #else /* UNIX */
@@ -2379,9 +2376,9 @@ get_random_info (unsigned char seed[16])
   gettimeofday (&r.tv, (struct timezone *) 0);
   gethostname (r.hostname, 256);
 
-  MD5Init (&c);
-  MD5Update (&c, (unsigned char *) &r, sizeof (r));
-  MD5Final (seed, &c);
+  MD5_Init (&c);
+  MD5_Update (&c, (unsigned char *) &r, sizeof (r));
+  MD5_Final (seed, &c);
 }
 #endif /* end system specific routines */
 /* end UUIDs generator */
@@ -2477,9 +2474,9 @@ md5 (caddr_t str)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+  MD5_Final (digest, &ctx);
   res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
   for (inx = 0; inx < sizeof (digest); inx++)
     {
@@ -2499,11 +2496,11 @@ mdigest5 (caddr_t str)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   res = dk_alloc_box (17, DV_SHORT_STRING);
   res[16] = '\0';
-  MD5Final ((unsigned char *)res, &ctx);
+  MD5_Final ((unsigned char *)res, &ctx);
   return res;
 }
 
@@ -2555,7 +2552,7 @@ bif_md5_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   return md5ctx_to_string (&ctx);
 }
 
@@ -2563,7 +2560,7 @@ void
 md5_update_map (buffer_elt_t * buf, caddr_t arg)
 {
   MD5_CTX *pctx = (MD5_CTX *) arg;
-  MD5Update (pctx, (unsigned char *) buf->data, buf->fill);
+  MD5_Update (pctx, (unsigned char *) buf->data, buf->fill);
 }
 
 static caddr_t
@@ -2580,13 +2577,13 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   string_to_md5ctx (&ctx, sctx);
   if (DV_STRING == dtp || DV_RDF == dtp)
-    MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+    MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   else
     {
       dk_session_t * ses = (dk_session_t *) str;
       strses_map (ses, md5_update_map, (caddr_t) & ctx);
       strses_file_map (ses, md5_update_map, (caddr_t) & ctx);
-      MD5Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
+      MD5_Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
     }
   return md5ctx_to_string (&ctx);
 }
@@ -2605,7 +2602,7 @@ bif_md5_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     make_it_hex = (int) bif_long_arg (qst, args, 1, "md5_final");
   if (make_it_hex)
     {
-      MD5Final (digest, &ctx);
+      MD5_Final (digest, &ctx);
       res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
 
       for (inx = 0; inx < sizeof (digest); inx++)
@@ -2619,7 +2616,7 @@ bif_md5_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       res = dk_alloc_box (MD5_SIZE + 1, DV_SHORT_STRING);
-      MD5Final ((unsigned char *) res, &ctx);
+      MD5_Final ((unsigned char *) res, &ctx);
       res[MD5_SIZE] = 0;
     }
   return res;
@@ -2635,11 +2632,11 @@ md5_ses (dk_session_t * ses)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   strses_map (ses, md5_update_map, (caddr_t) & ctx);
   strses_file_map (ses, md5_update_map, (caddr_t) & ctx);
-  MD5Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
-  MD5Final (digest, &ctx);
+  MD5_Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
+  MD5_Final (digest, &ctx);
 
   res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
   for (inx = 0; inx < sizeof (digest); inx++)

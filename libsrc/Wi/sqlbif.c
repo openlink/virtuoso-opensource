@@ -84,7 +84,7 @@ extern "C" {
 #include "virtpwd.h"
 #include "rdf_core.h"
 #include "shcompo.h"
-#include "http_client.h" /* for MD5Init and the like */
+#include "http_client.h" /* for MD5_Init and the like */
 #include "sparql.h"
 #include "aqueue.h"
 
@@ -16462,11 +16462,11 @@ bif_rdf_checksum_int (caddr_t * qst, state_slot_t ** args, int op, const char *f
       {
         MD5_CTX ctx;
         memset (&ctx, 0, sizeof (MD5_CTX));
-        MD5Init (&ctx);
-        MD5Update (&ctx, arg_strg, box_length (arg_strg)-1);
+        MD5_Init (&ctx);
+        MD5_Update (&ctx, arg_strg, box_length (arg_strg)-1);
         res_len = MD5_SIZE;
         res = dk_alloc_box (res_len*2 + 1, DV_SHORT_STRING);
-        MD5Final ((unsigned char *) res, &ctx);
+        MD5_Final ((unsigned char *) res, &ctx);
         break;
       }
 #if !defined(OPENSSL_NO_SHA1) && defined (SHA_DIGEST_LENGTH)
