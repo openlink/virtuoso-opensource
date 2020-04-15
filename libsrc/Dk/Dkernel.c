@@ -5148,10 +5148,12 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 	    disable = 1;
 	}
 
-      if (!strcasecmp (name, "SSLv3"))
-	opt = SSL_PROTOCOL_SSLV3;
+      if (!strcasecmp (name, "ALL"))
+	opt = SSL_PROTOCOL_ALL;
+#if defined (SSL_OP_NO_TLSv1)
       else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
 	opt = SSL_PROTOCOL_TLSV1;
+#endif
 #if defined (SSL_OP_NO_TLSv1_1)
       else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
 	opt = SSL_PROTOCOL_TLSV1_1;
@@ -5164,8 +5166,6 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
       else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
 	opt = SSL_PROTOCOL_TLSV1_3;
 #endif
-      else if (!strcasecmp (name, "ALL"))
-	opt = SSL_PROTOCOL_ALL;
       else
 	{
 	  log_error ("SSL: Unsupported protocol [%s]", name);
@@ -5182,7 +5182,7 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
     }
 
   /*
-   *   Start by enabling all options
+   *   Start by enabling standard workaround options
    */
   SSL_CTX_set_options (ctx, SSL_OP_ALL);
 
@@ -5214,6 +5214,8 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_1);
   if (!(proto & SSL_PROTOCOL_TLSV1_1))
     SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_1);
+  else
+    log_warning ("SSL: Enabling deprecated protocol TLS 1.1");
 #endif
 
 #if defined (SSL_OP_NO_TLSv1_2)
