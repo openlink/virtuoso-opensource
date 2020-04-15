@@ -1213,36 +1213,44 @@ void xenc_key_remove (xenc_key_t * key, int lock)
 }
 
 
-static void
-genrsa_cb(int p, int n, void *arg)
-{
-#ifdef LINT
-  p=n;
-#endif
-}
-
 int
 __xenc_key_rsa_init (char *name)
 {
   RSA *rsa = NULL;
-  int num=1024;
-  unsigned long f4=RSA_F4;
+  BIGNUM *bn = NULL;
   int r;
-  xenc_key_t * pkey = xenc_get_key_by_name (name, 1);
+
+  xenc_key_t *pkey = xenc_get_key_by_name (name, 1);
   if (NULL == pkey)
     SQLR_NEW_KEY_ERROR (name);
 
-  rsa=RSA_generate_key(num,f4,genrsa_cb,NULL);
-  r = RSA_check_key(rsa);
+  rsa = RSA_new ();
+  if (!rsa)
+    goto out;
+  bn = BN_new ();
+  if (!bn)
+    goto out;
+  if (!BN_set_word (bn, RSA_F4))
+    goto out;
+
+  if (!RSA_generate_key_ex (rsa, 1024, bn, NULL))
+    goto out;
+
+  r = RSA_check_key (rsa);
+  if (r != 1)
+    goto out;
   pkey->ki.rsa.pad = RSA_PKCS1_PADDING;
-  if (rsa == NULL)
-    {
-      sqlr_new_error ("42000", "XENC06",
-		    "RSA parameters generation error");
-    }
   pkey->xek_rsa = rsa;
   pkey->xek_private_rsa = rsa;
+  BN_free (bn);
   return 0;
+out:
+  if (bn)
+    BN_free (bn);
+  if (rsa)
+    RSA_free (rsa);
+  sqlr_new_error ("42000", "XENC06", "RSA parameters generation error");
+  return -1;
 }
 
 
@@ -1788,41 +1796,64 @@ xenc_key_len_get (const char * algo)
   return len;
 }
 
-static /*xenc_key_RSA_create */
-caddr_t bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+
+/*xenc_key_RSA_create */
+static caddr_t
+bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
-  xenc_key_t * k;
+  xenc_key_t *k;
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_RSA_create");
   int num = (int) bif_long_arg (qst, args, 1, "xenc_key_RSA_create");
-  RSA *rsa = NULL;
+  RSA *rsa;
+  BIGNUM *bn;
+  EVP_PKEY *pk = NULL;
+
+  rsa = RSA_new ();
+  if (!rsa)
+    goto out;
+  bn = BN_new ();
+  if (!bn)
+    goto out;
+  if (!BN_set_word (bn, RSA_F4))
+    goto out;
 
   mutex_enter (xenc_keys_mtx);
-  if (NULL == (k = xenc_key_create (name, XENC_RSA_ALGO , DSIG_RSA_SHA1_ALGO, 0)))
+  if (NULL == (k = xenc_key_create (name, XENC_RSA_ALGO, DSIG_RSA_SHA1_ALGO, 0)))
     {
       mutex_leave (xenc_keys_mtx);
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
 
-  rsa = RSA_generate_key (num, RSA_F4, NULL, NULL);
-
-  if (rsa == NULL)
+  if (!RSA_generate_key_ex (rsa, num, bn, NULL))
     {
-      sqlr_new_error ("42000", "XENC06", "RSA generation error");
+      mutex_leave (xenc_keys_mtx);
+      goto out;
     }
+  BN_free (bn);
 
   k->xek_rsa = RSAPublicKey_dup (rsa);
   k->xek_private_rsa = rsa;
   k->ki.rsa.pad = RSA_PKCS1_PADDING;
 
-  k->xek_evp_private_key = EVP_PKEY_new();
-  if (k->xek_evp_private_key) EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
+  k->xek_evp_private_key = EVP_PKEY_new ();
+  if (k->xek_evp_private_key)
+    EVP_PKEY_assign_RSA (k->xek_evp_private_key, k->xek_private_rsa);
 
-  k->xek_evp_key = EVP_PKEY_new();
-  if (k->xek_evp_key) EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
+  k->xek_evp_key = EVP_PKEY_new ();
+  if (k->xek_evp_key)
+    EVP_PKEY_assign_RSA (k->xek_evp_key, k->xek_rsa);
 
   mutex_leave (xenc_keys_mtx);
   return NULL;
+out:
+  if (bn)
+    BN_free (bn);
+  if (rsa)
+    RSA_free (rsa);
+  sqlr_new_error ("42000", "XENC06", "RSA generation error");
+  return NULL;
 }
+
 
 xenc_key_t *
 xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
