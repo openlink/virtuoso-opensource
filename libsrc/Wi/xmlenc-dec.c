@@ -983,7 +983,7 @@ void wss_usernametoken_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * c
     {
       char nonce1[16], nonce2 [40];
       int len;
-      RAND_pseudo_bytes ((unsigned char *)nonce1, 16);
+      RAND_bytes ((unsigned char *)nonce1, 16);
       session_buffered_write (ses, nonce1, 16);
       len = xenc_encode_base64 (nonce1, nonce2, 16);
       nonce2[len] = 0;

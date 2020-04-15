@@ -2130,7 +2130,7 @@ int __xenc_key_3des_init (char *name, char *pwd, int lock)
 
   memset(_key,0,sizeof(key));
   strncpy(_key, pwd, KEYSIZB);
-/*  RAND_pseudo_bytes(pkey->ki.triple_des.salt, PKCS5_SALT_LEN); - nosalt */
+/*  RAND_bytes(pkey->ki.triple_des.salt, PKCS5_SALT_LEN); - nosalt */
 
   EVP_BytesToKey(EVP_des_ede3_cbc(),EVP_md5(),
 	NULL /*pkey->ki.triple_des.salt - nosalt*/,
@@ -2251,14 +2251,7 @@ caddr_t bif_xenc_key_3des_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
 
-#ifndef DEBUG
-  RAND_pseudo_bytes(k->ki.triple_des.iv, 8);
-#else
-  {
-    unsigned char debug_iv [] = {34, 34, 34, 34, 34, 34, 34, 34 };
-    memcpy (k->ki.triple_des.iv, debug_iv, 8);
-  }
-#endif
+  RAND_bytes(k->ki.triple_des.iv, 8);
 
 #if 1
   xenc_key_3des_init (k, key_base64, key_base64 + 8, key_base64 + 16);
