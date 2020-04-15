@@ -1162,10 +1162,10 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
@@ -1232,10 +1232,10 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
@@ -1595,10 +1595,10 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
@@ -1665,10 +1665,10 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
