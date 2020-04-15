@@ -38,6 +38,7 @@
 #include <openssl/dsa.h>
 #include <openssl/rsa.h>
 #include <openssl/des.h>
+#include <openssl/hmac.h>
 
 #ifdef AES_ENC_ENABLE
 #include <openssl/aes.h>
@@ -630,6 +631,194 @@ caddr_t certificate_encode (BIO * b, const char * encoding_type);
 caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * uri);
 
 extern dk_mutex_t * xenc_keys_mtx;
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000
+
+static inline HMAC_CTX *HMAC_CTX_new(void)
+{
+	HMAC_CTX *p;
+
+	p = calloc(1, sizeof(HMAC_CTX));
+	if (!p)
+		return p;
+	HMAC_CTX_init(p);
+	return p;
+}
+
+static inline void HMAC_CTX_free(HMAC_CTX *ctx)
+{
+	HMAC_CTX_cleanup(ctx);
+	free(ctx);
+}
+
+static inline void RSA_get0_key(const RSA *r, const BIGNUM **n,
+				const BIGNUM **e, const BIGNUM **d)
+{
+	if (n != NULL)
+		*n = r->n;
+	if (e != NULL)
+		*e = r->e;
+	if (d != NULL)
+		*d = r->d;
+}
+
+static inline void RSA_get0_factors(const RSA *r, const BIGNUM **p,
+				    const BIGNUM **q)
+{
+	if (p != NULL)
+		*p = r->p;
+	if (q != NULL)
+		*q = r->q;
+}
+
+static inline RSA *EVP_PKEY_get0_RSA(EVP_PKEY *pkey)
+{
+	if (pkey->type != EVP_PKEY_RSA)
+		return NULL;
+	return pkey->pkey.rsa;
+}
+
+static inline void DH_get0_key(const DH *dh, const BIGNUM **pub_key,
+			       const BIGNUM **priv_key)
+{
+	if (pub_key != NULL)
+		*pub_key = dh->pub_key;
+	if (priv_key != NULL)
+		*priv_key = dh->priv_key;
+}
+
+
+static inline void DH_get0_pqg(const DH *dh, const BIGNUM **p, const BIGNUM **q,
+			       const BIGNUM **g)
+{
+	if (p != NULL)
+		*p = dh->p;
+	if (q != NULL)
+		*q = dh->q;
+	if (g != NULL)
+		*g = dh->g;
+}
+
+static inline DSA *EVP_PKEY_get0_DSA(EVP_PKEY *pkey)
+{
+	if (pkey->type != EVP_PKEY_DSA)
+		return NULL;
+	return pkey->pkey.dsa;
+}
+
+static inline int DH_set0_pqg(DH *dh, BIGNUM *p, BIGNUM *q, BIGNUM *g)
+{
+	/* If the fields p and g in d are NULL, the corresponding input
+	 * parameters MUST be non-NULL.  q may remain NULL.
+	 */
+	if ((dh->p == NULL && p == NULL)
+	    || (dh->g == NULL && g == NULL))
+		return 0;
+
+	if (p != NULL) {
+		BN_free(dh->p);
+		dh->p = p;
+	}
+	if (q != NULL) {
+		BN_free(dh->q);
+		dh->q = q;
+	}
+	if (g != NULL) {
+		BN_free(dh->g);
+		dh->g = g;
+	}
+
+	if (q != NULL) {
+		dh->length = BN_num_bits(q);
+	}
+
+	return 1;
+}
+
+static inline int RSA_set0_key(RSA *r, BIGNUM *n, BIGNUM *e, BIGNUM *d)
+{
+	/* If the fields n and e in r are NULL, the corresponding input
+	 * parameters MUST be non-NULL for n and e.  d may be
+	 * left NULL (in case only the public key is used).
+	 */
+	if ((r->n == NULL && n == NULL)
+	    || (r->e == NULL && e == NULL))
+		return 0;
+
+	if (n != NULL) {
+		BN_free(r->n);
+		r->n = n;
+	}
+	if (e != NULL) {
+		BN_free(r->e);
+		r->e = e;
+	}
+	if (d != NULL) {
+		BN_free(r->d);
+		r->d = d;
+	}
+
+	return 1;
+}
+
+static inline void DSA_get0_pqg(const DSA *d, const BIGNUM **p,
+				const BIGNUM **q, const BIGNUM **g)
+{
+	if (p != NULL)
+		*p = d->p;
+	if (q != NULL)
+		*q = d->q;
+	if (g != NULL)
+		*g = d->g;
+}
+
+static inline void DSA_get0_key(const DSA *d, const BIGNUM **pub_key,
+				const BIGNUM **priv_key)
+{
+	if (pub_key != NULL)
+		*pub_key = d->pub_key;
+	if (priv_key != NULL)
+		*priv_key = d->priv_key;
+}
+
+static inline const STACK_OF(X509_EXTENSION) *X509_get0_extensions(const X509 *x)
+{
+	return x->cert_info->extensions;
+}
+
+static inline int X509_up_ref(X509 *x)
+{
+	return CRYPTO_add(&x->references, 1, CRYPTO_LOCK_X509);
+}
+
+static inline STACK_OF(X509_OBJECT) *X509_STORE_get0_objects(X509_STORE *v)
+{
+	return v->objs;
+}
+
+static inline int X509_OBJECT_get_type(const X509_OBJECT *a)
+{
+	return a->type;
+}
+
+static inline X509 *X509_OBJECT_get0_X509(const X509_OBJECT *a)
+{
+	if (a == NULL || a->type != X509_LU_X509)
+		return NULL;
+	return a->data.x509;
+}
+
+static inline void *BIO_get_data(BIO *a)
+{
+	return a->ptr;
+}
+
+static inline const unsigned char *ASN1_STRING_get0_data(const ASN1_STRING *x)
+{
+	return x->data;
+}
+
+#endif
 
 #endif
 
