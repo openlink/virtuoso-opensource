@@ -72,6 +72,11 @@
 #endif
 #ifdef _SSL
 #include "util/sslengine.h"
+
+#if OPENSSL_VERSION_NUMBER < 0x1000100FL
+#define SSL_set_state(s, v)	(s)->state = (v);
+#endif
+
 #endif
 
 #define XML_VERSION		"1.0"
@@ -9995,7 +10000,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-      SSL_in_accept_init (ssl);
+      SSL_set_state (ssl, SSL_ST_ACCEPT);
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
 	  timeout_t to = { 0, 1000 };
