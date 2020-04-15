@@ -398,7 +398,7 @@
                       http_value (i + 1, 'td');
                       foreach (any c in r) do
                       {
-                        if (not isinteger (c))
+                        if (not isinteger (c) and not isnumeric (c))
                           c := charset_recode (c, enc, '_WIDE_');
                         http_value (c, 'td');
                       }
