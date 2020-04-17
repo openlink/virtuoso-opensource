@@ -37,7 +37,7 @@ command to get a copy of the tree:
 
 At this point you can create your own work branch based on any of
 the branches available, create bugfixes and commit them to your own
-branch and then use the 'git format-patch' command to generate the
+branch and then use the `git format-patch` command to generate the
 appropriate diffs to send to:
 
     vos.admin@openlinksw.com
@@ -57,9 +57,9 @@ pull requests, track the project etc. on:
 
 OpenLink Software will continue to use sourceforge.net for the
 source tarball releases and certain binary releases, and for
-completenes will also provides read-only Git Archive access.
+completeness will also provide read-only Git Archive access.
 
-For more information read:
+For more information, read:
 
    https://sourceforge.net/scm/?type=git&group_id=161622
 
@@ -96,35 +96,35 @@ could cause build problems.
 To check the version number of the tools installed on your system,
 use one of the following commands:
 
-  * autoconf --version
-  * automake --version
-  * libtoolize --version
-  * flex --version
-  * bison --version
-  * gperf --version
-  * gawk --version
-  * m4 --version
-  * make --version
-  * openssl version
+  * `autoconf --version`
+  * `automake --version`
+  * `libtoolize --version`
+  * `flex --version`
+  * `bison --version`
+  * `gperf --version`
+  * `gawk --version`
+  * `m4 --version`
+  * `make --version`
+  * `openssl version`
 
-If you have an older version than automake version 1.9 you can edit
-the configure.ac script around line 47 using the examples provided for
+If you have an `automake` version older than 1.9, you can edit the 
+`configure.ac` script around line 47 using the examples provided for
 each version.
 
-Mac OS X 10.10
---------------
-Apple removed a number of programs from their Xcode.app commandline
-installation including the autoconf, automake, libtool, gperf and
+macOS 10.10 and later
+---------------------
+Apple removed a number of programs from their `Xcode.app` commandline
+installation including `autoconf`, `automake`, `libtool`, `gperf`, and
 some other tools needed to build Virtuoso from a newly checked out
 GIT tree. We suggest using the HomeBrew package manager from
 http://brew.sh/ to install these tools.
 
 RedHat Enterprise Linux 7
 -------------------------
-On RedHat 7, the gperf tool is no longer available from the default
+On RedHat 7, the `gperf` tool is no longer available from the default
 repos, but can be installed using the following command:
 
-  $ sudo yum --enablerepo=rhui-REGION-rhel-server-optional info gperf
+    $ sudo yum --enablerepo=rhui-REGION-rhel-server-optional info gperf
 
 
 Diskspace Requirements
@@ -134,34 +134,32 @@ The build produces a demo database and Virtuoso application packages
 that are quite large. At least 800 MB of free space should be available
 in the build file system.
 
-When running `make install', the target file system should have about 460
-MB free. By default, the install target directories are under /usr/local/,
-but you can specify
+When running `make install`, the target file system should have about 460
+MB free. By default, the install target directories are under `/usr/local/`,
+but you can specify a different install target with --
 
     ./configure --prefix=/path/to/dir
 
-instead.
-
 The minimum working configuration consists of the server executable
-and config files plus database, no more than a few MB for the server
-executable, depending on platform and options.
+and config files plus database, and requires no more than a few MB for 
+the server executable, depending on platform and options.
 
 
 Generate build files
 ====================
 
 To (re)generate the configure script and all related build files,
-use use the supplied script in your working directory:
+use the supplied script in your working directory:
 
     $ ./autogen.sh
 
-If the above command succeed without any error messages, please use the
-following command to check out all the options you can use:
+If the above command succeeds without any error messages, please use the
+following command to review all the options you can use:
 
     $ ./configure --help
 
-Certain build targets are only enabled when the --enable-maintainer-mode
+Certain build targets are only enabled when the `--enable-maintainer-mode`
 flag is added to configure.
 
-Please read the files INSTALL and README in this directory for further
+Please read the `INSTALL` and `README` files in this directory for further
 information on how to configure the package and install it on your system.
