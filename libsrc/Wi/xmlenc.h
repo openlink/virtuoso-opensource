@@ -25,6 +25,7 @@
 
 #ifndef XMLENC_ALGO_H
 #define XMLENC_ALGO_H
+#ifdef _SSL
 #include <openssl/opensslv.h>
 
 #define OPENSSL_DISABLE_OLD_DES_SUPPORT
@@ -622,5 +623,5 @@ caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * ur
 
 extern dk_mutex_t * xenc_keys_mtx;
 
+#endif /* _SSL */
 #endif
-
