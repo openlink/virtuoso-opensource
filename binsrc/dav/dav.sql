@@ -109,7 +109,7 @@ not_found: ;
   acceptPatch := WS.WS.FINDPARAM (headers, 'Accept-Patch');
   if (acceptPatch <> '')
     acceptPatch := sprintf ('Accept-Patch: %s\r\n', acceptPatch);
- 
+
   acceptPost := WS.WS.FINDPARAM (headers, 'Accept-Post');
   if (acceptPost <> '')
     acceptPost := sprintf ('Accept-Post: %s\r\n', http_request_header (headers, 'Accept-Post', null, 'text/turtle, text/html, application/xhtml+xml, application/ld+json'));
@@ -7141,7 +7141,7 @@ create procedure DB.DBA.DAV_SET_HTTP_BODY (
 
 create procedure DB.DBA.LDP_RDF_TYPES ()
 {
-  return vector ('text/turtle', 'application/ld+json');
+  return vector ('text/turtle');
 }
 ;
 
