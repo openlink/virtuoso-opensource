@@ -2287,6 +2287,8 @@ create function DAV_AUTHENTICATE_SSL_WEBID (
 ;
 
 create function DAV_CHECK_ACLS_INTERNAL (
+  in mode integer,
+  in netid varchar,
   in webid varchar,
   in webidGraph varchar,
   in graph varchar,
@@ -2394,10 +2396,12 @@ _exit:;
 
 create function DAV_CHECK_ACLS (
   in id any,
-  in webid varchar,
-  in webidGraph varchar,
   in what char(1),
   in path varchar,
+  in mode integer,
+  in netid varchar,
+  in webid varchar,
+  in webidGraph varchar,
   in req varchar,
   inout a_uid integer,
   inout a_gid integer,
@@ -2427,7 +2431,7 @@ create function DAV_CHECK_ACLS (
     {
       graph := WS.WS.WAC_GRAPH (path);
       grpGraph := SIOC.DBA.get_graph () || '/private/%';
-      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
+      DB.DBA.DAV_CHECK_ACLS_INTERNAL (mode, netid, webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
         if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid, a_cert))
@@ -2495,7 +2499,7 @@ create function DAV_AUTHENTICATE_SSL (
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (a_webid, webidGraph, a_cert);
 
   a_perms := '___';
-  rc := DB.DBA.DAV_CHECK_ACLS (id, a_webid, webidGraph, what, path, req, a_uid, a_gid, a_perms, a_cert);
+  rc := DB.DBA.DAV_CHECK_ACLS (id, what, path, 0, a_webid, a_webid, webidGraph, req, a_uid, a_gid, a_perms, a_cert);
   if (rc)
   {
     DB.DBA.DAV_PERMS_FIX (a_perms, '000000000TM');
