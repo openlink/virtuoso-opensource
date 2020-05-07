@@ -1233,18 +1233,43 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  int hit = 0;
 		  caddr_t raw_name;
 		  int make_wide_name;
+
 #ifndef WIN32
-		  char path[PATH_MAX];
-		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
-		  V_STAT (path, &st);
-		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
-		    hit = 1;	/* Different values of \c hit are solely for debugging purposes */
-		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
-		    hit = 2;
-		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
-		    hit = 3;
-		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
-		    hit = 4;
+
+#  if defined(_DIRENT_HAVE_D_TYPE)
+		  /*
+		   *  Optimization for Linux, Apple and BSD based systems to eliminate the extra stat call.
+		   *
+		   *  NOTE: This works on most but not all modern filesystems, so if hit remains unset
+		   *        we just continue with the stat method
+		   */
+		  if (de->d_type == DT_DIR && files == 0)
+		    hit = 8;
+		  else if (de->d_type == DT_REG && files == 1)
+		    hit = 9;
+		  else if (de->d_type == DT_LNK && files == 2)
+		    hit = 10;
+		  else if (de->d_type != DT_UNKNOWN && files == 3)
+		    hit = 11;
+#  endif /* _DIRENT_HAVE_D_TYPE */
+
+		  /*
+		   *  Fallback to use slower method using stat systemcall
+		   */
+		  if (!hit)
+		    {
+		      char path[PATH_MAX];
+		      snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
+		      V_STAT (path, &st);
+		      if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
+			hit = 1;	/* Different values of \c hit are solely for debugging purposes */
+		      else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
+			hit = 2;
+		      else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
+			hit = 3;
+		      else if (((st.st_mode & S_IFMT) != 0) && files == 3)
+			hit = 4;
+		    }
 #else
 		  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
 		    hit = 5;
