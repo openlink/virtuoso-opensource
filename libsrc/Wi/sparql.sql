@@ -4655,7 +4655,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
     {
       http (sprintf ('\n  xmlns:%s="', nslist[ctr+1]), ses);
-      http_escape (nslist[ctr], 3, ses, 1, 1);
+      http_escape (nslist[ctr], 7, ses, 1, 1);
       http ('"', ses);
     }
   http ('>\n<head><title>RDFa+XHTML document</title></head><body>\n', ses);
