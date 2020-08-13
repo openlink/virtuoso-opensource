@@ -34,12 +34,13 @@
 # include <winsock.h>		/* For struct timeval */
 #include <process.h>
 #include <conio.h>
-#include <locale.h>
 #include <time.h>
 #else
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
+
+#include <locale.h>
 
 #include "isql_tchar.h"
 
@@ -10276,15 +10277,14 @@ int isql_main (int argc, TCHAR **argv, PFSTR url_info_fun);
 int __cdecl
 _tmain (int argc, TCHAR **argv)
 {
-#if defined (WIN32) && (defined (UNICODE) || defined (_UNICODE))
   char *locale = setlocale (LC_ALL, "");
   if (locale)
-    printf ("Locale=%s\n", setlocale (LC_ALL, ""));
+    printf ("Locale=%s\n", locale);
   else
     printf ("Can't apply the system locale. "
 	"Possibly wrong setting for LANG environment variable. "
 	"Using the C locale instead.\n");
-#endif
+
 #ifdef WIN32
   setmode (fileno (stdin), _O_BINARY);
 #endif
