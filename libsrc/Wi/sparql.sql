@@ -5645,7 +5645,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           subj_iri := id_to_iri (subj);
           if (starts_with (subj_iri, 'nodeID://'))
             subj_iri := '_:' || subseq (subj_iri, 9);
-          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('"\n      "properties" : {', ses);
+          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('",\n      "properties" : {', ses);
           prev_subj := subj;
           prev_pred := null;
         }
@@ -5752,7 +5752,7 @@ skip_obj: ;
     }
   if (prev_subj is not null)
     http ('] } }', ses);
-  http (' }\n', ses);
+  http (' ] }\n', ses);
 }
 ;
 
