@@ -13372,6 +13372,18 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (qi->qi_client->cli_ws)
 	qi->qi_client->cli_ws->ws_charset = charset ? charset : ws_default_charset;
     }
+  else   if (0 == stricmp (opt, "HTTP_IN_CHARSET"))
+    {
+      caddr_t charset_name = sqlp_box_upcase (value);
+      char charset;
+      if (!strcmp (charset_name, "UTF-8"))
+	charset = 1 /*CHARSET_UTF8*/;
+      else
+	charset = 0;
+      dk_free_box (charset_name);
+      if (qi->qi_client->cli_ws)
+	qi->qi_client->cli_ws->ws_in_charset = charset;
+    }
   else   if (0 == stricmp (opt, "MTS_2PC"))
     {
       int yes_no = (int) unbox (value);

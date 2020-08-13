@@ -129,6 +129,7 @@ typedef struct ws_connection_s
     caddr_t		ws_client_ip;
     char 		ws_forward;
     wcharset_t *	ws_charset;
+    char		ws_in_charset;
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
     int			ws_proxy_request;

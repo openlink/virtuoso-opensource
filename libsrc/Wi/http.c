@@ -1919,6 +1919,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_limited = 0;
   LEAVE_TXN;
   http_set_default_options (ws);
+  ws->ws_in_charset = 0;
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
@@ -5268,10 +5269,12 @@ bif_http_login_failed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_charset, wcharset_t *src_charset, int dks_esc_mode)
 {
+  query_instance_t * qi = (query_instance_t *) qst;
   dtp_t dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
-      if (box_flags (val) & BF_UTF8) /* if string is in UTF-8 do not even try to use some default */
+      ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
+      if (box_flags (val) & BF_UTF8 || (ws && ws->ws_in_charset)) /* if string is in UTF-8 do not even try to use some default */
 	src_charset = CHARSET_UTF8;
       dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
@@ -5281,7 +5284,6 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
     }
   else if (DV_BLOB_WIDE_HANDLE  == dtp)
     {
-      query_instance_t * qi = (query_instance_t *) qst;
       caddr_t wstring = blob_to_string (qi->qi_trx, val);
 	dks_wide_esc_write (out, (wchar_t *) wstring, box_length (wstring) / sizeof (wchar_t) - 1,
 	  tgt_charset, dks_esc_mode);
