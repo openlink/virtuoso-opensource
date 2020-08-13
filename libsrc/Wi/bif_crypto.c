@@ -1316,12 +1316,17 @@ BN_box (const BIGNUM * x)
   size_t buf_len, n;
   caddr_t buf;
   buf_len = (size_t) BN_num_bytes (x);
-  buf = dk_alloc_box (buf_len, DV_BIN);
-  if (buf)
+  if (buf_len <= BN_BYTES)
+    buf = box_num (BN_get_word (x));
+  else
     {
-      n = BN_bn2bin (x, (unsigned char *) buf);
-      if (n != buf_len)
-	GPF_T;
+      buf = dk_alloc_box (buf_len, DV_BIN);
+      if (buf)
+	{
+	  n = BN_bn2bin (x, (unsigned char *) buf);
+	  if (n != buf_len)
+	    GPF_T;
+	}
     }
   return buf;
 }
