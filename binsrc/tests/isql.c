@@ -9872,7 +9872,7 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
 				  SQL_DRIVER_COMPLETE)))
 	{
 	  isql_fprintf (error_stream, _T("Connection: %") PCT_S _T("\n"),
-		rc == SQL_SUCCESS_WITH_INFO ? _T("Established (with info)") : _T("Failed"));
+		rc == SQL_SUCCESS_WITH_INFO ? _T("Establised (with info)") : _T("Failed"));
 	  print_error (((HENV) 0), hdbc, ((HSTMT) 0), rc);
 	  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	    isql_exit (3);
