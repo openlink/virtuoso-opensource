@@ -4627,6 +4627,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses 
   declare ctr, len, tcount, tctr, status integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   http ('<?xml version="1.0" encoding="UTF-8"?>\n
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">\n', ses);
   if (0 = tcount)
@@ -4874,6 +4876,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_UL (inout triples any, inout ses any
   declare can_pivot, ctr, len, tcount, tctr, status, obj_needs_br integer;
   declare endpoint_fmt, subj_iri, pred_iri varchar;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_UL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">\n', ses);
   if (0 = tcount)
@@ -5042,6 +5046,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_TR (inout triples any, inout ses any
   declare can_pivot, ctr, len, tcount, tctr, status integer;
   declare endpoint_fmt, subj_iri, pred_iri, subj_recod, pred_recod, subj_trtd, pred_tdtd varchar;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_TR:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
@@ -5202,6 +5208,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout 
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
   declare objs_of_sp any;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
@@ -5395,6 +5403,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, i
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
   declare objs_of_sp any;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
@@ -7051,6 +7061,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout
 {
   declare tcount integer;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   if (0 = tcount)
     {
       http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="text/turtle"></script></body></html>\n', ses);
@@ -7072,6 +7084,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (inout triples any, i
 {
   declare tcount integer;
   tcount := length (triples);
+  set http_charset='utf-8';
+  set http_in_charset='utf-8';
   if (0 = tcount)
     {
       http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="application/ld+json"></script></body></html>\n', ses);
