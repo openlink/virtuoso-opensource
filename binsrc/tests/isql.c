@@ -663,6 +663,7 @@ long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
 int flag_binary_output = 0;	/* Has effect on Windows platforms. */
 int commit_mode = 0;		/* Zdravko: for manual autocommit */
+char *isql_locale = NULL;	/* Current locale */
 
 int virtuoso_shutdown = 0;
 int virtuoso_debug = 0;
@@ -2676,6 +2677,7 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("TRIM_STRING_RESULT"), (&trim_string_result), INT_FLAG, OFF_ON),
   add_var_def (_T("HEAD_ALREADY_PRINTED"), (&flag_head_already_printed), INT_FLAG, OFF_ON),
   add_var_def (_T("VIRTEXT"), (&virtext), INT_FLAG, OFF_ON),
+  add_var_def (_T("LOCALE"), (&isql_locale), CHARPTR_VAR, NULL),
 
   add_var_def (_T("AUTOCOMMIT"), (&commit_mode), INT_FLAG, PRE_AUTOCOMMIT),	/* ON */
   add_sam_def (_T("ACCESSMODE"), (SQL_ACCESS_MODE), SAM_CONNECT_OPTION, RW_RO),
@@ -9364,6 +9366,16 @@ is_set_subcommand_aux (TCHAR *text, int show_instead_of_set,
 			   (flag_binary_output ? _O_BINARY : _O_TEXT));
 		}
 #endif
+	      if (is_macro_name (macro_name, _T("LOCALE")))
+		{
+		  isql_locale = setlocale (LC_ALL, arg);
+		  if (!isql_locale)
+		    {
+		      isql_fprintf (error_stream, _T("%") PCT_S _T(": Warning: setlocale \"%") PCT_S _T("\" failed.\n"), progname, arg);
+		      isql_locale = setlocale (LC_ALL, NULL);
+		    }
+		}
+          return 1;
 	    }
 	}
 
@@ -10277,14 +10289,9 @@ int isql_main (int argc, TCHAR **argv, PFSTR url_info_fun);
 int __cdecl
 _tmain (int argc, TCHAR **argv)
 {
-  char *locale = setlocale (LC_ALL, "");
-  if (locale)
-    printf ("Locale=%s\n", locale);
-  else
-    printf ("Can't apply the system locale. "
-	"Possibly wrong setting for LANG environment variable. "
-	"Using the C locale instead.\n");
-
+  isql_locale = setlocale (LC_ALL, "");
+  if (!isql_locale)
+    isql_locale = setlocale (LC_ALL, NULL);
 #ifdef WIN32
   setmode (fileno (stdin), _O_BINARY);
 #endif
