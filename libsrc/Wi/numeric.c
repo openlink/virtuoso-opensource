@@ -27,6 +27,7 @@
 
 #include "Dk.h"
 #include "numeric.h"
+#include "util/strfuns.h"
 
 /* activates code for divmod, modulo, powmod, pow, sqr */
 #define NUMERIC_EXTS	1
