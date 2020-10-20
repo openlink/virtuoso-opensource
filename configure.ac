@@ -2503,6 +2503,30 @@ AC_HELP_STRING([--with-jdk4_2=DIR], [use the Oracle JDK 1.8.x at the specified l
     ])
 AC_MSG_RESULT(done)
 
+ac_jdk4_3_path="none"
+AC_ARG_WITH(jdk4_3, [dnl
+AC_HELP_STRING([--with-jdk4_3=DIR], [use the Oracle JDK 9.x-14.x at the specified location])dnl
+], [
+    case "${withval}" in
+      yes)
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)
+	  ac_jdk4_3_path="none"
+	  ;;
+
+      *)
+	  if test -d "${withval}" ; then
+	      ac_jdk4_3_path="${withval}"
+	  else
+	      AC_MSG_ERROR("Directory specified with --with-jdk4_3 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
 
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
@@ -2515,16 +2539,23 @@ ac_cv_prog_java_works=no
 if test "x$ac_jw_jdk" != "xnone" ; then
   AC_MSG_CHECKING([for working Java 1.$ac_jw_min_minor.x-1.$ac_jw_max_minor.x in $ac_jw_jdk])
   if test -x "$ac_jw_jdk/Commands/java"; then
-    ac_jw_jdk="$ac_jw_jdk/Commands" 
+    ac_jw_jdk="$ac_jw_jdk/Commands"
   else
-    ac_jw_jdk="$ac_jw_jdk/bin" 
+    ac_jw_jdk="$ac_jw_jdk/bin"
   fi
   JAVAC=$ac_jw_jdk/javac
   JAVA=$ac_jw_jdk/java
   ac_java_version=`$JAVA -version 2>&1 | grep ' version' | cut -f 2 -d '"'`
   ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
   ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
-  if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then
+  if test "0$ac_java_ver_major" -gt "1"
+  then
+    if test "0$ac_java_ver_major" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_major" -gt "0$ac_jw_max_minor"
+    then
+      AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
+    fi
+  elif test "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor"
+  then
       AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
   fi
   JAVA_TEST=Test.java
@@ -2582,8 +2613,16 @@ ac_jdk4_2_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK4_2, test "x$ac_jdk4_2_works" = "xyes")
 AC_SUBST(ac_jdk4_2_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_3_path, 9, 15)
+ac_jdk4_3_works="$ac_cv_prog_java_works"
+ac_jdk4_3_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4_3, test "x$ac_jdk4_3_works" = "xyes")
+AC_SUBST(ac_jdk4_3_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk4_2_works" = "xyes" ; then
+if test "x$ac_jdk4_3_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_3_path/.."
+elif test "x$ac_jdk4_2_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_2_path/.."
 elif test "x$ac_jdk4_1_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_1_path/.."

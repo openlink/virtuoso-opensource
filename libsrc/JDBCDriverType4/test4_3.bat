@@ -23,7 +23,7 @@ rem
 set JAVA_HOME=%JDK4_2%
 set CLASSPATH=%JAVA_HOME%\jre\lib\rt.jar
 
-echo "............. Test the JDBC 4.2 driver"
+echo "............. Test the JDBC 4.3 driver"
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_2.jar;testsuite4.jar testsuite.TestClean %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_2.jar;testsuite4.jar testsuite.TestURL %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_2.jar;testsuite4.jar testsuite.TestDatabaseMetaData %1%
@@ -50,4 +50,4 @@ copy testsuite4.jar bloor.pdf
 rem GK: not for now : no URL parsing
 rem %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_2.jar;testsuite4.jar testsuite.TestDataSource %1%
 
-%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_2.jar;testsuite4.jar testsuite.TestDateTime %1%
+%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_3.jar;testsuite4.jar testsuite.TestDateTime %1%

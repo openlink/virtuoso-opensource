@@ -69,11 +69,11 @@ M2_LDADD = \
 
 isql_SOURCES = isql.c time.c
 isql_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\"
-isql_LDADD   = $(client_libs) @LIBRDL@
+isql_LDADD   = $(client_libs) @LIBRDL@ @LIBTHR@ @LIBDL@
 
 isqlw_SOURCES = isql.c time.c isql_wfuncs.c
 isqlw_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\" -DUNICODE -D_UNICODE 
-isqlw_LDADD   = $(client_libs) @LIBRDL@
+isqlw_LDADD   = $(client_libs) @LIBRDL@ @LIBTHR@ @LIBDL@
 
 paramstats_LDADD = $(client_libs)
 
