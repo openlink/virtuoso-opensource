@@ -3788,7 +3788,6 @@ request_do_again:
       char *last_slash;
       caddr_t save_history_name;
       caddr_t vdir = NULL;
-      caddr_t err = NULL;
       /* Detect virtual dir directory */
       /* Assume first word is method name */
       if (!ws->ws_req_line)
@@ -3847,12 +3846,12 @@ request_do_again:
 	}
       dk_free_box (save_history_name);
       dk_free_box (vdir);
+    }
 rec_err_end:
-      if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
-	{
-	  log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
-	  dk_free_tree(err);
-	}
+  if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
+    {
+      log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
+      dk_free_tree(err);
     }
 
 #ifdef VIRTUAL_DIR
