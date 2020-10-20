@@ -917,6 +917,8 @@ char * http_log_format = WS_LOG_DEFAULT_FMT;
       mutex_leave (ws_http_log_mtx); \
       return
 
+static const char * monthname [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
 
 static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
@@ -1041,13 +1043,12 @@ next_fragment:
 	  break;
       case 't':
 	    {
-	      char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 	      int month, day, year;
 	      month = tm->tm_mon + 1;
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
+		  (tm->tm_mday), monthname [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
@@ -1104,7 +1105,6 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   int http_resp_code = 0;
@@ -1136,7 +1136,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
   u_id = ws_auth_get (ws);
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
-      ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
+      ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
@@ -10922,7 +10922,6 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   char * new_log = NULL;
@@ -10949,7 +10948,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dk_free_box (iaddr);
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
-      host_name, user, (tm->tm_mday), monday [month - 1], year,
+      host_name, user, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 
