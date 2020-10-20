@@ -2984,6 +2984,7 @@ ws_file (ws_connection_t * ws)
   const char * ctype;
   int fd;
   STAT_T st;
+  char tmp[4000];
 
   caddr_t box_date, md5_etag;
   wcharset_t * volatile charset = ws->ws_charset;
@@ -3156,6 +3157,11 @@ ws_file (ws_connection_t * ws)
 	      ranges_buffer
 	      );
 	  SES_PRINT (ws->ws_session, head);
+	  tmp[0] = 0;
+	  if (ws_cors_check (ws, tmp, sizeof (tmp)) && tmp[0] != 0)
+	    {
+	      SES_PRINT (ws->ws_session, tmp);
+	    }
 	  if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400)
 	    {
 	      SES_PRINT (ws->ws_session, "Allow: ");
