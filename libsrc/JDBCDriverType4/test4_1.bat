@@ -20,7 +20,7 @@ rem  with this program; if not, write to the Free Software Foundation, Inc.,
 rem  51 Franklin St, Fifth Floor, Boston, MA 02110-1401 USA
 rem
 
-set JAVA_HOME=%JDK4%
+set JAVA_HOME=%JDK4_1%
 set CLASSPATH=%JAVA_HOME%\jre\lib\rt.jar
 
 echo "............. Test the JDBC 4.1 driver"
@@ -42,7 +42,7 @@ echo "............. Test the JDBC 4.1 driver"
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.TestNumeric %1%
 del bloor.pdf
 copy testsuite4.jar bloor.pdf
-%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.TestBlob edsj
+%JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.TestBlob edsj %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.test2276 %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.TestTimeUpdate %1%
 %JAVA_HOME%\bin\java -classpath %CLASSPATH%;virtjdbc4_1.jar;testsuite4.jar testsuite.SPRgetColumns %1%

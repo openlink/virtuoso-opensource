@@ -92,7 +92,7 @@ public class VirtuosoStatement implements Statement
    protected static int req_no;
 
    // The current ResultSet
-   protected VirtuosoResultSet vresultSet;
+   protected volatile  VirtuosoResultSet vresultSet;
 
    // The future where result in DV format are stored
    protected VirtuosoFuture future;
@@ -379,6 +379,11 @@ public class VirtuosoStatement implements Statement
     */
    public void close() throws VirtuosoException
    {
+     if(close_flag)
+       return;
+
+     connection.removeStmtFromClose(this);
+
      close_rs(true, false);
    }
 
@@ -401,9 +406,9 @@ public class VirtuosoStatement implements Statement
    public boolean execute(String sql) throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_UNKNOWN;
-      vresultSet = sendQuery(sql);
+      VirtuosoResultSet rs = vresultSet = sendQuery(sql);
       // Test the kind of operation
-      return (vresultSet.kindop() != VirtuosoTypes.QT_UPDATE);
+      return (rs.kindop() != VirtuosoTypes.QT_UPDATE);
    }
 
    /**
@@ -418,8 +423,8 @@ public class VirtuosoStatement implements Statement
    public ResultSet executeQuery(String sql) throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_SELECT;
-      vresultSet = sendQuery(sql);
-      return vresultSet;
+      VirtuosoResultSet rs = vresultSet = sendQuery(sql);
+      return rs;
    }
 
    /**
@@ -437,8 +442,8 @@ public class VirtuosoStatement implements Statement
    public int executeUpdate(String sql) throws VirtuosoException
    {
       exec_type = VirtuosoTypes.QT_UPDATE;
-      vresultSet = sendQuery(sql);
-      return vresultSet.getUpdateCount();
+      VirtuosoResultSet rs = vresultSet = sendQuery(sql);
+      return rs.getUpdateCount();
    }
 
    /**

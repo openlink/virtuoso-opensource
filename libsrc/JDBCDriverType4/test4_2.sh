@@ -23,10 +23,10 @@
 
 CLASSPATH=.
 CLASSPATHSSL=.
-JAVA=$JDK4_2/java
+JAVA=$JDK4_2/bin/java
 export JAVA CLASSPATH CLASSPATHSSL
 
-echo "............. Test the JDBC 4.2 driver"
+echo "............. Test the JDBC 4.2 driver without SSL"
 $JAVA -classpath $CLASSPATH:virtjdbc4_2.jar:testsuite4.jar testsuite.TestClean $1
 $JAVA -classpath $CLASSPATH:virtjdbc4_2.jar:testsuite4.jar testsuite.TestURL $1
 $JAVA -classpath $CLASSPATH:virtjdbc4_2.jar:testsuite4.jar testsuite.TestDatabaseMetaData $1

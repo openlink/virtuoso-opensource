@@ -349,6 +349,8 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
      if(close_flag)
        return;
 
+     connection.removeStmtFromClose(this);
+
      synchronized (connection)
        {
 	 try

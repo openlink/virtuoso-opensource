@@ -149,6 +149,45 @@ then
     SHUTDOWN_SERVER
 fi # JDK4_2
 
+
+if [ "x$JDK4_3" != "x" -a -f  $JDBCDIR/testsuite4.jar ]
+then
+    STOP_SERVER
+    rm -f $DBLOGFILE
+    rm -f $DBFILE
+    MAKECFG_FILE $TESTCFGFILE $PORT $CFGFILE
+
+    START_SERVER $PORT 1000
+
+    ECHO "STARTED: JDBC 4_3 Test suite"
+    cd $JDBCDIR
+    sh $JDBCDIR/test4_3.sh "jdbc:virtuoso://localhost:$PORT/" > $CURRDIR/jdbc4_3.out 2>&1
+    cd $CURRDIR
+
+    passed=`egrep "PASSED\$" jdbc4_3.out`
+    passed_cnt=`egrep "PASSED\$" jdbc4_3.out | wc -l`
+    failed=`egrep "FAILED\$" jdbc4_3.out`
+    failed_cnt=`egrep "FAILED\$" jdbc4_3.out | wc -l`
+
+    errors=0
+    if [ $failed_cnt -gt 0 ]
+    then
+	errors=1
+	ECHO "*** FAILED: $failed_cnt JDBC 4_3 Tests failed (check jdbc4_3.out): $failed"
+    fi
+    if [ $passed_cnt -eq 0 ]
+    then
+	errors=1
+	ECHO "*** FAILED: no JDBC 4_3 Tests passed! (check jdbc4_3.out)"
+    fi
+    if [ $errors -eq 0 ]
+    then
+	ECHO "PASSED: JDBC 4_3 Test suite"
+    fi
+
+    SHUTDOWN_SERVER
+fi # JDK4_3
+
 CHECK_LOG
 
 BANNER "COMPLETED JDBC Driver TEST (tjdbc.sh)"
