@@ -10005,6 +10005,8 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
       SSL_set_state (ssl, SSL_ST_ACCEPT);
+#else
+      SSL_set_accept_state (ssl);	/*FIXME:This does not work in OpenSSL 1.1.1 */
 #endif
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
