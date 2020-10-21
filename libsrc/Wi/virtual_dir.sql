@@ -1649,6 +1649,9 @@ create procedure WS.WS."host-meta" (
 
 create procedure WS.WS.host_meta_init ()
 {
+  if (registry_get ('host_meta_inited') = '1')
+    return;
+
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
     {
       DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
@@ -1659,6 +1662,7 @@ create procedure WS.WS.host_meta_init ()
   DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
   DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+  registry_set ('host_meta_inited', '1');
 }
 ;
 
