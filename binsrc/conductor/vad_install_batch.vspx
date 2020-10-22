@@ -156,6 +156,9 @@
                           log_message ('Installing '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
                           res := res || 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')\r\n';
                           exec ('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector (pack_path, path_type, 1), 0, meta, result);
+                          if (pack_path like '/DAV/temp/%')
+                            DB.DBA.DAV_DELETE_INT (pack_path, 0, null, null, 0);
+
                           set_qualifier ('DB');
                           if (result[0][0] <> '00000')
                           {
