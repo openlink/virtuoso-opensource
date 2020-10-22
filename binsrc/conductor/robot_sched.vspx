@@ -199,7 +199,7 @@
                         </td>
                       </tr>
                       <tr align="left">
-                        <th valign="top">Interval</th>
+                        <th valign="top">Interval (minutes)</th>
                         <td valign="top">
                           <v:text name="interval_value" xhtml_style="width:400">
                             <!-- v:validator name="interval_value_val1" min="1" max="999999999" empty-allowed="1" test="value" regexp="" message="Wrong value! " /-->
