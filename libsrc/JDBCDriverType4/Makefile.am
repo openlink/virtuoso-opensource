@@ -82,7 +82,7 @@ jdk4_1-target:
 
 .PHONY: jdk4_1-test
 jdk4_1-test:
-	env "JDK4_1=@ac_jdk4_1_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+	env "JDK4_1=@ac_jdk4_1_path@" $(SHELL) ./test4_1.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 .PHONY: jdk4_1-doc
 jdk4_1-doc:
@@ -98,7 +98,7 @@ jdk4_2-target:
 
 .PHONY: jdk4_2-test
 jdk4_2-test:
-	env "JDK4_2=@ac_jdk4_2_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+	env "JDK4_2=@ac_jdk4_2_path@" $(SHELL) ./test4_2.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 .PHONY: jdk4_2-doc
 jdk4_2-doc:
@@ -114,7 +114,7 @@ jdk4_3-target:
 
 .PHONY: jdk4_3-test
 jdk4_3-test:
-	env "JDK4_3=@ac_jdk4_3_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+	env "JDK4_3=@ac_jdk4_3_path@" $(SHELL) ./test4_3.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 .PHONY: jdk4_3-doc
 jdk4_3-doc:

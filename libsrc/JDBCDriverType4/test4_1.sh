@@ -23,7 +23,7 @@
 
 CLASSPATH=.
 CLASSPATHSSL=.
-JAVA=$JDK4_1/bin/java
+JAVA=$JDK4_1/java
 export JAVA CLASSPATH CLASSPATHSSL
 
 echo "............. Test the JDBC 4.1 driver without SSL"

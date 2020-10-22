@@ -103,6 +103,7 @@ TESTS_ENVIRONMENT= \
 	JDK4="@ac_jdk4_path@" \
 	JDK4_1="@ac_jdk4_1_path@" \
 	JDK4_2="@ac_jdk4_2_path@" \
+	JDK4_3="@ac_jdk4_3_path@" \
 	MAKE=$(MAKE) \
 	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" \
 	PORT=$(PORT) \
