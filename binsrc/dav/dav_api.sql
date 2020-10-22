@@ -2561,7 +2561,7 @@ create procedure DAV_COL_CREATE_INT (
   if (extern and 0 > (rc := DAV_AUTHENTICATE (pid, 'C', '11_', auth_uname, auth_pwd)))
     {
       -- dbg_obj_princ ('authenticate OBLOM', rc);
-        return rc;
+      return rc;
     }
   if (DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (par, 0, length (par) - 1), 'R')) is not null)
     {
@@ -2579,7 +2579,12 @@ create procedure DAV_COL_CREATE_INT (
   if (check_locks and 0 <> (rc := DAV_IS_LOCKED (pid , 'C', check_locks)))
     {
       -- dbg_obj_princ ('lock OBLOM', rc);
-        return rc;
+      return rc;
+    }
+  name := aref (par, length (par) - 2);
+  if (name = '')
+    {
+      return -1;
     }
 
   if (isarray (pid))
@@ -2606,7 +2611,6 @@ create procedure DAV_COL_CREATE_INT (
       DAV_SEARCH_ID_OR_DET (par, 'C', det, detcol_id, detcol_path, unreached_path);
       return call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, unreached_path, permissions, ouid, ogid, auth_uid);
     }
-  name := aref (par, length (par) - 2);
   rc := WS.WS.GETID ('C');
   if (ouid is null)
     DAV_OWNER_ID (uid, gid, ouid, ogid);

@@ -917,6 +917,8 @@ char * http_log_format = WS_LOG_DEFAULT_FMT;
       mutex_leave (ws_http_log_mtx); \
       return
 
+static const char * monthname [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
 
 static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
@@ -1041,13 +1043,12 @@ next_fragment:
 	  break;
       case 't':
 	    {
-	      char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 	      int month, day, year;
 	      month = tm->tm_mon + 1;
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
+		  (tm->tm_mday), monthname [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
@@ -1104,7 +1105,6 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   int http_resp_code = 0;
@@ -1136,7 +1136,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
   u_id = ws_auth_get (ws);
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
-      ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
+      ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
@@ -2984,6 +2984,7 @@ ws_file (ws_connection_t * ws)
   const char * ctype;
   int fd;
   STAT_T st;
+  char tmp[4000];
 
   caddr_t box_date, md5_etag;
   wcharset_t * volatile charset = ws->ws_charset;
@@ -3156,6 +3157,11 @@ ws_file (ws_connection_t * ws)
 	      ranges_buffer
 	      );
 	  SES_PRINT (ws->ws_session, head);
+	  tmp[0] = 0;
+	  if (ws_cors_check (ws, tmp, sizeof (tmp)) && tmp[0] != 0)
+	    {
+	      SES_PRINT (ws->ws_session, tmp);
+	    }
 	  if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400)
 	    {
 	      SES_PRINT (ws->ws_session, "Allow: ");
@@ -3782,7 +3788,6 @@ request_do_again:
       char *last_slash;
       caddr_t save_history_name;
       caddr_t vdir = NULL;
-      caddr_t err = NULL;
       /* Detect virtual dir directory */
       /* Assume first word is method name */
       if (!ws->ws_req_line)
@@ -3841,12 +3846,12 @@ request_do_again:
 	}
       dk_free_box (save_history_name);
       dk_free_box (vdir);
+    }
 rec_err_end:
-      if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
-	{
-	  log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
-	  dk_free_tree(err);
-	}
+  if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
+    {
+      log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
+      dk_free_tree(err);
     }
 
 #ifdef VIRTUAL_DIR
@@ -10000,6 +10005,8 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	}
 #if OPENSSL_VERSION_NUMBER < 0x10100000L
       SSL_set_state (ssl, SSL_ST_ACCEPT);
+#else
+      SSL_set_accept_state (ssl);	/*FIXME:This does not work in OpenSSL 1.1.1 */
 #endif
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
@@ -10917,7 +10924,6 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   char * new_log = NULL;
@@ -10944,7 +10950,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dk_free_box (iaddr);
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
-      host_name, user, (tm->tm_mday), monday [month - 1], year,
+      host_name, user, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 

@@ -1846,7 +1846,7 @@ bif_base36enc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_base36dec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  boxint str = bif_string_arg (qst, args, 0, "base36dec");
+  caddr_t str = bif_string_arg (qst, args, 0, "base36dec");
   boxint ret;
   ret = strtoul(str, NULL, 36);
   return box_num (ret);

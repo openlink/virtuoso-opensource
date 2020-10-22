@@ -1264,16 +1264,56 @@ create procedure WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (
 }
 ;
 
-create procedure WS.WS.SYS_DAV_COL_FULL_PATH (
-  in force integer := 0)
+create procedure WS.WS.COL_PATH_RESOLVE (in _id any, inout dict any)
 {
-  if ((force = 0) and exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+  declare _path, _name varchar;
+  declare _p_id integer;
+
+  if (dict_get (dict, _id) is not null)
+    {
+      log_message ('Duplicate ID : %d', _id);
+      return NULL;
+    }
+  
+  _path := '/';
+  whenever not found goto nf;
+  while (_id > 0)
+    {
+      select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+        {
+          log_message (sprintf ('DAV collection %d is its own parent', _id));
+          _path := '__Circular_reference__/' || _path;
+          return _path;
+        }
+      _id := _p_id;
+      _path := concat ('/', _name, _path);
+    }
+  dict_put (dict, _id, 1);
+  return _path;
+nf:
+  return NULL;
+}
+;
+
+
+create procedure WS.WS.SYS_DAV_COL_FULL_PATH (in force integer := 0)
+{
+  declare dict, old_mode any;
+  if ((force = 0) and key_exists ('WS.WS.SYS_DAV_COL', 'SYS_DAV_COL_FULL_PATH'))
     return;
 
-  if (not exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+  log_message ('Started upgrading COL_FULL_PATH column.');
+  dict := dict_new (10000);
+  old_mode := log_enable (2, 1);
+  set triggers off;
+  update WS.WS.SYS_DAV_COL set COL_FULL_PATH = WS.WS.COL_PATH_RESOLVE (COL_ID, dict);
+  set triggers on;
+  log_enable (old_mode, 1);
+
+  if (0 = key_exists ('WS.WS.SYS_DAV_COL', 'SYS_DAV_COL_FULL_PATH'))
     exec ('create index SYS_DAV_COL_FULL_PATH on WS.WS.SYS_DAV_COL (COL_FULL_PATH) partition (COL_FULL_PATH varchar (-10, 0hexffff))');
 
-  WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (0, '/', vector ());
   WS.WS.SYS_DAV_COL_LOST ();
   if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_FULL_PATH is null))
   {
