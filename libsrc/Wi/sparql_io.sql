@@ -3745,7 +3745,7 @@ execute_query:
           if (length (dflt_graphs) = 0 and length (SH_GRAPH_URI))
             dflt_graphs := vector (SH_GRAPH_URI);
           if (SH_DEFINES is not null)
-            full_query := concat (SH_DEFINES, ' ', full_query);
+            full_query := concat (SH_DEFINES, '\n', full_query);
           goto host_found;
         }
     }
@@ -3753,44 +3753,44 @@ host_found:
 
   foreach (varchar dg in dflt_graphs) do
     {
-      full_query := concat ('define input:default-graph-uri <', dg, '> ', full_query);
+      full_query := concat ('define input:default-graph-uri <', dg, '>\n', full_query);
       http_header (http_header_get () || sprintf ('X-SPARQL-default-graph: %s\r\n', dg));
     }
   foreach (varchar ng in named_graphs) do
     {
-      full_query := concat ('define input:named-graph-uri <', ng, '> ', full_query);
+      full_query := concat ('define input:named-graph-uri <', ng, '>\n', full_query);
       http_header (http_header_get () || sprintf ('X-SPARQL-named-graph: %s\r\n', ng));
     }
   foreach (varchar dg in using_graphs) do
     {
-      full_query := concat ('define input:using-graph-uri <', dg, '> ', full_query);
+      full_query := concat ('define input:using-graph-uri <', dg, '>\n', full_query);
       http_header (http_header_get () || sprintf ('X-SPARQL-using-graph: %s\r\n', dg));
     }
   foreach (varchar ng in using_named_graphs) do
     {
-      full_query := concat ('define input:using-named-graph-uri <', ng, '> ', full_query);
+      full_query := concat ('define input:using-named-graph-uri <', ng, '>\n', full_query);
       http_header (http_header_get () || sprintf ('X-SPARQL-using-named-graph: %s\r\n', ng));
     }
   if ((should_sponge = 'soft') or (should_sponge = 'replacing'))
-    full_query := concat (sprintf('define get:soft "%s" ',should_sponge), full_query);
+    full_query := concat (sprintf('define get:soft "%s"\n',should_sponge), full_query);
   else if (should_sponge = 'grab-all')
-    full_query := concat ('define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 100 ', full_query);
+    full_query := concat ('define input:grab-all "yes"\ndefine input:grab-depth 5\ndefine input:grab-limit 100\n', full_query);
   else if (should_sponge = 'grab-all-seealso')
-    full_query := concat ('define input:grab-all "yes" define input:grab-depth 5 define input:grab-limit 200 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
+    full_query := concat ('define input:grab-all "yes"\ndefine input:grab-depth 5\ndefine input:grab-limit 200\ndefine input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso>\ndefine input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso>\n', full_query);
   else if (should_sponge = 'grab-everything')
-    full_query := concat ('define input:grab-all "yes" define input:grab-intermediate "yes" define input:grab-depth 5 define input:grab-limit 500 define input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso> define input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso> ', full_query);
+    full_query := concat ('define input:grab-all "yes"\ndefine input:grab-intermediate "yes"\ndefine input:grab-depth 5\ndefine input:grab-limit 500\ndefine input:grab-seealso <http://www.w3.org/2000/01/rdf-schema#seeAlso>\ndefine input:grab-seealso <http://xmlns.com/foaf/0.1/seeAlso>\n', full_query);
 --  full_query := concat ('define output:valmode "LONG" ', full_query);
   if (debug <> '')
-    full_query := concat ('define sql:signal-void-variables 1 ', full_query);
+    full_query := concat ('define sql:signal-void-variables 1\n', full_query);
   if (get_user <> '')
-    full_query := concat ('define get:login "', get_user, '" ', full_query);
+    full_query := concat ('define get:login "', get_user, '"\n', full_query);
   if (dict_size (qry_params) > 0)
     {
       declare pnames any;
       pnames := dict_list_keys (qry_params, 0);
       foreach (varchar pname in pnames) do
         {
-          full_query := concat ('define sql:param "', pname, '" ', full_query);
+          full_query := concat ('define sql:param "', pname, '"\n', full_query);
         }
       qry_params := DB.DBA.PARSE_SPARQL_WS_PARAMS (dict_to_vector (qry_params, 1));
     }
@@ -3801,7 +3801,7 @@ host_found:
 
   if (format <> '')
     {
-      full_query := '\n#output-format:' || format || '\n' || full_query;
+      full_query := '#output-format:' || format || '\n' || full_query;
     }
   if (not client_supports_partial_res) -- partial results do not work with chunked encoding
     {
@@ -3836,9 +3836,9 @@ host_found:
           if (isstring (fmtttl))
             {
               if (isstring (fmtxml))
-                full_query := 'define output:format ' || fmtxml || 'define output:dict-format ' || fmtttl || full_query;
+                full_query := 'define output:format ' || fmtxml || '\ndefine output:dict-format ' || fmtttl || '\n' || full_query;
               else
-                full_query := 'define output:format ' || fmtttl || full_query;
+                full_query := 'define output:format ' || fmtttl || '\n' || full_query;
             }
     --    }
     ;
@@ -3846,7 +3846,7 @@ host_found:
   -- if odata asked we imply CBD
   if (accept = 'application/atom+xml' or accept = 'application/odata+json')
     {
-      full_query := 'define sql:describe-mode "CBD" ' || full_query;
+      full_query := 'define sql:describe-mode "CBD"\n' || full_query;
     }
 
   state := '00000';
@@ -3861,7 +3861,7 @@ host_found:
   if (sc_max < 0)
     sc_max := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxExecutionTime'), '-1'));
   if (sc_max > 0)
-    full_query := concat ('define sql:big-data-const 0 ', full_query);
+    full_query := concat ('define sql:big-data-const 0\n', full_query);
 
   -- dbg_obj_princ ('accept = ', accept);
   -- dbg_obj_princ ('format = ', format);
