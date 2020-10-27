@@ -2308,32 +2308,29 @@ create procedure WS.WS.SPARQL_ENDPOINT_SVC_DESC ()
 {
   declare ses any;
   ses := string_output ();
-  http ('    <div xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"\n', ses);
-  http ('         xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#"\n', ses);
-  http ('         xmlns="http://www.w3.org/1999/xhtml"\n', ses);
-  http ('         xmlns:sd="http://www.w3.org/ns/sparql-service-description#"\n', ses);
-  http ('         xmlns:xsd="http://www.w3.org/2001/XMLSchema#"\n', ses);
-  http ('         style="display:none">\n', ses);
+  http ('    <div style="display:none">\n', ses);
   http ('       <div class="description" about="" typeof="sd:Service">\n', ses);
-  http (sprintf ('          <div rel="sd:endpoint" resource="http://%{WSHost}s/sparql"/>\n', ses), ses);
+  http (sprintf ('          <div rel="sd:endpoint" resource="%s://%{WSHost}s/sparql"></div>\n',
+		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
   http ('          <div rel="sd:feature"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#UnionDefaultGraph"/>\n', ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#UnionDefaultGraph"></div>\n', ses);
   http ('          <div rel="sd:feature"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#DereferencesURIs"/>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDF_XML"/>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/Turtle"/>\n', ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#DereferencesURIs"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDF_XML"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/Turtle"></div>\n', ses);
   http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_CSV"/>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N-Triples"/>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N3"/>\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_CSV"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N-Triples"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N3"></div>\n', ses);
   http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_JSON"/>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDFa"/>\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_JSON"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDFa"></div>\n', ses);
   http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_XML"/>\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_XML"></div>\n', ses);
   http ('          <div rel="sd:supportedLanguage"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#SPARQL10Query"/>\n', ses);
-  http (sprintf ('          <div rel="sd:url" resource="http://%{WSHost}s/sparql"/>\n', ses), ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#SPARQL10Query"></div>\n', ses);
+  http (sprintf ('          <div rel="sd:url" resource="%s://%{WSHost}s/sparql"></div>\n',
+		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
   http ('       </div>\n', ses);
   http ('    </div>\n', ses);
   return ses;
