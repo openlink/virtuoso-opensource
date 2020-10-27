@@ -42,281 +42,264 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD(in title varchar)
 
 
 create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
-{
-    http('\n');
-    http('
+{ >?
     <style type="text/css">
     /*<![CDATA[*/
-	html { padding: 0; }
-	body {
-	    padding: 0;
-	    margin: 0;
-	    font-family:Arial, Helvetica, sans-serif;
-	    font-size: 9pt;
-	    color: #333;
-	    background-color: #FDFDFD;
-	}
-	#header {
-	    padding: 0;
-	    margin: 0;
-	    background-color: #86B9D9;
-	    color: #FFFFFF;
-	    border-bottom: 1px solid #AAA;
-	}
-	#header h1 {
-	    font-size: 16pt;
-	    font-weight: normal;
-	    text-align: left;
-	    vertical-align: middle;
-	    padding: 4px 8px 4px 8px;
-	    margin: 0px 0px 0px 0px;
-	}
-	#menu {
-	    margin-left: 8px;
-	    margin-right: 8px;
- 	    margin-top: 0px;
-	    clear: right;
-	    float: right;
-	}
-	#intro,#main {
-	    margin-left: 8px;
-	    margin-right: 8px;
-	}
-	#help {
-	    margin-left: 8px;
-	    margin-right: 8px;
-	    width: 80%
-	}
-	#footer {
-	    width: 100%;
-	    float: left;
-	    clear: left;
-	    margin: 2em 0 0;
-	    padding-top: 0.7ex;
-	    border-top: 1px solid #AAA;
-	    font-size: 8pt;
-	    text-align: center;
-	}
-	fieldset {
-	    border: 0;
-	    padding: 0;
-	    margin: 0;
-	}
-	fieldset label {
-	    font-weight: normal;
-	    white-space: nowrap;
-	    font-size: 11pt;
-	    color: #000;
-	}
-	fieldset label.n {
-	    display: block;
-	    vertical-align: bottom;
-	    margin-top:5px;
-	    width: 160px;
-	    float:left;
-	    white-space: nowrap;
-	}
-	fieldset label.n:after { content: ":"; }
-	fieldset label.n1 {
-	    display: block;
-	    vertical-align: bottom;
-	    margin-top:5px;
-	    width: 160px;
-	    float:left;
-	    white-space: nowrap;
-	}
-	fieldset label.ckb {
-	    width: 160px;
-	    font-weight: normal;
-	    font-size: 10pt;
-	}
-	fieldset label.ckb:after { content: ""; }
-	fieldset textarea {
-	    width: 99%;
-	    font-family: monospace;
-	    font-size: 10pt;
-	}
-	#cxml {
-	    clear: both;
-	    display: block;
-	}
-	#savefs {
-	    clear: both;
-	    display: block;
-	}
-	span.info {
-	    font-size: 9pt;
-	    white-space: nowrap;
-	    height: 2em;
-	}
-	br { clear: both; }
+    html { padding: 0; }
+    body {
+        padding: 0;
+        margin: 0;
+        font-family:Arial, Helvetica, sans-serif;
+        font-size: 9pt;
+        color: #333;
+        background-color: #FDFDFD;
+    }
+    #header {
+        padding: 0;
+        margin: 0;
+        background-color: #86B9D9;
+        color: #FFFFFF;
+        border-bottom: 1px solid #AAA;
+    }
+    #header h1 {
+        font-size: 16pt;
+        font-weight: normal;
+        text-align: left;
+        vertical-align: middle;
+        padding: 4px 8px 4px 8px;
+        margin: 0px 0px 0px 0px;
+    }
+    #menu {
+        margin-left: 8px;
+        margin-right: 8px;
+        margin-top: 0px;
+        clear: right;
+        float: right;
+    }
+    #intro,#main {
+        margin-left: 8px;
+        margin-right: 8px;
+    }
+    #help {
+        margin-left: 8px;
+        margin-right: 8px;
+        width: 80%
+    }
+    #footer {
+        width: 100%;
+        float: left;
+        clear: left;
+        margin: 2em 0 0;
+        padding-top: 0.7ex;
+        border-top: 1px solid #AAA;
+        font-size: 8pt;
+        text-align: center;
+    }
+    fieldset {
+        border: 0;
+        padding: 0;
+        margin: 0;
+    }
+    fieldset label {
+        font-weight: normal;
+        white-space: nowrap;
+        font-size: 11pt;
+        color: #000;
+    }
+    fieldset label.n {
+        display: block;
+        vertical-align: bottom;
+        margin-top:5px;
+        width: 160px;
+        float:left;
+        white-space: nowrap;
+    }
+    fieldset label.n:after { content: ":"; }
+    fieldset label.n1 {
+        display: block;
+        vertical-align: bottom;
+        margin-top:5px;
+        width: 160px;
+        float:left;
+        white-space: nowrap;
+    }
+    fieldset label.ckb {
+        width: 160px;
+        font-weight: normal;
+        font-size: 10pt;
+    }
+    fieldset label.ckb:after { content: ""; }
+    fieldset textarea {
+        width: 99%;
+        font-family: monospace;
+        font-size: 10pt;
+    }
+    #cxml {
+        clear: both;
+        display: block;
+    }
+    #savefs {
+        clear: both;
+        display: block;
+    }
+    span.info {
+        font-size: 9pt;
+        white-space: nowrap;
+        height: 2em;
+    }
+    br { clear: both; }
     /*]]>*/
     </style>
-    ');
+<?vsp
 }
 ;
 
 
 create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_qrcode integer)
-{
-    http('\n');
-    http('    <script type="text/javascript">\n');
-    http('    /*<![CDATA[*/\n');
-    http('	var timer;\n');
-    http('	function format_select(query_obg){\n');
-    http('	    clearTimeout(timer);\n');
-    http('	    timer = setTimeout (function delay_format_select() {do_format_select(query_obg);}, 1000);\n');
-    http('	}\n\n');
-    http('	var curr_format = 0;\n');
-    http('	function do_format_select(query_obg)\n');
-    http('	{\n');
-    http('		var query = query_obg.value; \n');
-    http('		var format = query_obg.form.format;\n');
-    http('		var prev_value = format.options[format.selectedIndex].value;\n');
-    http('		var prev_format = curr_format;\n');
-    http('		var ctr = 0;\n');
-    http('		var query_is_construct = (query.match(/\\bconstruct\\b\\s/i) || query.match(/\\bdescribe\\b\\s/i));\n');
-    http('\n');
-    http('		if (query_is_construct && curr_format != 2) {\n');
-    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
-    http('				format.remove(ctr);\n');
-    http('			ctr = 0;\n');
-    http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Turtle (beautified)\',\'application/x-nice-turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'RDF/JSON\',\'application/rdf+json\');\n');
-    http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[ctr++] = new Option(\'XHTML+RDFa\',\'application/xhtml+xml\');\n');
-    http('			format.options[ctr++] = new Option(\'ATOM+XML\',\'application/atom+xml\');\n');
-    http('			format.options[ctr++] = new Option(\'ODATA/JSON\',\'application/odata+json\');\n');
-    http('			format.options[ctr++] = new Option(\'JSON-LD (plain)\',\'application/x-ld+json\');\n');
-    http('			format.options[ctr++] = new Option(\'JSON-LD (with context)\',\'application/ld+json\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML (list)\',\'text/x-html+ul\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML (table)\',\'text/x-html+tr\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (basic)\',\'text/html\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Microdata (table)\',\'application/x-nice-microdata\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+JSON-LD (basic)\',\'text/x-html-script-ld+json\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML+Turtle (basic)\',\'text/x-html-script-turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Turtle (beautified - browsing oriented)\',\'text/x-html-nice-turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'Microdata/JSON\',\'application/microdata+json\');\n');
-    http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    http('			format.options[ctr++] = new Option(\'TriG\',\'application/x-trig\');\n');
-    if (can_cxml)
-      {
-	http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-	if (can_qrcode)
-	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
-      }
-    http('			curr_format = 2;\n');
-    http('		}\n');
-    http('\n');
-    http('		if (!query_is_construct && curr_format != 1) {\n');
-    http('			for(ctr = format.options.length - 1; ctr >= 0; ctr--)\n');
-    http('				format.remove(ctr);\n');
-    http('			ctr = 0;\n');
-    http('			format.options[ctr++] = new Option(\'Auto\',\'auto\');\n');
-    http('			format.options[ctr++] = new Option(\'HTML\',\'text/html\');\n');
-    if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
-      http('			format.options[ctr++] = new Option(\'HTML (Faceted Browsing Links)\',\'text/x-html+tr\');\n');
-    else
-      http('			format.options[ctr++] = new Option(\'HTML (Basic Browsing Links)\',\'text/x-html+tr\');\n');
-    http('			format.options[ctr++] = new Option(\'Spreadsheet\',\'application/vnd.ms-excel\');\n');
-    http('			format.options[ctr++] = new Option(\'XML\',\'application/sparql-results+xml\');\n');
-    http('			format.options[ctr++] = new Option(\'JSON\',\'application/sparql-results+json\');\n');
-    http('			format.options[ctr++] = new Option(\'Javascript\',\'application/javascript\');\n');
-    http('			format.options[ctr++] = new Option(\'Turtle\',\'text/turtle\');\n');
-    http('			format.options[ctr++] = new Option(\'RDF/XML\',\'application/rdf+xml\');\n');
-    http('			format.options[ctr++] = new Option(\'N-Triples\',\'text/plain\');\n');
-    http('			format.options[ctr++] = new Option(\'CSV\',\'text/csv\');\n');
-    http('			format.options[ctr++] = new Option(\'TSV\',\'text/tab-separated-values\');\n');
-    if (can_cxml)
-      {
-	http('			format.options[ctr++] = new Option(\'CXML (Pivot Collection)\',\'text/cxml\');\n');
-	if (can_qrcode)
-	  http('		format.options[ctr++] = new Option(\'CXML (Pivot Collection with QRcodes)\',\'text/cxml+qrcode\');\n');
-      }
-    http('			curr_format = 1;\n');
-    http('		}\n');
-    http('		if (prev_format != curr_format)\n');
-    http('			for(ctr = format.options.length - 1, format.selectedIndex=0; ctr >= 0; ctr--)\n');
-    http('				if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;\n');
-    http('	}\n');
-    http('
-	function format_change(e)
-	{
-		var format = e.value;
-		var cxml = document.getElementById("cxml");
-		if (!cxml) return;
-		if ((format.match (/\\bCXML\\b/i)))
-		{
-			cxml.style.display="block";
-		} else {
-			cxml.style.display="none";
-		}
-	}
-	function savedav_change(e)
-	{
-		var savefs = document.getElementById("savefs");
-		if (!savefs) return;
-		if (e.checked)
-		{
-			savefs.style.display = "block";
-		}
-		else
-		{
-			savefs.style.display = "none";
-		}
-	}
-	function change_run_button(e)
-	{
-		var button = document.getElementById("run");
-		var lbl;
+{ ?>
+    <script type="text/javascript">
+    /*<![CDATA[*/
+    var timer;
+    function format_select(query_obg) {
+        clearTimeout(timer);
+        timer = setTimeout(function delay_format_select() {
+            do_format_select(query_obg);
+        }, 1000);
+    }
 
-		if (!button) return;
+    var curr_format = 0;
+    function do_format_select(query_obg) {
+        var query = query_obg.value;
+        var format = query_obg.form.format;
+        var prev_value = format.options[format.selectedIndex].value;
+        var prev_format = curr_format;
+        var ctr = 0;
+        var query_is_construct = (query.match(/\bconstruct\b\s/i) || query.match(/\bdescribe\b\s/i));
 
-		if (e.checked)
-		{
-		    lbl = " Explain ";
-		}
-		else
-		{
-		    lbl = " Run Query ";
-		}
+        if (query_is_construct && curr_format != 2) {
+            for (ctr = format.options.length - 1; ctr >= 0; ctr = ctr - 1)
+                format.remove(ctr);
+            ctr = 0;
+            format.options[ctr++] = new Option('Turtle', 'text/turtle');
+            format.options[ctr++] = new Option('Turtle (beautified)', 'application/x-nice-turtle');
+            format.options[ctr++] = new Option('RDF/JSON', 'application/rdf+json');
+            format.options[ctr++] = new Option('RDF/XML', 'application/rdf+xml');
+            format.options[ctr++] = new Option('N-Triples', 'text/plain');
+            format.options[ctr++] = new Option('XHTML+RDFa', 'application/xhtml+xml');
+            format.options[ctr++] = new Option('ATOM+XML', 'application/atom+xml');
+            format.options[ctr++] = new Option('ODATA/JSON', 'application/odata+json');
+            format.options[ctr++] = new Option('JSON-LD (plain)', 'application/x-ld+json');
+            format.options[ctr++] = new Option('JSON-LD (with context)', 'application/ld+json');
+            format.options[ctr++] = new Option('HTML (list)', 'text/x-html+ul');
+            format.options[ctr++] = new Option('HTML (table)', 'text/x-html+tr');
+            format.options[ctr++] = new Option('HTML+Microdata (basic)', 'text/html');
+            format.options[ctr++] = new Option('HTML+Microdata (table)', 'application/x-nice-microdata');
+            format.options[ctr++] = new Option('HTML+JSON-LD (basic)', 'text/x-html-script-ld+json');
+            format.options[ctr++] = new Option('HTML+Turtle (basic)', 'text/x-html-script-turtle');
+            format.options[ctr++] = new Option('Turtle (beautified - browsing oriented)', 'text/x-html-nice-turtle');
+            format.options[ctr++] = new Option('Microdata/JSON', 'application/microdata+json');
+            format.options[ctr++] = new Option('CSV', 'text/csv');
+            format.options[ctr++] = new Option('TSV', 'text/tab-separated-values');
+            format.options[ctr++] = new Option('TriG', 'application/x-trig');
+            if (can_cxml) {
+                format.options[ctr++] = new Option('CXML (Pivot Collection)', 'text/cxml');
+                if (can_qrcode)
+                    format.options[ctr++] = new Option('CXML (Pivot Collection with QRcodes)', 'text/cxml+qrcode');
+            }
+            curr_format = 2;
+        }
 
-		if (button)
-		{
-		      if (button.childNodes[0])
-		      {
-			button.childNodes[0].nodeValue=lbl;
-		      }
-		      else if (button.value)
-		      {
-			button.value=lbl;
-		      }
-		      else //if (button.innerHTML)
-		      {
-			button.innerHTML=lbl;
-		      }
-		}
-	}
-	function sparql_endpoint_init()
-	{
-		var format = document.getElementById("format");
- 		if (format) format_change(format);
-		var savefs = document.getElementById("savefs");
-		if (savefs)
-		{
-		  var save = document.getElementById("save");
-		  if (save)
-		    savedav_change(save);
-		}
-		var b = document.getElementById("explain");
-		if (b) change_run_button(b);
-	}
-    ');
-    http('    /*]]>*/\n');
-    http('    </script>\n');
+        if (!query_is_construct && curr_format != 1) {
+            for (ctr = format.options.length - 1; ctr >= 0; ctr = ctr - 1)
+                format.remove(ctr);
+            ctr = 0;
+            format.options[ctr++] = new Option('Auto', 'auto');
+            format.options[ctr++] = new Option('HTML', 'text/html');
+<?vsp if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null) { ?>
+            format.options[ctr++] = new Option('HTML (Faceted Browsing Links)','text/x-html+tr');
+<?vsp } else { ?>
+            format.options[ctr++] = new Option('HTML (Basic Browsing Links)','text/x-html+tr');
+<?vsp } ?>
+            format.options[ctr++] = new Option('Spreadsheet', 'application/vnd.ms-excel');
+            format.options[ctr++] = new Option('XML', 'application/sparql-results+xml');
+            format.options[ctr++] = new Option('JSON', 'application/sparql-results+json');
+            format.options[ctr++] = new Option('Javascript', 'application/javascript');
+            format.options[ctr++] = new Option('Turtle', 'text/turtle');
+            format.options[ctr++] = new Option('RDF/XML', 'application/rdf+xml');
+            format.options[ctr++] = new Option('N-Triples', 'text/plain');
+            format.options[ctr++] = new Option('CSV', 'text/csv');
+            format.options[ctr++] = new Option('TSV', 'text/tab-separated-values');
+            if (can_cxml) {
+                format.options[ctr++] = new Option('CXML (Pivot Collection)', 'text/cxml');
+                if (can_qrcode)
+                    format.options[ctr++] = new Option('CXML (Pivot Collection with QRcodes)', 'text/cxml+qrcode');
+            }
+            curr_format = 1;
+        }
+        if (prev_format != curr_format)
+            for (ctr = format.options.length - 1, format.selectedIndex = 0; ctr >= 0; ctr = ctr - 1)
+                if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;
+    }
+
+    function format_change(e) {
+        var format = e.value;
+        var cxml = document.getElementById("cxml");
+        if (!cxml) return;
+        if ((format.match(/\\bCXML\\b/i))) {
+            cxml.style.display = "block";
+        } else {
+            cxml.style.display = "none";
+        }
+    }
+
+    function savedav_change(e) {
+        var savefs = document.getElementById("savefs");
+        if (!savefs) return;
+        if (e.checked) {
+            savefs.style.display = "block";
+        } else {
+            savefs.style.display = "none";
+        }
+    }
+
+    function change_run_button(e) {
+        var button = document.getElementById("run");
+        var lbl;
+
+        if (!button) return;
+
+        if (e.checked) {
+            lbl = " Explain ";
+        } else {
+            lbl = " Run Query ";
+        }
+
+        if (button) {
+            if (button.childNodes[0]) {
+                button.childNodes[0].nodeValue = lbl;
+            } else if (button.value) {
+                button.value = lbl;
+            } else { //if (button.innerHTML)
+                button.innerHTML = lbl;
+            }
+        }
+    }
+
+    function sparql_endpoint_init() {
+        var format = document.getElementById("format");
+        if (format) format_change(format);
+
+        var savefs = document.getElementById("savefs");
+        if (savefs) {
+            var save = document.getElementById("save");
+            if (save) savedav_change(save);
+        }
+        var b = document.getElementById("explain");
+        if (b) change_run_button(b);
+    }
+    /*]]>*/
+    </script>
+<?vsp
 }
 ;
 
