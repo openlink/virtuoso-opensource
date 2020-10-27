@@ -204,6 +204,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     var can_cxml = <?V can_cxml ?>;
     var can_qrcode = <?V can_qrcode ?>;
     var can_fct = <?V isnotnull (DB.DBA.VAD_CHECK_VERSION ('fct')) ?>;
+    var max_url = <?V atoi (registry_get('sparql-ui-max-url', '0')) ?>;
+
+    var using_IE = /edge|msie\s|trident\//i.test(window.navigator.userAgent || '');
+    if (using_IE && (max_url == 0 || max_url > 2000)) {
+        max_url = 2000;
+    }
 
     function format_select (query_obg) {
         clearTimeout (timer);
@@ -278,6 +284,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
             for (ctr = format.options.length - 1, format.selectedIndex = 0; ctr >= 0; ctr = ctr - 1)
                 if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;
         }
+
     }
 
     function format_change (e) {
@@ -372,10 +379,20 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
         return link;
     }
 
+    function sparqlSubmitForm () {
+        var link = sparqlGenerateLink(1);
+
+        if (max_url > 0 && max_url < link.length) {
+            $('#sparql_form').attr('method', 'post');
+        }
+        document.forms['sparql_form'].submit();
+    }
+
+
     function sparqlSubmitFormWithCtrlEnter () {
         $('form').keydown (function (event) {
             if (event.ctrlKey && event.keyCode === 13) {
-                $(this).trigger ('submit');
+                sparqlSubmitForm();
             }
         })
     }
@@ -818,7 +835,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Main
     --
     http ('<main id="main">\n');
-    http ('<form action="/sparql" method="get">\n');
+    http ('<form id="sparql_form" action="/sparql" method="get">\n');
 ?>
 
     <fieldset class="">
