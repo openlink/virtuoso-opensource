@@ -19,30 +19,69 @@
 --
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE()
+create function WS.WS.SPARQL_ENDPOINT_CDN (in url varchar, in file varchar, in checksum varchar) returns varchar
 {
-    http('<?xml version="1.0" encoding="UTF-8" ?>\n');
-    http('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN" "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">\n');
-    http('<html version="-//W3C//DTD XHTML 1.1//EN"\n');
-    http('    xmlns="http://www.w3.org/1999/xhtml"\n');
-    http('    xml:lang="en"\n');
-    http('>\n');
+    declare path any;
+    declare integrity varchar;
+    declare anon varchar;
+    declare line varchar;
+
+    anon := 'crossorigin="anonymous"';
+    integrity := '';
+
+    path := registry_get ('sparql-ui-cdn', '');
+    if (length(path) = 0)
+    {
+        path := url;
+        if (length(checksum) > 0)
+            integrity := sprintf('integrity="%s"', checksum);
+    }
+    if (path = 'disable')
+        return;
+
+    path := rtrim (path, ' /') || '/' || file;
+
+    if (file like '%.js')
+        line := sprintf ('<script src="%H" %s %s></script>\n', path, integrity, anon);
+    else
+        line := sprintf ('<link rel="stylesheet" href="%H" %s %s>\n', path, integrity, anon);
+
+    return line;
 }
 ;
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD(in title varchar)
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE ()
 {
-    http('    <title>' || title || '</title>\n');
-    http(sprintf('    <meta name="Copyright" content="Copyright &copy; %d OpenLink Software" />\n', year(now())));
-    http('    <meta name="Keywords" content="OpenLink Virtuoso Sparql" />\n');
-    http('    <meta http-equiv="Content-Type" content="text/html;charset=utf-8" />\n');
+    set http_charset='utf-8';
+    set http_in_charset='utf-8';
+
+    http('<!DOCTYPE html>\n');
+    http('<html lang="en">\n');
 }
 ;
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
-{ >?
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
+{ ?>
+    <meta charset="utf-8">
+    <meta name="viewport"  content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta name="Copyright" content="Copyright &copy; <?V year(now()) ?> OpenLink Software">
+    <meta name="Keywords"  content="OpenLink Virtuoso Sparql">
+    <title><?V title ?></title>
+<?vsp
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_STYLE (in enable_bootstrap integer := 0)
+{
+    if (enable_bootstrap) {
+        http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/', 'bootstrap.min.css',
+            'sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk'));
+        return;
+    }
+?>
     <style type="text/css">
     /*<![CDATA[*/
     html { padding: 0; }
@@ -155,20 +194,23 @@ create procedure WS.WS.SPARQL_ENDPOINT_STYLE ()
 ;
 
 
+
 create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_qrcode integer)
 { ?>
-    <script type="text/javascript">
+    <script>
     /*<![CDATA[*/
-    var timer;
-    function format_select(query_obg) {
-        clearTimeout(timer);
-        timer = setTimeout(function delay_format_select() {
-            do_format_select(query_obg);
-        }, 1000);
+    var timer = 0;
+    var curr_format = 0;
+    var can_cxml = <?V can_cxml ?>;
+    var can_qrcode = <?V can_qrcode ?>;
+    var can_fct = <?V isnotnull (DB.DBA.VAD_CHECK_VERSION ('fct')) ?>;
+
+    function format_select (query_obg) {
+        clearTimeout (timer);
+        timer = setTimeout (function delay_format_select () { do_format_select (query_obg); }, 1000);
     }
 
-    var curr_format = 0;
-    function do_format_select(query_obg) {
+    function do_format_select (query_obg) {
         var query = query_obg.value;
         var format = query_obg.form.format;
         var prev_value = format.options[format.selectedIndex].value;
@@ -201,11 +243,6 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
             format.options[ctr++] = new Option('CSV', 'text/csv');
             format.options[ctr++] = new Option('TSV', 'text/tab-separated-values');
             format.options[ctr++] = new Option('TriG', 'application/x-trig');
-            if (can_cxml) {
-                format.options[ctr++] = new Option('CXML (Pivot Collection)', 'text/cxml');
-                if (can_qrcode)
-                    format.options[ctr++] = new Option('CXML (Pivot Collection with QRcodes)', 'text/cxml+qrcode');
-            }
             curr_format = 2;
         }
 
@@ -215,11 +252,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
             ctr = 0;
             format.options[ctr++] = new Option('Auto', 'auto');
             format.options[ctr++] = new Option('HTML', 'text/html');
-<?vsp if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null) { ?>
-            format.options[ctr++] = new Option('HTML (Faceted Browsing Links)','text/x-html+tr');
-<?vsp } else { ?>
-            format.options[ctr++] = new Option('HTML (Basic Browsing Links)','text/x-html+tr');
-<?vsp } ?>
+            if (can_fct)
+                format.options[ctr++] = new Option('HTML (Faceted Browsing Links)','text/x-html+tr');
+            else
+                format.options[ctr++] = new Option('HTML (Basic Browsing Links)','text/x-html+tr');
             format.options[ctr++] = new Option('Spreadsheet', 'application/vnd.ms-excel');
             format.options[ctr++] = new Option('XML', 'application/sparql-results+xml');
             format.options[ctr++] = new Option('JSON', 'application/sparql-results+json');
@@ -229,31 +265,40 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
             format.options[ctr++] = new Option('N-Triples', 'text/plain');
             format.options[ctr++] = new Option('CSV', 'text/csv');
             format.options[ctr++] = new Option('TSV', 'text/tab-separated-values');
-            if (can_cxml) {
-                format.options[ctr++] = new Option('CXML (Pivot Collection)', 'text/cxml');
-                if (can_qrcode)
-                    format.options[ctr++] = new Option('CXML (Pivot Collection with QRcodes)', 'text/cxml+qrcode');
-            }
             curr_format = 1;
         }
-        if (prev_format != curr_format)
+
+        if (can_cxml) {
+            format.options[ctr++] = new Option('CXML (Pivot Collection)', 'text/cxml');
+            if (can_qrcode)
+                format.options[ctr++] = new Option('CXML (Pivot Collection with QRcodes)', 'text/cxml+qrcode');
+        }
+
+        if (prev_format != curr_format) {
             for (ctr = format.options.length - 1, format.selectedIndex = 0; ctr >= 0; ctr = ctr - 1)
                 if (format.options[ctr].value == prev_value) format.selectedIndex = ctr;
+        }
     }
 
-    function format_change(e) {
+    function format_change (e) {
         var format = e.value;
-        var cxml = document.getElementById("cxml");
+        var cxml = document.getElementById ("cxml");
+        var cxml_subj = document.getElementById ("CXML_redir_for_subjs");
+        var cxml_href = document.getElementById ("CXML_redir_for_hrefs");
         if (!cxml) return;
-        if ((format.match(/\\bCXML\\b/i))) {
+        if ((format.match (/\bCXML\b/i))) {
+            if (cxml_subj) cxml_subj.removeAttribute ("disabled");
+            if (cxml_href) cxml_href.removeAttribute ("disabled");
             cxml.style.display = "block";
         } else {
+            if (cxml_subj) cxml_subj.setAttribute ("disabled", "disabled");
+            if (cxml_href) cxml_href.setAttribute ("disabled", "disabled");
             cxml.style.display = "none";
         }
     }
 
-    function savedav_change(e) {
-        var savefs = document.getElementById("savefs");
+    function savedav_change (e) {
+        var savefs = document.getElementById ("savefs");
         if (!savefs) return;
         if (e.checked) {
             savefs.style.display = "block";
@@ -262,16 +307,14 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
         }
     }
 
-    function change_run_button(e) {
-        var button = document.getElementById("run");
+    function change_run_button (e) {
+        var button = document.getElementById ("run");
         var lbl;
-
         if (!button) return;
-
         if (e.checked) {
-            lbl = " Explain ";
+            lbl = " Explain Query ";
         } else {
-            lbl = " Run Query ";
+            lbl = " Execute Query ";
         }
 
         if (button) {
@@ -285,17 +328,89 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
         }
     }
 
-    function sparql_endpoint_init() {
-        var format = document.getElementById("format");
-        if (format) format_change(format);
+    function sparqlGenerateLink (edit) {
+        var link;
+        var first = true;
 
-        var savefs = document.getElementById("savefs");
+        if (typeof location.origin === "undefined")
+            location.origin = location.protocol + "//" + location.host;
+        link = location.origin + location.pathname;
+
+        $("form input[type!=checkbox],input[type=checkbox]:checked,select,textarea").each (function () {
+            if (this.name.length > 0 && this.name != "sid" && !this.disabled) {
+                var name = this.name;
+
+                if (edit === 1 && name == "query")
+                    name = "qtxt";
+
+                if (first)
+                    link += "?";
+                else
+                    link += "&"
+                link += (name + "=" + encodeURIComponent (this.value));
+                first = false;
+            }
+        });
+
+        return link;
+    }
+
+    function CopyPermalinkToClipboard () {
+        var link = sparqlGenerateLink(1);
+
+        var el = document.createElement ('textarea');
+        el.value = link;
+        el.setAttribute ('readonly', '');
+        el.style = { position: 'absolute', left: '-9999px' };
+        document.body.appendChild (el);
+        el.select ();
+        document.execCommand ('copy');
+        document.body.removeChild (el);
+
+        showAlert ({ message: 'Copied permalink to clipboard', class: 'success', timeout: 5000 });
+
+        return link;
+    }
+
+    function submit_form_with_ctrl_enter () {
+        $('form').keydown (function (event) {
+            if (event.ctrlKey && event.keyCode === 13) {
+                $(this).trigger ('submit');
+            }
+        })
+    }
+
+    function alertTimeout (wait) {
+        setTimeout (function () {
+            $('#alert').children ('.alert:first-child').remove ();
+        }, wait);
+    }
+
+    function showAlert (obj) {
+        var html = '<div class="alert alert-' + obj.class + ' alert-dismissible" role="alert">' +
+            '   <strong>' + obj.message + '</strong>' +
+            '       <button class="close" type="button" data-dismiss="alert" aria-label="Close">' +
+            '           <span aria-hidden="true">×</span>' +
+            '       </button>'
+        '   </div>';
+
+        $('#alert').append (html);
+        if (obj.timeout > 0) alertTimeout (obj.timeout);
+    }
+
+    function sparql_endpoint_init () {
+        var format = document.getElementById ("format");
+        if (format) format_change (format);
+        var savefs = document.getElementById ("savefs");
         if (savefs) {
-            var save = document.getElementById("save");
-            if (save) savedav_change(save);
+            var save = document.getElementById ("save");
+            if (save)
+                savedav_change (save);
         }
-        var b = document.getElementById("explain");
-        if (b) change_run_button(b);
+        var b = document.getElementById ("explain");
+        if (b) change_run_button (b);
+
+        submit_form_with_ctrl_enter ();
     }
     /*]]>*/
     </script>
@@ -304,16 +419,22 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
 ;
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_FOOTER()
-{
-    http('    <div id="footer">\n');
-    http(sprintf('      Copyright &copy; %d <a href="http://www.openlinksw.com/virtuoso">OpenLink Software</a>', year(now())));
-    http(sprintf('<br />Virtuoso version %s on %s (%s), ', sys_stat('st_dbms_ver'), sys_stat('st_build_opsys_id'), host_id()));
+create procedure WS.WS.SPARQL_ENDPOINT_FOOTER ()
+{ ?>
+    <footer id="footer" class="page-footer small">
+    <div class="footer-copyright text-center">
+        Copyright &copy; <?V year(now()) ?> <a href="https://virtuoso.openlinksw.com/">OpenLink Software</a>
+        <br>
+        Virtuoso version <?V sys_stat('st_dbms_ver') ?> on <?V sys_stat('st_build_opsys_id') ?> (<?V host_id() ?>)
+<?vsp
     if (1 = sys_stat('cl_run_local_only'))
-        http('Single Server Edition\n');
+        http(sprintf ('Single Server Edition (%s total memory)\n', mem_hum_size (mem_info_cl())));
     else
-        http(sprintf('Cluster Edition (%d server processes)\n', sys_stat('cl_n_hosts')));
-    http('    </div>\n');
+        http(sprintf('Cluster Edition (%d server processes, %s total memory)\n', sys_stat('cl_n_hosts'), mem_hum_size (mem_info_cl())));
+?>
+    </div>
+    </footer>
+<?vsp
 }
 ;
 
@@ -434,7 +555,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (in params varchar)
 ;
 
 
-create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in params varchar, in lbl varchar, in decoration integer := 1)
+create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in params varchar, in lbl varchar, in use_label integer := 1)
 {
     declare val varchar;
     declare opts varchar;
@@ -442,7 +563,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
     if ('CXML_redir_for_subjs' = lbl)
     {
         val := get_keyword (lbl, params, '121');
-        if (decoration)
+        if (use_label)
         {
             http ('<label for="CXML_redir_for_subjs" class="n">External resource link</label>\n');
             http ('<select name="CXML_redir_for_subjs" id="CXML_redir_for_subjs">\n');
@@ -460,7 +581,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
         );
     } else {
         val := get_keyword (lbl, params, '');
-        if (decoration)
+        if (use_label)
         {
             http ('<label for="CXML_redir_for_hrefs" class="n">Facet link behavior</label>\n');
             http ('<select name="CXML_redir_for_hrefs" id="CXML_redir_for_hrefs">\n');
@@ -486,7 +607,100 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
             http(sprintf ('<option value="%V" %s>%V</option>\n', x[0], case when val = x[0] then 'selected' else '' end , x[1]));
     }
 
-    if (decoration) http ('</select><br />\n');
+    if (use_label) http ('</select><br>\n');
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_submenu integer := 1)
+{ ?>
+    <nav class="navbar navbar-expand-md sticky-top navbar-light bg-light">
+        <a class="navbar-brand" href="/sparql"><?V title ?></a>
+        <button class="navbar-toggler"
+            type="button"
+            data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent"
+            aria-expanded="false"
+            aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+
+<?vsp if (display_submenu) { ?>
+        <div class="collapse navbar-collapse" id="navbarSupportedContent">
+            <ul class="navbar-nav mr-auto">
+            <li class="nav-item"><a class="nav-link" href="/sparql/?help=intro">About</a></li>
+            <li class="nav-item dropdown">
+                <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" data-toggle="dropdown"
+                    aria-haspopup="true" aria-expanded="false">Tables</a>
+                <div class="dropdown-menu" aria-labelledby="navbarDropdown">
+                    <a class="nav-item nav-link"        href="/sparql/?help=nsdecl">Namespace&nbsp;Prefixes</a>
+                    <a class="nav-item nav-link"        href="/sparql/?help=rdfinf">Inference&nbsp;Rules</a>
+                    <a class="nav-item nav-link"        href="/sparql/?help=macrolibs">Macros</a>
+                    <a class="nav-item nav-link"        href="/sparql/?help=views">RDF Views</a>
+                </div>
+            </li>
+            </ul>
+
+            <ul class="navbar-nav">
+<?vsp if (DB.DBA.VAD_CHECK_VERSION('conductor') is not null) { ?>
+            <li class="nav-item"><a class="nav-item nav-link"        href="/conductor">Conductor</a></li>
+<?vsp } ?>
+<?vsp if (DB.DBA.VAD_CHECK_VERSION('fct') is not null) { ?>
+            <li class="nav-item"><a class="nav-item nav-link"        href="/fct">Facet Browser</a></li>
+<?vsp } ?>
+            <li class="nav-item">
+                <a class="nav-item nav-link" onclick="javascript:CopyPermalinkToClipboard()" href="#" title="Copy Permalink to Clipboard">Permalink</a>
+            </li>
+            </ul>
+        </div>
+<?vsp } ?>
+    </nav>
+<?vsp
+}
+;
+
+
+create procedure WS.WS.SPARQL_ENDPOINT_HTML_OPTION (in lbl varchar, in help varchar, in enabled integer)
+{
+    declare color varchar;
+
+    color := 'badge-light';
+    if (enabled)
+        color := 'badge-dark';
+
+    http (sprintf ('<a href="/sparql/?help=%U" class="badge badge-pill %s">%V</a>\n', help, color, lbl));
+}
+;
+
+
+create function WS.WS.SPARQL_ENDPOINT_CAN_SPONGE (in user_id varchar) returns integer
+{
+    if (exists (select top 1 1
+        from DB.DBA.SYS_USERS as sup
+        join DB.DBA.SYS_ROLE_GRANTS as g on (sup.U_ID = g.GI_SUPER)
+        join DB.DBA.SYS_USERS as sub on (g.GI_SUB = sub.U_ID)
+        where sup.U_NAME = user_id and sub.U_NAME = 'SPARQL_SPONGE' ))
+        return 1;
+
+    return 0;
+}
+;
+
+
+create function WS.WS.SPARQL_ENDPOINT_SAVE_PATH (in user_id varchar) returns varchar
+{
+    declare save_dir any;
+
+    save_dir := (select U_HOME from DB.DBA.SYS_USERS where U_NAME = user_id and U_DAV_ENABLE);
+    if (save_dir is not null)
+    {
+        save_dir := rtrim (save_dir, '/') || '/saved-sparql-results/';
+        if (exists (select COL_ID from WS.WS.SYS_DAV_COL where COL_DET = 'DynaRes' and COL_FULL_PATH = save_dir))
+          return save_dir;
+    }
+
+    return NULL;
 }
 ;
 
