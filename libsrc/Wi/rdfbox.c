@@ -5907,7 +5907,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+      if (c == '/' || c == '#' || c == ':')
         break;
     }
   do {
