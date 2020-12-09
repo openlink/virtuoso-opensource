@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -274,8 +274,17 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	break;
 	case DV_BIN:
 	  {
-	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
+	    uint32 inx;
+	    snprintf (tmp, sizeof (tmp), " LEN %d [", box_length (box));
 	    SES_PRINT (ses, tmp);
+	    for (inx = 0; inx < box_length (box) && inx < 1000 /*print elements*/; inx++)
+	      {
+		snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) ((caddr_t) box)[inx]);
+		SES_PRINT (ses, tmp);
+	      }
+	    if (inx >= 1000)
+	      SES_PRINT (ses, "...");
+	    SES_PRINT (ses, "]");
 	  }
 	break;
         case DV_RDF:

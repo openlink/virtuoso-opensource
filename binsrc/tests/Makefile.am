@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2020 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -69,11 +69,11 @@ M2_LDADD = \
 
 isql_SOURCES = isql.c time.c
 isql_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\"
-isql_LDADD   = $(client_libs) @LIBRDL@
+isql_LDADD   = $(client_libs) @LIBRDL@ @LIBTHR@ @LIBDL@
 
 isqlw_SOURCES = isql.c time.c isql_wfuncs.c
 isqlw_CFLAGS  = $(AM_CFLAGS) -DOPSYS=\"@OPSYS@\" -DUNICODE -D_UNICODE 
-isqlw_LDADD   = $(client_libs) @LIBRDL@
+isqlw_LDADD   = $(client_libs) @LIBRDL@ @LIBTHR@ @LIBDL@
 
 paramstats_LDADD = $(client_libs)
 

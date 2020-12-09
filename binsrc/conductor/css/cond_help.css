@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -20,13 +20,33 @@
  *
  */
 
-function dav_post(col, pcol, name, pname, dwn )
+div.help_viewport
 {
-   document.dav_pub_frm.col.value = col;
-   document.dav_pub_frm.pcol.value = pcol;
-   document.dav_pub_frm.name.value = name;
-   document.dav_pub_frm.pname.value = pname;
-   document.dav_pub_frm.dwn.value = dwn;
-   document.dav_pub_frm.action = 'db_repl_pub_edit.vspx';
-   document.dav_pub_frm.submit();
+  background-color: yellow;
+  border: 2px solid green;
+  margin-top: 0.5ex;
+  margin-bottom: 0.5ex;
+}
+
+div.help_title
+{
+  margin-top: 0,5ex;
+  background-color: orange;
+}
+
+div.help_footer
+{
+  margin-top: 0.5ex;
+  margin-bottom: 0.5ex;
+}
+
+a.help_dismiss
+{
+  text-decoration: none;
+  color: blue;
+}
+
+a.help_dismiss:hover
+{
+  text-decoration: underline;
 }

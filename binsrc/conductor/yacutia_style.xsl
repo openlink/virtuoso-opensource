@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -22,7 +22,7 @@
 -->
 <!--
   Virtuoso Conductor XSL style-sheet for page macros
-  Copyright (C) 2005-2019 OpenLink Software
+  Copyright (C) 2005-2020 OpenLink Software
 -->
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
@@ -87,17 +87,17 @@
     </xsl:choose>
   </xsl:element>
   <xsl:apply-templates select="node()|processing-instruction()" />
-  <div id="copyright_ctr">&amp;nbsp;Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  <div class="footer">&amp;nbsp;Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:pagewrapper">
   <v:variable name="page_owner" persist="0" type="varchar">
-      <xsl:attribute name="default">
-	  <xsl:choose>
-	      <xsl:when  test="../@vm:owner">'<xsl:value-of select="../@vm:owner"/>'</xsl:when>
-	      <xsl:otherwise>null</xsl:otherwise>
-	  </xsl:choose>
-      </xsl:attribute>
+    <xsl:attribute name="default">
+      <xsl:choose>
+        <xsl:when test="../@vm:owner">'<xsl:value-of select="../@vm:owner"/>'</xsl:when>
+        <xsl:otherwise>null</xsl:otherwise>
+      </xsl:choose>
+    </xsl:attribute>
   </v:variable>
   <v:variable name="nav_pos_fixed" type="int" default="0"/>
   <v:variable name="nav_top" type="int" default="0"/>
@@ -107,47 +107,44 @@
     <xsl:copy-of select="."/>
   </xsl:for-each>
 
-  <xsl:apply-templates select="vm:init"/>
-  <table id="MTB" cellspacing="0" cellpadding="0" width="100%">
-    <tr id="MB2">
-      <td colspan="2" align="left">
-	<table width="100%" border="0" cellpadding="0" cellspacing="0">
-	  <tr>
-	    <td align="left"><img src="images/con_banner.gif" border="0"/></td>
-	    <td width="80%" align="left">
-		<div class="login_info">
-		<img src="images/icons/user_16.png" />
-	      <?vsp if (connection_get ('vspx_user') is not null) { ?>
-	       logged in as <?V connection_get ('vspx_user') ?> |
-	      <v:url value="Log out" url="main_tabs.vspx?logout=1"/>
-	      <?vsp } else { ?>
-	      not logged in
-	      <?vsp
-	      }?>&amp;nbsp;|&amp;nbsp;<img src="images/vglobe_16.png" alt="Start" title="Start Menu" hspace="2" /><a href="/">Home</a>
-	       </div>
-	    </td>
-	  </tr>
-	</table>
-      </td>
-      </tr>
-    <tr id="MT">
-     <td id="LC" style="white-space: nowrap;">
+  <xsl:apply-templates select="vm:init" />
+  <div class="heading">
+    <div class="heading_left">
+      <img src="images/con_banner.gif" border="0"/>
+    </div>
+    <div class="heading_right">
+      <img src="images/icons/user_16.png" />
+      <?vsp
+        if (connection_get ('vspx_user') is not null)
+        {
+      ?>
+          logged in as <?V connection_get ('vspx_user') ?> |
+          <v:url value="Log out" url="main_tabs.vspx?logout=1" />
+        <?vsp
+          } else {
+        ?>
+          not logged in
+        <?vsp
+          }
+        ?>
+        &amp;nbsp;|&amp;nbsp;<img src="images/vglobe_16.png" alt="Start" title="Start Menu" hspace="2" /><a href="/">Home</a>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="left">
       <v:include name="loginp" url="adm_login.vspx"/>
-      <!--div class="lmenu_ctr">
-        &amp;nbsp;
-        <xsl:apply-templates select="vm:menu"/>
-      </div-->
       <ul class="left_toolbox">
         <li>
           <img src="images/icons/apps_16.png"
                alt="ISQL"
                title="Interactive SQL popup"/>
-          <v:browse-button style="url" name="browse_button1" value="Interactive  SQL (ISQL)" selector="isql.vspx"
-              child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800"/>
+          <v:browse-button style="url" name="browse_button1" value="Interactive SQL (ISQL)" selector="isql.vspx"
+            child-window-options="scrollbars=yes,resizable=yes,status=no,menubar=no,height=600,width=800" />
         </li>
         <?vsp
-  if (connection_get ('vspx_user') is not null)
-    {
+          if (connection_get ('vspx_user') is not null)
+          {
         ?>
         <li>
           <img src="images/icons/foldr_16.png"
@@ -166,114 +163,98 @@
                           advisory="mega advisory text"
                           lang="en" />
         </li>
-          <?vsp
-	  }
-	  if (vad_check_version ('Framework') is not null)
-	  {
-          ?>
-	  <li><img src="images/vglobe_16.png" alt="WA" title="Data Space Applications" /><a href="<?V wa_link () ?>">OpenLink Data Spaces</a>
-	  </li>
-	  <?vsp
-	  }
-          ?>
-	  <li><img src="images/vglobe_16.png" alt="Start" title="Start Menu" /><a href="/">Virtuoso Start Menu</a>
-	  </li>
+        <?vsp
+          }
+          if (vad_check_version ('Framework') is not null)
+          {
+        ?>
+        <li>
+          <img src="images/vglobe_16.png" alt="WA" title="Data Space Applications" /><a href="<?V wa_link () ?>">OpenLink Data Spaces</a>
+        </li>
+        <?vsp
+          }
+        ?>
+        <li>
+          <img src="images/vglobe_16.png" alt="Start" title="Start Menu" /><a href="/">Virtuoso Start Menu</a>
+        </li>
       </ul>
       <ul class="left_nav">
-	<li>
+        <li>
           <img src="images/icons/docs_16.png"
                alt="Documentation"
                title="Documentation" hspace="2"/>
-
           <?vsp
-	  if (vad_check_version ('doc') is not null)
-	  {
+            if (vad_check_version ('doc') is not null)
+            {
           ?>
-	  <a href="/doc/html/" target="_top">Documentation<small> (local)</small></a>
-	  <?vsp
-	  }
-          else
-          {
+          <a href="/doc/html/" target="_top">Documentation<small> (local)</small></a>
+          <?vsp
+            }
+            else
+            {
           ?>
           <a href="http://docs.openlinksw.com/virtuoso/" target="_top">Documentation<small> (web)</small></a>
           <?vsp
-	  }
+            }
           ?>
         </li>
-        <!--<a href="/doc/docs.vsp" target="_top">Documentation</a>-->
-	<li>
+        <li>
           <img src="images/icons/tour_16.png"
                alt="Tutorials"
-               title="Tutorials" hspace="2"/>
-	  <!--<a href="/tutorial/index.vsp" target="_top">Tutorials</a></li>-->
+               title="Tutorials" hspace="2" />
           <?vsp
-	  if (vad_check_version ('tutorial') is not null)
-	  {
+            if (vad_check_version ('tutorial') is not null)
+            {
           ?>
-	  <a href="/tutorial/" target="_top">Tutorials<small> (local)</small></a>
-	  <?vsp
-	  }
-          else
-          {
+          <a href="/tutorial/" target="_top">Tutorials<small> (local)</small></a>
+          <?vsp
+            }
+            else
+            {
           ?>
           <a href="http://demo.openlinksw.com/tutorial/" target="_top">Tutorials<small> (web)</small></a>
           <?vsp
-	  }
+            }
           ?>
-	</li>
+        </li>
       </ul>
       <ul class="left_nav">
-	<li class="xtern">
+        <li class="xtern">
           <img src="images/icons/web_16.png"
-               alt="Virtuoso Web Site"
-               title="Virtuoso Web Site" hspace="2"/>
-	    <a href="http://virtuoso.openlinksw.com/">Virtuoso Web Site</a></li>
-	<li class="xtern">
+             alt="Virtuoso Web Site"
+             title="Virtuoso Web Site" hspace="2"/>
+          <a href="http://virtuoso.openlinksw.com/">Virtuoso Web Site</a>
+        </li>
+        <li class="xtern">
           <img src="images/icons/web_16.png"
-               alt="OpenLink Software"
-               title="OpenLink Software" hspace="2"/>
-	    <a href="http://www.openlinksw.com">OpenLink Software</a></li>
+             alt="OpenLink Software"
+             title="OpenLink Software" hspace="2"/>
+          <a href="http://www.openlinksw.com">OpenLink Software</a>
+        </li>
       </ul>
       <ul class="left_id">
         <li>Version: <?V sys_stat ('st_dbms_ver') ?></li>
         <li>Build: <?V sys_stat ('st_build_date') ?></li>
       </ul>
-    </td> <!-- LC -->
-    <td id="RC">
-      <table id="RTB">
-      <tr>
-	<td id="RT">
-	  <v:vscx name="navbar1" url="adm_navigation_bar.vspx" />
-	</td>
-      </tr>
-      <tr>
-	<td id="RB"> <!-- Bread and butter zone -->
-	  <div class="subpage_header_area">
-	    <xsl:apply-templates select="vm:header" />
-	    <xsl:apply-templates select="vm:rawheader" />
-	    <v:template type="simple" condition="not self.vc_is_valid">
-	      <div class="validator_err_ctr">
-		<h2>Invalid data entered</h2>
-		<p><v:error-summary/></p>
-	      </div>
-	    </v:template>
-	  </div>
-	  <div class="main_page_area">
-	    <xsl:apply-templates select="vm:pagebody" />
-	  </div>
-	</td> <!-- RB -->
-      </tr>
-    </table> <!-- RC -->
-  </td>
-</tr>
-<tr id="FT">
-	<td id="copyright_ctr" colspan="2">
-	  <!-- Virtuoso Universal Server <?V sys_stat ('st_dbms_ver') ?> -->
-	  Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now ()), 4)?> OpenLink Software
-	  &amp;nbsp;
-	</td>
-</tr>
-  </table> <!-- MT -->
+    </div>
+    <div id="LC" class="content">
+      <v:vscx name="navbar1" url="adm_navigation_bar.vspx" />
+      <div class="subpage_header_area">
+        <xsl:apply-templates select="vm:header" />
+        <xsl:apply-templates select="vm:rawheader" />
+        <v:template type="simple" condition="not self.vc_is_valid">
+          <div class="validator_err_ctr">
+            <h2>Invalid data entered</h2>
+            <p><v:error-summary/></p>
+          </div>
+        </v:template>
+      </div>
+      <div class="main_page_area">
+        <xsl:apply-templates select="vm:pagebody" />
+      </div>
+    </div>
+  </div>
+  <div id="FT" class="footer">&amp;nbsp;Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
 </xsl:template>
 
 <xsl:template match="vm:menu">
@@ -390,30 +371,89 @@
   ?>
 </xsl:template>
 
+<xsl:template match="vm:ds-navigation-new">
+  &lt;?vsp
+    declare n_start, n_end, n_total integer;
+    declare ds vspx_data_set;
+
+    ds := case when (udt_instance_of (control, fix_identifier_case ('vspx_data_set'))) then control else control.vc_find_parent (control, 'vspx_data_set') end;
+    if (isnull (ds.ds_data_source))
+    {
+      n_total := ds.ds_rows_total;
+      n_start := ds.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_nrows - 1;
+    } else {
+      n_total := ds.ds_data_source.ds_total_rows;
+      n_start := ds.ds_data_source.ds_rows_offs + 1;
+      n_end   := n_start + ds.ds_data_source.ds_rows_fetched - 1;
+    }
+    if (n_end > n_total)
+      n_end := n_total;
+
+    if (n_total)
+      http (sprintf ('<b>Showing %d - %d of %d</b>', n_start, n_end, n_total));
+
+    declare _prev, _next vspx_button;
+
+    _next  := control.vc_find_control ('<xsl:value-of select="@data-set" />_next');
+    _prev  := control.vc_find_control ('<xsl:value-of select="@data-set" />_prev');
+    if ((_next is not null and _next.vc_enabled) or (_prev is not null and _prev.vc_enabled))
+      http (' | ');
+  ?&gt;
+  <v:button name="{@data-set}_first" action="simple" style="url" value="" xhtml_alt="First" xhtml_class="navi-button" >
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/conductor/images/pager/p_first.png" border="0" alt="First" title="First"/> First ';
+      ]]>
+    </v:before-render>
+  </v:button>
+  &nbsp;
+  <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/conductor/images/pager/p_prev.png" border="0" alt="Previous" title="Previous"/> Prev ';
+      ]]>
+    </v:before-render>
+  </v:button>
+  &nbsp;
+  <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/conductor/images/pager/p_next.png" border="0" alt="Next" title="Next"/> Next ';
+      ]]>
+    </v:before-render>
+  </v:button>
+  &nbsp;
+  <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
+    <v:before-render>
+      <![CDATA[
+        control.ufl_value := '<img src="/conductor/images/pager/p_last.png" border="0" alt="Last" title="Last"/> Last ';
+      ]]>
+    </v:before-render>
+  </v:button>
+</xsl:template>
+
 <xsl:template match="vm:helppagewrapper">
-    <!--div id="MB"><img src="images/yac_banner.jpg" alt="OpenLink Virtuoso Conductor"/></div-->
-    <div id="MB2" style="text-align: left;">
-	<img src="images/con_banner.gif" border="0"/>
-    </div>
-    <div>
-      <div id="RB"> <!-- Bread and butter zone -->
-        <div class="subpage_header_area">
-          <xsl:apply-templates select="vm:header" />
-          <xsl:apply-templates select="vm:rawheader" />
-          <v:template type="simple" condition="not self.vc_is_valid">
-            <div class="validator_err_ctr">
-              <v:error-summary/>
-            </div>
-          </v:template>
-        </div>
-        <div class="main_page_area">
-          <xsl:apply-templates select="*" />
-        </div>
-      </div> <!-- RB -->
-      <div id="copyright_ctr">
-        Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4)?> OpenLink Software
+  <div id="MB2" style="text-align: left;">
+	  <img src="images/con_banner.gif" border="0"/>
+  </div>
+  <div>
+    <div> <!-- Bread and butter zone -->
+      <div class="subpage_header_area">
+        <xsl:apply-templates select="vm:header" />
+        <xsl:apply-templates select="vm:rawheader" />
+        <v:template type="simple" condition="not self.vc_is_valid">
+          <div class="validator_err_ctr">
+            <v:error-summary/>
+          </div>
+        </v:template>
       </div>
-    </div> <!-- RC -->
+      <div class="main_page_area">
+        <xsl:apply-templates select="*" />
+      </div>
+    </div>
+    <div class="footer">&amp;nbsp;Copyright &amp;copy; 1998-<?V "LEFT" (datestring (now()), 4) ?> OpenLink Software</div>
+  </div>
 </xsl:template>
 
 <xsl:template match="vm:help">
@@ -962,58 +1002,89 @@ http(sprintf('<xsl:for-each select="text">
 </xsl:template>
 
 <xsl:template name="st-lic">
-   <?vsp
-   declare bits any;
-   bits := self.bits;
-   if (isnull (self.pname) or bits[1] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="1" %s /></td>', self.tp, y_check_if_bit (bits, 1)));
-	?>
-	<td class="stat_col_label">Server</td>
-	<td><?V sys_stat ('st_dbms_name') ?></td>
-    </tr>
+  <?vsp
+  declare bits any;
+  bits := self.bits;
+  if (isnull (self.pname) or bits[1] = ascii ('1')) {
+  ?>
+  <tr>
+  <?vsp
+    if (isnull (self.pname))
+      http (sprintf ('<td><input type="checkbox" name="%s" value="1" %s /></td>', self.tp, y_check_if_bit (bits, 1)));
+  ?>
+    <td class="stat_col_label">Server</td>
+    <td><?V sys_stat ('st_dbms_name') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if (isnull (self.pname) or bits[2] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="2" %s /></td>', self.tp, y_check_if_bit (bits, 2)));
-	?>
-	<td class="stat_col_label">Platform</td>
-	<td><?V sys_stat ('st_build_opsys_id') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="2" %s /></td>', self.tp, y_check_if_bit (bits, 2)));
+    ?>
+    <td class="stat_col_label">Platform</td>
+    <td><?V sys_stat ('st_build_opsys_id') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if ((isnull (self.pname) or bits[3] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="3" %s /></td>', self.tp, y_check_if_bit (bits, 3)));
-	?>
-	<td class="stat_col_label">Maximum Licensed <br />Client Connections</td>
-	<td><?V sys_stat ('st_lic_max_connections') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="3" %s /></td>', self.tp, y_check_if_bit (bits, 3)));
+    ?>
+    <td class="stat_col_label">Maximum Licensed<br />Client Connections</td>
+    <td>
+      <?vsp
+        declare lconnections varchar;
+
+        lconnections := 'Undefined';
+        {
+          declare continue handler for SQLSTATE '*'
+          {
+            goto _skip;
+          };
+          lconnections := sys_stat('st_lic_max_connections');
+        _skip:;
+        }
+        http (lconnections);
+      ?>
+    </td>
+  </tr>
   <?vsp } ?>
   <?vsp if (isnull (self.pname) or bits[4] = ascii ('1')) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="4" %s /></td>', self.tp, y_check_if_bit (bits, 4)));
-	?>
-	<td class="stat_col_label">Build Date</td>
-	<td><?V sys_stat ('st_build_date') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="4" %s /></td>', self.tp, y_check_if_bit (bits, 4)));
+    ?>
+    <td class="stat_col_label">Build Date</td>
+    <td><?V sys_stat ('st_build_date') ?></td>
+  </tr>
   <?vsp } ?>
   <?vsp if ((isnull (self.pname) or bits[5] = ascii ('1')) and sys_stat('st_has_vdb') = 1) { ?>
-    <tr>
-	<?vsp
-	  if (isnull (self.pname))
-	    http (sprintf ('<td><input type="checkbox" name="%s" value="5" %s /></td>', self.tp, y_check_if_bit (bits, 5)));
-	?>
-	<td class="stat_col_label">License Owner</td>
-	<td><?V sys_stat ('st_lic_owner') ?></td>
-    </tr>
+  <tr>
+    <?vsp
+      if (isnull (self.pname))
+        http (sprintf ('<td><input type="checkbox" name="%s" value="5" %s /></td>', self.tp, y_check_if_bit (bits, 5)));
+    ?>
+    <td class="stat_col_label">License Owner</td>
+    <td>
+      <?vsp
+        declare lowner varchar;
+
+        lowner := 'Undefined';
+        {
+          declare continue handler for SQLSTATE '*'
+          {
+            goto _skip2;
+          };
+          lowner := sys_stat('st_lic_owner');
+        _skip2:;
+        }
+        http (lowner);
+      ?>
+    </td>
+  </tr>
   <?vsp } ?>
 </xsl:template>
 

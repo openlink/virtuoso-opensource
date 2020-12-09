@@ -1,10 +1,9 @@
 /*
- *  $Id$
  *
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,33 +20,37 @@
  *
  */
 
-div.help_viewport
+function dsns_chg(sel)
 {
-  background-color: yellow;
-  border: 2px solid green;
-  margin-top: 0.5ex;
-  margin-bottom: 0.5ex;
+
+  //  Document.DSN.value =
+  // TODO: turn multiple into a single selection in unix-netscape,
+  // set DSN input value according to selection
+
+  var i, _new, old;
+
+
+  if (sel.selectedIndex == -1)
+    {
+      document.link_form.dsn.value = '';
+      document.link_form.uid.value = '';
+      document.link_form.pwd.value = '';
+      return (0);
+    }
+
+  for (i = 0;i < sel.length;i++)
+    {
+      if (sel.options[i].selected)
+	{
+	  if (sel.options[i].text == document.link_form.dsn.value)
+	    {
+	      sel.options[i].selected = false;
+	    }
+	  else
+	    {
+	      document.link_form.dsn.value = sel.options[i].text;
+	    }
+	}
+    }
 }
 
-div.help_title
-{
-  margin-top: 0,5ex;
-  background-color: orange;
-}
-
-div.help_footer
-{
-  margin-top: 0.5ex;
-  margin-bottom: 0.5ex;
-}
-
-a.help_dismiss
-{
-  text-decoration: none;
-  color: blue;
-}
-
-a.help_dismiss:hover
-{
-  text-decoration: underline;
-}

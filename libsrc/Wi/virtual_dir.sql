@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -807,6 +807,9 @@ create procedure DB.DBA.virt_proxy_init ()
   DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_http_proxy_rule_list1', 1, vector ('ext_http_proxy_rule_1'));
   DB.DBA.VHOST_REMOVE (lpath=>'/proxy');
   DB.DBA.VHOST_DEFINE (lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
+      opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/proxy');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/proxy', ppath=>'/SOAP/Http/EXT_HTTP_PROXY', soap_user=>'PROXY',
       opts=>vector('url_rewrite', 'ext_http_proxy_rule_list1'));
   registry_set ('DB.DBA.virt_proxy_init_state', '1.1');
 }
@@ -1646,6 +1649,9 @@ create procedure WS.WS."host-meta" (
 
 create procedure WS.WS.host_meta_init ()
 {
+  if (registry_get ('host_meta_inited') = '1')
+    return;
+
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
     {
       DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
@@ -1654,6 +1660,9 @@ create procedure WS.WS.host_meta_init ()
 
   DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
   DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
+  registry_set ('host_meta_inited', '1');
 }
 ;
 
@@ -1840,10 +1849,9 @@ create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH referencing ne
 ;
 
 -- Default WebDAV mapping for all future http listeners
-insert soft DB.DBA.HTTP_PATH_DEFAULT
-(
-HPD_LPATH, HPD_PPATH, HPD_STORE_AS_DAV, HPD_DIR_BROWSEABLE, HPD_DEFAULT,
-HPD_REALM, HPD_AUTH_FUNC, HPD_POSTPROCESS_FUNC, HPD_RUN_VSP_AS, HPD_RUN_SOAP_AS, HPD_PERSIST_SES_VARS)
-values ( '/DAV', '/DAV/', 1, 1, NULL, NULL, NULL, NULL, 'dba', NULL, 0
-)
+DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, is_brws=>1, vsp_user=>'dba', ses_vars=>0, overwrite=>1)
+;
+
+-- Default /.well-known mapping for all future http listeners
+DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta', overwrite=>1)
 ;

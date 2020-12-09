@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -229,6 +229,11 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
     case SQL_ATTR_OUTPUT_NTS:
       cli_dbg_printf (("SQLGetEnvAttr(..., ATTR_OUTPUT_NTS, ...)\n"));
       *((SQLINTEGER *) ValuePtr) = (env->env_output_nts ? SQL_TRUE : SQL_FALSE);
+      break;
+    case SQL_ATTR_DRIVER_UNICODE_TYPE:
+      if (ValuePtr)
+        *((SQLINTEGER *) ValuePtr) = (sizeof(wchar_t) == 4) 
+        				? SQL_DM_CP_UCS4 : SQL_DM_CP_UTF16;
       break;
     }
   return (SQL_SUCCESS);
@@ -1096,10 +1101,10 @@ virtodbc__SQLSetConnectAttr (SQLHDBC connectionHandle,
   switch (Attribute)
     {
 #if !defined (WIN32)
-    case SQL_ATTR_APP_WCHAR_ID:
+    case SQL_ATTR_APP_WCHAR_TYPE:
       {
         SQLUINTEGER val = (SQLUINTEGER) (ptrlong) ValuePtr;
-        cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_ID, ...) called\n"));
+	cli_dbg_printf (("SQLSetConnectAttr(..., SQL_ATTR_APP_WCHAR_TYPE, ...) called\n"));
         if (val == SQL_DM_CP_UTF16)
           con->con_wide_as_utf16 = TRUE;
         else if (val == SQL_DM_CP_UCS4)

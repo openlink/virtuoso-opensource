@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -547,7 +547,7 @@ create function DAV_DIR_LIST_INT (
   in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST_INT (', path, rec_depth, name_mask, auth_uname, auth_pwd, auth_uid, ')');
-  declare rc, t, id, l integer;
+  declare rc, id integer;
   declare path_string, st, det varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
 
@@ -707,7 +707,7 @@ create function DAV_DIR_LIST_INT (
 create function
 DAV_DIR_FILTER_INT (in path varchar := '/DAV/', in rec_depth integer := 0, in compilation any, in auth_uname varchar := null, in auth_pwd varchar := null, in auth_uid integer := null) returns any
 {
-  declare rc, t, id, uid, gid, l integer;
+  declare rc, id, uid, gid integer;
   declare path_string, st, det, qry_text varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
   -- dbg_obj_princ ('DAV_DIR_FILTER_INT (', path, rec_depth, compilation, auth_uname, auth_pwd, auth_uid, ')');
@@ -1597,7 +1597,7 @@ create function DAV_LOCK_INT (
 
   if ((scope <> 'R') and (old_scope = '') and (st ='C'))
   {
-    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where WS.WS.COL_PATH (COL_ID) between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
+    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where COL_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
       return -1;
 
     if (exists (select 1 from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_LOCK where RES_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID))
@@ -2151,6 +2151,9 @@ create function DAV_GET_UID_BY_SERVICE_ID (
 {
   declare rows any;
 
+  if (table_exists ('DB.DBA.WA_USER_OL_ACCOUNTS') = 0)
+    return 0;
+
   rows := DB.DBA.DAV_EXEC_SQL ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', vector (serviceId));
   if (length (rows) = 0)
   {
@@ -2284,6 +2287,8 @@ create function DAV_AUTHENTICATE_SSL_WEBID (
 ;
 
 create function DAV_CHECK_ACLS_INTERNAL (
+  in mode integer,
+  in netid varchar,
   in webid varchar,
   in webidGraph varchar,
   in graph varchar,
@@ -2391,10 +2396,12 @@ _exit:;
 
 create function DAV_CHECK_ACLS (
   in id any,
-  in webid varchar,
-  in webidGraph varchar,
   in what char(1),
   in path varchar,
+  in mode integer,
+  in netid varchar,
+  in webid varchar,
+  in webidGraph varchar,
   in req varchar,
   inout a_uid integer,
   inout a_gid integer,
@@ -2424,7 +2431,7 @@ create function DAV_CHECK_ACLS (
     {
       graph := WS.WS.WAC_GRAPH (path);
       grpGraph := SIOC.DBA.get_graph () || '/private/%';
-      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
+      DB.DBA.DAV_CHECK_ACLS_INTERNAL (mode, netid, webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
         if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid, a_cert))
@@ -2492,7 +2499,7 @@ create function DAV_AUTHENTICATE_SSL (
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (a_webid, webidGraph, a_cert);
 
   a_perms := '___';
-  rc := DB.DBA.DAV_CHECK_ACLS (id, a_webid, webidGraph, what, path, req, a_uid, a_gid, a_perms, a_cert);
+  rc := DB.DBA.DAV_CHECK_ACLS (id, what, path, 0, a_webid, a_webid, webidGraph, req, a_uid, a_gid, a_perms, a_cert);
   if (rc)
   {
     DB.DBA.DAV_PERMS_FIX (a_perms, '000000000TM');
@@ -2554,22 +2561,30 @@ create procedure DAV_COL_CREATE_INT (
   if (extern and 0 > (rc := DAV_AUTHENTICATE (pid, 'C', '11_', auth_uname, auth_pwd)))
     {
       -- dbg_obj_princ ('authenticate OBLOM', rc);
-        return rc;
+      return rc;
     }
   if (DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (par, 0, length (par) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict');
       return -25;
     }
-  if ((0 = return_error_if_already_exists) and (rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
+  if ((rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
     {
       -- dbg_obj_princ ('not overwrite and exists', rc);
+      if (return_error_if_already_exists)
+        return -3;
+      else
         return rc;
     }
   if (check_locks and 0 <> (rc := DAV_IS_LOCKED (pid , 'C', check_locks)))
     {
       -- dbg_obj_princ ('lock OBLOM', rc);
-        return rc;
+      return rc;
+    }
+  name := aref (par, length (par) - 2);
+  if (name = '')
+    {
+      return -1;
     }
 
   if (isarray (pid))
@@ -2596,7 +2611,6 @@ create procedure DAV_COL_CREATE_INT (
       DAV_SEARCH_ID_OR_DET (par, 'C', det, detcol_id, detcol_path, unreached_path);
       return call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, unreached_path, permissions, ouid, ogid, auth_uid);
     }
-  name := aref (par, length (par) - 2);
   rc := WS.WS.GETID ('C');
   if (ouid is null)
     DAV_OWNER_ID (uid, gid, ouid, ogid);
@@ -3576,7 +3590,7 @@ create procedure DAV_DELETE_INT (
   else if (what = 'C')
   {
     declare items any;
-    declare det, proc, graph varchar;
+    declare det, det_params, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
     if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
@@ -3626,6 +3640,10 @@ create procedure DAV_DELETE_INT (
         DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
       }
     }
+    det_params := null;
+    if ((det <> '') and __proc_exists ('DB.DBA.' || det || '__params') and __proc_exists ('DB.DBA.' || det || '_REVOKE'))
+      det_params := call ('DB.DBA.' || det || '__params') (id);
+
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
     DB.DBA.LDP_DELETE (path, 1);
 
@@ -3635,6 +3653,8 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta, 1);
     }
+    if (not isnull (det_params))
+      call ('DB.DBA.' || det || '_REVOKE') (det_params);
   }
   else if (not silent)
   {
@@ -3736,7 +3756,8 @@ create procedure DAV_COPY_INT (
   in extern integer := 1,
   in check_locks any := 1,
   in ouid integer := null,
-  in ogid integer := null )
+  in ogid integer := null,
+  in depth varchar := 'infinity' )
 {
   declare id, d_id, dp_id, rc integer;
   declare auth_uid integer;
@@ -3818,12 +3839,12 @@ create procedure DAV_COPY_INT (
       auth_uid := ouid;
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;
@@ -3964,7 +3985,7 @@ create procedure DAV_COPY_INT (
       if (isarray (id) and (id[0] like '%CatFilter'))
         return -39;
 
-      if (d_id is not null) -- do delete first
+      if (d_id is not null and depth = 'infinity') -- do delete first
         {
           declare rrc integer;
 
@@ -3974,14 +3995,19 @@ create procedure DAV_COPY_INT (
               rollback work;
               return rrc;
             }
+          d_id := null;
         }
+      if (d_id is null)
+        {
       newid := DAV_COL_CREATE_INT (destination, permissions, uid, gid, auth_uname, auth_pwd, 0, 0, 0, ouid, ogid);
       if (DAV_HIDE_ERROR (newid) is null)
         {
           rollback work;
           return newid;
         }
+        }
       DB.DBA.DAV_COPY_PROPS (0, id, 'C', destination, auth_uname, auth_pwd, extern, auth_uid);
+      if (depth = 'infinity')
       DB.DBA.DAV_COPY_SUBTREE (id , newid, sar, destination, 1, ouid, ogid, auth_uname, auth_pwd, extern, check_locks, auth_uid);
     }
   return 1;
@@ -4123,10 +4149,9 @@ create procedure DAV_MOVE_INT (
           dar := split_and_decode (destination, 0, '\0\0/');
         }
     }
-  else
+  else if (st = 'C')
     {
-      if (st = 'C')
-        return -4;
+      return -4;
     }
 
   id := DAV_SEARCH_ID (sar, st);
@@ -4168,12 +4193,12 @@ create procedure DAV_MOVE_INT (
       auth_uid := http_nobody_uid ();
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and (0 = overwrite) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;
@@ -8371,7 +8396,7 @@ create table WS.WS.SYS_DAV_QUEUE (
 
   PRIMARY KEY (DQ_ID)
 )
-create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE)
+create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE, DQ_PRIORITY)
 ;
 
 create table WS.WS.SYS_DAV_QUEUE_LCK (DQL_ID int primary key)
@@ -8456,6 +8481,7 @@ create procedure DB.DBA.DAV_QUEUE_CLEAR ()
 create procedure DB.DBA.DAV_QUEUE_GET (
   in _count integer)
 {
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_GET (', _count, ')');
   declare dummy, items any;
 
   if (_count <= 0)
@@ -8488,8 +8514,7 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
   declare dt datetime;
   declare dummy any;
 
-  retValue := 0;
-  if (is_atomic ())
+  if (is_atomic () or sys_stat ('srv_init'))
   {
     retValue := 1;
   }
@@ -8514,18 +8539,34 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
 }
 ;
 
+create procedure DB.DBA.DAV_QUEUE_REQUEST (
+  in aq any,
+  in delayNumber integer,
+  in item any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_REQUEST ()');
+  declare exit handler for sqlstate '*'
+  {
+    delay (delayNumber);
+    return -1;
+  };
+
+  return aq_request (aq, item[1], vector_concat (vector (item[0]), item[2]));
+}
+;
+
 create procedure DB.DBA.DAV_QUEUE_INIT (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_INIT ()');
   declare aq any;
 
-  if (not DB.DBA.DAV_QUEUE_ACTIVE ())
-  {
-    set_user_id ('dba');
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
-  }
+  if (DB.DBA.DAV_QUEUE_ACTIVE ())
+    return;
+
+  set_user_id ('dba');
+  aq := async_queue (1, 4);
+  aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
 }
 ;
 
@@ -8534,14 +8575,17 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, L, waited, threads integer;
+  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount integer;
   declare retValue, error any;
-  declare aq, item, items, threadsArray any;
+  declare aq, items, threadsArray any;
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     resignal;
   };
+
+  if (is_atomic () or sys_stat ('srv_init'))
+    return;
 
   if (_delay)
     delay (_delay);
@@ -8550,71 +8594,86 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
 
-  aq := null;
-  threads := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
-  if (threads <= 0)
-    threads := 1;
+  threadsCount := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
+  if (threadsCount <= 0)
+    threadsCount := 1;
 
-_new_batch:;
-  items := DB.DBA.DAV_QUEUE_GET (threads);
-  L := length (items);
-  if (not L)
+  items := DB.DBA.DAV_QUEUE_GET (threadsCount);
+  itemsCount := length (items);
+  if (not itemsCount)
     goto _exit;
 
+  if (itemsCount < threadsCount)
+    threadsCount := itemsCount;
 
-  if (isnull (aq))
+  threadsArray := make_array (threadsCount, 'any');
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (L + 1 < threads)
-    {
-      threads := length (items) + 1;
-    }
-    aq := async_queue (threads, 4);
+    threadsArray[N] := -1;
   }
 
-  threadsArray := make_array (threads, 'any');
-  for (N := 0; N < threads; N := N + 1)
+  aq := async_queue (threadsCount, 4);
+
+  delayNumber := 1;
+  maxDelayNumber := 10;
+
+_start:;
+  newThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (N < L)
+    if ((threadsArray[N] < 0) and itemsCount)
     {
-      threadsArray[N] := aq_request (aq, items[N][1], vector_concat (vector (items[N][0]), items[N][2]));
-    }
-    else
-    {
-      threadsArray[N] := -1;
+      threadsArray[N] := DB.DBA.DAV_QUEUE_REQUEST (aq, delayNumber, items[0]);
+      if (threadsArray[N] >= 0)
+      {
+        items := subseq (items, 1);
+        itemsCount := itemsCount - 1;
+        newThreads := newThreads + 1;
+      }
     }
   }
 
 _again:;
-  commit work;
-
-  waited := 0;
-  for (N := 0; N < threads; N := N + 1)
+  freeThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
     if (threadsArray[N] >= 0)
-	  {
+    {
       error := 0;
-	    retValue := aq_wait (aq, threadsArray[N], 0, error);
-	    if (retValue = 100 or error = 100) -- done
+      retValue := aq_wait (aq, threadsArray[N], 0, error);
+      if (retValue = 100 or error = 100) -- done
         threadsArray[N] := -1;
     }
     if (threadsArray[N] < 0)
-	  {
-      item := DB.DBA.DAV_QUEUE_GET (1);
-      if (length (item) = 1)
-     	  threadsArray[N] := aq_request (aq, item[0][1], vector_concat (vector (item[0][0]), item[0][2]));
-    }
-    if (threadsArray[N] >= 0)
-    {
-      waited := 1;
-    }
+      freeThreads := freeThreads + 1;
   }
-  if (waited)
+
+  delay (delayNumber);
+  if (freeThreads and itemsCount and (newThreads = 0))
   {
-    delay (1);
+    delayNumber := delayNumber + 1;
+    if (delayNumber > maxDelayNumber)
+    {
+      log_message ('WS.WS.SYS_DAV_QUEUE - exit: no free threads');
+      goto _exit;
+    }
+
+    goto _again;
+  }
+  else if (freeThreads = 0)
+  {
+    delay (delayNumber);
     goto _again;
   }
 
-  goto _new_batch;
+  if (not length (items))
+    items := DB.DBA.DAV_QUEUE_GET (freeThreads);
+
+  itemsCount := length (items);
+  if (not itemsCount)
+    goto _exit;
+
+  goto _start;
 
 _exit:;
   DB.DBA.DAV_QUEUE_CLEAR ();

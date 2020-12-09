@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,9 @@
 #include "sqlver.h"
 
 
+#ifdef _SSL
 #include "util/sslengine.h"
+#endif
 #include "plugin.h"
 #include "langfunc.h"
 #include "msdtc.h"
@@ -1674,6 +1676,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "EnablePstats", &enable_p_stat) == -1)
     enable_p_stat = 2;
 
+#ifdef _SSL
   /* Initialize OpenSSL engines */
   ssl_engine_startup ();
 #if 0
@@ -1708,6 +1711,7 @@ cfg_setup (void)
       if (!http_log)
 	log_error ("Can't open HTTP log file (%s)", http_log_file);
     }
+#endif
 
   /*
    *  VDB related parameters

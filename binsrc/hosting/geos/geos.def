@@ -1,0 +1,3 @@
+EXPORTS
+    geos_check
+    sqls_define_geos

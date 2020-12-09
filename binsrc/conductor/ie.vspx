@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -31,44 +31,31 @@
       <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
         <tr valign='top'>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-              <v:template name="tabTemplate1" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                <td class="page_tab_selected" align="center">
-                  Import
-                </td>
-                <td class="page_tab" align="center">
-                  <v:url name="b_url13" value="--'Export'" format="%s" url="--'ie.vspx?page=2'" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </v:template>
-              <v:template name="tabTemplate4" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                <td class="page_tab" align="center">
-                  <v:url name="b_url31" value="--'Import'" format="%s" url="--'ie.vspx?page=1'" xhtml_class="uddi"/>
-                </td>
-                <td class="page_tab_selected" align="center">
-                  Export
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </v:template>
-            </tr>
-          </table>
-          <table class="tab_page">
-            <tr>
-              <td valign="top">
-                <v:template name="ent_template" type="simple" enabled="-- case when(get_keyword('page', control.vc_page.vc_event.ve_params) ='1' or get_keyword('page', control.vc_page.vc_event.ve_params) is null) then 1 else 0 end">
-                  <v:include url="ie_import.vspx"/>
-                </v:template>
-                <v:template name="tmodel_template" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
-                  <v:include url="ie_export.vspx"/>
-                </v:template>
-              </td>
-            </tr>
-          </table>
+          <v:template name="tabTemplate1" type="simple" enabled="--equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '1'), '1')">
+            <div class="page_tab_selected">
+              Import
+            </div>
+            <div class="page_tab">
+              <v:url name="b_url13" value="--'Export'" format="%s" url="--'ie.vspx?page=2'" />
+            </div>
+          </v:template>
+          <v:template name="tabTemplate4" type="simple" enabled="--equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '2')">
+            <div class="page_tab">
+              <v:url name="b_url31" value="--'Import'" format="%s" url="--'ie.vspx?page=1'" />
+            </div>
+            <div class="page_tab_selected">
+              Export
+            </div>
+          </v:template>
+
+          <div class="tab_page_new">
+            <v:template name="ent_template" type="simple" enabled="--equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '1'), '1')">
+              <v:include url="ie_import.vspx"/>
+            </v:template>
+            <v:template name="tmodel_template" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '2')">
+              <v:include url="ie_export.vspx"/>
+            </v:template>
+          </div>
         </td>
       </tr>
     </table>

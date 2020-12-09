@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -419,9 +419,9 @@ cmp_boxes_inx (caddr_t b1, caddr_t b2)
   if (dtp1 == dtp2)
     {
       if (DV_SINGLE_FLOAT == dtp1)
-	return NUM_COMPARE (*(float *) b1, *(float *) b2);
+	return NUM_COMPARE_DBL (*(float *) b1, *(float *) b2);
       if (DV_DOUBLE_FLOAT == dtp1)
-	return NUM_COMPARE (*(double *) b1, *(double *) b2);
+	return NUM_COMPARE_DBL (*(double *) b1, *(double *) b2);
     }
   return cmp_boxes (b1, b2, NULL, NULL);
 }

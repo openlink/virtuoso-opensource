@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2004,13 +2004,44 @@ db.dba.dav_br_map_icon (in type varchar)
 create procedure db.dba.yac_hum_min_to_dur (
   in mins integer)
 {
+  declare N imteger;
+  declare S varchar;
+
+  if (isnull (mins))
+    return '';
+
   if (mins < 60)
-    return sprintf ('%d minutes', mins);
+    return sprintf ('%d min', mins) || case when mins > 1 then 's' else '' end;;
 
   if (mins < 1440)
-    return sprintf ('%dhrs,%dmin', mins/60, mod (mins, 60));
+  {
+    -- hours
+    N := floor (mins / 60);
+    S := sprintf ('%d hour', N) || case when N > 1 then 's' else '' end;
 
-  return (sprintf ('%dd,%dhrs,%dmin', mins/1440, mod (mins, 1440)/60, mod (mod (mins, 1440), 60)));
+    -- mins
+    N := mod (mins, 60);
+    if (N = 0)
+      return S;
+
+    return S || sprintf (', %d min', N) || case when N > 1 then 's' else '' end;;
+  }
+
+  -- days
+  N := floor (mins / 1440);
+  S := sprintf ('%d day', N) || case when N > 1 then 's' else '' end;
+
+  -- hours
+  N := floor (mod (mins, 1440) / 60);
+  if (N <> 0)
+    S := S || sprintf (', %d hour', N) || case when N > 1 then 's' else '' end;
+
+  -- mins
+  N := mod (mod (mins, 1440), 60);
+    if (N = 0)
+      return S;
+
+  return S || sprintf (', %d min', N) || case when N > 1 then 's' else '' end;;
 }
 ;
 
@@ -3222,27 +3253,41 @@ yacutia_exec_no_error('create procedure view Y_SYS_USERS_USERS as adm_get_users 
 
 yacutia_exec_no_error('create procedure view Y_SYS_USERS as adm_get_all_users (mask, ord, seq) (U_NAME varchar, U_FULL_NAME varchar, U_IS_ROLE int)');
 
-create procedure adm_get_scheduled_events (in ord any := '', in seq any := 'asc')
+create procedure adm_get_scheduled_events (
+  in ord any := 'name',
+  in seq any := 'asc')
 {
   declare SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR, SE_NEXT any;
   declare  sql, dta, mdta, rc, h, tmp any;
+
   result_names (SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, SE_LAST_ERROR, SE_NEXT);
-  sql := 'select SE_NAME, SE_START, SE_LAST_COMPLETED, SE_INTERVAL, case when length (SE_LAST_ERROR) then ''error'' else null end,
-          case when SE_LAST_COMPLETED is not null then datediff (''minute'', SE_LAST_COMPLETED, now()) else null end
-          from DB.DBA.SYS_SCHEDULED_EVENT';
+  sql := 'select SE_NAME,
+                 SE_START,
+                 SE_LAST_COMPLETED,
+                 SE_INTERVAL,
+                 case when length (SE_LAST_ERROR) then ''error'' else null end,
+                 case when SE_LAST_COMPLETED is not null then __max ((SE_INTERVAL - datediff (''minute'', SE_LAST_COMPLETED, now())), 0) else null end
+            from DB.DBA.SYS_SCHEDULED_EVENT';
   if (length (ord))
+  {
+    tmp := case ord
+             when 'name' then '1'
+             when 'start' then '2'
+             when 'last' then '3'
+             when 'interval' then '4'
+             when 'error' then '5'
+             when 'next' then '6' else ''
+           end;
+    if (tmp <> '')
     {
-      tmp := case ord when 'name' then '1' when 'start' then '2' when 'last' then '3'
-       when 'interval' then '4' when 'error' then '5' when 'next' then '6' else '' end;
-      if (tmp <> '')
-	{
-	  ord := ' order by ' || tmp || ' ' || seq;
-	  sql := sql || ord;
-	}
+      ord := ' order by ' || tmp || ' ' || seq;
+      sql := sql || ord;
     }
+  }
   rc := exec (sql, null, null, vector (), 0, null, null, h);
   while (0 = exec_next (h, null, null, dta))
     exec_result (dta);
+
   exec_close (h);
 }
 ;
@@ -4389,7 +4434,7 @@ create procedure y_base_uri (in p any)
   if (path like '/DAV/%')
     path := 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || path;
   else
-    path := 'file:' || path;
+    path := 'file:/' || path;
   return path;
 }
 ;
@@ -5564,6 +5609,8 @@ create procedure y_col_dts (in t varchar)
        TYPE_NAME := cast (TYPE_NAME as varchar);
        if (TYPE_NAME = 'int')
 	 TYPE_NAME := 'integer';
+       if (TYPE_NAME = 'decimal')
+	 TYPE_NAME := 'double precision';
        http (sprintf ('<option %s>%s</option>', case when upper (TYPE_NAME) = t then 'selected' else '' end, upper (TYPE_NAME)));
     }
   http (sprintf ('<option %s>ANY</option>', case when 'ANY' = t then 'selected' else '' end));
@@ -5683,7 +5730,7 @@ create procedure WS.WS.VFS_EXPORT_DEFS (in ids any := null)
         http (')', ses);
       }
       http (',', ses);
-      http (DB.DBA.SYS_SQL_VAL_PRINT (coalesce (VM_RDF_MAP_TYPE, 0)),ses); 
+      http (DB.DBA.SYS_SQL_VAL_PRINT (coalesce (VM_RDF_MAP_TYPE, 0)),ses);
       http (');\n', ses);
     }
     http ('\n', ses);

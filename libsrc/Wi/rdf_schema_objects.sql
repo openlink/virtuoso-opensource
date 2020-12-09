@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -950,7 +950,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -967,7 +967,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fp+%%3Fo+}&format=%U'',
     vector(''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -983,7 +983,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/objects/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -1096,7 +1096,7 @@ RDF_OWL_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);

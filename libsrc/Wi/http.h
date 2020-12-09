@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -129,6 +129,7 @@ typedef struct ws_connection_s
     caddr_t		ws_client_ip;
     char 		ws_forward;
     wcharset_t *	ws_charset;
+    char		ws_in_charset;
     int			ws_ignore_disconnect;
     caddr_t 		ws_store_in_cache;     /* the url to be cached */
     int			ws_proxy_request;

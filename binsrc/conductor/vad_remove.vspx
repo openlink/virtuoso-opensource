@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -68,20 +68,21 @@
           </tr>
           <tr>
             <td>
+              <br />
               <v:template type="simple" enabled="--case when (self.is_yacutia = 0) then 1 else 0 end">
                 <v:button action="simple" value="Proceed">
                   <v:on-post>
                     <![CDATA[
-                      declare state, msg varchar;
                       declare exit handler for sqlstate '*', not found
                       {
-                        state := __SQL_STATE;
-                        msg := __SQL_MESSAGE;
-                        self.vc_error_message := msg;
+                        log_message ('Uninstall error');
+                        self.vc_error_message := __SQL_MESSAGE;
                         self.vc_is_valid := 0;
                         return;
                       };
+                      log_message ('Uninstalling ' || self.pack_name);
                       DB.DBA.VAD_UNINSTALL(self.pack_name);
+                      log_message ('Uninstall complete');
                       set_qualifier ('DB');
                       http_request_status('HTTP/1.1 302 Found');
                       http_header(sprintf('Location: vad.vspx?sid=%s&realm=%s\r\n', self.sid, self.realm));

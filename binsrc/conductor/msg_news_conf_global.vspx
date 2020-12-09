@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -24,14 +24,17 @@
         decor="yacutia_decor.vspx"
         style="yacutia_style.xsl"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
-      <![CDATA[
-        self.org := registry_get ('__nntp_organization_header');
-        self._from := registry_get ('__nntp_from_header');
-	self._retr := registry_get ('__nntp_self_retr');
-	if (self._retr = 0) self._retr := 3;
-      ]]>
+    <![CDATA[
+      self.org := registry_get ('__nntp_organization_header');
+      self._from := registry_get ('__nntp_from_header');
+      self._retr := registry_get ('__nntp_self_retr');
+      if (self._retr = 0)
+        self._retr := 3;
+    ]]>
   </v:on-init>
   <vm:pagetitle>Virtuoso NNTP Server Global Management</vm:pagetitle>
   <vm:pagewrapper>
@@ -48,82 +51,59 @@
     </vm:menu>
     <vm:header caption="NNTP Server Global Management"></vm:header>
     <vm:pagebody>
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-                      <td class="page_tab" align="center">
-                        <v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
-                      </td>
-                      <td class="page_tab_selected" align="center">General Setup
-                      </td>
-                      <td class="page_tab_empty" align="center" width="100%">
-                        &amp;nbsp;
-                      </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-		      <td valign="top">
-			<!-- MAIN -->
-      <v:form type="simple" method="POST" action="msg_news_conf.vspx">
-      <table class="ctl_grp">
-        <tr>
-	  <td colspan="2">
-	    <h3>Headers:</h3>
-          </td>
-	</tr>
-        <tr>
-          <td>
-            Default value for Organization header:
-          </td>
-          <td>
-	    <v:text xhtml_size="80" type="simple" value="--self.org" name="org_head"/>
-          </td>
-        </tr>
-        <tr>
-          <td>
-	    Optional node-name for Path header:
-          </td>
-          <td>
-	    <v:text xhtml_size="80" type="simple" value="--self._from" name="from_head"/>
-          </td>
-        </tr>
-        <tr>
-          <td>
-	    Post retrieve:
-          </td>
-          <td>
-	    <v:text xhtml_size="80" type="simple" value="--self._retr" name="retrive"/>
-          </td>
-        </tr>
-        <tr>
-	  <td colspan="2">
-	    <v:button action="submit" value="Update" name="upd" style="button" xhtml_style="width:60px"/>
-          </td>
-	</tr>
-        <tr>
-	  <td colspan="2">
-	    <!--v:url value="Access Control List" url="--'sec_acl_edit.vspx?mode=edit&edit=NEWS'" enabled="--self.vc_authenticated" /-->
-          </td>
-	</tr>
-      </table>
-  </v:form>
-	  <!-- END -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+      <div class="main_tab_page">
+        <div class="page_tab">
+                  <v:url name="gsetup" value="NNTP servers" url="msg_news_conf.vspx"/>
+        </div>
+        <div class="page_tab_selected">
+          General Setup
+        </div>
+
+        <div class="tab_page_new">
+                  <!-- MAIN -->
+                  <v:form type="simple" method="POST" action="msg_news_conf.vspx">
+            <table class="ctl_form">
+                      <tr>
+                <td align="center" colspan="2">
+                          <h3>Headers</h3>
+                        </td>
+                      </tr>
+                      <tr>
+                <th>
+                          Default value for Organization header
+                </th>
+                        <td>
+                          <v:text xhtml_size="80" type="simple" value="--self.org" name="org_head"/>
+                        </td>
+                      </tr>
+                      <tr>
+                <th>
+                          Optional node-name for Path header
+                </th>
+                        <td>
+                          <v:text xhtml_size="80" type="simple" value="--self._from" name="from_head"/>
+                        </td>
+                      </tr>
+                      <tr>
+                <th>
+                  Post retrive
+                </th>
+                        <td>
+                          <v:text xhtml_size="80" type="simple" value="--self._retr" name="retrive"/>
+                        </td>
+                      </tr>
+                      <tr>
+                        <td>
+                        </td>
+                        <td>
+                          <v:button action="submit" value="Update" name="upd" style="button" xhtml_style="width:60px"/>
+                        </td>
+                      </tr>
+                    </table>
+                  </v:form>
+                  <!-- END -->
+        </div>
+      </div>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>
-

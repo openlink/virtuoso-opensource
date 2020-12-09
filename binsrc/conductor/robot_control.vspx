@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,56 +30,42 @@
   doctype-system="http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
 
   <v:variable name="error_str" persist="1" type="varchar" default="''"/>
-      <script language="JavaScript" src="admin_utils.js">
-      </script>
-      <v:form name="robot_form1" type="simple" method="POST" action="">
-      <table width="100%">
-        <tr>
-          <td align="right">
-              <table>
-                <tr>
-                  <td align="right">
-                    <v:button action="simple" value="New Target" name="robot_button1" format="%s">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: robot_edit.vspx?mode=create&sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                  <td align="right">
-                    &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
-                  </td>
-                  <td align="right">
-                    <v:button action="simple" value="Import Queues" name="robot_button3" format="%s">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                  <td align="right">
-                    <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%s">
-                      <v:on-post>
-                        <![CDATA[
-                          http_request_status ('HTTP/1.1 302 Found');
-                          http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
-                          return;
-                        ]]>
-                      </v:on-post>
-                    </v:button>
-                  </td>
-                </tr>
-              </table>
-          </td>
-        </tr>
-      </table>
-      <div class="scroll_area">
+  <v:form name="robot_form1" type="simple" method="POST" action="">
+    <table width="100%">
+      <tr>
+        <td align="right">
+          <v:button action="simple" value="New Target" name="robot_button1" format="%s">
+            <v:on-post>
+              <![CDATA[
+                http_request_status ('HTTP/1.1 302 Found');
+                http_header(sprintf('Location: robot_edit.vspx?mode=create&sid=%s&realm=%s\r\n', self.sid , self.realm));
+                return;
+              ]]>
+            </v:on-post>
+          </v:button>
+          &amp;nbsp;&amp;nbsp;&amp;nbsp;&amp;nbsp;
+          <v:button action="simple" value="Import Queues" name="robot_button3" format="%s">
+            <v:on-post>
+              <![CDATA[
+                http_request_status ('HTTP/1.1 302 Found');
+                http_header(sprintf('Location: robot_queues.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                return;
+              ]]>
+            </v:on-post>
+          </v:button>
+          <v:button action="simple" value="Retrieved Sites" name="robot_button4" format="%s">
+            <v:on-post>
+              <![CDATA[
+                http_request_status ('HTTP/1.1 302 Found');
+                http_header(sprintf('Location: robot_sites.vspx?sid=%s&realm=%s\r\n', self.sid , self.realm));
+                return;
+              ]]>
+            </v:on-post>
+          </v:button>
+        </td>
+      </tr>
+    </table>
+    <div class="scroll_area">
       <v:data-set name="data_set2" sql="select VS_DESCR, VS_HOST, VS_URL, VS_ROOT, VS_ID from WS.WS.VFS_SITE" nrows="1000" scrollable="1" cursor-type="dynamic" edit="1">
         <input type="hidden" name="page" value="2"/>
         <!--v:column name="VS_DESCR" />
@@ -90,7 +76,7 @@
         <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set2_header_template">
           <table class="listing">
             <tr class="listing_header_row">
-              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes_mask (this.form, this, 'cb_')"/></th>
+              <th style="width:5px;" nowrap="1"><input type="checkbox" name="select_all" value="Select All" onClick="selectAllCheckboxes (this.form, this, 'cb_')"/></th>
               <th width="50%">Description</th>
               <th width="50%">URL</th>
               <th width="1%">
@@ -210,7 +196,7 @@
       <v:button name="drop_selected_bt"
         action="simple"
         value="Delete Selected"
-        xhtml_title="Drop Selected"
+        xhtml_title="Delete Selected"
       >
         <v:on-post>
           <![CDATA[

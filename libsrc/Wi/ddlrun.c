@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -6289,6 +6289,7 @@ const char * wsst =
 "  __tc_no ('tws_cached_connection_hits');\n"
 "  __tc_no ('tws_cached_connection_miss');\n"
 "  __tc_no ('tws_bad_request');\n"
+"  __tc_no ('tws_max_connects');\n"
 "}\n";
 
 

@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -387,20 +387,23 @@ WEBDAV.updateLabel = function(value)
     OAT.Dom.show('tr_dav_ldp');
   }
   if ($('dav_det')) {
-    if (['', 'Versioning'].indexOf(value) === -1) {
+    var av = $('dav_autoversion');
+    if (!av || (['', 'Versioning'].indexOf(value) === -1)) {
       OAT.Dom.hide('davRow_version');
-    } else {
-      OAT.Dom.show('davRow_version');
-      var av = $('dav_autoversion');
+    }
+    else {
       var o = av.options;
-      if ((value == 'Versioning') && (o.length !== 4)) {
-        o.remove(0);
-      }
-      else if ((value !== 'Versioning') && (o.length == 4)) {
-        var item = document.createElement('option');
-        item.text = 'No';
-        item.value = '';
-        o.add(item, 0);
+      if (o) {
+        if ((value == 'Versioning') && (o.length !== 4)) {
+          o.remove(0);
+        }
+        else if ((value !== 'Versioning') && (o.length == 4)) {
+          var item = document.createElement('option');
+          item.text = 'No';
+          item.value = '';
+          o.add(item, 0);
+        }
+        OAT.Dom.show('davRow_version');
       }
     }
   }

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,6 +72,7 @@
 #endif
 #ifdef _SSL
 #include "util/sslengine.h"
+#include "util/ssl_compat.h"
 #endif
 
 #define XML_VERSION		"1.0"
@@ -916,6 +917,8 @@ char * http_log_format = WS_LOG_DEFAULT_FMT;
       mutex_leave (ws_http_log_mtx); \
       return
 
+static const char * monthname [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
+
 
 static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
@@ -1040,13 +1043,12 @@ next_fragment:
 	  break;
       case 't':
 	    {
-	      char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
 	      int month, day, year;
 	      month = tm->tm_mon + 1;
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
 	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monday [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
+		  (tm->tm_mday), monthname [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
 	    }
 	  break;
       case 'r':
@@ -1103,7 +1105,6 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   int http_resp_code = 0;
@@ -1135,7 +1136,7 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
   u_id = ws_auth_get (ws);
 
   snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
-      ws->ws_client_ip, u_id, (tm->tm_mday), monday [month - 1], year,
+      ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       (ws->ws_req_line
 #ifdef WM_ERROR
@@ -1918,6 +1919,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_limited = 0;
   LEAVE_TXN;
   http_set_default_options (ws);
+  ws->ws_in_charset = 0;
 #ifdef _SSL
   ws->ws_ssl_ctx = NULL;
 #endif
@@ -1932,8 +1934,10 @@ static char hsts_header_buf[128];
 static char *
 hsts_header_line (ws_connection_t * ws)
 {
+#ifdef _SSL
   if (https_hsts_max_age >= 0 && tcpses_get_ssl (ws->ws_session->dks_session) != NULL)
     return hsts_header_buf;
+#endif
   return "";
 }
 
@@ -2980,6 +2984,7 @@ ws_file (ws_connection_t * ws)
   const char * ctype;
   int fd;
   STAT_T st;
+  char tmp[4000];
 
   caddr_t box_date, md5_etag;
   wcharset_t * volatile charset = ws->ws_charset;
@@ -3152,6 +3157,11 @@ ws_file (ws_connection_t * ws)
 	      ranges_buffer
 	      );
 	  SES_PRINT (ws->ws_session, head);
+	  tmp[0] = 0;
+	  if (ws_cors_check (ws, tmp, sizeof (tmp)) && tmp[0] != 0)
+	    {
+	      SES_PRINT (ws->ws_session, tmp);
+	    }
 	  if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400)
 	    {
 	      SES_PRINT (ws->ws_session, "Allow: ");
@@ -3778,7 +3788,6 @@ request_do_again:
       char *last_slash;
       caddr_t save_history_name;
       caddr_t vdir = NULL;
-      caddr_t err = NULL;
       /* Detect virtual dir directory */
       /* Assume first word is method name */
       if (!ws->ws_req_line)
@@ -3837,12 +3846,12 @@ request_do_again:
 	}
       dk_free_box (save_history_name);
       dk_free_box (vdir);
+    }
 rec_err_end:
-      if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
-	{
-	  log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
-	  dk_free_tree(err);
-	}
+  if (err && err != (caddr_t) SQL_NO_DATA_FOUND)
+    {
+      log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
+      dk_free_tree(err);
     }
 
 #ifdef VIRTUAL_DIR
@@ -4816,6 +4825,8 @@ ws_init_func (ws_connection_t * ws)
     }
 }
 
+extern long tws_max_connects;
+
 void
 ws_ready (dk_session_t * accept)
 {
@@ -4834,6 +4845,8 @@ ws_ready (dk_session_t * accept)
       mutex_enter (ws_queue_mtx);
     }
   ws = (ws_connection_t *) resource_get (ws_dbcs);
+  if (tws_max_connects < (ws_dbcs->rc_size - ws_dbcs->rc_fill))
+    tws_max_connects = ws_dbcs->rc_size - ws_dbcs->rc_fill;
 
   if (!ws)
     {
@@ -5261,10 +5274,12 @@ bif_http_login_failed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_charset, wcharset_t *src_charset, int dks_esc_mode)
 {
+  query_instance_t * qi = (query_instance_t *) qst;
   dtp_t dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
-      if (box_flags (val) & BF_UTF8) /* if string is in UTF-8 do not even try to use some default */
+      ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
+      if (box_flags (val) & BF_UTF8 || (ws && ws->ws_in_charset)) /* if string is in UTF-8 do not even try to use some default */
 	src_charset = CHARSET_UTF8;
       dks_esc_write (out, val, box_length (val) - 1, tgt_charset, src_charset, dks_esc_mode);
     }
@@ -5274,7 +5289,6 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
     }
   else if (DV_BLOB_WIDE_HANDLE  == dtp)
     {
-      query_instance_t * qi = (query_instance_t *) qst;
       caddr_t wstring = blob_to_string (qi->qi_trx, val);
 	dks_wide_esc_write (out, (wchar_t *) wstring, box_length (wstring) / sizeof (wchar_t) - 1,
 	  tgt_charset, dks_esc_mode);
@@ -8744,9 +8758,7 @@ https_cert_verify_callback (int ok, void *_ctx)
   if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	  || errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -8799,9 +8811,7 @@ https_ssl_verify_callback (int ok, void *_ctx)
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
     {
@@ -8909,7 +8919,7 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name,
 		  log_error ("SSL: The stored certificate '%s' can not be used as extra chain certificate", tok);
 		  break;
 		}
-	      CRYPTO_add(&k->xek_x509->references, 1, CRYPTO_LOCK_X509);
+              X509_up_ref (k->xek_x509);
               tok = strtok_r (NULL, ",", &tok_s);
 	    }
 	  dk_free_box (str);
@@ -9993,7 +10003,11 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-      SSL_in_accept_init (ssl);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+      SSL_set_state (ssl, SSL_ST_ACCEPT);
+#else
+      SSL_set_accept_state (ssl);	/*FIXME:This does not work in OpenSSL 1.1.1 */
+#endif
       while (SSL_renegotiate_pending (ssl) && ctr < 1000)
 	{
 	  timeout_t to = { 0, 1000 };
@@ -10085,7 +10099,7 @@ bif_http_escape (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   dk_session_t * out = http_session_no_catch_arg (qst, args, 2, "http_escape");
   caddr_t text = bif_arg (qst, args, 0, "http_escape");
-  int box_len = box_length (text);
+  int box_len = text ? box_length (text) : 0;
   int mode = (int) bif_long_arg (qst, args, 1, "http_escape");
   wcharset_t *src_charset;
   wcharset_t *tgt_charset = (((BOX_ELEMENTS (args) < 5) || bif_long_arg (qst, args, 4, "http_escape")) ? CHARSET_UTF8 : default_charset);
@@ -10910,7 +10924,6 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
-  char * monday [] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
   time_t now;
   int month, day, year;
   char * new_log = NULL;
@@ -10937,7 +10950,7 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     dk_free_box (iaddr);
 
   snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
-      host_name, user, (tm->tm_mday), monday [month - 1], year,
+      host_name, user, (tm->tm_mday), monthname [month - 1], year,
       tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
       command, resp, len);
 
@@ -11667,8 +11680,6 @@ http_init_part_two ()
   /* SSL support */
 #ifdef _SSL
   /*    CRYPTO_malloc_init();*/
-  SSL_load_error_strings();
-  SSLeay_add_ssl_algorithms();
   if (!https_key) /* when key & certificate are in same file */
     https_key = https_cert;
   if (https_port && https_cert && https_key)

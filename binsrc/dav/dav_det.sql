@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -495,7 +495,7 @@ create function DB.DBA.DAV_DET_ACTIVITY (
   declare parentPath varchar;
   declare activity_id integer;
   declare activity, activityName, activityPath, activityContent, activityType varchar;
-  declare davEntry any;
+  declare davEntry, activitySize any;
   declare _errorCount integer;
   declare exit handler for sqlstate '*'
   {
@@ -546,9 +546,14 @@ _start:;
 
     activityContent := cast (activityContent as varchar);
     -- .log file size < 100KB
-    if (length (activityContent) > 1024)
+    activitySize := registry_get ('DETActivitySize');
+    if (activitySize = 0)
+      activitySize := '2048';
+
+    activitySize := atoi (activitySize);
+    if (length (activityContent) > activitySize)
     {
-      activityContent := right (activityContent, 1024);
+      activityContent := right (activityContent, activitySize);
       pos := strstr (activityContent, '\r\n20');
       if (not isnull (pos))
         activityContent := subseq (activityContent, pos+2);
@@ -884,6 +889,25 @@ create function DB.DBA.DAV_DET_ENTRY_XUPDATE (
 --
 -- RDF related proc
 --
+create function DB.DBA.DAV_DET_AQ (
+  in proc varchar,
+  in params varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_AQ (', proc, ')');
+  declare aq any;
+  declare exit handler for sqlstate '42000'
+  {
+    return 0;
+  };
+
+  set_user_id ('dba');
+  aq := async_queue (1, 4);
+  aq_request (aq, proc, params);
+
+  return 1;
+}
+;
+
 create function DB.DBA.DAV_DET_RDF (
   in det varchar,
   in detcol_id integer,
@@ -891,15 +915,13 @@ create function DB.DBA.DAV_DET_RDF (
   in what varchar)
 {
   declare rdf_params any;
-  declare aq any;
 
   rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET (det, detcol_id);
   if (DB.DBA.is_empty_or_null (get_keyword ('graph', rdf_params)))
     return;
 
-  set_user_id ('dba');
-  aq := async_queue (1, 4);
-  aq_request (aq, 'DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params));
+  if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params)))
+    DB.DBA.DAV_DET_RDF_AQ (det, detcol_id, id, what, rdf_params);
 }
 ;
 
@@ -1373,7 +1395,7 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
   declare N integer;
   declare det, path, graph varchar;
   declare oldGraph, newGraph varchar;
-  declare aq, aci, acis, rdfParams any;
+  declare aci, acis, rdfParams any;
 
   oldGraph := get_keyword ('graph', oldRDFParams, '');
   newGraph := get_keyword ('graph', newRDFParams, '');
@@ -1422,8 +1444,8 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
     for (N := 0; N < length (newAcls); N := N + 1)
       newAcls[N] := cast (newAcls[N] as varchar);
 
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD', vector (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate));
+    if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD', vector (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate)))
+      DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate);
   }
 }
 ;
@@ -1440,7 +1462,6 @@ create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (
   declare path, detType varchar;
   declare oldGraph, newGraph, oldGraphSecurity, newGraphSecurity, oldSponger, newSponger, oldCartridges, newCartridges, oldMetaCartridges, newMetaCartridges varchar;
   declare oldAcls, newAcls any;
-  declare aq any;
 
   oldGraphSecurity := get_keyword ('graphSecurity', oldRDFParams, 'off');
   newGraphSecurity := get_keyword ('graphSecurity', newRDFParams, 'off');
@@ -1513,9 +1534,10 @@ create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (
     );
 
     path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-    detType := DB.DBA.DAV_DET_COL_DET (id);
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ', vector (path, cast (detType as varchar), oldRDFParams, newRDFParams));
+    detType := cast (DB.DBA.DAV_DET_COL_DET (id) as varchar);
+
+    if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ', vector (path, detType, oldRDFParams, newRDFParams)))
+      DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ (path, detType, oldRDFParams, newRDFParams);
   }
 }
 ;

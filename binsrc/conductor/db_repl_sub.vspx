@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,37 +30,34 @@
 
   <v:variable name="error_str" type="varchar" persist="1" default="null"/>
   <div class="scroll_area">
-    <v:data-set name="data_set1" sql="select SERVER, ACCOUNT, SYNC_USER, case when repl_is_pushback(SERVER, ACCOUNT) = 0 then ACCOUNT else concat (subseq (ACCOUNT, 1), '!') end as ACCT from SYS_REPL_ACCOUNTS where SERVER <> repl_this_server () order by SERVER, ACCT" nrows="10" scrollable="1000" cursor-type="keyset" edit="1">
-      <v:column name="SERVER" />
-      <v:column name="ACCOUNT" />
-      <v:column name="SYNC_USER" />
-      <v:column name="ACCT" />
-      <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
-        <table class="listing" rules="groups">
-          <thead>
-            <tr class="listing_header_row">
-              <th>Server</th>
-              <th>Publication Name</th>
-              <th>Login Name</th>
-              <th>Last trx no</th>
-              <th>Sync User</th>
-              <th>Schedule</th>
-              <th>Status</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-        </table>
-      </v:template>
-      <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
-        <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
-          <table>
+    <table class="listing" rules="groups">
+      <thead>
+        <tr class="listing_header_row">
+          <th>Server</th>
+          <th>Publication Name</th>
+          <th>Login Name</th>
+          <th>Last trx no</th>
+          <th>Sync User</th>
+          <th>Schedule</th>
+          <th>Status</th>
+          <th class="action">Action</th>
+        </tr>
+      </thead>
+
+      <v:data-set name="data_set1" sql="select SERVER, ACCOUNT, SYNC_USER, case when repl_is_pushback(SERVER, ACCOUNT) = 0 then ACCOUNT else concat (subseq (ACCOUNT, 1), '!') end as ACCT from SYS_REPL_ACCOUNTS where SERVER <> repl_this_server () order by SERVER, ACCT" nrows="10" scrollable="1000" cursor-type="keyset" edit="1">
+        <v:column name="SERVER" />
+        <v:column name="ACCOUNT" />
+        <v:column name="SYNC_USER" />
+        <v:column name="ACCT" />
+
+        <v:template type="repeat" name="data_set1_repeat">
+          <v:template type="if-not-exists" name="data_set1_if_not_exists_template">
             <tr>
-              <td class="Attention" colspan="8">No rows selected</td>
+              <td class="listing_empty" colspan="8">No rows selected</td>
             </tr>
-          </table>
-        </v:template>
-        <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
-          <table>
+          </v:template>
+
+          <v:template type="browse" name="data_set1_browse">
             <tr>
               <td class="listing_col">
                 <v:label format="%s" name="data_set1_browse_label_1" value="--((control.vc_parent as vspx_row_template).te_rowset[0])" />
@@ -84,7 +81,7 @@
               <td class="listing_col">
                 <v:label format="%s" name="data_set1_browse_label_5" value="--((control.vc_parent as vspx_row_template).te_rowset)" fmt-function="repl_sch_fmt"/>
               </td>
-              <td class="listing_col_action">
+              <td class="action">
                 <?vsp
                   if (repl_is_pushback((control as vspx_row_template).te_rowset[0], (control as vspx_row_template).te_rowset[1]) = 0)
                   {
@@ -191,20 +188,20 @@
                   url="--concat('db_repl_sub_edit.vspx?acct=', (control.vc_parent as vspx_row_template).te_rowset[1], '&srv=', (control.vc_parent as vspx_row_template).te_rowset[0], '&sid=', self.sid, '&realm=', self.realm)"/>
               </td>
             </tr>
-          </table>
+          </v:template>
         </v:template>
-      </v:template>
 
-      <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
-        <table>
-          <tr>
-            <td colspan="8" align="center"  class="listing_col_action">
-              <vm:ds-navigation data-set="data_set1"/>
-            </td>
-          </tr>
-        </table>
-      </v:template>
-    </v:data-set>
+        <v:template type="simple" name="data_set1_footer">
+          <tfoot>
+            <tr>
+              <td colspan="8" align="center" class="listing_empty">
+                <vm:ds-navigation data-set="data_set1"/>
+              </td>
+            </tr>
+          </tfoot>
+        </v:template>
+      </v:data-set>
+    </table>
   </div>
 
   <div class="listing_bot_ctl_grp">

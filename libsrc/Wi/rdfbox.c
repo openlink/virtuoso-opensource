@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -5031,7 +5031,6 @@ typedef struct ld_json_env2_s
   int single_subject_only;
   int first_triple_idx;
   int obj_is_single;
-  int obj_can_be_simplified;
   id_hash_t *bnode_usage;
   caddr_t printed_triples_mask;
   id_hash_iterator_t *ctx_iter;
@@ -5098,6 +5097,7 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
   caddr_t subj_iri = NULL, pred_iri = NULL, obj_iri = NULL;
   int subj_iri_is_new = 0, pred_iri_is_new = 0, obj_iri_is_new = 0, pred_is_type = 0;
   int is_bnode, obj_is_bnode;
+  int obj_can_be_simplified;
   if (DV_ARRAY_OF_POINTER != DV_TYPE_OF ((caddr_t)env) ||
     (sizeof (ld_json_env_t) != box_length ((caddr_t)env)) ||
     ((DV_STRING == DV_TYPE_OF (env->tje_prev_subj)) && (DV_STRING != DV_TYPE_OF (env->tje_prev_pred)) && ((caddr_t)((ptrlong)1) != env->tje_prev_pred)) )
@@ -5144,10 +5144,12 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
       TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
     }
+
   if (!strcmp (pred_iri, uname_rdf_ns_uri_type))
     pred_is_type = 1;
-  else if ((pred_iri_or_id != p_shorthand) && !((DV_RDF == obj_dtp) && (RDF_BOX_DEFAULT_LANG != ((rdf_box_t *)obj)->rb_lang)))
-    e2->obj_can_be_simplified = 1;
+
+  obj_can_be_simplified = http_ld_json_obj_can_be_simplified (e2->qi, obj);
+
   if (e2->obj_is_single || (NULL == env->tje_prev_pred) || ((caddr_t)((ptrlong)1) == env->tje_prev_pred) || strcmp (env->tje_prev_pred, p_shorthand))
     {
       if (NULL != env->tje_prev_pred)
@@ -5235,7 +5237,7 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
         }
     }
   else
-    http_ld_json_write_literal_obj (e2->ses, e2->qi, obj, obj_dtp, e2->obj_can_be_simplified);
+    http_ld_json_write_literal_obj (e2->ses, e2->qi, obj, obj_dtp, obj_can_be_simplified);
 fail:
   if (subj_iri_is_new) dk_free_box (subj_iri);
   if (pred_iri_is_new) dk_free_box (pred_iri);
@@ -5364,10 +5366,6 @@ again:
       1 ) ) ) )
       if (NULL == p_shorthand)
         p_shorthand = ((NULL == e2->ctx_iter) ? pred_iri_or_id : ld_json_ctx_get_shorthand (e2->qi, pred_iri_or_id, obj, e2->ctx_iter, &found));
-      if (p_shorthand != pred_iri_or_id)
-        e2->obj_can_be_simplified = 1;
-      if (!e2->obj_can_be_simplified)
-        e2->obj_can_be_simplified = http_ld_json_obj_can_be_simplified (e2->qi, obj);
       if (0 == prev_sp_pair_is_distinct_YN0)
         {
           prev_sp_pair_is_distinct_YN0 = ((FLD_DIFFERS (prev_p_shorthand, p_shorthand) || FLD_DIFFERS (e2->batch[triple_ctr-1][0], subj_iri_or_id)) ? 'Y' : 'N');

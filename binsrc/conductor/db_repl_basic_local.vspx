@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -32,15 +32,11 @@
     </vm:menu>
     <vm:header caption="Basic Snapshot Replication"/>
     <vm:pagebody vdb_check="1">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="page_tab" align="center">
-            <v:url name="b_url31" value="Query(Table select) to Remote" url="db_repl_basic.vspx"/>
-          </td>
-          <td class="page_tab_selected" align="center">Query(Table select) to Local</td>
-          <td class="page_tab_empty"></td>
-        </tr>
-      </table>
+      <div class="page_tab">
+        <v:url name="b_url31" value="Query(Table select) to Remote" url="db_repl_basic.vspx"/>
+      </div>
+      <div class="page_tab_selected">Query(Table select) to Local</div>
+
       <table class="tab_page">
         <tr>
           <td>
@@ -56,7 +52,7 @@
               </div>
 
               <div class="scroll_area">
-                <table class="listing" rules="groups">
+                <table class="listing">
                   <thead>
                     <tr class="listing_header_row">
                       <th class="checkbox">
@@ -102,7 +98,7 @@
                     }
                     if (_ex = 0)
                     {
-                      http ('<tr><td colspan="7" class="Attention">No snapshot replications</td></tr>');
+                      http ('<tfoot><tr><td colspan="7" class="listing_empty">No snapshot replications</td></tr></tfoot>');
                     }
                   ?>
                 </table>

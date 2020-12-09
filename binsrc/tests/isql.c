@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,12 +34,13 @@
 # include <winsock.h>		/* For struct timeval */
 #include <process.h>
 #include <conio.h>
-#include <locale.h>
 #include <time.h>
 #else
 #include <netdb.h>
 #include <netinet/in.h>
 #endif
+
+#include <locale.h>
 
 #include "isql_tchar.h"
 
@@ -662,6 +663,7 @@ long int select_max_rows = 0;	/* By default show them all. */
 long int perm_deadlock_retries = 0, vol_deadlock_retries = 0;
 int flag_binary_output = 0;	/* Has effect on Windows platforms. */
 int commit_mode = 0;		/* Zdravko: for manual autocommit */
+char *isql_locale = NULL;	/* Current locale */
 
 int virtuoso_shutdown = 0;
 int virtuoso_debug = 0;
@@ -2675,6 +2677,7 @@ struct name_var_pair isql_variables[] =
   add_var_def (_T("TRIM_STRING_RESULT"), (&trim_string_result), INT_FLAG, OFF_ON),
   add_var_def (_T("HEAD_ALREADY_PRINTED"), (&flag_head_already_printed), INT_FLAG, OFF_ON),
   add_var_def (_T("VIRTEXT"), (&virtext), INT_FLAG, OFF_ON),
+  add_var_def (_T("LOCALE"), (&isql_locale), CHARPTR_VAR, NULL),
 
   add_var_def (_T("AUTOCOMMIT"), (&commit_mode), INT_FLAG, PRE_AUTOCOMMIT),	/* ON */
   add_sam_def (_T("ACCESSMODE"), (SQL_ACCESS_MODE), SAM_CONNECT_OPTION, RW_RO),
@@ -9363,6 +9366,16 @@ is_set_subcommand_aux (TCHAR *text, int show_instead_of_set,
 			   (flag_binary_output ? _O_BINARY : _O_TEXT));
 		}
 #endif
+	      if (is_macro_name (macro_name, _T("LOCALE")))
+		{
+		  isql_locale = setlocale (LC_ALL, arg);
+		  if (!isql_locale)
+		    {
+		      isql_fprintf (error_stream, _T("%") PCT_S _T(": Warning: setlocale \"%") PCT_S _T("\" failed.\n"), progname, arg);
+		      isql_locale = setlocale (LC_ALL, NULL);
+		    }
+		}
+          return 1;
 	    }
 	}
 
@@ -9871,7 +9884,7 @@ connect_to_datasource (TCHAR *datasource, TCHAR *username, TCHAR *password)
 				  SQL_DRIVER_COMPLETE)))
 	{
 	  isql_fprintf (error_stream, _T("Connection: %") PCT_S _T("\n"),
-		rc == SQL_SUCCESS_WITH_INFO ? _T("Established (with info)") : _T("Failed"));
+		rc == SQL_SUCCESS_WITH_INFO ? _T("Establised (with info)") : _T("Failed"));
 	  print_error (((HENV) 0), hdbc, ((HSTMT) 0), rc);
 	  if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)
 	    isql_exit (3);
@@ -10276,15 +10289,9 @@ int isql_main (int argc, TCHAR **argv, PFSTR url_info_fun);
 int __cdecl
 _tmain (int argc, TCHAR **argv)
 {
-#if defined (WIN32) && (defined (UNICODE) || defined (_UNICODE))
-  char *locale = setlocale (LC_ALL, "");
-  if (locale)
-    printf ("Locale=%s\n", setlocale (LC_ALL, ""));
-  else
-    printf ("Can't apply the system locale. "
-	"Possibly wrong setting for LANG environment variable. "
-	"Using the C locale instead.\n");
-#endif
+  isql_locale = setlocale (LC_ALL, "");
+  if (!isql_locale)
+    isql_locale = setlocale (LC_ALL, NULL);
 #ifdef WIN32
   setmode (fileno (stdin), _O_BINARY);
 #endif
@@ -10639,6 +10646,7 @@ isql_main (int argc,
 	  if (!isqlt_tcsncmp (argv[i], _T("-D"), 2))
 	    {
 	      virtuoso_debug = 1;
+	      continue;
 	    }
 #endif
 #endif
@@ -10729,6 +10737,8 @@ isql_main (int argc,
 #ifdef PLDBG
   if (virtuoso_debug)
     {
+      if (!password)
+	password = username;
       debug_session = pldbg_connect (datasource, username, password);
 
       if (!debug_session)

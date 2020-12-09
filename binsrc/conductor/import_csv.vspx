@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -77,8 +77,6 @@
 
   <vm:pagetitle>CSV Import</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:menu>
-    </vm:menu>
     <vm:variables>
       <v:variable name="csv_step" type="varchar" default="'1'" />
       <v:variable name="upl_file" type="varchar" default="null" />
@@ -111,77 +109,57 @@
             <tr>
               <th>
                 <label>
-                  <v:radio-button name="rb_fs" value="2" group-name="choice_source" auto-submit="1" initial-checked="1"/>
+                  <v:radio-button name="rb_fs" value="2" group-name="choice_source" initial-checked="1" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_1\'], \'hide\': [\'div_choice_2\', \'div_choice_3\', \'div_choice_4\']}});" />
                   Server-side file
                 </label>
               </th>
               <td>
-                <?vsp
-                  if (self.rb_fs.ufl_selected)
-                  {
-                ?>
-                <v:text name="fs_package_path" xhtml_size="70" />
-                <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv;*.csv.gz" path="DAV"
-                  browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
-                <?vsp
-                  }
-                ?>
+                <div id="div_choice_1">
+                  <v:text name="fs_package_path" xhtml_size="70" />
+                  <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv;*.csv.gz" path="DAV"
+                    browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+                </div>
               </td>
             </tr>
             <tr>
               <th>
                 <label>
-                  <v:radio-button name="rb_dav" value="1" group-name="choice_source" auto-submit="1" />
+                  <v:radio-button name="rb_dav" value="1" group-name="choice_source"  xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_2\'], \'hide\': [\'div_choice_1\', \'div_choice_3\', \'div_choice_4\']}});" />
                   DAV resource
                 </label>
               </th>
               <td>
-                <?vsp
-                  if (self.rb_dav.ufl_selected)
-                  {
-                ?>
-                <v:text name="package_path" xhtml_size="70"/>
-                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv" path="DAV"
-                  browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="package_path"/>
-                <?vsp
-                  }
-                ?>
+                <div id="div_choice_2" style="display: none;">
+                  <v:text name="package_path" xhtml_size="70"/>
+                  <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.csv" path="DAV"
+                    browse_type="res" w_title="DAV Browser" title="DAV Browser" lang="en" return_box="package_path"/>
+                </div>
               </td>
             </tr>
             <tr>
               <th>
                 <label>
-                  <v:radio-button name="rb_upload" value="0" group-name="choice_source" auto-submit="1" />
+                  <v:radio-button name="rb_upload" value="0" group-name="choice_source"  xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_3\'], \'hide\': [\'div_choice_1\', \'div_choice_2\', \'div_choice_4\']}});" />
                   Upload file
                 </label>
               </th>
               <td>
-                <?vsp
-                  if (self.rb_upload.ufl_selected)
-                  {
-                ?>
-                <input type="file" name="package_path1" size="70" />
-                <?vsp
-                  }
-                ?>
+                <div id="div_choice_3" style="display: none;">
+                  <input type="file" name="package_path1" size="70" />
+                </div>
               </td>
             </tr>
             <tr>
               <th>
                 <label>
-                  <v:radio-button name="rb_url" value="3" group-name="choice_source" auto-submit="1" />
+                  <v:radio-button name="rb_url" value="3" group-name="choice_source"  xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_4\'], \'hide\': [\'div_choice_1\', \'div_choice_2\', \'div_choice_3\']}});" />
                   URL
                 </label>
               </th>
               <td>
-                <?vsp
-                  if (self.rb_url.ufl_selected)
-                  {
-                ?>
-                <v:text name="url_path" xhtml_size="70" />
-                <?vsp
-                  }
-                ?>
+                <div id="div_choice_4" style="display: none;">
+                  <v:text name="url_path" xhtml_size="70" />
+                </div>
               </td>
             </tr>
             <tr>
@@ -194,7 +172,6 @@
                       declare ret integer;
                       declare ret, pos, mode integer;
                       declare ses, tmp, arr, url, h any;
-                      declare params any;
                       declare exit handler for sqlstate '*'
                       {
                         self.vc_is_valid := 0;
@@ -206,7 +183,6 @@
                         return;
 
                       path := '';
-                      params := self.vc_event.ve_params;
                       mode := atoi (get_keyword ('choice_source', params));
                       if (mode = 0)
                       {
@@ -283,7 +259,7 @@
         <v:form name="inx_form2" type="simple" method="POST" action="" >
           <table class="ctl_grp">
             <tr class="ctl_grp_title">
-              <th><h3>Select parse options</h3></th>
+              <th colspan="2"><h3>Select parse options</h3></th>
             </tr>
             <tr>
               <th>Mode</th>
@@ -422,7 +398,7 @@
                       http_value (i + 1, 'td');
                       foreach (any c in r) do
                       {
-                        if (not isinteger (c))
+                        if (isstring (c))
                           c := charset_recode (c, enc, '_WIDE_');
                         http_value (c, 'td');
                       }

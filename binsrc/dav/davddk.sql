@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1107,9 +1107,9 @@ props_done:
   -- dbg_obj_princ ('WS.WS.SYS_DAV_INIT-status is equal to "', dav_status, '"');
   if (strstr (dav_status, '(WS.WS.SYS_DAV_CATFILTER)') is null)
     {
-      for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
+      for (select COL_ID, COL_DET, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
         {
-          for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (_c_path, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
+          for select CF_ID from WS.WS.SYS_DAV_CATFILTER where "LEFT" (COL_FULL_PATH, length (CF_SEARCH_PATH)) = CF_SEARCH_PATH do
             {
               insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
               values (CF_ID, COL_ID, COL_DET);
@@ -1186,10 +1186,10 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
 
      as:items owl:equivalentProperty ldp:contains .
      as:Collection owl:equivalentClass ldp:Container .',
-     'xx',
-     'asEquivalent'
+     '',
+     'urn:activitystreams-owl:map'
   );
-  DB.DBA.rdfs_rule_set ('asEquivalent', 'asEquivalent');
+  DB.DBA.rdfs_rule_set ('asEquivalent', 'urn:activitystreams-owl:map');
   DB.DBA.XML_SET_NS_DECL ('as', 'http://www.w3.org/ns/activitystreams#', 2);
 }
 ;
@@ -1264,16 +1264,56 @@ create procedure WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (
 }
 ;
 
-create procedure WS.WS.SYS_DAV_COL_FULL_PATH (
-  in force integer := 0)
+create procedure WS.WS.COL_PATH_RESOLVE (in _id any, inout dict any)
 {
-  if ((force = 0) and exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+  declare _path, _name varchar;
+  declare _p_id integer;
+
+  if (dict_get (dict, _id) is not null)
+    {
+      log_message ('Duplicate ID : %d', _id);
+      return NULL;
+    }
+  
+  _path := '/';
+  whenever not found goto nf;
+  while (_id > 0)
+    {
+      select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+        {
+          log_message (sprintf ('DAV collection %d is its own parent', _id));
+          _path := '__Circular_reference__/' || _path;
+          return _path;
+        }
+      _id := _p_id;
+      _path := concat ('/', _name, _path);
+    }
+  dict_put (dict, _id, 1);
+  return _path;
+nf:
+  return NULL;
+}
+;
+
+
+create procedure WS.WS.SYS_DAV_COL_FULL_PATH (in force integer := 0)
+{
+  declare dict, old_mode any;
+  if ((force = 0) and key_exists ('WS.WS.SYS_DAV_COL', 'SYS_DAV_COL_FULL_PATH'))
     return;
 
-  if (not exists (select 1 from DB.DBA.SYS_K_STAT where INDEX_NAME = 'SYS_DAV_COL_FULL_PATH'))
+  log_message ('Started upgrading COL_FULL_PATH column.');
+  dict := dict_new (10000);
+  old_mode := log_enable (2, 1);
+  set triggers off;
+  update WS.WS.SYS_DAV_COL set COL_FULL_PATH = WS.WS.COL_PATH_RESOLVE (COL_ID, dict);
+  set triggers on;
+  log_enable (old_mode, 1);
+
+  if (0 = key_exists ('WS.WS.SYS_DAV_COL', 'SYS_DAV_COL_FULL_PATH'))
     exec ('create index SYS_DAV_COL_FULL_PATH on WS.WS.SYS_DAV_COL (COL_FULL_PATH) partition (COL_FULL_PATH varchar (-10, 0hexffff))');
 
-  WS.WS.SYS_DAV_COL_FULL_PATH_INTERNAL (0, '/', vector ());
   WS.WS.SYS_DAV_COL_LOST ();
   if (exists (select 1 from WS.WS.SYS_DAV_COL where COL_FULL_PATH is null))
   {

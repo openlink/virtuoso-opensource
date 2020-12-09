@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -5389,15 +5389,6 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 	  inv_cond = en;
 	  sql_node_append (&head, (data_source_t*) en);
 	}
-      if (0 && IS_BOX_POINTER (dt_dfe->dfe_locus))
-	{
-	  data_source_t * rts = sqlg_locus_rts (so, dt_dfe, pre_code);
-	  t_set_push (&generated_loci, (void*) dt_dfe->dfe_locus);
-	  pre_code = NULL;
-	  sql_node_append (&head, rts);
-	  last_qn = rts;
-	  goto make_select;
-	}
       for (dfe = dt_dfe->_.sub.first; dfe; dfe = dfe->dfe_next)
 	{
 	  if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
@@ -5411,7 +5402,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		{
 		  data_source_t * rts;
 		  dfe_loc_ensure_out_cols (dfe);
-		  rts = sqlg_locus_rts (so, dfe, pre_code);
+                  rts = sqlg_locus_rts (so, dt_dfe, dfe, pre_code);
 		  t_set_push (&generated_loci, (void*) dfe->dfe_locus);
 		  pre_code = NULL;
 		  if (DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)

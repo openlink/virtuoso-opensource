@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -78,20 +78,31 @@ extern int virt_wide_as_utf16;
   { \
     if ((con)->con_defs.cdef_utf8_execs || (con)->con_string_is_utf8) \
     { \
-      len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
       if ((con)->con_wide_as_utf16) \
-        sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+        { \
+          len = cb##param > 0 ? cb##param : virt_ucs2len ((uint16 *) wsz##param); \
+          sz##param = (SQLCHAR *) box_utf16_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+        } \
       else \
-        sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+        { \
+          len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
+          sz##param = (SQLCHAR *) box_wide_as_utf8_char ((caddr_t) wsz##param, len, DV_LONG_STRING); \
+        } \
     } \
     else \
     { \
-      len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
-      sz##param = (SQLCHAR *) dk_alloc_box (len + 1, DV_LONG_STRING); \
       if ((con)->con_wide_as_utf16) \
-        cli_utf16_to_narrow (charset, 0, (uint16 *) wsz##param, len, sz##param, len, NULL, NULL); \
+        { \
+          len = cb##param > 0 ? cb##param : virt_ucs2len ((uint16 *) wsz##param); \
+          sz##param = (SQLCHAR *) dk_alloc_box (len + 1, DV_LONG_STRING); \
+          cli_utf16_to_narrow (charset, 0, (uint16 *) wsz##param, len, sz##param, len, NULL, NULL); \
+        } \
       else \
-        cli_wide_to_narrow (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len, NULL, NULL); \
+        { \
+          len = cb##param > 0 ? cb##param : wcslen (WCHAR_CAST wsz##param); \
+          sz##param = (SQLCHAR *) dk_alloc_box (len + 1, DV_LONG_STRING); \
+          cli_wide_to_narrow (charset, 0, WCHAR_CAST wsz##param, len, sz##param, len, NULL, NULL); \
+        } \
       sz##param[len] = 0; \
     } \
   }

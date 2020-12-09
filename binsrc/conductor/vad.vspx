@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -113,36 +113,36 @@
         </v:form>
       </div>
       <v:form name="vad_list1" method="POST" type="simple">
-        <table class="listing" rules="groups">
+        <table class="listing">
+          <thead>
+            <tr class="listing_header_row">
+              <th>Name</th>
+              <th>Target</th>
+              <th>Installed Version</th>
+              <th>New Version</th>
+              <th>Last Update</th>
+              <th width="1%">Action</th>
+            </tr>
+          </thead>
           <v:data-set name="ds_items1"
                       sql="select PKG_NAME, PKG_DESC, PKG_VER, PKG_DATE, PKG_INST, PKG_NVER, PKG_NDATE, PKG_FILE, PKG_DEST from VAD.DBA.VAD_LIST where dir = :self.src_folder and fs_type = :self.src_folder_type order by 1"
                       nrows="1000"
                       scrollable="1"
                       enabled="--isnull(self.upl_file)">
-            <v:template name="header11" type="simple">
-              <thead>
-                <tr class="listing_header_row">
-                  <th>Name</th>
-                  <th>Target</th>
-                  <th>Installed Version</th>
-                  <th>New Version</th>
-                  <th>Last Update</th>
-                  <th width="1%">Action</th>
-                </tr>
-              </thead>
-            </v:template>
+
             <v:template name="rows1" type="repeat">
+
               <v:template type="if-not-exists" name="ds_items1_if_not_exists_template">
-                <tr class="listing_row_even">
-                  <td align="center" colspan="6">
-                    <b>No packages are installed</b>
+                <tr>
+                  <td class="listing_empty" colspan="6">
+                    No packages are installed
                   </td>
                 </tr>
               </v:template>
 
               <v:template name="template41" type="browse" >
-                <tr class="<?V case when mod (control.te_ctr, 2) = 0 then 'listing_row_even' else 'listing_row_odd' end ?>">
-                  <td class="listing_col">
+                <tr>
+                  <td>
                     <input type="checkbox" value="<?U control.te_ctr ?>" name="cb<?V case when (control as vspx_row_template).te_rowset[5] is not null and (control as vspx_row_template).te_rowset[2] is not null and gt (control.te_rowset[5], control.te_rowset[2]) then '2' else '1' end ?>"/>
                     <?vsp if (control.te_rowset[7] is not null) { ?>
                     <input type="hidden" name="f_<?V control.te_ctr ?>" value="<?V control.te_rowset[7] ?>" />
@@ -152,7 +152,7 @@
                     <?vsp } ?>
                     <?V (control as vspx_row_template).te_rowset[0] ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if (control.te_rowset[8])
                         http ('dav');
@@ -160,7 +160,7 @@
                         http ('fs');
                     ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if ((control as vspx_row_template).te_rowset[2] is null)
                       {
@@ -175,7 +175,7 @@
                       }
                     ?>
                   </td>
-                  <td class="listing_col">
+                  <td>
                     <?vsp
                       if ((control as vspx_row_template).te_rowset[5] is null)
                       {
@@ -189,18 +189,18 @@
                     <?vsp
                       }
                     ?>
-                    </td>
-                    <td class="listing_col">
-                      <?V (control as vspx_row_template).te_rowset[4] ?>
-                    </td>
-                    <td class="listing_col_action">
-                      <v:button action="simple" style="image" name="delete1"
-                        value="images/icons/del_16.png"
-                        url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[0], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
-                        xhtml_alt="Uninstall"
-                        xhtml_title="Uninstall"
-                        text="&nbsp;Uninstall"
-                        >
+                  </td>
+                  <td>
+                    <?V (control as vspx_row_template).te_rowset[4] ?>
+                  </td>
+                  <td class="listing_col_action">
+                    <v:button action="simple" style="image" name="delete1"
+                      value="images/icons/del_16.png"
+                      url="--concat('vad_remove.vspx?name=', encode_base64 (serialize (concat((control.vc_parent as vspx_row_template).te_rowset[0], '/', (control.vc_parent as vspx_row_template).te_rowset[2]))))"
+                      xhtml_alt="Uninstall"
+                      xhtml_title="Uninstall"
+                      text="&nbsp;Uninstall"
+                      >
                       <v:before-render>
                         <![CDATA[
                           declare fullname varchar;
@@ -210,7 +210,7 @@
                           {
                             control.vc_enabled := 0;
                           };
-                          fullname := DB.DBA.VAD_CHECK_UNINSTALLABILITY(fullname);
+                          DB.DBA.VAD_CHECK_UNINSTALLABILITY(fullname);
                         ]]>
                       </v:before-render>
                     </v:button>
@@ -294,15 +294,17 @@
                 </tr>
               </v:template>
             </v:template>
+
             <v:template name="template31" type="simple">
               <tr>
-                <td colspan="6" align="center"  class="listing_col_action">
-                  <vm:ds-navigation data-set="ds_items1"/>
+                <td colspan="6" align="center" class="listing_col_action">
+                  <vm:ds-navigation data-set="ds_items1" />
                 </td>
               </tr>
             </v:template>
           </v:data-set>
-        </table><br/>
+        </table>
+        <br/>
         <script type="text/javascript">
           <![CDATA[
             function select_all ()
@@ -450,49 +452,49 @@
 
       <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
         <h3>Install package</h3>
-        <table class="ctl_grp">
+        <table class="ctl_grp" style="width: auto">
           <tr class="ctl_grp_title">
-            <th>Install from</th>
+            <td colspan="2"><strong>Install from</strong></td>
           </tr>
           <tr>
             <td>
-              <v:radio-button
-                name="rb_upload"
-                xhtml_id="rb_upload"
-                value="0"
-                group-name="choice_source"
-                auto-submit="1"
-                initial-checked="1"/>
-              <label for="rb_upload">Upload package</label>
+              <label>
+                <v:radio-button name="rb_upload" xhtml_id="rb_upload" value="0" group-name="choice_source" initial-checked="1" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_1\'], \'hide\': [\'div_choice_2\', \'div_choice_3\']}});" />
+                Upload package
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_upload.ufl_selected or not self.vc_event.ve_is_post) { ?>
-              <input type="file" name="package_path1" size="70"></input>
-              <?vsp } ?>
+              <div id="div_choice_1">
+                <input type="file" name="package_path1" size="70"></input>
+              </div>
             </td>
           </tr>
           <tr>
             <td>
-              <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source" auto-submit="1" />
-              <label for="rb_dav">DAV resource</label>
+              <label>
+                <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_2\'], \'hide\': [\'div_choice_1\', \'div_choice_3\']}});" />
+                DAV resource
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_dav.ufl_selected) { ?>
-              <v:text name="package_path" xhtml_size="70"/>
-              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
-              <?vsp }  ?>
+              <div id="div_choice_2" style="display: none;">
+                <v:text name="package_path" xhtml_size="70"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="res" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
+              </div>
             </td>
           </tr>
           <tr>
             <td>
-              <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="2" group-name="choice_source" auto-submit="1" />
-              <label for="rb_fs">Server-side file</label>
+              <label>
+                <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="2" group-name="choice_source" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_3\'], \'hide\': [\'div_choice_1\', \'div_choice_2\']}});" />
+                Server-side file
+              </label>
             </td>
             <td>
-              <?vsp if (self.rb_fs.ufl_selected) { ?>
-              <v:text name="fs_package_path" xhtml_size="70"/>
-              <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
-              <?vsp } ?>
+              <div id="div_choice_3" style="display: none;">
+                <v:text name="fs_package_path" xhtml_size="70"/>
+                <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="res" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+              </div>
             </td>
           </tr>
           <tr>
@@ -506,7 +508,7 @@
                       return;
 
                     path := '';
-                    mode := atoi (get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                    mode := atoi (get_keyword('choice_source', params));
                     if (mode = 0)
                     {
                       if (self.upl_file is not null)
@@ -524,11 +526,11 @@
                     }
                     else if (mode = 1)
                     {
-                      path := get_keyword('package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword('package_path', params);
                     }
                     else if (mode = 2)
                     {
-                      path := get_keyword('fs_package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword('fs_package_path', params);
                     }
                     if (path = '' or path is null)
                     {

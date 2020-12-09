@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -92,7 +92,7 @@ dc_double_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i1 = ((double*)dc->dc_values)[r1];
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -102,7 +102,7 @@ dc_float_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i1 = ((float *) dc->dc_values)[r1];
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 int
@@ -142,7 +142,7 @@ dc_double_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -153,7 +153,7 @@ dc_float_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -304,7 +304,7 @@ dc_set_flags (data_col_t * dc, sql_type_t * sqt, dtp_t dcdtp)
       break;
     case DV_ANY:
       /* only set if dc_dtp does not contraditc, if it does, control falls through to default case */
-      if (0 == dcdtp || DV_ANY == dcdtp)
+      if (0 == dcdtp || DV_ANY == dcdtp || DCT_NUM_INLINE == dc->dc_type)
 	{
 	  dc->dc_dtp = DV_ANY;
 	  dc->dc_type = 0;

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -238,6 +238,17 @@ fct_query_info_1 (in tree any,
 }
 ;
 
+create function fct_query_limit (inout tree any) returns int
+{
+  declare lim int;
+  lim := atoi(cast (coalesce (
+  	xpath_eval('//view/@limit', tree),
+	xpath_eval('//query/@limit', tree),
+	registry_get ('fct_defailt_limit'), '20') as varchar));
+  return lim;
+}
+;
+
 create procedure
 fct_query_info (in tree any,
 	        in this_s int,
@@ -248,8 +259,10 @@ fct_query_info (in tree any,
 		inout cno int)
 {
   declare n varchar;
+  declare lim int;
 
   n := cast (xpath_eval ('name ()', tree, 1) as varchar);
+  lim := fct_query_limit (tree);
 
   fct_dbg_msg (sprintf ('fct_query_info: cno: %d, level: %d, n: %s, ctx: %d', cno, level, n, ctx));
 
@@ -300,10 +313,11 @@ fct_query_info (in tree any,
                          charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')),
                 txt);
       else if (vt = 'properties')
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_s_term (),
                          connection_get ('sid'), 
+			 lim,
                          cno,
 		         fct_p_term (),
 		         fct_o_term (),
@@ -311,10 +325,11 @@ fct_query_info (in tree any,
                          connection_get ('sid')), 
                  txt);
       else if (vt = 'properties-in') 
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ', 
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_o_term (),
                          connection_get ('sid'), 
+			 lim,
                          cno,
 		         fct_p_term (),
 		         fct_s_term (),
@@ -322,9 +337,10 @@ fct_query_info (in tree any,
                          connection_get ('sid')), 
                  txt);
       else
-        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=20&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx),
                          connection_get ('sid'),
+			 lim,
                          cno,
 		         fct_p_term (),
 		         fct_o_term (),
@@ -585,13 +601,13 @@ fct_top (in tree any, in txt any)
 ;
 
 create procedure
-fct_view_link (in tp varchar, in msg varchar, in txt any, in tip any := null)
+fct_view_link (in tp varchar, in lim int, in msg varchar, in txt any, in tip any := null)
 {
   if (tip is null)
     tip := msg;
 
-  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=20&offset=0" title="%V">%s</a></li>',
-                 connection_get ('sid'), tp, tip, msg), txt);
+  http (sprintf ('<li><a href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=%d&offset=0" title="%V">%s</a></li>',
+                 connection_get ('sid'), tp, lim, tip, msg), txt);
 }
 ;
 
@@ -621,9 +637,10 @@ fct_nav (in tree any,
          in reply any,
          in txt any)
 {
-  declare pos int;
+  declare pos, lim int;
   declare tp varchar;
   tp := cast (xpath_eval ('//view/@type', tree) as varchar);
+  lim := fct_query_limit (tree);
   pos := fct_view_pos (tree);
 
   fct_set_conn_tlogy (tree);
@@ -634,7 +651,7 @@ fct_nav (in tree any,
 
   if ('text-properties' = tp)
     {
-      fct_view_link ('text', 'Return to text match list', txt);
+      fct_view_link ('text', lim, 'Return to text match list', txt);
       return;
     }
 
@@ -645,50 +662,50 @@ fct_nav (in tree any,
 
   if ('classes' <> tp)
     if (connection_get('c_term') = 'class')
-	fct_view_link ('classes', 'Classes', txt);
+	fct_view_link ('classes', lim, 'Classes', txt);
     else
-	fct_view_link ('classes', 'Type', txt, 'Entity Category or Class');
+	fct_view_link ('classes', lim, 'Type', txt, 'Entity Category or Class');
 
   if ('properties' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties', 'Predicates', txt, 'Relationships for which selected variable denotes relation subject');
+      fct_view_link ('properties', lim, 'Predicates', txt, 'Relationships for which selected variable denotes relation subject');
     else
-      fct_view_link ('properties', 'Attributes', txt, 'Relationships for which selected variable denotes relation entity');
+      fct_view_link ('properties', lim, 'Attributes', txt, 'Relationships for which selected variable denotes relation entity');
 
   if ('text' = tp and pos = 0)
-    fct_view_link ('text-properties', 'Properties containing the text', txt);
+    fct_view_link ('text-properties', lim, 'Properties containing the text', txt);
 
   if ('properties-in' <> tp)
     if (connection_get('s_term') = 's')
-      fct_view_link ('properties-in', 'Object', txt, 'Relationships for which selected variable denotes relation object');
+      fct_view_link ('properties-in', lim, 'Object', txt, 'Relationships for which selected variable denotes relation object');
     else
-      fct_view_link ('properties-in', 'Values', txt, 'Relationships for which selected variable denotes relation value');
+      fct_view_link ('properties-in', lim, 'Values', txt, 'Relationships for which selected variable denotes relation value');
 
       if (tp <> 'list-count')
     {
 	if (connection_get('s_term') = 's')
-	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', lim, 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
 	else
-	fct_view_link ('list-count', 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
+	fct_view_link ('list-count', lim, 'Distinct (Count)', txt, 'Displaying List of Distinct Entity Names ordered by Count');
     }
   if ('text' <> tp and tp <> 'text-d')
     {
       if (tp <> 'list')
 	if (connection_get('s_term') = 's')
-	  fct_view_link ('list', 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
+	  fct_view_link ('list', lim, 'Show Matching Objects', txt, 'Displaying Ranked Enitity Names and Text summaries');
 	else
-	  fct_view_link ('list', 'Show Matching Entities', txt, 'Displaying Ranked Enitity Names and Text summaries');
+	  fct_view_link ('list', lim, 'Show Matching Entities', txt, 'Displaying Ranked Enitity Names and Text summaries');
     }
 
   if ('full-text' <> tp and not xpath_eval ('//query/text', tree))
     {
-      fct_view_link ('full-text', 'Text', txt,'Add full-text constraint');
+      fct_view_link ('full-text', lim, 'Text', txt,'Add full-text constraint');
     }
 
   if ('geo' <> tp)
     {
       --fct_view_link ('geo', 'Map', txt);
-      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=200&offset=0" title="%V">%s</a>&nbsp;'||
+      http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=%d&offset=0" title="%V">%s</a>&nbsp;'||
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="any">Any location</option>'||
 	    		'<option value="">Shown items</option>'||
@@ -703,7 +720,7 @@ fct_nav (in tree any,
 	    		'<option value="dbp:placeOfDeath">dbpedia:placeOfDeath</option>'||
 	    		'<option value="dbp:deathPlace">dbpedia:deathPlace</option>'||
 			'</select></li>',
-                 connection_get ('sid'), 'geo', 'Geospatial Entities projected over Map overlays', 'Places'), txt);
+                 connection_get ('sid'), 'geo', lim, 'Geospatial Entities projected over Map overlays', 'Places'), txt);
     }
 
   http ('</ul><ul class="n2">', txt);
@@ -771,10 +788,15 @@ cl_exec ('registry_set (''fct_timeout_max'', ''20000'')');
 create procedure
 fct_set_default_qry (inout tree any)
 {
-
+  declare lim any;
+  lim := cast(xpath_eval('//view/@limit', tree) as varchar);
+  if (lim is null)
+    lim := 20;
+  else
+    lim := atoi (lim);
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_default.xsl',
                 tree,
-		vector ('pos', 1, 'op', 'class', 'iri', 'http://www.w3.org/2000/01/rdf-schema#Class'));
+		vector ('pos', 1, 'op', 'class', 'limit', lim, 'iri', 'http://www.w3.org/2000/01/rdf-schema#Class'));
 
 }
 ;
@@ -896,7 +918,7 @@ fct_c_plink (in p_xml any)
 ;
 
 create procedure
-fct_web (in tree any)
+fct_web (in tree any, in sid int)
 {
   declare sqls, msg, tp, agg, agg_qr, agg_res varchar;
   declare start_time int;
@@ -919,7 +941,10 @@ fct_web (in tree any)
   if (xpath_eval('/query/*[not(name()=''view'')]', tree) is null)
     {
       if (xpath_eval('/query/view[@type=''classes'']', tree) is null)
+        {
 	fct_set_default_qry (tree);
+	  update fct_state set fct_state = tree where fct_sid = sid;
+	}
     }
 
   reply := fct_exec (tree, timeout);
@@ -1035,6 +1060,9 @@ create procedure
 fct_set_text (in tree any, in sid int, in txt varchar)
 {
   declare new_tree any;
+  declare lim int;
+
+  lim := fct_query_limit (tree);
 
   new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl', tree, vector ('text', txt, 'prop', 'none'));
 
@@ -1042,13 +1070,13 @@ fct_set_text (in tree any, in sid int, in txt varchar)
     {
       new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                         new_tree,
-		        vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
+		        vector ('pos', 0, 'type', 'text-d', 'limit', lim, 'op', 'view'));
     }
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
   commit work;
 
-  fct_web (new_tree);
+  fct_web (new_tree, sid);
 }
 ;
 
@@ -1056,48 +1084,53 @@ fct_set_text (in tree any, in sid int, in txt varchar)
 create procedure
 fct_set_text_property (in tree any, in sid int, in iri varchar)
 {
-  declare new_tree, txt any;
+  declare new_tree, txt, lim any;
 
+  lim := fct_query_limit (tree);
   txt := cast (xpath_eval ('//text', tree) as varchar);
   new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_text.xsl',
                     tree, vector ('text', txt, 'prop', iri));
   new_tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
-                    new_tree, vector ('pos', 0, 'type', 'text-d', 'limit', 20, 'op', 'view'));
+                    new_tree, vector ('pos', 0, 'type', 'text-d', 'limit', lim, 'op', 'view'));
 
   update fct_state set fct_state = new_tree where fct_sid = sid;
   commit work;
 
-  fct_web (new_tree);
+  fct_web (new_tree, sid);
 }
 ;
 
 create procedure
 fct_set_focus (in tree any, in sid int, in pos int)
 {
+  declare lim int;
+  lim := fct_query_limit (tree);
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-		vector ('pos', pos - 1, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+		vector ('pos', pos - 1, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
 create procedure
 fct_drop (in tree any, in sid int, in pos int)
 {
+  declare lim int;
+  lim := fct_query_limit (tree);
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree, vector ('pos', pos - 1, 'op', 'close'));
 
   if (xpath_eval ('//view', tree) is null)
     tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
-                  tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+                  tree, vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1110,7 +1143,7 @@ fct_drop_cond (in tree any, in sid int, in cno int)
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1125,7 +1158,7 @@ fct_drop_text (in tree any, in sid int)
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1140,7 +1173,7 @@ fct_drop_text_prop (in tree any, in sid int)
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1178,7 +1211,7 @@ fct_set_view (in tree     any,
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1259,9 +1292,10 @@ fct_open_property  (in tree any,
                     in name varchar,
                     in exclude varchar := null)
 {
-  declare pos int;
+  declare pos, lim int;
   pos := fct_view_pos (tree);
 
+  lim := fct_query_limit (tree);
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
 		vector ('pos', pos,
@@ -1269,7 +1303,7 @@ fct_open_property  (in tree any,
 			'name', name,
 			'iri', iri,
 			'type', 'list',
-			'limit', 20,
+			'limit', lim,
 			'offset', 0,
 			'exclude', exclude));
 
@@ -1280,16 +1314,13 @@ fct_open_property  (in tree any,
                     vector ('pos', pos,
                     'op', 'view',
                     'type', 'properties',
-                    'limit', 20,
+                    'limit', lim,
                     'offset', 0));
     }
 
-  update fct_state
-    set fct_state = tree
-    where fct_sid = sid;
-
+  update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1299,9 +1330,10 @@ fct_set_class (in tree any,
 	       in iri varchar,
 	       in exclude varchar := null)
 {
-  declare pos int;
+  declare pos, lim int;
 
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
   fct_dbg_msg (sprintf ('fct_set_class: sid: %d, iri: %s, pos: %d', sid, iri, pos));
 
@@ -1311,20 +1343,20 @@ fct_set_class (in tree any,
 		        'op',      'class',
 			'iri',     iri,
 			'type',    'list',
-			'limit',   20,
+			'limit',   lim,
 			'offset',  0,
 			'exclude', exclude));
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 
   update fct_state
     set fct_state = tree
     where fct_sid = sid;
 
   commit work;
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1560,8 +1592,8 @@ fct_create_ses ()
   declare new_tree any;
 
   sid := sequence_next ('fct_seq');
-  new_tree := xtree_doc('<?xml version="1.0" encoding="UTF-8"?>\n' ||
-                        '<query inference="" same-as="" view3="" s-term="" c-term="" agg=""/>');
+  new_tree := xtree_doc(sprintf ('<?xml version="1.0" encoding="UTF-8"?>\n' ||
+                        '<query inference="" same-as="" view3="" s-term="" c-term="" agg="" limit="%d"/>', 20));
 
   insert into fct_state (fct_sid, fct_state)
          values (sid, new_tree);
@@ -1587,19 +1619,16 @@ fct_new ()
   else
     {
       declare tree any;
+      declare lim int;
 
       whenever not found goto no_ses;
 
-      select fct_state
-        into tree
-	from fct_state
-	where fct_sid = sid;
+      select fct_state into tree from fct_state where fct_sid = sid;
 
+      lim := fct_query_limit (tree);
       tree := XMLUpdate (tree, '/query/*', null);
 
-      update fct_state
-        set fct_state = tree
-	where fct_sid = sid;
+      update fct_state set fct_state = tree where fct_sid = sid;
     }
 
   declare fct_demo_uri varchar;
@@ -1812,7 +1841,7 @@ fct_set_inf (in tree any, in sid int)
 
       commit work;
 
-      fct_refresh (tree);
+      fct_refresh (tree, sid);
     }
 }
 ;
@@ -1849,9 +1878,9 @@ fct_open_iri (in tree any, in sid int, in iri varchar)
 ;
 
 create procedure
-fct_refresh (in tree any)
+fct_refresh (in tree any, in sid int)
 {
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1863,7 +1892,7 @@ fct_set_agg (in tree any, in sid varchar)
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_agg.xsl', tree, vector ('agg', agg));
   update fct_state set fct_state = tree where fct_sid = sid;
   commit work;
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -1893,7 +1922,7 @@ fct_select_value (in tree any,
 		  in dtp varchar,
 		  in cond_t varchar)
 {
-  declare pos int;
+  declare pos, lim int;
 
 --  fct_dbg_msg (sprintf ('fct_select_value: val: %s, lang: %s, dtp: %s, op: %s',
 --              cast (val as varchar),
@@ -1902,6 +1931,7 @@ fct_select_value (in tree any,
 --              cast (cond_t as varchar)));
 
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
@@ -1911,13 +1941,13 @@ fct_select_value (in tree any,
 --    {
       tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                     tree,
-	            vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+	            vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 --    }
 
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2099,9 +2129,10 @@ fct_set_cond_range (in tree any,
                     in hi varchar,
                     in neg varchar)
 {
-  declare pos int;
+  declare pos, lim int;
 
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
 --  lo := fct_validate_cond_input (lo);
 --  hi := fct_validate_cond_input (hi);
@@ -2110,7 +2141,7 @@ fct_set_cond_range (in tree any,
 
   if (lo is null and hi is null)
   {
-    fct_web (tree);
+    fct_web (tree, sid);
     return;
   }
   else
@@ -2127,14 +2158,14 @@ fct_set_cond_range (in tree any,
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
   }
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2147,9 +2178,10 @@ fct_set_cond (in tree any,
               in val varchar,
               in neg varchar)
 {
-  declare pos int;
+  declare pos, lim int;
 
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
@@ -2163,13 +2195,13 @@ fct_set_cond (in tree any,
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2189,8 +2221,9 @@ fct_set_cond_in (in tree any,
   declare parm_tree any;
   parm_tree := xtree_doc (parms);
 
-  declare pos int;
+  declare pos, lim int;
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
@@ -2202,13 +2235,13 @@ fct_set_cond_in (in tree any,
 
   tree := xslt (registry_get ('_fct_xslt_') || 'fct_set_view.xsl',
                 tree,
-                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', 20, 'offset', 0));
+                vector ('pos', 0, 'op', 'view', 'type', 'list', 'limit', lim, 'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2227,8 +2260,9 @@ fct_set_cond_near (in tree any,
                         dist,
                         cast (acquire as varchar)));
 
-  declare pos int;
+  declare pos, lim int;
   pos := fct_view_pos (tree);
+  lim := fct_query_limit (tree);
 
   declare acq varchar;
 
@@ -2247,7 +2281,7 @@ fct_set_cond_near (in tree any,
                 vector ('pos', 0,
                         'op', 'view',
                         'type', 'geo',
-                        'limit', 20,
+                        'limit', lim,
                         'offset', 0,
                         'location-prop', prop));
 
@@ -2255,7 +2289,7 @@ fct_set_cond_near (in tree any,
 
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2265,10 +2299,11 @@ fct_set_loc (in tree any,
              in cno int)
 {
   declare lon, lat float;
-  declare acc int;
+  declare acc, lim int;
 
   lon := http_param ('lon');
   lat := http_param ('lat');
+  lim := fct_query_limit (tree);
 
   fct_dbg_msg (sprintf ('fct_set_loc: cno:%d, lon:%s, lat:%s', cno, lon, lat));
 
@@ -2289,14 +2324,14 @@ fct_set_loc (in tree any,
                 vector ('pos', 0,
                         'op', 'view',
                         'type', 'geo',
-                        'limit', 20,
+                        'limit', lim,
                         'offset', 0));
 
   update fct_state set fct_state = tree where fct_sid = sid;
 
   commit work;
 
-  fct_web (tree);
+  fct_web (tree, sid);
 }
 ;
 
@@ -2343,7 +2378,7 @@ fct_vsp ()
 
   sid := http_param ('sid');
 
-  if (0 <> sid) {
+  if (isstring (sid)) { 
     sid := atoi (sid);
   }
   else {
@@ -2473,7 +2508,7 @@ exec:;
 	  fct_new ();
 	  return;
         }
-      fct_refresh (tree);
+      fct_refresh (tree, sid);
     }
   else if ('set_inf' = cmd)
     fct_set_inf (tree, sid);

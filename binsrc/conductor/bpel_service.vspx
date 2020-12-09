@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <v:page name="bpel_service_page"
         decor="yacutia_decor.vspx"
@@ -30,33 +27,33 @@
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
    <v:after-data-bind>
-    <v:script>
-      <![CDATA[
-         declare url varchar;
-        if ( DB.DBA.check_package('bpel4ws') = 1 )
-     {
+    <![CDATA[
+      declare url varchar;
+      if ( DB.DBA.check_package('bpel4ws') = 1 )
+      {
         url := vspx_uri_add_parameters ('configure.vspx', sprintf ('sid=%s&realm=%s',self.sid,self.realm));
         http_request_status ('HTTP/1.1 302 Found');
         http_header ('Location: ../BPELGUI/'||url||'\r\n');
         return;
-     };
-      ]]>
-    </v:script>
+      };
+    ]]>
   </v:after-data-bind>
   <vm:pagetitle>BPEL</vm:pagetitle>
   <vm:pagewrapper>
-   <vm:menu>
+    <vm:menu>
       <vm:menuitem value="BPEL"/>
     </vm:menu>
     <vm:header caption="BPEL"/>
-     <vm:pagebody>
-       <table>
-         <tr>
-           <td>
-             <p> The BPEL package currently is not installed. Check the <?vsp http(sprintf('<a target="_blank" href="../doc/html/bpel.html#bpelvadinstall">BPEL Installation Guide</a>'));?> for more details.</p>
-           </td>
-         </tr>
-       </table>
-      </vm:pagebody>
+    <vm:pagebody>
+      <div class="main_tab_page">
+        <table>
+          <tr>
+            <td>
+              <p> The BPEL package currently is not installed. Check the <?vsp http(sprintf('<a target="_blank" href="../doc/html/bpel.html#bpelvadinstall">BPEL Installation Guide</a>'));?> for more details.</p>
+            </td>
+          </tr>
+        </table>
+      </div>
+    </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

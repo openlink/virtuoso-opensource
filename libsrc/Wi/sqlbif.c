@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -84,7 +84,7 @@ extern "C" {
 #include "virtpwd.h"
 #include "rdf_core.h"
 #include "shcompo.h"
-#include "http_client.h" /* for MD5Init and the like */
+#include "http_client.h" /* for MD5_Init and the like */
 #include "sparql.h"
 #include "aqueue.h"
 
@@ -2679,7 +2679,7 @@ bif_make_bin_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_make_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  ptrlong n = bif_long_range_arg (qst, args, 0, "make_array", 0, 10000000);
+  ptrlong n = bif_long_range_arg (qst, args, 0, "make_array", 0, MAX_BOX_ELEMENTS);
   caddr_t tp = bif_string_arg (qst, args, 1, "make_array");
   dtp_t dtp = 0;
   caddr_t arr;
@@ -4130,7 +4130,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ptr++;
 
   format_char_found:
-    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsRSIVU", *ptr) || ('R' != *ptr && modifier && '_' == modifier[0]))
+    if (!ptr || !*ptr || !strchr ("dDiouxXeEfgcsRSIVUH", *ptr) || ('R' != *ptr && modifier && '_' == modifier[0]))
       {
 	sqlr_new_error ("22023", "SR031", "Invalid format string for sprintf at escape %d", arg_inx);
       }
@@ -4307,6 +4307,20 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
           goto get_next;
 	}
 	break;
+
+      case 'H':
+	{
+	  caddr_t arg, narrow_arg;
+	  if (arg_len || arg_prec)
+            sqlr_new_error ("22025", "SR037", "The HTTP escaping sprintf escape %d does not support modifiers", arg_inx);
+          bif_string_arg_for_sprintf (qst, args, arg_inx, szMe, 0, 0, 1, &arg, &narrow_arg);
+          http_value_esc (qst, ses, arg, NULL, DKS_ESC_DAV);
+          if (narrow_arg)
+            dk_free_box (narrow_arg);
+          goto get_next;
+	}
+	break;
+
       case 'D':
 	{
 	  int rb_type;
@@ -12863,6 +12877,22 @@ bif_table_exists (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num (0);
 }
 
+caddr_t
+bif_key_exists (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char * fn = "key_exists";
+  query_instance_t *qi = (query_instance_t *) qst;
+  caddr_t tb_name = bif_string_arg (qst, args, 0, fn);
+  caddr_t key_name = bif_string_arg (qst, args, 1, fn);
+  dbe_table_t *tb = qi_name_to_table (qi, tb_name);
+
+  if (!tb)
+    {
+      sqlr_new_error ("42S02", "SR243", "No table %s in %s", tb_name, fn);
+    }
+  return (NULL != tb_find_key (tb, key_name, 0) ? box_num(1) : box_num(0));
+}
+
 #if 0
 caddr_t
 bif_ddl_table_renamed (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -13355,6 +13385,18 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       dk_free_box (charset_name);
       if (qi->qi_client->cli_ws)
 	qi->qi_client->cli_ws->ws_charset = charset ? charset : ws_default_charset;
+    }
+  else   if (0 == stricmp (opt, "HTTP_IN_CHARSET"))
+    {
+      caddr_t charset_name = sqlp_box_upcase (value);
+      char charset;
+      if (!strcmp (charset_name, "UTF-8"))
+	charset = 1 /*CHARSET_UTF8*/;
+      else
+	charset = 0;
+      dk_free_box (charset_name);
+      if (qi->qi_client->cli_ws)
+	qi->qi_client->cli_ws->ws_in_charset = charset;
     }
   else   if (0 == stricmp (opt, "MTS_2PC"))
     {
@@ -16446,11 +16488,11 @@ bif_rdf_checksum_int (caddr_t * qst, state_slot_t ** args, int op, const char *f
       {
         MD5_CTX ctx;
         memset (&ctx, 0, sizeof (MD5_CTX));
-        MD5Init (&ctx);
-        MD5Update (&ctx, arg_strg, box_length (arg_strg)-1);
+        MD5_Init (&ctx);
+        MD5_Update (&ctx, arg_strg, box_length (arg_strg)-1);
         res_len = MD5_SIZE;
         res = dk_alloc_box (res_len*2 + 1, DV_SHORT_STRING);
-        MD5Final ((unsigned char *) res, &ctx);
+        MD5_Final ((unsigned char *) res, &ctx);
         break;
       }
 #if !defined(OPENSSL_NO_SHA1) && defined (SHA_DIGEST_LENGTH)
@@ -17029,6 +17071,7 @@ sql_bif_init (void)
   bif_define ("txn_killall", bif_txn_killall);
 
   bif_define ("table_exists", bif_table_exists);
+  bif_define ("key_exists", bif_key_exists);
   bif_define ("__ddl_changed", bif_ddl_change);
   /*bif_define ("__ddl_table_renamed", bif_ddl_table_renamed);*/
   bif_define ("__ddl_index_def", bif_ddl_index_def);

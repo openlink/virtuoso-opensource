@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -64,9 +64,10 @@
           text-align: center;
         }
 
-        #copyright_ctr {
-          font-size: x-small;
+        div.footer {
+          font-size: 0.9em;
           text-align: right;
+          padding-top: 3px;
           padding-right: 5px;
           border-top: 1px solid silver;
       }
@@ -103,6 +104,7 @@
       <v:before-data-bind>
         <![CDATA[
           declare vspx_user varchar;
+          declare cookies any;
 
           vspx_user := connection_get ('vspx_user');
           if (isnull (vspx_user) or (vspx_user = 'nobody'))

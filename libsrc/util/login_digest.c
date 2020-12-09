@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,9 +30,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -42,10 +39,10 @@ sec_login_digest (char *ses_name, char *user, char *pwd, unsigned char *digest)
 {
   MD5_CTX ctx;
 
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   /* ses_name has binary parts */
-  MD5Update (&ctx, (unsigned char *) ses_name, box_length (ses_name) - 1);
-  MD5Update (&ctx, (unsigned char *) user, strlen (user));
-  MD5Update (&ctx, (unsigned char *) pwd, strlen (pwd));
-  MD5Final (digest, &ctx);
+  MD5_Update (&ctx, (unsigned char *) ses_name, box_length (ses_name) - 1);
+  MD5_Update (&ctx, (unsigned char *) user, strlen (user));
+  MD5_Update (&ctx, (unsigned char *) pwd, strlen (pwd));
+  MD5_Final (digest, &ctx);
 }

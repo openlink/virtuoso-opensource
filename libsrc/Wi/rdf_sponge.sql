@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -957,12 +957,17 @@ perform_actual_load:
   --!!!TBD: if (get_method in ('MGET', 'GET+MGET')) { ... }
   if (get_method in ('POST', 'GET', 'GET+MGET'))
     {
-      declare acc_hdr varchar;
+      declare acc_hdr, user_agent varchar;
       req_hdr := NULL;
       get_proxy := get_keyword_ucase ('get:proxy', options);
       acc_hdr := trim (get_keyword_ucase ('get:accept', options));
       if (not length (acc_hdr))
 	acc_hdr := 'application/rdf+xml; q=1.0, text/rdf+n3; q=0.9, application/rdf+turtle; q=0.5, application/x-turtle; q=0.6, application/turtle; q=0.5, text/turtle; q=1.0, application/xml; q=0.2, */*; q=0.1';
+
+      user_agent := registry_get ('_cartridges_userAgent');
+      if (user_agent = 0)
+        user_agent := 'OpenLink Virtuoso RDF crawler';
+
       connection_set ('sparql-get:proxy', get_proxy);
       --!!!TBD: proper support for POST
       --!!!TBD: proper authentication if get:login / get:password is provided.
@@ -975,7 +980,7 @@ perform_actual_load:
       -- Here we tell to the remote party we want rdf in some form, if it supports content negotiation
       -- then it may return rdf instead of html
       req_hdr := req_hdr || case when length (req_hdr) > 0 then '\r\n' else '' end
-        || 'User-Agent: OpenLink Virtuoso RDF crawler\r\n'
+        || sprintf ('User-Agent: %s\r\n', user_agent)
 	|| 'Accept: ' || acc_hdr;
 	--|| 'Accept: application/rdf+xml, text/rdf+n3, application/rdf+turtle, application/x-turtle, application/turtle, application/xml, */*';
       -- dbg_obj_princ (get_method, ' method with ', req_hdr);

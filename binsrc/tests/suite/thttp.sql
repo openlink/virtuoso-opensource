@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -341,9 +341,11 @@ ECHO BOTH ": DAV browse page not retrieved (wrong password) : STATE=" $STATE " M
 
 
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/.well-known', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/webid/api', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/.well-known', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/DAV', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT2}','localhost:$U{HTTPPORT2}', '/webid/api', 1);
 
@@ -499,6 +501,7 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": HTTP test string_session tmp file : STATE=" $STATE "  LAST="  $LAST[1] "\n";
 
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/', 1);
+VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/.well-known', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/DAV', 1);
 VHOST_REMOVE ('localhost:$U{HTTPPORT1}','localhost:$U{HTTPPORT1}', '/webid/api', 1);
 

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,19 +34,6 @@ function y_tg_enabled (c_id)
       c.disabled = false;
     else
       c.disabled = true;
-}
-
-function selectAllCheckboxes (form, btn)
-{
-  for (var i = 0; i < form.elements.length; i++) {
-    var contr = form.elements[i];
-    if ((contr != null) && (contr.type == "checkbox")) {
-      contr.focus();
-      contr.checked = (btn.value == 'Select All')
-    }
-  }
-  btn.value = (btn.value == 'Select All')? 'Unselect All':'Select All';
-  btn.focus();
 }
 
 function dsns_chg(sel)
@@ -109,4 +96,17 @@ function destinationChange(obj, changes) {
 
   if (!obj.checked && changes.unchecked)
     destinationChangeInternal(changes.unchecked);
+}
+
+function selectAllCheckboxes (form, btn, txt)
+{
+  for (var i = 0; i < form.elements.length; i++) {
+    var contr = form.elements[i];
+    if (contr && (contr.type == "checkbox") && (!txt || (contr.name.indexOf (txt) != -1))) {
+      contr.focus();
+      contr.checked = (btn.value == 'Select All')
+    }
+  }
+  btn.value = (btn.value == 'Select All')? 'Unselect All':'Select All';
+  btn.focus();
 }

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,6 @@
   <vm:pagewrapper>
     <vm:variables>
       <v:variable name="repl_bi_error_str" type="varchar" persist="1" default="null"/>
-      <v:variable persist="temp" name="r_count" type="integer" default="0"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="publ" value="Bidirectional Snapshot Replication"/>
@@ -54,14 +53,9 @@
           </v:button>
         </div>
       </v:form>
-      <v:data-set name="data_set1" sql="select SP_ITEM, SP_TYPE, SP_LAST_TS from DB.DBA.SYS_SNAPSHOT_PUB order by SP_TYPE, SP_ITEM" nrows="10" scrollable="1" cursor-type="keyset" edit="1">
-        <v:column name="SP_ITEM" />
-        <v:column name="SP_LAST_TS" />
-        <v:column name="SP_TYPE" />
-        <v:template type="simple" name-to-remove="table" set-to-remove="bottom" name="data_set1_header_template">
-          <div><b>Published Items</b></div>
-    <?vsp http('<div class="scroll_area">'); ?>
-          <table class="listing" rules="groups">
+
+      <div class="scroll_area">
+      <table class="listing">
             <thead>
               <tr class="listing_header_row">
                 <th class="checkbox">
@@ -75,24 +69,24 @@
                 <th class="action">Action</th>
               </tr>
             </thead>
-          </table>
-        </v:template>
-        <v:template type="repeat" name-to-remove="" set-to-remove="" name="data_set1_repeat_template">
-          <v:template type="if-not-exists" name-to-remove="table" set-to-remove="both" name="data_set1_if_not_exists_template">
-            <table>
+
+        <v:data-set name="data_set1" sql="select SP_ITEM, SP_TYPE, SP_LAST_TS from DB.DBA.SYS_SNAPSHOT_PUB order by SP_TYPE, SP_ITEM" nrows="10" scrollable="1" cursor-type="keyset" edit="1">
+          <v:column name="SP_ITEM" />
+          <v:column name="SP_LAST_TS" />
+          <v:column name="SP_TYPE" />
+
+          <v:template type="repeat" name="data_set1_repeat">
+
+            <v:template type="if-not-exists" name="data_set1_if_not_exists_template">
               <tr>
-                <td colspan="7" class="Attention">
+                <td colspan="7" class="listing_empty">
                   No rows selected
                 </td>
               </tr>
-            </table>
           </v:template>
+
           <v:template type="browse" name-to-remove="table" set-to-remove="both" name="data_set1_browse_template">
-            <table>
-              <?vsp
-                self.r_count := self.r_count + 1;
-                http (sprintf ('<tr class="%s">', case when mod (self.r_count, 2) then 'listing_row_odd' else 'listing_row_even' end));
-              ?>
+              <tr>
               <td class="listing_col">
                 <input type="checkbox" name="TB_<?V ((control as vspx_row_template).te_rowset[0]) ?>" />
                 <input type="hidden" name="TBT_<?V ((control as vspx_row_template).te_rowset[0]) ?>"
@@ -146,21 +140,23 @@
                 <v:url name="url3" value="--'Conflict Resolvers'" format="%s" url="--concat('db_repl_bi_cr.vspx?mode=edit&item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
                 <v:url name="url2" value="--'Delete'" format="%s" url="--concat('db_repl_bi_remove.vspx?item=', encode_base64(serialize((control.vc_parent as vspx_row_template).te_rowset[0])), '&item_type=', cast((control.vc_parent as vspx_row_template).te_rowset[1] as varchar))"/>
               </td>
-              <?vsp
-                http('</tr>');
-              ?>
-            </table>
+              </tr>
           </v:template>
+
         </v:template>
-        <v:template type="simple" name-to-remove="table" set-to-remove="top" name="data_set1_footer_template">
-          <table>
+
+          <v:template type="simple" name="data_set1_footer">
+            <tfoot>
             <tr>
               <td colspan="7" align="center"  class="listing_col_action">
                 <vm:ds-navigation data-set="data_set1"/>
               </td>
             </tr>
+            </tfoot>
+          </v:template>
+        </v:data-set>
           </table>
-          <?vsp http ('</div>'); ?>
+
           <div class="listing_bot_ctl_grp">
             <label for="interval">Schedule Sync Interval</label>
             <input type="text" name="interval" value="10" size="5" id="interval"/>
@@ -220,8 +216,8 @@
               </v:on-post>
             </v:button>
           </div>
-        </v:template>
-      </v:data-set>
+      </div>
+
       <v:template name="error_template" type="simple">
       <?vsp
         if (length(self.repl_bi_error_str) > 1)

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,12 +25,8 @@
 
 #ifndef XMLENC_ALGO_H
 #define XMLENC_ALGO_H
+#ifdef _SSL
 #include <openssl/opensslv.h>
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-/*#warning aes is not supported*/
-#else
-#define AES_ENC_ENABLE
-#endif
 
 #define OPENSSL_DISABLE_OLD_DES_SUPPORT
 
@@ -39,9 +35,7 @@
 #include <openssl/rsa.h>
 #include <openssl/des.h>
 
-#ifdef AES_ENC_ENABLE
 #include <openssl/aes.h>
-#endif
 
 #include <openssl/x509.h>
 #include <openssl/rand.h>
@@ -326,7 +320,6 @@ struct xenc_key_s
 #define PKCS5_SALT_LEN			8
       unsigned char salt[PKCS5_SALT_LEN];
     } triple_des;
-#ifdef AES_ENC_ENABLE
     struct dsig_aes_keyinfo_s
     {
       /* key */
@@ -334,7 +327,6 @@ struct xenc_key_s
       int		bits;
       unsigned char	iv[16];
     } aes;
-#endif
 #ifdef _KERBEROS
     struct dsig_kerberos_s
     {
@@ -631,5 +623,5 @@ caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * ur
 
 extern dk_mutex_t * xenc_keys_mtx;
 
+#endif /* _SSL */
 #endif
-

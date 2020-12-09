@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,11 +53,9 @@ extern "C" {
 #ifdef _SSL
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
-#define MD5Init MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final MD5_Final
+#include <openssl/md5.h>
 #else
-#include "../util/md5.h"
+#include "util/md5.h"
 #endif /* _SSL */
 #include "mhash.h"
 
@@ -1453,8 +1451,10 @@ nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_m
 
           NIC_IN_ID (nic, nth_id, el.nicel_id);
           remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
+#ifndef NDEBUG
 	  if (!flag)
 	    log_debug ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
+#endif
           NIC_LEAVE_ID (nic, nth_id);
 
           if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
@@ -2244,9 +2244,9 @@ iri_shorten (char * iri, char * buf, size_t buf_len, int * ret_len)
 
   memcpy (buf, iri, buf_len - 33); /* hex md5 + zero byte */
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, strlen (str));
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, strlen (str));
+  MD5_Final (digest, &ctx);
   while (tail < end)
     {
       unsigned c = (unsigned) digest[inx++];

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,9 +47,9 @@ dfe_left_col (df_elt_t * tb_dfe, df_elt_t * pred)
   in_list = sqlo_in_list (pred, tb_dfe, NULL);
   if (in_list && dfe_tables (pred) && !pred->dfe_tables->next)
     return in_list[0];
-  if (DFE_COLUMN == pred->_.bin.left->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.left->dfe_tables->data)
+  if ( DFE_COLUMN == pred->_.bin.left->dfe_type && (op_table_t *)pred->_.bin.left->dfe_tables && tb_dfe->_.table.ot == (op_table_t *)pred->_.bin.left->dfe_tables->data)
     return pred->_.bin.left;
-  if (DFE_COLUMN == pred->_.bin.right->dfe_type && tb_dfe->_.table.ot == (op_table_t *) pred->_.bin.right->dfe_tables->data)
+  if (DFE_COLUMN == pred->_.bin.right->dfe_type && (op_table_t *)pred->_.bin.right->dfe_tables && tb_dfe->_.table.ot == (op_table_t *)pred->_.bin.right->dfe_tables->data)
     return pred->_.bin.right;
   return NULL;
 }

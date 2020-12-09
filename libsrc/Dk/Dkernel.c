@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -67,7 +67,10 @@ int LEVEL_VAR = 4;
 #include <openssl/asn1.h>
 #include <openssl/pkcs12.h>
 #include <openssl/rand.h>
+#include <openssl/ec.h>
 #include <openssl/dh.h>
+
+#include "util/ssl_compat.h"
 
 static void ssl_server_init ();
 
@@ -4901,9 +4904,7 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
 	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
 	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
 	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
 	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
       && ssl_server_verify == 3)
     {
@@ -5150,10 +5151,12 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 	    disable = 1;
 	}
 
-      if (!strcasecmp (name, "SSLv3"))
-	opt = SSL_PROTOCOL_SSLV3;
+      if (!strcasecmp (name, "ALL"))
+	opt = SSL_PROTOCOL_ALL;
+#if defined (SSL_OP_NO_TLSv1)
       else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
 	opt = SSL_PROTOCOL_TLSV1;
+#endif
 #if defined (SSL_OP_NO_TLSv1_1)
       else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
 	opt = SSL_PROTOCOL_TLSV1_1;
@@ -5166,8 +5169,6 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
       else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
 	opt = SSL_PROTOCOL_TLSV1_3;
 #endif
-      else if (!strcasecmp (name, "ALL"))
-	opt = SSL_PROTOCOL_ALL;
       else
 	{
 	  log_error ("SSL: Unsupported protocol [%s]", name);
@@ -5184,7 +5185,7 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
     }
 
   /*
-   *   Start by enabling all options
+   *   Start by enabling standard workaround options
    */
   SSL_CTX_set_options (ctx, SSL_OP_ALL);
 
@@ -5216,6 +5217,8 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_1);
   if (!(proto & SSL_PROTOCOL_TLSV1_1))
     SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_1);
+  else
+    log_warning ("SSL: Enabling deprecated protocol TLS 1.1");
 #endif
 
 #if defined (SSL_OP_NO_TLSv1_2)
@@ -5228,6 +5231,20 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
   SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_3);
   if (!(proto & SSL_PROTOCOL_TLSV1_3))
     SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_3);
+#endif
+
+
+/*
+ *  On OpenSSL 1.1.0 and above set min/max proto
+ */
+#ifdef SSL_CTX_set_min_proto_version
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+#endif
+
+#ifdef TLS1_3_VERSION
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
 #endif
 
   /*
@@ -5369,15 +5386,20 @@ ssl_ctx_set_dhparam (SSL_CTX * ctx, char *dh_file)
       static unsigned char dh2048_g[] = {
 	0x02
       };
+      BIGNUM *p, *g;
 
       if ((dh = DH_new ()) == NULL)
 	goto cleanup;
 
-      dh->p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
-      dh->g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
+      p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
+      g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
 
-      if (dh->p == NULL || dh->g == NULL)
-        goto cleanup;
+      if (p == NULL || g == NULL || !DH_set0_pqg (dh, p, NULL, g))
+	{
+	  BN_free (p);
+	  BN_free (g);
+	  goto cleanup;
+	}
     }
 #endif
 
@@ -5414,9 +5436,7 @@ ssl_server_init ()
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
-#endif
 
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
@@ -5448,7 +5468,6 @@ ssl_server_init ()
   }
   while (!RAND_status ());
 
-  SSLeay_add_all_algorithms ();
   PKCS12_PBE_add ();		/* stub */
 
 #ifdef NO_THREAD

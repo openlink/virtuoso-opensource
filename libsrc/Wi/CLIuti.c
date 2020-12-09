@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,7 +208,7 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
       return SQL_LONGVARCHAR;
 
     case DV_INT64:
-      return SQL_INTEGER;
+      return SQL_BIGINT;
 
     case DV_IRI_ID:
       return SQL_VARCHAR;

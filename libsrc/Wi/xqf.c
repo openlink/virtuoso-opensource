@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3438,6 +3438,11 @@ ENTITIES
 xqf_str_parser_desc_t *xqf_str_parser_descs_ptr = xqf_str_parser_descs;
 int xqf_str_parser_desc_count = sizeof (xqf_str_parser_descs)/sizeof (xqf_str_parser_desc_t);
 
+#define MAKE_XQ_DT_RES \
+		  GMTimestamp_struct_to_dt (&ts, res); \
+		  DT_SET_DT_TYPE (res, DT_TYPE_DATE); \
+		  DT_SET_TZL (res, tzl)
+
 caddr_t
 bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -3466,7 +3471,38 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (DV_STRING != arg_dtp)
         {
           if (desc->p_dest_dtp == arg_dtp)
-            res = box_copy_tree (arg);
+	    {
+	      res = box_copy_tree (arg);
+	      if (desc->p_dest_dtp == DV_DATETIME)
+		{
+		  int tzl = DT_TZL (res);
+		  GMTIMESTAMP_STRUCT ts;
+		  dt_to_GMTimestamp_struct (res, &ts);
+		  switch (desc->p_opcode)
+		    {
+		      case XQ_YEAR:
+			  ts.day = ts.month = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_YEARMONTH:
+			  ts.day = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_MONTH:
+			  ts.day = ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_MONTHDAY:
+			  ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_DAY:
+			  ts.month = ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		    }
+		}
+	    }
           else
             {
               caddr_t err = NULL;

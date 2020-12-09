@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -207,10 +207,8 @@ sqlg_non_local (sqlo_t * so, df_elt_t * dfe)
 
 
 
-
-
 data_source_t *
-sqlg_locus_rts (sqlo_t * so, df_elt_t * first_dfe, dk_set_t pre_code)
+sqlg_locus_rts (sqlo_t * so, df_elt_t * dt_dfe, df_elt_t * first_dfe, dk_set_t pre_code)
 {
   NO_VDB;
   return NULL;

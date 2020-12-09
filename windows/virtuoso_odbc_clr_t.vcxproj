@@ -15,7 +15,6 @@
     <ProjectGuid>{8D07389F-F48A-49B9-BED9-F71FCBACC4A8}</ProjectGuid>
     <RootNamespace>virtuoso_clr_t</RootNamespace>
     <Keyword>Win32Proj</Keyword>
-    <WindowsTargetPlatformVersion>8.1</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
@@ -132,6 +131,7 @@
     <ClCompile Include="..\binsrc\hosting\mono\dotnet.cpp" />
     <ClCompile Include="..\binsrc\hosting\mono\sql_code_clr.c" />
     <ClCompile Include="..\binsrc\hosting\mono\sql_code_xslt.c" />
+    <ClCompile Include="..\SDK\x64\sslsdk\inc32\openssl\applink.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\binsrc\virtuoso\virtuoso_t.rc" />

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -983,7 +983,7 @@ void wss_usernametoken_c (char* uri, char * name, caddr_t * curr, wsse_ctx_t * c
     {
       char nonce1[16], nonce2 [40];
       int len;
-      RAND_pseudo_bytes ((unsigned char *)nonce1, 16);
+      RAND_bytes ((unsigned char *)nonce1, 16);
       session_buffered_write (ses, nonce1, 16);
       len = xenc_encode_base64 (nonce1, nonce2, 16);
       nonce2[len] = 0;
@@ -1920,7 +1920,6 @@ xenc_key_t * xenc_build_encrypted_key (const char * carried_name, dk_session_t *
 	}
       xenc_key_3des_init (key, key_raw_data, key_raw_data + 8, key_raw_data + 16);
       break;
-#ifdef AES_ENC_ENABLE
     case DSIG_KEY_AES:
       /* len = decode_base64 (key_raw_data, key_raw_data + box_length (key_raw_data) - 1); */
       len = strses_length (in);
@@ -1944,7 +1943,6 @@ xenc_key_t * xenc_build_encrypted_key (const char * carried_name, dk_session_t *
       memset (key->ki.aes.iv, 0, sizeof (key->ki.aes.iv));
       memcpy (key->ki.aes.k, key_raw_data, key->ki.aes.bits / 8 /* bits in one byte */);
       break;
-#endif
     default:;
       /* do nothing */
     }

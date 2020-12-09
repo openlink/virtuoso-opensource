@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -60,6 +60,10 @@
 #include "sqloinv.h"
 #include "ltrx.h"
 #include "uname_const_decl.h"
+
+#ifdef _SSL
+#include <openssl/opensslv.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -3764,7 +3768,28 @@ futures_object_space_clear (caddr_t b, future_request_t *f)
   if (cli && cli->cli_trx && cli->cli_trx->lt_is_excl)
     {
       while (srv_have_global_lock (THREAD_CURRENT_THREAD))
-	srv_global_unlock (cli, cli->cli_trx);
+	{
+	  if (CLI_TERMINATE == cli->cli_terminate_requested)
+	    {
+	      char *new_name;
+
+	      log_error ("An atomic transaction cannot be committed due to a client");
+	      log_error ("disconnect. The transaction will be rolled back to restore");
+	      log_error ("the database to its previous state.");
+
+	      new_name = setext (wi_inst.wi_master->dbs_log_name, "atomic-trx", EXT_SET);
+	      rename (wi_inst.wi_master->dbs_log_name, new_name);
+
+	      log_error ("The old transaction file has been renamed");
+	      log_error ("from : %s", wi_inst.wi_master->dbs_log_name);
+	      log_error ("to   : %s", new_name);
+
+	      log_error ("The database engine will need to be restarted");
+
+	      call_exit (0);
+	    }
+	  srv_global_unlock (cli, cli->cli_trx);
+	}
     }
 }
 
@@ -3945,7 +3970,13 @@ srv_global_init (char *mode)
   log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
       build_thread_model, build_opsys_id, build_date);
 
-  log_info ("uses parts of OpenSSL, PCRE, Html Tidy");
+#ifdef _SSL
+  log_info ("uses " OPENSSL_VERSION_TEXT);
+#else
+  log_info ("build without SSL support");
+#endif
+  log_info ("uses parts of PCRE, Html Tidy");
+
 
   mode_pass_change = 0;
   in_srv_global_init = 1;

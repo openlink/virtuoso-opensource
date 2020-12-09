@@ -7,7 +7,7 @@
  *
  *  The iODBC driver manager.
  *  
- *  Copyright (C) 1999-2019 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1999-2020 OpenLink Software <iodbc@openlinksw.com>
  *  All Rights Reserved.
  *
  *  This software is released under the terms of either of the following
@@ -123,6 +123,22 @@ extern "C" {
 #    endif
 #  else
 #    define SYS_ODBC_INI	"/etc/odbc.ini"
+#  endif
+#endif
+
+#ifndef DEFAULT_FILEDSNPATH
+#  if defined(__BEOS__)
+#    define DEFAULT_FILEDSNPATH	"/boot/beos/etc/ODBCDataSources"
+#  elif defined(macintosh)
+#    ifdef __POWERPC__
+#      define DEFAULT_FILEDSNPATH "Boot:System Folder:Preferences:ODBC Preferences PPC:ODBCDataSources"
+#    else
+#      define DEFAULT_FILEDSNPATH "Boot:System Folder:Preferences:ODBC Preferences:ODBCDataSources"
+#    endif
+#  elif defined (__APPLE__)
+#    define DEFAULT_FILEDSNPATH	"/Library/ODBC/ODBCDataSources"
+#  else
+#    define DEFAULT_FILEDSNPATH	"/etc/ODBCDataSources"
 #  endif
 #endif
 

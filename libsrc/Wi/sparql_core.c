@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2020 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,9 +53,6 @@ extern "C" {
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -110,11 +107,11 @@ sparp_dump_weird_query (spar_query_env_t *sparqre, const char *reason, char *md5
       int inx;
       long msec = get_msec_real_time ();
       memset (&ctx, 0, sizeof (MD5_CTX));
-      MD5Init (&ctx);
-      MD5Update (&ctx, (unsigned char *) txt, strlen(txt));
-      MD5Update (&ctx, (unsigned char *) txt, strlen(sqltxt));
-      MD5Update (&ctx, (unsigned char *) (&msec), sizeof (msec));
-      MD5Final (digest, &ctx);
+      MD5_Init (&ctx);
+      MD5_Update (&ctx, (unsigned char *) txt, strlen(txt));
+      MD5_Update (&ctx, (unsigned char *) txt, strlen(sqltxt));
+      MD5_Update (&ctx, (unsigned char *) (&msec), sizeof (msec));
+      MD5_Final (digest, &ctx);
       for (inx = 0; inx < sizeof (digest); inx++)
         {
           unsigned c = (unsigned) digest[inx];

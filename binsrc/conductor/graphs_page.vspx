@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2020 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -308,43 +308,32 @@
       <table cellpadding='10' cellspacing='0' border='0' width='100%'>
         <tr>
           <td>
-            <table cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td class="<?V self.tab_selected ('1') ?>" align="center" nowrap="1">
-                  <?vsp self.tab_element ('Graphs', '1'); ?>
-                </td>
-                <td class="<?V self.tab_selected ('2') ?>" align="center" nowrap="1">
-                  <?vsp self.tab_element ('Users Security', '2'); ?>
-                </td>
-                <td class="<?V self.tab_selected ('3') ?>" align="center" nowrap="1">
-                  <?vsp self.tab_element ('Roles Security', '3'); ?>
-                </td>
-                <td class="<?V self.tab_selected ('4') ?>" align="center" nowrap="1">
-                  <?vsp self.tab_element ('Security Audit', '4'); ?>
-                </td>
-                <td class="page_tab_empty" align="center" width="100%">
-                  &amp;nbsp;
-                </td>
-              </tr>
-            </table>
-            <table class="tab_page">
-              <tr>
-                <td valign="top">
-                  <v:template name="_tabtemplate1" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '1')">
-                    <v:include url="sparql_graph.vspx"/>
-                  </v:template>
-                  <v:template name="_tabtemplate2" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '2'), '2')">
-                    <v:include url="graphs_users_security.vspx"/>
-                  </v:template>
-                  <v:template name="_tabtemplate3" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '3')">
-                    <v:include url="graphs_roles_security.vspx"/>
-                  </v:template>
-                  <v:template name="_tabtemplate4" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '4')">
-                    <v:include url="graphs_audit_security.vspx"/>
-                  </v:template>
-                </td>
-              </tr>
-            </table>
+            <div class="<?V self.tab_selected ('1') ?>">
+              <?vsp self.tab_element ('Graphs', '1'); ?>
+            </div>
+            <div class="<?V self.tab_selected ('2') ?>">
+              <?vsp self.tab_element ('Users Security', '2'); ?>
+            </div>
+            <div class="<?V self.tab_selected ('3') ?>">
+              <?vsp self.tab_element ('Roles Security', '3'); ?>
+            </div>
+            <div class="<?V self.tab_selected ('4') ?>">
+              <?vsp self.tab_element ('Security Audit', '4'); ?>
+            </div>
+            <div class="tab_page_new">
+              <v:template name="_tabtemplate1" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '1')">
+                <v:include url="sparql_graph.vspx"/>
+              </v:template>
+              <v:template name="_tabtemplate2" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '2'), '2')">
+                <v:include url="graphs_users_security.vspx"/>
+              </v:template>
+              <v:template name="_tabtemplate3" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '3')">
+                <v:include url="graphs_roles_security.vspx"/>
+              </v:template>
+              <v:template name="_tabtemplate4" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '4')">
+                <v:include url="graphs_audit_security.vspx"/>
+              </v:template>
+            </div>
           </td>
         </tr>
       </table>

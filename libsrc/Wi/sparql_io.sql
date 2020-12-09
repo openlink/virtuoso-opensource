@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2020 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -615,11 +615,11 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
     set_user_id ('dba');
-  if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
-    {
-      DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() fails due to safety restruction: service in question, <%s>, seems to belong to the server itself ("URIQADefaultHost" registry is <%s>), HTTP connection to self may hang', service_iri, registry_get ('URIQADefaultHost'));
-      signal ('22023', 'Can not load own service description');
-    }
+  -- if (isstring (registry_get ('URIQADefaultHost')) and strstr (service_iri, registry_get ('URIQADefaultHost')) is not null)
+  --  {
+  --    DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() fails due to safety restruction: service in question, <%s>, seems to belong to the server itself ("URIQADefaultHost" registry is <%s>), HTTP connection to self may hang', service_iri, registry_get ('URIQADefaultHost'));
+  --    signal ('22023', 'Can not load own service description');
+  --  }
   if (exists (sparql define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       prefix sd: <http://www.w3.org/ns/sparql-service-description#>
@@ -2303,18 +2303,26 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     }
   if (registry_get ('__SPARQL_VHOST_RESET') >= '20120519')
     return;
+
   DB.DBA.VHOST_REMOVE (lpath=>'/SPARQL');
   DB.DBA.VHOST_REMOVE (lpath=>'/services/sparql-query');
+
   oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql/', ppath => '/!sparql/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+
   oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-graph-crud');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-graph-crud');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-graph-crud/', ppath => '/!sparql-graph-crud/', is_dav => 1, vsp_user => 'dba', opts => oopts);
+
   oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql/' and HP_LPATH = '/sparql-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1);
@@ -2327,6 +2335,16 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-auth');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-auth',
+    ppath => '/!sparql/',
+    is_dav => 1,
+    vsp_user => 'dba',
+    opts => oopts,
+    auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
+    realm=>'SPARQL',
+    sec=>'digest');
+
   oopts := (select deserialize (HP_OPTIONS) from HTTP_PATH
   	where HP_PPATH = '/!sparql-graph-crud/' and HP_LPATH = '/sparql-graph-crud-auth' and HP_HOST = '*ini*' and HP_LISTEN_HOST = '*ini*');
   if (oopts is null) oopts := vector ('noinherit', 1, 'exec_as_get', 1);
@@ -2339,11 +2357,24 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
     auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
     realm=>'SPARQL',
     sec=>'digest');
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-graph-crud-auth');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-graph-crud-auth',
+    ppath => '/!sparql-graph-crud/',
+    is_dav => 1,
+    vsp_user => 'dba',
+    opts => oopts,
+    auth_fn=>'DB.DBA.HP_AUTH_SPARQL_USER',
+    realm=>'SPARQL',
+    sec=>'digest');
+
 --DB.DBA.EXEC_STMT ('grant execute on DB.."querySoap" to "SPARQL", 0);
 --VHOST_DEFINE (lpath=>'/services/sparql-query', ppath=>'/SOAP/', soap_user=>'SPARQL',
 --              soap_opts => vector ('ServiceName', 'XMLAnalysis', 'elementFormDefault', 'qualified'));
   DB.DBA.VHOST_REMOVE (lpath=>'/sparql-sd');
   DB.DBA.VHOST_DEFINE (lpath=>'/sparql-sd/', ppath => '/!sparql-sd/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-sd');
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-sd/', ppath => '/!sparql-sd/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
+
   gr := concat ('http://', registry_get ('URIQADefaultHost'), '/sparql');
   DB.DBA.RDF_LOAD_RDFA (WS.WS.SPARQL_ENDPOINT_SVC_DESC (), gr, gr);
   registry_set ('__SPARQL_VHOST_RESET', '20120519');
@@ -3059,10 +3090,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('    </div>\n\n');
 
     http('    <div id="menu">\n');
-    http('	  <a href="/sparql?help=intro">About</a>\n');
-    http('	| <a href="/sparql?help=nsdecl">Namespace Prefixes</a>\n');
-    http('	| <a href="/sparql?help=rdfinf">Inference rules</a>\n');
-    http('	| <a href="/sparql?help=views">RDF views</a>\n');
+    http('	  <a href="?help=intro">About</a>\n');
+    http('	| <a href="?help=nsdecl">Namespace Prefixes</a>\n');
+    http('	| <a href="?help=rdfinf">Inference rules</a>\n');
+    http('	| <a href="?help=views">RDF views</a>\n');
     if (DB.DBA.VAD_CHECK_VERSION('iSPARQL') is not null)
 	    http('	| <a href="/isparql">iSPARQL</a>\n');
     http('    </div>\n\n');
@@ -3073,11 +3104,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     http('	<fieldset>\n');
     http('		<label for="default-graph-uri">Default Data Set Name (Graph IRI)</label><br />\n');
     http('		<input type="text" name="default-graph-uri" id="default-graph-uri"');
-    http(sprintf (' value="%s" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
+    http(sprintf (' value="%V" size="80"/>\n', coalesce (ini_dflt_graph, '') ));
     http('		<br /><br />\n');
 
     http('		<label for="query">Query Text</label><br />\n');
-    http('		<textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">'|| def_qry ||'</textarea>\n');
+    http(sprintf('             <textarea rows="18" cols="80" name="query" id="query" onchange="javascript:format_select(this)" onkeyup="javascript:format_select(this)">%V</textarea>\n', charset_recode (def_qry, 'UTF-8', '_WIDE_')));
 
     http('		<br /><br />\n');
     if (can_sponge)
@@ -3089,7 +3120,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
     else
     {
-	    http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="/sparql?help=enable_sponge">details</a>.)</i></span>\n');
+	    http('		<span class="info"><i>(Security restrictions of this server do not allow you to retrieve remote RDF data, see <a href="?help=enable_sponge">details</a>.)</i></span>\n');
     }
 
     http('		<br />\n');
@@ -3100,9 +3131,9 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     if (sys_stat('st_has_vdb'))
     {
 	    if (not can_cxml)
-	      http('		<span class="info"><i>(The CXML output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	      http('		<span class="info"><i>(The CXML output is disabled, see <a href="?help=enable_cxml">details</a>)</i></span>\n');
 	    else if (not can_qrcode)
-	      http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="/sparql?help=enable_cxml">details</a>)</i></span>\n');
+	      http('		<span class="info"><i>(The QRCODE output is disabled, see <a href="?help=enable_cxml">details</a>)</i></span>\n');
     }
     http('		<br />\n');
 
@@ -3116,7 +3147,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
     }
 
     http('		<label for="timeout" class="n">Execution timeout</label>\n');
-    http('		<input name="timeout" id="timeout" type="text" value="' || coalesce (cast (timeout as varchar), '') || '" /> milliseconds\n');
+    http(sprintf('             <input name="timeout" id="timeout" type="text" value="%d" /> milliseconds\n', timeout, ''));
     http('		<span class="info"><i>(values less than 1000 are ignored)</i></span>');
     http('		<br />\n');
 
@@ -3171,7 +3202,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(
 
     if (save_dir is null)
     {
-    	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="/sparql?help=enable_det">details</a>)</i></span>\n');
+    	http('		<span class="info"><i>(The result can only be sent back to browser, not saved on the server, see <a href="?help=enable_det">details</a>)</i></span>\n');
       http('		<br />\n');
     }
 
@@ -3486,7 +3517,7 @@ execute_query:
       else if ('timeout' = pname and length (pvalue))
         {
           declare t integer;
-          t := cast (pvalue as integer);
+          t := atoi (pvalue);
           if (t is not null and t >= 1000)
             {
               if (hard_timeout >= 1000)
@@ -4179,7 +4210,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
 	  http('	In order to use it, ask the site admin to install the iSPARQL package (isparql_dav.vad).</p>\n');
       else
 	  http('	You can access it at: <a href="/isparql">/isparql</a>.</p>\n');
-      http('	<p>For your convenience we have a set of <a href="/sparql?help=nsdecl">predefined name space prefixes</a> and <a href="/sparql?help=rdfinf">inference rules</a></p>\n');
+      http('	<p>For your convenience we have a set of <a href="?help=nsdecl">predefined name space prefixes</a> and <a href="?help=rdfinf">inference rules</a></p>\n');
 
       http('	<h3>What is SPARQL?</h3>\n');
       http('	<p>SPARQL is the W3C''s declaritive query-language for Graph Model Databases and Stores.</p>\n');
