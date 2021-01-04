@@ -2264,10 +2264,11 @@ all_attributes_are_retrieved:
         {
           for (ctr = ancestor->xrdfal_ict_count; ctr--; /* no step */) /* The order is important */
             {
-              rdfa_ict_t *ict = ancestor->xrdfal_ict_buffer + ctr;
+              rdfa_ict_t * volatile ict = ancestor->xrdfal_ict_buffer + ctr;
               if ((RDFA_ICT_PRED_PROPERTY != ict->ict_pred_type) && (NULL == ict->ict_right))
                 {
                   rdfa_feed_or_make_ict (xp, ancestor, box_copy (ict->ict_left), box_copy (ict->ict_pred), box_copy (inner->xrdfal_subj), ict->ict_pred_type, NULL, NULL);
+                  ict = ancestor->xrdfal_ict_buffer + ctr;
                   ict->ict_used_as_template = 1;
                 }
             }

@@ -2344,6 +2344,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  code = "HTTP/1.0 500 Internal Server Error";
 	  ws_proc_error (ws, err);
 	  dk_free_tree (err);
+	  err = NULL;
 	}
       dk_free_tree (ws->ws_xslt_url);
       ws->ws_xslt_url = NULL;
@@ -3852,6 +3853,7 @@ rec_err_end:
     {
       log_warning("Error [%s] : %s", ERR_STATE(err), ERR_MESSAGE(err));
       dk_free_tree(err);
+	  err = NULL;
     }
 
 #ifdef VIRTUAL_DIR
@@ -7161,7 +7163,6 @@ http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, 
       log_error ("Error compiling http cache register statement : %s: %s",
 	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
       dk_free_tree (err);
-      err = NULL;
       return;
     }
   err = qr_rec_exec (qr, qi->qi_client, NULL, qi, NULL, 4,
@@ -7175,7 +7176,6 @@ http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, 
       log_error ("Error registering http client cache : %s: %s",
 	  ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING]);
       dk_free_tree (err);
-      err = NULL;
     }
 }
 
