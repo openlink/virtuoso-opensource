@@ -12,7 +12,7 @@ Upstream Authors:
 
 Copyright:
 
-    Copyright (C) 1998-2020 OpenLink Software
+    Copyright (C) 1998-2021 OpenLink Software
 
 License:
 
@@ -882,7 +882,7 @@ Additional copyrights:
     
     iODBC driver manager (with updated FSF address)
     
-       Copyright (C) 1999-2020 OpenLink Software <iodbc@openlinksw.com>
+       Copyright (C) 1999-2021 OpenLink Software <iodbc@openlinksw.com>
        All Rights Reserved.
      
        This software is released under the terms of either of the following
@@ -1405,7 +1405,7 @@ Additional copyrights:
 
 The Debian packaging is:
 
-    Copyright (C) 2008-2020 OpenLink Sofware <vos.admin@openlinksw.com>
+    Copyright (C) 2008-2021 OpenLink Sofware <vos.admin@openlinksw.com>
 
 and builds on work by:
 

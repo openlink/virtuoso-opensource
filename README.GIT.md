@@ -1,7 +1,7 @@
 Using Virtuoso Open Source Edition GIT Tree
 ===========================================
 
-Copyright (C) 1998-2020 OpenLink Software <vos.admin@openlinksw.com>
+Copyright (C) 1998-2021 OpenLink Software <vos.admin@openlinksw.com>
 
 
 Introduction
