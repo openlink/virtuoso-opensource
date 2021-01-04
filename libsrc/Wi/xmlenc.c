@@ -6381,7 +6381,7 @@ bif_xenc_hmac_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   caddr_t res = NULL;
   int rc = 0;
 
-  SES_PRINT (ses, text);
+  session_buffered_write (ses, text, box_length (text) - 1);
   rc = dsig_hmac_sha1_digest (ses, strses_length (ses), key, &res);
   dk_free_box (ses);
   if (0 == rc)
