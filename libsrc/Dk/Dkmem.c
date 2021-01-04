@@ -139,7 +139,14 @@ rdtsc()
   struct timespec t;
   clock_gettime(CLOCK_REALTIME, &t);
   return (uint64) t.tv_sec * 1000000000 + (uint64) t.tv_nsec;
+#elif defined(__aarch64__)
+  uint64 result;
+  asm volatile("mrs %0, cntvct_el0" : "=r"(result));
+  return result;
 #else
-  return 0;
+#error You need to implement the rdtsc function for your OS/CPU or comment out this line to use the vanilla version
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  return (uint64) tv.tv_sec * 1000000L + tv.tv_usec;
 #endif
 }
