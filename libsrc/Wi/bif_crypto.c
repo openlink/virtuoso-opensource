@@ -1187,12 +1187,13 @@ bif_pem_certificates_to_array (caddr_t * qst, caddr_t * err_ret, state_slot_t **
 
 
 static int
-x509_certificate_verify_cb (int ok, X509_STORE_CTX * ctx)
+x509_certificate_verify_cb (int ok, X509_STORE_CTX * x509_store)
 {
-  char *opts = (char *) X509_STORE_CTX_get_app_data (ctx);
+  char *opts = (char *) X509_STORE_CTX_get_ex_data(x509_store, SSL_get_ex_data_X509_STORE_CTX_idx());
+
   if (!ok && opts)
     {
-      switch (X509_STORE_CTX_get_error(ctx))
+      switch (X509_STORE_CTX_get_error(x509_store))
 	{
 	case X509_V_ERR_CERT_HAS_EXPIRED:
 	  if (strstr (opts, "expired"))
@@ -1283,7 +1284,7 @@ bif_x509_certificate_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
       goto err_ret;
     }
 
-  X509_STORE_CTX_set_app_data (csc, (void *) opts);
+  X509_STORE_CTX_set_ex_data (csc, SSL_get_ex_data_X509_STORE_CTX_idx(), (void *) opts);
 
   i = X509_verify_cert (csc);
 

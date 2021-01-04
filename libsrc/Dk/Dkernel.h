@@ -970,7 +970,6 @@ typedef struct ssl_ctx_info_s
   int32 *		ssci_depth_ptr;
   char *		ssci_name_ptr;
 } ssl_ctx_info_t;
-int ssl_cert_verify_callback (int ok, void *ctx);
 #  endif
 #endif
 

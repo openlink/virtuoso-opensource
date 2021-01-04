@@ -4876,10 +4876,9 @@ ssl_get_x509_error (caddr_t _ssl)
 
 
 #ifndef NO_THREAD
-int
-ssl_cert_verify_callback (int ok, void *_ctx)
+static int
+ssl_cert_verify_callback (int ok, X509_STORE_CTX * x509_store)
 {
-  X509_STORE_CTX *ctx;
   SSL *ssl;
   X509 *xs;
   int errnum;
@@ -4889,54 +4888,57 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   SSL_CTX *ssl_ctx;
   ssl_ctx_info_t *app_ctx;
 
-  ctx = (X509_STORE_CTX *) _ctx;
-  ssl = (SSL *) X509_STORE_CTX_get_app_data (ctx);
+  ssl = (SSL *) X509_STORE_CTX_get_ex_data (x509_store, SSL_get_ex_data_X509_STORE_CTX_idx ());
   ssl_ctx = SSL_get_SSL_CTX (ssl);
-  app_ctx = (ssl_ctx_info_t *) SSL_CTX_get_app_data (ssl_ctx);
+  app_ctx = (ssl_ctx_info_t *) SSL_CTX_get_ex_data (ssl_ctx, 0);
 
-  xs = X509_STORE_CTX_get_current_cert (ctx);
-  errnum = X509_STORE_CTX_get_error (ctx);
-  errdepth = X509_STORE_CTX_get_error_depth (ctx);
+  xs = X509_STORE_CTX_get_current_cert (x509_store);
+  errnum = X509_STORE_CTX_get_error (x509_store);
+  errdepth = X509_STORE_CTX_get_error_depth (x509_store);
 
   cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
   cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
 
-  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
-	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
-	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-      && ssl_server_verify == 3)
+  if (      (errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	  || errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+	  || errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+	  || errnum == X509_V_ERR_CERT_UNTRUSTED
+	  || errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+	&& ssl_server_verify == 3)
     {
-      SSL_set_verify_result(ssl, X509_V_OK);
+      SSL_set_verify_result (ssl, X509_V_OK);
       ok = 1;
     }
 
 #if 0
   log_debug ("%s Certificate Verification: depth: %d, subject: %s, issuer: %s",
-  	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
-	cp2 != NULL ? cp2 : "-unknown");
+      app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-", cp2 != NULL ? cp2 : "-unknown");
 #endif
+
+#if 0
   /*
    * Additionally perform CRL-based revocation checks
    *
-   if (ok) {
-   ok = ssl_callback_SSLVerify_CRL(ok, ctx, s);
-   if (!ok)
-   errnum = X509_STORE_CTX_get_error(ctx);
-   }
    */
+  if (ok)
+    {
+      ok = ssl_callback_SSLVerify_CRL (ok, x509_store, s);
+      if (!ok)
+	errnum = X509_STORE_CTX_get_error (x509_store);
+    }
+#endif
 
   if (!ok)
     {
       log_error ("%s Certificate Verification: Error (%d): %s",
-      	app_ctx->ssci_name_ptr, errnum, X509_verify_cert_error_string (errnum));
+	  app_ctx->ssci_name_ptr, errnum, X509_verify_cert_error_string (errnum));
     }
 
   if (errdepth > *app_ctx->ssci_depth_ptr)
     {
-      log_error ("%s Certificate Verification: Certificate Chain too long (chain has %d certificates, but maximum allowed are only %ld)",
-	app_ctx->ssci_name_ptr, errdepth, *app_ctx->ssci_depth_ptr);
+      log_error
+	  ("%s Certificate Verification: Certificate Chain too long (chain has %d certificates, but maximum allowed are only %ld)",
+	  app_ctx->ssci_name_ptr, errdepth, *app_ctx->ssci_depth_ptr);
       ok = 0;
     }
 
@@ -5018,12 +5020,12 @@ ssl_server_key_setup ()
 	  SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
 	  SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
 	}
-      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
+      SSL_CTX_set_ex_data (ssl_server_ctx, 0, &ssl_server_ctx_info);
       if (ssl_server_verify == 1)	/* required */
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
       else			/* 2 optional OR 3 optional no ca */
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      SSL_CTX_set_verify (ssl_server_ctx, verify, ssl_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
       SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 
