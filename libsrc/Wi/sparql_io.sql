@@ -3912,7 +3912,7 @@ again:
   start_time := msec_time();
   exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
-  if (isvector (rset) and length (rset) = maxrows)
+  if (isvector (rset) and length (rset) >= maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
   if (state = '00000')
