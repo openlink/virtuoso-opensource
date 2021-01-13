@@ -3227,7 +3227,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 {
   declare query, full_query, format, should_sponge, debug, log_debug_info, def_qry varchar;
   declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
-  declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
+  declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time, nresults integer;
   declare ses, content any;
   declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
@@ -3912,7 +3912,15 @@ again:
   start_time := msec_time();
   exec ( concat ('sparql {', full_query, '\n}'), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
   commit work;
-  if (isvector (rset) and length (rset) >= maxrows)
+  nresults := -1;
+  if (isvector (rset)) nresults := length (rset);
+  -- for construct queries, the results are a bit deeper
+  if (
+    (1 = nresults) and
+    (1 = length (rset[0])) and
+    (__tag of dictionary reference = __tag (rset[0][0]))
+  ) nresults := dict_size (rset[0][0]);
+  if (nresults > -1 and nresults >= maxrows)
     http_header (http_header_get () || sprintf ('X-SPARQL-MaxRows: %d\r\n', maxrows));
   -- dbg_obj_princ ('exec metas=', metas, ', state=', state, ', msg=', msg);
   if (state = '00000')
