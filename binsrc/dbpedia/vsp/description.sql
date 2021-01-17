@@ -613,8 +613,8 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
     }
 
 
-  if (nspref is not null and nspref not in ('dbp', 'dbpprop', 'owl'))
-    nss := sprintf (' xmlns:%s="%s"', nspref, nss);
+  if (nspref is not null and nspref not in ( 'dbo', 'dbp', 'dc', 'dct', 'foaf', 'owl', 'prov', 'rdf', 'rdfa', 'rdfs', 'schema', 'skos'))
+    nss := sprintf (' prefix="%s: %s"', nspref, nss);
   else
     nss := '';
   if (flag)
@@ -627,7 +627,7 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
   --  res := sprintf (' resource="%V"', obj);
   lang_def := '';
   if (isstring (lang) and lang <> '')
-    lang_def := sprintf (' xml:lang="%s"', lang);
+    lang_def := sprintf (' lang="%s"', lang);
   return concat (loc, res, nss, lang_def);
 }
 ;

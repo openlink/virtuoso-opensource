@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:dbpprop="http://dbpedia.org/property/"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    version="XHTML+RDFa 1.0"
-    xml:lang="<?= registry_get('dbp_lang') ?>"
+<!DOCTYPE html>
+<html
+    prefix="
+        dbp: http://dbpedia.org/property/
+        dbo: http://dbedia.org/ontology/
+        dct: http://purl.org/dc/terms/
+	"
+    lang="<?= registry_get('dbp_lang') ?>"
 >
 <?vsp
 --
@@ -36,8 +37,9 @@
    declare iri_type, iri_uri, white_page, pkgs, txt, host, links, langs, dset, tmp_lines any;
 
    -- INIT VALLUES
-
    set http_charset='utf-8';
+   set http_in_charset='utf-8';
+
    set isolation = 'uncomitted';
    _resource_ := get_keyword ('res', params, '');
    dset := get_keyword ('lang', params, '');
@@ -224,7 +226,7 @@
 <head profile="http://www.w3.org/1999/xhtml/vocab">
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>About: <?V charset_recode (label, 'UTF-8', '_WIDE_') ?></title>
     <link rel="alternate" type="application/rdf+xml" 		href="<?V charset_recode (rdf_link2, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/XML format)" />
     <link rel="alternate" type="text/n3" 			href="<?V charset_recode (rdf_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (N3 format)" />
@@ -430,7 +432,7 @@
 	<a href="https://opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/images/od_80x15_red_green.png"/></a>&nbsp; &nbsp;
 	<span style="display:none;" about=""
 	    resource="http://www.w3.org/TR/rdfa-syntax"
-	    rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
+	    rel="dc:conformsTo">
 	    <a href="https://validator.w3.org/check?uri=referer">
 		<img src="https://www.w3.org/Icons/valid-xhtml-rdfa" alt="Valid XHTML + RDFa" height="27px" />
 	    </a>
