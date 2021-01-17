@@ -107,7 +107,7 @@
    -- check weather to decode the iri's
    if (registry_get ('dbp_decode_iri') = 'on')
      {
-       page_resource_uri := split_and_decode (page_resource_uri)[0];
+       page_resource_uri := split_and_decode (page_resource_uri, 0, '%\0?&')[0];
      }
 
    __box_flags_set (page_resource_uri, 2);
