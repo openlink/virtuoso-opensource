@@ -5399,7 +5399,7 @@ skip_obj: ;
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any)
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
-  declare val, p_itemprop, nice_host, describe_path, about_path varchar;
+  declare val, p_itemprop, describe_path, about_path varchar;
   declare ctr, len, tcount, tctr, status integer;
   declare objs_of_sp any;
   tcount := length (triples);
@@ -5416,15 +5416,11 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       return;
     }
   objs_of_sp := dict_new (20);
-  nice_host := registry_get ('URIQADefaultHost');
   describe_path := about_path := null;
-  if (isstring (nice_host))
-    {
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
-        describe_path := 'http://' || nice_host || '/describe/?url=';
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/cartridges/%/resources/dav/%'))
-        about_path := 'http://' || nice_host || '/about/html/';
-    }
+  if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+    describe_path := '/describe/?url=';
+  else if (DB.DBA.VAD_CHECK_VERSION ('cartridges') is not null)
+    about_path := '/about/html/';
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');

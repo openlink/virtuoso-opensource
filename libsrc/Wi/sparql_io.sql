@@ -1725,19 +1725,15 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
 create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas any, inout rset any, in esc_mode integer := 1)
 {
   declare varctr, varcount, resctr, rescount, ctr integer;
-  declare nice_host, describe_path, about_path varchar;
+  declare describe_path, about_path varchar;
   declare nsdict, nslist any;
   varcount := length (metas[0]);
   rescount := length (rset);
-  nice_host := registry_get ('URIQADefaultHost');
   describe_path := about_path := null;
-  if (isstring (nice_host))
-    {
-      if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
-        describe_path := 'http://' || nice_host || '/describe/?url=';
-      else if (DB.DBA.VAD_CHECK_VERSION ('cartridges') is not null)
-        about_path := 'http://' || nice_host || '/about/html/';
-    }
+  if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+    describe_path := '/describe/?url=';
+  else if (DB.DBA.VAD_CHECK_VERSION ('cartridges') is not null)
+    about_path := '/about/html/';
   nsdict := dict_new (10 + cast (sqrt (0.3e0 * varcount * rescount) as integer));
   --dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   --dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
