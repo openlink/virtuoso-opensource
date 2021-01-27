@@ -852,9 +852,9 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 }
 ;
 
-create procedure b3s_xsd_link (in t varchar)
+create procedure b3s_xsd_link (in dt varchar)
 {
-  return sprintf ('<a href="http://www.w3.org/2001/XMLSchema#%s">xsd:%s</a>', t, t);
+  return sprintf ('<a href="%s">%s</a>', dt, b3s_uri_curie(dt));
 }
 ;
 
@@ -1018,22 +1018,22 @@ again:
    else if (__tag (_object) = 189)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := b3s_xsd_link ('integer');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 190)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := b3s_xsd_link ('float');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 191)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := b3s_xsd_link ('double');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
-       lang := b3s_xsd_link ('double');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 182)
      {
@@ -1062,7 +1062,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := b3s_xsd_link ('dateTime');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 230)
      {
