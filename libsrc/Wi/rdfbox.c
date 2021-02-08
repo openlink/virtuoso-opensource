@@ -5310,7 +5310,7 @@ ld_json_ctx_get_shorthand (query_instance_t *qi, caddr_t pred_iri_or_id, caddr_t
 int
 bif_http_ld_json_triple_batch_impl (ld_json_env_t *env, ld_json_env2_t *e2)
 {
-  int triple_ctr, nesting;
+  int triple_ctr, nesting = 0;
   char next_sp_pair_is_distinct_YN0 = 'Y';
   int try_parent = (!e2->single_subject_only) && (NULL != e2->printed_triples_mask);
   caddr_t prev_p_shorthand = NULL;
@@ -5349,7 +5349,7 @@ again:
               sub_e2 = e2[0];
               sub_e2.first_triple_idx = best_triple_idx;
               sub_e2.single_subject_only = 1;
-              bif_http_ld_json_triple_batch_impl (env, &sub_e2);
+              nesting = bif_http_ld_json_triple_batch_impl (env, &sub_e2);
               try_parent = 1;
               goto again;
             }
