@@ -697,13 +697,14 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
              )
             {
               StrCopyInUTF16 (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+              con->con_wide_as_utf16 = TRUE;
             }
           else
             StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
         }
       else
 #endif
-        StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
+      StrCopyInW (&connStr, (TCHAR *) szConnStrIn, cbConnStrIn);
     }
 
   ParseOptions (cfgdata, NULL, 1);
@@ -781,12 +782,33 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   if (cfgdata[oWideUTF16].data && _tcslen (cfgdata[oWideUTF16].data))
     {
       char *nst, nst1;
+      int val;
 
       nst = virt_wide_to_ansi (cfgdata[oWideUTF16].data);
       nst1 = toupper (*nst);
-      con->con_wide_as_utf16 = OPTION_TRUE (nst1) ? 1 : 0;
+      val = OPTION_TRUE (nst1) ? 1 : 0;
       virt_wide_as_utf16 = con->con_wide_as_utf16;
       free_wide_buffer (nst);
+
+      if (con->con_wide_as_utf16 == TRUE)
+        {
+          if (val == 1)
+            {
+              con->con_wide_as_utf16 = virt_wide_as_utf16 = val;
+            }
+          else
+            {
+              set_error (&con->con_error, "01S00", "CL033", "UTF16 connection string was used without option 'wideAsUTF16=Y'");
+              rc = SQL_ERROR;
+              goto exit;
+            }
+        }
+    }
+  else if (con->con_wide_as_utf16 == TRUE)
+    {
+      set_error (&con->con_error, "01S00", "CL033", "UTF16 connection string was used without option 'wideAsUTF16=Y'");
+      rc = SQL_ERROR;
+      goto exit;
     }
 
   FORCE_DMBS_NAMEW = cfgdata[oFORCE_DBMS_NAME].data && _tcslen (cfgdata[oFORCE_DBMS_NAME].data) ? cfgdata[oFORCE_DBMS_NAME].data : NULL;
@@ -977,6 +999,7 @@ virtodbc__SQLDriverConnect (SQLHDBC hdbc,
   free_wide_buffer (CHARSET);
   free_wide_buffer (DATABASE);
 
+exit:
   /* Cleanup */
   ParseOptions (cfgdata, NULL, 1);
 
@@ -1056,6 +1079,7 @@ SQLConnect (SQLHDBC hdbc,
           StrCopyInUTF16 (&dsn, (TCHAR *) szDSN, cbDSN);
           StrCopyInUTF16 (&uid, (TCHAR *) szUID, cbUID);
           StrCopyInUTF16 (&pwd, (TCHAR *) szPWD, cbPWD);
+          con->con_wide_as_utf16 = TRUE;
         }
       else
         {
