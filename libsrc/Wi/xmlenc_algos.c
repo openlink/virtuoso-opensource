@@ -1452,6 +1452,9 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   if (NULL == key)
     return 0;
 
+  if  (key->xek_type != DSIG_KEY_RSA)
+    return 0;
+
 
 #if 0
   memcpy (sig, digest_base64, box_length (digest_base64));
@@ -1555,6 +1558,8 @@ dsig_rsa_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
   if (NULL == key)
     return 0;
 
+  if  (key->xek_type != DSIG_KEY_RSA)
+    return 0;
 
   siglen = box_length (digest_base64);
   sig = (unsigned char *) dk_alloc_box_zero (siglen, DV_BIN);
