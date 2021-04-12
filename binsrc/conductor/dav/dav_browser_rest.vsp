@@ -290,12 +290,14 @@
       {
         -- validate ACL rules
         {
+	  declare dav_aci any;
           declare exit handler for sqlstate '*'
           {
             _error := VALIDATE.DBA.clear (__SQL_MESSAGE);
             goto _end_share;
           };
-          DB.DBA.ACL_VALIDATE (WEBDAV.DBA.aci_params (params), 1);
+          dav_aci := WEBDAV.DBA.aci_params (params);
+          --DB.DBA.ACL_VALIDATE (dav_aci, 1);
         }
       _end_share:;
       }
