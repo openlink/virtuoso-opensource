@@ -3946,6 +3946,85 @@ srv_global_init_plugin_actions (dk_set_t *set_ptr, char *mode)
     }
 }
 
+
+/*
+ *  Wrappers for FUTURE calls
+ */
+
+static server_func
+sf_sql_connect_wrapper (caddr_t args[])
+{
+  return sf_sql_connect (args[0], args[1], args[2], (caddr_t *) args[3]);
+}
+
+static server_func
+sf_stmt_prepare_wrapper (caddr_t args[])
+{
+  sf_stmt_prepare (args[0], args[1], (long) args[2], (stmt_options_t *) args[3]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_execute_wrapper (caddr_t args[])
+{
+  sf_sql_execute (args[0], args[1], args[2], (caddr_t *) args[3], (caddr_t *) args[4], (stmt_options_t *) args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_fetch (args[0], (long) args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_transact_wrapper (caddr_t args[])
+{
+  sf_sql_transact ((long) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_free_stmt_wrapper (caddr_t args[])
+{
+  return (caddr_t) sf_sql_free_stmt (args[0], (int)args[1]);
+}
+
+static server_func
+sf_sql_get_data_wrapper (caddr_t args[])
+{
+  sf_sql_get_data (args[0], (long) args[1], (long)args[2], (long) args[3], (long) args[4]);
+  return NULL;			/* void function */
+}
+static server_func
+sf_sql_get_data_ac_wrapper (caddr_t args[])
+{
+  sf_sql_get_data_ac ((long) args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], (long) args[5],
+      args[6], (long) args[7], (long) args[8]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_extended_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_extended_fetch (args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_no_threads_reply_wrapper (caddr_t args[])
+{
+  return sf_sql_no_threads_reply ();
+}
+
+static server_func
+sf_sql_tp_transact_wrapper (caddr_t args[])
+{
+  sf_sql_tp_transact ((short) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
 void
 srv_global_init (char *mode)
 {
@@ -4100,19 +4179,19 @@ srv_global_init (char *mode)
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 
   sec_init ();
-  PrpcRegisterService ("SCON", (server_func) sf_sql_connect, NULL,
+  PrpcRegisterService ("SCON", (server_func) sf_sql_connect_wrapper, NULL,
       DV_ARRAY_OF_POINTER, (post_func) dk_free_tree);
-  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare);
-  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute);
-  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact);
-  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt);
-  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data);
-  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac);
-  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply);
+  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply_wrapper);
 #ifdef VIRTTP
-  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact);
+  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact_wrapper);
 #endif
 
   PrpcSetBackgroundAction ((background_action_func) the_grim_lock_reaper);

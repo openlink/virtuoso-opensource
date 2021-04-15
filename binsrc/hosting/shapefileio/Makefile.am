@@ -40,6 +40,7 @@ shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
+shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Xml.new
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 
 shapefileio_la_LDFLAGS = -module -avoid-version -export-dynamic

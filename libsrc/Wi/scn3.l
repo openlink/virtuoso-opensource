@@ -59,6 +59,7 @@ struct yyguts_t;
 extern void *scn3yyalloc (yy_size_t ,yyscan_t yyscanner );
 extern void *scn3yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
 extern void scn3yyfree(void *ptr, yyscan_t scanner);
+extern void scn3yyerror(char *error);
 
 #ifdef SCN3SPLIT
 #define scn3splityyalloc(sz,scanner) scn3yyalloc(sz,scanner)

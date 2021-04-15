@@ -26,6 +26,7 @@
  */
 
 #include "Dk.h"
+#include "libutil.h"
 #include "numeric.h"
 
 /* activates code for divmod, modulo, powmod, pow, sqr */

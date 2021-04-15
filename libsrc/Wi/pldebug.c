@@ -1280,7 +1280,7 @@ pldbg_input_ready (dk_session_t * ses)
   semaphore_leave (pldbg_sem);
 }
 
-caddr_t
+static caddr_t
 sf_pl_debug (caddr_t name, caddr_t digest)
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
@@ -1298,6 +1298,12 @@ sf_pl_debug (caddr_t name, caddr_t digest)
   SESSION_SCH_DATA (client)->sio_default_read_ready_action =
 	  (io_action_func) pldbg_input_ready;
   return box_num(1);
+}
+
+static server_func
+sf_pl_debug_wrapper (caddr_t args[])
+{
+  return sf_pl_debug (args[0], args[1]);
 }
 
 /* source and line are from module's qr */
@@ -1641,7 +1647,7 @@ pldbg_init (void)
   pldbg_sem = semaphore_allocate (0);
   pldbg_rc = resource_allocate (100, (rc_constr_t) pd_allocate, (rc_destr_t) pd_free, (rc_destr_t) pd_clear, 0);
 
-  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug);
+  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug_wrapper);
   pldbg_thr = PrpcThreadAllocate ((thread_init_func) pldbg_loop, 50000, NULL);
 
   if (!pldbg_thr)

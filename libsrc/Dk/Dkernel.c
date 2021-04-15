@@ -1165,10 +1165,7 @@ future_wrapper (void *ignore)
 
 	  F_CALLED;				 /* not serialized, does not have to be exact. */
 	  CB_PREPARE;
-	  result = (caddr_t) future->rq_service->sr_func (
-	  	arg_array[0], arg_array[1], arg_array[2], arg_array[3],
-		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
-		arg_array[8]);
+	  result = (caddr_t) future->rq_service->sr_func ( arg_array );
 	  CB_DONE;
 	}
 
@@ -1862,10 +1859,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
       F_CALLED;					 /* not serialized, does not have to be exact. */
       CB_PREPARE;
-      result = (caddr_t) future->rq_service->sr_func (
-		arg_array[0], arg_array[1], arg_array[2], arg_array[3],
-		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
-		arg_array[8]);
+      result = (caddr_t) future->rq_service->sr_func ( arg_array );
       CB_DONE;
     }
 
@@ -2019,8 +2013,8 @@ read_inprocess_request (dk_session_t * ses)
 }
 
 
-caddr_t *
-sf_inprocess_ep ()
+static caddr_t *
+sf_inprocess_ep (void)
 {
   int pid;
   dk_session_t *client = IMMEDIATE_CLIENT;
@@ -2036,6 +2030,13 @@ sf_inprocess_ep ()
   thrs_printf ((thrs_fo, "ses %p thr:%p in sf_inprocess_ep1\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   return ret;
+}
+
+
+static server_func
+sf_inprocess_ep_wrapper (caddr_t args[])
+{
+  return sf_inprocess_ep();
 }
 
 
@@ -3654,6 +3655,13 @@ sf_caller_identification (char *name)
   DKST_RPC_DONE (client);
   return (ret);
 }
+
+static server_func
+sf_caller_identification_wrapper (caddr_t args[])
+{
+  return sf_caller_identification ((char *)args[0]);
+}
+
 #endif /* NO_THREAD */
 
 #if !defined (NO_THREAD)			 /*&& defined (WIN32) */
@@ -3837,9 +3845,9 @@ PrpcInitialize1 (int mem_mode)
 #endif
 
 #ifndef NO_THREAD
-  PrpcRegisterServiceDescPostProcess (&s_caller_identification, (server_func) sf_caller_identification, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_caller_identification, (server_func) sf_caller_identification_wrapper, (post_func) dk_free_tree);
 # ifdef INPROCESS_CLIENT
-  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep, (server_func) sf_inprocess_ep, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep, (server_func) sf_inprocess_ep_wrapper, (post_func) dk_free_tree);
 # endif
 
   if (0 == strcmp (build_thread_model, "-fibers"))

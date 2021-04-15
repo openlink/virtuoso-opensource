@@ -3039,8 +3039,12 @@ alpha-dec-osf*)
 	OPSYS="BSDI"
 	;;
 
+*-darwin20*)
+	OPSYS="Mac\ OS\ 11"
+	;;
+
 *-darwin*)
-	OPSYS="Darwin"
+	OPSYS="Mac\ OS\ X"
 	;;
 
 *)

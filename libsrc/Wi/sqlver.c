@@ -39,6 +39,17 @@ const char *build_opsys_id = "Win64";
 const char *build_host_id = "i686-generic-win-32";
 const char *build_opsys_id = "Win32";
 #endif
+#elif (__APPLE__)
+const char *build_host_id = HOST;			/* eg. universal-apple-macosx10.9 */
+const char *build_opsys_id = OPSYS " "
+# if defined (__aarch64__)
+	"(Apple Silicon)"
+# elif defined (__x86_64__)
+	"(Intel x86_64)"
+# else
+	"(UNKNOWN)"
+# endif
+	;
 #else
 const char *build_host_id = HOST;			/* eg. i586-pc-linux-gnu */
 const char *build_opsys_id = OPSYS;			/* eg. Linux */

@@ -179,7 +179,7 @@ struct future_request_s
   int 			rq_is_second;
 };
 
-typedef char *(*server_func) (caddr_t x, ...);
+typedef caddr_t (*server_func) (caddr_t args[]);
 typedef void (*post_func) (caddr_t b, future_request_t * f);
 
 /*
