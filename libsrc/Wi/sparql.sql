@@ -4851,16 +4851,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
 
 create function DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT (in ul_or_tr varchar)
 {
-  declare lpath varchar;
-  lpath := virtuoso_ini_item_value ('URIQA','DefaultHost');
-  if (lpath is null)
-    lpath := '/sparql';
-  else
-    lpath := 'http://' || lpath || '/sparql';
-  whenever sqlstate 'HT013' goto no_http_context;
-  lpath := http_path ();
-no_http_context:
-  return ' <a href=" ' || lpath || '?query=describe+%%3C%U%%3E&amp;format=text%%2Fx-html%%2B' || ul_or_tr || '">describe</a> ';
+  return ' <a href="/sparql?query=describe+%%3C%U%%3E&amp;format=text%%2Fx-html%%2B' || ul_or_tr || '">describe</a> ';
 }
 ;
 
