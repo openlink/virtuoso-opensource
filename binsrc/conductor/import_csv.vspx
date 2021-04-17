@@ -259,10 +259,10 @@
         <v:form name="inx_form2" type="simple" method="POST" action="" >
           <table class="ctl_grp">
             <tr class="ctl_grp_title">
-              <th colspan="2"><h3>Select parse options</h3></th>
+              <th colspan="2"><h3 style="background-color: #f7f7f7; padding: 3px;">Select parse options</h3></th>
             </tr>
             <tr>
-              <th>Mode</th>
+              <th width="120px">Mode</th>
               <td>
                 <v:select-list name="pmode">
                   <v:item name="Strict" value='1'/>
@@ -347,7 +347,7 @@
             </tr>
             <tr>
               <td colspan="2">
-                <h3>Sample Data</h3>
+                <h3 style="background-color: #f7f7f7; padding: 3px;">Sample Data</h3>
                 <table class="listing" width="100%">
                 <?vsp
                   declare ss, cn, tmp, r, i, hi, offs, bom, enc, pmode any;
@@ -358,7 +358,7 @@
                     self.vc_error_message := 'Invalid path';
                     self.vc_is_valid := 0;
                     return 0;
-                  };
+                  }
 
                   if (self.enc.ufl_value = '*default*')
                     enc := null;
@@ -381,7 +381,7 @@
                     {
                       declare j int;
 
-                      http ('<tr class="listing_header_row"><td>Row No</td>');
+                      http ('<tr class="listing_header_row"><td>#</td>');
                       foreach (any c in r) do
                       {
                         if (hi < 0 or not isstring (r[j]))
@@ -395,12 +395,13 @@
                     if (i >= offs)
                     {
                       http ('<tr>');
-                      http_value (i + 1, 'td');
+                      http (sprintf ('<td valign="top">%d</>', i+1));
                       foreach (any c in r) do
                       {
                         if (isstring (c))
                           c := charset_recode (c, enc, '_WIDE_');
-                        http_value (c, 'td');
+
+                        http (sprintf ('<td valign="top">%V</>', c));
                       }
                       http ('</tr>');
                     }
