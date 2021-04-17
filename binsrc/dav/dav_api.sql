@@ -2750,7 +2750,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     {
       -- clear previous uploaded data
       id := DB.DBA.DAV_SEARCH_ID (path, 'R');
-      if (not isnull (DB.DBA.DAV_HIDE_ERROR (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
+      if (not isnull (DB.DBA.DAV_HIDE_ERROR (id)) and isinteger (DB.DBA.DAV_DET_DAV_ID (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
         WS.WS.TTL_QUERY_POST_CLEAR (path);
 
       if (type = 'application/sparql-query')

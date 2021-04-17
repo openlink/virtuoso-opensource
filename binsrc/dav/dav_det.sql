@@ -53,7 +53,10 @@ create function DB.DBA.DAV_DET_NAME (
   if (isnull (id) or isinteger (id))
     return null;
 
-  return cast (id[0] as varchar);
+  if (isvector (id))
+    return cast (id[0] as varchar);
+
+  return null;
 }
 ;
 
@@ -63,7 +66,10 @@ create function DB.DBA.DAV_DET_DETCOL_ID (
   if (isnull (id) or isinteger (id))
     return id;
 
-  return cast (id[1] as integer);
+  if (isvector (id))
+    return cast (id[1] as integer);
+
+  return null;
 }
 ;
 
@@ -73,7 +79,10 @@ create function DB.DBA.DAV_DET_DAV_ID (
   if (isnull (id) or isinteger (id))
     return id;
 
-  return id[2];
+  if (isvector (id))
+    return id[2];
+
+  return null;
 }
 ;
 
