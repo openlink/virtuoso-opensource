@@ -479,10 +479,7 @@ conductor/vdb_unlink_obj.vspx
 conductor/vdir_browser.vspx
 conductor/vfs_export.vspx
 conductor/vhost_export.vspx
-conductor/view_dav_res.vsp
-conductor/view_file.vsp
 conductor/view.vsp
-conductor/view.vspx
 conductor/virtuoso_splash.vspx
 conductor/wsdl_service_create.vspx
 conductor/wsdl_services.vspx

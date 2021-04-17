@@ -73,6 +73,9 @@
 </xsl:template>
 
 <xsl:template match="vm:popup_page_wrapper">
+  <?vsp
+    http_header (http_header_get () || 'X-Frame-Options: DENY\r\n');
+  ?>
   <xsl:element name="v:variable">
     <xsl:attribute name="persist">0</xsl:attribute>
     <xsl:attribute name="name">page_owner</xsl:attribute>

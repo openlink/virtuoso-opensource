@@ -24,6 +24,9 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns="http://www.w3.org/1999/xhtml">
+  <?vsp
+    http_header (http_header_get () || 'X-Frame-Options: DENY\r\n');
+  ?>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <link rel="stylesheet" href="css/yacutia_style.css" type="text/css" />
