@@ -1593,7 +1593,7 @@ ApplicationMain (int argc, char **argv)
 	  if (serviceFlag)
 	    UpdateRunningServiceStatus (SERVICE_STOP_PENDING, 0);
 #ifdef _RENDEZVOUS
-	  stop_rendezvous ();
+	  /*stop_rendezvous ();*/
 #endif
 	  sf_fastdown (NULL);
 	}

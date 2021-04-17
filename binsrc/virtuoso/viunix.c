@@ -776,7 +776,7 @@ main (int argc, char **argv)
 #endif
 	  log_info ("Initiating quick shutdown");
 #ifdef _RENDEZVOUS
-	  stop_rendezvous ();
+	  /* stop_rendezvous (); */
 #endif
 	  sf_fastdown (NULL);
 	}
