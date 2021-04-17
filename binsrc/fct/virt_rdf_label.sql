@@ -55,6 +55,7 @@ TTLP (
 @prefix oplog: <http://www.openlinksw.com/schemas/opengraph#> . 
 @prefix mo: <http://purl.org/ontology/mo/> .
 @prefix oplbase: <http://www.openlinksw.com/schemas/oplbase#> . 
+@prefix schema: <http://schema.org/> .
 
 foaf:primarytopic rdfs:subPropertyOf sioc:container_of .
 
@@ -89,6 +90,8 @@ foaf:topic rdfs:subPropertyOf dcterms:references .
 <http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> rdfs:subPropertyOf geo:long .
 og:latitude rdfs:subPropertyOf geo:lat .
 og:longitude rdfs:subPropertyOf geo:long .
+schema:latitude rdfs:subPropertyOf geo:lat .
+schema:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 <http://www.ontosearch.com/2008/02/ontosminer-ns/domain/common/english#Person> rdfs:subClassOf foaf:Person .

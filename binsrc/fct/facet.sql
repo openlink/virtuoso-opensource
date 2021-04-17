@@ -449,6 +449,7 @@ TTLP ('@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix owl: <http://www.w3.org/2002/07/owl#> .
 @prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
 @prefix og: <http://opengraphprotocol.org/schema/> .
+@prefix schema: <http://schema.org/> .
 
 dc:title rdfs:subPropertyOf virtrdf:label .
 rdfs:label rdfs:subPropertyOf virtrdf:label .
@@ -474,6 +475,8 @@ gr:BusinessEntity rdfs:subClassOf foaf:Organization .
 <http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> rdfs:subPropertyOf geo:long .
 og:latitude rdfs:subPropertyOf geo:lat .
 og:longitude rdfs:subPropertyOf geo:long .
+schema:latitude rdfs:subPropertyOf geo:lat .
+schema:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasCategory> rdfs:subPropertyOf rdf:type .
