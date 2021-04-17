@@ -352,7 +352,7 @@
               if (cmd in ('refresh', 'bookmarklet', 'home', 'feeds'))
                 return 1;
 
-             if (is_empty_or_null (self.dir_path))
+              if (is_empty_or_null (self.dir_path))
                 return 0;
 
               if (not (((self.command = 0) and (self.command_mode <> 3)) or ((self.command = 0) and (self.command_mode = 3) and (not isnull (self.search_advanced)))))
@@ -625,8 +625,8 @@
               else if (detClass = 'rdfSink')
                 retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'tag', 'properties', 'share');
 
-              else if (detClass = 'HostFS')
-                retValue := vector ('new', 'upload', 'create', 'link', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties', 'share');
+              else if (detClass = 'HostFs')
+                retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties');
 
               else if (detClass = 'IMAP')
                 retValue := vector ('new', 'delete', 'copy', 'move', 'properties', 'share');
@@ -673,7 +673,7 @@
               else if (detClass = 'rdfSink')
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expiretexm', 'publicTags', 'privateTags', 'properties', 'acl', 'aci', 'version');
 
-              else if (detClass = 'HostFS')
+              else if (detClass = 'HostFs')
                 retValue := vector ('source', 'name', 'mime', 'fileSize', 'owner', 'group', 'permissions', 'textSearch', 'metadata', 'acl');
 
               else if (detClass = 'IMAP')
@@ -727,7 +727,7 @@
             <![CDATA[
               declare retValue any;
 
-              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFS', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
+              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFs', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
                 retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass = 'IMAP')
@@ -2674,7 +2674,7 @@
                                               1, 'ResFilter',  'Smart Folder',
                                               1, 'CatFilter',  'Category Folder',
                                               1, 'PropFilter', 'Property Filter',
-                                              1, 'HostFS',     'Host FS',
+                                              1, 'HostFs',     'Host Filesystem',
                                               0, 'rdfSink',    'Linked Data Import',
                                               1, 'LDP',        'Linked Data Protocol',
                                               1, 'RDFData',    'RDF Data',
@@ -2705,6 +2705,9 @@
                                     goto _0;
 
                                   if ((V[N] = 2) and not isstring (DB.DBA.vad_check_version ('SyncML')))
+                                    goto _0;
+
+                                  if ((V[N+1] = 'HostFs') and (not WEBDAV.DBA.check_admin (self.account_id)))
                                     goto _0;
 
                                   if ((V[N+1] = 'GDrive') and isnull (WEBDAV.DBA.det_api_key ('Google API')))
@@ -3971,7 +3974,7 @@
                         {
                           detParams := vector ();
                         }
-                        if (not isnull (detParams) or (dav_detType = 'HostFS'))
+                        if (not isnull (detParams) or (dav_detType = 'HostFs'))
                         {
                           tmp := null;
                           if (__proc_exists ('WEBDAV.DBA.' || dav_detType || '_CONFIGURE') is not null)
