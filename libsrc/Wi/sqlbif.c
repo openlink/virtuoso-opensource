@@ -11452,9 +11452,15 @@ bif_registry_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t res;
   caddr_t name = bif_string_arg (qst, args, 0, "registry_get");
+  caddr_t dflt = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "registry_get") : NULL;
+
   IN_TXN;
   res = registry_get (name);
   LEAVE_TXN;
+
+  if (!res && dflt)
+    res = box_copy (dflt);
+
   return res;
 }
 
