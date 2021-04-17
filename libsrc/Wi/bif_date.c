@@ -1176,6 +1176,33 @@ generic_err:
   return NULL;
 }
 
+
+caddr_t
+bif_strftime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t format = bif_string_arg (qst, args, 0, "strftime");
+  caddr_t dt = bif_date_arg (qst, args, 1, "strftime");
+  TIMESTAMP_STRUCT ts;
+  char szTmp[1024];
+  struct tm tm;
+
+  dt_to_timestamp_struct (dt, &ts);
+
+  memset (&tm, 0, sizeof (tm));
+  tm.tm_year = ts.year - 1900;
+  tm.tm_mon = ts.month - 1;
+  tm.tm_mday = ts.day;
+  tm.tm_hour = ts.hour;
+  tm.tm_min = ts.minute;
+  tm.tm_sec = ts.second;
+  tm.tm_isdst = -1;
+
+  strftime (szTmp, sizeof (szTmp), format, &tm);
+
+  return box_dv_short_string (szTmp);
+}
+
+
 void
 bif_date_init ()
 {
@@ -1225,5 +1252,6 @@ bif_date_init ()
   bif_define_ex ("timestampdiff"		, bif_timestampdiff			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dt_set_tz"			, bif_dt_set_tz				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("__extract"			, bif_extract				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("strftime"			, bif_strftime				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   dt_init ();
 }
