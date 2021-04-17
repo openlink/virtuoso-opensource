@@ -1915,6 +1915,57 @@ find_next_line:
 }
 ;
 
+
+--
+-- Generate Content-Disposition header hint to browsers
+--
+create procedure DB.DBA.SPARQL_CONTENT_DISPOSITION (in fmt varchar, in att integer := 0)
+{
+  declare hdr varchar;
+  declare suffix varchar;
+  declare slist any;
+  declare ctr, len integer;
+
+  --  NOTE: ordering is important
+  slist := vector (
+    'ATOM%'		, '.atom',
+    'CSV'		, '.csv',
+    'CXML%'		, '.cxml',
+    'HTML%'		, '.html',
+    'JS'		, '.js',
+    'JSON;LD%'		, '.jsonld',
+    'JSON%'		, '.json',
+    'NICE_TTL'		, '.ttl',
+    'NT'		, '.nt',
+    'RDFA%'		, '.rdfa',
+    'RDFXML'		, '.rdf',
+    'SOAP'		, '.soap',
+    'TRIG'		, '.trig',
+    'TSV'		, '.tsv',
+    'TTL'		, '.ttl',
+    'XML'		, '.xml'
+  );
+  len := length(slist);
+
+  suffix := '.txt';
+  for (ctr := 0; ctr < len; ctr := ctr + 2) {
+     if (fmt like slist[ctr]) {
+	suffix := slist[ctr + 1];
+	goto found_match;
+     }
+  }
+
+found_match:
+  hdr := 'Content-disposition: ';
+  if (att)
+    hdr := hdr || 'attachement; ';
+  hdr := hdr || 'filename=' || strftime ('sparql_%Y-%m-%d_%H-%M-%SZ', curutcdatetime()) || suffix || '\r\n';
+
+  http_header (coalesce (http_header_get (), '') || hdr);
+}
+;
+
+
 --! \c flags is bitmask: 1 to add HTTP headers, 2 to dump the log of debug info composed by RDF_LOG_DEBUG_INFO in current connection, there may be more in the future
 create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, inout rset any, in accept varchar, in flags integer, in status any := null) returns varchar
 {
@@ -2241,6 +2292,9 @@ body_complete:
       if (line_begin is not null)
         DB.DBA.SPARQL_LOG_DEBUG_INFO (log_array, line_begin, line_end, ses);
     }
+
+  DB.DBA.SPARQL_CONTENT_DISPOSITION (ret_format);
+
   if (bit_and (flags, 1) and strcasestr (http_header_get (), 'Content-Type:') is null)
     http_header (coalesce (http_header_get (), '') || 'Content-Type: ' || ret_mime || case when strstr (ret_mime, 'json') is null then '; charset=UTF-8' else '' end || '\r\n');
   return ret_mime;
