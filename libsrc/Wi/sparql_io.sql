@@ -1419,7 +1419,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
       http (''');', ses);
       return;
    }
-  http ('<table class="sparql" border="1">', ses);
+  http ('<table class="table table-striped table-sm table-borderless">', ses);
   http (trnewline || '  <tr>', ses);
   --http ('\n    <th>Row</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
@@ -1737,7 +1737,8 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   nsdict := dict_new (10 + cast (sqrt (0.3e0 * varcount * rescount) as integer));
   --dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   --dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
-  http ('<table class="sparql" border="1">', ses);
+
+  http ('<table class="table table-striped table-sm table-borderless">', ses);
   http ('\n  <tr>', ses);
   --http('\n    <th>Row #</th>', ses);
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
@@ -1839,11 +1840,14 @@ iri_print:
 --              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
 --            }
 
-	  http (sprintf('<a href="', describe_path), ses);
-	  if (describe_path is not null) {
+          http ('<a href="', ses);
+          if (describe_path is not null)
+            {
 	      http (describe_path, ses);
 	      http_escape (val, 6, ses, 1, 1);	-- encode as parameter
-	  } else {
+            }
+          else
+            {
 	      if (about_path is not null)
 	          http(about_path, ses);
 	      http_escape (val, 3, ses, 1, 1);  -- normal encode
@@ -2177,7 +2181,11 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
     }
   if (ret_format = 'HTML')
     {
+      if (bit_and (flags, 1))
+        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table', ses);
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0, 1, case when ret_mime = 'text/html' then 1 else 0 end);
+      if (bit_and (flags, 1))
+        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       goto body_complete;
     }
   if (ret_format = 'JS')
@@ -2254,7 +2262,9 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'HTML;TR')
     {
       ret_mime := 'text/html';
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table (faceted browsing links)', ses);
       DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (ses, metas, rset);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       goto body_complete;
     }
   ret_mime := 'application/sparql-results+xml';
@@ -2275,9 +2285,9 @@ body_complete:
         log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
       else
         vectorbld_final (log_array);
-      if (ret_format in ('HTML', 'HTML;TR'))
+      if (ret_format like 'HTML%')
         {
-          line_begin := '<xmp>'; line_end := '</xmp>';
+          line_begin := '<!-' || '- '; line_end := '-' || '->';
         }
       else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
         {
