@@ -19,32 +19,31 @@
 --
 
 
-create function WS.WS.SPARQL_ENDPOINT_CDN (in url varchar, in file varchar, in checksum varchar) returns varchar
+create function WS.WS.SPARQL_ENDPOINT_CDN (in url varchar, in file varchar, in checksum varchar, in no_checksum integer := 0) returns varchar
 {
     declare path any;
     declare integrity varchar;
-    declare anon varchar;
     declare line varchar;
-
-    anon := 'crossorigin="anonymous"';
-    integrity := '';
 
     path := registry_get ('sparql-ui-cdn', '');
     if (length(path) = 0)
     {
         path := url;
         if (length(checksum) > 0)
-            integrity := sprintf('integrity="%s"', checksum);
+            integrity := sprintf('integrity="%s" crossorigin="anonymous"', checksum);
     }
     if (path = 'disable')
         return;
 
+    if (no_checksum > 0)
+      integrity := '';
+
     path := rtrim (path, ' /') || '/' || file;
 
     if (file like '%.js')
-        line := sprintf ('<script src="%H" %s %s></script>\n', path, integrity, anon);
+        line := sprintf ('<script src="%H" %s></script>\n', path, integrity);
     else
-        line := sprintf ('<link rel="stylesheet" href="%H" %s %s>\n', path, integrity, anon);
+        line := sprintf ('<link rel="stylesheet" href="%H" %s />\n', path, integrity);
 
     return line;
 }
@@ -77,8 +76,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
 create procedure WS.WS.SPARQL_ENDPOINT_STYLE (in enable_bootstrap integer := 0)
 {
     if (enable_bootstrap) {
-        http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/css/', 'bootstrap.min.css',
-            'sha384-9aIt2nRpC12Uk9gS9baDl411NQApFmC26EwAOH8WgZl5MYYxFfc+NcPb1dKGj7Sk'));
+        http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/', 'bootstrap.min.css',
+            'sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA=='));
         return;
     }
 ?>
@@ -1005,12 +1004,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Javascript
     --
     http('<div id="sparql-scripts">\n');
-    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/', 'jquery.min.js',
-            'sha256-9/aliU8dGd2tb6OSsuzixeV4y/faTqgFtohetphbbj0='));
-    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.16.0/umd/', 'popper.min.js',
-            'sha384-Q6E9RHvbIyZFJoft+2mJbHaEWldlvI9IOYy5n3zV9zzTtmI3UksdQRVvoxMfooAo'));
-    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.5.0/js/', 'bootstrap.min.js',
-            'sha384-OgVRvuATP1z7JjHLkuOU7Xw704+h835Lr+6QL9UvYjZE3Ipu6Tp75j7Bh/kR0JKI'));
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/', 'jquery.slim.min.js',
+            'sha512-/DXTXr6nQodMUiq+IUJYCt2PPOUjrHJ9wFrqpJ3XkgPNOZVfMok7cRw6CSxyCQxXn6ozlESsSh1/sMCTF1rL/g=='));
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/', 'bootstrap.bundle.min.js',
+            'sha512-wV7Yj1alIZDqZFCUQJy85VN+qvEIly93fIQAN7iqDFCPEucLCeNFz4r35FCo9s6WrpdDQPi80xbljXB8Bjtvcg=='));
 
     WS.WS.SPARQL_ENDPOINT_JAVASCRIPT(can_cxml, can_qrcode);
 
@@ -1464,6 +1461,14 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
     http('</div>\n\n');
     WS.WS.SPARQL_ENDPOINT_FOOTER ();
     http('</div>\n');
+
+    http('<div id="sparql-scripts">\n');
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/', 'jquery.slim.min.js',
+            'sha512-/DXTXr6nQodMUiq+IUJYCt2PPOUjrHJ9wFrqpJ3XkgPNOZVfMok7cRw6CSxyCQxXn6ozlESsSh1/sMCTF1rL/g=='));
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/js/', 'bootstrap.bundle.min.js',
+            'sha512-wV7Yj1alIZDqZFCUQJy85VN+qvEIly93fIQAN7iqDFCPEucLCeNFz4r35FCo9s6WrpdDQPi80xbljXB8Bjtvcg=='));
+    http('</div>');
+
     http('</body>\n');
     http('</html>\n');
 }
