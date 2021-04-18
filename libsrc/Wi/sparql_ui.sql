@@ -1586,6 +1586,115 @@ sparql_explain_done:
 ;
 
 
+
+--
+--  Functions for generating bootstrap 4 enabled output
+--
+create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout ses any, in nslist any := null)
+{
+    set http_charset='utf-8';
+    set http_in_charset='utf-8';
+
+    http ('<!DOCTYPE html>\n', ses);
+    if (nslist is not null)
+    {
+      declare len, ctr any;
+      http ('<html prefix="', ses);
+      len := length (nslist);
+      for (ctr := len-2; ctr >= 0; ctr := ctr-2)
+      {
+        http (sprintf ('\n  %s: ', nslist[ctr+1]), ses);
+        http_escape (nslist[ctr], 7, ses, 1, 1);
+      }
+      http ('\n" >\n', ses);
+    }
+    else
+    {
+      http ('<html>\n', ses);
+    }
+    http ('<head>\n', ses);
+    http ('<meta charset="utf-8" />\n', ses);
+    http ('<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />\n', ses);
+    http ('<title>', ses);
+    http_value(title, 0, ses);
+    http ('</title>\n', ses);
+
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/', 'bootstrap.min.css',
+            'sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA=='), ses);
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.4.0/font/', 'bootstrap-icons.min.css',
+            'sha512-jNfYp+q76zAGok++m0PjqlsP7xwJSnadvhhsL7gzzfjbXTqqOq+FmEtplSXGVI5uzKq7FrNimWaoc8ubP7PT5w=='), ses);
+
+    http ('</head>\n', ses);
+    http ('<body>\n', ses);
+    http ('<div class="container-fluid">\n', ses);
+    http ('<nav class="navbar navbar-expand-md sticky-top navbar-light bg-light">', ses);
+    http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
+    http_value (title);
+    http ('</a></nav>\n', ses);
+}
+;
+
+
+create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END(inout ses any)
+{
+    http('</div>\n</body>\n</html>\n', ses);
+}
+;
+
+
+create procedure WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN (in title varchar, inout ses any, in nslist any := null)
+{
+    set http_charset='utf-8';
+    set http_in_charset='utf-8';
+
+    http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
+    http ('<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">\n', ses);
+    if (nslist is not null)
+    {
+      declare len, ctr any;
+      http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
+      len := length (nslist);
+      for (ctr := len-2; ctr >= 0; ctr := ctr-2)
+      {
+        http (sprintf ('\n  xmlns:%s="', nslist[ctr+1]), ses);
+        http_escape (nslist[ctr], 7, ses, 1, 1);
+        http ('"', ses);
+      }
+      http ('\n>\n', ses);
+    }
+    else
+    {
+      http ('<html xmlns="http://www.w3.org/1999/xhtml">\n', ses);
+    }
+    http ('<head>\n', ses);
+    http ('<meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />\n', ses);
+    http ('<title>', ses);
+    http_value(title, 0, ses);
+    http ('</title>\n', ses);
+
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/4.6.0/css/', 'bootstrap.min.css',
+            'sha512-P5MgMn1jBN01asBgU0z60Qk4QxiXo86+wlFahKrsQf37c9cro517WzVSPPV1tDKzhku2iJ2FVgL67wG03SGnNA==', 1), ses);
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.4.0/font/', 'bootstrap-icons.min.css',
+            'sha512-jNfYp+q76zAGok++m0PjqlsP7xwJSnadvhhsL7gzzfjbXTqqOq+FmEtplSXGVI5uzKq7FrNimWaoc8ubP7PT5w==', 1), ses);
+
+    http ('</head>\n', ses);
+    http ('<body>\n', ses);
+    http ('<div class="container-fluid">\n', ses);
+    http ('<div class="navbar navbar-expand-md sticky-top navbar-light bg-light">', ses);
+    http ('<a class="navbar-brand" href="#" onclick="javascript:history.go(-1); return false;">SPARQL | ', ses);
+    http_value (title);
+    http ('</a></div>\n', ses);
+}
+;
+
+
+create procedure WS.WS.SPARQL_RESULT_XHTML_OUTPUT_END(inout ses any)
+{
+    http('</div>\n</body>\n</html>\n', ses);
+}
+;
+
+
 --
 -- vim: tabstop=4 shiftwidth=4 expandtab autoindent
 --
