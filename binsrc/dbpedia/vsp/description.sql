@@ -376,6 +376,30 @@ create procedure dbp_ldd_type (in gr varchar, in subj varchar, out url varchar, 
 }
 ;
 
+create procedure dbp_ldd_thumbnail (in _S any, in _G varchar)
+{
+  declare img, meta, data any;
+  declare best_q, q float;
+  declare lang, langs varchar;
+  declare retr int;
+
+  if (__tag of IRI_ID = __tag (_S))
+    _S := id_to_iri (_S);
+  if (__tag of IRI_ID = __tag (_G))
+    _G := id_to_iri (_G);
+
+  img := null;
+
+  exec ('sparql select ?o where { graph `iri(??)` { `iri(??)` dbo:thumbnail ?o } } limit 1', null, null, vector (_G, _S), vector ('use_cache', 1, 'max_rows', 0), meta, data);
+  if (length (data))
+    {
+	img := sprintf ('%H', data[0][0]);
+    }
+
+  return img;
+}
+;
+
 create procedure dbp_ldd_uri_local_part (in uri varchar)
 {
   declare delim integer;

@@ -4,8 +4,8 @@
         dbp: http://dbpedia.org/property/
         dbo: http://dbedia.org/ontology/
         dct: http://purl.org/dc/terms/
+	og:  https://ogp.me/ns#
 	"
-    lang="<?= registry_get('dbp_lang') ?>"
 >
 <?vsp
 --
@@ -35,6 +35,7 @@
    declare _resource_, project_name, project_home_page any;
    declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, rdf_link5, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link, text_link, md_json_link, json_ld_link, embed_json, embed_turtle any;
    declare iri_type, iri_uri, white_page, pkgs, txt, host, links, langs, dset, tmp_lines any;
+   declare _thumbnail any;
 
    -- INIT VALLUES
    set http_charset='utf-8';
@@ -212,6 +213,12 @@
    if (not length (label))
      label := page_resource_uri;
 
+   -- set up thumbnail
+   _thumbnail := dbp_ldd_thumbnail (_S, _G);
+   if (not length (_thumbnail))
+      _thumbnail := '/statics/images/dbpedia_logo.png';
+
+
    -- abstract
    _subject := dbp_ldd_subject (_S, _G, tmp_lines);
    -- class type
@@ -249,6 +256,15 @@
     <link rev="describedby" 					href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rel="stylesheet" type="text/css"			href="/statics/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" 			href="/statics/css/dbpedia.css" />
+
+    <!-- OpenGraph -->
+    <meta property="og:title"       content="<?= charset_recode(label, 'UTF-8', '_WIDE_') ?>" />
+    <meta property="og:type"        content="article" />
+    <meta property="og:url"         content="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>" />
+    <meta property="og:image"       content="<?= _thumbnail ?>" />
+    <meta property="og:description" content="<?vsp http (sprintf ('%s', _subject)); ?>" />
+    <meta property="og:site_name"   content="DBpedia" />
+    <!-- -->
 </head>
 <body about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
 <div class="navbar navbar-default navbar-fixed-top">
@@ -334,9 +350,18 @@
 <!-- page-header -->
 <!-- row -->
     <div class="row">
-	<div class="col-xs-12">
+	<div class="col-xs-9 col-sm-10">
 	    <p class="lead"><?vsp http (sprintf ('%s', _subject)); ?></p>
 	</div>
+<?vsp if (_thumbnail not like '/statics/%') { ?>
+	<div class="col-xs-3 col-sm-2">
+	  <a href="#" class="thumbnail">
+            <img src="<?= _thumbnail ?>" alt="thumbnail" style="max-width:100%; height:auto;">
+	  </a>
+	</div>
+<?vsp } ?>
+    </div>
+    <div class="row">
 	<div class="col-xs-12">
 	    <!-- proptable -->
 	    <table class="description table table-striped">
