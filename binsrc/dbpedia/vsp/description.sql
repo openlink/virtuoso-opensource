@@ -796,7 +796,7 @@ again:
    else if (__tag (_object) = 238)
      {
        http (sprintf ('<span %s>', rdfa));
-       http (st_astext (_object));
+       http_value (st_astext (_object));
        http ('</span>');
      }
    else
