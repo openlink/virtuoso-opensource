@@ -450,6 +450,9 @@ dbp_ldd_trunc_uri (in s varchar, in maxlen int := 80)
   declare _s varchar;
   declare _h int;
 
+  if (not isstring(s))
+    return s;
+
   _s := trim(s);
   _s := charset_recode (_s, 'UTF-8', '_WIDE_');
 
@@ -466,11 +469,17 @@ create procedure dbp_ldd_split_url (in uri varchar, out pref varchar, out res va
   declare delim any;
   declare uriSearch, nsPrefix any;
 
+  if (uri is null)
+    return;
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
+
   delim := -1;
   uriSearch := uri;
   nsPrefix := null;
   if (not length (label))
     label := null;
+
   while (nsPrefix is null and delim <> 0)
     {
       delim := coalesce (strrchr (uriSearch, '/'), 0);
@@ -611,11 +620,11 @@ create procedure dbp_ldd_http_print_l (in p_text any, inout odd_position int, in
 }
 ;
 
-create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null, in nofollow int := 0)
+create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag int := 0, in lang varchar := null, in dt varchar := null, in nofollow int := 0)
 {
   declare delim, delim1, delim2, delim3 integer;
   declare inx int;
-  declare nss, loc, res, nspref, lang_def varchar;
+  declare nss, loc, res, nspref, lang_def, dt_def varchar;
 
   delim1 := coalesce (strrchr (val, '/'), -1);
   delim2 := coalesce (strrchr (val, '#'), -1);
@@ -627,6 +636,8 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
   nss := subseq (val, 0, delim + 1);
   loc := subseq (val, delim + 1);
   res := '';
+  lang_def := '';
+  dt_def := '';
 
   nspref := __xml_get_ns_prefix (nss, 2);
   if (nspref is null)
@@ -636,38 +647,56 @@ create procedure dbp_ldd_rel_print (in val any, in rel any, in obj any, in flag 
       nspref := sprintf ('ns%d', inx);
     }
 
-
   if (nspref is not null and nspref not in ( 'dbo', 'dbp', 'dc', 'dct', 'foaf', 'owl', 'prov', 'rdf', 'rdfa', 'rdfs', 'schema', 'skos'))
-    nss := sprintf (' prefix="%s: %s"', nspref, nss);
+    nss := sprintf ('prefix="%s: %s" ', nspref, nss);
   else
     nss := '';
+
   if (flag)
-    loc := sprintf ('property="%s:%s"', nspref, loc);
+    loc := sprintf ('property="%s:%s" ', nspref, loc);
   else if (rel)
-    loc := sprintf ('rel="%s:%s%s"', nspref, loc, case when nofollow = 1 and loc <> 'sameAs' then ' nofollow' else '' end);
+    loc := sprintf ('rel="%s:%s%s" ', nspref, loc, case when nofollow = 1 and loc <> 'sameAs' then ' nofollow' else '' end);
   else
-    loc := sprintf ('rev="%s:%s"', nspref, loc);
-  --if (obj is not null)
-  --  res := sprintf (' resource="%V"', obj);
-  lang_def := '';
-  if (isstring (lang) and lang <> '')
-    lang_def := sprintf (' lang="%s"', lang);
-  return concat (loc, res, nss, lang_def);
+    loc := sprintf ('rev="%s:%s" ', nspref, loc);
+
+  if (obj is not null)
+    res := sprintf ('resource="%V" ', obj);
+
+  if (length (lang))
+    lang_def := sprintf ('lang="%V" ', lang);
+  if (length (dt))
+    dt_def := sprintf ('datatype="%V" ', dt);
+
+  return concat (loc, res, nss, lang_def, dt_def);
 }
 ;
 
 create procedure dbp_ldd_http_print_r (in _object any, in org int := 0, in label varchar, in pred varchar, in rel int, inout acc any)
 {
-   declare lang, rdfs_type, rdfa, visible any;
+   declare lang, rdfs_type, rdfs_type_short, rdfa, visible, p_dt, s_dt any;
 
    if (__tag of rdf_box = __tag (_object))
      {
        __rdf_box_make_complete (_object);
      }
-   lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object);
+
+   lang := DB.DBA.RDF_LANGUAGE_OF_OBJ (_object, null);
    visible := dbp_ldd_str_lang_check (lang, acc);
-   rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object);
-   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang, 0);
+   rdfs_type := DB.DBA.RDF_DATATYPE_OF_OBJ (_object, null);
+
+   if (__tag of IRI_ID = __tag (rdfs_type))
+     rdfs_type := id_to_iri (rdfs_type);
+
+   p_dt := '';
+   s_dt := '';
+   dbp_ldd_split_url (rdfs_type, p_dt, s_dt);
+
+   if (length(s_dt))
+     rdfs_type_short := sprintf ('%s:%s', p_dt, s_dt);
+   else
+     rdfs_type_short := '';
+
+   rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, null, 1, lang, rdfs_type_short, 0);
 
    http (sprintf ('\t<li%s><span class="literal">', case visible when 0 then ' style="display:none;"' else '' end));
 
@@ -682,22 +711,22 @@ again:
    else if (__tag (_object) = 189)
      {
        http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := 'xsd:integer';
+       lang := rdfs_type_short;
      }
    else if (__tag (_object) = 190)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := 'xsd:float';
+       lang := rdfs_type_short;
      }
    else if (__tag (_object) = 191)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := 'xsd:double';
+       lang := rdfs_type_short;
      }
    else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
-       lang := 'xsd:double';
+       lang := rdfs_type_short;
      }
    else if (__tag (_object) = 182)
      {
@@ -710,7 +739,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := 'xsd:date';
+       lang := rdfs_type_short;
      }
    else if (__tag (_object) = 243)
      {
@@ -746,7 +775,7 @@ again:
        if (s_t is null and _url not like registry_get('dbp_domain') || '/%')
 	 nofollow := 1;
 
-       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang, nofollow);
+       rdfa := dbp_ldd_rel_print (id_to_iri (pred), rel, _url, 0, lang, rdfs_type_short, nofollow);
 
        if (s_t is null)
 	 {
