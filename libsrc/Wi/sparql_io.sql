@@ -3954,6 +3954,8 @@ create procedure DB.DBA.SPARQL_ROUTE_DICT_CONTENT_DAV (
       else if ('application/x-json+ld+ctx' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, out_ses);
       else if ('application/ld+json' = mime)
+        DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (triples, out_ses);
+      else if ('application/x-ld+json' = mime)
         DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, out_ses);
       else if ('application/xhtml+xml' = mime)
         DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, out_ses);
