@@ -5425,7 +5425,8 @@ bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   if (NULL != e2.bnode_usage)
     HT_WRLOCK_COND(e2.bnode_usage,e2_wrlocked);
   nesting = bif_http_ld_json_triple_batch_impl (env, &e2);
-  HT_UNLOCK_COND(e2.bnode_usage,e2_wrlocked);
+  if (NULL != e2.bnode_usage)
+    HT_UNLOCK_COND(e2.bnode_usage,e2_wrlocked);
   return box_num (nesting);
 }
 
