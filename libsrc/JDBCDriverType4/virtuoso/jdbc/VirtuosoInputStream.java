@@ -162,7 +162,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_NULL:
                    {
                      //System.out.println("DV_NULL");
-                     return new Short((short)0); //null; because off absence of TAG_BOX in O12
+                     return Short.valueOf((short)0); //null; because off absence of TAG_BOX in O12
                    }
              case VirtuosoTypes.DV_DB_NULL:
                    {
@@ -188,7 +188,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Long(readlongint());
+                       array[i] = Long.valueOf(readlongint());
                      res = new VectorOfLong(array);
                      //System.out.print("DV_ARRAY_OF_LONG");
 		     //System.out.println (res.toString());
@@ -201,7 +201,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Long(readlongint());
+                       array[i] = Long.valueOf(readlongint());
                      res = new VectorOfLong(array);
                      //System.out.print("DV_ARRAY_OF_LONG_PACKED: ");
 		     //System.out.println (res.toString());
@@ -213,7 +213,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Double(readdouble());
+                       array[i] = Double.valueOf(readdouble());
                      res = new VectorOfDouble(array);
                      //System.out.print("DV_ARRAY_OF_DOUBLE: ");
 		     //System.out.println (res.toString());
@@ -225,7 +225,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Float(readfloat());
+                       array[i] = Float.valueOf(readfloat());
                      res = new VectorOfFloat(array);
                      //System.out.print("DV_ARRAY_OF_FLOAT: ");
 		     //System.out.println (res.toString());
@@ -329,7 +329,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_SINGLE_FLOAT:
                    {
                      //System.out.println("DV_SINGLE_FLOAT");
-                     res = new Float(readfloat());
+                     res = Float.valueOf(readfloat());
                      //System.out.print("DV_SINGLE_FLOAT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -337,7 +337,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_DOUBLE_FLOAT:
                    {
                      //System.out.println("DV_DOUBLE_FLOAT");
-                     res = new Double(readdouble());
+                     res = Double.valueOf(readdouble());
                      //System.out.print("DV_DOUBLE_FLOAT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -348,7 +348,7 @@ class VirtuosoInputStream extends BufferedInputStream
 		     int ret = readshortint();
 		     if (ret > 127)
 		       ret = ret - 256;
-                     res = new Short((short)ret);
+                     res = Short.valueOf((short)ret);
                      //System.out.print("DV_SHORT_INT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -356,7 +356,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_LONG_INT:
                    {
                      //System.out.println("DV_LONG_INT");
-                     res = new Integer(readlongint());
+                     res = Integer.valueOf(readlongint());
                      //System.out.print("DV_LONG_INT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -439,13 +439,13 @@ class VirtuosoInputStream extends BufferedInputStream
                    }
              case VirtuosoTypes.DV_IRI_ID:
                    {
-                     res = new Integer(readlongint());
+                     res = Integer.valueOf(readlongint());
                      return res;
                    }
              case VirtuosoTypes.DV_IRI_ID_8:
              case VirtuosoTypes.DV_INT64:
                    {
-                     res = new Long(readlong());
+                     res = Long.valueOf(readlong());
                      return res;
                    }
 	     case VirtuosoTypes.DV_RDF:

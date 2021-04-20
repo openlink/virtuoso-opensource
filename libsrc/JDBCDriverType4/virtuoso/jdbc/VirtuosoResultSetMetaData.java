@@ -62,7 +62,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       {
          // Create the new column
          VirtuosoColumn col = new VirtuosoColumn(columns[i], dtps[i], conn);
-         hcolumns.put(col,new Integer(i));
+         hcolumns.put(col,Integer.valueOf(i));
          columnsMetaData.insertElementAt(col,i);
       }
    }
@@ -87,7 +87,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
          VirtuosoColumn col =
 	     new VirtuosoColumn((openlink.util.Vector)((openlink.util.Vector)vect).elementAt(i),
 		 conn);
-         hcolumns.put(col,new Integer(i));
+         hcolumns.put(col,Integer.valueOf(i));
          columnsMetaData.insertElementAt(col,i);
       }
    }

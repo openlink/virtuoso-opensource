@@ -457,11 +457,11 @@ public class VirtuosoConnection implements Connection
    {
        Object[] ret = new Object[7];
        ret[0] = new String ("JDBC");
-       ret[1] = new Integer (0);
+       ret[1] = Integer.valueOf(0);
        ret[2] = new String ("");
        ret[3] = System.getProperty("os.name");
        ret[4] = new String ("");
-       ret[5] = new Integer (0);
+       ret[5] = Integer.valueOf(0);
        //System.out.println (con_delegate);
        ret[6] = new String (con_delegate != null ? con_delegate : "");
        return ret;
@@ -656,15 +656,15 @@ public class VirtuosoConnection implements Connection
 				   {
 				     //System.err.println ("Mapping1 " + ((int)table.charAt(i)) + "=" + (i + 1));
 				     client_charset_hash.put (
-					 new Character (table.charAt(i)),
-					 new Byte ((byte) (i + 1)));
+					 Character.valueOf (table.charAt(i)),
+					 Byte.valueOf ((byte) (i + 1)));
 				   }
 				 else
 				   {
 				     //System.err.println ("Mapping2 " + (i + 1) + "=" + (i + 1));
 				     client_charset_hash.put (
-					 new Character ((char) (i + 1)),
-					 new Byte ((byte) (i + 1)));
+					 Character.valueOf ((char) (i + 1)),
+					 Byte.valueOf ((byte) (i + 1)));
 				   }
 			       }
 			   }
@@ -705,7 +705,7 @@ public class VirtuosoConnection implements Connection
 			       "but processing character escapes also disabled",
 			       VirtuosoException.MISCERROR);
 			 //System.err.println ("version=[" + version + " ver=" + version.substring (6, 10));
-			 //if ((new Integer (version.substring (6, 10))).intValue() > 2143)
+			 //if ((Integer.valueOf(version.substring (6, 10))).intValue() > 2143)
 			 //  utf8_execs = true;
 
 			 timezoneless_datetimes = (int) cdef_param (client_defaults, "SQL_TIMEZONELESS_DATETIMES", 0);
@@ -864,7 +864,7 @@ public class VirtuosoConnection implements Connection
      // Create a VirtuosoFuture instance
      fut = new VirtuosoFuture(this,rpcname,args,this_req_no, timeout);
      // Set the request id and put it into the hash table
-     futures.put(new Integer(this_req_no),fut);
+     futures.put(Integer.valueOf(this_req_no),fut);
      return fut;
    }
 
@@ -885,7 +885,7 @@ public class VirtuosoConnection implements Connection
    protected void removeFuture(VirtuosoFuture fut)
    {
      if (futures != null)
-       futures.remove(new Integer(fut.hashCode()));
+       futures.remove(Integer.valueOf(fut.hashCode()));
    }
 
    /**
@@ -942,7 +942,7 @@ public class VirtuosoConnection implements Connection
 	   return false;
 	 // Then put the message into the corresponding future queue
 	 //System.out.println("---------------> read_reqest for "+((Number)result.elementAt(1)).intValue());
-	 VirtuosoFuture fut = (VirtuosoFuture)futures.get(new Integer(((Number)result.elementAt(1)).intValue()));
+	 VirtuosoFuture fut = (VirtuosoFuture)futures.get(Integer.valueOf(((Number)result.elementAt(1)).intValue()));
 	 if(fut == null)
 	   return false;
 	 fut.putResult(result.elementAt(2));
@@ -1006,7 +1006,7 @@ public class VirtuosoConnection implements Connection
      {
        try
 	 {
-	   return (new Integer (version.substring (6, 10))).intValue();
+	   return (Integer.valueOf(version.substring (6, 10))).intValue();
 	 }
        catch (Exception e)
 	 {
@@ -1108,7 +1108,7 @@ public class VirtuosoConnection implements Connection
       {
 	// RPC transaction
 	Object[] args = new Object[2];
-	args[0] = new Long(VirtuosoTypes.SQL_COMMIT);
+	args[0] = Long.valueOf(VirtuosoTypes.SQL_COMMIT);
 	args[1] = null;
 	VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
 	openlink.util.Vector trsres = fut.nextResult();
@@ -1289,7 +1289,7 @@ public class VirtuosoConnection implements Connection
       {
          // RPC transaction
          Object[] args = new Object[2];
-         args[0] = new Long(VirtuosoTypes.SQL_ROLLBACK);
+         args[0] = Long.valueOf(VirtuosoTypes.SQL_ROLLBACK);
          args[1] = null;
          VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
          openlink.util.Vector trsres = fut.nextResult();
