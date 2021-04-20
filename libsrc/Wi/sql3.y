@@ -60,10 +60,19 @@
  */
 #define obe_keyword_to_bif_fun_name(X) ((X))
 
+extern void scn3yyerror (const char *strg);
+
 #ifdef DEBUG
 #define yyerror(scanner,strg) yyerror_1(/* no scanner */ yystate, yyssa, yyssp, strg)
 #define yyfatalerror(strg) yyfatalerror_1(/* no scanner */ yyssa, yyssp, strg)
+#else
+#define yyerror(scanner,strg) scn3yyerror(/* no scanner */ strg)
 #endif
+
+
+extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
+#define YY_DECL int scn3yylex (void *void_yylval, yyscan_t yyscanner)
+
 
 #define assert_ms_compat(text)
 

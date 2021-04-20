@@ -8104,6 +8104,9 @@ bif_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #include "sql3.h"
 
+extern int scn3yylex (YYSTYPE *, yyscan_t);
+extern int scn3splityylex (YYSTYPE *, yyscan_t);
+
 caddr_t
 sql_lex_analyze (const char * str2, caddr_t * qst, int max_lexems, int use_strval, int find_lextype)
 {

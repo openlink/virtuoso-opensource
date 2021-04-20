@@ -512,6 +512,7 @@ void qi_detach_from_stmt (query_instance_t * qi);
 
 EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
 EXE_EXPORT (void, sqlr_error, (const char * code, const char * msg, ...));
+EXE_EXPORT (void, sqlr_warning, (const char *code, const char *virt_code, const char *string, ...));
 EXE_EXPORT (void, sqlr_new_error, (const char *code, const char *virt_code, const char *msg, ...));
 
 #ifdef __GNUC__
@@ -519,6 +520,8 @@ extern caddr_t srv_make_new_error (const char *code, const char *virt_code, cons
     __attribute__ ((format (printf, 3, 4)));
 extern void sqlr_error (const char * code, const char * msg, ...)
     __attribute__ ((format (printf, 2, 3))) NORETURN;
+extern void sqlr_warning (const char * code, const char *virt_core, const char * msg, ...)
+    __attribute__ ((format (printf, 3, 4)));
 extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...)
     __attribute__ ((format (printf, 3, 4))) NORETURN;
 #endif
