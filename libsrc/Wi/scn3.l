@@ -47,7 +47,7 @@
 #ifndef SCN3SPLIT
 #include "sqlwords.h"
 #else
-struct keyword { char *keiiyword; int token; };
+struct keyword { char *kwd; int token; };
 extern const struct keyword *lex_hash_kw (register const char *str, register unsigned int len);
 #endif
 #include "numeric.h"
@@ -501,7 +501,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     {
       global_scs->scs_scn3c.last_keyword_yytext = yytext;
       global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
-      yylval->strval = k->keiiyword;
+      yylval->strval = k->kwd;
       if (SPARQL_L == k->token)
         {
 #ifndef SCN3SPILT

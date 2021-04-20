@@ -21,7 +21,7 @@
  *
  */
 
-struct keyword { char *keiiyword; int token; };
+struct keyword { char *kwd; int token; };
 %%
 ADA, ADA
 ADD, ADD

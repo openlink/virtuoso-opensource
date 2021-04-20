@@ -769,7 +769,7 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
-		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
+		-aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
