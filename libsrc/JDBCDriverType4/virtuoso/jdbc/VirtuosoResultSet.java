@@ -290,7 +290,7 @@ public class VirtuosoResultSet implements ResultSet
 	    // Fill the statement id,the operation, and the beginning line
 	    args[0] = statement.statid;
 	    // the future number
-	    args[1] = new Long(statement.future.hashCode());
+	    args[1] = Long.valueOf(statement.future.hashCode());
 	    // Send the RPC message
 	    statement.connection.removeFuture(statement.connection.getFuture(
 		  VirtuosoFuture.fetch,args, statement.rpc_timeout));
@@ -320,11 +320,11 @@ public class VirtuosoResultSet implements ResultSet
 	    Object[] args = new Object[6];
 	    // Fill the statement id,the operation, and the beginning line
 	    args[0] = statement.statid;
-	    args[1] = new Long(op);
-	    args[2] = new Long(firstline);
-	    args[3] = new Long(nbline);
+	    args[1] = Long.valueOf(op);
+	    args[2] = Long.valueOf(firstline);
+	    args[3] = Long.valueOf(nbline);
 	    // Fill the autocommit mode
-	    args[4] = new Long((statement.connection.getAutoCommit()) ? 1 : 0);
+	    args[4] = Long.valueOf((statement.connection.getAutoCommit()) ? 1 : 0);
 	    // Fill the bookmark (never used for the moment in JDBC)
 	    args[5] = null;
 	    // Send the RPC message
@@ -2707,7 +2707,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Boolean(x);
+      row[columnIndex - 1] = Boolean.valueOf(x);
    }
 
    /**
@@ -2733,7 +2733,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Byte(x);
+      row[columnIndex - 1] = Byte.valueOf(x);
    }
 
    /**
@@ -2759,7 +2759,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Short(x);
+      row[columnIndex - 1] = Short.valueOf(x);
    }
 
    /**
@@ -2785,7 +2785,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Integer(x);
+      row[columnIndex - 1] = Integer.valueOf(x);
    }
 
    /**
@@ -2811,7 +2811,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Long(x);
+      row[columnIndex - 1] = Long.valueOf(x);
    }
 
    /**
@@ -2837,7 +2837,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Float(x);
+      row[columnIndex - 1] = Float.valueOf(x);
    }
 
    /**
@@ -2863,7 +2863,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Double(x);
+      row[columnIndex - 1] = Double.valueOf(x);
    }
 
    /**

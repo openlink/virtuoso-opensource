@@ -87,7 +87,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	      Object[] args = new Object[4];
 	      args[0] = (statid == null) ? statid = new String("ps" + connection.hashCode() + (req_no++)) : statid;
 	      args[1] = connection.escapeSQL(sql);
-	      args[2] = new Long(0);
+	      args[2] = Long.valueOf(0);
 	      args[3] = getStmtOpts();
 	      // Create a future
 	      future = connection.getFuture(VirtuosoFuture.prepare,args, this.rpc_timeout);
@@ -364,7 +364,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
-	     args[1] = new Long(VirtuosoTypes.STAT_DROP);
+	     args[1] = Long.valueOf(VirtuosoTypes.STAT_DROP);
 	     // Create and get a future for this
 	     future = connection.getFuture(VirtuosoFuture.close,args, this.rpc_timeout);
 	     // Read the answer
@@ -614,7 +614,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Boolean(x),parameterIndex - 1);
+      objparams.setElementAt(Boolean.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -631,7 +631,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Byte(x),parameterIndex - 1);
+      objparams.setElementAt(Byte.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -688,7 +688,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Double(x),parameterIndex - 1);
+      objparams.setElementAt(Double.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -705,7 +705,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Float(x),parameterIndex - 1);
+      objparams.setElementAt(Float.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -722,7 +722,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Integer(x),parameterIndex - 1);
+      objparams.setElementAt(Integer.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -739,7 +739,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Long(x),parameterIndex - 1);
+      objparams.setElementAt(Long.valueOf(x),parameterIndex - 1);
    }
 
    /**
@@ -867,7 +867,7 @@ public class VirtuosoPreparedStatement extends VirtuosoStatement implements Prep
       // Check parameters
       if(parameterIndex < 1 || parameterIndex > parameters.capacity())
          throw new VirtuosoException("Index " + parameterIndex + " is not 1<n<" + parameters.capacity(),VirtuosoException.BADPARAM);
-      objparams.setElementAt(new Short(x),parameterIndex - 1);
+      objparams.setElementAt(Short.valueOf(x),parameterIndex - 1);
    }
 
    /**

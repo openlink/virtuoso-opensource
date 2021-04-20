@@ -181,9 +181,9 @@ public class Driver implements java.sql.Driver
    {
     host = "localhost";
     port = "1111";
-    fbs = new Integer(VirtuosoTypes.DEFAULTPREFETCH);
-    sendbs = new Integer(32768);
-    recvbs = new Integer(32768);
+    fbs = Integer.valueOf(VirtuosoTypes.DEFAULTPREFETCH);
+    sendbs = Integer.valueOf(32768);
+    recvbs = Integer.valueOf(32768);
 
     Properties props = new Properties();
 

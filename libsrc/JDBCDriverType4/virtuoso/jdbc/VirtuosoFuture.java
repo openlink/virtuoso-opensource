@@ -116,8 +116,8 @@ class VirtuosoFuture
          vector[4] = null;
       vector[3] = rpcname;
       vector[2] = null;
-      vector[1] = new Integer(req_no);
-      vector[0] = new Integer(VirtuosoTypes.DA_FUTURE_REQUEST);
+      vector[1] = Integer.valueOf(req_no);
+      vector[0] = Integer.valueOf(VirtuosoTypes.DA_FUTURE_REQUEST);
       // Serialize data and flush the stream
       connection.write_object(new openlink.util.Vector(vector));
    }
