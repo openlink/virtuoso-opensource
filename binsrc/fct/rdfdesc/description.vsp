@@ -69,6 +69,14 @@
   declare auto_sponge_on_empty_graph int;
   declare q_txt any;
 
+  set http_charset='utf-8';
+  { 
+    --  catch error when using old binaries
+    declare continue handler for sqlstate '*';
+    --  always treat narrow string boxes as UTF-8 encoded
+    set http_in_charset='UTF-8';
+  }
+
   if (registry_get ('fct_auto_sponge') = '1')
     auto_sponge_on_empty_graph := 1;
   err := null;
@@ -304,7 +312,6 @@ again:
   --set_user_id (http_map_get ('vsp_uid'));
 
   odd_position := 0;
-  set http_charset='utf-8';
   set isolation = 'uncommitted';
 
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
