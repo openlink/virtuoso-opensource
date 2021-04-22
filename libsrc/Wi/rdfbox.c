@@ -3030,9 +3030,9 @@ bif_http_sys_find_best_sparql_accept (caddr_t * qst, caddr_t * err_ret, state_sl
         "text/md+html"				, "HTML;MICRODATA"	, /* 28 */
         "text/microdata+html"			, "HTML;MICRODATA"	, /* 29 */
         "application/microdata+json"		, "JSON;MICRODATA"	, /* 30 */
-        "application/x-json+ld+ctx"		, "JSON;LD_CTX"		, /* 31 */
-        "application/x-json+ld"			, "JSON;LD"		, /* 32 */
-        "application/ld+json"			, "JSON;LD"		, /* 33 */
+        "application/json+ld"			, "JSON;LD_CTX"		, /* 31 */
+        "application/x-ld+json"			, "JSON;LD"		, /* 32 */
+        "application/ld+json"			, "JSON;LD_CTX"		, /* 33 */
         "text/ntriples"				, "NT"			, /* 34 */
         "text/csv"				, "CSV"			, /* 35 */
         "text/tab-separated-values"		, "TSV"			, /* 36 */
@@ -5425,7 +5425,8 @@ bif_http_ld_json_triple_batch (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   if (NULL != e2.bnode_usage)
     HT_WRLOCK_COND(e2.bnode_usage,e2_wrlocked);
   nesting = bif_http_ld_json_triple_batch_impl (env, &e2);
-  HT_UNLOCK_COND(e2.bnode_usage,e2_wrlocked);
+  if (NULL != e2.bnode_usage)
+    HT_UNLOCK_COND(e2.bnode_usage,e2_wrlocked);
   return box_num (nesting);
 }
 
@@ -5907,7 +5908,7 @@ bif_sparql_iri_split_rdfa_qname (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   for (tail = iri + iri_strlen; tail > iri; tail--)
     {
       unsigned char c = (unsigned char) tail[-1];
-      if (!isalnum(c) && ('_' != c) && ('-' != c) && !(c & 0x80))
+      if (c == '/' || c == '#' || c == ':')
         break;
     }
   do {
