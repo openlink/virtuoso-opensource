@@ -154,7 +154,7 @@ public class VirtuosoStatement implements Statement
    protected VectorOfLong getStmtOpts () throws VirtuosoException
      {
        // Set the concurrency type
-       Long[] arrLong = Long.valueOf[11];
+       Long[] arrLong = new Long [11];
        if (connection.isReadOnly ()) {
          arrLong[0] = Long.valueOf (VirtuosoTypes.SQL_CONCUR_ROWVER);
        }
