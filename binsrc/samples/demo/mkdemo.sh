@@ -146,34 +146,38 @@ START_SERVER()
   if [ "z$HOST_OS" != "z" ] 
   then
       "$SERVER" +foreground &
+      starth=`date | cut -f 2 -d :`
+      starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+      while true
+	do
+	  sleep 6
+	  if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
+	    then
+	      ECHO "Virtuoso server started"
+	      return 0
+	    fi
+	  nowh=`date | cut -f 2 -d :`
+	  nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	  nowh=`expr $nowh - $starth`
+	  nows=`expr $nows - $starts`
+
+	  nows=`expr $nows + $nowh \*  60`
+	  if test $nows -ge $timeout
+	    then
+	      ECHO "***FAILED: Could not start Virtuoso DEMO Server within $timeout seconds"
+	      exit 1
+	    fi
+      done
   else
       "$SERVER" +wait
-  fi
-
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-
-  while true
-    do
-      sleep 6
-      if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
-        then
-	  ECHO "Virtuoso server started"
-	  return 0
-	fi
-      nowh=`date | cut -f 2 -d :`
-      nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-
-      nowh=`expr $nowh - $starth`
-      nows=`expr $nows - $starts`
-
-      nows=`expr $nows + $nowh \*  60`
-      if test $nows -ge $timeout
-        then
+      if test $? -ne 0
+      then
 	  ECHO "***FAILED: Could not start Virtuoso DEMO Server within $timeout seconds"
 	  exit 1
-	fi
-  done
+      fi
+  fi
 }
 
 STOP_SERVER()
