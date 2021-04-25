@@ -136,7 +136,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
          case Types.BIGINT:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Long(Long.MAX_VALUE),parameterIndex - 1);
+              objparams.setElementAt(Long.valueOf(Long.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.LONGVARBINARY:
          case Types.VARBINARY:
@@ -144,7 +144,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
          case Types.BIT:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Boolean(false),parameterIndex - 1);
+              objparams.setElementAt(Boolean.valueOf(false),parameterIndex - 1);
             return;
          case Types.BLOB:
          case Types.CLOB:
@@ -175,7 +175,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
          case Types.FLOAT:
          case Types.DOUBLE:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Double(Double.MAX_VALUE),parameterIndex - 1);
+              objparams.setElementAt(Double.valueOf(Double.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.OTHER:
          case Types.JAVA_OBJECT:
@@ -188,16 +188,16 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
          case Types.REAL:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Float(Float.MAX_VALUE),parameterIndex - 1);
+              objparams.setElementAt(Float.valueOf(Float.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.SMALLINT:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Short(Short.MAX_VALUE),parameterIndex - 1);
+              objparams.setElementAt(Short.valueOf(Short.MAX_VALUE),parameterIndex - 1);
             return;
          case Types.INTEGER:
          case Types.TINYINT:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(new Integer(Integer.MAX_VALUE),parameterIndex - 1);
+              objparams.setElementAt(Integer.valueOf(Integer.MAX_VALUE),parameterIndex - 1);
             return;
       }
       ;

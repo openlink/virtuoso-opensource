@@ -62,7 +62,7 @@ public class Driver implements java.sql.Driver
    // The major and minor version number
    protected static final int major = 3;
 
-   protected static final int minor = 117;
+   protected static final int minor = 118;
 
    // Some variables
    private String host = "localhost";
@@ -181,9 +181,9 @@ public class Driver implements java.sql.Driver
    {
     host = "localhost";
     port = "1111";
-    fbs = new Integer(VirtuosoTypes.DEFAULTPREFETCH);
-    sendbs = new Integer(32768);
-    recvbs = new Integer(32768);
+    fbs = Integer.valueOf(VirtuosoTypes.DEFAULTPREFETCH);
+    sendbs = Integer.valueOf(32768);
+    recvbs = Integer.valueOf(32768);
 
     Properties props = new Properties();
 

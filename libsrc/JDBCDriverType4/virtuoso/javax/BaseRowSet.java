@@ -997,7 +997,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Boolean(x);
+    param.value = Boolean.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1013,7 +1013,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Byte(x);
+    param.value = Byte.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1322,7 +1322,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Double(x);
+    param.value = Double.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1339,7 +1339,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Float(x);
+    param.value = Float.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1355,7 +1355,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Integer(x);
+    param.value = Integer.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1371,7 +1371,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Long(x);
+    param.value = Long.valueOf(x);
     param.jType = Parameter.jObject;
   }
 
@@ -1402,7 +1402,7 @@ public abstract class BaseRowSet implements RowSet, Serializable {
   {
     Parameter param = getParam(parameterIndex);
 
-    param.value = new Short(x);
+    param.value = Short.valueOf(x);
     param.jType = Parameter.jObject;
   }
 

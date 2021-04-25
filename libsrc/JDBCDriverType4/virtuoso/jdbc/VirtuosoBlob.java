@@ -281,13 +281,13 @@ public class VirtuosoBlob
 	       // we should go from start
 	       //System.out.println ("vb: rewind pos:" + pos + " ofs:" + bh_offset());
 	       rewind();
-//	       init_read_len = new Long ((pos - 1) *
+//	       init_read_len = Long.valueOf ((pos - 1) *
 //		   (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
-	       init_read_len = new Long (pos - 1);
+	       init_read_len = Long.valueOf (pos - 1);
 	     }
 	   else if (pos - 1 > bh_offset ())
-	     init_read_len = new Long (pos - bh_offset() - 1);
-//	     init_read_len = new Long ((pos - bh_offset() - 1) *
+	     init_read_len = Long.valueOf (pos - bh_offset() - 1);
+//	     init_read_len = Long.valueOf ((pos - bh_offset() - 1) *
 //		 (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
 ***/
 	   if (pos - 1 < bh_offset ())
@@ -298,7 +298,7 @@ public class VirtuosoBlob
 	     }
 
 	   if (pos - 1 > bh_offset ())
-	     init_read_len = new Long (pos - bh_offset() - 1);
+	     init_read_len = Long.valueOf (pos - bh_offset() - 1);
 
 
 	   if (init_read_len != null)
@@ -309,15 +309,15 @@ public class VirtuosoBlob
 		 {
 		   // skip the desired number of bytes
 		   Object[] args = new Object[9];
-		   args[0] = new Long(this.bh_current_page);
+		   args[0] = Long.valueOf(this.bh_current_page);
 		   args[1] = init_read_len;
-		   args[2] = new Long(this.bh_position);
-		   args[3] = new Long(this.key_id);
-		   args[4] = new Long(this.frag_no);
-		   args[5] = new Long(this.dir_page);
+		   args[2] = Long.valueOf(this.bh_position);
+		   args[3] = Long.valueOf(this.key_id);
+		   args[4] = Long.valueOf(this.frag_no);
+		   args[5] = Long.valueOf(this.dir_page);
 		   args[6] = this.pages;
-		   args[7] = this.dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? new Long (1) : new Long(0);
-		   args[8] = new Long (this.bh_timestamp);
+		   args[7] = this.dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? Long.valueOf (1) : Long.valueOf(0);
+		   args[8] = Long.valueOf (this.bh_timestamp);
 		   //System.out.println ("vb: init read FUTURE: " + this.bh_current_page + " " + init_read_len + " " + this.bh_position);
 		   VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
 		   curr = future.nextResult();
@@ -369,17 +369,17 @@ public class VirtuosoBlob
 	   synchronized (connection)
 	     {
 	       Object[] args = new Object[9];
-	       args[0] = new Long(this.bh_current_page);
-//	       args[1] = new Long(length *
+	       args[0] = Long.valueOf(this.bh_current_page);
+//	       args[1] = Long.valueOf(length *
 //		       (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? -1 : 1));
-	       args[1] = new Long(length);
-	       args[2] = new Long(this.bh_position);
-               args[3] = new Long(this.key_id);
-               args[4] = new Long(this.frag_no);
-               args[5] = new Long(this.dir_page);
+	       args[1] = Long.valueOf(length);
+	       args[2] = Long.valueOf(this.bh_position);
+               args[3] = Long.valueOf(this.key_id);
+               args[4] = Long.valueOf(this.frag_no);
+               args[5] = Long.valueOf(this.dir_page);
                args[6] = this.pages;
-	       args[7] = this.dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? new Long (1) : new Long(0);
-	       args[8] = new Long (this.bh_timestamp);
+	       args[7] = this.dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE ? Long.valueOf (1) : Long.valueOf(0);
+	       args[8] = Long.valueOf (this.bh_timestamp);
 	       //System.out.println ("vb: FUTURE: " + this.bh_current_page + " " + length + " " + this.bh_position);
 	       VirtuosoFuture future = connection.getFuture(VirtuosoFuture.getdata,args, -1);
 	       curr = future.nextResult();
