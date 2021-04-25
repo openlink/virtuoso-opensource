@@ -144,7 +144,7 @@ public class VirtuosoCallableStatement extends VirtuosoPreparedStatement impleme
             return;
          case Types.BIT:
             if (objparams.elementAt(parameterIndex - 1) == null)
-              objparams.setElementAt(Boolean.FALSE,parameterIndex - 1);
+              objparams.setElementAt(Boolean.valueOf(false),parameterIndex - 1);
             return;
          case Types.BLOB:
          case Types.CLOB:

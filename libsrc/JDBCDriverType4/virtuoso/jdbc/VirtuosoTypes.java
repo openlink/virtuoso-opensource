@@ -570,7 +570,7 @@ class VirtuosoTypes
               else if (x instanceof java.lang.Number)
                 return Integer.valueOf (((Number)x).intValue());
               else if (x instanceof java.lang.String)
-                return Integer.valueOf ((String) x);
+                return Integer.parseInt ((String) x);
 	      break;
 
           case Types.REAL:
