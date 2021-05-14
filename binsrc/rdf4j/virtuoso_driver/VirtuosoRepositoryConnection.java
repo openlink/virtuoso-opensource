@@ -3387,15 +3387,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             v_finished = true;
         }
 
-        protected void finalize() throws Throwable
-        {
-            super.finalize();
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {}
-        }
-
         protected void moveForward() throws X
         {
             try
@@ -3524,7 +3515,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     ((QueryBindingSet)v_row).setBinding(col, v);
                 }
             }
-        }
+        }        
+        
     }
 
 
