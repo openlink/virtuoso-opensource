@@ -687,14 +687,6 @@ public class VirtuosoResultSet implements ResultSet
       }
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      close();
-   }
-
    void fixReturnedData(openlink.util.Vector data)
    {
      if (data == null)
