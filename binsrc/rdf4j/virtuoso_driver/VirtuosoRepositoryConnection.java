@@ -46,6 +46,7 @@ import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.ParseErrorLogger;
@@ -3325,7 +3326,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X>
     {
         E	  v_row;
-        boolean	  v_finished = false;
+        AtomicBoolean v_finished = new AtomicBoolean(false);
         boolean	  v_prefetched = false;
         Resource  subject;
         IRI       predicate;
@@ -3347,19 +3348,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
         public boolean hasNext() throws X
         {
-            if (!v_finished && !v_prefetched)
+            if (!v_finished.get() && !v_prefetched)
                 moveForward();
-            return !v_finished;
+            return !v_finished.get();
         }
 
         public E next() throws X
         {
-            if (!v_finished && !v_prefetched)
+            if (!v_finished.get() && !v_prefetched)
                 moveForward();
 
             v_prefetched = false;
 
-            if (v_finished)
+            if (v_finished.get())
                 throw new NoSuchElementException();
 
             return v_row;
@@ -3370,9 +3371,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             throw new UnsupportedOperationException();
         }
 
+	public final boolean isClosed() {
+		return v_finished.get();
+	}
+
         public void close() throws X
         {
-            if (!v_finished)
+            if (v_finished.compareAndSet(false, true))
             {
                 try
                 {
@@ -3384,23 +3389,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     throw createException(e);
                 }
             }
-            v_finished = true;
         }
 
         protected void finalize() throws Throwable
         {
-            super.finalize();
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {}
+            try {
+                close();
+            } catch (Exception e) {}
         }
 
         protected void moveForward() throws X
         {
             try
             {
-                if (!v_finished && v_rs.next())
+                if (!v_finished.get() && v_rs.next())
                 {
                     extractRow();
                     v_prefetched = true;
