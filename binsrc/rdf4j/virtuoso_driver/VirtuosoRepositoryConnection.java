@@ -3391,13 +3391,6 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             }
         }
 
-        protected void finalize() throws Throwable
-        {
-            try {
-                close();
-            } catch (Exception e) {}
-        }
-
         protected void moveForward() throws X
         {
             try
