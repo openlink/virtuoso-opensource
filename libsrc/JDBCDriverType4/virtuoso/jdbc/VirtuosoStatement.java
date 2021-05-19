@@ -221,12 +221,11 @@ public class VirtuosoStatement implements Statement
        sparql_executed =  sql.trim().regionMatches(true, 0, "sparql", 0, 6);
        try
        {
+	   if (close_flag)
+               throw new VirtuosoException("Statement is already closed",VirtuosoException.CLOSED);
+
 	   synchronized (connection)
 	   {
-	       if (close_flag)
-		   throw new VirtuosoException("Statement is already closed",VirtuosoException.CLOSED);
-	       Object[] args = new Object[6];
-	       openlink.util.Vector vect = new openlink.util.Vector(1);
 	       // Drop the current statement
 	       if (future != null)
 	       {
@@ -235,6 +234,10 @@ public class VirtuosoStatement implements Statement
 	       }
 	       else
 		   cancel_rs();
+
+	       Object[] args = new Object[6];
+	       openlink.util.Vector vect = new openlink.util.Vector(1);
+
 	       //System.out.println(this+" "+connection+" [@"+sql+"@]");
 	       // Set arguments to the RPC function
 	       args[0] = (statid == null) ? statid = new String("s" + connection.hashCode() + (req_no++)) : statid;
@@ -317,6 +320,16 @@ public class VirtuosoStatement implements Statement
      if(close_flag)
        return;
 
+     if(statid == null)
+       return;
+
+     // Close the result set
+     if(vresultSet != null)
+       vresultSet = null;
+
+     if (!close_stmt && !result_opened)
+        return;
+
      synchronized (connection)
        {
 	 // System.out.println("Close statement : "+this);
@@ -325,14 +338,7 @@ public class VirtuosoStatement implements Statement
 	     // Check if a statement is treat
 	     if(close_flag)
 	       return;
-	     if (close_stmt)
-             	close_flag = true;
-	     if(statid == null)
-	       return;
-	     // Cancel current result set
-	     cancel_rs();
-             if (!close_stmt && !result_opened)
-               return;
+
 	     // Build the args array
 	     Object[] args = new Object[2];
 	     args[0] = statid;
@@ -343,11 +349,15 @@ public class VirtuosoStatement implements Statement
 	     future.nextResult();
 	     // Remove the future reference
 	     connection.removeFuture(future);
+
+             if (close_stmt)
+       	       close_flag = true;
+
 	     future = null;
 	     result_opened = false;
-	     if (!is_prepared) {
+
+	     if (!is_prepared)
 	       metaData = null;
-	     }
 	   }
 	 catch(IOException e)
 	   {
