@@ -63,10 +63,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE ()
 
 create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
 { ?>
-    <meta charset="utf-8">
-    <meta name="viewport"  content="width=device-width, initial-scale=1, shrink-to-fit=no">
-    <meta name="Copyright" content="Copyright &copy; <?V year(now()) ?> OpenLink Software">
-    <meta name="Keywords"  content="OpenLink Virtuoso Sparql">
+    <meta charset="utf-8" />
+    <meta name="viewport"  content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+    <meta name="Copyright" content="Copyright &copy; <?V year(now()) ?> OpenLink Software" />
+    <meta name="Keywords"  content="OpenLink Virtuoso Sparql" />
     <title><?V title ?></title>
 <?vsp
 }
@@ -440,7 +440,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FOOTER ()
     <footer id="footer" class="page-footer small">
     <div class="footer-copyright text-center">
         Copyright &copy; <?V year(now()) ?> <a href="https://virtuoso.openlinksw.com/">OpenLink Software</a>
-        <br>
+        <br/>
         Virtuoso version <?V sys_stat('st_dbms_ver') ?> on <?V sys_stat('st_build_opsys_id') ?> (<?V host_id() ?>)
 <?vsp
     if (1 = sys_stat('cl_run_local_only'))
@@ -543,7 +543,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FORMAT_OPTS (in can_cxml integer, in can_
 
     foreach (any x in opts) do
     {
-        http( sprintf ('<option value="%V" %s>%V</option>\n', x[1], case when format = x[1] then 'selected' else '' end , x[0]));
+        http( sprintf ('<option value="%V" %s>%V</option>\n', x[1], case when format = x[1] then 'selected="selected"' else '' end , x[0]));
     }
 }
 ;
@@ -565,7 +565,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_SPONGE_OPTS (in params varchar)
 
     foreach (any x in opts) do
     {
-        http(sprintf ('<option value="%V" %s>%V</option>\n', x[0], case when s_param = x[0] then 'selected' else '' end , x[1]));
+        http(sprintf ('<option value="%V" %s>%V</option>\n', x[0], case when s_param = x[0] then 'selected="selected"' else '' end , x[1]));
     }
 }
 ;
@@ -620,10 +620,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
     foreach (any x in opts) do
     {
         if ('LOCAL_PIVOT' <> x[0] or can_pivot)
-            http(sprintf ('<option value="%V" %s>%V</option>\n', x[0], case when val = x[0] then 'selected' else '' end , x[1]));
+            http(sprintf ('<option value="%V" %s>%V</option>\n', x[0], case when val = x[0] then 'selected="selected"' else '' end , x[1]));
     }
 
-    if (use_label) http ('</select><br>\n');
+    if (use_label) http ('</select><br/>\n');
 }
 ;
 
@@ -840,12 +840,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     <fieldset class="">
 
         <div class="form-group">
-            <label for="default-graph-uri">Default Data Set Name (Graph IRI)</label><br>
-            <input class="form-control form-control-sm" type="url" name="default-graph-uri" id="default-graph-uri" value="<?V ini_dflt_graph ?>">
+            <label for="default-graph-uri">Default Data Set Name (Graph IRI)</label><br/>
+            <input class="form-control form-control-sm" type="url" name="default-graph-uri" id="default-graph-uri" value="<?V ini_dflt_graph ?>"/>
         </div>
 
         <div class="form-group">
-            <label for="query">Query Text</label><br>
+            <label for="query">Query Text</label><br/>
             <textarea class="form-control" rows="10" name="query" id="query" onchange="javascript:format_select(this)"
                 onkeyup="javascript:format_select(this)"><?V def_qry ?></textarea>
         </div>
@@ -860,12 +860,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
         </div>
 
         <div>
-            <input class="btn btn-primary" type="submit" id="run" value="Execute Query">
-            <input class="btn btn-light" type="reset" value="Reset" id="reset">
+            <input class="btn btn-primary" type="submit" id="run" value="Execute Query"/>
+            <input class="btn btn-light" type="reset" value="Reset" id="reset"/>
         </div>
     </fieldset>
 
-    <hr>
+    <hr />
 
     <fieldset class="" id="options">
 
@@ -917,33 +917,33 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
 
                 <div class="form-check">
                     <input class="form-check-input" name="signal_void" id="signal_void" type="checkbox"
-                        <?V case (signal_void) when '' then '' else 'checked' end ?> >
+                        <?vsp http( case (signal_void) when '' then '' else 'checked="checked"' end); ?> />
                     <label for="signal_void" class="form-check-label">Strict checking of void variables</label>
                 </div>
 
 <?vsp if (virtuoso_major > 7) { ?>
                 <div class="form-check">
                     <input class="form-check-input" name="signal_unconnected" id="signal_unconnected" type="checkbox"
-                        <?= case (signal_unconnected) when '' then '' else 'checked' end ?> >
+                        <?vsp http( case (signal_unconnected) when '' then '' else 'checked="checked"' end ); ?> />
                     <label for="signal_unconnected" class="form-check-label">Strict checking of variable names used in multiple clauses but not logically connected to each other</label>
                 </div>
 
                 <div class="form-check">
                     <input class="form-check-input" name="quiet_geo" id="quiet_geo" type="checkbox"
-                        <?= case (quiet_geo) when '' then '' else 'checked' end ?> >
+                        <?vsp http( case (quiet_geo) when '' then '' else 'checked="checked"' end ); ?> />
                     <label for="quiet_geo" class="form-check-label">Suppress errors on wrong geometries and errors on geometrical operators (failed operations will return NULL)</label>
                 </div>
 <?vsp } ?>
 
                 <div class="form-check">
                     <input class="form-check-input" name="log_debug_info" id="log_debug_info" type="checkbox"
-                        <?= case (log_debug_info) when '' then '' else 'checked' end ?> >
+                        <?vsp http( case (log_debug_info) when '' then '' else 'checked="checked"' end ); ?> />
                     <label for="log_debug_info" class="form-check-label">Log debug info at the end of output (has no effect on some queries and output formats)</label>
                 </div>
 
                 <div class="form-check">
                     <input class="form-check-input" name="explain" id="explain" onclick="javascript:change_run_button(this)" type="checkbox"
-                        <?= case (explain_report) when '' then '' else 'checked' end ?> >
+                        <?vsp http( case (explain_report) when '' then '' else 'checked="checked"' end ); ?> />
                     <label for="explain" class="form-check-label">Generate SPARQL compilation report (instead of executing the query)</label>
                 </div>
 
@@ -955,27 +955,27 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
             <div class="col-form-label col-lg-2 pt-0">Save to DAV</div>
             <div class="col-lg-10">
                 <div class="form-check">
-                    <input class="form-check-input" name="save" id="save" type="checkbox" onclick="savedav_change(this)">
+                    <input class="form-check-input" name="save" id="save" type="checkbox" onclick="savedav_change(this)"/>
                     <label for="save" class="form-check-label">Save resultset to WebDAV folder on the server</label>
                 </div>
 
                 <div id="savefs" style="display: none">
 
                     <div class="form-group row">
-                        <input type="hidden" id="dname" name="dname" value="<?V save_dir ?>">
+                        <input type="hidden" id="dname" name="dname" value="<?V save_dir ?>"/>
                         <label for="fname" class="col-lg-1 col-form-label">Filename</label>
                         <div class="col-lg-9">
                             <div class="input-group input-group-sm">
                                 <div class="input-group-prepend"><span class="input-group-text"><?V save_dir ?></span></div>
-                                <input class="form-control" type="text" id="fname" name="fname">
+                                <input class="form-control" type="text" id="fname" name="fname"/>
                             </div>
                         </div>
                     </div>
 
-                    <input type="checkbox" name="dav_refresh" id="dav_refresh" <?V case when (dav_refresh is null) then '' else 'checked' end ?> >
+                    <input type="checkbox" name="dav_refresh" id="dav_refresh" <?vsp http( case when (dav_refresh is null) then '' else 'checked="checked"' end ); ?> />
                     <label class="ckb" for="dav_refresh">Refresh periodically</label>
-                    <br>
-                    <input type="checkbox" name="dav_overwrite" id="dav_overwrite" <?V case when (overwrite is null or overwrite = '0') then '' else 'checked' end ?> >
+                    <br/>
+                    <input type="checkbox" name="dav_overwrite" id="dav_overwrite" <?vsp http( case when (overwrite is null or overwrite = '0') then '' else 'checked="checked"' end ); ?> />
                     <label class="ckb" for="dav_overwrite">Overwrite if exists</label>
                 </div>
             </div>
@@ -1295,7 +1295,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_MACROS()
             macro_list := sparql_list_macro_in_lib (id_to_iri ("sml"));
             goto macro_compilation_done;
 macro_compilation_error:
-            http ('  <p>This macro library is not available due to error<br><pre>' || __SQL_STATE || ': '); http_value (__SQL_MESSAGE); http ('</pre></p>');
+            http ('  <p>This macro library is not available due to error<br/><pre>' || __SQL_STATE || ': '); http_value (__SQL_MESSAGE); http ('</pre></p>');
         }
 macro_compilation_done:
         if (macro_list is not null) {
