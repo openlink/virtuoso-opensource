@@ -1112,9 +1112,10 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_INTRO()
 
 create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_SPONGE(inout lines any)
 {
-    declare host_ur varchar;
+    declare host_ur, _http varchar;
     host_ur := registry_get ('URIQADefaultHost');
     host_ur := http_request_header (lines, 'Host', null, host_ur);
+    _http := case when is_https_ctx() then 'https' else 'http' end;
 ?>
     <h3>How To Enable Sponge?</h3>
     <p>When a new Virtuoso server is installed, the default security restrictions do not
@@ -1127,7 +1128,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_SPONGE(inout lines any)
     if (not isstring (host_ur))
       http('http://host:port/conductor .');
     else
-      http( sprintf('<a href="http://%s/conductor">http://%s/conductor</a>.', host_ur, host_ur));
+      http( sprintf('<a href="%s://%s/conductor">%s://%s/conductor</a>.', _http, host_ur, _http, host_ur));
 ?>
     </li>
     <li>Login as dba user.</li>

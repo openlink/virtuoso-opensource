@@ -2491,8 +2491,9 @@ create procedure DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (
 
 create procedure DB.DBA.SPARQL_WSDL11 (in lines any)
 {
-  declare host any;
+  declare host, _http  any;
   host := http_request_header (lines, 'Host', null, null);
+  _http := case when is_https_ctx() then 'https' else 'http' end;
     http (sprintf ('<?xml version="1.0" encoding="utf-8"?>
     <definitions xmlns="http://schemas.xmlsoap.org/wsdl/"
 		 xmlns:tns="http://www.w3.org/2005/08/sparql-protocol-query/#"
@@ -2501,26 +2502,28 @@ create procedure DB.DBA.SPARQL_WSDL11 (in lines any)
     location="http://www.w3.org/TR/sprot11/sparql-protocol-query-11.wsdl"/>
       <service name="SparqlService">
         <port name="SparqlServicePort" binding="tns:QuerySoapBinding">
-	  <address location="http://%s/sparql"/>
+	  <address location="%s://%s/sparql"/>
 	</port>
       </service>
-    </definitions>', host));
+    </definitions>', _http, host));
 }
 ;
 
 create procedure DB.DBA.SPARQL_WSDL (in lines any)
 {
-  declare host any;
+  declare host, _http  any;
   host := http_request_header (lines, 'Host', null, null);
+  _http := case when is_https_ctx() then 'https' else 'http' end;
+  
     http (sprintf ('<?xml version="1.0" encoding="utf-8"?>
     <description xmlns="http://www.w3.org/2006/01/wsdl"
 		 xmlns:tns="http://www.w3.org/2005/08/sparql-protocol-query/#"
 		 targetNamespace="http://www.w3.org/2005/08/sparql-protocol-query/#">
       <include location="http://www.w3.org/TR/rdf-sparql-protocol/sparql-protocol-query.wsdl" />
       <service name="SparqlService" interface="tns:SparqlQuery">
-	<endpoint name="SparqlEndpoint" binding="tns:querySoap" address="http://%s/sparql"/>
+	<endpoint name="SparqlEndpoint" binding="tns:querySoap" address="%s://%s/sparql"/>
       </service>
-    </description>', host));
+    </description>', _http, host));
 }
 ;
 
