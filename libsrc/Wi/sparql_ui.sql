@@ -65,7 +65,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
 { ?>
     <meta charset="utf-8" />
     <meta name="viewport"  content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-    <meta name="Copyright" content="Copyright &copy; <?V year(now()) ?> OpenLink Software" />
+    <meta name="Copyright" content="Copyright &#169; <?V year(now()) ?> OpenLink Software" />
     <meta name="Keywords"  content="OpenLink Virtuoso Sparql" />
     <title><?V title ?></title>
 <?vsp
@@ -439,7 +439,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_FOOTER ()
 { ?>
     <footer id="footer" class="page-footer small">
     <div class="footer-copyright text-center">
-        Copyright &copy; <?V year(now()) ?> <a href="https://virtuoso.openlinksw.com/">OpenLink Software</a>
+        Copyright &#169; <?V year(now()) ?> <a href="https://virtuoso.openlinksw.com/">OpenLink Software</a>
         <br/>
         Virtuoso version <?V sys_stat('st_dbms_ver') ?> on <?V sys_stat('st_build_opsys_id') ?> (<?V host_id() ?>)
 <?vsp
@@ -650,8 +650,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_s
                 <a class="nav-link dropdown-toggle" href="#" id="navbarDropdown" data-toggle="dropdown"
                     aria-haspopup="true" aria-expanded="false">Tables</a>
                 <div class="dropdown-menu" aria-labelledby="navbarDropdown">
-                    <a class="nav-item nav-link"        href="/sparql/?help=nsdecl">Namespace&nbsp;Prefixes</a>
-                    <a class="nav-item nav-link"        href="/sparql/?help=rdfinf">Inference&nbsp;Rules</a>
+                    <a class="nav-item nav-link"        href="/sparql/?help=nsdecl">Namespace&#160;Prefixes</a>
+                    <a class="nav-item nav-link"        href="/sparql/?help=rdfinf">Inference&#160;Rules</a>
                     <a class="nav-item nav-link"        href="/sparql/?help=macrolibs">Macros</a>
                     <a class="nav-item nav-link"        href="/sparql/?help=views">RDF Views</a>
                 </div>
