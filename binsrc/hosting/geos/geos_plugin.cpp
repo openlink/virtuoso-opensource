@@ -393,7 +393,7 @@ bif_geos_get_coordinate (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 }
 
 #define BIF_GEXXX(gexxx,unwind,bifname) do { \
-    if (((query_instance_t *)qst)->qi_query->qr_no_cast_error && strstr (gexxx.what(), " does not support ")) \
+    if ((qst) && ((query_instance_t *)qst)->qi_query->qr_no_cast_error && strstr (gexxx.what(), " does not support ")) \
       return NEW_DB_NULL; \
     unwind; \
     sqlr_new_error ("22023", "GEO22", "Error in \"%s\"() function: %s", (bifname), gexxx.what()); \
