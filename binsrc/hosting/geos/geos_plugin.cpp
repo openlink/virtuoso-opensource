@@ -21,7 +21,7 @@
  *
  */
 
-#define PLUGIN_VERSION "1.1"
+#define PLUGIN_VERSION "1.2"
 
 #include <stdio.h>
 #include <iostream>
