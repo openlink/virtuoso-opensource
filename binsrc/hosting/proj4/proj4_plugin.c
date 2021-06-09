@@ -25,7 +25,7 @@
 #include "geo.h"
 #include "import_gate_virtuoso.h"
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.1"
 
 query_t *srid_to_proj4_string_qr = NULL;
 id_hash_t *virt_proj4_sr_iri_to_srid = NULL;
