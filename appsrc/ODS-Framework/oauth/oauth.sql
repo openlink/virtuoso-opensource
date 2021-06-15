@@ -309,7 +309,7 @@ create procedure OAUTH..hybrid_request_token (in sid varchar, in oauth_consumer_
   sec := '';
 
   oauth_client_ip := http_client_ip ();
-  timest := datediff ('second', stringdate ('1970-1-1'), now ());
+  timest := datediff ('second', stringdate ('1970-1-1Z'), sysutcdatetime ());
   nonce := xenc_rand_bytes (8, 1);
 
   insert into OAUTH..SESSIONS (s_sid, s_nonce, s_timestamp, s_req_key, s_req_secret, s_a_id, s_method, s_state, s_ip)
@@ -605,9 +605,8 @@ create procedure OAUTH..sign_request (in meth varchar := 'GET', in url varchar, 
   declare consumer_secret, oauth_token, oauth_secret varchar;
 
   nonce := xenc_rand_bytes (8, 1);
-  timest := datediff ('second', stringdate ('1970-1-1'), curdatetime_tz ());
-  if (tz)
-    timest := timest - timezone (curdatetime_tz()) * 60; 
+  timest := datediff ('second', stringdate ('1970-1-1Z'), sysutcdatetime ());
+
   if (length (params) and params not like '%&')
     params := params || '&';
 
@@ -645,9 +644,7 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
   declare arr, hf any;
 
   nonce := xenc_rand_bytes (8, 1);
-  timest := datediff ('second', stringdate ('1970-1-1'), curdatetime_tz ()) - (timezone (curdatetime_tz()) * 60);
-  if (tz)
-    timest := timest - timezone (curdatetime_tz()) * 60; 
+  timest := datediff ('second', stringdate ('1970-1-1Z'), sysutcdatetime ());
   if (length (params) and params not like '%&')
     params := params || '&';
 
@@ -674,12 +671,12 @@ create procedure OAUTH..signed_request_header (in meth varchar := 'GET', in url 
   ret := params||'&oauth_signature='||sprintf ('%U', signature);
   arr := split_and_decode (ret, 0);
   ret := 'Authorization: OAuth';
-  for (inx := 0; inx < length (arr); inx := inx + 2) 
+  for (inx := 0; inx < length (arr); inx := inx + 2)
      {
        if (arr[inx] like 'oauth_%')
-	 ret := ret || ' ' || arr[inx] || '="' || sprintf ('%U', arr[inx+1]) || '"' || ','; 
+	 ret := ret || ' ' || arr[inx] || '="' || sprintf ('%U', arr[inx+1]) || '"' || ',';
      }
-  ret := rtrim (ret, ',');   
+  ret := rtrim (ret, ',');
   --dbg_obj_print (ret);
   return ret;
 }
