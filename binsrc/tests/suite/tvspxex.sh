@@ -2598,7 +2598,7 @@ cp -f $VIRTUOSO_TEST/tvspxex.awk .
 MakeConfig 
 CHECK_PORT $TPORT
 START_SERVER $DSN 1000
-sleep 1
+sleep 5
 
 
 cd $TESTDIR

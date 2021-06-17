@@ -422,7 +422,7 @@ sleep 2
 
 DoCommand $DS1 "vad_uninstall ('bpel4ws/'||registry_get('_bpel4ws_version_'));" "bpel_filesystem.vad uninstalled"
 DoCommand $DS1 "vad_install ('bpel_filesystem.vad', 0);" "bpel_filesystem.vad re-installed"
-sleep 1
+sleep 5
 if $ISQL $DS1 "EXEC=status();" VERBOSE=OFF ERRORS=STDOUT > ident.txt
 then
     if test -s ident.txt

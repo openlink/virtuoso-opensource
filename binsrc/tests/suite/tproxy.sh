@@ -161,7 +161,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 1
+       sleep 5
        clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -227,7 +227,7 @@ ECHO "Two pages (html&vsp)"
    GenVSP
    STOP_SERVER
    START_SERVER $DSN 1000
-   sleep 1
+   sleep 5
 
    DoCommand $DSN "DB.DBA.VHOST_DEFINE ('*ini*', '*ini*', '/test.vsp', '/test.vsp', 0, 0, NULL,  NULL, NULL, NULL, 'dba', NULL, NULL, 0);"   
    DoCommand $DSN "insert into HTTP_ACL (HA_LIST,HA_ORDER,HA_CLIENT_IP,HA_FLAG,HA_DEST_IP) values ('PROXY',1,'*',0,'*');"   

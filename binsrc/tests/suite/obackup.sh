@@ -75,7 +75,7 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup1.sq
 
 while test -f "$LOCKFILE" 
 do
-	sleep 1
+	sleep 5
 done
 
 rm -f $DBLOGFILE $DBFILE
@@ -93,7 +93,7 @@ RUN $ISQL $DSN '"EXEC=shutdown();"' ERRORS=STDOUT
 
 while test -f "$LOCKFILE" 
 do
-	sleep 1
+	sleep 5
 done
 
 rm -f $DBLOGFILE

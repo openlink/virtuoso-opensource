@@ -641,7 +641,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 1
+       sleep 5
        clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -823,7 +823,7 @@ case $1 in
        rm -f tmp.tmp
    done
    START_SERVER $PORT 1000
-   sleep 1
+   sleep 5
    cd ..
 
 if [ $do_mappers_only -ne 1 ]

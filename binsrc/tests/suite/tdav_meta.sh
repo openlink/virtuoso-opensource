@@ -67,7 +67,7 @@ CHECK_HTTP_PORT()
   stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
   while [ "z$stat" = "z" ]
   do
-    sleep 1
+    sleep 5
     stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
   done
   LOG "PASSED: Virtuoso HTTP/WebDAV Server successfully started on port $port"

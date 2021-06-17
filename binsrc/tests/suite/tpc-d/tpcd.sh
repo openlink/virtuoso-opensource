@@ -209,7 +209,7 @@ START_SERVER ()
       stat="true"
       while true 
 	do
-	  sleep 4
+	  sleep 5
 	      stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$PORT " | grep LISTEN` 
 	      if [ "z$stat" != "z" ] 
 		then 
