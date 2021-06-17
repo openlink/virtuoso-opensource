@@ -71,6 +71,25 @@ VIRTUOSO_VDB=0
 VIRTUOSO_TABLE_SCHEME="row"
 VIRTUOSO_CAPACITY="single"
 
+#
+#  Netstat
+#
+NETSTAT=`which netstat`
+if test -z "$NETSTAT"
+then
+    NETSTAT=`which ss`
+fi
+if test -z "$NETSTAT"
+then
+    echo ""
+    echo "***"
+    echo "*** ERROR: Please make sure either netstat or ss is installed and in your PATH before running the test suite."
+    echo "***" 
+    exit 1
+fi
+export NETSTAT
+
+
 while getopts ":smrcvwV" optname
   do
     case "$optname" in

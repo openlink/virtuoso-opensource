@@ -64,11 +64,11 @@ esac
 CHECK_HTTP_PORT()
 {
   port=$1
-  stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+  stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
   while [ "z$stat" = "z" ]
   do
     sleep 1
-    stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+    stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
   done
   LOG "PASSED: Virtuoso HTTP/WebDAV Server successfully started on port $port"
 }

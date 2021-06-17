@@ -55,7 +55,7 @@ CHECK_OLD_PORT()
   port=$1
   if [ "x${OLD_HOST}" = "xlocalhost" ]
   then
-    stat=`netstat -an | grep tcp | grep "[\.\:]$port "`
+    stat=`$NETSTAT -an 2>/dev/null | grep tcp | grep "[\.\:]$port "`
     if [ "z$stat" = "z" ] 
     then
       LOG "***ABORTED: The source server is not running  on localhost:${OLD_PORT} (tdconv.sh)" 
