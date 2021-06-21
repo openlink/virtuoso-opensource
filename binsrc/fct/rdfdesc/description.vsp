@@ -856,6 +856,7 @@ if (_subject <> '') {
 	    src="//www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
 	</span>
+<?vsp fct_cctr(); ?>
 	<br />
 	<?vsp fct_virt_info (); ?><br />
 	<?vsp

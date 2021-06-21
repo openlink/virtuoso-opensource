@@ -226,6 +226,8 @@ footer:;
 <?vsp fct_render_dbg_out ();?>
 </div>
 <?vsp } ?>
+  
+<?vsp fct_cctr(); ?>
 
 </div><!-- #MD -->
 <div id="FT">

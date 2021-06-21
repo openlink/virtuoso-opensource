@@ -918,6 +918,20 @@ fct_c_plink (in p_xml any)
 ;
 
 create procedure
+fct_cctr ()
+{
+  declare in_header, out_header, cctr varchar;
+  in_header := http_header_get ();
+  cctr := registry_get ('fct_cctr');
+  if (strcasestr (in_header, 'Cache-Control:') is null and cctr <> 0)
+    {
+      in_header := in_header || 'Cache-Control:' || cctr || '\r\n';
+      http_header (in_header);
+    }
+}
+;
+
+create procedure
 fct_web (in tree any, in sid int)
 {
   declare sqls, msg, tp, agg, agg_qr, agg_res varchar;
