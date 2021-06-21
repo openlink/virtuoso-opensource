@@ -75,6 +75,18 @@ schema:mainEntityOfPage rdfs:subPropertyOf virtrdf:url .
 pows:describedby rdfs:subPropertyOf virtrdf:url .
 sioc:links_to rdfs:subPropertyOf virtrdf:url .
 
+dbpedia:location rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:place rdfs:subPropertyOf virtrdf:geo_cont .
+foaf:based_near rdfs:subPropertyOf virtrdf:geo_cont .
+geo:location rdfs:subPropertyOf virtrdf:geo_cont .
+geo:Point rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:birthPlace rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:placeOfBirth rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:birthplace rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:placeOfDeath rdfs:subPropertyOf virtrdf:geo_cont .
+dbpedia:deathPlace rdfs:subPropertyOf virtrdf:geo_cont .
+schema:geo rdfs:subPropertyOf virtrdf:geo_cont .
+
 ', '', 'virtrdf-url');
 
 rdfs_rule_set ('virtrdf-url', 'virtrdf-url');

@@ -97,6 +97,7 @@ DB.DBA.XML_SET_NS_DECL ('rdfs', 'http://www.w3.org/2000/01/rdf-schema#', 2);
 DB.DBA.XML_SET_NS_DECL ('review', 'http:/purl.org/stuff/rev#', 2);
 DB.DBA.XML_SET_NS_DECL ('rss', 'http://purl.org/rss/1.0/', 2);
 DB.DBA.XML_SET_NS_DECL ('sc', 'http://purl.org/science/owl/sciencecommons/', 2);
+DB.DBA.XML_SET_NS_DECL ('schema', 'http://schema.org/', 2);
 DB.DBA.XML_SET_NS_DECL ('scovo', 'http://purl.org/NET/scovo#', 2);
 DB.DBA.XML_SET_NS_DECL ('sf', 'urn:sobject.enterprise.soap.sforce.com', 2);
 DB.DBA.XML_SET_NS_DECL ('sioc', 'http://rdfs.org/sioc/ns#', 2);

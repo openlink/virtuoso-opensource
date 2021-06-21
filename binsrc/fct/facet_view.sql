@@ -705,20 +705,31 @@ fct_nav (in tree any,
   if ('geo' <> tp)
     {
       --fct_view_link ('geo', 'Map', txt);
+      declare glst, gval, gopt any;
+      declare i, len int;
+
+      glst := rdf_super_sub_list ('virtrdf-url', __i2id ('http://www.openlinksw.com/schemas/virtrdf#geo_cont'), 3);
+      gopt := '';
+      if (length (glst) > 1)
+        {
+          -- sort strings
+          for (i := 0; i < length (glst); i := i + 1)
+          {
+            glst [i] := fct_uri_curie (id_to_iri (glst [i]));
+          }
+          glst := __vector_sort (glst, 2, 0, 1);
+        }
+          for (i := 1; i < length (glst); i := i + 1)
+            {
+              gval := glst [i];
+              if (gval <> 'virtrdf:geo_cont')
+                gopt := gopt || sprintf ('<option value="%s">%s</option>', gval, gval);
+            }
       http (sprintf ('<li><a id="map_link" href="/fct/facet.vsp?cmd=set_view&sid=%d&type=%s&limit=%d&offset=0" title="%V">%s</a>&nbsp;'||
 	    		'<select name="map_of" onchange="javascript:link_change(this.value)">'||
 	    		'<option value="any">Any location</option>'||
 	    		'<option value="">Shown items</option>'||
-	    		'<option value="dbp:location">dbpedia:location</option>'||
-	    		'<option value="dbp:place">dbpedia:place</option>'||
-	    		'<option value="foaf:based_near">foaf:based_near</option>'||
-	    		'<option value="geo:location">geo:location</option>'||
-	    		'<option value="geo:Point">geo:Point</option>'||
-	    		'<option value="dbp:birthPlace">dbpedia:birthPlace</option>'||
-	    		'<option value="dbp:placeOfBirth">dbpedia:placeOfBirth</option>'||
-	    		'<option value="dbp:birthplace">dbpedia:birthplace</option>'||
-	    		'<option value="dbp:placeOfDeath">dbpedia:placeOfDeath</option>'||
-	    		'<option value="dbp:deathPlace">dbpedia:deathPlace</option>'||
+                        gopt ||
 			'</select></li>',
                  connection_get ('sid'), 'geo', lim, 'Geospatial Entities projected over Map overlays', 'Places'), txt);
     }

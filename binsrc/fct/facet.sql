@@ -922,8 +922,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 	loc := '?anyloc';
       if (length (loc) > 1)	
 	{
-	  http (sprintf ('select distinct ?location as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
-                         this_s, this_s, this_s), pre);
+	  http (sprintf ('define input:inference "facets" select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+                         this_s, this_s, this_s, this_s), pre);
 	}
       else
         http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
