@@ -45,7 +45,7 @@ endif
 
 JDK_TESTS = $(JDK4_TEST) $(JDK4_1_TEST) $(JDK4_2_TEST) $(JDK4_3_TEST)
 
-SUBDIRS	= . testsuite_4.0
+SUBDIRS	= . virtuoso testsuite_4.0
 
 
 all-am: $(JDK4_TARGETS) $(JDK4_1_TARGETS) $(JDK4_2_TARGETS) $(JDK4_3_TARGETS)

@@ -76,6 +76,7 @@ EXTRA_DIST = \
 	images/dav_browser/*.png \
 	images/icons/*.gif \
 	images/icons/*.png \
+	images/pager/*.png \
 	INSTALL \
 	mkvad.ini \
 	mkvad.sh \
