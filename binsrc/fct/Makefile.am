@@ -59,6 +59,9 @@ EXTRA_DIST = \
 	$(srcdir)/*.txt \
 	$(srcdir)/*.vsp \
 	$(srcdir)/*.xsl \
+	$(srcdir)/conductor/*.js \
+	$(srcdir)/conductor/*.sql \
+	$(srcdir)/conductor/*.vspx \
 	$(srcdir)/images/*.gif \
 	$(srcdir)/images/*.png \
 	$(srcdir)/images/*.svg \

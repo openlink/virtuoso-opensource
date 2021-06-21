@@ -1615,10 +1615,42 @@ fct_create_ses ()
 {
   declare sid int;
   declare new_tree any;
+  declare reg_default_limit, reg_default_inf, reg_default_invfp, reg_default_sas, reg_default_terminology any;
+
+  -- Global, pan-user defaults set through Conductor's Faceted Browser Configuration UI
+  reg_default_limit := registry_get('fct_default_limit'); 
+  reg_default_inf := registry_get('fct_default_inf'); 
+  reg_default_invfp := registry_get('fct_default_invfp'); 
+  reg_default_sas := registry_get('fct_default_sas'); 
+  reg_default_terminology := registry_get('fct_default_terminology');
+
+  if (isstring(reg_default_limit))
+    reg_default_limit := atoi(reg_default_limit);
+
+  -- These registry entries are created by the VAD installer if they don't already exist,
+  -- but just in case...
+  if (reg_default_limit = 0) 
+    reg_default_limit := 50; 
+  if (reg_default_inf = 0 or reg_default_inf = 'None')
+    reg_default_inf := '';
+  if (reg_default_invfp = 0)
+    reg_default_invfp := 'IFP_OFF';
+  if (reg_default_sas = 0)
+    reg_default_sas := 'SAME_AS_OFF';
+  if (reg_default_terminology = 0)
+    reg_default_terminology := 'eav';
+
+  declare default_s_term, default_c_term varchar;
+  default_s_term := case when reg_default_terminology = 'eav' then 'e' else 's' end;
+  connection_set ('s_term', default_s_term);
+  default_c_term := case when reg_default_terminology = 'eav' then 'type' else 'class' end;
+  connection_set ('c_term', default_c_term);
 
   sid := sequence_next ('fct_seq');
-  new_tree := xtree_doc(sprintf ('<?xml version="1.0" encoding="UTF-8"?>\n' ||
-                        '<query inference="" same-as="" view3="" s-term="" c-term="" agg="" limit="%d"/>', 20));
+  new_tree := xtree_doc(sprintf (
+    '<?xml version="1.0" encoding="UTF-8"?>\n' ||
+    '<query inference="%s" invfp="%s" same-as="%s" view3="" s-term="%s" c-term="%s" agg="" limit="%d"/>', 
+    reg_default_inf, reg_default_invfp, reg_default_sas, default_s_term, default_c_term, reg_default_limit));
 
   insert into fct_state (fct_sid, fct_state)
          values (sid, new_tree);

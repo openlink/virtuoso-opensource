@@ -166,7 +166,7 @@ directory_init() {
 
   for d in `find . -type d | grep -v CVS | grep -v VirtTripleLoader`
   do
-     mkdir -p vad/vsp/fct/$d
+     mkdir -p -v vad/vsp/fct/$d
   done
 
   for f in `find . -name '*.sql'`
@@ -174,7 +174,7 @@ directory_init() {
       cp $f vad/code/fct/"`basename $f`"
   done
 
-  for f in `find . -type f | grep -v '.sql' | grep -v '.vad' | grep -v 'vad_' | grep -v 'CVS' | grep -v VirtTripleLoader`
+  for f in `find . -type f | grep -v '\\.sql' | grep -v '\\.vad' | grep -v '^vad_' | grep -v 'CVS' | grep -v VirtTripleLoader`
   do
       cp $f vad/vsp/fct/$f
   done
@@ -365,15 +365,21 @@ fi
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
-
+  echo ""
+  echo "      -- Copy FCT VAD configuration files to Conductor UI folder" >> $STICKER
+  echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.vspx');" >> $STICKER
+  echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.js');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
-#  echo "  <sql purpose='post-uninstall'>" >> $STICKER
-#  echo "  </sql>" >> $STICKER
+  echo "  <sql purpose='pre-uninstall'>" >> $STICKER
+  echo "  <![CDATA[" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/fct/sql/fct_drop.sql', 1, 'report', 1);" >> $STICKER
+  echo "  ]]>" >> $STICKER
+  echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
 
