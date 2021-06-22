@@ -1,6 +1,18 @@
 2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
 
+	Updated ChangeLog
+
 	Updated NEWS.md
+
+	Updated rdb2rml VAD version
+
+2021-06-22  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed support for rr:datatype and rr:language
+
+2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated engine number to 3233 for release
 
 2021-06-21  Patrick van Kleef  <pkleef@openlinksw.com>
 
