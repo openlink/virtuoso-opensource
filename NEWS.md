@@ -1,31 +1,57 @@
 NEWS
 ====
 
-October 2, 2018, v7.2.6-dev:
-----------------------------
+June 22, 2021, v7.2.6:
+----------------------
 
   * Virtuoso Engine
-    - Added new plugins proj4, geos and shapefileio for GeoSPARQL
+    - Added support for macOS 11 Big Sur on Intel and Apple Silicon
+    - Added support for OpenSSL 1.1.1
     - Added support for Strict-Transport-Security header
     - Added check to make sure RPNG is properly seeded
     - Added support for Forward Secrecy using DH and ECDH
-    - Added missing X509_STRING_DATE
     - Added support for rwlock in dict
+    - Added support for latest iODBC DM Unicode fixes
+    - Added support for unfoldable internal functions in execution plan
     - Fixed default cipher list
-    - Fixed issues with SSL_CTX options
     - Fixed set default protocol to TLSv1.2 or newer when possible
-    - Fixed issue setting cipherlist on https ctx
+    - Fixed issue setting cipher list on https ctx
+    - Fixed issues ordering NaN values
+    - Fixed issue with atomic transactions
+    - Fixed issue reading large blobs
+    - Fixed small memory leaks
+    - Fixed small portability issues
+    - Fixed dependency on netstat during building and testing
 
   * SPARQL
     - Added initial support for GeoSPARQL functions
+    - Added new bootstrap 4 based /sparql (X)HTML endpoint
+    - Added support for Content-Disposition header hint for browsers
+    - Added flag to control inference optimizations by G
+    - Added support for property paths in federated SPARQL queries
     - Fixed namespace check for bif: and sql: and issues with system functions
+    - Fixed issue with JSON-LD and JSON-LD (with context) mime types
+    - Fixed output formats to use UTF-8 and HTML5 or XHTML5
+    - Fixed splitting on '/#:' produces better results for unnamed prefixes
 
   * JDBC Driver
-    - Fixed issue with closing stmt handle in PreparedStatement
-    - Removed support for deprecated versions of JDKs 1.1, 1.2, 1.3, 1.4 and 1.5
+    - Added support for JDBC 4.3
     - Moved SSL connectivity into regular jdbc drivers
+    - Fixed issue with closing stmt handle in PreparedStatement
+    - Fixed JDBC RPC login options
+    - Fixed issue with POINTZ
+    - Fixed constructions using new Long/Byte/Short/Character
+    - Fixed issue with finalizers
+    - Fixed issue running jdbc testsuite
+    - Removed support for deprecated versions of JDKs 1.1, 1.2, 1.3, 1.4 and 1.5
 
   * Faceted Browser
+    - Added FCT Configuration page in Conductor
+    - Added specific Map view options using dedicated graph
+    - Added configuration option to control browser cache
+    - Added small inference rule for link-out icons
+    - Added support for schema.org latitude/longitude in factet inference
+    - Added new setting to treat narrow string boxes as UTF-8 encoded
     - Added page to show state of Entity Data generation
     - Added preview for embedded content
     - Added statistics about users of IRI as subject or object in graph to Metadata page
@@ -36,13 +62,52 @@ October 2, 2018, v7.2.6-dev:
     - Fixed issue with page refresh when Show x rows selector changes
     - Fixed issues with https in /describe content negotiation in Alternates and Location headers
     - Fixed issues with /describe page behind a (ssl) proxy
+    - Fixed reporting proper datatype of object rather than box type
 
   * Conductor
+    - Added UI optimizations
+    - Added option to view CalDAV and CardDAV resources
+    - Disabled triggers generation for RDF view referencing SQL views
+    - Fixed issue creating LDP collection data
+    - Fixed issue creating user's IRIs
+    - Fixed issue in RDF console
+    - Fixed issues editing soap services
+    - Fixed login when conductor is behind a proxy
+    - Fixed small build issues
     - Moved binsrc/yacutia binsrc/conductor
 
   * DAV
+    - Added new optimizations for WebDAV
+    - Added support to move lost collections to '/DAV/.lost+found/' collection
+    - Added triggers to check the collection hierarchy before updates
+    - Added performance improvements for some often used functions
+    - Added additional checks for some API calls
+    - Updated triggers and procedures to use the new column COL_FULL_PATH
+    - Fixed issue in conductor showing folder content after rename.
+    - Fixed issue with ID of DET collections and optimize DAV_SEARCH_ID
+    - Fixed issues reported by the Litmus DAV testsuite for COPY and MOVE
+    - Fixed issues with LDP, PROPFIND, PATCH
+    - Fixed issues with HostFs DET actions
+    - Fixed issue with SSL HTTP authentication
     - Fixed issue with LDP POST command
     - Fixed LDP folder content return (by GET)
+
+  * GEO
+    - Added new plugins proj4, geos and shapefileio for GeoSPARQL
+    - Added check if proj data has been loaded
+    - Fixed issue in error handling
+    - Fixed handling of GEO_NULL_SHAPE
+    - Fixed bif:st_intersects
+    - Fixed issue with empty shape
+    - Fixed handling empty and invalid geometries
+    - Fixed portability issues
+
+  * ODS
+    - Fixed issue login into ODS
+    - Fixed OAUTH token
+
+  * R2RML
+    - Fixed support for rr:datatype and rr:language
 
 
 August 15, 2018, v7.2.5
