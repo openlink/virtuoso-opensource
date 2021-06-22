@@ -30,12 +30,12 @@
     <name package="rdb2rdf">
       <prop name="Title" value="RDB2RDF support"/>
       <prop name="Developer" value="OpenLink Software"/>
-      <prop name="Copyright" value="(C) 2014-2021 OpenLink Software"/>
+      <prop name="Copyright" value="(C) 2013-2021 OpenLink Software"/>
       <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
     </name>
-    <version package="1.00.0275">
-      <prop name="Release Date" value="2019-03-07 12:00"/>
+    <version package="1.00.281">
+      <prop name="Release Date" value="2019-04-01 12:00"/>
       <prop name="Build" value="Release, optimized"/>
     </version>
   </caption>
