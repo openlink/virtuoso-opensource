@@ -522,7 +522,7 @@ create method R2RML_GEN_CREATE_IOL_CLASS_OR_REF (in fld_idx integer, in mode int
         when (coltype[1] in (__tag of integer, __tag of smallint)) then '%d'
         when (coltype[1] in (__tag of bigint)) then '%ld'
         when (coltype[1] in (__tag of real, __tag of double precision, __tag of numeric)) then '%g'
-        when (coltype[1] in (__tag of varchar, __tag of nvarchar)) then
+        when (coltype[1] in (__tag of varchar, __tag of nvarchar, __tag of long varchar, __tag of long nvarchar)) then
           case (termtype) when 'http://www.w3.org/ns/r2rml#Literal' then '%s' else '%U' end
         else
           signal ('R2RML',
@@ -569,6 +569,8 @@ create_iol_class:
               when __tag of numeric then 'numeric'
               when __tag of varchar then 'varchar'
               when __tag of nvarchar then 'nvarchar'
+              when __tag of long varchar then 'long varchar'
+              when __tag of long nvarchar then 'long nvarchar'
               else 'any' end ||
             case (argtypes[argctr][0]) when 0 then ' not null' else '' end,
             self.codegen_ses );
@@ -794,7 +796,7 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
 {
   declare p_md5 varchar;
   for (sparql define input:storage "" define output:valmode "LONG"
-    select ?constp, ?pcol, ?ptmpl, ?consto, ?ocol, ?otmpl, ?ott, ?odatatype, ?lang
+    select ?constp, ?pcol, ?ptmpl, ?consto, ?ocol, ?otmpl, ?ott, ?odatatype, ?olang
     where { graph `iri(?:self.graph_iid)` {
               { `iri(?:pofld)` rr:predicate ?constp . filter (?constp = iri(?:pconst)) }
             union
@@ -831,7 +833,7 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
         }
       else
           http (',\n                            ', self.codegen_ses);
-      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"), coalesce (__rdf_strsqlval("ott"), 'http://www.w3.org/ns/r2rml#Literal'), "odatatype", __rdf_strsqlval("lang"));
+      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"), coalesce (__rdf_strsqlval("ott"), 'http://www.w3.org/ns/r2rml#Literal'), "odatatype", __rdf_strsqlval("olang"));
     }
 }
 ;
