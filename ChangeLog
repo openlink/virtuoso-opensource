@@ -1,5 +1,31 @@
 2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
 
+	Merge tag 'v7.2.6.1' into develop/7
+
+	Added hotfix#1 for fct
+
+2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'hotfix/7.2.6.1' into stable/7
+
+	Updated FCT vad version
+
+	Fixed missing grant
+
+2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.6' into develop/7
+
+	Tagged 7.2.6 for release
+
+2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.6' into stable/7
+
+	Updated version to 7.2.6 for release
+
+	Last minute ChangeLog updates
+
 	Updated ChangeLog
 
 	Updated NEWS.md
