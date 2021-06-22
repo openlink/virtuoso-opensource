@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1199,6 +1199,7 @@ bif_vt_words_next_d_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!tb)
     sqlr_new_error ("S0002", "FT002", "bad table for vt_words_next_d_id");
   ITC_INIT (itc, qi->qi_space, qi->qi_trx);
+  itc->itc_n_reads = 0;
   DO_SET (state_slot_t *, ssl, &qi->qi_query->qr_state_map)
     {
       if (SSL_ITC == ssl->ssl_type || SSL_PLACEHOLDER == ssl->ssl_type)

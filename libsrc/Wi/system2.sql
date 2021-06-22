@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -593,6 +593,7 @@ create procedure SYS_CREATE_TABLE_AS (
    declare _cols any;
    declare _n_cols, _inx integer;
    declare _stmt varchar;
+   declare old_log_mode int;
 -- MI: no more need as sql_ddl_node always set flag to replicate, thus tbdef & insert will be logged separately
 --   declare log_is_on integer;
 --   log_is_on := client_attr ('transaction_log');
@@ -659,7 +660,14 @@ create procedure SYS_CREATE_TABLE_AS (
 		);
                 aref_set_0 (_insert_stmt, 2);
                 aref_set_0 (_insert_stmt, 4);
+		declare exit handler for sqlstate '*' {
+		  rollback work;
+		  log_enable (old_log_mode, 1);
+		  resignal;
+		};
+		old_log_mode := log_enable (cli_log_mode (), 1);
 		exec (_insert_stmt);
+		log_enable (old_log_mode, 1);
 		--dbg_obj_print ('after insert');
 	      }
         }
@@ -838,7 +846,7 @@ add_protected_sequence ('vad_tmp')
 add_protected_sequence ('vdd_init')
 ;
 
-create table SYS_X509_CERTIFICATES (
+create table DB.DBA.SYS_X509_CERTIFICATES (
     	C_U_ID	int,			-- user id
     	C_ID varchar, 			-- key id
 	C_DATA long varchar, 		-- certificate (and possibly key) pem format
@@ -847,9 +855,9 @@ create table SYS_X509_CERTIFICATES (
 	primary key (C_U_ID, C_KIND, C_ID))
 ;
 
-create procedure X509_CA_CERTIFICATES_INIT ()
+create procedure DB.DBA.X509_CA_CERTIFICATES_INIT ()
 {
-  for select C_DATA from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 do
+  for select C_DATA from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1 do
     {
       x509_ca_cert_add (cast (C_DATA as varchar));
     }
@@ -857,10 +865,10 @@ create procedure X509_CA_CERTIFICATES_INIT ()
 ;
 
 --!AFTER
-X509_CA_CERTIFICATES_INIT ()
+DB.DBA.X509_CA_CERTIFICATES_INIT ()
 ;
 
-create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
+create procedure DB.DBA.X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 {
   declare ki varchar;
   declare name, subj varchar;
@@ -888,13 +896,13 @@ create procedure X509_CERTIFICATES_ADD (in certs varchar, in kind int := 1)
 	  name := subseq (name, pos + 1);
 	  name := split_and_decode (replace (name, '\\x', '%'))[0];
 	}
-      insert soft SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
+      insert soft DB.DBA.SYS_X509_CERTIFICATES (C_U_ID, C_ID, C_DATA, C_KIND, C_NAME) values (user_id, ki, cert, kind, name);
       x509_ca_cert_add (cert);
     }
 }
 ;
 
-create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
+create procedure DB.DBA.X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
 {
   declare ki varchar;
   declare name, subj varchar;
@@ -910,20 +918,46 @@ create procedure X509_CERTIFICATES_DEL (in certs varchar, in kind int := 1)
       ki := get_certificate_info (6, cert, 0, '');
       if (ki is null)
 	signal ('22023', 'Can not get certificate id');
-      delete from SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
+      delete from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = user_id and C_KIND = kind and C_ID = ki;
     }
   x509_ca_certs_remove ();
-  X509_CA_CERTIFICATES_INIT ();
+  DB.DBA.X509_CA_CERTIFICATES_INIT ();
 }
 ;
 
-create procedure X509_ROOT_CA_CERTS ()
+create procedure DB.DBA.X509_ROOT_CA_CERTS ()
 {
   declare ret any;
-  ret := (select vector_agg (C_DATA) from SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
+  ret := (select vector_agg (C_DATA) from DB.DBA.SYS_X509_CERTIFICATES where C_U_ID = 0 and C_KIND = 1);
   return ret;
 }
 ;
+
+create procedure DB.DBA.X509_STRING_DATE (
+  in val varchar)
+{
+  declare ret, tmp any;
+  declare exit handler for sqlstate '*'
+  {
+    return null;
+  };
+
+  ret := NULL;
+  val := regexp_replace (val, '[ ]+', ' ', 1, null);
+  -- Jan 11 14:36:33 2012 GMT
+  if (val is not null and regexp_match ('[[:upper:]][[:lower:]]{2} [0-9]{1,} [0-9]{2}:[0-9]{2}:[0-9]{2} [0-9]{4,} GMT', val) is not null)
+  {
+    tmp := sprintf_inverse (val, '%s %s %s %s GMT', 0);
+    if (tmp is not null and length (tmp) > 3)
+    {
+      ret := http_string_date (sprintf ('Wee, %s %s %s %s GMT', tmp[1], tmp[0], tmp[3], tmp[2]));
+      ret := dt_set_tz (ret, 0);
+    }
+  }
+  return ret;
+}
+;
+
 
 create procedure uptime ()
 {
@@ -1335,7 +1369,7 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
         {
 	  declare tag int;
 	  tag := __tag (c[i]);
-	  if (tag = 246)
+	  if (tag = __tag of rdf_box)
 	    tag := __tag (rdf_box_data (c[i]));
 	  http (sprintf ('    <col dtp="%d">%V</col>\n', tag, cast (c[i] as varchar)), ss);
         }
@@ -1350,7 +1384,7 @@ in check_plan int := 1, in plan_xpath varchar := null, in addp int := 0, in ref_
 
 
 create procedure
-qt_check (in file varchar, out message varchar, in record_new integer := 0) returns int
+qt_check (in file varchar, out message varchar, in record_new integer := 0, in skip_comment int := 0) returns int
 {
   declare xt, qr, xp_test, expl, da any;
   declare stat, msg, meta, data, r, check_order, cnt any;
@@ -1365,6 +1399,8 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
 
   xt := qt_source (file);
   message := xpath_eval ('/test/comment/text()', xt);
+  if (skip_comment)
+    message := '';
   qr := charset_recode (xpath_eval ('string (/test/query)', xt), '_WIDE_', 'UTF-8');
   check_order := atoi (charset_recode (xpath_eval ('/test/plans/plan/verify/@result-order', xt), '_WIDE_', 'UTF-8'));
   xp_test := charset_recode (xpath_eval ('/test/plans/plan/verify/@plan-xpath', xt), '_WIDE_', 'UTF-8');
@@ -1389,7 +1425,7 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
   if (check_order = 0)
     gvector_sort (data, 1, 0, 1);
   if (cnt <> length (data))
-      message := message || ' : result count differs';
+      message := message || sprintf (' : result count differs %d<>%d', cnt, length (data));
   refs := xpath_eval ('/test/result/row', xt, 0);
   idx := 0;
   foreach (any rr in refs) do
@@ -1409,7 +1445,7 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
         {
 	  declare t any;
 	  t := cast (vals[i] as varchar);
-	  if (__tag(c[i]) in (191, 190, 219))
+	  if (__tag(c[i]) in (191, 190, __tag of decimal))
 	    {
 	      declare delta float;
 	      t := cast (t as double precision);
@@ -1418,15 +1454,15 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
 		delta := -1 * delta;
 	      if (delta > 1e-6)
 		{
-		  message := message || sprintf (' : value at #%d %s <> %s', i,
+		  message := message || sprintf (' : value at #%d [%s] <> [%s]', i,
 		  	cast (t as varchar),  cast (c[i] as varchar));
-		  return 0;
+		  goto err_ret;
 		}
 	    }
 	  else if (t <>  cast (c[i] as varchar) or cast (dtps[i] as int) <> __tag(c[i]))
 	    {
-	      message := message || sprintf (' : value at %d #%d %s <> %s', idx + 1, i, t,  cast (c[i] as varchar));
-	      return 0;
+	      message := message || sprintf (' : value at %d #%d [%s] <> [%s]', idx + 1, i, t,  cast (c[i] as varchar));
+	      goto err_ret;
 	    }
 	}
       idx := idx + 1;
@@ -1436,20 +1472,24 @@ qt_check (in file varchar, out message varchar, in record_new integer := 0) retu
       qt_record (file || '.new', qr, comment => message, check_order => check_order);
     }
   return 1;
+err_ret:
+  qt_record (regexp_replace (file, '\.xml\x24', '.err'), qr, comment => message, check_order => check_order);
+  return 0;
 }
 ;
 
 create procedure
-qt_check_dir (in dir varchar, in file_mask varchar := '%', in record_new integer := 0)
+qt_check_dir (in dir varchar, in file_mask varchar := '%', in record_new integer := 0, in skip_comment int := 0)
 {
   declare ls, inx, f, msg, stat, file, report any;
   ls := sys_dirlist (dir, 1);
   result_names (stat, file, report);
+  gvector_sort (ls, 1, 0, 1);
   for (inx := 0; inx < length (ls); inx := inx + 1)
     {
       if (ls[inx] like '%.xml' and ls[inx] like file_mask)
 	{
-	  f := qt_check (dir || '/' || ls[inx], msg, record_new);
+	  f := qt_check (dir || '/' || ls[inx], msg, record_new, skip_comment);
 	  result (case f when 1 then 'PASSED: ' else '***FAILED: ' end,ls[inx], msg);
 	}
     }
@@ -1550,9 +1590,9 @@ qt_make_array (inout arr any)
         {
 	  declare dtp int;
 	  dtp := cast (dtps[i] as int);
-	  if (dtp = 246)
-	    dtp := 182;
-	  if (dtp = 219)
+	  if (dtp = __tag of rdf_box)
+	    dtp := __tag of varchar;
+	  if (dtp = __tag of decimal)
 	    vals[i] := _cvt (vector (dtp, 40, 15), cast (vals[i] as varchar));
 	  else
 	    vals[i] := _cvt (vector (dtp, 0), cast (vals[i] as varchar));
@@ -1609,9 +1649,9 @@ qt_diff (in file varchar, in target varchar, out message varchar) returns int
 	  t2 := v2[i];
 	  dtp1 := __tag (t1);
 	  dtp2 := __tag (t2);
-	  if (dtp1 in (191, 190, 219) and dtp2 in (191, 190, 219))
+	  if (dtp1 in (191, 190, __tag of decimal) and dtp2 in (191, 190, __tag of decimal))
 	    dtp1 := dtp2 := __max (dtp1, dtp1);
-	  if (dtp1 = dtp2 and dtp1 in (191, 190, 219))
+	  if (dtp1 = dtp2 and dtp1 in (191, 190, __tag of decimal))
 	    {
 	      declare delta float;
 	      t1 := cast (t1 as double precision);
@@ -1771,7 +1811,7 @@ create procedure VALIDATE.DBA.validate_internal (
 
   if (propertyType = 'boolean')
   {
-    if (propertyValue not in ('Yes', 'No'))
+    if (lcase (propertyValue) not in ('yes', 'no', '1', '0', 'true', 'false'))
       goto _error;
   }
   else if (propertyType = 'integer')
@@ -1955,7 +1995,7 @@ create procedure VALIDATE.DBA.validate_tags (
     return 0;
 
   for (N := 0; N < length(V); N := N + 1)
-    if (not WEBDAV.DBA.validate_tag (V[N]))
+    if (not VALIDATE.DBA.validate_tag (V[N]))
       return 0;
 
   return 1;

@@ -10,7 +10,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -286,8 +286,8 @@ START_SERVER()
     starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
     while [ "z$stat" != "z" -a $timeout -gt 0 ]
     do
-	sleep 1
-	stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+	sleep 5
+	stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
 
 	nowh=`date | cut -f 2 -d :`
 	nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
@@ -324,13 +324,13 @@ START_SERVER()
     then
         while true
         do
-            stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+            sleep 5
+            stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
             if [ "z$stat" != "z" ]
             then
         	LOG "PASSED: Virtuoso Server successfully started on port $port"
         	break
             fi
-            sleep 1
             nowh=`date | cut -f 2 -d :`
             nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
             
@@ -378,13 +378,13 @@ CHECK_PORT()
   port=$1
   while true
   do
-    stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+    sleep 5
+    stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
     if [ "z$stat" = "z" ]
     then
 	LOG "PASSED: Port $port is not listened by any process"
 	return 0
     fi
-    sleep 1
     nowh=`date | cut -f 2 -d :`
     nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
 
@@ -946,13 +946,13 @@ WAIT_CLUSTER_PORT_UP ()
 
     while true
     do
-        stat=`netstat -an | grep "[\.\:]$port " | grep LISTEN`
+        sleep 5
+        stat=`$NETSTAT -an 2>/dev/null | grep "[\.\:]$port " | grep LISTEN`
         if [ "z$stat" != "z" ]
         then
             LOG "PASSED: $3 listen on port $port"
             return 0
         fi
-        sleep 1
         nowh=`date | cut -f 2 -d :`
         nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
 
@@ -987,6 +987,7 @@ WAIT_CLUSTER_TO_STOP ()
   do
       if [ -f $file ]
       then
+          sleep 5
           eval `cat $file`
           stat=`ps -p $VIRT_PID | grep $VIRT_PID` 
           if [ "z$stat" = "z" ]
@@ -994,7 +995,6 @@ WAIT_CLUSTER_TO_STOP ()
               LOG "PASSED: cluster with lock-file $file stopped."
               return 0;
           fi
-          sleep 1
           nowh=`date | cut -f 2 -d :`
           nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
           nowh=`expr $nowh - $starth`

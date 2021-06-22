@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -694,6 +694,7 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/ttlpv.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
+	$(srcdir)/sparql_ui.sql \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
@@ -769,7 +770,7 @@ json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
-		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
+		-aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
@@ -1060,6 +1061,7 @@ EXTRA_DIST = \
 	bif_kerberoscli.c \
 	bif_mts.c \
 	bif_purify.c \
+	bmcmp.c \
 	box2any.c \
 	cebits.c \
 	cebitsdec.c \

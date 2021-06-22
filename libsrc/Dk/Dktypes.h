@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -221,7 +221,9 @@ round (double x)
 #ifdef _finite
 #define isfinite(val) _finite (val)
 #else
+#ifndef __cplusplus
 #error "Neither isfinite() nor _finite() is defined in standard headers"
+#endif
 #endif
 #endif
 

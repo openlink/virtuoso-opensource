@@ -127,6 +127,7 @@
     <ClCompile Include="..\binsrc\tests\biftest\sql_code_clr.c" />
     <ClCompile Include="..\binsrc\tests\biftest\sql_code_javavm.c" />
     <ClCompile Include="..\binsrc\tests\biftest\sql_code_xslt.c" />
+    <ClCompile Include="..\SDK\x64\sslsdk\inc32\openssl\applink.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\binsrc\virtuoso\virtuoso_t.rc" />

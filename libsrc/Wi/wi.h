@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1651,7 +1651,8 @@ int adler32_of_buffer (unsigned char *data, size_t len);
 int32 sqlbif_rnd (int32* seed);
 #define BUF_SET_CK(buf) do { \
 	  int32 chk; \
-  	  RAND_pseudo_bytes (buf->bd_buffer, PAGE_SZ); \
+	  memset (buf->bf_buffer, 0xff, PAGE_SZ); \
+  	  RAND_bytes (buf->bd_buffer, 16); \
 	  chk = adler32_of_buffer (buf->bd_buffer, PAGE_SZ); \
 	  LONG_SET (buf->bd_buffer + PAGE_SZ, chk); \
 } while (0)
@@ -1938,6 +1939,9 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
 
 #define NUM_COMPARE(n1,n2) \
   (n1 < n2 ? DVC_LESS : (n1 == n2 ? DVC_MATCH : DVC_GREATER))
+
+#define NUM_COMPARE_DBL(n1,n2) \
+  (isnan(n1) && isnan(n2) ? DVC_MATCH : (isnan(n2) || n1 < n2 ? DVC_LESS : (n1 == n2 ? DVC_MATCH : DVC_GREATER)))
 
 #define IS_NUM_DTP(dtp) \
   (DV_LONG_INT == dtp || \

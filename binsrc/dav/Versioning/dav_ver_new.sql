@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -29,19 +29,6 @@ DROP TABLE WS.WS.SYS_DAV_RES_MERGE;
 DROP TABLE WS.WS.SYS_DAV_RES_DIFF;
 DROP TABLE WS.WS.SYS_DAV_RES_VERSION;
 
-ALTER TABLE WS.WS.SYS_DAV_COL ADD COL_AUTO_VERSIONING char(1);
-
-ALTER TABLE WS.WS.SYS_DAV_COL ADD COL_FORK INTEGER NOT NULL DEFAULT 0;
-
--- ALTER TABLE WS.WS.SYS_DAV_COL ADD COL_VERSION_NAME_TEMPLATE NOT NULL DEFAULT 'WS.WS.VERSION_NAME_TEMPLATE_PLAIN';
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_STATUS VARCHAR;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_ID INTEGER;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_CO_VERSION INTEGER;
-
-ALTER TABLE WS.WS.SYS_DAV_RES ADD RES_VCR_STATE INTEGER; -- 0 CIN, -- 1 COUT
 
 CREATE TABLE WS.WS.SYS_DAV_RES_VERSION (
   RV_RES_ID INTEGER NOT NULL, -- This is equal to either existing resource ID or to an attic ID

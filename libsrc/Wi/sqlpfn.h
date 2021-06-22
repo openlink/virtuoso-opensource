@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -202,17 +202,12 @@ extern char *scn3_get_file_name (void);
 #define YY_TYPEDEF_YY_SCANNER_T
 typedef void* yyscan_t;
 #endif
-#if 0
-#ifndef YY_DECL
-extern int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner);
-extern int scn3splityylex(YYSTYPE *yylval, yyscan_t yyscanner);
-#define YY_DECL int scn3yylex (YYSTYPE *yylval, yyscan_t yyscanner)
-#endif
-#endif
 extern int scn3yylex_init (yyscan_t* scanner);
 extern int scn3yylex_destroy (yyscan_t yyscanner );
-/* No need as soon as thing is reentrant: void scn3yyrestart (FILE * in, yyscan_t yyscanner); */
-/* No need as soon as thing is reentrant: void scn3splityyrestart (FILE * in, yyscan_t yyscanner); */
+extern int scn3splityylex_destroy (yyscan_t yyscanner );
+extern int scn3yyparse (yyscan_t yyscanner);
+extern void scn3yyrestart (FILE * in, yyscan_t yyscanner);
+extern void scn3splityyrestart (FILE * in, yyscan_t yyscanner);
 extern void sql_yy_reset (yyscan_t yyscanner);
 extern void scn3split_yy_reset (yyscan_t yyscanner);
 extern void sql_pop_all_buffers (yyscan_t yyscanner);

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,7 @@ dist_doc_DATA = \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README \
 	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \

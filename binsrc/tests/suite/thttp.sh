@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -641,7 +641,7 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 1
+       sleep 5
        clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
@@ -823,7 +823,7 @@ case $1 in
        rm -f tmp.tmp
    done
    START_SERVER $PORT 1000
-   sleep 1
+   sleep 5
    cd ..
 
 if [ $do_mappers_only -ne 1 ]

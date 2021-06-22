@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1153,8 +1153,8 @@ dvc_int_double (int64 i, double d)
       return NUM_COMPARE (i, i2);
     }
   if (d > -1 && d < 1)
-    return NUM_COMPARE (((double) i), d);
-  r = NUM_COMPARE ((double) i, d);
+    return NUM_COMPARE_DBL (((double) i), d);
+  r = NUM_COMPARE_DBL ((double) i, d);
   if (DVC_MATCH == r)
     {
       /* if int and double look like eq and the double is outside the int precise int range, then the int is seen as farther from zero */
@@ -1235,7 +1235,7 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	case DV_LONG_INT:
 	  return NUM_COMPARE (*(int64 *) dn1, *(int64 *) dn2);
 	case DV_DOUBLE_FLOAT:
-	  return NUM_COMPARE (*(double *) dn1, *(double *) dn2);
+	  return NUM_COMPARE_DBL (*(double *) dn1, *(double *) dn2);
 	case DV_NUMERIC:
 	  return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
 	default:

@@ -1,0 +1,2 @@
+Main-Class: virtuoso.jdbc4.Driver
+Automatic-Module-Name: virtuoso.jdbc4

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1284,7 +1284,11 @@ dc_elt_size (data_col_t * dc)
 }
 
 extern int dbf_explain_level;
+#ifdef NDEBUG
 int32 enable_sslr_check = 0;
+#else
+int32 enable_sslr_check = 1;
+#endif
 
 caddr_t
 sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
@@ -1361,11 +1365,11 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
     case DV_SINGLE_FLOAT:
       SSL_FIXED_STR_BOX (DV_SINGLE_FLOAT, sizeof (float));
     default:
-      if (DCT_BOXES & val_dc->dc_type)
+      if (!(DCT_BOXES & val_dc->dc_type))
+	GPF_T1 ("dc of unsupported dtp for single value qst_get");
 	if (val_dc->dc_n_values <= (uint32) row_no)
 	  return NULL;
       return ((caddr_t *) val_dc->dc_values)[row_no];
-      GPF_T1 ("dc of unsupported dtp for single value qst_get");
     }
   return 0;
 }
@@ -2340,7 +2344,7 @@ vc_anynn (data_col_t * target, data_col_t * source, int row, caddr_t * err_ret)
   dtp_t tmp[10];
   if (DCT_BOXES & source->dc_type)
     {
-      caddr_t box = ((caddr_t *) source->dc_values)[row];
+      box = ((caddr_t *) source->dc_values)[row];
       dtp_t dtp = DV_TYPE_OF (box);
       if (DV_DB_NULL == dtp)
 	return 0;

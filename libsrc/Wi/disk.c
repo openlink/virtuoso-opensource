@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -65,14 +65,13 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
 
-
+#if defined (HAVE_FLOCK_IN_SYS_FILE)
+#include <sys/file.h>
+#endif
 
 #define CHECK_PG(pg,name) \
       if (cfg_page.pg < 1 || cfg_page.pg > dbs->dbs_n_pages) \
@@ -1567,7 +1566,7 @@ bp_mtx_entry_check (dk_mutex_t * mtx, du_thread_t * self, void * cd)
 }
 
 int enable_buf_mprotect = 0;
-#ifdef PAGE_DEBUG
+#if defined(PAGE_DEBUG) || defined(MTX_DEBUG)
 void
 buf_prot_read (buffer_desc_t * buf)
 {
@@ -3560,6 +3559,46 @@ dbs_open_ext_cache (dbe_storage_t * dbs)
 }
 
 
+
+static int
+dbs_open_lock_fd (int fd, const char *name)
+{
+#ifdef F_SETLK
+  struct flock fl = { 0 };
+
+  /* Set an advisory WRITE lock */
+  fl.l_type = F_WRLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0;
+
+  if (fcntl (fd, F_SETLK, &fl))
+    {
+      log_error ("Unable to lock file %s (%m).", name);
+
+      /* If we could not set a lock, who owns it? */
+      if (fcntl (fd, F_GETLK, &fl))
+	log_error ("Unable to get lock information on file %s (%m)", name);
+      else
+	log_error ("Virtuoso is already running (pid %ld)", fl.l_pid);
+      return -1;
+    }
+#elif defined (HAVE_FLOCK_IN_SYS_FILE)
+  if (flock (fd, LOCK_EX | LOCK_NB))
+    {
+      log_error ("Unable to lock file %s (%m).", name);
+      return -1;
+    }
+#endif
+
+#ifdef DEBUG
+  log_info ("Set write lock on %s", name);
+#endif
+
+  return 0;
+}
+
+
 int
 dbs_open_disks (dbe_storage_t * dbs)
 {
@@ -3601,15 +3640,12 @@ dbs_open_disks (dbe_storage_t * dbs)
 			     dst->dst_file, errno);
 		  call_exit (1);
 		}
-#if 0
-#ifdef LOCK_EX
-	      if (flock (fd, LOCK_EX | LOCK_NB))
+
+	      if (!inx && dbs_open_lock_fd (fd, dst->dst_file))
 		{
-		  log_error ("Cannot lock stripe file on %s (%d), it may be used by other server instance", dst->dst_file, errno);
 		  call_exit (1);
 		}
-#endif /* HAVE_FLOCK */
-#endif
+
 	      dst_fd_done (dst, fd, NULL);
 	    }
 	}
@@ -3837,16 +3873,16 @@ dbs_init_id (char * str)
   char buf[100];
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   DO_BOX (caddr_t, val, inx, local_interfaces)
     {
-      MD5Update (&ctx, (unsigned char *) val, box_length (val) - 1);
+      MD5_Update (&ctx, (unsigned char *) val, box_length (val) - 1);
     }
   END_DO_BOX;
-  MD5Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
+  MD5_Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
   snprintf (buf, sizeof (buf), "%ld,%p", srv_pid, &str);
-  MD5Update (&ctx, (unsigned char *) buf, strlen (buf));
-  MD5Final ((unsigned char*)str, &ctx);
+  MD5_Update (&ctx, (unsigned char *) buf, strlen (buf));
+  MD5_Final ((unsigned char*)str, &ctx);
 }
 
 void
@@ -4418,7 +4454,6 @@ dbs_delete_tempdb_files_if_big (dbe_storage_t * dbs)
 	}
   return 0;
 }
-
 /** returns nonzero if the main DBS file exists */
 char
 dbs_open_main_files (dbe_storage_t *dbs, char type)
@@ -4436,31 +4471,13 @@ dbs_open_main_files (dbe_storage_t *dbs, char type)
 	  call_exit (1);
 	}
 
-#if defined (F_SETLK)
  if (type != DBS_TEMP)
       {
-	struct flock fl;
-
-#ifdef DEBUG
-        log_info ("Setting write lock on %s", dbs->dbs_file);
-#endif
-
-	/* Get an advisory WRITE lock */
-	fl.l_type = F_WRLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = 0;
-	fl.l_len = 0;
-
-	if (fcntl (fd, F_SETLK, &fl) < 0)
+      if (dbs_open_lock_fd (fd, dbs->dbs_file))
 	  {
-  	    /* we could not get a lock, so who owns it? */
-	    fcntl (fd, F_GETLK, &fl);
-
-	    log_error ("Virtuoso is already running (pid %ld)", fl.l_pid);
  	    call_exit(1);
 	  }
       }
-#endif
 
       dbs->dbs_fd = fd;
   size = db_file_size (fd, dbs->dbs_file, DB_FILE_SIZE_FIX);

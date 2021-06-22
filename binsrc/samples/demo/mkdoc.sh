@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -61,7 +61,7 @@ STICKER_FS="doc_vad_filesystem.xml"
 VAD_NAME="doc"
 VAD_NAME_DEVEL="$VAD_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_NAME"_dav.vad
-VERSION="1.1.18"
+VERSION="1.1.19"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 
 HOST_OS=`uname -s | grep WIN`
@@ -156,47 +156,48 @@ BANNER()
     ECHO ""
 }
 
-
 START_SERVER()
 {
-   if [ "z$DEMODB" = "z" ]
-   then
-       timeout=180
+  timeout=180
 
-       ECHO "Starting Virtuoso server ..."
-       if [ "z$HOST_OS" != "z" ] 
-       then
-	   "$SERVER" +foreground &
-       else
-	   "$SERVER" +wait
-       fi
+  ECHO "Starting Virtuoso DOC server ..."
+  if [ "z$HOST_OS" != "z" ] 
+  then
+      "$SERVER" +foreground &
+      starth=`date | cut -f 2 -d :`
+      starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
 
-       starth=`date | cut -f 2 -d :`
-       starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+      while true
+	do
+	  sleep 6
+	  if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
+	    then
+	      ECHO "Virtuoso server started"
+	      return 0
+	    fi
+	  nowh=`date | cut -f 2 -d :`
+	  nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
 
-       while true
-       do
-           sleep 6
-           if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
-           then
-       	ECHO "Virtuoso server started"
-       	return 0
-           fi
-           nowh=`date | cut -f 2 -d :`
-           nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+	  nowh=`expr $nowh - $starth`
+	  nows=`expr $nows - $starts`
 
-           nowh=`expr $nowh - $starth`
-           nows=`expr $nows - $starts`
-
-           nows=`expr $nows + $nowh \*  60`
-           if test $nows -ge $timeout
-           then
-       	ECHO "***FAILED: Could not start Virtuoso DOC Server within $timeout seconds"
-       	exit 1
-           fi
-       done
-   fi
+	  nows=`expr $nows + $nowh \*  60`
+	  if test $nows -ge $timeout
+	    then
+	      ECHO "***FAILED: Could not start Virtuoso DOC Server within $timeout seconds"
+	      exit 1
+	    fi
+      done
+  else
+      "$SERVER" +wait
+      if test $? -ne 0
+      then
+	  ECHO "***FAILED: Could not start Virtuoso DOC Server within $timeout seconds"
+	  exit 1
+      fi
+  fi
 }
+
 
 STOP_SERVER()
 {
@@ -387,7 +388,7 @@ sticker_init() {
   echo "  <name package=\"doc\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Virtuoso Documentation\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2021 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER

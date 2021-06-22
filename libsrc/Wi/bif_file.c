@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,6 +50,14 @@
 # endif
 #endif
 
+#ifndef P_tmpdir
+# ifdef _P_tmpdir /* native Windows */
+#  define P_tmpdir _P_tmpdir
+# else
+#  define P_tmpdir "/tmp"
+# endif
+#endif
+
 #define UUID_T_DEFINED
 #include "libutil.h"		/* needed by bif_cfg_* functions */
 #include "statuslog.h"
@@ -57,9 +65,6 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -1228,18 +1233,43 @@ bif_sys_dirlist (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		  int hit = 0;
 		  caddr_t raw_name;
 		  int make_wide_name;
+
 #ifndef WIN32
-		  char path[PATH_MAX];
-		  snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
-		  V_STAT (path, &st);
-		  if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
-		    hit = 1;	/* Different values of \c hit are solely for debugging purposes */
-		  else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
-		    hit = 2;
-		  else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
-		    hit = 3;
-		  else if (((st.st_mode & S_IFMT) != 0) && files == 3)
-		    hit = 4;
+
+#  if defined(_DIRENT_HAVE_D_TYPE)
+		  /*
+		   *  Optimization for Linux, Apple and BSD based systems to eliminate the extra stat call.
+		   *
+		   *  NOTE: This works on most but not all modern filesystems, so if hit remains unset
+		   *        we just continue with the stat method
+		   */
+		  if (de->d_type == DT_DIR && files == 0)
+		    hit = 8;
+		  else if (de->d_type == DT_REG && files == 1)
+		    hit = 9;
+		  else if (de->d_type == DT_LNK && files == 2)
+		    hit = 10;
+		  else if (de->d_type != DT_UNKNOWN && files == 3)
+		    hit = 11;
+#  endif /* _DIRENT_HAVE_D_TYPE */
+
+		  /*
+		   *  Fallback to use slower method using stat systemcall
+		   */
+		  if (!hit)
+		    {
+		      char path[PATH_MAX];
+		      snprintf (path, sizeof (path), "%s/%s", fname_cvt, DIRNAME (de));
+		      V_STAT (path, &st);
+		      if (((st.st_mode & S_IFMT) == S_IFDIR) && files == 0)
+			hit = 1;	/* Different values of \c hit are solely for debugging purposes */
+		      else if (((st.st_mode & S_IFMT) == S_IFREG) && files == 1)
+			hit = 2;
+		      else if (((st.st_mode & S_IFMT) == S_IFLNK) && files == 2)
+			hit = 3;
+		      else if (((st.st_mode & S_IFMT) != 0) && files == 3)
+			hit = 4;
+		    }
 #else
 		  if (files == 0 && (FILE_ATTRIBUTE_DIRECTORY & de->dwFileAttributes) > 0)
 		    hit = 5;
@@ -2327,7 +2357,7 @@ get_random_info (unsigned char seed[16])
   } r;
 
   memset (&r, 0, sizeof (r));
-  MD5Init (&c);			/* memory usage stats */
+  MD5_Init (&c);			/* memory usage stats */
   GlobalMemoryStatus (&r.m);	/* random system stats */
   GetSystemInfo (&r.s);		/* 100ns resolution (nominally) time of day */
   GetSystemTimeAsFileTime (&r.t);	/* high resolution performance counter */
@@ -2336,8 +2366,8 @@ get_random_info (unsigned char seed[16])
   r.l = MAX_COMPUTERNAME_LENGTH + 1;
 
   GetComputerName (r.hostname, &r.l);
-  MD5Update (&c, (unsigned char *) &r, sizeof (r));
-  MD5Final (seed, &c);
+  MD5_Update (&c, (unsigned char *) &r, sizeof (r));
+  MD5_Final (seed, &c);
 }
 
 #else /* UNIX */
@@ -2371,9 +2401,9 @@ get_random_info (unsigned char seed[16])
   gettimeofday (&r.tv, (struct timezone *) 0);
   gethostname (r.hostname, 256);
 
-  MD5Init (&c);
-  MD5Update (&c, (unsigned char *) &r, sizeof (r));
-  MD5Final (seed, &c);
+  MD5_Init (&c);
+  MD5_Update (&c, (unsigned char *) &r, sizeof (r));
+  MD5_Final (seed, &c);
 }
 #endif /* end system specific routines */
 /* end UUIDs generator */
@@ -2469,9 +2499,9 @@ md5 (caddr_t str)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+  MD5_Final (digest, &ctx);
   res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
   for (inx = 0; inx < sizeof (digest); inx++)
     {
@@ -2491,11 +2521,11 @@ mdigest5 (caddr_t str)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   res = dk_alloc_box (17, DV_SHORT_STRING);
   res[16] = '\0';
-  MD5Final ((unsigned char *)res, &ctx);
+  MD5_Final ((unsigned char *)res, &ctx);
   return res;
 }
 
@@ -2547,7 +2577,7 @@ bif_md5_init (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   return md5ctx_to_string (&ctx);
 }
 
@@ -2555,7 +2585,7 @@ void
 md5_update_map (buffer_elt_t * buf, caddr_t arg)
 {
   MD5_CTX *pctx = (MD5_CTX *) arg;
-  MD5Update (pctx, (unsigned char *) buf->data, buf->fill);
+  MD5_Update (pctx, (unsigned char *) buf->data, buf->fill);
 }
 
 static caddr_t
@@ -2572,13 +2602,13 @@ bif_md5_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   string_to_md5ctx (&ctx, sctx);
   if (DV_STRING == dtp || DV_RDF == dtp)
-    MD5Update (&ctx, (unsigned char *) str, box_length (str) - 1);
+    MD5_Update (&ctx, (unsigned char *) str, box_length (str) - 1);
   else
     {
       dk_session_t * ses = (dk_session_t *) str;
       strses_map (ses, md5_update_map, (caddr_t) & ctx);
       strses_file_map (ses, md5_update_map, (caddr_t) & ctx);
-      MD5Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
+      MD5_Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
     }
   return md5ctx_to_string (&ctx);
 }
@@ -2597,7 +2627,7 @@ bif_md5_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     make_it_hex = (int) bif_long_arg (qst, args, 1, "md5_final");
   if (make_it_hex)
     {
-      MD5Final (digest, &ctx);
+      MD5_Final (digest, &ctx);
       res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
 
       for (inx = 0; inx < sizeof (digest); inx++)
@@ -2611,7 +2641,7 @@ bif_md5_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else
     {
       res = dk_alloc_box (MD5_SIZE + 1, DV_SHORT_STRING);
-      MD5Final ((unsigned char *) res, &ctx);
+      MD5_Final ((unsigned char *) res, &ctx);
       res[MD5_SIZE] = 0;
     }
   return res;
@@ -2627,11 +2657,11 @@ md5_ses (dk_session_t * ses)
   MD5_CTX ctx;
 
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   strses_map (ses, md5_update_map, (caddr_t) & ctx);
   strses_file_map (ses, md5_update_map, (caddr_t) & ctx);
-  MD5Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
-  MD5Final (digest, &ctx);
+  MD5_Update (&ctx, (unsigned char *) ses->dks_out_buffer, ses->dks_out_fill);
+  MD5_Final (digest, &ctx);
 
   res = dk_alloc_box (sizeof (digest) * 2 + 1, DV_SHORT_STRING);
   for (inx = 0; inx < sizeof (digest); inx++)
@@ -7475,7 +7505,7 @@ bif_file_init (void)
   bif_define_ex ("md5_update", bif_md5_update, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("md5_final", bif_md5_final, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__vector_sort", bif_vector_sort, BMD_RET_TYPE, &bt_any, BMD_DONE);
-  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_NO_FOLD, BMD_DONE);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
   bif_define_ex ("file_stat", bif_file_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);

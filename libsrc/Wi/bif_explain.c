@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3253,10 +3253,10 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
 	    {
 	      if (!ik)
 		continue;
-		ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
-		if (ik->ik_slots)
-		  ssl_array_print_xml (ik->ik_slots, s);
-		SES_PRINT (s, "</key>");
+	      ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
+	      if (ik->ik_slots)
+		ssl_array_print_xml (ik->ik_slots, s);
+	      SES_PRINT (s, "</key>");
 	    }
 	  END_DO_BOX;
 	}

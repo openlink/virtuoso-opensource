@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -255,7 +255,10 @@ ldap_get_version (caddr_t * qst)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   client_connection_t * cli = qi->qi_client;
-  caddr_t *ret = (caddr_t *)id_hash_get (cli->cli_globals, (caddr_t) &con_ldap_version_name);
+  int rdlocked;
+  caddr_t *ret;
+  HT_RDLOCK_COND(cli->cli_globals,rdlocked);
+  ret = (caddr_t *)id_hash_get (cli->cli_globals, (caddr_t) &con_ldap_version_name);
   int ver = LDAP_DEF_VERSION;
   if (ret && DV_LONG_INT == DV_TYPE_OF (*ret))
     {
@@ -263,6 +266,7 @@ ldap_get_version (caddr_t * qst)
       if (ver < LDAP_VERSION_MIN || ver > LDAP_VERSION_MAX)
 	ver = LDAP_DEF_VERSION;
     }
+  HT_UNLOCK_COND(cli->cli_globals,rdlocked);
   return ver;
 }
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -56,6 +56,21 @@
 #else
 #define VIRTVARCLASS extern
 #endif
+
+#ifdef MALLOC_DEBUG
+#define DBG_NAME(nm) dbg_##nm
+#define DBG_PARAMS char *file, int line,
+#define DBG_ARGS file, line,
+#define DK_ALLOC(SIZE) dbg_malloc(DBG_ARGS (SIZE))
+#define DK_FREE(BOX,SIZE) dbg_free(DBG_ARGS (BOX))
+#else
+#define DBG_NAME(nm) nm
+#define DBG_PARAMS
+#define DBG_ARGS
+#define DK_ALLOC dk_alloc
+#define DK_FREE dk_free
+#endif
+
 
 #define timer_t opl_timer_t
 
@@ -617,20 +632,6 @@ void * thread_getattr (thread_t *self, void *key);
 thread_t * thread_current (void);
 void * thread_setattr (thread_t *self, void *key, void *value);
 int strnicmp (const char *s1, const char *s2, size_t n);
-
-#ifdef MALLOC_DEBUG
-#define DBG_NAME(nm) dbg_##nm
-#define DBG_PARAMS char *file, int line,
-#define DBG_ARGS file, line,
-#define DK_ALLOC(SIZE) dbg_malloc(DBG_ARGS (SIZE))
-#define DK_FREE(BOX,SIZE) dbg_free(DBG_ARGS (BOX))
-#else
-#define DBG_NAME(nm) nm
-#define DBG_PARAMS
-#define DBG_ARGS
-#define DK_ALLOC dk_alloc
-#define DK_FREE dk_free
-#endif
 
 typedef struct s_node_s s_node_t, *dk_set_t;
 struct s_node_s

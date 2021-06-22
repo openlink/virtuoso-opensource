@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4362,14 +4362,15 @@ bif_int_vectorbld_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_int_vectorbld_final (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int64 *acc = NULL, new_box;
+  int64 *acc = NULL;
+  caddr_t new_box;
   size_t filled_size;
   int arg_ctr = BOX_ELEMENTS (args);
   if (1 > arg_ctr)
     sqlr_new_error ("22003", "SR444", "Too few arguments for vectorbld_final");
   qst_swap_or_get_copy (qst, args[0], (int64 *) (&acc));
   filled_size = sizeof (int64) * acc[0];
-  new_box = dk_alloc_box (filled_size, DV_ARRAY_OF_LONG);
+  new_box = (caddr_t) dk_alloc_box (filled_size, DV_ARRAY_OF_LONG);
   memcpy (new_box, acc + 1, filled_size);
   return new_box;
 }
@@ -5286,25 +5287,23 @@ bif_to_xml_array_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *
 	if (BOX_ELEMENTS (elem) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
 
-	  if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
-	    { /* XMLATTRIBUTES */
-	      int inx, attr_length = BOX_ELEMENTS (elem);
+	if ((((caddr_t *) elem)[0]) == XMLATTRIBUTE_FLAG)
+	  {				/* XMLATTRIBUTES */
+	    int inx, attr_length = BOX_ELEMENTS (elem);
 
-	      for (inx = 1; inx < attr_length; inx += 2)
-		{
-		  if (elem_is_writeable)
-		    {
-		      if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0,
-			  ((caddr_t *) elem)[inx + 1]))
-			((caddr_t *) elem)[inx] = NULL;
-		      ((caddr_t *) elem)[inx + 1] = NULL;
-		    }
-		  else
-		    bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1,
-			box_copy_tree (((caddr_t *) elem)[inx + 1]));
-		}
-              goto array_arg_done;
-	    }
+	    for (inx = 1; inx < attr_length; inx += 2)
+	      {
+		if (elem_is_writeable)
+		  {
+		    if (bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 0, ((caddr_t *) elem)[inx + 1]))
+		      ((caddr_t *) elem)[inx] = NULL;
+		    ((caddr_t *) elem)[inx + 1] = NULL;
+		  }
+		else
+		  bif_to_xml_array_push_new_attr (head_set, ((caddr_t *) elem)[inx], 1, box_copy_tree (((caddr_t *) elem)[inx + 1]));
+	      }
+	    goto array_arg_done;
+	  }
 	if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (((caddr_t *)elem)[0]) || BOX_ELEMENTS (((caddr_t *)elem)[0]) < 1)
 	  sqlr_new_error ("37000", "XI027", "Argument of %s must be valid xml entity.", func);
         if (DV_UNAME != DV_TYPE_OF (XTE_HEAD_NAME (XTE_HEAD (elem))))

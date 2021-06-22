@@ -1,10 +1,11 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml"
-    xmlns:dbpprop="http://dbpedia.org/property/"
-    xmlns:foaf="http://xmlns.com/foaf/0.1/"
-    version="XHTML+RDFa 1.0"
-    xml:lang="<?= registry_get('dbp_lang') ?>"
+<!DOCTYPE html>
+<html
+    prefix="
+        dbp: http://dbpedia.org/property/
+        dbo: http://dbedia.org/ontology/
+        dct: http://purl.org/dc/terms/
+	og:  https://ogp.me/ns#
+	"
 >
 <?vsp
 --
@@ -13,7 +14,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,12 +33,14 @@
 
    declare _G, _S, _P, _O, odd_position any;
    declare _resource_, project_name, project_home_page any;
-   declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link, text_link, md_json_link, json_ld_link, embed_json, embed_turtle any;
+   declare page_resource_uri, rdf_link, rdf_link2, rdf_link3, rdf_link4, rdf_link5, atom_link, jsod, ntriples, label, true_label, _subject, csv_link, cxml_link, gen_rdf_link, text_link, md_json_link, json_ld_link, embed_json, embed_turtle any;
    declare iri_type, iri_uri, white_page, pkgs, txt, host, links, langs, dset, tmp_lines any;
+   declare _thumbnail any;
 
    -- INIT VALLUES
-
    set http_charset='utf-8';
+   set http_in_charset='utf-8';
+
    set isolation = 'uncomitted';
    _resource_ := get_keyword ('res', params, '');
    dset := get_keyword ('lang', params, '');
@@ -105,7 +108,7 @@
    -- check weather to decode the iri's
    if (registry_get ('dbp_decode_iri') = 'on')
      {
-       page_resource_uri := split_and_decode (page_resource_uri)[0];
+       page_resource_uri := split_and_decode (page_resource_uri, 0, '%\0?&')[0];
      }
 
    __box_flags_set (page_resource_uri, 2);
@@ -150,16 +153,18 @@
        rdf_link2 := rdf_link || '&format=rdf';
        rdf_link3 := rdf_link || '&format=application%2Frdf%2Bjson';
        rdf_link4 := rdf_link || '&format=application%2Frdf%2Bjson';
-       rdf_link := rdf_link  || '&format=n3';
+       rdf_link5 := rdf_link  || '&format=text%2Fturtle';
        atom_link := rdf_link || '&format=application%2Fatom%2Bxml';
        jsod := rdf_link      || '&format=application%2Fodata%2Bjson';
        ntriples := rdf_link  || '&format=text%2Fplain';
+       rdf_link := rdf_link  || '&format=text%2Fn3';
      }
    else
      {
        rdf_link := rdf_link2  || '.n3';
        rdf_link3 := rdf_link2 || '.json';
        rdf_link4 := rdf_link2 || '.jrdf';
+       rdf_link5 := rdf_link2 || '.ttl';
        atom_link := rdf_link2 || '.atom';
        jsod := rdf_link2      || '.jsod';
        ntriples := rdf_link2  || '.ntriples';
@@ -168,7 +173,8 @@
 
    links := 'Link: <http://creativecommons.org/licenses/by-sa/3.0/>;rel="license", ';
    links := links || sprintf ('<%s>; rel="alternate"; type="application/rdf+xml"; title="Structured Descriptor Document (RDF/XML format)", ', rdf_link2);
-   links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3/Turtle format)", ',rdf_link);
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/n3"; title="Structured Descriptor Document (N3 format)", ',rdf_link);
+   links := links || sprintf ('<%s>; rel="alternate"; type="text/turtle"; title="Structured Descriptor Document (Turtle format)", ',rdf_link5);
    links := links || sprintf ('<%s>; rel="alternate"; type="application/json"; title="Structured Descriptor Document (RDF/JSON format)", ', rdf_link3);
    links := links || sprintf ('<%s>; rel="alternate"; type="application/atom+xml"; title="OData (Atom+Feed format)", ', atom_link);
    links := links || sprintf ('<%s>; rel="alternate"; type="text/csv"; title="Structured Descriptor Document (CSV format)", ', csv_link);
@@ -184,7 +190,7 @@
 
    links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', page_resource_uri);
    links := links || sprintf ('<%s>; rev="describedby", ', page_resource_uri);
-   links := links || sprintf ('<http://mementoarchive.lanl.gov/dbpedia/timegate/%s>; rel="timegate"\r\n', _resource_);
+   links := links || sprintf ('<http://dbpedia.mementodepot.org/timegate/%s>; rel="timegate"\r\n', _resource_);
 
    -- set for white page
    if (lower (host) <> 'dbpedia.org')
@@ -207,6 +213,12 @@
    if (not length (label))
      label := page_resource_uri;
 
+   -- set up thumbnail
+   _thumbnail := dbp_ldd_thumbnail (_S, _G);
+   if (not length (_thumbnail))
+      _thumbnail := '/statics/images/dbpedia_logo.png';
+
+
    -- abstract
    _subject := dbp_ldd_subject (_S, _G, tmp_lines);
    -- class type
@@ -221,10 +233,11 @@
 <head profile="http://www.w3.org/1999/xhtml/vocab">
     <meta charset="utf-8" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
     <title>About: <?V charset_recode (label, 'UTF-8', '_WIDE_') ?></title>
     <link rel="alternate" type="application/rdf+xml" 		href="<?V charset_recode (rdf_link2, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/XML format)" />
-    <link rel="alternate" type="text/rdf+n3" 			href="<?V charset_recode (rdf_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (N3/Turtle format)" />
+    <link rel="alternate" type="text/n3" 			href="<?V charset_recode (rdf_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (N3 format)" />
+    <link rel="alternate" type="text/turtle" 			href="<?V charset_recode (rdf_link5, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (Turtle format)" />
     <link rel="alternate" type="application/json+rdf" 		href="<?V charset_recode (rdf_link4, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/json" 		href="<?V charset_recode (rdf_link3, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (RDF/JSON format)" />
     <link rel="alternate" type="application/atom+xml" 		href="<?V charset_recode (atom_link, 'UTF-8', '_WIDE_') ?>" title="OData (Atom+Feed format)" />
@@ -238,11 +251,20 @@
     <link rel="alternate" type="application/ld+json" 		href="<?V charset_recode (json_ld_link, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (JSON-LD format)" />
     <link rel="alternate" type="text/x-html-script-ld+json"	href="<?V charset_recode (embed_json, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (HTML with embedded JSON-LD)" />
     <link rel="alternate" type="text/x-html-script-turtle"	href="<?V charset_recode (embed_turtle, 'UTF-8', '_WIDE_') ?>" title="Structured Descriptor Document (HTML with embedded Turtle)" />
-    <link rel="timegate" type="text/html" 			href="http://mementoarchive.lanl.gov/dbpedia/timegate/<?V charset_recode(_resource_, 'UTF-8', '_WIDE_') ?>" title="Time Machine" />
+    <link rel="timegate" type="text/html" 			href="http://dbpedia.mementodepot.org/timegate/<?V charset_recode(_resource_, 'UTF-8', '_WIDE_') ?>" title="Time Machine" />
     <link rel="foaf:primarytopic" 				href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rev="describedby" 					href="<?V charset_recode (page_resource_uri, 'UTF-8', '_WIDE_') ?>"/>
     <link rel="stylesheet" type="text/css"			href="/statics/css/bootstrap.min.css" />
     <link rel="stylesheet" type="text/css" 			href="/statics/css/dbpedia.css" />
+
+    <!-- OpenGraph -->
+    <meta property="og:title"       content="<?= charset_recode(label, 'UTF-8', '_WIDE_') ?>" />
+    <meta property="og:type"        content="article" />
+    <meta property="og:url"         content="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>" />
+    <meta property="og:image"       content="<?= _thumbnail ?>" />
+    <meta property="og:description" content="<?vsp http (sprintf ('%s', _subject)); ?>" />
+    <meta property="og:site_name"   content="DBpedia" />
+    <!-- -->
 </head>
 <body about="<?V charset_recode(page_resource_uri, 'UTF-8', '_WIDE_') ?>">
 <div class="navbar navbar-default navbar-fixed-top">
@@ -279,7 +301,8 @@
 		<ul class="dropdown-menu">
 		<li>&nbsp;RDF:</li>
 		    <li><a href="<?= charset_recode(ntriples, 'UTF-8', '_WIDE_') ?>">N-Triples</a></li>
-		    <li><a href="<?= charset_recode(rdf_link, 'UTF-8', '_WIDE_') ?>">N3/Turtle</a></li>
+		    <li><a href="<?= charset_recode(rdf_link, 'UTF-8', '_WIDE_') ?>">N3</a></li>
+		    <li><a href="<?= charset_recode(rdf_link5, 'UTF-8', '_WIDE_') ?>">Turtle</a></li>
 		    <li><a href="<?= charset_recode(rdf_link3, 'UTF-8', '_WIDE_') ?>">JSON</a></li>
 		    <li><a href="<?= charset_recode(rdf_link2, 'UTF-8', '_WIDE_') ?>">XML</a></li>
 		<li class="divider"></li>
@@ -327,9 +350,18 @@
 <!-- page-header -->
 <!-- row -->
     <div class="row">
-	<div class="col-xs-12">
+	<div class="col-xs-9 col-sm-10">
 	    <p class="lead"><?vsp http (sprintf ('%s', _subject)); ?></p>
 	</div>
+<?vsp if (_thumbnail not like '/statics/%') { ?>
+	<div class="col-xs-3 col-sm-2">
+	  <a href="#" class="thumbnail">
+            <img src="<?= _thumbnail ?>" alt="thumbnail" style="max-width:100%; height:auto;">
+	  </a>
+	</div>
+<?vsp } ?>
+    </div>
+    <div class="row">
 	<div class="col-xs-12">
 	    <!-- proptable -->
 	    <table class="description table table-striped">
@@ -419,15 +451,15 @@
 <!-- footer -->
 <div class="footer">
     <div class="container">
-	<a href="http://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/statics/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>&nbsp; &nbsp;
+	<a href="https://virtuoso.openlinksw.com" title="OpenLink Virtuoso"><img class="powered_by" src="/statics/images/virt_power_no_border.png" alt="Powered by OpenLink Virtuoso"/></a>&nbsp; &nbsp;
 	<a href="http://linkeddata.org/"><img alt="This material is Open Knowledge" src="/statics/images/LoDLogo.gif"/></a> &nbsp; &nbsp;
 	<a href="<?= project_home_page ?>/sparql"><img alt="W3C Semantic Web Technology" src="/statics/images/sw-sparql-blue.png"/></a> &nbsp;  &nbsp;
-	<a href="http://www.opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/images/od_80x15_red_green.png"/></a>&nbsp; &nbsp;
+	<a href="https://opendefinition.org/"><img alt="This material is Open Knowledge" src="/statics/images/od_80x15_red_green.png"/></a>&nbsp; &nbsp;
 	<span style="display:none;" about=""
 	    resource="http://www.w3.org/TR/rdfa-syntax"
-	    rel="dc:conformsTo" xmlns:dc="http://purl.org/dc/terms/">
-	    <a href="http://validator.w3.org/check?uri=referer">
-		<img src="http://www.w3.org/Icons/valid-xhtml-rdfa" alt="Valid XHTML + RDFa" height="27px" />
+	    rel="dc:conformsTo">
+	    <a href="https://validator.w3.org/check?uri=referer">
+		<img src="https://www.w3.org/Icons/valid-xhtml-rdfa" alt="Valid XHTML + RDFa" height="27px" />
 	    </a>
 	</span>
 	<br />

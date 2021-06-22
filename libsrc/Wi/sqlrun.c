@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1959,9 +1959,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
-		  if (pct)
+		  if (pct < 1)
 		    pct = 1;
-		  if (pct >= 30)
+		  else if (pct > 30)
 		    pct = 30;
 		  order_itc->itc_st.sample_size = (((float) row_est) / 100) * pct;
 		  if (order_itc->itc_st.sample_size < 200)
@@ -2236,6 +2236,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
   QNCAST (query_instance_t, qi, inst);
   int k;
   dbe_table_t *tb = ins->ins_table;
+  int non_txn_insert;
 
   it_cursor_t auto_itc;
   it_cursor_t *itc;
@@ -2307,6 +2308,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  qi->qi_set_mask = mask_save;
 	  qi->qi_n_sets = n_sets;
 	}
+      non_txn_insert = qi->qi_non_txn_insert;
       for (k = 0; k < BOX_ELEMENTS_INT (ins->ins_keys); k++)
 	{
 	  if (qi->qi_client->cli_row_autocommit)
@@ -2317,6 +2319,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  itc_col_free (itc);
 	}
 	}
+      qi->qi_non_txn_insert = non_txn_insert;
       qi->qi_set_mask = save_sets;
       qi->qi_n_sets = n_sets;
       if (itc->itc_siblings)

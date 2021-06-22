@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -274,8 +274,17 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	break;
 	case DV_BIN:
 	  {
-	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
+	    uint32 inx;
+	    snprintf (tmp, sizeof (tmp), " LEN %d [", box_length (box));
 	    SES_PRINT (ses, tmp);
+	    for (inx = 0; inx < box_length (box) && inx < 1000 /*print elements*/; inx++)
+	      {
+		snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) ((caddr_t) box)[inx]);
+		SES_PRINT (ses, tmp);
+	      }
+	    if (inx >= 1000)
+	      SES_PRINT (ses, "...");
+	    SES_PRINT (ses, "]");
 	  }
 	break;
         case DV_RDF:
@@ -1271,7 +1280,7 @@ pldbg_input_ready (dk_session_t * ses)
   semaphore_leave (pldbg_sem);
 }
 
-caddr_t
+static caddr_t
 sf_pl_debug (caddr_t name, caddr_t digest)
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
@@ -1289,6 +1298,12 @@ sf_pl_debug (caddr_t name, caddr_t digest)
   SESSION_SCH_DATA (client)->sio_default_read_ready_action =
 	  (io_action_func) pldbg_input_ready;
   return box_num(1);
+}
+
+static server_func
+sf_pl_debug_wrapper (caddr_t args[])
+{
+  return sf_pl_debug (args[0], args[1]);
 }
 
 /* source and line are from module's qr */
@@ -1632,7 +1647,7 @@ pldbg_init (void)
   pldbg_sem = semaphore_allocate (0);
   pldbg_rc = resource_allocate (100, (rc_constr_t) pd_allocate, (rc_destr_t) pd_free, (rc_destr_t) pd_clear, 0);
 
-  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug);
+  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug_wrapper);
   pldbg_thr = PrpcThreadAllocate ((thread_init_func) pldbg_loop, 50000, NULL);
 
   if (!pldbg_thr)

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -129,40 +129,47 @@ version_init()
 }
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
-  then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true 
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN` 
-    if [ "z$stat" != "z" ] 
-    then 
-      sleep 7 
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 do_command_safe () {
@@ -256,7 +263,7 @@ sticker_init() {
   echo "  <name package=\"Wiki\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Wiki\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2021 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/\"/>" >> $STICKER
   echo "  </name>" >> $STICKER

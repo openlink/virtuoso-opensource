@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -60,6 +60,10 @@
 #include "sqloinv.h"
 #include "ltrx.h"
 #include "uname_const_decl.h"
+
+#ifdef _SSL
+#include <openssl/opensslv.h>
+#endif
 
 #ifdef WIN32
 #include <windows.h>
@@ -449,6 +453,7 @@ client_connection_create (void)
       wi_inst.wi_master->dbs_log_name ? REPL_LOG : REPL_NO_LOG;
   else
     cli->cli_replicate = REPL_NO_LOG;
+  cli->cli_log_mode = 1;
   cli->cli_qualifier = box_string ("DB");
 #ifdef SERIAL_CLI
   cli->cli_test_mtx = mutex_allocate ();
@@ -3763,7 +3768,28 @@ futures_object_space_clear (caddr_t b, future_request_t *f)
   if (cli && cli->cli_trx && cli->cli_trx->lt_is_excl)
     {
       while (srv_have_global_lock (THREAD_CURRENT_THREAD))
-	srv_global_unlock (cli, cli->cli_trx);
+	{
+	  if (CLI_TERMINATE == cli->cli_terminate_requested)
+	    {
+	      char *new_name;
+
+	      log_error ("An atomic transaction cannot be committed due to a client");
+	      log_error ("disconnect. The transaction will be rolled back to restore");
+	      log_error ("the database to its previous state.");
+
+	      new_name = setext (wi_inst.wi_master->dbs_log_name, "atomic-trx", EXT_SET);
+	      rename (wi_inst.wi_master->dbs_log_name, new_name);
+
+	      log_error ("The old transaction file has been renamed");
+	      log_error ("from : %s", wi_inst.wi_master->dbs_log_name);
+	      log_error ("to   : %s", new_name);
+
+	      log_error ("The database engine will need to be restarted");
+
+	      call_exit (0);
+	    }
+	  srv_global_unlock (cli, cli->cli_trx);
+	}
     }
 }
 
@@ -3920,6 +3946,85 @@ srv_global_init_plugin_actions (dk_set_t *set_ptr, char *mode)
     }
 }
 
+
+/*
+ *  Wrappers for FUTURE calls
+ */
+
+static server_func
+sf_sql_connect_wrapper (caddr_t args[])
+{
+  return sf_sql_connect (args[0], args[1], args[2], (caddr_t *) args[3]);
+}
+
+static server_func
+sf_stmt_prepare_wrapper (caddr_t args[])
+{
+  sf_stmt_prepare (args[0], args[1], (long) args[2], (stmt_options_t *) args[3]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_execute_wrapper (caddr_t args[])
+{
+  sf_sql_execute (args[0], args[1], args[2], (caddr_t *) args[3], (caddr_t *) args[4], (stmt_options_t *) args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_fetch (args[0], (long) args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_transact_wrapper (caddr_t args[])
+{
+  sf_sql_transact ((long) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_free_stmt_wrapper (caddr_t args[])
+{
+  return (caddr_t) sf_sql_free_stmt (args[0], (int)args[1]);
+}
+
+static server_func
+sf_sql_get_data_wrapper (caddr_t args[])
+{
+  sf_sql_get_data (args[0], (long) args[1], (long)args[2], (long) args[3], (long) args[4]);
+  return NULL;			/* void function */
+}
+static server_func
+sf_sql_get_data_ac_wrapper (caddr_t args[])
+{
+  sf_sql_get_data_ac ((long) args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], (long) args[5],
+      args[6], (long) args[7], (long) args[8]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_extended_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_extended_fetch (args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_no_threads_reply_wrapper (caddr_t args[])
+{
+  return sf_sql_no_threads_reply ();
+}
+
+static server_func
+sf_sql_tp_transact_wrapper (caddr_t args[])
+{
+  sf_sql_tp_transact ((short) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
 void
 srv_global_init (char *mode)
 {
@@ -3944,7 +4049,13 @@ srv_global_init (char *mode)
   log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
       build_thread_model, build_opsys_id, build_date);
 
-  log_info ("uses parts of OpenSSL, PCRE, Html Tidy");
+#ifdef _SSL
+  log_info ("uses " OPENSSL_VERSION_TEXT);
+#else
+  log_info ("build without SSL support");
+#endif
+  log_info ("uses parts of PCRE, Html Tidy");
+
 
   mode_pass_change = 0;
   in_srv_global_init = 1;
@@ -4068,19 +4179,19 @@ srv_global_init (char *mode)
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 
   sec_init ();
-  PrpcRegisterService ("SCON", (server_func) sf_sql_connect, NULL,
+  PrpcRegisterService ("SCON", (server_func) sf_sql_connect_wrapper, NULL,
       DV_ARRAY_OF_POINTER, (post_func) dk_free_tree);
-  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare);
-  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute);
-  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact);
-  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt);
-  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data);
-  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac);
-  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply);
+  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply_wrapper);
 #ifdef VIRTTP
-  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact);
+  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact_wrapper);
 #endif
 
   PrpcSetBackgroundAction ((background_action_func) the_grim_lock_reaper);
@@ -4415,7 +4526,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_LOG_IMAGE:
 	  err = srv_make_new_error ("40005", "SR325",
 	      "Transaction aborted because it's log after image size "
-	      "went above the limit%s%s",
+	      "went above the " OFF_T_PRINTF_FMT " bytes limit%s%s", (OFF_T_PRINTF_DTP)txn_after_image_limit,
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_OUT_OF_MEM:

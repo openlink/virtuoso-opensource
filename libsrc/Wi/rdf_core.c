@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,11 +53,9 @@ extern "C" {
 #ifdef _SSL
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
-#define MD5Init MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final MD5_Final
+#include <openssl/md5.h>
 #else
-#include "../util/md5.h"
+#include "util/md5.h"
 #endif /* _SSL */
 #include "mhash.h"
 
@@ -1453,8 +1451,10 @@ nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_m
 
           NIC_IN_ID (nic, nth_id, el.nicel_id);
           remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
+#ifndef NDEBUG
 	  if (!flag)
 	    log_debug ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
+#endif
           NIC_LEAVE_ID (nic, nth_id);
 
           if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
@@ -2244,9 +2244,9 @@ iri_shorten (char * iri, char * buf, size_t buf_len, int * ret_len)
 
   memcpy (buf, iri, buf_len - 33); /* hex md5 + zero byte */
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, strlen (str));
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, strlen (str));
+  MD5_Final (digest, &ctx);
   while (tail < end)
     {
       unsigned c = (unsigned) digest[inx++];
@@ -3453,6 +3453,11 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_default_geo_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return uname_virtrdf_ns_uri_Geometry;
+}
 
 caddr_t
 rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
@@ -4396,6 +4401,8 @@ rdf_core_init (void)
   bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("default_geo_type"		, bif_default_geo_type	, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
+
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
   bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);

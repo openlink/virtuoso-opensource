@@ -3,7 +3,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2021 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -215,9 +215,6 @@ cat <<- EOF >> $exportc.tmp
 
 	/* Now we should declare dictionary array with one item per one exported function. */
 	/* At connection time, executable will fill _gate structures of plugins with data from this table. */
-
-	struct _gate_export_item_s { void *_ptr; const char *_name; };
-	typedef struct _gate_export_item_s _gate_export_item_t;
 
 	extern _gate_export_item_t _gate_export_data[];
 

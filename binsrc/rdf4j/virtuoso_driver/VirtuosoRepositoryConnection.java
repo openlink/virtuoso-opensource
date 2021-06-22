@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,6 +46,7 @@ import java.sql.*;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.*;
+import java.util.concurrent.atomic.*;
 
 import org.eclipse.rdf4j.rio.helpers.AbstractRDFHandler;
 import org.eclipse.rdf4j.rio.helpers.ParseErrorLogger;
@@ -1003,8 +1004,109 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      *         because the repository is not writable.
      */
     public void add(InputStream in, String baseURI, RDFFormat dataFormat, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
-        Reader reader = new InputStreamReader(in);
-        add(reader, baseURI, dataFormat, contexts);
+        verifyIsOpen();
+        flushDelayAdd();
+
+        final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+
+        try {
+            RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
+            parser.setParserConfig(getParserConfig());
+            parser.setParseErrorListener(new ParseErrorLogger());
+
+            // set up a handler for parsing the data from reader
+
+            parser.setRDFHandler(new AbstractRDFHandler() {
+
+                int count = 0;
+                PreparedStatement ps = null;
+                java.sql.Statement st_cmd = null;
+                Resource[] _contexts = checkDMLContext(contexts);
+
+                public void startRDF() throws RDFHandlerException {
+                    if (!insertBNodeAsVirtuosoIRI) {
+                        try {
+                            st_cmd = createStatement(-1, false);
+                            st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                        }
+                        catch (SQLException e) {
+                            throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
+                        }
+                    }
+                }
+
+                public void endRDF() throws RDFHandlerException {
+                    try {
+                        if (count > 0)
+                            ps = flushDelayAdd_batch(ps, count);
+                    }
+                    catch (RepositoryException e) {
+                        throw new RDFHandlerException("Problem executing query: ", e);
+                    }
+                    try {
+                        if (st_cmd!=null)
+                            st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                    }
+                    catch (SQLException e) {
+                        throw new RDFHandlerException("Problem with clearing of BNode cache: ", e);
+                    }
+                    if (ps != null) {
+                        try {
+                            ps.close();
+                        } catch (Exception e) {}
+                    }
+                    if (st_cmd != null) {
+                        try {
+                            st_cmd.close();
+                        } catch (Exception e) {}
+                    }
+                    ps = null;
+                    st_cmd = null;
+                    count = 0;
+                }
+
+                public void handleNamespace(String prefix, String name) throws RDFHandlerException {
+                    String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+                    try {
+                        PreparedStatement psn = prepareStatement(query, false);
+                        psn.setString(1, prefix);
+                        psn.setString(2, name);
+                        psn.execute();
+                        psn.close();
+                    }
+                    catch (SQLException e) {
+                        throw new RDFHandlerException("Problem executing query: " + query, e);
+                    }
+                }
+
+                public void handleStatement(Statement st) throws RDFHandlerException {
+                    try {
+                        Resource[] hcontexts;
+                        if (st.getContext() != null && useStatementContext) {
+                            hcontexts = new Resource[] {st.getContext()};
+                        } else {
+                            hcontexts = _contexts;
+                        }
+
+                        ps = addToQuadStore_batch(ps, st.getSubject(),
+                                st.getPredicate(), st.getObject(), hcontexts);
+                        count += hcontexts.length;
+
+                        if (count > BATCH_SIZE) {
+                            ps = flushDelayAdd_batch(ps, count);
+                            count = 0;
+                        }
+                    }
+                    catch(Exception e) {
+                        throw new RDFHandlerException(e);
+                    }
+                }
+            });
+            parser.parse(in, baseURI); // parse out each tripled to be handled by the handler above
+        }
+        catch (Exception e) {
+            throw new RepositoryException("Problem parsing triples", e);
+        }
     }
 
     /**
@@ -3224,7 +3326,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X>
     {
         E	  v_row;
-        boolean	  v_finished = false;
+        AtomicBoolean v_finished = new AtomicBoolean(false);
         boolean	  v_prefetched = false;
         Resource  subject;
         IRI       predicate;
@@ -3246,19 +3348,19 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
         public boolean hasNext() throws X
         {
-            if (!v_finished && !v_prefetched)
+            if (!v_finished.get() && !v_prefetched)
                 moveForward();
-            return !v_finished;
+            return !v_finished.get();
         }
 
         public E next() throws X
         {
-            if (!v_finished && !v_prefetched)
+            if (!v_finished.get() && !v_prefetched)
                 moveForward();
 
             v_prefetched = false;
 
-            if (v_finished)
+            if (v_finished.get())
                 throw new NoSuchElementException();
 
             return v_row;
@@ -3269,9 +3371,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             throw new UnsupportedOperationException();
         }
 
+	public final boolean isClosed() {
+		return v_finished.get();
+	}
+
         public void close() throws X
         {
-            if (!v_finished)
+            if (v_finished.compareAndSet(false, true))
             {
                 try
                 {
@@ -3283,23 +3389,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     throw createException(e);
                 }
             }
-            v_finished = true;
-        }
-
-        protected void finalize() throws Throwable
-        {
-            super.finalize();
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {}
         }
 
         protected void moveForward() throws X
         {
             try
             {
-                if (!v_finished && v_rs.next())
+                if (!v_finished.get() && v_rs.next())
                 {
                     extractRow();
                     v_prefetched = true;

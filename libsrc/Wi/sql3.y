@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/
 /*%lex-param {sql_comp_context_t* scs_arg}*/
-%expect 18
+%expect 19
 
 
 %{
@@ -60,10 +60,19 @@
  */
 #define obe_keyword_to_bif_fun_name(X) ((X))
 
+extern void scn3yyerror (const char *strg);
+
 #ifdef DEBUG
 #define yyerror(scanner,strg) yyerror_1(/* no scanner */ yystate, yyssa, yyssp, strg)
 #define yyfatalerror(strg) yyfatalerror_1(/* no scanner */ yyssa, yyssp, strg)
+#else
+#define yyerror(scanner,strg) scn3yyerror(/* no scanner */ strg)
 #endif
+
+
+extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
+#define YY_DECL int scn3yylex (void *void_yylval, yyscan_t yyscanner)
+
 
 #define assert_ms_compat(text)
 
@@ -81,7 +90,6 @@
   sqlp_join_t join;
 }
 
-%expect 18
 %token <box> NAME
 %token <box> STRING
 %token <box> WSTRING
@@ -176,6 +184,7 @@
 %type <box> cursor
 %type <box> literal
 %type <box> signed_literal
+%type <box> tail_of_tag_of
 %type <tree> column_ref
 %type <tree> aggregate_ref
 
@@ -550,7 +559,7 @@
 %token <box> MODIFIES INPUT CALLED ADA C_L3 COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
+%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING HANDLE_L STREAM_L
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -574,7 +583,7 @@
 %token CASCADE CHARACTER CHECK CLOSE COMMIT CONSTRAINT CONTINUE CREATE CUBE CURRENT
 %token CURSOR DECIMAL_L DECLARE DEFAULT DELETE_L DESC DISTINCT DOUBLE_L
 %token DROP ESCAPE EXISTS FETCH FLOAT_L FOREIGN FOUND FROM GOTO GO
-%token GRANT GROUP GROUPING HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
+%token GRANT GROUP GROUPING_L HAVING IN_L INDEX INDEX_NO_FILL INDEX_ONLY INDICATOR INSERT INTEGER INTO
 %token IS KEY LANGUAGE ENCODING LIKE NULLX NUMERIC OF ON OPEN OPTION
 %token PRECISION PRIMARY PRIVILEGES PROCEDURE
 %token PUBLIC REAL REFERENCES RESTRICT ROLLBACK ROLLUP SCHEMA SELECT SET
@@ -584,6 +593,7 @@
 
 /* Extensions */
 %token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
+%token DICTIONARY_L REFERENCE_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -653,8 +663,9 @@
 %token WS_PRAGMA_C_ESC WS_PGRAGMA_UTF8_ESC WS_PRAGMA_PL_DEBUG WS_PRAGMA_SRC
 %token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG __COST
 
+
 /* Important! Do NOT add meaningful SQL tokens at the end of this list!
-Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE is
+Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE are
 treated as garbage by sql_split_text(). */
 
 %%
@@ -746,6 +757,7 @@ identifier
 	| SQL_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| GENERAL		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DETERMINISTIC		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | DICTIONARY_L          { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NO_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DISABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NOVALIDATE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -769,6 +781,7 @@ identifier
 	| JAVA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| INOUT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| REMOTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | REFERENCE_L           { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| KEYSET		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VALUE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| PARAMETER		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -811,6 +824,8 @@ identifier
 	| RDF_BOX_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VECTOR_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| UNAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| HANDLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| STREAM_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 opt_with_data
@@ -2247,7 +2262,7 @@ opt_group_by_clause
 		{
 			$$ = (ST*) t_list_to_array(t_CONS (t_list_to_array ($3), NULL));
 		}
-	| GROUP BY GROUPING SETS '(' grouping_set_list ')'
+	| GROUP BY GROUPING_L SETS '(' grouping_set_list ')'
 		{
 			$$ = (ST *) t_list_to_array ($6);
  		}
@@ -2759,7 +2774,7 @@ function_call
 		{
 		  $$ = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("curdatetime"), t_list (1, $3));
 		}
-	| GROUPING '(' column_ref ')'
+	| GROUPING_L '(' column_ref ')'
 		{
 		  caddr_t bit = t_box_num (0);
 		  caddr_t bit_index = t_box_num (0);
@@ -2907,11 +2922,7 @@ literal
 	| BINARYNUM
 	| IRI_LIT
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
-	| __TAG_L OF data_type { $$ = ((caddr_t *)$3)[0]; }
-	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
-	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
-	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
-	| __TAG_L OF UNAME_L { $$ = (caddr_t) DV_UNAME; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
 	;
 
 signed_literal
@@ -2939,6 +2950,24 @@ signed_literal
 	| '+' APPROXNUM %prec UMINUS { $$ = $2; }
 	| BINARYNUM
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
+	;
+
+tail_of_tag_of
+	: data_type { $$ = ((caddr_t *)$1)[0]; }
+	| data_type HANDLE_L
+		{
+		  $$ = ((caddr_t *)$1)[0];
+		  if (!IS_BLOB_DTP($$))
+		    yyerror (scanner, "__TAG OF ... HANDLE is valid only for LONG datatypes");
+		  $$ = DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP($$);
+		}
+	| DICTIONARY_L REFERENCE_L { $$ = (caddr_t) DV_DICT_ITERATOR; }
+	| STREAM_L { $$ = (caddr_t) DV_STRING_SESSION; }
+	| XML { $$ = (caddr_t) DV_XML_ENTITY; }
+	| RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
+	| VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
+	| UNAME_L { $$ = (caddr_t) DV_UNAME; }
 	;
 
 /* miscellaneous */

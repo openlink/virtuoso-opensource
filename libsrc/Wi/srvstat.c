@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -213,6 +213,7 @@ extern long tc_log_write_clocks;
 
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
+extern int32 enable_g_inf_opt;
 extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
@@ -318,6 +319,7 @@ long tws_disconnect_while_check_in;
 long tws_done_while_check_in;
 long tws_cancel;
 long tws_bad_request;
+long tws_max_connects;
 
 long tws_cached_connection_hits;
 long tws_cached_connection_miss;
@@ -643,7 +645,7 @@ dbms_status_report (void)
   char mem[100];
   char rpc[200];
   char col_ac_str[100];
-  char w_rate[20];
+  char w_rate[40];
   long read_percent = 0, write_percent = 0, interval_msec = 0;
   static long last_time;
   static long last_read_cum_time, last_write_cum_time;
@@ -1260,6 +1262,8 @@ get_total_sys_mem ()
 }
 
 extern int process_is_swapping;
+extern double curr_cpu_pct;
+extern unsigned long curr_mem_rss;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
@@ -1404,6 +1408,7 @@ caddr_t
 bif_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   const char * mode = BOX_ELEMENTS (args) > 0 ? bif_string_arg (qst, args, 0, "status") : "dhrcl";
+  sec_check_dba ((query_instance_t*)qst, "status");
 /*  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   if (!cli_ws)
     {*/
@@ -1631,6 +1636,7 @@ stat_desc_t stat_descs [] =
     {"tws_cached_connection_hits", &tws_cached_connection_hits , NULL},
     {"tws_cached_connection_miss", &tws_cached_connection_miss , NULL},
     {"tws_bad_request", &tws_bad_request , NULL},
+    {"tws_max_connects", &tws_max_connects , NULL},
 
     {"vt_batch_size_limit", &vt_batch_size_limit, NULL},
 
@@ -1809,6 +1815,7 @@ stat_desc_t dbf_descs [] =
     {"cl_res_buffer_bytes", (long *)&cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", (long *)&cl_batches_per_rpc, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
+    {"enable_g_inf_opt", (long *)&enable_g_inf_opt, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
@@ -1842,6 +1849,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", (long *)&ha_rehash_pct, SD_INT32},
     {"c_use_aio", (long *)&c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception, NULL},
+    {"public_debug", &public_debug, NULL},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"enable_qp", (long *)&enable_qp, SD_INT32},
     {"enable_mt_txn", (long *)&enable_mt_txn, SD_INT32},
@@ -2173,9 +2181,9 @@ caddr_t
 bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
-  caddr_t stat_name = bif_string_arg (qst, args, 2, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_stat");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_stat");
+  caddr_t stat_name = bif_string_arg (qst, args, 2, "key_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {
@@ -2238,6 +2246,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
 	    return (box_num (key->key_ac_out));
+	  if (0 == strcmp (stat_name, "key_count"))
+	    return (box_num (key->key_count));
 	  if (0 == strcmp (stat_name, "n_est_rows"))
 	    {
 	      return box_num (tb->tb_count_estimate + tb->tb_count_delta);
@@ -2694,8 +2704,8 @@ dbg_print_d_id_aux (FILE *out, d_id_t *d_id_buf_ptr)
     goto print_d_id_as_binary;
   for (ctr = 0; ctr < 4; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
-    return;
-  print_d_id_as_binary:
+  return;
+print_d_id_as_binary:
   for (ctr = 0; ctr < 32; ctr++)
     fprintf (out, "%02x", (unsigned int)(d_id_buf_ptr->id[ctr]));
 }
@@ -3537,7 +3547,7 @@ dbg_page_structure_error (buffer_desc_t * buf, db_buf_t ptr)
   trace [0] = 0;
   for (inx = 0, p = trace; inx < 32; inx++, p += 3)
     {
-       char buf [3];
+       char buf [5];
        snprintf (buf, sizeof (buf), "%02x ", ptr[inx]);
        strcat_ck (trace, buf);
     }
@@ -4279,8 +4289,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
   dbe_key_t * key = NULL;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_estimate");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_estimate");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {

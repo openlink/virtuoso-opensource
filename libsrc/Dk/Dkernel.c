@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -55,10 +55,6 @@
 int LEVEL_VAR = 4;
 #endif
 
-#ifdef WIN32
-#define strcasecmp _stricmp
-#endif
-
 
 #ifdef _SSL
 #include <openssl/rsa.h>
@@ -71,11 +67,17 @@ int LEVEL_VAR = 4;
 #include <openssl/asn1.h>
 #include <openssl/pkcs12.h>
 #include <openssl/rand.h>
+#include <openssl/ec.h>
+#include <openssl/dh.h>
+
+#include "util/ssl_compat.h"
 
 static void ssl_server_init ();
 
 int ssl_ctx_set_cipher_list(SSL_CTX *ctx, char *cipher_list);
 int ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol);
+int ssl_ctx_set_dhparam(SSL_CTX *ctx, char * dhparam);
+int ssl_ctx_set_ecdh_curve(SSL_CTX *ctx, char * curve);
 
 #ifndef NO_THREAD
 static int ssl_server_accept (dk_session_t * listen, dk_session_t * ses);
@@ -87,6 +89,8 @@ int32 ssl_server_verify_depth = 0;
 char *ssl_server_verify_file = NULL;
 char *ssl_server_cipher_list = NULL;
 char *ssl_server_protocols = NULL;
+char *ssl_server_dhparam = NULL;
+char *ssl_server_ecdh_curve = NULL;
 #endif
 
 #ifndef NO_THREAD
@@ -1161,10 +1165,7 @@ future_wrapper (void *ignore)
 
 	  F_CALLED;				 /* not serialized, does not have to be exact. */
 	  CB_PREPARE;
-	  result = (caddr_t) future->rq_service->sr_func (
-	  	arg_array[0], arg_array[1], arg_array[2], arg_array[3],
-		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
-		arg_array[8]);
+	  result = (caddr_t) future->rq_service->sr_func ( arg_array );
 	  CB_DONE;
 	}
 
@@ -1858,10 +1859,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
       F_CALLED;					 /* not serialized, does not have to be exact. */
       CB_PREPARE;
-      result = (caddr_t) future->rq_service->sr_func (
-		arg_array[0], arg_array[1], arg_array[2], arg_array[3],
-		arg_array[4], arg_array[5], arg_array[6], arg_array[7],
-		arg_array[8]);
+      result = (caddr_t) future->rq_service->sr_func ( arg_array );
       CB_DONE;
     }
 
@@ -2015,8 +2013,8 @@ read_inprocess_request (dk_session_t * ses)
 }
 
 
-caddr_t *
-sf_inprocess_ep ()
+static caddr_t *
+sf_inprocess_ep (void)
 {
   int pid;
   dk_session_t *client = IMMEDIATE_CLIENT;
@@ -2032,6 +2030,13 @@ sf_inprocess_ep ()
   thrs_printf ((thrs_fo, "ses %p thr:%p in sf_inprocess_ep1\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   return ret;
+}
+
+
+static server_func
+sf_inprocess_ep_wrapper (caddr_t args[])
+{
+  return sf_inprocess_ep();
 }
 
 
@@ -3650,6 +3655,13 @@ sf_caller_identification (char *name)
   DKST_RPC_DONE (client);
   return (ret);
 }
+
+static server_func
+sf_caller_identification_wrapper (caddr_t args[])
+{
+  return sf_caller_identification ((char *)args[0]);
+}
+
 #endif /* NO_THREAD */
 
 #if !defined (NO_THREAD)			 /*&& defined (WIN32) */
@@ -3833,9 +3845,9 @@ PrpcInitialize1 (int mem_mode)
 #endif
 
 #ifndef NO_THREAD
-  PrpcRegisterServiceDescPostProcess (&s_caller_identification, (server_func) sf_caller_identification, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_caller_identification, (server_func) sf_caller_identification_wrapper, (post_func) dk_free_tree);
 # ifdef INPROCESS_CLIENT
-  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep, (server_func) sf_inprocess_ep, (post_func) dk_free_tree);
+  PrpcRegisterServiceDescPostProcess (&s_inprocess_ep, (server_func) sf_inprocess_ep_wrapper, (post_func) dk_free_tree);
 # endif
 
   if (0 == strcmp (build_thread_model, "-fibers"))
@@ -4872,10 +4884,9 @@ ssl_get_x509_error (caddr_t _ssl)
 
 
 #ifndef NO_THREAD
-int
-ssl_cert_verify_callback (int ok, void *_ctx)
+static int
+ssl_cert_verify_callback (int ok, X509_STORE_CTX * x509_store)
 {
-  X509_STORE_CTX *ctx;
   SSL *ssl;
   X509 *xs;
   int errnum;
@@ -4885,56 +4896,57 @@ ssl_cert_verify_callback (int ok, void *_ctx)
   SSL_CTX *ssl_ctx;
   ssl_ctx_info_t *app_ctx;
 
-  ctx = (X509_STORE_CTX *) _ctx;
-  ssl = (SSL *) X509_STORE_CTX_get_app_data (ctx);
+  ssl = (SSL *) X509_STORE_CTX_get_ex_data (x509_store, SSL_get_ex_data_X509_STORE_CTX_idx ());
   ssl_ctx = SSL_get_SSL_CTX (ssl);
-  app_ctx = (ssl_ctx_info_t *) SSL_CTX_get_app_data (ssl_ctx);
+  app_ctx = (ssl_ctx_info_t *) SSL_CTX_get_ex_data (ssl_ctx, 0);
 
-  xs = X509_STORE_CTX_get_current_cert (ctx);
-  errnum = X509_STORE_CTX_get_error (ctx);
-  errdepth = X509_STORE_CTX_get_error_depth (ctx);
+  xs = X509_STORE_CTX_get_current_cert (x509_store);
+  errnum = X509_STORE_CTX_get_error (x509_store);
+  errdepth = X509_STORE_CTX_get_error_depth (x509_store);
 
   cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
   cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
 
-  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
-	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
-	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-#if OPENSSL_VERSION_NUMBER >= 0x00905000
-	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-#endif
-	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-      && ssl_server_verify == 3)
+  if (      (errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
+	  || errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
+	  || errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
+	  || errnum == X509_V_ERR_CERT_UNTRUSTED
+	  || errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
+	&& ssl_server_verify == 3)
     {
-      SSL_set_verify_result(ssl, X509_V_OK);
+      SSL_set_verify_result (ssl, X509_V_OK);
       ok = 1;
     }
 
 #if 0
   log_debug ("%s Certificate Verification: depth: %d, subject: %s, issuer: %s",
-  	app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-",
-	cp2 != NULL ? cp2 : "-unknown");
+      app_ctx->ssci_name_ptr, errdepth, cp != NULL ? cp : "-unknown-", cp2 != NULL ? cp2 : "-unknown");
 #endif
+
+#if 0
   /*
    * Additionally perform CRL-based revocation checks
    *
-   if (ok) {
-   ok = ssl_callback_SSLVerify_CRL(ok, ctx, s);
-   if (!ok)
-   errnum = X509_STORE_CTX_get_error(ctx);
-   }
    */
+  if (ok)
+    {
+      ok = ssl_callback_SSLVerify_CRL (ok, x509_store, s);
+      if (!ok)
+	errnum = X509_STORE_CTX_get_error (x509_store);
+    }
+#endif
 
   if (!ok)
     {
       log_error ("%s Certificate Verification: Error (%d): %s",
-      	app_ctx->ssci_name_ptr, errnum, X509_verify_cert_error_string (errnum));
+	  app_ctx->ssci_name_ptr, errnum, X509_verify_cert_error_string (errnum));
     }
 
   if (errdepth > *app_ctx->ssci_depth_ptr)
     {
-      log_error ("%s Certificate Verification: Certificate Chain too long (chain has %d certificates, but maximum allowed are only %ld)",
-	app_ctx->ssci_name_ptr, errdepth, *app_ctx->ssci_depth_ptr);
+      log_error
+	  ("%s Certificate Verification: Certificate Chain too long (chain has %d certificates, but maximum allowed are only %ld)",
+	  app_ctx->ssci_name_ptr, errdepth, *app_ctx->ssci_depth_ptr);
       ok = 0;
     }
 
@@ -5016,12 +5028,12 @@ ssl_server_key_setup ()
 	  SSL_CTX_load_verify_locations (ssl_server_ctx, ssl_server_verify_file, NULL);
 	  SSL_CTX_set_client_CA_list (ssl_server_ctx, SSL_load_client_CA_file (ssl_server_verify_file));
 	}
-      SSL_CTX_set_app_data (ssl_server_ctx, &ssl_server_ctx_info);
+      SSL_CTX_set_ex_data (ssl_server_ctx, 0, &ssl_server_ctx_info);
       if (ssl_server_verify == 1)	/* required */
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
       else			/* 2 optional OR 3 optional no ca */
 	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      SSL_CTX_set_verify (ssl_server_ctx, verify, (int (*)(int, X509_STORE_CTX *)) ssl_cert_verify_callback);
+      SSL_CTX_set_verify (ssl_server_ctx, verify, ssl_cert_verify_callback);
       SSL_CTX_set_verify_depth (ssl_server_ctx, (int) ssl_server_verify_depth);
       SSL_CTX_set_session_id_context (ssl_server_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
 
@@ -5087,14 +5099,15 @@ ssl_thread_setup ()
 #define SSL_PROTOCOL_TLSV1 (1<<2)
 #define SSL_PROTOCOL_TLSV1_1 (1<<3)
 #define SSL_PROTOCOL_TLSV1_2 (1<<4)
+#define SSL_PROTOCOL_TLSV1_3 (1<<5)
 
 #if OPENSSL_VERSION_NUMBER >= 0x1000100FL
-#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1_2|SSL_PROTOCOL_TLSV1_3)
 #else
-#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1)
+#define SSL_PROTOCOL_ALL   (SSL_PROTOCOL_TLSV1|SSL_PROTOCOL_TLSV1_1|SSL_PROTOCOL_TLSV1_2)
 #endif
 
-#define	VIRTUOSO_DEFAULT_CIPHER_LIST "HIGH:!aNULL:!eNULL:!RC4:!DES:!MD5:!PSK:!SRP:!KRB5:!SSLv2:!EXP:!MEDIUM:!LOW:!DES-CBC-SHA:@STRENGTH"
+#define	VIRTUOSO_DEFAULT_CIPHER_LIST "HIGH:!aNULL:!eNULL:!MD5:!RC4:!RSA"
 
 int
 ssl_ctx_set_cipher_list (SSL_CTX * ctx, char *cipher_list)
@@ -5105,7 +5118,7 @@ ssl_ctx_set_cipher_list (SSL_CTX * ctx, char *cipher_list)
   if (!cipher_list || !*cipher_list || !strcasecmp(cipher_list, "default"))
     cipher_list = VIRTUOSO_DEFAULT_CIPHER_LIST;
 
-  if (!SSL_CTX_set_cipher_list (ssl_server_ctx, cipher_list))
+  if (!SSL_CTX_set_cipher_list (ctx, cipher_list))
     {
       log_error ("SSL: Failed setting cipher list [%s]", cipher_list);
       return 0;
@@ -5119,7 +5132,6 @@ int
 ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 {
   int proto = SSL_PROTOCOL_NONE;
-  long ctx_options;
   int i;
 
   /*
@@ -5149,10 +5161,12 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
 	    disable = 1;
 	}
 
-      if (!strcasecmp (name, "SSLv3"))
-	opt = SSL_PROTOCOL_SSLV3;
+      if (!strcasecmp (name, "ALL"))
+	opt = SSL_PROTOCOL_ALL;
+#if defined (SSL_OP_NO_TLSv1)
       else if (!strcasecmp (name, "TLSv1") || !strcasecmp (name, "TLSv1.0"))
 	opt = SSL_PROTOCOL_TLSV1;
+#endif
 #if defined (SSL_OP_NO_TLSv1_1)
       else if (!strcasecmp (name, "TLSv1_1") || !strcasecmp (name, "TLSv1.1"))
 	opt = SSL_PROTOCOL_TLSV1_1;
@@ -5165,8 +5179,6 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
       else if (!strcasecmp (name, "TLSv1_3") || !strcasecmp (name, "TLSv1.3"))
 	opt = SSL_PROTOCOL_TLSV1_3;
 #endif
-      else if (!strcasecmp (name, "ALL"))
-	opt = SSL_PROTOCOL_ALL;
       else
 	{
 	  log_error ("SSL: Unsupported protocol [%s]", name);
@@ -5183,75 +5195,244 @@ ssl_ctx_set_protocol_options(SSL_CTX *ctx, char *protocol)
     }
 
   /*
-   *   Start by enabling all options
+   *   Start by enabling standard workaround options
    */
-  ctx_options = SSL_OP_ALL;
+  SSL_CTX_set_options (ctx, SSL_OP_ALL);
 
   /*
    *  Always disable SSLv2, as per RFC 6176
    */
-  ctx_options |= SSL_OP_NO_SSLv2;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv2);
 
   /*
-   *  Warn when user enables SSLv3 protocol
+   *  Always disable SSLv3 as well
    */
-  if (!(proto & SSL_PROTOCOL_SSLV3))
-    ctx_options |= SSL_OP_NO_SSLv3;
-  else
-    log_warning ("SSL: Enabling legacy protocol SSLv3 which may be vulnerable");
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SSLv3);
 
+  /*
+   *  Show warning if user enabled the TLSv1 protocol
+   */
+#if defined (SSL_OP_NO_TLSv1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1);
   if (!(proto & SSL_PROTOCOL_TLSV1))
-    ctx_options |= SSL_OP_NO_TLSv1;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1);
   else
     log_warning ("SSL: Enabling legacy protocol TLS 1.0 which may be vulnerable");
+#endif
 
   /*
    *  Check rest of protocols
    */
-
 #if defined (SSL_OP_NO_TLSv1_1)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_1);
   if (!(proto & SSL_PROTOCOL_TLSV1_1))
-    ctx_options |= SSL_OP_NO_TLSv1_1;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_1);
+  else
+    log_warning ("SSL: Enabling deprecated protocol TLS 1.1");
 #endif
 
 #if defined (SSL_OP_NO_TLSv1_2)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_2);
   if (!(proto & SSL_PROTOCOL_TLSV1_2))
-    ctx_options |= SSL_OP_NO_TLSv1_2;
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_2);
+#endif
+
+#if defined (SSL_OP_NO_TLSv1_3)
+  SSL_CTX_clear_options (ctx, SSL_OP_NO_TLSv1_3);
+  if (!(proto & SSL_PROTOCOL_TLSV1_3))
+    SSL_CTX_set_options (ctx, SSL_OP_NO_TLSv1_3);
+#endif
+
+
+/*
+ *  On OpenSSL 1.1.0 and above set min/max proto
+ */
+#ifdef SSL_CTX_set_min_proto_version
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_2_VERSION);
+#endif
+
+#ifdef TLS1_3_VERSION
+    SSL_CTX_set_min_proto_version(ctx, 0);
+    SSL_CTX_set_max_proto_version(ctx, TLS1_3_VERSION);
 #endif
 
   /*
    *  Disable compression on OpenSSL >= 1.0 to fix "CRIME" attack
    */
 #ifdef SSL_OP_NO_COMPRESSION
-  ctx_options |= SSL_OP_NO_COMPRESSION;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_COMPRESSION);
 #endif
 
   /*
    *  Server prefers cipher in order it listed
    */
 #ifdef SSL_OP_CIPHER_SERVER_PREFERENCE
-  ctx_options |= SSL_OP_CIPHER_SERVER_PREFERENCE;
+  SSL_CTX_set_options (ctx, SSL_OP_CIPHER_SERVER_PREFERENCE);
 #endif
 
-  /*
-   *  Configure additional options
-   */
-  ctx_options |= SSL_OP_SINGLE_DH_USE;
 
 #ifdef SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION
-  ctx_options |= SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION;
+  SSL_CTX_set_options (ctx, SSL_OP_NO_SESSION_RESUMPTION_ON_RENEGOTIATION);
+#endif
+
+  return 1;
+}
+
+int
+ssl_ctx_set_ecdh_curve (SSL_CTX * ctx, char *curve)
+{
+#ifndef OPENSSL_NO_ECDH
+
+  if (!curve)
+    curve = "auto";
+
+  /*
+   *  Configure ECDH
+   */
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_ECDH_USE);
+
+  /*
+   *  Set default curve(s) for ECDH
+   */
+
+#if defined (SSL_CTX_set1_curves_list) || defined (SSL_CTRL_SET_CURVES_LIST)
+    /*
+     *  OpenSSL 1.0.2+ can use a cuve list instead of a single curve
+     */
+#if defined (SSL_CTRL_SET_ECDH_AUTO)
+    SSL_CTX_set_ecdh_auto (ctx, 1);		/* For OpenSSL 1.0.2+ */
+#endif
+
+  if (!strcasecmp(curve, "auto"))
+    return 1;
+
+  /*
+   *  Try setting list of curves
+   */
+  if (SSL_CTX_set1_curves_list(ctx, curve) == 0)
+    return 0;
+
+#else
+
+  /*
+   *  Try setting the specified curve with default of prime256v1
+   */
+  {
+    EC_KEY *eckey = NULL;
+    int nid;
+
+    if (!strcasecmp(curve, "auto"))
+      curve = "prime256v1";
+
+    nid = OBJ_sn2nid(curve);
+    if (nid == 0)
+	return 0;
+    eckey = EC_KEY_new_by_curve_name (nid);
+    if (eckey == NULL)
+	return 0;
+    SSL_CTX_set_tmp_ecdh (ctx, eckey);
+    EC_KEY_free (eckey);
+  }
+#endif
+#endif
+
+  return 1;
+}
+
+int
+ssl_ctx_set_dhparam (SSL_CTX * ctx, char *dh_file)
+{
+  DH *dh = NULL;
+  BIO *bio = NULL;
+  int ok = 0;
+
+  /*
+   *  If the dba provided a filename, try to read the DH from
+   */
+  if (dh_file)
+    {
+      bio = BIO_new_file (dh_file, "r");
+      if (bio)
+	dh = PEM_read_bio_DHparams (bio, NULL, NULL, NULL);
+      if (!dh)
+	goto cleanup;
+    }
+
+#ifndef VIRTUOSO_NO_INTERNAL_DH
+  /*
+   *  If dba has not provided a custom dhparam, then use a built-in version
+   */
+  if (!dh)
+    {
+      static unsigned char dh2048_p[] = {
+	0x90, 0xE0, 0xDE, 0x4C, 0x70, 0x1D, 0xCB, 0x0F, 0xD9, 0x2E,
+	0xD9, 0x44, 0x3C, 0x99, 0x99, 0x4C, 0x92, 0x41, 0x3F, 0x09,
+	0x65, 0xB9, 0x7D, 0xAD, 0xEE, 0xD2, 0x73, 0xAC, 0x17, 0x46,
+	0x6E, 0x7F, 0x6D, 0x42, 0x36, 0xC8, 0x19, 0x0D, 0x69, 0xF4,
+	0xA2, 0x4D, 0x83, 0x7E, 0x15, 0x3A, 0xB8, 0x09, 0x86, 0xA5,
+	0xA6, 0x9E, 0xD5, 0x72, 0xBF, 0xD9, 0x64, 0xE0, 0x14, 0x09,
+	0x27, 0xC0, 0x13, 0x73, 0x98, 0xAC, 0xB2, 0xD6, 0x8A, 0xC8,
+	0x4F, 0xD1, 0x41, 0x45, 0x10, 0x08, 0xA2, 0x4F, 0xA9, 0xD9,
+	0xD0, 0xAF, 0x9B, 0x98, 0xF1, 0xAF, 0x52, 0x17, 0xB1, 0x9E,
+	0x0B, 0x87, 0xCE, 0x6F, 0xDC, 0xA3, 0x42, 0x56, 0xFD, 0x04,
+	0xBD, 0xBF, 0x57, 0xCB, 0xB8, 0xB3, 0x62, 0x36, 0x3E, 0x2C,
+	0xC0, 0xA0, 0x37, 0xC3, 0x1B, 0x22, 0x8B, 0x25, 0x9A, 0x69,
+	0xF3, 0x94, 0xF7, 0x14, 0x7B, 0xAA, 0x2E, 0xD3, 0x79, 0x20,
+	0x93, 0x58, 0xA5, 0xD7, 0x84, 0x69, 0x94, 0x5E, 0xB0, 0x72,
+	0x7A, 0x7A, 0x4E, 0x70, 0x64, 0x10, 0x69, 0xAD, 0x51, 0x7A,
+	0xDE, 0xD2, 0x03, 0xE0, 0xDE, 0x0C, 0xEC, 0xA8, 0xB1, 0x41,
+	0x08, 0x54, 0x76, 0xF5, 0x09, 0xF4, 0xBE, 0xA6, 0xAF, 0x13,
+	0x1F, 0xCB, 0xF7, 0xA6, 0xE4, 0x43, 0x62, 0x7D, 0xDC, 0x4B,
+	0x43, 0x4F, 0x64, 0x00, 0x44, 0xBC, 0xE3, 0x6F, 0x61, 0x81,
+	0xEF, 0x4D, 0x3B, 0x43, 0x37, 0x9E, 0xA2, 0x88, 0xAE, 0x8C,
+	0x26, 0x05, 0x0A, 0xD2, 0x41, 0xA2, 0x28, 0xDD, 0x1A, 0xEE,
+	0x8C, 0x2A, 0xDB, 0x39, 0xF8, 0x43, 0xB3, 0xD4, 0x3B, 0xC9,
+	0x9B, 0x8B, 0xBA, 0xCA, 0xEC, 0x91, 0x12, 0x0E, 0xA5, 0xDC,
+	0x4F, 0x61, 0xD8, 0xBB, 0x3E, 0x9D, 0x7B, 0x7D, 0x76, 0x3F,
+	0xF5, 0xDA, 0xC1, 0xFA, 0x72, 0x37, 0x0B, 0xD9, 0xC3, 0xED,
+	0xC0, 0x2C, 0x70, 0x71, 0x77, 0x6B
+      };
+      static unsigned char dh2048_g[] = {
+	0x02
+      };
+      BIGNUM *p, *g;
+
+      if ((dh = DH_new ()) == NULL)
+	goto cleanup;
+
+      p = BN_bin2bn (dh2048_p, sizeof (dh2048_p), NULL);
+      g = BN_bin2bn (dh2048_g, sizeof (dh2048_g), NULL);
+
+      if (p == NULL || g == NULL || !DH_set0_pqg (dh, p, NULL, g))
+	{
+	  BN_free (p);
+	  BN_free (g);
+	  goto cleanup;
+	}
+    }
 #endif
 
   /*
-   *  Set options
+   *  Always create a new key when using temporary DH parameters
    */
-  if (!SSL_CTX_set_options (ctx, ctx_options))
-    {
-      log_error ("SSL: Failed setting protocol options [%s] [%lx]", protocol, ctx_options);
-      return 0;
-    }
+  SSL_CTX_set_options (ctx, SSL_OP_SINGLE_DH_USE);
 
-  return 1;
+  /*
+   *  Assign dh
+   */
+  SSL_CTX_set_tmp_dh (ctx, dh);
+
+  /*
+   *  Signal success
+   */
+  ok = 1;
+
+cleanup:
+  BIO_free (bio);
+  DH_free (dh);
+
+  return ok;
 }
 
 
@@ -5265,22 +5446,38 @@ ssl_server_init ()
   CRYPTO_set_locked_mem_functions (dk_ssl_alloc, dk_ssl_free);
 #endif
 
-#if (OPENSSL_VERSION_NUMBER >= 0x00908000L)
   SSL_library_init ();
-#endif
 
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
 
-#ifndef WIN32
+  /*
+   *  Make sure the PRNG is properly seeded
+   */
+  do
   {
     unsigned char tmp[1024];
-    RAND_bytes (tmp, sizeof (tmp));
-    RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp)));
-  }
+      int pid;
+      timeout_t tm;
+
+#ifndef NDEBUG
+      log_debug ("Initializing PRNG");
 #endif
 
-  SSLeay_add_all_algorithms ();
+      /* Add current pid to seed */
+      pid = getpid ();
+      RAND_seed (&pid, sizeof (pid));
+
+      /* Add current time in secs + usec to seed */
+      get_real_time (&tm);
+      RAND_seed (&tm, sizeof (tm));
+
+      /* Read one block of random bytes and feed it back to seed */
+    RAND_bytes (tmp, sizeof (tmp));
+      RAND_add (tmp, sizeof (tmp), (double) (sizeof (tmp) * 0.9));
+  }
+  while (!RAND_status ());
+
   PKCS12_PBE_add ();		/* stub */
 
 #ifdef NO_THREAD
@@ -5301,11 +5498,25 @@ ssl_server_init ()
    */
   if (!ssl_ctx_set_protocol_options (ssl_server_ctx, ssl_server_protocols))
     {
+      log_error ("Error setting SSL Protocols [%s]", ssl_server_protocols);
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }
   if (!ssl_ctx_set_cipher_list (ssl_server_ctx, ssl_server_cipher_list))
     {
+      log_error ("Error setting SSL Cipher list [%s]", ssl_server_cipher_list);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_dhparam (ssl_server_ctx, ssl_server_dhparam))
+    {
+      log_error ("Error setting SSL DH param [%s]", ssl_server_dhparam);
+      ERR_print_errors_fp (stderr);
+      call_exit (-1);
+    }
+  if (!ssl_ctx_set_ecdh_curve (ssl_server_ctx, ssl_server_ecdh_curve))
+    {
+      log_error ("Error setting SSL ECDH curve [%s]", ssl_server_ecdh_curve);
       ERR_print_errors_fp (stderr);
       call_exit (-1);
     }

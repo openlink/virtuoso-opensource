@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -156,15 +156,9 @@ create trigger HOSTFS_RES_META_U after update on WS.WS.HOSTFS_RES_META referenci
 ;
 
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index (fix_identifier_case ('WS.WS.HOSTFS_RES_META'), fix_identifier_case ('RESM_DATA'), fix_identifier_case ('RESM_ID'), 2, 0, NULL, 0, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_batch_update (fix_identifier_case ('WS.WS.HOSTFS_RES_META'), 'ON', 1)
 ;
 
@@ -310,15 +304,9 @@ done:
 }
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_create_text_index (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), fix_identifier_case ('RESC_DATA'), fix_identifier_case ('RESC_ID'), 2, 0, NULL, 1, '*ini*', '*ini*')
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.VT_CREATE_TEXT_INDEX !
---#ENDIF
 DB.DBA.vt_batch_update (fix_identifier_case ('WS.WS.HOSTFS_RES_CACHE'), 'ON', 5)
 ;
 
@@ -589,14 +577,28 @@ create function "HostFs_DAV_GET_PARENT" (in id any, in st char(1), in path varch
 }
 ;
 
-create function "HostFs_DAV_COL_CREATE" (in detcol_id any, in path_parts any, in permissions varchar, in uid integer, in gid integer, in auth_uid integer) returns any
+create function "HostFs_DAV_COL_CREATE" (
+  in detcol_id any,
+  in path_parts any,
+  in permissions varchar,
+  in uid integer,
+  in gid integer,
+  in auth_uid integer) returns any
 {
-  declare ospath varchar;
   -- dbg_obj_princ ('HostFs_DAV_COL_CREATE (', detcol_id, path_parts, permissions, uid, gid, auth_uid, ')');
+  declare slash integer;
+  declare ospath, dbroot varchar;
+
+  dbroot := server_root ();
+  slash := position ('\\', dbroot);
   ospath := DAV_CONCAT_PATH ("HostFs_ID_TO_OSPATH" (detcol_id), path_parts);
-  -- dbg_obj_princ ('cmd=', sprintf ('mkdir ''%s''', ospath));
-  system (sprintf ('mkdir ''%s''', ospath));
+  if (slash)
+    ospath := replace (ospath, '/', '\\');
+
+  -- system (sprintf ('mkdir "%s"', dbroot || ospath));
+  sys_mkdir (dbroot || ospath);
   WS.WS.HOSTFS_FIND_COL (ospath);
+
   return vector (UNAME'HostFs', detcol_id, ospath);
 }
 ;
@@ -635,7 +637,7 @@ create function "HostFs_DAV_RES_UPLOAD" (in detcol_id any, in path_parts any, in
   declare rc integer;
   -- dbg_obj_princ ('HostFs_DAV_RES_UPLOAD (', detcol_id, path_parts, ', [content], ', type, permissions, uid, gid, auth_uid, ')');
   ospath := DAV_CONCAT_PATH ("HostFs_ID_TO_OSPATH" (detcol_id), path_parts);
-  if (__tag (content) = 126)
+  if (__tag (content) = __tag of long varchar handle)
     {
       declare p varchar;
       p := '[' || serialize (now()) || '][' || serialize (detcol_id) || '][' || serialize (path_parts) || ']';
@@ -700,63 +702,77 @@ create function "HostFs_DAV_PROP_LIST" (in id any, in what char(0), in propmask 
 }
 ;
 
-create function "HostFs_ID_TO_OSPATH" (in col any)
+create function "HostFs_ID_TO_OSPATH" (
+  in col any)
 {
-  declare res varchar;
-  declare ctr, len integer;
   if (isinteger (col))
     return coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = col), ' no such ');
+
   return col[2];
 }
 ;
 
-create function "HostFs_DAV_DIR_SINGLE" (in id any, in what char(0), in path any, in auth_uid integer) returns any
+create function "HostFs_DAV_DIR_SINGLE" (
+  in id any,
+  in what char(0),
+  in path any,
+  in auth_uid integer) returns any
 {
-  declare fullname, name, tmp, mimetype, ft_mode varchar;
+  -- dbg_obj_princ ('HostFs_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+  declare fullname, name, mimetype, ft_mode varchar;
   declare cr_time, mod_time datetime;
   declare puid, pgid, flen, rc integer;
-  -- dbg_obj_princ ('HostFs_DAV_DIR_SINGLE (', id, what, path, auth_uid, ')');
+
   fullname := id[2];
   rc := WS.WS.HOSTFS_PATH_STAT (fullname, flen, cr_time, mod_time);
   if (rc < 0)
-    {
-      if ('R' = what)
-	WS.WS.HOSTFS_RES_DISAPPEARS (fullname);
-      else
-	WS.WS.HOSTFS_COL_DISAPPEARS (fullname);
-      return -1;
-    }
+  {
+    if ('R' = what)
+      WS.WS.HOSTFS_RES_DISAPPEARS (fullname);
+    else
+      WS.WS.HOSTFS_COL_DISAPPEARS (fullname);
+
+    return -1;
+  }
   name := subseq (fullname, strrchr (fullname, '/') + 1);
   if (path is null)
     path := "HostFs_DAV_SEARCH_PATH" (id, what);
+
   puid := http_dav_uid();
-  pgid := coalesce (
-    ( select G_ID from WS.WS.SYS_DAV_GROUP
-      where G_NAME = 'HostFs_' || coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID=id[1] and COL_DET='HostFs'), '')
-      ), puid+1);
+  pgid := coalesce ((select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = 'HostFs_' || coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID=id[1] and COL_DET='HostFs'), '')), puid+1);
   if ('R' = what)
-    {
-      WS.WS.HOSTFS_READ_TYPEINFO (fullname, mimetype, ft_mode);
-      WS.WS.HOSTFS_HANDLE_RES_SCAN (fullname, null, flen, cr_time, mod_time, mimetype, ft_mode);
-      return vector (path, 'R',	flen, mod_time, id, '110000000RR', pgid, puid, cr_time, mimetype, name);
-    }
+  {
+    WS.WS.HOSTFS_READ_TYPEINFO (fullname, mimetype, ft_mode);
+    WS.WS.HOSTFS_HANDLE_RES_SCAN (fullname, null, flen, cr_time, mod_time, mimetype, ft_mode);
+
+    return vector (DAV_CONCAT_PATH (path, null), 'R',  flen, mod_time, id, '110000000RR', pgid, puid, cr_time, mimetype, name);
+  }
+
   if ('C' = what)
-    {
-      return vector (DAV_CONCAT_PATH (path, '/'), 'C', flen, mod_time, id, '110000000RR', pgid, puid, cr_time, 'dav/unix-directory', name);
-    }
+  {
+    return vector (DAV_CONCAT_PATH (path, '/'), 'C', flen, mod_time, id, '110000000RR', pgid, puid, cr_time, 'dav/unix-directory', name);
+  }
+
   return -20;
 }
 ;
 
-create function "HostFs_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in detcol_path varchar, in name_mask varchar, in recursive integer, in auth_uid integer) returns any
+create function "HostFs_DAV_DIR_LIST" (
+  in detcol_id any,
+  in path_parts any,
+  in detcol_path varchar,
+  in name_mask varchar,
+  in recursive integer,
+  in auth_uid integer) returns any
 {
+  -- dbg_obj_princ ('HostFs_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
   declare ospath, name, fullname, top_davpath varchar;
   declare stale_files, files, stale_dirs, dirs, res any;
   declare ctr, len integer;
   declare tmp, mimetype, ft_mode varchar;
   declare cr_time, mod_time datetime;
   declare puid, pgid, flen, rc, parent_c_id, r_id integer;
-  -- dbg_obj_princ ('HostFs_DAV_DIR_LIST (', detcol_id, path_parts, detcol_path, name_mask, recursive, auth_uid, ')');
+
   ospath := DAV_CONCAT_PATH ("HostFs_ID_TO_OSPATH" (detcol_id), path_parts);
   top_davpath := DAV_CONCAT_PATH (detcol_path, path_parts);
   whenever sqlstate '39000' goto no_dir;
@@ -766,12 +782,15 @@ create function "HostFs_DAV_DIR_LIST" (in detcol_id any, in path_parts any, in d
     select VECTOR_AGG (COL_FULL_PATH) into stale_dirs from WS.WS.HOSTFS_COL where COL_PARENT_ID is null and 0 = position (COL_NAME, dirs);
   else
     select VECTOR_AGG (COL_FULL_PATH) into stale_dirs from WS.WS.HOSTFS_COL where COL_PARENT_ID = parent_c_id and 0 = position (COL_NAME, dirs);
+
   foreach (varchar stale_fullname in stale_dirs) do
     WS.WS.HOSTFS_COL_DISAPPEARS (stale_fullname);
+
   puid := http_dav_uid();
   pgid := coalesce (
-    ( select G_ID from WS.WS.SYS_DAV_GROUP
-      where G_NAME = 'HostFs_' || coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = detcol_id and COL_DET='HostFs'), '')
+    ( select G_ID
+        from WS.WS.SYS_DAV_GROUP
+       where G_NAME = 'HostFs_' || coalesce ((select COL_NAME from WS.WS.SYS_DAV_COL where COL_ID = DB.DBA.DAV_DET_DETCOL_ID (detcol_id) and COL_DET='HostFs'), '')
       ), puid+1);
   vectorbld_init (res);
   len := length (dirs);
@@ -916,7 +935,7 @@ create function "HostFs_DAV_SEARCH_PATH" (in id any, in what char(1)) returns an
   -- dbg_obj_princ ('HostFs_DAV_SEARCH_PATH (', id, what, ')');
   ospath := id[2];
   slash_pos := strchr (ospath, '/');
-  detcol_fullpath := coalesce ((select WS.WS.COL_PATH (COL_ID) from WS.WS.SYS_DAV_COL where COL_ID = id[1] and COL_DET='HostFs'));
+  detcol_fullpath := coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id[1] and COL_DET = 'HostFs'));
   if (detcol_fullpath is null)
     return -23;
   if (not isstring (file_stat (ospath)))

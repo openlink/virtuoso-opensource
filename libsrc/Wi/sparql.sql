@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1090,7 +1090,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
       else
         ro_id_dict := null;
     }
-  if (126 = __tag (v))
+  if (__tag of long varchar handle = __tag (v))
     v := blob_to_string (v);
   if (isstring (rdf_box_data (v)))
     need_digest := rdf_box_needs_digest (v, ro_id_dict);
@@ -1352,7 +1352,7 @@ create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, 
   declare llong, dt_and_lang int;
   declare dt_s, lang_s, chksm, sum64 varchar;
   declare digest, old_digest any;
-  if (126 = __tag (v))
+  if (__tag of long varchar handle = __tag (v))
     v := blob_to_string (v);
   dt_and_lang := bit_or (bit_shift (dt_twobyte, 16), lang_twobyte);
   if (not (isstring (v)))
@@ -1396,7 +1396,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1413,7 +1413,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
   declare t int;
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (', v, g_iid, p_iid, ro_id_dict, ')');
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML, __tag of rdf_box)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1421,7 +1421,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_SQLVAL_FT (in v any, in g_iid IRI_ID, in 
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
   if (not __rdf_obj_ft_rule_check (g_iid, p_iid))
     ro_id_dict := null;
@@ -1446,7 +1446,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID, 
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL (', v, dt_iid, lang, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1458,7 +1458,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (126 = t)
+  else if (__tag of long varchar handle = t)
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1479,7 +1479,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (in v any, in dt_iid IRI_I
   -- dbg_obj_princ ('DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_FT (', v, dt_iid, lang, g_iid, p_iid, ro_id_dict, ')');
 retry_unrdf:
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     {
       if (__tag of rdf_box = t)
         {
@@ -1491,7 +1491,7 @@ retry_unrdf:
     }
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (__tag of UNAME = t or 126 = t)
+  else if (t in (__tag of UNAME, __tag of long varchar handle))
     v := cast (v as varchar);
   if (dt_iid is not null)
     dt_twobyte := DB.DBA.RDF_TWOBYTE_OF_DATATYPE (dt_iid);
@@ -1656,16 +1656,16 @@ create function DB.DBA.RDF_OBJ_OF_LONG (in longobj any) returns any
   t := __tag (longobj);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar, 133, 226)))
+      if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar, __tag of long nvarchar handle, 226)))
         return longobj;
-      if (t = 133)
+      if (t = __tag of long nvarchar handle)
 	{
 	  longobj := cast (longobj as nvarchar);
 	  t := __tag (longobj);
 	}
       if (__tag of nvarchar = t or t = 226)
         longobj := charset_recode (longobj, '_WIDE_', 'UTF-8');
-      else if (t = 126)
+      else if (t = __tag of long varchar handle)
         longobj := cast (longobj as varchar);
       else if (__tag of UNAME = t)
         return __i2id (longobj);
@@ -1683,7 +1683,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (__tag of varchar, 126, __tag of UNAME, __tag of nvarchar)))
+  if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of UNAME, __tag of nvarchar)))
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
         return DB.DBA.RDF_OBJ_ADD (257, v, 257);
@@ -1695,7 +1695,7 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
   return DB.DBA.RDF_OBJ_ADD (257, v, 257);
 }
@@ -1709,7 +1709,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
   declare t int;
   declare res any;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -1717,7 +1717,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (126 = t)
+  else if (__tag of long varchar handle = t)
     v := cast (v as varchar);
   res := rdf_box (v, 257, 257, 0, 1);
   return res;
@@ -2014,7 +2014,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
 {
   declare t int;
   t := __tag (v);
-  if (not (t in (126, __tag of varchar, __tag of UNAME, __tag of nvarchar)))
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar)))
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
@@ -2022,7 +2022,7 @@ create function DB.DBA.RDF_LONG_OF_SQLVAL (in v varchar) returns any
     return __i2id (v);
   if (__tag of nvarchar = t)
     v := charset_recode (v, '_WIDE_', 'UTF-8');
-  else if (t = 126)
+  else if (t = __tag of long varchar handle)
     v := cast (v as varchar);
 --  if ((t = __tag of varchar) and (v like 'http://%'))
 --    {
@@ -2103,7 +2103,7 @@ create function DB.DBA.RDF_IS_BLANK_REF (in v any) returns any
         return 0;
       return 1;
     }
-  if (__tag (v) = 243)
+  if (__tag (v) = __tag of IRI_ID)
     {
       if (v < min_bnode_iri_id ())
         return 0;
@@ -2122,7 +2122,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
         return 1;
       return 0;
     }
-  if (__tag (v) = 243)
+  if (__tag (v) = __tag of IRI_ID)
     {
       if (v < min_bnode_iri_id ())
         return 1;
@@ -2135,7 +2135,7 @@ create function DB.DBA.RDF_IS_URI_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_REF (in v any) returns any
 {
-  if (__tag (v) in (__tag of UNAME, 243))
+  if (__tag (v) in (__tag of UNAME, __tag of IRI_ID))
     return 1;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 1;
@@ -2146,7 +2146,7 @@ create function DB.DBA.RDF_IS_REF (in v any) returns any
 --!AWK PUBLIC
 create function DB.DBA.RDF_IS_LITERAL (in v any) returns any
 {
-  if (__tag (v) in (__tag of UNAME, 243))
+  if (__tag (v) in (__tag of UNAME, __tag of IRI_ID))
     return 0;
   if ((__tag of varchar = __tag (v)) and bit_and (1, __box_flags (v)))
     return 0;
@@ -2577,18 +2577,18 @@ create procedure DB.DBA.RDF_QUAD_L_RDB2RDF (in g_iid varchar, in s_iid varchar, 
   t := __tag (o_val);
   if (__tag of rdf_box <> t)
     {
-      if (not (t in (__tag of varchar, 126, 133, __tag of UNAME, __tag of nvarchar, 226)))
+      if (not (t in (__tag of varchar, __tag of long varchar handle, __tag of long nvarchar handle, __tag of UNAME, __tag of nvarchar, 226)))
         {
           goto o_val_done;
         }
-      if (t = 133)
+      if (t = __tag of long nvarchar handle)
 	{
 	  o_val := cast (o_val as nvarchar);
 	  t := __tag (o_val);
 	}
       if (__tag of nvarchar = t or t = 226)
         o_val := charset_recode (o_val, '_WIDE_', 'UTF-8');
-      else if (t = 126)
+      else if (t = __tag of long varchar handle)
         o_val := cast (o_val as varchar);
       else if (t = __tag of UNAME)
         {
@@ -2843,7 +2843,7 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null);
   ret := rdf_load_turtle (strg, base, graph, flags,
@@ -2891,7 +2891,7 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null, iri_xlate_cbk, iri_xlate_env);
   return rdf_load_turtle (strg, base, graph, flags,
@@ -2911,7 +2911,7 @@ create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in grap
 {
   declare app_env any;
   declare old_log_mode int;
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
     vector ('', '', '', '', '', '', report_cbk),
@@ -2923,8 +2923,8 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
 {
   declare app_env any;
   declare old_log_mode int;
-  if (126 = __tag (strg))
-    strg := cast (strg as varchar);
+  if (__tag of long varchar handle = __tag (strg))
+     strg := cast (strg as varchar);
   return rdf_load_turtle_local_file (strg, base, graph, flags,
     vector ('', '', '', '', '', '', report_cbk),
     app_env);
@@ -3051,7 +3051,7 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 {
   declare res any;
   res := dict_new ();
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
@@ -3070,9 +3070,9 @@ create function DB.DBA.RDF_TTL2HASH (in strg varchar, in base varchar, in graph 
 
 create function DB.DBA.RDF_TTL_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, in dict any, in flags integer := 0) returns any
 {
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
@@ -3129,7 +3129,7 @@ create function DB.DBA.RDF_TTL2SQLHASH (in strg varchar, in base varchar, in gra
 {
   declare res any;
   res := dict_new ();
-  if (126 = __tag (strg))
+  if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   res := dict_new (length (strg) / 100);
   rdf_load_turtle (strg, base, graph, flags,
@@ -3226,7 +3226,7 @@ create procedure DB.DBA.RDF_RDFXML_TO_DICT (in strg varchar, in base varchar, in
 
 create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in flag int := 0, in xml_parse_mode int := 0)
 {
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   if (flag = 0)
     xml_parse_mode := 0;
@@ -3248,7 +3248,7 @@ create procedure DB.DBA.RDF_RDFXML_LOAD_DICT (in strg varchar, in base varchar, 
 create procedure DB.DBA.RDFA_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0)
 {
   declare app_env any;
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa
     graph,
@@ -3269,7 +3269,7 @@ create procedure DB.DBA.RDFA_LOAD_DICT (in strg varchar, in base varchar, in gra
 create procedure DB.DBA.RDFA_LOAD_DICT_XLAT (in strg varchar, in base varchar, in graph varchar, inout dict any, in xml_parse_mode int := 0, in iri_xlate_cbk varchar, in iri_xlate_env any)
 {
   declare app_env any;
-  if (__tag (dict) <> 214)
+  if (__tag (dict) <> __tag of dictionary reference)
     signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
   rdf_load_rdfxml (strg, bit_or (2, bit_shift (xml_parse_mode, 8)), -- 0 rdfxml, 2 rdfa
     graph,
@@ -4426,7 +4426,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
       return;
     }
   env := vector (0, 0, 0, null);
-  if (214 <> __tag (ctx_dict))
+  if (__tag of dictionary reference <> __tag (ctx_dict))
     {
       if (bit_and (ctx_mode, 1))
         ctx_dict := dict_new (31);
@@ -4506,7 +4506,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_LD_CTX (inout triples any, inout ses
 skip_shortcut_calc: ;
         }
     }
-  if (214 <> __tag (ctx_dict))
+  if (__tag of dictionary reference <> __tag (ctx_dict))
     http ('{ "@graph": [\n    ', ses);
   else
     {
@@ -4627,40 +4627,34 @@ create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses 
   declare ctr, len, tcount, tctr, status integer;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
-  http ('<?xml version="1.0" encoding="UTF-8"?>\n
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">\n', ses);
   if (0 = tcount)
     {
-      http ('<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Empty RDFa+XHTML document</title></head><body>
-<p>This document is empty and basically useless. It is generated by a web service that can make some statements in XHTML+RDFa format.
-This time the service made zero such statements, sorry.</p></body></html>', ses);
+      WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN ('Empty XHTML+RDFa Microdata document', ses);
+      http('<p>This document is empty and basically useless. It is generated by a web service that can make some statements in XHTML+RDFa Microdata format.
+This time the service made zero such statements, sorry.</p>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
+
   for (tctr := 0; (tctr < tcount) and (1000 > dict_size (nsdict)); tctr := tctr + 1)
     {
       sparql_iri_split_rdfa_qname (triples[tctr][0], nsdict, 1);
       sparql_iri_split_rdfa_qname (triples[tctr][1], nsdict, 1);
       sparql_iri_split_rdfa_qname (triples[tctr][2], nsdict, 1);
     }
-  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
   nslist := dict_to_vector (nsdict, 0);
   len := length (nslist);
-  for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
-    {
-      http (sprintf ('\n  xmlns:%s="', nslist[ctr+1]), ses);
-      http_escape (nslist[ctr], 3, ses, 1, 1);
-      http ('"', ses);
-    }
-  http ('>\n<head><title>RDFa+XHTML document</title></head><body>\n', ses);
+
+  WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN ('XHTML+RDFa Microdata document', ses, nslist);
   http (sprintf ('<p>This HTML document contains %d embedded RDF statements represented using (X)HTML+RDFa notation.</p>',
     tcount), ses);
   http ('<p>The embedded RDF content will be recognized by any processor of (X)HTML+RDFa.</p>', ses);
-  http ('\n<table border="1">\n<thead><tr><th>Namespace Prefix</th><th>Namespace URI</th></tr></thead><tbody>', ses);
+  http ('<h3>Namespace Prefixes</h3>\n', ses);
+  http ('\n<table class="table table-striped table-sm table-borderless">\n<thead><tr><th>Prefix</th><th>URI</th></tr></thead><tbody>', ses);
   for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
     {
       http (sprintf ('\n<tr><td>xmlns:%s</td><td>', nslist[ctr+1]), ses);
@@ -4668,7 +4662,8 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       http ('</td></tr>', ses);
     }
   http ('\n</tbody></table>', ses);
-  http ('\n<table border="1">\n<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>', ses);
+  http ('<h3>Statements</h3>\n', ses);
+  http ('\n<table class="table table-striped table-sm table-borderless">\n<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead>', ses);
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -4843,28 +4838,20 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   if (prev_subj is not null)
     http ('\n</tbody>', ses);
-  http ('\n</table></body></html>\n', ses);
+  http ('\n</table>\n', ses);
+  WS.WS.SPARQL_RESULT_XHTML_OUTPUT_END (ses);
 }
 ;
 
 create function DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT (in ul_or_tr varchar)
 {
-  declare lpath varchar;
-  lpath := virtuoso_ini_item_value ('URIQA','DefaultHost');
-  if (lpath is null)
-    lpath := '/sparql';
-  else
-    lpath := 'http://' || lpath || '/sparql';
-  whenever sqlstate 'HT013' goto no_http_context;
-  lpath := http_path ();
-no_http_context:
-  return ' <a href=" ' || lpath || '?query=describe+%%3C%U%%3E&amp;format=text%%2Fx-html%%2B' || ul_or_tr || '">describe</a> ';
+  return ' <a href="/sparql?query=describe+%%3C%U%%3E&amp;format=text%%2Fx-html%%2B' || ul_or_tr || '"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a> ';
 }
 ;
 
 create function DB.DBA.RDF_PIVOT_DESCRIBE_LINK (in iri varchar)
 {
-  return sprintf ('; <a href="/describe/?url=%U&sid=1&amp;urilookup=1">facets</a> ', iri);
+  return sprintf ('; <a href="/describe/?url=%U&amp;sid=1&amp;urilookup=1"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="facets"></i></a> ', iri);
 }
 ;
 
@@ -4875,24 +4862,20 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_UL (inout triples any, inout ses any
   declare endpoint_fmt, subj_iri, pred_iri varchar;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_UL:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
-  http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML+RDFa 1.0//EN" "http://www.w3.org/MarkUp/DTD/xhtml-rdfa-1.dtd">\n', ses);
   if (0 = tcount)
     {
-      http ('<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Empty HTML RDFa and Microdata document</title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-</head><body>
-<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
-This time the service made zero such statements, sorry.</p></body></html>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty HTML5 RDFa and Microdata document', ses);
+      http('<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
+This time the service made zero such statements, sorry.</p>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('ul');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
-  http ('>\n<head><title>HTML RDFa and Microdata document</title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-</head>\n<body>\n<ul>\n', ses);
+
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 RDFa and Microdata document', ses);
+  http ('<ul>\n', ses);
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -4922,11 +4905,11 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (subj_iri, 3, ses, 1, 1);
           http ('">', ses);
           http_escape (subj_iri, 1, ses, 1, 1);
-          http ('</a> (', ses);
+          http ('</a> ', ses);
           http (sprintf (endpoint_fmt, subj_iri), ses);
           if (can_pivot)
             http (DB.DBA.RDF_PIVOT_DESCRIBE_LINK (subj_iri), ses);
-          http (')\n    <ul>', ses);
+          http ('\n    <ul>', ses);
           prev_subj := subj;
           prev_pred := null;
         }
@@ -4939,11 +4922,11 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (pred_iri, 3, ses, 1, 1);
           http ('">', ses);
           http_escape (pred_iri, 1, ses, 1, 1);
-          http ('</a> (', ses);
+          http ('</a> ', ses);
           http (sprintf (endpoint_fmt, pred_iri), ses);
           if (can_pivot)
             http (DB.DBA.RDF_PIVOT_DESCRIBE_LINK (pred_iri), ses);
-          http (')\n        <ul>', ses);
+          http ('\n        <ul>', ses);
           prev_pred := pred;
           obj_needs_br := 0;
         }
@@ -4967,11 +4950,11 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (obj_iri, 3, ses, 1, 1);
           http ('">', ses);
           http_escape (obj_iri, 1, ses, 1, 1);
-          http ('</a> (', ses);
+          http ('</a> ', ses);
           http (sprintf (endpoint_fmt, obj_iri), ses);
           if (can_pivot)
             http (DB.DBA.RDF_PIVOT_DESCRIBE_LINK (obj_iri), ses);
-          http (')</li>', ses);
+          http ('</li>', ses);
         }
       else
         {
@@ -5031,7 +5014,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
     }
   if (prev_subj is not null)
     http ('\n        </ul></li></ul></li></ul>', ses);
-  http ('\n</body></html>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
@@ -5046,19 +5029,19 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_TR (inout triples any, inout ses any
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
     {
-      http ('<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Empty HTML RDFa and Microdata document</title></head><body>
-<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
-This time the service made zero such statements, sorry.</p></body></html>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty HTML5 RDFa and Microdata document', ses);
+      http('<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
+This time the service made zero such statements, sorry.</p>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
   endpoint_fmt := DB.DBA.RDF_ENDPOINT_DESCRIBE_LINK_FMT ('tr');
   can_pivot := case (isnull (DB.DBA.VAD_CHECK_VERSION ('PivotViewer'))) when 0 then 1 else 0 end;
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
-  http ('>\n<head><title>HTML RDFa and Microdata document</title>
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-</head>\n<body>\n<table>\n', ses);
+
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 RDFa and Microdata document', ses);
+  http ('<table class="table table-striped table-sm table-borderless">\n', ses);
+  http ('<tr><th>Subject</th><th>Predicate</th><th>Object</th></tr>\n', ses);
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -5089,7 +5072,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (subj_iri, 3, trtd_ses, 1, 1);
           http ('">\n  <td><a href="', trtd_ses);
           http_escape (subj_iri, 3, trtd_ses, 1, 1);
-          http (sprintf ('">%V</a> (' || endpoint_fmt || '%s)</td>', subj_iri, subj_iri,
+          http (sprintf ('">%V</a> ' || endpoint_fmt || '%s</td>', subj_iri, subj_iri,
               case when (can_pivot) then DB.DBA.RDF_PIVOT_DESCRIBE_LINK (id_to_iri (subj)) else '' end ),
             trtd_ses );
           subj_trtd := string_output_string (trtd_ses);
@@ -5100,7 +5083,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           declare tdtd_ses any;
           pred_iri := id_to_iri (pred);
           --pred_recod := replace (pred_iri, '"', '%22');
-          --pred_tdtd := sprintf ('\n  <td><a href="%s">%s</a> (' || endpoint_fmt || '%s)\n  </td><td',
+          --pred_tdtd := sprintf ('\n  <td><a href="%s">%s</a> ' || endpoint_fmt || '%s\n  </td><td',
           --  pred_recod, pred_recod, pred_iri,
           --  case when (can_pivot) then DB.DBA.RDF_PIVOT_DESCRIBE_LINK (id_to_iri (pred)) else '' end );
           tdtd_ses := string_output ();
@@ -5108,7 +5091,7 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (pred_iri, 3, tdtd_ses, 1, 1);
           http ('">', tdtd_ses);
           http_escape (pred_iri, 1, tdtd_ses, 1, 1);
-          http (sprintf ('</a> (' || endpoint_fmt || '%s)\n  </td><td', pred_iri,
+          http (sprintf ('</a> ' || endpoint_fmt || '%s\n  </td><td', pred_iri,
               case when (can_pivot) then DB.DBA.RDF_PIVOT_DESCRIBE_LINK (id_to_iri (pred)) else '' end ),
             tdtd_ses );
           pred_tdtd := string_output_string (tdtd_ses);
@@ -5130,10 +5113,10 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http_escape (pred_iri, 3, ses, 1, 1);
           http ('" href="', ses);
           http_escape (obj_iri, 3, ses, 1, 1);
-          http (sprintf ('">%V</a> (' || endpoint_fmt, obj_iri, obj_iri), ses);
+          http (sprintf ('">%V</a> ' || endpoint_fmt, obj_iri, obj_iri), ses);
           if (can_pivot)
             http (DB.DBA.RDF_PIVOT_DESCRIBE_LINK (obj_iri), ses);
-          http (')</td></tr>', ses);
+          http ('</td></tr>', ses);
         }
       else
         {
@@ -5191,7 +5174,8 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http ('</td></tr>', ses);
         }
     }
-  http ('\n</table></body></html>\n', ses);
+  http ('\n</table>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
@@ -5206,10 +5190,10 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout 
   -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
     {
-      http ('<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Empty HTML Microdata document</title></head><body>
-<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
-This time the service made zero such statements, sorry.</p></body></html>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty HTML Microdata document', ses);
+      http('<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML+Microdata format.
+This time the service made zero such statements, sorry.</p>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
@@ -5222,12 +5206,12 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       sparql_iri_split_rdfa_qname (triples[tctr][1], nsdict, 1);
       sparql_iri_split_rdfa_qname (triples[tctr][2], nsdict, 1);
     }
-  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
-  http ('>\n<head><title>HTML Microdata document</title></head><body>\n', ses);
-  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML+Microdata notation.</p>',
-    tcount), ses);
+
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML Microdata document', ses);
+  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML+Microdata notation.</p>', tcount), ses);
   http ('<p>The embedded RDF content will be recognized by any processor of HTML5 Microdata.</p>', ses);
-  http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
+  http ('<h3>Namespace Prefixes</h3>\n', ses);
+  http ('\n<table class="table table-sm table-borderless"><tr><th>Prefix</th><th>IRI</th></tr>', ses);
   nslist := dict_to_vector (nsdict, 0);
   len := length (nslist);
   for (ctr := len - 2; ctr >= 0; ctr := ctr-2)
@@ -5235,6 +5219,8 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       http (sprintf ('\n<tr><td>%V</td><td>%V</td></tr>', nslist[ctr+1], nslist[ctr]), ses);
     }
   http ('</table>', ses);
+
+  http ('<h3>Statements</h3>\n', ses);
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -5384,37 +5370,32 @@ skip_obj: ;
     }
   if (prev_subj is not null)
     http ('\n</dd></dl>', ses);
-  http ('\n</body></html>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
 create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any)
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
-  declare val, p_itemprop, nice_host, describe_path, about_path varchar;
-  declare ctr, len, tcount, tctr, status, obj_needs_br integer;
+  declare val, p_itemprop, describe_path, about_path varchar;
+  declare ctr, len, tcount, tctr, status integer;
   declare objs_of_sp any;
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
-  -- http ('<?xml version="1.0" encoding="UTF-8"?>\n<!DOCTYPE html>\n', ses);
   if (0 = tcount)
     {
-      http ('<html xmlns="http://www.w3.org/1999/xhtml">
-<head><title>Empty HTML Microdata document</title></head><body>
-<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty HTML5 Microdata document', ses);
+      http ('<p>This document is empty and basically useless. It is generated by a web service that can make some statements in HTML Microdata format.
 This time the service made zero such statements, sorry.</p></body></html>', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
   objs_of_sp := dict_new (20);
-  nice_host := registry_get ('URIQADefaultHost');
   describe_path := about_path := null;
-  if (isstring (nice_host))
-    {
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/fct/%/resources/dav/%'))
-        describe_path := 'http://' || nice_host || '/describe/?url=';
-      if (exists (select 1 from VAD.DBA.VAD_REGISTRY where R_KEY like '/VAD/cartridges/%/resources/dav/%'))
-        about_path := 'http://' || nice_host || '/about/html/';
-    }
+  if (DB.DBA.VAD_CHECK_VERSION ('fct') is not null)
+    describe_path := '/describe/?url=';
+  else if (DB.DBA.VAD_CHECK_VERSION ('cartridges') is not null)
+    about_path := '/about/html/';
   nsdict := dict_new (10 + cast (sqrt(tcount) as integer));
   dict_put (nsdict, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 'rdf');
   dict_put (nsdict, 'http://www.w3.org/2001/XMLSchema#', 'xsdh');
@@ -5425,11 +5406,11 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       sparql_iri_split_rdfa_qname (triples[tctr][1], nsdict, 1);
       sparql_iri_split_rdfa_qname (triples[tctr][2], nsdict, 1);
     }
-  http ('<html xmlns="http://www.w3.org/1999/xhtml"', ses);
-  http ('>\n<head><title>HTML Based Entity Description (with embedded Microdata)</title></head><body>\n', ses);
-  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML+Microdata notation.</p>',
+
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 Microdata document', ses);
+  http (sprintf ('<p>This HTML5 document contains %d embedded RDF statements represented using HTML5+Microdata notation.</p>\n',
     tcount), ses);
-  http ('<p>The embedded RDF content will be recognized by any processor of HTML5 Microdata.</p>', ses);
+  http ('<p>The embedded RDF content will be recognized by any processor of HTML5 Microdata.</p>\n', ses);
 
   -- http ('\n<table><tr><th>Prefix</th><th>Namespace IRI</th></tr>', ses);
   -- nslist := dict_to_vector (nsdict, 0);
@@ -5439,12 +5420,14 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
   --     http (sprintf ('\n<tr><td>%V</td><td>%V</td></tr>', nslist[ctr+1], nslist[ctr]), ses);
   --   }
   -- http ('</table>', ses);
+
   env := vector (0, 0, 0, null);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
   prev_subj := prev_pred := null;
-  obj_needs_br := 0;
-  http ('\n<table border="1"><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr><tr><td>', ses);
+
+  http ('\n<table class="table table-striped table-sm table-borderless">\n', ses);
+  http ('<thead><tr><th>Subject</th><th>Predicate</th><th>Object</th></tr></thead><tbody>\n', ses);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare subj, pred, obj, split, o_split any;
@@ -5462,120 +5445,109 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
       -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA: subj:', subj, __tag(subj), __box_flags (subj));
       -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA: pred:', pred, __tag(pred), __box_flags (pred));
       -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA: obj:', obj, __tag(obj), __box_flags (obj));
+
+      http ('\n<tr>\n<td>\n', ses);
+
       if (prev_subj is null or (subj <> prev_subj))
         {
-          if (prev_subj is not null)
-            http ('\n</td></tr><tr><td>', ses);
           split := sparql_iri_split_rdfa_qname (subj, nsdict, 2);
           val := id_to_iri (subj);
-          -- dbg_obj_princ ('Split of ', subj, ' is ', split);
           if (about_path is not null)
             {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[2]			, about_path, val)	, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[0], split[2]	, about_path, val)	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/about</a>)</td>'		, val, split[1], split[2]	, about_path, val)	, ses);
+              if ('' = split[1])
+		http (sprintf ('<a href="%H">%V</a> <a href="%s%H"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="about"></i></a>', val, split[2], about_path, val), ses);
+              else if (isstring (split[0]))
+		http (sprintf ('<a href="%H">%V:%V</a> <a href="%s%H"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="about"></i></a>', val, split[0], split[2], about_path, val), ses);
+              else
+		http (sprintf ('<a href="%H">%V%V</a> <a href="%s%H"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="about"></i></a>', val, split[1], split[2], about_path, val), ses);
             }
           else if (describe_path is not null)
             {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'		, val, split[2]			, describe_path, val)	, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[0], split[2]	, describe_path, val)	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a>&nbsp;(<a href="%s%U">/describe</a>)</td>'	, val, split[1], split[2]	, describe_path, val)	, ses);
+              if ('' = split[1])
+		http (sprintf ('<a href="%H">%V</a> <a href="%s%U"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a>', val, split[2], describe_path, val), ses);
+              else if (isstring (split[0]))
+		http (sprintf ('<a href="%H">%V:%V</a> <a href="%s%U"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a>', val, split[0], split[2], describe_path, val), ses);
+              else
+		http (sprintf ('<a href="%H">%V%V</a> <a href="%s%U"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a>', val, split[1], split[2], describe_path, val), ses);
             }
           else
             {
-              if ('' = split[1])		http (sprintf ('\n<a href="%U">%V</a></td>'	, val, split[2])		, ses);
-              else if (isstring (split[0]))	http (sprintf ('\n<a href="%U">%V:%V</a></td>'	, val, split[0], split[2])	, ses);
-              else				http (sprintf ('\n<a href="%U">%V%V</a></td>'	, val, split[1], split[2])	, ses);
+              if ('' = split[1])
+		http (sprintf ('<a href="%H">%V</a>', val, split[2]), ses);
+              else if (isstring (split[0]))
+		http (sprintf ('<a href="%H">%V:%V</a>', val, split[0], split[2]), ses);
+              else
+		http (sprintf ('<a href="%H">%V%V</a>', val, split[1], split[2]), ses);
             }
           prev_subj := subj;
           prev_pred := null;
         }
+
+      http('\n</td>\n<td>\n', ses);
+
       if (prev_pred is null or (pred <> prev_pred))
         {
           dict_zap (objs_of_sp, 2);
---          if (prev_pred is not null)
---            http ('\n</td></tr>', ses);
---          http ('\n<tr>', ses);
           split := sparql_iri_split_rdfa_qname (pred, nsdict, 2);
           p_itemprop := replace (id_to_iri (pred), '"', '%22');
-          -- dbg_obj_princ ('Split of ', pred, ' is ', split);
-          if ('' = split[1])		http (sprintf ('\n<td><a href="%s">%V</a>'	, p_itemprop, split[2])			, ses);
-          else if (isstring (split[0]))	http (sprintf ('\n<td><a href="%s">%V:%V</a>'	, p_itemprop, split[0], split[2])	, ses);
-          else				http (sprintf ('\n<td><a href="%s">%V%V</a>'	, p_itemprop, split[1], split[2])	, ses);
+          if ('' = split[1])
+	    http (sprintf ('<a href="%H">%V</a>', p_itemprop, split[2]), ses);
+          else if (isstring (split[0]))
+	    http (sprintf ('<a href="%H">%V:%V</a>', p_itemprop, split[0], split[2]), ses);
+          else
+	    http (sprintf ('<a href="%H">%V%V</a>', p_itemprop, split[1], split[2]), ses);
+
           if (describe_path is not null)
-            http (sprintf (' (<a href="%s%U">/describe</a>)'	, describe_path, id_to_iri (pred)), ses);
-          http (sprintf ('</td>\n<td itemscope itemid="%U">', val), ses);
+            http (sprintf (' <a href="%s%U"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a>', describe_path, id_to_iri (pred)), ses);
+          else if (about_path is not null)
+            http (sprintf ('<a href="%s%H"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="about"></i></a>', about_path, id_to_iri (pred)), ses);
           prev_pred := pred;
-          obj_needs_br := 0;
         }
+
+      http (sprintf ('\n</td>\n<td itemscope itemid="%H">\n', val), ses);
+
       if (dict_get (objs_of_sp, obj, 0))
         goto skip_obj;
+
       dict_put (objs_of_sp, obj, 1);
       if (obj is null)
         signal ('RDFXX', 'DB.DBA.TRIPLES_TO_HTML_NICE_MICRODATA: object is NULL');
-      if (obj_needs_br)
-        http (' ,', ses);
-      else
-        obj_needs_br := 1;
+
       o_split := sparql_iri_split_rdfa_qname (obj, nsdict, 2);
       if (isvector (o_split))
         {
           declare o_href varchar;
           o_href := replace (id_to_iri (obj), '"', '%22');
-          if ('' = o_split[1])			http (sprintf ('\n<a itemprop="%V" href="%s">%V</a>'	, p_itemprop, o_href, o_split[2])		, ses);
-          else if (isstring (o_split[0]))	http (sprintf ('\n<a itemprop="%V" href="%s">%V:%V</a>'	, p_itemprop, o_href, o_split[0], o_split[2])	, ses);
-          else					http (sprintf ('\n<a itemprop="%V" href="%s">%V%V</a>'	, p_itemprop, o_href, o_split[1], o_split[2])	, ses);
-          if (about_path is not null)
-            http (sprintf ('\n(<a href="%s%s">/about</a>)', about_path, o_href), ses);
+          if ('' = o_split[1])
+	    http (sprintf ('<a itemprop="%V" href="%H">%V</a>', p_itemprop, o_href, o_split[2]), ses);
+          else if (isstring (o_split[0]))
+	    http (sprintf ('<a itemprop="%V" href="%H">%V:%V</a>', p_itemprop, o_href, o_split[0], o_split[2]), ses);
+          else
+	    http (sprintf ('<a itemprop="%V" href="%H">%V%V</a>', p_itemprop, o_href, o_split[1], o_split[2]), ses);
+
+          if (describe_path is not null)
+            http (sprintf (' <a href="%s%U"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="describe"></i></a>', describe_path, o_href), ses);
+          else if (about_path is not null)
+            http (sprintf ('<a href="%s%H"><i class="small bi bi-arrow-up-right-circle" role="img" aria-label="about"></i></a>', about_path, o_href), ses);
         }
       else
         {
           declare sqlval any;
           declare dt, lang, strval any;
-          http (sprintf ('\n<span itemprop="%s"', replace (id_to_iri (pred), '"', '%22')), ses);
+          http (sprintf ('<span itemprop="%H"', replace (id_to_iri (pred), '"', '%22')), ses);
           dt := 0; lang := 0;
           if (__tag of rdf_box = __tag (obj))
             {
               if (257 <> rdf_box_lang (obj))
                 lang := coalesce ((select RL_ID from DB.DBA.RDF_LANGUAGE where RL_TWOBYTE = rdf_box_lang (obj)));
---DT          else if (257 <> rdf_box_type (obj))
---DT            dt := coalesce ((select __bft (RDT_QNAME, 1) from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = rdf_box_type (obj)));
               sqlval := __rdf_sqlval_of_obj (obj, 1);
---DT          if (__tag of datetime = __tag (sqlval))
---DT            {
---DT              if (257 = rdf_box_type (obj))
---DT                dt := __xsd_type (sqlval);
---DT            }
             }
           else if (__tag (obj) not in (__tag of varchar, __tag of varbinary))
             {
               sqlval := obj;
---DT          dt := __xsd_type (sqlval);
             }
           else
             sqlval := obj;
---DT      if (not (isinteger (dt)))
---DT        {
---DT          http (' datatype="', ses);
---DT          split := sparql_iri_split_rdfa_qname (dt, nsdict, 2);
---DT          if ('' = split[1])
---DT            {
---DT              http_escape (split[2], 3, ses, 1, 1);
---DT              http ('"', ses);
---DT            }
---DT          else if (isstring (split[0]))
---DT            {
---DT              http_escape (concat (split[0], ':', split[2]), 3, ses, 1, 1);
---DT              http ('"', ses);
---DT            }
---DT          else
---DT            {
---DT              http_escape (concat ('dt:', split[2]), 3, ses, 1, 1);
---DT              http ('" xmlns:dt="', ses);
---DT              http_escape (split[1], 3, ses, 1, 1);
---DT              http ('"', ses);
---DT            }
---DT        }
           if (isstring (lang))
             {
               http (' xml:lang="', ses);
@@ -5599,12 +5571,13 @@ This time the service made zero such statements, sorry.</p></body></html>', ses)
           http ('</span>', ses);
         }
 skip_obj: ;
+    http('\n</td>\n</tr>\n', ses);
     }
-  if (prev_subj is not null)
-    http ('\n</td></tr></table>', ses);
-  http ('\n</body></html>\n', ses);
+  http ('\n</tbody>\n</table>', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END(ses);
 }
 ;
+
 
 create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout ses any)
 {
@@ -5643,7 +5616,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           subj_iri := id_to_iri (subj);
           if (starts_with (subj_iri, 'nodeID://'))
             subj_iri := '_:' || subseq (subj_iri, 9);
-          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('"\n      "properties" : {', ses);
+          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('",\n      "properties" : {', ses);
           prev_subj := subj;
           prev_pred := null;
         }
@@ -5750,7 +5723,7 @@ skip_obj: ;
     }
   if (prev_subj is not null)
     http ('] } }', ses);
-  http (' }\n', ses);
+  http (' ] }\n', ses);
 }
 ;
 
@@ -5759,7 +5732,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ATOM_XML (inout triples_dict an
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -5800,7 +5773,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_ODATA_JSON (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6123,7 +6096,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
 {
   declare col_ctr, col_count integer;
   declare blank_ids any;
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
   http ('\n  rs:result [', _env);
   col_count := length (colnames);
@@ -6168,7 +6141,7 @@ end_of_binding: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
 
   http ('\n    ] .', _env);
@@ -6203,7 +6176,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_ACC (inout _env any, inout c
     {
       declare col_buf any;
       col_count := length (colnames);
-      if (185 <> __tag(_env))
+      if (__tag of stream <> __tag(_env))
         DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
       col_buf := make_array (col_count * 7, 'any');
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6244,7 +6217,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
   declare sol_id varchar;
   declare col_ctr, col_count integer;
   declare blank_ids any;
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
   sol_id := cast (length (_env) as varchar);
   http ('\n  <rs:result rdf:nodeID="sol' || sol_id || '">', _env);
@@ -6310,7 +6283,7 @@ end_of_binding: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
 
   http ('\n </rs:results>\n</rdf:RDF>', _env);
@@ -6335,7 +6308,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_ACC (inout _env any, inout
   declare col_ctr, col_count, need_comma integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       http ('\n{ "head": { "link": [], "vars": [', _env);
@@ -6372,7 +6345,7 @@ end_of_val_print: ;
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       http ('\n{ "head": { "link": [], "vars": [] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', _env);
@@ -6430,7 +6403,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout 
   declare col_ctr, col_count integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6456,7 +6429,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_ACC (inout _env any, inout 
 
 create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns long varchar
 {
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     return '';
   return string_output_string (_env);
 }
@@ -6473,7 +6446,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
   declare col_ctr, col_count integer;
   declare blank_ids any;
   col_count := length (colnames);
-  if (185 <> __tag(_env))
+  if (__tag of stream <> __tag(_env))
     {
       _env := string_output ();
       for (col_ctr := 0; col_ctr < col_count; col_ctr := col_ctr + 1)
@@ -6575,7 +6548,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_ACC (inout _env any, i
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
   if (isinteger (_env[1]))
     {
-      if (185 <> __tag(_env))
+      if (__tag of stream <> __tag(_env))
         DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_INIT (_env);
       _env[1] := colnames;
       ses := aref_set_0 (_env, 2);
@@ -6624,7 +6597,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6641,7 +6614,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NICE_TTL (inout triples_dict an
   if (2666 < dict_size (triples_dict)) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
     return DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TTL (triples_dict);
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -6836,7 +6809,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TRIG (inout triples_dict any) r
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6851,7 +6824,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_NT (inout triples_dict any) ret
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6866,7 +6839,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDF_XML (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6881,7 +6854,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TALIS_JSON (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6896,7 +6869,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6911,7 +6884,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_LD_CTX (inout triples_dict
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6926,7 +6899,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_UL (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6941,7 +6914,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_TR (inout triples_dict any
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6956,7 +6929,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_MICRODATA (inout triples_d
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6971,7 +6944,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_MICRODATA (inout trip
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -6986,7 +6959,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_NICE_TTL (inout triples_di
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -6999,7 +6972,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_LD_JSON (inout trip
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -7012,7 +6985,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL (inout triples_
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     triples := vector ();
   else
     triples := dict_list_keys (triples_dict, 1);
@@ -7030,20 +7003,23 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout s
       http ('# Empty Turtle\n', ses);
       return;
     }
+
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('RDF Graph', ses);
   rowvector_obj_sort (triples, 2, 1);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
   if (2666 < tcount) -- The "nice" algorithm is too slow to be applied to large outputs. There's also a limit for 8000 namespace prefixes.
     {
       http (sprintf ('# The result consists of %d triples so it is too long to be pretty-printed. The dump below contains that triples without any decoration', tcount), ses);
-      http ('<xmp>', ses);
+      http ('<xmp>\n', ses);
       DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
-      http ('</xmp>', ses);
+      http ('</xmp>\n', ses);
       return;
     }
-  http ('<pre>', ses);
+  http ('<pre>\n', ses);
   DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
-  http ('</pre>', ses);
+  http ('</pre>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
@@ -7053,10 +7029,15 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout
   tcount := length (triples);
   if (0 = tcount)
     {
-      http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="text/turtle"></script></body></html>\n', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty RDF Graph', ses);
+      http ('<p>This document contains an empty RDF graph.</p>\n', ses);
+      http ('<script type="text/turtle"></script>\n', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
-  http ('<html><head><title>RDF Graph</title></head><body><para>This document contains ' || tcount || ' RDF triples in machine-readable format.</para><script type="text/turtle">', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('RDF Graph', ses);
+  http ('<p>This document contains ' || tcount || ' RDF triples in machine-readable format.</p>\n', ses);
+  http ('<script type="text/turtle">\n', ses);
   rowvector_obj_sort (triples, 2, 1);
   rowvector_subj_sort (triples, 1, 1);
   rowvector_subj_sort (triples, 0, 1);
@@ -7064,7 +7045,8 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout
     DB.DBA.RDF_TRIPLES_TO_TTL (triples, ses);
 --  else
 --    DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (triples, 257, ses);
-  http ('</script></body></html>', ses);
+  http ('</script>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
@@ -7074,12 +7056,18 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (inout triples any, i
   tcount := length (triples);
   if (0 = tcount)
     {
-      http ('<html><head><title>Empty RDF Graph</title></head><body><para>This document contains an empty RDF graph.</para><script type="application/ld+json"></script></body></html>\n', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('Empty RDF Graph', ses);
+      http ('<p>This document contains an empty RDF graph.</p>\n', ses);
+      http ('<script type="application/ld+json"></script>\n', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       return;
     }
-  http ('<html><head><title>RDF Graph</title></head><body><para>This document contains ' || tcount || ' RDF triples in machine-readable format.</para><script type="application/ld+json">', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('RDF Graph', ses);
+  http ('<p>This document contains ' || tcount || ' RDF triples in machine-readable format.</p>\n', ses);
+  http ('<script type="application/ld+json">\n', ses);
   DB.DBA.RDF_TRIPLES_TO_JSON_LD (triples, ses);
-  http ('</script></body></html>', ses);
+  http ('</script>\n', ses);
+  WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
 }
 ;
 
@@ -7087,7 +7075,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_JSON_MICRODATA (inout triples_d
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7102,7 +7090,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CSV (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7117,7 +7105,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_TSV (inout triples_dict any) re
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7132,7 +7120,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_RDFA_XHTML (inout triples_dict 
 {
   declare triples, ses any;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7150,7 +7138,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML (inout triples_dict any) r
   declare add_http_headers integer;
   add_http_headers := 0;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -7168,7 +7156,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_CXML_QRCODE (inout triples_dict
   declare add_http_headers integer;
   add_http_headers := 0;
   ses := string_output ();
-  if (214 <> __tag (triples_dict))
+  if (__tag of dictionary reference <> __tag (triples_dict))
     {
       triples := vector ();
     }
@@ -8003,9 +7991,6 @@ create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
@@ -8035,9 +8020,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
           repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d clear graph iri ( ?? )', lm), g_iri);
         }
       declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-      exec (sprintf ('
-      delete from DB.DBA.RDF_QUAD
-      where G = __i2id (''%S'') ', g_iri));
+      delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0)  option (index_only, index RDF_QUAD_GS);
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)
@@ -9002,7 +8985,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
 {
   declare triple_ctr integer;
   declare blank_ids any;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     {
       if (use_dict_limit)
         _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
@@ -9105,7 +9088,7 @@ end_of_adding_triple: ;
 --!AWK PUBLIC
 create procedure DB.DBA.SPARQL_CONSTRUCT_FIN (inout _env any)
 {
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     _env := dict_new ();
   return _env;
 }
@@ -9129,7 +9112,7 @@ create procedure DB.DBA.SPARQL_DESC_AGG_ACC (inout _env any, in vars any)
 {
   declare var_ctr integer;
   declare blank_ids any;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     {
       _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
     }
@@ -9147,7 +9130,7 @@ create procedure DB.DBA.SPARQL_DESC_AGG_FIN (inout _env any)
 {
   declare subjects, options, res any;
   declare subj_ctr integer;
-  if (214 <> __tag(_env))
+  if (__tag of dictionary reference <> __tag(_env))
     return dict_new ();
   return _env;
 }
@@ -10725,7 +10708,7 @@ next_batch:
         return;
     }
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
---  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
+--  exec_result_names (vector (vector ('S', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 125, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0)));
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -10771,7 +10754,7 @@ create procedure DB.DBA.RDF_DICT_OF_TRIPLES_TO_FOUR_COLS (in dict any, in destru
   declare O_IS_IRI, dt_twobyte, lang_twobyte integer;
   triples := dict_list_keys (dict, destructive);
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
-  exec_result_names (vector (vector ('S', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', 182, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0), vector ('O_TYPE', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0)));
+  exec_result_names (vector (vector ('S', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('P', __tag of varchar, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0), vector ('O', __tag of varchar, 0, 2147483647, 1, 0, 0, 0, 0, 0, 0, 0), vector ('O_TYPE', 182, 0, 4072, 1, 0, 1, 0, 0, 0, 0, 0)));
   len := length (triples);
   for (ctr := 0; ctr < len; ctr := ctr+1)
     {
@@ -11398,7 +11381,7 @@ create function DB.DBA.JSO_DUMP_FLD (in v any, inout ses any)
   v_tag := __tag(v);
   if (v_tag = __tag of UNAME)
     DB.DBA.JSO_DUMP_IRI (cast (v as varchar), ses);
-  else if (v_tag = 243)
+  else if (v_tag = __tag of IRI_ID)
     DB.DBA.JSO_DUMP_IRI (id_to_iri (v), ses);
   else if (v_tag = 203)
     http (jso_dbg_dump_rtti (v), ses);
@@ -17358,7 +17341,7 @@ create procedure DB.DBA.RDF_QUAD_AUDIT ()
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_FLAGS')
-    and COL_DTP = 188 ) )
+    and COL_DTP = __tag of smallint ) )
     goto check_new_style;
   err_dict := dict_new ();
   if (isstring (registry_get ('DB.DBA.RDF_QUAD_FT_UPGRADE')))
@@ -17645,7 +17628,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   commit work;
   if (1 <> sys_stat ('cl_run_local_only'))
     goto final_qm_reload;
-  if (244 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
+  if (__tag of IRI_ID_8 = coalesce ((select COL_DTP from SYS_COLS where "TABLE" = 'DB.DBA.RDF_QUAD' and "COLUMN"='G'), 0))
     {
       __set_64bit_min_bnode_iri_id();
       sequence_set ('RDF_URL_IID_BLANK', iri_id_num (min_bnode_iri_id ()), 1);
@@ -17657,7 +17640,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
     and exists (select top 1 1 from DB.DBA.SYS_COLS
     where "TABLE" = fix_identifier_case ('DB.DBA.RDF_OBJ')
     and "COLUMN" = fix_identifier_case ('RO_FLAGS')
-    and COL_DTP = 188 ) )
+    and COL_DTP = __tag of smallint ) )
     goto final_qm_reload;
   exec ('DB.DBA.vt_create_text_index (
     fix_identifier_case (''DB.DBA.RDF_OBJ''),
@@ -17681,9 +17664,6 @@ final_qm_reload:
 DB.DBA.RDF_QUAD_FT_UPGRADE ()
 ;
 
---#IF VER=5
---!AFTER __PROCEDURE__ DB.DBA.USER_CREATE !
---#ENDIF
 DB.DBA.RDF_CREATE_SPARQL_ROLES ()
 ;
 

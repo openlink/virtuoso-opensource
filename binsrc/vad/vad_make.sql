@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2021 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -53,9 +53,9 @@ create procedure "VAD"."DBA"."DAV_DELETE_VAD" (
         return rrc;
       }
     }
-    for select COL_ID from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+    for select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id do
     {
-      rrc := "VAD"."DBA"."DAV_DELETE_VAD" (WS.WS.COL_PATH(COL_ID), silent, extern);
+      rrc := "VAD"."DBA"."DAV_DELETE_VAD" (COL_FULL_PATH, silent, extern);
       if (rrc <> 1)
       {
         rollback work;
@@ -1207,8 +1207,8 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
   SQL_MESSAGE := '';
   result_names (SQL_STATE, SQL_MESSAGE);
 
-  if ((is_dav = 0 and 0 = file_stat (fname)) 
-      or 
+  if ((is_dav = 0 and 0 = file_stat (fname))
+      or
       (is_dav <> 0 and (not exists (select 1 from WS.WS.SYS_DAV_RES where RES_FULL_PATH = fname))))
     {
       registry_set ('VAD_wet_run', '0');
@@ -1217,7 +1217,7 @@ create procedure "DB"."DBA"."VAD_INSTALL" (
       connection_set ('app_endpoint_uri', 'unknown');
       connection_set ('app_usage_uri', 'unknown');
       result ('42VAD', concat ('Could not open ',
-      case when is_dav = 0 then 'filesystem' else 'DAV' end, 
+      case when is_dav = 0 then 'filesystem' else 'DAV' end,
       ' resource ', fname, ' Reason: File not found'));
       goto failure;
     }

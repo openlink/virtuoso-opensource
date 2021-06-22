@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -198,6 +198,7 @@ int		cfg_setup (void);
 int		db_check_in_use (void);
 static void	sigh_do_action (int is_asynchronous);
 static int	set_virtuoso_dir (void);
+void		viwin32_terminate (int n);
 
 /* Program options */
 struct pgm_option options[] =
@@ -730,6 +731,7 @@ ServiceCtrlMain (int cmd)
 DWORD
 CreateApplicationConsole (void)
 {
+#if 0
   if (debugFlag && AllocConsole ())
     {
       SetConsoleTitle (DISPLAY_NAME);
@@ -753,7 +755,7 @@ CreateApplicationConsole (void)
       *stdin = *CInputHandle;
       setvbuf(stdin, NULL, _IONBF, 0);
     }
-
+#endif
   return NO_ERROR;
 }
 
@@ -1013,7 +1015,7 @@ main (int argc, char **argv)
   dbg_malloc_enable();
 #endif
 
-  process_exit_hook = terminate;
+  process_exit_hook = viwin32_terminate;
 
   srv_set_cfg (new_cfg_replace_log, new_cfg_set_checkpoint_interval, new_db_read_cfg, new_dbs_read_cfg, new_cfg_read_storages);
 
@@ -1039,7 +1041,7 @@ main (int argc, char **argv)
   /*
    *  Don't execute maintenance commands running as a service
    */
-  if (f_backup_dump || f_crash_dump)
+  if (f_backup_dump || f_crash_dump || f_read_from_rebuilt_database)
     {
       f_cmd = CMD_NONE;
       f_foreground = 1;
@@ -1113,7 +1115,7 @@ sigh_do_action (int is_asynchronous)
   switch (sigh_mode)
     {
     case SIGH_EXIT:
-      terminate (1);
+      viwin32_terminate (1);
 
     case SIGH_BLOCK:
       log_info ("Server shutdown pending", sigh_pending_signal);
@@ -1179,7 +1181,7 @@ CtrlEventHandler (DWORD sig)
  *  Take the necessary action to shutdown this application
  */
 void
-terminate (int n)
+viwin32_terminate (int n)
 {
   if (is_in_use)
     {
@@ -1208,7 +1210,7 @@ terminate (int n)
 static void
 server_is_down (void)
 {
-  terminate (0);
+  viwin32_terminate (0);
 }
 
 
@@ -1253,7 +1255,6 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
-  extern char *git_head;
 #if LICENSE
   int lic;
 #endif
@@ -1265,15 +1266,6 @@ usage (void)
   sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
-
-  /*
-   *  Add git SHA1 of HEAD for easier identification of code base
-   */
-  if (git_head[0])
-    {
-      sprintf (line, " (%s)", git_head);
-      p = stpcpy (p, line);
-    }
 
   sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
@@ -1305,7 +1297,7 @@ usage (void)
     "  %s +service start +instance MyService\n",
     program_info.program_name, program_info.program_name);
 
-  terminate (1);
+  viwin32_terminate (1);
 }
 
 
@@ -1453,20 +1445,20 @@ ApplicationMain (int argc, char **argv)
 
   /* change to virtuoso directory */
   if (set_virtuoso_dir () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   if (kernel_init () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   dk_box_initialize (); /* This should happen before cfg_setup() because loading plugins may result in calls of bif_define() and thus calls of box_dv_uname_string() and the like */
 
   /* parse configuration file */
   if (cfg_setup () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   /* make sure database is not in use */
   if (db_check_in_use () == -1)
-    terminate (1);
+    viwin32_terminate (1);
 
   /* mark .lck file for removal */
   is_in_use = 1;
@@ -1489,8 +1481,9 @@ ApplicationMain (int argc, char **argv)
       os_sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
+      txn_after_image_limit = 0;
       db_to_log ();
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   if (recover_file_prefix)
@@ -1498,7 +1491,7 @@ ApplicationMain (int argc, char **argv)
       os_sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   if (f_crash_dump)
@@ -1515,7 +1508,7 @@ ApplicationMain (int argc, char **argv)
       db_recover_keys (f_dump_keys);
       log_info ("Using mode \'%s\'", f_mode);
       db_crash_to_log (f_mode);
-      terminate (0);
+      viwin32_terminate (0);
     }
 
   /* begin normal server operation */
@@ -1560,7 +1553,7 @@ ApplicationMain (int argc, char **argv)
   if (!DKSESSTAT_ISSET (listening, SST_LISTENING))
     {
       log_error ("Failed to start listening at SQL port '%s'", c_serverport);
-      terminate (1);
+      viwin32_terminate (1);
     }
 
   ssl_server_listen ();
@@ -1600,7 +1593,7 @@ ApplicationMain (int argc, char **argv)
 	  if (serviceFlag)
 	    UpdateRunningServiceStatus (SERVICE_STOP_PENDING, 0);
 #ifdef _RENDEZVOUS
-	  stop_rendezvous ();
+	  /*stop_rendezvous ();*/
 #endif
 	  sf_fastdown (NULL);
 	}

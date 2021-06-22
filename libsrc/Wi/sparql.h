@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -828,6 +828,9 @@ extern int sparyyparse (sparp_t *sparp_arg);
 The search for associated macro lib is disabled if the statement contains CREATE MACRO LIBRARY clause */
 extern void sparp_configure_storage_and_macro_libs (sparp_t *sparp);
 extern void sparp_compile_smllist (sparp_t *sparp, caddr_t sml_iri_uname, void /* actually struct sparql_macro_library_t */ *smlib);
+extern int sparp_sql_function_name_is_unsafe (const char *buf);
+extern int sparp_bif_function_name_is_unsafe (const char *buf);
+
 
 extern const char *spart_dump_opname (ptrlong opname, int is_op);
 extern void spart_dump (const void *tree_arg, dk_session_t *ses, int indent, const char *title, int hint);
@@ -931,7 +934,10 @@ extern caddr_t sparp_graph_sec_id_to_iri_nosignal (sparp_t *sparp, iri_id_t iid)
 extern caddr_t sparp_iri_to_id_nosignal (sparp_t *sparp, ccaddr_t qname); /*!< returns t_boxed IRI_ID or plain NULL pointer */
 extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_boxed string or plain NULL pointer */
 
-extern caddr_t spar_strliteral (sparp_t *sparp, const char *sparyytext, int strg_is_long, int is_json);
+#define SPAR_STRLITERAL_SPARQL_STRING	0
+#define SPAR_STRLITERAL_JSON_STRING	1
+#define SPAR_STRLITERAL_SPARQL_QNAME	2
+extern caddr_t spar_unescape_strliteral (sparp_t *sparp, const char *sparyytext, int count_of_quotes, int mode);
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 

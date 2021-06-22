@@ -1,0 +1,224 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2021 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="vad_main_page"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
+  <vm:pagetitle>Virtuoso Conductor: FCT Configuration</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Virtuoso Application Deployment"/>
+    </vm:menu>
+    <vm:header caption="Faceted Browser Configuration"/>
+    <vm:variables>
+      <v:variable persist="temp" name="v_resultPageSize" type="varchar" />
+      <v:variable persist="temp" name="v_ruleSet" type="varchar" />
+      <v:variable persist="temp" name="v_inverseFuncProp" type="varchar" />
+      <v:variable persist="temp" name="v_sameAs" type="varchar" />
+      <v:variable persist="temp" name="v_terminology" type="varchar" />
+      <v:variable persist="temp" name="v_timeout_min" type="varchar" />
+      <v:variable persist="temp" name="v_timeout_max" type="varchar" />
+      <v:variable persist="temp" name="v_cctr" type="varchar" />
+    </vm:variables>
+    <vm:pagebody>
+      <![CDATA[
+        <script type="text/javascript" src="vad_fct_config.js"></script>
+      ]]>
+      <v:on-init>
+        <![CDATA[
+          set http_charset='utf-8';
+
+          self.v_resultPageSize := registry_get ('fct_default_limit');
+          if (self.v_resultPageSize = 0)
+            self.v_resultPageSize := '50';
+
+          self.v_ruleSet := registry_get ('fct_default_inf');
+          if (self.v_ruleSet = 0)
+            self.v_ruleSet := 'None';
+
+          self.v_inverseFuncProp := registry_get ('fct_default_invfp');
+          if (self.v_inverseFuncProp = 0)
+            self.v_inverseFuncProp := 'IFP_OFF';
+
+          self.v_sameAs := registry_get ('fct_default_sas');
+          if (self.v_sameAs = 0)
+            self.v_sameAs := 'SAME_AS_OFF';
+
+          self.v_terminology := registry_get ('fct_default_terminology');
+          if (self.v_terminology = 0)
+            self.v_terminology := 'eav';
+
+          self.v_timeout_min := registry_get ('fct_timeout_min');
+          if (self.v_timeout_min = 0)
+            self.v_timeout_min := '8000';
+
+          self.v_timeout_max := registry_get ('fct_timeout_max');
+          if (self.v_timeout_max = 0)
+            self.v_timeout_max := '20000';
+
+          self.v_cctr := registry_get ('fct_ctr');
+          if (self.v_cctr = 0)
+            self.v_cctr := 'max-age=3600';
+        ]]>
+      </v:on-init>
+      <div class="main_tab_page">
+        <v:form xhtml_id="form1" name="form1" method="POST" type="simple" action="">
+          <h2 style="color: #aeaeaa; font-weight: bold;">Global Settings</h2>
+
+          <h3 style="background-color: #f7f7f7; padding: 3px;">Query Timeouts</h3>
+          <p>
+            The timeout for a Facet query is specified on a per-query basis as one of the query parameters.<br/>
+            The minimum and maximum timeouts below set limits on the permitted range of the query timeout.
+          </p>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Minimum timeout (ms)</span>
+          <v:text xhtml_id="timeoutMin" name="timeoutMin" value="--self.v_timeout_min" xhtml_style="margin-right: 10px;"/>
+          <br/>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Maximum timeout (ms)</span>
+          <v:text xhtml_id="timeoutMax" name="timeoutMax" value="--self.v_timeout_max" />
+
+          <h2 style="color: #aeaeaa; font-weight: bold;">User Overridable Settings</h2>
+          <p>
+            The defaults below provide initial values for various Faceted Browser options.<br/>
+            A user can set their own preferences by overriding these defaults through the Faceted Browser's Options screen.
+          </p>
+          <h3 style="background-color: #f7f7f7; padding: 3px;">Resultset Paging Defaults</h3>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Rows displayed per page</span>
+          <v:select-list name="resultPageSize" xhtml_id="resultPageSize" xhtml_style="width: 100px">
+            <v:item name="20" value="20" />
+            <v:item name="50" value="50" />
+            <v:item name="100" value="100" />
+            <v:item name="150" value="150" />
+            <v:item name="200" value="200" />
+            <v:item name="300" value="300" />
+            <v:item name="400" value="400" />
+            <v:item name="500" value="500" />
+            <v:before-data-bind>
+              <![CDATA[
+                if (isnull (control.ufl_value))
+                  control.ufl_value := self.v_resultPageSize;
+              ]]>
+            </v:before-data-bind>
+          </v:select-list>
+          <br />
+
+          <h3 style="background-color: #f7f7f7; padding: 3px;">Inference Defaults</h3>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Ruleset</span>
+          <v:data-list name="ruleSet" id="ruleSet" 
+              sql="select top 1 'None' as RS_NAME from SYS_RDF_SCHEMA union select distinct RS_NAME from SYS_RDF_SCHEMA"
+              key-column="RS_NAME" value-column="RS_NAME" 
+              xhtml_style="width: 500px;">
+            <v:before-data-bind>
+              <![CDATA[
+                if (isnull (control.ufl_value))
+                  control.ufl_value := self.v_ruleSet;
+              ]]>
+            </v:before-data-bind>
+          </v:data-list>
+          <br />
+
+          <span class="fm_label" style="padding: 6px 5px 0 0; width:245px">Inverse Functional Property</span>
+          <v:select-list name="inverseFuncProp" xhtml_id="inverseFuncProp" xhtml_style="width: 500px; margin-top: 4px;">
+            <v:item name="Disabled (fastest)" value="IFP_OFF" />
+            <v:item name="Apply to subjects only" value="IFP_S" />
+            <v:item name="Apply to objects only" value="IFP_O" />
+            <v:item name="Apply to both subjects and objects" value="IFP" />
+            <v:before-data-bind>
+              <![CDATA[
+                if (isnull (control.ufl_value))
+                  control.ufl_value := self.v_inverseFuncProp;
+              ]]>
+            </v:before-data-bind>
+          </v:select-list>
+          <br />
+
+          <span class="fm_label" style="padding: 6px 5px 0 0; width:245px">Same As</span>
+          <v:select-list name="sameAs" xhtml_id="sameAs" xhtml_style="width: 500px; margin-top: 4px;">
+            <v:item name="Disabled (fastest)" value="SAME_AS_OFF" />
+            <v:item name="Apply to subjects only" value="SAME_AS_S" />
+            <v:item name="Apply to objects only" value="SAME_AS_O" />
+            <v:item name="Apply to both subjects and objects (recommended)" value="SAME_AS_S_O" />
+            <v:item name="Apply to subjects, objects and predicates (not recommended on big datasets)" value="SAME_AS" />
+            <v:item name="Apply to predicates only (special use cases only)" value="SAME_AS_P" />
+            <v:before-data-bind>
+              <![CDATA[
+                if (isnull (control.ufl_value))
+                  control.ufl_value := self.v_sameAs;
+              ]]>
+            </v:before-data-bind>
+          </v:select-list>
+          <br />
+
+          <h3 style="background-color: #f7f7f7; padding: 3px;">User Interface Defaults</h3>
+          <span class="fm_label" style="padding: 5px 5px 0 0; width:245px">Terminology</span>
+          <v:select-list name="terminology" xhtml_id="terminology" xhtml_style="width: 500px; margin-top: 4px;">
+            <v:item name="Entity-Attribute-Value" value="eav" />
+            <v:item name="Subject-Predicate-Object" value="spo" />
+            <v:before-data-bind>
+              <![CDATA[
+                if (isnull (control.ufl_value))
+                  control.ufl_value := self.v_terminology;
+              ]]>
+            </v:before-data-bind>
+          </v:select-list>
+          <br />
+
+          <div style="margin-top: 10px;"></div>
+
+
+          <h3 style="background-color: #f7f7f7; padding: 3px;">Caching HTTP request</h3>
+          <p>
+            The cache directives sent via HTTP header to the client
+          </p>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Cache Control settings</span>
+          <v:text xhtml_id="cctr" name="cctr" value="--self.v_cctr" xhtml_style="margin-right: 10px;"/>
+          <br/>
+
+          <v:button action="simple" name="set" value="Set">
+            <v:on-post>
+              <![CDATA[
+                registry_set ('fct_default_limit', self.resultPageSize.ufl_value);
+                registry_set ('fct_default_inf', self.ruleSet.ufl_value);
+                registry_set ('fct_default_invfp', self.inverseFuncProp.ufl_value);
+                registry_set ('fct_default_sas', self.sameAs.ufl_value);
+                registry_set ('fct_default_terminology', self.terminology.ufl_value);
+                registry_set ('fct_timeout_min', self.timeoutMin.ufl_value);
+                registry_set ('fct_timeout_max', self.timeoutMax.ufl_value);
+                registry_set ('fct_cctr', self.cctr.ufl_value);
+              ]]>
+            </v:on-post>
+          </v:button>
+          <br />
+          <hr />
+          <v:button action="simple" name="back" value="Back to packages list">
+            <v:on-post>
+              self.vc_redirect ('vad.vspx');
+            </v:on-post>
+          </v:button>
+        </v:form>
+      </div>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

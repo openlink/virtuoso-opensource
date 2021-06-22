@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,6 +25,15 @@
 #include "sqlfn.h"
 #include "monitor.h"
 
+#ifdef WIN32
+#include <Psapi.h>
+#endif
+
+#if defined(__APPLE__) || defined(WIN32)
+#define MEM_RSS_UNITS (1024*1024)		/* These operating systems report value in bytes */
+#else
+#define MEM_RSS_UNITS (1024)			/* Most modern operating systems report value in kilobytes */
+#endif
 
 #define DIMENSION_OF_STATISTICS 60
 static monitor_t statistics[DIMENSION_OF_STATISTICS];
@@ -34,6 +43,7 @@ int mon_is_inited;
 int32 mon_enable = 1;
 int mon_max_cpu_pct;
 double curr_cpu_pct = 0.0;
+unsigned long curr_mem_rss = 0;
 
 extern timeout_t time_now;
 extern long disk_reads;
@@ -107,11 +117,14 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
   next->mon_cpu_time = (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000) + (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
   curr_cpu_pct = next->mon_cpu_pct = (next->mon_cpu_time - prev->mon_cpu_time) / (double)(next->mon_time_now - prev->mon_time_now) * 100;
   next->mon_pageflts = ru.ru_majflt - prev->mon_pageflts;
+  curr_mem_rss = ru.ru_maxrss / MEM_RSS_UNITS;
 #elif defined (WIN32)
   {
     FILETIME ftime, fsys, fuser;
     ULARGE_INTEGER now, sys, user;
     double percent;
+      HANDLE hProcess = GetCurrentProcess ();
+      PROCESS_MEMORY_COUNTERS pmc;
 
     GetSystemTimeAsFileTime (&ftime);
     memcpy (&now, &ftime, sizeof (FILETIME));
@@ -125,6 +138,9 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
     lastUserCPU = user;
     lastSysCPU = sys;
     curr_cpu_pct = next->mon_cpu_pct = percent * 100;
+
+      if (GetProcessMemoryInfo (hProcess, &pmc, sizeof(pmc)))
+	curr_mem_rss = pmc.WorkingSetSize / MEM_RSS_UNITS;
   }
 #endif
   /* thread counts */

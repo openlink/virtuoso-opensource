@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -299,21 +299,27 @@ strdev_write (session_t * ses2, char *buffer, int bytes)
 	{
 	  char fname[PATH_MAX + 1];
 	  snprintf (fname, sizeof (fname), "%s/sesXXXXXX", ses_tmp_dir);
+
+#if defined (HAVE_MKSTEMP64) && defined (FILE64)
+	  ses2->ses_file->ses_file_descriptor = mkstemp64 (fname);
+#elif defined (HAVE_MKSTEMP)
+	  ses2->ses_file->ses_file_descriptor = mkstemp (fname);
+#else
 	  mktemp (fname);
 
 #if defined (WIN32)
-# define OPEN_FLAGS  	  O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY
+#  define OPEN_FLAGS	O_CREAT | O_RDWR | O_BINARY | O_EXCL | O_TEMPORARY
 #elif defined (FILE64)
-# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL | O_LARGEFILE
+#  define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY | O_EXCL | O_LARGEFILE
 #else
-# define OPEN_FLAGS       O_RDWR | O_CREAT | O_BINARY | O_EXCL
+#  define OPEN_FLAGS	O_RDWR | O_CREAT | O_BINARY | O_EXCL
 #endif
 
 #ifdef WIN32
 	  ses2->ses_file->ses_file_descriptor = _open (fname, OPEN_FLAGS, 0600);
 #else
 	  ses2->ses_file->ses_file_descriptor = open (fname, OPEN_FLAGS, 0600);
-	  unlink (fname);
+#endif
 #endif
 	  if (ses2->ses_file->ses_file_descriptor < 0)
 	    {
@@ -322,7 +328,12 @@ strdev_write (session_t * ses2, char *buffer, int bytes)
 	      ses2->ses_file->ses_file_descriptor = 0;
 	    }
 	  else
-	    ses2->ses_file->ses_temp_file_name = box_dv_short_string (fname);
+	    {
+	      ses2->ses_file->ses_temp_file_name = box_dv_short_string (fname);
+	    }
+#if !defined (WIN32)
+          unlink (fname);
+#endif
 	  ses2->ses_file->ses_fd_fill = ses2->ses_file->ses_fd_read = 0;
 	}
     }
@@ -1322,7 +1333,7 @@ strses_get_part_1 (dk_session_t * ses, void *buf2, int64 starting_ofs, long nbyt
 		  dest_readed = 0;
 		  do
 		    {
-		      long to_read = MIN (sizeof (buffer), src_n_bytes);
+		      long to_read = MIN (sizeof (src_buffer), src_n_bytes);
 		      readed = strf_read (ses_file, src_buffer, to_read);
 		      if (readed == -1)
 			break;

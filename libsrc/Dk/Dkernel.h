@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -179,7 +179,7 @@ struct future_request_s
   int 			rq_is_second;
 };
 
-typedef char *(*server_func) (caddr_t x, ...);
+typedef caddr_t (*server_func) (caddr_t args[]);
 typedef void (*post_func) (caddr_t b, future_request_t * f);
 
 /*
@@ -970,7 +970,6 @@ typedef struct ssl_ctx_info_s
   int32 *		ssci_depth_ptr;
   char *		ssci_name_ptr;
 } ssl_ctx_info_t;
-int ssl_cert_verify_callback (int ok, void *ctx);
 #  endif
 #endif
 
