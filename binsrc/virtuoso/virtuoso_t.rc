@@ -60,8 +60,8 @@ LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 7,0,1,3207
- PRODUCTVERSION 7,0,1,3207
+ FILEVERSION 7,2,6,3233
+ PRODUCTVERSION 7,2,6,3233
  FILEFLAGSMASK 0x17L
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -78,11 +78,11 @@ BEGIN
         BEGIN
             VALUE "CompanyName", "OpenLink Software"
             VALUE "FileDescription", "Virtuoso OpenSource"
-            VALUE "FileVersion", "7.0.1.3207"
+            VALUE "FileVersion", "7.2.6.3233"
             VALUE "InternalName", "Virtuoso"
             VALUE "LegalCopyright", "Copyright (C) 1998-2021 OpenLink Software"
             VALUE "ProductName", "Virtuoso OpenSource"
-            VALUE "ProductVersion", "7.0.1.3207"
+            VALUE "ProductVersion", "7.2.6.3233"
         END
     END
     BLOCK "VarFileInfo"
@@ -110,7 +110,8 @@ IDI_ICON1               ICON                    "viwin32.ico"
 //
 // Generated from the TEXTINCLUDE 3 resource.
 //
-
+
+
 /////////////////////////////////////////////////////////////////////////////
 #endif    // not APSTUDIO_INVOKED
 
