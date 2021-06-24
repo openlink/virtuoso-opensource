@@ -5,7 +5,8 @@ June 22, 2021, v7.2.6:
 ----------------------
 
   * Virtuoso Engine
-    - Added support for macOS 11 Big Sur on Intel and Apple Silicon
+    - Added support for macOS Big Sur (11.x) on Intel (x86_64) and Apple Silicon (arm64 or M1)
+    - Added support for Linux on arm64 such as Raspberry Pi
     - Added support for OpenSSL 1.1.1
     - Added support for Strict-Transport-Security header
     - Added check to make sure RPNG is properly seeded
