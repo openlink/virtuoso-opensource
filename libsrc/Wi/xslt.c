@@ -3587,7 +3587,7 @@ dict_put_impl (id_hash_iterator_t *hit, caddr_t key, caddr_t val, int signal_uns
 	}
     }
   if ((0 < ht->ht_dict_max_entries) &&
-      ((ht->ht_inserts - ht->ht_deletes) > ht->ht_dict_max_entries) )
+      ((ht->ht_inserts - ht->ht_deletes) >= ht->ht_dict_max_entries) )
     goto skip_insertion;	/* see below */
   if ((0 < ht->ht_dict_max_mem_in_use) &&
       (ht->ht_dict_mem_in_use > ht->ht_dict_max_mem_in_use) )
