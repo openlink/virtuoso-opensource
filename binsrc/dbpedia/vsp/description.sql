@@ -351,13 +351,15 @@ create procedure dbp_ldd_type (in gr varchar, in subj varchar, out url varchar, 
 
       langs := dbp_ldd_get_default_lang_acc (lines);
 
-      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` <http://dbpedia.org/ontology/type>  ?tp . optional { ?tp rdfs:label ?l } }', langs, gr), null, null, vector (subj), 0, meta, data);
+      exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` a ?tp . optional { ?tp rdfs:label ?l } }', langs, gr),
+      	null, null, vector (subj), 0, meta, data);
+      
       if (not length (data))
         exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` a ?tp . optional { ?tp rdfs:label ?l } filter (?tp like <http://dbpedia.org/ontology/%%>) }', langs, gr),
 	  null, null, vector ( subj), 0, meta, data);
       if (not length (data))
-        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` a ?tp . optional { ?tp rdfs:label ?l } }', langs, gr),
-	  null, null, vector (subj), 0, meta, data);
+        exec (sprintf ('sparql select (sql:BEST_LANGMATCH (?l, \'%S\', \'\')) ?tp from <%S> from virtrdf:schemas { `iri(??)` <http://dbpedia.org/ontology/type>  ?tp . optional { ?tp rdfs:label ?l } }', langs, gr), null, null, vector (subj), 0, meta, data);
+	
       if (length (data))
 	{
 	  if (data[0][0] is not null and data[0][0] <> 0)
