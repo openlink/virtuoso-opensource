@@ -854,7 +854,12 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 
 create procedure b3s_xsd_link (in dt varchar)
 {
-  return sprintf ('<a href="%s">%s</a>', dt, b3s_uri_curie(dt));
+  declare p_prefix, url any;
+  p_prefix := b3s_label (dt, null);
+  if (not length (p_prefix))
+    p_prefix := b3s_uri_curie (dt);
+  url := b3s_http_url (dt, null, null, 0);
+  return sprintf ('<a href="%s">%s</a>', url, p_prefix);
 }
 ;
 
