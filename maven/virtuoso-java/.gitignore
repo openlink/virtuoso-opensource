@@ -1,0 +1,9 @@
+.project
+.settings
+.classpath
+bin
+*.class
+target
+build
+*.log
+*~
