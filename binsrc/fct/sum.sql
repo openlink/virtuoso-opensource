@@ -116,6 +116,7 @@ create procedure sum_result (inout final any,
   for (inx := 0; inx < length (sorted); inx := inx + 3)
   tot	 := tot || cast (rdf_box_data (sorted[inx]) as varchar);
   tot := __bft (tot, 2);
+  s := charset_recode (s, 'UTF-8', '_WIDE_');
  exc := fct_bold_tags (search_excerpt (text_exp, tot));
 -- dbg_obj_print (' summaries of ', tot, ' ', lbl, ' ', exc);
  elt := xmlelement ('row',

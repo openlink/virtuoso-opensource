@@ -1022,7 +1022,8 @@ fct_web (in tree any, in sid int)
   p_ses := string_output();
   http_value (p_xml_tree, null, p_ses);
 
-  p_xml := cast (p_ses as varchar);
+  p_xml := string_output_string (p_ses);
+  __box_flags_set (p_xml, 2);
   p_link := fct_c_plink (p_xml);
 
   r_ses := string_output ();
