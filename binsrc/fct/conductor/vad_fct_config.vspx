@@ -79,7 +79,7 @@
           if (self.v_timeout_max = 0)
             self.v_timeout_max := '20000';
 
-          self.v_cctr := registry_get ('fct_ctr');
+          self.v_cctr := registry_get ('fct_cctr');
           if (self.v_cctr = 0)
             self.v_cctr := 'max-age=3600';
         ]]>
