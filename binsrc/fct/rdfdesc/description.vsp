@@ -68,6 +68,7 @@
   declare metas, rset any;
   declare auto_sponge_on_empty_graph int;
   declare q_txt any;
+  declare safetolink integer;
 
   set http_charset='utf-8';
   { 
@@ -229,6 +230,11 @@ again:
 
   _S := page_resource_uri;
   proxy_iri := page_resource_uri;
+
+  safetolink:=0;
+  if(lower(rfc1808_parse_uri(page_resource_uri)[0]) in ('http','https','ftp')) {
+    safetolink:=1;
+  }
 
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
   sp_mode := get_keyword ('sponger:get', params, 'add');
