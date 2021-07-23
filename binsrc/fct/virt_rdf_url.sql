@@ -23,8 +23,6 @@
 --
 --
 
-delete from RDF_QUAD where G = iri_to_id ('virtrdf-url');
-
 TTLP (
 '@prefix foaf: <http://xmlns.com/foaf/0.1/> .
 @prefix dc: <http://purl.org/dc/elements/1.1/> .
@@ -71,6 +69,7 @@ schema:potentialAction rdfs:subPropertyOf virtrdf:url .
 schema:logo rdfs:subPropertyOf virtrdf:url .
 schema:image rdfs:subPropertyOf virtrdf:url .
 schema:mainEntityOfPage rdfs:subPropertyOf virtrdf:url .
+schema:url rdfs:subPropertyOf virtrdf:url .
 
 pows:describedby rdfs:subPropertyOf virtrdf:url .
 sioc:links_to rdfs:subPropertyOf virtrdf:url .
