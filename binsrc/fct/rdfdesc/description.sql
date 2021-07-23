@@ -143,8 +143,7 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
            sid := get_keyword ('sid', pars);
        }
    }
-
-   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', sid);
+   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', cast (sid as integer));
 }
 ;
 
@@ -1591,6 +1590,7 @@ create procedure fct_set_graphs (in sid any, in graphs any)
   declare xt, newx, s any;
   if (sid is null) return;
   xt := (select fct_state from fct_state where fct_sid = sid);
+  if (xt is null) return; -- bad sid
   s := string_output ();
   http ('<graphs>', s);
   foreach (any g in graphs) do
