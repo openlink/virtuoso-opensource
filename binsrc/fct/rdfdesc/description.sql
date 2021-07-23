@@ -306,6 +306,9 @@ b3s_get_types (in _s varchar,
   data := null;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
@@ -321,6 +324,9 @@ b3s_get_types (in _s varchar,
     goto skip_virt_graphs;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
