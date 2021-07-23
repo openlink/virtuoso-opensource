@@ -377,8 +377,17 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
     {
       if (is_rdf_box (o))
 	{
+	  if (not rdf_box_is_complete (o))
+	    __rdf_box_make_complete (o);
           lng_pref := rdf_box_lang (o);
-	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	  if (lng_pref <> 257)
+	    {
+	      str_lang := rdf_cache_id_to_name ('l', lng_pref);
+	      if (0 = str_lang) 
+		str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	    }
+	  else
+	    str_lang := 'en';
 	}
       else
         str_lang := 'en';
