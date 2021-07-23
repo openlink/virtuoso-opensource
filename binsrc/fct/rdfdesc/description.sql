@@ -1159,10 +1159,10 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
   foreach (any elm in vec) do
     {
       links := links ||
-      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
+      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)", ', desc_link, elm[0], elm[0], elm[1]);
     }
-  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
-  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
+  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', subj);
+  links := links || '<?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }
