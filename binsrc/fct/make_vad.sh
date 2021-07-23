@@ -365,10 +365,14 @@ fi
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
-  echo ""
+  echo "" >> $STICKER
   echo "      -- Copy FCT VAD configuration files to Conductor UI folder" >> $STICKER
   echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.vspx');" >> $STICKER
   echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.js');" >> $STICKER
+  echo ""  >> $STICKER
+  echo "       -- Check if automated label fill is enabled" >> $STICKER
+  echo "       if (virtuoso_ini_item_value ('SPARQL', 'LabelInferenceName') = 'facets')" >> $STICKER
+  echo "           registry_set ('urilbl_ac_init_status', '2');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
