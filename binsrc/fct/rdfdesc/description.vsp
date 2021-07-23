@@ -416,6 +416,9 @@ again:
   if (not length (label))
     label := b3s_trunc_uri (page_resource_uri);
   if (vlbl <> 0) label := vlbl;
+  if (label like 'http%://%')
+    label := b3s_uri_percent_decode(label);
+
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
   desc_qr := sprintf ('define sql:describe-mode "SPO" DESCRIBE <%s>', page_resource_uri);
@@ -450,7 +453,7 @@ again:
 ?>
 <head>
     <base href="/fct/rdfdesc/" />
-    <title>About: <?vsp if (length (label)) http_value (label); else http_value (b3s_uri_curie (page_resource_uri));?></title>
+    <title>About: <?vsp if (length (label)) http_value (label); else http (b3s_uri_percent_decode(b3s_uri_curie (page_resource_uri)));?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <?vsp

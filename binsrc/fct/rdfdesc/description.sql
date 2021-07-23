@@ -1567,6 +1567,23 @@ create procedure b3s_get_user_graph_permissions (
 }
 ;
 
+create procedure b3s_uri_percent_decode (in uri any)
+{
+  declare du any;
+  if (uri is null)
+    return '';
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
+  if (length(uri) and strcontains(uri, '%'))
+  {
+    -- Assume the label is a percent-encoded URL/Curie. Percent-decode the label.
+    du := sprintf_inverse(uri, '%U', 0);
+    uri := case when length(du) > 0 then du[0] else uri end;
+  }
+  return uri;
+}
+;
+
 grant execute on b3s_gs_check_needed to public;
 
 create procedure fct_set_graphs (in sid any, in graphs any)
