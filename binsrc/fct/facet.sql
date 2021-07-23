@@ -829,8 +829,11 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
+      declare langs varchar;
+      langs := connection_get ('langs');
       http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) desc (bif:langmatches_pct_http (coalesce(lang(?s%d), \'\'), \'%s\'))',
+	   this_s, this_s, this_s, langs), post);
     }
 
   if ('list-count' = mode)
