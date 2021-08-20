@@ -444,6 +444,8 @@ bif_##x##name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \
 
 bif_x_name(day, "%A")
 bif_x_name(month, "%B")
+bif_x_name(dayshort, "%a")
+bif_x_name(monthshort, "%b")
 
 caddr_t
 bif_dayofweek (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -1228,6 +1230,8 @@ bif_date_init ()
 {
   bif_define_ex ("dayname"			, bif_dayname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("monthname"			, bif_monthname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayshortname"			, bif_dayshortname			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("monthshortname"		, bif_monthshortname			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofmonth"	, bif_day		,BMD_ALIAS, "rdf_day_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofweek"			, bif_dayofweek				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofyear"			, bif_dayofyear				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);

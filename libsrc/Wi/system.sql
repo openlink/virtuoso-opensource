@@ -4734,7 +4734,7 @@ HTTP_GET_HOST ()
 }
 ;
 
---!AWK PUBLIC
+--!AWK PLBIF date_rfc1123
 create procedure
 date_rfc1123 (in dt datetime)
 {
@@ -4742,7 +4742,7 @@ date_rfc1123 (in dt datetime)
 }
 ;
 
---!AWK PUBLIC
+--!AWK PLBIF date_iso8601
 create procedure
 date_iso8601 (in dt datetime)
 {
