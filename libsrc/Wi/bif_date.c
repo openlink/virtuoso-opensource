@@ -809,6 +809,26 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_unix_timestamp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int64 res;
+  TIMESTAMP_STRUCT ts;
+  caddr_t box[DT_LENGTH  + BOX_AUTO_OVERHEAD], dt_auto;
+  caddr_t dt = BOX_ELEMENTS (args) > 0 ? bif_date_arg (qst, args, 0, "unix_timestamp") : NULL;
+
+  if (NULL == dt)
+    {
+      BOX_AUTO_TYPED (caddr_t, dt_auto, box, DT_LENGTH, DV_DATETIME);
+      dt_now_GMT (dt_auto);
+      dt = dt_auto;
+    }
+  dt_to_timestamp_struct (dt, &ts);
+  res = ((((int64)24) * 60 * 60 * date2num (ts.year, ts.month, ts.day)) + (ts.hour * 60 * 60) + (ts.minute * 60) + ts.second) 
+      - (((int64)24) * 60 * 60 * date2num (1970, 1, 1));
+  return box_num (res);
+}
+
+static caddr_t
 bif_extract (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t unit = bif_string_arg (qst, args, 0, "extract");
@@ -1253,5 +1273,6 @@ bif_date_init ()
   bif_define_ex ("dt_set_tz"			, bif_dt_set_tz				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("__extract"			, bif_extract				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("strftime"			, bif_strftime				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("unix_timestamp"		, bif_unix_timestamp			, BMD_RET_TYPE, &bt_integer	, BMD_DONE);
   dt_init ();
 }
