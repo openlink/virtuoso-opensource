@@ -3573,7 +3573,7 @@ char * rdf_prefix_text = "create table DB.DBA.RDF_PREFIX (RP_NAME varchar not nu
 
 char * rdf_iri_text = "create table DB.DBA.RDF_IRI (RI_NAME varchar not null primary key, RI_ID IRI_ID_8 not null unique)"
 "alter index RDF_IRI on RDF_IRI partition (RI_NAME varchar (-10, 0hexffff))"
-"alter index DB_DBA_RDF_IRI_UNQC_RI_ID on DB.DBA.RDF_IRI partition (RI_ID int (0hexffff00))";
+"alter index DB_DBA_RDF_IRI_UNQC_RI_ID on DB.DBA.RDF_IRI partition (RI_ID bigint (0hexffff00))";
 
 
 
