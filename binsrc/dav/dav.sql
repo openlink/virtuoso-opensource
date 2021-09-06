@@ -3595,7 +3595,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   n_page := atoi (get_keyword ('p', params, '1'));
   n_count := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
   n_last := (n_count / n_per_page) + 1;
-  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, n_page, n_last, full_path)));
+  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, n_page, n_last, full_path, pref_mime)));
 
   etag := WS.WS.ETAG (name_, id_, mod_time);
   if (isstring (etag))
