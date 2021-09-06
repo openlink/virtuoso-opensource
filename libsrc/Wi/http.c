@@ -4592,7 +4592,10 @@ ws_serve_connection (ws_connection_t * ws)
       ssl_err = SSL_accept (new_ssl);
       if (ssl_err == -1)
 	{
-	  ERR_print_errors_fp (stderr);
+          unsigned long err = ERR_get_error();
+          char err_buf[1024];
+          ERR_error_string_n(err, err_buf, sizeof(err_buf));
+          log_info("SSL_accept [%s]", err_buf);
 	  SSL_free (new_ssl);
 	  ses->dks_ws_status = DKS_WS_DISCONNECTED;
 	  goto check_state;
