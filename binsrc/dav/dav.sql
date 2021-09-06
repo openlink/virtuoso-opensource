@@ -3628,7 +3628,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
                  'where ' ||
                  '  { ' ||
                  '    ?s ?p ?o option (table_option "index G") . ' ||
-                 '    optional { graph ?g { ?o a ?t option (table_option "index primary key") } } . ' ||
+                 '    optional { ?o a ?t option (table_option "index primary key") } . ' ||
                  '    BIND (sql:dynamic_host_name(?s) as ?dyn_s) .' ||
                  '    BIND (sql:dynamic_host_name(?o) as ?dyn_o) .' ||
                  '  } ' ||
