@@ -1689,6 +1689,8 @@ aq_transact_func (caddr_t av, caddr_t * err_ret)
   if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
     log_error ("transact while cpt atomic, trx no: %d, ", lt->lt_trx_no);
   ITC_LEAVE_MAPS (itc);
+  /* check for itc_is_col is inside free */
+  itc_col_free (itc);
   return NULL;
 }
 
