@@ -6225,3 +6225,83 @@ create procedure elarestore (in p varchar := 'ela')
     }
 }
 ;
+
+--
+-- Function to replace http_proxy, must be called in HTTP/HTTPS context
+-- Parameters:
+--   url - target URL
+--   params - request parameters
+---          if no 'content' parameter given, will try to get request body from HTTP session
+--   in_headers - HTTP headers for request
+--
+--   return - no value, the origin response will be sent back to current HTTP client connection
+--
+
+--!AWK PLBIF http_proxy_v2
+create procedure DB.DBA.HTTP_PROXY_V2 (in url varchar, in params any, in in_headers any)
+{
+  declare in_headers, out_headers, in_header, out_header, content, out_content, meth varchar;
+  declare inx, len, is_post integer;
+  if (url is null)
+    url := get_keyword ('url', params);
+  content := http_body_read ();
+  --dbg_obj_print_vars (params, url, in_headers, string_output_string (content));
+  meth := subseq (in_headers[0], 0, strchr (in_headers[0], ' '));
+  len := length (in_headers);
+  in_header := '';
+  is_post := 0;
+  for (inx := 1; inx < len; inx := inx + 1)
+     {
+	declare line varchar;
+        line := in_headers [inx];
+        if (lower (line) not like 'host:%' and lower (line) not like 'content-length:%')
+          in_header := in_header || line;
+        if (lower (line) like 'content-type:%' and lower (line) like '%application/x-www-form-urlencoded%')
+          is_post := 1;
+     }
+  --dbg_obj_print_vars (url, meth, in_header);
+  if (length (content) = 0 and is_post)
+    {
+      declare first int;
+      content := string_output ();
+      len := length (params);
+      first := 1;
+      for (inx := 0; inx < len; inx := inx + 2)
+         {
+            declare name, value varchar;
+            name := params[inx];
+            value := params[inx + 1];
+            if (name = 'content')
+              {
+                http (value, content);
+              }
+            else if (name <> 'url')
+	      {
+		if (not first)
+		  http ('&');
+		first := 0;
+		http (sprintf ('%U=%U', name, value), content); 
+	      }
+         }
+    }
+  --dbg_obj_print_vars (string_output_string (content));
+  out_content := http_client_ext (url, http_method=>meth, http_headers=>in_header, body=>content, headers=>out_headers);
+  --dbg_obj_print_vars (out_headers, length (out_content));
+  http_request_status (rtrim (out_headers[0], '\r\n', ''));
+  out_header := '';
+  len := length (out_headers);
+  for (inx := 1; inx < len; inx := inx + 1)
+     {
+	declare line varchar;
+        line := out_headers [inx];
+        if (lower (line) not like 'server:%' 
+          and lower (line) not like 'connection:%'
+	  and not (meth <> 'HEAD' and lower (line) like 'content-length:%'))
+	out_header := out_header || line;
+     }
+  --dbg_obj_print_vars (out_header);
+  http_header (out_header);
+  http (out_content);
+  return; -- no empty line
+}
+;
