@@ -210,6 +210,7 @@ BEGIN   {
 	  nindexes = 0
 	  ntriggers = 0
 	  nother = 0
+	  notherexec = 0
 	  nalter = 0
 	  nudt = 0
 	  nalterudt = 0
@@ -587,9 +588,10 @@ BEGIN   {
 		  }
 		else
 		  {
-		    _defines1 = "\n  ddl_ensure_table (\"do this always\", other" nother ");"
+		    _defines1 = "\n  EXEC_AND_LOG_TIME(" end_name ", other" nother ");"
 		    print "static const char *other" nother " = \n" fun ";"
 		    nother = nother + 1
+		    notherexec = notherexec + 1
 		  }
 		if (after_rfw)
 		  defines_arfw = _defines _pre_code _defines1
@@ -795,11 +797,19 @@ END 	{
 	     print "}"
 	   }
 
+	   print "#define EXEC_AND_LOG_TIME(fname, sno) \\\n" \
+			        "  ts = rdtsc (); \\\n" \
+				"  ddl_ensure_table (\"do this always\", sno); \\\n" \
+				"  msec = (rdtsc () - ts) / 2000000; \\\n" \
+			        "  if (log_sql_code_init && msec > (int64) log_sql_code_init) \\\n"\
+				"    log_debug (#fname \" \" #sno \": \" BOXINT_FMT \" msec\", msec);\n"
+
 	   if (pass_bootstrap_cli != 0)
 	     print "void\nsqls_define" init_name " (client_connection_t *bootstrap_cli)\n{"
            else
 	     print "void\nsqls_define" init_name " (void)\n{"
-
+           if (nother > 0 && notherexec > 0)
+	     print "  int64 ts, msec;\n"
 	   if (has_qualifier > 0 || (length (defines) > 0 && qualifier != "DB"))
 	     print "  caddr_t saved_qualifier = bootstrap_cli->cli_qualifier;\n"
 	   if (n_upgraded_tables > 0)
@@ -827,6 +837,8 @@ END 	{
 
 	   print "\n\nvoid\nsqls_arfw_define" init_name " (void)\n{"
 
+           if (nother > 0 && notherexec > 0)
+	     print "  int64 ts, msec;\n"
 	   if (has_qualifier_arfw > 0 || (length (defines_arfw) > 0 && qualifier != "DB"))
 	     print "  caddr_t saved_qualifier = bootstrap_cli->cli_qualifier;\n"
 	   if (n_upgraded_tables_arfw > 0)

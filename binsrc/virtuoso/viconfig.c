@@ -115,6 +115,7 @@ extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
 extern int32 ws_write_timeout;
 extern int32 log_proc_overwrite;
+extern int32 log_sql_code_init;
 extern char * backup_ignore_keys;
 
 #ifdef _SSL
@@ -1118,6 +1119,8 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
+  if (cfg_getlong (pconfig, section, "LogSqlCodeInit", &log_sql_code_init) == -1)
+    log_proc_overwrite = 0;
   if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
     c_compress_mode = 0;
 

@@ -1721,6 +1721,7 @@ void cli_set_start_times (client_connection_t * cli);
 
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
 extern int32 log_proc_overwrite;
+extern int32 log_sql_code_init;
 
 #ifdef MALLOC_DEBUG
 #define TMP_ARRAY_INIT_SZ 2
