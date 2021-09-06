@@ -959,6 +959,7 @@ create procedure DB.DBA.X509_STRING_DATE (
 ;
 
 
+--!AWK PLBIF uptime
 create procedure uptime ()
 {
   declare y,m,d,h,mn int;
