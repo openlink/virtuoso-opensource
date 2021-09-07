@@ -9993,13 +9993,20 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
       i = 0;
       IO_SECT (qst);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
       i = SSL_renegotiate (ssl);
+#else
+      if (SSL_version(ssl) >= TLS1_3_VERSION)
+	i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
+      else
+        i = SSL_renegotiate (ssl);
+#endif
       if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
 	}
-	i = SSL_do_handshake (ssl);
+      i = SSL_do_handshake (ssl);
       if (i <= 0) 
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
