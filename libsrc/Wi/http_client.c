@@ -2131,7 +2131,6 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
       ctx->hcctx_ssl_insecure = '\1';
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   else if (!strnicmp (url, "http://", 7))
     {
@@ -2566,14 +2565,12 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
       if (1 == strlen (cert) && 1 == atoi (cert))
 	ctx->hcctx_ssl_insecure = '\1';
       else
-      ctx->hcctx_ssl_insecure = (char) insecure;
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
+        ctx->hcctx_ssl_insecure = (char) insecure;
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
       ctx->hcctx_ssl_insecure = '\1';
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
 #endif
   if (!time_out_is_null) /* timeout */
