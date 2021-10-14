@@ -313,7 +313,7 @@ fct_query_info (in tree any,
                          charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')),
                 txt);
       else if (vt = 'properties')
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_s_term (),
                          connection_get ('sid'), 
@@ -325,7 +325,7 @@ fct_query_info (in tree any,
                          connection_get ('sid')), 
                  txt);
       else if (vt = 'properties-in') 
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_o_term (),
                          connection_get ('sid'), 
@@ -337,7 +337,7 @@ fct_query_info (in tree any,
                          connection_get ('sid')), 
                  txt);
       else
-        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> with %s <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx),
                          connection_get ('sid'),
 			 lim,
