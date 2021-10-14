@@ -10498,6 +10498,16 @@ do_datetime:
 	case DV_STRING:
 	  res = string_to_dt_box (data);
           break;
+	case DV_LONG_INT:
+	case DV_SHORT_INT:
+	  {
+	      time_t t = (time_t) unbox(data);
+	      res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+	      time_t_to_dt (t, 0L, res);
+	      DT_SET_TZ (res, 0);
+	      DT_SET_TZL (res, 0);
+	      break;
+	  }
 	case DV_DATETIME:
 	case DV_DATE:
 	case DV_TIME:
