@@ -79,10 +79,6 @@ json_out_vec (in v any, inout ses any)
 }
 ;
 
-DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/iriautocomplete.get');
-DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/iriautocomplete.get',
-                     ppath=>'/SOAP/Http/IRI_AUTOCOMPLETE', soap_user=>'PROXY');
-
 create procedure
 DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
 {

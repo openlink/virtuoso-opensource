@@ -22,14 +22,6 @@
 
 cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
 
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'SPARQL');
-
--- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/search');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/search', ppath=>'/SOAP/Http/fct_search', soap_user=>'SPARQL');
-
-
 create procedure fct_init ()
 {
   if (__proc_exists ('WS.WS.host_meta_add') is not null)
@@ -237,9 +229,6 @@ ret:
 
 grant execute on fct_svc to SPARQL_SELECT;
 grant execute on fct_search to SPARQL_SELECT;
-
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/soap');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'SPARQL');
 
 select DB.DBA.soap_dt_define ('',
 '<element xmlns="http://www.w3.org/2001/XMLSchema" name="facets" targetNamespace="http://openlinksw.com/services/facets/1.0/">

@@ -162,7 +162,7 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-  gr := get_keyword ('g', params, '');
+  gr := get_keyword ('g', params, 'unknown');
   gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
