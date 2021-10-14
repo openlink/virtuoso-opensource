@@ -1047,7 +1047,7 @@ SQLConnect (SQLHDBC hdbc,
   TCHAR *pcmd = &(cmd[0]);
 
 #ifdef UNICODE
-  if (sizeof(TCHAR) == 4)
+  if (sizeof(TCHAR) == 4 && (cbDSN > 0 || cbDSN == SQL_NTS))
     {
       int wsize = 4;
       char *ch;
@@ -1061,7 +1061,7 @@ SQLConnect (SQLHDBC hdbc,
       if (ch && ch[0]!=0 && ch[1]==0 && ch[2]!=0)
         wsize = 2;
 #endif
-      if (wsize == 4)
+      if (wsize == 4 && (cbUID > 0 || cbUID == SQL_NTS))
         {
           // try recheck charset in szUID string
           ch = (char *) szUID;
