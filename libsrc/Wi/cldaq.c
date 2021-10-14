@@ -1087,7 +1087,7 @@ cu_ld_str (caddr_t * row, int tmp)
   iri_id_write ((iri_id_t *) (row[0]), &ses);
   iri_id_write ((iri_id_t *) (row[1]), &ses);
   iri_id_write ((iri_id_t *) (row[2]), &ses);
-  if (DV_TYPE_OF (row[3]) == DV_RDF)
+  if (DV_TYPE_OF (row[3]) == DV_RDF && RDF_BOX (row[3])->rb_ro_id)
     rb_id_serialize ((rdf_box_t *) (row[3]), &ses);
   else
     print_object (row[3], &ses, NULL, NULL);

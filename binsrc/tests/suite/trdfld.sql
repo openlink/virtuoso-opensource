@@ -44,3 +44,15 @@ sparql select * from <g1> where { ?s <only2> ?o . };
 echo both $if $equ $last[2] only2  "PASSED" "***FAILED";
 echo both ": only2\n";
 
+ttlp ('<#a> <#b> "false"^^<http://www.w3.org/2001/XMLSchema#boolean> <#g> .', '', '#g', 0hexa00);
+sparql select count (*) from <#g> where {?s ?p ?o};
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+echo both ": 1 triple in #g\n";
+
+sparql describe <#a> from <#g> ;
+echo both $if $equ $rowcnt 1 "PASSED" "***FAILED";
+echo both ": 1 triple described from #g\n";
+
+select count(*) from rdf_quad where is_rdf_box (o) and rdf_box_ro_id (o) = 0 and rdf_box_is_complete (o) = 0;
+echo both $if $equ $last[1] 0 "PASSED" "***FAILED";
+echo both ": 0 rows with rdf_box w/o ro_id \n";

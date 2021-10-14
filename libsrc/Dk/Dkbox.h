@@ -792,6 +792,8 @@ typedef struct rdf_box_s
 #define rb_dt_lang_check(rb)
 #endif
 
+#define RDF_BOX(rb) ((rdf_box_t *)(rb))
+
 #define RB_MAX_INLINED_CHARS 		20
 
 #define RBS_OUTLINED			0x01

@@ -1843,6 +1843,19 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
       if (err_ret && *err_ret)
 	return;
       ITC_OWNS_PARAM (ins_itc, str);
+      if ((DV_RDF_ID == (dtp_t)str[0] || DV_RDF_ID_8 == (dtp_t)str[0]) && tb_is_rdf_quad (key->key_table) && DV_RDF == DV_TYPE_OF (data))
+        {
+	  QNCAST (rdf_box_t, rb, data);
+	  if (!rb->rb_ro_id && !rb->rb_is_complete)
+	    {
+	      caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a incomplete RDF BOX without RO_ID into O in RDF_QUAD.  RDF box is expected to have RO_ID");
+	      if (err_ret)
+		*err_ret = err;
+	      else
+		sqlr_resignal (err);
+	      return;
+	    }
+	}
       if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0] || IS_WIDE_STRING_DTP ((dtp_t)str[0])) && tb_is_rdf_quad (key->key_table))
 	{
 	  caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a string into O in RDF_QUAD.  RDF box is expected");
