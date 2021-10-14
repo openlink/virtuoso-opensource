@@ -32,7 +32,7 @@
 --
 --
 
-  declare _S, odd_position any;
+  declare _S, has_data any;
   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp, grs any;
   declare orig_refr varchar;
@@ -94,7 +94,7 @@
 
   proxy_iri := page_resource_uri;
 
-  odd_position := 0;
+  has_data := 0;
   set http_charset='utf-8';
   set isolation = 'uncommitted';
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
@@ -238,6 +238,7 @@
           grvar := graph_usages[row_ctr][0];
           tot := graph_usages[row_ctr][1];
           phy := graph_usages[row_ctr][2];
+	  has_data := 1;
           http ('<tr>');
           if (position (grvar, grs))
             tgr := vector_concat (tgr, vector (grvar));
@@ -307,6 +308,10 @@
               {
 		 if (not position (g, tgr))
                    http (sprintf ('<input type="hidden" name="graph" value="%V"/>', g));
+	      }
+	  if (has_data = 0)
+	      {
+                http_request_status ('HTTP/1.1 404 Not Found');
 	      }
           ?>
 	  <tr><td colspan="2">
