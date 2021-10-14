@@ -227,12 +227,15 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	break;
       case DV_RDF:
 	{
-	  dtp_t copy[50];
+         dtp_t copy[128];
 	  if (offset)
 	    {
 	      int len = rbs_length (dv1);
 	      if (len > sizeof (copy))
+               {
+                 log_error ("dv rdf serialization too long in dv compare with offset (len=%ld offset=%ld)", (long) len, (long) offset);
 		GPF_T1 ("dv rdf serialization too long in dv compare with offset");
+               }
 	      memcpy (copy, dv1, len);
 	      copy[len - 1] += offset;
 	      dv1 = copy;
