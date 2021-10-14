@@ -82,8 +82,8 @@
   gr := get_keyword ('g', params, '');
   arr := rfc1808_parse_uri (gr);
 
-  if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
-    gr := 'http://' || gr;
+  -- if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
+  --  gr := 'http://' || gr;
 
   page_resource_uri := gr;
   --page_resource_uri := replace (page_resource_uri, '%23', '#');
