@@ -92,6 +92,7 @@ create procedure fct_load_oplweb ()
 fct_load_oplweb ();
 rdfs_rule_set ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#');
 
+DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 1);
 DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sonto');
 DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sifp');
 DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:rules.skos');
