@@ -873,20 +873,20 @@ if (_subject <> '') {
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
 
         &nbsp; &nbsp; Content Formats: &nbsp; 
-	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img src="/fct/images/cxml_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img src="/fct/images/csv_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img alt="[cxml]" src="/fct/images/cxml_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img alt="[csv]" src="/fct/images/csv_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; RDF &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img src="/fct/images/ntriples_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img src="/fct/images/jsonld_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img src="/fct/images/xml_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img alt="[text]" src="/fct/images/ntriples_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img alt="[turtle]" src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img alt="[ld+json]" src="/fct/images/jsonld_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img alt="[rdf+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img alt="[rdf+xml]" src="/fct/images/xml_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; ODATA &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img src="/fct/images/atom_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img alt="[atom+xml]" src="/fct/images/atom_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img alt="[odata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; Microdata &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img src="/fct/images/html_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img alt="[microdata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img alt="[html]" src="/fct/images/html_doc.png" class="dicon"/></a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
