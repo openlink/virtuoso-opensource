@@ -163,6 +163,8 @@
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
+
+    <meta name="robots" content="noindex,nofollow" />
 </head>
 <body class="usage_page">
   <div id="HD">
