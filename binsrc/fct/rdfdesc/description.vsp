@@ -552,11 +552,11 @@ again:
         id="sp_link" rel="nofollow">Sponge
     </a>
     &nbsp;
-    <a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&distinct=%d',  plink_href, equ (dist, 0)), lines)); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator">
+    <a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&amp;distinct=%d',  plink_href, equ (dist, 0)), lines)); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator">
     <?vsp if (dist) http ('Not'); ?>Distinct
     </a>
     &nbsp;
-    <a class="desc_permalink" href="<?vsp http(fct_make_curie (sprintf ('%s&distinct=%d', plink_href, dist), lines)); ?>">Permalink
+    <a class="desc_permalink" href="<?vsp http(fct_make_curie (sprintf ('%s&amp;distinct=%d', plink_href, dist), lines)); ?>" rel="nofollow">Permalink
     </a>
 
     </h2>
