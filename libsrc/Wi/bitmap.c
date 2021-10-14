@@ -2106,10 +2106,10 @@ itc_bm_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	      /*itc->itc_bp.bp_new_on_row = 0;*/
 	    }
 	  if (ks->ks_local_test
-	      && !code_vec_run_no_catch (ks->ks_local_test, itc))
+	      && !code_vec_run_no_catch (ks->ks_local_test, itc, 0))
 	    goto next_bit;
 	  if (ks->ks_local_code)
-	    code_vec_run_no_catch (ks->ks_local_code, itc);
+	    code_vec_run_no_catch (ks->ks_local_code, itc, 0);
 	  if (ks->ks_setp)
 	    {
 	      KEY_TOUCH (ks->ks_key);
@@ -2301,7 +2301,7 @@ itc_bm_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	      QNCAST (query_instance_t, qi, inst);
 	      qi->qi_set_mask = NULL;
 	      qi->qi_set = itc->itc_n_results - 1;
-	      if (!code_vec_run_no_catch (ks->ks_local_test, itc))
+	      if (!code_vec_run_no_catch (ks->ks_local_test, itc, 0))
 		{
 		  QST_INT (inst, ts->src_gen.src_out_fill)--;
 		  itc->itc_n_results--;

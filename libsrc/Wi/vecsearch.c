@@ -967,7 +967,7 @@ itc_vec_row_check (it_cursor_t * itc, buffer_desc_t * buf)
       QNCAST (query_instance_t, qi, inst);
       qi->qi_set_mask = NULL;
       qi->qi_set = itc->itc_n_results - 1;
-      if (!code_vec_run_no_catch (ks->ks_local_test, itc))
+      if (!code_vec_run_no_catch (ks->ks_local_test, itc, CV_THIS_SET_ONLY))
 	{
 	  QST_INT (inst, ts->src_gen.src_out_fill)--;
 	  itc->itc_n_results--;

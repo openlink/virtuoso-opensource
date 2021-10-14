@@ -1231,10 +1231,10 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	  qi->qi_set = itc->itc_set;
 	}
       if (ks->ks_local_test
-	  && !code_vec_run_no_catch (ks->ks_local_test, itc))
+	  && !code_vec_run_no_catch (ks->ks_local_test, itc, 0))
 	return DVC_LESS;
       if (ks->ks_local_code)
-	code_vec_run_no_catch (ks->ks_local_code, itc);
+	code_vec_run_no_catch (ks->ks_local_code, itc, 0);
       if (ks->ks_setp)
 	{
 	  KEY_TOUCH (ks->ks_key);

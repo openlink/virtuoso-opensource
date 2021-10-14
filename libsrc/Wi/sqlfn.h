@@ -824,7 +824,7 @@ extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
 #define CV_THIS_SET_ONLY -1
-caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc);
+caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag);
 
 void cv_free (code_vec_t cv);
 
