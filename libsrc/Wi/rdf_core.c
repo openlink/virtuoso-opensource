@@ -70,11 +70,23 @@ uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
       ws_connection_t *ws = cli->cli_ws;
       res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
       if (NULL != is_https)
+	{
 #ifdef _SSL
-	*is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
+	  caddr_t xproto = NULL;
+
+	  *is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
+
+	  xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1);
+	  if (xproto)
+	    {
+	      if (!strcmp (xproto, "https"))
+		*is_https = 1;
+	      dk_free_box (xproto);
+	    }
 #else
-	*is_https = 0;
+	  *is_https = 0;
 #endif
+	}
     }
   if (NULL == res)
     {
