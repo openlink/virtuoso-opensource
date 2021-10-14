@@ -47,7 +47,7 @@ VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
-SQLDEPS="ns.sql virt_rdf_label.sql virt_rdf_url.sql facet.sql complete_ddl.sql"
+SQLDEPS="ns.sql virt_rdf_label.sql virt_rdf_url.sql facet.sql complete_ddl.sql vad_fct_config.sql"
 EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql grants.sql"
 
 HOST_OS=`uname -s | grep WIN`
