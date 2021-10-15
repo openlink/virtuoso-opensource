@@ -44,6 +44,7 @@
   declare pageUrl varchar;
   declare user_permissions int;
   declare q_txt any;
+  declare safetolink integer;
 
   white_page := 1;
 
@@ -79,11 +80,13 @@
 
   host := http_request_header (http_request_header (), 'Host');
   langs := http_request_header_full (lines, 'Accept-Language', 'en');
-  gr := get_keyword ('g', params, '');
+  gr := get_keyword ('g', params, 'unknown');
   arr := rfc1808_parse_uri (gr);
 
-  -- if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
-  --  gr := 'http://' || gr;
+  safetolink := 0;
+  if (lower (arr[0]) in ('http','https','ftp')) {
+    safetolink:=1;
+  }
 
   page_resource_uri := gr;
   --page_resource_uri := replace (page_resource_uri, '%23', '#');
@@ -185,8 +188,37 @@
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
-      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
-	      <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>&amp;tp=<?U tp ?><?V b3s_render_ses_params (0, 0) ?>">Permalink</a>
+    <h2>About:
+      <?vsp
+      if (safetolink > 0)
+        {
+          http(sprintf('<a href="%s">',
+	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+
+	  if (length (label))
+	    http_value (label);
+	  else
+	    http (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
+	  http ('</a>\n');
+        }
+      else
+        {
+	  if (length(label))
+	    http_value(label);
+	  else
+	    http (b3s_uri_curie(page_resource_uri));
+        }
+      ?>
+    <a href="">
+    </a>&nbsp;&nbsp;&nbsp;
+    <?vsp
+	  http(sprintf('<a class="desc_permalink" href="usage.vsp?g=%U&amp;tp=%d%s" rel="nofollow">Permalink</a>\n',
+	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end,
+	    tp,
+	    b3s_render_ses_params (0,0)
+        ));
+    ?>
+    </h2>
 	<p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
