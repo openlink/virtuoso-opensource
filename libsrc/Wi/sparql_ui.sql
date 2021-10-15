@@ -443,8 +443,16 @@ create procedure WS.WS.SPARQL_ENDPOINT_FOOTER ()
         <br/>
         Virtuoso version <?V sys_stat('st_dbms_ver') ?> on <?V sys_stat('st_build_opsys_id') ?> (<?V host_id() ?>)
 <?vsp
+    declare rss any;
+    rss := getrusage();
     if (1 = sys_stat('cl_run_local_only'))
-        http(sprintf ('Single Server Edition (%s total memory)\n', mem_hum_size (mem_info_cl())));
+    {
+	if (rss <> 0)
+            http(sprintf ('Single Server Edition (%s total memory, %s memory in use)\n',
+	      mem_hum_size (mem_info_cl()), mem_hum_size(rss[2] * 1024)));
+	else
+            http(sprintf ('Single Server Edition (%s total memory)\n', mem_hum_size (mem_info_cl())));
+    }
     else
         http(sprintf('Cluster Edition (%d server processes, %s total memory)\n', sys_stat('cl_n_hosts'), mem_hum_size (mem_info_cl())));
 ?>
