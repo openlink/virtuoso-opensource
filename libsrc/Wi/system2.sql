@@ -1044,7 +1044,7 @@ mem_hum_size (in sz integer) returns varchar
     return (sprintf ('%d MB', sz/1048576));
   if (sz < 1073741824)
     return (sprintf ('%d MB', cast (sz/1048576 as integer)));
-  return (sprintf ('%d GB', sz/1073741824));
+  return (sprintf ('%d GB', cast (0.5 + sz/1073741824.0 as integer)));
 }
 ;
 
