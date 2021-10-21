@@ -1811,12 +1811,62 @@ err_first_line (const char * text)
     }
   return text;
 }
+
+
 void
-ddl_ensure_table (const char *name, const char *text)
+ddl_ensure_table (const char *table, const char *text)
 {
   client_connection_t *old_cli = sqlc_client();
   sqlc_set_client (NULL);
-  if (!sch_name_to_table (wi_inst.wi_schema, name))
+  if (!sch_name_to_table (wi_inst.wi_schema, table))
+    {
+      caddr_t err = NULL;
+      query_t *obj_create = eql_compile_2 (text, bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	{
+	  log_error ("Error compiling a server init statement : %s: %s -- %s",
+	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		     err_first_line (text));
+	  sqlc_set_client (old_cli);
+	  dk_free_tree (err);
+	  return;
+	}
+      sqlc_set_client (bootstrap_cli);
+      first_id = DD_FIRST_PRIVATE_OID;
+      err = qr_quick_exec (obj_create, bootstrap_cli, "", NULL, 0);
+      if (err)
+	{
+	  if (err == (caddr_t) SQL_NO_DATA_FOUND)
+	    log_error ("Error executing a server init statement : NO DATA FOUND -- %s",
+		       err_first_line (text));
+	  else
+	    log_error ("Error executing a server init statement : %s: %s -- %s",
+		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		       err_first_line (text));
+	  dk_free_tree (err);
+	  qr_free (obj_create);
+	  sqlc_set_client (old_cli);
+	  return;
+	}
+      qr_free (obj_create);
+
+      first_id = DD_FIRST_FREE_OID;
+      sqlc_set_client (old_cli);
+      local_commit (bootstrap_cli);
+    }
+  else
+    sqlc_set_client (old_cli);
+}
+
+
+void
+ddl_ensure_index (const char *table, const char * index_name, const char *text)
+{
+  client_connection_t *old_cli = sqlc_client();
+  sqlc_set_client (NULL);
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, table);
+  dbe_key_t * key = tb ? tb_find_key (tb, index_name, NULL) : NULL;
+  if (!key)
     {
       caddr_t err = NULL;
       query_t *obj_create = eql_compile_2 (text, bootstrap_cli, &err, SQLC_DEFAULT);

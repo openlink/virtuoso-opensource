@@ -536,7 +536,11 @@ BEGIN   {
 		      }
 		    else if (pieces[2] == "INDEX")
 		      {
-		        _defines1 = "\n  ddl_ensure_table (\"do this always\", inx" nindexes ");"
+			tablename = pieces[5]
+		        if (index (tablename, ".") == 0)
+		          tablename = "DB.DBA." tablename
+			index_name = pieces[3]
+		        _defines1 = "\n  ddl_ensure_index (\"" tablename "\",\"" index_name "\" , inx" nindexes ");"
 		        print "static const char *inx" nindexes " = \n" fun ";\n"
 			nindexes = nindexes + 1
 		      }
