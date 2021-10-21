@@ -1860,6 +1860,21 @@ ddl_ensure_table (const char *table, const char *text)
 
 
 void
+ddl_exec_init_stmt (const char *table, const char *text, const char *fname, const char *stmt)
+{
+  int64 ts, msec;
+
+  ts = rdtsc ();
+  ddl_ensure_table (table, text);
+  msec = (rdtsc () - ts) / 2000000;
+  if (log_sql_code_init && msec > (int64) log_sql_code_init)
+    {
+      log_debug ("%s %s: " BOXINT_FMT " msec", fname, stmt, msec);
+    }
+}
+
+
+void
 ddl_ensure_index (const char *table, const char * index_name, const char *text)
 {
   client_connection_t *old_cli = sqlc_client();

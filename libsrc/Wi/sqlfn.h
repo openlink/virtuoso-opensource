@@ -250,9 +250,11 @@ void ddl_ensure_univ_tables (void);
 #define DDL_STD_REENTRANT 0x40
 
 EXE_EXPORT (void, ddl_std_proc, (const char * text, int is_public));
-EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int ddl_std_flags, int to_recompile));
-EXE_EXPORT (void, ddl_ensure_table, (const char *name, const char *text));
+EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int is_public, int to_recompile));
+EXE_EXPORT (void, ddl_ensure_table, (const char *table, const char *text));
+EXE_EXPORT (void, ddl_ensure_index, (const char *table, const char *index_name, const char *text));
 EXE_EXPORT (void, ddl_ensure_column, (const char *table, const char *col, const char *text, int is_drop));
+EXE_EXPORT (void, ddl_exec_init_stmt, (const char *table, const char *text, const char *fname, const char *stmt));
 EXE_EXPORT (void, ddl_sel_for_effect, (const char *str));
 
 caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
