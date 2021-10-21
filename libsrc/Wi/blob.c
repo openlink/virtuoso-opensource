@@ -3014,7 +3014,9 @@ bl_check (blob_layout_t * bl)
       for (inx = 0; inx < n; inx++)
 	{
 	  dp = bl->bl_pages[inx];
+#if 0
 	  if (dp == bl_trap) bing ();
+#endif
 	  if (dp <3 || dp > it->it_storage->dbs_n_pages)
 	    {
 	      error = 1;

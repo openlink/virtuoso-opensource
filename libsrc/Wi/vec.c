@@ -3211,8 +3211,10 @@ dcp_nz (data_col_t * dc)
 	  s += v;
 	}
     }
+#if 0
   if (s != n)
     bing ();
+#endif
   printf ("first %d last %d n %d sum %d\n", first, last, n, (int) s);
 }
 

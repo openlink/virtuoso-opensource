@@ -1083,6 +1083,7 @@ int enable_dfe_check = 0;
 void
 dfe_ref_check_1 (df_elt_t * dfe, dk_hash_t * defd1)
 {
+#ifdef DEBUG
   dk_hash_t* defd = defd1 ? defd1 : hash_table_allocate (101);
   df_elt_t * elt;
   switch (dfe->dfe_type)
@@ -1116,6 +1117,7 @@ dfe_ref_check_1 (df_elt_t * dfe, dk_hash_t * defd1)
     }
   if (!defd1)
     hash_table_free (defd);
+#endif
 }
 
 void
@@ -1130,6 +1132,7 @@ dfe_ref_check (df_elt_t * dfe)
 void
 ot_placed_check (op_table_t * ot)
 {
+#ifdef DEBUG
   dk_hash_t * ht;
   df_elt_t * elt;
   if (!enable_dfe_check)
@@ -1148,6 +1151,7 @@ ot_placed_check (op_table_t * ot)
     }
   END_DO_SET();
   hash_table_free (ht);
+#endif
 }
 
 int enable_gb_dep = 1;
@@ -2072,11 +2076,13 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
   locus_t * pref_loc;
   int inx;
   df_elt_t * placed = NULL;
-  int is_ro2lo = 0;
   /* check if equal exp already placed */
   locus_t * loc = super->dfe_locus;
+#if 0
+  int is_ro2lo = 0;
   if (st_is_call (dfe->dfe_tree, "__ro2lo", 1))
     {is_ro2lo = 1; bing (); }
+#endif
   if (!IS_BOX_POINTER (dfe))
     return dfe; /*true and falsecond markers */
   so->so_crossed_oby = NULL;
@@ -2096,8 +2102,10 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	      /* even if doing a conditional exp and the subexp is already
 	       * placed in the directly preceding code sequence, return the placed one instead of repeating */
 	      placed = dfe_latest (so, 1, &dfe, 0);
+#if 0
 	      if (is_ro2lo && placed)
 		bing ();
+#endif
 	      so->so_place_code_forr_cond = prev;
 	    }
 	  if (placed && so->so_context_dt)
@@ -4176,8 +4184,10 @@ sqlo_tb_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t preds,
   int old_cond;
   DO_SET (df_elt_t *, pred, &preds)
     {
+#if 0
       if (!dfe_reqd_placed (pred))
 	bing (); /* pred references unplaced */
+#endif
       if (text_pred && dk_set_member (text_pred->_.text.after_preds, pred))
 	{ /*GK : this is already placed */
 	  continue;
@@ -5468,10 +5478,11 @@ sqlo_hash_redundant_keys (sqlo_t * so, dk_set_t * hash_refs_ret, dk_set_t * hash
 void
 sqlo_check_col_pred_placed (df_elt_t * tb_dfe)
 {
-  return;
+#if 0
   DO_SET (df_elt_t *, cp, &tb_dfe->_.table.col_preds)
     if (!cp->dfe_is_placed) bing ();
   END_DO_SET();
+#endif
 }
 
 
@@ -6629,6 +6640,7 @@ int brk_dt_plan;
 void
 sqlo_check_order_dbg (op_table_t * ot)
 {
+#ifdef DEBUG
   df_elt_t * dfe;
   char * pref;
   int nth = 0, n;
@@ -6649,6 +6661,7 @@ sqlo_check_order_dbg (op_table_t * ot)
 	  return;
 	}
     }
+#endif
 }
 
 
@@ -7173,7 +7186,9 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
 	      sqlo_print (("New best %s is:\n", ot->ot_new_prefix));
 	      sqlo_scenario_summary (ot->ot_work_dfe, this_score);
 	    }
+#if 0
 	  if (brk_dt_plan && brk_dt_plan == OT_NO (ot->ot_new_prefix)) bing ();
+#endif
 	  if (ot->ot_first_dfe && (DFE_TABLE == ot->ot_first_dfe->dfe_type || DFE_DT == ot->ot_first_dfe->dfe_type))
 	    {
 	      ot->ot_first_dfe->_.table.ot->ot_any_plan = 1;

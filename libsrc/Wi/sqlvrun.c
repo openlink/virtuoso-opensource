@@ -2068,7 +2068,9 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
     }
   if (itc->itc_set < itc->itc_first_set)
     {
+#if 0
       bing ();			/* anomalous to have first set above set, will /0 so return. */
+#endif
       return;
     }
   if (itc->itc_rows_selected / (1 + itc->itc_set - itc->itc_first_set) > 30)
@@ -2130,7 +2132,9 @@ ins_check_batch_sz (insert_node_t * ins, caddr_t * inst, it_cursor_t * itc)
     }
   if (itc->itc_set < itc->itc_first_set)
     {
+#if 0
       bing (); /* anomalous to have first set above set, will /0 so return. */
+#endif
       return;
     }
   if (prev)
@@ -4052,7 +4056,9 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 		    aq_request (aq, aq_qr_func, list (4, box_copy ((caddr_t)branch), box_num ((ptrlong)ts->src_gen.src_query), box_num (qi->qi_trx->lt_rc_w_id ? qi->qi_trx->lt_rc_w_id : qi->qi_trx->lt_w_id), box_num ((ptrlong)qi->qi_client->cli_csl)));
 		  else
 		    {
+#if 0
 		      bing ();
+#endif
 		      /*fnr_branch_done (fref, inst, branch) */ ;
 		    }
 		}

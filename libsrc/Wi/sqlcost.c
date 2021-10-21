@@ -75,7 +75,6 @@ float hm_y[] = { 0.042, 0.045, 0.09, 0.15, 0.24, 0.34, 0.4};
 lin_int_t li_hash_mem_cost = {sizeof (hm_x) /sizeof  (float), hm_x, hm_y};
 
 
-
 float
 lin_int (lin_int_t * li, float x)
 {
@@ -4207,7 +4206,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + (0 != p_stat);
     no_sample: ;
     }
-#ifndef NDEBUG
+#if 0
   if (-INFINITY == inx_arity) bing ();
 #endif
   if (enable_vec_cost)
@@ -4324,7 +4323,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
   dfe->dfe_arity = *a1 = total_arity;
   dfe->dfe_unit = *u1 = total_cost;
-#ifndef NDEBUG
+#if 0
   if (!isfinite (dfe->dfe_unit) || !isfinite (dfe->dfe_arity)) bing ();
 #endif
   if (IC_AS_IS != ic->ic_op && ic->ic_ric && empty_ric != ic->ic_ric)
@@ -4743,7 +4742,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       *a1 = 1;
       break;
     }
-#ifndef NDEBUG
+#if 0
   if (!isfinite (*a1) || !isfinite (*u1)) bing ();
 #endif
   dfe->dfe_unit = *u1;
@@ -4762,7 +4761,7 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
       DO_BOX (df_elt_t *, elt, inx, dfe_arr)
 	{
 	  dfe_unit_cost (elt, 1, &u1, &a1, overhead_ret);
-#ifndef NDEBUG
+#if 0
 	  if (!isfinite (a1 * arity) || !isfinite (u1 + cum)) bing ();
 #endif
 	  if ((DFE_TABLE == elt->dfe_type || DFE_DT == elt->dfe_type)

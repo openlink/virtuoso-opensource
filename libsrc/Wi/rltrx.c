@@ -693,7 +693,9 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int flags)
   /* if the lt is a branch of a mt write txn, set the main branch as (co) owner of the pl.  If the main is not on, set the branch to uncommittable but still finish with the lock, setting it on the branch.  Return the lt that will own the rl or clk under the pl */
   int is_new_pl = 1 & flags;
   int has_txn = 0;
+#if 0
   if (QFID_HOST (lt->lt_trx_no) != local_cll.cll_this_host && !lt->lt_cl_enlisted) ltbing2 ();
+#endif
   if (PL_IS_PAGE (pl))
     {
       LT_ADD_CK_BRANCH;
@@ -1207,6 +1209,10 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	  pl_release (pl, lt, NULL);
 	  return;
 	}
+#if 0
+      if (131 == pl->pl_page)
+	bing ();
+#endif
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
       /* when free remap we do same as on deleted */

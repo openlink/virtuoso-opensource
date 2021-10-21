@@ -1331,11 +1331,12 @@ ins_open (instruction_t * ins, caddr_t * qst)
   qst_set (qst, ins->_.open.cursor, (caddr_t) CR_INITIAL);
 }
 
-
+#ifdef DEBUG
 void
 bing ()
 {
 }
+#endif
 
 
 #define AC_ENLIST_CK(qi)

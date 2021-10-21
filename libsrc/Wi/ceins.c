@@ -895,7 +895,10 @@ ce_insert_dict (ce_ins_ctx_t * ceic, ce_ins_ctx_t ** col_ceic, db_buf_t ce, int 
 	  bit_insert (dict, 4 * (row + inx + 1), 4 * row, 4 * (last_moved - row));
 	  bf_set (dict, 4 * (row + inx), values[inx], 4);
 	}
-      /*if (ce == org_ce && !IS_GAP (dict[new_bytes])) bing (); */
+#if 0
+      if (ce == org_ce && !IS_GAP (dict[new_bytes]))
+	bing ();
+#endif
       last_moved = row;
     }
   return ce;
@@ -1234,14 +1237,16 @@ void
 ce_compare_ins (ce_ins_ctx_t * ceic, caddr_t * res, db_buf_t ce2, int len)
 {
   caddr_t *res2 = ce_box (ce2, 0);
+#if 0
   int inx;
   for (inx = 0; inx < len; inx++)
     {
       if (!box_equal (res[inx], res2[inx]))
 	bing ();
     }
-  dk_free_tree (res);
-  dk_free_tree (res2);
+#endif
+  dk_free_tree ((caddr_t) res);
+  dk_free_tree ((caddr_t) res2);
 }
 
 int dbf_ce_ins_check = 0;

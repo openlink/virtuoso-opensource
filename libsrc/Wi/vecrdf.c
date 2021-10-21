@@ -598,7 +598,6 @@ bif_ro2sq_vec_1 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
 		{
 		  dc->dc_any_null = 1;
 		  dc_no_empty_marks (dc, empty_mark);
-		  bing ();
 		}
 	}
 	}

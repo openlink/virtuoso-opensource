@@ -4001,7 +4001,6 @@ bif_sys_em_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       extent_map_t * em = it->it_extent_map;
       if (!em || em == sys_em) 
 	continue;
-      bing ();
       sys_em_stat_entry (&set, it->it_key, em);
     }
   END_DO_SET()
@@ -4502,7 +4501,9 @@ caddr_t
 bif_lt_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int64 id = ((query_instance_t*)qst)->qi_trx->lt_w_id;
+#if 0
   if (!id) bing ();
+#endif
   return box_num (id);
 }
 
@@ -4844,8 +4845,10 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      for (inx = 2; inx < BOX_ELEMENTS (k); inx++)
 		{
 		  caddr_t * elt = k[inx];
+#if 0
 		  if (DV_STRINGP (elt) && strstr (elt, stat_trap))
 		    bing ();
+#endif
 		}
 	    }
 	  stat_adjust_key ((caddr_t *)k);

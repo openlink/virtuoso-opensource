@@ -582,8 +582,10 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
   }
   END_DO_SET ();
   jp->jp_fanout = jp_fanout (jp);
+#if 0
   if (jp->jp_fanout < 0 && jp->jp_fanout != -1)
     bing ();
+#endif
 }
 
 

@@ -741,8 +741,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
   if (sc->sc_so)
     {
       dfe = sqlo_df (sc->sc_so, tree);
+#if 0
       if (st_is_call (tree, "__ro2lo", 1))
-  bing ();
+        bing ();
+#endif
 
       if (dfe->dfe_ssl)
 	return (dfe->dfe_ssl);

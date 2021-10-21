@@ -2573,7 +2573,6 @@ int non_unq_printed = 0;
       non_unq_printed = 1;		     \
       log_error ("non unq range for unq ts key %s slice %d page %d pos %d", itc->itc_insert_key->key_name, itc->itc_tree->it_slice, itc->itc_page, itc->itc_map_pos); \
       } \
-      bing (); \
       WAIT_IF (allow_non_unq_range);; \
     } \
   else \
@@ -2832,7 +2831,6 @@ itc_col_seg (it_cursor_t * itc, buffer_desc_t * buf, int is_singles, int n_sets_
       n_used = end - cpo.cpo_range->r_first;
       if (n_used < 0)
 	{
-	  bing ();
 	  n_used = 0;
 	}
       if (n_used >= itc->itc_batch_size - itc->itc_n_results)

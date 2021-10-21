@@ -3115,8 +3115,8 @@ em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr
 	  if (0 == (ext->ext_pages[inx] & (1 << b_idx)))
 	    ;
 	  else if (gethash (DP_ADDR2VOID(other_dp), em->em_uninitialized))
-#ifdef DEBUG
-	    bing  ()
+#if 0
+	    bing()
 #endif
 		;
 	  else
@@ -3842,7 +3842,9 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	      was_left_leaf = have_left_leaf = 1;
 	      leaves[leaf_fill++] = LONG_REF (row + LD_LEAF);
 	      leaf_ctr++;
+#if 0
 	      if (leaf_fill > 1000) bing ();
+#endif
 	    }
 	}
       else
@@ -3868,7 +3870,9 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	    {
 	      dp_addr_t leaf1 = LONG_REF (row + itc->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
 	      leaves[leaf_fill++] = leaf1;
+#if 0
 	      if (leaf_fill > 1000) bing ();
+#endif
 	      if (have_left_leaf)
 		{
 		  /* prefer giving the next to leftmost instead of leftmost leaf if leftmost is left dummy.
@@ -3934,10 +3938,12 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
     }
       else
     itc->itc_map_pos = save_pos;
+#if 0
   if (itc->itc_map_pos >= buf->bd_content_map->pm_count)
     {
       bing ();
     }
+#endif
   if (is_col)
     itc->itc_st.n_rows_sampled = itc->itc_st.rows_in_segs;
   else

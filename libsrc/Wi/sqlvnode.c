@@ -974,6 +974,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
 }
 
 
+#if 0
 void
 dbg_del_check (data_col_t * source_dc, int source_row)
 {
@@ -982,6 +983,7 @@ dbg_del_check (data_col_t * source_dc, int source_row)
     bing ();
   dk_free_tree (box);
 }
+#endif
 
 #define   CL_AC_RESET_CK(is_reset, del, qi) \
 { \

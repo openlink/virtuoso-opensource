@@ -1569,6 +1569,7 @@ neq:
 void
 dcckz (hash_area_t * ha, caddr_t * inst, int n_sets)
 {
+#if 0
   if (BOX_ELEMENTS (ha->ha_slots) > 2 && SSL_VEC == ha->ha_slots[2]->ssl_type)
     {
       data_col_t *dc = QST_BOX (data_col_t *, inst, ha->ha_slots[2]->ssl_index);
@@ -1579,6 +1580,7 @@ dcckz (hash_area_t * ha, caddr_t * inst, int n_sets)
 	    bing ();
 	}
     }
+#endif
 }
 
 
@@ -3540,7 +3542,6 @@ cha_check (chash_t * cha, cha_ent_cmp_t cmp, int64 * row)
       if (h == ent[0] && cha_ent_cmp (cha, ent, row))
 	return 1;
     }
-  bing ();
   return 0;
 }
 
@@ -4779,8 +4780,10 @@ cha_bloom_sets (chash_t * cha, uint64 * hash_no, row_no_t * hits, int n_in, uint
       uint64 h = hash_no[nth];
       uint64 w = bf[BF_WORD (h, sz)];
       uint64 mask = (1L << BF_BIT_1 (h)) | (1L << BF_BIT_2 (h));
+#if 0
       if ((w & mask) != mask)
 	bing ();
+#endif
       hits[fill] = nth;
       fill += (w & mask) == mask;
     }
@@ -5373,6 +5376,7 @@ dbg_dc_ck (data_col_t * dc)
 }
 
 
+#if 0
 void
 dclck (data_col_t * dc)
 {
@@ -5381,6 +5385,7 @@ dclck (data_col_t * dc)
       if ((long)dc->dc_buffer - (long)dc->dc_values  < 8 * dc->dc_n_places) bing ();
     }
 }
+#endif
 
 
 int

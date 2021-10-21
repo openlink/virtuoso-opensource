@@ -1266,7 +1266,9 @@ sch_set_ua_func_ua (caddr_t name, query_t * qr)
   if (!ua_func_to_ua)
     ua_func_to_ua = id_casemode_hash_create (23);
   name = box_copy (name);
+#if 0
   if (strstr (name, "DB.DBA.SPARQL_RSET_TTL_H")) bing ();
+#endif
   id_hash_set (ua_func_to_ua, (caddr_t)&name, (caddr_t)&qr);
 }
 

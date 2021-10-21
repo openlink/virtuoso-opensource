@@ -538,7 +538,6 @@ ce_bad_dtp (it_cursor_t * itc, db_buf_t ce, int set, int row_of_ce, int ce_n_val
       if (DVC_DTP_LESS == dtp_cmp && (!(nth_key && itc->itc_ranges[set].r_end <= row_of_ce)))
 	{
 	  /* if range extends to the ce and the ce is dtp lt the previous ce then the index is out of order */
-	  bing ();
 	  if (!allow_non_unq_range)
 	    {
 	      itc->itc_reset_after_seg = col_ins_error = 1;
@@ -1185,7 +1184,6 @@ ce_search_rld (it_cursor_t * itc, db_buf_t ce, row_no_t row_of_ce, int rc, int n
 	    {
 	      if (below > 0)
 		{
-		  bing ();
 		  if (!allow_non_unq_range)
 		    GPF_T1 ("In rld it is suspect to find lt value in range when looking for last match");
 		  itc->itc_reset_after_seg = col_ins_error = 1;

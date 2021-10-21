@@ -2108,7 +2108,9 @@ pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf)
     buf->bd_pl = NULL;
 }
 
+#ifdef DEBUG
 void ltbing2 () {}
+#endif
 
 void
 gl_print (gen_lock_t * gl)

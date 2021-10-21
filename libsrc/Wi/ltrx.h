@@ -928,5 +928,7 @@ int lt_log_merge (lock_trx_t * lt, int in_txn);
 #define NO_LOCK_LT ((lock_trx_t*)-1L)
 
 int ltbing (int s);
-void ltbing2 ();
 #endif /* _LTRX_H */
+#ifdef DEBUG
+void ltbing2 ();
+#endif
