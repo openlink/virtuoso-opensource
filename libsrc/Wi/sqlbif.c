@@ -33,14 +33,6 @@
 
 #include <math.h>
 
-#if defined(unix) && !defined(HAVE_GETRUSAGE)
-#define HAVE_GETRUSAGE
-#endif
-
-#ifdef HAVE_GETRUSAGE
-#include <sys/resource.h>
-#endif
-
 #include "sqlnode.h"
 #include "sqlver.h"
 #include "sqlfn.h"
@@ -87,6 +79,10 @@ extern "C" {
 #include "http_client.h" /* for MD5_Init and the like */
 #include "sparql.h"
 #include "aqueue.h"
+
+#ifdef HAVE_GETRUSAGE
+#include <sys/resource.h>
+#endif
 
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
@@ -14922,9 +14918,6 @@ bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
-#ifndef RUSAGE_SELF
-#undef HAVE_GETRUSAGE
-#endif
 
 caddr_t
 bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
