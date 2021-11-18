@@ -6240,13 +6240,18 @@ create procedure elarestore (in p varchar := 'ela')
 --!AWK PLBIF http_proxy_v2
 create procedure DB.DBA.HTTP_PROXY_V2 (in url varchar, in params any, in in_headers any)
 {
-  declare in_headers, out_headers, in_header, out_header, content, out_content, meth varchar;
+  declare out_headers, in_header, out_header, content, out_content, meth varchar;
   declare inx, len, is_post integer;
+  if (not is_http_ctx())
+    signal ('42000', 'HTPRX1', 'The http_proxy_v2 must be called in HTTP context');
   if (url is null)
     url := get_keyword ('url', params);
   content := http_body_read ();
   --dbg_obj_print_vars (params, url, in_headers, string_output_string (content));
-  meth := subseq (in_headers[0], 0, strchr (in_headers[0], ' '));
+  if (length (in_headers) = 0)
+    meth := 'GET';
+  else
+    meth := subseq (in_headers[0], 0, strchr (in_headers[0], ' '));
   len := length (in_headers);
   in_header := '';
   is_post := 0;

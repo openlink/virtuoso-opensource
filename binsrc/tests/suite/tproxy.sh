@@ -272,7 +272,6 @@ ECHO "Two pages (html&vsp)"
    # 
    #  CLEANUP
    #
-   ;;
 
 CHECK_LOG
 BANNER "COMPLETED SERIES OF HTTP PROXY SERVER TESTS"
