@@ -4449,7 +4449,10 @@ DBG_NAME(srv_make_new_error) (DBG_PARAMS const char *code, const char *virt_code
 
   if (DO_LOG(LOG_SRV_ERROR))
     {
-      log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
+      char * mark = "ERRS_0";
+      if (0 == strcmp (code, "01V01"))
+        mark = "WARN_0";
+      log_info ("%s %s %s %s", mark, code, virt_code, temp);
     }
   log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
 #ifdef MALLOC_DEBUG
