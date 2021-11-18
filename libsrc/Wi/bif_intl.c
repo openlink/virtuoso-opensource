@@ -1287,7 +1287,10 @@ bif_langmatches_pct_http (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   static const char * bifname = "langmatches_pct_http";
   caddr_t lang = bif_string_arg (qst, args, 0, bifname);
   caddr_t line = bif_string_arg (qst, args, 1, bifname);
-  double q = get_q_of_lang_in_http_accept_language (lang, line);
+  double q;
+  if (!lang)
+    return box_num (0);
+  q = get_q_of_lang_in_http_accept_language (lang, line);
   return box_num (q * 100);
 }
 
