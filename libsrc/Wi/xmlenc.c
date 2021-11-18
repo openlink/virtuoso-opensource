@@ -6272,10 +6272,20 @@ bif_x509_get_subject (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char * text = bif_string_arg (qst, args, 0, "xenc_sha1_digest");
+  char * text = bif_arg (qst, args, 0, "xenc_sha1_digest");
   dk_session_t * ses = strses_allocate ();
   caddr_t res = NULL;
-  session_buffered_write (ses, text, box_length (text) - 1);
+  int32 len;
+
+  if (DV_BIN == DV_TYPE_OF (text))
+    len = box_length (text);
+  else if (IS_STRING_DTP (DV_TYPE_OF (text)))
+    len = box_length (text) - 1;
+  else
+    sqlr_new_error ("22023", "ENC..", "Function xenc_sha1_digest expects binary or string as a 1st argument");
+
+  ses = strses_allocate ();
+  session_buffered_write (ses, text, len);
   dsig_sha1_digest (ses, strses_length (ses), &res);
   dk_free_box (ses);
   return res;
@@ -6285,10 +6295,20 @@ bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_xenc_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char * text = bif_string_arg (qst, args, 0, "xenc_sha256_digest");
-  dk_session_t * ses = strses_allocate ();
+  char * text = bif_arg (qst, args, 0, "xenc_sha256_digest");
+  dk_session_t * ses;
   caddr_t res = NULL;
-  session_buffered_write (ses, text, box_length (text) - 1);
+  int32 len;
+
+  if (DV_BIN == DV_TYPE_OF (text))
+    len = box_length (text);
+  else if (IS_STRING_DTP (DV_TYPE_OF (text)))
+    len = box_length (text) - 1;
+  else
+    sqlr_new_error ("22023", "ENC..", "Function xenc_sha256_digest expects binary or string as a 1st argument");
+
+  ses = strses_allocate ();
+  session_buffered_write (ses, text, len);
   dsig_sha256_digest (ses, strses_length (ses), &res);
   dk_free_box (ses);
   return res;

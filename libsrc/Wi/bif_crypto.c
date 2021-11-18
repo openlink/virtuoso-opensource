@@ -1728,17 +1728,26 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 static caddr_t
 bif_bin2hex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t bin = bif_bin_arg (qst, args, 0, "bin2hex");
-  caddr_t out = dk_alloc_box (2 * box_length (bin) + 1, DV_SHORT_STRING);
-  uint32 inx;
+  caddr_t bin = bif_arg (qst, args, 0, "bin2hex");
+  caddr_t out;
+  uint32 inx, len;
   char tmp[3];
+
+  if (DV_BIN == DV_TYPE_OF (bin))
+    len = box_length (bin);
+  else if (IS_STRING_DTP (DV_TYPE_OF (bin)))
+    len = box_length (bin) - 1;
+  else
+    sqlr_new_error ("22023", "ENC..", "Function bin2hex expects binary or string as a 1st argument");
+
+  out = dk_alloc_box (2 * len + 1, DV_SHORT_STRING);
   out[0] = 0;
-  for (inx = 0; inx < box_length (bin); inx++)
+  for (inx = 0; inx < len; inx++)
     {
       snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) bin[inx]);
       strcat_box_ck (out, tmp);
     }
-  out[2 * box_length (bin)] = 0;
+  out[2 * len] = 0;
   return out;
 }
 

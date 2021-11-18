@@ -6527,9 +6527,12 @@ bif_encode_base64url(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t dest;
   caddr_t res;
-  caddr_t src = bif_string_arg (qst, args, 0, ENC_B64_NAME);
+  caddr_t src = bif_arg (qst, args, 0, ENC_B64_NAME);
   dtp_t dtp = DV_TYPE_OF (src);
   size_t len = box_length(src);
+
+  if (DV_TYPE_OF (src) != DV_BIN && !IS_STRING_DTP (DV_TYPE_OF (src)))
+    sqlr_new_error ("22023", "ENC..", "Function encode_base64 expects binary or string as a 1st argument");
 
   if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
     len--;
