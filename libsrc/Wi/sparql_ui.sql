@@ -834,7 +834,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Main
     --
     http ('<main id="main">\n');
-    http ('<form id="sparql_form" action="/sparql" method="get">\n');
+    http ('<form id="sparql_form" method="get">\n');
 ?>
 
     <fieldset class="">
