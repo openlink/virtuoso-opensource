@@ -29,6 +29,7 @@ CURRDIR=`pwd`
 JENADIR="$TOP/binsrc/jena"
 JENA2DIR="$TOP/binsrc/jena2"
 JENA3DIR="$TOP/binsrc/jena3"
+JENA4DIR="$TOP/binsrc/jena4"
 SESAME2DIR="$TOP/binsrc/sesame2"
 SESAME3DIR="$TOP/binsrc/sesame3"
 SESAME4DIR="$TOP/binsrc/sesame4"
@@ -105,6 +106,28 @@ fi
 cd $CURRDIR
 
 
+#
+#   Run Jena4 tests
+#
+cd $JENA4DIR
+
+RUN $MAKE
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Jena 4 compile"
+else
+    LOG "PASSED: Jena 4 compile"
+fi
+
+RUN $MAKE run-tests
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Jena 4 provider JUnit tests"
+else
+    LOG "PASSED: Jena 4 provider JUnit tests"
+fi
+
+cd $CURRDIR
 
 
 #
