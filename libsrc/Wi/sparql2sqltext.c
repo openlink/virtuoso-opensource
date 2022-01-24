@@ -10709,9 +10709,15 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
               ssg_puts (".__ask_retval) AS \"fmtaggret-");
               if (NULL != fmname)
                 ssg_puts (fmname);
-              ssg_puts ("\"");
+              ssg_puts ("\"  LONG VARCHAR");
             }
-          ssg_puts (" LONG VARCHAR \nFROM (");
+          ssg_puts (" \nFROM (");
+          ssg->ssg_indent += 1;
+        }
+      else if (SSG_VALMODE_LONG != retvalmode)
+        {
+          ssg_puts ("SELECT COUNT(1) AS __ask_retval INTEGER");
+          ssg_puts (" \nFROM (");
           ssg->ssg_indent += 1;
         }
       ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
@@ -10855,7 +10861,9 @@ The fix is to avoid printing constant expressions at all, with only exception fo
           ssg_newline (0);
         }
     }
-  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
+  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) ||
+      (ASK_L == tree->_.req_top.subtype && (SSG_VALMODE_LONG != retvalmode)) ||
+      (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {
       switch (tree->_.req_top.subtype)
         {

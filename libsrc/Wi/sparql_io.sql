@@ -1989,13 +1989,17 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   -- dbg_obj_princ ('DB.DBA.SPARQL_RESULTS_WRITE: length(rset) = ', length(rset), ' metas=', metas, ' singlefield=', singlefield, ' accept=', accept, ' flags=', flags);
   if ('__ask_retval' = singlefield)
     {
+      declare ask_result int;
+      ask_result := 0;
+      if (length (rset) = 1 and length (rset[0]) = 1 and rset[0][0] > 0)
+        ask_result := 1;
       ret_mime := http_sys_find_best_sparql_accept (accept, 0, ret_format);
       if (ret_format in ('JSON', 'JSON;RES'))
         {
           http (
             concat (
               '{  "head": { "link": [] }, "boolean": ',
-              case (length (rset)) when 0 then 'false' else 'true' end,
+              case (ask_result) when 0 then 'false' else 'true' end,
               '}'),
             ses );
         }
@@ -2005,23 +2009,23 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
           http (
             concat (
               '\n <head></head>\n <boolean>',
-              case (length (rset)) when 0 then 'false' else 'true' end,
+              case (ask_result) when 0 then 'false' else 'true' end,
               '</boolean>\n</sparql>'),
             ses );
         }
       else if (ret_format = 'TTL')
         {
           http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n@prefix rs: <http://www.w3.org/2005/sparql-results#> .\n', ses);
-          http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (length (rset)) when 0 then 'false' else 'true' end), ses);
+          http (sprintf ('[] rdf:type rs:results ; rs:boolean %s .', case (ask_result) when 0 then 'false' else 'true' end), ses);
         }
       else if (ret_format = 'CSV' or ret_format = 'TSV')
         {
-          http (sprintf ('"bool"\n%d\n', case (length (rset)) when 0 then 0 else 1 end), ses);
+          http (sprintf ('"bool"\n%d\n', case (ask_result) when 0 then 0 else 1 end), ses);
         }
       else
         {
           ret_mime := 'text/html';
-          http (case (length (rset)) when 0 then 'false' else 'true' end, ses); --- stub
+          http (case (ask_result) when 0 then 'false' else 'true' end, ses); --- stub
         }
       goto body_complete;
     }
