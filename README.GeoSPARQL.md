@@ -3,7 +3,7 @@
 _Copyright (C) 2018-2021 OpenLink Software_
 
 ## Introduction
-Release 7.1 marked the addition of GeoSPARQL function support to Virtuoso Open Source Edition,
+Release 7.2.6 marked the addition of GeoSPARQL function support to Virtuoso Open Source Edition,
 with additional enhancements in subsequent versions.
 
 Besides a number of enhancements to the core Virtuoso engine, OpenLink added three plugins that
@@ -122,7 +122,7 @@ v2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html).
 ### The `shapefileio` plugin
 
 The `shapefileio` plugin adds an interface between the Virtuoso engine and the 
-[__`Shapefile`__ C Library](https://shapelib.maptools.org) currently maintainer by 
+[__`Shapefile`__ C Library](https://shapelib.maptools.org) currently maintained by 
 Frank Warmerdam et al.
 
 This plugin adds support for reading ESRI Shapefiles.
