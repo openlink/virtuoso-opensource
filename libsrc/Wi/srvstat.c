@@ -1731,9 +1731,9 @@ stat_desc_t stat_descs [] =
     {"sqlc_add_views_qualifiers", &sqlc_add_views_qualifiers, NULL},
 
     {"db_ver_string", NULL, &db_version_string},
-#ifdef unix
+
     {"git_head", NULL, &git_head},
-#endif
+
     {"db_max_col_bytes", &db_max_col_bytes, NULL},
     {"db_sizeof_wide_char", &db_sizeof_wide_char, NULL},
 
