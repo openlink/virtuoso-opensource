@@ -76,23 +76,6 @@ public class VirtuosoQueryExecutionFactory {
         }
     }
 
-    /**
-     * static public QueryExecution create(Query query, FileManager fm)
-     * {
-     * checkArg(query) ;
-     * QueryExecution qe = make(query) ;
-     * if ( fm != null )
-     * qe.setFileManager(fm) ;
-     * return qe ;
-     * }
-     * <p/>
-     * static public QueryExecution create(String queryStr, FileManager fm)
-     * {
-     * checkArg(queryStr) ;
-     * return create(makeQuery(queryStr), fm) ;
-     * }
-     */
-
     // ---------------- Query + Model
     static public QueryExecution create(Query query, Model model) {
         checkArg(query);
