@@ -98,12 +98,11 @@ public class VirtGraph extends GraphBase {
     private javax.transaction.xa.XAResource xa_resource = null;
     private XAConnection xa_connection = null;
     protected VirtTransactionHandler tranHandler = null;
-    private final Object lck_add = new Object();
+    protected final Object lck_add = new Object();
 
     private boolean isBNodesDictCreated = false;
     private boolean batch_add_executed = false;
     PreparedStatement psInsert = null;
-    java.sql.Statement stInsert_Cmd = null;
     int psInsert_Count = 0;
 
 
@@ -1148,34 +1147,45 @@ public class VirtGraph extends GraphBase {
 
     protected void createBNodesDict() {
         synchronized(lck_add) {
+            java.sql.Statement st = null;
+
             try {
                 if (isBNodesDictCreated)
                   return;
 
                 if (!insertBNodeAsVirtuosoIRI) {
-                    if (stInsert_Cmd == null)
-                        stInsert_Cmd = createStatement(false);
-                    stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                    st = createStatement(false);
+                    st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
                     isBNodesDictCreated = true;
                 }
             } catch (SQLException e) {
                 throw new JenaException(e);
+            } finally {
+              if (st !=null)
+                try {
+                  st.close();
+                } catch (Exception e) {}
             }
         }
     }
 
     protected void dropBNodesDict() {
         synchronized(lck_add) {
+            java.sql.Statement st = null;
             try {
                 if (!isBNodesDictCreated)
                   return;
 
-                if (stInsert_Cmd == null)
-                    stInsert_Cmd = createStatement(false);
-                stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                st = createStatement(false);
+                st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
                 isBNodesDictCreated = false;
             } catch (SQLException e) {
                 throw new JenaException(e);
+            } finally {
+              if (st != null)
+                try {
+                  st.close();
+                } catch (Exception e) {}
             }
         }
     }
@@ -1204,23 +1214,16 @@ public class VirtGraph extends GraphBase {
                     dropBNodesDict();
             } catch (SQLException e) {
                 throw new JenaException(e);
-            }
-
-            if (psInsert!=null) {
+            } finally {
+              if (psInsert!=null) {
                 try {
                     psInsert.close();
                 } catch (Exception e) {}
+              }
+              psInsert = null;
+              batch_add_executed = false;
             }
-            if (resetBNodesDictAfterCall) {
-                if (stInsert_Cmd!=null) {
-                    try {
-                        stInsert_Cmd.close();
-                    } catch (Exception e) {}
-                }
-                stInsert_Cmd = null;
-            }
-            psInsert = null;
-            batch_add_executed = false;
+
         }
     }
 
