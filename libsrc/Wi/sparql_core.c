@@ -600,9 +600,6 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
   lname++;
   do
     {
-      ns_uri = (caddr_t)dk_set_get_keyword (ns_dict, ns_pref, NULL);
-      if (NULL != ns_uri)
-	break;
       if (!strcmp (ns_pref, "rdf"))
 	{
 	  ns_uri = uname_rdf_ns_uri;
@@ -620,14 +617,17 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
 	}
       if (!strcmp ("sql", ns_pref))
 	{
-	  ns_uri = box_dv_uname_string ("sql:");
+	  ns_uri = uname_sql_ns_uri;
 	  break;
 	}
       if (!strcmp ("bif", ns_pref))
 	{
-	  ns_uri = box_dv_uname_string ("bif:");
+	  ns_uri = uname_bif_ns_uri;
 	  break;
 	}
+      ns_uri = (caddr_t)dk_set_get_keyword (ns_dict, ns_pref, NULL);
+      if (NULL != ns_uri)
+	break;
       ns_uri = xml_get_ns_uri (sparp->sparp_sparqre->sparqre_cli, ns_pref, 0x3, 1 /* ret_in_mp_box */ );
       if (NULL != ns_uri)
 	break;
