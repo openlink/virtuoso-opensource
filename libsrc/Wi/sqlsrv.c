@@ -4354,7 +4354,10 @@ srv_global_init (char *mode)
       sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
-  srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
+  if (!f_read_from_rebuilt_database)
+    {
+      srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
+    }
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;
