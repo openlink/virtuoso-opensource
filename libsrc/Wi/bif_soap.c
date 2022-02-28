@@ -6263,6 +6263,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
        SES_PRINT (out, "http:");
       SES_PRINT (out, "//");
       SES_PRINT (out, szHost);
+#if 0
       if (!strchr (szHost, ':'))
 	{
 	  struct sockaddr_in sa;
@@ -6278,6 +6279,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
 	        }
 	    }
 	}
+#endif
       if (szHost != szHostBuffer)
 	dk_free_box (szHost);
     }
