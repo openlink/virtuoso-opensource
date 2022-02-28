@@ -1536,7 +1536,24 @@ get_sql_type_title (int type)
 	return ("TINYINT");
       }				/* (-6) in sqlext.h */
 #endif
-
+#ifdef SQL_WCHAR
+    case SQL_WCHAR:
+      {
+	return "NCHAR";
+      }
+#endif
+#ifdef SQL_WVARCHAR
+    case SQL_WVARCHAR:
+      {
+	return "NVARCHAR";
+      }
+#endif
+#ifdef SQL_WLONGVARCHAR
+    case SQL_WLONGVARCHAR:
+      {
+	return "LONG NVARCHAR";
+      }
+#endif
     default:
       {
 	char tmp[33];
