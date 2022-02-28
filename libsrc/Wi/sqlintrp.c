@@ -1969,7 +1969,7 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	sqlr_new_error ("42000", "VEC..", "Input arrays  in for_vectored not of equal length");
       dc_reset (dc);
       if (len > dc_max_batch_sz)
-	sqlr_new_error ("42000", "FRVEC",  "array in for vectored over max vector length %d > %d", len, dc_max_batch_sz);
+        sqlr_new_error ("42000", "FRVEC", "Input array FOR VECTORED over max vector length %d > %d", len, dc_max_batch_sz);
       if (ins->_.for_vect.modify && (DCT_BOXES & dc->dc_type))
 	{
 	  int len = BOX_ELEMENTS (arr);
