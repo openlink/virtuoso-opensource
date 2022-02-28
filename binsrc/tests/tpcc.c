@@ -49,8 +49,7 @@ int messages_off = 0;
 int quiet = 0;
 
 
-void login (HENV * henv, HDBC * hdbc, char *argv_, char *dbms, int dbms_sz,
-    HSTMT * misc_stmt, char *uid, char *pwd);
+void login (HENV * henv, HDBC * hdbc, char *argv_, char *dbms, int dbms_sz, HSTMT * misc_stmt, char *uid, char *pwd);
 
 void logoff ();
 void scrap_log ();
@@ -65,8 +64,7 @@ RandomNumber (long x, long y)
 long
 NURand (int a, int x, int y)
 {
-  return ((((RandomNumber (0, a) |
-		  RandomNumber (x, y)) + 1234567) % (y - x + 1)) + x);
+  return ((((RandomNumber (0, a) | RandomNumber (x, y)) + 1234567) % (y - x + 1)) + x);
 }
 
 
@@ -76,7 +74,10 @@ MakeAlphaString (int sz1, int sz2, char *str)
   int sz = RandomNumber (sz1, sz2);
   int inx;
   for (inx = 0; inx < sz; inx++)
-    str[inx] = 'a' + (inx % 24);
+    {
+      int n = RandomNumber (32, 127);
+      str[inx] = n;
+    }
   str[sz - 1] = 0;
   return sz - 1;
 }
@@ -87,7 +88,7 @@ MakeNumberString (int sz, int sz2, char *str)
 {
   int inx;
   for (inx = 0; inx < sz; inx++)
-    str[inx] = '0' + (inx % 10);
+    str[inx] = '0' + RandomNumber (0, 9);
   str[sz - 1] = 0;
 }
 
@@ -132,9 +133,7 @@ check_dd ()
   HSTMT ck_stmt;
   SQLAllocStmt (hdbc, &ck_stmt);
 
-  rc =
-      SQLTables (ck_stmt, (UCHAR *) "%", SQL_NTS, (UCHAR *) "%", SQL_NTS,
-      (UCHAR *) "ORDERS", SQL_NTS, (UCHAR *) "%", SQL_NTS);
+  rc = SQLTables (ck_stmt, (UCHAR *) "%", SQL_NTS, (UCHAR *) "%", SQL_NTS, (UCHAR *) "ORDERS", SQL_NTS, (UCHAR *) "%", SQL_NTS);
   IF_ERR_EXIT (ck_stmt, rc);
   if (SQL_SUCCESS != SQLFetch (ck_stmt))
     {
@@ -243,7 +242,8 @@ MakeAddress (char *str1, char *str2, char *city, char *state, char *zip)
   MakeAlphaString (10, 18, str2);	/* Street 2 */
   MakeAlphaString (10, 18, city);	/* City */
   MakeAlphaString (2, 2, state);	/* State */
-  MakeNumberString (9, 9, zip);	/* Zip */
+  MakeNumberString (4, 4, zip);
+  strcat (zip, "11111");	/* Zip */
 }
 
 
@@ -301,8 +301,8 @@ print_error (HSTMT e1, HSTMT e2, HSTMT e3)
   char state[10];
   char message[1000];
 
-  SQLError (e1, e2, e3, (UCHAR *) state, NULL,
-      (UCHAR *) & message, sizeof (message), (SWORD *) & len);
+  if (SQL_NO_DATA_FOUND == SQLError (e1, e2, e3, (UCHAR *) state, NULL, (UCHAR *) & message, sizeof (message), (SWORD *) & len))
+    return;
 #if defined (GUI)
   printf ("\n*** Error %s: %s\n", state, message);
   log (0, "*** Error %s: %s", state, message);
@@ -323,11 +323,13 @@ usage ()
   exit (1);
 }
 
+char *uid = "dba", *pwd = "dba";
+int speed_limit = 0;
+
 
 int
 main (int argc, char **argv)
 {
-  char *uid = "dba", *pwd = "dba";
   long del_start, del_total;
 
   printf ("Virtuoso TPC C Benchmark.\n"
@@ -341,7 +343,7 @@ main (int argc, char **argv)
       printf ("Usage:\n"
 	  "  tpcc <host:port> user pass i <n>\n"
 	  "       - Create a database of n warehouses. Approx 100MB / warehouse.\n"
-	  "  tpcc <host:port> user pass r <n> [<local_w> <n_ware>]]\n"
+	  "  tpcc <host:port> user pass r <n> [<local_w> <n_ware>]] [max-tpm]\n"
 	  "       - Run n sets of 10 transactions, print results\n"
 	  "   Running the benchmark requires the procedures in tpcc.sql and tpccddk.sql\n"
 	  "   to be loaded\n into the database.\n");
@@ -354,7 +356,7 @@ main (int argc, char **argv)
 
   login (&henv, &hdbc, argv[1], dbms, sizeof (dbms), &misc_stmt, uid, pwd);
   if (*argv[4] == 'S')
-    printf ("Connected trough SOAP to DBMS %s\n", dbms);
+    printf ("Connected through SOAP to DBMS %s\n", dbms);
   else
     printf ("Connected to DBMS %s\n", dbms);
   init_globals ();
@@ -394,8 +396,7 @@ main (int argc, char **argv)
 	  del_start = get_msec_count ();
 	  remove_old_orders (nCount);
 	  del_total = get_msec_count () - del_start;
-	  printf ("# Time for delete %d records - %ld msec\n", nCount,
-	      del_total);
+	printf ("# Time for delete %d records - %ld msec\n", nCount, del_total);
 	}
       break;
     }

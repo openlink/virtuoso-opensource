@@ -177,6 +177,22 @@ get_msec_count ()
 #endif
 
 
+void
+sleep_msec (int msec)
+{
+#if !defined (WIN32)
+  struct timeval tv;
+
+  tv.tv_sec = msec / 1000;
+  tv.tv_usec = (msec % 1000) * 1000;
+  select (0, NULL, NULL, NULL, &tv);
+#else
+  /* The Windows Sleep suspends current thread execution */
+  Sleep (msec);
+#endif
+}
+
+
 /* Random function
    TODO Probably make this a bif (PmN) */
 
