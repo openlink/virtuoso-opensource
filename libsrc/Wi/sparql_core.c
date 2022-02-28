@@ -4733,6 +4733,11 @@ static const char *spar_unsafe_bif_names[] = {
   "REGISTRY_SET",
   "REGISTRY_SET_ALL",
   "STRING_TO_FILE",
+  "SEQUENCE_REMOVE",
+  "SEQUENCE_GET_ALL",
+  "SEQUENCE_NEXT_BOUNDED",
+  "SEQUENCE_NEXT",
+  "SEQUENCE_SET",
   "SYSTEM"
 };
 
