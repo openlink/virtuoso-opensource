@@ -2413,6 +2413,9 @@ create function DAV_CHECK_ACLS (
   declare det varchar;
   declare graph, grpGraph, reqMode, realMode, IRIs any;
 
+  if (not isstring (path))
+    return 0;
+
   rc := 0;
   req := replace (req, '_', '0');
   reqMode := vector (req[0]-48, req[1]-48, req[2]-48);
