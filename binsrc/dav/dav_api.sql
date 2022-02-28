@@ -8775,3 +8775,26 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
 --!AFTER
 DB.DBA.DAV_RDF_SINK_UPDATE ()
 ;
+
+create procedure WS.WS.COL_PATH_FX (in _id any)
+{
+  declare _path, _name varchar;
+  declare _p_id integer;
+  _path := '/';
+  whenever not found goto nf;
+  while (_id > 0)
+    {
+      select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+	{
+	  return NULL;
+	}
+      _id := _p_id;
+      _path := concat ('/', _name, _path);
+    }
+  return _path;
+nf:
+  return NULL;
+}
+;
+
