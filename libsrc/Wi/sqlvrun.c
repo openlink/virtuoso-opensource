@@ -409,6 +409,9 @@ mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
     dc->dc_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp;
   dc->dc_n_places = n_sets;
   if (DV_STRING == dc->dc_dtp) GPF_T1 ("no dv string here");
+#ifndef NDEBUG
+  dc->dc_ssl = ssl;
+#endif
   return dc;
 }
 
