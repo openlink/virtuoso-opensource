@@ -4838,6 +4838,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
       tb_sample_t smpl;
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
+#if 0				/* debug code dissabled */
 	  if (stat_trap)
 	    {
 	      caddr_t * k = (caddr_t*)smp[0];
@@ -4852,6 +4853,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		}
 	    }
 	  stat_adjust_key ((caddr_t *)k);
+#endif
 	  memzero (&smpl, sizeof (smpl));
 	  smpl.smp_time = approx_msec_real_time ();
 	  smpl.smp_card = unbox_float (smp[1]);
