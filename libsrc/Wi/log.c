@@ -3736,7 +3736,10 @@ void
 log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
   if ((char*) -1 == new_log)
-    return;
+    {
+      log_info ("Checkpoint finished.");
+      return;
+    }
   mutex_enter (log_write_mtx);
   if (dbs->dbs_2pc_log_session)
     session_flush (dbs->dbs_2pc_log_session);

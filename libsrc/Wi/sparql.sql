@@ -477,7 +477,7 @@ create procedure DB.DBA.RDF_REPL_START (in quiet integer := 0)
   repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
   DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group', 1);
   DB.DBA.CL_EXEC ('registry_set (?,?)', vector ('DB.DBA.RDF_REPL', cast (now() as varchar)));
-  exec ('checkpoint');
+  if (sys_stat ('db_exists')) exec ('checkpoint');
 }
 ;
 
@@ -15439,7 +15439,7 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
     {
       -- dbg_obj_princ ('DB.DBA.RDF_OBJ_FT_RULE_ADD: need scan');
       commit work;
-      exec ('checkpoint');
+      if (sys_stat ('db_exists')) exec ('checkpoint');
       __atomic (1);
       declare exit handler for sqlstate '*' {
         __atomic (0);
@@ -15508,8 +15508,8 @@ create function DB.DBA.RDF_OBJ_FT_RULE_ADD (in rule_g varchar, in rule_p varchar
     }
       else
         DB.DBA.RDF_OBJ_FT_INS_ALL ();
-  __atomic (0);
-  exec ('checkpoint');
+      __atomic (0);
+      if (sys_stat ('db_exists')) exec ('checkpoint');
     }
   insert into DB.DBA.RDF_OBJ_FT_RULES (ROFR_G, ROFR_P, ROFR_REASON) values (rule_g, rule_p, reason);
   commit work;
@@ -17054,7 +17054,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
         }
       DB.DBA.RDF_INSERT_TRIPLES (jso_sys_g_iid, sum_lst);
       commit work;
-      cl_exec ('checkpoint');
+      if (sys_stat ('db_exists')) cl_exec ('checkpoint');
     }
   DB.DBA.JSO_LOAD_GRAPH (DB.DBA.JSO_SYS_GRAPH(), 1, 0, 1);
   sequence_set ('RDF_URL_IID_NAMED', 1010000, 1);

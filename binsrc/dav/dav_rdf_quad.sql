@@ -59,13 +59,13 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
     new_dav_graph := 'local:/DAV/';
   else
     new_dav_graph := sprintf ('http://%s/DAV/', uriqa_default_host);
-  exec ('checkpoint');
+  if (sys_stat ('db_exists')) exec ('checkpoint');
   __atomic (1);
   DB.DBA.RDF_DELETE_ENTIRE_GRAPH (new_dav_graph, 1);
   old_dav_graph := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
   if (isstring (old_dav_graph) and old_dav_graph <> new_dav_graph and old_dav_graph <> '')
     DB.DBA.RDF_DELETE_ENTIRE_GRAPH (old_dav_graph, 1);
-  if (not enable)
+  if (not enable and sys_stat ('db_exists'))
     {
       registry_set ('DB.DBA.DAV_RDF_GRAPH_URI', '');
       __atomic (0);
@@ -108,7 +108,7 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
     }
   commit work;
   __atomic (0);
-  exec ('checkpoint');
+  if (sys_stat ('db_exists')) exec ('checkpoint');
   return;
 }
 ;
