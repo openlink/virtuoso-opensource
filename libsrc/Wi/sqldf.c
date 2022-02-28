@@ -3392,11 +3392,14 @@ dbe_column_t *
 cp_left_col (df_elt_t * cp)
 {
   df_elt_t ** in_list;
-  if (DFE_BOP_PRED != cp->dfe_type
-      && DFE_BOP != cp->dfe_type)
+  if (DFE_BOP_PRED != cp->dfe_type && DFE_BOP != cp->dfe_type)
     return NULL;
   if (cp->_.bin.op != BOP_LT)
-    return cp->_.bin.left->_.col.col;
+    {
+      if (DFE_COLUMN != cp->_.bin.left->dfe_type)
+	SQL_GPF_T (NULL);
+      return cp->_.bin.left->_.col.col;
+    }
   in_list = sqlo_in_list (cp, NULL, NULL);
   if (in_list)
     return in_list[0]->_.col.col;
