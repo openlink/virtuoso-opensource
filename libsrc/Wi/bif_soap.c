@@ -6214,11 +6214,20 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
   int inx, len;
   dk_session_t *out = strses_allocate ();
   caddr_t res;
+  caddr_t xproto = NULL;
   int is_https = 0;
+
 #ifdef _SSL
   SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
   is_https = (NULL != ssl);
 #endif
+
+  /* Additional https check when running behind proxy */
+  if (NULL != (xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1)))
+    if (!strcmp (xproto, "https"))
+      is_https = 1;
+  if (xproto)
+    dk_free_box (xproto);
 
   if (!(szHost = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0)))
     {
