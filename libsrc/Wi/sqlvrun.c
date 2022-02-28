@@ -53,7 +53,7 @@ int dc_init_sz = 10000;
 int32 dc_adjust_batch_sz_min_anytime = 12000;
 int dc_default_var_len = 8;
 int32 dc_batch_sz = 10000;
-int32 dc_max_batch_sz = 1000000 /*(1024 * 1024 * 4)  - 16 */ ;
+int32 dc_max_batch_sz = 100000 /*(1024 * 1024 * 4)  - 16 */ ;
 int32 dc_max_q_batch_sz = 1000000;
 int dc_str_buf_unit = 0x10000;
 size_t c_max_large_vec;
