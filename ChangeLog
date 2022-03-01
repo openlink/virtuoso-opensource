@@ -1,3 +1,298 @@
+2022-03-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed copyright
+
+2022-02-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use a standard namespace URI for special bif: and sql: SPARQL Built-in functions
+
+	The official prefixes are defined as:
+
+	PREFIX bif: <http://www.openlinksw.com/schemas/bif#>
+	PREFIX sql: <http://www.openlinksw.com/schemas/sql#>
+
+	which have been added to the default namespace prefix list for new
+	databases.
+
+	The code is backward compatible with existing databases, so the old
+	magic prefixes also still work:
+
+	PREFIX bif: <bif:>
+	PREFIX sql: <sql:>
+
+	This solves a problem for third party parsers that cannot handle <bif:>
+
+2022-02-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_02_16_fix_jena' into develop/7
+
+	Rebuild Jena3/4 providers
+
+	Updated version of Jena3/4 provider
+
+	Fixed javadoc generation
+
+2022-02-16  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update for Jena3/4 providers for avoid possible leak of statements
+
+2022-01-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed allow srv_stat ('git_head') on all builds
+
+2022-01-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed wrong version number
+
+2022-01-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with sparql ASK
+
+2021-12-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2021_12_23_add_jena4' into develop/7
+
+	Regenerated virt_jena4.jar
+
+	Upgraded jena4 to use latest version of junit and log4j
+
+	Added jena4 to testsuite
+
+	Added jena4 to configure
+
+	Fixed jena4 requires JDK 11
+
+2021-12-23  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Add Jena4 provider
+
+2021-12-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added amount of 'memory in use' (RSS) in footer
+
+2021-12-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed /sparql-auth requests should not be redirect to /sparql
+
+2021-12-01  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Merge pull request #998 from openlink/TallTed-20211201-GeoSPARQLReadMeUpdate
+
+	Improve README.GeoSPARQL.md, as approved by @openlink
+
+2021-12-01  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Improve README.GeoSPARQL.md
+
+	various minor punctuation, language, markup, etc.
+
+2021-11-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for match of xx-YY etc vs xx
+
+	Fixed accept nulls
+
+	Added GEOS-isValid BIF
+
+	Fixed small issue in http_proxy_v2
+
+	Fixed allow certain digest functions to accept string or binary args to avoid explicit type cast
+
+	Fixed trace to log warnings as WARN_0 instead of ERRS_0
+
+2021-10-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed rounding of GB values
+
+	Fixed issue building getrusage bif
+
+	Commented out old debug code
+
+2021-10-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with registering tables in plugin
+
+	Fixed check if index already exists
+
+2021-10-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed FCT VAD version
+
+	Fixed usage.vsp for safe links
+
+	Fixed return 404 if usage.vsp is called with bad url
+
+	Fixed do not make default http links
+
+	Fixed missing alt tags on images
+
+	Fixed XSS issue
+
+	Fixed bad url encoding
+
+	Added some nofollow and noindex hints for bots
+
+	Fixed endpoint creation
+
+	Fixed missing graph group
+
+	Fixed missing script
+
+2021-10-14  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue executing vec exec expression in WHERE clause
+
+2021-10-14  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with incomplete RDF box
+
+	SR580: RDF box refers to row with RO_ID = 0 of table DB.DBA.RDF_OBJ,
+	but no such row in the table" error
+
+	The rb_id_serialize() must be called only when and only when ro_id
+	is known, otherwise we loose the type/lang and content.
+
+2021-10-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for cast epoch time back to date/datetime
+
+	Fixed size of copy buf and added log message
+
+	Fixed check for https behind proxy for dynamic local
+
+2021-10-14  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed SQLConnect handling of empty strings in szDSN and szUID
+
+2021-09-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed max keys in group by to 32
+
+	Fixed issue calling external proxy with https address
+
+2021-09-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed SSL_renegotiate for OpenSSL 1.1.x
+
+2021-09-06  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed when running as windows service, stderr is an invalid handle
+
+2021-09-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed handling of content type
+
+	Removed redundand join with all graphs
+
+	Fixed memory leak in colsearch
+
+	Added http_proxy_v2 PL BIF
+
+2021-09-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added initial debug logging for SQL code init
+
+	Log only when exec time is over ini setting
+
+	    [Parameters]
+	    LogSQLCodeInit  = 500      ; only log if if takes more than 500 msec
+
+2021-09-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed more PL BIFs
+
+	Added RDF_DUMP_GRAPH and RDF_DUMP_NQUADS as built-in stored procedures
+
+2021-09-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed calculations from TZ in minutes to +HHMM format
+
+2021-08-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added: short name date funcs Fixed: date_rfc/isoNNNN should behave as a BIFs
+
+	Added: unix_timestamp() BIF function
+
+2021-08-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed old proxy and redirect handling in RDF_HTTP_URL_GET
+
+2021-08-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for CONNECT to allow http proxy like squid to tunnel https:// requests
+
+2021-07-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not remove user defined graphs
+
+2021-07-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed whitespace in Link: header
+
+2021-07-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed several issues in About: block
+
+2021-07-23  Tim Haynes  <thaynes@openlinksw.com>
+
+	Fixed only make link when protocol scheme is safe (http, https, ftp)
+
+2021-07-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with bnodes
+
+2021-07-23  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed issue with sid
+
+2021-07-23  Carl Blakeley  <cblakeley@openlinksw.com>
+
+	Fixed decoding of percent-encoded URLs when used as labels
+
+2021-07-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed caching query via plink
+
+	Fixed various encoding issues
+
+	Fixed make ifps secure
+
+	Fixed order labels by accept-language
+
+	Added check if automated label fill is enabled
+
+	Fixed detection of label language
+
+	Added support to use built-in rdf_label and don't cache the object value twice
+
+	Updated S ranking algorithm
+
+2021-06-25  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Update NEWS.md
+
+2021-06-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with sponge link in header
+
+	Fixed missing file in sparql endpoint code generation
+
+2021-06-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2021_06_23_fix_win_build' into develop/7
+
+2021-06-23  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix VS project files
+
+	Fix version number in resources
+
+2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.7-dev to mark the start of a new development cycle
+
+	Updated Changelog
+
 2021-06-22  Patrick van Kleef  <pkleef@openlinksw.com>
 
 	Merge tag 'v7.2.6.1' into develop/7
