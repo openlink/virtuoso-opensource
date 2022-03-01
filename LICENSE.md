@@ -1,7 +1,7 @@
 License
 =======
 
-*Copyright (C) 1998-2021 OpenLink Software <vos.admin@openlinksw.com>*
+*Copyright (C) 1998-2022 OpenLink Software <vos.admin@openlinksw.com>*
 
 OpenLink Software's Virtuoso Open-Source (VOS) project
 ------------------------------------------------------
