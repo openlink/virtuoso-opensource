@@ -1141,7 +1141,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
   http ('  {\n', self.codegen_ses);
   self.used_fld_tmap_aliases := vector (vector(), vector(), vector(), vector(), vector());
   http ('    create ' || self.R2RML_IRI_ID_AS_QNAME (rdfview_iid) || ' as', self.codegen_ses);
-  if (self.default_constg is null) 
+  if (self.default_constg is null)
     self.default_constg := iri_to_id (sprintf ('http://example.com/r2rml?graph=%U', id_to_iri(self.graph_iid)));
   if ((const_graph_count + var_graph_count) <= 1)
     {
@@ -1150,19 +1150,18 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
         {
           declare constg IRI_ID;
           constg := (sparql define input:storage "" define output:valmode "LONG"
-            select ?constg
-            where { graph `iri(?:self.graph_iid)` {
-                    ?tmap a rr:TriplesMap .
-                    optional {
-                        { ?tmap rr:subjectMap ?smap }
-                      union
-                        { ?tmap rr:predicateObjectMap ?pomap } }
-                      { ?gcontainer rr:graph ?constg }
-                    union
-                      {
-                        ?gcontainer rr:graphMap ?gfld .
-                        ?gfld rr:constant ?constg }
-                    filter (?gcontainer in (?smap, ?pomap)) } } );
+          SELECT  ?constg WHERE
+          { GRAPH `iri(?:self.graph_iid)`
+              { ?tmap  a  rr:TriplesMap
+                  { ?tmap  rr:subjectMap [ rr:graph  ?constg ] . }
+                  UNION
+                  { ?tmap  rr:predicateObjectMap [ rr:graph  ?constg ] . }
+                  UNION
+                  { ?tmap  rr:subjectMap [ rr:graphMap  [ rr:constant  ?constg ] ] . }
+                  UNION
+                  { ?tmap  rr:predicateObjectMap [ rr:graphMap  [ rr:constant  ?constg ] ] . }
+              }
+          });
           if (constg is null)
             constg := self.default_constg;
           self.R2RML_GEN_FLD (0 /* for G */, constg, null, null, null, 'http://www.w3.org/ns/r2rml#IRI', null, null);
