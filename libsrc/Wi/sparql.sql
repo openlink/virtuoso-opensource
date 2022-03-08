@@ -1856,7 +1856,7 @@ create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL (in v any, in dt_iid IRI_ID,
 ;
 
 create function DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS (
-  in o_val any, in o_type varchar, in o_lang varchar ) returns any
+  in o_val any, in o_type varchar, in o_lang varchar ) returns any array
 {
   if (__tag (o_type) in (__tag of varchar, __tag of UNAME))
     {
