@@ -1334,24 +1334,29 @@ create procedure "Versioning_REMOVE_V_PROPERTIES" (in _path varchar)
 ;
 
 --| API: remove the collection from version control
-create function DAV_REMOVE_VERSIONING_CONTROL_INT (in _main varchar, in _auth varchar, in _pwd varchar) returns integer
+create function DAV_REMOVE_VERSIONING_CONTROL_INT (
+  in _main varchar,
+  in _auth varchar,
+  in _pwd varchar) returns integer
 {
   declare _vvc any;
-  _vvc := DAV_PROP_GET (_main, 'virt:Versioning-History', 'dav', 'dav');
-  if (DAV_HIDE_ERROR (_vvc) is null)
+  declare _col_id integer;
+
+  _col_id := DB.DBA.DAV_SEARCH_ID (_main, 'C');
+  _vvc := DB.DBA.DAV_PROP_GET_INT (_col_id, 'C', 'virt:Versioning-History', 0);
+  if (DB.DBA.DAV_HIDE_ERROR (_vvc) is null)
     return _vvc;
-  declare _col_id int;
-  _col_id := DAV_SEARCH_ID (_main, 'C');
-  update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING=NULL where COL_ID = DAV_SEARCH_ID (_main, 'C');
-  for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = _col_id
-  do {
+
+  update WS.WS.SYS_DAV_COL set COL_AUTO_VERSIONING = null where COL_ID = _col_id;
+  for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = _col_id) do
+  {
     "Versioning_REMOVE_V_PROPERTIES" (RES_FULL_PATH);
   }
 
   connection_set ('Versioning REM PROP', 1);
-  DAV_PROP_REMOVE (_main, 'virt:Versioning-History', _auth, _pwd);
-  DAV_PROP_REMOVE (_vvc, 'virt:Versioning-Collection', _auth, _pwd);
-  DAV_PROP_REMOVE (_vvc, 'virt:Versioning-Attic', _auth, _pwd);
+  DB.DBA.DAV_PROP_REMOVE (_main, 'virt:Versioning-History', _auth, _pwd);
+  DB.DBA.DAV_PROP_REMOVE (_vvc, 'virt:Versioning-Collection', _auth, _pwd);
+  DB.DBA.DAV_PROP_REMOVE (_vvc, 'virt:Versioning-Attic', _auth, _pwd);
   connection_set ('Versioning REM PROP', NULL);
   return 1;
 }
