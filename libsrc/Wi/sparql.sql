@@ -1149,7 +1149,7 @@ create function DB.DBA.RDF_GEO_SET_ID (inout v any)
 }
 ;
 
-create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR, in ro_id_dict any := 0) returns varchar
+create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integer, in v varchar, in lang_twobyte integer, in ro_id_dict any := 0) returns varchar
 {
   declare llong, id, need_digest integer;
   declare digest any;
@@ -1419,7 +1419,7 @@ recheck:
 }
 ;
 
-create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integeR, in v varchar, in lang_twobyte integeR) returns varchar
+create function DB.DBA.RDF_FIND_RO_DIGEST (in dt_twobyte integer, in v varchar, in lang_twobyte integer) returns varchar
 {
   declare llong, dt_and_lang int;
   declare dt_s, lang_s, chksm, sum64 varchar;
@@ -17426,8 +17426,8 @@ create procedure DB.DBA.RDF_QUAD_AUDIT ()
       declare o_old_len integer;
       declare o_long any;
       declare o_strval varchar;
-      declare val_len, o_id integeR;
-      declare o_dt, o_lang integeR;
+      declare val_len, o_id integer;
+      declare o_dt, o_lang integer;
       o_old_len := length (o_old);
       if (dict_size (err_dict) > 10000)
         {
