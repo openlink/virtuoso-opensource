@@ -75,6 +75,7 @@ cmp_label (in lbl_str varchar, in langs varchar)
   declare cur_iid any;
   declare cur_lbl varchar;
   declare n integer;
+  declare lang_vec any;
 
   res := vector();
 
@@ -87,8 +88,9 @@ cmp_label (in lbl_str varchar, in langs varchar)
       goto done;
     };
 
-    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from rdf_label, rdf_quad, rdf_p_score  
-	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o and p = p_iri order by p_score) do
+    lang_vec := cmp_fill_lang_by_q (langs);
+    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from rdf_label, rdf_quad  
+	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o) do
       {
 	declare ull_label_lang varchar;
 	ull_label_lang := '';
@@ -103,7 +105,7 @@ cmp_label (in lbl_str varchar, in langs varchar)
   	}
 
         cur_iid := ull_iid;
-        q := cmp_get_lang_by_q (langs, ull_label_lang);
+        q := get_keyword_ucase (ull_label_lang, lang_vec, 0.001);
 
         if (q >= best_q)
           {

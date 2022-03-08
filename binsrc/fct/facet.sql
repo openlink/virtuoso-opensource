@@ -263,6 +263,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lng_pref any;
+  declare lang_vec any;
 
   if (not isiri_id (x))
     return vector (null, 1);
@@ -271,6 +272,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_str := null;
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o, p
         from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
@@ -282,8 +284,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	}
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
-
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
@@ -320,6 +321,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lang_id any;
+  declare lang_vec any;
 
   if (is_rdf_box (x))
     {
@@ -343,6 +345,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   best_str := '';
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o
         from rdf_quad table option (index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) order by cast (b3s_lbl_order (P) as int) option (same_as) do
@@ -353,7 +356,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 	str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lang_id);
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
@@ -378,6 +381,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lng_pref any;
+  declare lang_vec any;
 
   if (not isiri_id (x))
     return null;
@@ -393,6 +397,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_str := null;
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o, p
         from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
@@ -413,8 +418,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	}
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
-
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
