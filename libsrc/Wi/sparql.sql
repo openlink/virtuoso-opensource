@@ -176,6 +176,8 @@ alter index RDF_GEO on RDF_GEO partition (ID int (0hexffff00))
 
 create table DB.DBA.RDF_LABEL (RL_O any primary key, RL_RO_ID bigint, RL_TEXT varchar, RL_LANG int)
 alter index RDF_LABEL on RDF_LABEL partition (RL_O varchar (-1, 0hexffff))
+;
+
 create index RDF_LABEL_TEXT on RDF_LABEL (RL_TEXT, RL_O) partition (RL_TEXT varchar (6, 0hexffff))
 ;
 
