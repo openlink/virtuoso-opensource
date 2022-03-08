@@ -939,6 +939,73 @@ cache_and_log:
 }
 ;
 
+create procedure DB.DBA.RDF_PRESET_TWOBYTES_OF_LANGUAGES ()
+{
+  declare codes any;
+  codes := vector (
+-- ISO codes
+'aa', 'ab', 'ae', 'af', 'ak', 'am', 'an', 'ar', 'as', 'av', 'ay', 'az',
+'ba', 'be', 'bg', 'bh', 'bi', 'bm', 'bn', 'bo', 'br', 'bs',
+'ca', 'ce', 'ch', 'co', 'cr', 'cs', 'cu', 'cv', 'cy', 'da', 'de', 'dv', 'dz',
+'ee', 'el', 'en', 'eo', 'es', 'et', 'eu',
+'fa', 'ff', 'fi', 'fj', 'fo', 'fr', 'fy', 'ga', 'gd', 'gl', 'gn', 'gu', 'gv',
+'ha', 'he', 'hi', 'ho', 'hr', 'ht', 'hu', 'hy', 'hz',
+'ia', 'id', 'ie', 'ig', 'ii', 'ik', 'io', 'is', 'it', 'iu', 'ja', 'jv',
+'ka', 'kg', 'ki', 'kj', 'kk', 'kl', 'km', 'kn', 'ko', 'kr', 'ks', 'ku', 'kv',
+'kw', 'ky', 'la', 'lb', 'lg', 'li', 'ln', 'lo', 'lt', 'lu', 'lv',
+'mg', 'mh', 'mi', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt', 'my',
+'na', 'nb', 'nd', 'ne', 'ng', 'nl', 'nn', 'no', 'nr', 'nv', 'ny',
+'oc', 'oj', 'om', 'or', 'os', 'pa', 'pi', 'pl', 'ps', 'pt', 'qu',
+'rm', 'rn', 'ro', 'ru', 'rw', 'sa', 'sc', 'sd', 'se', 'sg', 'si', 'sk',
+'sl', 'sm', 'sn', 'so', 'sq', 'sr', 'ss', 'st', 'su', 'sv', 'sw',
+'ta', 'te', 'tg', 'th', 'ti', 'tk', 'tl', 'tn', 'to', 'tr', 'ts', 'tt',
+'tw', 'ty', 'ug', 'uk', 'ur', 'uz', 've', 'vi', 'vo', 'wa', 'wo',
+'xh', 'yi', 'yo', 'za', 'zh', 'zu',
+-- Codes from Java locales
+'ar', 'ar-AE', 'ar-BH', 'ar-DZ', 'ar-EG', 'ar-IQ', 'ar-JO', 'ar-KW', 'ar-LB',
+'ar-LY', 'ar-MA', 'ar-OM', 'ar-QA', 'ar-SA', 'ar-SD', 'ar-SY', 'ar-TN',
+'ar-YE',
+'be', 'be-BY', 'bg', 'bg-BG', 'ca', 'ca-ES', 'cs', 'cs-CZ',
+'da', 'da-DK', 'de', 'de-AT', 'de-CH', 'de-DE', 'de-LU',
+'el', 'el-CY', 'el-GR', 'en', 'en-AU', 'en-CA', 'en-GB', 'en-IE', 'en-IN',
+'en-MT', 'en-NZ', 'en-PH', 'en-SG', 'en-US', 'en-ZA', 'es', 'es-AR', 'es-BO',
+'es-CL', 'es-CO', 'es-CR', 'es-DO', 'es-EC', 'es-ES', 'es-GT', 'es-HN',
+'es-MX', 'es-NI', 'es-PA', 'es-PE', 'es-PR', 'es-PY', 'es-SV', 'es-US',
+'es-UY', 'es-VE', 'et', 'et-EE',
+'fi', 'fi-FI', 'fr', 'fr-BE', 'fr-CA', 'fr-CH', 'fr-FR', 'fr-LU',
+'ga', 'ga-IE', 'hi-IN',
+'hr', 'hr-HR', 'hu', 'hu-HU',
+'in', 'in-ID', 'is', 'is-IS', 'it', 'it-CH', 'it-IT', 'iw', 'iw-IL',
+'ja', 'ja-JP', 'ja-JP-JP',
+'ko', 'ko-KR',
+'lt', 'lt-LT', 'lv', 'lv-LV',
+'mk', 'mk-MK',
+'ms', 'ms-MY',
+'mt', 'mt-MT',
+'nl', 'nl-BE', 'nl-NL', 'no', 'no-NO', 'no-NO-NY',
+'pl', 'pl-PL',
+'pt', 'pt-BR', 'pt-PT',
+'ro', 'ro-RO',
+'ru', 'ru-RU',
+'sk', 'sk-SK', 'sl', 'sl-SI', 'sq', 'sq-AL', 'sr', 'sr-BA', 'sr-CS', 'sr-ME',
+'sr-RS', 'sv', 'sv-SE',
+'th', 'th-TH', 'th-TH-TH', 'tr', 'tr-TR',
+'uk', 'uk-UA',
+'vi', 'vi-VN',
+'zh', 'zh-CN', 'zh-HK', 'zh-SG', 'zh-TW',
+--Internal Virtuoso codes
+'x-any', 'x-ftq-x-any', 'x-viDoc', 'x-ftq-x-viDoc' );
+  foreach (varchar c in codes) do
+    DB.DBA.RDF_TWOBYTE_OF_LANGUAGE (c);
+  commit work;
+}
+;
+
+--!AFTER
+DB.DBA.RDF_PRESET_TWOBYTES_OF_LANGUAGES ()
+;
+
+
 -----
 -- Conversions from and to _table fields_ in short representation
 
