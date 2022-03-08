@@ -492,7 +492,7 @@ create procedure DB.DBA.TTLP_EV_NULL_IID (inout uri varchar, inout g_iid IRI_ID,
 
 --/1d1/tpch1000
 --!!!
-create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads int, in log_mode int, in old_log_mode int)
+create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads integer, in log_mode integer, in old_log_mode integer)
 {
   declare ro_id_dict, app_env, g_iid any;
   -- dbg_obj_princ ('DB.DBA.TTLP_V_GS (...', base, graph, flags, threads, log_mode, old_log_mode);
@@ -519,7 +519,8 @@ create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph va
       aq_wait_all (app_env[0]);
     }
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 

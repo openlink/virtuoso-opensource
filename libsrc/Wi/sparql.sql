@@ -2885,7 +2885,7 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
 	in log_enable int := null, in transactional int := 0)
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   declare ret any;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
@@ -2939,7 +2939,7 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
         in iri_xlate_cbk varchar, in iri_xlate_env any )
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.TTLP()');
   else if (graph is null)
@@ -2982,7 +2982,7 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
 create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in report_cbk varchar := '')
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   return rdf_load_turtle (strg, base, graph, flags,
@@ -2994,7 +2994,7 @@ create procedure DB.DBA.TTLP_VALIDATE (in strg varchar, in base varchar, in grap
 create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0, in report_cbk varchar := '')
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   if (__tag of long varchar handle = __tag (strg))
      strg := cast (strg as varchar);
   return rdf_load_turtle_local_file (strg, base, graph, flags,
@@ -3006,7 +3006,7 @@ create procedure DB.DBA.TTLP_VALIDATE_LOCAL_FILE (in strg varchar, in base varch
 create procedure DB.DBA.RDF_VALIDATE_RDFXML (in strg varchar, in base varchar, in graph varchar)
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_VALIDATE_RDFXML()');
   else if (graph is null)
@@ -3222,7 +3222,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_IMPL (inout strg varchar, in base varcha
   in parse_mode integer, in log_enable int := null, in transactional int := 0)
 {
   declare app_env any;
-  declare old_log_mode int;
+  declare old_log_mode integer;
   if (graph = '')
     signal ('22023', 'Empty string is not a valid graph IRI in DB.DBA.RDF_LOAD_RDFXML() and the like');
   else if (graph is null)
@@ -7408,7 +7408,7 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RE
 
 create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triples any, in log_mode integer := null)
 {
-  declare is_text, ctr, old_log_enable, l integer;
+  declare is_text, ctr, old_log_mode, l integer;
   declare ro_id_dict, dp any;
   if ('1' = registry_get ('cl_rdf_text_index'))
     is_text := 1;
@@ -7470,15 +7470,15 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES_CL (inout graph_iri any, inout triple
 /* insert */
 create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any, in log_mode integer := null)
 {
-  declare ctr, old_log_enable integer;
+  declare ctr, old_log_mode integer;
   declare ro_id_dict any;
   if (0 = sys_stat ('cl_run_local_only'))
     return RDF_INSERT_TRIPLES_CL (graph_iid, triples, log_mode);
   if (not isiri_id (graph_iid))
     graph_iid := iri_to_id (graph_iid);
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
-  if (0 = bit_and (old_log_enable, 2))
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
+  if (0 = bit_and (old_log_mode, 2))
     {
       declare dp any;
       dp := rl_local_dpipe ();
@@ -7526,7 +7526,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
       commit work;
       aq_wait_all (app_env[0]);
       connection_set ('g_dict', null);
-      log_enable (old_log_enable, 1);
+      log_enable (old_log_mode, 1);
       return;
     }
   if (__rdf_graph_is_in_enabled_repl (graph_iid))
@@ -7569,19 +7569,19 @@ do_insert:
     }
   if (ro_id_dict is not null)
     DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH (graph_iid, ro_id_dict);
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
 }
 ;
 
 create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in log_mode integer := null)
 {
-  declare ctr, old_log_enable, l integer;
+  declare ctr, old_log_mode, l integer;
   if (not isiri_id (graph_iri))
     graph_iri := iri_to_id (graph_iri);
   if (__rdf_graph_is_in_enabled_repl (graph_iri))
     DB.DBA.RDF_REPL_DELETE_TRIPLES (id_to_iri (graph_iri), triples);
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   if (1 = sys_stat ('enable_vec'))
     {
       declare gv, sv, pv, ov any;
@@ -7603,7 +7603,7 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
          {
 	   delete from DB.DBA.RDF_QUAD where G = gi and S = si and P = pi and O = oi;
 	 }
-      log_enable (old_log_enable, 1);
+      log_enable (old_log_mode, 1);
       return;
     }
   for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
@@ -7624,14 +7624,14 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES (in graph_iri any, in triples any, in
 --      where G = graph_iri and S = triples[ctr][0] and P = triples[ctr][1] and O = o_short;
 -- complete: ;
     }
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
 }
 ;
 
 -- /* delete */
 create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples any, in log_mode integer := null)
 {
-  declare ctr, old_log_enable, l integer;
+  declare ctr, old_log_mode, l integer;
   declare is_local int;
   declare dp any array;
   is_local := sys_stat ('cl_run_local_only');
@@ -7639,8 +7639,8 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples 
     graph_iid := iri_to_id (graph_iid);
   if (__rdf_graph_is_in_enabled_repl (graph_iid))
     DB.DBA.RDF_REPL_DELETE_TRIPLES (id_to_iri (graph_iid), triples);
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   if (is_local)
     dp := dpipe (5, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO');
   else
@@ -7661,7 +7661,7 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples 
       dpipe_next (dp, 0);
       dpipe_next (dp, 1);
         }
-      log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
     }
 ;
 
@@ -7685,10 +7685,10 @@ create procedure DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (inout _env any, in graph_ir
   declare blank_ids any;
   declare dict any;
   declare action_ctr integer;
-  declare old_log_enable integer;
-  old_log_enable := log_enable (log_mode, 1);
+  declare old_log_mode integer;
+  old_log_mode := log_enable (log_mode, 1);
   -- dbg_obj_princ ('DB.DBA.SPARQL_INS_OR_DEL_CTOR_IMPL (', _env, graph_iri, opcodes, vars, log_mode, ctor_op, ')');
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   blank_ids := 0;
   action_ctr := 0;
   quads_found := _env[5 + ctor_op];
@@ -7814,7 +7814,7 @@ end_of_adding_triple: ;
     }
   _env[ctor_op] := _env[ctor_op] + action_ctr;
   _env[5 + ctor_op] := quads_found;
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
 }
 ;
 
@@ -8066,7 +8066,7 @@ create procedure DB.DBA.RDF_REPL_DEL (inout rquads any)
 create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer, in uid integer := 0, in log_mode integer := null, in compose_report integer := 0, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
-  declare old_log_enable integer;
+  declare old_log_mode integer;
   declare txtreport varchar;
   txtreport := '';
   if (__tag of vector <> __tag (graph_iris))
@@ -8083,7 +8083,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
       if (isiri_id (g_iri))
         g_iri := id_to_iri (g_iri);
       g_iid := iri_to_id (g_iri);
-      old_log_enable := log_enable (log_mode, 1);
+      old_log_mode := log_enable (log_mode, 1);
       if (__rdf_graph_is_in_enabled_repl (g_iid))
         {
 	  declare lm int;
@@ -8091,7 +8091,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
           repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
           repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d clear graph iri ( ?? )', lm), g_iri);
         }
-      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+      declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
       delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0)  option (index_only, index RDF_QUAD_GS);
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS where VT_WORD = rdf_graph_keyword (g_iid);
@@ -8108,7 +8108,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
         }
     }
   /*091202 commit work; */
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (compose_report)
     return txtreport;
   return 1;
@@ -8117,13 +8117,13 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
 
 create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
-  declare old_log_enable integer;
+  declare old_log_mode integer;
   declare grab_params any;
   declare grabbed any;
   declare res integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL LOAD');
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); if (silent) goto fail; resignal; };
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); if (silent) goto fail; resignal; };
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
@@ -8141,7 +8141,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   commit work;
   res := DB.DBA.RDF_GRAB_SINGLE (resource, grabbed, grab_params);
   commit work;
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (res)
     {
       if (compose_report)
@@ -8166,15 +8166,15 @@ fail:
 
 create function DB.DBA.SPARUL_LOAD_SERVICE_DATA (in service_iri any, in proxy_iri varchar, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
-  declare old_log_enable integer;
+  declare old_log_mode integer;
   declare mdta, rows any;
   declare stat, msg varchar;
   __rgs_assert_cbk (service_iri, uid, 2, 'SPARUL LOAD SERVICE DATA');
   -- dbg_obj_princ ('DB.DBA.SPARUL_LOAD_SERVICE_DATA (', service_iri, proxy_iri, uid, log_mode, compose_report, options, silent, ')');
-  old_log_enable := log_enable (log_mode, 1);
+  old_log_mode := log_enable (log_mode, 1);
   stat := '00000';
   exec ('DB.DBA.SPARQL_SD_PROBE (?, ?, 0, 0)', stat, msg, vector (service_iri, proxy_iri), 10000, mdta, rows);
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (stat <> '00000')
     {
       if (not silent) signal (stat, msg);
@@ -8198,7 +8198,7 @@ create function DB.DBA.SPARUL_LOAD_SERVICE_DATA (in service_iri any, in proxy_ir
 create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
-  declare old_log_enable integer;
+  declare old_log_mode integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL CREATE GRAPH');
   g_iid := iri_to_id (graph_iri);
   if (__rdf_graph_is_in_enabled_repl (g_iid))
@@ -8219,11 +8219,11 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in u
     }
   if (silent)
     {
-      old_log_enable := log_enable (log_mode, 1);
-      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+      old_log_mode := log_enable (log_mode, 1);
+      declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
       insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
       /*091202 commit work; */
-      log_enable (old_log_enable, 1);
+      log_enable (old_log_mode, 1);
       if (compose_report)
         return sprintf ('Create silent graph <%s> -- done', graph_iri);
       else
@@ -8235,11 +8235,11 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in u
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   insert soft DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH (REC_GRAPH_IID) values (iri_to_id (graph_iri));
   /*091202 commit work; */
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (compose_report)
     return sprintf ('Create graph <%s> -- done', graph_iri);
   else
@@ -8250,7 +8250,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in u
 create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in uid integer, in log_mode integer, in compose_report integer, in options any := null, in silent integer := 0) returns any
 {
   declare g_iid IRI_ID;
-  declare old_log_enable integer;
+  declare old_log_mode integer;
   declare txtreport varchar;
   txtreport := '';
   if ((silent1 is not null) and silent1)
@@ -8274,8 +8274,8 @@ create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in ui
           repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
           repl_text ('__rdf_repl', 'sparql define input:storage "" drop graph iri ( ?? )', g_iri);
         }
-      old_log_enable := log_enable (log_mode, 1);
-      declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+      old_log_mode := log_enable (log_mode, 1);
+      declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
       if (not exists (select top 1 1 from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid))
         {
           if (silent)
@@ -8283,7 +8283,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in ui
               if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = g_iid))
                 {
                   DB.DBA.SPARUL_CLEAR (g_iri, 0, uid);
-                  log_enable (old_log_enable, 1);
+                  log_enable (old_log_mode, 1);
                   if (compose_report)
                     return sprintf ('Drop silent graph <%s> -- graph has not been explicitly created before, triples were removed', g_iri);
                   else
@@ -8302,7 +8302,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in ui
           DB.DBA.SPARUL_CLEAR (g_iri, 0, uid);
           delete from DB.DBA.RDF_EXPLICITLY_CREATED_GRAPH where REC_GRAPH_IID = g_iid;
           /*091202 commit work; */
-          log_enable (old_log_enable, 1);
+          log_enable (old_log_mode, 1);
           if (compose_report)
             return sprintf ('Drop silent graph <%s> -- done', g_iri);
           else
@@ -8321,7 +8321,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in ui
           txtreport := txtreport || sprintf ('Drop graph <%s> -- done', g_iri);
         }
     }
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   /*091202 commit work; */
   if (compose_report)
     return txtreport;
@@ -8479,9 +8479,9 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
 {
   declare groups any;
   declare group_ctr, group_count integer;
-  declare old_log_enable integer;
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare old_log_mode integer;
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   declare repl_quads any array;
   declare all_sv, all_pv, all_ov, all_gv, repl_sv, repl_pv, repl_ov, repl_gv any;
   -- dbg_obj_princ ('__rgs_prepare_del_or_ins (', quads, uid, dflt_graph_iri, ') formed the following:');
@@ -8560,7 +8560,7 @@ create function DB.DBA.RDF_DELETE_QUADS (in dflt_graph_iri any, inout quads any,
         }
       repl_text ('__rdf_repl', 'DB.DBA.RDF_REPL_DELETE_QUADS (?)', repl_quads);
     }
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
 }
 ;
 
@@ -8643,9 +8643,9 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
   declare del_count, del_grp_count integer;
   declare res_ses any;
   del_count := 0;
-  declare old_log_enable integer;
-  old_log_enable := log_enable (log_mode, 1);
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare old_log_mode integer;
+  old_log_mode := log_enable (log_mode, 1);
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   if (__tag of vector = __tag (dflt_graph_iri))
     {
       del_count := dflt_graph_iri[1]; -- 1 for del count
@@ -8734,7 +8734,7 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
         }
       del_count := del_count + length (quads);
     }
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (compose_report)
     {
       if (del_count)
@@ -8791,7 +8791,7 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
 {
   declare src_g_iid IRI_ID;
   declare tgt_g_iid IRI_ID;
-  declare old_log_enable, src_repl, tgt_repl integer;
+  declare old_log_mode, src_repl, tgt_repl integer;
   declare qry, stat, msg varchar;
   if (isiri_id (src_g_iri))
     src_g_iri := id_to_iri (src_g_iri);
@@ -8815,7 +8815,7 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
     signal ('22023', sprintf ('SPARQL 1.1 can not %s non-replicated graph <%s> to replicated graph <%s>, both should be in same replication status', src_g_iri, tgt_g_iri));
   if ('ADD' <> opname)
     DB.DBA.SPARUL_CLEAR (tgt_g_iri, 0, uid, log_mode, 0, options, silent);
-  old_log_enable := log_enable (log_mode, 1);
+  old_log_mode := log_enable (log_mode, 1);
   if (src_repl and tgt_repl)
     {
       declare lm int;
@@ -8823,7 +8823,7 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
       repl_text ('__rdf_repl', '__rdf_repl_flush_queue()');
       repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d add iri( ?? ) to iri( ?? )', lm), src_g_iri, tgt_g_iri);
     }
-  declare exit handler for sqlstate '*' { log_enable (old_log_enable, 1); resignal; };
+  declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   stat := '00000';
   qry := sprintf ('insert soft DB.DBA.RDF_QUAD (G,S,P,O) select __i2id (''%S''), t.S, t.P, t.O from DB.DBA.RDF_QUAD t where t.G = __i2id (''%S'') ',
      tgt_g_iri, src_g_iri );
@@ -8833,7 +8833,7 @@ create function DB.DBA.SPARUL_COPYMOVEADD_IMPL (in opname varchar, in src_g_iri 
   if ('MOVE' = opname)
     DB.DBA.SPARUL_CLEAR (src_g_iri, 0, uid, log_mode, 0, options, silent);
   /*091202 commit work; */
-  log_enable (old_log_enable, 1);
+  log_enable (old_log_mode, 1);
   if (compose_report)
     return sprintf ('%s <%s> to <%s> -- done', opname, src_g_iri, tgt_g_iri);
   return 1;
