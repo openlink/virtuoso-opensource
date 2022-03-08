@@ -237,7 +237,7 @@
       </ul>
       <ul class="left_id">
         <li>Version: <?V sys_stat ('st_dbms_ver') ?></li>
-        <li>Build: <?V sys_stat ('st_build_date') ?></li>
+        <li>Build: <?V sys_stat('st_build_date') ?> (<?V sys_stat('git_head') ?>)</li>
       </ul>
     </div>
     <div id="LC" class="content">
