@@ -364,7 +364,8 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 	}
     }
   endproc:
-  best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
+  if (__tag(best_str) = __tag of varchar)
+    best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
 }
 ;
