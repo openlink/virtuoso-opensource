@@ -5606,39 +5606,48 @@ create procedure DAV_RES_CONTENT_META_N3 (
   in path varchar)
 {
   declare item any;
-  declare iri, creator_iri varchar;
+  declare iri, creator_iri, person_iri, pref, tp_iri varchar;
   declare stream, dict, triples any;
 
-  if (__proc_exists ('SIOC.DBA.get_graph') is null)
-    return -1;
-
-  dict := dict_new();
   item := DAV_DIR_LIST_INT (path, -1, '%', null, null, http_dav_uid ());
   if (DAV_HIDE_ERROR (item) is null)
     return -1;
 
+  pref := WS.WS.DAV_HOST();
   item := item[0];
-  iri := iri_to_id (WS.WS.DAV_HOST () || path);
+  iri := iri_to_id (pref || path);
 
-  -- creator
-  creator_iri := SIOC..user_iri (item[7]);
-	dict_put (dict, vector (iri, iri_to_id (SIOC..sioc_iri ('has_creator')), iri_to_id (creator_iri)), 0);
-	dict_put (dict, vector (iri_to_id (creator_iri), iri_to_id (SIOC..sioc_iri ('creator_of')), iri), 0);
-  dict_put (dict, vector (iri, SIOC..foaf_iri ('maker'), SIOC..person_iri (creator_iri)), 0);
-  dict_put (dict, vector (iri_to_id (SIOC..person_iri (creator_iri)), SIOC..foaf_iri ('made'), iri), 0);
+  creator_iri := iri_to_id (sprintf ('%s/dataspace/%U#this', pref, __sec_uid_to_user (item[7])));
+  person_iri := iri_to_id (sprintf ('%s/dataspace/person/%U#this', pref, __sec_uid_to_user (item[7])));
+  if (item[1] = 'R')
+    {
+      tp_iri := iri_to_id (sprintf ('http://www.w3.org/ns/iana/media-types/%s#Resource', item[9]));
+    }
 
-  -- name
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('title')), item[10]), 0);
-  dict_put (dict, vector (iri, iri_to_id (SIOC..rdfs_iri ('label')), item[10]), 0);
-
-  -- created
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('created')), item[8]), 0);
-
-  -- modified
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('modified')), item[3]), 0);
-
-  -- content type
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('format')), item[9]), 0);
+  dict := dict_new();
+  if (item[1] = 'R')
+    {
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), tp_iri), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('rdfs:Resource'))), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Resource'))), 0);
+    }
+  if (item[1] = 'C')
+    {
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:BasicContainer'))), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Container'))), 0);
+    }
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('sioc:has_creator')), creator_iri), 0);
+  dict_put (dict, vector (creator_iri, iri_to_id (__xml_nsexpand_iristr('sioc:creator_of')), iri), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('foaf:maker')), person_iri), 0);
+  dict_put (dict, vector (person_iri, iri_to_id (__xml_nsexpand_iristr('foaf:made')), iri), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dc:title')), item[10]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdfs:label')), item[10]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dcterms:created')), item[8]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dcterms:modified')), item[3]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('stat:mtime')), item[3]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('stat:size')), item[2]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dc:format')), item[9]), 0);
 
   stream := string_output ();
  	triples := dict_list_keys (dict, 0);

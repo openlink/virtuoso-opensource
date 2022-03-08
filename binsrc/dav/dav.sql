@@ -7222,7 +7222,7 @@ create procedure DB.DBA.LDP_CREATE (
   in mimeType varchar := null)
 {
   -- dbg_obj_princ ('LDP_CREATE (', path, ')');
-  declare tmp, path_parent, graph, graph_parent varchar;
+  declare path_parent, graph, graph_parent varchar;
   declare graphIdn, graphParentIdn any;
 
   -- macOS metadata files
@@ -7239,22 +7239,31 @@ create procedure DB.DBA.LDP_CREATE (
     graph := WS.WS.DAV_IRI (path);
     set_user_id ('dba');
 
-    tmp := sprintf (' <%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph);
     if ((path <> '') and (path[length(path)-1] <> 47))
     {
+      declare str any;
       -- delete old data
       graphIdn := __i2idn (graph);
       graphParentIdn := __i2idn (graph_parent);
       delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
       delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
-      for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
-      {
-        tmp := tmp ||
-               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#mtime> %d .', graph, datediff ('second', stringdate ('1970-1-1Z'), adjust_timezone (_mod_time, 0, 1))) ||
-               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#size> %d .', graph, _size);
-      }
+
+      str := string_output();
+      http ('@prefix ldp: <http://www.w3.org/ns/ldp#> .\n', str);
+      http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', str);
+      http ('@prefix stat: <http://www.w3.org/ns/posix/stat#> .\n', str);
+      http (sprintf ('<%s> ldp:contains <%s> .\n', graph_parent, graph), str);
+
+      for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time, RES_TYPE as mtype
+          from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
+        {
+          declare tp varchar;
+          tp := sprintf ('http://www.w3.org/ns/iana/media-types/%s#Resource', mtype);
+          http (sprintf ('<%s> a <%s> ; stat:mtime "%s"^^xsd:dateTime ; stat:size %d .\n',
+                graph, tp, date_iso8601 (_mod_time), _size), str);
+        }
+      DB.DBA.TTLP (str, '', graph_parent);
     }
-    DB.DBA.TTLP (tmp, '', graph_parent);
   }
 }
 ;
