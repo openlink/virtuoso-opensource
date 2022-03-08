@@ -56,7 +56,7 @@ create procedure
 fct_render_dbg_out ()
 {
   declare d_lvl int;
-  declare d_out varchar;
+  declare d_out any;
 
   d_lvl := connection_get ('fct_dbg_lvl');
   d_out := connection_get ('fct_dbg_out');
@@ -168,7 +168,7 @@ fct_short_form (in x any, in ltgt int := 0)
   declare ret nvarchar;
 
   if (iswidestring (x))
-    x := charset_recode (x, '_WIDE_', 'UTF-8');
+    x := __box_flags_tweak (charset_recode (x, '_WIDE_', 'UTF-8'), 2);
 
   if (not isstring (x))
     return null;
@@ -325,8 +325,6 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 
   if (is_rdf_box (x))
     {
-      if (not rdf_box_is_complete (x))
-	__rdf_box_make_complete (x);
       best_str := x;
       goto endproc;
     }
@@ -367,6 +365,12 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 	}
     }
   endproc:
+  if (is_rdf_box (best_str))
+    {
+      if (not rdf_box_is_complete (best_str))
+	__rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
+    }
   if (__tag(best_str) = __tag of varchar)
     best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
@@ -429,10 +433,11 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	}
     }
   if (is_rdf_box (best_str) and not rdf_box_is_complete (best_str))
-    {
-      __rdf_box_make_complete (best_str);
-    }
-  best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
+    __rdf_box_make_complete (best_str);
+  if (is_rdf_box (best_str))
+    best_str := rdf_box_data (best_str);
+  if (__tag(best_str) = __tag of varchar)
+    best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
 }
 ;
@@ -976,7 +981,7 @@ create procedure fct_esc_lit (in val any)
 create procedure
 fct_literal (in tree any)
 {
-  declare val, dtp, lang varchar;
+  declare val, dtp, lang any;
 
   dtp := cast (xpath_eval ('./@datatype', tree) as varchar);
   lang := cast (xpath_eval ('./@lang', tree) as varchar);
@@ -1194,7 +1199,7 @@ fct_cond_near (in tree any, in this_s int, in txt any) {
   declare v any;
   declare v_str varchar;
   declare i int;
-  declare lon, lat float;
+  declare lon, lat any;
   declare d int;
   declare prop varchar;
 
@@ -1624,7 +1629,7 @@ fct_exec (in tree any,
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit", v_pos as "position")),
                                results[0], results[1], results[2]);
 
-  --String_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
+  -- string_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
 
 --  dbg_obj_print (results[0]);
 
