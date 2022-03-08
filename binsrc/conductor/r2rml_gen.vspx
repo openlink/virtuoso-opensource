@@ -52,11 +52,17 @@
       <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
         <v:before-data-bind>
           <![CDATA[
-            declare h any;
-
-            h := rfc1808_parse_uri (self.graph);
-            self.tgraph1 := self.graph || '#';
-            self.pgraph1 := sprintf ('urn:%s:%s', h[1], trim (replace (h[2], '/', ':'), ':'));
+            declare h, rml_graph any;
+            rml_graph := self.graph;
+            self.pgraph1 := '';
+            self.tgraph1 := (SPARQL select distinct ?g  { graph ?:rml_graph {{ ?s rr:graph ?g } union { ?s rr:graphMap ?m . ?m rr:constant ?g }}});
+            if (self.tgraph1 is null)
+              self.tgraph1 := '';
+            if (self.tgraph1 <> '')
+              {
+                h := rfc1808_parse_uri (self.tgraph1);
+                self.pgraph1 := sprintf ('urn:%s:%s', h[1], trim (replace (h[2], '/', ':'), ':'));
+              }
             self.body_v := DB.DBA.R2RML_MAKE_QM_FROM_G (self.graph, self.tgraph1);
           ]]>
         </v:before-data-bind>
@@ -71,20 +77,19 @@
                 <h2>Definitions</h2>
                 <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/>
                 <br style="clear: both;"/>
-                <label style="width: 200px; text-align: left;">Default Virtual Named Graph</label>
+                <label style="width: 250px; text-align: left;" 
+                    title="Identifies a Named Graph to be associated generated Quad Maps (RDF Views)">Default Virtual Named Graph IRI</label>
                 <v:text name="tgraph" value="--self.tgraph1" xhtml_size="70" />
                 <br />
-                <label style="width: 200px; text-align: left;">Default Physical Named Graph</label>
+                <label style="width: 250px; text-align: left;">Default Physical Named Graph IRI</label>
                 <v:text name="pgraph" value="--self.pgraph1" xhtml_size="70" />
                 <br />
-                <label style="margin-left: 200px; width: 400px; text-align: left;">
-                  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" />
-                  Generate RDB2RDF triggers
+                <label for="rdb_sync" style="margin-left: 250px; width: 450px; text-align: left;">
+                  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" />Generate RDB2RDF triggers
                 </label>
                 <br />
-                <label style="margin-left: 200px; width: 400px; text-align: left;">
-                  <v:check-box name="fill" value="1" xhtml_id="fill" />
-                  Enable Data Syncs with Physical Quad Store
+                <label for="fill" style="margin-left: 250px; width: 450px; text-align: left;">
+                  <v:check-box name="fill" value="0" xhtml_id="fill" />Enable Data Syncs with Physical Quad Store
                 </label>
                 <br />
               </div>
