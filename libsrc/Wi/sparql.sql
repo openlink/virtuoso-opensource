@@ -228,7 +228,7 @@ sequence_set ('RDF_DATATYPE_TWOBYTE', 258, 1)
 sequence_set ('RDF_LANGUAGE_TWOBYTE', 258, 1)
 ;
 
-create procedure RDF_QUAD_FT_INIT ()
+create procedure DB.DBA.RDF_GEO_INIT ()
 {
   if (not exists (select 1 from SYS_VT_INDEX where VI_COL = 'o'))
     {
@@ -1068,7 +1068,7 @@ create procedure RDF_G_INS (in id int, in g any)
 }
 ;
 
-create procedure cl_rdf_geo_insert (in id int, inout g any)
+create procedure DB.DBA.CL_RDF_GEO_INSERT (in id int, inout g any)
 {
   declare daq any;
   daq := daq (1);
@@ -1077,7 +1077,7 @@ create procedure cl_rdf_geo_insert (in id int, inout g any)
 }
 ;
 
-create function rdf_geo_add (in v any)
+create function DB.DBA.RDF_GEO_ADD (in v any)
 {
   declare id, h, ser, g any;
   if (rdf_box_ro_id (v))
@@ -1115,13 +1115,13 @@ create function rdf_geo_add (in v any)
   if (1 = sys_stat ('cl_run_local_only'))
     geo_insert ('DB.DBA.RDF_GEO', g, id);
   else
-    cl_rdf_geo_insert (id, g);
+    DB.DBA.CL_RDF_GEO_INSERT (id, g);
   rdf_box_set_ro_id (v, id);
   return v;
 }
 ;
 
-create function rdf_geo_set_id (inout v any)
+create function DB.DBA.RDF_GEO_SET_ID (inout v any)
 {
   declare id, h, ser, g any;
   if (rdf_box_ro_id (v))
@@ -1171,7 +1171,7 @@ create function DB.DBA.RDF_OBJ_ADD (in dt_twobyte integeR, in v varchar, in lang
   if (__tag of rdf_box = __tag (v))
     {
       if (256 = rdf_box_type (v))
-	return rdf_geo_add (v);
+	return DB.DBA.RDF_GEO_ADD (v);
       if (0 = need_digest)
         return v;
       if (1 = need_digest)
@@ -1608,7 +1608,7 @@ create function DB.DBA.RDF_MAKE_OBJ_OF_TYPEDSQLVAL_STRINGS (
           if (__tag of rdf_box = __tag (parsed))
             {
               if (256 = rdf_box_type (parsed))
-                db..rdf_geo_add (parsed);
+                DB.DBA.RDF_GEO_ADD (parsed);
               else
                 rdf_box_set_type (parsed,
                   DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -2774,7 +2774,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L (
           if (__tag of rdf_box = __tag (parsed))
 	    {
 	      if (256 = rdf_box_type (parsed))
-		db..rdf_geo_add (parsed);
+		DB.DBA.RDF_GEO_ADD (parsed);
 	      else
 		rdf_box_set_type (parsed,
 				  DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -14791,7 +14791,7 @@ create procedure DB.DBA.TTLP_EV_TRIPLE_L_W (
           if (__tag of rdf_box = __tag (parsed))
             {
 	      if (256 = rdf_box_type (parsed))
-		db..rdf_geo_add (parsed);
+		DB.DBA.RDF_GEO_ADD (parsed);
 	      else
                 rdf_box_set_type (parsed,
                   DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id (o_type)));
@@ -17375,8 +17375,8 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on RL_I2ID_NP to SPARQL_SPONGE',
     'grant execute on rl_i2id to SPARQL_SPONGE',
     'grant execute on DB.DBA.TTLP_RL_TRIPLE to SPARQL_UPDATE',
-    'grant execute on rdf_rl_type_id to SPARQL_UPDATE',
-    'grant execute on rdf_rl_lang_id to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_RL_TYPE_ID to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RDF_RL_LANG_ID to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_TRIPLE_L to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_NEW_GRAPH to SPARQL_UPDATE',
     'grant execute on rl_local_dpipe to SPARQL_UPDATE',
@@ -17683,7 +17683,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
       -- v7 index is on by default
       DB.DBA.RDF_OBJ_FT_RULE_ADD ('', '', 'ALL');
     }
-  RDF_QUAD_FT_INIT ();
+  DB.DBA.RDF_GEO_INIT ();
   DB.DBA.RDF_QUAD_LOAD_CACHE ();
   delete from DB.DBA.RDF_GRAPH_USER where not exists (select 1 from DB.DBA.SYS_USERS where RGU_USER_ID = U_ID);
   if (row_count ())
@@ -17724,7 +17724,7 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
 
 final_qm_reload:
   DB.DBA.SPARQL_RELOAD_QM_GRAPH ();
-  insert soft rdf_datatype (rdt_iid, rdt_twobyte, rdt_qname) values
+  insert soft DB.DBA.RDF_DATATYPE (RDT_IID, RDT_TWOBYTE, RDT_QNAME) values
     (iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#Geometry'), 256, 'http://www.openlinksw.com/schemas/virtrdf#Geometry');
   if (0 = sys_stat ('db_exists') and 1 <> sys_stat ('cl_run_local_only'))
     cl_exec ('checkpoint');

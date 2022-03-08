@@ -114,11 +114,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
 }
 ;
 
-create procedure rdf_rl_type_id (in iri varchar)
+create procedure DB.DBA.RDF_RL_TYPE_ID (in iri varchar)
 {
   declare id, old_mode int;
   declare t_iri_id, daq  any;
-  id := (select rdt_twobyte from rdf_datatype  where rdt_qname = iri);
+  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
   if (id)
     {
       rdf_cache_id ('t', iri, id);
@@ -139,7 +139,7 @@ create procedure rdf_rl_type_id (in iri varchar)
     log_enable (0, 1);
 
   t_iri_id := iri_to_id (iri, 1);
-  id := (select rdt_twobyte from rdf_datatype  where rdt_qname = iri);
+  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
   if (id)
     {
       commit work; -- if load non transactional, this is still a sharpp transaction boundary.
@@ -149,7 +149,7 @@ create procedure rdf_rl_type_id (in iri varchar)
     }
 
   id:= sequence_next ('RDF_DATATYPE_TWOBYTE', 1, 1);
-  insert into rdf_datatype (rdt_twobyte, rdt_iid, rdt_qname) values (id, t_iri_id, iri);
+  insert into DB.DBA.RDF_DATATYPE (RDT_TWOBYTE, RDT_IID, RDT_QNAME) values (id, t_iri_id, iri);
   commit work; -- if load non transactional, this is still a sharpp transaction boundary.
   log_enable (old_mode, 1);
   rdf_cache_id ('t', iri, id);
@@ -157,7 +157,7 @@ create procedure rdf_rl_type_id (in iri varchar)
 }
 ;
 
-create procedure rdf_rl_lang_id (in ln varchar)
+create procedure DB.DBA.RDF_RL_LANG_ID (in ln varchar)
 {
   declare id, old_mode int;
   declare daq  any;
@@ -216,7 +216,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 	{
 	  lid := rdf_cache_id ('l', o_lang);
 	    if (lid = 0)
-	      lid := rdf_rl_lang_id (o_lang);
+	      lid := DB.DBA.RDF_RL_LANG_ID (o_lang);
 	}
       else
         lid := 257;
@@ -230,7 +230,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
                 {
                   tid := rdf_cache_id ('t', o_type);
                   if (tid = 0)
-                    tid := rdf_rl_type_id (o_type);
+                    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                   rdf_box_set_type (parsed, tid);
                 }
               else if (__tag of XML = __tag (parsed))
@@ -238,7 +238,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  tid := rdf_cache_id ('t', o_type);
 		  if (tid = 0)
-		    tid := rdf_rl_type_id (o_type);
+		    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 		  rdf_box_set_type (parsed, tid);
 		}
               -- if (not bit_and (is_text, 1))
@@ -252,7 +252,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
             }
 	  tid := rdf_cache_id ('t', o_type);
 	  if (tid = 0)
-	    tid := rdf_rl_type_id (o_type);
+	    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	}
       else
         tid := 257;
@@ -408,7 +408,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
 	{
 	  lid := rdf_cache_id ('l', o_lang);
 	    if (lid = 0)
-	      lid := rdf_rl_lang_id (o_lang);
+	      lid := DB.DBA.RDF_RL_LANG_ID (o_lang);
 	}
       else
         lid := 257;
@@ -422,7 +422,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
                 {
                   tid := rdf_cache_id ('t', o_type);
                   if (tid = 0)
-                    tid := rdf_rl_type_id (o_type);
+                    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                   rdf_box_set_type (parsed, tid);
                 }
               else if (__tag of XML = __tag (parsed))
@@ -441,7 +441,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
             }
 	  tid := rdf_cache_id ('t', o_type);
 	  if (tid = 0)
-	    tid := rdf_rl_type_id (o_type);
+	    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	}
       else
         tid := 257;
@@ -586,7 +586,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
 {
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
-    return rdf_load_rdfxml_cl (strg, base, graph,0);
+    return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph,0);
 
   declare exit handler for sqlstate '37000' {
     rl_send (app_env, g_iid);
@@ -840,9 +840,9 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
       if (lid = 0)
 	{
 	  if (is_local)
-	    lid := rdf_rl_lang_id (lower (o_type));
+            lid := DB.DBA.RDF_RL_LANG_ID (lower (o_type));
 	  else
-	    lid := rdf_lang_id (lower (o_type));
+            lid := DB.DBA.RDF_LANG_ID (lower (o_type));
 	}
       if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
@@ -869,9 +869,9 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
                   if (tid = 0)
                     {
                       if (is_local)
-                        tid := rdf_rl_type_id (o_type);
+                        tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                       else
-                        tid := rdf_type_id (o_type);
+                        tid := DB.DBA.RDF_TYPE_ID (o_type);
                     }
                   rdf_box_set_type (parsed, tid);
                 }
@@ -885,9 +885,9 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	  if (tid = 0)
 	    {
 	      if (is_local)
-		tid := rdf_rl_type_id (o_type);
+                tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	      else
-		tid := rdf_type_id (o_type);
+                tid := DB.DBA.RDF_TYPE_ID (o_type);
 	    }
           o := rdf_box (o, tid, 257, 0, 1);
           if (is_text and __tag of rdf_box = __tag (o))

@@ -5188,7 +5188,7 @@ create procedure cl_new_db ()
   cl_wait_start ();
   log_message ('new clustered database:Init of RDF');
   rdf_dpipes ();
-  rdf_cl_init ();
+  DB.DBA.RDF_CL_INIT ();
   DB.DBA.RDF_CREATE_SPARQL_ROLES_CL ();
   WS.WS.SYS_DAV_INIT ();
   cl_exec ('checkpoint');
