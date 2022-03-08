@@ -2907,17 +2907,32 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
         log_enable := log_enable + 2;
     }
   if (log_enable is not null)
-    {
-      old_log_mode := log_enable (log_enable, 1);
-    }
+    old_log_mode := log_enable (log_enable, 1);
   if (1 <> sys_stat ('cl_run_local_only'))
     {
+      declare exit handler for sqlstate '*' {
+	connection_set ('g_dict', null);
+	log_enable (old_log_mode, 1);
+	signal (__SQL_STATE, __SQL_MESSAGE);
+      };
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+      if (old_log_mode is not null)
+	log_enable (old_log_mode, 1);
       return;
     }
   if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null);
+  declare exit handler for sqlstate '37000' {
+    if (app_env <> 0)
+      {
+	if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
+	  repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+      }
+    connection_set ('g_dict', null);
+    log_enable (old_log_mode, 1);
+    signal (__SQL_STATE, '[Turtle loader] ' || __SQL_MESSAGE);
+  };
   ret := rdf_load_turtle (strg, base, graph, flags,
     vector (
       'DB.DBA.TTLP_EV_NEW_GRAPH',
@@ -2930,6 +2945,9 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
     app_env);
   if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
     repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+  connection_set ('g_dict', null);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
   return ret;
 }
 ;
@@ -2955,14 +2973,19 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
         log_enable := log_enable + 2;
     }
   if (log_enable is not null)
-    {
-      old_log_mode := log_enable (log_enable, 1);
-    }
-  if (1 <> sys_stat ('cl_run_local_only'))
-    {
-      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
-      return;
-    }
+    old_log_mode := log_enable (log_enable, 1);
+  declare exit handler for sqlstate '37000' {
+    if (old_log_mode is not null)
+      log_enable (old_log_mode, 1);
+    signal (__SQL_STATE, '[Turtle loader with IRI translation] ' || __SQL_MESSAGE);
+  };
+-- This is not valid, because clustered version will not translate IRIs!
+--  if (1 <> sys_stat ('cl_run_local_only'))
+--    {
+--      DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
+--      return;
+--    }
+
   if (__tag of long varchar handle = __tag (strg))
     strg := cast (strg as varchar);
   app_env := vector (flags, null, __max (length (strg) / 100, 100000), null, iri_xlate_cbk, iri_xlate_env);
@@ -2976,6 +2999,8 @@ create procedure DB.DBA.TTLP_WITH_IRI_TRANSLATION (in strg varchar, in base varc
       'DB.DBA.TTLP_EV_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
@@ -3238,9 +3263,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_IMPL (inout strg varchar, in base varcha
         log_enable := log_enable + 2;
     }
   if (log_enable is not null)
-    {
       old_log_mode := log_enable (log_enable, 1);
-    }
   if (1 <> sys_stat ('cl_run_local_only'))
     return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph, parse_mode);
   if (not is_atomic ())
@@ -3264,6 +3287,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_IMPL (inout strg varchar, in base varcha
     base );
   if (__rdf_graph_is_in_enabled_repl (iri_to_id (graph)))
     repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
   return graph;
 }
 ;

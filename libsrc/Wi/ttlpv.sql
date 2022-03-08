@@ -117,9 +117,8 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
 create procedure DB.DBA.RDF_RL_TYPE_ID (in iri varchar)
 {
   declare id, old_mode int;
-  declare t_iri_id, daq  any;
   id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
-  if (id)
+  if (id is not null)
     {
       rdf_cache_id ('t', iri, id);
       return id;
@@ -131,26 +130,22 @@ create procedure DB.DBA.RDF_RL_TYPE_ID (in iri varchar)
     rollback work;
     n_dead := n_dead + 1;
     if (n_dead > 10)
-      signal ('RDF..', 'Over 10 deadlocks getting language id.  Retry ref load');
+      signal ('RDF..', 'Over 10 deadlocks getting datatype id. Retry the RDF load');
     goto again;
   };
  again:
   if (2 = old_mode)
     log_enable (0, 1);
 
-  t_iri_id := iri_to_id (iri, 1);
   id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
-  if (id)
+  if (id is null)
     {
-      commit work; -- if load non transactional, this is still a sharpp transaction boundary.
-      log_enable (old_mode, 1);
-      rdf_cache_id ('t', iri, id);
-      return id;
+      declare t_iri_id any;
+      t_iri_id := iri_to_id (iri, 1);
+      id:= sequence_next ('RDF_DATATYPE_TWOBYTE', 1, 1);
+      insert into DB.DBA.RDF_DATATYPE (RDT_TWOBYTE, RDT_IID, RDT_QNAME) values (id, t_iri_id, iri);
     }
-
-  id:= sequence_next ('RDF_DATATYPE_TWOBYTE', 1, 1);
-  insert into DB.DBA.RDF_DATATYPE (RDT_TWOBYTE, RDT_IID, RDT_QNAME) values (id, t_iri_id, iri);
-  commit work; -- if load non transactional, this is still a sharpp transaction boundary.
+  commit work; -- if load non transactional, this is still a sharp transaction boundary.
   log_enable (old_mode, 1);
   rdf_cache_id ('t', iri, id);
   return id;
@@ -163,7 +158,7 @@ create procedure DB.DBA.RDF_RL_LANG_ID (in ln varchar)
   declare daq  any;
   ln := lower (ln);
   id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
-  if (id)
+  if (id is not null)
     {
       rdf_cache_id ('l', ln, id);
       return id;
@@ -175,24 +170,19 @@ create procedure DB.DBA.RDF_RL_LANG_ID (in ln varchar)
     rollback work;
     n_dead := n_dead + 1;
     if (n_dead > 10)
-      signal ('RDF..', 'Over 10 deadlocks getting language id.  Retry ref load');
+      signal ('RDF..', 'Over 10 deadlocks getting language id. Retry the RDF load');
     goto again;
   };
  again:
   if (2 = old_mode)
     log_enable (0, 1);
   id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
-  if (id)
+  if (id is null)
     {
-      rdf_cache_id ('l', ln, id);
-      commit work; -- if load non transactional, this is still a sharpp transaction boundary.
-      log_enable (old_mode, 1);
-      return id;
+      id:= sequence_next ('RDF_LANGUAGE_TWOBYTE', 1, 1);
+      insert into DB.DBA.RDF_LANGUAGE (RL_TWOBYTE, RL_ID) values (id, ln);
     }
-
-  id:= sequence_next ('RDF_LANGUAGE_TWOBYTE', 1, 1);
-  insert into rdf_language (rl_twobyte, rl_id) values (id, ln);
-  commit work; -- if load non transactional, this is still a sharpp transaction boundary.
+  commit work; -- if load non transactional, this is still a sharp transaction boundary.
   log_enable (old_mode, 1);
   rdf_cache_id ('l', ln, id);
   return id;
@@ -534,6 +524,7 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
     }
   if (is_atomic ())
     signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
+  old_log_mode := null;
   declare exit handler for sqlstate '37000' {
     if (app_env <> 0)
       {
@@ -542,21 +533,21 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
     aq_wait_all (app_env[0]);
       }
     connection_set ('g_dict', null);
+    if (old_log_mode is not null)
     log_enable (old_log_mode, 1);
     signal (__SQL_STATE, '[Vectorized Turtle loader] ' || __SQL_MESSAGE);
   };
-  old_log_mode := log_enable (null, 1);
   if (transactional = 0)
     {
       if (log_enable = 0 or log_enable = 1)
-    log_enable (2 + log_enable, 1);
+        log_enable := 2 + log_enable;
     }
   else
     threads := 0;
+
   if (log_enable is not null)
-    {
       old_log_mode := log_enable (log_enable, 1);
-    }
+
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
 
@@ -579,7 +570,8 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
   commit work;
   aq_wait_all (app_env[0]);
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
@@ -594,21 +586,20 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
     commit work;
     aq_wait_all (app_env[0]);
     connection_set ('g_dict', null);
+    if (old_log_mode is not null)
     log_enable (old_log_mode, 1);
     signal (__SQL_STATE, '[Vectorized RDF/XML loader] ' || __SQL_MESSAGE);
   };
-  old_log_mode := log_enable (null, 1);
+  old_log_mode := null;
   if (transactional = 0)
     {
       if (log_mode = 0 or log_mode = 1)
-	log_enable (2 + log_mode, 1);
+	log_mode := 2 + log_mode;
     }
   else
     threads := 0;
   if (log_mode is not null)
-    {
       old_log_mode := log_enable (log_mode, 1);
-    }
   if (126 = __tag (strg))
     {
       declare s any;
@@ -632,7 +623,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
   commit work;
   aq_wait_all (app_env[0]);
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
