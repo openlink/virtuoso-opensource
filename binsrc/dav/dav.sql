@@ -2588,7 +2588,7 @@ again:
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
-      http_header ('Content-Type: text/turtle\r\n');
+      http_header (DB.DBA.DAV_CONTENT_TYPE ('text/turtle'));
       server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
       if (server_etag is not null)
         http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
@@ -2621,7 +2621,7 @@ again:
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
-      http_header ('Content-Type: text/turtle\r\n');
+      http_header (DB.DBA.DAV_CONTENT_TYPE ('text/turtle'));
       server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
       if (server_etag is not null)
         http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
@@ -3098,7 +3098,7 @@ again:
           hdr_str := http_header_get ();
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
-            hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+            hdr_str := hdr_str || DB.DBA.DAV_CONTENT_TYPE (cont_type);
 
           if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
             hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', 1));
@@ -3119,7 +3119,7 @@ again:
         }
         else
         {
-          http_header ('Content-Type: text/xml\r\nETag: "' || server_etag || '"\r\n');
+          http_header (DB.DBA.DAV_CONTENT_TYPE ('text/xml') || 'ETag: "' || server_etag || '"\r\n');
         }
       }
     }
@@ -3185,7 +3185,7 @@ again:
         if (stat = '00000')
           return;
 
-        http_header (concat ('Content-Type: text/html\r\n'));
+        http_header (DB.DBA.DAV_CONTENT_TYPE ('text/html'));
         http (concat ('SQL Error: ', stat, ' ', msg));
         return;
       }
@@ -7556,5 +7556,15 @@ create procedure DB.DBA.DAV_RESPONSE_FORMAT_DATE (
     dt := dt_set_tz  (dateadd ('minute', -tz, dt), tz);
   }
   return soap_print_box (dt, enclosing_tag, date_encoding_type);
+}
+;
+
+create procedure DB.DBA.DAV_CONTENT_TYPE (
+  in ct varchar)
+{
+  if (ct like 'text/%')
+     return sprintf ('Content-Type: %s; charset="%s"\r\n', ct, 'UTF-8');
+
+  return sprintf ('Content-Type: %s\r\n', ct);
 }
 ;
