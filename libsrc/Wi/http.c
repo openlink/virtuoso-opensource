@@ -2608,15 +2608,17 @@ static char *fmt1 =
   SES_PRINT (ws->ws_strses, tmp);
   dk_free_box (tmp);
   dks_esc_write (ws->ws_strses, message, strlen (message), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-
-  SES_PRINT (ws->ws_strses, "    URI  = '");
-  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-  SES_PRINT (ws->ws_strses, "'\n");
+  if (NULL != uri)
+    {
+      SES_PRINT (ws->ws_strses, "    URI  = '");
+      dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+      SES_PRINT (ws->ws_strses, "'\n");
 #ifdef DEBUG
-  SES_PRINT (ws->ws_strses, "    PATH = '");
-  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-  SES_PRINT (ws->ws_strses, "'\n");
+      SES_PRINT (ws->ws_strses, "    PATH = '");
+      dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+      SES_PRINT (ws->ws_strses, "'\n");
 #endif
+    }
   SES_PRINT (ws->ws_strses, "  </pre></body></html>\n");
 }
 
@@ -3017,8 +3019,17 @@ ws_file (ws_connection_t * ws)
   ctype = ws_file_ctype (fname);
   if ((fd = open (path, OPEN_FLAGS_RO)) < 0)
     {
-      ws_http_error (ws, "HTTP/1.1 404 File not found", "The requested URL was not found", lfname, path);
-      HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 404 File not found", 0);
+      if (MAINTENANCE) /* it sould be set maintenance page w/o such, keep status 503 */
+        {
+          ws_http_error (ws, "HTTP/1.1 503 Service Temporarily Unavailable",
+              "Service Temporarily Unavailable, please try again later", NULL, NULL);
+          HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 503 Service Temporarily Unavailable", 1);
+        }
+      else
+        {
+          ws_http_error (ws, "HTTP/1.1 404 File not found", "The requested URL was not found", lfname, path);
+          HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 404 File not found", 0);
+        }
       return;
     }
   if (V_FSTAT (fd, &st) || 0 != (st.st_mode & S_IFDIR))
