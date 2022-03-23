@@ -7416,6 +7416,43 @@ from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_TTL_INIT,	-- Not DB.DBA.RDF_FORMAT_BOOL_RE
  DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_CSV_FIN
 ;
 
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_INIT (inout _env any)
+{
+  _env := 0;
+}
+;
+
+--!AWK PUBLIC
+create procedure DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_ACC (inout _env any, in one any array)
+{
+  _env := 1;
+}
+;
+
+--!AWK PUBLIC
+create function DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_FIN (inout _env any) returns long varchar
+{
+  declare ses any;
+  declare ans varchar;
+  ses := string_output ();
+  if (isinteger (_env) and _env)
+    ans := 'true';
+  else
+    ans := 'false';
+  http ('{ "head": { "link": [] }, "boolean": ' || ans || ' }', ses);
+  return ses;
+}
+;
+
+create aggregate DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON (in one any array) returns long varchar
+from DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_INIT,
+     DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_ACC,
+     DB.DBA.RDF_FORMAT_BOOL_RESULT_AS_JSON_FIN
+;
+
+
 -----
 -- Insert, delete, modify operations for lists of triples
 
