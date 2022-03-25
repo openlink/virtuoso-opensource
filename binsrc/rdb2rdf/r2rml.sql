@@ -261,7 +261,24 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
         }
       else
         {
-          all_metas[0] := vector ('TABLE', DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("ts", 'DB')), DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("to", 'DBA')), DB.DBA.R2RML_UNQUOTE_NAME ("tn"));
+          declare qual, owner, tbname, tree varchar;
+          if ("ts" is null and "to" is null)
+            {
+               declare exit handler for sqlstate '*' {
+                 signal ('R2RML', 'Invalid tableName');
+               };
+               tree := sql_parse (sprintf ('%s ()', "tn"));
+               tbname := tree[1];
+               qual := name_part (tbname, 0); owner := name_part (tbname, 1); tbname := name_part (tbname, 2);
+               all_metas[0] := vector ('TABLE', qual, owner, tbname);
+            }
+          else
+            {
+              all_metas[0] := vector ('TABLE',
+                    DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("ts", 'DB')),
+                    DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("to", 'DBA')),
+                    DB.DBA.R2RML_UNQUOTE_NAME ("tn"));
+            }
           text_to_prepare := sprintf ('select * from "%I"."%I"."%I"', all_metas[0][1], all_metas[0][2], all_metas[0][3]);
         }
       stat := '00000';
