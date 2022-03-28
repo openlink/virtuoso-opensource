@@ -5294,6 +5294,7 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
 {
   query_instance_t * qi = (query_instance_t *) qst;
   dtp_t dtp = DV_TYPE_OF (val);
+again:
   if (DV_STRINGP (val))
     {
       ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
@@ -5333,6 +5334,17 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
   else if (DV_DB_NULL == dtp)
     {
       ; /* do nothing */
+    }
+  else if (DV_RDF == dtp)
+    {
+      rdf_box_t *rb = val;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, qi->qi_trx, qi);
+      val = rb->rb_box;
+      /* strings in RDF all are expected to be UTF8 */
+      if (DV_STRINGP (val))
+        box_flags (val) = (box_flags (val) | BF_UTF8);
+      goto again;
     }
   else
     {
