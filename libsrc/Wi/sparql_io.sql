@@ -130,7 +130,7 @@ create procedure DB.DBA.SPARQL_RSET_TTL_WRITE_HEAD (inout ses any, in colnames a
     {
       if (i > 0)
         http ('" , "', ses);
-      http_escape (colnames[i], 11, ses, 0, 1);
+      http_escape (colnames[i], 11, ses, 1, 1);
     }
   http ('" .\n', ses);
 }
@@ -194,7 +194,7 @@ create procedure DB.DBA.SPARQL_RSET_NT_WRITE_HEAD (inout ses any, in colnames an
   for (i := 0; i < col_count; i := i + 1)
     {
       http ('_:ResultSet2053 <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
-      http_escape (colnames[i], 11, ses, 0, 1);
+      http_escape (colnames[i], 11, ses, 1, 1);
       http ('" .\n', ses);
     }
 }
@@ -1160,6 +1160,9 @@ end_of_binding: ;
 
 create procedure DB.DBA.SPARQL_RESULTS_RDFXML_WRITE_NS (inout ses any)
 {
+  set http_charset='UTF-8';
+  set http_in_charset='UTF-8';
+
   http ('<rdf:RDF xmlns:res="http://www.w3.org/2005/sparql-results#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
   <rdf:Description rdf:nodeID="rset">
     <rdf:type rdf:resource="http://www.w3.org/2005/sparql-results#ResultSet" />', ses);
@@ -1311,7 +1314,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TTL_WRITE_HEAD (inout ses any, in mdta an
         nill := mdta[i][4];
       else
         nill := 0;
-      http_escape (_name, 11, ses, 0, 1);
+      http_escape (_name, 11, ses, 1, 1);
       i := i + 1;
       if (i < col_count)
         http ('" , "', ses);
@@ -1367,7 +1370,7 @@ create procedure DB.DBA.SPARQL_RESULTS_NT_WRITE_HEAD (inout ses any, in mdta any
       else
         nill := 0;
       http ('_:ResultSet2053 <http://www.w3.org/2005/sparql-results#resultVariable> "', ses);
-      http_escape (_name, 11, ses, 0, 1);
+      http_escape (_name, 11, ses, 1, 1);
       http ('" .\n', ses);
       i := i + 1;
     }
@@ -1405,6 +1408,10 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
   declare trnewline, newline varchar;
   varcount := length (metas[0]);
   rescount := length (rset);
+
+  set http_charset='UTF-8';
+  set http_in_charset='UTF-8';
+
   if (esc_mode = 13)
     {
       newline := '';
@@ -1425,7 +1432,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE (inout ses any, ino
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http(newline || '    <th>', ses);
-      http_escape (metas[0][varctr][0], esc_mode, ses, 0, 1);
+      http_escape (metas[0][varctr][0], esc_mode, ses, 1, 1);
       http('</th>', ses);
     }
   http (newline || '  </tr>', ses);
@@ -1519,7 +1526,7 @@ end_of_val_print: ;
 create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in colname varchar, inout val any)
 {
   http(' "', ses);
-  http_escape (colname, 14, ses, 0, 1);
+  http_escape (colname, 14, ses, 1, 1);
   http('": { ', ses);
   if (isiri_id (val))
     {
@@ -1635,7 +1642,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE (inout ses any, inout metas an
         http(', "', ses);
       else
         http('"', ses);
-      http_escape (metas[0][varctr][0], 14, ses, 0, 1);
+      http_escape (metas[0][varctr][0], 14, ses, 1, 1);
       http('"', ses);
     }
   http ('] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', ses);
@@ -1744,7 +1751,7 @@ create procedure DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (inout ses any, inout metas
   for (varctr := 0; varctr < varcount; varctr := varctr + 1)
     {
       http('\n    <th>', ses);
-      http_escape (metas[0][varctr][0], 1, ses, 0, 1);
+      http_escape (metas[0][varctr][0], 1, ses, 1, 1);
       http('</th>', ses);
     }
   http ('\n  </tr>', ses);
