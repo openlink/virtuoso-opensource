@@ -9121,10 +9121,7 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
   declare blank_ids any;
   if (__tag of dictionary reference <> __tag(_env))
     {
-      if (use_dict_limit)
-        _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
-      else
-        _env := dict_new (31);
+      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
       if (0 < length (stats))
         DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vars, vector(), use_dict_limit);
     }

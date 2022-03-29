@@ -1662,7 +1662,7 @@ cfg_setup (void)
     c_sparql_result_set_max_rows = 0;
 
   if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
-    c_sparql_max_mem_in_use = 0;
+    c_sparql_max_mem_in_use = 200000000L;
 
   if (cfg_getlong (pconfig, section, "CreateGraphKeywords", &c_rdf_create_graph_keywords) == -1)
     c_rdf_create_graph_keywords = 0;
