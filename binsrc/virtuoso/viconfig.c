@@ -465,12 +465,12 @@ int32 c_temp_db_size = 0;
 int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
-extern long sparql_max_mem_in_use;
+extern size_t sparql_max_mem_in_use;
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
 
 int32 c_sparql_result_set_max_rows = 0;
-int32 c_sparql_max_mem_in_use = 0;
+size_t c_sparql_max_mem_in_use = 0L;
 int32 c_rdf_create_graph_keywords = 0;
 int32 c_rdf_query_graph_keywords = 0;
 
@@ -1661,8 +1661,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "ResultSetMaxRows", &c_sparql_result_set_max_rows) == -1)
     c_sparql_result_set_max_rows = 0;
 
-  if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
-    c_sparql_max_mem_in_use = 0;
+  if (cfg_getsize (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
+    c_sparql_max_mem_in_use = 0L;
 
   if (cfg_getlong (pconfig, section, "CreateGraphKeywords", &c_rdf_create_graph_keywords) == -1)
     c_rdf_create_graph_keywords = 0;

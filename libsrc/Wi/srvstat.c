@@ -481,7 +481,7 @@ long st_cli_n_current_connections = 0;
 long fe_replication_support = 0;
 
 long sparql_result_set_max_rows = 0;
-long sparql_max_mem_in_use = 0;
+size_t sparql_max_mem_in_use = 0L;
 
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
