@@ -513,6 +513,7 @@ box_dict_hashtable_copy_hook (caddr_t orig)
   return (caddr_t) res;
 }
 
+size_t dict_max_mp_bytes_in_use;
 
 int
 box_dict_hashtable_destr_hook (caddr_t dict)
@@ -540,7 +541,10 @@ box_dict_hashtable_destr_hook (caddr_t dict)
 	}
     }
   if (ht->ht_mp)
-    mp_free ((mem_pool_t*)ht->ht_mp);
+    {
+      dict_max_mp_bytes_in_use = MAX ((((mem_pool_t*)ht->ht_mp)->mp_bytes), dict_max_mp_bytes_in_use);
+      mp_free ((mem_pool_t*)ht->ht_mp);
+    }
   id_hash_clear ((id_hash_t *) (dict));
   ID_HASH_FREE_INTERNALS ((id_hash_t *) (dict));
   return 0;

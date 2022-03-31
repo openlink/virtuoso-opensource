@@ -1555,6 +1555,7 @@ stat_desc_t stat_descs [] =
     {"mp_large_in_use", (long *)&mp_large_in_use, NULL},
     {"mp_max_large_in_use", (long *)&mp_max_large_in_use, NULL},
     {"mp_mmap_clocks", &mp_mmap_clocks, NULL},
+    {"dict_max_mp_bytes_in_use", &dict_max_mp_bytes_in_use, SD_INT64},
     {"tc_read_aside", &tc_read_aside, NULL},
     {"tc_merge_reads", &tc_merge_reads, NULL},
     {"tc_merge_read_pages", &tc_merge_read_pages, NULL},
@@ -1777,7 +1778,7 @@ stat_desc_t stat_descs [] =
 
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
-    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, NULL},
+    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"rdf_create_graph_keywords", &rdf_create_graph_keywords, SD_INT32},
     {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
@@ -1905,7 +1906,7 @@ stat_desc_t dbf_descs [] =
     {"mp_large_soft_cap", &mp_large_soft_cap},
     {"mp_large_hard_cap", &mp_large_hard_cap},
     {"mp_sparql_cap", &mp_sparql_cap, NULL},
-
+    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
     { "tn_max_memory",  (long *)&tn_max_memory, NULL},
     {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},

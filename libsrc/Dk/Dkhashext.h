@@ -286,5 +286,6 @@ EXE_EXPORT (int, boxint_hashcmp, (char *x, char *y));
 
 #define END_DO_IDHASH }}
 
+extern size_t dict_max_mp_bytes_in_use;
 
 #endif
