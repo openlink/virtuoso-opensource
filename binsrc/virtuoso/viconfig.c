@@ -1351,6 +1351,8 @@ cfg_setup (void)
       }
   }
 
+  /* no more than max array elements, otherwise will have bad box allocated */
+  dc_max_batch_sz = MIN (dc_max_batch_sz, MAX_BOX_ELEMENTS - 1);
 
   /*
    *  Parse [HTTPServer] section
