@@ -26,10 +26,10 @@ package virtuoso.jena.driver;
 
 public class Version {
 
-   protected static final String DRV_VER = "4.3.1";
+   protected static final String DRV_VER = "4.4.0";
 
    // The major and minor version number
-   protected static final String build_id = "1.35";
+   protected static final String build_id = "1.36";
 
    public static void main(String args[])
    {

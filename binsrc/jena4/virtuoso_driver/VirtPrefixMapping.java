@@ -24,13 +24,8 @@
 package virtuoso.jena.driver;
 
 import java.sql.*;
-import java.io.*;
-import java.util.*;
 import java.util.Iterator;
 
-import virtuoso.sql.*;
-
-import java.util.Iterator;
 import java.util.Map;
 
 import org.apache.jena.shared.*;
@@ -51,7 +46,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         // Populate the prefix map using data from the
         // persistent graph properties
         String query = "DB.DBA.XML_SELECT_ALL_NS_DECLS (3)";
-        Statement stmt = null;
+        java.sql.Statement stmt = null;
         try {
             stmt = m_graph.createStatement(false);
             ResultSet rs = stmt.executeQuery(query);
@@ -66,11 +61,10 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         } catch (Exception e) {
             throw new JenaException(e);
         } finally {
-            if (stmt != null)
-                try {
-                    stmt.close();
-                } catch (Exception e) {
-                }
+            try {
+              if (stmt != null)
+                stmt.close();
+            } catch (Exception e) { }
         }
     }
 
@@ -78,13 +72,18 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         String query = "DB.DBA.XML_REMOVE_NS_BY_PREFIX(?, 2)";
         super.removeNsPrefix(prefix);
 
+        PreparedStatement ps = null;
         try {
-            PreparedStatement ps = m_graph.prepareStatement(query, false);
+            ps = m_graph.prepareStatement(query, false);
             ps.setString(1, prefix);
             ps.execute();
-            ps.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch (Exception e) {}
         }
 
         return this;
@@ -103,14 +102,19 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
         // All went well, so persist the prefix by adding it to the graph properties
         // (the addPrefix call will overwrite any existing mapping with the same prefix
         // so it matches the behaviour of the prefixMappingImpl).
+        PreparedStatement ps = null;
         try {
-            PreparedStatement ps = m_graph.prepareStatement(query, false);
+            ps = m_graph.prepareStatement(query, false);
             ps.setString(1, prefix);
             ps.setString(2, uri);
             ps.execute();
-            ps.close();
         } catch (Exception e) {
             throw new JenaException(e.toString());
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch (Exception e) {}
         }
         return this;
     }

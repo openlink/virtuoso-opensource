@@ -24,16 +24,8 @@
 package virtuoso.jena.driver;
 
 import java.util.*;
-import java.io.*;
-import java.net.*;
-import java.sql.*;
-
-import virtuoso.sql.*;
 
 import org.apache.jena.update.*;
-import org.apache.jena.shared.*;
-
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoUpdateRequest {
     private List requests = new ArrayList();
@@ -66,14 +58,16 @@ public class VirtuosoUpdateRequest {
             }
             stmt.executeBatch();
             stmt.clearBatch();
-
             requests.clear();
-            stmt.close();
-            stmt = null;
         } catch (Exception e) {
             throw new UpdateException("Convert results are FAILED.:", e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
-
     }
 
 

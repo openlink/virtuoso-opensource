@@ -24,10 +24,6 @@
 package virtuoso.jena.driver;
 
 import java.util.*;
-import java.io.*;
-import java.net.*;
-import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.ResultSetMetaData;
 
 import org.apache.jena.atlas.json.JsonArray;
@@ -56,12 +52,7 @@ import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingMap;
-import org.apache.jena.sparql.engine.ResultSetStream;
-import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.iterator.QueryIterConcat;
-import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
-import org.apache.jena.sparql.engine.iterator.QueryIterSingleton;
-import org.apache.jena.sparql.engine.iterator.QueryIteratorResultSet;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.core.ResultBinding;
 import org.apache.jena.sparql.util.Context;
@@ -71,7 +62,6 @@ import org.apache.jena.query.*;
 
 import java.util.concurrent.TimeUnit;
 
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoQueryExecution implements QueryExecution {
     private QueryIterConcat output = null;
@@ -229,11 +219,14 @@ public class VirtuosoQueryExecution implements QueryExecution {
                     model.add(st);
             }
             rs.close();
-            stmt.close();
-            stmt = null;
-
         } catch (Exception e) {
             throw new JenaException("Convert results has FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return model;
     }
@@ -281,11 +274,15 @@ public class VirtuosoQueryExecution implements QueryExecution {
                     model.add(st);
             }
             rs.close();
-            stmt.close();
-            stmt = null;
 
         } catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return model;
     }
@@ -327,11 +324,15 @@ public class VirtuosoQueryExecution implements QueryExecution {
                     ret = true;
             }
             rs.close();
-            stmt.close();
-            stmt = null;
 
         } catch (Exception e) {
             throw new JenaException("Convert results has FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return ret;
     }
@@ -638,16 +639,14 @@ public class VirtuosoQueryExecution implements QueryExecution {
                 if (rs != null) {
                     try {
                         rs.close();
-                        rs = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    rs = null;
                 }
                 if (stmt != null) {
                     try {
                         stmt.close();
-                        stmt = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    stmt = null;
                 }
             }
             v_finished = true;

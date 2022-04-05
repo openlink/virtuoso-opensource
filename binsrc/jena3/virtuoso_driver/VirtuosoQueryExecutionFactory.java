@@ -29,15 +29,9 @@ import org.apache.jena.query.Query;
 import org.apache.jena.query.QueryExecution;
 import org.apache.jena.query.QueryFactory;
 import org.apache.jena.query.QuerySolution;
-import org.apache.jena.query.ResultSet;
-import org.apache.jena.rdf.model.RDFNode;
 import org.apache.jena.rdf.model.Model;
-import org.apache.jena.util.FileManager;
 import org.apache.jena.query.Dataset;
 
-import org.apache.jena.sparql.engine.QueryEngineFactory;
-import org.apache.jena.sparql.engine.QueryEngineRegistry;
-import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
 import org.apache.jena.sparql.core.DatasetImpl;
 import org.apache.jena.sparql.util.Context;
 
@@ -55,8 +49,6 @@ public class VirtuosoQueryExecutionFactory {
         VirtuosoQueryExecution ret = new VirtuosoQueryExecution(query, graph);
         return ret;
     }
-
-/* TODO */
 
     static public QueryExecution create(Query query, Dataset dataset) {
         if (dataset instanceof VirtDataset) {
@@ -100,66 +92,46 @@ public class VirtuosoQueryExecutionFactory {
         }
     }
 
-    static public QueryExecution create(Query query, QuerySolution initialBinding) {
+    static public QueryExecution create(Query query, VirtGraph graph, QuerySolution initialBinding) {
         checkArg(query);
-        QueryExecution qe = make(query);
+        VirtuosoQueryExecution qe = new VirtuosoQueryExecution(query.toString(), graph);
         if (initialBinding != null)
             qe.setInitialBinding(initialBinding);
         return qe;
     }
 
-    static public QueryExecution create(String queryStr, QuerySolution initialBinding) {
-        checkArg(queryStr);
-        return create(makeQuery(queryStr), initialBinding);
+    static public QueryExecution create(String query, VirtGraph graph, QuerySolution initialBinding) {
+        checkArg(query);
+        VirtuosoQueryExecution qe = new VirtuosoQueryExecution(query, graph);
+        if (initialBinding != null)
+            qe.setInitialBinding(initialBinding);
+        return qe;
     }
 
-    //??
     static public QueryExecution create(Query query, Dataset dataset, QuerySolution initialBinding) {
         checkArg(query);
-        QueryExecution qe = make(query, dataset);
-        if (initialBinding != null)
-            qe.setInitialBinding(initialBinding);
-        return qe;
+        if (dataset instanceof VirtDataset) {
+            VirtuosoQueryExecution qe = new VirtuosoQueryExecution(query.toString(), (VirtGraph) dataset);
+            if (initialBinding != null)
+                qe.setInitialBinding(initialBinding);
+            return qe;
+        } else {
+            return make(query, dataset);
+        }
     }
 
-    //??
     static public QueryExecution create(String queryStr, Dataset dataset, QuerySolution initialBinding) {
         checkArg(queryStr);
-        return create(makeQuery(queryStr), dataset, initialBinding);
+        if (dataset instanceof VirtDataset) {
+            VirtuosoQueryExecution qe = new VirtuosoQueryExecution(queryStr, (VirtGraph) dataset);
+            if (initialBinding != null)
+                qe.setInitialBinding(initialBinding);
+            return qe;
+        } else {
+            return make(makeQuery(queryStr), dataset);
+        }
     }
 
-    // ---------------- Remote query execution
-
-    static public QueryExecution sparqlService(String service, Query query) {
-        checkNotNull(service, "URL for service is null");
-        checkArg(query);
-        return makeServiceRequest(service, query);
-    }
-
-    static public QueryExecution sparqlService(String service, Query query, String defaultGraph) {
-        checkNotNull(service, "URL for service is null");
-        //checkNotNull(defaultGraph, "IRI for default graph is null") ;
-        checkArg(query);
-        QueryEngineHTTP qe = makeServiceRequest(service, query);
-        qe.addDefaultGraph(defaultGraph);
-        return qe;
-    }
-
-    static public QueryExecution sparqlService(String service, Query query, List defaultGraphURIs,
-                                               List namedGraphURIs) {
-        checkNotNull(service, "URL for service is null");
-        //checkNotNull(defaultGraphURIs, "List of default graph URIs is null") ;
-        //checkNotNull(namedGraphURIs, "List of named graph URIs is null") ;
-        checkArg(query);
-
-        QueryEngineHTTP qe = makeServiceRequest(service, query);
-
-        if (defaultGraphURIs != null)
-            qe.setDefaultGraphURIs(defaultGraphURIs);
-        if (namedGraphURIs != null)
-            qe.setNamedGraphURIs(namedGraphURIs);
-        return qe;
-    }
 
     // ---------------- Internal routines
 
@@ -183,9 +155,6 @@ public class VirtuosoQueryExecutionFactory {
         return null;
     }
 
-    static private QueryEngineHTTP makeServiceRequest(String service, Query query) {
-        return new QueryEngineHTTP(service, query);
-    }
 
     static private void checkNotNull(Object obj, String msg) {
         if (obj == null)

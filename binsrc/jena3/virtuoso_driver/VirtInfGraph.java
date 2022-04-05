@@ -29,11 +29,7 @@ import java.util.*;
 
 import org.apache.jena.graph.*;
 import org.apache.jena.graph.compose.MultiUnion;
-import org.apache.jena.graph.impl.*;
-import org.apache.jena.shared.*;
 import org.apache.jena.util.iterator.*;
-import org.apache.jena.datatypes.*;
-import org.apache.jena.rdf.model.*;
 import org.apache.jena.reasoner.*;
 
 

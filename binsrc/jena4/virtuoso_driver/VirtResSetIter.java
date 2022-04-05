@@ -128,17 +128,14 @@ public class VirtResSetIter extends NiceIterator<Triple> {
             if (v_resultSet != null) {
                 try {
                     v_resultSet.close();
-                    v_resultSet = null;
-                } catch (SQLException e) {
-                    throw new JenaException(e);
-                }
+                } catch (Exception e) { }
+                v_resultSet = null;
             }
             if (v_stmt != null) {
                 try {
                     v_stmt.close();
-                    v_stmt = null;
-                } catch (SQLException e) {
-                }
+                } catch (Exception e) { }
+                v_stmt = null;
             }
         }
         v_finished = true;

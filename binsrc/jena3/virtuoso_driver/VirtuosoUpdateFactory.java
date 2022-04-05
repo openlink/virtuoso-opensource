@@ -23,8 +23,6 @@
 
 package virtuoso.jena.driver;
 
-import java.util.List;
-
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.InputStream;
