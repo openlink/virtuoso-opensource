@@ -61,7 +61,7 @@ SAMPLES_SOURCE= \
 	virtuoso_driver/VirtuosoTest.java
 
 
-RDF4J_CLASSPATH= lib/slf4j-api-1.7.10.jar:lib/commons-io-2.4.jar:lib/eclipse-rdf4j-2.0.1-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar
+RDF4J_CLASSPATH= lib/slf4j-api-1.7.32.jar:lib/commons-io-2.8.0.jar:lib/eclipse-rdf4j-3.7.6-onejar.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4_2.jar
 
 
 
