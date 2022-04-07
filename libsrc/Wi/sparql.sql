@@ -3391,7 +3391,7 @@ create procedure DB.DBA.RDF_RDFA11_FETCH_PROFILES (in profile_iris any, inout pr
   -- dbg_obj_princ ('DB.DBA.RDF_RDFA11_FETCH_PROFILES (', profile_iris, ')');
   foreach (varchar profile_iri in profile_iris) do
     {
-      if (not exists (sparql define input:storage "" ask where { graph `iri(?:profile_iri)` { ?s ?p ?o }}))
+      if (not (sparql define input:storage "" ask where { graph `iri(?:profile_iri)` { ?s ?p ?o }}))
         DB.DBA.SPARUL_LOAD (profile_iri, profile_iri, 0, NULL, 0);
     }
   vectorbld_init (agg);
@@ -8293,7 +8293,7 @@ create function DB.DBA.SPARUL_CREATE (in graph_iri any, in silent1 integer, in u
     }
   if (exists (select top 1 1 from DB.DBA.RDF_QUAD where G = iri_to_id (graph_iri)))
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> contains triples already');
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
     ask from <http://www.openlinksw.com/schemas/virtrdf#>
     where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:graph_iri)` } ) )
     signal ('22023', 'SPARUL_CREATE() failed: graph <' || graph_iri || '> is used for mapping relational data to RDF');
@@ -8370,7 +8370,7 @@ create function DB.DBA.SPARUL_DROP (in graph_iris any, in silent1 integer, in ui
           else
             return 1;
         }
-      if (exists (sparql define input:storage ""
+      if ((sparql define input:storage ""
         ask from <http://www.openlinksw.com/schemas/virtrdf#>
         where { ?qmv virtrdf:qmGraphRange-rvrFixedValue `iri(?:g_iri)` } ) )
         signal ('22023', 'SPARUL_DROP() failed: graph <' || g_iri || '> is used for mapping relational data to RDF');
@@ -11134,7 +11134,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
   -- dbg_obj_princ ('JSO_MAKE_INHERITANCE (', jgraph, class, rootinst, destinst, ')');
   inh_stack := vector_concat (inh_stack, vector (destinst));
   baseinst := null;
-  if (not exists (sparql
+  if (not (sparql
       define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask where {
@@ -11171,7 +11171,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
       srcinst := id_to_iri_nosignal ("src_iid");
       if (baseinst is null)
         {
-          if (not exists (sparql
+          if (not (sparql
               define input:storage ""
               prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
               ask where { graph ?:jgraph { ?:"src_iid" rdf:type `iri(?:class)` } } ) )
@@ -11225,7 +11225,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
           graph ?:jgraph {
               ?:base_iid ?pred_id ?predval
             } } ) as "t00"
-      where not exists (sparql
+      where not (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           ask where { graph ?:jgraph { ?:"t00"."pred_id" virtrdf:loadAs virtrdf:jsoTriple } } )
@@ -11306,7 +11306,7 @@ create function DB.DBA.JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, i
               { ?:jsubj_iid ?p_id ?o1 }  optional { ?o1 rdf:name ?o2 }
             } }
         ) as "t00"
-      where not exists (sparql
+      where not (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           ask where { graph ?:jgraph_iid { ?:"t00"."p_id" virtrdf:loadAs virtrdf:jsoTriple } } ) option (quietcast)
@@ -11688,7 +11688,7 @@ create function DB.DBA.RDF_BACKUP_METADATA (in save_to_file integer := 0, in bac
     }
   else
     {
-      if (exists (sparql define input:storage "" ask where { graph `iri(?:backup_name)` { ?s ?p ?o }}))
+      if ((sparql define input:storage "" ask where { graph `iri(?:backup_name)` { ?s ?p ?o }}))
         signal ('22023', sprintf ('Can not backup RDF metadata into nonempty graph <%.300s>', backup_name));
       foreach (any triple in proplist) do
         {
@@ -12188,7 +12188,7 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (in storage varch
 {
   declare graphiri varchar;
   graphiri := DB.DBA.JSO_SYS_GRAPH ();
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
         ask where {
           graph ?:graphiri {
             { `iri(?:storage)` virtrdf:qsDefaultMap `iri(?:qmid)` }
@@ -13245,7 +13245,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (in coltype v
   src_fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#' || src_lname;
   res_fmtid := 'http://www.openlinksw.com/virtrdf-data-formats#' || res_lname;
   superformatsid := res_fmtid || '--SuperFormats';
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask where { graph virtrdf: { `iri(?:res_fmtid)` a virtrdf:QuadMapFormat } } ) )
@@ -13253,7 +13253,7 @@ create function DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (in coltype v
       -- dbg_obj_princ ('DB.DBA.RDF_QM_DEFINE_LITERAL_CLASS_WITH_FIXED_LANG (', coltype, o_lang, is_nullable, ') exists');
       return res_fmtid;
     }
-  if (not exists (sparql define input:storage ""
+  if (not (sparql define input:storage ""
       prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask where { graph virtrdf: { `iri(?:src_fmtid)` a virtrdf:QuadMapFormat } } ) )
@@ -13613,7 +13613,7 @@ create function DB.DBA.RDF_QM_FT_USAGE (in ft_type varchar, in ft_alias varchar,
   else
     ftcondsid := NULL;
 /* Trick to avoid repeating re-declarations */
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     ask where {
         graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -13888,7 +13888,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
     }
   else
     {
-      if (exists (sparql define input:storage ""
+      if ((sparql define input:storage ""
           ask where {
               graph <http://www.openlinksw.com/schemas/virtrdf#> { `iri (?:fmtid)` virtrdf:qmfValRange-rvrRestrictions virtrdf:SPART_VARR_IS_REF } } ) )
         iriclassid := fmtid;
@@ -13900,7 +13900,7 @@ create function DB.DBA.RDF_QM_DEFINE_MAP_VALUE (in qmv any, in fldname varchar, 
   qmvcolsid := qmvid || '-cols';
   qmvcondsid := qmvid || '-conds';
 /* Trick to avoid repeating re-declarations */
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
     prefix rdfdf: <http://www.openlinksw.com/virtrdf-data-formats#>
     ask where {
         graph <http://www.openlinksw.com/schemas/virtrdf#> {
@@ -14301,7 +14301,7 @@ create function DB.DBA.RDF_QM_ATTACH_MAPPING (in storage varchar, in source varc
   qm_order := coalesce ((sparql define input:storage ""
       select ?o where { graph ?:graphiri {
               `iri(?:qmid)` virtrdf:qmPriorityOrder ?o } } ) );
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
       ask where { graph ?:graphiri {
               `iri(?:qmid)` virtrdf:qmMatchingFlags virtrdf:SPART_QM_OK_FOR_ANY_QUAD } } ) )
     qm_is_default := 1;
@@ -14567,7 +14567,8 @@ create function DB.DBA.RDF_SML_CREATE (in smliri varchar, in txt varchar) return
   exec ('sparql define input:macro-lib-ignore-create "yes" define input:disable-storage-macro-lib "yes" ' || txt, stat, msg, null, 1, mdata, rset);
   if (stat <> '00000')
     signal (stat, msg);
-  if (length (rset))
+  if (length (rset) and not
+      (length (rset) = 1 and length (rset[0]) = 1 and rset[0][0] = 0))
     signal ('SPAR0', 'Assertion failed: the validation query of macro library should return nothing');
   vectorbld_init (affected);
   for (sparql define input:storage ""
@@ -17136,7 +17137,7 @@ create procedure DB.DBA.SPARQL_RELOAD_QM_GRAPH ()
   ver := '2022-02-17 0001v7';
   if (USER <> 'dba')
     signal ('RDFXX', 'Only DBA can reload quad map metadata');
-  if (not exists (sparql define input:storage "" ask where {
+  if (not (sparql define input:storage "" ask where {
           graph <http://www.openlinksw.com/schemas/virtrdf#> {
               <http://www.openlinksw.com/sparql/virtrdf-data-formats.ttl>
                 virtrdf:version ?:ver

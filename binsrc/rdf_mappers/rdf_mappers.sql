@@ -1848,7 +1848,7 @@ create procedure DB.DBA.GET_XBRL_CANONICAL_NAME(in elem varchar) returns varchar
     if (elem = 'schemaRef')
 		return null;
     cur := 'http://www.openlinksw.com/schemas/xbrl/' || elem;
-    if (exists (sparql ask from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property } ) )
+    if ((sparql ask from <http://www.openlinksw.com/schemas/RDF_Mapper_Ontology/1.0/> {`iri(?:cur)` a rdf:Property } ) )
     {
         return elem;
     }

@@ -133,8 +133,8 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar, in realm varchar := null)
 	    {
 	      http (sprintf (' rc := 0;\n'), s);
 	      http (sprintf (' foreach (any w in val) do { \n'), s);
-        http (sprintf ('   webid := w;\n'), s);
-	      http (sprintf ('  if (exists (sparql %s)) rc := 1;\n', exp), s);
+              http (sprintf ('   webid := w;\n'), s);
+	      http (sprintf ('  if ((sparql %s)) rc := 1;\n', exp), s);
 	      http (sprintf (' } \n'), s);
 	      http (sprintf (' if (rc = 0) return 0;\n'), s);
 	    }
@@ -170,7 +170,7 @@ create procedure WEBID_GEN_ACL_PROC (in rule varchar, in realm varchar := null)
         http (sprintf ('  rc := 0;\n'), s);
         http (sprintf ('  foreach (any w in val) do { \n'), s);
         http (sprintf ('    webid := w;\n'), s);
-        http (sprintf ('    if (exists (\n sparql \n%s)) rc := 1;\n', exp), s);
+        http (sprintf ('    if ((sparql %s)) rc := 1;\n', exp), s);
         http (sprintf ('  } \n'), s);
         http (sprintf ('  if (rc = 0) return 0;\n'), s);
       }

@@ -1207,7 +1207,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_VIEWS()
 {
     declare storage_is_dflt integer;
     storage_is_dflt := 0;
-    if (exists (sparql define input:storage "" ask from virtrdf:
+    if ((sparql define input:storage "" ask from virtrdf:
         where {
             virtrdf:DefaultQuadStorage a virtrdf:QuadStorage    ;
                 virtrdf:qsDefaultMap virtrdf:DefaultQuadMap     ;

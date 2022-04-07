@@ -3612,7 +3612,7 @@ contains many SPARQL fragments that refer to a common set of namespaces.
 <programlisting><![CDATA[
 create function sparql_ask_demo () returns varchar
 {
-  if (exists (sparql ask where { graph ?g { ?s ?p 4}}))
+  if ((sparql ask where { graph ?g { ?s ?p 4}}))
     return 'YES';
   else
     return 'NO';

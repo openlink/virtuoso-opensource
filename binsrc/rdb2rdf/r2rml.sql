@@ -1267,7 +1267,7 @@ create procedure R2RML_GENERATE_LINKED_VIEW (in source varchar, in destination_g
     vgraph := sprintf ('http://example.com/r2rml?graph=%U', source);
   if (graph_type = 1)
     {
-      if (exists (sparql define input:storage "" prefix rr: <http://www.w3.org/ns/r2rml#> ask { graph `iri(?:source)` { [] rr:graphMap ?m . ?m rr:template ?g }}))
+      if ((sparql define input:storage "" prefix rr: <http://www.w3.org/ns/r2rml#> ask { graph `iri(?:source)` { [] rr:graphMap ?m . ?m rr:template ?g }}))
 	signal ('42000', 'Can not sync graph template to physical graph');
     }
   vstr := DB.DBA.R2RML_MAKE_QM_FROM_G (source, vgraph);

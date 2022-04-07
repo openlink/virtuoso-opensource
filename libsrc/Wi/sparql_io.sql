@@ -611,7 +611,7 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
   get_is_ok := null;
   post_is_ok := null;
   if (service_iri like '%/sparql' or service_iri like '%/sparql-auth' or service_iri like '%/sparql-sd' or
-    exists (sparql define input:storage ""
+    (sparql define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask from virtrdf: { `iri(?:service_iri)` virtrdf:dialect [] } ) )
     set_user_id ('dba');
@@ -620,7 +620,7 @@ create procedure DB.DBA.SPARQL_SD_PROBE (in service_iri varchar, in proxy_iri va
   --    DB.DBA.RDF_LOG_DEBUG_INFO ('DB.DBA.SPARQL_SD_PROBE() fails due to safety restruction: service in question, <%s>, seems to belong to the server itself ("URIQADefaultHost" registry is <%s>), HTTP connection to self may hang', service_iri, registry_get ('URIQADefaultHost'));
   --    signal ('22023', 'Can not load own service description');
   --  }
-  if (exists (sparql define input:storage ""
+  if ((sparql define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       prefix sd: <http://www.w3.org/ns/sparql-service-description#>
       ask { graph `iri (?:service_iri)` { { ?s a sd:Service } union { ?s sd:endpoint ?ep } } } ) )
@@ -637,13 +637,13 @@ goto get_and_post_checks;
   if (proxy_iri is not null)
   {
     sparql load iri (?:proxy_iri);
-    if (not exists (sparql define input:storage "" ask where { graph `iri(?:proxy_iri)` { ?s ?p ?o }}))
+    if (not (sparql define input:storage "" ask where { graph `iri(?:proxy_iri)` { ?s ?p ?o }}))
       signal ('22023', 'The resource <' || proxy_iri || '> exists but does not contain any RDF data');
-    if (not exists (sparql define input:storage ""
+    if (not (sparql define input:storage ""
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
         ask where { graph `iri(?:proxy_iri)` { ?s sd:endpoint ?o }}))
       signal ('22023', 'The resource <' || proxy_iri || '> exists but does not contain service description data');
-    if (not exists (sparql define input:storage ""
+    if (not (sparql define input:storage ""
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
         ask where { graph `iri(?:proxy_iri)` { ?s sd:endpoint ?o }}))
       {
@@ -657,7 +657,7 @@ goto get_and_post_checks;
     {
       declare sd_iri varchar;
       sd_iri := service_iri || '-sd';
-      if (exists (sparql define input:storage ""
+      if ((sparql define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           prefix sd: <http://www.w3.org/ns/sparql-service-description#>
           ask { graph `iri (?:sd_iri)` { { ?s a sd:Service } union { ?s sd:endpoint ?ep } } }))
@@ -669,12 +669,12 @@ goto get_and_post_checks;
       whenever sqlstate '*' goto no_sd;
       result ('00000', 'Trying to load <' || sd_iri || '> as a standalone service description...');
       sparql load iri (?:sd_iri);
-      if (not exists (sparql define input:storage "" ask where { graph `iri(?:sd_iri)` { ?s ?p ?o }}))
+      if (not (sparql define input:storage "" ask where { graph `iri(?:sd_iri)` { ?s ?p ?o }}))
         {
           result ('00000', 'The resource <' || sd_iri || '> does not contain any RDF data, ignored');
           goto no_sd;
         }
-      if (not exists (sparql define input:storage ""
+    if (not (sparql define input:storage ""
           prefix sd: <http://www.w3.org/ns/sparql-service-description#>
           ask where { graph `iri(?:sd_iri)` { ?s sd:endpoint ?o }}))
         {
@@ -692,12 +692,12 @@ no_sd:
     whenever sqlstate '*' goto g_done;
     result ('00000', 'Trying to load <' || service_iri || '> as self-description of the service...');
     sparql load iri (?:service_iri);
-    if (not exists (sparql define input:storage "" ask where { graph `iri(?:service_iri)` { ?s ?p ?o }}))
+    if (not (sparql define input:storage "" ask where { graph `iri(?:service_iri)` { ?s ?p ?o }}))
       {
         result ('00000', 'The resource <' || service_iri || '> exists but does not contain any RDF data, ignored');
         goto g_done;
       }
-    if (not exists (sparql define input:storage ""
+    if (not (sparql define input:storage ""
         prefix sd: <http://www.w3.org/ns/sparql-service-description#>
         ask where { graph `iri(?:service_iri)` { ?s sd:endpoint ?o }}))
       {
@@ -3787,7 +3787,7 @@ graph_processing:
         }
       else
         signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
-      if (graph_exists is null)
+      if (graph_exists)
         http_request_status ('HTTP/1.1 201 Created');
       else if (length (res_file) <= 2)
         http_request_status ('HTTP/1.1 204 No Content');
