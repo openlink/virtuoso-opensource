@@ -30,7 +30,6 @@ import java.sql.ResultSetMetaData;
 import java.util.*;
 
 import org.eclipse.rdf4j.model.*;
-import org.eclipse.rdf4j.model.impl.GraphImpl;
 import org.eclipse.rdf4j.query.BindingSet;
 import org.eclipse.rdf4j.query.BooleanQuery;
 import org.eclipse.rdf4j.query.GraphQuery;
@@ -49,7 +48,7 @@ import org.eclipse.rdf4j.rio.RDFHandler;
 import org.eclipse.rdf4j.rio.ntriples.NTriplesWriter;
 import org.eclipse.rdf4j.model.impl.ContextStatementImpl;
 
-import virtuoso.sesame4.driver.*;
+import virtuoso.rdf4j.driver.*;
 
 public class Test_BNode_perf1 {
 
