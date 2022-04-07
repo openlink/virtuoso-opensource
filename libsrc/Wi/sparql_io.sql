@@ -2709,7 +2709,9 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   if (not connection_get ('SPARQL/ResultSetMaxRows') is null)
     def_max := __min (cast (connection_get ('SPARQL/ResultSetMaxRows') as int), def_max);
 
-  -- if timeout specified and it's over 1 second
+  -- If MaxQueryExecutionTime is set, assume we can return a partial result
+  if (hard_timeout >= 1000)
+    client_supports_partial_res := 1;
 
   save_dir := trim (get_keyword ('dname', params, ''));
   save_dir_id := DAV_SEARCH_ID (save_dir, 'C');
@@ -2918,11 +2920,8 @@ execute_query:
         {
           declare t integer;
           t := atoi (pvalue);
-          if (t is not null and t >= 1000)
+          if (t is not null)
             {
-              if (hard_timeout >= 1000)
-                timeout := __min (t, hard_timeout);
-              else
                 timeout := t;
             }
           client_supports_partial_res := 1;
@@ -3251,7 +3250,15 @@ host_found:
   metas := null;
   rset := null;
   commit work;
-  if (client_supports_partial_res and (timeout > 0))
+
+  -- If timeout is outside of range 1000..hard_timeout, use the hard_timeout limit
+  if (hard_timeout >= 1000 and (timeout < 1000 or timeout > hard_timeout))
+    {
+      timeout := hard_timeout;
+    }
+
+  -- If timeout is set (>=1000) then enable ANYTIME query unless a partial result is not allowed
+  if (client_supports_partial_res and (timeout >= 1000))
     {
       set RESULT_TIMEOUT = timeout;
       -- dbg_obj_princ ('anytime timeout is set to', timeout);
