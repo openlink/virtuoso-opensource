@@ -105,9 +105,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private Connection quadStoreConnection;
     protected VirtuosoRepository repository;
 //    static final String S_DELETE = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
-    static final String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
-    static final String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
-    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+    static final String S_BATCH_INSERT = "DB.DBA.RDF_INSERT_TRIPLE_C (?,?,?,?,?,?)";
+    static final String S_BATCH_DELETE = "DB.DBA.RDF_DELETE_TRIPLE_C (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.RDF_CLEAR_GRAPHS_C (?)";
 
     static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
 
