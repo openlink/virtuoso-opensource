@@ -55,9 +55,9 @@ public class VirtGraph extends GraphBase {
 
 
     static final String xsd_string = "http://www.w3.org/2001/XMLSchema#string";
-    static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
-    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
-    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+    static final protected String S_BATCH_INSERT = "DB.DBA.RDF_INSERT_TRIPLE_C (?,?,?,?,?,?)";
+    static final protected String S_BATCH_DELETE = "DB.DBA.RDF_DELETE_TRIPLE_C (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.RDF_CLEAR_GRAPHS_C (?)";
 
 //    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
 
@@ -1416,7 +1416,7 @@ public class VirtGraph extends GraphBase {
         }
     }
 
-/// disabled, because there is issue in DB.DBA.rdf_delete_triple_c
+/// disabled, because there is issue in DB.DBA.RDF_DELETE_TRIPLE_C
     void delete(Iterator<Triple> it, List<Triple> list)
     {
       PreparedStatement ps = null;
