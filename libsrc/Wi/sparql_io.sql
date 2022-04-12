@@ -3794,7 +3794,7 @@ graph_processing:
         }
       else
         signal ('22023', 'The PUT request for graph <' || full_graph_uri || '> is rejected: the submitted resource is of unsupported type ' || coalesce (res_content_type, ''));
-      if (graph_exists)
+      if (not graph_exists)
         http_request_status ('HTTP/1.1 201 Created');
       else if (length (res_file) <= 2)
         http_request_status ('HTTP/1.1 204 No Content');
