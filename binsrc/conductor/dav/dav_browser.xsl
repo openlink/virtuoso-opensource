@@ -2938,9 +2938,24 @@
                         </th>
                         <td>
                           <?vsp
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_0" value="None" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>None</b></label>', case when not strcontains (self.dav_encryption, 'AES256') then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_1" value="AES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>AES-256</b></label>', case when self.dav_encryption = 'AES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/><b>AES-256 (Password or Pass Phrase)</b></label>', case when self.dav_encryption = 'UserAES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
+                          declare can_edit varchar;
+                          can_edit := (case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end);
+
+                          http (sprintf ('<label>
+                              <input type="radio" name="dav_encryption" id="dav_encryption_0" value="None"
+                                  disabled="disabled" %s %s
+                                  onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/>
+                              <b>None</b></label>',
+                            case when not strcontains (self.dav_encryption, 'AES256')
+                            then 'checked="checked"' else '' end, can_edit));
+
+                        http (sprintf ('<label>
+                            <input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256"
+                                disabled="disabled" %s %s
+                                onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/>
+                            <b>AES-256-CBC (Password or Pass Phrase)</b></label>',
+                        case when self.dav_encryption = 'UserAES256'
+                        then 'checked="checked"' else '' end, can_edit));
                           ?>
                         </td>
                       </tr>
