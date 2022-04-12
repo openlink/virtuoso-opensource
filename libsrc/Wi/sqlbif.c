@@ -11137,6 +11137,10 @@ static int registry_name_is_protected (const caddr_t name)
 {
   if (!strncmp (name, "__key__", 7))
     return 2;
+  if (!strncmp (name, "__EM:", 5))
+    return 2;
+  if (!strncmp (name, "__EMC:", 6))
+    return 2;
   if (!strcmp (name, "__next_free_port"))
     return 1;
   if (!strcmp (name, "cl_host_map"))

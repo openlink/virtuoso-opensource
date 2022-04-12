@@ -46,6 +46,13 @@
     </vm:header>
     <vm:pagebody>
       <br class="clear"></br>
+      <div class="confirm_dialog">
+          <img class="dialog_icon" src="images/icons/warning_32.png" alt="Stop" title="Stop"/>
+          <div class="confirm_text">
+              This page contains important system settings, changes can make system unusable if misused.
+              Before making change(s), a full database backup is recommended.
+          </div>
+      </div>
       <v:form name="frm1" method="POST" type="simple">
 
         <vm:if test="self.c_mode = 'C/browse'">

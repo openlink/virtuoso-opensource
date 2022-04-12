@@ -788,6 +788,13 @@ div.dialog_buttons {
   margin-top: 10px;
 }
 
+div.confirm_text {
+    font-size:12pt;
+    color:black;
+    font-weight:bold;
+    width:70%;
+}
+
 
 /* was redstar */
 

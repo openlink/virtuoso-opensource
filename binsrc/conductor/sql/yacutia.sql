@@ -6107,6 +6107,22 @@ create procedure y_wide2utf (
 }
 ;
 
+create procedure registry_name_is_idn (in name varchar)
+{
+  declare arr any;
+  arr := sprintf_inverse (name, '%s.%s.%s.%s.%s.%s', 1);
+  if (not isvector (arr) and length (arr) <> 6)
+    return 0;
+  if (arr[0] <> arr[2] and arr[1] <> arr[3])
+    return 0;
+  if (not table_exists (sprintf ('%s.%s.%s', arr[2], arr[3], arr[4])))
+    return 0;
+  if (not exists (select 1 from SYS_COLS where "TABLE" = sprintf ('%s.%s.%s', arr[2], arr[3], arr[4]) and "COLUMN" = arr[5]))
+    return 0;
+  return 1;
+}
+;
+
 create procedure y_registries (
   in _filter varchar := '')
 {
@@ -6121,6 +6137,10 @@ create procedure y_registries (
   {
     v0 := cast (V[N] as varchar);
     v1 := subseq (V[N+1], 0, 1024);
+    if (registry_name_is_protected (v0))
+      goto _skip;
+    if (registry_name_is_idn (v0))
+      goto _skip;
     if ((_filter <> '') and (v0 not like _filter))
       goto _skip;
 
