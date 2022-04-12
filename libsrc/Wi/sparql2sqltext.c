@@ -2321,6 +2321,11 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
   int buffill = 0;
   dtp_t dtp = DV_TYPE_OF (box);
   buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 5 : 25);
+  /* we limit the space to print literal atom to max box len, then we check if it was (almost) at end,
+   * not precise, but buf len is quite a large and when tmpbuf fill is over max box len - 1
+   * then we consider that as an error.
+   */
+  buflen = MIN (buflen, MAX_BOX_LENGTH - 1);
   BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
   ssg_putchar (' ');
   switch (dtp)
@@ -2355,6 +2360,8 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
                   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
                   BOX_DONE (tmpbuf, smallbuf);
                   ssg_puts (", 'UTF-8', '_WIDE_')");
+                  if (buffill >= (MAX_BOX_LENGTH - 1))
+                    spar_error (ssg->ssg_sparp, "Literal value is too long %d", buffill);
                   return;
                 }
           }
@@ -2524,6 +2531,8 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       }
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
+  if (buffill >= (MAX_BOX_LENGTH - 1))
+    spar_error (ssg->ssg_sparp, "Literal value is too long %d", buffill);
 }
 
 int
