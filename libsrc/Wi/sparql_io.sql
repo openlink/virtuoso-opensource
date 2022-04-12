@@ -260,16 +260,17 @@ create procedure DB.DBA.SPARQL_REXEC_INT (
       service := subseq (service, 0, quest_pos);
     }
   http ('query=', req_body);
-  http_url (query, 0, req_body);
+  http_escape (query, 6, req_body, 1, 1);
   if (dflt_graph is not null and dflt_graph <> '')
     {
       http ('&default-graph-uri=', req_body);
       http_url (dflt_graph, 0, req_body);
+      http_escape (dflt_graph, 6, req_body, 1, 1);
     }
   foreach (varchar uri in named_graphs) do
     {
       http ('&named-graph-uri=', req_body);
-      http_url (uri, 0, req_body);
+      http_escape (uri, 6, req_body, 1, 1);
     }
   if (maxrows is not null)
     http (sprintf ('&maxrows=%d', maxrows), req_body);
