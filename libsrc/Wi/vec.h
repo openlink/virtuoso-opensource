@@ -73,6 +73,9 @@ struct data_col_s
   mem_pool_t *dc_mp;
   db_buf_t dc_org_values;	/* initial values array if values array is assigned by reference to another dc */
   db_buf_t dc_org_nulls;	/* when getting first null for a num inline dc, use this if this is set and large enough */
+#ifndef NDEBUG
+    state_slot_t * dc_ssl;
+#endif
 };
 
 #define dc_dtp dc_sqt.sqt_dtp
