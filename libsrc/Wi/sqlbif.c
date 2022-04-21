@@ -7372,6 +7372,13 @@ bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (long1 % long2));
 }
 
+static caddr_t
+bif_fmod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t num1 = bif_arg (qst, args, 0, "fmod");
+  caddr_t num2 = bif_arg (qst, args, 1, "fmod");
+  return (box_mod (num1, num2, qst, NULL));
+}
 
 caddr_t
 bif_frexp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16918,6 +16925,7 @@ sql_bif_init (void)
   bif_define_ex ("atoi"			, bif_atoi	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dtoi"			, bif_dtoi	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("mod"			, bif_mod	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fmod"                 , bif_fmod      , BMD_RET_TYPE, &bt_double      , BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_any	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("acos"			, bif_acos	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
