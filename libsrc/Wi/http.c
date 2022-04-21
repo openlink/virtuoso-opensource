@@ -6478,7 +6478,7 @@ encode_base64_impl (char * input, char * output, size_t len, char * table)
       n = 1;
       count += 4;
       val = c;
-      if (count >= 70)
+      if (count >= 70 && table != &base64url_vec[0])
 	{
 	  output[x++] = '\r';
 	  output[x++] = '\n';
