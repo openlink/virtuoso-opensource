@@ -712,6 +712,7 @@
                                         };
                                         username := self.t_login_name.ufl_value;
                                         set_user_id (username);
+                              set_qualifier ('DB');
                                         USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, self.k_pwd.ufl_value, null, 1);
                                         EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
                                         http_request_status ('HTTP/1.1 302 Found');
@@ -821,6 +822,7 @@
                                         };
                                         username := y_wide2utf (self.t_login_name.ufl_value);
                                         set_user_id (username);
+                              set_qualifier ('DB');
                                         USER_CERT_REGISTER (username, get_keyword ('ca_value', params), self.ca_pwd.ufl_value, self.ca_type.ufl_value);
 
                                         http_request_status ('HTTP/1.1 302 Found');
