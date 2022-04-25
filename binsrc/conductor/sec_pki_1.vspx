@@ -37,6 +37,7 @@
       <v:variable name="name1" type="varchar" default="''" persist="temp"/>
       <v:variable name="email1" type="varchar" default="''" persist="temp"/>
       <v:variable name="uri1" type="varchar" default="''" persist="temp"/>
+      <v:variable name="fp1" type="varchar" default="''" persist="temp"/>
       <v:variable name="sdt" type="varchar" default="''" persist="temp"/>
       <v:variable name="edt" type="varchar" default="''" persist="temp"/>
     </vm:variables>
@@ -61,6 +62,7 @@
               self.ou1 := get_keyword ('OU', arr, '');
               self.name1 := get_keyword ('CN', arr, '');
               self.email1 := get_keyword ('emailAddress', arr, '');
+              self.fp1 := get_certificate_info (6, 'id_rsa', 3, NULL, 'sha1');
               self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
               self.sdt := get_certificate_info (4, 'id_rsa', 3);
               self.edt := get_certificate_info (5, 'id_rsa', 3);
@@ -100,7 +102,7 @@
             <div id="pki_form">
               <h3>CA Root Certificate Details</h3>
               <label>Country</label>
-              <v:text xhtml_size="100" value="" name="c" default_value="--self.c1">
+              <v:text xhtml_size="100" value="" name="country" default_value="--self.c1">
                 <v:before-render>
                   if (xenc_key_exists ('id_rsa'))
                     control.vc_add_attribute ('disabled', '1');
@@ -175,6 +177,14 @@
                 </v:before-render>
               </v:text>
               <br />
+              <label>Fingerprint (SHA1)</label>
+              <v:text xhtml_size="100" value="" name="fp" default_value="--self.fp1" >
+                <v:before-render>
+                  if (xenc_key_exists ('id_rsa'))
+                    control.vc_add_attribute ('disabled', '1');
+                </v:before-render>
+              </v:text>
+              <br />
               <label>Key strength</label>
               <v:select-list name="num">
                 <v:item name="2048" value="2048"/>
@@ -206,7 +216,7 @@
 
                     xenc_key_RSA_create ('id_rsa', atoi (get_keyword ('num', params, '2048')));
                     xenc_x509_ss_generate ('id_rsa', sequence_next ('ca_id_rsa'), 365,
-                      vector ('C',  get_keyword ('c', params),
+                      vector ('C',  get_keyword ('country', params),
                               'ST', get_keyword ('st', params),
                               'O',  get_keyword ('o', params),
                               'OU', get_keyword ('ou', params),
