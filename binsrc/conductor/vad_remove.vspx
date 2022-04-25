@@ -80,6 +80,8 @@
                         self.vc_is_valid := 0;
                         return;
                       };
+                      if (get_user() <> 'dba')
+                        signal ('42000', 'VAD Installation must be done as DBA');
                       log_message ('Uninstalling ' || self.pack_name);
                       DB.DBA.VAD_UNINSTALL(self.pack_name);
                       log_message ('Uninstall complete');
