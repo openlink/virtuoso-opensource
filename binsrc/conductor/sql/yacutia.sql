@@ -6153,3 +6153,20 @@ create procedure y_registries (
   }
 }
 ;
+
+create procedure y_sys_stat(
+  in _key varchar := '')
+{
+  declare val any;
+  val := '';
+  {
+    -- catch error when using old binaries
+    declare continue handler for sqlstate '*';
+
+    -- next line can fail on older ports
+    val := sys_stat (_key);
+  }
+
+  return val;
+}
+;
