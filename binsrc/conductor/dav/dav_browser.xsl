@@ -4319,10 +4319,13 @@
               </v:template>
               <div id="f_plain">
                 <?vsp
+                  declare S varchar;
+
+                  S := WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source));
                   if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30))
                   {
                     http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
-                    http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, S));
                     http ('</textarea>');
                 ?>
                     <![CDATA[
@@ -4337,7 +4340,7 @@
                   else
                   {
                     http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" autofocus style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
-                    http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, S));
                     http ('</textarea>');
                   }
                 ?>

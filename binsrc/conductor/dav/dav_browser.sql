@@ -964,6 +964,9 @@ create procedure WEBDAV.DBA.utf2wide (
 {
   declare retValue any;
 
+  if (isbinary (S))
+    S := cast (S as varchar);
+
   if (isstring (S))
   {
     retValue := charset_recode (S, 'UTF-8', '_WIDE_');
@@ -980,6 +983,9 @@ create procedure WEBDAV.DBA.wide2utf (
   in S any)
 {
   declare retValue any;
+
+  if (isbinary (S))
+    S := cast (S as varchar);
 
   if (iswidestring (S))
   {
