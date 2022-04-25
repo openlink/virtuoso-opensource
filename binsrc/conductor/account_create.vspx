@@ -67,6 +67,19 @@
       <vm:help id="account_create" sect="" />
       <script tyep="text/javascript">
         <![CDATA[
+        function guessFileType (f, key_name, sel_name)
+          {
+              var sel = document.getElementById(sel_name);
+              var k_name = document.getElementById(key_name);
+              var filePath = f.value;
+              k_name.value = filePath.substr(filePath.lastIndexOf('\\') + 1).split('.')[0];
+              if (filePath.match (/\.pem$/) || filePath.match (/\.crt$/))
+                  sel.value = 'PEM';
+              else if (filePath.match (/\.cer$/))
+                  sel.value = 'DER';
+              if (filePath.match (/\.p12$/) || filePath.match (/\.pfx$/))
+                  sel.value = 'PKCS12';
+          }
           function onExitAccountName()
           {
             var f = document.account_form;
@@ -676,7 +689,7 @@
                                   <table> <!-- right side -->
                                     <tr>
                                       <th width="130px"><label for="k_name">Key Name</label></th>
-                                      <td><v:text name="k_name" id="k_name" value="" /></td>
+                            <td><v:text name="k_name" xhtml_id="k_name" value="" /></td>
                                     </tr>
                                     <tr>
                                       <th><label for="k_pwd">Password</label></th>
@@ -694,13 +707,14 @@
                                     </tr>
                                     <tr>
                                       <th><label for="k_value">Import File</label></th>
-                                      <td><input type="file" name="k_value" id="k_value" /></td>
+                            <td><input type="file" name="k_value" id="k_value" onchange="guessFileType(this, 'k_name', 'k_type')"/></td>
                                     </tr>
                                   </table>
                                   <v:button action="simple" name="imp_key" value="Import Key">
                                     <v:on-post>
                                       <![CDATA[
-				        declare username any;
+                              declare username, key_file_format, key_value any;
+                              declare import_pk_from_pem int;
                                         if (self.vc_is_valid = 0)
                                           return;
 
@@ -711,9 +725,22 @@
                                           return;
                                         };
                                         username := self.t_login_name.ufl_value;
+                              key_value := get_keyword ('k_value', params);
+                              key_file_format := self.k_type.ufl_value;
+                              import_pk_from_pem := 0;
+                              if (key_file_format = 'PEM' and strstr (key_value, 'PRIVATE KEY') is not null)
+                                import_pk_from_pem := 1;
                                         set_user_id (username);
                               set_qualifier ('DB');
-                                        USER_KEY_LOAD (self.k_name.ufl_value, get_keyword ('k_value', params), 'X.509', self.k_type.ufl_value, self.k_pwd.ufl_value, null, 1);
+
+                              USER_KEY_LOAD (self.k_name.ufl_value, 
+                                    key_value,
+                                    'X.509',
+                                    key_file_format,
+                                    self.k_pwd.ufl_value,
+                                    case when import_pk_from_pem then key_value else null end, 
+                                    1);
+
                                         EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);
                                         http_request_status ('HTTP/1.1 302 Found');
                                         http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
@@ -759,7 +786,7 @@
                                 </table>
                                 <br />
                                 <?vsp if (i > 0) { ?>
-                                  <v:button action="simple" name="del_ca" value="Remove Selected Keys" xhtml_tabindex="21">
+                        <v:button action="simple" name="del_ca" value="Remove Selected Certificates" xhtml_tabindex="21">
                                     <v:on-post>
                                       <![CDATA[
                                         declare username, cert, certs any;
@@ -804,7 +831,7 @@
                                     </tr>
                                     <tr>
                                       <th><label for="ca_value">Import File</label></th>
-                                      <td><input type="file" name="ca_value" id="ca_value" /></td>
+                            <td><input type="file" name="ca_value" id="ca_value" onchange="guessFileType(this, 'k_name', 'ca_type')" /></td>
                                     </tr>
                                   </table>
                                   <v:button action="simple" name="imp_ca" value="Import Certificate">

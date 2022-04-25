@@ -5811,7 +5811,7 @@ create procedure y_list_webids (in uname varchar)
       if (tp = 'X.509')
 	{
 	  fmt := x[1];
-	  cert := x[2];
+	  cert := cast (x[2] as varchar);
 	  pass := x[3];
 	  if (fmt = 3)
 	    fmt := 1;
