@@ -669,6 +669,14 @@ table.warning {
   background-color: #ffff99
 }
 
+div.message {
+  width: 100%;
+  padding: 5px;
+  clear: both;
+  text-align: center;
+  color: green;
+}
+
 div.warning {
   width: 100%;
   background-color: #ffff99;
