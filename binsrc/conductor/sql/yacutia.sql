@@ -822,6 +822,10 @@ y_sql_user_password_check (in name varchar, in pass varchar)
   else if (not length (nonce) and pass1 = pass)
     rc := 1;
 
+  -- no grant for any page, even main page
+  if (check_grants (name, 'nobody') = 0)
+    rc := 0;
+
   if (rc and (ltm is null or ltm < dateadd ('minute', -2, now ())))
     {
       update SYS_USERS set U_LOGIN_TIME = now () where U_NAME = name;
