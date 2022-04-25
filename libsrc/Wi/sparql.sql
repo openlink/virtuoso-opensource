@@ -18024,6 +18024,8 @@ create procedure rdf_schema_ld ()
 {
   if (1 <> sys_stat ('cl_run_local_only'))
     return 0;
+  if (sys_stat ('disable_rdf_init') = 1)
+    return 0;
   return (select count (*) from (select distinct s.RS_NAME from DB.DBA.SYS_RDF_SCHEMA s) sub where 0 = rdfs_load_schema (sub.RS_NAME));
 }
 ;
