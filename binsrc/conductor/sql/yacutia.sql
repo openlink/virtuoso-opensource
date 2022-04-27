@@ -22,6 +22,8 @@
 
 /* Aggregate concat */
 
+use DB;
+
 create procedure yac_rep_exec (in _attached_qual varchar, in _attached_owner varchar, in _attached_name varchar,
 			       inout _stmt any, inout _stat any, inout _msg any)
 {
@@ -3227,7 +3229,7 @@ create procedure adm_get_users (in mask any := '%', in ord any := '', in seq any
 }
 ;
 
-create procedure adm_get_all_users (in mask any := '%', in ord any := '', in seq any := 'asc')
+create procedure DB.DBA.adm_get_all_users (in mask any := '%', in ord any := '', in seq any := 'asc')
 {
   declare sql, dta, mdta, rc, h, tmp any;
 
@@ -3253,9 +3255,9 @@ create procedure adm_get_all_users (in mask any := '%', in ord any := '', in seq
 }
 ;
 
-yacutia_exec_no_error('create procedure view Y_SYS_USERS_USERS as adm_get_users (mask, ord, seq) (U_NAME varchar, U_FULL_NAME varchar, U_LOGIN_TIME datetime, U_EDIT_TIME datetime)');
+yacutia_exec_no_error('create procedure view DB.DBA.Y_SYS_USERS_USERS as DB.DBA.adm_get_users (mask, ord, seq) (U_NAME varchar, U_FULL_NAME varchar, U_LOGIN_TIME datetime, U_EDIT_TIME datetime)');
 
-yacutia_exec_no_error('create procedure view Y_SYS_USERS as adm_get_all_users (mask, ord, seq) (U_NAME varchar, U_FULL_NAME varchar, U_IS_ROLE int)');
+yacutia_exec_no_error('create procedure view DB.DBA.Y_SYS_USERS as DB.DBA.adm_get_all_users (mask, ord, seq) (U_NAME varchar, U_FULL_NAME varchar, U_IS_ROLE int)');
 
 create procedure adm_get_scheduled_events (
   in ord any := 'name',

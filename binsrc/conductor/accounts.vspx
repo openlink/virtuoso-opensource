@@ -119,7 +119,7 @@
             self.ord_set (ord_button, e, self.ds);
           }
         }
-        control.ds_sql := 'select U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME from Y_SYS_USERS_USERS where mask = ? and ord = ? and seq = ?';
+        control.ds_sql := 'select U_NAME, U_FULL_NAME, U_LOGIN_TIME, U_EDIT_TIME from DB.DBA.Y_SYS_USERS_USERS where mask = ? and ord = ? and seq = ?';
         control.ds_parameters := null;
         control.add_parameter (self.search_mask);
         control.add_parameter (self.ord);
