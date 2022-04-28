@@ -30,13 +30,9 @@ import java.util.Iterator;
 import java.util.List;
 import javax.sql.*;
 
-import org.apache.jena.graph.*;
-import org.apache.jena.graph.impl.*;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
 import org.apache.jena.shared.*;
-import org.apache.jena.util.iterator.*;
-import org.apache.jena.datatypes.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
 

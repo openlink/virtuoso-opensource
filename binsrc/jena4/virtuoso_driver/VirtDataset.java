@@ -304,7 +304,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             addNamedModel(resource.toString(), model, false);
             return this;
         } catch (Exception e) {
-            throw new JenaException("Could not replace model:", e);
+            throw new JenaException("Could not replace model", e);
         }
     }
 
@@ -314,7 +314,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public Iterator<String> listNames() {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
         ResultSet rs = null;
-        int ret = 0;
         java.sql.Statement stmt = null;
 
         checkOpen();
@@ -344,7 +343,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public Iterator<Resource> listModelNames() {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
         ResultSet rs = null;
-        int ret = 0;
         java.sql.Statement stmt = null;
 
         checkOpen();
@@ -604,7 +602,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
         protected List<Node> getListGraphNodes() {
             String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
             ResultSet rs = null;
-            int ret = 0;
             java.sql.Statement stmt = null;
 
             vd.checkOpen();
@@ -685,7 +682,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
                 vd.add(graphName.toString(), it, null);
             } catch (Exception e) {
-                throw new JenaException("Error in addGraph:" + e);
+                throw new JenaException("Error in addGraph", e);
             }
         }
 
@@ -696,7 +693,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 vd.clear(graphName);
             } catch (Exception e) {
-                throw new JenaException("Error in removeGraph:" + e);
+                throw new JenaException("Error in removeGraph", e);
             }
         }
 

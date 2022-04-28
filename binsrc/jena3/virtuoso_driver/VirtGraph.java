@@ -30,7 +30,6 @@ import java.text.SimpleDateFormat;
 import javax.sql.*;
 import javax.transaction.xa.*;
 
-import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
 import virtuoso.jdbc4.*;
 import virtuoso.sql.*;
@@ -95,7 +94,6 @@ public class VirtGraph extends GraphBase {
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
-    private XADataSource xa_ds;
     private javax.transaction.xa.XAResource xa_resource = null;
     private XAConnection xa_connection = null;
     protected VirtTransactionHandler tranHandler = null;
@@ -222,6 +220,8 @@ public class VirtGraph extends GraphBase {
             this.user = vds.getUser();
             this.password = vds.getPassword();
         }
+
+        ds = (javax.sql.DataSource) _ds;
 
         this.graphName = _graphName == null ? DEFAULT : _graphName;
 
@@ -689,11 +689,10 @@ public class VirtGraph extends GraphBase {
         if (ns.startsWith("nodeID://"))
             return ns;
         else
-            return "_:" + n.toString().replace(':', '_').replace('-', 'z').replace('/','y');
+            return "_:" + ns.replace(':', '_').replace('-', 'z').replace('/','y');
     }
 
     static String BNode2String_add(Node n) {
-        String ns = n.toString();
         return "_:" + n.toString().replace(':', '_').replace('-', 'z').replace('/','y');
     }
 
@@ -708,7 +707,7 @@ public class VirtGraph extends GraphBase {
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
         } else if (n.isLiteral()) {
-            String s, llang, ltype;
+            String llang, ltype;
             boolean llang_exists = false;
             StringBuilder sb = new StringBuilder();
             sb.append("\"");
@@ -747,7 +746,7 @@ public class VirtGraph extends GraphBase {
                     return "<" + BNode2String_add(n) + ">";
                 }
             } else if (n.isLiteral()) {
-                String s, llang, ltype;
+                String llang, ltype;
                 boolean llang_exists = false;
                 StringBuilder sb = new StringBuilder();
                 sb.append("\"");
@@ -896,7 +895,7 @@ public class VirtGraph extends GraphBase {
                 }
             }
         } catch (Exception e) {
-            throw new AddDeniedException(e.toString());
+            throw new AddDeniedException(e);
         } finally {
           try {
             if (st != null)
@@ -922,7 +921,7 @@ public class VirtGraph extends GraphBase {
             bindBatchParams(ps, s, p, o, (_gName != null ? _gName : this.graphName));
             ps.execute();
         } catch (Exception e) {
-            throw new DeleteDeniedException(e.toString());
+            throw new DeleteDeniedException(e);
         } finally {
           try {
             if (ps != null)
@@ -1345,7 +1344,7 @@ public class VirtGraph extends GraphBase {
              }
 
         } catch (Exception e) {
-            throw new AddDeniedException(e.toString());
+            throw new AddDeniedException(e);
         }
     }
 
@@ -1723,7 +1722,7 @@ public class VirtGraph extends GraphBase {
             }
 
         } catch (Exception e) {
-            throw new JenaException(e+"\n"+data.toString());
+            throw new JenaException(data.toString(), e);
         } finally {
             try {
                 if (stmt!=null)
@@ -1908,7 +1907,7 @@ literal.
                 ps.execute();
             }
         } catch (Exception e) {
-            throw new DeleteDeniedException(e.toString());
+            throw new DeleteDeniedException(e);
         } finally {
           try {
             if (ps!=null)
@@ -2077,7 +2076,6 @@ literal.
         StringBuilder sb = new StringBuilder();
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         String nanosString;
-        String timeZoneString = null;
         String zeros = "000000000";
         int nanos = v.getNanos();
 

@@ -28,7 +28,7 @@ import java.util.*;
 import org.apache.jena.update.*;
 
 public class VirtuosoUpdateRequest {
-    private List requests = new ArrayList();
+    private List<String> requests = new ArrayList<String>();
     private VirtGraph graph;
     private String virt_query;
 
@@ -42,13 +42,13 @@ public class VirtuosoUpdateRequest {
     public VirtuosoUpdateRequest(String query, VirtGraph _graph) {
         this(_graph);
         virt_query = query;
-        requests.add((Object) query);
+        requests.add(query);
     }
 
     public void exec() {
         try {
             stmt = graph.createStatement(true);
-            for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
+            for ( Iterator<String> iter = requests.iterator() ; iter.hasNext(); )
             {
                 StringBuilder sb = new StringBuilder();
                 sb.append("sparql\n");
@@ -75,14 +75,14 @@ public class VirtuosoUpdateRequest {
         requests.add(update);
     }
 
-    public Iterator iterator() {
+    public Iterator<String> iterator() {
         return requests.iterator();
     }
 
     public String toString() {
         StringBuffer b = new StringBuffer();
 
-        for (Iterator iter = requests.iterator(); iter.hasNext(); ) {
+        for (Iterator<String> iter = requests.iterator(); iter.hasNext(); ) {
             b.append((String) iter.next());
             b.append("\n");
         }

@@ -22,8 +22,6 @@
  */
 package virtuoso.jena.driver;
 
-import java.util.*;
-
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.Node;

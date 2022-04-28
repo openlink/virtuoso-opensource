@@ -54,7 +54,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
             while (rs.next()) {
                 String prefix = rs.getString(1);
                 String uri = rs.getString(2);
-                if (uri != null && uri != null)
+                if (prefix != null && uri != null)
                     super.setNsPrefix(prefix, uri);
             }
             rs.close();
@@ -109,7 +109,7 @@ public class VirtPrefixMapping extends PrefixMappingImpl {
             ps.setString(2, uri);
             ps.execute();
         } catch (Exception e) {
-            throw new JenaException(e.toString());
+            throw new JenaException(e);
         } finally {
           try {
             if (ps != null)
