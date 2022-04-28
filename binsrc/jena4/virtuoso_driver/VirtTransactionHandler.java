@@ -98,7 +98,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         try {
             Connection c = graph.getConnection();
             if (c != null) {
-                m_transactionsSupported = new Boolean(c.getMetaData().supportsMultipleTransactions());
+                m_transactionsSupported = Boolean.valueOf(c.getMetaData().supportsMultipleTransactions());
                 return (m_transactionsSupported.booleanValue());
             }
         } catch (Exception e) {

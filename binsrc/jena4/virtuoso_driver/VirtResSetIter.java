@@ -26,12 +26,9 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.*;
 
-import virtuoso.sql.*;
 import org.apache.jena.util.iterator.*;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.*;
-import org.apache.jena.datatypes.*;
-import org.apache.jena.rdf.model.*;
 
 
 public class VirtResSetIter extends NiceIterator<Triple> {

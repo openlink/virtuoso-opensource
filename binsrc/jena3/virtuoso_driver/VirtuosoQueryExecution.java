@@ -208,7 +208,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
@@ -263,7 +262,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
                 Node p = VirtGraph.Object2Node(rs.getObject(2));
@@ -317,7 +315,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 if (rs.getInt(1) == 1)

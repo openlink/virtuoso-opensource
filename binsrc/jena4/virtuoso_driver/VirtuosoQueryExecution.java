@@ -46,7 +46,6 @@ import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.engine.binding.BindingBuilder;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingLib;
-import org.apache.jena.sparql.engine.iterator.QueryIterConcat;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.core.ResultBinding;
 import org.apache.jena.sparql.util.Context;
@@ -56,10 +55,8 @@ import org.apache.jena.query.*;
 
 import java.util.concurrent.TimeUnit;
 
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoQueryExecution implements QueryExecution {
-    private QueryIterConcat output = null;
     private String virt_graph = null;
     private VirtGraph graph;
     private String virt_query;
@@ -84,7 +81,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
 
     public ResultSet execSelect() {
-        ResultSet ret = null;
 
         try {
             stmt = graph.createStatement(false);
@@ -219,7 +215,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
@@ -274,7 +269,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
                 Node p = VirtGraph.Object2Node(rs.getObject(2));
@@ -328,7 +322,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 if (rs.getInt(1) == 1)
@@ -597,7 +590,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
         }
 
         public List<String> getResultVars() {
-            List<String> lst = new ArrayList();
+            List<String> lst = new ArrayList<String>();
             int i = (virt_graph != null && !virt_graph.equals("virt:DEFAULT")) ? 0 : 1;
 
             for( ; i < cols.length; i++) 

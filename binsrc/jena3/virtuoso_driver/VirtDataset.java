@@ -567,7 +567,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
                 vd.add(graphName.toString(), it, null);
             } catch (Exception e) {
-                throw new JenaException("Error in addGraph:" + e);
+                throw new JenaException("Error in addGraph", e);
             }
         }
 
@@ -578,7 +578,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 vd.clear(graphName);
             } catch (Exception e) {
-                throw new JenaException("Error in removeGraph:" + e);
+                throw new JenaException("Error in removeGraph", e);
             }
         }
 
