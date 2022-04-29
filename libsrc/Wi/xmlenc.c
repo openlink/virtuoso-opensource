@@ -3110,6 +3110,84 @@ dbg_hash_tables (void)
 }
 #endif
 
+
+#define __ok(FUN)	ok = ok && (1 == FUN)
+#define __0k(FUN)	ok = ok && (0 == FUN)
+
+#define __ok_signal_error(_fn) \
+    if (!ok) \
+      do { \
+	unsigned long err = ERR_get_error (); \
+	char err_buf[1024]; \
+	ERR_error_string_n (err, err_buf, sizeof (err_buf)); \
+	*err_ret = srv_make_new_error ("42000", "XECK1","%s: [%s]", _fn, err_buf); \
+      } while(0)
+
+static caddr_t
+bif_xenc_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static char *me = "xenc_digest";
+  unsigned int len, md_len;
+  caddr_t str = bif_string_or_bin_arg (qst, args, 0, me, &len);
+  caddr_t digest = NULL, digest_name = bif_string_arg (qst, args, 1, me);
+  unsigned char md_value[EVP_MAX_MD_SIZE];
+  EVP_MD_CTX *ctx;
+  const EVP_MD *md = EVP_get_digestbyname (digest_name);
+  int ok = 1;
+
+  if (!md)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
+
+  if ((ctx = EVP_MD_CTX_new ()) == NULL)
+    sqlr_new_error ("42000", "XECXX", "Cannot allocate EVP_MD context");
+
+  __ok (EVP_DigestInit_ex (ctx, md, NULL));
+  __ok (EVP_DigestUpdate (ctx, str, len));
+  __ok (EVP_DigestFinal_ex (ctx, md_value, &md_len));
+
+  EVP_MD_CTX_free (ctx);
+
+  __ok_signal_error (me);
+
+  digest = dk_alloc_box (md_len, DV_BIN);
+  if (digest)
+    memcpy (digest, md_value, md_len);
+  return digest ? digest : NEW_DB_NULL;
+}
+
+static caddr_t
+bif_xenc_hmac_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  static const char *me = "xenc_hmac_digest";
+  unsigned int len, hmac_len, key_len;
+  caddr_t data = bif_string_or_bin_arg (qst, args, 0, me, &len);
+  caddr_t key_data = bif_string_or_bin_arg (qst, args, 1, me, &key_len);
+  caddr_t result = NULL, digest_name = bif_string_arg (qst, args, 2, me);
+  unsigned char hmac_value[EVP_MAX_MD_SIZE];
+  const EVP_MD *digest = EVP_get_digestbyname (digest_name);
+  HMAC_CTX *ctx;
+  int ok = 1;
+
+  if (!digest)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
+
+  if ((ctx = HMAC_CTX_new ()) == NULL)
+    sqlr_new_error ("42000", "XECXX", "Cannot allocate HMAC context");
+
+  __ok (HMAC_Init_ex (ctx, (void *) key_data, key_len, digest, NULL));
+  __ok (HMAC_Update (ctx, data, len));
+  __ok (HMAC_Final (ctx, hmac_value, &hmac_len));
+
+  HMAC_CTX_free (ctx);
+
+  __ok_signal_error (me);
+
+  result = dk_alloc_box (hmac_len, DV_BIN);
+  if (result)
+    memcpy (result, hmac_value, hmac_len);
+  return result ? result : NEW_DB_NULL;
+}
+
 void
 xenc_set_serialization_ctx (caddr_t try_ns_spec, wsse_ser_ctx_t * sctx)
 {
@@ -7831,6 +7909,8 @@ void bif_xmlenc_init ()
   bif_define ("x509_ca_cert_add", bif_xenc_x509_ca_cert_add);
   bif_define ("x509_ca_certs_remove", bif_xenc_x509_ca_certs_remove);
   bif_define ("xenc_x509_ca_certs_list", bif_xenc_x509_ca_certs_list);
+  bif_define ("xenc_digest", bif_xenc_digest);
+  bif_define ("xenc_hmac_digest", bif_xenc_hmac_digest);
 
   xenc_cert_X509_idx = ecm_find_name ("X.509", (void*)xenc_cert_types, xenc_cert_types_len,
 					 sizeof (xenc_cert_type_t));
