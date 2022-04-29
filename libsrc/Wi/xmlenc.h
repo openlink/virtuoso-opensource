@@ -58,12 +58,10 @@
 
 /* uris */
 /* from Web Services Security Addendum */
-#if 0
-#define WSS_SOAP_URI	"http://www.w3.org/2001/12/soap-envelope"
-#else
 #define WSS_SOAP_URI	SOAP_URI (11)
-#endif
+			/* 0123456789012345678901234567890123 */
 #define WSS_DSIG_URI	  "http://www.w3.org/2000/09/xmldsig#"
+#define WSS_DSIG_URI_LEN  34
 #define WSS_XENC_URI	  "http://www.w3.org/2001/04/xmlenc#"
 #define WSS_M_URI	  "http://schemas.xmlsoap.org/rp"
 
@@ -82,6 +80,7 @@
 
 #define XENC_URI WSS_XENC_URI
 #define DSIG_URI WSS_DSIG_URI
+#define DSIG_URI_LEN WSS_DSIG_URI_LEN
 
 /* aliases */
 #define WSSE_URI(sctx) (sctx ? wsse_uris[(sctx)->wsc_wsse] : WSS_WSS_URI)

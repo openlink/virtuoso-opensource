@@ -302,6 +302,8 @@ int add_algo_to_store (algo_store_t * s, const char * xmln, void * f)
 
 int dsig_key_algo_create (const char* xmln, DSIG_KEY_TYPE kt)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("key"), xmln + DSIG_URI_LEN, (void *) kt);
   return add_algo_to_store (select_store ("key"), xmln, (void *) kt);
 }
 
@@ -312,10 +314,14 @@ int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 
 int dsig_sign_algo_create (const char * xmln, dsig_sign_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("dsig"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("dsig"), xmln, (void *) f);
 }
 int dsig_verify_algo_create (const char * xmln, dsig_verify_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("verify"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("verify"), xmln, (void *) f);
 }
 
