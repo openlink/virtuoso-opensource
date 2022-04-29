@@ -279,6 +279,15 @@ typedef struct u_tok_s
 
 typedef uuid_t * xenc_id_t;
 
+# define AES_KEY_SZ_128 16
+# define AES_KEY_SZ_192 24
+# define AES_KEY_SZ_256 32
+# define AES_IV_LEN     16
+
+# define AES_KEY_SERIAL_LEN_128 33	/* + 1 to do not overlap with raw key material len */
+# define AES_KEY_SERIAL_LEN_192 41
+# define AES_KEY_SERIAL_LEN_256 49
+
 #define xek_rsa ki.rsa.rsa_st
 #define xek_private_rsa ki.rsa.private_rsa_st
 #define xek_dsa ki.dsa.dsa_st

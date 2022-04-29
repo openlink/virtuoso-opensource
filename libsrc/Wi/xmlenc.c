@@ -2677,7 +2677,12 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     }
   else if (k->xek_type == DSIG_KEY_AES)
     {
+      static const char zero[AES_IV_LEN];
       len = k->ki.aes.bits / 8;
+      if (pub && memcmp (&k->ki.aes.iv[0], &zero[0], AES_IV_LEN))
+        len += AES_IV_LEN + 1;
+      else
+        pub = 0; /* IV not initialized, do not serialize */
     }
   else
     return NEW_DB_NULL;
@@ -2715,7 +2720,13 @@ caddr_t bif_xenc_key_serialize (caddr_t * qst, caddr_t * err_r, state_slot_t ** 
     }
   else if (k->xek_type == DSIG_KEY_AES)
     {
-      memcpy (in_buf, k->ki.aes.k, len);
+      memcpy (in_buf, k->ki.aes.k, k->ki.aes.bits / 8);
+      if (pub)
+        {
+          uint8 lb = k->ki.aes.k[(k->ki.aes.bits / 8) - 1];
+          memcpy (in_buf + (k->ki.aes.bits / 8), k->ki.aes.iv, AES_IV_LEN);
+          in_buf[len - 1] = lb % 2 ? 0x03 : 0x02;
+        }
     }
   else
     GPF_T;
