@@ -6463,7 +6463,8 @@ static caddr_t
 bif_xenc_dsig_signature (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "xenc_dsig_signature";
-  caddr_t  text = bif_string_arg (qst, args, 0, me);
+  unsigned int len;
+  caddr_t text = bif_string_or_bin_arg (qst, args, 0, me, &len);
   caddr_t name = bif_string_arg (qst, args, 1, me);
   caddr_t signature_method = bif_string_arg (qst, args, 2, me);
   xenc_key_t * key = xenc_get_key_by_name (name, 1);
@@ -6471,7 +6472,7 @@ bif_xenc_dsig_signature (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t signval;
   dk_session_t * ses;
   ses = strses_allocate ();
-  session_buffered_write (ses, text, box_length (text) - 1);
+  session_buffered_write (ses, text, len);
   if (!sign_f || !(sign_f) (ses, strses_length(ses), key, &signval))
     signval = NEW_DB_NULL;
   dk_free_box (ses);
@@ -6482,7 +6483,8 @@ static caddr_t
 bif_xenc_dsig_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char * me = "xenc_dsig_verify";
-  caddr_t  text = bif_string_arg (qst, args, 0, me);
+  unsigned int len;
+  caddr_t text = bif_string_or_bin_arg (qst, args, 0, me, &len);
   caddr_t name = bif_string_arg (qst, args, 1, me);
   caddr_t signature_method = bif_string_arg (qst, args, 2, me);
   caddr_t signval = bif_string_arg (qst, args, 3, me);
@@ -6492,7 +6494,7 @@ bif_xenc_dsig_verify (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   dk_session_t * ses;
   ses = strses_allocate ();
-  session_buffered_write (ses, text, box_length (text) - 1);
+  session_buffered_write (ses, text, len);
   if (!verify_f || !(verify_f) (ses, strses_length(ses), key, signval))
     rc = box_num (0);
   else
