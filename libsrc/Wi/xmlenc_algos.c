@@ -2094,6 +2094,11 @@ xenc_rsa_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
       xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not RSA]", key->xek_name);
       return 0;
     }
+  if (NULL == rsa)
+    {
+      xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not Private]", key->xek_name);
+      return 0;
+    }
   RSA_get0_factors(rsa, &p, &q);
   if (!rsa ||
       !p || !q)
