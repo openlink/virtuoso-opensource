@@ -6522,12 +6522,12 @@ bif_xenc_hmac_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   return res;
 }
 
-static int x509_add_ext (X509 *cert, int nid, char *value)
+static int x509_add_ext (X509 *issuer, X509 *cert, int nid, char *value)
 {
   X509_EXTENSION *ex;
   X509V3_CTX ctx;
   X509V3_set_ctx_nodb (&ctx);
-  X509V3_set_ctx (&ctx, cert, cert, NULL, NULL, 0);
+  X509V3_set_ctx (&ctx, issuer, cert, NULL, NULL, 0);
   ex = X509V3_EXT_conf_nid (NULL, &ctx, nid, value);
   if (!ex)
     return 0;
@@ -6536,14 +6536,76 @@ static int x509_add_ext (X509 *cert, int nid, char *value)
   return 1;
 }
 
-static void
-x509_add_custom (X509 * x, ccaddr_t n, ccaddr_t v)
+static caddr_t
+der_bin2hex (caddr_t bin)
 {
-  int nid = OBJ_create (n, n, n);
-  X509V3_EXT_add_alias (nid, NID_netscape_comment);
-  x509_add_ext (x, nid, (char *) v);
+  caddr_t out;
+  uint32 inx, len;
+  char tmp[3];
+
+  if (DV_BIN == DV_TYPE_OF (bin))
+    len = box_length (bin);
+  else
+    len = box_length (bin) - 1;
+  out = dk_alloc_box (2 * len + 4 /*DER:*/ + 1, DV_SHORT_STRING);
+  out[0] = 0;
+  strcat_box_ck (out, "DER:");
+  for (inx = 0; inx < len; inx++)
+    {
+      snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) bin[inx]);
+      strcat_box_ck (out, tmp);
+    }
+  return out;
 }
 
+static
+int x509_add_binbox_ext (X509 *issuer, X509 *x, ccaddr_t ext, ccaddr_t v)
+{
+  int nid = OBJ_sn2nid (ext);
+  X509_EXTENSION *extension = NULL;
+  dtp_t dtp = DV_TYPE_OF (v);
+  X509V3_CTX ctx;
+  caddr_t value = v;
+
+  if (dtp != DV_BIN && !IS_STRING_DTP (dtp))
+    goto err;
+
+  if (nid == NID_undef)
+    nid = OBJ_create (ext, ext /*short*/, ext /*long name*/);
+
+  if (dtp == DV_BIN)
+    value = der_bin2hex (v);
+
+  X509V3_set_ctx_nodb (&ctx);
+  X509V3_set_ctx (&ctx, issuer, x, NULL, NULL, 0);
+  extension = X509V3_EXT_conf_nid (NULL, &ctx, nid, value);
+  if (1 != (X509_add_ext(x, extension, -1)))
+    goto err;
+  X509_EXTENSION_free(extension);
+  if (v != value) dk_free_box (value);
+  return 1;
+err:
+  if (extension) X509_EXTENSION_free (extension);
+  if (v != value) dk_free_box (value);
+  return 0;
+}
+
+static void
+x509_add_extensions_from_vector (X509 *issuer, X509 *x, caddr_t ** exts)
+{
+  int i;
+  for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
+    {
+      int nid;
+      caddr_t ext = exts[i];
+      caddr_t val = exts[i + 1];
+      dtp_t dtp = DV_TYPE_OF (val);
+
+      if (!DV_STRINGP (ext) || (!DV_STRINGP (val) && DV_BIN != dtp) || box_length (val) < 2)
+	continue;
+      x509_add_binbox_ext (issuer, x, ext, val);
+    }
+}
 
 static caddr_t
 bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -6657,23 +6719,8 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   X509_set_issuer_name(x,X509_NAME_dup (X509_get_subject_name (ca_key->xek_x509)));
 
   /* Add standard extensions */
-  x509_add_ext (x, NID_subject_key_identifier, "hash");
-
-  for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
-    {
-      int nid;
-      if (!DV_STRINGP (exts[i]) || !DV_STRINGP (exts[i + 1]) || box_length (exts[i + 1]) < 2)
-	continue;
-      nid = OBJ_sn2nid (exts[i]);
-      if (nid == NID_undef)
-	{
-	  x509_add_custom (x, exts[i], exts[i+1]);
-	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
-	  continue;
-	}
-      x509_add_ext (x, nid, exts[i+1]);
-    }
-
+  x509_add_ext (ca_key->xek_x509, x, NID_subject_key_identifier, "hash");
+  x509_add_extensions_from_vector (ca_key->xek_x509, x, exts);
   if (!X509_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
@@ -6805,23 +6852,8 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   X509_set_issuer_name(x,name);
 
   /* Add standard extensions */
-  x509_add_ext (x, NID_subject_key_identifier, "hash");
-
-  for (i = 0; i < BOX_ELEMENTS (exts); i += 2)
-    {
-      int nid;
-      if (!DV_STRINGP (exts[i]) || !DV_STRINGP (exts[i + 1]) || box_length (exts[i + 1]) < 2)
-	continue;
-      nid = OBJ_sn2nid (exts[i]);
-      if (nid == NID_undef)
-	{
-	  x509_add_custom (x, exts[i], exts[i+1]);
-	  sqlr_warning ("01V01", "QW001", "Unknown extension entry %s", exts[i]);
-	  continue;
-	}
-      x509_add_ext (x, nid, exts[i+1]);
-    }
-
+  x509_add_ext (x, x, NID_subject_key_identifier, "hash");
+  x509_add_extensions_from_vector (x, x, exts);
   if (!X509_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
@@ -7080,7 +7112,8 @@ bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   X509_set_issuer_name(x, X509_NAME_dup (X509_get_subject_name (ca_key->xek_x509)));
 
   /* Add standard extensions */
-  x509_add_ext (x, NID_subject_key_identifier, "hash");
+  x509_add_ext (ca_key->xek_x509, x, NID_subject_key_identifier, "hash");
+  x509_add_ext (ca_key->xek_x509, x, NID_authority_key_identifier, "keyid,issuer:always");
   exts = X509_REQ_get_extensions (req);
   for (i = 0; i < sk_X509_EXTENSION_num (exts); i++)
     {
