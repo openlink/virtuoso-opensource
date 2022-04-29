@@ -271,6 +271,20 @@ bif_string_or_wide_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, c
 }
 
 
+caddr_t
+bif_string_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *len)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp != DV_BIN && !IS_STRING_DTP (dtp))
+    sqlr_new_error ("22023", "SR005", "Function %s needs a string or binary as argument %d, not an arg of type %s (%d)",
+        func, nth + 1, dv_type_title (dtp), dtp);
+  *len = box_length (arg);
+  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
+    --*len;
+  return arg;
+}
+
 dk_session_t *
 bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
 {
