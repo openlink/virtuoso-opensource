@@ -52,7 +52,7 @@ into the VOS 6.0 database. Contact us at <vos.admin@openlinksw.com>
 for more info.
 
 If you attempt to start a VOS 5.0 database with a VOS 6.0 server, the 
-server will print the following message ans refuses to start the
+server will print the following message and refuses to start the
 database:
 
     The database you are opening was last closed with a server of
