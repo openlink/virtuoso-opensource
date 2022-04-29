@@ -6722,7 +6722,7 @@ bif_xenc_x509_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   for (i = 0; i < BOX_ELEMENTS (subj); i += 2)
     {
       if (DV_STRINGP (subj[i]) && DV_STRINGP (subj[i + 1]) && box_length (subj[i + 1]) > 1 &&
-	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_ASC, (unsigned char *) subj[i+1], -1, -1, 0))
+	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_UTF8, (unsigned char *) subj[i+1], -1, -1, 0))
 	{
 	  sqlr_warning ("01V01", "QW001", "Unknown name entry %s", subj[i]);
 	}
@@ -6855,7 +6855,7 @@ bif_xenc_x509_ss_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
   for (i = 0; i < BOX_ELEMENTS (subj); i += 2)
     {
       if (DV_STRINGP (subj[i]) && DV_STRINGP (subj[i + 1]) && box_length (subj[i + 1]) > 1 &&
-	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_ASC, (unsigned char *) subj[i+1], -1, -1, 0))
+	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_UTF8, (unsigned char *) subj[i+1], -1, -1, 0))
 	{
 	  sqlr_warning ("01V01", "QW001", "Unknown name entry %s", subj[i]);
 	}
