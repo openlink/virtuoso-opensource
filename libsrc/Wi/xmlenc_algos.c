@@ -625,7 +625,7 @@ xml_c_nss_hash_add_item (id_hash_t * novo, id_hash_t * nss, caddr_t * tree, xml_
   caddr_t *namespaces;
   int inx;
 
-  if (!DV_TYPE_OF (tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
 
   namespaces = xenc_get_namespaces (tree, nss);
@@ -683,7 +683,7 @@ id_hash_t * xml_c_nss_hash_create (caddr_t * select_tree, id_hash_t * nss,
   int inx;
   dk_set_t pexc_list = 0;
 
-  if (!DV_TYPE_OF (select_tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (select_tree) != DV_ARRAY_OF_POINTER)
     return new_h;
 
   xml_c_namespaces_sort (new_namespaces);
