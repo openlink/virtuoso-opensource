@@ -6876,10 +6876,11 @@ err:
 static caddr_t
 bif_xenc_x509_csr_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char * me = "xenc_x509_csr_generate";
+  static const char *me = "xenc_x509_csr_generate";
   caddr_t key_name = bif_string_arg (qst, args, 0, me);
   caddr_t * subj = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 1, me);
   caddr_t * exts = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 2, me);
+  caddr_t digest_name = BOX_ELEMENTS (args) > 3 ? bif_string_arg (qst, args, 3, me) : DEFAULT_SHA_DIGEST;
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509_REQ *x = NULL;
   EVP_PKEY *pk = NULL;
@@ -6893,21 +6894,28 @@ bif_xenc_x509_csr_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   int len;
   caddr_t ret = NULL;
   STACK_OF(X509_EXTENSION) *st_exts = NULL;
+  const EVP_MD *digest = EVP_get_digestbyname (digest_name);
 
+  if (!digest)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
   if (!key)
     {
       *err_ret = srv_make_new_error ("22023", "XECXX", "Missing key");
       goto err;
     }
 
-  if (key->xek_type != DSIG_KEY_RSA && key->xek_type != DSIG_KEY_DSA)
+  switch (key->xek_type)
     {
+      case DSIG_KEY_RSA:
+          rsa = key->xek_private_rsa;
+          break;
+      case DSIG_KEY_DSA:
+          dsa = key->xek_private_dsa;
+          break;
+      default:
       *err_ret = srv_make_new_error ("22023", "XECXX", "Key is not DSA nor RSA");
       goto err;
     }
-
-  rsa = key->xek_type == DSIG_KEY_RSA ? key->xek_private_rsa : NULL;
-  dsa = key->xek_type == DSIG_KEY_DSA ? key->xek_private_dsa : NULL;
 
   if (!rsa && !dsa)
     {
@@ -6965,7 +6973,7 @@ bif_xenc_x509_csr_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   for (i = 0; i < BOX_ELEMENTS (subj); i += 2)
     {
       if (DV_STRINGP (subj[i]) && DV_STRINGP (subj[i + 1]) && box_length (subj[i + 1]) > 1 &&
-	  0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_ASC, (unsigned char *) subj[i+1], -1, -1, 0))
+          0 == X509_NAME_add_entry_by_txt (name, subj[i], MBSTRING_UTF8, (unsigned char *) subj[i+1], -1, -1, 0))
 	{
 	  sqlr_warning ("01V01", "QW001", "Unknown name entry %s", subj[i]);
 	}
@@ -6988,7 +6996,7 @@ bif_xenc_x509_csr_generate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 	sk_X509_EXTENSION_push(st_exts, ex);
     }
   X509_REQ_add_extensions(x, st_exts);
-  if (!X509_REQ_sign (x, pk, (EVP_PKEY_id(pk) == EVP_PKEY_RSA ? EVP_md5() : EVP_sha1())))
+  if (!X509_REQ_sign (x, pk, digest))
     {
       pk = NULL; /* keep one in the xenc_key */
       *err_ret = srv_make_new_error ("42000", "XECXX", "Can not sign certificate : %s", get_ssl_error_text (buf, sizeof (buf)));
@@ -7018,7 +7026,7 @@ err:
 static caddr_t
 bif_xenc_x509_from_csr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char * me = "xenc_x509_from_csr";
+  static const char *me = "xenc_x509_from_csr";
   caddr_t key_name = bif_string_arg (qst, args, 0, me);
   caddr_t cli_name = bif_string_arg (qst, args, 1, me);
   caddr_t csr_str  = bif_string_arg (qst, args, 2, me);
