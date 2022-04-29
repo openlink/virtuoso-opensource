@@ -115,6 +115,7 @@ static algo_store_t algo_stores[] = {
   {"canon_2", NULL},
   {"digest", NULL},
   {"dsig", NULL},
+  {"key", NULL},
   {"trans", NULL},
   {"verify", NULL}
 };
@@ -298,6 +299,11 @@ int add_algo_to_store (algo_store_t * s, const char * xmln, void * f)
    post: if algo in store, returns algo
 	else GPF
 */
+
+int dsig_key_algo_create (const char* xmln, DSIG_KEY_TYPE kt)
+{
+  return add_algo_to_store (select_store ("key"), xmln, (void *) kt);
+}
 
 int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 {
@@ -1369,7 +1375,7 @@ dsig_dsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA1_Final(&(md[0]),&ctx);
 
   i = DSA_verify (NID_sha1, md, SHA_DIGEST_LENGTH, sig, siglen, key->ki.dsa.dsa_st);
-  return i;
+  return (1 == i);
 }
 
 int
@@ -1489,7 +1495,7 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   dk_free_box ((box_t) sig);
 
-  return i;
+  return (1 == i);
 }
 
 #ifdef SHA256_ENABLE
@@ -3014,6 +3020,17 @@ generate_algo_accessor (canon_2, "canon_2")
 generate_algo_accessor (digest, "digest")
 generate_algo_accessor (transform, "trans")
 
+DSIG_KEY_TYPE 
+dsig_key_algo_get (const char * xmln)
+{
+  xxx_algo_t ** kt;
+  if (!xmln) xmln = "[unknown]";
+  kt = (xxx_algo_t **) id_hash_get (select_store ("key")->dat_hash, (caddr_t) & xmln);
+  if (!kt) 
+    return 0;
+  return (ptrlong)(kt[0]->func);
+}
+
 
 void algo_stores_init ()
 {
@@ -3051,6 +3068,22 @@ void dsig_sec_init ()
 #ifdef DEBUG
   log_info ("dsig_sec_init()");
 #endif
+
+  /* algo key type support */
+  dsig_key_algo_create (DSIG_RSA_SHA1_ALGO, DSIG_KEY_RSA);
+  dsig_key_algo_create (DSIG_RSA_SHA256_ALGO, DSIG_KEY_RSA);
+
+  dsig_key_algo_create (DSIG_DSA_SHA1_ALGO, DSIG_KEY_DSA);
+
+  dsig_key_algo_create (DSIG_DH_SHA1_ALGO, DSIG_KEY_DH);
+  dsig_key_algo_create (DSIG_DH_SHA256_ALGO, DSIG_KEY_DH);
+
+  dsig_key_algo_create (DSIG_HMAC_SHA1_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create (DSIG_HMAC_SHA256_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha1", DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha256", DSIG_KEY_RAW);
+  /* end type support */
+
   dsig_digest_algo_create (DSIG_SHA1_ALGO, dsig_sha1_digest);
 
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);
