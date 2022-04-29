@@ -1253,6 +1253,12 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
+	  break;
       default:
 	  return 0;
     }
@@ -1697,6 +1703,12 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
+	  break;
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
 	  break;
       default:
 	  return 0;
