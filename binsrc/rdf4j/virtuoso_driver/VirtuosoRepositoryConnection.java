@@ -279,7 +279,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public Query prepareQuery(QueryLanguage ql, String query, String baseURI) throws RepositoryException, MalformedQueryException {
         if (ql != QueryLanguage.SPARQL)
-            throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+            throw new UnsupportedQueryLanguageException("Only SPARQL queries are supported");
 
         StringTokenizer st = new StringTokenizer(query);
         String type = null;
@@ -346,7 +346,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public TupleQuery prepareTupleQuery(QueryLanguage ql, final String query, final String baseURI) throws RepositoryException, MalformedQueryException {
         if (ql != QueryLanguage.SPARQL)
-            throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+            throw new UnsupportedQueryLanguageException("Only SPARQL queries are supported");
 
         return new VirtuosoTupleQuery() {
             public TupleQueryResult evaluate() throws QueryEvaluationException {
@@ -400,7 +400,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public GraphQuery prepareGraphQuery(QueryLanguage ql, final String query, final String baseURI) throws RepositoryException, MalformedQueryException {
         if (ql != QueryLanguage.SPARQL)
-            throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+            throw new UnsupportedQueryLanguageException("Only SPARQL queries are supported");
 
         return new VirtuosoGraphQuery() {
             public GraphQueryResult evaluate() throws QueryEvaluationException {
@@ -454,7 +454,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public BooleanQuery prepareBooleanQuery(QueryLanguage ql, final String query, final String baseURI) throws RepositoryException, MalformedQueryException {
         if (ql != QueryLanguage.SPARQL)
-            throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+            throw new UnsupportedQueryLanguageException("Only SPARQL queries are supported");
 
         return new VirtuosoBooleanQuery() {
             public boolean evaluate() throws QueryEvaluationException {
@@ -469,7 +469,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     public Update prepareUpdate(QueryLanguage ql, final String query, final String baseURI) throws RepositoryException, MalformedQueryException {
         if (ql != QueryLanguage.SPARQL)
-            throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
+            throw new UnsupportedQueryLanguageException("Only SPARQL queries are supported");
 
         return new VirtuosoUpdate() {
             public void execute() throws UpdateExecutionException {
@@ -512,7 +512,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             rs.close();
         }
         catch (Exception e) {
-            throw new RepositoryException(": SPARQL execute failed." + "\n" + query, e);
+            throw new RepositoryException("SPARQL execute failed." + "\n" + query, e);
         }
         finally {
           if (stmt != null)
@@ -731,7 +731,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             rs.close();
         }
         catch (Exception e) {
-            throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new RepositoryException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (st != null)
@@ -765,7 +765,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return result;
         }
         catch (Exception e) {
-            throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new RepositoryException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (stmt != null)
@@ -1968,7 +1968,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return new IteratingTupleQueryResult(names, new CloseableIterationBindingSet(stmt, rs));
         }
         catch (Exception e) {
-            throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new QueryEvaluationException("SPARQL execute failed:["+query+"]", e);
         }
     }
 
@@ -1990,7 +1990,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return new IteratingGraphQueryResult(new HashMap<String,String>(), new CloseableIterationGraphResult(stmt, rs));
         }
         catch (Exception e) {
-            throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new QueryEvaluationException("SPARQL execute failed:["+query+"]", e);
         }
 
     }
@@ -2015,7 +2015,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return result;
         }
         catch (Exception e) {
-            throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new QueryEvaluationException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (stmt != null)
@@ -2058,7 +2058,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             tqrh.endQueryResult();
         }
         catch (Exception e) {
-            throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new QueryEvaluationException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (stmt != null)
@@ -2121,7 +2121,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             tqrh.endRDF();
         }
         catch (Exception e) {
-            throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new QueryEvaluationException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (stmt != null)
@@ -2155,7 +2155,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             stmt.execute();
         }
         catch (Exception e) {
-            throw new UpdateExecutionException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new UpdateExecutionException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
           if (stmt != null)
@@ -2187,7 +2187,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return stmt.getUpdateCount();
         }
         catch (SQLException e) {
-            throw new RepositoryException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
+            throw new RepositoryException("SPARQL execute failed:["+query+"]", e);
         }
         finally {
             try {
@@ -3089,7 +3089,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             rs = ps.executeQuery();
         }
         catch (Exception e) {
-            throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString() + "[" + e + "]", e);
+            throw new RepositoryException(getClass().getCanonicalName() + ": SPARQL execute failed." + "\n" + query.toString(), e);
         }
 
         return new CloseableIterationStmt(ps, rs, subject, predicate, object);

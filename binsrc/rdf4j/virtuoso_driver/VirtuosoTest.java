@@ -22,7 +22,7 @@
  */
 
 
-//package virtuoso.sesame.driver;
+//package virtuoso.rdf4j.driver;
 
 import java.io.File;
 import java.io.FileOutputStream;
