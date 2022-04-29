@@ -1310,8 +1310,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1335,6 +1335,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = DSA_size (key->xek_private_dsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   DSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->ki.dsa.dsa_st);
 
   if (sign_out)
@@ -1345,6 +1347,7 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1410,8 +1413,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1422,7 +1425,6 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   if (!key->xek_private_rsa)
     return 0;
-
   memset (md, 0, sizeof (md));
   SHA1_Init(&ctx);
 
@@ -1442,6 +1444,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1453,6 +1457,7 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1517,8 +1522,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
   SHA256_CTX ctx;
   unsigned char md[SHA256_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1549,6 +1554,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
 
   SHA256_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign (NID_sha256, md, SHA256_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1560,6 +1567,7 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
