@@ -2070,6 +2070,13 @@ int __xenc_key_dsa_init (char *name, int lock, int num)
     }
   pkey->xek_dsa = dsa;
   pkey->xek_private_dsa = dsa;
+
+  pkey->xek_evp_private_key = EVP_PKEY_new ();
+  if (pkey->xek_evp_private_key)
+    EVP_PKEY_assign_DSA (pkey->xek_evp_private_key, dsa);
+  pkey->xek_evp_key = EVP_PKEY_new ();
+  if (pkey->xek_evp_key)
+    EVP_PKEY_assign_DSA (pkey->xek_evp_key, dsa);
   return 0;
 }
 
@@ -2411,17 +2418,17 @@ bif_xenc_key_dsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   xenc_key_t * k;
   int len, is_private = 1;
   const unsigned char * key_base64 = (unsigned char *)box_copy (key_data);
-  DSA *r;
+  DSA *dsa;
 
   len = xenc_decode_base64 ((char *)key_base64, (char *)(key_base64 + box_length (key_base64)));
-  r = d2i_DSAPrivateKey (NULL, &key_base64, len);
-  if (!r)
+  dsa = d2i_DSAPrivateKey (NULL, &key_base64, len);
+  if (!dsa)
     {
-      r = d2i_DSAPublicKey (NULL, &key_base64, len);
+      dsa = d2i_DSAPublicKey (NULL, &key_base64, len);
       is_private = 0;
     }
 
-  if (!r)
+  if (!dsa)
     sqlr_new_error ("42000", "XENC05", "Cannot import the supplied DSA key");
 
   mutex_enter (xenc_keys_mtx);
@@ -2432,8 +2439,20 @@ bif_xenc_key_dsa_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
       SQLR_NEW_KEY_EXIST_ERROR (name);
     }
   if (is_private)
-    k->xek_private_dsa = r;
-  k->xek_dsa = r;
+    k->xek_private_dsa = dsa;
+  k->xek_dsa = dsa;
+
+  if (is_private)
+    {
+      k->xek_evp_private_key = EVP_PKEY_new ();
+      if (k->xek_evp_private_key)
+        EVP_PKEY_assign_DSA (k->xek_evp_private_key, dsa);
+    }
+
+  k->xek_evp_key = EVP_PKEY_new ();
+  if (k->xek_evp_key)
+    EVP_PKEY_assign_DSA (k->xek_evp_key, dsa);
+
   mutex_leave (xenc_keys_mtx);
   return box_dv_short_string (k->xek_name);
 }
