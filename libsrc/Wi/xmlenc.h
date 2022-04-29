@@ -581,7 +581,7 @@ caddr_t wsse_get_content_val (caddr_t * curr);
 #endif
 
 
-xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd);
+xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const unsigned char * pwd, const char * digest_name);
 void xenc_key_remove (xenc_key_t * key, int lock);
 int __xenc_key_dsa_init (char *name, int lock, int num);
 int __xenc_key_dh_init (char *name, int lock);

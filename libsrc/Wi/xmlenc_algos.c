@@ -2531,7 +2531,7 @@ void xenc_alloc_cbc_box_test()
 void xenc_aes_enctest_1 (const char * data)
 {
   unsigned char key_data[16] = "0123456789ABCDEF";
-  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data);
+  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data, "sha512");
   dk_session_t *in, *out;
   xenc_try_block_t t;
 

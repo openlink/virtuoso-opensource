@@ -2450,6 +2450,32 @@ bif_xenc_get_key_algo (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
     return NEW_DB_NULL;
 }
 
+static caddr_t
+bif_xenc_get_key_type (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
+{
+  caddr_t name = bif_key_name_arg (qst, args, 0, "xenc_get_key_type");
+  xenc_key_t * key;
+  char * v;
+  key = xenc_get_key_by_name (name, 1);
+  if (key)
+    {
+      switch (key->xek_type)
+        {
+          case DSIG_KEY_RSA: v = "RSA"; break;
+          case DSIG_KEY_DSA: v = "DSA"; break;
+          case DSIG_KEY_3DES: v = "3DES"; break;
+          case DSIG_KEY_AES: v = "AES"; break;
+          case DSIG_KEY_KERBEROS: v = "KERBEROS"; break;
+          case DSIG_KEY_DH: v = "DH"; break;
+          case DSIG_KEY_RAW: v = "RAW"; break;
+          default: v = "UNKNOWN";
+        }
+      return box_dv_short_string (v);
+    }
+  else
+    return NEW_DB_NULL;
+}
+
 static
 caddr_t bif_xenc_key_raw_read (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
 {
@@ -2741,12 +2767,16 @@ caddr_t bif_xenc_x509_cert_serialize (caddr_t * qst, caddr_t * err_r, state_slot
   return ret;
 }
 
-xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd)
+xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const unsigned char * pwd, const char *digest_name)
 {
   char _key[KEYSIZB+1];
   xenc_key_t * k;
   const char * algoname;
   const EVP_CIPHER * cipher;
+  const EVP_MD *md =  EVP_get_digestbyname (digest_name);
+
+  if (!md)
+    sqlr_new_error ("42000", "XECXX", "Cannot find digest %s", digest_name);
 
   strncpy(_key, pwd, KEYSIZB);
 
@@ -2777,7 +2807,7 @@ xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pw
   k->ki.aes.k = (unsigned char *) dk_alloc (keylen / 8 /* number of bits in a byte */);
   k->ki.aes.bits = keylen;
 
-  EVP_BytesToKey(cipher,EVP_md5(),
+  EVP_BytesToKey(cipher, md,
 		 NULL,
 		 (unsigned char *) _key,
 		 strlen(_key), 1, (unsigned char*) k->ki.aes.k, k->ki.aes.iv);
@@ -2791,9 +2821,10 @@ caddr_t bif_xenc_key_aes_create (caddr_t * qst, caddr_t * err_r, state_slot_t **
   char * name = bif_key_name_arg (qst, args, 0, "xenc_key_aes_create");
   long bits = bif_long_arg (qst, args, 1, "xenc_key_aes_create");
   char * pwd = bif_string_arg (qst, args, 2, "xenc_key_aes_create");
+  const char * md = BOX_ELEMENTS (args) > 3 ? bif_string_arg (qst, args, 3, "xenc_key_aes_create") : "sha512";
   xenc_key_t * k;
 
-  k = xenc_key_aes_create (name, bits, pwd);
+  k = xenc_key_aes_create (name, bits, pwd, md);
 
   return box_dv_short_string (k->xek_name);
 }
@@ -2803,6 +2834,7 @@ caddr_t bif_xenc_key_aes_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
 {
   char * name = bif_key_name_arg (qst, args, 0, "xenc_key_aes_rnd_create");
   long bits = bif_long_arg (qst, args, 1, "xenc_key_aes_rnd_create");
+  const char * md = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 3, "xenc_key_aes_rand_create") : "sha512";
   xenc_key_t * k;
   int rc;
   unsigned char buf[KEYSIZB];
@@ -2810,7 +2842,7 @@ caddr_t bif_xenc_key_aes_rand_create (caddr_t * qst, caddr_t * err_r, state_slot
   rc = RAND_bytes(buf, sizeof (buf));
   if (rc <= 0)
     sqlr_new_error ("42000", "XENC14", "Cannot generate key data");
-  k = xenc_key_aes_create (name, bits, buf);
+  k = xenc_key_aes_create (name, bits, buf, md);
   if (!k)
     SQLR_NEW_KEY_EXIST_ERROR (name);
 
@@ -7117,10 +7149,9 @@ bif_xenc_pkcs12_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t key_name = bif_string_arg (qst, args, 0, "xenc_pkcs12_export");
   caddr_t name  = bif_string_arg (qst, args, 1, "xenc_pkcs12_export");
-  caddr_t pass  = bif_string_arg (qst, args, 2, "xenc_pkcs12_export");
+  caddr_t pass  = BOX_ELEMENTS (args) > 2 ? bif_string_arg (qst, args, 2, "xenc_pkcs12_export") : "";
   int export_chain = BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "xenc_pkcs12_export") : 0;
   caddr_t acerts = BOX_ELEMENTS (args) > 4 ? bif_string_arg (qst, args, 4, "xenc_pkcs12_export") : NULL;
-
   xenc_key_t * key = xenc_get_key_by_name (key_name, 1);
   X509 *x;
   EVP_PKEY *pk;
@@ -7859,6 +7890,7 @@ void bif_xmlenc_init ()
   bif_define ("xenc_X509_certificate_serialize", bif_xenc_x509_cert_serialize);
   bif_define ("xenc_set_primary_key", bif_xenc_set_primary_key);
   bif_define ("xenc_get_key_algo", bif_xenc_get_key_algo);
+  bif_define ("xenc_get_key_type", bif_xenc_get_key_type);
   bif_define ("xenc_get_key_identifier", bif_xenc_get_key_identifier);
   bif_define ("xenc_delete_temp_keys", bif_delete_temp_keys);
   bif_define ("xenc_x509_ss_generate", bif_xenc_x509_ss_generate);
