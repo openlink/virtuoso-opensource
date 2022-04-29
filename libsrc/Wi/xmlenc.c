@@ -6360,7 +6360,7 @@ bif_xenc_sha1_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (IS_STRING_DTP (DV_TYPE_OF (text)))
     len = box_length (text) - 1;
   else
-    sqlr_new_error ("22023", "ENC..", "Function xenc_sha1_digest expects binary or string as a 1st argument");
+    sqlr_new_error ("22023", "ENC11", "Function xenc_sha1_digest expects binary or string as a 1st argument");
 
   ses = strses_allocate ();
   session_buffered_write (ses, text, len);
@@ -6383,7 +6383,7 @@ bif_xenc_sha256_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (IS_STRING_DTP (DV_TYPE_OF (text)))
     len = box_length (text) - 1;
   else
-    sqlr_new_error ("22023", "ENC..", "Function xenc_sha256_digest expects binary or string as a 1st argument");
+    sqlr_new_error ("22023", "ENC14", "Function xenc_sha256_digest expects binary or string as a 1st argument");
 
   ses = strses_allocate ();
   session_buffered_write (ses, text, len);
@@ -7449,7 +7449,7 @@ bif_xenc_pubkey_magic_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
        ret = xenc_rsa_pub_magic (x);
     }
   else
-    sqlr_new_error ("42000", "XENC..", "The key type is not supported for export.");
+    sqlr_new_error ("42000", "XENC15", "The key type is not supported for export.");
 
   return ret;
 }
@@ -7532,7 +7532,7 @@ bif_xenc_pubkey_ssh_export (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
        ret = xenc_rsa_pub_ssh_export (x);
     }
   else
-    sqlr_new_error ("42000", "XENC..", "The key type is not supported for export.");
+    sqlr_new_error ("42000", "XENC17", "The key type is not supported for export.");
 
   return ret;
 }

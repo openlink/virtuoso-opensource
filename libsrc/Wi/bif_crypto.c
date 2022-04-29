@@ -1738,7 +1738,7 @@ bif_bin2hex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (IS_STRING_DTP (DV_TYPE_OF (bin)))
     len = box_length (bin) - 1;
   else
-    sqlr_new_error ("22023", "ENC..", "Function bin2hex expects binary or string as a 1st argument");
+    sqlr_new_error ("22023", "ENC01", "Function bin2hex expects binary or string as a 1st argument");
 
   out = dk_alloc_box (2 * len + 1, DV_SHORT_STRING);
   out[0] = 0;
@@ -1762,7 +1762,7 @@ bif_hex2bin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!len)
     return NEW_DB_NULL;
   if (len % 2)
-    sqlr_new_error ("22023", "ENC..", "The input string must have a length multiple by two");
+    sqlr_new_error ("22023", "ENC02", "The input string must have a length multiple by two");
   out = dk_alloc_box (len / 2, DV_BIN);
   out[0] = 0;
   for (inx = 0; inx < len; inx += 2)
@@ -1770,7 +1770,7 @@ bif_hex2bin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (1 != sscanf (str+inx, "%02x", &tmp))
 	{
 	  dk_free_box (out);
-	  sqlr_new_error ("22023", "ENC..", "The input string does not contains hexadecimal string");
+	  sqlr_new_error ("22023", "ENC03", "The input string does not contains hexadecimal string");
 	}
       out [inx/2] = (unsigned char) tmp;
     }
