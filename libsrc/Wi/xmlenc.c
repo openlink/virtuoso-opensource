@@ -2056,9 +2056,10 @@ int __xenc_key_dsa_init (char *name, int lock, int num)
     SQLR_NEW_KEY_ERROR (name);
 
   RAND_poll ();
-  dsa = DSA_generate_parameters(num, NULL, 0, NULL, NULL, dh_cb, NULL);
-  if (dsa == NULL)
+  dsa = DSA_new ();
+  if (1 != DSA_generate_parameters_ex (dsa, num, NULL /*seed*/, 0, NULL, NULL, NULL /* cbk*/))
     {
+      DSA_free (dsa);
       sqlr_new_error ("42000", "XENC11",
 		    "DSA parameters generation error");
     }
@@ -2080,9 +2081,10 @@ int __xenc_key_dh_init (char *name, int lock)
   if (NULL == pkey)
     SQLR_NEW_KEY_ERROR (name);
 
-  dh = DH_generate_parameters (num, g, dh_cb, NULL);
-  if (!dh)
+  dh = DH_new ();
+  if (1 != DH_generate_parameters_ex (dh, num, g, NULL))
     {
+      DH_free (dh);
       sqlr_new_error ("42000", "XENC11",
 		    "DH parameters generation error");
     }
