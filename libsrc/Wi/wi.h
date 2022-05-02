@@ -2154,6 +2154,7 @@ extern int assertion_on_read_fail;
 
 extern char *run_as_os_uname;
 extern long dbe_auto_sql_stats; /* from search.c */
+extern char *rdf_label_inf_name;
 
 extern int in_crash_dump;
 

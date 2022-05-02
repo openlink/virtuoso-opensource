@@ -28,6 +28,8 @@
 #include "sqlnode.h"
 #include "sqlbif.h"
 #include "rdf_core.h"
+#include "sqlo.h"
+#include "rdfinf.h"
 #include "aqueue.h"
 #include "sqlbif.h"
 #include "security.h"
@@ -35,9 +37,12 @@
 
 query_t *rl_queries[10];
 query_t * rl_del_qrs[10];
-query_t *rl_all_keys_qr;
+query_t * rl_all_keys_qr; /* do we need this, obsolete? */
 query_t *rl_graph_words_qr;
+query_t * rl_labels_qr;
+query_t * rl_labels_qr_inx;
 state_slot_t ssl_set_no_dummy;
+#define ssl_int_dummy ssl_set_no_dummy /* infact it is int */
 state_slot_t ssl_iri_dummy;
 state_slot_t ssl_any_dummy;
 extern resource_t *clib_rc;
@@ -254,6 +259,88 @@ aq_rl_del_key_func (caddr_t av, caddr_t * err_ret)
   return aq_rl_key_func_1 (av, err_ret, 0);
 }
 
+caddr_t cu_rdf_ins_label_normalize (mem_pool_t * mp, caddr_t lbl);
+
+void
+rl_rdf_ins_label (cucurbit_t * cu, caddr_t * quad, caddr_t ** ret_dc_array)
+{
+  static rdf_inf_ctx_t * ctx;
+  static caddr_t err;
+  dbe_table_t * tbl = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_LABEL");
+  caddr_t oval;
+  cl_req_group_t * clrg = cu->cu_clrg;
+  /* RL_O any, RL_RO_ID bigint, RL_TEXT varchar, RL_LANG int */
+  data_col_t *rl_o_dc = NULL, *rl_ro_id_dc = NULL, *rl_text_dc = NULL, *rl_lang_dc = NULL;
+
+  if (!tbl || !virtuoso_server_initialized)
+    return;
+
+  if (!ctx && !err)
+    {
+      caddr_t err = NULL, ctx_name = box_string (rdf_label_inf_name);
+      cl_rdf_inf_init (CU_CLI(cu), &err);
+      ctx = rdf_inf_ctx (ctx_name);
+      dk_free_box (ctx_name);
+    }
+
+  if (!ctx)
+    return;
+
+  oval = quad[3];
+
+  if (DV_RDF != DV_TYPE_OF (oval) || !ric_iri_to_sub (ctx, quad[2], RI_SUBPROPERTY, 0))
+    return;
+
+  /* alloc all in MP */
+  if (!*ret_dc_array)
+    {
+      rl_o_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
+      rl_ro_id_dc = mp_data_col (clrg->clrg_pool, &ssl_int_dummy, dc_batch_sz);
+      rl_text_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
+      rl_lang_dc = mp_data_col (clrg->clrg_pool, &ssl_int_dummy, dc_batch_sz);
+      /* rdf labels */
+      (*ret_dc_array) = (caddr_t*)mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * 4, DV_BIN);
+      (*ret_dc_array)[0] = (caddr_t) rl_o_dc;
+      (*ret_dc_array)[1] = (caddr_t) rl_ro_id_dc;
+      (*ret_dc_array)[2] = (caddr_t) rl_text_dc;
+      (*ret_dc_array)[3] = (caddr_t) rl_lang_dc;
+    }
+  else
+    {
+      rl_o_dc = (data_col_t *)(*ret_dc_array)[0];
+      rl_ro_id_dc = (data_col_t *)(*ret_dc_array)[1];
+      rl_text_dc = (data_col_t *)(*ret_dc_array)[2];
+      rl_lang_dc = (data_col_t *)(*ret_dc_array)[3];
+    }
+
+
+  if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, quad[2], RI_SUBPROPERTY, 0))
+    {
+      rdf_box_t * rb = (rdf_box_t *) oval;
+      if (!rb->rb_is_complete)
+	GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb");
+      if (!DV_STRINGP (rb->rb_box)) /* labels are supposed to be strings */
+	return;
+      dc_append_box (rl_o_dc, oval);
+      dc_append_box (rl_ro_id_dc, mp_box_num (clrg->clrg_pool, rb->rb_ro_id));
+      dc_append_box (rl_text_dc, cu_rdf_ins_label_normalize (clrg->clrg_pool, rb->rb_box));
+      dc_append_box (rl_lang_dc, mp_box_num (clrg->clrg_pool, rb->rb_lang));
+    }
+}
+
+caddr_t
+aq_rl_lbl_func (caddr_t av, caddr_t * err_ret)
+{
+  caddr_t *params = (caddr_t *) av;
+  client_connection_t *cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+  int is_pk = BOX_ELEMENTS_0 (params) == 4 ? 1 : 0;
+  if (0 == ((data_col_t **)params)[0]->dc_n_values)
+    *err_ret = NULL;
+  else
+    *err_ret = qr_exec (cli, is_pk ? rl_labels_qr : rl_labels_qr_inx, CALLER_LOCAL, "", NULL, NULL, params, NULL, 0);
+  return NULL;
+}
+
 int rl_query_inited;
 int32 enable_rdf_trig = 0;
 
@@ -318,6 +405,14 @@ rl_query_init (dbe_table_t * quad_tb)
   rl_all_keys_qr = sql_compile ("insert soft DB.DBA.RDF_QUAD option (vectored) (G, S, P, O) values (?, ?, ?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
   if (err)
     sqlr_resignal (err);
+  rl_labels_qr = sql_compile ("insert soft DB.DBA.RDF_LABEL index RDF_LABEL option (vectored) (RL_O, RL_RO_ID, RL_TEXT, RL_LANG) values (?,?,?,?)", 
+      bootstrap_cli, &err, SQLC_DEFAULT);
+  if (err)
+    sqlr_resignal (err);
+  rl_labels_qr_inx = sql_compile ("insert soft DB.DBA.RDF_LABEL index RDF_LABEL_TEXT option (vectored) (RL_TEXT, RL_O) values (?,?)", 
+      bootstrap_cli, &err, SQLC_DEFAULT);
+  if (err)
+    sqlr_resignal (err);
   rl_graph_words_qr = sql_compile ("DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH  (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
   if (err)
     sqlr_resignal (err);
@@ -374,7 +469,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   int is_gs = BOX_ELEMENTS (cu->cu_input_funcs) == 5;
   int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE, allg;
   dk_set_t set = NULL;
-  caddr_t tmp[5], * quad;
+  caddr_t tmp[5], * quad, * lbl_box = NULL;
   BOX_AUTO_TYPED (caddr_t *, quad, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 
   rl_query_init (quad_tb);
@@ -427,6 +522,9 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
 	  if (is_rb)
 	    rb->rb_is_complete = 1;
 	  quad[3] = x;
+	  /* rdf labels */
+	  if (rdf_label_inf_name) /* label's fill enabled */
+	    rl_rdf_ins_label (cu, quad, &lbl_box);
 	}
       else
 	{
@@ -481,6 +579,15 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   }
   END_DO_SET ();
   /*cu_rl_graph_words (cu, g_iid);*/
+  /* rdf labels */
+  if (NULL != lbl_box)
+    {
+      caddr_t * lbl_box_inx = (caddr_t*)mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * 2, DV_BIN);
+      lbl_box_inx[0] = lbl_box[2];
+      lbl_box_inx[1] = lbl_box[0];
+      aq_request  (aq, aq_rl_lbl_func, (caddr_t)lbl_box);
+      aq_request  (aq, aq_rl_lbl_func, (caddr_t)lbl_box_inx);
+    }
   IO_SECT (inst);
   aq->aq_wait_qi = qi;
   aq_wait_all (aq, &err1);
@@ -772,7 +879,6 @@ bif_rl_set_pref_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   return NULL;
 }
-
 
 caddr_t
 bif_rl_dp_ids (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
