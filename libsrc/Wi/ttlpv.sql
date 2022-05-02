@@ -74,28 +74,23 @@ create procedure RL_I2ID_NP (inout pref varchar, inout name varchar, inout id ir
 {
   vectored;
   declare pref_fetched, id_fetched, pref_id int;
-  insert into rdf_prefix index rdf_prefix option (fetch pref_id by 'RDF_PREF_SEQ' set pref_fetched) (rp_name, rp_id) values (pref, pref_id);
+  insert into DB.DBA.RDF_PREFIX index RDF_PREFIX option (fetch pref_id by 'RDF_PREF_SEQ' set pref_fetched) (RP_NAME, RP_ID) values (pref, pref_id);
   if (0 = pref_fetched)
-    insert soft rdf_prefix index DB_DBA_RDF_PREFIX_UNQC_RP_ID (rp_name, rp_id) values (pref, pref_id);
+    insert soft DB.DBA.RDF_PREFIX index DB_DBA_RDF_PREFIX_UNQC_RP_ID (RP_NAME, RP_ID) values (pref, pref_id);
   rdf_cache_id ('p', pref, pref_id);
   __rl_set_pref_id (name, pref_id);
---  name[0] := bit_shift (pref_id, -24);
---  name[1] := bit_shift (pref_id, -16);
---  name[2] := bit_shift (pref_id, -8);
---  name[3] := pref_id;
-
-  insert into rdf_iri index rdf_iri option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (ri_name, ri_id) values (name, id);
+  insert into DB.DBA.RDF_IRI index RDF_IRI option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (RI_NAME, RI_ID) values (name, id);
   if (0 = id_fetched)
-    insert into RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
+    insert into DB.DBA.RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
 }
 ;
 
-create procedure rl_i2id (inout name varchar, inout id iri_id_8)
+create procedure RL_I2ID (inout name varchar, inout id iri_id_8)
 {
   vectored;
   declare id_fetched int;
 
-  insert into rdf_iri index rdf_iri option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (ri_name, ri_id) values (name, id);
+  insert into DB.DBA.RDF_IRI index RDF_IRI option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (RI_NAME, RI_ID) values (name, id);
   if (0 = id_fetched)
     insert into RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
   rdf_cache_id ('i', name, id);
@@ -486,6 +481,8 @@ create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph va
 {
   declare ro_id_dict, app_env, g_iid any;
   -- dbg_obj_princ ('DB.DBA.TTLP_V_GS (...', base, graph, flags, threads, log_mode, old_log_mode);
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    signal ('22023', 'DB.DBA.TTLP_V_GS() cannot be used before upgrading the RDF_IRI table to 64-bit prefix IDs, use TTLP() instead');
   app_env := vector (async_queue (threads, 1), rl_local_dpipe_gs (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (bit_and (flags, 2048))
     dpipe_set_rdf_load (app_env[1], 6);
@@ -524,6 +521,11 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
     }
   if (is_atomic ())
     signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      DB.DBA.TTLP (strg, base, graph, flags);
+      return;
+    }
   old_log_mode := null;
   declare exit handler for sqlstate '37000' {
     if (app_env <> 0)
@@ -580,6 +582,11 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
     return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph,0);
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      DB.DBA.RDF_LOAD_RDFXML_IMPL (strg, base, graph, parse_mode, log_mode, transactional);
+      return;
+    }
 
   declare exit handler for sqlstate '37000' {
     rl_send (app_env, g_iid);

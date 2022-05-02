@@ -3920,6 +3920,8 @@ void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
 long get_total_sys_mem ();
 
+extern int32 rdf_rpid64_mode;
+
 dk_set_t srv_global_init_pre_log_actions = NULL;
 dk_set_t srv_global_init_postponed_actions = NULL;
 
@@ -4133,6 +4135,26 @@ srv_global_init (char *mode)
     pl_debug_all = 0;
 #endif
   wi_open (mode);
+
+  if (!rdf_rpid64_mode)
+    {
+      log_warning ("");
+      log_warning ("NOTE: Your database is using 32-bit prefix IDs in RDF_IRI");
+      log_warning ("");
+      log_warning ("    This Virtuoso engine has been upgraded to use 64-bit prefix IDs");
+      log_warning ("    in RDF_IRI to allow for even larger databases.");
+      log_warning ("");
+      log_warning ("    To take advantage of this new feature, your database needs to");
+      log_warning ("    be upgraded.");
+      log_warning ("");
+      log_warning ("    The performance of your existing database should not be affected,");
+      log_warning ("    except when performing certain bulkload operations.");
+      log_warning ("");
+      log_warning ("    Please contact OpenLink Support <support@openlinksw.com> for ");
+      log_warning ("    more information.");
+      log_warning ("");
+    }
+
   srv_client_defaults_init ();
   sql_bif_init ();
   bif_daq_init ();

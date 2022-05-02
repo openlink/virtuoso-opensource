@@ -231,6 +231,7 @@ extern int enable_no_free;
 #endif
 extern int32 enable_rdf_box_const;
 extern int32 simple_rdf_numbers;
+extern int32 rdf_rpid64_mode;
 extern int enable_subscore;
 extern int enable_dfg;
 extern int enable_feed_other_dfg;
@@ -1792,6 +1793,36 @@ stat_desc_t stat_descs [] =
     {NULL, NULL, NULL}
 };
 
+/*
+ the following are ptrs of protected system wide params, once are set to a value greater than zero
+ cannot be changed until server is running, also if they written in DB cfg page,
+ cannot be changed even after server restart.
+*/
+static void *
+dbf_protected_params[] = {
+  &timezoneless_datetimes,
+  &rdf_rpid64_mode,
+  NULL
+};
+
+int
+dbf_protected_param (stat_desc_t * sd)
+{
+  int inx;
+  void *ptr;
+  for (inx = 0; NULL != (ptr = dbf_protected_params[inx]); inx++)
+    if (sd->sd_value == ptr)
+      {
+	int64 val = 0;
+	if (SD_INT32 == (char **) sd->sd_str_value)
+	  val = *((int32 *) sd->sd_value);
+	else if (SD_INT64 == (char **) sd->sd_str_value)
+	  val = *((int64 *) sd->sd_value);
+	return (val != 0);
+      }
+  return 0;
+}
+
 
 stat_desc_t dbf_descs [] =
   {
@@ -1932,6 +1963,7 @@ stat_desc_t dbf_descs [] =
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
     {"simple_rdf_numbers", &simple_rdf_numbers, SD_INT32},
+    {"rdf_rpid64_mode", (long *)&rdf_rpid64_mode, SD_INT32},
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
@@ -2080,6 +2112,8 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
   sd = *place;
+  if (dbf_protected_param (sd))
+    sqlr_new_error ("42000", "SR...", "sys_stat parameter '%.300s' is already set and cannot be changed", name);
   if (SD_INT32 == (char **) sd->sd_str_value)
 	    {
 	      int32 ov = *((int32*)sd->sd_value);
