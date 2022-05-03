@@ -60,7 +60,7 @@ extern "C" {
 #include "mhash.h"
 
 int uriqa_dynamic_local = 0;
-int32 rdf_rpid64_mode = 1; /* set to true for old existing databases */
+int32 rdf_rpid64_mode = 2; /* set to true for old existing databases */
 
 caddr_t
 uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
@@ -2290,7 +2290,7 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
       goto local_start_found; /* see below */
     }
   local_start = strrchr (iri, '#');
-  if (!local_start)
+  if (!local_start && rdf_rpid64_mode < 2)
     local_start = strrchr (iri, '?');
   if (!local_start)
     {
