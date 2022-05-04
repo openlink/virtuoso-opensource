@@ -1143,26 +1143,23 @@ public class VirtGraph extends GraphBase {
 
 
     public void clear(Node... graphs) {
-        PreparedStatement ps = null;
+        java.sql.Statement st = null;
 
         if (graphs != null && graphs.length > 0)
             try {
-                String[] graphNames = new String[graphs.length];
+                st = createStatement(true);
+
                 for (int i = 0; i < graphs.length; i++)
-                    graphNames[i] = graphs[i].toString();
+                    st.addBatch("sparql clear graph <"+graphs[i].toString()+">");
 
-                ps = prepareStatement(S_CLEAR_GRAPH, true);
-
-                Array gArray = connection.createArrayOf("VARCHAR", graphNames);
-                ps.setArray(1, gArray);
-                ps.executeUpdate();
-                gArray.free();
+                st.executeBatch();
+                st.clearBatch();
             } catch (Exception e) {
                 throw new JenaException(e);
             } finally {
               try {
-                if (ps != null)
-                  ps.close();
+                if (st != null)
+                  st.close();
               } catch(Exception e) {}
             }
     }
