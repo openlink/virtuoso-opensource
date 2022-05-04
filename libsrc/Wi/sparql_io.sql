@@ -2323,46 +2323,25 @@ body_complete:
 }
 ;
 
--- CLIENT --
---select -- dbg_obj_princ (soap_client (url=>'http://neo:6666/SPARQL', operation=>'querySoap', target_namespace=>'urn:FIXME', soap_action =>'urn:FIXME:querySoap', parameters=> vector ('Command', soap_box_structure ('Statement' , 'select TEST from DB.DBA.SPARQL_TABLE3'), 'Properties', soap_box_structure ('PropertyList', 'None' )), style=>2));
-
-create procedure WS.WS.SPARQL_ENDPOINT_SVC_DESC ()
+create procedure WS.WS.SPARQL_ENDPOINT_SVC_TTL ()
 {
   declare ses any;
   ses := string_output ();
-  http ('    <div style="display:none">\n', ses);
-  http ('       <div class="description" about="" typeof="sd:Service">\n', ses);
-  http (sprintf ('          <div rel="sd:endpoint" resource="%s://%{WSHost}s/sparql"></div>\n',
-		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
-  http ('          <div rel="sd:feature"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#UnionDefaultGraph"></div>\n', ses);
-  http ('          <div rel="sd:feature"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#DereferencesURIs"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDF_XML"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/Turtle"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_CSV"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N-Triples"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N3"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_JSON"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDFa"></div>\n', ses);
-  http ('          <div rel="sd:resultFormat"\n', ses);
-  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_XML"></div>\n', ses);
-  http ('          <div rel="sd:supportedLanguage"\n', ses);
-  http ('               resource="http://www.w3.org/ns/sparql-service-description#SPARQL10Query"></div>\n', ses);
-  http (sprintf ('          <div rel="sd:url" resource="%s://%{WSHost}s/sparql"></div>\n',
-		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
-  http ('       </div>\n', ses);
-  http ('    </div>\n', ses);
+  http('@prefix sd: <http://www.w3.org/ns/sparql-service-description#> .\n', ses);
+  http('@prefix sdf: <http://www.w3.org/ns/formats/> .\n', ses);
+  http('<local:/sparql#service> a sd:Service ;\n', ses);
+  http('sd:feature sd:DereferencesURIs, sd:UnionDefaultGraph ;\n', ses);
+  http('sd:endpoint <local:/sparql> ;\n', ses);
+  http('sd:resultFormat sdf:N-Triples, sdf:N3, sdf:RDF_XML, sdf:RDFa, sdf:SPARQL_Results_CSV, ', ses);
+  http('sdf:SPARQL_Results_JSON, sdf:SPARQL_Results_XML, sdf:Turtle;\n', ses);
+  http('sd:supportedLanguage sd:SPARQL10Query ;\n', ses);
+  http('sd:url <local:/sparql> .\n', ses);
   return ses;
 }
 ;
 
-
 create procedure WS.WS.SPARQL_VHOST_RESET ()
 {
-  declare gr varchar;
   declare oopts any;
   oopts := null;
   if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'SPARQL'))
@@ -2444,8 +2423,7 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
   DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-sd');
   DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/sparql-sd/', ppath => '/!sparql-sd/', is_dav => 1, vsp_user => 'dba', opts => vector('noinherit', 1));
 
-  gr := concat ('http://', registry_get ('URIQADefaultHost'), '/sparql');
-  DB.DBA.RDF_LOAD_RDFA (WS.WS.SPARQL_ENDPOINT_SVC_DESC (), gr, gr);
+  DB.DBA.TTLP (WS.WS.SPARQL_ENDPOINT_SVC_TTL (), '', 'urn:core:services:sparql');
   registry_set ('__SPARQL_VHOST_RESET', '20120519');
 }
 ;
@@ -2833,7 +2811,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 	  acc := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
 	  if (strstr (acc, '/rdf+xml') is not null or strstr (acc, 'text/n3') is not null or strstr (acc, 'text/turtle') is not null)
 	    {
-	       query := sprintf ('construct { ?s ?p ?o } from <http://%s/sparql> { ?s ?p ?o }', registry_get ('URIQADefaultHost'));
+	       query := 'CONSTRUCT { ?s ?p ?o } FROM <urn:core:services:sparql> { ?s ?p ?o }';
 	       accept := acc;
 	       goto execute_query;
 	    }
