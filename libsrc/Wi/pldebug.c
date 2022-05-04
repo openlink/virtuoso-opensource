@@ -306,6 +306,15 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 	      SES_PRINT (ses, ")");
               break;
             }
+        case DV_DICT_ITERATOR:
+            {
+              id_hash_iterator_t *hit = (id_hash_iterator_t *) box;
+              id_hash_t *ht = hit->hit_hash;
+              snprintf (tmp, sizeof (tmp), "dictonary_reference (%d,%d)",
+                  ht->ht_buckets, (ht->ht_inserts - ht->ht_deletes));
+              SES_PRINT (ses, tmp);
+              break;
+            }
       default:
 	    {
 	      caddr_t err_ret = NULL;
