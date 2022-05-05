@@ -186,7 +186,8 @@ public class VirtuosoStatement implements Statement
        arrLong[5] = Long.valueOf((connection.getAutoCommit()) ? 1 : 0);
        arrLong[6] = Long.valueOf (rpc_timeout);
        // Set the cursor type
-       switch(type)
+       int _type = sparql_executed ? VirtuosoResultSet.TYPE_FORWARD_ONLY : type;
+       switch(_type)
 	 {
 	   case VirtuosoResultSet.TYPE_FORWARD_ONLY:
 	       arrLong[7] = Long.valueOf(VirtuosoTypes.SQL_CURSOR_FORWARD_ONLY);
