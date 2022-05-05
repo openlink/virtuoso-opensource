@@ -60,6 +60,7 @@ extern "C" {
 #include "mhash.h"
 
 int uriqa_dynamic_local = 0;
+int32 rdf_rpid64_mode = 2; /* set to true for old existing databases */
 
 caddr_t
 uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
@@ -2289,7 +2290,7 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
       goto local_start_found; /* see below */
     }
   local_start = strrchr (iri, '#');
-  if (!local_start)
+  if (!local_start && rdf_rpid64_mode < 2)
     local_start = strrchr (iri, '?');
   if (!local_start)
     {
@@ -2315,7 +2316,7 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
 
 local_start_found:
   *pref = box_dv_short_nchars (iri, local_start - iri);
-  *name = box_dv_short_nchars (local_start - 4, 4 + strlen (local_start));
+  *name = box_dv_short_nchars (local_start - RPID_SZ, RPID_SZ + strlen (local_start));
   return 1;
 }
 
@@ -2378,8 +2379,8 @@ key_name_to_iri_id_1 (lock_trx_t * lt, caddr_t name, int make_new)
 {
   boxint pref_id_no, iri_id_no;
   caddr_t local_copy;
-  caddr_t prefix, local;
-  caddr_t pref_id, iri_id;
+  caddr_t prefix, local, local32 = NULL;
+  caddr_t pref_id = 0, iri_id = 0;
   if (DV_IRI_ID == DV_TYPE_OF (name))
     return box_copy (name);
 #ifdef DEBUG
@@ -2426,19 +2427,35 @@ key_name_to_iri_id_1 (lock_trx_t * lt, caddr_t name, int make_new)
     }
   else
     dk_free_box (prefix);
-  LONG_SET_NA (local, pref_id_no);
+  RPID_SET_NA (local, pref_id_no);
   iri_id_no = lt_nic_name_id (lt, iri_name_cache, local);
+  /* compatibility with 32bit rp_name header */
+  if (!rdf_rpid64_mode && !iri_id_no && INT32_MAX > pref_id_no)
+    {
+       local32 = box_dv_short_nchars (local + 4, box_length (local) - 1 - 4);
+       LONG_SET_NA (local32, pref_id_no);
+       iri_id_no = lt_nic_name_id (lt, iri_name_cache, local32);
+    }
   if (iri_id_no)
     {
       dk_free_box (local);
+      dk_free_box (local32);
       return box_iri_id (iri_id_no);
     }
-  local_copy = box_copy (local);
-  iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local,
-    (  make_new ?
-      ((('_' == name[0]) && (':' == name[1])) ?
-        "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
-      NULL ) );
+  if (!rdf_rpid64_mode && INT32_MAX > pref_id_no)
+    {
+      local_copy = box_copy (local32); /* local32 is released after next call */
+      iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local32, 0);
+    }
+  if (!iri_id)
+    {
+      local_copy = box_copy (local);
+      if (!iri_id)
+       iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local, (  make_new ?
+             ((('_' == name[0]) && (':' == name[1])) ?
+              "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
+             NULL ) );
+    }
   if(!iri_id)
     {
       dk_free_box (local_copy);
@@ -2641,8 +2658,16 @@ key_name_to_existing_cached_iri_id (lock_trx_t * lt, caddr_t name)
       dk_free_box (local);
       return NULL;
     }
-  LONG_SET_NA (local, pref_id_no);
+  RPID_SET_NA (local, pref_id_no);
   iri_id_no = lt_nic_name_id (lt, iri_name_cache, local);
+  /* compatibility with 32bit rp_name header */
+  if (!rdf_rpid64_mode && !iri_id_no && INT32_MAX > pref_id_no)
+    {
+       caddr_t local32 = box_dv_short_nchars (local + 4, box_length (local) - 1 - 4);
+       LONG_SET_NA (local32, pref_id_no);
+       iri_id_no = lt_nic_name_id (lt, iri_name_cache, local32);
+       dk_free_box (local32);
+    }
   dk_free_box (local);
   if (!iri_id_no)
     return NULL;
@@ -3106,6 +3131,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   lock_trx_t * lt = qi ? qi->qi_trx : NULL;
   lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  int hl;
   if (0 == iri_id_no) return uname_nodeID_ns_0;
   if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
@@ -3128,7 +3154,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       else
 	nic_set (iri_name_cache, local, iri_id_no);
     }
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = nic_id_name (iri_prefix_cache, pref_id);
   if (!prefix)
     {
@@ -3156,10 +3182,11 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	    nic_set (iri_prefix_cache, prefix, pref_id);
 	}
     }
-  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  RPID_HL(local,hl);
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - hl - 1, DV_STRING);
   /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
   memcpy (name, prefix, box_length (prefix) - 1);
-  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  memcpy (name + box_length (prefix) - 1, local + hl, box_length (local) - hl);
   dk_free_box (prefix);
   dk_free_box (local);
   return name;
@@ -3171,19 +3198,21 @@ key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no)
   boxint pref_id;
   lock_trx_t * nic_lt = bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  int hl;
   if (0 == iri_id_no) return uname_nodeID_ns_0;
   if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     return NULL;
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = nic_id_name (iri_prefix_cache, pref_id);
   if (!prefix)
     return NULL;
-  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  RPID_HL(local,hl);
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - hl - 1, DV_STRING);
   /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
   memcpy (name, prefix, box_length (prefix) - 1);
-  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  memcpy (name + box_length (prefix) - 1, local + hl, box_length (local) - hl);
   dk_free_box (prefix);
   dk_free_box (local);
   return name;
@@ -3227,7 +3256,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 	return 0;
       lt_nic_set (lt, iri_name_cache, local, iid);
     }
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = lt_nic_id_name (lt, iri_prefix_cache, pref_id);
   if (!prefix)
     {
@@ -3277,7 +3306,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
         }
     }
   subj_ns_ret[0] = prefix;
-  subj_loc_ret[0] = box_dv_short_nchars (local+4, box_length (local) - 5);
+  subj_loc_ret[0] = box_dv_short_nchars (local+8, box_length (local) - (RPID_SZ + 1));
   dk_free_tree (local);
   return 1;
 }
@@ -3610,14 +3639,16 @@ bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int pref_len = box_length (pref) - 1;
   int name_len = box_length (name) - 1;
   caddr_t res;
-  if (name_len < 4)
+  int hl;
+  RPID_HL(name, hl);
+  if (name_len < (hl - 1))
     res = box_dv_short_string ("iri_from_pref_name");
   else
     {
-      res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
+      res = dk_alloc_box (pref_len + name_len - (hl - 1), DV_STRING);
       memcpy_16 (res, pref, pref_len);
-      memcpy_16 (res + pref_len, name + 4, name_len - 4);
-      res[pref_len + name_len - 4] = 0;
+      memcpy_16 (res + pref_len, name + hl, name_len - hl);
+      res[pref_len + name_len - hl] = 0;
     }
   box_flags (res) = BF_IRI;
   return res;

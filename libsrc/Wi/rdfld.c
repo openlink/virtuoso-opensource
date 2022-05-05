@@ -826,7 +826,7 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
       return NULL;
     }
   dk_free_box (prefix);
-  LONG_SET_NA (local, pref_id_no);
+  RPID_SET_NA (local, pref_id_no);
   iri_id_no = 0;		/*nic_name_id (iri_name_cache, local); */
   if (iri_id_no)
     {
@@ -867,12 +867,9 @@ bif_rl_set_pref_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
 	  long l, hl;
 	  db_buf_length ((db_buf_t) str, &hl, &l);
-	  if (l < 4)
-	    sqlr_new_error ("42000", ".....", "Must have a string of at least 4 chars to set prefix");
-	  str[hl] = id >> 24;
-	  str[hl + 1] = id >> 16;
-	  str[hl + 2] = id >> 8;
-	  str[hl + 3] = id;
+	  if (l < RPID_SZ)
+	    sqlr_new_error ("42000", ".....", "Must have a string of at least %d chars to set prefix", RPID_SZ);
+	  RPID_SET_NA (((unsigned char *) (&str[hl])), id);
 	}
       else
 	sqlr_new_error ("42000", ".....", "__rl_set_pref_id expects a any type column");
@@ -889,6 +886,8 @@ bif_rl_dp_ids (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   void * save;
   if (!cu)
     sqlr_new_error ("42000", "CL...", "Not a dpipe daq");
+  if (!rdf_rpid64_mode)
+    sqlr_new_error ("42000", "CL...", "Can not use dpipe IRI operations before upgrading the RDF_IRI table to 64-bit prefix IDs");
   cu->cu_qst = qst;
   save = cu->cu_ready_cb;
   cu->cu_ready_cb = NULL; /* local exec, CBs are for clustered operation */

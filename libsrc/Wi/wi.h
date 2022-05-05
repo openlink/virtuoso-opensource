@@ -2181,6 +2181,7 @@ typedef struct stat_desc_s
 
 extern stat_desc_t dbf_descs[];
 extern stat_desc_t rdf_preset_datatypes_descs[];
+int dbf_protected_param(stat_desc_t *sd);
 
 typedef struct s_time_t
 {

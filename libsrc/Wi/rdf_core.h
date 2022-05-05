@@ -370,5 +370,13 @@ typedef struct rdf_obj_ft_rule_iri_hkey_s
    caddr_t hkey_iri_p;
 } rdf_obj_ft_rule_iri_hkey_t;
 
+extern int32 rdf_rpid64_mode;
+
+#define RPID_SZ			8
+#define RPID_64_FLAG		0x8000000000000000LL
+#define RPID_SET_NA(p,v) 	INT64_SET_NA((p),((v) | RPID_64_FLAG))
+#define RPID_REF_NA(p) 		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? (INT64_REF_NA(p) & ~RPID_64_FLAG)  : LONG_REF_NA(p) )
+#define RPID_IS_64(p)		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 1 : 0)
+#define RPID_HL(p,hl) 		( (hl) = (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 8  : 4 )
 
 #endif

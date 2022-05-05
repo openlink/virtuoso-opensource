@@ -2896,7 +2896,7 @@ create procedure DB.DBA.TTLP (in strg varchar, in base varchar, in graph varchar
       if ((graph is null) or (graph = ''))
         signal ('22023', 'DB.DBA.TTLP() requires a valid IRI as a base argument if graph is not specified');
     }
-  if (1 = sys_stat ('enable_vec') and not is_atomic ())
+  if (1 = sys_stat ('enable_vec') and not is_atomic () and sys_stat ('rdf_rpid64_mode'))
     {
       DB.DBA.TTLP_V (strg, base, graph, flags, 3, log_enable => log_enable, transactional => transactional);
       return;
@@ -3267,8 +3267,8 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_IMPL (inout strg varchar, in base varcha
       old_log_mode := log_enable (log_enable, 1);
   if (1 <> sys_stat ('cl_run_local_only'))
     return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph, parse_mode);
-  if (not is_atomic ())
-    return db.dba.rdf_load_rdfxml_v (strg, base, graph, transactional => transactional, log_mode => log_enable, parse_mode => parse_mode);
+  if (not is_atomic () and sys_stat ('rdf_rpid64_mode'))
+    return DB.DBA.RDF_LOAD_RDFXML_V (strg, base, graph, transactional => transactional, log_mode => log_enable, parse_mode => parse_mode);
   app_env := vector (
     null,
     null,

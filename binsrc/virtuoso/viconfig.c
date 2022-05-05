@@ -1341,14 +1341,16 @@ cfg_setup (void)
       {
 	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
 	  {
-	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
-	      *((int32*)sd->sd_value) = v;
+	    if (dbf_protected_param (sd))
+	      log_error ("Cannot set protected flag %s", sd->sd_name);
+	    else if ((ptrlong) SD_INT32 == (ptrlong) sd->sd_str_value)
+	      *((int32 *) sd->sd_value) = v;
 	    else if (sd->sd_value)
 	      *(sd->sd_value) = (long) v;
 	    else
 	      log_error ("Cannot set flag %s", sd->sd_name);
 	  }
-	sd ++;
+	sd++;
       }
   }
 
