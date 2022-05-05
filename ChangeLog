@@ -1,4 +1,540 @@
+2022-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/prefix64-fixes' into develop/7
+
+	Updated documentation on upgrading from prior releases of VOS
+
+2022-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed prefix generation algorithm
+
+	Disable splitting IRIs on '?' as this generates a lot of dirty records
+	in the RDF_PREFIX table.
+
+2022-05-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Upgraded rdf_iri table to use 64bit prefix id
+
+	Please read ~/README.UPGRADE.md for more information
+
+2022-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_05_04_fix_rdf4j_jena' into develop/7
+
+	Rebuild Jena 3, 4 and RDF4j providers
+
+	Updated version of Jena and RDF4j providers
+
+2022-05-05  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update RDF4J and Jena providers for use query "sparql clear graph<>" instead of RDF_CLEAR_GRAPH_C()
+
+2022-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_05_04_fix_jdbc' into develop/7
+
+	Rebuild JDBC providers
+
+	Updated version of JDBC provider
+
+2022-05-05  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Add checks for null pointers
+
+	Fixed always use resultSetType = TYPE_FORWARD_ONLY for SPARQL queries
+
+2022-05-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed SPARQL endpoint description document
+
+	  * dynamic endpoint URL
+	  * separate micro-data for UI & turtle doc for internal graph
+
+2022-05-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with format
+
+	Added support dict size and entries in debug session
+
+2022-05-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added initial support to populate labels in insert for FCT
+
+	This replaces the manual step of running the `urilbl_ac_init_db ()`
+	PL needed by the Faceted Browser to do an `Entity Label Lookup` after
+	loading data into the database.
+
+	To enable perform the following steps:
+
+	  1. add/uncomment the following line to your virtuoso.ini
+
+	    [SPARQL]
+	    LabelInferenceName = facets
+
+	  2. start your database
+
+	  3. load the fct_dav.vad packag
+
+	  4. insert/bulkload data
+
+2022-04-29  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed handling of non-DV_ARRAY_OF_POINTER trees
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed dsig stack overwrite when using long keys
+
+	Added dsig aliases
+
+2022-04-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing check
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with RAW key
+
+	Fixed key type check
+
+	Fixed issue with dsa and rsa keys when no cert is attached
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed subject should be written in UTF8 format
+
+	See: https://www.rfc-editor.org/rfc/rfc4630#section-3
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Removed deprecated DH/DSA calls
+
+	Fixed serialize of AES IV
+
+	Fixed issue with X509 CSR generation
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with x509 extensions
+
+	* Use issues to set proper keyrefs
+	* Use string representations for extension values
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with text length
+
+	Added optional digest name to aes key
+
+	Fixed crypto functions error codes
+
+2022-04-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added small json testsuite
+
+2022-04-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not use old hardcoded keys for testing
+
+	Added BIF xenc_digest and xenc_hmac_digest
+
+	Added bif_string_or_bin_arg() for use in crypto funcs
+
+2022-04-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_04_29_fix_rdf4j' into develop/7
+
+	Rebuild RDF4j provider
+
+	Updated version of RDF4j provider
+
+2022-04-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update RDF4J provider for fix creation JenaException
+
+2022-04-28  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_04_28_fix_jena' into develop/7
+
+	Rebuild Jena 3/4 providers
+
+	Updated Jena 3/4 provider version
+
+2022-04-28  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Jena providers for fix creation JenaException, clear code
+
+2022-04-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added check for OpenSSL 3.0.x
+
+2022-04-27  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed fully qualified view name and use DB qual for all conductor sql
+
+2022-04-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2022-04-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added fingerprint info for system root key
+
+2022-04-25  Dimitar Dimitrov  <ddimitrov@openlinksw.com>
+
+	Fixed UI form related to RDF push subscriptions
+
+2022-04-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added drop statement and better reporting (ala-isql)
+
+2022-04-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added git hash to the build info
+
+2022-04-25  Dimitar Dimitrov  <ddimitrov@openlinksw.com>
+
+	Fixed url encoding
+
+	Fixed issue with encoding
+
+	Fixed UI form related to importing RDF files
+
+2022-04-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for maintenance flag in RDFS init
+
+	Updated Conductor VAD version
+
+	Fixed import of user's key
+
+	Fixed installation of VADs can only be performed by dba account
+
+	Fixed issue with non-dba user login causing inf redirects
+
+	Fixed ensure DB qualifier for conductor
+
+2022-04-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed according to the bsase64url standard should not split
+
+	Added fmod() bif
+
+2022-04-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed: compile with debug
+
+2022-04-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed incorrect handling of UTF8 characters on SPARQL HTTP endpoint (closes #1026)
+
+	Fixed possible box corruption printing a very long literals box
+
+	Updated Conductor VAD version
+
+	Removed old password-less encryption
+
+	Added warning to modifying registry by hand
+
+2022-04-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed reporting when new graph is created
+
+2022-04-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added SPARQL_SELECT_FED role
+
+2022-04-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild Jena3/4 and RDF4j providers
+
+	Small cleanup
+
+2022-04-08  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed makefile
+
+	Update version info
+
+	Fix tests
+
+	Update RDF4J providers for use DB stored proc rdf_delete_triple_c
+
+2022-04-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Small cleanup
+
+2022-04-08  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix Jena3, Jena4 providers for use DB proc rdf_delete_triple_c and updated for related with close JDBC Statements
+
+2022-04-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with ANYTIME query timeout values
+
+	Fixed issue with SPARQL ASK in embedded PL
+
+2022-04-01  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed dc_max_batch_sz cannot be more than sz of boxed array
+
+2022-04-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added [SPARQL] MaxMemInUse setting to default virtuoso.ini
+
+2022-03-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	* Added support to fine tune size of memory pool used by SPARQL constructs
+
+	The operator of a SPARQL endpoint may want to limit the amount of
+	memory Virtuoso can use for construct queries, to make sure its
+	users cannot use up too many resources.
+
+	Once this limit is reached, the SPARQL query will return the following
+	error:
+
+	    Virtuoso 42000 Error D1CT0: Hash dictionary memory pool is full,
+	    XXXX exceeded YYYY bytes
+
+	To fine tune the MaxMemInUse setting in the [SPARQL] section, use
+	the isql tool to perform the following steps:
+
+	  * Check current setting of MaxMemInUse:
+
+	SQL> select sys_stat('sparql_max_mem_in_use');
+
+	  * Temporarily set the in memory setting to unlimited:
+
+	SQL> __dbf_set('sparql_max_mem_in_use', 0);
+
+	  * Run the construct queries that failed with the above D1CT0 error
+	    which should now run to completion
+
+	  * Find out the maximum size the dict mempool reached:
+
+	SQL> select sys_stat('dict_max_mp_bytes_in_use');
+
+	  * Change the INI to persist the setting in the virtuoso.ini file.
+	    Use a value that is greater or equal to the value reported by
+	    the previous command.
+
+	[SPARQL]
+	MaxMemInUse = ZZZZ       ; Use 0 for unlimited
+
+	  * Shutdown and restart the Virtuoso database for this setting
+	    to come into effect
+
+2022-03-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed MaxMemInUse setting to allow specifying sizes in G, M, B
+
+2022-03-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Revert changing default MaxMemInUse back to 0 (unlimited)
+
+	Previous change was too disruptive on existing installations.
+
+2022-03-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed name of arg
+
+2022-03-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed always check mem for construct dict, never w/o limit
+
+	The [SPARQL] MaxMemInUse now defaults to 200m
+
+	It should only be set to 0 (unlimited) when the operator understands
+	the impact on the system.
+
+2022-03-28  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with SPARQL variables containing unicode characters (fixes #973)
+
+	* fixed issue parsing UTF-8 character sequences
+	* fixed encoding of column names in sparql output
+
+2022-03-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing check for ODS Briefcase
+
+	The conductor does not depend on ODS, so it should check instead of
+	making an exception and hiding it.
+
+2022-03-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed if value is rb then complete
+
+	Also strings are supposed to be UTF-8 so do not recode twice
+
+2022-03-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed handling tableName attribute as per spec
+
+	Handle both quoted table names as well as fully qualified table names
+
+2022-03-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing JSON support function to format output of ASK query (fixes #1016)
+
+2022-03-22  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed RDF loading re. transaction modes.
+
+2022-03-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed functions for making rdf literals must return dc of boxes
+
+2022-03-22  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Renamed integeR to integer
+
+	Renamed old_log_enable to old_log_mode
+
+	Fixed missing qualifiers and uppercase names in PL
+
+2022-03-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing index upgrading older databases
+
+2022-03-22  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Added initial list of languages to decrease risk of deadlocks
+
+2022-03-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed return HTTP 503 even if MaintenancePage cannot be found (fixes #299)
+
+2022-03-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added faster check for version of installed VAD package
+
+2022-03-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed LDP metadata
+
+2022-03-08  Dimitar Dimitrov  <ddimitrov@openlinksw.com>
+
+	Fixed encoding-type for text/* files
+
+	Fixed issue removing properties
+
+2022-03-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed UTF-8 encoding issues
+
+	* set box flags to UTF-8 so we dont lose the encoding
+	* complete box when best label match is found
+
+2022-03-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed efficiency of label language lookup
+
+	Fixed only use charset_recode if value is varchar
+
+2022-03-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2022-03-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added git hash to the build info
+
+	Fixed the the rr:graph was not taken from RML doc - UI changes
+
+2022-03-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed VAD release date
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Disabled broken debug code that caused GPF
+
+	Fixed debug ifdef
+
+	Fixed lower limit for max batch to 100K
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with backup restore and DDL from plugins
+
+	The restore from backup dump do need only system tables a/k/a schema,
+	as the rest of tables are restored from db dump. Therefore plugin sql code etc.
+	DDL code must be excluded.
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed text of error message
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed prevent GPF, until source of error is found
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing bif alias
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added more secure bifs
+
+	Removed redundant checkpoints when creating new database
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed Host header should include non-standard port.
+
+	If a port is not specified, it is not a good idea to add the internal
+	port, as this does not work when using a proxy.
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for handling X-Forwarded-Proto header from proxy
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues in tpcc test program
+
+	* Added small enhancements such as disconnect/reconnect
+	* Fixed generating random data
+	* Fixed missing prototypes
+	* Fixed whitespace and indentation
+
+2022-03-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed support for NCHAR, NVARCHAR and LONG NVARCHAR fields
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed backup_online syntax
+
+	The backup_online function can be used to point to multiple directories,
+	preferably on different filesystems, so if one directory is full, the
+	backup can continue in the second directory.
+
+	Syntax for using multiple directories is:
+
+	  backup_online ('prefix-', 10000000, 0,
+	vector ('/disk1/backup1', '/disk2/backup2'));
+
+	This patch allows a single directory to be specified, without the use of
+	a vector with one element e.g.:
+
+	  backup_online ('prefix-', 10000000, 0, '/disk1/backup1');
+
+2022-03-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed unhandled error when COL_FULL_PATH is NULL
+
+	Added helper function for fixing DAV COL_FULL_PATH
+
+	Fixed use LONG mode for exist ( sparql ... ask ...)
+
+	Fixed the the rr:graph was not taken from RML doc
+
 2022-03-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Fixed copyright
 
