@@ -3002,27 +3002,25 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private void clearQuadStore(Resource[] contexts) throws RepositoryException 
     {
-        PreparedStatement ps = null;
+        java.sql.Statement stmt = null;
 
         if (contexts!=null && contexts.length > 0)
             try {
-                String [] graphs = new String[contexts.length];
-                ps = prepareStatement(S_CLEAR_GRAPH, true);
-                for (int i = 0; i < contexts.length; i++)
-                    graphs[i] = contexts[i].stringValue();
+                stmt = createStatement(-1, true);
 
-                Array gArray = quadStoreConnection.createArrayOf ("VARCHAR", graphs);
-                ps.setArray (1, gArray);
-                ps.executeUpdate ();
-                gArray.free();
+                for (int i = 0; i < contexts.length; i++)
+                    stmt.addBatch("sparql clear graph <"+contexts[i].stringValue()+">");
+
+                stmt.executeBatch();
+                stmt.clearBatch();
             }
             catch (Exception e) {
                 throw new RepositoryException(e);
             }
             finally {
-              if (ps != null)
+              if (stmt != null)
                 try {
-                  ps.close();
+                  stmt.close();
                 } catch(Exception e) { }
             }
     }
