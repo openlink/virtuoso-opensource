@@ -2213,3 +2213,10 @@ create procedure RDF_DUMP_NQUADS
     }
 }
 ;
+
+--!AWK PUBLIC
+create procedure DB.DBA.REPL_GETDATE (in _src varchar := null, in _type integer := 0) returns datetime
+{
+  return cast (datestring_GMT(now()) as datetime);
+}
+;
