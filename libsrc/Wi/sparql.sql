@@ -7541,7 +7541,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
     graph_iid := iri_to_id (graph_iid);
   old_log_mode := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
-  if (0 = bit_and (old_log_mode, 2))
+  if (0 = bit_and (old_log_mode, 2) and sys_stat ('rdf_rpid64_mode'))
     {
       declare dp any;
       dp := rl_local_dpipe ();
@@ -7563,7 +7563,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
       rl_flush (dp, graph_iid);
       return;
     }
-  if (not is_atomic ())
+  if (not is_atomic () and sys_stat ('rdf_rpid64_mode'))
     {
       declare app_env any;
       -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES, not atomic');
