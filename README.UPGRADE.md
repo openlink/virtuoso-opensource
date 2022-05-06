@@ -60,8 +60,8 @@ Bulkloading operations on an existing database using 32-bit prefix IDs will be r
 non-vectored functions. This will cause a drop in bulkload performance, so users who rely on this
 functionality should upgrade their database as soon as possible.
 
-Calling vectored functions like `TTLP_V` and `RDF_LOAD_RDFXML_V` will automatically call their
-non-vectored equivalents like `TTLP` and `RDF_LOAD_RDFXML`.
+Calling vectored functions like `TTLP_V()` and `RDF_LOAD_RDFXML_V()` will automatically call their
+non-vectored equivalents like `TTLP()` and `RDF_LOAD_RDFXML()`.
 
 Bulkloading using the `rdf_loader_run()` functions also automatically with downgrade to using
 non-vectored functions.
