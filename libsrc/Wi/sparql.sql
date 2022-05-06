@@ -7544,7 +7544,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
   if (0 = bit_and (old_log_mode, 2) and sys_stat ('rdf_rpid64_mode'))
     {
       declare dp any;
-      dp := rl_local_dpipe ();
+      dp := DB.DBA.RL_LOCAL_DPIPE ();
       connection_set ('g_iid', graph_iid);
       for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
 	{
@@ -7560,14 +7560,14 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
 	    dpipe_input (dp, s_iid, p_iid, null, obj);
 	}
         }
-      rl_flush (dp, graph_iid);
+      DB.DBA.RL_FLUSH (dp, graph_iid);
       return;
     }
   if (not is_atomic () and sys_stat ('rdf_rpid64_mode'))
     {
       declare app_env any;
       -- dbg_obj_princ ('DB.DBA.RDF_INSERT_TRIPLES, not atomic');
-      app_env := vector (async_queue (0, 1), rl_local_dpipe (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+      app_env := vector (async_queue (0, 1), DB.DBA.RL_LOCAL_DPIPE (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
       connection_set ('g_iid', graph_iid);
       for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
          {
@@ -7705,10 +7705,10 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples 
   old_log_mode := log_enable (log_mode, 1);
   declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
   if (is_local)
-    dp := dpipe (5, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO');
+    dp := dpipe (5, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO'); -- pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
   else
-    dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1');
-  dpipe_set_rdf_load (dp, 8);
+    dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1'); -- the pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
+  dpipe_set_rdf_load (dp, 8); -- RDF_LD_DEL_GS
   for vectored (in a_triple any array := triples)
             {
       declare a_s, a_p, a_o any array;
@@ -17434,28 +17434,28 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RL_FLUSH to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_OBJ_ADD_KEYWORD_FOR_GRAPH to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_GRAPH_GROUP_LIST_GET to SPARQL_SELECT',
-    'grant execute on L_O_LOOK to SPARQL_SPONGE',
-    'grant execute on RL_I2ID_NP to SPARQL_SPONGE',
-    'grant execute on rl_i2id to SPARQL_SPONGE',
+    'grant execute on DB.DBA.L_O_LOOK to SPARQL_SPONGE',
+    'grant execute on DB.DBA.RL_I2ID_NP to SPARQL_SPONGE',
+    'grant execute on DB.DBA.RL_I2ID to SPARQL_SPONGE',
     'grant execute on DB.DBA.TTLP_RL_TRIPLE to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RL_TYPE_ID to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_RL_LANG_ID to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_TRIPLE_L to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_NEW_GRAPH to SPARQL_UPDATE',
-    'grant execute on rl_local_dpipe to SPARQL_UPDATE',
-    'grant execute on rl_local_dpipe_gs to SPARQL_UPDATE',
-    'grant execute on RL_FLUSH to SPARQL_UPDATE',
-    'grant execute on rl_send to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RL_LOCAL_DPIPE to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RL_LOCAl_DPIPE_GS to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RL_FLUSH to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RL_SEND to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_COMMIT to SPARQL_UPDATE',
-    'grant execute on rl_send_gs to SPARQL_UPDATE',
+    'grant execute on DB.DBA.RL_SEND_GS to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_GS_TRIPLE to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_GS_TRIPLE_L to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_RL_GS_NEW_GRAPH to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_EV_NULL_IID to SPARQL_UPDATE',
-    'grant execute on TTLP_V_GS to SPARQL_UPDATE',
+    'grant execute on DB.DBA.TTLP_V_GS to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_V to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML_V to SPARQL_UPDATE',
-    'grant execute on ID_TO_IRI_VEC to SPARQL_UPDATE' );
+    'grant execute on DB.DBA.ID_TO_IRI_VEC to SPARQL_UPDATE' );
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);
