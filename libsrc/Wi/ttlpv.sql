@@ -744,30 +744,6 @@ create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
 }
 ;
 
-create procedure DB.DBA.RDF_QUADS_BATCH_COMPLETE (inout triples any)
-{
-  declare tcount, tctr, vcount, vctr integer;
-  declare inx, nt int;
-  declare og, os, op, oo any array;
-  nt := length (triples);
-  for vectored (in t any array := triples, out og := g1, out os := s1, out op := p1, out oo := o1)
-    {
-      declare g1, s1, p1, o1 any array;
-      g1 := __ro2sq (t[0]);
-      s1 := __ro2sq (t[1]);
-      p1 := __ro2sq (t[2]);
-      o1 := __ro2sq (t[3]);
-    }
-  for (inx := 0; inx < nt; inx := inx + 1)
-    {
-      triples[inx][0] := og[inx];
-      triples[inx][1] := os[inx];
-      triples[inx][2] := op[inx];
-      triples[inx][3] := oo[inx];
-    }
-}
-;
-
 create procedure DB.DBA.RDF_VEC_INS_TRIPLES (in s any, in p any, in o any, in g any)
 {
   vectored;
