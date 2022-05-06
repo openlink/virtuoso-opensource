@@ -649,14 +649,9 @@ create procedure DB.DBA.ID_TO_IRI_VEC (in id iri_id)
       if (__tag (id) = __tag of varchar and bit_and (__box_flags (id), 1))
         return id;
     }
-  idn := iri_id_num (id);
-  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
-    {
-      if (idn >= 4611686018427387904)
-        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
-      return sprintf_iri ('nodeID://%ld', idn);
-    }
-  name := rdf_cache_id_to_name ('i', idn, 0);
+  if (is_plain_bnode_iri_id (id))
+    return iri_id_to_blank_nodeid (id);
+  name := rdf_cache_id_to_name ('i', id, 0);
   if (0 = name)
     {
       name := (select RI_NAME from DB.DBA.RDF_IRI where RI_ID = id);
@@ -688,13 +683,8 @@ create procedure DB.DBA.ID_TO_IRI_VEC_NS (in id any array)
       when __tag of UNAME then id
       when __tag of varchar then case when bit_and (__box_flags (id), 1) then id else NULL end
       else NULL end );
-  idn := iri_id_num (id);
-  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
-    {
-      if (idn >= 4611686018427387904)
-        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
-      return sprintf_iri ('nodeID://%ld', idn);
-    }
+  if (is_plain_bnode_iri_id (id))
+    return iri_id_to_blank_nodeid (id);
   name := rdf_cache_id_to_name ('i', idn, 0);
   if (0 = name)
     {

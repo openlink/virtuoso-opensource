@@ -2693,6 +2693,49 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_iri_id (id);
 }
 
+int64
+iri_nodeid_to_iid (unsigned char *nodeid_tail, const char **error_fmt_ret)
+{
+  int64 acc = 0;
+  int64 prefix_base = 0;
+  if ('b' == nodeid_tail[0])
+    {
+      prefix_base = MIN_64BIT_BNODE_IRI_ID;
+      nodeid_tail++;
+    }
+  else if ('t' == nodeid_tail[0])
+    {
+      if (bnode_t_threshold == ~((boxint) 0))
+	{
+	  error_fmt_ret[0] =
+	      "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_threshold() is not called";
+	  return 0;
+	}
+      prefix_base = bnode_t_threshold;
+      nodeid_tail++;
+    }
+  while (isdigit (nodeid_tail[0]))
+    acc = acc * 10 + ((nodeid_tail++)[0] - '0');
+  if ('\0' != nodeid_tail[0])
+    {
+      error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI";
+      return 0;
+    }
+  acc += prefix_base;
+  if ((acc > (2 * min_bnode_iri_id ())) || (acc < min_bnode_iri_id ()))
+    {
+      if ((0 == acc) || (8192 == acc))
+	return acc;
+      if ((bnode_iri_ids_are_huge) || (acc < 0))
+	error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI";
+      else
+	error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI for 32-bit RDF storage";
+      return 0;
+    }
+  error_fmt_ret[0] = NULL;
+  return acc;
+}
+
 int
 iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret)
 {
@@ -2755,43 +2798,16 @@ again:
 /*                     0123456789 */
   if (!strncmp (name, "nodeID://", 9))
     {
-      unsigned char *tail = (unsigned char *)(name + 9);
-      int64 acc = 0;
-      int64 prefix_base = 0;
-      if ('b' == tail[0]) { prefix_base = MIN_64BIT_BNODE_IRI_ID; tail++; }
-      else if ('t' == tail[0])
+      const char *error_fmt = NULL;
+      int64 n = iri_nodeid_to_iid ((unsigned char *) (name + 9), &error_fmt);
+      if (NULL != error_fmt)
         {
-          if (bnode_t_treshold == ~((boxint)0))
-            {
-              err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-                "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_treshold() is not called", name );
-              goto return_error; /* see below */
-            }
-          prefix_base = bnode_t_treshold;
-          tail++;
-        }
-      while (isdigit (tail[0]))
-        acc = acc * 10 + ((tail++)[0] - '0');
-      if ('\0' != tail[0])
-        {
-          err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-            "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
-          goto return_error; /* see below */
-        }
-      acc += prefix_base;
-      if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
-        {
-          if ((bnode_iri_ids_are_huge) || (acc < 0))
-            err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-              "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
-          else
-            err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-              "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI for 32-bit RDF storage", name );
+	  err_ret[0] = srv_make_new_error ("RDFXX", ".....", error_fmt, name);
           goto return_error; /* see below */
         }
       if (NULL != box_to_delete)
         dk_free_box (box_to_delete);
-      res_ret[0] = box_iri_int64 (acc, DV_IRI_ID);
+      res_ret[0] = box_iri_int64 (n, DV_IRI_ID);
       return 1;
     }
   if (uriqa_dynamic_local)
@@ -3503,10 +3519,12 @@ bif_default_geo_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
 {
-  name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
+  name_id_cache_t * cache =
+      mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
     : mode[0] == 't' ? rdf_type_cache
-    : mode[0] == 'i'? iri_name_cache : NULL;
+    : mode[0] == 'i'? iri_name_cache
+    : NULL;
   if ('t' == mode[0] && !strcmp (pref, "http://www.opengis.net/ont/geosparql#wktLiteral"))
     return box_num (256);
   if (!cache)
@@ -3538,10 +3556,10 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 2)
     {
       new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+	  : bif_iri_id_or_long_arg (qst, args, 2, "rdf_cache_id");
       is_set = 1;
     }
-  return  rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
+  return rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
 }
 
 
@@ -3562,7 +3580,7 @@ bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, st
   SET_LOOP
     {
       boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+	: bif_iri_id_or_long_arg (qst, args, 2, "rdf_cache_id");
       rdf_cache_id (qi, mode, bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id"), new_id, 1, is_txn);
     }
   END_SET_LOOP;
@@ -3574,11 +3592,13 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 {
   QNCAST (query_instance_t, qi, qst);
   caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id_to_name");
-  boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
-  name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
-    : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 'i' ? iri_name_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+  boxint id = bif_iri_id_or_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+  name_id_cache_t *cache =
+	mode[0] == 'p' ? iri_prefix_cache
+      : mode[0] == 'l' ? rdf_lang_cache
+      : mode[0] == 'i' ? iri_name_cache
+      : mode[0] == 't' ? rdf_type_cache
+      : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
   if (cache == iri_name_cache || cache == iri_prefix_cache)
@@ -3604,15 +3624,17 @@ bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       return;
     }
   mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
-  cache = mode[0] == 'p' ? iri_prefix_cache
-    : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 'i' ? iri_name_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+  cache =
+        mode[0] == 'p' ? iri_prefix_cache
+      : mode[0] == 'l' ? rdf_lang_cache
+      : mode[0] == 'i' ? iri_name_cache
+      : mode[0] == 't' ? rdf_type_cache
+      : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
   SET_LOOP
     {
-      boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+    boxint id = bif_iri_id_or_long_arg (qst, args, 1, "rdf_cache_id_to_name");
       if (id == prev)
 	{
 	  qst_set_copy (qst, ret, box);

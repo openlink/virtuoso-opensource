@@ -165,56 +165,72 @@ cu_rl_local_exec (cucurbit_t * cu)
       {
 	ptrlong nth = dc_any_value (sets, inx);
 	int64 id = dc_any_value (res, inx);
-	value_state_t *vs = gethash ((void *) nth, cu->cu_seq_no_to_vs);
+	value_state_t *vs = (value_state_t *) gethash ((void *) nth, cu->cu_seq_no_to_vs);
 	if (is_ro)
 	  {
-	    if (DV_RDF == DV_TYPE_OF (vs->vs_org_value))
+	    switch (DV_TYPE_OF (vs->vs_org_value))
 	      {
-		rdf_box_t *rb = (rdf_box_t *) vs->vs_org_value;
-		rb->rb_ro_id = id;
-		if (rb->rb_is_text_index && cu->cu_rdf_load_mode != RDF_LD_MULTIGRAPH)
-		  {
-		    client_connection_t *cli = qi->qi_client;
-		    char *g_dict_name = "g_dict";
-		    id_hash_iterator_t **dict_place =
-			(id_hash_iterator_t **) id_hash_get (cli->cli_globals, (caddr_t) & g_dict_name);
-		    id_hash_t *ht;
-		    if (dict_place && (ht = dict_ht (*dict_place)))
-		      {
-			caddr_t one = (caddr_t) 1, id_box;
-			if (ht->ht_mp)
-			  id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
-			else
-			  id_box = box_num (id);
-			id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
-		      }
-		  }
-		cu_set_value (cu, vs, box_copy_tree ((caddr_t) rb));
-	      }
-	    else if (DV_STRING == DV_TYPE_OF (vs->vs_org_value) || IS_WIDE_STRING_DTP (DV_TYPE_OF (vs->vs_org_value)))
-	      {
-		rdf_box_t *rb = rb_allocate ();
-		rb->rb_ro_id = id;
-		rb->rb_type = RDF_BOX_DEFAULT_TYPE;
-		rb->rb_lang = RDF_BOX_DEFAULT_LANG;
-		if (cu->cu_rdf_load_mode != RDF_LD_MULTIGRAPH)
-		  {
-		    client_connection_t *cli = qi->qi_client;
-		    char *g_dict_name = "g_dict";
-		    id_hash_iterator_t **dict_place =
-			(id_hash_iterator_t **) id_hash_get (cli->cli_globals, (caddr_t) & g_dict_name);
-		    id_hash_t *ht;
-		    if (dict_place && (ht = dict_ht (*dict_place)))
-		      {
-			caddr_t one = (caddr_t) 1, id_box;
-			if (ht->ht_mp)
-			  id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
-			else
-			  id_box = box_num (id);
-			id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
-		      }
-		  }
-		cu_set_value (cu, vs, (caddr_t) rb);
+	      case DV_RDF:
+		{
+		  rdf_box_t *rb = (rdf_box_t *) vs->vs_org_value;
+		  rb->rb_ro_id = id;
+		  if (rb->rb_is_text_index && cu->cu_rdf_load_mode != RDF_LD_MULTIGRAPH)
+		    {
+		      client_connection_t *cli = qi->qi_client;
+		      const char *g_dict_name = "g_dict";
+		      id_hash_iterator_t **dict_place =
+			  (id_hash_iterator_t **) id_hash_get (cli->cli_globals, (caddr_t) & g_dict_name);
+		      id_hash_t *ht;
+		      if (dict_place && (ht = dict_ht (*dict_place)))
+			{
+			  caddr_t one = (caddr_t) 1, id_box;
+			  if (ht->ht_mp)
+			    id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
+			  else
+			    id_box = box_num (id);
+			  id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
+			}
+		    }
+		  cu_set_value (cu, vs, box_copy_tree ((caddr_t) rb));
+		  break;
+		}
+	      case DV_STRING:
+	      case DV_WIDE:
+	      case DV_BLOB_HANDLE:
+		{
+		  rdf_box_t *rb = rb_allocate ();
+		  rb->rb_ro_id = id;
+		  rb->rb_type = RDF_BOX_DEFAULT_TYPE;
+		  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+		  if (cu->cu_rdf_load_mode != RDF_LD_MULTIGRAPH)
+		    {
+		      client_connection_t *cli = qi->qi_client;
+		      const char *g_dict_name = "g_dict";
+		      id_hash_iterator_t **dict_place =
+			  (id_hash_iterator_t **) id_hash_get (cli->cli_globals, (caddr_t) & g_dict_name);
+		      id_hash_t *ht;
+		      if (dict_place && (ht = dict_ht (*dict_place)))
+			{
+			  caddr_t one = (caddr_t) 1, id_box;
+			  if (ht->ht_mp)
+			    id_box = mp_box_num ((mem_pool_t *) (ht->ht_mp), id);
+			  else
+			    id_box = box_num (id);
+			  id_hash_set (ht, (caddr_t) & id_box, (caddr_t) & one);
+			}
+		    }
+		  cu_set_value (cu, vs, (caddr_t) rb);
+		  break;
+		}
+	      case DV_GEO:
+		{
+		  rdf_box_t *rb = rb_allocate ();
+		  rb->rb_ro_id = id;
+		  rb->rb_type = RDF_BOX_GEO_TYPE;
+		  rb->rb_lang = RDF_BOX_DEFAULT_LANG;
+		  cu_set_value (cu, vs, (caddr_t) rb);
+		  break;
+		}
 	      }
 	  }
 	else
@@ -624,104 +640,128 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       l_null = dk_alloc_box (0, DV_DB_NULL);
       cf = cu_func ("L_O_LOOK", 1);
     }
-  if (IS_WIDE_STRING_DTP (dtp))
+  switch (dtp)
     {
-      mem_pool_t *pool = cu->cu_clrg->clrg_pool;
-      box = mp_box_wide_as_utf8_char (pool, box, box_length (box) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
-      dtp = DV_TYPE_OF (box);
-    }
-  if (DV_RDF == dtp)
-    {
-      rdf_box_t *rb = (rdf_box_t *) box;
-      caddr_t content = rb->rb_box;
-      dtp_t cdtp = DV_TYPE_OF (content);
-      rdf_obj_ft_rule_iid_hkey_t iid_hkey = { 0, 0 };
-      if (rb->rb_ro_id)
-	{
-	  cu_set_value (cu, vs, box_copy_tree (box));
-	  return NULL;
-	}
-      dt_lang = rb->rb_type << 16 | rb->rb_lang;
-      if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
-	{
-	  QNCAST (rdf_bigbox_t, rbb, rb);
-	  if (!rb->rb_ro_id)
-	    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, rbb->rbb_chksum, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)rb->rb_is_text_index, ap_box_num (&ap, 0)));
-	  else
+    case DV_RDF:
+      {
+	rdf_box_t *rb = (rdf_box_t *) box;
+	caddr_t content = rb->rb_box;
+	dtp_t cdtp = DV_TYPE_OF (content);
+	rdf_obj_ft_rule_iid_hkey_t iid_hkey = { 0, 0 };
+	if (rb->rb_ro_id)
+	  {
 	    cu_set_value (cu, vs, box_copy_tree (box));
-	  return NULL;
-	}
-      if (DV_GEO != cdtp
-	  && (DV_STRING != cdtp
-	      || (!rdf_no_string_inline && (box_length (content) - 1 < RB_MAX_INLINED_CHARS && !rb->rb_is_text_index))))
+	    return NULL;
+	  }
+	dt_lang = rb->rb_type << 16 | rb->rb_lang;
+	if (DV_XML_ENTITY == cdtp && rb->rb_chksum_tail)
+	  {
+	    QNCAST (rdf_bigbox_t, rbb, rb);
+	    if (!rb->rb_ro_id)
+	      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, rbb->rbb_chksum, ap_box_num (&ap, dt_lang), content, (caddr_t) (ptrlong) rb->rb_is_text_index, ap_box_num (&ap, 0)));
+	    else
+	      cu_set_value (cu, vs, box_copy_tree (box));
+	    return NULL;
+	  }
+	if (DV_GEO != cdtp
+	    && (DV_STRING != cdtp
+		|| (!rdf_no_string_inline && (box_length (content) - 1 < RB_MAX_INLINED_CHARS && !rb->rb_is_text_index))))
+	  {
+	    rb->rb_is_text_index = 0;	/* not a string and not xml */
+	    cu_set_value (cu, vs, box_copy_tree (box));
+	    return NULL;
+	  }
+	if ((DV_STRING == cdtp || DV_GEO == cdtp) && rb->rb_ro_id)
+	  {
+	    cu_set_value (cu, vs, box_copy_tree (box));
+	    return NULL;
+	  }
+	rb->rb_is_outlined = 1;
+	if (DV_GEO == cdtp)
+	  {
+	    caddr_t err = NULL;
+	    content = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
+	    allocd_content = content;
+	    is_text = 2;
+	  }
+	else
+	  is_text = rb->rb_is_text_index;
+	if (!is_text)		/* check if all graphs are enabled */
+	  {
+	    mutex_enter (rdf_obj_ft_rules_mtx);
+	    if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t) (&iid_hkey)))
+	      is_text = 1;
+	    mutex_leave (rdf_obj_ft_rules_mtx);
+	  }
+	len = box_length (content) - 1;
+	if (len > RB_BOX_HASH_MIN_LEN)
+	  {
+	    caddr_t trid = mdigest5 (content);
+	    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t) (ptrlong) is_text, NULL));
+	    dk_free_box (trid);
+	    dk_free_box (allocd_content);
+	    return NULL;
+	  }
+	cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t) (ptrlong) is_text, NULL));
+	dk_free_box (allocd_content);
+	return NULL;
+      }
+    case DV_GEO:
+      {
+	/* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
+	caddr_t err = NULL;
+	caddr_t content = box_to_any_1 (box, &err, NULL, DKS_TO_DC);
+	dt_lang = RDF_BOX_GEO << 16 | RDF_BOX_DEFAULT_LANG;
+	allocd_content = content;
+	len = box_length (content) - 1;
+	is_text = 2;
+	if (len > RB_BOX_HASH_MIN_LEN)
+	  {
+	    caddr_t trid = mdigest5 (content);
+	    cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t) (ptrlong) is_text, NULL));
+	    dk_free_box (trid);
+	  }
+	else
+	  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t) (ptrlong) is_text, NULL));
+	dk_free_box (allocd_content);
+	return NULL;
+      }
+    case DV_STRING:
+      len = box_length (box) - 1;
+      break;
+    case DV_WIDE:
+      allocd_content = box = box_wide_as_utf8_char (box, box_length (box) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
+      len = box_length (box) - 1;
+      dtp = DV_STRING;
+      break;
+    case DV_BLOB_HANDLE:
+      {
+	caddr_t wide = blob_to_string (((query_instance_t *) (cu->cu_qst))->qi_trx, box);
+	QR_RESET_CTX
 	{
-	  rb->rb_is_text_index = 0;	/* not a string and not xml */
-	  cu_set_value (cu, vs, box_copy_tree (box));
-	  return NULL;
+	  allocd_content = box = box_wide_as_utf8_char (box, box_length (box) / sizeof (wchar_t) - 1, DV_SHORT_STRING);
 	}
-      if ((DV_STRING == cdtp || DV_GEO == cdtp) && rb->rb_ro_id)
+	QR_RESET_CODE
 	{
-	  cu_set_value (cu, vs, box_copy_tree (box));
-	  return NULL;
+	  dk_free_box (wide);
+	  POP_QR_RESET;
 	}
-      rb->rb_is_outlined = 1;
-      if (DV_GEO == cdtp)
-	{
-	  caddr_t err = NULL;
-	  content = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
-	  allocd_content = content;
-	  is_text = 2;
-	}
-      else
-	is_text = rb->rb_is_text_index;
-      if (!is_text) /* check if all graphs are enabled */
-	{
-	  mutex_enter (rdf_obj_ft_rules_mtx);
-	  if (NULL != id_hash_get (rdf_obj_ft_rules_by_iids, (caddr_t)(&iid_hkey)))
-	    is_text = 1;
-	  mutex_leave (rdf_obj_ft_rules_mtx);
-	}
-      len = box_length (content) - 1;
-      if (len > RB_BOX_HASH_MIN_LEN)
-	{
-	  caddr_t trid = mdigest5 (content);
-	  cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)is_text, NULL));
-	  dk_free_box (trid);
-	  dk_free_box (allocd_content);
-	  return NULL;
-	}
-      cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t)(ptrlong)is_text, NULL));
-      dk_free_box (allocd_content);
-      return NULL;
+	END_QR_RESET dk_free_box (wide);
+	dtp = DV_STRING;
+	len = box_length (box) - 1;
+	break;
+      }
     }
-  if (DV_GEO == dtp)
+
+  if ((DV_STRING != dtp && DV_UNAME != dtp) || (!rdf_no_string_inline && len < RB_MAX_INLINED_CHARS))
     {
-      /* A trick instead of sqlr_new_error ("22023", "CLGEO", "A geometry without rdf box is not allowed as object of quad"); */
-      caddr_t err = NULL;
-      caddr_t content = box_to_any_1 (box, &err, NULL, DKS_TO_DC);
-      dt_lang = RDF_BOX_GEO << 16 | RDF_BOX_DEFAULT_LANG;
-      allocd_content = content;
-      len = box_length (content) - 1;
-      is_text = 2;
-      if (len > RB_BOX_HASH_MIN_LEN)
-        {
-          caddr_t trid = mdigest5 (content);
-          cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), content, (caddr_t)(ptrlong)is_text, NULL));
-          dk_free_box (trid);
-        }
+      if (allocd_content == box)
+	cu_set_value (cu, vs, box);
       else
-        cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, content, ap_box_num (&ap, dt_lang), l_null, (caddr_t)(ptrlong)is_text, NULL));
-      dk_free_box (allocd_content);
+	cu_set_value (cu, vs, box_copy_tree (box));
       return NULL;
     }
-  else if (DV_STRING == dtp)
-    len = box_length (box) - 1;
-  if (DV_STRING != dtp || (!rdf_no_string_inline && len < RB_MAX_INLINED_CHARS))
-    {
-      cu_set_value (cu, vs, box_copy_tree (box));
-      return NULL;
-    }
-  if (BF_IRI == box_flags (box))
+  if (BF_IRI == box_flags (box) || DV_UNAME == dtp)
     return l_iri_id_disp (cu, box, vs);
 
   dt_lang = (RDF_BOX_DEFAULT_TYPE << 16) | RDF_BOX_DEFAULT_LANG;
@@ -766,33 +806,19 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
     case DV_UNAME:
       break;
     default:
-      sqlr_new_error ("42000", "CL...", "expected string for arg of disp fn");
+      sqlr_new_error ("42000", "CL...",
+	  "IRI ID lookup dispatching function expects IRI_ID or string as an argument, not a value with tag %d (%s)", dtp,
+	  dv_type_title (dtp));
     }
   if (!strncmp (name, "nodeID://", 9))
     {
-      unsigned char *tail = (unsigned char *) (name + 9);
-      int64 acc = 0;
-      int b_first = 0;
-      if ('b' == tail[0])
-	{
-	  b_first = 1;
-	  tail++;
-	}
-      while (isdigit (tail[0]))
-	acc = acc * 10 + ((tail++)[0] - '0');
-      if ('\0' != tail[0])
+      const char *error_fmt = NULL;
+      int64 acc = iri_nodeid_to_iid ((unsigned char *) (name + 9), &error_fmt);
+      if (NULL != error_fmt)
 	{
 	  if (NULL != box_to_delete)
 	    dk_free_box (box_to_delete);
-	  sqlr_new_error ("42000", "CL...", "Invalid tail of nodeID:// IRI");
-	}
-      if (b_first)
-	acc += MIN_64BIT_BNODE_IRI_ID;
-      if ((acc > (2 * min_bnode_iri_id ())) || (acc < min_bnode_iri_id ()))
-	{
-	  if (NULL != box_to_delete)
-	    dk_free_box (box_to_delete);
-	  sqlr_new_error ("42000", "CL...", "Invalid numeric value in the tail of nodeID:// IRI");
+	  sqlr_new_error ("42000", "CL...", error_fmt, name);
 	}
       cu_set_value (cu, vs, box_iri_id (acc));
       return NULL;

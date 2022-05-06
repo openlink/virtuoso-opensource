@@ -174,7 +174,7 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_world)
 }
 
-iri_id_t bnode_t_treshold = ~((iri_id_t)0);
+iri_id_t bnode_t_threshold = ~((iri_id_t)0);
 
 int
 rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
@@ -311,11 +311,11 @@ rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
 }
 
 caddr_t
-bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_rdf_set_bnode_t_threshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  sec_check_dba ((query_instance_t *) qst, "__rdf_set_bnode_t_treshold");
-    bnode_t_treshold = sequence_next ("RDF_URL_IID_BLANK", 0);
-  return box_iri_id (bnode_t_treshold);
+  sec_check_dba ((query_instance_t *) qst, "__rdf_set_bnode_t_threshold");
+    bnode_t_threshold = sequence_next ("RDF_URL_IID_BLANK", 0);
+  return box_iri_id (bnode_t_threshold);
 }
 
 void
@@ -7128,8 +7128,8 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
-  bif_define_ex ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
+  bif_define_ex ("__rdf_set_bnode_t_threshold", bif_rdf_set_bnode_t_threshold, BMD_ALIAS, "__rdf_set_bnode_t_treshold", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_set_uses_index (bif_rdf_set_bnode_t_threshold);
   bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id, BMD_IS_PURE, BMD_DONE);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
