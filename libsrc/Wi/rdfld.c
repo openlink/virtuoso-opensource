@@ -334,7 +334,7 @@ rl_rdf_ins_label (cucurbit_t * cu, caddr_t * quad, caddr_t ** ret_dc_array)
     {
       rdf_box_t * rb = (rdf_box_t *) oval;
       if (!rb->rb_is_complete)
-	GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb");
+        rb_complete (rb, qi->qi_trx, qi); /*GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb");*/
       if (!DV_STRINGP (rb->rb_box)) /* labels are supposed to be strings */
 	return;
       dc_append_box (rl_o_dc, oval);
