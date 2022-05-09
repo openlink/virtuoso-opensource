@@ -15,7 +15,7 @@ set SQL_FILES_VDB=vdb.sql
 set SQL_FILES_PLDBG=cov_report.xsl cov_time.xsl
 set SQL_FILES_VAD=../../binsrc/vad/vad_root.sql ../../binsrc/vad/vad_misc.sql ../../binsrc/vad/oper_pars.sql ../../binsrc/vad/pars_init.sql ../../binsrc/vad/vad_make.sql
 set SQL_FILES_DBP=../../binsrc/vsp/admin/dbpump/dbpump_root.sql ../../binsrc/vsp/admin/dbpump/oper_pars.sql ../../binsrc/vsp/admin/dbpump/components.sql ../../binsrc/vsp/admin/dbpump/comp_html.sql ../../binsrc/vsp/admin/dbpump/comp_misc.sql ../../binsrc/vsp/admin/dbpump/comp_rpath.sql ../../binsrc/vsp/admin/dbpump/comp_tables.sql ../../binsrc/vsp/admin/dbpump/pars_init.sql
-set SQL_FILES_SPARQL=sparql.sql sparql_io.sql sparql_ui.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql ttlpv.sql
+set SQL_FILES_SPARQL=sparql.sql sparql_io.sql sparql_ui.sql sparql_qm.sql rdf_sponge.sql rdf_schema_objects.sql rdf_void.sql rdflddir2.sql ttlpv.sql
 set SQL_FILES_SPARQL_INIT=sparql_init.sql
 
 rm -f sql_code.c sql_code_1.c sql_code_ws.c sql_code_repl.c sql_code_dav.c sql_code_ddk.c sql_code_sys.c sql_code_uddi.c 

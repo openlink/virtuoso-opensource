@@ -695,6 +695,7 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
 	$(srcdir)/sparql_ui.sql \
+	$(srcdir)/sparql_qm.sql \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
