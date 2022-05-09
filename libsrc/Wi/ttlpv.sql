@@ -70,6 +70,15 @@ create procedure DB.DBA.L_O_LOOK (inout val_str varchar, inout dt_lang int, inou
 }
 ;
 
+create procedure DB.DBA.L_O_LOOK_NE (inout val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
+{
+  vectored;
+  id := (select RO_ID from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = val_str and  RO_DT_AND_LANG = dt_lang);
+  if (id is null)
+    id := 0;
+}
+;
+
 create procedure DB.DBA.RL_I2ID_NP (inout pref varchar, inout name varchar, inout id iri_id_8)
 {
   vectored;
@@ -96,6 +105,38 @@ create procedure DB.DBA.RL_I2ID (inout name varchar, inout id iri_id_8)
   rdf_cache_id ('i', name, id);
 }
 ;
+
+create procedure DB.DBA.RL_I2ID_NE (inout name varchar, inout id iri_id_8)
+{
+  vectored;
+  id := (select RI_ID from DB.DBA.RDF_IRI table option (index RDF_IRI) where RI_NAME = name);
+  if (id is not null)
+    rdf_cache_id ('i', name, id);
+  else
+    id := #i0;
+}
+;
+
+create procedure RL_I2ID_NPE (inout pref varchar, inout name varchar, inout id iri_id_8)
+{
+  vectored;
+  declare pref_fetched, id_fetched, pref_id int;
+  pref_id := (select RP_ID from DB.DBA.RDF_PREFIX table option (index RDF_PREFIX) where RP_NAME = pref);
+  if (pref_id is null)
+    id := #i0;
+  else
+    {
+      rdf_cache_id ('p', pref, pref_id);
+      __rl_set_pref_id (name, pref_id);
+      id := (select RI_ID from DB.DBA.RDF_IRI table option (index RDF_IRI) where RI_NAME = name);
+      if (id is not null)
+        rdf_cache_id ('i', name, id);
+      else
+        id := #i0;
+    }
+}
+;
+
 
 create procedure DB.DBA.TTLP_RL_TRIPLE (
   inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,

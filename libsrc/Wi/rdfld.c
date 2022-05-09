@@ -93,7 +93,7 @@ cu_local_dispatch (cucurbit_t * cu, value_state_t * vs, cu_func_t * cf, caddr_t 
       clo->clo_set_no = mp_data_col (clrg->clrg_pool, &ssl_set_no_dummy, init_sz);
       clo->_.call.func = cf->cf_proc;
       clo->_.call.params = (caddr_t *) mp_box_copy (clrg->clrg_pool, val);
-      DO_BOX (caddr_t, arg, inx, args)
+      DO_BOX_0 (caddr_t, arg, inx, args)
       {
 	ssl_dummy.ssl_sqt = cf->cf_arg_sqt[inx];
 	ssl_dummy.ssl_dc_dtp = sqt_dc_dtp (&ssl_dummy.ssl_sqt);
@@ -281,7 +281,8 @@ void
 rl_rdf_ins_label (cucurbit_t * cu, caddr_t * quad, caddr_t ** ret_dc_array)
 {
   static rdf_inf_ctx_t * ctx;
-  static caddr_t err;
+  static caddr_t err;		/* if init fails do not try every time, supposed to do init once */
+  QNCAST (query_instance_t, qi, cu->cu_qst);
   dbe_table_t * tbl = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_LABEL");
   caddr_t oval;
   cl_req_group_t * clrg = cu->cu_clrg;
@@ -293,7 +294,7 @@ rl_rdf_ins_label (cucurbit_t * cu, caddr_t * quad, caddr_t ** ret_dc_array)
 
   if (!ctx && !err)
     {
-      caddr_t err = NULL, ctx_name = box_string (rdf_label_inf_name);
+      caddr_t ctx_name = box_string (rdf_label_inf_name);
       cl_rdf_inf_init (CU_CLI(cu), &err);
       ctx = rdf_inf_ctx (ctx_name);
       dk_free_box (ctx_name);
@@ -328,7 +329,6 @@ rl_rdf_ins_label (cucurbit_t * cu, caddr_t * quad, caddr_t ** ret_dc_array)
       rl_text_dc = (data_col_t *)(*ret_dc_array)[2];
       rl_lang_dc = (data_col_t *)(*ret_dc_array)[3];
     }
-
 
   if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, quad[2], RI_SUBPROPERTY, 0))
     {
@@ -451,7 +451,7 @@ cu_rl_graph_words (cucurbit_t * cu, caddr_t g_iid)
     return;
   hit = *dict_place;
   pars = (caddr_t *) list (2, box_copy_tree (g_iid), box_copy_tree ((caddr_t) hit));
-  save_repl = box_copy_tree (qi->qi_trx->lt_replicate);
+  save_repl = (caddr_t *) box_copy_tree ((caddr_t) (qi->qi_trx->lt_replicate));
   save_ac = qi->qi_client->cli_row_autocommit;
   err = qr_exec (cli, rl_graph_words_qr, CALLER_LOCAL, "", NULL, NULL, pars, NULL, 0);
   qi->qi_trx->lt_replicate = save_repl;
@@ -466,7 +466,6 @@ cu_rl_graph_words (cucurbit_t * cu, caddr_t g_iid)
   dk_free_box ((caddr_t) pars);
 }
 
-void rdf_repl_gs_batch (query_instance_t * qi, caddr_t * batch, int ins);
 
 void
 cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
@@ -475,7 +474,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   caddr_t *inst = cu->cu_qst;
   async_queue_t *aq;
   dbe_table_t *quad_tb = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_QUAD");
-  caddr_t err1 = NULL, err2 = NULL;
+  caddr_t err1 = NULL, err2 = NULL, *perr2 = &err2;
   int nth_key = 0, inx, n_keys;
   cl_req_group_t *clrg = cu->cu_clrg;
   data_col_t *g_dc = mp_data_col (clrg->clrg_pool, &ssl_iri_dummy, dc_batch_sz);
@@ -484,7 +483,6 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   data_col_t *o_dc = mp_data_col (clrg->clrg_pool, &ssl_any_dummy, dc_batch_sz);
   int is_gs = BOX_ELEMENTS (cu->cu_input_funcs) == 5;
   int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE, allg;
-  dk_set_t set = NULL;
   caddr_t tmp[5], * quad, * lbl_box = NULL;
   BOX_AUTO_TYPED (caddr_t *, quad, tmp, 4 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
 
@@ -492,69 +490,60 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   for (inx = 0; inx < cu->cu_fill; inx++)
     {
       caddr_t *row = (caddr_t *) cu->cu_rows[inx];
-      caddr_t gx;
+      caddr_t x = row[5];
+      QNCAST (rdf_box_t, rb, x);
+      int is_rb = DV_RDF == DV_TYPE_OF (x) && rb->rb_is_complete && rb->rb_ro_id;
       /* dpipe from replication cb  */
       if (cu->cu_rdf_load_mode == RDF_LD_INS_GS || cu->cu_rdf_load_mode == RDF_LD_DEL_GS)
 	{
-	  caddr_t x = row[5];
-	  dc_append_box (g_dc, row[2]); /* G */
-	  dc_append_box (s_dc, row[3]); /* S */
-	  dc_append_box (p_dc, row[4]); /* P */
+	  quad[0] = row[2];	/* G */
+	  quad[1] = row[3];	/* S */
+	  quad[2] = row[4];	/* P */
 	  if (DV_RDF == DV_TYPE_OF (x)) /* O */
-	    {
-	      QNCAST (rdf_box_t, rb, x);
-	      int is_rb = rb->rb_is_complete && rb->rb_ro_id;
-	      if (is_rb) rb->rb_is_complete = 0;
-	      dc_append_box (o_dc, x);
-	      if (is_rb) rb->rb_is_complete = 1;
-	    }
+	    quad[3] = x;
 	  else
-	    dc_append_box (o_dc, row[5]);
-	  continue;
+	    quad[3] = row[5];
 	}
-      /* ttlpv loader */
-      if (is_gs)
-	gx = row[6];
-      else
-	gx = g_iid;
-      dc_append_box (g_dc, gx);
-      dc_append_box (s_dc, row[2]);
-      dc_append_box (p_dc, row[3]);
-      quad[0] = gx;
-      quad[1] = row[2];
-      quad[2] = row[3];
-      if (DV_DB_NULL == DV_TYPE_OF (row[4]))
+      else			/* ttlpv loader dpipes */
 	{
-	  caddr_t x = row[5];
-	  QNCAST (rdf_box_t, rb, x);
-	  int is_rb = DV_RDF == DV_TYPE_OF (x) && rb->rb_is_complete && rb->rb_ro_id;
+	  quad[0] = (is_gs ? row[6] : g_iid);	/* G */
+	  quad[1] = row[2];			/* S */
+	  quad[2] = row[3];			/* P */
+	  if (DV_DB_NULL == DV_TYPE_OF (row[4]))	/* inx 4  is for IRI, if null then we expect rdf_box, number or date at inx 5  */
+	{
 	  dtp_t dtp = DV_TYPE_OF (x); 
 	  if (DV_DB_NULL == dtp || DV_STRING == dtp || IS_WIDE_STRING_DTP (dtp))
 	    sqlr_new_error ("42000",  "CL...",  "%s not allowed for O column value S=" BOXINT_FMT 
 		" P=" BOXINT_FMT , (DV_DB_NULL == dtp ? "NULL" : "string"), unbox_iri_id (quad[1]), unbox_iri_id (quad[2]));
-	  if (is_rb)
-	    rb->rb_is_complete = 0;
-	  dc_append_box (o_dc, x);
-	  if (is_rb)
-	    rb->rb_is_complete = 1;
 	  quad[3] = x;
-	  /* rdf labels */
-	  if (rdf_label_inf_name) /* label's fill enabled */
+
+	      if (rdf_label_inf_name)	/* rdf labels fill if enabled */
 	    rl_rdf_ins_label (cu, quad, &lbl_box);
 	}
       else
-	{
-	dc_append_box (o_dc, row[4]);
 	  quad[3] = row[4];
+
+#define IS_DUMMY_QUAD(quad) (is_del && ( !unbox_iri_id (quad[0]) || !unbox_iri_id (quad[1]) || !unbox_iri_id (quad[2]) ))
+
 	}
-      if (rdf_graph_is_in_enabled_repl ((caddr_t *)qi, unbox_iri_id (quad[0]), &allg))
-	dk_set_push (&set, box_copy_tree (quad));
+
+      /* we do not try to delete zero IRI ID */
+      if (IS_DUMMY_QUAD (quad))
+	continue;
+
+      dc_append_box (g_dc, quad[0]);
+      dc_append_box (s_dc, quad[1]);
+      dc_append_box (p_dc, quad[2]);
+      if (is_rb)
+	rb->rb_is_complete = 0;	/* this is important, in insert o_dc we don't want complete boxes */
+      dc_append_box (o_dc, quad[3]);
+      if (is_rb)
+	rb->rb_is_complete = 1;
     }
   BOX_DONE (quad, tmp);
-  if (set)
-    rdf_repl_gs_batch (qi, (caddr_t *) list_to_array (dk_set_nreverse (set)), 1);
 
   cu->cu_cd = (caddr_t *) mp_alloc_box (clrg->clrg_pool, sizeof (caddr_t) * dk_set_length (quad_tb->tb_keys), DV_BIN);
+
   DO_SET (dbe_key_t *, key, &quad_tb->tb_keys)
   {
     int n_parts = dk_set_length (key->key_parts);
@@ -580,6 +569,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
     nth_key++;
   }
   END_DO_SET ();
+
   n_keys = dk_set_length (quad_tb->tb_keys);
   if (qi->qi_trx->lt_replicate != REPL_NO_LOG)
     n_keys = 0;
@@ -608,7 +598,7 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
   aq->aq_wait_qi = qi;
   aq_wait_all (aq, &err1);
   aq->aq_wait_qi = NULL;
-  END_IO_SECT (&err2);
+  END_IO_SECT (perr2);
   if (err1)
     {
       dk_free_tree (err2);
@@ -633,13 +623,17 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
   dtp_t dtp = DV_TYPE_OF (box);
   int len = 0, is_text = 0;
   static caddr_t l_null;
-  static cu_func_t *cf;
+  static cu_func_t *cf_0, *cf_ne;
+  cu_func_t *cf;
+  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE;
   AUTO_POOL (12);
-  if (!cf)
+  if (!cf_0)
     {
       l_null = dk_alloc_box (0, DV_DB_NULL);
-      cf = cu_func ("L_O_LOOK", 1);
+      cf_0 = cu_func ("L_O_LOOK", 1);
+      cf_ne = cu_func ("L_O_LOOK_NE", 1);
     }
+  cf = is_del ? cf_ne : cf_0;
   switch (dtp)
     {
     case DV_RDF:
@@ -770,9 +764,11 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
       caddr_t trid = mdigest5 (box);
       cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, trid, ap_box_num (&ap, dt_lang), vs->vs_org_value, (caddr_t) 1, NULL));
       dk_free_box (trid);
+      dk_free_box (allocd_content);
       return NULL;
     }
   cu_local_dispatch (cu, vs, cf, (caddr_t) ap_list (&ap, 5, box, ap_box_num (&ap, dt_lang), l_null, (caddr_t) 1, NULL));
+  dk_free_box (allocd_content);
   return NULL;
 }
 
@@ -782,14 +778,20 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
 {
   static cu_func_t *cf;
   static cu_func_t *cf_np;
+  static cu_func_t *cf_ne;
+  static cu_func_t *cf_npe;
   boxint pref_id_no, iri_id_no;
   caddr_t prefix, local;
   dtp_t dtp = DV_TYPE_OF (name);
   caddr_t box_to_delete = NULL, name_to_delete = NULL;
+  int is_del = cu->cu_rdf_load_mode == RDF_LD_DEL_GS || cu->cu_rdf_load_mode == RDF_LD_DELETE;
+
   if (!cf)
     {
       cf = cu_func ("L_I_LOOK", 1);
       cf_np = cu_func ("L_I_LOOK_NP", 1);
+      cf_ne = cu_func ("L_I_LOOK_NE", 1);
+      cf_npe = cu_func ("L_I_LOOK_NPE", 1);
     }
 
   switch (dtp)
@@ -846,13 +848,20 @@ l_iri_id_disp (cucurbit_t * cu, caddr_t name, value_state_t * vs)
   if (!pref_id_no)
     {
       AUTO_POOL (8);
-      cu_local_dispatch (cu, vs, cf_np, (caddr_t) ap_list (&ap, 3, prefix, local, ap_box_iri_id (&ap, 0)));
+      cu_local_dispatch (cu, vs, (is_del ? cf_npe : cf_np), (caddr_t) ap_list (&ap, 3, prefix, local, ap_box_iri_id (&ap, 0)));
       dk_free_box (local);
       dk_free_box (prefix);
       return NULL;
     }
   dk_free_box (prefix);
   RPID_SET_NA (local, pref_id_no);
+  if (is_del)
+    {
+      AUTO_POOL (8);
+      cu_local_dispatch (cu, vs, cf_ne, (caddr_t) ap_list (&ap, 2, local, ap_box_iri_id (&ap, 0)));
+      dk_free_box (local);
+      return NULL;
+    }
   iri_id_no = 0;		/*nic_name_id (iri_name_cache, local); */
   if (iri_id_no)
     {
@@ -898,7 +907,7 @@ bif_rl_set_pref_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  RPID_SET_NA (((unsigned char *) (&str[hl])), id);
 	}
       else
-	sqlr_new_error ("42000", ".....", "__rl_set_pref_id expects a any type column");
+	sqlr_new_error ("42000", ".....", "__rl_set_pref_id() expects a column of type \"any\"");
     }
   return NULL;
 }
@@ -939,16 +948,36 @@ bif_rld_init ()
   bif_define ("rl_dp_ids", bif_rl_dp_ids);
   bif_define ("__rl_set_pref_id", bif_rl_set_pref_id);
   bif_set_vectored (bif_rl_set_pref_id, (bif_vec_t) bif_rl_set_pref_id);
+
+  /* local iri_to_id dpipe */
   dpipe_define ("L_IRI_TO_ID", NULL, "", (cu_op_func_t) l_iri_id_disp, CF_1_ARG);
+
+  /* called from l_iri_id_disp in case when IRI prefix is known cache iri */
   dpipe_define ("L_I_LOOK", NULL, "DB.DBA.RL_I2ID", (cu_op_func_t) NULL, 0);
   dpipe_signature ("L_I_LOOK", 2, DV_STRING, DV_IRI_ID_8);
+
+  /* called from l_iri_id_disp in case when IRI prefix is NOT known cache prefix */
   dpipe_define ("L_I_LOOK_NP", NULL, "DB.DBA.RL_I2ID_NP", (cu_op_func_t) NULL, 0);
   dpipe_signature ("L_I_LOOK_NP", 3, DV_STRING, DV_STRING, DV_IRI_ID_8);
 
+  /* called from l_iri_id_disp in case when we check if IRI to delete exists */
+  dpipe_define ("L_I_LOOK_NE", NULL, "DB.DBA.RL_I2ID_NE", (cu_op_func_t) NULL, 0);
+  dpipe_signature ("L_I_LOOK_NE", 2, DV_STRING, DV_IRI_ID_8);
 
+  /* called from l_iri_id_disp in case when IRI prefix is NOT known cache prefix, to delete if IRI exists */
+  dpipe_define ("L_I_LOOK_NPE", NULL, "DB.DBA.RL_I2ID_NPE", (cu_op_func_t) NULL, 0);
+  dpipe_signature ("L_I_LOOK_NPE", 3, DV_STRING, DV_STRING, DV_IRI_ID_8);
+
+  /* local rdf obj from sql value dpipe */
   dpipe_define ("L_MAKE_RO", NULL, "", (cu_op_func_t) l_make_ro_disp, CF_1_ARG);
+
+  /* called from l_make_ro_disp, fetch ro_id if not make new rdf_obj */
   dpipe_define ("L_O_LOOK", NULL, "DB.DBA.L_O_LOOK", (cu_op_func_t) NULL, 0);
   dpipe_signature ("L_O_LOOK", 5, DV_STRING, DV_LONG_INT, DV_STRING, DV_LONG_INT, DV_LONG_INT);
+
+  dpipe_define ("L_O_LOOK_NE", NULL, "DB.DBA.L_O_LOOK_NE", (cu_op_func_t) NULL, 0);
+  dpipe_signature ("L_O_LOOK_NE", 5, DV_STRING, DV_LONG_INT, DV_STRING, DV_LONG_INT, DV_LONG_INT);
+
   ssl_set_no_dummy.ssl_dc_dtp = ssl_set_no_dummy.ssl_sqt.sqt_dtp = DV_LONG_INT;
   ssl_iri_dummy.ssl_dc_dtp = ssl_iri_dummy.ssl_sqt.sqt_dtp = DV_IRI_ID;
   ssl_any_dummy.ssl_dc_dtp = ssl_any_dummy.ssl_sqt.sqt_dtp = DV_ANY;
