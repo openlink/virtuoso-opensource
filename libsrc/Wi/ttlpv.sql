@@ -1068,12 +1068,26 @@ create procedure DB.DBA.RDF_DELETE_TRIPLE_C (in s any array, in p any array, in 
 
 create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
 {
-  for vectored (in in_g any array := graphs)
+  declare  kesg integer;
+  foreach (any g_v in graphs) do
     {
       declare g_iid any;
       g_iid := iri_to_id (in_g, 0);
-      delete from RDF_QUAD table option (index G) where G = g_iid;
+      kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', g_iid));
+      if (kesg <= 1000)
+        {
+          -- if graph is relatively small
+          delete from DB.DBA.RDF_QUAD table option (index G) where G = g_iid;
+        }
+      else
+        {
+          delete from DB.DBA.RDF_QUAD where G = g_iid;
+        }
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = g_iid option (index_only, index RDF_QUAD_GS);
+
+      -- Sponging
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_v;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (gv), '&graphMD5=%');
     }
 }
 ;
