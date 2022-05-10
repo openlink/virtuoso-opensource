@@ -1,4 +1,75 @@
+2022-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/sparql_delete_c_opt' into develop/7
+
+2022-05-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue generating triples from rdf view to physical store with rdfs:label property
+
+	Added optimizations for clearing graph
+
+2022-05-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added optimizations for deleting triples
+
+	* Fixed do not make new IRIs and RDF objects when delete dpipe is used
+	* Fixed do not schedule prefix insert if non-existing on delete
+	* Added more comments
+	* Small cleanups
+
+2022-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Backported functions and cleanups from v8
+
+	* is_plain_bnode_iri_id
+	* iri_id_to_blank_nodeid
+	* bif_iri_id_or_long_arg
+	* iri_nodeid_to_iid
+	* __rdf_set_bnode_t_threshold
+	* cu_rl_local_exec
+	* l_make_ro_disp
+
+2022-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Split quad map functions into a separate file
+
+2022-05-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed deprecated function
+
+2022-05-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use fully qualified PL names in uppercase
+
+2022-05-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Small documentation fix
+
+2022-05-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue converting RDF metadata from older databases
+
+	This fixes the following error during startup of the database:
+
+	  ...
+	  14:35:16 SQL Optimizer enabled (max 1000 layouts)
+	  14:35:17 Compiler unit is timed at 0.000497 msec
+	  14:35:18 Roll forward started
+	  14:35:18 Roll forward complete
+	  14:35:18 Error executing a server init statement :
+	  42000: CL...: Can not use dpipe IRI operations before upgrading
+	  the RDF_IRI table to 64-bit prefix IDs --  DB.DBA.RDF_QUAD_FT_UPGRADE()
+	  14:35:18 Checkpoint started
+	  14:35:18 Checkpoint finished, log reused
+	  ...
+
+2022-05-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing function
+
 2022-05-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Merge branch 'feature/prefix64-fixes' into develop/7
 
