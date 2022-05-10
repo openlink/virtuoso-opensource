@@ -1177,6 +1177,8 @@ dvc_num_double (numeric_t num1, double d2)
       return numeric_compare_dvc ((numeric_t) num1, (numeric_t) num2);
     }
   numeric_to_double (num1, &d1);
+  if (isnan (d2))
+    return DVC_LESS;
   if (d1 == d2)
     {
       if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE)
