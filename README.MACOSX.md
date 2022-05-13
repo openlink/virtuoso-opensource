@@ -125,6 +125,12 @@ First we set some environment variables:
     $ export LDFLAGS="-g"
     $ export CC="clang"
 
+Note: On macOS 11 (Big Sur) and later we can set the CFLAGS to make
+a universal binary that runs on both Intel and Apple Silicon
+platforms:
+
+    $ export CFLAGS="-O -arch arm64 -arch x86_64"
+
 Next we (re)generate the configure script and all related build files, using the supplied script in
 your working directory:
 
