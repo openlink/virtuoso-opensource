@@ -1072,7 +1072,7 @@ create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
   foreach (any g_v in graphs) do
     {
       declare g_iid any;
-      g_iid := iri_to_id (in_g, 0);
+      g_iid := iri_to_id (g_v, 0);
       kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', g_iid));
       if (kesg <= 1000)
         {
@@ -1087,7 +1087,7 @@ create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
 
       -- Sponging
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_v;
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (gv), '&graphMD5=%');
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_v), '&graphMD5=%');
     }
 }
 ;
