@@ -5435,6 +5435,10 @@ cleanup:
   return ok;
 }
 
+#if OPENSSL_VERSION_NUMBER > 0x30000000L
+OSSL_PROVIDER *ssl_legacy_provider;
+OSSL_PROVIDER *ssl_deflt_provider;
+#endif
 
 static void
 ssl_server_init ()
@@ -5450,6 +5454,21 @@ ssl_server_init ()
 
   SSL_load_error_strings ();
   ERR_load_crypto_strings ();
+
+#if OPENSSL_VERSION_NUMBER > 0x30000000L
+  /* Load multiple providers into the default (NULL) library context */
+  ssl_legacy_provider = OSSL_PROVIDER_load(NULL, "legacy");
+  if (ssl_legacy_provider == NULL) {
+     log_error("SSL: failed to load Legacy provider");
+     call_exit (-1);
+  }
+  ssl_deflt_provider = OSSL_PROVIDER_load(NULL, "default");
+  if (ssl_deflt_provider == NULL) {
+     log_error("SSL: failed to load Default provider");
+     OSSL_PROVIDER_unload(ssl_legacy_provider);
+     call_exit (-1);
+  }
+#endif
 
   /*
    *  Make sure the PRNG is properly seeded

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2021 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -28,6 +28,7 @@
  *    OpenSSL 1.0.2
  *    OpenSSL 1.1.0
  *    OpenSSL 1.1.1
+ *    OpenSSL 3.0.2
  *
  *    LibreSSL 2.x
  *    LibreSSL 3.x
@@ -664,6 +665,36 @@ void X509_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, const X509 *
         *palg = x->sig_alg;
 }
 #endif
+
+
+/*
+ * ----------------------------------------------------------------------
+ * ASN1
+ * ----------------------------------------------------------------------
+ */
+
+SSL_COMPAT_INLINE
+int ASN1_TIME_to_tm (const ASN1_TIME * s, struct tm *tm)
+{
+  if (s == NULL)
+    {
+      time_t now_t;
+
+      time (&now_t);
+      memset (tm, 0, sizeof (*tm));
+      if (OPENSSL_gmtime (&now_t, tm) != NULL)
+	return 1;
+      return 0;
+    }
+
+  if (s->type == V_ASN1_UTCTIME)
+    return asn1_utctime_to_tm (tm, s);
+  else if (s->type == V_ASN1_GENERALIZEDTIME)
+    return asn1_generalizedtime_to_tm (tm, s);
+
+  return 0;
+}
+
 
 #endif /* OPENSSL_VERSION_NUMBER */
 #endif /* _SSL */
