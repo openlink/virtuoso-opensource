@@ -79,8 +79,12 @@ Please read our [instructions to upgrade from 7.2.x to 7.2.7](README.UPGRADE.md#
   * JDBC, Jena and RDF4j
     - Added optimizations for bulk deleting triples
     - Added support for all JDBC Transaction Isolation levels
+    - Added new class VirtStreamRDF for support stream uploading to Virtuoso
     - Fixed issue with closing/leaking JDBC statements
     - Fixed issue with exceptions
+    - Fixed issue using batchSize
+    - Fixed SQLException handler for better conversion to JenaException
+
     - Small cleanups
 
   * Faceted Browser

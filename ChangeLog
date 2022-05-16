@@ -1,3 +1,23 @@
+2022-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.7-rc1
+
+	Merge branch 'feature/2022_05_16_fix_jena' into develop/7
+
+	Rebuild Jena 3 and 4 provider
+
+2022-05-16  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issues in Jena3/4 provider
+
+	- fix issues with using batchSize
+	- update SQLException handler for better conversion to JenaException
+	- implemented new class VirtStreamRDF for support stream uploading to Virtuoso
+
+2022-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated documentation
+
 2022-05-16  Mitko Iliev  <imitko@openlinksw.com>
 
 	Added optimizations for clearing graph
