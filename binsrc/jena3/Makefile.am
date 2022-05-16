@@ -50,6 +50,7 @@ JENA_SRC= \
 	virtuoso_driver/VirtResSetIter.java \
 	virtuoso_driver/VirtResSetIter2.java \
 	virtuoso_driver/VirtResSetQIter.java \
+	virtuoso_driver/VirtStreamRDF.java \
 	virtuoso_driver/VirtTransactionHandler.java \
 	virtuoso_driver/VirtuosoQueryEngine.java \
 	virtuoso_driver/VirtuosoQueryExecutionFactory.java \

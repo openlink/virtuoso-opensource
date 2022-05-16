@@ -631,7 +631,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
             throw new UnsupportedOperationException(this.getClass().getName() + ".remove");
         }
 
-        private void close() {
+        public void close() {
             if (!v_finished) {
                 if (rs != null) {
                     try {

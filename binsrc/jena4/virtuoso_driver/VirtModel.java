@@ -32,6 +32,7 @@ import javax.sql.*;
 
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.shared.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
@@ -88,6 +89,9 @@ public class VirtModel extends ModelCom {
         return this;
     }
 
+    public StreamRDF getStreamRDF(boolean useAutoCommit, int chunkSize, VirtStreamRDF.DeadLockHandler dhandler) {
+        return new VirtStreamRDF(this, useAutoCommit, chunkSize, dhandler);
+    }
 
     public void createRuleSet(String ruleSetName, String uriGraphRuleSet) {
         ((VirtGraph) this.graph).createRuleSet(ruleSetName, uriGraphRuleSet);
@@ -238,12 +242,20 @@ public class VirtModel extends ModelCom {
     public Model read(String url) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -252,12 +264,20 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -266,12 +286,20 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -280,12 +308,20 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url, lang);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -294,12 +330,20 @@ public class VirtModel extends ModelCom {
     public Model read(String url, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url, base, lang);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -308,12 +352,20 @@ public class VirtModel extends ModelCom {
     public Model read(Reader reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base, lang);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -322,12 +374,20 @@ public class VirtModel extends ModelCom {
     public Model read(InputStream reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
         synchronized (g.lck_add){
-            g.startBatchAdd();
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base, lang);
               return ret;
             } finally {
-              g.stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
