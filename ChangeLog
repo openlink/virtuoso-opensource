@@ -1,4 +1,60 @@
+2022-05-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added optimizations for clearing graph
+
+2022-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed always use top level API
+
+2022-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Enable multiple providers for OpenSSL 3.x
+
+	We need to load both the legacy provider and the default provider into
+	the default (NULL) library context to continue using ripemd160
+
+2022-05-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for favicon
+
+2022-05-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed wrong variable after merge
+
+2022-05-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed documentation
+
+	* Converted README to README.md using markdown
+	* Updated notes for current versions of Linux and macOS
+	* Removed references to 32-bit build environments as VOS is 64-bit only
+
+2022-05-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated gcc/clang flags
+
+2022-05-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue sorting NaN values in colstore
+
+	When sorting doubles, a NaN value on the right hand side of comparison
+	should always return DVC_LESS.
+
 2022-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild RDF4j provider
+
+	Updated version of RDF4j provider
+
+2022-05-10  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update RDF4J provider for support all JDBC Transaction Isolation levels
+
+	Added two methods to RepositoryConnection for set/get Jdbc Transaction Isolation Level.
+
+2022-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Merge branch 'feature/sparql_delete_c_opt' into develop/7
 

@@ -35,7 +35,6 @@ dist_doc_DATA = \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
 	$(srcdir)/LICENSE.md \
-	$(srcdir)/NEWS \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README.md \
 	$(srcdir)/README.GIT.md \
@@ -178,4 +177,7 @@ EXTRA_DIST = \
 
 
 README: README.md
+	-pandoc -f markdown -t plain --wrap=none $< -o $@
+
+NEWS: NEWS.md
 	-pandoc -f markdown -t plain --wrap=none $< -o $@

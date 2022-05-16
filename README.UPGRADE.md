@@ -23,15 +23,36 @@ empty before performing any of the following updates/upgrades.
 
 Before upgrading any database, it is always a wise precaution to make a proper backup.
 
-*NOTE*: This document contains historic notes for upgrading deprecated releases of Virtuoso Open Source
+**NOTE**: This document contains historic notes for upgrading deprecated releases of Virtuoso Open Source
 versions 5.x upto 6.1.4. It is not recommended to attempt to upgrade from these versions to the
 current release using in-place upgrades.
 
 
 ## Upgrading from VOS 7.2.X to VOS 7.2.7
 
-The Virtuoso engine in 7.2.7 has been enhanced to use 64-bit prefix IDs in RDF_IRI which allows for
+The Virtuoso engine in 7.2.7 has been enhanced to use 64-bit prefix IDs in `RDF_IRI` which allows for
 even larger databases.
+
+This enhancement fixes two important problems in Virtuoso:
+
+1. When Virtuoso was upgraded to use 64-bit `IRI_ID`s around v6.0.x, we forgot to upgrade the
+   `RDF_IRI` table to use a 64-bit prefix ID. This meant that Virtuoso could only store around 2
+   billion distinct prefixes before returning an error.
+2. The algorithm to generate distinct prefixes resulted in too many prefixes being created.
+
+While this is not a problem for storing small or even medium sized data sets, this becomes a
+problem when you want to host large databases the size of [Uniprot](https://www.uniprot.org/)
+which now contains over 90 billion triples.
+
+To compare sizes, here are some of the databases that OpenLink hosts, all of which were unaffected
+by this issue:
+
+| Endpoint                                    |        triples | distinct prefixes |
+| ------------------------------------------- | -------------: | ----------------: |
+| https://uriburner.com/sparql                |    138,881,702 |         9,197,016 |
+| https://dbpedia.org/sparql                  |  1,104,129,087 |        27,528,113 |
+| https://wikidata.demo.openlinksw.com/sparql | 12,216,143,296 |           990,992 |
+| https://lod.openlinksw.com/sparql           | 35,875,699,899 |       175,697,066 |
 
 When starting an existing 7.x database with the new 7.2.7 binary, the following message will appear in
 the virtuoso.log file:
@@ -63,7 +84,7 @@ functionality should upgrade their database as soon as possible.
 Calling vectored functions like `TTLP_V()` and `RDF_LOAD_RDFXML_V()` will automatically call their
 non-vectored equivalents like `TTLP()` and `RDF_LOAD_RDFXML()`.
 
-Bulkloading using the `rdf_loader_run()` functions also automatically with downgrade to using
+Bulkloading using the `rdf_loader_run()` functions also automatically will downgrade to use
 non-vectored functions.
 
 Some functions may fail with the following error:
@@ -73,8 +94,8 @@ Some functions may fail with the following error:
 
 
 ### Upgrade method 1
-The preferred way of upgrading to the new 7.2.7 format is to perform an NQUAD dump of all your
-triples using the RDF_DUMP_NQUADS() function and bulkloading them into a new database.
+The preferred way of upgrading to the new 7.2.7 format is to perform an `NQUAD` dump of all your
+triples using the `RDF_DUMP_NQUADS()` function and bulkloading them into a new database.
 
 ### Upgrade method 2
 To upgrade an existing database in-place, make sure you have a proper backup of your existing
@@ -100,8 +121,8 @@ __dbf_set('rdf_rpid64_mode',1);
 shutdown;
 ```
 
-Note however that depending on the number of records in the DB.DBA.RDF_IRI table, this can take a
-long time and will increase the size of the database.
+Note however that depending on the number of records in the `DB.DBA.RDF_IRI` table, this can take a
+long time and will increase the size of your database.
 
 
 ## Upgrading from VOS 6.1.4 to VOS 7.2.6
