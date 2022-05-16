@@ -38,6 +38,10 @@
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos" href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
     <title></title>
     <![CDATA[
       <script type="text/javascript" src="toolkit/loader.js"></script>

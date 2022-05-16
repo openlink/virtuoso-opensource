@@ -29,14 +29,17 @@ install-data-local:
 	mkdir -p "$(DESTDIR)$(httprootdir)"/images
 	mkdir -p "$(DESTDIR)$(httprootdir)"/admin
 	mkdir -p "$(DESTDIR)$(httprootdir)"/vsmx
+	mkdir -p "$(DESTDIR)$(httprootdir)"/favicon
 	$(INSTALL_DATA) *.html "$(DESTDIR)$(httprootdir)"
 	$(INSTALL_DATA) *.css "$(DESTDIR)$(httprootdir)"
 	$(INSTALL_DATA) *.txt "$(DESTDIR)$(httprootdir)"
+	$(INSTALL_DATA) *.ico "$(DESTDIR)$(httprootdir)"
 	$(INSTALL_DATA) admin/index_left.vsp "$(DESTDIR)$(httprootdir)"/admin
 	$(INSTALL_DATA) images/*.gif "$(DESTDIR)$(httprootdir)"/images
 	$(INSTALL_DATA) images/*.png "$(DESTDIR)$(httprootdir)"/images
 	$(INSTALL_DATA) images/*.jpg "$(DESTDIR)$(httprootdir)"/images
 	$(INSTALL_DATA) vsmx/*.* "$(DESTDIR)$(httprootdir)"/vsmx
+	$(INSTALL_DATA) favicon/*.* "$(DESTDIR)$(httprootdir)"/favicon
 
 
 uninstall-local:
@@ -102,6 +105,10 @@ EXTRA_DIST =  \
 	doc/*.vsp \
 	doc/*.vspx \
 	doc/*.xsl \
+	favicon.ico \
+	favicon/*.png \
+	favicon/*.svg \
+	favicon/manifest.webmanifest \
 	images/*.gif \
 	images/*.jpg \
 	images/*.png \

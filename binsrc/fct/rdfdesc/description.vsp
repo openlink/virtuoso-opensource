@@ -477,6 +477,11 @@ again:
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
+
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
 <?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
 <body about="<?V page_resource_uri ?>">

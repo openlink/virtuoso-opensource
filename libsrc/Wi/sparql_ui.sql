@@ -68,6 +68,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
     <meta name="Copyright" content="Copyright &#169; <?V year(now()) ?> OpenLink Software" />
     <meta name="Keywords"  content="OpenLink Virtuoso Sparql" />
     <title><?V title ?></title>
+
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
 <?vsp
 }
 ;
