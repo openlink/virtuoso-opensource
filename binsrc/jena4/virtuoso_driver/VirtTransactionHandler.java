@@ -90,6 +90,15 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
     }
 
 
+    public boolean isAutoCommit() {
+        try {
+          return graph.getConnection().getAutoCommit();
+        } catch(SQLException e) {
+          return false;
+        }
+
+    }
+
     public boolean transactionsSupported() {
         if (m_transactionsSupported != null) {
             return (m_transactionsSupported.booleanValue());
@@ -131,21 +140,27 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         XAResource xa = checkXA();
         xa.commit(xid, flag);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) { }
     }
 
     public void end(Xid xid, int i) throws XAException {
         XAResource xa = checkXA();
         xa.end(xid, i);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) { }
     }
 
     public void forget(Xid xid) throws XAException {
         XAResource xa = checkXA();
         xa.forget(xid);
-        if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+        if (graph.resetBNodesDictAfterCommit) 
+            try {
+              graph.dropBNodesDict();
+            } catch (SQLException e) {}
     }
 
     public int prepare(Xid xid) throws XAException {
@@ -162,7 +177,9 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         XAResource xa = checkXA();
         xa.rollback(xid);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) {}
     }
 
     public boolean setTransactionTimeout(int i) throws XAException {

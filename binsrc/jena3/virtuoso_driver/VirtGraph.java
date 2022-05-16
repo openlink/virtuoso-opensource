@@ -31,6 +31,7 @@ import javax.sql.*;
 import javax.transaction.xa.*;
 
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.sparql.core.Quad;
 import virtuoso.jdbc4.*;
 import virtuoso.sql.*;
 
@@ -859,7 +860,7 @@ public class VirtGraph extends GraphBase {
                 psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
                 psInsert_Count++;
 
-                if (psInsert_Count > BATCH_SIZE) {
+                if (psInsert_Count >= batchSize) {
                     psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
                     psInsert_Count = 0;
                 }
@@ -1189,7 +1190,7 @@ public class VirtGraph extends GraphBase {
 
 
 
-    protected void createBNodesDict() {
+    protected void createBNodesDict() throws SQLException {
         synchronized(lck_add) {
             java.sql.Statement st = null;
 
@@ -1202,8 +1203,6 @@ public class VirtGraph extends GraphBase {
                     st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
                     isBNodesDictCreated = true;
                 }
-            } catch (SQLException e) {
-                throw new JenaException(e);
             } finally {
               try {
                 if (st != null)
@@ -1213,7 +1212,7 @@ public class VirtGraph extends GraphBase {
         }
     }
 
-    protected void dropBNodesDict() {
+    protected void dropBNodesDict() throws SQLException {
         synchronized(lck_add) {
             java.sql.Statement st = null;
             try {
@@ -1223,8 +1222,6 @@ public class VirtGraph extends GraphBase {
                 st = createStatement(false);
                 st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
                 isBNodesDictCreated = false;
-            } catch (SQLException e) {
-                throw new JenaException(e);
             } finally {
               try {
                 if (st != null)
@@ -1235,7 +1232,7 @@ public class VirtGraph extends GraphBase {
     }
 
 
-    protected void startBatchAdd() {
+    protected void startBatchAdd() throws SQLException {
         synchronized(lck_add) {
             if (batch_add_executed)
                 throw new JenaException("Batch mode is started already");
@@ -1244,7 +1241,7 @@ public class VirtGraph extends GraphBase {
         }
     }
 
-    protected void stopBatchAdd() {
+    protected void stopBatchAdd() throws SQLException {
         synchronized(lck_add) {
             if (!batch_add_executed)
                 return;
@@ -1256,8 +1253,6 @@ public class VirtGraph extends GraphBase {
                 }
                 if (resetBNodesDictAfterCall)
                     dropBNodesDict();
-            } catch (SQLException e) {
-                throw new JenaException(e);
             } finally {
               if (psInsert!=null) {
                 try {
@@ -1275,34 +1270,27 @@ public class VirtGraph extends GraphBase {
 
     private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps,
                                                                     Node subject, Node predicate,
-                                                                    Node object, String _gName)
+                                                                    Node object, String _gName) throws SQLException
     {
-        try {
-            if (ps == null)
-                ps = prepareStatement(S_BATCH_INSERT, true);
-            bindBatchParams(ps, subject, predicate, object, _gName);
-            ps.addBatch();
-        } catch (Exception e) {
-            throw new JenaException(e);
-        }
+        if (ps == null)
+            ps = prepareStatement(S_BATCH_INSERT, true);
+        bindBatchParams(ps, subject, predicate, object, _gName);
+        ps.addBatch();
         return ps;
     }
 
-    private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, int psCount) {
-        try {
-            if (psCount > 0 && ps != null) {
-                ps.executeBatch();
-                ps.clearBatch();
-                if (useReprepare) {
-                    try {
-                        ps.close();
-                    } catch (Exception e) {
-                    }
-                    ps = null;
+    private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, int psCount) throws SQLException 
+    {
+        if (psCount > 0 && ps != null) {
+            ps.executeBatch();
+            ps.clearBatch();
+            if (useReprepare) {
+                try {
+                    ps.close();
+                } catch (Exception e) {
                 }
+                ps = null;
             }
-        } catch (Exception e) {
-            throw new JenaException(e);
         }
         return ps;
     }
@@ -1328,21 +1316,16 @@ public class VirtGraph extends GraphBase {
     }
 **/
 
-    void performAdd_batch(String _gName, Node nS, Node nP, Node nO) {
+    void performAdd_batch(String _gName, Node nS, Node nP, Node nO) throws SQLException {
         _gName = (_gName != null ? _gName : this.graphName);
 
-        try {
-            psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
-            psInsert_Count++;
+        psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
+        psInsert_Count++;
 
-            if (psInsert_Count > BATCH_SIZE) {
-                psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
-                psInsert_Count = 0;
-             }
-
-        } catch (Exception e) {
-            throw new AddDeniedException(e);
-        }
+        if (psInsert_Count >= batchSize) {
+            psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
+            psInsert_Count = 0;
+         }
     }
 
     //--java5 or newer    @SuppressWarnings("unchecked")
@@ -1368,14 +1351,15 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
-                if (ps==null)
-                    psInsert_Count = 0;
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
             } finally {
-                stopBatchAdd();
+                try {
+                  stopBatchAdd();
+                } catch(Exception e) {}
             }
         }
     }
@@ -1400,19 +1384,72 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
-                if (ps==null)
-                    psInsert_Count = 0;
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
             } finally {
-                stopBatchAdd();
+                try {
+                  stopBatchAdd();
+                } catch(Exception e) {}
             }
         }
     }
 
-/// disabled, because there is issue in DB.DBA.RDF_DELETE_TRIPLE_C
+    void streamAdd(String _gName, Iterator<Triple> it) {
+        synchronized (lck_add) {
+            _gName = (_gName != null ? _gName : graphName);
+
+            checkOpen();
+
+            try {
+                while (it.hasNext()) {
+                    Triple t = it.next();
+
+                    Node nS = t.getSubject();
+                    Node nP = t.getPredicate();
+                    Node nO = t.getObject();
+
+                    performAdd_batch(_gName, nS, nP, nO);
+                }
+
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
+
+            } catch (Exception e) {
+                throw new JenaException(e);
+            }
+        }
+    }
+
+
+    void streamAdd(Iterator<Quad> it) {
+        synchronized (lck_add) {
+            checkOpen();
+
+            try {
+                while (it.hasNext()) {
+                    Quad q = it.next();
+
+                    String _gName = (q.getGraph()==null ? graphName : q.getGraph().toString());
+                    Node nS = q.getSubject();
+                    Node nP = q.getPredicate();
+                    Node nO = q.getObject();
+
+                    performAdd_batch(_gName, nS, nP, nO);
+                }
+
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
+
+            } catch (Exception e) {
+                throw new JenaException(e);
+            }
+        }
+    }
+
+
     void delete(Iterator<Triple> it, List<Triple> list)
     {
       PreparedStatement ps = null;
