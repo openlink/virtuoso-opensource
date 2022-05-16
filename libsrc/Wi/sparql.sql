@@ -8131,6 +8131,7 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
   declare g_iid IRI_ID;
   declare old_log_mode integer;
   declare txtreport varchar;
+  declare kesg int;
   txtreport := '';
   if (__tag of vector <> __tag (graph_iris))
     graph_iris := vector (graph_iris);
@@ -8155,7 +8156,16 @@ create function DB.DBA.SPARUL_CLEAR (in graph_iris any, in inside_sponge integer
           repl_text ('__rdf_repl', sprintf ('sparql define input:storage "" define sql:log-enable %d clear graph iri ( ?? )', lm), g_iri);
         }
       declare exit handler for sqlstate '*' { log_enable (old_log_mode, 1); resignal; };
-      delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
+      kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', iri_to_id (g_iri, 0)));
+      if (kesg <= 1000)
+        {
+          -- if graph is relatively small
+          delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
+        }
+      else
+        {
+          delete from DB.DBA.RDF_QUAD where G = iri_to_id (g_iri, 0);
+        }
       delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0)  option (index_only, index RDF_QUAD_GS);
       delete from DB.DBA.RDF_OBJ_RO_FLAGS_WORDS where VT_WORD = rdf_graph_keyword (g_iid);
       if (not inside_sponge)

@@ -1069,25 +1069,23 @@ create procedure DB.DBA.RDF_DELETE_TRIPLE_C (in s any array, in p any array, in 
 create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
 {
   declare  kesg integer;
-  foreach (any g_v in graphs) do
+  foreach (any g_iri in graphs) do
     {
-      declare g_iid any;
-      g_iid := iri_to_id (g_v, 0);
-      kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', g_iid));
+      kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', iri_to_id (g_iri, 0)));
       if (kesg <= 1000)
         {
           -- if graph is relatively small
-          delete from DB.DBA.RDF_QUAD table option (index G) where G = g_iid;
+          delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
         }
       else
         {
-          delete from DB.DBA.RDF_QUAD where G = g_iid;
+          delete from DB.DBA.RDF_QUAD where G = iri_to_id (g_iri, 0);
         }
-      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = g_iid option (index_only, index RDF_QUAD_GS);
+      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0) option (index_only, index RDF_QUAD_GS);
 
       -- Sponging
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_v;
-      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_v), '&graphMD5=%');
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_iri;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_iri), '&graphMD5=%');
     }
 }
 ;
