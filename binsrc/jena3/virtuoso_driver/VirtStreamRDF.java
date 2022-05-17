@@ -46,11 +46,11 @@ public class VirtStreamRDF implements StreamRDF
             this.vg = (VirtGraph)vm.getGraph();
             this.useAutoCommit = useAutoCommit;
             this.dhandler = dhandler;
-            this.buff = new ArrayList<>(batchSize);
             vm.setResetBNodesDictAfterCommit(false);
             if (batchSize > 0)
                 vg.setBatchSize(batchSize);
             this.batchSize = vg.getBatchSize();
+            this.buff = new ArrayList<>(batchSize);
         }
 
         @Override
