@@ -1,6 +1,6 @@
 # NEWS
 
-## May 16, 2022, v7.2.7:
+## May 17, 2022, v7.2.7-rc1:
 
 The Virtuoso engine has been enhanced to use 64-bit prefix IDs in `RDF_IRI` which allows for
 very large databases such as [Uniprot](https://www.uniprot.org/), which currently contains over
@@ -24,6 +24,7 @@ Please read our [instructions to upgrade from 7.2.x to 7.2.7](README.UPGRADE.md#
     - Added short name date BIF functions
     - Added xenc_digest and xenc_hmac_digest BIF functions
     - Added unix_timestamp() BIF function
+    - Added support for handling HTTP status 307 and 308 in client
     - Fixed Host header should include non-standard port.
     - Fixed SQLConnect handling of empty strings in szDSN and szUID
     - Fixed SSL_renegotiate for OpenSSL 1.1.x
