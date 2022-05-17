@@ -134,6 +134,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private volatile ParserConfig parserConfig = new ParserConfig();
     private IsolationLevel isolationLevel;
     private int concurencyMode;
+    private DeadLockHandler dhandler = new DeadLockHandler(0);
 
     public VirtuosoRepositoryConnection(VirtuosoRepository repository, Connection connection) throws RepositoryException {
         this.quadStoreConnection = connection;
@@ -169,6 +170,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         return repository;
     }
 
+
+    public void setDeadLockHandler(DeadLockHandler handler) {
+        if (handler != null)
+            dhandler = handler;
+    }
 
     /**
      * Set the parser configuration this connection should use for
@@ -1076,6 +1082,116 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         }
     }
 
+
+    /**
+     * Adds RDF data from an InputStream to the repository, optionally to one or
+     * more named contexts.
+     *
+     * @param in
+     *        An InputStream from which RDF data can be read.
+     * @param baseURI
+     *        The base URI to resolve any relative URIs that are in the data
+     *        against.
+     * @param dataFormat
+     *        The serialization format of the data.
+     * @param batchSize
+     *        Batch size for upload data to DB.
+     * @param autoCommit
+     *        use AutoCommit mode for insert data.
+     * @param handler
+     *        DeadLock handler.
+     * @param contexts
+     *        The contexts to add the data to. If one or more contexts are
+     *        supplied the method ignores contextual information in the actual
+     *        data. If no contexts are supplied the contextual information in the
+     *        input stream is used, if no context information is available the
+     *        data is added without any context.
+     * @throws IOException
+     *         If an I/O error occurred while reading from the input stream.
+     * @throws UnsupportedRDFormatException
+     *         If no parser is available for the specified RDF format.
+     * @throws RDFParseException
+     *         If an error was found while parsing the RDF data.
+     * @throws RepositoryException
+     *         If the data could not be added to the repository, for example
+     *         because the repository is not writable.
+     */
+    public void add(InputStream in, String baseURI, RDFFormat dataFormat, int batchSize, boolean autoCommit, DeadLockHandler handler, Resource... contexts) throws IOException, RDFParseException, RepositoryException {
+        verifyIsOpen();
+        flushDelayAdd();
+
+        try {
+            RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
+            parser.setParserConfig(getParserConfig());
+            parser.setParseErrorListener(new ParseErrorLogger());
+
+            // set up a handler for parsing the data from reader
+            Resource[] _contexts = checkDMLContext(contexts);
+            parser.setRDFHandler(new VirtuosoRDFHandler(this, _contexts, batchSize, autoCommit, handler!=null? handler: this.dhandler));
+
+            parser.parse(in, baseURI); // parse out each tripled to be handled by the handler above
+        }
+        catch (Exception e) {
+            throw new RepositoryException("Problem parsing triples", e);
+        }
+    }
+
+
+    /**
+     * Adds RDF data from a Reader to the repository, optionally to one or more
+     * named contexts. <b>Note: using a Reader to upload byte-based data means
+     * that you have to be careful not to destroy the data's character encoding
+     * by enforcing a default character encoding upon the bytes. If possible,
+     * adding such data using an InputStream is to be preferred.</b>
+     *
+     * @param reader
+     *        A Reader from which RDF data can be read.
+     * @param baseURI
+     *        The base URI to resolve any relative URIs that are in the data
+     *        against.
+     * @param dataFormat
+     *        The serialization format of the data.
+     * @param batchSize
+     *        Batch size for upload data to DB.
+     * @param autoCommit
+     *        use AutoCommit mode for insert data.
+     * @param handler
+     *        DeadLock handler.
+     * @param contexts
+     *        The contexts to add the data to. If one or more contexts are
+     *        specified the data is added to these contexts, ignoring any context
+     *        information in the data itself.
+     * @throws IOException
+     *         If an I/O error occurred while reading from the reader.
+     * @throws UnsupportedRDFormatException
+     *         If no parser is available for the specified RDF format.
+     * @throws RDFParseException
+     *         If an error was found while parsing the RDF data.
+     * @throws RepositoryException
+     *         If the data could not be added to the repository, for example
+     *         because the repository is not writable.
+     */
+    public synchronized void add(Reader reader, String baseURI, RDFFormat dataFormat, int batchSize, boolean autoCommit, DeadLockHandler handler,  final Resource... contexts) throws IOException, RDFParseException, RepositoryException {
+        verifyIsOpen();
+        flushDelayAdd();
+
+        try {
+            RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
+            parser.setParserConfig(getParserConfig());
+            parser.setParseErrorListener(new ParseErrorLogger());
+
+            // set up a handler for parsing the data from reader
+            Resource[] _contexts = checkDMLContext(contexts);
+            parser.setRDFHandler(new VirtuosoRDFHandler(this, _contexts, batchSize, autoCommit, handler!=null? handler: this.dhandler));
+
+            parser.parse(reader, baseURI); // parse out each tripled to be handled by the handler above
+        }
+        catch (Exception e) {
+            throw new RepositoryException("Problem parsing triples", e);
+        }
+    }
+
+
     /**
      * Adds RDF data from an InputStream to the repository, optionally to one or
      * more named contexts.
@@ -1107,7 +1223,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         verifyIsOpen();
         flushDelayAdd();
 
-        final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+        final boolean useStatementContext = (contexts ==null || (contexts != null && contexts.length == 0)); // If no context are specified, each statement is added to statement context
 
         try {
             RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
@@ -1140,7 +1256,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         if (count > 0)
                             ps = flushDelayAdd_batch(ps, count);
                     }
-                    catch (RepositoryException e) {
+                    catch (Exception e) {
                         throw new RDFHandlerException("Problem executing query: ", e);
                     }
                     try {
@@ -1198,7 +1314,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                 st.getPredicate(), st.getObject(), hcontexts);
                         count += hcontexts.length;
 
-                        if (count > BATCH_SIZE) {
+                        if (count >= BATCH_SIZE) {
                             ps = flushDelayAdd_batch(ps, count);
                             count = 0;
                         }
@@ -1247,7 +1363,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         verifyIsOpen();
         flushDelayAdd();
 
-        final boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+        final boolean useStatementContext = (contexts == null || (contexts != null && contexts.length == 0)); // If no context are specified, each statement is added to statement context
 
         try {
             RDFParser parser = Rio.createParser(dataFormat, getValueFactory());
@@ -1280,7 +1396,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         if (count > 0)
                             ps = flushDelayAdd_batch(ps, count);
                     }
-                    catch (RepositoryException e) {
+                    catch (Exception e) {
                         throw new RDFHandlerException("Problem executing query: ", e);
                     }
                     try {
@@ -1338,7 +1454,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                 st.getPredicate(), st.getObject(), hcontexts);
                         count += hcontexts.length;
 
-                        if (count > BATCH_SIZE) {
+                        if (count >= BATCH_SIZE) {
                             ps = flushDelayAdd_batch(ps, count);
                             count = 0;
                         }
@@ -1515,7 +1631,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         flushDelayAdd();
 
         Iterator<? extends Statement> it = statements.iterator();
-        boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+        boolean useStatementContext = (contexts == null || (contexts != null && contexts.length == 0)); // If no context are specified, each statement is added to statement context
         Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
         int count = 0;
@@ -1541,7 +1657,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         st.getPredicate(), st.getObject(), contexts);
                 count += contexts.length;
 
-                if (count > BATCH_SIZE) {
+                if (count >= BATCH_SIZE) {
                     ps = flushDelayAdd_batch(ps, count);
                     count = 0;
                 }
@@ -1592,7 +1708,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         verifyIsOpen();
         flushDelayAdd();
 
-        boolean useStatementContext = (contexts != null && contexts.length == 0); // If no context are specified, each statement is added to statement context
+        boolean useStatementContext = (contexts == null || (contexts != null && contexts.length == 0)); // If no context are specified, each statement is added to statement context
         Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
         int count = 0;
@@ -1618,7 +1734,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                         st.getPredicate(), st.getObject(), contexts);
                 count += contexts.length;
 
-                if (count > BATCH_SIZE) {
+                if (count >= BATCH_SIZE) {
                     ps = flushDelayAdd_batch(ps, count);
                     count = 0;
                 }
@@ -1742,7 +1858,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     ps.addBatch();
                     count++;
 
-                    if (count > BATCH_SIZE) {
+                    if (count >= BATCH_SIZE) {
                         ps.executeBatch();
                         ps.clearBatch();
                         count = 0;
@@ -1811,7 +1927,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     ps.addBatch();
                     count++;
 
-                    if (count > BATCH_SIZE) {
+                    if (count >= BATCH_SIZE) {
                         ps.executeBatch();
                         ps.clearBatch();
                         count = 0;
@@ -2835,21 +2951,16 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                                                 Resource subject,
                                                                 IRI predicate,
                                                                 Value object,
-                                                                Resource... contexts) throws RepositoryException
+                                                                Resource... contexts) throws SQLException
     {
         verifyIsOpen();
 
-        try {
-            if (ps == null)
-                ps = prepareStatement(VirtuosoRepositoryConnection.S_BATCH_INSERT, true);
+        if (ps == null)
+            ps = prepareStatement(VirtuosoRepositoryConnection.S_BATCH_INSERT, true);
 
-            for (Resource context : contexts) {
-                bindParams(ps, subject, predicate, object, context);
-                ps.addBatch();
-            }
-        }
-        catch (Exception e) {
-            throw new RepositoryException(e);
+        for (Resource context : contexts) {
+            bindParams(ps, subject, predicate, object, context);
+            ps.addBatch();
         }
         return ps;
     }
@@ -2857,22 +2968,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
     private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps,
-                                                               int psCount) throws RepositoryException
+                                                               int psCount) throws SQLException
     {
-        try {
-            if (psCount > 0 && ps!=null) {
-                ps.executeBatch();
-                ps.clearBatch();
-                if (useReprepare) {
-                    try{
-                        ps.close();
-                    } catch(Exception e){}
-                    ps = null;
-                }
+        if (psCount > 0 && ps!=null) {
+            ps.executeBatch();
+            ps.clearBatch();
+            if (useReprepare) {
+                try{
+                    ps.close();
+                } catch(Exception e){}
+                ps = null;
             }
-        }
-        catch (Exception e) {
-            throw new RepositoryException(e);
         }
         return ps;
     }
@@ -2900,7 +3006,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private synchronized void flushDelayAdd() throws RepositoryException
     {
-        psInsert = flushDelayAdd_batch(psInsert, psInsertCount);
+        try {
+            psInsert = flushDelayAdd_batch(psInsert, psInsertCount);
+        } catch (SQLException e) {
+            throw new RepositoryException(e);
+        }
         psInsertCount = 0;
         if (psInsert_BNode!=null && psInsertBNodeCount > 0)
             try {
@@ -3800,5 +3910,186 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
+    protected static class VirtuosoRDFHandler extends AbstractRDFHandler {
+        final VirtuosoRepositoryConnection conn;
+        final DeadLockHandler dhandler;
+        final boolean autoCommit;
+        ArrayList<DataItem> buff;
+        PreparedStatement ps = null;
+        final Resource[] contexts;
+        boolean useStatementContext;
+        int batchSize;
+
+
+        public VirtuosoRDFHandler(VirtuosoRepositoryConnection conn, Resource[] contexts, int batchSize, boolean autoCommit, DeadLockHandler dhandler) {
+            this.conn = conn;
+            this.contexts = contexts;
+            this.dhandler = dhandler;
+            this.autoCommit = autoCommit;
+            useStatementContext = (contexts == null || (contexts != null && contexts.length == 0)); // If no context are specified, each statement is added to statement context
+            if (batchSize > 0)
+                this.batchSize = batchSize;
+            else
+                this.batchSize = conn.BATCH_SIZE;
+
+            buff = new ArrayList<>(this.batchSize);
+        }
+
+        public void startRDF() throws RDFHandlerException {
+            java.sql.Statement st_cmd = null;
+            if (!conn.insertBNodeAsVirtuosoIRI)
+                try {
+                    st_cmd = conn.createStatement(-1, false);
+                    st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                } catch (SQLException e) {
+                    throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
+                } finally {
+                    if (st_cmd != null)
+                        try {
+                            st_cmd.close();
+                        }catch(Exception e) {}
+
+                }
+        }
+
+        public void endRDF() throws RDFHandlerException {
+            java.sql.Statement st_cmd = null;
+
+            try {
+                check_flush(true);
+            } catch (Exception e) {
+                throw new RDFHandlerException("Problem executing query: ", e);
+            }
+            if (!conn.insertBNodeAsVirtuosoIRI)
+                try {
+                    st_cmd = conn.createStatement(-1, false);
+                    st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                } catch (SQLException e) {
+                    throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
+                } finally {
+                    if (st_cmd != null)
+                        try {
+                            st_cmd.close();
+                        }catch(Exception e) {}
+
+                }
+
+            if (ps != null) {
+                try {
+                    ps.close();
+                } catch (Exception e) {
+                }
+            }
+            ps = null;
+        }
+
+        public void handleNamespace(String prefix, String name) throws RDFHandlerException {
+            String query = "DB.DBA.XML_SET_NS_DECL(?, ?, 1)";
+            PreparedStatement psn = null;
+            try {
+                psn = conn.prepareStatement(query, false);
+                psn.setString(1, prefix);
+                psn.setString(2, name);
+                psn.execute();
+            } catch (SQLException e) {
+                throw new RDFHandlerException("Problem executing query: " + query, e);
+            } finally {
+                if (psn != null)
+                    try {
+                        psn.close();
+                    } catch (Exception e) {
+                    }
+            }
+        }
+
+        public void handleStatement(Statement st) throws RDFHandlerException {
+            try {
+                Resource[] hcontexts;
+                if (st.getContext() != null && useStatementContext) {
+                    hcontexts = new Resource[]{st.getContext()};
+                } else {
+                    hcontexts = contexts;
+                }
+
+                for (Resource ctx : hcontexts) {
+                    buff.add(new DataItem(ctx, st));
+                    check_flush(false);
+                }
+            } catch (Exception e) {
+                throw new RDFHandlerException(e);
+            }
+        }
+
+        void check_flush(boolean end) throws RDFHandlerException
+        {
+            if (buff.size() >= batchSize || end) {
+                int pass = 0;
+
+                while (true) {
+                    try {
+                        if (!this.autoCommit)
+                            conn.begin();
+
+                        for(DataItem i : buff)
+                            ps = conn.addToQuadStore_batch(ps, i.st.getSubject(), i.st.getPredicate(), i.st.getObject(), i.ctx);
+
+                        conn.flushDelayAdd_batch(ps, buff.size());
+
+                        if (!this.autoCommit)
+                            conn.commit();
+
+                    } catch (Exception e) {
+                        Throwable ex = e.getCause();
+                        boolean deadlock = (ex instanceof SQLException) && ((SQLException) ex).getSQLState().equals("40001");
+                        if (deadlock && dhandler != null) {
+                            pass++;
+                            conn.rollback();
+
+                            boolean rc = dhandler.deadLockFired(pass);
+                            if (rc)
+                                continue;
+                        }
+                        throw new RDFHandlerException(e);
+                    }
+                    break;
+                }
+                buff.clear();
+            }
+        }
+
+
+        private static class DataItem {
+            final Resource ctx;
+            final Statement st;
+
+            DataItem(Resource ctx, Statement st) {
+                this.ctx = ctx;
+                this.st = st;
+            }
+        }
+    }
+
+    public static class DeadLockHandler {
+        protected final int maxDeadLockCount;
+
+        public DeadLockHandler(int maxDeadLockCount)
+        {
+            this.maxDeadLockCount = maxDeadLockCount > 0 ? maxDeadLockCount : 0;
+        }
+
+        /**
+         *
+         * @param pass - deadlock attemps for current data chunk
+         * @return true - for try insert data chunk again
+         *         false - throw DEADLOCK exception
+         */
+        public boolean deadLockFired(int pass)
+        {
+            if (maxDeadLockCount == 0 || pass <= maxDeadLockCount)
+                return true; // try insert data chunk again
+            else
+                return false; // throw DEADLOCK exception
+        }
+    }
 
 }
