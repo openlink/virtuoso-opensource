@@ -35,20 +35,22 @@ public class VirtStreamRDF implements StreamRDF
 {
         protected final VirtModel vm;
         protected final VirtGraph vg;
-        protected final int chunkSize;
+        protected final int batchSize;
         protected final boolean useAutoCommit;
         protected ArrayList<Quad> buff;
         protected final DeadLockHandler dhandler;
 
 
-        protected VirtStreamRDF(VirtModel vm, boolean useAutoCommit, int chunkSize, DeadLockHandler dhandler) {
+        protected VirtStreamRDF(VirtModel vm, boolean useAutoCommit, int batchSize, DeadLockHandler dhandler) {
             this.vm = vm;
             this.vg = (VirtGraph)vm.getGraph();
-            this.chunkSize = chunkSize > 0 ? chunkSize : vg.getBatchSize();
             this.useAutoCommit = useAutoCommit;
             this.dhandler = dhandler;
-            this.buff = new ArrayList<>(chunkSize);
+            this.buff = new ArrayList<>(batchSize);
             vm.setResetBNodesDictAfterCommit(false);
+            if (batchSize > 0)
+                vg.setBatchSize(batchSize);
+            this.batchSize = vg.getBatchSize();
         }
 
         @Override
@@ -97,7 +99,7 @@ public class VirtStreamRDF implements StreamRDF
 
         void check_flush(boolean end) throws JenaException
         {
-            if (buff.size() >= chunkSize || end) {
+            if (buff.size() >= batchSize || end) {
                 int pass = 0;
 
                 while(true) {
@@ -112,7 +114,6 @@ public class VirtStreamRDF implements StreamRDF
 
                     } catch (Exception e) {
                         Throwable ex = e.getCause();
-                        System.out.println("==["+Thread.currentThread().getName()+"]***Exception=" + ex.toString());
                         boolean deadlock = (ex instanceof SQLException) && ((SQLException) ex).getSQLState().equals("40001");
                         if (deadlock && dhandler != null) {
                             pass++;
