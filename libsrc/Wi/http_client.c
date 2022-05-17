@@ -2468,6 +2468,8 @@ http_cli_init_std_redir (http_cli_ctx* ctx, int r)
   http_cli_push_resp_evt (ctx, 301, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   http_cli_push_resp_evt (ctx, 302, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   http_cli_push_resp_evt (ctx, 303, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 307, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 308, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   ctx->hcctx_redirects = r;
   return (HC_RET_OK);
 }
