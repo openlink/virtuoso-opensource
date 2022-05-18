@@ -672,7 +672,7 @@ void X509_get0_signature(ASN1_BIT_STRING **psig, X509_ALGOR **palg, const X509 *
  * ASN1
  * ----------------------------------------------------------------------
  */
-
+#if 0
 SSL_COMPAT_INLINE
 int ASN1_TIME_to_tm (const ASN1_TIME * s, struct tm *tm)
 {
@@ -694,6 +694,7 @@ int ASN1_TIME_to_tm (const ASN1_TIME * s, struct tm *tm)
 
   return 0;
 }
+#endif
 
 
 #endif /* OPENSSL_VERSION_NUMBER */
