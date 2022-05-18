@@ -1,4 +1,12 @@
+2022-05-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.7 engine 3234
+
+	Commented out unused function
+
 2022-05-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS.md and ChangeLog
 
 	Added support for handling HTTP status 307 and 308 in client (closes 1044)
 
