@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,19 +24,11 @@
 package virtuoso.jena.driver;
 
 import java.util.*;
-import java.io.*;
-import java.net.*;
-import java.sql.*;
-
-import virtuoso.sql.*;
 
 import org.apache.jena.update.*;
-import org.apache.jena.shared.*;
-
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoUpdateRequest {
-    private List requests = new ArrayList();
+    private List<String> requests = new ArrayList<String>();
     private VirtGraph graph;
     private String virt_query;
 
@@ -50,13 +42,13 @@ public class VirtuosoUpdateRequest {
     public VirtuosoUpdateRequest(String query, VirtGraph _graph) {
         this(_graph);
         virt_query = query;
-        requests.add((Object) query);
+        requests.add(query);
     }
 
     public void exec() {
         try {
             stmt = graph.createStatement(true);
-            for ( Iterator iter = requests.iterator() ; iter.hasNext(); )
+            for ( Iterator<String> iter = requests.iterator() ; iter.hasNext(); )
             {
                 StringBuilder sb = new StringBuilder();
                 sb.append("sparql\n");
@@ -66,14 +58,16 @@ public class VirtuosoUpdateRequest {
             }
             stmt.executeBatch();
             stmt.clearBatch();
-
             requests.clear();
-            stmt.close();
-            stmt = null;
         } catch (Exception e) {
             throw new UpdateException("Convert results are FAILED.:", e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
-
     }
 
 
@@ -81,14 +75,14 @@ public class VirtuosoUpdateRequest {
         requests.add(update);
     }
 
-    public Iterator iterator() {
+    public Iterator<String> iterator() {
         return requests.iterator();
     }
 
     public String toString() {
         StringBuffer b = new StringBuffer();
 
-        for (Iterator iter = requests.iterator(); iter.hasNext(); ) {
+        for (Iterator<String> iter = requests.iterator(); iter.hasNext(); ) {
             b.append((String) iter.next());
             b.append("\n");
         }

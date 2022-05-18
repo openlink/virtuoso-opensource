@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3736,7 +3736,10 @@ void
 log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
   if ((char*) -1 == new_log)
-    return;
+    {
+      log_info ("Checkpoint finished.");
+      return;
+    }
   mutex_enter (log_write_mtx);
   if (dbs->dbs_2pc_log_session)
     session_flush (dbs->dbs_2pc_log_session);

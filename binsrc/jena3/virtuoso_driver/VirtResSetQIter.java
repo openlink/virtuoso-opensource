@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,12 +26,9 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.*;
 
-import virtuoso.sql.*;
 import org.apache.jena.util.iterator.*;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.*;
-import org.apache.jena.datatypes.*;
-import org.apache.jena.rdf.model.*;
 import org.apache.jena.sparql.core.*;
 
 
@@ -126,10 +123,8 @@ public class VirtResSetQIter implements ClosableIterator<Quad> {
             if (v_curTriples != null) {
                 try {
                     v_curTriples.close();
-                    v_curTriples = null;
-                } catch (Exception e) {
-                    throw new JenaException(e);
-                }
+                } catch (Exception e) { }
+                v_curTriples = null;
             }
         }
         v_finished = true;

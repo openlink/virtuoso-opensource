@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -148,11 +148,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public boolean containsNamedModel(String name) {
         String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
         ResultSet rs = null;
+        PreparedStatement ps = null;
         int ret = 0;
 
         checkOpen();
         try {
-            java.sql.PreparedStatement ps = prepareStatement(query, false);
+            ps = prepareStatement(query, false);
             ps.setString(1, name);
             rs = ps.executeQuery();
             if (rs.next())
@@ -160,6 +161,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             rs.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch(Exception e) {}
         }
         return (ret != 0);
     }
@@ -172,11 +178,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
         String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
         ResultSet rs = null;
         int ret = 0;
+        PreparedStatement ps = null;
 
         checkOpen();
         if (checkExists) {
             try {
-                java.sql.PreparedStatement ps = prepareStatement(query, false);
+                ps = prepareStatement(query, false);
                 ps.setString(1, name);
                 rs = ps.executeQuery();
                 if (rs.next())
@@ -184,6 +191,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 rs.close();
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+              try {
+                if (ps != null)
+                  ps.close();
+              } catch(Exception e) {}
             }
 
             if (ret != 0)
@@ -209,15 +221,20 @@ public class VirtDataset extends VirtGraph implements Dataset {
      */
     public VirtDataset removeNamedModel(String name) {
         String exec_text = "sparql clear graph <" + name + ">";
+        java.sql.Statement stmt = null;
 
         checkOpen();
         try {
-            java.sql.Statement stmt = createStatement(true);
+            stmt = createStatement(true);
             stmt.executeQuery(exec_text);
-            stmt.close();
             return this;
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -241,12 +258,13 @@ public class VirtDataset extends VirtGraph implements Dataset {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
         ResultSet rs = null;
         int ret = 0;
+        java.sql.Statement stmt = null;
 
         checkOpen();
         try {
             List<String> names = new LinkedList<String>();
 
-            java.sql.Statement stmt = createStatement(false);
+            stmt = createStatement(false);
             rs = stmt.executeQuery(exec_text);
             while (rs.next())
                 names.add(rs.getString(1));
@@ -254,6 +272,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             return names.iterator();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -476,12 +499,13 @@ public class VirtDataset extends VirtGraph implements Dataset {
             String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
             ResultSet rs = null;
             int ret = 0;
+            java.sql.Statement stmt = null;
 
             vd.checkOpen();
             try {
                 List<Node> names = new LinkedList<Node>();
 
-                java.sql.Statement stmt = vd.createStatement(false);
+                stmt = vd.createStatement(false);
                 rs = stmt.executeQuery(exec_text);
                 while (rs.next())
                     names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
@@ -489,6 +513,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 return names;
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+              try {
+                if (stmt != null)
+                  stmt.close();
+              } catch(Exception e) {}
             }
         }
 
@@ -538,7 +567,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
                 vd.add(graphName.toString(), it, null);
             } catch (Exception e) {
-                throw new JenaException("Error in addGraph:" + e);
+                throw new JenaException("Error in addGraph", e);
             }
         }
 
@@ -549,7 +578,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 vd.clear(graphName);
             } catch (Exception e) {
-                throw new JenaException("Error in removeGraph:" + e);
+                throw new JenaException("Error in removeGraph", e);
             }
         }
 
@@ -610,11 +639,10 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 } catch (Exception e) {
                     throw new JenaException("Error in deleteAny():" + e);
                 } finally {
+                  try {
                     if (stmt != null)
-                        try {
-                            stmt.close();
-                        } catch (Exception e) {
-                        }
+                      stmt.close();
+                  } catch(Exception e) {}
                 }
 
             } else {

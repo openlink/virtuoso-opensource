@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -202,28 +202,28 @@ ld_file (in f varchar, in graph varchar)
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), base, graph);
       else
-	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (gz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else if (f like '%.bz2')
     {
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (bz2_file_open (f), base, graph);
       else
-	TTLP_V (bz2_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (bz2_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else if (f like '%.xz')
     {
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (xz_file_open (f), base, graph);
       else
-	TTLP_V (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
 	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), base, graph);
       else
-	TTLP_V (file_open (f), base, graph, ld_ttlp_flags (f, graph));
+	TTLP (file_open (f), base, graph, ld_ttlp_flags (f, graph));
     }
 
   log_stats (sprintf ('RDF load %s', f));

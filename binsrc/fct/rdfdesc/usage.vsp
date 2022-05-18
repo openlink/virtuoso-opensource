@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@
 --
 --
 
-  declare _S, odd_position any;
+  declare _S, has_data any;
   declare page_resource_uri, proxy_iri, rdf_link, label, _subject any;
   declare white_page, arr, data, meta, h1, h2, inx, gr, host, refr, sid, inf, langs, best_q, tp, grs any;
   declare orig_refr varchar;
@@ -44,6 +44,7 @@
   declare pageUrl varchar;
   declare user_permissions int;
   declare q_txt any;
+  declare safetolink integer;
 
   white_page := 1;
 
@@ -79,11 +80,13 @@
 
   host := http_request_header (http_request_header (), 'Host');
   langs := http_request_header_full (lines, 'Accept-Language', 'en');
-  gr := get_keyword ('g', params, '');
+  gr := get_keyword ('g', params, 'unknown');
   arr := rfc1808_parse_uri (gr);
 
-  if (arr[0] = '' and arr[1] = '' and arr[2] <> '')
-    gr := 'http://' || gr;
+  safetolink := 0;
+  if (lower (arr[0]) in ('http','https','ftp')) {
+    safetolink:=1;
+  }
 
   page_resource_uri := gr;
   --page_resource_uri := replace (page_resource_uri, '%23', '#');
@@ -94,7 +97,7 @@
 
   proxy_iri := page_resource_uri;
 
-  odd_position := 0;
+  has_data := 0;
   set http_charset='utf-8';
   set isolation = 'uncommitted';
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
@@ -163,6 +166,8 @@
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
+
+    <meta name="robots" content="noindex,nofollow" />
 </head>
 <body class="usage_page">
   <div id="HD">
@@ -183,8 +188,37 @@
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
-      <h2>About: <a href="<?= case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end ?>">
-	      <?vsp http (sprintf ('%s', label)); ?></a></h2>&nbsp;<a class="desc_permalink" href="usage.vsp?g=<?U b3s_u2w (page_resource_uri) ?>&tp=<?U tp ?>&<?V b3s_render_ses_params (0, 0) ?>">Permalink</a>
+    <h2>About:
+      <?vsp
+      if (safetolink > 0)
+        {
+          http(sprintf('<a href="%s">',
+	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+
+	  if (length (label))
+	    http_value (label);
+	  else
+	    http (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
+	  http ('</a>\n');
+        }
+      else
+        {
+	  if (length(label))
+	    http_value(label);
+	  else
+	    http (b3s_uri_curie(page_resource_uri));
+        }
+      ?>
+    <a href="">
+    </a>&nbsp;&nbsp;&nbsp;
+    <?vsp
+	  http(sprintf('<a class="desc_permalink" href="usage.vsp?g=%U&amp;tp=%d%s" rel="nofollow">Permalink</a>\n',
+	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end,
+	    tp,
+	    b3s_render_ses_params (0,0)
+        ));
+    ?>
+    </h2>
 	<p> an Entity references as follows: </p>
     </div>
     <div class="subj_nav">
@@ -236,10 +270,11 @@
           grvar := graph_usages[row_ctr][0];
           tot := graph_usages[row_ctr][1];
           phy := graph_usages[row_ctr][2];
+	  has_data := 1;
           http ('<tr>');
           if (position (grvar, grs))
             tgr := vector_concat (tgr, vector (grvar));
-          http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&graph=%U%s">%V</a></td>', 
+          http (sprintf ('<td><input type="checkbox" value="%V" name="graph" %s/><a href="/describe/?url=%U&amp;graph=%U%s">%V</a></td>',
              grvar, 
              case when position (grvar, grs) then 'checked' else '' end,
              b3s_u2w (page_resource_uri), 
@@ -306,6 +341,10 @@
 		 if (not position (g, tgr))
                    http (sprintf ('<input type="hidden" name="graph" value="%V"/>', g));
 	      }
+	  if (has_data = 0)
+	      {
+                http_request_status ('HTTP/1.1 404 Not Found');
+	      }
           ?>
 	  <tr><td colspan="2">
 		  <input type="hidden" name="tp" value="<?V tp ?>"/>
@@ -356,7 +395,7 @@
 	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
-	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
+	<?vsp if (0 and VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
 	<a href="<?vsp http (rdfdesc_http_url (page_resource_uri)); ?>" target="_blank">Sponger</a>
 	|
 	<?vsp } ?>

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2021 OpenLink Software
+ -  Copyright (C) 1998-2022 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -2938,9 +2938,24 @@
                         </th>
                         <td>
                           <?vsp
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_0" value="None" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>None</b></label>', case when not strcontains (self.dav_encryption, 'AES256') then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_1" value="AES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/><b>AES-256</b></label>', case when self.dav_encryption = 'AES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
-                            http (sprintf ('<label><input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256" disabled="disabled" %s %s onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/><b>AES-256 (Password or Pass Phrase)</b></label>', case when self.dav_encryption = 'UserAES256' then 'checked="checked"' else '' end, case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end));
+                          declare can_edit varchar;
+                          can_edit := (case when self.dav_enable and not self.editField ('sse') then 'class="disabled"' else '' end);
+
+                          http (sprintf ('<label>
+                              <input type="radio" name="dav_encryption" id="dav_encryption_0" value="None"
+                                  disabled="disabled" %s %s
+                                  onchange="javascript: destinationChange(this, {checked: {hide: [''davRow_encryption_password'']}})"/>
+                              <b>None</b></label>',
+                            case when not strcontains (self.dav_encryption, 'AES256')
+                            then 'checked="checked"' else '' end, can_edit));
+
+                        http (sprintf ('<label>
+                            <input type="radio" name="dav_encryption" id="dav_encryption_2" value="UserAES256"
+                                disabled="disabled" %s %s
+                                onchange="javascript: destinationChange(this, {checked: {show: [''davRow_encryption_password'']}})"/>
+                            <b>AES-256-CBC (Password or Pass Phrase)</b></label>',
+                        case when self.dav_encryption = 'UserAES256'
+                        then 'checked="checked"' else '' end, can_edit));
                           ?>
                         </td>
                       </tr>
@@ -4304,10 +4319,13 @@
               </v:template>
               <div id="f_plain">
                 <?vsp
+                  declare S varchar;
+
+                  S := WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source));
                   if (WEBDAV.DBA.VAD_CHECK ('Framework') and (self.mimeType in ('text/html', 'application/xhtml+xml')) and (self.command <> 30))
                   {
                     http ('<textarea id="f_content_html" name="f_content_html" style="width: 400px; height: 170px;">');
-                    http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_html', self.vc_page.vc_event.ve_params, S));
                     http ('</textarea>');
                 ?>
                     <![CDATA[
@@ -4322,7 +4340,7 @@
                   else
                   {
                     http (sprintf ('<textarea id="f_content_plain" name="f_content_plain" autofocus style="width: 100%%; height: 360px" %s>', case when self.command = 30 then 'disabled="disabled"' else '' end));
-                    http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, WEBDAV.DBA.utf2wide (WEBDAV.DBA.DAV_RES_CONTENT (self.source))));
+                    http_value (get_keyword ('f_content_plain', self.vc_page.vc_event.ve_params, S));
                     http ('</textarea>');
                   }
                 ?>

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -56,7 +56,7 @@ create procedure
 fct_render_dbg_out ()
 {
   declare d_lvl int;
-  declare d_out varchar;
+  declare d_out any;
 
   d_lvl := connection_get ('fct_dbg_lvl');
   d_out := connection_get ('fct_dbg_out');
@@ -88,6 +88,9 @@ fct_uri_curie (in uri varchar)
 
   if (uri is null)
     return uri;
+
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
 
   uriSearch := uri;
   nsPrefix := null;
@@ -146,14 +149,15 @@ fct_short_uri (in x any)
 create procedure
 fct_trunc_uri (in s varchar, in maxlen int := 40)
 {
-  declare _s varchar;
+  declare _s, ret varchar;
   declare _h int;
 
   _s := trim(s);
 
   if (length(_s) <= maxlen) return _s;
   _h := floor (maxlen / 2);
-  return sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+  ret := sprintf ('%s...%s', "LEFT"(_s, _h), "RIGHT"(_s, _h-1));
+  return ret;
 }
 ;
 
@@ -161,6 +165,10 @@ create procedure
 fct_short_form (in x any, in ltgt int := 0)
 {
   declare loc, pref, sh varchar;
+  declare ret nvarchar;
+
+  if (iswidestring (x))
+    x := __box_flags_tweak (charset_recode (x, '_WIDE_', 'UTF-8'), 2);
 
   if (not isstring (x))
     return null;
@@ -171,8 +179,11 @@ fct_short_form (in x any, in ltgt int := 0)
     return 'Blank' || x;
 
   if (sh is not null)
-    return (fct_trunc_uri(sh));
-  else return (case when ltgt then '&lt;' || fct_trunc_uri (x) || '&gt;' else fct_trunc_uri (x) end);
+    ret := fct_trunc_uri(sh);
+  else 
+    ret := (case when ltgt then '&lt;' || fct_trunc_uri (x) || '&gt;' else fct_trunc_uri (x) end);
+  ret := charset_recode (ret, 'UTF-8', '_WIDE_');
+  return ret;
 }
 ;
 
@@ -187,7 +198,7 @@ fct_long_uri (in x any)
     return x;
  sh := __xml_get_ns_uri (subseq (pref, 0, length (pref) - 1), 2);
   if (sh is not null)
-    return sh || loc;
+    x := sh || loc;
   return x;
 }
 ;
@@ -252,6 +263,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lng_pref any;
+  declare lang_vec any;
 
   if (not isiri_id (x))
     return vector (null, 1);
@@ -260,6 +272,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_str := null;
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o, p
         from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
@@ -271,8 +284,7 @@ FCT_LABEL_DP_L (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	}
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
-
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
@@ -309,6 +321,13 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lang_id any;
+  declare lang_vec any;
+
+  if (is_rdf_box (x))
+    {
+      best_str := x;
+      goto endproc;
+    }
 
   if (not isiri_id (x))
     return null;
@@ -324,6 +343,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
   best_str := '';
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o
         from rdf_quad table option (index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) order by cast (b3s_lbl_order (P) as int) option (same_as) do
@@ -334,7 +354,7 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 	str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lang_id);
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
@@ -344,6 +364,15 @@ FCT_LABEL_NP (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar := 'en'
 	    }
 	}
     }
+  endproc:
+  if (is_rdf_box (best_str))
+    {
+      if (not rdf_box_is_complete (best_str))
+	__rdf_box_make_complete (best_str);
+      best_str := rdf_box_data (best_str);
+    }
+  if (__tag(best_str) = __tag of varchar)
+    best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
 }
 ;
@@ -356,6 +385,7 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   declare best_l, l int;
   declare label_iri iri_id_8;
   declare q, best_q, str_lang, lng_pref any;
+  declare lang_vec any;
 
   if (not isiri_id (x))
     return null;
@@ -371,19 +401,28 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
   best_str := null;
   best_l := 0;
   best_q := 0;
+  lang_vec := cmp_fill_lang_by_q (lng);
   for select o, p
         from rdf_quad table option (no cluster, index rdf_quad)
         where s = x and p in (rdf_super_sub_list (ctx, label_iri, 3)) do
     {
       if (is_rdf_box (o))
 	{
+	  if (not rdf_box_is_complete (o))
+	    __rdf_box_make_complete (o);
           lng_pref := rdf_box_lang (o);
-	  str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	  if (lng_pref <> 257)
+	    {
+	      str_lang := rdf_cache_id_to_name ('l', lng_pref);
+	      if (0 = str_lang) 
+		str_lang := (select RL_ID from RDF_LANGUAGE where RL_TWOBYTE = lng_pref);
+	    }
+	  else
+	    str_lang := 'en';
 	}
       else
         str_lang := 'en';
-      q := cmp_get_lang_by_q (lng, str_lang);
-
+      q := get_keyword_ucase (str_lang, lang_vec, 0.001);
       if (is_rdf_box (o) or isstring (o))
 	{
 	  if (q > best_q)
@@ -392,26 +431,13 @@ FCT_LABEL_S (in x any, in g_id iri_id_8, in ctx varchar, in lng varchar)
 	      best_q := q;
 	    }
 	}
-
-      if (0)
-	{
-	  if (is_rdf_box (o) and not rdf_box_is_complete (o))
-	    l := 20;
-	  else
-	    l := length (o);
-	  if (l > best_l)
-	    {
-	      best_str := o;
-	      best_l := l;
-	    }
-	}
     }
   if (is_rdf_box (best_str) and not rdf_box_is_complete (best_str))
-    {
-      set isolation = 'committed';
-      return (select case (isnull (RO_LONG)) when 0 then blob_to_string (RO_LONG) else RO_VAL end
-		   from DB.DBA.RDF_OBJ table option (no cluster) where RO_ID = rdf_box_ro_id (best_str));
-    }
+    __rdf_box_make_complete (best_str);
+  if (is_rdf_box (best_str))
+    best_str := rdf_box_data (best_str);
+  if (__tag(best_str) = __tag of varchar)
+    best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
 }
 ;
@@ -820,8 +846,11 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 
   if ('list' = mode or 'propval-list' = mode)
     {
+      declare langs varchar;
+      langs := connection_get ('langs');
       http (sprintf ('select ?s%d as ?c1 ', this_s), pre);
-      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) ', this_s, this_s), post);
+      http (sprintf (' group by (?s%d) order by desc (<LONG::IRI_RANK> (?s%d)) desc (bif:langmatches_pct_http (coalesce(lang(?s%d), \'\'), \'%s\'))',
+	   this_s, this_s, this_s, langs), post);
     }
 
   if ('list-count' = mode)
@@ -878,7 +907,8 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
     {
       declare exp any;
 
-      exp := cast (xpath_eval ('//text', tree) as varchar);
+      exp := cast (xpath_eval ('string (//text)', tree) as nvarchar);
+      exp := charset_recode (exp, '_WIDE_', 'UTF-8');
 
       http (sprintf ('select ?s%d as ?c1, (bif:search_excerpt (bif:vector (%s), ?o%d)) as ?c2, ?sc, ?rank, ?g where {{{ select ?s%d, (?sc * 3e-1) as ?sc, ?o%d, (sql:rnk_scale (<LONG::IRI_RANK> (?s%d))) as ?rank, ?g',
             this_s,
@@ -951,7 +981,7 @@ create procedure fct_esc_lit (in val any)
 create procedure
 fct_literal (in tree any)
 {
-  declare val, dtp, lang varchar;
+  declare val, dtp, lang any;
 
   dtp := cast (xpath_eval ('./@datatype', tree) as varchar);
   lang := cast (xpath_eval ('./@lang', tree) as varchar);
@@ -1169,7 +1199,7 @@ fct_cond_near (in tree any, in this_s int, in txt any) {
   declare v any;
   declare v_str varchar;
   declare i int;
-  declare lon, lat float;
+  declare lon, lat any;
   declare d int;
   declare prop varchar;
 
@@ -1599,7 +1629,7 @@ fct_exec (in tree any,
                                xmlelement ("view", xmlattributes (offs as "offset", lim as "limit", v_pos as "position")),
                                results[0], results[1], results[2]);
 
-  --String_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
+  -- string_to_file ('ret.xml', serialize_to_UTF8_xml (res), -2);
 
 --  dbg_obj_print (results[0]);
 

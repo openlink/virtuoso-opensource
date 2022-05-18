@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -90,6 +90,15 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
     }
 
 
+    public boolean isAutoCommit() {
+        try {
+          return graph.getConnection().getAutoCommit();
+        } catch(SQLException e) {
+          return false;
+        }
+
+    }
+
     public boolean transactionsSupported() {
         if (m_transactionsSupported != null) {
             return (m_transactionsSupported.booleanValue());
@@ -98,7 +107,7 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         try {
             Connection c = graph.getConnection();
             if (c != null) {
-                m_transactionsSupported = new Boolean(c.getMetaData().supportsMultipleTransactions());
+                m_transactionsSupported = Boolean.valueOf(c.getMetaData().supportsMultipleTransactions());
                 return (m_transactionsSupported.booleanValue());
             }
         } catch (Exception e) {
@@ -131,21 +140,27 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         XAResource xa = checkXA();
         xa.commit(xid, flag);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) { }
     }
 
     public void end(Xid xid, int i) throws XAException {
         XAResource xa = checkXA();
         xa.end(xid, i);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) { }
     }
 
     public void forget(Xid xid) throws XAException {
         XAResource xa = checkXA();
         xa.forget(xid);
-        if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+        if (graph.resetBNodesDictAfterCommit) 
+            try {
+              graph.dropBNodesDict();
+            } catch (SQLException e) {}
     }
 
     public int prepare(Xid xid) throws XAException {
@@ -162,7 +177,9 @@ public class VirtTransactionHandler extends TransactionHandlerBase implements XA
         XAResource xa = checkXA();
         xa.rollback(xid);
         if (graph.resetBNodesDictAfterCommit)
-            graph.dropBNodesDict();
+            try {
+              graph.dropBNodesDict();
+            } catch(SQLException e) {}
     }
 
     public boolean setTransactionTimeout(int i) throws XAException {

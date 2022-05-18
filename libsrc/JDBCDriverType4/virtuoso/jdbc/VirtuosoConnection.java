@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -141,9 +141,9 @@ public class VirtuosoConnection implements Connection
    protected Hashtable<String,Integer> rdf_type_rev = null;
    protected Hashtable<String,Integer> rdf_lang_rev = null;
 
-  private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
-  private boolean  useCachePrepStatements = false;
-  private Vector<VhostRec> hostList = new Vector<VhostRec>();
+   private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
+   private boolean  useCachePrepStatements = false;
+   private Vector<VhostRec> hostList = new Vector<VhostRec>();
    protected boolean rdf_type_loaded = false;
    protected boolean rdf_lang_loaded = false;
 
@@ -152,7 +152,7 @@ public class VirtuosoConnection implements Connection
    private static final SQLPermission ABORT_PERM = new SQLPermission("abort");
 #endif
 
-  private boolean useRoundRobin;
+   private boolean useRoundRobin;
 
    private boolean oAutoCommit;
    private int oTxnIsolation;
@@ -503,20 +503,20 @@ public class VirtuosoConnection implements Connection
       {
          // Establish the connection
         if(use_ssl || truststore_path != null || keystore_path != null)
-	  {
-	    //System.out.println ("Will do SSL");
+          {
+               //System.out.println ("Will do SSL");
                if (ssl_provider != null && ssl_provider.length() != 0) {
-		//System.out.println ("SSL Provider " + ssl_provider);
-		Security.addProvider((Provider)(Class.forName(ssl_provider).newInstance()));
-	      }
+                   //System.out.println ("SSL Provider " + ssl_provider);
+                   Security.addProvider((Provider) (Class.forName(ssl_provider).newInstance()));
+               }
 
                SSLContext ssl_ctx = SSLContext.getInstance("TLS");
                X509TrustManager tm = new VirtX509TrustManager();
-		KeyManager []km = null;
+               KeyManager[] km = null;
                TrustManager[] tma = null;
                KeyStore tks = null;
 
-               if (truststore_path.length() > 0) {
+               if (truststore_path != null && truststore_path.length() > 0) {
                    InputStream fis = null;
                    String keys_pwd = (truststore_pass != null) ? truststore_pass : "";
                    String alg = TrustManagerFactory.getDefaultAlgorithm();
@@ -541,8 +541,8 @@ public class VirtuosoConnection implements Connection
                                i++;
                              }
                            }
-	      }
-	    else
+                       }
+                     else
                        tks.load(fis, keys_pwd.toCharArray());
 
                    } finally {
@@ -557,22 +557,22 @@ public class VirtuosoConnection implements Connection
                    tma = new TrustManager[]{tm};
                }
 
-               if (keystore_path.length() > 0 && keystore_pass.length() > 0) {
+               if (keystore_path != null && keystore_path.length() > 0 && keystore_pass.length() > 0) {
                    String keys_file = (keystore_path != null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator");
                    String keys_pwd = (keystore_pass != null) ? keystore_pass : "";
 
                    fname = keys_file;
                    km = new KeyManager[]{new VirtX509KeyManager(cert_alias, keys_file, keys_pwd, tks)};
-	      }
+               }
 
                ssl_ctx.init(km, tma, new SecureRandom());
 
                socket = ((SSLSocketFactory) ssl_ctx.getSocketFactory()).createSocket(host, port);
-	    ((SSLSocket)socket).startHandshake();
+               ((SSLSocket)socket).startHandshake();
 
-	  }
-	else
-	 socket = new Socket(host,port);
+          }
+        else
+	      socket = new Socket(host,port);
 
 	 if (timeout > 0)
 	   socket.setSoTimeout(timeout);
@@ -1404,7 +1404,7 @@ public class VirtuosoConnection implements Connection
     */
    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws VirtuosoException
    {
-       VirtuosoPreparedStatement ps = null;
+     VirtuosoPreparedStatement ps = null;
      if (useCachePrepStatements) {
        synchronized(pStatementCache) {
          ps = pStatementCache.remove(""+resultSetType+"#"

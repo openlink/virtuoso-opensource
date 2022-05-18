@@ -886,24 +886,24 @@ cd $(ProjectDir)
     <CustomBuild Include="..\libsrc\Wi\sqlwords.gperf">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>

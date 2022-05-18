@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -261,7 +261,24 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
         }
       else
         {
-          all_metas[0] := vector ('TABLE', DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("ts", 'DB')), DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("to", 'DBA')), DB.DBA.R2RML_UNQUOTE_NAME ("tn"));
+          declare qual, owner, tbname, tree varchar;
+          if ("ts" is null and "to" is null)
+            {
+               declare exit handler for sqlstate '*' {
+                 signal ('R2RML', 'Invalid tableName');
+               };
+               tree := sql_parse (sprintf ('%s ()', "tn"));
+               tbname := tree[1];
+               qual := name_part (tbname, 0); owner := name_part (tbname, 1); tbname := name_part (tbname, 2);
+               all_metas[0] := vector ('TABLE', qual, owner, tbname);
+            }
+          else
+            {
+              all_metas[0] := vector ('TABLE',
+                    DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("ts", 'DB')),
+                    DB.DBA.R2RML_UNQUOTE_NAME (coalesce ("to", 'DBA')),
+                    DB.DBA.R2RML_UNQUOTE_NAME ("tn"));
+            }
           text_to_prepare := sprintf ('select * from "%I"."%I"."%I"', all_metas[0][1], all_metas[0][2], all_metas[0][3]);
         }
       stat := '00000';
@@ -1141,7 +1158,7 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
   http ('  {\n', self.codegen_ses);
   self.used_fld_tmap_aliases := vector (vector(), vector(), vector(), vector(), vector());
   http ('    create ' || self.R2RML_IRI_ID_AS_QNAME (rdfview_iid) || ' as', self.codegen_ses);
-  if (self.default_constg is null) 
+  if (self.default_constg is null)
     self.default_constg := iri_to_id (sprintf ('http://example.com/r2rml?graph=%U', id_to_iri(self.graph_iid)));
   if ((const_graph_count + var_graph_count) <= 1)
     {
@@ -1150,19 +1167,18 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
         {
           declare constg IRI_ID;
           constg := (sparql define input:storage "" define output:valmode "LONG"
-            select ?constg
-            where { graph `iri(?:self.graph_iid)` {
-                    ?tmap a rr:TriplesMap .
-                    optional {
-                        { ?tmap rr:subjectMap ?smap }
-                      union
-                        { ?tmap rr:predicateObjectMap ?pomap } }
-                      { ?gcontainer rr:graph ?constg }
-                    union
-                      {
-                        ?gcontainer rr:graphMap ?gfld .
-                        ?gfld rr:constant ?constg }
-                    filter (?gcontainer in (?smap, ?pomap)) } } );
+          SELECT  ?constg WHERE
+          { GRAPH `iri(?:self.graph_iid)`
+              { ?tmap  a  rr:TriplesMap
+                  { ?tmap  rr:subjectMap [ rr:graph  ?constg ] . }
+                  UNION
+                  { ?tmap  rr:predicateObjectMap [ rr:graph  ?constg ] . }
+                  UNION
+                  { ?tmap  rr:subjectMap [ rr:graphMap  [ rr:constant  ?constg ] ] . }
+                  UNION
+                  { ?tmap  rr:predicateObjectMap [ rr:graphMap  [ rr:constant  ?constg ] ] . }
+              }
+          });
           if (constg is null)
             constg := self.default_constg;
           self.R2RML_GEN_FLD (0 /* for G */, constg, null, null, null, 'http://www.w3.org/ns/r2rml#IRI', null, null);
@@ -1251,7 +1267,7 @@ create procedure R2RML_GENERATE_LINKED_VIEW (in source varchar, in destination_g
     vgraph := sprintf ('http://example.com/r2rml?graph=%U', source);
   if (graph_type = 1)
     {
-      if (exists (sparql define input:storage "" prefix rr: <http://www.w3.org/ns/r2rml#> ask { graph `iri(?:source)` { [] rr:graphMap ?m . ?m rr:template ?g }}))
+      if ((sparql define input:storage "" prefix rr: <http://www.w3.org/ns/r2rml#> ask { graph `iri(?:source)` { [] rr:graphMap ?m . ?m rr:template ?g }}))
 	signal ('42000', 'Can not sync graph template to physical graph');
     }
   vstr := DB.DBA.R2RML_MAKE_QM_FROM_G (source, vgraph);

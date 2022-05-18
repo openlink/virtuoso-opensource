@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -174,7 +174,7 @@ rdf_fetch_or_create_system_iri_ids (caddr_t * qst)
   RDF_FETCH_OR_CREATE_1(virtrdf_ns_uri_rdf_repl_world)
 }
 
-iri_id_t bnode_t_treshold = ~((iri_id_t)0);
+iri_id_t bnode_t_threshold = ~((iri_id_t)0);
 
 int
 rb_uname_to_wellknown_datatype_twobyte (ccaddr_t dt_uname)
@@ -311,11 +311,11 @@ rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
 }
 
 caddr_t
-bif_rdf_set_bnode_t_treshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_rdf_set_bnode_t_threshold (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  sec_check_dba ((query_instance_t *) qst, "__rdf_set_bnode_t_treshold");
-    bnode_t_treshold = sequence_next ("RDF_URL_IID_BLANK", 0);
-  return box_iri_id (bnode_t_treshold);
+  sec_check_dba ((query_instance_t *) qst, "__rdf_set_bnode_t_threshold");
+    bnode_t_threshold = sequence_next ("RDF_URL_IID_BLANK", 0);
+  return box_iri_id (bnode_t_threshold);
 }
 
 void
@@ -6745,7 +6745,7 @@ rdf_repl_feed_batch_of_rquads (query_instance_t *qi, caddr_t **rquads_vector, cc
             void **params;
             static const char *geo_qr_text = "insert soft DB.DBA.RDF_QUAD (G,S,P,O) \
  values (iri_to_id_repl (?), iri_to_id_repl (?), iri_to_id (\'http://www.w3.org/2003/01/geo/wgs84_pos#geometry\'), \
- rdf_geo_add (rdf_box (st_point (?, ?), 256, 257, 0, 1)))";
+ DB.DBA.RDF_GEO_ADD (rdf_box (st_point (?, ?), 256, 257, 0, 1)))";
             if (NULL == geo_qr)
               {
                 geo_qr = sql_compile (geo_qr_text, qi->qi_client, &err, SQLC_DEFAULT);
@@ -7027,8 +7027,78 @@ rb_tmp_copy (mem_pool_t * mp, rdf_box_t * rb)
 caddr_t
 bif_iri_name_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t name = bif_string_arg (qst, args, 0, "ri_name_id");
-  return box_num (LONG_REF_NA (name));
+  caddr_t name = bif_string_arg (qst, args, 0, "iri_name_id");
+  return box_num (RPID_REF_NA (name));
+}
+
+caddr_t
+bif_iri_set_name_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "iri_set_name_id");
+  int64 rp_id = bif_long_arg (qst, args, 1, "iri_set_name_id");
+  caddr_t local, pref;
+  if (!iri_split (name, &pref, &local))
+    sqlr_new_error ("22023", ".....", "Can not spilt IRI name");
+  RPID_SET_NA (local, rp_id);
+  dk_free_box (pref);
+  return local;
+}
+
+caddr_t
+bif_iri_name_id_64_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_t * ret)
+{
+  QNCAST (query_instance_t, qi, qst);
+  data_col_t * names = bif_dc_arg (qst, args, 0, "__iri_name_id_64");
+  data_col_t * dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
+  db_buf_t set_mask = qi->qi_set_mask;
+  int set, n_sets = qi->qi_n_sets, first_set = 0;
+
+  /*if (dc->dc_dtp != DV_ANY)
+    dc_heterogenous (dc);*/
+  SET_LOOP
+    {
+      db_buf_t dv = ((db_buf_t*)names->dc_values)[set];
+      switch (*dv)
+	{
+	  case DV_SHORT_STRING_SERIAL:
+	  case DV_LONG_STRING:
+		{
+		  caddr_t name = box_deserialize_string ((caddr_t)dv, INT32_MAX, 0);
+		  if (!RPID_IS_64 (name))
+		    {
+		      int64 rp_id = RPID_REF_NA (name);
+		      caddr_t local = dk_alloc_box (box_length (name) + 4, DV_STRING);
+		      memcpy (local + 4, name, box_length (name));
+		      RPID_SET_NA (local, rp_id);
+		      dc_append_box (dc, local);
+		      dk_free_box (name);
+		    }
+		  else
+		    {
+		      dc_append_box (dc, name);
+		    }
+		}
+	      break;
+	  default:
+	      sqlr_new_error ("42000", ".....", "__rl_set_pref_id() expects a column of type \"varchar\"");
+	}
+    }
+  END_SET_LOOP;
+  return NULL;
+}
+
+
+caddr_t
+bif_iri_name_id_64 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t name = bif_string_arg (qst, args, 0, "__iri_name_id_64");
+  int64 rp_id = RPID_REF_NA (name);
+  caddr_t local;
+  int hl = (RPID_IS_64(name) ? 0 : 4);
+  local = dk_alloc_box (box_length (name) + hl, DV_STRING);
+  memcpy (local + hl, name, box_length (name));
+  RPID_SET_NA (local, rp_id);
+  return local;
 }
 
 
@@ -7058,8 +7128,8 @@ rdf_box_init ()
   MAKE_RDF_GRAPH_DICT(rdf_graph_group_of_privates_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_world_perms_of_user_dict);
   MAKE_RDF_GRAPH_DICT(rdf_graph_default_private_perms_of_user_dict);
-  bif_define_ex ("__rdf_set_bnode_t_treshold", bif_rdf_set_bnode_t_treshold, BMD_RET_TYPE, &bt_integer, BMD_DONE);
-  bif_set_uses_index (bif_rdf_set_bnode_t_treshold);
+  bif_define_ex ("__rdf_set_bnode_t_threshold", bif_rdf_set_bnode_t_threshold, BMD_ALIAS, "__rdf_set_bnode_t_treshold", BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_set_uses_index (bif_rdf_set_bnode_t_threshold);
   bif_define_ex ("rdf_box", bif_rdf_box, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("rdf_box_from_ro_id", bif_rdf_box_from_ro_id, BMD_IS_PURE, BMD_DONE);
   bif_define ("ro_digest_from_parts", bif_ro_digest_from_parts);
@@ -7161,4 +7231,6 @@ rdf_box_init ()
   bif_define ("__rdf_range_check", bif_rdf_range_check);
   bif_set_uses_index (bif_rdf_range_check );
   bif_define_ex ("iri_name_id", bif_iri_name_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("iri_set_name_id", bif_iri_set_name_id, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("__iri_name_id_64", bif_iri_name_id_64, BMD_VECTOR_IMPL, bif_iri_name_id_64_vec, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 }

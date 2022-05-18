@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,12 +26,8 @@ package virtuoso.jena.driver;
 import java.sql.*;
 import java.util.*;
 
-import virtuoso.sql.*;
-import org.apache.jena.util.iterator.*;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.*;
-import org.apache.jena.datatypes.*;
-import org.apache.jena.rdf.model.*;
 
 
 public class VirtResSetIter2 implements Iterator<Triple> {
@@ -117,17 +113,14 @@ public class VirtResSetIter2 implements Iterator<Triple> {
             if (v_resultSet != null) {
                 try {
                     v_resultSet.close();
-                    v_resultSet = null;
-                } catch (SQLException e) {
-                    throw new JenaException(e);
-                }
+                } catch (Exception e) { }
+                v_resultSet = null;
             }
             if (v_stmt != null) {
                 try {
                     v_stmt.close();
-                    v_stmt = null;
-                } catch (SQLException e) {
-                }
+                } catch (Exception e) { }
+               v_stmt = null;
             }
         }
         v_finished = true;

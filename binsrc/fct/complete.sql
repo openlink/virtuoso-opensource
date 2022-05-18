@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -268,46 +268,38 @@ urilbl_ac_init_state(in info integer := 1)
 ;
 
 
--- Originally from rdf_mappers/rdfdesc.sql
--- Determine q of given lang based on value of Accept-Language hdr
-
 create procedure
-cmp_get_lang_by_q (in accept varchar, in lang varchar)
+cmp_fill_lang_by_q (in accept varchar)
 {
-  declare format, itm, q varchar;
-  declare arr any;
+  declare itm varchar;
+  declare arr, vec any;
+  declare q float;
   declare i, l int;
 
+  vec := vector ();
   arr := split_and_decode (accept, 0, '\0\0,;');
   q := 0;
   l := length (arr);
-  format := null;
   for (i := 0; i < l; i := i + 2)
     {
       declare tmp any;
       itm := trim(arr[i]);
-      if (itm = lang)
-	{
-	  q := arr[i+1];
-	  if (q is null)
-	    q := 1.0;
-	  else
-	    {
-	      tmp := split_and_decode (q, 0, '\0\0=');
-	      if (length (tmp) = 2)
-		q := atof (tmp[1]);
-	      else
-		q := 1.0;
-	    }
-	  goto ret;
-	}
+      q := arr[i+1];
+      if (q is null)
+        q := 1.0;
+      else
+        {
+          tmp := split_and_decode (q, 0, '\0\0=');
+          if (length (tmp) = 2)
+            q := atof (tmp[1]);
+          else
+            q := 1.0;
+        }
+      vec := vector_concat (vec, vector (itm, q));
     }
-  ret:
-  if (q = 0 and lang = 'en')
-    q := 0.002;
-  if (q = 0 and not length (lang))
-    q := 0.001;
-  return q;
+  if (not position ('en', vec))
+    vec := vector_concat (vec, vector ('en', 0.002));
+  return vec;
 }
 ;
 

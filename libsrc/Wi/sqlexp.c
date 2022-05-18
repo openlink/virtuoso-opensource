@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -741,8 +741,10 @@ scalar_exp_generate (sql_comp_t * sc, ST * tree, dk_set_t * code)
   if (sc->sc_so)
     {
       dfe = sqlo_df (sc->sc_so, tree);
+#if 0
       if (st_is_call (tree, "__ro2lo", 1))
-  bing ();
+        bing ();
+#endif
 
       if (dfe->dfe_ssl)
 	return (dfe->dfe_ssl);

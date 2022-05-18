@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1728,17 +1728,26 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 static caddr_t
 bif_bin2hex (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t bin = bif_bin_arg (qst, args, 0, "bin2hex");
-  caddr_t out = dk_alloc_box (2 * box_length (bin) + 1, DV_SHORT_STRING);
-  uint32 inx;
+  caddr_t bin = bif_arg (qst, args, 0, "bin2hex");
+  caddr_t out;
+  uint32 inx, len;
   char tmp[3];
+
+  if (DV_BIN == DV_TYPE_OF (bin))
+    len = box_length (bin);
+  else if (IS_STRING_DTP (DV_TYPE_OF (bin)))
+    len = box_length (bin) - 1;
+  else
+    sqlr_new_error ("22023", "ENC01", "Function bin2hex expects binary or string as a 1st argument");
+
+  out = dk_alloc_box (2 * len + 1, DV_SHORT_STRING);
   out[0] = 0;
-  for (inx = 0; inx < box_length (bin); inx++)
+  for (inx = 0; inx < len; inx++)
     {
       snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) bin[inx]);
       strcat_box_ck (out, tmp);
     }
-  out[2 * box_length (bin)] = 0;
+  out[2 * len] = 0;
   return out;
 }
 
@@ -1753,7 +1762,7 @@ bif_hex2bin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!len)
     return NEW_DB_NULL;
   if (len % 2)
-    sqlr_new_error ("22023", "ENC..", "The input string must have a length multiple by two");
+    sqlr_new_error ("22023", "ENC02", "The input string must have a length multiple by two");
   out = dk_alloc_box (len / 2, DV_BIN);
   out[0] = 0;
   for (inx = 0; inx < len; inx += 2)
@@ -1761,7 +1770,7 @@ bif_hex2bin (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (1 != sscanf (str+inx, "%02x", &tmp))
 	{
 	  dk_free_box (out);
-	  sqlr_new_error ("22023", "ENC..", "The input string does not contains hexadecimal string");
+	  sqlr_new_error ("22023", "ENC03", "The input string does not contains hexadecimal string");
 	}
       out [inx/2] = (unsigned char) tmp;
     }

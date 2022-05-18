@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3885,6 +3885,8 @@ dbs_init_id (char * str)
   MD5_Final ((unsigned char*)str, &ctx);
 }
 
+extern int32 rdf_rpid64_mode;
+
 void
 dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
 {
@@ -3935,6 +3937,8 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   if (-1 == timezoneless_datetimes)
     timezoneless_datetimes = DT_TZL_BY_DEFAULT;
   db.db_timezoneless_datetimes = timezoneless_datetimes;
+  /* should we check it is set to true? */
+  db.db_rdf_id64 = rdf_rpid64_mode;
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
   rc = write (fd, zero, PAGE_SZ);
@@ -4372,6 +4376,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
         }
       timezoneless_datetimes = cfg_page->db_timezoneless_datetimes;
     }
+  rdf_rpid64_mode = cfg_page->db_rdf_id64;
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
     {
 #ifdef BYTE_ORDER_REV_SUPPORT

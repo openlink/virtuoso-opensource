@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2108,7 +2108,9 @@ pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf)
     buf->bd_pl = NULL;
 }
 
+#ifdef DEBUG
 void ltbing2 () {}
+#endif
 
 void
 gl_print (gen_lock_t * gl)

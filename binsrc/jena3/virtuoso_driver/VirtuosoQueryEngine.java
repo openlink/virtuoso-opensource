@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -22,15 +22,12 @@
  */
 package virtuoso.jena.driver;
 
-import java.util.*;
-
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.Node;
 
 import org.apache.jena.query.Query;
 import org.apache.jena.sparql.ARQInternalErrorException;
-import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.Transform;
 import org.apache.jena.sparql.algebra.TransformCopy;
@@ -46,7 +43,6 @@ import org.apache.jena.sparql.engine.QueryEngineFactory;
 import org.apache.jena.sparql.engine.QueryEngineRegistry;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorBase;
-import org.apache.jena.sparql.engine.binding.BindingMap;
 import org.apache.jena.sparql.engine.main.QueryEngineMain;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.util.Context;
@@ -272,16 +268,14 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
                 if (rs != null) {
                     try {
                         rs.close();
-                        rs = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    rs = null;
                 }
                 if (stmt != null) {
                     try {
                         stmt.close();
-                        stmt = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    stmt = null;
                 }
             }
             v_finished = true;
@@ -322,8 +316,7 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
             if (!v_finished)
                 try {
                     close();
-                } catch (Exception e) {
-                }
+                } catch (Exception e) { }
         }
 
         /**

@@ -15,20 +15,23 @@ urilbl_ac_init_db ()
     goto finished;
   };
 
--- XXX test that this inference graph exists a priori
--- XXX check if the unresolved literal problem still needs a workaround
-
   for (sparql
         define output:valmode 'LONG'
         define input:inference 'facets'
-        select ?s ?o (lang(?o)) as ?lng where { ?s virtrdf:label ?o }) do
+        select ?s ?o where { ?s virtrdf:label ?o }) do
     {
+      declare lng, id int;
+      lng := 257;
       if (__tag of rdf_box = __tag(o))
-	o_str := cast (o as varchar);
-      else if (isstring(o) and o not like 'Unresolved literal for ID%')
-	{
-	  o_str := o;
-        }
+        {
+	  o_str := rdf_box_data (o);
+	  if (isstring (o_str))
+	    o_str := charset_recode (o_str, 'UTF-8', '_WIDE_');
+	  else
+	    o_str := cast (o_str as varchar);
+	  lng := rdf_box_lang (o);
+	  id := rdf_box_ro_id (o);
+	}
       else
 	{
           n_strange := n_strange + 1;
@@ -37,12 +40,9 @@ urilbl_ac_init_db ()
 
       n_ins := n_ins + 1;
 
-      o_str := charset_recode (o_str, 'UTF-8', '_WIDE_');
       o_str := "LEFT"(o_str, 512);
 
-      insert soft urilbl_complete_lookup_2
-           (ull_label_lang, ull_label_ruined, ull_iid, ull_label)
-          values (lng, urilbl_ac_ruin_label (o_str), s, o_str);
+      insert soft rdf_label (rl_o, rl_ro_id, rl_text, rl_lang) values (o, id, urilbl_ac_ruin_label (o_str), lng);
 
      cont:;
       n := n + 1;
@@ -70,6 +70,7 @@ cmp_label (in lbl_str varchar, in langs varchar)
   declare cur_iid any;
   declare cur_lbl varchar;
   declare n integer;
+  declare lang_vec any;
 
   res := vector();
 
@@ -82,10 +83,18 @@ cmp_label (in lbl_str varchar, in langs varchar)
       goto done;
     };
 
-    for (select ull_label_lang, ull_label, ull_iid
-         from urilbl_complete_lookup_2
-         where ull_label_ruined like urilbl_ac_ruin_label (lbl_str) || '%') do
+    lang_vec := cmp_fill_lang_by_q (langs);
+    for (select rl_lang, s as ull_iid, __ro2sq (o) as ull_label from RDF_LABEL table option (index RDF_LABEL_TEXT), RDF_QUAD
+	where rl_text like urilbl_ac_ruin_label (lbl_str) || '%' and rl_o = o) do
       {
+	declare ull_label_lang varchar;
+	ull_label_lang := '';
+	if (rl_lang <> 257)
+	  {
+	    ull_label_lang := rdf_cache_id_to_name('l', rl_lang);
+            if (ull_label_lang = 0)
+	      ull_label_lang := coalesce ((select rl_id from rdf_language where rl_twobyte = rl_lang), '');
+	  }
         if (cur_iid is not null and ull_iid <> cur_iid)
           {
             res := vector_concat (res, vector (cur_lbl, id_to_iri(cur_iid)));
@@ -95,12 +104,15 @@ cmp_label (in lbl_str varchar, in langs varchar)
   	}
 
         cur_iid := ull_iid;
-        q := cmp_get_lang_by_q (langs, ull_label_lang);
+        q := get_keyword_ucase (ull_label_lang, lang_vec, 0.001);
 
         if (q >= best_q)
           {
             best_q := q;
-            cur_lbl := ull_label;
+	    if (__tag (ull_label) = 246)
+	      cur_lbl := rdf_box_data (ull_label);
+	    else
+	      cur_lbl := ull_label;
 	  }
       }
     res := vector_concat (res, vector (cur_lbl, id_to_iri (cur_iid)));

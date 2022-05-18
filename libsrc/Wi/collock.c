@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1038,8 +1038,10 @@ ceic_save_uci (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int ice, row_no_t * uci
   for (inx = 0; inx < dc.dc_n_values; inx++)
     {
       caddr_t val = ((caddr_t *) dc.dc_values)[inx];
+#if 0
       if (DV_ANY == dc.dc_dtp && DV_STRING == (dtp_t) val[0] && LONG_REF_NA (val + 1) > 4000)
 	bing ();
+#endif
       ceic->ceic_rb_rds[inx + ceic->ceic_nth_rb_rd]->rd_values[ceic->ceic_nth_col] = val;
     }
   ceic->ceic_nth_rb_rd += dc.dc_n_values;

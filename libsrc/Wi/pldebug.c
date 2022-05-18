@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -304,6 +304,15 @@ pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
 		  SES_PRINT (ses, tmp);
                 }
 	      SES_PRINT (ses, ")");
+              break;
+            }
+        case DV_DICT_ITERATOR:
+            {
+              id_hash_iterator_t *hit = (id_hash_iterator_t *) box;
+              id_hash_t *ht = hit->hit_hash;
+              snprintf (tmp, sizeof (tmp), "dictonary_reference (%d,%d)",
+                  ht->ht_buckets, (ht->ht_inserts - ht->ht_deletes));
+              SES_PRINT (ses, tmp);
               break;
             }
       default:

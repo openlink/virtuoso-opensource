@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1331,11 +1331,12 @@ ins_open (instruction_t * ins, caddr_t * qst)
   qst_set (qst, ins->_.open.cursor, (caddr_t) CR_INITIAL);
 }
 
-
+#ifdef DEBUG
 void
 bing ()
 {
 }
+#endif
 
 
 #define AC_ENLIST_CK(qi)
@@ -1968,7 +1969,7 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	sqlr_new_error ("42000", "VEC..", "Input arrays  in for_vectored not of equal length");
       dc_reset (dc);
       if (len > dc_max_batch_sz)
-	sqlr_new_error ("42000", "FRVEC",  "array in for vectored over max vector length %d > %d", len, dc_max_batch_sz);
+        sqlr_new_error ("42000", "FRVEC", "Input array FOR VECTORED over max vector length %d > %d", len, dc_max_batch_sz);
       if (ins->_.for_vect.modify && (DCT_BOXES & dc->dc_type))
 	{
 	  int len = BOX_ELEMENTS (arr);
@@ -2719,7 +2720,7 @@ again:
 
 
 caddr_t
-code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
+code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag)
 {
   instruction_t * ins = code_vec;
   caddr_t *qst = itc->itc_out_state;
@@ -2728,6 +2729,22 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
     cli_anytime_timeout (qi->qi_client);
   for (;;)
     {
+      switch (ins->ins_type)
+	{
+	case IN_ARTM_PLUS:
+	case IN_ARTM_MINUS:
+	case IN_ARTM_TIMES:
+	case IN_ARTM_DIV:
+	case IN_ARTM_IDENTITY:
+	  if (flag == CV_THIS_SET_ONLY && qi->qi_query->qr_proc_vectored)
+	    {
+	      data_col_t *dc = QST_BOX (data_col_t *, qst, ins->_.artm.result->ssl_index);
+	      DC_CLR_NULL (dc, qi->qi_set);
+	      break;
+	    }
+	default:
+	  break;
+	}
       switch (ins->ins_type)
 	{
 	case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);

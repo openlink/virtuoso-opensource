@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -557,7 +557,9 @@ db_buf_t itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp);
 #define MAX_FIXED_DV_BYTES 50 /* max bytes in dv representation of fixed len box, e.g. date, decimal */
 int ce_dtp_compare (db_buf_t ce, dtp_t dtp);
 int ce_typed_vec_dtp_compare (db_buf_t ce, dtp_t dtp);
-void bing ();
+#ifdef DEBUG
+void bing (void);
+#endif
 dtp_t ce_dtp_f (db_buf_t ce);
 int  asc_cmp (dtp_t * dv1, dtp_t * dv2);
 int  asc_cmp_delta (dtp_t * dv1, dtp_t * dv2, uint32 * num_ret, int is_int_delta);

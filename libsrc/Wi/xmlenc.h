@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -58,12 +58,10 @@
 
 /* uris */
 /* from Web Services Security Addendum */
-#if 0
-#define WSS_SOAP_URI	"http://www.w3.org/2001/12/soap-envelope"
-#else
 #define WSS_SOAP_URI	SOAP_URI (11)
-#endif
+			/* 0123456789012345678901234567890123 */
 #define WSS_DSIG_URI	  "http://www.w3.org/2000/09/xmldsig#"
+#define WSS_DSIG_URI_LEN  34
 #define WSS_XENC_URI	  "http://www.w3.org/2001/04/xmlenc#"
 #define WSS_M_URI	  "http://schemas.xmlsoap.org/rp"
 
@@ -82,6 +80,7 @@
 
 #define XENC_URI WSS_XENC_URI
 #define DSIG_URI WSS_DSIG_URI
+#define DSIG_URI_LEN WSS_DSIG_URI_LEN
 
 /* aliases */
 #define WSSE_URI(sctx) (sctx ? wsse_uris[(sctx)->wsc_wsse] : WSS_WSS_URI)
@@ -278,6 +277,15 @@ typedef struct u_tok_s
 } u_tok_t;
 
 typedef uuid_t * xenc_id_t;
+
+# define AES_KEY_SZ_128 16
+# define AES_KEY_SZ_192 24
+# define AES_KEY_SZ_256 32
+# define AES_IV_LEN     16
+
+# define AES_KEY_SERIAL_LEN_128 33	/* + 1 to do not overlap with raw key material len */
+# define AES_KEY_SERIAL_LEN_192 41
+# define AES_KEY_SERIAL_LEN_256 49
 
 #define xek_rsa ki.rsa.rsa_st
 #define xek_private_rsa ki.rsa.private_rsa_st
@@ -581,7 +589,7 @@ caddr_t wsse_get_content_val (caddr_t * curr);
 #endif
 
 
-xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd);
+xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const unsigned char * pwd, const char * digest_name);
 void xenc_key_remove (xenc_key_t * key, int lock);
 int __xenc_key_dsa_init (char *name, int lock, int num);
 int __xenc_key_dh_init (char *name, int lock);

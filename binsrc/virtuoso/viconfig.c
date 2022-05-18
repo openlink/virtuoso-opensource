@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -115,6 +115,7 @@ extern char *http_cli_proxy_except;
 extern int32 http_enable_client_cache;
 extern int32 ws_write_timeout;
 extern int32 log_proc_overwrite;
+extern int32 log_sql_code_init;
 extern char * backup_ignore_keys;
 
 #ifdef _SSL
@@ -193,6 +194,7 @@ extern int uriqa_dynamic_local;
 extern int lite_mode;
 extern int rdf_obj_ft_rules_size;
 extern int it_n_maps;
+extern char * rdf_label_inf_name;
 extern int32 rdf_shorten_long_iri;
 extern int32 ric_samples_sz;
 extern int32 enable_p_stat;
@@ -464,12 +466,12 @@ int32 c_temp_db_size = 0;
 int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
-extern long sparql_max_mem_in_use;
+extern size_t sparql_max_mem_in_use;
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
 
 int32 c_sparql_result_set_max_rows = 0;
-int32 c_sparql_max_mem_in_use = 0;
+size_t c_sparql_max_mem_in_use = 0L;
 int32 c_rdf_create_graph_keywords = 0;
 int32 c_rdf_query_graph_keywords = 0;
 
@@ -1118,6 +1120,8 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "LogProcOverwrite", &log_proc_overwrite) == -1)
     log_proc_overwrite = 1;
+  if (cfg_getlong (pconfig, section, "LogSqlCodeInit", &log_sql_code_init) == -1)
+    log_proc_overwrite = 0;
   if (cfg_getlong (pconfig, section, "PageCompress", &c_compress_mode) == -1)
     c_compress_mode = 0;
 
@@ -1337,17 +1341,21 @@ cfg_setup (void)
       {
 	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
 	  {
-	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
-	      *((int32*)sd->sd_value) = v;
+	    if (dbf_protected_param (sd))
+	      log_error ("Cannot set protected flag %s", sd->sd_name);
+	    else if ((ptrlong) SD_INT32 == (ptrlong) sd->sd_str_value)
+	      *((int32 *) sd->sd_value) = v;
 	    else if (sd->sd_value)
 	      *(sd->sd_value) = (long) v;
 	    else
 	      log_error ("Cannot set flag %s", sd->sd_name);
 	  }
-	sd ++;
+	sd++;
       }
   }
 
+  /* no more than max array elements, otherwise will have bad box allocated */
+  dc_max_batch_sz = MIN (dc_max_batch_sz, MAX_BOX_ELEMENTS - 1);
 
   /*
    *  Parse [HTTPServer] section
@@ -1658,8 +1666,8 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "ResultSetMaxRows", &c_sparql_result_set_max_rows) == -1)
     c_sparql_result_set_max_rows = 0;
 
-  if (cfg_getlong (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
-    c_sparql_max_mem_in_use = 0;
+  if (cfg_getsize (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
+    c_sparql_max_mem_in_use = 0L;
 
   if (cfg_getlong (pconfig, section, "CreateGraphKeywords", &c_rdf_create_graph_keywords) == -1)
     c_rdf_create_graph_keywords = 0;
@@ -1669,6 +1677,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "TransitivityCacheEnabled", &tn_cache_enable) == -1)
     tn_cache_enable = 0;
+
+  if (cfg_getstring (pconfig, section, "LabelInferenceName", &rdf_label_inf_name) == -1)
+    rdf_label_inf_name = NULL;
 
   if (cfg_getlong (pconfig, section, "ShortenLongURIs", &rdf_shorten_long_iri) == -1)
     rdf_shorten_long_iri = 1;

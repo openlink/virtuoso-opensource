@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -133,7 +133,7 @@ create procedure DB.DBA.RDF_GRAB_PREPARE_PRIVATE (in graph_iri varchar, in group
   if (group_iri in (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', UNAME'http://www.openlinksw.com/schemas/virtrdf#rdf_repl_graph_group'))
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to add graph <%.500s> to special graph group <%.500s>', graph_iri, group_iri));
 -- If graph name is an IRI of handshaked web service endpoint then an error is signaled.
-  if (exists (sparql define input:storage "" ask from virtrdf:
+  if ((sparql define input:storage "" ask from virtrdf:
       where { `iri(?:graph_iri)` virtrdf:dialect|virtrdf:isEndpointOfService|^virtrdf:isEndpointOfService ?o } ) )
     signal ('RDFGS', sprintf ('A SPARQL query with get:private tries to change access permissions of graph <%.500s> but the graph is a known web service endpoint', graph_iri));
 -- If access is public by default even for private graphs then an error is signaled and sponging is not tried.
@@ -1376,48 +1376,16 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
 	in meth any := 'GET', in req_hdr varchar := null, in cnt any := null, in proxy any := null, in sig int := 1)
 {
   declare content varchar;
-  declare olduri, req_hdr_orig varchar;
   --declare hdr any;
-  declare redirects, is_https int;
   -- dbg_obj_princ ('DB.DBA.RDF_HTTP_URL_GET (', url, base, ')');
 
-  req_hdr_orig := req_hdr;
   hdr := null;
-  redirects := 15;
   url := WS.WS.EXPAND_URL (base, url);
-  again:
-  olduri := url;
-  if (redirects <= 0)
-    signal ('22023', 'Too many HTTP redirects', 'RDFXX');
 
-  if (lower (url) like 'https://%' and proxy is not null)
-    signal ('22023', 'The HTTPS retrieval is not supported via proxy', 'RDFXX');
-  is_https := 0;
-  if (lower (url) like 'https://%')
-    is_https := 1;
-
-  if (proxy is null)
-    content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt);
-  else
-    content := http_get (url, hdr, meth, req_hdr, cnt, proxy);
-  redirects := redirects - 1;
+  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy, n_redirects=>15);
 
   if (hdr[0] not like 'HTTP/1._ 200 %' and hdr[0] not like 'HTTP/1._ 203 %')
     {
-      if (hdr[0] like 'HTTP/1._ 30_ %' and hdr[0] not like 'HTTP/1._ 304 %')
-	{
-	  url := http_request_header (hdr, 'Location');
-	  if (isstring (url))
-	    {
-	      declare cookie_hdr varchar;
-	      url := WS.WS.EXPAND_URL (olduri, url);
-	      req_hdr := req_hdr_orig;
-	      cookie_hdr := DB.DBA.COOKIE_HDR (olduri, hdr, url);
-	      if (length (cookie_hdr))
-	        req_hdr := req_hdr || '\r\n' || cookie_hdr;
-	      goto again;
-	    }
-	}
       if (sig)
         signal ('22023', trim(hdr[0], '\r\n'), 'RDFXX');
       -- dbg_obj_princ ('DB.DBA.RDF_HTTP_URL_GET (', url, base, ') failed to download ', url);

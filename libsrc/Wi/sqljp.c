@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -582,8 +582,10 @@ dfe_jp_fill (sqlo_t * so, op_table_t * ot, df_elt_t * tb_dfe, join_plan_t * jp, 
   }
   END_DO_SET ();
   jp->jp_fanout = jp_fanout (jp);
+#if 0
   if (jp->jp_fanout < 0 && jp->jp_fanout != -1)
     bing ();
+#endif
 }
 
 

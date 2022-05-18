@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -962,6 +962,74 @@ http_cli_connect (http_cli_ctx * ctx)
 	  char * pass = ctx->hcctx_cert_pass;
 	  timeout_t to = {100, 0};
 
+	  /*
+	   *  Currently this only works for HTTP/HTTPS based proxies like squid.
+	   *
+	   *  TODO: check for SOCKS4 and SOCKS5
+	   */
+	  if (ctx->hcctx_proxy.hcp_proxy && ctx->hcctx_proxy.hcp_socks_ver == 0)
+	    {
+	      char tmp[1024];
+	      int ret;
+
+	      /*
+	       *  Send a CONNECT request
+	       */
+	      CATCH_WRITE_FAIL (ctx->hcctx_http_out)
+	      {
+		snprintf (tmp, sizeof (tmp), "CONNECT %s HTTP/%d.%d\r\n", ctx->hcctx_host, ctx->hcctx_http_maj, ctx->hcctx_http_min);
+		SES_PRINT (ctx->hcctx_http_out, tmp);
+
+		snprintf (tmp, sizeof (tmp), "Host: %s\r\n", ctx->hcctx_host);
+		SES_PRINT (ctx->hcctx_http_out, tmp);
+
+		snprintf (tmp, sizeof (tmp), "User-Agent: %s\r\n", "virtuoso");
+		SES_PRINT (ctx->hcctx_http_out, tmp);
+
+		snprintf (tmp, sizeof (tmp), "Proxy-Connection: %s\r\n", "Keep-Alive");
+		SES_PRINT (ctx->hcctx_http_out, tmp);
+
+		if (NULL != ctx->hcctx_proxy.hcp_user)
+		  {
+		    char enc_buf[2048];
+		    uint32 len;
+
+		    snprintf (tmp, sizeof (tmp), "%s:%s", ctx->hcctx_proxy.hcp_user, ctx->hcctx_proxy.hcp_pass ? ctx->hcctx_proxy.hcp_pass : "");
+		    len = strlen (tmp) + 1;
+		    SES_PRINT (ctx->hcctx_http_out, "Proxy-Authorization: Basic ");
+		    encode_base64 (tmp, enc_buf, len);
+		    SES_PRINT (ctx->hcctx_http_out, enc_buf);
+		    SES_PRINT (ctx->hcctx_http_out, "\r\n");
+		  }
+
+		/* Send empty body */
+		SES_PRINT (ctx->hcctx_http_out, "\r\n");
+
+		strses_write_out (ctx->hcctx_req_body, ctx->hcctx_http_out);
+		session_flush_1 (ctx->hcctx_http_out);
+	      }
+	      FAILED
+	      {
+		if (ctx->hcctx_http_out_cached)
+		  {
+		    ctx->hcctx_http_out_cached = 0;
+		    F_SET (ctx, (HC_F_RETRY | HC_F_REPLY_READ | HC_F_HDRS_READ));
+		  }
+		else
+		  return (http_cli_hook_dispatch (ctx, HC_HTTP_WRITE_ERR));
+	      }
+	      END_WRITE_FAIL (ctx->hcctx_http_out);
+
+	      /* Read response header */
+	      CATCH_ABORT (http_cli_read_resp, ctx, ret);
+
+	      /* Read response body */
+	      CATCH_ABORT (http_cli_read_resp_hdrs, ctx, ret);
+	    }
+
+	  /*
+	   *  Switch socket to SSL protocol
+	   */
 	  ctx->hcctx_ssl_method = SSLv23_client_method();
 	  ctx->hcctx_ssl_ctx = SSL_CTX_new (ctx->hcctx_ssl_method);
 	  ctx->hcctx_ssl = SSL_new (ctx->hcctx_ssl_ctx);
@@ -2063,7 +2131,6 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
       ctx->hcctx_ssl_insecure = '\1';
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
   else if (!strnicmp (url, "http://", 7))
     {
@@ -2401,6 +2468,8 @@ http_cli_init_std_redir (http_cli_ctx* ctx, int r)
   http_cli_push_resp_evt (ctx, 301, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   http_cli_push_resp_evt (ctx, 302, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   http_cli_push_resp_evt (ctx, 303, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 307, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
+  http_cli_push_resp_evt (ctx, 308, http_cli_make_handler_frame (http_cli_std_handle_redir, NULL, NULL, NULL));
   ctx->hcctx_redirects = r;
   return (HC_RET_OK);
 }
@@ -2498,14 +2567,12 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
       if (1 == strlen (cert) && 1 == atoi (cert))
 	ctx->hcctx_ssl_insecure = '\1';
       else
-      ctx->hcctx_ssl_insecure = (char) insecure;
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
+        ctx->hcctx_ssl_insecure = (char) insecure;
     }
   else if (!strnicmp (url, "https://", 8))
     {
       http_cli_ssl_cert (ctx, (caddr_t)"1");
       ctx->hcctx_ssl_insecure = '\1';
-      RELEASE (ctx->hcctx_proxy.hcp_proxy);
     }
 #endif
   if (!time_out_is_null) /* timeout */

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2021 OpenLink Software
+ -  Copyright (C) 1998-2022 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -91,6 +91,14 @@
           }
         ]]>
       </v:after-data-bind>
+      <v:template  type="simple" enabled="--neq ('dba', get_user())" name="vad_warn">
+      <div class="confirm_dialog">
+          <img class="dialog_icon" src="images/icons/warning_32.png" alt="Stop" title="Stop"/>
+          <div class="confirm_text">
+              Installation or removal of VAD packages is permitted to DBA account only.
+          </div>
+      </div>
+      </v:template>
       <div class="clear">
         <v:form name="srcf2" method="POST" type="simple">
           Package path: <span class="emphasize"><v:label name="spath1" value="--case when self.src_folder_type then 'dav://' else 'file://' end || self.src_folder" xhtml_size="70" /></span>
@@ -200,6 +208,7 @@
                       xhtml_alt="Uninstall"
                       xhtml_title="Uninstall"
                       text="&nbsp;Uninstall"
+                      enabled="--equ(get_user(), 'dba')"
                       >
                       <v:before-render>
                         <![CDATA[
@@ -250,6 +259,7 @@
                       xhtml_alt="Install"
                       xhtml_title="Install"
                       text="&nbsp;Install"
+                      enabled="--equ(get_user(), 'dba')"
                       url="--sprintf ('vad_install_batch.vspx?mode=%d&packs=%U&dir=%U&dirmode=%d',
                       self.src_folder_type, encode_base64 (serialize (vector (self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7]))), self.src_folder, self.src_folder_type)"
                       >
@@ -355,7 +365,7 @@
           Select: <a href="javascript:void(0)" onclick="javascript:select_all()">all</a> | <a href="javascript:void(0)" onclick="javascript:select_upg()">upgrades</a> | <a href="javascript:void(0)" onclick="javascript:select_inv()">inverse</a> | <a href="javascript:void(0)" onclick="javascript:select_none()">none</a>
         </div><br/>
         <div>
-          <v:button name="instg1" value="Install/Upgrade" action="simple">
+          <v:button name="instg1" value="Install/Upgrade" action="simple" enabled="--equ(get_user(), 'dba')">
             <v:on-post>
               <![CDATA[
                 declare i, l, do_ods, add_blog int;
@@ -415,7 +425,7 @@
               ]]>
             </v:on-post>
           </v:button>
-          <v:button name="rem1" value="Remove" action="simple">
+          <v:button name="rem1" value="Remove" action="simple" enabled="--equ(get_user(), 'dba')">
             <v:on-post>
               <![CDATA[
                 declare i, l int;
@@ -450,7 +460,7 @@
         </div>
       </v:form>
 
-      <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+      <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" enabled="--equ(get_user(), 'dba')">
         <h3>Install package</h3>
         <table class="ctl_grp" style="width: auto">
           <tr class="ctl_grp_title">

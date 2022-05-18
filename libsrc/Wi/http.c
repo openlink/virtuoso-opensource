@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -907,6 +907,8 @@ error_end:
 #define WS_LOG_DEFAULT_FMT "%h %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
 char * http_log_format = WS_LOG_DEFAULT_FMT;
 
+#define TZ_TO_HHMM(x)  ((x / 60) * 100 + (x % 60))
+
 #ifndef WS_OLD_LOG
 #define WS_LOG_ERROR \
       mutex_enter (ws_http_log_mtx); \
@@ -1047,8 +1049,8 @@ next_fragment:
 	      month = tm->tm_mon + 1;
 	      day = tm->tm_mday;
 	      year = tm->tm_year + 1900;
-	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05li]",
-		  (tm->tm_mday), monthname [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100);
+	      snprintf (tmp, sizeof (tmp), "[%02d/%s/%04d:%02d:%02d:%02d %+05d]",
+		  (tm->tm_mday), monthname [month - 1], year, tm->tm_hour, tm->tm_min, tm->tm_sec, TZ_TO_HHMM(dt_local_tz_for_logs));
 	    }
 	  break;
       case 'r':
@@ -1135,9 +1137,9 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
 
   u_id = ws_auth_get (ws);
 
-  snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
+  snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05d] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
       ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, TZ_TO_HHMM(dt_local_tz_for_logs),
       (ws->ws_req_line
 #ifdef WM_ERROR
        && ws->ws_method != WM_ERROR
@@ -2606,15 +2608,17 @@ static char *fmt1 =
   SES_PRINT (ws->ws_strses, tmp);
   dk_free_box (tmp);
   dks_esc_write (ws->ws_strses, message, strlen (message), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-
-  SES_PRINT (ws->ws_strses, "    URI  = '");
-  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-  SES_PRINT (ws->ws_strses, "'\n");
+  if (NULL != uri)
+    {
+      SES_PRINT (ws->ws_strses, "    URI  = '");
+      dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+      SES_PRINT (ws->ws_strses, "'\n");
 #ifdef DEBUG
-  SES_PRINT (ws->ws_strses, "    PATH = '");
-  dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
-  SES_PRINT (ws->ws_strses, "'\n");
+      SES_PRINT (ws->ws_strses, "    PATH = '");
+      dks_esc_write (ws->ws_strses, uri, strlen (uri), ws->ws_charset, default_charset, DKS_ESC_PTEXT);
+      SES_PRINT (ws->ws_strses, "'\n");
 #endif
+    }
   SES_PRINT (ws->ws_strses, "  </pre></body></html>\n");
 }
 
@@ -3015,8 +3019,17 @@ ws_file (ws_connection_t * ws)
   ctype = ws_file_ctype (fname);
   if ((fd = open (path, OPEN_FLAGS_RO)) < 0)
     {
-      ws_http_error (ws, "HTTP/1.1 404 File not found", "The requested URL was not found", lfname, path);
-      HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 404 File not found", 0);
+      if (MAINTENANCE) /* it sould be set maintenance page w/o such, keep status 503 */
+        {
+          ws_http_error (ws, "HTTP/1.1 503 Service Temporarily Unavailable",
+              "Service Temporarily Unavailable, please try again later", NULL, NULL);
+          HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 503 Service Temporarily Unavailable", 1);
+        }
+      else
+        {
+          ws_http_error (ws, "HTTP/1.1 404 File not found", "The requested URL was not found", lfname, path);
+          HTTP_SET_STATUS_LINE (ws, "HTTP/1.1 404 File not found", 0);
+        }
       return;
     }
   if (V_FSTAT (fd, &st) || 0 != (st.st_mode & S_IFDIR))
@@ -4590,7 +4603,10 @@ ws_serve_connection (ws_connection_t * ws)
       ssl_err = SSL_accept (new_ssl);
       if (ssl_err == -1)
 	{
-	  ERR_print_errors_fp (stderr);
+          unsigned long err = ERR_get_error();
+          char err_buf[1024];
+          ERR_error_string_n(err, err_buf, sizeof(err_buf));
+          log_info("SSL_accept [%s]", err_buf);
 	  SSL_free (new_ssl);
 	  ses->dks_ws_status = DKS_WS_DISCONNECTED;
 	  goto check_state;
@@ -5278,6 +5294,7 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
 {
   query_instance_t * qi = (query_instance_t *) qst;
   dtp_t dtp = DV_TYPE_OF (val);
+again:
   if (DV_STRINGP (val))
     {
       ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
@@ -5317,6 +5334,17 @@ dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *
   else if (DV_DB_NULL == dtp)
     {
       ; /* do nothing */
+    }
+  else if (DV_RDF == dtp)
+    {
+      rdf_box_t *rb = val;
+      if (!rb->rb_is_complete)
+        rb_complete (rb, qi->qi_trx, qi);
+      val = rb->rb_box;
+      /* strings in RDF all are expected to be UTF8 */
+      if (DV_STRINGP (val))
+        box_flags (val) = (box_flags (val) | BF_UTF8);
+      goto again;
     }
   else
     {
@@ -6450,7 +6478,7 @@ encode_base64_impl (char * input, char * output, size_t len, char * table)
       n = 1;
       count += 4;
       val = c;
-      if (count >= 70)
+      if (count >= 70 && table != &base64url_vec[0])
 	{
 	  output[x++] = '\r';
 	  output[x++] = '\n';
@@ -6522,9 +6550,12 @@ bif_encode_base64url(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t dest;
   caddr_t res;
-  caddr_t src = bif_string_arg (qst, args, 0, ENC_B64_NAME);
+  caddr_t src = bif_arg (qst, args, 0, ENC_B64_NAME);
   dtp_t dtp = DV_TYPE_OF (src);
   size_t len = box_length(src);
+
+  if (DV_TYPE_OF (src) != DV_BIN && !IS_STRING_DTP (DV_TYPE_OF (src)))
+    sqlr_new_error ("22023", "ENC04", "Function encode_base64 expects binary or string as a 1st argument");
 
   if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
     len--;
@@ -9988,13 +10019,20 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
       i = 0;
       IO_SECT (qst);
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
       i = SSL_renegotiate (ssl);
+#else
+      if (SSL_version(ssl) >= TLS1_3_VERSION)
+	i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
+      else
+        i = SSL_renegotiate (ssl);
+#endif
       if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
 	}
-	i = SSL_do_handshake (ssl);
+      i = SSL_do_handshake (ssl);
       if (i <= 0) 
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
@@ -10946,9 +10984,9 @@ bif_ftp_log (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (!qi->qi_client->cli_ws)
     dk_free_box (iaddr);
 
-  snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05li] \"%.2000s\" %.3s %ld\n",
+  snprintf (buff, sizeof (buff), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05d] \"%.2000s\" %.3s %ld\n",
       host_name, user, (tm->tm_mday), monthname [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, (long) dt_local_tz_for_logs/36*100,
+      tm->tm_hour, tm->tm_min, tm->tm_sec, TZ_TO_HHMM(dt_local_tz_for_logs),
       command, resp, len);
 
   dk_free_box (host_name);

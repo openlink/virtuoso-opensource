@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -115,6 +115,7 @@ static algo_store_t algo_stores[] = {
   {"canon_2", NULL},
   {"digest", NULL},
   {"dsig", NULL},
+  {"key", NULL},
   {"trans", NULL},
   {"verify", NULL}
 };
@@ -299,6 +300,13 @@ int add_algo_to_store (algo_store_t * s, const char * xmln, void * f)
 	else GPF
 */
 
+int dsig_key_algo_create (const char* xmln, DSIG_KEY_TYPE kt)
+{
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("key"), xmln + DSIG_URI_LEN, (void *) kt);
+  return add_algo_to_store (select_store ("key"), xmln, (void *) kt);
+}
+
 int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 {
   return add_algo_to_store (select_store ("digest"), xmln, (void *) f);
@@ -306,10 +314,14 @@ int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 
 int dsig_sign_algo_create (const char * xmln, dsig_sign_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("dsig"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("dsig"), xmln, (void *) f);
 }
 int dsig_verify_algo_create (const char * xmln, dsig_verify_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("verify"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("verify"), xmln, (void *) f);
 }
 
@@ -613,7 +625,7 @@ xml_c_nss_hash_add_item (id_hash_t * novo, id_hash_t * nss, caddr_t * tree, xml_
   caddr_t *namespaces;
   int inx;
 
-  if (!DV_TYPE_OF (tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
 
   namespaces = xenc_get_namespaces (tree, nss);
@@ -671,7 +683,7 @@ id_hash_t * xml_c_nss_hash_create (caddr_t * select_tree, id_hash_t * nss,
   int inx;
   dk_set_t pexc_list = 0;
 
-  if (!DV_TYPE_OF (select_tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (select_tree) != DV_ARRAY_OF_POINTER)
     return new_h;
 
   xml_c_namespaces_sort (new_namespaces);
@@ -1247,6 +1259,12 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
+	  break;
       default:
 	  return 0;
     }
@@ -1292,8 +1310,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1317,6 +1335,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = DSA_size (key->xek_private_dsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   DSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->ki.dsa.dsa_st);
 
   if (sign_out)
@@ -1327,6 +1347,7 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1369,7 +1390,7 @@ dsig_dsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA1_Final(&(md[0]),&ctx);
 
   i = DSA_verify (NID_sha1, md, SHA_DIGEST_LENGTH, sig, siglen, key->ki.dsa.dsa_st);
-  return i;
+  return (1 == i);
 }
 
 int
@@ -1392,8 +1413,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1404,7 +1425,6 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   if (!key->xek_private_rsa)
     return 0;
-
   memset (md, 0, sizeof (md));
   SHA1_Init(&ctx);
 
@@ -1424,6 +1444,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1435,6 +1457,7 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1489,7 +1512,7 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   dk_free_box ((box_t) sig);
 
-  return i;
+  return (1 == i);
 }
 
 #ifdef SHA256_ENABLE
@@ -1499,8 +1522,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
   SHA256_CTX ctx;
   unsigned char md[SHA256_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1531,6 +1554,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
 
   SHA256_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign (NID_sha256, md, SHA256_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1542,6 +1567,7 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1691,6 +1717,12 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
+	  break;
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
 	  break;
       default:
 	  return 0;
@@ -2074,6 +2106,11 @@ xenc_rsa_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
   if (key->xek_type != DSIG_KEY_RSA)
     {
       xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not RSA]", key->xek_name);
+      return 0;
+    }
+  if (NULL == rsa)
+    {
+      xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not Private]", key->xek_name);
       return 0;
     }
   RSA_get0_factors(rsa, &p, &q);
@@ -2531,7 +2568,7 @@ void xenc_alloc_cbc_box_test()
 void xenc_aes_enctest_1 (const char * data)
 {
   unsigned char key_data[16] = "0123456789ABCDEF";
-  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data);
+  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data, "sha512");
   dk_session_t *in, *out;
   xenc_try_block_t t;
 
@@ -3014,6 +3051,17 @@ generate_algo_accessor (canon_2, "canon_2")
 generate_algo_accessor (digest, "digest")
 generate_algo_accessor (transform, "trans")
 
+DSIG_KEY_TYPE 
+dsig_key_algo_get (const char * xmln)
+{
+  xxx_algo_t ** kt;
+  if (!xmln) xmln = "[unknown]";
+  kt = (xxx_algo_t **) id_hash_get (select_store ("key")->dat_hash, (caddr_t) & xmln);
+  if (!kt) 
+    return 0;
+  return (ptrlong)(kt[0]->func);
+}
+
 
 void algo_stores_init ()
 {
@@ -3051,6 +3099,22 @@ void dsig_sec_init ()
 #ifdef DEBUG
   log_info ("dsig_sec_init()");
 #endif
+
+  /* algo key type support */
+  dsig_key_algo_create (DSIG_RSA_SHA1_ALGO, DSIG_KEY_RSA);
+  dsig_key_algo_create (DSIG_RSA_SHA256_ALGO, DSIG_KEY_RSA);
+
+  dsig_key_algo_create (DSIG_DSA_SHA1_ALGO, DSIG_KEY_DSA);
+
+  dsig_key_algo_create (DSIG_DH_SHA1_ALGO, DSIG_KEY_DH);
+  dsig_key_algo_create (DSIG_DH_SHA256_ALGO, DSIG_KEY_DH);
+
+  dsig_key_algo_create (DSIG_HMAC_SHA1_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create (DSIG_HMAC_SHA256_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha1", DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha256", DSIG_KEY_RAW);
+  /* end type support */
+
   dsig_digest_algo_create (DSIG_SHA1_ALGO, dsig_sha1_digest);
 
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);

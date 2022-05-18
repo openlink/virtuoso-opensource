@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -143,8 +143,7 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
            sid := get_keyword ('sid', pars);
        }
    }
-
-   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', sid);
+   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', cast (sid as integer));
 }
 ;
 
@@ -307,6 +306,9 @@ b3s_get_types (in _s varchar,
   data := null;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
@@ -322,6 +324,9 @@ b3s_get_types (in _s varchar,
     goto skip_virt_graphs;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
@@ -1071,7 +1076,7 @@ again:
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-       http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8')));
        http ('</span>');
      }
    else if (__tag (_object) = 238)
@@ -1154,10 +1159,10 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
   foreach (any elm in vec) do
     {
       links := links ||
-      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
+      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)", ', desc_link, elm[0], elm[0], elm[1]);
     }
-  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
-  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
+  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', subj);
+  links := links || '<?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }
@@ -1567,6 +1572,23 @@ create procedure b3s_get_user_graph_permissions (
 }
 ;
 
+create procedure b3s_uri_percent_decode (in uri any)
+{
+  declare du any;
+  if (uri is null)
+    return '';
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
+  if (length(uri) and strcontains(uri, '%'))
+  {
+    -- Assume the label is a percent-encoded URL/Curie. Percent-decode the label.
+    du := sprintf_inverse(uri, '%U', 0);
+    uri := case when length(du) > 0 then du[0] else uri end;
+  }
+  return uri;
+}
+;
+
 grant execute on b3s_gs_check_needed to public;
 
 create procedure fct_set_graphs (in sid any, in graphs any)
@@ -1574,6 +1596,7 @@ create procedure fct_set_graphs (in sid any, in graphs any)
   declare xt, newx, s any;
   if (sid is null) return;
   xt := (select fct_state from fct_state where fct_sid = sid);
+  if (xt is null) return; -- bad sid
   s := string_output ();
   http ('<graphs>', s);
   foreach (any g in graphs) do

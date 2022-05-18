@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2021 OpenLink Software
+ -  Copyright (C) 1998-2022 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -132,7 +132,7 @@
               <td colspan="4">
                 <br />
                 <v:template type="simple" condition="self.pack_ready = 1">
-                  <v:button action="simple" value="Proceed">
+                  <v:button action="simple" value="Proceed" enabled="--(case when (get_user() = 'dba') then 1 else 0 end)">
                     <v:on-post>
                       <![CDATA[
                         declare res varchar;
@@ -155,6 +155,8 @@
 
                           log_message ('Installing '||pfull||' version '||pver||'/'||pdate|| ' '||case when isdav then '(DAV)' else '' end);
                           res := res || 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')\r\n';
+                          if (get_user() <> 'dba')
+                            signal ('42000', 'VAD Installation must be done as DBA');
                           exec ('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector (pack_path, path_type, 1), 0, meta, result);
                           if (pack_path like '/DAV/temp/%')
                             DB.DBA.DAV_DELETE_INT (pack_path, 0, null, null, 0);

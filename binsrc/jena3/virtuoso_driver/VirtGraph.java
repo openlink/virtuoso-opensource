@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,8 +30,8 @@ import java.text.SimpleDateFormat;
 import javax.sql.*;
 import javax.transaction.xa.*;
 
-import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.sparql.core.Quad;
 import virtuoso.jdbc4.*;
 import virtuoso.sql.*;
 
@@ -55,14 +55,14 @@ public class VirtGraph extends GraphBase {
 
 
     static final String xsd_string = "http://www.w3.org/2001/XMLSchema#string";
-    static final protected String S_BATCH_INSERT = "DB.DBA.rdf_insert_triple_c (?,?,?,?,?,?)";
-//    static final protected String S_BATCH_DELETE = "DB.DBA.rdf_delete_triple_c (?,?,?,?,?,?)";
-    static final String S_CLEAR_GRAPH = "DB.DBA.rdf_clear_graphs_c (?)";
+    static final protected String S_BATCH_INSERT = "DB.DBA.RDF_INSERT_TRIPLE_C (?,?,?,?,?,?)";
+    static final protected String S_BATCH_DELETE = "DB.DBA.RDF_DELETE_TRIPLE_C (?,?,?,?,?,?)";
+    static final String S_CLEAR_GRAPH = "DB.DBA.RDF_CLEAR_GRAPHS_C (?)";
 
 //    static final String S_TTLP_INSERT = "DB.DBA.TTLP_MT (?, '', ?, 255, 2, 3, ?)";
 
 //    static final String sinsert = "sparql insert into graph iri(??) { `iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)` }";
-    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
+//    static final String sdelete = "sparql delete from graph iri(??) {`iri(??)` `iri(??)` `bif:__rdf_long_from_batch_params(??,??,??)`}";
     static final protected int BATCH_SIZE = 5000;
     static final protected int MAX_CMD_SIZE = 36000;
     static final String utf8 = "charset=utf-8";
@@ -90,20 +90,19 @@ public class VirtGraph extends GraphBase {
     protected boolean resetBNodesDictAfterCall = false;
     protected boolean resetBNodesDictAfterCommit = true;
     protected boolean insertStringLiteralAsSimple = false;
+    protected boolean useAdvancedDelete = false;
     protected int concurencyMode = CONCUR_DEFAULT;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
     private DataSource ds;
-    private XADataSource xa_ds;
     private javax.transaction.xa.XAResource xa_resource = null;
     private XAConnection xa_connection = null;
     protected VirtTransactionHandler tranHandler = null;
-    private final Object lck_add = new Object();
+    protected final Object lck_add = new Object();
 
     private boolean isBNodesDictCreated = false;
     private boolean batch_add_executed = false;
     PreparedStatement psInsert = null;
-    java.sql.Statement stInsert_Cmd = null;
     int psInsert_Count = 0;
 
 
@@ -222,6 +221,8 @@ public class VirtGraph extends GraphBase {
             this.user = vds.getUser();
             this.password = vds.getPassword();
         }
+
+        ds = (javax.sql.DataSource) _ds;
 
         this.graphName = _graphName == null ? DEFAULT : _graphName;
 
@@ -447,6 +448,14 @@ public class VirtGraph extends GraphBase {
     }
 
 
+    public boolean getUseAdvancedDelete() {
+       return this.useAdvancedDelete;
+    }
+
+    public void setUseAdvancedDelete(boolean v) {
+       this.useAdvancedDelete = v;
+    }
+
 
     /**
      * Get the insertStringLiteralAsSimple state for connection
@@ -542,26 +551,37 @@ public class VirtGraph extends GraphBase {
 
     public void createRuleSet(String ruleSetName, String uriGraphRuleSet) {
         checkOpen();
+        java.sql.Statement st = null;
 
         try {
-            java.sql.Statement st = createStatement(false);
+            st = createStatement(false);
             st.execute("rdfs_rule_set('" + ruleSetName + "', '" + uriGraphRuleSet + "')");
-            st.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (st != null)
+              st.close();
+          } catch(Exception e) {}
         }
     }
 
 
     public void removeRuleSet(String ruleSetName, String uriGraphRuleSet) {
         checkOpen();
+        java.sql.Statement st = null;
 
         try {
-            java.sql.Statement st = createStatement(false);
+            st = createStatement(false);
             st.execute("rdfs_rule_set('" + ruleSetName + "', '" + uriGraphRuleSet + "', 1)");
             st.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (st != null)
+              st.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -670,11 +690,10 @@ public class VirtGraph extends GraphBase {
         if (ns.startsWith("nodeID://"))
             return ns;
         else
-            return "_:" + n.toString().replace(':', '_').replace('-', 'z').replace('/','y');
+            return "_:" + ns.replace(':', '_').replace('-', 'z').replace('/','y');
     }
 
     static String BNode2String_add(Node n) {
-        String ns = n.toString();
         return "_:" + n.toString().replace(':', '_').replace('-', 'z').replace('/','y');
     }
 
@@ -689,7 +708,7 @@ public class VirtGraph extends GraphBase {
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
         } else if (n.isLiteral()) {
-            String s, llang, ltype;
+            String llang, ltype;
             boolean llang_exists = false;
             StringBuilder sb = new StringBuilder();
             sb.append("\"");
@@ -728,7 +747,7 @@ public class VirtGraph extends GraphBase {
                     return "<" + BNode2String_add(n) + ">";
                 }
             } else if (n.isLiteral()) {
-                String s, llang, ltype;
+                String llang, ltype;
                 boolean llang_exists = false;
                 StringBuilder sb = new StringBuilder();
                 sb.append("\"");
@@ -833,13 +852,15 @@ public class VirtGraph extends GraphBase {
 
     protected void performAdd(String _gName, Node nS, Node nP, Node nO) {
         _gName = (_gName != null ? _gName : this.graphName);
+        java.sql.Statement st = null;
+        PreparedStatement ps = null;
 
         try {
             if (this.batch_add_executed) {
                 psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
                 psInsert_Count++;
 
-                if (psInsert_Count > BATCH_SIZE) {
+                if (psInsert_Count >= batchSize) {
                     psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
                     psInsert_Count = 0;
                 }
@@ -851,7 +872,7 @@ public class VirtGraph extends GraphBase {
                     || resetBNodesDictAfterCall
                     || isAutocommit)
                 {
-                    java.sql.Statement st = createStatement(true);
+                    st = createStatement(true);
 
                     StringBuilder data = new StringBuilder(1024);
                     data.append("sparql insert into <");
@@ -865,19 +886,24 @@ public class VirtGraph extends GraphBase {
                     data.append(" .}");
 
                     st.execute(data.toString());
-                    st.close();
                 }
                 else
                 {
                    createBNodesDict();
-                   PreparedStatement ps = prepareStatement(S_BATCH_INSERT, true);
+                   ps = prepareStatement(S_BATCH_INSERT, true);
                    bindBatchParams(ps, nS, nP, nO, _gName);
                    ps.execute();
-                   ps.close();
                 }
             }
         } catch (Exception e) {
-            throw new AddDeniedException(e.toString());
+            throw new AddDeniedException(e);
+        } finally {
+          try {
+            if (st != null)
+              st.close();
+            if (ps != null)
+              ps.close();
+          } catch (Exception e) {}
         }
     }
 
@@ -889,19 +915,19 @@ public class VirtGraph extends GraphBase {
 
 
     protected void performDelete(String _gName, Node s, Node p, Node o) {
-        java.sql.PreparedStatement ps;
+        java.sql.PreparedStatement ps = null;
 
         try {
-            ps = prepareStatement(sdelete, true);
-            ps.setString(1, (_gName != null ? _gName : this.graphName));
-            bindSubject(ps, 2, s);
-            bindPredicate(ps, 3, p);
-            bindObject(ps, 4, o);
-
+            ps = prepareStatement(S_BATCH_DELETE, true);
+            bindBatchParams(ps, s, p, o, (_gName != null ? _gName : this.graphName));
             ps.execute();
-            ps.close();
         } catch (Exception e) {
-            throw new DeleteDeniedException(e.toString());
+            throw new DeleteDeniedException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -925,8 +951,9 @@ public class VirtGraph extends GraphBase {
 
         checkOpen();
 
+        PreparedStatement ps = null;
         try {
-            java.sql.PreparedStatement ps = prepareStatement(sb.toString(), false);
+            ps = prepareStatement(sb.toString(), false);
 
             if (!readFromAllGraphs)
                 ps.setString(1, graphName);
@@ -935,9 +962,13 @@ public class VirtGraph extends GraphBase {
             if (rs.next())
                 ret = rs.getInt(1);
             rs.close();
-            ps.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch(Exception e) {}
         }
         return ret;
     }
@@ -992,8 +1023,9 @@ public class VirtGraph extends GraphBase {
 
         sb.append(" } limit 1");
 
+        PreparedStatement ps = null;
         try {
-            java.sql.PreparedStatement ps = prepareStatement(sb.toString(), false);
+            ps = prepareStatement(sb.toString(), false);
             int col = 1;
 
             if (!Node.ANY.equals(nS))
@@ -1006,11 +1038,15 @@ public class VirtGraph extends GraphBase {
             rs = ps.executeQuery();
             boolean ret = rs.next();
             rs.close();
-            ps.close();
             return ret;
 
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -1108,21 +1144,24 @@ public class VirtGraph extends GraphBase {
 
 
     public void clear(Node... graphs) {
+        java.sql.Statement st = null;
+
         if (graphs != null && graphs.length > 0)
             try {
-                String[] graphNames = new String[graphs.length];
+                st = createStatement(true);
+
                 for (int i = 0; i < graphs.length; i++)
-                    graphNames[i] = graphs[i].toString();
+                    st.addBatch("sparql clear graph <"+graphs[i].toString()+">");
 
-                java.sql.PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH, true);
-
-                Array gArray = connection.createArrayOf("VARCHAR", graphNames);
-                ps.setArray(1, gArray);
-                ps.executeUpdate();
-                ps.close();
-                gArray.free();
+                st.executeBatch();
+                st.clearBatch();
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+              try {
+                if (st != null)
+                  st.close();
+              } catch(Exception e) {}
             }
     }
 
@@ -1135,53 +1174,65 @@ public class VirtGraph extends GraphBase {
         sb.append("load \"" + url + "\" into graph <" + graphName + ">");
 
         checkOpen();
+        java.sql.Statement st = null;
         try {
-            java.sql.Statement stmt = createStatement(true);
-            stmt.execute(sb.toString());
-            stmt.close();
+            st = createStatement(true);
+            st.execute(sb.toString());
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (st != null)
+              st.close();
+          } catch(Exception e) {}
         }
     }
 
 
 
-    protected void createBNodesDict() {
+    protected void createBNodesDict() throws SQLException {
         synchronized(lck_add) {
+            java.sql.Statement st = null;
+
             try {
                 if (isBNodesDictCreated)
                   return;
 
                 if (!insertBNodeAsVirtuosoIRI) {
-                    if (stInsert_Cmd == null)
-                        stInsert_Cmd = createStatement(false);
-                    stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
+                    st = createStatement(false);
+                    st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
                     isBNodesDictCreated = true;
                 }
-            } catch (SQLException e) {
-                throw new JenaException(e);
+            } finally {
+              try {
+                if (st != null)
+                  st.close();
+              } catch(Exception e) {}
             }
         }
     }
 
-    protected void dropBNodesDict() {
+    protected void dropBNodesDict() throws SQLException {
         synchronized(lck_add) {
+            java.sql.Statement st = null;
             try {
                 if (!isBNodesDictCreated)
                   return;
 
-                if (stInsert_Cmd == null)
-                    stInsert_Cmd = createStatement(false);
-                stInsert_Cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
+                st = createStatement(false);
+                st.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
                 isBNodesDictCreated = false;
-            } catch (SQLException e) {
-                throw new JenaException(e);
+            } finally {
+              try {
+                if (st != null)
+                  st.close();
+              } catch(Exception e) {}
             }
         }
     }
 
 
-    protected void startBatchAdd() {
+    protected void startBatchAdd() throws SQLException {
         synchronized(lck_add) {
             if (batch_add_executed)
                 throw new JenaException("Batch mode is started already");
@@ -1190,7 +1241,7 @@ public class VirtGraph extends GraphBase {
         }
     }
 
-    protected void stopBatchAdd() {
+    protected void stopBatchAdd() throws SQLException {
         synchronized(lck_add) {
             if (!batch_add_executed)
                 return;
@@ -1202,25 +1253,16 @@ public class VirtGraph extends GraphBase {
                 }
                 if (resetBNodesDictAfterCall)
                     dropBNodesDict();
-            } catch (SQLException e) {
-                throw new JenaException(e);
-            }
-
-            if (psInsert!=null) {
+            } finally {
+              if (psInsert!=null) {
                 try {
                     psInsert.close();
                 } catch (Exception e) {}
+              }
+              psInsert = null;
+              batch_add_executed = false;
             }
-            if (resetBNodesDictAfterCall) {
-                if (stInsert_Cmd!=null) {
-                    try {
-                        stInsert_Cmd.close();
-                    } catch (Exception e) {}
-                }
-                stInsert_Cmd = null;
-            }
-            psInsert = null;
-            batch_add_executed = false;
+
         }
     }
 
@@ -1228,34 +1270,27 @@ public class VirtGraph extends GraphBase {
 
     private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps,
                                                                     Node subject, Node predicate,
-                                                                    Node object, String _gName)
+                                                                    Node object, String _gName) throws SQLException
     {
-        try {
-            if (ps == null)
-                ps = prepareStatement(S_BATCH_INSERT, true);
-            bindBatchParams(ps, subject, predicate, object, _gName);
-            ps.addBatch();
-        } catch (Exception e) {
-            throw new JenaException(e);
-        }
+        if (ps == null)
+            ps = prepareStatement(S_BATCH_INSERT, true);
+        bindBatchParams(ps, subject, predicate, object, _gName);
+        ps.addBatch();
         return ps;
     }
 
-    private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, int psCount) {
-        try {
-            if (psCount > 0 && ps != null) {
-                ps.executeBatch();
-                ps.clearBatch();
-                if (useReprepare) {
-                    try {
-                        ps.close();
-                    } catch (Exception e) {
-                    }
-                    ps = null;
+    private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, int psCount) throws SQLException 
+    {
+        if (psCount > 0 && ps != null) {
+            ps.executeBatch();
+            ps.clearBatch();
+            if (useReprepare) {
+                try {
+                    ps.close();
+                } catch (Exception e) {
                 }
+                ps = null;
             }
-        } catch (Exception e) {
-            throw new JenaException(e);
         }
         return ps;
     }
@@ -1281,21 +1316,16 @@ public class VirtGraph extends GraphBase {
     }
 **/
 
-    void performAdd_batch(String _gName, Node nS, Node nP, Node nO) {
+    void performAdd_batch(String _gName, Node nS, Node nP, Node nO) throws SQLException {
         _gName = (_gName != null ? _gName : this.graphName);
 
-        try {
-            psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
-            psInsert_Count++;
+        psInsert = addToQuadStore_batch(psInsert, nS, nP, nO, _gName);
+        psInsert_Count++;
 
-            if (psInsert_Count > BATCH_SIZE) {
-                psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
-                psInsert_Count = 0;
-             }
-
-        } catch (Exception e) {
-            throw new AddDeniedException(e.toString());
-        }
+        if (psInsert_Count >= batchSize) {
+            psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
+            psInsert_Count = 0;
+         }
     }
 
     //--java5 or newer    @SuppressWarnings("unchecked")
@@ -1321,14 +1351,15 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
-                if (ps==null)
-                    psInsert_Count = 0;
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
             } finally {
-                stopBatchAdd();
+                try {
+                  stopBatchAdd();
+                } catch(Exception e) {}
             }
         }
     }
@@ -1353,27 +1384,77 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                PreparedStatement ps = flushDelayAdd_batch(psInsert, psInsert_Count);
-                if (ps==null)
-                    psInsert_Count = 0;
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
 
             } catch (Exception e) {
                 throw new JenaException(e);
             } finally {
-                stopBatchAdd();
+                try {
+                  stopBatchAdd();
+                } catch(Exception e) {}
+            }
+        }
+    }
+
+    void streamAdd(String _gName, Iterator<Triple> it) {
+        synchronized (lck_add) {
+            _gName = (_gName != null ? _gName : graphName);
+
+            checkOpen();
+
+            try {
+                while (it.hasNext()) {
+                    Triple t = it.next();
+
+                    Node nS = t.getSubject();
+                    Node nP = t.getPredicate();
+                    Node nO = t.getObject();
+
+                    performAdd_batch(_gName, nS, nP, nO);
+                }
+
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
+
+            } catch (Exception e) {
+                throw new JenaException(e);
             }
         }
     }
 
 
-    /***
-/// disabled, because there is issue in DB.DBA.rdf_delete_triple_c
+    void streamAdd(Iterator<Quad> it) {
+        synchronized (lck_add) {
+            checkOpen();
+
+            try {
+                while (it.hasNext()) {
+                    Quad q = it.next();
+
+                    String _gName = (q.getGraph()==null ? graphName : q.getGraph().toString());
+                    Node nS = q.getSubject();
+                    Node nP = q.getPredicate();
+                    Node nO = q.getObject();
+
+                    performAdd_batch(_gName, nS, nP, nO);
+                }
+
+                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert_Count = 0;
+
+            } catch (Exception e) {
+                throw new JenaException(e);
+            }
+        }
+    }
+
 
     void delete(Iterator<Triple> it, List<Triple> list)
     {
       PreparedStatement ps = null;
       try {
-        ps = prepareStatement(S_BATCH_DELETE);
+        ps = prepareStatement(S_BATCH_DELETE, true);
 
         int count = 0;
 
@@ -1398,7 +1479,7 @@ public class VirtGraph extends GraphBase {
                  ps.close();
                  ps = null;
                } catch(Exception e){}
-               ps = prepareStatement(S_BATCH_DELETE);
+               ps = prepareStatement(S_BATCH_DELETE, true);
             }
           }
         }
@@ -1412,140 +1493,67 @@ public class VirtGraph extends GraphBase {
       }	catch(Exception e) {
         throw new JenaException(e);
       } finally {
-        if (ps!=null)
-          try {
-            ps.close();
-          } catch (SQLException e) {}
-      }
-    }
-***/
-    void delete(Iterator<Triple> it, List<Triple> list)
-    {
-        String del_start;
-        java.sql.Statement stmt = null;
-        int count = 0;
-        StringBuilder data = new StringBuilder(256);
-
-        del_start = "sparql DELETE FROM <";
-
-        data.append(del_start);
-        data.append(this.graphName);
-        data.append("> { ");
-
         try {
-            stmt = createStatement(true);
-
-            while (it.hasNext()) {
-                Triple t = (Triple) it.next();
-
-                if (list != null)
-                    list.add(t);
-
-                StringBuilder row = new StringBuilder(256);
-                row.append(Node2Str(t.getSubject()));
-                row.append(' ');
-                row.append(Node2Str(t.getPredicate()));
-                row.append(' ');
-                row.append(Node2Str(t.getObject()));
-                row.append(" .\n");
-
-                if (count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
-                    data.append(" }");
-
-                    stmt.execute(data.toString());
-
-                    data.setLength(0);
-                    data.append(del_start);
-                    data.append(this.graphName);
-                    data.append("> { ");
-                    count = 0;
-                }
-
-                data.append(row);
-                count++;
-            }
-
-            if (count > 0) {
-                data.append(" }");
-
-                stmt.execute(data.toString());
-            }
-
-        } catch (Exception e) {
-            throw new JenaException(e);
-        } finally {
-            try {
-                if (stmt!=null)
-                  stmt.close();
-            } catch (Exception e) {
-            }
-        }
+          if (ps!=null)
+            ps.close();
+        } catch (SQLException e) {}
+      }
     }
 
 
     protected void delete(String _gName, Iterator<Statement> it)
     {
-        String del_start;
-        java.sql.Statement stmt = null;
+      PreparedStatement ps = null;
+      try {
+        ps = prepareStatement(S_BATCH_DELETE, true);
+
         int count = 0;
-        StringBuilder data = new StringBuilder(256);
 
-        del_start = "sparql DELETE FROM <";
+        while (it.hasNext())
+        {
+          Statement t = it.next();
 
-        data.append(del_start);
-        data.append(_gName);
-        data.append("> { ");
+          bindBatchParams(ps, t.getSubject().asNode(), 
+                          t.getPredicate().asNode(),
+          		  t.getObject().asNode(), _gName);
+          ps.addBatch();
+          count++;
 
-        try {
-            stmt = createStatement(true);
-
-            while (it.hasNext()) {
-                Statement t = it.next();
-
-                StringBuilder row = new StringBuilder(256);
-                row.append(Node2Str(t.getSubject().asNode()));
-                row.append(' ');
-                row.append(Node2Str(t.getPredicate().asNode()));
-                row.append(' ');
-                row.append(Node2Str(t.getObject().asNode()));
-                row.append(" .\n");
-
-                if (count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
-                    data.append(" }");
-
-                    stmt.execute(data.toString());
-
-                    data.setLength(0);
-                    data.append(del_start);
-                    data.append(_gName);
-                    data.append("> { ");
-                    count = 0;
-                }
-
-                data.append(row);
-                count++;
+          if (count > batchSize) {
+	    ps.executeBatch();
+	    ps.clearBatch();
+            count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_DELETE, true);
             }
-
-            if (count > 0) {
-                data.append(" }");
-
-                stmt.execute(data.toString());
-            }
-
-        } catch (Exception e) {
-            throw new JenaException(e);
-        } finally {
-            try {
-                if (stmt!=null)
-                    stmt.close();
-            } catch (Exception e) {
-            }
+          }
         }
+
+        if (count > 0)
+        {
+	  ps.executeBatch();
+	  ps.clearBatch();
+        }
+
+      }	catch(Exception e) {
+        throw new JenaException(e);
+      } finally {
+        try {
+          if (ps!=null)
+            ps.close();
+        } catch (SQLException e) {}
+      }
     }
 
 
     protected void md_delete_Model(StmtIterator it)
     {
+      if (this.useAdvancedDelete)
+      {
         LinkedList<DelItem> lst = new LinkedList<DelItem>();
         LinkedList<DelItem> cmd = new LinkedList<DelItem>();
         while(it.hasNext()) {
@@ -1561,7 +1569,7 @@ public class VirtGraph extends GraphBase {
         it.close();
 
         // process Non Blank items
-        md_apply_delete(cmd, null, true);
+        md_apply_delete_n(cmd);
         cmd.clear();
 
         // process Blank items
@@ -1588,17 +1596,29 @@ public class VirtGraph extends GraphBase {
             md_apply_delete(cmd, bnodes, false);
             cmd.clear();
         }
+      }
+      else
+      {
+        delete(this.graphName, it);
+      }
     }
 
 
     void md_load_Bnodes(HashMap<String,String> bnodes, DelItem i)
     {
-        if (i.s instanceof String)
-            bnodes.put((String)i.s, (String)i.s);
-        if (i.p instanceof String)
-            bnodes.put((String)i.p, (String)i.p);
-        if (i.o instanceof String)
-            bnodes.put((String)i.o, (String)i.o);
+        String s;
+        if (i.s.isBlank()) {
+            s = i.s.toString();
+            bnodes.put(s, s);
+        }
+        if (i.p.isBlank()) {
+            s = i.p.toString();
+            bnodes.put(s, s);
+        }
+        if (i.o.isBlank()) {
+            s = i.o.toString();
+            bnodes.put(s, s);
+        }
     }
 
 
@@ -1606,11 +1626,11 @@ public class VirtGraph extends GraphBase {
     {
         boolean add = false;
 
-        if (i.s instanceof String && bnodes.containsKey((String)i.s))
+        if (i.s.isBlank() && bnodes.containsKey(i.s.toString()))
             add = true;
-        if (i.p instanceof String && bnodes.containsKey((String)i.p))
+        if (i.p.isBlank() && bnodes.containsKey(i.p.toString()))
             add = true;
-        if (i.o instanceof String && bnodes.containsKey((String)i.o))
+        if (i.o.isBlank() && bnodes.containsKey(i.o.toString()))
             add = true;
 
         if (add)
@@ -1619,22 +1639,64 @@ public class VirtGraph extends GraphBase {
         return add;
     }
 
+
+    void md_apply_delete_n(LinkedList<DelItem> cmd)
+    {
+      PreparedStatement ps = null;
+      try {
+        ps = prepareStatement(S_BATCH_DELETE, true);
+
+        int count = 0;
+
+        for(DelItem it : cmd) 
+        {
+
+          bindBatchParams(ps, it.s, it.p, it.o, this.graphName);
+          ps.addBatch();
+          count++;
+
+          if (count > batchSize) {
+	    ps.executeBatch();
+	    ps.clearBatch();
+            count = 0;
+            if (useReprepare) {
+               try {
+                 ps.close();
+                 ps = null;
+               } catch(Exception e){}
+               ps = prepareStatement(S_BATCH_DELETE, true);
+            }
+          }
+        }
+
+        if (count > 0)
+        {
+	  ps.executeBatch();
+	  ps.clearBatch();
+        }
+
+      }	catch(Exception e) {
+        throw new JenaException(e);
+      } finally {
+        try {
+          if (ps!=null)
+            ps.close();
+        } catch (SQLException e) {}
+      }
+    }
+
+
     void md_apply_delete(LinkedList<DelItem> cmd, HashMap<String,String> bnodes, boolean splitCmdData)
     {
         String del_start = null;
 
-        if (bnodes!=null) {
-            int id = 0;
-            for(String key: bnodes.keySet()) {
-                bnodes.put(key, "?a"+id);
-                id++;
-            }
+        int id = 0;
+        for(String key: bnodes.keySet()) {
+            bnodes.put(key, "?a"+id);
+            id++;
         }
 
-        if (bnodes!=null)
-            del_start = "sparql DELETE WHERE { GRAPH <";
-        else
-            del_start = "sparql DELETE FROM <";
+        del_start = "sparql DELETE WHERE { GRAPH <";
 
         java.sql.Statement stmt = null;
         int count = 0;
@@ -1649,32 +1711,30 @@ public class VirtGraph extends GraphBase {
 
             for(DelItem it : cmd) {
                 StringBuilder row = new StringBuilder(256);
-                if (bnodes!=null && it.s instanceof String) {
-                    row.append(bnodes.get((String)it.s));
-                } else {
-                    row.append(Node2Str((Node)it.s));
+                if (it.s.isBlank()) {
+                    row.append(bnodes.get(it.s.toString()));
+                } 
+                else {
+                    row.append(Node2Str(it.s));
                 }
                 row.append(' ');
 
-                if (bnodes!=null && it.p instanceof String) {
-                    row.append(bnodes.get((String)it.p));
+                if (it.p.isBlank()) {
+                    row.append(bnodes.get(it.p.toString()));
                 } else {
-                    row.append(Node2Str((Node)it.p));
+                    row.append(Node2Str(it.p));
                 }
                 row.append(' ');
 
-                if (bnodes!=null && it.o instanceof String) {
-                    row.append(bnodes.get((String)it.o));
+                if (it.o.isBlank()) {
+                    row.append(bnodes.get(it.o.toString()));
                 } else {
-                    row.append(Node2Str((Node)it.o));
+                    row.append(Node2Str(it.o));
                 }
                 row.append(" .\n");
 
                 if (splitCmdData && count > 0 && data.length() + row.length() > MAX_CMD_SIZE) {
-                    if (bnodes!=null)
-                      data.append(" }}");
-                    else
-                      data.append(" }");
+                    data.append(" }}");
 
                     stmt.execute(data.toString());
 
@@ -1690,16 +1750,13 @@ public class VirtGraph extends GraphBase {
             }
 
             if (count > 0) {
-                if (bnodes!=null)
-                  data.append(" }}");
-                else
-                  data.append(" }");
+                data.append(" }}");
 
                 stmt.execute(data.toString());
             }
 
         } catch (Exception e) {
-            throw new JenaException(e+"\n"+data.toString());
+            throw new JenaException(data.toString(), e);
         } finally {
             try {
                 if (stmt!=null)
@@ -1708,16 +1765,16 @@ public class VirtGraph extends GraphBase {
         }
     }
 
-
+    
     class DelItem {
-        Object s;
-        Object p;
-        Object o;
+        Node s;
+        Node p;
+        Node o;
 
         DelItem(Node _s, Node _p, Node _o) {
-            s = _s.isBlank() ? _s.toString() : _s;
-            p = _p.isBlank() ? _p.toString() : _p;
-            o = _o.isBlank() ? _o.toString() : _o;
+            s = _s;
+            p = _p;
+            o = _o;
         }
     }
 
@@ -1742,8 +1799,8 @@ literal.
                                    String _graphName) throws SQLException {
         int flags = 0;
 
-        flags |= subject.isBlank()?0x0100:0;
-        flags |= object.isBlank() ?0x0200:0;
+        flags |= (subject.isBlank() && !subject.toString().startsWith("nodeID://")) ? 0x0100 : 0;
+        flags |= (object.isBlank() && !object.toString().startsWith("nodeID://")) ? 0x0200 : 0;
 
         ps.setString(1, subject.isBlank() ? BNode2String(subject) : subject.toString());
         ps.setString(2, predicate.toString());
@@ -1801,6 +1858,7 @@ literal.
 
     void delete_match(String _gName, Triple tm) {
         Node nS, nP, nO;
+        java.sql.PreparedStatement ps = null;
 
         checkOpen();
 
@@ -1818,21 +1876,13 @@ literal.
                 clear(NodeFactory.createURI(gr));
 
             } else if (nS != null && nP != null && nO != null) {
-                java.sql.PreparedStatement ps;
 
-                ps = prepareStatement(sdelete, true);
-
-                ps.setString(1, (_gName != null ? _gName : this.graphName));
-                bindSubject(ps, 2, nS);
-                bindPredicate(ps, 3, nP);
-                bindObject(ps, 4, nO);
+                ps = prepareStatement(S_BATCH_DELETE, true);
+                bindBatchParams(ps, nS, nP, nO, (_gName != null ? _gName : this.graphName));
 
                 ps.execute();
-                ps.close();
 
             } else {
-
-                java.sql.PreparedStatement ps;
 
                 StringBuilder stm = new StringBuilder();
 
@@ -1889,10 +1939,14 @@ literal.
                     bindObject(ps, col, nO);
 
                 ps.execute();
-                ps.close();
             }
         } catch (Exception e) {
-            throw new DeleteDeniedException(e.toString());
+            throw new DeleteDeniedException(e);
+        } finally {
+          try {
+            if (ps!=null)
+              ps.close();
+          } catch (SQLException e) {}
         }
     }
 
@@ -2056,7 +2110,6 @@ literal.
         StringBuilder sb = new StringBuilder();
         DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss");
         String nanosString;
-        String timeZoneString = null;
         String zeros = "000000000";
         int nanos = v.getNanos();
 

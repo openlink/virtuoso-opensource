@@ -86,6 +86,11 @@
 
 ?>
 
+<link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+<link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+<link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
+
 </head>
 <body>
 <div id="PG">
@@ -103,7 +108,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1087,7 +1087,7 @@ cu_ld_str (caddr_t * row, int tmp)
   iri_id_write ((iri_id_t *) (row[0]), &ses);
   iri_id_write ((iri_id_t *) (row[1]), &ses);
   iri_id_write ((iri_id_t *) (row[2]), &ses);
-  if (DV_TYPE_OF (row[3]) == DV_RDF)
+  if (DV_TYPE_OF (row[3]) == DV_RDF && RDF_BOX (row[3])->rb_ro_id)
     rb_id_serialize ((rdf_box_t *) (row[3]), &ses);
   else
     print_object (row[3], &ses, NULL, NULL);

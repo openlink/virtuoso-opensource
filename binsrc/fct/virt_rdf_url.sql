@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,8 +22,6 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 --
-
-delete from RDF_QUAD where G = iri_to_id ('virtrdf-url');
 
 TTLP (
 '@prefix foaf: <http://xmlns.com/foaf/0.1/> .
@@ -71,6 +69,7 @@ schema:potentialAction rdfs:subPropertyOf virtrdf:url .
 schema:logo rdfs:subPropertyOf virtrdf:url .
 schema:image rdfs:subPropertyOf virtrdf:url .
 schema:mainEntityOfPage rdfs:subPropertyOf virtrdf:url .
+schema:url rdfs:subPropertyOf virtrdf:url .
 
 pows:describedby rdfs:subPropertyOf virtrdf:url .
 sioc:links_to rdfs:subPropertyOf virtrdf:url .

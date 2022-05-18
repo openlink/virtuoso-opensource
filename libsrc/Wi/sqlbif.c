@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,14 +32,6 @@
  */
 
 #include <math.h>
-
-#if defined(unix) && !defined(HAVE_GETRUSAGE)
-#define HAVE_GETRUSAGE
-#endif
-
-#ifdef HAVE_GETRUSAGE
-#include <sys/resource.h>
-#endif
 
 #include "sqlnode.h"
 #include "sqlver.h"
@@ -87,6 +79,10 @@ extern "C" {
 #include "http_client.h" /* for MD5_Init and the like */
 #include "sparql.h"
 #include "aqueue.h"
+
+#ifdef HAVE_GETRUSAGE
+#include <sys/resource.h>
+#endif
 
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
@@ -274,6 +270,20 @@ bif_string_or_wide_or_uname_arg (caddr_t * qst, state_slot_t ** args, int nth, c
   return arg;
 }
 
+
+caddr_t
+bif_string_or_bin_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *len)
+{
+  caddr_t arg = bif_arg_unrdf (qst, args, nth, func);
+  dtp_t dtp = DV_TYPE_OF (arg);
+  if (dtp != DV_BIN && !IS_STRING_DTP (dtp))
+    sqlr_new_error ("22023", "SR005", "Function %s needs a string or binary as argument %d, not an arg of type %s (%d)",
+        func, nth + 1, dv_type_title (dtp), dtp);
+  *len = box_length (arg);
+  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
+    --*len;
+  return arg;
+}
 
 dk_session_t *
 bif_strses_arg (caddr_t * qst, state_slot_t ** args, int nth, const char *func)
@@ -7376,6 +7386,13 @@ bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (long1 % long2));
 }
 
+static caddr_t
+bif_fmod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t num1 = bif_arg (qst, args, 0, "fmod");
+  caddr_t num2 = bif_arg (qst, args, 1, "fmod");
+  return (box_mod (num1, num2, qst, NULL));
+}
 
 caddr_t
 bif_frexp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -10498,6 +10515,16 @@ do_datetime:
 	case DV_STRING:
 	  res = string_to_dt_box (data);
           break;
+	case DV_LONG_INT:
+	case DV_SHORT_INT:
+	  {
+	      time_t t = (time_t) unbox(data);
+	      res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+	      time_t_to_dt (t, 0L, res);
+	      DT_SET_TZ (res, 0);
+	      DT_SET_TZL (res, 0);
+	      break;
+	  }
 	case DV_DATETIME:
 	case DV_DATE:
 	case DV_TIME:
@@ -11130,6 +11157,10 @@ check_sequence_grants (query_instance_t * qi, caddr_t name)
 static int registry_name_is_protected (const caddr_t name)
 {
   if (!strncmp (name, "__key__", 7))
+    return 2;
+  if (!strncmp (name, "__EM:", 5))
+    return 2;
+  if (!strncmp (name, "__EMC:", 6))
     return 2;
   if (!strcmp (name, "__next_free_port"))
     return 1;
@@ -14912,9 +14943,6 @@ bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return 0;
 }
 
-#ifndef RUSAGE_SELF
-#undef HAVE_GETRUSAGE
-#endif
 
 caddr_t
 bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16911,6 +16939,7 @@ sql_bif_init (void)
   bif_define_ex ("atoi"			, bif_atoi	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dtoi"			, bif_dtoi	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("mod"			, bif_mod	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("fmod"                 , bif_fmod      , BMD_RET_TYPE, &bt_double      , BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_any	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("acos"			, bif_acos	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);

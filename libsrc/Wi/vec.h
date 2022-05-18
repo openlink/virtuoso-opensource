@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,9 @@ struct data_col_s
   mem_pool_t *dc_mp;
   db_buf_t dc_org_values;	/* initial values array if values array is assigned by reference to another dc */
   db_buf_t dc_org_nulls;	/* when getting first null for a num inline dc, use this if this is set and large enough */
+#ifndef NDEBUG
+    state_slot_t * dc_ssl;
+#endif
 };
 
 #define dc_dtp dc_sqt.sqt_dtp

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2588,7 +2588,7 @@ again:
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
-      http_header ('Content-Type: text/turtle\r\n');
+      http_header (DB.DBA.DAV_CONTENT_TYPE ('text/turtle'));
       server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
       if (server_etag is not null)
         http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
@@ -2621,7 +2621,7 @@ again:
         goto _500;
 
       DB.DBA.DAV_SET_HTTP_STATUS (200);
-      http_header ('Content-Type: text/turtle\r\n');
+      http_header (DB.DBA.DAV_CONTENT_TYPE ('text/turtle'));
       server_etag := WS.WS.ETAG_BY_ID (meta_id, meta_what);
       if (server_etag is not null)
         http_header (http_header_get () || sprintf ('ETag: "%s"\r\n', server_etag));
@@ -3098,7 +3098,7 @@ again:
           hdr_str := http_header_get ();
           hdr_str := hdr_str || 'ETag: "' || server_etag || '"\r\n';
           if (strcasestr (hdr_str, 'Content-Type:') is null)
-            hdr_str := hdr_str || 'Content-Type: ' || cont_type || '\r\n';
+            hdr_str := hdr_str || DB.DBA.DAV_CONTENT_TYPE (cont_type);
 
           if (modt is not null and strcasestr (hdr_str, 'Last-Modified:') is null)
             hdr_str := hdr_str || sprintf ('Last-Modified: %s\r\n', DB.DBA.DAV_RESPONSE_FORMAT_DATE (modt, '', 1));
@@ -3119,7 +3119,7 @@ again:
         }
         else
         {
-          http_header ('Content-Type: text/xml\r\nETag: "' || server_etag || '"\r\n');
+          http_header (DB.DBA.DAV_CONTENT_TYPE ('text/xml') || 'ETag: "' || server_etag || '"\r\n');
         }
       }
     }
@@ -3185,7 +3185,7 @@ again:
         if (stat = '00000')
           return;
 
-        http_header (concat ('Content-Type: text/html\r\n'));
+        http_header (DB.DBA.DAV_CONTENT_TYPE ('text/html'));
         http (concat ('SQL Error: ', stat, ' ', msg));
         return;
       }
@@ -3595,7 +3595,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   n_page := atoi (get_keyword ('p', params, '1'));
   n_count := (sparql define input:storage "" select count(1) where { graph `iri(?:gr)` { ?s ?p ?o }});
   n_last := (n_count / n_per_page) + 1;
-  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, n_page, n_last, full_path)));
+  http_header (sprintf('Content-Type: %s\r\n%s', accept, WS.WS.LDP_HDRS (is_col, 1, n_page, n_last, full_path, pref_mime)));
 
   etag := WS.WS.ETAG (name_, id_, mod_time);
   if (isstring (etag))
@@ -3628,7 +3628,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
                  'where ' ||
                  '  { ' ||
                  '    ?s ?p ?o option (table_option "index G") . ' ||
-                 '    optional { graph ?g { ?o a ?t option (table_option "index primary key") } } . ' ||
+                 '    optional { ?o a ?t option (table_option "index primary key") } . ' ||
                  '    BIND (sql:dynamic_host_name(?s) as ?dyn_s) .' ||
                  '    BIND (sql:dynamic_host_name(?o) as ?dyn_o) .' ||
                  '  } ' ||
@@ -7222,7 +7222,7 @@ create procedure DB.DBA.LDP_CREATE (
   in mimeType varchar := null)
 {
   -- dbg_obj_princ ('LDP_CREATE (', path, ')');
-  declare tmp, path_parent, graph, graph_parent varchar;
+  declare path_parent, graph, graph_parent varchar;
   declare graphIdn, graphParentIdn any;
 
   -- macOS metadata files
@@ -7239,22 +7239,31 @@ create procedure DB.DBA.LDP_CREATE (
     graph := WS.WS.DAV_IRI (path);
     set_user_id ('dba');
 
-    tmp := sprintf (' <%s> <http://www.w3.org/ns/ldp#contains> <%s> .', graph_parent, graph);
     if ((path <> '') and (path[length(path)-1] <> 47))
     {
+      declare str any;
       -- delete old data
       graphIdn := __i2idn (graph);
       graphParentIdn := __i2idn (graph_parent);
       delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#mtime') and S = graphIdn;
       delete from DB.DBA.RDF_QUAD where G = graphParentIdn and P = __i2idn ('http://www.w3.org/ns/posix/stat#size') and S = graphIdn;
-      for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
-      {
-        tmp := tmp ||
-               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#mtime> %d .', graph, datediff ('second', stringdate ('1970-1-1Z'), adjust_timezone (_mod_time, 0, 1))) ||
-               sprintf (' <%s> <http://www.w3.org/ns/posix/stat#size> %d .', graph, _size);
-      }
+
+      str := string_output();
+      http ('@prefix ldp: <http://www.w3.org/ns/ldp#> .\n', str);
+      http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', str);
+      http ('@prefix stat: <http://www.w3.org/ns/posix/stat#> .\n', str);
+      http (sprintf ('<%s> ldp:contains <%s> .\n', graph_parent, graph), str);
+
+      for (select DB.DBA.DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as _size, RES_MOD_TIME as _mod_time, RES_TYPE as mtype
+          from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path) do
+        {
+          declare tp varchar;
+          tp := sprintf ('http://www.w3.org/ns/iana/media-types/%s#Resource', mtype);
+          http (sprintf ('<%s> a <%s> ; stat:mtime "%s"^^xsd:dateTime ; stat:size %d .\n',
+                graph, tp, date_iso8601 (_mod_time), _size), str);
+        }
+      DB.DBA.TTLP (str, '', graph_parent);
     }
-    DB.DBA.TTLP (tmp, '', graph_parent);
   }
 }
 ;
@@ -7556,5 +7565,15 @@ create procedure DB.DBA.DAV_RESPONSE_FORMAT_DATE (
     dt := dt_set_tz  (dateadd ('minute', -tz, dt), tz);
   }
   return soap_print_box (dt, enclosing_tag, date_encoding_type);
+}
+;
+
+create procedure DB.DBA.DAV_CONTENT_TYPE (
+  in ct varchar)
+{
+  if (ct like 'text/%')
+     return sprintf ('Content-Type: %s; charset="%s"\r\n', ct, 'UTF-8');
+
+  return sprintf ('Content-Type: %s\r\n', ct);
 }
 ;

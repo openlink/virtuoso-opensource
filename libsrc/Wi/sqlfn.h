@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -250,9 +250,11 @@ void ddl_ensure_univ_tables (void);
 #define DDL_STD_REENTRANT 0x40
 
 EXE_EXPORT (void, ddl_std_proc, (const char * text, int is_public));
-EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int ddl_std_flags, int to_recompile));
-EXE_EXPORT (void, ddl_ensure_table, (const char *name, const char *text));
+EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int is_public, int to_recompile));
+EXE_EXPORT (void, ddl_ensure_table, (const char *table, const char *text));
+EXE_EXPORT (void, ddl_ensure_index, (const char *table, const char *index_name, const char *text));
 EXE_EXPORT (void, ddl_ensure_column, (const char *table, const char *col, const char *text, int is_drop));
+EXE_EXPORT (void, ddl_exec_init_stmt, (const char *table, const char *text, const char *fname, const char *stmt));
 EXE_EXPORT (void, ddl_sel_for_effect, (const char *str));
 
 caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
@@ -824,7 +826,7 @@ extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
 #define CV_THIS_SET_ONLY -1
-caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc);
+caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag);
 
 void cv_free (code_vec_t cv);
 
@@ -1721,6 +1723,7 @@ void cli_set_start_times (client_connection_t * cli);
 
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
 extern int32 log_proc_overwrite;
+extern int32 log_sql_code_init;
 
 #ifdef MALLOC_DEBUG
 #define TMP_ARRAY_INIT_SZ 2

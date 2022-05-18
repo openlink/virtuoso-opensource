@@ -6,7 +6,7 @@
   if (username is not null)
     set_user_id (username);
 
-  ret := xenc_pem_export ({?'key'});
+  ret := xenc_pem_export ({?'key'}, 1);
    
   http_header (sprintf ('Content-Type: application/octet-stream\r\nContent-Disposition: attachment; filename=%U.pem\r\n', {?'key'}));
   http_rewrite ();

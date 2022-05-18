@@ -1,14 +1,12 @@
 /*
  *  ccdefs.c
  *
- *  $Id$
- *
  *  Determine & report the Makeconfig variables
  *  
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,6 +28,17 @@
 #include <ctype.h>
 #include <string.h>
 
+#if defined (__GNUC_MINOR__)
+# define CHECK_GCC_PREREQ(maj, min) ((__GNUC__ << 16) + __GNUC_MINOR__ >= ((maj) << 16) + (min))
+#else
+# define CHECK_GCC_PREREQ(maj, min) 0
+#endif
+
+#if defined (__clang_minor__)
+#  define CHECK_CLANG_PREREQ(maj, min) ((__clang_major__ << 16) + __clang_minor__ >= ((maj) << 16) + (min))
+#else 
+#  define CHECK_CLANG_PREREQ(maj,min) 0
+#endif
 
 /*
  *  Check for toupper problems
@@ -59,9 +68,8 @@ char **argv;
   static char CCWARN[800];
   static char CCOPT[800];
   static char CCDEBUG[800];
-  static char CCLIBS[800];
 
-  CCDEFS[0] = CCWARN[0] = CCOPT[0] = CCDEBUG[0] = CCLIBS[0] = 0;
+  CCDEFS[0] = CCWARN[0] = CCOPT[0] = CCDEBUG[0] = 0;
 
   /*
    *  Build releases by default
@@ -83,23 +91,15 @@ char **argv;
    *  --with-pthreads works on linux redhat >= 5
    */
 
-# if !defined (M_I386) && !defined (__i386__) && defined (NOTDEF)
-  /*
-   *  GNU C library bug work around (See spromo.c)
-   *  libudbc.a causes core dumps when stdarg.h doesn't work...
-   */
-  strcat (CCDEFS, "-D__i386__ ");
+  strcat (CCOPT, "-g -O2 ");
+# if CHECK_GCC_PREREQ (3, 0) || CHECK_CLANG_PREREQ (3, 0)
+  strcat (CCOPT, "-fno-strict-aliasing -fno-omit-frame-pointer ");
 # endif
 
-# if defined (i386)
-  strcat (CCOPT, "-fomit-frame-pointer ");
+  strcat (CCWARN, "-Wall -Wextra ");
+# if CHECK_GCC_PREREQ (4, 4) || CHECK_CLANG_PREREQ (3, 0)
+  strcat (CCWARN, "-Wformat -Werror=format-security -Werror=implicit-function-declaration");
 # endif
-# if (__GNUC__ > 3)
-  strcat (CCOPT, "-fno-strict-aliasing ");
-# endif
-  strcat (CCOPT, "-O2 ");
-  strcat (CCWARN, "-Wall ");
-  strcat (CCLIBS, "`gcc -print-libgcc-file-name` ");
 
 
   /* NATIVE C COMPILERS FOR VARIOUS PLATFORMS */
@@ -185,7 +185,6 @@ char **argv;
   printf ("CCDEFS=\"%s\"\n", CCDEFS);
   printf ("CCWARN=\"%s\"\n", CCWARN);
   printf ("CCDEBUG=\"%s\"\n", CCDEBUG);
-  printf ("CCLIBS=\"%s\"\n", CCLIBS);
 
   return 0;
 }

@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2020 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -68,6 +68,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
     <meta name="Copyright" content="Copyright &#169; <?V year(now()) ?> OpenLink Software" />
     <meta name="Keywords"  content="OpenLink Virtuoso Sparql" />
     <title><?V title ?></title>
+
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
 <?vsp
 }
 ;
@@ -443,14 +448,55 @@ create procedure WS.WS.SPARQL_ENDPOINT_FOOTER ()
         <br/>
         Virtuoso version <?V sys_stat('st_dbms_ver') ?> on <?V sys_stat('st_build_opsys_id') ?> (<?V host_id() ?>)
 <?vsp
+    declare rss any;
+    rss := getrusage();
     if (1 = sys_stat('cl_run_local_only'))
-        http(sprintf ('Single Server Edition (%s total memory)\n', mem_hum_size (mem_info_cl())));
+    {
+	if (rss <> 0)
+            http(sprintf ('Single Server Edition (%s total memory, %s memory in use)\n',
+	      mem_hum_size (mem_info_cl()), mem_hum_size(rss[2] * 1024)));
+	else
+            http(sprintf ('Single Server Edition (%s total memory)\n', mem_hum_size (mem_info_cl())));
+    }
     else
         http(sprintf('Cluster Edition (%d server processes, %s total memory)\n', sys_stat('cl_n_hosts'), mem_hum_size (mem_info_cl())));
 ?>
     </div>
     </footer>
 <?vsp
+}
+;
+
+create procedure WS.WS.SPARQL_ENDPOINT_SVC_DESC ()
+{
+  declare ses any;
+  ses := string_output ();
+  http ('    <div style="display:none">\n', ses);
+  http ('       <div class="description" about="#service" typeof="sd:Service">\n', ses);
+  http (sprintf ('          <div rel="sd:endpoint" resource="%s://%{WSHost}s/sparql"></div>\n',
+		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
+  http ('          <div rel="sd:feature"\n', ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#UnionDefaultGraph"></div>\n', ses);
+  http ('          <div rel="sd:feature"\n', ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#DereferencesURIs"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDF_XML"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/Turtle"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat"\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_CSV"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N-Triples"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/N3"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat"\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_JSON"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat" resource="http://www.w3.org/ns/formats/RDFa"></div>\n', ses);
+  http ('          <div rel="sd:resultFormat"\n', ses);
+  http ('               resource="http://www.w3.org/ns/formats/SPARQL_Results_XML"></div>\n', ses);
+  http ('          <div rel="sd:supportedLanguage"\n', ses);
+  http ('               resource="http://www.w3.org/ns/sparql-service-description#SPARQL10Query"></div>\n', ses);
+  http (sprintf ('          <div rel="sd:url" resource="%s://%{WSHost}s/sparql"></div>\n',
+		case when is_https_ctx () then 'https' else 'http' end, ses), ses);
+  http ('       </div>\n', ses);
+  http ('    </div>\n', ses);
+  return ses;
 }
 ;
 
@@ -834,7 +880,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Main
     --
     http ('<main id="main">\n');
-    http ('<form id="sparql_form" action="/sparql" method="get">\n');
+    http ('<form id="sparql_form" method="get">\n');
 ?>
 
     <fieldset class="">
@@ -1199,7 +1245,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP_VIEWS()
 {
     declare storage_is_dflt integer;
     storage_is_dflt := 0;
-    if (exists (sparql define input:storage "" ask from virtrdf:
+    if ((sparql define input:storage "" ask from virtrdf:
         where {
             virtrdf:DefaultQuadStorage a virtrdf:QuadStorage    ;
                 virtrdf:qsDefaultMap virtrdf:DefaultQuadMap     ;

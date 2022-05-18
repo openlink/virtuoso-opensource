@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1771,7 +1771,7 @@ sqlbif2_init (void)
   bif_define_ex ("query_instance_id", bif_query_instance_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
-  bif_define_ex ("__sec_uid_to_user", bif_sec_uid_to_user, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__sec_uid_to_user", bif_sec_uid_to_user, BMD_ALIAS, "uid_to_user", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("current_proc_name", bif_current_proc_name);
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -600,9 +600,6 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
   lname++;
   do
     {
-      ns_uri = (caddr_t)dk_set_get_keyword (ns_dict, ns_pref, NULL);
-      if (NULL != ns_uri)
-	break;
       if (!strcmp (ns_pref, "rdf"))
 	{
 	  ns_uri = uname_rdf_ns_uri;
@@ -620,14 +617,17 @@ sparp_expand_qname_prefix (sparp_t * sparp, caddr_t qname)
 	}
       if (!strcmp ("sql", ns_pref))
 	{
-	  ns_uri = box_dv_uname_string ("sql:");
+	  ns_uri = uname_sql_ns_uri;
 	  break;
 	}
       if (!strcmp ("bif", ns_pref))
 	{
-	  ns_uri = box_dv_uname_string ("bif:");
+	  ns_uri = uname_bif_ns_uri;
 	  break;
 	}
+      ns_uri = (caddr_t)dk_set_get_keyword (ns_dict, ns_pref, NULL);
+      if (NULL != ns_uri)
+	break;
       ns_uri = xml_get_ns_uri (sparp->sparp_sparqre->sparqre_cli, ns_pref, 0x3, 1 /* ret_in_mp_box */ );
       if (NULL != ns_uri)
 	break;
@@ -4733,6 +4733,11 @@ static const char *spar_unsafe_bif_names[] = {
   "REGISTRY_SET",
   "REGISTRY_SET_ALL",
   "STRING_TO_FILE",
+  "SEQUENCE_REMOVE",
+  "SEQUENCE_GET_ALL",
+  "SEQUENCE_NEXT_BOUNDED",
+  "SEQUENCE_NEXT",
+  "SEQUENCE_SET",
   "SYSTEM"
 };
 

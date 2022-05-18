@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3650,6 +3650,10 @@ dict_put_impl (id_hash_iterator_t *hit, caddr_t key, caddr_t val, int signal_uns
 skip_insertion:
   HT_UNLOCK_COND(ht,wrlocked);
   res = ht->ht_inserts - ht->ht_deletes;
+  if (signal_unsafe_args && ht->ht_dict_max_mem_in_use > 0
+      && ht->ht_mp != NULL && ((mem_pool_t *)ht->ht_mp)->mp_bytes > ht->ht_dict_max_mem_in_use)
+    sqlr_new_error ("42000", "D1CT0", "Hash dictionary memory pool is full, %ld exceeded %ld bytes",
+        ((mem_pool_t *)ht->ht_mp)->mp_bytes, ht->ht_dict_max_mem_in_use);
   return box_num (res);
 }
 

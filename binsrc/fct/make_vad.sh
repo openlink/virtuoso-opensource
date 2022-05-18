@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2021 OpenLink Software
+#  Copyright (C) 1998-2022 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@ VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
-SQLDEPS="ns.sql virt_rdf_label.sql virt_rdf_url.sql facet.sql complete_ddl.sql"
+SQLDEPS="ns.sql virt_rdf_label.sql virt_rdf_url.sql facet.sql complete_ddl.sql vad_fct_config.sql fct_endpoints.sql"
 EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql grants.sql"
 
 HOST_OS=`uname -s | grep WIN`
@@ -265,7 +265,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2021 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2022 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -365,10 +365,14 @@ fi
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
-  echo ""
+  echo "" >> $STICKER
   echo "      -- Copy FCT VAD configuration files to Conductor UI folder" >> $STICKER
   echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.vspx');" >> $STICKER
   echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.js');" >> $STICKER
+  echo ""  >> $STICKER
+  echo "       -- Check if automated label fill is enabled" >> $STICKER
+  echo "       if (virtuoso_ini_item_value ('SPARQL', 'LabelInferenceName') = 'facets')" >> $STICKER
+  echo "           registry_set ('urilbl_ac_init_status', '2');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER

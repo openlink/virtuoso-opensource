@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1266,7 +1266,9 @@ sch_set_ua_func_ua (caddr_t name, query_t * qr)
   if (!ua_func_to_ua)
     ua_func_to_ua = id_casemode_hash_create (23);
   name = box_copy (name);
+#if 0
   if (strstr (name, "DB.DBA.SPARQL_RSET_TTL_H")) bing ();
+#endif
   id_hash_set (ua_func_to_ua, (caddr_t)&name, (caddr_t)&qr);
 }
 

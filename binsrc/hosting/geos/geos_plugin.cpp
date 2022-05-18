@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -818,6 +818,25 @@ bif_geos_is_simple (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 }
 
 static caddr_t
+bif_geos_is_valid (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  int arg_err;
+  std::auto_ptr<geos::geom::Geometry> arg1 = bif_Geometry_auto_ptr_arg_nosignal (qst, args, 0, "GEOS isValid", GEO_ARG_ANY_NONNULL, &arg_err);
+  if (arg_err)
+    return NEW_DB_NULL;
+  int res;
+  try
+    {
+      if (0 == arg1.get()->getNumGeometries())
+        res = 0;
+      else
+        res = arg1.get()->isValid();
+    }
+  CATCH_BIF_GEXXX((arg1.reset()), "GEOS isValid")
+  return box_num (res ? 1 : 0);
+}
+
+static caddr_t
 bif_geos_is_unsupported (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res = NULL;
@@ -1299,6 +1318,7 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS spatialDimension"	, bif_geos_spat_dimension	, BMD_ALIAS, "GEOS-spatialDimension"		, DF_GS_ALIASES("spatialDimension")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isEmpty"		, bif_geos_is_empty		, BMD_ALIAS, "GEOS-isEmpty"			, DF_GS_ALIASES("isEmpty")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isSimple"	, bif_geos_is_simple		, BMD_ALIAS, "GEOS-isSimple"			, DF_GS_ALIASES("isSimple")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("GEOS isValid"	, bif_geos_is_valid		, BMD_ALIAS, "GEOS-isValid"			, DF_GS_ALIASES("isValid")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isUnsupported"	, bif_geos_is_unsupported	, BMD_ALIAS, "GEOS-isUnsupported"						,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS asWKT"		, bif_geos_as_wkt		, BMD_ALIAS, "GEOS-asWKT"			, DF_GS_ALIASES("hasSerialization")	, DF_GS_ALIASES("asWKT")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
 

@@ -2,7 +2,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -669,6 +669,14 @@ table.warning {
   background-color: #ffff99
 }
 
+div.message {
+  width: 100%;
+  padding: 5px;
+  clear: both;
+  text-align: center;
+  color: green;
+}
+
 div.warning {
   width: 100%;
   background-color: #ffff99;
@@ -786,6 +794,13 @@ div.confirm_dialog {
 
 div.dialog_buttons {
   margin-top: 10px;
+}
+
+div.confirm_text {
+    font-size:12pt;
+    color:black;
+    font-weight:bold;
+    width:70%;
 }
 
 

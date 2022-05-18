@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2022 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -27,8 +27,9 @@
 
 #ifndef _SQLO_H
 #define _SQLO_H
-
+#include "sqlcmps.h"
 typedef struct df_elt_s df_elt_t;
+typedef struct dfe_reuse_s dfe_reuse_t;
 typedef struct sqlo_s sqlo_t;
 typedef struct locus_s locus_t;
 #ifdef __cplusplus

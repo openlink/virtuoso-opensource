@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2021 OpenLink Software
+--  Copyright (C) 1998-2022 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -310,10 +310,10 @@ fct_query_info (in tree any,
                          fct_var_tag (this_s, ctx),
                          connection_get ('sid'),
                          fct_short_form (prop),
-                         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8')),
+                         __box_flags_tweak (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), 2)), 
                 txt);
       else if (vt = 'properties')
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_s_term (),
                          connection_get ('sid'), 
@@ -321,11 +321,11 @@ fct_query_info (in tree any,
                          cno,
 		         fct_p_term (),
 		         fct_o_term (),
-		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+		         __box_flags_tweak (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), 2),
                          connection_get ('sid')), 
                  txt);
       else if (vt = 'properties-in') 
-        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s is the %s of <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> where the %s is associated with <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx), 
 			 fct_o_term (),
                          connection_get ('sid'), 
@@ -333,18 +333,18 @@ fct_query_info (in tree any,
                          cno,
 		         fct_p_term (),
 		         fct_s_term (),
-		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+		         __box_flags_tweak (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), 2),
                          connection_get ('sid')), 
                  txt);
       else
-        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> with %s <span class="value">"%s"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
+        fct_li (sprintf (' %s has <a class="qry_info_cmd" href="/fct/facet.vsp?sid=%d&cmd=set_view&type=text-properties&limit=%d&offset=0&cno=%d">any %s</a> with %s <span class="value">"%V"</span> <a href="/fct/facet.vsp?sid=%d&cmd=drop_text">Drop</a>. ',
                          fct_var_tag (this_s, ctx),
                          connection_get ('sid'),
 			 lim,
                          cno,
 		         fct_p_term (),
 		         fct_o_term (),
-		         charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'),
+		         __box_flags_tweak (charset_recode (xpath_eval ('string (.)', tree), '_WIDE_', 'UTF-8'), 2),
                          connection_get ('sid')),
                  txt);
 
@@ -474,7 +474,7 @@ fct_query_info (in tree any,
         else if ('in' = cond_t)
           {
             declare this_cno int;
-            declare neg varchar;
+            declare neg any;
             neg := case when (xpath_eval ('./@neg', tree) = '1') then 'NOT ' else '' end;
             this_cno := cno;
             http (sprintf ('%s %sis %sIN: ', fct_var_tag (this_s, ctx), prop_qual, neg), txt);
@@ -567,20 +567,6 @@ fct_query_info (in tree any,
     }
 }
 ;
-
-VHOST_REMOVE (lpath=>'/fct');
-VHOST_DEFINE (
-  lpath=>'/fct',
-    	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end,
-	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-  vsp_user=>'SPARQL',
-  def_page=>'facet.vsp'
-  );
-VHOST_REMOVE (lpath=>'/b3s');
-VHOST_DEFINE (lpath=>'/b3s',
-    	ppath=>case when registry_get('_fct_path_') = 0 then '/fct/' else registry_get('_fct_path_') end || 'www/',
-	is_dav=>atoi (case when registry_get('_fct_dav_') = 0 then '0' else registry_get('_fct_dav_') end),
-    	vsp_user=>'SPARQL', def_page=>'listall.vsp');
 
 
 create procedure
@@ -917,10 +903,10 @@ fct_pretty_sparql (in q varchar, in lev int := 0)
 ;
 
 create procedure
-fct_c_plink (in p_xml any)
+fct_c_plink (in p_xml any, in retry_timeout varchar)
 {
   declare link any;
-  link := sprintf ('local:/fct/facet.vsp?qxml=%U', p_xml);
+  link := sprintf ('local:/fct/facet.vsp?qxml=%U&timeout=%U', p_xml, retry_timeout);
   link := uriqa_dynamic_local_replace (link);
   if (__proc_exists ('WS..CURI_MAKE_CURI') is not null)
     link := '/c/' || WS..CURI_MAKE_CURI (link);
@@ -1017,13 +1003,17 @@ fct_web (in tree any, in sid int)
   declare p_xml, p_link varchar;
   declare p_xml_tree any;
 
-  p_xml_tree := xslt (registry_get ('_fct_xslt_') || 'fct_strip_loc.xsl', tree, vector());
+  declare complete, retry_timeout any;
+  complete := cast (xpath_eval ('//complete', reply) as varchar);
+  retry_timeout := cast (xpath_eval ('//timeout', reply) as varchar);
 
+  p_xml_tree := xslt (registry_get ('_fct_xslt_') || 'fct_strip_loc.xsl', tree, vector());
   p_ses := string_output();
   http_value (p_xml_tree, null, p_ses);
 
-  p_xml := cast (p_ses as varchar);
-  p_link := fct_c_plink (p_xml);
+  p_xml := string_output_string (p_ses);
+  __box_flags_set (p_xml, 2);
+  p_link := fct_c_plink (p_xml, retry_timeout);
 
   r_ses := string_output ();
   http_value (reply, null, r_ses);
@@ -2013,7 +2003,7 @@ fct_validate_xsd_float (in str varchar)
 {
   declare ret varchar;
 
-  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)$', str); -- simple case
+  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)x24', str); -- simple case
 
   if (ret is not null)
   {
@@ -2037,12 +2027,12 @@ fct_validate_xsd_int (in str varchar)
 {
   declare ret varchar;
 
-  ret := regexp_match ('^[-+]?[0-9]+$', str); -- simple integers
+  ret := regexp_match ('^[-+]?[0-9]+x24', str); -- simple integers
   if (ret is not null)
   {
     return ret;
   }
-  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)$', str);
+  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)x24', str);
   return ret;
 
 }
@@ -2051,7 +2041,7 @@ fct_validate_xsd_int (in str varchar)
 create procedure
 fct_validate_xsd_date (in str varchar)
 {
-  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:date$', str);
+  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:datex24', str);
 }
 ;
 
@@ -2060,7 +2050,7 @@ fct_validate_xsd_datetime (in str varchar)
 {
   declare retval varchar;
 
-  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTime$', str);
+  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTimex24', str);
   return retval;
 }
 ;
@@ -2069,7 +2059,7 @@ create procedure
 fct_validate_xsd_str (in str varchar) {
   declare retval varchar;
 
-  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*$', str);
+  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*x24', str);
 
 --  if (retval is null) {
 --    retval := sprintf ('''%s''', regexp_replace (str,'["'']','', 1, null));
@@ -2098,7 +2088,7 @@ create procedure
 fct_validate_xsd_float (in str varchar) {
   declare ret varchar;
 
-  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)$', str); -- simple case
+  ret := regexp_match ('^[-+]?([0-9]+(\.[0-9]*)?|\.[0-9]+)([eE][-+]?[0-9]+)x24', str); -- simple case
 
   if (ret is not null)
   {
@@ -2121,12 +2111,12 @@ fct_validate_xsd_int (in str varchar)
 {
   declare ret varchar;
 
-  ret := regexp_match ('^[-+]?[0-9]+$', str); -- simple integers
+  ret := regexp_match ('^[-+]?[0-9]+x24', str); -- simple integers
   if (ret is not null)
   {
     return ret;
   }
-  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)$', str);
+  ret := regexp_match ('^"([^\\"]|\\.|[-+]?([0-9]+))"\\^\\^(xsd:int|xsd:integer)x24', str);
   return ret;
 
 }
@@ -2134,7 +2124,7 @@ fct_validate_xsd_int (in str varchar)
 
 create procedure
 fct_validate_xsd_date (in str varchar) {
-  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:date$', str);
+  return regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])?"\\^\\^xsd\\:datex24', str);
 }
 ;
 
@@ -2143,7 +2133,7 @@ fct_validate_xsd_datetime (in str varchar)
 {
   declare retval varchar;
 
-  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTime$', str);
+  retval := regexp_match ('^"-?[0-9][0-9][0-9][0-9]-[01][0-9]-[0-3][0-9]T[0-2][0-9]\\:[0-5][0-9](Z|[-+]?[0-2][0-9]\\:[0-5][0-9])+"\\^\\^xsd\\:dateTimex24', str);
   return retval;
 }
 ;
@@ -2152,7 +2142,7 @@ create procedure
 fct_validate_xsd_str (in str varchar) {
   declare retval varchar;
 
-  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*$', str);
+  retval := regexp_match ('^"([^\\"\\'']|.*)"(@([a-zA-Z0-9]+)?)(-[a-zA-Z0-9]+)*x24', str);
 
 --  if (retval is null) {
 --    retval := sprintf ('''%s''', regexp_replace (str,'["'']','', 1, null));
@@ -2505,7 +2495,7 @@ exec:;
   if ('' = c_term) c_term := 'class';
   connection_set ('c_term', c_term);
 
-  if (registry_get ('fct_log_enable') = 1)
+  if (registry_get ('fct_log_enable') = '1')
     insert into fct_log (fl_sid, fl_cli_ip, fl_where, fl_state, fl_cmd)
          values (sid, http_client_ip(), 'DISPATCH', tree, cmd);
 
@@ -2616,7 +2606,7 @@ exec:;
                        1,
                        http_param('cond_parms'));
     } else if ('near' = cond_t) {
-      declare i_lat, i_lon, i_loc_trig_sel varchar;
+      declare i_lat, i_lon, i_loc_trig_sel any;
 
       i_lat := http_param ('lat');
       i_lon := http_param ('lon');
@@ -2683,13 +2673,25 @@ exec:;
 
 create procedure fct_virt_info ()
 {
+  declare rss any;
+
+  rss := getrusage();
+
   http ('<a href="http://www.openlinksw.com/virtuoso/">OpenLink Virtuoso</a> version ');
   http (sprintf ('%s as of %s', sys_stat ('st_dbms_ver'), sys_stat('st_build_date')));
   http (', on ');
   http (sys_stat ('st_build_opsys_id')); http (sprintf (' (%s), ', host_id ()));
-  http (case when sys_stat ('cl_run_local_only') = 1 then 'Single-Server' else 'Cluster' end); http (' Edition ');
-  http (case when sys_stat ('cl_run_local_only') = 0 then sprintf ('(%d server processes, %s total memory)', sys_stat ('cl_n_hosts'), mem_hum_size (mem_info_cl ())) 
-      else sprintf ('(%s total memory)', mem_hum_size (mem_info_cl ())) end); 
+  if (0 = sys_stat ('cl_run_local_only'))
+    {
+      http (sprintf ('Cluster Edition (%d server processes, %s total memory)', sys_stat('cl_n_hosts'), mem_hum_size (mem_info_cl())));
+    }
+  else
+    {
+      http (sprintf ('Single-Server Edition (%s total memory', mem_hum_size (mem_info_cl ())));
+      if (rss <> 0)
+        http (sprintf (', %s memory in use', mem_hum_size (rss[2] * 1024)));
+      http (')');
+    }
 }
 ;
 
