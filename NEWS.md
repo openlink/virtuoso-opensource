@@ -1,6 +1,6 @@
 # NEWS
 
-## May 17, 2022, v7.2.7-rc1:
+## May 17, 2022, v7.2.7:
 
 The Virtuoso engine has been enhanced to use 64-bit prefix IDs in `RDF_IRI` which allows for
 very large databases such as [Uniprot](https://www.uniprot.org/), which currently contains over

@@ -1,4 +1,18 @@
+2022-05-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.8-dev to mark the start of a new development cycle
+
 2022-05-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.7' into develop/7
+
+	Tagged 7.2.7 for release
+
+2022-05-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.7' into stable/7
+
+	Updated ChangeLog
 
 	Updated version to 7.2.7 engine 3234
 
