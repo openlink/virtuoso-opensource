@@ -69,6 +69,9 @@ int LEVEL_VAR = 4;
 #include <openssl/rand.h>
 #include <openssl/ec.h>
 #include <openssl/dh.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/provider.h>
+#endif
 
 #include "util/ssl_compat.h"
 
