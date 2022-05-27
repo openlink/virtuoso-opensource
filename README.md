@@ -23,10 +23,12 @@ Copyright (C) 1998-2022 OpenLink Software <vos.admin@openlinksw.com>
     + [Solaris 2.10 Opteron 64-bit](#solaris-210-opteron-64-bit)
     + [Solaris 2.8 and above SPARC 64-bit](#solaris-28-and-above-sparc-64-bit)
     + [Generic build environment](#generic-build-environment)
-- [Installation](#installation)
+- [Installation via Source Code](#installation-from-source-code)
+- [Installation via Installer Programs](#installer-packages)
 - [Test Suite](#test-suite)
 - [Getting Started](#getting-started)
 - [VAD Packages](#vad-packages)
+
 
 
 ## Introduction
@@ -254,7 +256,7 @@ contact us at <vos.admin@openlinksw.com>.
 
 
 
-## Installation
+## Installation From Source Code
 
 After running configure && make,
 
@@ -289,6 +291,15 @@ accordingly.
 
 As of version 5.0.3, the demo is a VAD package, not a separate
 directory.
+
+## Installer Packages 
+
+If installation from source code isn't for you, simply download and install using any of the following:
+
+* [GNU/Linux](https://github.com/openlink/virtuoso-opensource/releases/download/v7.2.7/virtuoso-opensource.x86_64-generic_glibc25-linux-gnu.tar.gz)
+* [Windows Installer](https://github.com/openlink/virtuoso-opensource/releases/download/v7.2.7/Virtuoso_OpenSource_Server_7.2.x64.exe)
+* [macOS (Intel64 and Apple Silicon)](https://github.com/openlink/virtuoso-opensource/releases/download/v7.2.7/Virtuoso_Open_Source_for_macOS.dmg)
+* [Docker Container](https://hub.docker.com/r/openlink/virtuoso-opensource-7)
 
 ## Test Suite
 
@@ -370,3 +381,4 @@ at the isql command line.
 *Note*: The DirsAllowed parameter of the Parameters section of the
 ini-file must allow access to the directory where the package file
 is located.
+
