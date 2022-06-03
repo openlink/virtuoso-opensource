@@ -366,7 +366,7 @@ RDF_VIEW_GET_NS (in uri varchar, out uriSearch varchar)
   nsPrefix := null;
   if (length (uri) = 0)
     return null;
-  while (nsPrefix is null and delim <> 0)
+  while (nsPrefix is null and delim <= 0)
     {
       delim := coalesce (strrchr (uriSearch, '/'), 0);
       delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
