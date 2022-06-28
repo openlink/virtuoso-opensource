@@ -2456,13 +2456,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private void setQueryParams(PreparedStatement stmt, List<Value> params) throws RepositoryException
     {
-        int i = 0;
+        int i = 1;
         for (Value value : params) {
             try {
-                if (value instanceof Resource)
-                    bindResource(stmt, ++i, (Resource)value);
-                else
-                    bindValue(stmt, ++i, value);
+                if (value instanceof Resource) {
+                    bindResource(stmt, i, (Resource)value);
+                    i++;
+                }
+                else {
+                    bindValue(stmt, i, value);
+                    i+=3;
+                }
             } catch(SQLException e) {
                 throw new RepositoryException("Failed to bind parameter " + value.toString() + " to the query.", e);
             }
