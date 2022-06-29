@@ -661,8 +661,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
     private void verifyContextNotNull(Resource... contexts) {
-	Objects.requireNonNull(contexts,
-		"contexts argument may not be null; either the value should be cast to Resource or an empty array should be supplied");
+	    Objects.requireNonNull(contexts,
+		    "contexts argument may not be null; either the value should be cast to Resource or an empty array should be supplied");
     }
     
     private Resource[] checkDMLContext(Resource... contexts) throws RepositoryException {
@@ -2183,17 +2183,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                                                            Dataset dataset, boolean includeInferred, BindingSet bindings,
                                                            int maxQueryTime) throws QueryEvaluationException
     {
-//        HashMap<String,Integer> names = new HashMap<String,Integer>();
         try {
             PreparedStatement stmt = executeSPARQL(baseURI, query, dataset, includeInferred, bindings, maxQueryTime, false);
             ResultSet rs = stmt.executeQuery();
-//            ResultSetMetaData rsmd = rs.getMetaData();
 
-            // begin at onset one
-/**
-            for (int i = 1; i <= rsmd.getColumnCount(); i++)
-                names.put(rsmd.getColumnName(i), new Integer(i));
-**/
             return new IteratingGraphQueryResult(new HashMap<String,String>(), new CloseableIterationGraphResult(stmt, rs));
         }
         catch (Exception e) {
@@ -2473,13 +2466,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
     private void setQueryParams(PreparedStatement stmt, List<Value> params) throws RepositoryException
     {
-        int i = 0;
+        int i = 1;
         for (Value value : params) {
             try {
-                if (value instanceof Resource)
-                    bindResource(stmt, ++i, (Resource)value);
-                else
-                    bindValue(stmt, ++i, value);
+                if (value instanceof Resource) {
+                    bindResource(stmt, i, (Resource)value);
+                    i++;
+                }
+                else {
+                    bindValue(stmt, i, value);
+                    i+=3;
+                }
             } catch(SQLException e) {
                 throw new RepositoryException("Failed to bind parameter " + value.toString() + " to the query.", e);
             }
@@ -2497,6 +2494,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         int i = 0;
         char ch;
         boolean afterFROM = false;
+        boolean afterOrderBy = false;
         int qlen = query.length();
 
         while( i < qlen) {
@@ -2533,28 +2531,31 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String varData = null;
                 int j = i;
                 while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
-                if (j != i) {
+                if (j != i && !afterOrderBy) {
                     boolean useBackSlash = (isSPARUL || inCurly > 0);
                     String varName = query.substring(i, j);
                     Value val = bindings.getValue(varName);
                     if (val != null) {
                         if (use_setParams) {
                             if (inCurly>0) { 
+/*** disabled for now, SPARQL compilier must be updated
                                 // in triple pattern
-                            pstmtParams.add(val);
-                            if (val instanceof Resource)
-                                varData = "`iri(??)`";
-                            else
-                                varData = "`bif:__rdf_long_from_batch_params(??,??,??)`";
-                        } else {
+                                pstmtParams.add(val);
+                                if (val instanceof Resource)
+                                    varData = "`iri(??)`";
+                                else
+                                    varData = "`bif:__rdf_long_from_batch_params(??,??,??)`";
+***/
+                                varData = stringForValue(val, useBackSlash);
+                            } else {
                                 if (isSPARUL || afterFROM)
                                     varData = stringForValue(val, useBackSlash);
                                 else
-                                    varData = stringForValue(val, useBackSlash)+" AS ?"+varName;
+                                    varData = "( "+stringForValue(val, useBackSlash)+" AS ?"+varName+" )";
                             }
                         } else {
                             if (inCurly==0 && !isSPARUL && !afterFROM) //for values in SELECT before triple pattern
-                                varData = stringForValue(val, useBackSlash)+" AS ?"+varName;
+                                varData = "( "+stringForValue(val, useBackSlash)+" AS ?"+varName+" )";
                             else
                                 varData = stringForValue(val, useBackSlash);
                         }
@@ -2573,9 +2574,23 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 } else {
                     if (tok.length()==4 
                         && (tok.charAt(0)=='F' || tok.charAt(0)=='f')
-                        && tok.toString().equalsIgnoreCase("FROM")
-                       )
-                        afterFROM = true;
+                        && tok.toString().equalsIgnoreCase("FROM")) {
+                      afterFROM = true;
+                    }
+                    else if (tok.length()==5
+                        && (tok.charAt(0)=='O' || tok.charAt(0)=='o')
+                        && tok.toString().equalsIgnoreCase("ORDER")) {
+                      int j0 = i;
+                      while(j0 < qlen && Character.isWhitespace(query.charAt(j0))) j0++;
+                      int j = j0;
+                      while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+                      if (j != j0) {
+                        String tok1 = query.substring(j0,j).toUpperCase();
+                        if (tok1.equals("BY"))
+                          afterOrderBy = true;
+                      }
+                    }
+
                     tok.setLength(0);
                 }
             }
@@ -2983,6 +2998,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         if (psCount > 0 && ps!=null) {
             ps.executeBatch();
             ps.clearBatch();
+
             if (useReprepare) {
                 try{
                     ps.close();
