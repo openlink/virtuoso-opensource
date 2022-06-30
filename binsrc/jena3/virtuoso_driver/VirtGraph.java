@@ -735,6 +735,43 @@ public class VirtGraph extends GraphBase {
         }
     }
 
+    public String Node2Str(Node n, boolean inTriplePattern) {
+        if (n.isURI()) {
+            return "<" + n + ">";
+        } else if (n.isBlank()) {
+            String ns = n.toString();
+            if (ns.startsWith("nodeID://"))
+                return inTriplePattern ? "`iri('"+ns+"')`" : "iri('"+ns+"')";
+            else
+                return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
+        } else if (n.isLiteral()) {
+            String llang, ltype;
+            boolean llang_exists = false;
+            StringBuilder sb = new StringBuilder();
+            sb.append("\"");
+            sb.append(escapeString(n.getLiteralLexicalForm()));
+            sb.append("\"");
+
+            llang = n.getLiteralLanguage();
+            if (llang != null && llang.length() > 0) {
+                sb.append("@");
+                sb.append(llang);
+                llang_exists = true;
+            }
+            ltype = n.getLiteralDatatypeURI();
+            if (!llang_exists && ltype != null && ltype.length() > 0) {
+                if (!(insertStringLiteralAsSimple && ltype.equals(xsd_string))) {
+                    sb.append("^^<");
+                    sb.append(ltype);
+                    sb.append(">");
+                }
+            }
+            return sb.toString();
+        } else {
+            return "<" + n + ">";
+        }
+    }
+
     public String Node2Str_add(Object o) {
         if (o instanceof Node) {
             Node n = (Node)o;
