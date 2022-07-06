@@ -2548,13 +2548,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 ***/
                                 varData = stringForValue(val, useBackSlash);
                             } else {
-                                if (isSPARUL || afterFROM)
+                                if (isSPARUL || afterFROM || afterOrderBy)
                                     varData = stringForValue(val, useBackSlash);
                                 else
                                     varData = "( "+stringForValue(val, useBackSlash)+" AS ?"+varName+" )";
                             }
                         } else {
-                            if (inCurly==0 && !isSPARUL && !afterFROM) //for values in SELECT before triple pattern
+                            if (inCurly==0 && !isSPARUL && !afterFROM && !afterOrderBy) //for values in SELECT before triple pattern
                                 varData = "( "+stringForValue(val, useBackSlash)+" AS ?"+varName+" )";
                             else
                                 varData = stringForValue(val, useBackSlash);
@@ -3136,18 +3136,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         escapeString(lit.getLabel(), sb);
         sb.append("\"");
 
-        if (lit.getDatatype() != null) {
+        Optional<String> lang = lit.getLanguage();
+
+        if (lang.isPresent()) {
+            // Append the literal's language
+            sb.append("@");
+            sb.append(lang.get());
+        }
+        else if (lit.getDatatype() != null) {
             // Append the literal's datatype
             IRI ltype = lit.getDatatype();
             if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
                 sb.append("^^");
                 append(ltype, sb, inTriplePattern);
             }
-        }
-        else if (lit.getLanguage() != null) {
-            // Append the literal's language
-            sb.append("@");
-            sb.append(lit.getLanguage());
         }
     }
 
@@ -3426,6 +3428,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         else if (n instanceof Literal) {
             Literal lit = (Literal) n;
             Optional<String> lang = lit.getLanguage();
+
             if (lang.isPresent()) {
                 ps.setInt(col, 5);
                 ps.setString(col+1, lit.getLabel());
