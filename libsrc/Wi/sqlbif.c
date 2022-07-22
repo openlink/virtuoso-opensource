@@ -3927,8 +3927,19 @@ bif_string_arg_for_sprintf (caddr_t *qst, state_slot_t ** args, int arg_inx, con
       arg = arg_ret[0] = narrow_arg_ret[0] = box_dv_short_string ("(NULL)");
       break;
     case DV_IRI_ID:
-      arg = arg_ret[0] = narrow_arg_ret[0] = key_id_to_iri (((query_instance_t *)qst), unbox_iri_id (arg));
-      break;
+        {
+          iri_id_t iid = unbox_iri_id (arg);
+          if ((min_bnode_iri_id () <= iid) && (min_named_bnode_iri_id () > iid))
+            arg = arg_ret[0] = narrow_arg_ret[0] = BNODE_IID_TO_LABEL(iid);
+          else
+            arg = arg_ret[0] = narrow_arg_ret[0] = key_id_to_iri (((query_instance_t *)qst), iid);
+          if (NULL == arg)
+          sqlr_new_error ("22023", "SR007",
+              "Function %s needs a string or a value that can be cast to a string or NULL as argument %d, "
+                    "not a non-existing IRI ID (" IIDBOXINT_FMT ")",
+                szMe, arg_inx, iid);
+          break;
+        }
     case DV_LONG_INT: case DV_SINGLE_FLOAT: case DV_DOUBLE_FLOAT: case DV_DATETIME: case DV_NUMERIC:
       {
         caddr_t err = NULL;

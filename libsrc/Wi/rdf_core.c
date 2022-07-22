@@ -3165,7 +3165,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       dk_free_box (id_box);
       if (!local)
 	return NULL;
-      if (qi && lt->lt_lock.ht_count)
+      if (qi && lt && lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
 	nic_set (iri_name_cache, local, iri_id_no);
@@ -3192,7 +3192,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	      dk_free_box (local);
 	      return NULL;
 	    }
-	  if (qi && lt->lt_lock.ht_count)
+	  if (qi && lt && lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
 	    nic_set (iri_prefix_cache, prefix, pref_id);
