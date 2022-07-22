@@ -715,7 +715,7 @@ xp_free (xparse_ctx_t * xp)
 caddr_t
 xml_make_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, const char *enc, lang_handler_t *lh, struct dtd_s **ret_dtd)
 {
-  int dtp_of_text = box_tag(text);
+  int dtp_of_text = DV_TYPE_OF(text);
   int text_strg_is_wide = 0;
   dk_set_t top;
   caddr_t tree;
@@ -864,7 +864,7 @@ make_tree:
 caddr_t
 xml_make_tree_with_ns (query_instance_t * qi, caddr_t text, caddr_t *err_ret, const char *enc, lang_handler_t *lh, id_hash_t ** nss, id_hash_t ** id_cache)
 {
-  int dtp_of_text = box_tag(text);
+  int dtp_of_text = DV_TYPE_OF(text);
   int text_strg_is_wide = 0;
   dk_set_t top;
   caddr_t tree;
@@ -1481,7 +1481,7 @@ xp_element_change (void *userdata, char * name, vxml_parser_attrdata_t *attrdata
 int
 xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t *xrie, const char **enc_ret)
 {
-  int dtp_of_text = box_tag (text);
+  int dtp_of_text = DV_TYPE_OF (text);
   if ((DV_BLOB_HANDLE == dtp_of_text) || (DV_BLOB_WIDE_HANDLE == dtp_of_text))
     {
       blob_handle_t *bh = (blob_handle_t *) text;
@@ -1536,7 +1536,7 @@ xml_set_xml_read_iter (query_instance_t * qi, caddr_t text, xml_read_iter_env_t 
 caddr_t
 xml_make_mod_tree (query_instance_t * qi, caddr_t text, caddr_t *err_ret, long html_mode, caddr_t uri, const char *enc, lang_handler_t *lh, caddr_t dtd_config, dtd_t **ret_dtd, id_hash_t **ret_id_cache, xml_ns_2dict_t *ret_ns_2dict)
 {
-  int dtp_of_text = box_tag (text);
+  int dtp_of_text = DV_TYPE_OF (text);
   dk_set_t top;
   caddr_t *root_elt_head, tree;
   vxml_parser_config_t config;
