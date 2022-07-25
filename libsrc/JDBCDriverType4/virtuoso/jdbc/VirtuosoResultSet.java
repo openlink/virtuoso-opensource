@@ -2174,17 +2174,9 @@ public class VirtuosoResultSet implements ResultSet
       if (statement != null && isLastResult && statement.closeOnCompletion)
       {
          statement.close();
-         statement = null;
       }
 #endif
-      if (statement != null)
-      {
-         statement.close_rs(false, is_prepared);
-         if (!is_prepared) {
-           statement = null;
-         }
-      }
-
+      statement = null;
       row = null;
       cursorName = null;
    }
