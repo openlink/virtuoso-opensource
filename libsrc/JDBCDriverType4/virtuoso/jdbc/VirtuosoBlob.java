@@ -366,6 +366,10 @@ public class VirtuosoBlob
 	   ByteArrayOutputStream bo = new ByteArrayOutputStream();
 
 	   openlink.util.Vector curr = null;
+
+           if (this.dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE)
+               length *= 2;
+
 	   synchronized (connection)
 	     {
 	       Object[] args = new Object[9];
@@ -407,7 +411,7 @@ public class VirtuosoBlob
 		 }
 	       else if (val instanceof String)
 		 {
-		   String sval = (String)val;
+                   byte[] sbytes = ((String)val).getBytes("8859_1");
 		   /*
 		   if (dtp == VirtuosoTypes.DV_BLOB_WIDE_HANDLE)
 		     {
@@ -419,8 +423,8 @@ public class VirtuosoBlob
 		   else
 		   */
 		     {
-		       bo.write (sval.getBytes("8859_1"));
-		       this.bh_start_offset += sval.getBytes("8859_1").length;
+		       bo.write (sbytes);
+		       this.bh_start_offset += sbytes.length;
 		       //System.out.println ("vb: read : strlen= " + sval.getBytes("8859_1").length +
 		//	   " bh_start_offset=" + this.bh_start_offset);
 		     }

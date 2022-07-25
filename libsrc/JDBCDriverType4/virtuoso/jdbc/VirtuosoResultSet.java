@@ -80,7 +80,7 @@ public class VirtuosoResultSet implements ResultSet
    protected int totalRows;
 
    // Flag to let know if results processed
-   private boolean is_complete;
+   protected boolean is_complete;
 
    // The update count
    private int updateCount;
@@ -186,7 +186,7 @@ public class VirtuosoResultSet implements ResultSet
     * @param metaData   The metadata of the result. (It can be null)
     * @exception virtuoso.jdbc4.VirtuosoException An internal error occurred.
     */
-   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean isPrepare) throws VirtuosoException
+   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean is_prepared) throws VirtuosoException
    {
       this.statement = statement;
       this.metaData = metaData;
@@ -201,11 +201,8 @@ public class VirtuosoResultSet implements ResultSet
       stmt_current_of = -1;
       stmt_n_rows_to_get = prefetch;
       stmt_co_last_in_batch = false;
-      is_prepared = isPrepare;
+      this.is_prepared = is_prepared;
       //System.err.print ("init: rows :");
-      //System.err.println (rows.toString());
-      process_result(isPrepare);
-      //System.err.print ("init: after process : rows :");
       //System.err.println (rows.toString());
    }
 
@@ -229,6 +226,13 @@ public class VirtuosoResultSet implements ResultSet
       this.type = VirtuosoResultSet.TYPE_FORWARD_ONLY;
       is_complete = true;
    }
+
+    VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean is_prepared, int kindop) throws VirtuosoException
+    {
+        this(statement, metaData, is_prepared);
+        this.kindop = kindop;
+    }
+
 
    /**
     * Method uses to get next rows of this result set.
@@ -687,31 +691,6 @@ public class VirtuosoResultSet implements ResultSet
       }
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      if(pstmt != null)
-      {
-         pstmt.close();
-         pstmt = null;
-      }
-#if JDK_VER >= 17
-      if (statement != null && isLastResult && statement.closeOnCompletion)
-      {
-         statement.close();
-         statement = null;
-      }
-#endif
-      if (statement != null)
-      {
-         statement.close_rs(false, is_prepared);
-         if (!is_prepared) {
-           statement = null;
-         }
-      }
-   }
 
    void fixReturnedData(openlink.util.Vector data)
    {
@@ -2182,7 +2161,6 @@ public class VirtuosoResultSet implements ResultSet
     */
    public void close() throws VirtuosoException
    {
-     //System.err.println ("close");
       if(pstmt != null)
       {
          pstmt.close();
@@ -2191,7 +2169,6 @@ public class VirtuosoResultSet implements ResultSet
       if(rows != null)
       {
          rows.removeAllElements();
-         //rows = null;
       }
 #if JDK_VER >= 17
       if (statement != null && isLastResult && statement.closeOnCompletion)

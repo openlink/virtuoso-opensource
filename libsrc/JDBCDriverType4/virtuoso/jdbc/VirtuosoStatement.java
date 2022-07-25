@@ -253,7 +253,9 @@ public class VirtuosoStatement implements Statement
 		   args[5] = getStmtOpts();
 		   future = connection.getFuture(VirtuosoFuture.exec,args, this.rpc_timeout);
 		   result_opened = true;
-		   return new VirtuosoResultSet(this,metaData,false);
+		   VirtuosoResultSet rs = new VirtuosoResultSet(this,metaData,false);
+		   rs.getMoreResults(false);
+		   return rs;
 	       }
 	       catch(IOException e)
 	       {
@@ -271,9 +273,15 @@ public class VirtuosoStatement implements Statement
    /**
     * Method runs when the garbage collector want to erase the object
     */
-   public void finalize() throws Throwable
+   @Override
+   protected void finalize() throws Throwable
    {
-      close();
+       try {
+           if (connection.isClosed())
+               return;
+           close();
+       } catch (Exception e) {
+       }
    }
 
    // --------------------------- JDBC 1.0 ------------------------------
