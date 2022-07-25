@@ -1386,6 +1386,14 @@ cfg_setup (void)
   if (strlen (http_client_id_string) > 64)
     http_client_id_string = "Mozilla/4.0 (compatible; Virtuoso)";
 
+  if (cfg_getlong (pconfig, section, "ClientRequestTimeout", &long_helper) == -1)
+    http_default_client_req_timeout = 100;
+  else
+    {
+      if (long_helper > 0 && long_helper < INT32_MAX)
+        http_default_client_req_timeout = long_helper;
+    }
+
   if (cfg_getstring (pconfig, section, "SOAPClientIdString", &http_soap_client_id_string) == -1)
     http_soap_client_id_string = "OpenLink Virtuoso SOAP";
 

@@ -2192,13 +2192,15 @@ http_cli_std_init (char * url, caddr_t * qst)
 {
   http_cli_ctx * ctx;
   http_cli_handler_frame_t * h;
+  QNCAST (query_instance_t, qi, qst);
+  uint32 cli_timeout = (qi && qi->qi_client && qi->qi_client->cli_http_client_req_timeout ? qi->qi_client->cli_http_client_req_timeout : 0);
 
   ctx = http_cli_ctx_init ();
 
   ctx->hcctx_http_maj = 1;
   ctx->hcctx_http_min = 1;
   ctx->hcctx_keep_alive = 1;
-  ctx->hcctx_timeout = 100;
+  ctx->hcctx_timeout = cli_timeout ? cli_timeout : http_default_client_req_timeout;
   ctx->hcctx_qst = qst;
 
   ctx->hcctx_url = box_string (url);

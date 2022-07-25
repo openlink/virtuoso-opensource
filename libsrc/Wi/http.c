@@ -1930,6 +1930,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
 char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
+uint32 http_default_client_req_timeout = 100;
 
 static char hsts_header_buf[128];
 

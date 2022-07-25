@@ -637,4 +637,10 @@ ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": IRI of local:/resource/Paris\n";
 
+SET HTTP_CLIENT_REQUEST_TIMEOUT=3;
+select HTTP_CLIENT ('http://localhost:$U{HTTPPORT}/slow.vsp');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Request timedout in 3s : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: HTTP server tests\n";

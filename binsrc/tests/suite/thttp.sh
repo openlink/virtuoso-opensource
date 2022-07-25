@@ -167,6 +167,29 @@ cat > $file <<END_VSP
 END_VSP
     chmod 644 $file
 }
+
+GenSlowVSP ()
+{
+    ECHO "Creating slow VSP page for HTTP cient timeout test"
+    file=slow.vsp
+    cat > $file <<END_VSP
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <title>OpenLink Virtuoso Server</title>
+    <meta name="description" content="OpenLink Virtuoso Server">
+  </head>
+  <body>
+<?vsp
+delay (10);
+http (cast (now () as varchar));
+?>
+  </body>
+</html>
+END_VSP
+    chmod 644 $file
+}
 #SOAP data types
 # XSD files generation
 XSD_GENERATE()
@@ -737,6 +760,7 @@ case $1 in
    cp -f $VIRTUOSO_TEST/r4/* r4 
    GenHTML
    GenVSP
+   GenSlowVSP
    mkdir test_404
    cd test_404
    Gen404VSP

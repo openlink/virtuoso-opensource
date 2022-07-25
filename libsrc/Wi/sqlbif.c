@@ -13404,6 +13404,13 @@ bif_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       qi->qi_client->cli_anytime_checked = 0;
       qi->qi_client->cli_anytime_started = lvalue ? get_msec_real_time () : 0;
     }
+  else if (0 == stricmp (opt, "HTTP_CLIENT_REQUEST_TIMEOUT"))
+    {
+      client_connection_t * cli = qi->qi_client;
+      if (lvalue < 0)
+	sqlr_new_error ("22023", "SR076", "HTTP_CLIENT_REQUEST_TIMEOUT must be positive number or zero");
+      cli->cli_http_client_req_timeout = lvalue;
+    }
   else   if (0 == stricmp (opt, "DIVE_CACHE"))
     dive_cache_enable = (int) unbox (value);
   else   if (0 == stricmp (opt, "NO_CHAR_C_ESCAPE"))

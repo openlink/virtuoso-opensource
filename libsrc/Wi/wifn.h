@@ -825,6 +825,7 @@ extern FILE *http_log;
 extern char * http_soap_client_id_string;
 extern char * http_client_id_string;
 extern char * http_server_id_string;
+extern uint32 http_default_client_req_timeout;
 extern long http_ses_trap;
 extern unsigned long cfg_scheduler_period ;
 extern long callstack_on_exception;
