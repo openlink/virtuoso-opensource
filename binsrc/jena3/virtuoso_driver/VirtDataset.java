@@ -257,7 +257,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public Iterator<String> listNames() {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
         ResultSet rs = null;
-        int ret = 0;
         java.sql.Statement stmt = null;
 
         checkOpen();
@@ -498,7 +497,6 @@ public class VirtDataset extends VirtGraph implements Dataset {
         protected List<Node> getListGraphNodes() {
             String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
             ResultSet rs = null;
-            int ret = 0;
             java.sql.Statement stmt = null;
 
             vd.checkOpen();

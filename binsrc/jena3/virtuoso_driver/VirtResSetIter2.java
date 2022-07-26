@@ -127,8 +127,4 @@ public class VirtResSetIter2 implements Iterator<Triple> {
     }
 
 
-    protected void finalize() throws SQLException {
-        if (!v_finished && v_resultSet != null) close();
-    }
-
 }

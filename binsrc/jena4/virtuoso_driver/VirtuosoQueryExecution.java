@@ -603,14 +603,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             return m;
         }
 
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {
-                }
-        }
-
         protected void moveForward() throws JenaException {
             try {
                 if (!v_finished && rs.next()) {

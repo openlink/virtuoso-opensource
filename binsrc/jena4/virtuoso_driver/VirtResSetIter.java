@@ -139,8 +139,4 @@ public class VirtResSetIter extends NiceIterator<Triple> {
     }
 
 
-    protected void finalize() throws SQLException {
-        if (!v_finished && v_resultSet != null) close();
-    }
-
 }

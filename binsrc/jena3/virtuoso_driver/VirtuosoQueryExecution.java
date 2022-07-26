@@ -89,7 +89,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
 
     public ResultSet execSelect() {
-        ResultSet ret = null;
 
         try {
             stmt = graph.createStatement(false);
@@ -587,14 +586,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
         public Model getResourceModel() {
             return m;
-        }
-
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {
-                }
         }
 
         protected void moveForward() throws JenaException {
