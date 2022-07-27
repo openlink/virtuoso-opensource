@@ -363,13 +363,6 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
         }
 
 
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) { }
-        }
-
         /**
          * Propagates the cancellation request - called asynchronously with the iterator itself
          */

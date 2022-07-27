@@ -1451,7 +1451,7 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
                 psInsert_Count = 0;
 
             } catch (Exception e) {
@@ -1477,7 +1477,7 @@ public class VirtGraph extends GraphBase {
                     performAdd_batch(_gName, nS, nP, nO);
                 }
 
-                flushDelayAdd_batch(psInsert, psInsert_Count);
+                psInsert = flushDelayAdd_batch(psInsert, psInsert_Count);
                 psInsert_Count = 0;
 
             } catch (Exception e) {
