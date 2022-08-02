@@ -1477,17 +1477,25 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 
 int32 cli_max_cached_stmts = 10000;
 
+
 srv_stmt_t *
 cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret)
 {
   caddr_t place;
   srv_stmt_t *stmt;
   IN_CLIENT (cli);
+
+  if (!id)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("HY000", "SR675", "Invalid Statement");
+      return NULL;
+    }
   place = id_hash_get (cli->cli_statements, (caddr_t) & id);
   if (!place && cli->cli_statements->ht_count >= cli_max_cached_stmts)
     {
       if (err_ret)
-	*err_ret = srv_make_new_error ("HY013", "SR491", "Too many open statements");
+	*err_ret = srv_make_new_error ("HY013", "SR676", "Too many open statements");
       return NULL;
     }
   if (!place)
@@ -2464,6 +2472,16 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
   srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+
+  if (NULL == stmt)
+    {
+      caddr_t err = srv_make_new_error ("HY000", "SR674", "Non-existing Statement");
+      LEAVE_CLIENT (cli);
+      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+      dk_free_tree (err);
+      DKST_RPC_DONE (client);
+      return 0;
+    }
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
