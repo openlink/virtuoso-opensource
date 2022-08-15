@@ -401,7 +401,7 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
   query_instance_t **qip;
   for (;;)
     {
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       id_hash_iterator (&it, cli->cli_cursors);
       qi = 0;
       while (hit_next (&it, (char **) &kp, (char **) &qip))
@@ -426,12 +426,12 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 	  LEAVE_TXN;
 	  qi_enter (qi);
 	  dbg_cli_printf (("cli_scrap_cursors - killing %s %d\n", *kp, rc));
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  qi_kill (qi, QI_ERROR);
 	}
       else
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  return;
 	}
     }
@@ -1575,7 +1575,7 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
       /* There's an instance. can't do it */
       err = srv_make_new_error ("S1010", "SR209", "Statement active");
 report_error:
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1604,7 +1604,7 @@ report_error:
 
   stmt_set_query (stmt, cli, text, opts);
   dk_free_box ((caddr_t) opts);
-  mutex_leave (cli->cli_mtx);
+  LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in prepare2\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
@@ -1809,7 +1809,7 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       /* Busy */
       err = srv_make_new_error ("S1010", "SR210", "Async exec busy");
 report_error:
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
     report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       DKST_RPC_DONE (client);
@@ -1845,7 +1845,7 @@ report_error:
       else if (TP_ABORT == cli->cli_tp_data->tpd_last_act)
 	{
 	  caddr_t err = srv_make_new_error ("41000", "SR211", "Aborted");
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	  dk_free_tree (err);
 
@@ -1885,7 +1885,7 @@ report_error:
       /* Exec direct RPC. Compile first */
       if (stmt_set_query (stmt, cli, text, options) != (caddr_t) SQL_SUCCESS)
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  dk_free_tree ((caddr_t) params);
 	  dk_free_box ((caddr_t) options);
 
@@ -1906,7 +1906,7 @@ report_error:
     {
       if (SQL_SUCCESS != stmt_check_recompile (stmt))
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  if (DK_MEM_RESERVE)
 	    {
 	      IN_CLIENT (cli);
@@ -1923,7 +1923,7 @@ report_error:
   if (!stmt->sst_query)
     {
       caddr_t err = srv_make_new_error ("S1010", "SR212", "Statement not prepared.");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in execute3\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2006,7 +2006,7 @@ report_error:
 
 	  if (!first_set)
 	    {
-	      mutex_enter (cli->cli_mtx);
+	      IN_CLIENT (cli);
 	    }
 	  first_set = 0;
 	  err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
@@ -2028,7 +2028,7 @@ report_error:
       dk_free_tree ((caddr_t) params);
     }
   if (n_params == 0)
-    mutex_leave (cli->cli_mtx);
+    LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in execute4\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
@@ -2420,7 +2420,7 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
     {
       /* Busy */
       caddr_t err = srv_make_new_error ("S1010", "SR213", "SQLFetch of busy");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in fetch1\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2524,7 +2524,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   if (op == SQL_DROP)
     {
 
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       if (stmt->sst_query)
         {
 #ifdef QUERY_DEBUG
@@ -2533,7 +2533,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
 	  stmt->sst_query->qr_ref_count--;
         }
       id_hash_remove (cli->cli_statements, (caddr_t) & stmt->sst_id);
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       dk_free_box (stmt->sst_id);
 
       dk_free ((caddr_t) stmt, sizeof (srv_stmt_t));
