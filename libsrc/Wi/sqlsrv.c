@@ -1544,6 +1544,11 @@ cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli, caddr_t *e
   IN_CLIENT (cli);
   stmt_id = box_dv_short_string (stmt_id_name);
   sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
+  if (!sst)
+  {
+    LEAVE_CLIENT (cli);
+    return NULL;
+  }
   old_log_val = cli->cli_is_log;
   cli->cli_is_log = 1;
   err = stmt_set_query (sst, cli, stmt_boxed, NULL);
