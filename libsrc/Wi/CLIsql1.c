@@ -1909,6 +1909,11 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 	  dk_free ((caddr_t) stmt->stmt_imp_row_descriptor, sizeof (stmt_descriptor_t));
 	  dk_free ((caddr_t) stmt->stmt_app_param_descriptor, sizeof (stmt_descriptor_t));
 	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
+
+	  stmt->stmt_app_row_descriptor = NULL;
+	  stmt->stmt_imp_row_descriptor = NULL;
+	  stmt->stmt_app_param_descriptor = NULL;
+	  stmt->stmt_imp_param_descriptor = NULL;
 	}
 #endif
       dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
