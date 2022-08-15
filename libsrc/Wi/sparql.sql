@@ -7698,6 +7698,11 @@ create procedure DB.DBA.RDF_DELETE_TRIPLES_AGG (in graph_iid any, inout triples 
   declare is_local int;
   declare dp any array;
   is_local := sys_stat ('cl_run_local_only');
+  if (is_local and 0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      DB.DBA.RDF_DELETE_TRIPLES (graph_iid, triples, log_mode);
+      return;
+    }
   if (not isiri_id (graph_iid))
     graph_iid := iri_to_id (graph_iid);
   if (__rdf_graph_is_in_enabled_repl (graph_iid))
