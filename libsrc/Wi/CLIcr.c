@@ -501,6 +501,8 @@ SQLSetPos (
     SQLUSMALLINT	fOption,
     SQLUSMALLINT	fLock)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLSetPos (hstmt, irow, fOption, fLock);
 }
 

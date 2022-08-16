@@ -1026,6 +1026,8 @@ SQLDriverConnect (SQLHDBC hdbc,
     SQLSMALLINT * pcbConnStrOutMax,
     SQLUSMALLINT fDriverCompletion)
 {
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   return virtodbc__SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOutMax, pcbConnStrOutMax, fDriverCompletion);
 }
 
@@ -1036,6 +1038,7 @@ SQLConnect (SQLHDBC hdbc,
 {
 #ifndef DSN_TRANSLATION
 
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
   return internal_sql_connect (hdbc, szDSN, cbDSN, szUID, cbUID, szPWD, cbPWD);
 
 #else
@@ -1045,6 +1048,8 @@ SQLConnect (SQLHDBC hdbc,
   TCHAR *uid;
   TCHAR *pwd;
   TCHAR *pcmd = &(cmd[0]);
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
 #ifdef UNICODE
   if (sizeof(TCHAR) == 4 && (cbDSN > 0 || cbDSN == SQL_NTS))

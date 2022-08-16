@@ -433,22 +433,27 @@ SQLConnectW (
 	SQLWCHAR * wszPWD,
 	SQLSMALLINT cbPWD)
 {
-  long len;
-  CON_CHARSET (hdbc);
   SQLRETURN rc;
-  DEFINE_INPUT_NARROW (DSN);
-  DEFINE_INPUT_NARROW (UID);
-  DEFINE_INPUT_NARROW (PWD);
 
-  MAKE_INPUT_NARROW_N (DSN);
-  MAKE_INPUT_NARROW_N (UID);
-  MAKE_INPUT_NARROW_N (PWD);
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+  {
+    CON_CHARSET (hdbc);
+    size_t len;
 
-  rc = SQLConnect (hdbc, szDSN, SQL_NTS, szUID, SQL_NTS, szPWD, SQL_NTS);
+    DEFINE_INPUT_NARROW (DSN);
+    DEFINE_INPUT_NARROW (UID);
+    DEFINE_INPUT_NARROW (PWD);
 
-  FREE_INPUT_NARROW (DSN);
-  FREE_INPUT_NARROW (UID);
-  FREE_INPUT_NARROW (PWD);
+    MAKE_INPUT_NARROW_N (DSN);
+    MAKE_INPUT_NARROW_N (UID);
+    MAKE_INPUT_NARROW_N (PWD);
+
+    rc = SQLConnect (hdbc, szDSN, SQL_NTS, szUID, SQL_NTS, szPWD, SQL_NTS);
+
+    FREE_INPUT_NARROW (DSN);
+    FREE_INPUT_NARROW (UID);
+    FREE_INPUT_NARROW (PWD);
+  }
 
   return rc;
 }
@@ -464,6 +469,8 @@ SQLBrowseConnectW (
       SQLSMALLINT cbConnStrOutMax,
       SQLSMALLINT * pcbConnStrOut)
 {
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   NOT_IMPL_FUN (hdbc, "Function not supported: SQLBrowseConnect");
 }
 
@@ -477,8 +484,7 @@ SQLRETURN SQL_API virtodbc__SQLColAttributesW(
     SQLSMALLINT        *pcbDesc,
     SQLLEN             *pfDesc)
 {
-  STMT_CHARSET (hstmt);
-  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
+  SQLRETURN rc;
 
   switch (fDescType)
     {
@@ -497,8 +503,10 @@ SQLRETURN SQL_API virtodbc__SQLColAttributesW(
     case SQL_DESC_NAME:
 #endif
       {
+        STMT_CHARSET (hstmt);
+        int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
+
 	DEFINE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, pcbDesc, stmt->stmt_connection, SQLSMALLINT);
-	SQLRETURN rc;
 
 	MAKE_OUTPUT_NONCHAR_NARROW (rgbDesc, cbDescMax, stmt->stmt_connection);
 
@@ -524,6 +532,8 @@ SQLRETURN SQL_API SQLColAttributesW(
     SQLSMALLINT        *pcbDesc,
     SQLLEN             *pfDesc)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLColAttributesW (hstmt, icol, fDescType, rgbDesc, cbDescMax, pcbDesc, pfDesc);
 }
 
@@ -543,16 +553,20 @@ SQLRETURN SQL_API SQLColAttributeW(
 	)
 {
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  DEFINE_OUTPUT_NONCHAR_NARROW (wszCharAttr, cbCharAttr, pcbCharAttr, stmt->stmt_connection, SQLSMALLINT);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  MAKE_OUTPUT_NONCHAR_NARROW (wszCharAttr, cbCharAttr, stmt->stmt_connection);
+    DEFINE_OUTPUT_NONCHAR_NARROW (wszCharAttr, cbCharAttr, pcbCharAttr, stmt->stmt_connection, SQLSMALLINT);
 
-  rc = (virtodbc__SQLColAttribute (hstmt, iCol, iField, _wszCharAttr, _cbCharAttr, _pcbCharAttr, pNumAttr));
+    MAKE_OUTPUT_NONCHAR_NARROW (wszCharAttr, cbCharAttr, stmt->stmt_connection);
 
-  SET_AND_FREE_OUTPUT_NONCHAR_NARROW_1 (wszCharAttr, cbCharAttr, pcbCharAttr, stmt->stmt_connection);
+    rc = virtodbc__SQLColAttribute (hstmt, iCol, iField, _wszCharAttr, _cbCharAttr, _pcbCharAttr, pNumAttr);
+
+    SET_AND_FREE_OUTPUT_NONCHAR_NARROW_1 (wszCharAttr, cbCharAttr, pcbCharAttr, stmt->stmt_connection);
+  }
 
   return rc;
 }
@@ -570,25 +584,30 @@ SQLColumnPrivilegesW (
 	SQLWCHAR * wszColumnName,
 	SQLSMALLINT cbColumnName)
 {
-  size_t len;
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
-  DEFINE_INPUT_NARROW (ColumnName);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLColumnPrivileges (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szColumnName, cbColumnName);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
+    DEFINE_INPUT_NARROW (ColumnName);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
-  FREE_INPUT_NARROW (ColumnName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
+
+    rc = virtodbc__SQLColumnPrivileges (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szColumnName, cbColumnName);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+    FREE_INPUT_NARROW (ColumnName);
+  }
 
   return rc;
 }
@@ -606,26 +625,31 @@ SQLColumnsW (
 	SQLWCHAR * wszColumnName,
 	SQLSMALLINT cbColumnName)
 {
-  size_t len;
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
-  DEFINE_INPUT_NARROW (ColumnName);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLColumns (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szColumnName, cbColumnName);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
+    DEFINE_INPUT_NARROW (ColumnName);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
-  FREE_INPUT_NARROW (ColumnName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
 
+    rc = virtodbc__SQLColumns (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName,
+	szColumnName, cbColumnName);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+    FREE_INPUT_NARROW (ColumnName);
+  }
   return rc;
 }
 
@@ -644,18 +668,22 @@ SQLDriverConnectW (
     SQLUSMALLINT fDriverCompletion)
 {
   SQLRETURN rc;
-  long len;
+  size_t len;
   wcharset_t *charset = NULL;
-  DEFINE_INPUT_NARROW (ConnStrIn);
-  DEFINE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
 
-  MAKE_INPUT_NARROW_N (ConnStrIn);
-  MAKE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+  {
+    DEFINE_INPUT_NARROW (ConnStrIn);
+    DEFINE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
 
-  rc = SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOut, pcbConnStrOut, fDriverCompletion);
+    MAKE_INPUT_NARROW_N (ConnStrIn);
+    MAKE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
 
-  FREE_INPUT_NARROW (ConnStrIn);
-  SET_AND_FREE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
+    rc = SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOut, pcbConnStrOut, fDriverCompletion);
+
+    FREE_INPUT_NARROW (ConnStrIn);
+    SET_AND_FREE_OUTPUT_CHAR_NARROW_N (ConnStrOut);
+  }
 
   return rc;
 }
@@ -675,15 +703,20 @@ SQLDescribeColW (
 	SQLSMALLINT * pfNullable)
 {
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
-  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  MAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  rc = virtodbc__SQLDescribeCol (hstmt, icol, szColName, _cbColName, _pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable);
+    DEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
-  SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (ColName, stmt->stmt_connection);
+    MAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
+
+    rc = virtodbc__SQLDescribeCol (hstmt, icol, szColName, _cbColName, _pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable);
+
+    SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (ColName, stmt->stmt_connection);
+  }
 
   return rc;
 }
@@ -702,19 +735,23 @@ SQLErrorW (
 {
   STMT (stmt, hstmt);
   CON (con, hdbc);
-  /*ENV (env, henv); */
-  wcharset_t *charset = con ? con->con_charset : (stmt ? stmt->stmt_connection->con_charset : NULL);
+  wcharset_t *charset;
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
-  int wide_as_utf16 = virt_wide_as_utf16;
+  int wide_as_utf16;
 
+  ASSERT_OPT_HANDLE_TYPE (henv, SQL_HANDLE_ENV);
+  ASSERT_OPT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+  ASSERT_OPT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
+  charset = con ? con->con_charset : (stmt ? stmt->stmt_connection->con_charset : NULL);
+  wide_as_utf16 = virt_wide_as_utf16;
 
   if (con || stmt)
     {
       cli_connection_t *conn = con ? con : stmt->stmt_connection;
-      wide_as_utf16 = conn->con_wide_as_utf16;
-
       DEFINE_OUTPUT_CHAR_NARROW (ErrorMsg, conn, SQLSMALLINT);
+      wide_as_utf16 = conn->con_wide_as_utf16;
 
       MAKE_OUTPUT_CHAR_NARROW (ErrorMsg, conn);
 
@@ -753,15 +790,20 @@ SQLExecDirectW (
 	SQLINTEGER cbSqlStr)
 {
   SQLRETURN rc;
-  size_t len;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (SqlStr);
 
-  MAKE_INPUT_ESCAPED_NARROW_1 (SqlStr, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLExecDirect (hstmt, szSqlStr, SQL_NTS);
+    DEFINE_INPUT_NARROW (SqlStr);
 
-  FREE_INPUT_NARROW (SqlStr);
+    MAKE_INPUT_ESCAPED_NARROW_1 (SqlStr, stmt->stmt_connection);
+
+    rc = virtodbc__SQLExecDirect (hstmt, szSqlStr, SQL_NTS);
+
+    FREE_INPUT_NARROW (SqlStr);
+  }
 
   return rc;
 }
@@ -783,32 +825,37 @@ SQLForeignKeysW (
 	SQLWCHAR * wszFkTableName,
 	SQLSMALLINT cbFkTableName)
 {
-  size_t len;
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (PkTableQualifier);
-  DEFINE_INPUT_NARROW (PkTableOwner);
-  DEFINE_INPUT_NARROW (PkTableName);
-  DEFINE_INPUT_NARROW (FkTableQualifier);
-  DEFINE_INPUT_NARROW (FkTableOwner);
-  DEFINE_INPUT_NARROW (FkTableName);
 
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  MAKE_INPUT_NARROW_1 (PkTableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (PkTableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (PkTableName, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (FkTableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (FkTableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (FkTableName, stmt->stmt_connection);
+    DEFINE_INPUT_NARROW (PkTableQualifier);
+    DEFINE_INPUT_NARROW (PkTableOwner);
+    DEFINE_INPUT_NARROW (PkTableName);
+    DEFINE_INPUT_NARROW (FkTableQualifier);
+    DEFINE_INPUT_NARROW (FkTableOwner);
+    DEFINE_INPUT_NARROW (FkTableName);
 
-  rc = virtodbc__SQLForeignKeys (hstmt, szPkTableQualifier, cbPkTableQualifier, szPkTableOwner, cbPkTableOwner, szPkTableName, cbPkTableName, szFkTableQualifier, cbFkTableQualifier, szFkTableOwner, cbFkTableOwner, szFkTableName, cbFkTableName);
+    MAKE_INPUT_NARROW_1 (PkTableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (PkTableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (PkTableName, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (FkTableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (FkTableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (FkTableName, stmt->stmt_connection);
 
-  FREE_INPUT_NARROW (PkTableQualifier);
-  FREE_INPUT_NARROW (PkTableOwner);
-  FREE_INPUT_NARROW (PkTableName);
-  FREE_INPUT_NARROW (FkTableQualifier);
-  FREE_INPUT_NARROW (FkTableOwner);
-  FREE_INPUT_NARROW (FkTableName);
+    rc = virtodbc__SQLForeignKeys (hstmt, szPkTableQualifier, cbPkTableQualifier, szPkTableOwner, cbPkTableOwner, szPkTableName,
+	cbPkTableName, szFkTableQualifier, cbFkTableQualifier, szFkTableOwner, cbFkTableOwner, szFkTableName, cbFkTableName);
+
+    FREE_INPUT_NARROW (PkTableQualifier);
+    FREE_INPUT_NARROW (PkTableOwner);
+    FREE_INPUT_NARROW (PkTableName);
+    FREE_INPUT_NARROW (FkTableQualifier);
+    FREE_INPUT_NARROW (FkTableOwner);
+    FREE_INPUT_NARROW (FkTableName);
+  }
 
   return rc;
 }
@@ -821,8 +868,9 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
     SQLINTEGER StringLength,
     SQLINTEGER * StringLengthPtr)
 {
-  CON_CHARSET (connectionHandle);
-  int wide_as_utf16 = con->con_wide_as_utf16;
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (connectionHandle, SQL_HANDLE_DBC);
 
   switch (Attribute)
     {
@@ -832,7 +880,9 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
     case SQL_CHARSET:
     case SQL_APPLICATION_NAME:
       {
-	SQLRETURN rc;
+	CON_CHARSET (connectionHandle);
+	int wide_as_utf16 = con->con_wide_as_utf16;
+
 	DEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, StringLengthPtr, con, SQLINTEGER);
 
 	MAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
@@ -840,6 +890,7 @@ SQLGetConnectAttrW (SQLHDBC connectionHandle,
 	rc = virtodbc__SQLGetConnectAttr (connectionHandle, Attribute, _ValuePtr, _StringLength, _StringLengthPtr);
 
 	SET_AND_FREE_OUTPUT_NONCHAR_NARROW_1 (ValuePtr, StringLength, StringLengthPtr, con);
+
 	return rc;
       }
 
@@ -855,9 +906,9 @@ SQLGetConnectOptionW (
 	SQLUSMALLINT fOption,
 	SQLPOINTER pvParam)
 {
-  CON_CHARSET (hdbc);
   SQLRETURN rc;
-  int wide_as_utf16 = con->con_wide_as_utf16;
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
   switch (fOption)
     {
@@ -865,6 +916,8 @@ SQLGetConnectOptionW (
     case SQL_ATTR_TRACEFILE:
     case SQL_ATTR_TRANSLATE_LIB:
       {
+	CON_CHARSET (hdbc);
+	int wide_as_utf16 = con->con_wide_as_utf16;
 	SQLINTEGER StrLen = 512, *StrLenPtr = NULL;
 
 	DEFINE_OUTPUT_NONCHAR_NARROW (pvParam, StrLen, StrLenPtr, con, SQLINTEGER);
@@ -892,15 +945,20 @@ SQLGetCursorNameW (
 	SQLSMALLINT * pcbCursor)
 {
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
-  int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  MAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    int wide_as_utf16 = stmt->stmt_connection->con_wide_as_utf16;
 
-  rc = virtodbc__SQLGetCursorName (hstmt, szCursor, _cbCursor, _pcbCursor);
+    DEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
-  SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (Cursor, stmt->stmt_connection);
+    MAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
+
+    rc = virtodbc__SQLGetCursorName (hstmt, szCursor, _cbCursor, _pcbCursor);
+
+    SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (Cursor, stmt->stmt_connection);
+  }
 
   return rc;
 }
@@ -914,7 +972,9 @@ SQLGetDescFieldW (SQLHDESC descriptorHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr)
 {
-  DESC_CHARSET1 (descriptorHandle);
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
 
   switch (FieldIdentifier)
     {
@@ -930,7 +990,8 @@ SQLGetDescFieldW (SQLHDESC descriptorHandle,
     case SQL_DESC_TYPE_NAME:
     case SQL_DESC_LOCAL_TYPE_NAME:
       {
-	SQLRETURN rc;
+        DESC_CHARSET1 (descriptorHandle);
+
 	DEFINE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, StringLengthPtr, desc->d_stmt->stmt_connection, SQLINTEGER);
 
 	MAKE_OUTPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
@@ -962,14 +1023,20 @@ SQLGetDescRecW (SQLHDESC descriptorHandle,
     SQLSMALLINT * NullablePtr)
 {
   SQLRETURN rc;
-  DESC_CHARSET1 (descriptorHandle);
-  DEFINE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection, SQLSMALLINT);
 
-  MAKE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
+  {
+    DESC_CHARSET1 (descriptorHandle);
 
-  rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName, _pcbName, TypePtr, SubTypePtr, LengthPtr, PrecisionPtr, ScalePtr, NullablePtr);
+    DEFINE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection, SQLSMALLINT);
 
-  SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (Name, desc->d_stmt->stmt_connection);
+    MAKE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
+
+    rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName, _pcbName, TypePtr, SubTypePtr, LengthPtr,
+	PrecisionPtr, ScalePtr, NullablePtr);
+
+    SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (Name, desc->d_stmt->stmt_connection);
+  }
 
   return rc;
 }
@@ -984,7 +1051,9 @@ SQLGetDiagFieldW (SQLSMALLINT nHandleType,
     SQLSMALLINT nBufferLength,
     SQLSMALLINT * pnStringLengthPtr)
 {
-  DESC_CHARSET (Handle, nHandleType);
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (Handle, nHandleType);
 
   switch (nDiagIdentifier)
     {
@@ -996,7 +1065,7 @@ SQLGetDiagFieldW (SQLSMALLINT nHandleType,
     case SQL_DIAG_MESSAGE_TEXT:
     case SQL_DIAG_SQLSTATE:
       {
-	SQLRETURN rc;
+        DESC_CHARSET (Handle, nHandleType);
 	cli_connection_t *conn = (nHandleType == SQL_HANDLE_DBC ? con :
 	    (nHandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
 		(nHandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
@@ -1030,46 +1099,52 @@ SQLGetDiagRecW (SQLSMALLINT HandleType,
     SQLSMALLINT cbMessageText,
     SQLSMALLINT * pcbMessageText)
 {
-  DESC_CHARSET (Handle, HandleType);
-  SQLCHAR szSqlState[6];
   SQLRETURN rc;
-  cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
-      (HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
-	  (HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
-  int wide_as_utf16 = conn ? conn->con_wide_as_utf16 : virt_wide_as_utf16;
 
-  if (conn)
-    {
-      DEFINE_OUTPUT_CHAR_NARROW (MessageText, conn, SQLSMALLINT);
+  ASSERT_HANDLE_TYPE (Handle, HandleType);
+  {
+    DESC_CHARSET (Handle, HandleType);
+    SQLCHAR szSqlState[6];
+    cli_connection_t *conn = (HandleType == SQL_HANDLE_DBC ? con :
+	(HandleType == SQL_HANDLE_STMT ? stmt->stmt_connection :
+	    (HandleType == SQL_HANDLE_DESC ? desc->d_stmt->stmt_connection : NULL)));
+    int wide_as_utf16 = conn ? conn->con_wide_as_utf16 : virt_wide_as_utf16;
 
-      MAKE_OUTPUT_CHAR_NARROW (MessageText, conn);
+    if (conn)
+      {
+	DEFINE_OUTPUT_CHAR_NARROW (MessageText, conn, SQLSMALLINT);
 
-      rc = virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState, NativeErrorPtr, szMessageText, _cbMessageText, _pcbMessageText);
+	MAKE_OUTPUT_CHAR_NARROW (MessageText, conn);
 
-      SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (MessageText, conn);
+	rc = virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState, NativeErrorPtr, szMessageText, _cbMessageText,
+	    _pcbMessageText);
 
-      /*if (pcbMessageText) - explicit bug, _cbMessageText is a temp buffer length
-       *pcbMessageText = ((SQLSMALLINT) _cbMessageText);*/
-    }
-  else
-    {
-      cli_connection_t *_con = NULL;
-      DEFINE_OUTPUT_CHAR_NARROW_N (MessageText, SQLSMALLINT);
+	SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (MessageText, conn);
 
-      MAKE_OUTPUT_CHAR_NARROW_N (MessageText);
+	/*if (pcbMessageText) - explicit bug, _cbMessageText is a temp buffer length
+	 *pcbMessageText = ((SQLSMALLINT) _cbMessageText);*/
+      }
+    else
+      {
+	cli_connection_t *_con = NULL;
+	DEFINE_OUTPUT_CHAR_NARROW_N (MessageText, SQLSMALLINT);
 
-      rc = virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState, NativeErrorPtr, szMessageText, _cbMessageText, _pcbMessageText);
+	MAKE_OUTPUT_CHAR_NARROW_N (MessageText);
 
-      SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (MessageText, _con);
-    }
+	rc = virtodbc__SQLGetDiagRec (HandleType, Handle, RecNumber, szSqlState, NativeErrorPtr, szMessageText, _cbMessageText,
+	    _pcbMessageText);
 
-  if (wszSqlstate)
-    {
-      if (wide_as_utf16)
-        cli_narrow_to_utf16 (charset, 0, szSqlState, 6, (uint16 *) wszSqlstate, 6);
-      else
-        cli_narrow_to_wide (charset, 0, szSqlState, 6, WCHAR_CAST wszSqlstate, 6);
-    }
+	SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (MessageText, _con);
+      }
+
+    if (wszSqlstate)
+      {
+	if (wide_as_utf16)
+	  cli_narrow_to_utf16 (charset, 0, szSqlState, 6, (uint16 *) wszSqlstate, 6);
+	else
+	  cli_narrow_to_wide (charset, 0, szSqlState, 6, WCHAR_CAST wszSqlstate, 6);
+      }
+  }
 
   return rc;
 }
@@ -1083,8 +1158,9 @@ SQLGetInfoW (
 	SQLSMALLINT cbInfoValueMax,
 	SQLSMALLINT * pcbInfoValue)
 {
-  CON_CHARSET (hdbc);
-  int wide_as_utf16 = con->con_wide_as_utf16;
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
   switch (fInfoType)
     {
@@ -1127,7 +1203,9 @@ SQLGetInfoW (
     case SQL_DESCRIBE_PARAMETER:
     case SQL_XOPEN_CLI_YEAR:
       {
-	SQLRETURN rc;
+	CON_CHARSET (hdbc);
+	int wide_as_utf16 = con->con_wide_as_utf16;
+
 	DEFINE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, pcbInfoValue, con, SQLSMALLINT);
 
 	MAKE_OUTPUT_NONCHAR_NARROW (rgbInfoValue, cbInfoValueMax, con);
@@ -1152,6 +1230,8 @@ SQLGetStmtAttrW (SQLHSTMT statementHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr)
 {
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
+
   return virtodbc__SQLGetStmtAttr (statementHandle, Attribute, ValuePtr, BufferLength, StringLengthPtr);
 }
 
@@ -1165,20 +1245,25 @@ SQLNativeSqlW (
 	SQLINTEGER cbSqlStr,
 	SQLINTEGER * pcbSqlStr)
 {
-  CON_CHARSET (hdbc);
   SQLRETURN rc;
-  size_t len;
-  int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
-  DEFINE_INPUT_NARROW (SqlStrIn);
-  DEFINE_OUTPUT_CHAR_NARROW (SqlStr, con, SQLINTEGER);
 
-  MAKE_INPUT_NARROW_1 (SqlStrIn, con);
-  MAKE_OUTPUT_CHAR_NARROW (SqlStr, con);
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+  {
+    CON_CHARSET (hdbc);
+    size_t len;
+    int wide_as_utf16 = con ? con->con_wide_as_utf16 : virt_wide_as_utf16;
 
-  rc = virtodbc__SQLNativeSql (hdbc, szSqlStrIn, SQL_NTS, szSqlStr, _cbSqlStr, _pcbSqlStr);
+    DEFINE_INPUT_NARROW (SqlStrIn);
+    DEFINE_OUTPUT_CHAR_NARROW (SqlStr, con, SQLINTEGER);
 
-  SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (SqlStr, con);
-  FREE_INPUT_NARROW (SqlStrIn);
+    MAKE_INPUT_NARROW_1 (SqlStrIn, con);
+    MAKE_OUTPUT_CHAR_NARROW (SqlStr, con);
+
+    rc = virtodbc__SQLNativeSql (hdbc, szSqlStrIn, SQL_NTS, szSqlStr, _cbSqlStr, _pcbSqlStr);
+
+    SET_AND_FREE_OUTPUT_CHAR_NARROW_1 (SqlStr, con);
+    FREE_INPUT_NARROW (SqlStrIn);
+  }
 
   return rc;
 }
@@ -1190,16 +1275,21 @@ SQLPrepareW (
 	SQLWCHAR * wszSqlStr,
 	SQLINTEGER cbSqlStr)
 {
-  size_t len;
   SQLRETURN rc;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (SqlStr);
 
-  MAKE_INPUT_ESCAPED_NARROW_1 (SqlStr, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLPrepare (hstmt, szSqlStr, SQL_NTS);
+    DEFINE_INPUT_NARROW (SqlStr);
 
-  FREE_INPUT_NARROW (SqlStr);
+    MAKE_INPUT_ESCAPED_NARROW_1 (SqlStr, stmt->stmt_connection);
+
+    rc = virtodbc__SQLPrepare (hstmt, szSqlStr, SQL_NTS);
+
+    FREE_INPUT_NARROW (SqlStr);
+  }
 
   return rc;
 }
@@ -1215,23 +1305,27 @@ SQLPrimaryKeysW (
 	SQLWCHAR * wszTableName,
 	SQLSMALLINT cbTableName)
 {
-  STMT_CHARSET (hstmt);
   SQLRETURN rc;
-  size_t len;
 
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
 
-  rc = virtodbc__SQLPrimaryKeys (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
+    rc = virtodbc__SQLPrimaryKeys (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+  }
 
   return rc;
 }
@@ -1249,26 +1343,31 @@ SQLProcedureColumnsW (
 	SQLWCHAR * wszColumnName,
 	SQLSMALLINT cbColumnName)
 {
-  STMT_CHARSET (hstmt);
   SQLRETURN rc;
-  size_t len;
 
-  DEFINE_INPUT_NARROW (ProcQualifier);
-  DEFINE_INPUT_NARROW (ProcOwner);
-  DEFINE_INPUT_NARROW (ProcName);
-  DEFINE_INPUT_NARROW (ColumnName);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  MAKE_INPUT_NARROW_1 (ProcQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ProcOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ProcName, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
+    DEFINE_INPUT_NARROW (ProcQualifier);
+    DEFINE_INPUT_NARROW (ProcOwner);
+    DEFINE_INPUT_NARROW (ProcName);
+    DEFINE_INPUT_NARROW (ColumnName);
 
-  rc = virtodbc__SQLProcedureColumns (hstmt, szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName, szColumnName, cbColumnName);
+    MAKE_INPUT_NARROW_1 (ProcQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ProcOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ProcName, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ColumnName, stmt->stmt_connection);
 
-  FREE_INPUT_NARROW (ProcQualifier);
-  FREE_INPUT_NARROW (ProcOwner);
-  FREE_INPUT_NARROW (ProcName);
-  FREE_INPUT_NARROW (ColumnName);
+    rc = virtodbc__SQLProcedureColumns (hstmt, szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName,
+	szColumnName, cbColumnName);
+
+    FREE_INPUT_NARROW (ProcQualifier);
+    FREE_INPUT_NARROW (ProcOwner);
+    FREE_INPUT_NARROW (ProcName);
+    FREE_INPUT_NARROW (ColumnName);
+  }
 
   return rc;
 }
@@ -1284,23 +1383,27 @@ SQLProceduresW (
 	SQLWCHAR * wszProcName,
 	SQLSMALLINT cbProcName)
 {
-  STMT_CHARSET (hstmt);
   SQLRETURN rc;
-  size_t len;
 
-  DEFINE_INPUT_NARROW (ProcQualifier);
-  DEFINE_INPUT_NARROW (ProcOwner);
-  DEFINE_INPUT_NARROW (ProcName);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  MAKE_INPUT_NARROW_1 (ProcQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ProcOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (ProcName, stmt->stmt_connection);
+    DEFINE_INPUT_NARROW (ProcQualifier);
+    DEFINE_INPUT_NARROW (ProcOwner);
+    DEFINE_INPUT_NARROW (ProcName);
 
-  rc = virtodbc__SQLProcedures (hstmt, szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName);
+    MAKE_INPUT_NARROW_1 (ProcQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ProcOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (ProcName, stmt->stmt_connection);
 
-  FREE_INPUT_NARROW (ProcQualifier);
-  FREE_INPUT_NARROW (ProcOwner);
-  FREE_INPUT_NARROW (ProcName);
+    rc = virtodbc__SQLProcedures (hstmt, szProcQualifier, cbProcQualifier, szProcOwner, cbProcOwner, szProcName, cbProcName);
+
+    FREE_INPUT_NARROW (ProcQualifier);
+    FREE_INPUT_NARROW (ProcOwner);
+    FREE_INPUT_NARROW (ProcName);
+  }
 
   return rc;
 }
@@ -1312,8 +1415,9 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength)
 {
-  CON_CHARSET (connectionHandle);
-  int wide_as_utf16 = con->con_wide_as_utf16;
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (connectionHandle, SQL_HANDLE_DBC);
 
   switch (Attribute)
     {
@@ -1321,7 +1425,9 @@ SQLSetConnectAttrW (SQLHDBC connectionHandle,
     case SQL_CHARSET:
     case SQL_APPLICATION_NAME:
       {
-	SQLRETURN rc;
+	CON_CHARSET (connectionHandle);
+	int wide_as_utf16 = con->con_wide_as_utf16;
+
 	DEFINE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength);
 
 	MAKE_INPUT_NONCHAR_NARROW (ValuePtr, StringLength, con);
@@ -1345,15 +1451,18 @@ SQLSetConnectOptionW (
       SQLUSMALLINT fOption,
       SQLULEN vParam)
 {
-  CON_CHARSET (hdbc);
-  int wide_as_utf16 = con->con_wide_as_utf16;
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
   switch (fOption)
     {
     case SQL_CURRENT_QUALIFIER:
       {
-	SQLRETURN rc;
+	CON_CHARSET (hdbc);
+	int wide_as_utf16 = con->con_wide_as_utf16;
 	int StringLength = SQL_NTS;
+
 	DEFINE_INPUT_NONCHAR_NARROW (vParam, StringLength);
 
 	MAKE_INPUT_NONCHAR_NARROW (vParam, StringLength, con);
@@ -1377,9 +1486,13 @@ SQLSetCursorNameW (
       SQLWCHAR * wszCursor,
       SQLSMALLINT cbCursor)
 {
-  STMT_CHARSET (hstmt);
   SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
   size_t len;
+
   DEFINE_INPUT_NARROW (Cursor);
 
   MAKE_INPUT_NARROW_1 (Cursor, stmt->stmt_connection);
@@ -1387,6 +1500,7 @@ SQLSetCursorNameW (
   rc = virtodbc__SQLSetCursorName (hstmt, szCursor, cbCursor);
 
   FREE_INPUT_NARROW (Cursor);
+  }
 
   return rc;
 }
@@ -1399,7 +1513,9 @@ SQLSetDescFieldW (SQLHDESC descriptorHandle,
     SQLPOINTER ValuePtr,
     SQLINTEGER BufferLength)
 {
-  DESC_CHARSET1 (descriptorHandle);
+  SQLRETURN rc;
+
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
 
   switch (FieldIdentifier)
     {
@@ -1413,7 +1529,8 @@ SQLSetDescFieldW (SQLHDESC descriptorHandle,
     case SQL_DESC_CONCISE_TYPE:
     case SQL_DESC_TYPE_NAME:
       {
-	SQLRETURN rc;
+        DESC_CHARSET1 (descriptorHandle);
+
 	DEFINE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength);
 
 	MAKE_INPUT_NONCHAR_NARROW (ValuePtr, BufferLength, desc->d_stmt->stmt_connection);
@@ -1437,6 +1554,8 @@ SQLSetStmtAttrW (SQLHSTMT statementHandle,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength)
 {
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
+
   return virtodbc__SQLSetStmtAttr (statementHandle, Attribute, ValuePtr, StringLength);
 }
 
@@ -1455,21 +1574,27 @@ SQLSpecialColumnsW (
 	SQLUSMALLINT fNullable)
 {
   SQLRETURN rc;
-  size_t len;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLSpecialColumns (hstmt, fColType, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, fScope, fNullable);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+
+    rc = virtodbc__SQLSpecialColumns (hstmt, fColType, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName,
+	cbTableName, fScope, fNullable);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+  }
 
   return rc;
 }
@@ -1488,21 +1613,27 @@ SQLStatisticsW (
 	SQLUSMALLINT fAccuracy)
 {
   SQLRETURN rc;
-  size_t len;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLStatistics (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, fUnique, fAccuracy);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+
+    rc = virtodbc__SQLStatistics (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName,
+	fUnique, fAccuracy);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+  }
 
   return rc;
 }
@@ -1519,21 +1650,27 @@ SQLTablePrivilegesW (
 	SQLSMALLINT cbTableName)
 {
   SQLRETURN rc;
-  size_t len;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLTablePrivileges (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+
+    rc = virtodbc__SQLTablePrivileges (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName,
+	cbTableName);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+  }
 
   return rc;
 }
@@ -1552,24 +1689,30 @@ SQLTablesW (
 	SQLSMALLINT cbTableType)
 {
   SQLRETURN rc;
-  size_t len;
-  STMT_CHARSET (hstmt);
-  DEFINE_INPUT_NARROW (TableQualifier);
-  DEFINE_INPUT_NARROW (TableOwner);
-  DEFINE_INPUT_NARROW (TableName);
-  DEFINE_INPUT_NARROW (TableType);
 
-  MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
-  MAKE_INPUT_NARROW_1 (TableType, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    STMT_CHARSET (hstmt);
+    size_t len;
 
-  rc = virtodbc__SQLTables (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName, szTableType, cbTableType);
+    DEFINE_INPUT_NARROW (TableQualifier);
+    DEFINE_INPUT_NARROW (TableOwner);
+    DEFINE_INPUT_NARROW (TableName);
+    DEFINE_INPUT_NARROW (TableType);
 
-  FREE_INPUT_NARROW (TableQualifier);
-  FREE_INPUT_NARROW (TableOwner);
-  FREE_INPUT_NARROW (TableName);
-  FREE_INPUT_NARROW (TableType);
+    MAKE_INPUT_NARROW_1 (TableQualifier, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableOwner, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableName, stmt->stmt_connection);
+    MAKE_INPUT_NARROW_1 (TableType, stmt->stmt_connection);
+
+    rc = virtodbc__SQLTables (hstmt, szTableQualifier, cbTableQualifier, szTableOwner, cbTableOwner, szTableName, cbTableName,
+	szTableType, cbTableType);
+
+    FREE_INPUT_NARROW (TableQualifier);
+    FREE_INPUT_NARROW (TableOwner);
+    FREE_INPUT_NARROW (TableName);
+    FREE_INPUT_NARROW (TableType);
+  }
 
   return rc;
 }
@@ -1580,5 +1723,7 @@ SQLGetTypeInfoW (
 	SQLHSTMT hstmt,
 	SQLSMALLINT fSqlType)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLGetTypeInfo (hstmt, fSqlType);
 }
