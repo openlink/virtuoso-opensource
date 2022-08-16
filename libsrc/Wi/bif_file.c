@@ -43,14 +43,6 @@
 #include "sqlbif.h"
 
 #ifndef P_tmpdir
-# ifdef _P_tmpdir               /* native Windows */
-#  define P_tmpdir _P_tmpdir
-# else
-#  define P_tmpdir "/tmp"
-# endif
-#endif
-
-#ifndef P_tmpdir
 # ifdef _P_tmpdir /* native Windows */
 #  define P_tmpdir _P_tmpdir
 # else
@@ -84,23 +76,6 @@
 
 #define FS_MAX_STRING	(10L * 1024L * 1024L)	/* allow files up to 10 MB */
 
-#ifdef WIN32
-#include <windows.h>
-#define HAVE_DIRECT_H
-#endif
-
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#include <io.h>
-#define mkdir(p,m)	_mkdir (p)
-#define FS_DIR_MODE	0777
-#define PATH_MAX	 MAX_PATH
-#define get_cwd(p,l)	_get_cwd (p,l)
-#else
-#include <dirent.h>
-#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG | S_IRWXO)
-#endif
-
 #include "datesupp.h"
 #include "langfunc.h"
 
@@ -124,22 +99,6 @@ static char www_abs_path[PATH_MAX + 1];	/* the max possible OS path */
 int spotlight_integration;
 
 char *rel_to_abs_path (char *p, const char *path, long len);
-
-#ifdef WIN32
-#define DIR_SEP '\\'
-#define SINGLE_DOT "\\."
-#define DOUBLE_DOT "\\.."
-#define IS_DRIVE(p) (*(p+1) == ':')
-#define BEGIN_WITH(a,b) (0 == strnicmp (a,b,strlen(b)))
-#define STR_EQUAL(a,b) (0 == stricmp (a,b))
-#else
-#define DIR_SEP '/'
-#define SINGLE_DOT "/."
-#define DOUBLE_DOT "/.."
-#define IS_DRIVE(p) 0
-#define BEGIN_WITH(a,b) (0 == strncmp (a,b,strlen(b)))
-#define STR_EQUAL(a,b) (0 == strcmp (a,b))
-#endif
 
 char *
 virt_strerror (int eno)

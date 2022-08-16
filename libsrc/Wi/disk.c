@@ -24,7 +24,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
+#include "../Dk/Dkconfig.h"
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -484,10 +484,6 @@ it_temp_tree_check ()
 #define it_temp_tree_check(a)
 #endif
 
-
-#ifdef WIN32
-#define PATH_MAX	 MAX_PATH
-#endif
 
 void
 dbs_sys_db_file_remove (caddr_t file)

@@ -56,20 +56,6 @@
 #include "sqlver.h"
 #include "xmlenc.h"
 
-#ifdef WIN32
-#include <windows.h>
-#ifdef _MSC_VER
-#define HAVE_DIRECT_H
-#endif
-#endif
-
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#include <io.h>
-#define PATH_MAX	 MAX_PATH
-#else
-#include <dirent.h>
-#endif
 #ifdef _SSL
 #include "util/sslengine.h"
 #include "util/ssl_compat.h"

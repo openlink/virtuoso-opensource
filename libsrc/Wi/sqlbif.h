@@ -409,4 +409,39 @@ extern void trset_printf (const char *str, ...);
 extern void trset_end (void);
 extern void trset_add_indent (int delta);
 
+#ifdef WIN32
+#include <windows.h>
+#define HAVE_DIRECT_H
+#endif
+
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#include <io.h>
+#define mkdir(p,m)	_mkdir (p)
+#define FS_DIR_MODE	0777
+#define PATH_MAX	 MAX_PATH
+#define get_cwd(p,l)	_get_cwd (p,l)
+#else
+#include <dirent.h>
+#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG | S_IRWXO)
+#endif
+
+#ifdef WIN32
+#define DIR_SEP '\\'
+#define SINGLE_DOT "\\."
+#define DOUBLE_DOT "\\.."
+#define IS_DRIVE(p) (*(p+1) == ':')
+#define BEGIN_WITH(a,b) (0 == strnicmp (a,b,strlen(b)))
+#define STR_EQUAL(a,b) (0 == stricmp (a,b))
+#else
+#define DIR_SEP '/'
+#define SINGLE_DOT "/."
+#define DOUBLE_DOT "/.."
+#define IS_DRIVE(p) 0
+#define BEGIN_WITH(a,b) (0 == strncmp (a,b,strlen(b)))
+#define STR_EQUAL(a,b) (0 == strcmp (a,b))
+#endif
+
+#define PATH_SEP DIR_SEP
+
 #endif /* _SQLBIF_H */

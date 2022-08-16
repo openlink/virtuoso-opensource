@@ -39,24 +39,6 @@
 
 #include "security.h"
 
-
-#ifdef WIN32
-#include <windows.h>
-#define HAVE_DIRECT_H
-#endif
-
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#include <io.h>
-#define mkdir(p,m)	_mkdir (p)
-#define FS_DIR_MODE	0
-#define PATH_MAX	 MAX_PATH
-#define get_cwd(p,l)	_get_cwd (p,l)
-#else
-#include <dirent.h>
-#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
-#endif
-
 #undef DBG_BREAKPOINTS
 #undef INC_DEBUG
 
