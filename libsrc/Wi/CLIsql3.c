@@ -457,7 +457,9 @@ ParseOptions (CfgData cfgdata[], TCHAR * s, int clean_up)
 	  _tcsncpy (cfgdata[i].data, valueW, attrs[i].maxLength);
 	  cfgdata[i].data[attrs[i].maxLength] = 0;
 	  if (valueW != attrs[i].defVal)
-	    free_wide_buffer (valueW);
+	    {
+	      free_wide_buffer (valueW);
+	    }
 # endif
 #else
 	  _tcsncpy (cfgdata[i].data, _T (""), attrs[i].maxLength);
@@ -1026,6 +1028,8 @@ SQLDriverConnect (SQLHDBC hdbc,
     SQLSMALLINT * pcbConnStrOutMax,
     SQLUSMALLINT fDriverCompletion)
 {
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   return virtodbc__SQLDriverConnect (hdbc, hwnd, szConnStrIn, cbConnStrIn, szConnStrOut, cbConnStrOutMax, pcbConnStrOutMax, fDriverCompletion);
 }
 
@@ -1036,6 +1040,7 @@ SQLConnect (SQLHDBC hdbc,
 {
 #ifndef DSN_TRANSLATION
 
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
   return internal_sql_connect (hdbc, szDSN, cbDSN, szUID, cbUID, szPWD, cbPWD);
 
 #else
@@ -1045,6 +1050,8 @@ SQLConnect (SQLHDBC hdbc,
   TCHAR *uid;
   TCHAR *pwd;
   TCHAR *pcmd = &(cmd[0]);
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
 #ifdef UNICODE
   if (sizeof(TCHAR) == 4 && (cbDSN > 0 || cbDSN == SQL_NTS))

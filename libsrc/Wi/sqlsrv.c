@@ -401,7 +401,7 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
   query_instance_t **qip;
   for (;;)
     {
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       id_hash_iterator (&it, cli->cli_cursors);
       qi = 0;
       while (hit_next (&it, (char **) &kp, (char **) &qip))
@@ -426,12 +426,12 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 	  LEAVE_TXN;
 	  qi_enter (qi);
 	  dbg_cli_printf (("cli_scrap_cursors - killing %s %d\n", *kp, rc));
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  qi_kill (qi, QI_ERROR);
 	}
       else
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  return;
 	}
     }
@@ -1477,17 +1477,24 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 
 int32 cli_max_cached_stmts = 10000;
 
+
 srv_stmt_t *
 cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret)
 {
   caddr_t place;
   srv_stmt_t *stmt;
-  IN_CLIENT (cli);
+
+  if (!id)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("HY000", "SR675", "Invalid Statement");
+      return NULL;
+    }
   place = id_hash_get (cli->cli_statements, (caddr_t) & id);
   if (!place && cli->cli_statements->ht_count >= cli_max_cached_stmts)
     {
       if (err_ret)
-	*err_ret = srv_make_new_error ("HY013", "SR491", "Too many open statements");
+	*err_ret = srv_make_new_error ("HY013", "SR676", "Too many open statements");
       return NULL;
     }
   if (!place)
@@ -1534,8 +1541,14 @@ cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli, caddr_t *e
   caddr_t stmt_id = NULL;
   caddr_t stmt_boxed = box_dv_short_string (query_text);
 
+  IN_CLIENT (cli);
   stmt_id = box_dv_short_string (stmt_id_name);
   sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
+  if (!sst)
+  {
+    LEAVE_CLIENT (cli);
+    return NULL;
+  }
   old_log_val = cli->cli_is_log;
   cli->cli_is_log = 1;
   err = stmt_set_query (sst, cli, stmt_boxed, NULL);
@@ -1556,8 +1569,10 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
   caddr_t err = NULL;
+  srv_stmt_t *stmt;
 
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
   if (!stmt && err)
     goto report_error;
   cli->cli_terminate_requested = 0;
@@ -1567,7 +1582,7 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
       /* There's an instance. can't do it */
       err = srv_make_new_error ("S1010", "SR209", "Statement active");
 report_error:
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1596,7 +1611,7 @@ report_error:
 
   stmt_set_query (stmt, cli, text, opts);
   dk_free_box ((caddr_t) opts);
-  mutex_leave (cli->cli_mtx);
+  LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in prepare2\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
@@ -1774,6 +1789,7 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       goto report_rpc_format_error;
     }
 
+  IN_CLIENT (cli);
   stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
   if (err)
     goto report_error;
@@ -1801,8 +1817,8 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       /* Busy */
       err = srv_make_new_error ("S1010", "SR210", "Async exec busy");
 report_error:
-      mutex_leave (cli->cli_mtx);
-    report_rpc_format_error:
+      LEAVE_CLIENT (cli);
+report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       DKST_RPC_DONE (client);
       dk_free_tree (err);
@@ -1837,7 +1853,7 @@ report_error:
       else if (TP_ABORT == cli->cli_tp_data->tpd_last_act)
 	{
 	  caddr_t err = srv_make_new_error ("41000", "SR211", "Aborted");
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	  dk_free_tree (err);
 
@@ -1877,7 +1893,7 @@ report_error:
       /* Exec direct RPC. Compile first */
       if (stmt_set_query (stmt, cli, text, options) != (caddr_t) SQL_SUCCESS)
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  dk_free_tree ((caddr_t) params);
 	  dk_free_box ((caddr_t) options);
 
@@ -1898,7 +1914,7 @@ report_error:
     {
       if (SQL_SUCCESS != stmt_check_recompile (stmt))
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  if (DK_MEM_RESERVE)
 	    {
 	      IN_CLIENT (cli);
@@ -1915,7 +1931,7 @@ report_error:
   if (!stmt->sst_query)
     {
       caddr_t err = srv_make_new_error ("S1010", "SR212", "Statement not prepared.");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in execute3\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -1998,7 +2014,7 @@ report_error:
 
 	  if (!first_set)
 	    {
-	      mutex_enter (cli->cli_mtx);
+	      IN_CLIENT (cli);
 	    }
 	  first_set = 0;
 	  err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
@@ -2020,7 +2036,7 @@ report_error:
       dk_free_tree ((caddr_t) params);
     }
   if (n_params == 0)
-    mutex_leave (cli->cli_mtx);
+    LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in execute4\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
@@ -2404,15 +2420,18 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
   dk_session_t *client = IMMEDIATE_CLIENT;
   caddr_t err;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
+  srv_stmt_t *stmt;
 
   CHANGE_THREAD_USER(cli->cli_user);
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
 
   if (!stmt || !stmt->sst_inst)
     {
       /* Busy */
       caddr_t err = srv_make_new_error ("S1010", "SR213", "SQLFetch of busy");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in fetch1\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2463,7 +2482,22 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   query_instance_t *qi = NULL;
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  srv_stmt_t *stmt;
+  caddr_t err = NULL;
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, &err);
+
+  if (NULL == stmt)
+    {
+      if (!err)
+        err = srv_make_new_error ("HY000", "SR674", "Statement does not exist");
+      LEAVE_CLIENT (cli);
+      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+      dk_free_tree (err);
+      DKST_RPC_DONE (client);
+      return 0;
+    }
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
@@ -2506,7 +2540,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   if (op == SQL_DROP)
     {
 
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       if (stmt->sst_query)
         {
 #ifdef QUERY_DEBUG
@@ -2515,7 +2549,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
 	  stmt->sst_query->qr_ref_count--;
         }
       id_hash_remove (cli->cli_statements, (caddr_t) & stmt->sst_id);
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       dk_free_box (stmt->sst_id);
 
       dk_free ((caddr_t) stmt, sizeof (srv_stmt_t));
@@ -3036,8 +3070,11 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *lt;
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
-  if (stmt->sst_inst)
+  srv_stmt_t *stmt;
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  if (stmt && stmt->sst_inst)
     {
       query_instance_t *qi = stmt->sst_inst;
       caddr_t val;

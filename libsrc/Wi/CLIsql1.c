@@ -46,6 +46,103 @@
 
 #define MD5_LOGIN
 
+/*
+ *   Handle Validation
+ */
+static id_hash_t  *hdl_hash = NULL;
+static dk_mutex_t *hdl_mtx = NULL;
+
+void
+virt_handle_init ()
+{
+  hdl_hash = id_hash_allocate (1001, sizeof (caddr_t), sizeof (int), voidptrhash, voidptrhashcmp);
+  if (!hdl_hash)
+    return;
+
+  hdl_mtx = mutex_allocate ();
+}
+
+void
+virt_handle_cleanup ()
+{
+  if (hdl_hash)
+    id_hash_free (hdl_hash);
+  hdl_hash = NULL;
+
+  if (hdl_mtx)
+    mutex_free (hdl_mtx);
+  hdl_mtx = NULL;
+}
+
+void
+virt_handle_register (void *handle, int type)
+{
+  if (!hdl_hash || !hdl_mtx)
+    return;
+
+  mutex_enter (hdl_mtx);
+  id_hash_set (hdl_hash, &handle, (caddr_t) &type);
+  mutex_leave (hdl_mtx);
+}
+
+void
+virt_handle_unregister (void *handle)
+{
+  if (!hdl_hash || !hdl_mtx)
+    return;
+
+  mutex_enter (hdl_mtx);
+  id_hash_remove (hdl_hash, &handle);
+  mutex_leave (hdl_mtx);
+}
+
+int
+virt_handle_check_type (void *handle, int type, int nullable)
+{
+  int *type_p;
+
+  if (!hdl_hash || !hdl_mtx)
+    return 0;
+
+  if (!handle)
+    return nullable ? 1 : 0;
+
+  type_p = (int *) id_hash_get (hdl_hash, &handle);
+
+  if (type_p != NULL && *type_p == type)
+    return 1;
+
+  return 0;
+}
+
+void
+virt_handle_debug (void)
+{
+#ifdef DEBUG
+  id_hash_iterator_t it;
+  caddr_t **handle;
+  int *type;
+
+  if (!hdl_hash || !hdl_mtx)
+    return;
+
+  mutex_enter (hdl_mtx);
+  id_hash_iterator (&it, hdl_hash);
+
+  dbg_printf (("virt_handle_debug:\n"));
+  while (hit_next (&it, (caddr_t *) & handle, (caddr_t *) & type))
+    {
+      dbg_printf (("DBG: hdl=%p type=%d\n", *handle, *type));
+    }
+  dbg_printf (("\n"));
+  mutex_leave (hdl_mtx);
+#endif
+}
+
+
+/*
+ *
+ */
 SQLRETURN SQL_API
 virtodbc__SQLAllocConnect (
 	SQLHENV henv,
@@ -69,6 +166,8 @@ virtodbc__SQLAllocConnect (
   cli->con_defs.cdef_txn_timeout = SO_DEFAULT_TIMEOUT;
   cli->con_defs.cdef_prefetch = SELECT_PREFETCH_QUOTA;
 
+  virt_handle_register (cli, SQL_HANDLE_DBC);
+
   return SQL_SUCCESS;
 }
 
@@ -78,6 +177,8 @@ SQLAllocConnect (
 	SQLHENV henv,
 	SQLHDBC * phdbc)
 {
+  ASSERT_HANDLE_TYPE (henv, SQL_HANDLE_ENV);
+
   return virtodbc__SQLAllocConnect (henv, phdbc);
 }
 
@@ -91,8 +192,9 @@ virtodbc__SQLAllocEnv (
 
   if (firsttime)
     {
-      srand ((unsigned int) time(NULL));
       firsttime = 0;
+      srand ((unsigned int) time(NULL));
+      virt_handle_init();
     }
 
   PrpcInitialize ();
@@ -113,6 +215,8 @@ virtodbc__SQLAllocEnv (
     /* check is MS DTC is exists on machine */
     mts_client_init ();
 #endif
+
+    virt_handle_register (env, SQL_HANDLE_ENV);
 
     return SQL_SUCCESS;
   }
@@ -195,6 +299,8 @@ virtodbc__SQLAllocStmt (
   stmt->stmt_opts->so_timeout = STMT_MSEC_OPTION (con->con_defs.cdef_txn_timeout);
 #endif
 
+  virt_handle_register (stmt, SQL_HANDLE_STMT);
+
   return SQL_SUCCESS;
 }
 
@@ -204,6 +310,8 @@ SQLAllocStmt (
 	SQLHDBC hdbc,
 	SQLHSTMT * phstmt)
 {
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   return virtodbc__SQLAllocStmt (hdbc, phstmt);
 }
 
@@ -218,23 +326,26 @@ SQLBindCol (
 	SQLLEN * pcbValue)
 {
   STMT (stmt, hstmt);
-  col_binding_t *col = stmt_nth_col (stmt, icol);
 
-  if (cbValueMax == 0 && icol > 0 && fCType != SQL_C_DEFAULT)
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
   {
-    /*
-     * If fCType == SQL_C_DEFAULT, we need to know the SQL type of the data to
-     * determine which ODBC C type to use. Depending on when SQLBindCol
-     * is called, we may not be able to determine the SQL type now
-     */
-    cbValueMax = sqlc_sizeof (fCType, cbValueMax);
+    col_binding_t *col = stmt_nth_col (stmt, icol);
+
+    if (cbValueMax == 0 && icol > 0 && fCType != SQL_C_DEFAULT)
+      {
+	/*
+	 * If fCType == SQL_C_DEFAULT, we need to know the SQL type of the data to
+	 * determine which ODBC C type to use. Depending on when SQLBindCol
+	 * is called, we may not be able to determine the SQL type now
+	 */
+	cbValueMax = sqlc_sizeof (fCType, cbValueMax);
+      }
+
+    col->cb_c_type = fCType;
+    col->cb_place = (caddr_t) rgbValue;
+    col->cb_length = pcbValue;
+    col->cb_max_length = cbValueMax;
   }
-
-  col->cb_c_type = fCType;
-  col->cb_place = (caddr_t) rgbValue;
-  col->cb_length = pcbValue;
-  col->cb_max_length = cbValueMax;
-
   return SQL_SUCCESS;
 }
 
@@ -263,6 +374,8 @@ SQLRETURN SQL_API
 SQLCancel (
     SQLHSTMT hstmt)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLCancel (hstmt);
 }
 
@@ -278,6 +391,8 @@ SQLColAttributes (
 	SQLLEN * pfDesc)
 {
   STMT (stmt, hstmt);
+
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
 
   switch (fDescType)
     {
@@ -1231,14 +1346,17 @@ SQLDescribeCol (
 {
   SQLRETURN rc;
   STMT (stmt, hstmt);
-  NDEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
-  NMAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    NDEFINE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection, SQLSMALLINT);
 
-  rc = virtodbc__SQLDescribeCol (hstmt, icol, szColName, _cbColName, _pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable);
+    NMAKE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
 
-  NSET_AND_FREE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
+    rc = virtodbc__SQLDescribeCol (hstmt, icol, szColName, _cbColName, _pcbColName, pfSqlType, pcbColDef, pibScale, pfNullable);
 
+    NSET_AND_FREE_OUTPUT_CHAR_NARROW (ColName, stmt->stmt_connection);
+  }
   return rc;
 }
 
@@ -1247,6 +1365,9 @@ SQLRETURN SQL_API
 SQLDisconnect (SQLHDBC hdbc)
 {
   CON (con, hdbc);
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   if (con->con_session)
     PrpcDisconnect (con->con_session);
 
@@ -1270,6 +1391,10 @@ SQLError (
   /*ENV (env, henv); */
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
+
+  ASSERT_OPT_HANDLE_TYPE (henv, SQL_HANDLE_ENV);
+  ASSERT_OPT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+  ASSERT_OPT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
 
   if (con || stmt)
     {
@@ -1566,13 +1691,17 @@ SQLExecDirect (
   SQLRETURN rc;
   size_t len;
   STMT (stmt, hstmt);
-  NDEFINE_INPUT_NARROW (SqlStr);
 
-  NMAKE_INPUT_ESCAPED_NARROW (SqlStr, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    NDEFINE_INPUT_NARROW (SqlStr);
 
-  rc = virtodbc__SQLExecDirect (hstmt, szSqlStr, cbSqlStr);
+    NMAKE_INPUT_ESCAPED_NARROW (SqlStr, stmt->stmt_connection);
 
-  NFREE_INPUT_NARROW (SqlStr);
+    rc = virtodbc__SQLExecDirect (hstmt, szSqlStr, cbSqlStr);
+
+    NFREE_INPUT_NARROW (SqlStr);
+  }
 
   return rc;
 }
@@ -1582,6 +1711,8 @@ SQLRETURN SQL_API
 SQLExecute (
 	SQLHSTMT hstmt)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLExecDirect (hstmt, NULL, 0);
 }
 
@@ -1667,6 +1798,8 @@ SQLFetch (SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
 
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   set_error (&stmt->stmt_error, NULL, NULL, NULL);
 
   if (stmt->stmt_connection->con_environment->env_odbc_version < 3)
@@ -1689,6 +1822,8 @@ SQLFetch (SQLHSTMT hstmt)
 SQLRETURN SQL_API
 SQLFreeConnect (SQLHDBC hdbc)
 {
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   return virtodbc__SQLFreeConnect (hdbc);
 }
 
@@ -1697,6 +1832,8 @@ SQLRETURN SQL_API
 virtodbc__SQLFreeConnect (SQLHDBC hdbc)
 {
   CON (con, hdbc);
+
+  virt_handle_unregister (con);
 
   set_error (&con->con_error, NULL, NULL, NULL);
 
@@ -1740,6 +1877,7 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
   dk_set_delete (&con->con_environment->env_connections, (void *) con);
   dk_free ((caddr_t) con, sizeof (cli_connection_t));
 
+
   return SQL_SUCCESS;
 }
 
@@ -1747,6 +1885,8 @@ virtodbc__SQLFreeConnect (SQLHDBC hdbc)
 SQLRETURN SQL_API
 SQLFreeEnv (SQLHENV henv)
 {
+  ASSERT_HANDLE_TYPE (henv, SQL_HANDLE_ENV);
+
   return virtodbc__SQLFreeEnv (henv);
 }
 
@@ -1755,6 +1895,8 @@ SQLRETURN SQL_API
 virtodbc__SQLFreeEnv (SQLHENV henv)
 {
   ENV (env, henv);
+
+  virt_handle_unregister (env);
 
   set_error (&env->env_error, NULL, NULL, NULL);
 
@@ -1841,6 +1983,7 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
       }
 
     case SQL_DROP:
+      virt_handle_unregister (hstmt);
       virtodbc__SQLFreeStmt (hstmt, SQL_UNBIND);
       virtodbc__SQLFreeStmt (hstmt, SQL_RESET_PARAMS);
 
@@ -1909,6 +2052,11 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 	  dk_free ((caddr_t) stmt->stmt_imp_row_descriptor, sizeof (stmt_descriptor_t));
 	  dk_free ((caddr_t) stmt->stmt_app_param_descriptor, sizeof (stmt_descriptor_t));
 	  dk_free ((caddr_t) stmt->stmt_imp_param_descriptor, sizeof (stmt_descriptor_t));
+
+	  stmt->stmt_app_row_descriptor = NULL;
+	  stmt->stmt_imp_row_descriptor = NULL;
+	  stmt->stmt_app_param_descriptor = NULL;
+	  stmt->stmt_imp_param_descriptor = NULL;
 	}
 #endif
       dk_free ((caddr_t) stmt, sizeof (cli_stmt_t));
@@ -1923,6 +2071,8 @@ virtodbc__SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 SQLRETURN SQL_API
 SQLFreeStmt (SQLHSTMT hstmt, SQLUSMALLINT fOption)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLFreeStmt (hstmt, fOption);
 }
 
@@ -1965,14 +2115,17 @@ SQLGetCursorName (
 {
   SQLRETURN rc;
   STMT (stmt, hstmt);
-  NDEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
-  NMAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    NDEFINE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection, SQLSMALLINT);
 
-  rc = virtodbc__SQLGetCursorName (hstmt, szCursor, _cbCursor, _pcbCursor);
+    NMAKE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
 
-  NSET_AND_FREE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
+    rc = virtodbc__SQLGetCursorName (hstmt, szCursor, _cbCursor, _pcbCursor);
 
+    NSET_AND_FREE_OUTPUT_CHAR_NARROW (Cursor, stmt->stmt_connection);
+  }
   return rc;
 }
 
@@ -1980,6 +2133,8 @@ SQLGetCursorName (
 SQLRETURN SQL_API
 SQLNumResultCols (SQLHSTMT hstmt, SQLSMALLINT * pccol)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLNumResultCols (hstmt, pccol);
 }
 
@@ -2059,14 +2214,17 @@ SQLPrepare (
   size_t len;
   SQLRETURN rc;
   STMT (stmt, hstmt);
-  NDEFINE_INPUT_NARROW (SqlStr);
 
-  NMAKE_INPUT_ESCAPED_NARROW (SqlStr, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    NDEFINE_INPUT_NARROW (SqlStr);
 
-  rc = virtodbc__SQLPrepare (hstmt, szSqlStr, SQL_NTS);
+    NMAKE_INPUT_ESCAPED_NARROW (SqlStr, stmt->stmt_connection);
 
-  NFREE_INPUT_NARROW (SqlStr);
+    rc = virtodbc__SQLPrepare (hstmt, szSqlStr, SQL_NTS);
 
+    NFREE_INPUT_NARROW (SqlStr);
+  }
   return rc;
 }
 
@@ -2075,6 +2233,8 @@ SQLRETURN SQL_API
 SQLRowCount (SQLHSTMT hstmt, SQLLEN * pcrow)
 {
   STMT (stmt, hstmt);
+
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
 
   *pcrow = stmt->stmt_rows_affected;
 
@@ -2110,13 +2270,17 @@ SQLSetCursorName (
   SQLRETURN rc;
   size_t len;
   size_t cbCursor = _cbCursor;
-  NDEFINE_INPUT_NARROW (Cursor);
 
-  NMAKE_INPUT_NARROW (Cursor, stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+  {
+    NDEFINE_INPUT_NARROW (Cursor);
 
-  rc = virtodbc__SQLSetCursorName (hstmt, szCursor, (SQLSMALLINT) cbCursor);
+    NMAKE_INPUT_NARROW (Cursor, stmt->stmt_connection);
 
-  NFREE_INPUT_NARROW (Cursor);
+    rc = virtodbc__SQLSetCursorName (hstmt, szCursor, (SQLSMALLINT) cbCursor);
+
+    NFREE_INPUT_NARROW (Cursor);
+  }
   return rc;
 }
 
@@ -2160,6 +2324,8 @@ SQLSetParam (
       SQLPOINTER rgbValue,
       SQLLEN * pcbValue)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLSetParam (hstmt, ipar, fCType, fSqlType, cbColDef, ibScale, rgbValue, pcbValue);
 }
 
@@ -2220,6 +2386,8 @@ SQLBindParameter (
     SQLLEN cbValueMax,
     SQLLEN * pcbValue)
 {
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return virtodbc__SQLBindParameter (hstmt, ipar, fParamType, fCType, fSqlType, cbColDef, ibScale, rgbValue, cbValueMax, pcbValue);
 }
 
@@ -2230,6 +2398,9 @@ SQLTransact (
       SQLHDBC hdbc,
       SQLUSMALLINT fType)
 {
+  ASSERT_OPT_HANDLE_TYPE (henv, SQL_HANDLE_ENV);
+  ASSERT_OPT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
+
   return virtodbc__SQLTransact (henv, hdbc, fType);
 }
 
@@ -2313,6 +2484,8 @@ SQLSync (SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
 
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
+
   return stmt_process_result (stmt, 1);
 }
 
@@ -2322,6 +2495,8 @@ SQLShutdown (SQLHDBC hdbc, char *new_log)
 {
   CON (dbc, hdbc);
   caddr_t box = new_log ? box_string (new_log) : NULL;
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
   PrpcFutureFree (PrpcFuture (dbc->con_session, &s_ds_shutdown, box));
 
@@ -2335,8 +2510,9 @@ SQLCheckpoint (SQLHDBC hdbc, char *new_log)
   CON (dbc, hdbc);
   caddr_t box = new_log ? box_string (new_log) : NULL;
 
-  VERIFY_INPROCESS_CLIENT (dbc);
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
+  VERIFY_INPROCESS_CLIENT (dbc);
   PrpcSync (PrpcFuture (dbc->con_session, &s_ds_makecp, box));
 
   return SQL_SUCCESS;
@@ -2348,6 +2524,8 @@ SQLStatus (SQLHDBC hdbc, char *buffer, int max)
 {
   CON (dbc, hdbc);
   caddr_t *sta;
+
+  ASSERT_HANDLE_TYPE (hdbc, SQL_HANDLE_DBC);
 
   VERIFY_INPROCESS_CLIENT (dbc);
 

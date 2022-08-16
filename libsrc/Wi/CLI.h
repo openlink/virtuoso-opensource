@@ -990,4 +990,20 @@ SQLLEN _##len = ((len) < 0 ? strlen ((char *) wide) : (len)) ; \
 	}
 
 
+/*
+ * Validate handles
+ */
+extern void virt_handle_init (void);
+extern void virt_handle_cleanup (void);
+extern void virt_handle_register (void *handle, int type);
+extern void virt_handle_unregister (void *handle);
+extern int virt_handle_check_type (void *handle, int type, int nullable);
+extern void virt_handle_debug (void);
+
+#define ASSERT_HANDLE_TYPE(handle,type)	\
+	do { if (!virt_handle_check_type(handle, type, 0)) return SQL_INVALID_HANDLE; } while (0)
+
+#define ASSERT_OPT_HANDLE_TYPE(handle,type) \
+	do { if (!virt_handle_check_type(handle, type, 1)) return SQL_INVALID_HANDLE; } while (0)
+
 #endif /* _CLI_H */
