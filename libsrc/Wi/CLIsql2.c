@@ -1379,6 +1379,7 @@ virtodbc__SQLSetConnectOption (
 
     case SQL_VIRTTP_ABORT:
       op = SQL_TP_ABORT;
+      /*FALLTHROUGH*/
 
     case SQL_VIRTTP_COMMIT:
       if (CON_CONNECTED (con))
@@ -2657,6 +2658,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 /*	  SQL_CVT_WLONGVARCHAR |*/
 	  SQL_CVT_VARCHAR;
+      break;
 
     case SQL_CONVERT_WLONGVARCHAR:
       intres =
@@ -2682,6 +2684,7 @@ virtodbc__SQLGetInfo (
 	  SQL_CVT_WVARCHAR |
 	  SQL_CVT_WLONGVARCHAR |
 	  SQL_CVT_VARCHAR;
+      break;
 #endif
 
     case SQL_NUMERIC_FUNCTIONS:

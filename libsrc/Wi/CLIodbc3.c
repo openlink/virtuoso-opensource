@@ -1271,6 +1271,7 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     case SQL_ATTR_MAX_ROWS:
       cli_dbg_printf (("SQLGetConnectAttr(..., MAX_ROWS, ...) called\n"));
       *((SQLUINTEGER *) ValuePtr) = con->con_max_rows;
+      break;
 
       /* ODBC 2 */
     case SQL_ATTR_TRACEFILE:
@@ -1282,6 +1283,8 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     case SQL_NO_CHAR_C_ESCAPE:
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_NTS;
+      /*FALLTHROUGH*/
+
     case SQL_ATTR_ACCESS_MODE:
     case SQL_ATTR_AUTOCOMMIT:
     case SQL_ATTR_ODBC_CURSORS:
