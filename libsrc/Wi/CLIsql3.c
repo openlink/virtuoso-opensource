@@ -457,7 +457,9 @@ ParseOptions (CfgData cfgdata[], TCHAR * s, int clean_up)
 	  _tcsncpy (cfgdata[i].data, valueW, attrs[i].maxLength);
 	  cfgdata[i].data[attrs[i].maxLength] = 0;
 	  if (valueW != attrs[i].defVal)
-	    free_wide_buffer (valueW);
+	    {
+	      free_wide_buffer (valueW);
+	    }
 # endif
 #else
 	  _tcsncpy (cfgdata[i].data, _T (""), attrs[i].maxLength);
