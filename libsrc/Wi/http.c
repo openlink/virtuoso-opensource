@@ -2682,8 +2682,11 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    SES_PRINT (ws->ws_session, tmp);
 	}
 
-      if (ws->ws_status_code != 101)
-      SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
+      if (WS_NOT_HDR (ws, "Accept-Ranges"))
+	{
+	  if (ws->ws_status_code != 101)
+	    SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
+	}
 
       SES_PRINT (ws->ws_session, hsts_header_line(ws));
 
