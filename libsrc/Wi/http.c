@@ -2228,6 +2228,39 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
   return check_only ? NULL : code;
 }
 
+static dk_set_t http_default_allow_headers_list;
+int32 http_ac_max_age = 86400;
+/*char * http_ac_default_cors;*/
+
+char *http_access_control_allow_default_headers =
+    "Accept, Authorization, Content-Length, Content-Type, Depth, DPoP, If-None-Match,"
+    " Link, Location, On-Behalf-Of, Origin, Slug, WebID-TLS, X-Requested-With";
+
+#define  WS_CORS_DEFAULT_ALLOW_HEADERS http_access_control_allow_default_headers
+
+
+static char *http_default_exposed_headers[] = {
+  "Access-Control-Allow-Headers",
+  "Access-Control-Allow-Methods",
+  "Access-Control-Allow-Origin",
+  "Allow",
+  "Accept-Patch",
+  "Accept-Post",
+  "Authorization",
+  "Content-Length",
+  "Content-Type",
+  "ETag",
+  "Last-Modified",
+  "Link",
+  "Location",
+  "Updates-Via",
+  "User",
+  "Vary",
+  "WAC-Allow",
+  "WWW-Authenticate",
+  NULL
+};
+
 #define WS_CORS_STAR (caddr_t*)-1
 
 static caddr_t *
@@ -2259,6 +2292,105 @@ ws_split_cors (caddr_t str)
   return (caddr_t *) list_to_array (dk_set_nreverse (acl_set_ptr));
 }
 
+/*
+ * currently we allow client to expose all headres returned as a legacy/backward compat approach,
+ * in future we may restrict/filter the list
+ * this also apples to ac-allow-methods, these are specific by domain, so keep ones for dav in dav
+ */
+static void
+http_add_cors_expose_headers (ws_connection_t * ws, char * buf, size_t buf_len)
+{
+  char *header;
+  dtp_t *pos;
+  int hlen, inx;
+  strcat_size_ck (buf, "Access-Control-Expose-Headers: ", buf_len);
+  /* first the ones set by app if any, minimal header is x:y<cr><lf> */
+  if (ws->ws_header && box_length (ws->ws_header) > 4)
+    {
+      caddr_t *hdrs = ws_header_line_to_array (ws->ws_header);
+      DO_BOX (caddr_t, hdr, inx, hdrs)
+        {
+          char * sep = strchr (hdr, ':');
+          if (sep) *sep = 0;
+          if (sep && !ncs_strstr (buf, hdr))
+            {
+              strcat_size_ck (buf, hdr, buf_len);
+              strcat_size_ck (buf, ",", buf_len);
+            }
+        }
+      END_DO_BOX;
+      dk_free_tree ((caddr_t)hdrs);
+    }
+  /* next we add default set of headers, should cleanup and make precise list,
+   * present list is one from dav.sql/options
+   * various headers added by a reason, se keep them for now
+   */
+  for (inx = 0; NULL != (header = http_default_exposed_headers[inx]); inx++)
+    {
+      hlen = strlen (header);
+      /* here we see if already set by app, this is to avoid duplicates */
+      if ((NULL != (pos = ncs_strstr (buf, header))) && ',' == pos[hlen])
+        continue;
+      strcat_size_ck (buf, header, buf_len);
+      strcat_size_ck (buf, ",", buf_len);
+    }
+  buf[strlen (buf) - 1] = 0;
+  strcat_size_ck (buf, "\r\n", buf_len);
+}
+
+static void
+http_add_cors_allow_headers (ws_connection_t * ws, char * buf, size_t buf_len)
+{
+  id_hash_t * ht_allow_rules = (ws->ws_map && ws->ws_map->hm_cors_allow_headers) ? ws->ws_map->hm_cors_allow_headers : NULL;
+  caddr_t requested_headers = ws_mime_header_field (ws->ws_lines, "Access-Control-Request-Headers", NULL, 1);
+  dk_set_t requested = NULL;
+  char * comma = NULL;
+  static caddr_t default_deny_all;
+
+  if (!default_deny_all)
+    default_deny_all = box_dv_short_string ("!ALL");
+
+  split_string (requested_headers, ", ", &requested);
+
+  strcat_size_ck (buf, "Access-Control-Allow-Headers: ", buf_len);
+  if (NULL == ht_allow_rules) /* if no rules at all, then we print default */
+    {
+      strcat_size_ck (buf, WS_CORS_DEFAULT_ALLOW_HEADERS, buf_len);
+      strcat_size_ck (buf, ",", buf_len);
+    }
+  else
+    {
+      DO_IDHASH (caddr_t, header, ptrlong, v, ht_allow_rules) /* if there are rules, print what is enabled */
+        {
+          if ((ptrlong)1 == v && 0 != stricmp (header, default_deny_all))
+            {
+              strcat_size_ck (buf, header, buf_len);
+              strcat_size_ck (buf, ", ", buf_len);
+            }
+        }
+      END_DO_IDHASH;
+    }
+  if (NULL == ht_allow_rules || NULL == id_hash_get (ht_allow_rules, (caddr_t) &default_deny_all))
+    {
+      DO_SET (caddr_t, header, &requested) /* then we look what is requested, if not in the list above or no list at all, print */
+        {
+          if (NULL == ht_allow_rules || NULL == id_hash_get (ht_allow_rules, (caddr_t) &header))
+            {
+              strcat_size_ck (buf, header, buf_len);
+              strcat_size_ck (buf, ", ", buf_len);
+            }
+        }
+      END_DO_SET ();
+    }
+  comma = strrchr (buf, ',');
+  if (comma)
+    *comma = '\0';
+  strcat_size_ck (buf, "\r\n", buf_len);
+  dk_free_tree (requested_headers);
+  if (NULL != requested)
+    dk_free_tree (list_to_array (dk_set_nreverse (requested)));
+}
+
 static int
 ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
@@ -2266,10 +2398,12 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
   char * ret_origin = NULL;
   int rc = 0;
+  /* CORS enabled Vdir, and Origin present, go ahead */
   if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
       caddr_t * orgs = ws_split_cors (origin), * place = NULL;
       int inx;
+      /* match the Origin first */
       if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
 	{
 	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
@@ -2289,39 +2423,30 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	    }
 	  END_DO_BOX;
 	}
+      /* client have permissions to proceed, so we say ac allow origin  */
       if (rc)
 	{
-	  char ach[2000] = {0}; 
-	  if (ws->ws_header && box_length (ws->ws_header))
-	    {
-	      caddr_t * hdrs = ws_header_line_to_array (ws->ws_header);
-	      strcat_ck (ach, "Access-Control-Expose-Headers: ");
-	      DO_BOX (caddr_t, hdr, inx, hdrs)
+	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%sAccess-Control-Max-Age: %d\r\n",
+	      ret_origin ? ret_origin : "*",
+	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "",
+              http_ac_max_age); /* max age, for now a constant, should be a config param */
+        }
+      if (rc)
 		{
-		  char * sep = strchr (hdr, ':');
-		  if (sep) *sep = 0;
-		  if (sep && !strstr (ach, hdr))
+	  char ach[2000] = {0};
+          /* preflight next, allow or disallow  headers  */
+          if (WS_NOT_HDR (ws, "Access-Control-Expose-Headers:"))
 		    {
-		      strcat_ck (ach, hdr);
-		      strcat_ck (ach, ",");
-		    }
-		}
-	      END_DO_BOX;
-	      dk_free_tree (hdrs);
-	      ach[strlen (ach) - 1] = 0;
-	      strcat_ck (ach, "\r\n");
+              http_add_cors_expose_headers (ws, ach, sizeof(ach));
 	    }
 	  if (WS_NOT_HDR (ws, "Access-Control-Allow-Headers:"))
 	    {
-	      strcat_ck (ach, "Access-Control-Allow-Headers: Accept, Authorization, Slug, Link, Origin, Content-type");
-	      strcat_ck (ach, "\r\n");
+              http_add_cors_allow_headers (ws, ach, sizeof(ach));
 	    }
-	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%s%s", 
-	      ret_origin ? ret_origin : "*",
-	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "", ach);
+          strcat_size_ck (buf, ach, buf_len);
 	}
       if (orgs != WS_CORS_STAR)
-	dk_free_tree (orgs);
+	dk_free_tree ((caddr_t)orgs);
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -6583,12 +6708,8 @@ bif_encode_base64(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t dest;
   caddr_t res;
-  caddr_t src = bif_string_arg (qst, args, 0, ENC_B64_NAME);
-  dtp_t dtp = DV_TYPE_OF (src);
-  size_t len = box_length(src);
-
-  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
-    len--;
+  int len;
+  caddr_t src = bif_string_or_bin_arg (qst, args, 0, ENC_B64_NAME, &len);
 
   if ((len * 2 + 1) > MAX_BOX_LENGTH)
     sqlr_new_error ("22023", "HT081", "The input string is too large");
@@ -6607,15 +6728,8 @@ bif_encode_base64url(caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t dest;
   caddr_t res;
-  caddr_t src = bif_arg (qst, args, 0, ENC_B64_NAME);
-  dtp_t dtp = DV_TYPE_OF (src);
-  size_t len = box_length(src);
-
-  if (DV_TYPE_OF (src) != DV_BIN && !IS_STRING_DTP (DV_TYPE_OF (src)))
-    sqlr_new_error ("22023", "ENC04", "Function encode_base64 expects binary or string as a 1st argument");
-
-  if (IS_STRING_DTP(dtp) || dtp == DV_C_STRING)
-    len--;
+  int len;
+  caddr_t src = bif_string_or_bin_arg (qst, args, 0, ENC_B64_NAME, &len);
 
   if ((len * 2 + 1) > MAX_BOX_LENGTH)
     sqlr_new_error ("22023", "HT081", "The input string is too large");
@@ -8593,6 +8707,78 @@ http_virtual_host_normalize (caddr_t _host, caddr_t lhost)
   return host1;
 }
 
+static id_hash_t *
+http_map_fill_cors_allow_headers (caddr_t option_value)
+{
+  dk_set_t set = NULL;
+  id_hash_t * ht = NULL;
+  ptrlong one = 1, two = 2;
+
+  split_string (option_value, ", ", &set);
+
+  if (NULL == set)
+    return NULL;
+
+  DO_SET (caddr_t, h, &set)
+    {
+      if (0 == strcmp (h, "*")) /* allow everything incl. custom headers, same as no rules at all */
+        {
+          if (NULL != ht)
+            id_hash_free (ht);
+          ht = NULL;
+          dk_free_tree (list_to_array (dk_set_nreverse (set)));
+          return NULL;
+        }
+      if (NULL == ht)
+        ht = id_strcase_hash_create (7);
+      if (h[0] != '!' || 0 == stricmp (h, "!ALL")) /* expilicitly added header, or all custom disabled */
+        id_hash_set (ht, &h, (caddr_t) & one);
+      else /* explicitly denied header */
+        {
+          caddr_t he = box_dv_short_string (h+1);
+          id_hash_set (ht, &he, (caddr_t)&two);
+        }
+    }
+  END_DO_SET();
+
+  /* default allowed headers, except if denied explicitly, see above */
+  DO_SET (caddr_t, h, &http_default_allow_headers_list)
+    {
+      ptrlong * flag = id_hash_get (ht, (caddr_t) &h);
+      if (flag && 2 == flag[0])
+        continue;
+      id_hash_set (ht, &h, (caddr_t)&one);
+    }
+  END_DO_SET();
+
+  dk_set_free (set);
+  return ht;
+}
+
+static id_hash_t *
+http_map_fill_cors_origins (caddr_t option_value)
+{
+  caddr_t * orgs = ws_split_cors (option_value);
+  id_hash_t * ht = NULL;
+  if (orgs)
+    {
+      if (orgs != WS_CORS_STAR)
+        {
+          int inx;
+          ptrlong one = 1;
+          ht = id_str_hash_create (7);
+          DO_BOX (caddr_t, org, inx, orgs)
+            {
+              id_hash_set (ht, (caddr_t) & org, (caddr_t) & one);
+            }
+          END_DO_BOX;
+        }
+      else
+        ht = (id_hash_t *) orgs;
+    }
+  return ht;
+}
+
 
 /*##********************************************************
 * Add entry in HTTP virtual directories map hash
@@ -8721,44 +8907,32 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  int i, nelm = BOX_ELEMENTS (opts);
 	  for (i = 0; i < nelm && ((nelm % 2) == 0); i+=2)
 	    {
-	      if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"noinherit"))
+              caddr_t option_name = opts[i];
+              caddr_t option_value = opts[i+1];
+
+              if (!DV_STRINGP(option_name))
+                continue;
+
+	      if (!stricmp (option_name,"noinherit"))
 		map->hm_no_inherit = 1;
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"xml_templates"))
+	      else if (!stricmp (option_name,"xml_templates"))
 		map->hm_xml_template = 1;
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"executable"))
+	      else if (!stricmp (option_name,"executable"))
 		map->hm_executable = 1;
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"exec_as_get"))
+	      else if (!stricmp (option_name,"exec_as_get"))
 		map->hm_exec_as_get = 1;
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite"))
-		map->hm_url_rewrite_rule = box_copy_tree (opts[i+1]);
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"url_rewrite_keep_lpath"))
-		map->hm_url_rewrite_keep_lpath = unbox (opts[i+1]);
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"cors_restricted"))
-		map->hm_cors_restricted = unbox (opts[i+1]);
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"cors"))
-		{
-		  caddr_t * orgs = ws_split_cors (opts[i+1]);
-		  id_hash_t * ht = NULL;
-		  if (orgs)
-		    {
-		      if (orgs != WS_CORS_STAR)
-			{
-			  int inx;
-			  ptrlong one = 1;
-			  ht = id_str_hash_create (7);
-			  DO_BOX (caddr_t, org, inx, orgs)
-			    {
-			      id_hash_set (ht, (caddr_t) & org, (caddr_t) & one);
-			    }
-			  END_DO_BOX;
-			}
-		      else
-			ht = (id_hash_t *) orgs;
-		    }
-		  map->hm_cors = ht;
-		}
-	      else if (DV_STRINGP (opts[i]) && !stricmp (opts[i],"expiration_function"))
-		map->hm_expiration_fn = box_copy_tree (opts[i+1]);
+	      else if (!stricmp (option_name,"url_rewrite"))
+		map->hm_url_rewrite_rule = box_copy_tree (option_value);
+	      else if (!stricmp (option_name,"url_rewrite_keep_lpath"))
+		map->hm_url_rewrite_keep_lpath = unbox (option_value);
+	      else if (!stricmp (option_name,"cors_restricted"))
+		map->hm_cors_restricted = unbox (option_value);
+	      else if (!stricmp (option_name,"cors"))
+                map->hm_cors = http_map_fill_cors_origins (option_value);
+	      else if (!stricmp (option_name,"cors_allow_headers"))
+                map->hm_cors_allow_headers = http_map_fill_cors_allow_headers (option_value);
+	      else if (!stricmp (option_name,"expiration_function"))
+		map->hm_expiration_fn = box_copy_tree (option_value);
 	    }
 	  map->hm_opts = (caddr_t *) box_copy_tree ((box_t) opts);
 	}
@@ -11337,7 +11511,6 @@ bif_http_current_charset (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
   return box_dv_short_string (CHARSET_NAME (charset, "ISO-8859-1"));
 }
 
-
 caddr_t
 bif_http_status_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -11626,6 +11799,7 @@ http_init_part_one ()
   snprintf (hsts_header_buf, sizeof (hsts_header_buf), "Strict-Transport-Security: max-age=%d\r\n", https_hsts_max_age);
 
   dns_host_name = get_qualified_host_name ();
+  split_string (WS_CORS_DEFAULT_ALLOW_HEADERS, NULL, &http_default_allow_headers_list);
   return 1;
 }
 

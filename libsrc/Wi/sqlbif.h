@@ -444,4 +444,6 @@ extern void trset_add_indent (int delta);
 
 #define PATH_SEP DIR_SEP
 
+void split_string (caddr_t str, char * chrs, dk_set_t * set);
+
 #endif /* _SQLBIF_H */

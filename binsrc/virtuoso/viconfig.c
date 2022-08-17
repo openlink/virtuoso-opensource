@@ -167,6 +167,7 @@ extern long http_max_cached_proxy_connections;
 extern long http_proxy_connection_cache_timeout;
 extern char * http_server_id_string;
 extern char * http_client_id_string;
+extern char * http_access_control_allow_default_headers;
 extern char * http_soap_client_id_string;
 extern long http_ses_trap;
 extern int http_check_rdf_accept;
@@ -355,6 +356,7 @@ int32 c_lh_xany_normalization_flags = 0;
 int32 c_i18n_wide_file_names = 0;
 char *c_i18n_volume_encoding = NULL;
 char *c_i18n_volume_emergency_encoding = NULL;
+char *c_http_access_control_allow_default_headers = NULL;
 extern int lh_xany_normalization_flags;
 extern int i18n_wide_file_names;
 extern struct encoding_handler_s *i18n_volume_encoding;
@@ -1555,6 +1557,10 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "WriteTimeout", &ws_write_timeout) == -1)
     ws_write_timeout = 0;
+
+  if (cfg_getstring (pconfig, section, "AccessControlAllowDefaultHeaders", &c_http_access_control_allow_default_headers) != -1)
+    http_access_control_allow_default_headers = box_dv_short_string (c_http_access_control_allow_default_headers);
+
   /*
    * FIXME: set meaningful default for c_http_proxy_connection_cache_timeout
    * if c_http_max_cached_proxy_connections is set to something whenever

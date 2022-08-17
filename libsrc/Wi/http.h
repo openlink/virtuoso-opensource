@@ -79,6 +79,7 @@ typedef struct ws_http_map_s
     caddr_t     hm_url_rewrite_rule;
     int		hm_url_rewrite_keep_lpath;
     id_hash_t *	hm_cors;
+    id_hash_t * hm_cors_allow_headers;
     int 	hm_cors_restricted;
     caddr_t     hm_expiration_fn;
   } ws_http_map_t;

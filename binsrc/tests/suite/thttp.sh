@@ -664,8 +664,8 @@ waitAll ()
    clients=1
    while [ "$clients" -gt "0" ]
      do
-       sleep 5
-       clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
+       sleep 1
+       clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
 }
@@ -736,9 +736,6 @@ NOLITE
 ECHO "HTTP Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"
 
-case $1 in 
-   *) #run test
-
    #CLEANUP
    STOP_SERVER
    MakeIni
@@ -771,8 +768,8 @@ case $1 in
    START_SERVER $PORT 1000
    sleep 5
   cd ..
-    rm http/_virtrdf_log*.ttl
-    rm http/graphcrud*.log
+  rm -f http/_virtrdf_log*.ttl
+  rm -f http/graphcrud*.log
     curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
     if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
       LOG 'PASSED: http/_virtrdf_log1.ttl contains data (old IRI syntax)'
@@ -847,7 +844,7 @@ case $1 in
        rm -f tmp.tmp
    done
    START_SERVER $PORT 1000
-   sleep 5
+   sleep 1
    cd ..
 
 if [ $do_mappers_only -ne 1 ]
@@ -1060,7 +1057,15 @@ fi
       LOG "***ABORTED: tjson.sql"
       exit 1
    fi
+
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcors.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: tcors.sql"
+      exit 1
+   fi
 fi
+### end of main tests
 if [ -f $HOME/vad/cartridges_dav.vad ]
 then  
    cp $HOME/vad/cartridges_dav.vad http/ 
@@ -1090,8 +1095,5 @@ fi
    #
    rm -f http/result?.*
    rm -f test_gz.vsp 
-   ;;
-
-esac
 CHECK_LOG
 BANNER "COMPLETED SERIES OF HTTP SERVER TESTS"
