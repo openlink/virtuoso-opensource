@@ -3850,6 +3850,10 @@ ws_check_rdf_accept (ws_connection_t *ws)
   CLI_NEXT_USER (cli);
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
+  if (rc != LTE_OK)
+    {
+      MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
+    }
 
 error_end:
   if (err && err != (caddr_t)SQL_NO_DATA_FOUND)
