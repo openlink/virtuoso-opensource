@@ -11098,6 +11098,29 @@ bif_tcpip_local_interfaces (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   return box_copy_tree (local_interfaces);
 }
 
+
+static caddr_t
+bif_inet_aton (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ip_str = bif_string_arg (qst, args, 0, "inet_aton");
+  struct in_addr in;
+  if (inet_pton (AF_INET, ip_str, (void *) &in))
+    return box_num (in.s_addr);
+  return NEW_DB_NULL;
+}
+
+static caddr_t
+bif_inet_ntoa (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  struct in_addr in;
+  char buf[INET_ADDRSTRLEN], *p_ip;
+  in.s_addr = bif_long_range_arg (qst, args, 0, "inet_ntoa", 0, 0xffffffff);
+  p_ip = inet_ntop (AF_INET, (void *) &in, buf, sizeof (buf));
+  if (p_ip)
+    return box_dv_short_string (p_ip);
+  return NEW_DB_NULL;
+}
+
 static caddr_t
 bif_http_full_request (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -11731,6 +11754,8 @@ http_init_part_one ()
   bif_define_ex ("tcpip_gethostbyname", bif_tcpip_gethostbyname, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("tcpip_gethostbyaddr", bif_tcpip_gethostbyaddr, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("tcpip_local_interfaces", bif_tcpip_local_interfaces, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("inet_aton", bif_inet_aton, BMD_RET_TYPE, &bt_integer, BMD_DONE);
+  bif_define_ex ("inet_ntoa", bif_inet_ntoa, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
 
   bif_define ("http_full_request", bif_http_full_request);
   bif_define ("http_get_string_output", bif_http_get_string_output);
