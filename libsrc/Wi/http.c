@@ -4792,10 +4792,12 @@ ws_serve_connection (ws_connection_t * ws)
       ssl_err = SSL_accept (new_ssl);
       if (ssl_err == -1)
 	{
+#ifndef NDEBUG
           unsigned long err = ERR_get_error();
           char err_buf[1024];
           ERR_error_string_n(err, err_buf, sizeof(err_buf));
-          log_info("SSL_accept [%s]", err_buf);
+	  log_debug ("SSL_accept [%s]", err_buf);
+#endif
 	  SSL_free (new_ssl);
 	  ses->dks_ws_status = DKS_WS_DISCONNECTED;
 	  goto check_state;
@@ -9408,6 +9410,7 @@ http_listen (char * host, caddr_t * https_opts)
       log_error ("Failed HTTP listen at %s code (%d).", host, rc);
       goto err_exit;
     };
+  log_info ("HTTP%s server online at %s", https_opts ? "S" : "", host);
   PrpcCheckIn (listening);
   return listening;
 
