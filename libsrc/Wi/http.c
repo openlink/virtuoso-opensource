@@ -281,6 +281,76 @@ ws_gethostbyaddr (const char * ip)
   return box_dv_short_string (host->h_name);
 }
 
+/* HTTP listeners startup query */
+/*                       0             1        2             3           4  */
+/*     5               6       7               8           9         10         11  */
+#define q_listen "select HL_INTERFACE, HL_TYPE, HL_PROTOCOLS, HL_CIPHERS, HL_DH_PARAM, " \
+    " HL_ECDH_CURVE, HL_KEY, HL_CERTIFICATE, HL_CA_LIST, HL_EXTRA, HL_VERYFY, HL_VERIFY_DEPTH" \
+    " from DB.DBA.SYS_HTTP_LISTENERS where HL_INTERFACE <> server_http_port()"
+
+/* TLS options */
+static ws_opt_t ws_tls_opts[] =
+{
+    {2, "https_protocols", &https_protocols, NULL, DV_STRING},             /* SSL_Protocols */
+    {3, "https_cipher_list", &https_cipher_list, NULL, DV_STRING},         /* SSL_Cipher_List */
+    {4, "https_dhparam", &https_dhparam, NULL, DV_STRING},                 /* SSL_DHparam */
+    {5, "https_ecdh_curve", &https_ecdh_curve, NULL, DV_STRING},           /* SSL_ECDH_Curve */
+    {6, "https_key", &https_key, NULL, DV_STRING},                         /* SSLPrivateKey */
+    {7, "https_cert", &https_cert, NULL, DV_STRING},                       /* SSLCertificate */
+    {8, "https_cv", &https_client_verify_file, NULL, DV_STRING},           /* X509ClientVerifyCAFile */
+    {9, "https_extra_chain_certificates", &https_extra, NULL, DV_STRING},  /* SSLExtraChainCertificate */
+    {10, "https_verify", NULL, &https_client_verify, DV_LONG_INT},         /* X509ClientVerify */
+    {11, "https_cv_depth", NULL, &https_client_verify_depth, DV_LONG_INT}, /* X509ClientVerifyDepth */
+    {-1, NULL, NULL, NULL, DV_LONG_INT}
+};
+
+static caddr_t *
+https_default_opts (void)
+{
+  dk_set_t set = NULL;
+  ws_opt_t *opt;
+
+  for (opt = ws_tls_opts; opt->wo_pos > 0; opt++)
+    {
+      caddr_t val;
+      if (opt->wo_dtp == DV_STRING && NULL == opt->wo_str_val[0])
+        continue;
+      val = opt->wo_dtp == DV_STRING ? box_dv_short_string (opt->wo_str_val[0]) : box_num (opt->wo_int_val[0]);
+      dk_set_push (&set, box_dv_short_string (opt->wo_name));
+      dk_set_push (&set, val);
+    }
+  return (caddr_t *) list_to_array (dk_set_nreverse (set));
+}
+
+static caddr_t *
+http_prepare_opts (local_cursor_t *lc)
+{
+  dk_set_t set = NULL;
+  ws_opt_t *opt;
+  caddr_t proto = lc_nth_col (lc, 1);
+  caddr_t opts = lc_nth_col (lc, 2);
+
+  if (DV_STRINGP (proto) && 0 == stricmp (proto, "SSL") && ARRAYP (opts) && box_length (opts))
+    {
+      /* HTTP_PATH qr comaptibility */
+      return box_copy_tree (opts);
+    }
+  if (DV_DB_NULL == DV_TYPE_OF (proto) || 0 == unbox (proto))
+    return NULL;
+  for (opt = ws_tls_opts; opt->wo_pos > 0; opt++)
+    {
+      caddr_t val = lc_nth_col (lc, opt->wo_pos);
+      if (DV_TYPE_OF (val) == DV_DB_NULL)
+        continue;
+      if (IS_STRING_DTP (DV_TYPE_OF (val)) && box_length (val) < 1)
+        continue;
+      dk_set_push (&set, box_dv_short_string (opt->wo_name));
+      dk_set_push (&set, box_copy_tree (val));
+    }
+  return (caddr_t *) list_to_array (dk_set_nreverse (set));
+}
+
+
 #define ACL_HIT_RESTORE(hit) \
       if (hit) \
 	{ \
@@ -9212,8 +9282,20 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (place && *place && stop & HS_STOP_LISTEN)
 	{
 	  caddr_t *key, old_key;
+	  int is_https_ctx = 0;
+#ifdef _SSL
+	  SSL_CTX *ssl_ctx = NULL;
+#endif
+
 	  listening = *place;
+
+#ifdef _SSL
+	  ssl_ctx = (SSL_CTX *) tcpses_get_sslctx (listening->dks_session);
+	  if (ssl_ctx)
+	    is_https_ctx = 1;
+#endif
 	  http_trace (("stop listen on: %s %p\n", host, listening));
+	  log_info ("HTTP%s server offline at %s", is_https_ctx ? "S" : "", host);
 	  key = (caddr_t *) id_hash_get_key (http_listeners, (caddr_t) & host);
 	  old_key = *key;
 	  id_hash_remove (http_listeners, (caddr_t) & host);
@@ -9221,8 +9303,8 @@ bif_http_listen_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    dk_free_box (old_key);
 	  PrpcDisconnect (listening);
 #ifdef _SSL
-	  if (tcpses_get_sslctx (listening->dks_session))
-	    SSL_CTX_free ((SSL_CTX *) tcpses_get_sslctx (listening->dks_session));
+	  if (ssl_ctx)
+	    SSL_CTX_free (ssl_ctx);
 #endif
 	  PrpcSessionFree (listening);
 	}
@@ -9706,9 +9788,6 @@ bif_http_request_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 }
 
 
-/* HTTP listeners startup query */
-#define q_listen "select HP_LISTEN_HOST, deserialize (HP_AUTH_OPTIONS), HP_SECURITY from DB.DBA.HTTP_PATH where HP_LISTEN_HOST is not null and HP_LISTEN_HOST <> server_http_port() and HP_LISTEN_HOST <> '*ini*' and HP_LISTEN_HOST <> '*sslini*'"
-
 void
 http_vhosts_init (void)
 {
@@ -9727,8 +9806,7 @@ http_vhosts_init (void)
   while (!err && lc_next (lc))
     {
       char * hp = lc_nth_col (lc, 0);
-      caddr_t * opts = (caddr_t *) lc_nth_col (lc, 1);
-      char * sec = lc_nth_col (lc, 2);
+      caddr_t * ssl_opts = http_prepare_opts (lc);
       caddr_t host = http_host_normalize (hp, 0);
       caddr_t has_it, tried;
       mutex_enter (http_listeners_mutex);
@@ -9736,9 +9814,6 @@ http_vhosts_init (void)
       tried = id_hash_get (http_failed_listeners, (caddr_t) & host);
       if (!has_it && !tried)
 	{
-	  caddr_t * ssl_opts = NULL;
-	  if (DV_STRINGP (sec) && 0 == stricmp (sec, "SSL") && ARRAYP (opts) && box_length (opts))
-	    ssl_opts = opts;
 	  listening = http_listen (host, ssl_opts);
 	  if (listening)
 	    {
@@ -9750,6 +9825,7 @@ http_vhosts_init (void)
 	      id_hash_set (http_failed_listeners, (caddr_t) & host, (caddr_t)&one);
 	    }
 	}
+      dk_free_tree (ssl_opts);
       mutex_leave (http_listeners_mutex);
     }
   lc_free (lc);

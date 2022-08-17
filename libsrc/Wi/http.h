@@ -177,6 +177,16 @@ typedef struct acl_hit_s
     float ah_avg;     /* for statistics */
   } acl_hit_t;
 
+/* TLS options */
+typedef struct ws_opt_s
+  {
+    int            wo_pos;     /*!< position in the select list of init query */
+    const char *   wo_name;    /*!< internal option name */
+    char **        wo_str_val; /*!< string option value */
+    int32 *        wo_int_val; /*!< integer option */
+    dtp_t          wo_dtp;     /*!< datatype of option value */
+  } ws_opt_t;
+
 extern long tws_cached_connection_hits;
 extern long tws_cached_connection_miss;
 extern long tws_cached_connections_in_use;

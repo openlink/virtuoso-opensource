@@ -20,19 +20,28 @@
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
 
--- XXX: no longer needed, obsoleted
---create table SYS_HTTP_MAP
---(
---  HM_LPATH       varchar,  -- Logical path
---  HM_PPATH       varchar,  -- Physical path
---  primary key (HM_LPATH)
---)
---;
+create table SYS_HTTP_LISTENERS (
+    HL_INTERFACE varchar,               -- address:port
+    HL_IP_VERSION int default 4,        -- future use
+    HL_TYPE int,                        -- HTTP:0, HTTPS:1
+    HL_PROTOCOLS varchar,               -- e.g. TLSv1, TLSv1.1, TLSv1.2 [https_protocols]
+    HL_CIPHERS varchar,                 -- e.g. AES256-SHA256:AES128-SHA256:HIGH:!aNULL:!eNULL:!EXPORT:!DES:!MD5:!PSK:!RC4 [https_cipher_list]
+    HL_DH_PARAM varchar,                -- [https_dhparam]
+    HL_ECDH_CURVE varchar,              -- [https_ecdh_curve]
+    HL_KEY varchar,                     -- Private key (file or db:name) [https_key]
+    HL_CERTIFICATE varchar,             -- X.509 certificate (file or db:name) [https_cert]
+    HL_CA_LIST varchar,                 -- X.509 CA directory (PEM file) [https_cv]
+    HL_EXTRA varchar,                   -- extra chain certificates [https_extra_chain_certificates]
+    HL_VERYFY int,                      -- 0:no, 1:verify, 2:optional, 3:optional-no-ca [https_verify]
+    HL_VERIFY_DEPTH int,                -- client certificate issuer chain depth [https_cv_depth]
+    PRIMARY KEY (HL_INTERFACE)
+)
+;
 
 -- Mappings table
 create table DB.DBA.HTTP_PATH (
 HP_HOST     varchar not null, -- mapping Host in HTTP header note: *ini*, *sslini*
-HP_LISTEN_HOST  varchar not null, -- IP address & port for mapping listening session
+HP_LISTEN_HOST  varchar not null, -- IP address & port for mapping listening session - FK to SYS_HTTP_LISTENERS
 HP_LPATH        varchar not null, -- logical path
 HP_PPATH    varchar not null, -- physical path
 HP_STORE_AS_DAV   integer not null, -- flag for webDAV storage
@@ -51,6 +60,194 @@ HP_OPTIONS    any,      -- Global options
 HP_IS_DEFAULT_HOST  integer,    -- default host mapping
 primary key (HP_LISTEN_HOST, HP_HOST, HP_LPATH)
 )
+;
+
+create procedure DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (in vin any)
+{
+  declare vout any;
+  declare i int;
+
+  if (not isvector (vin) or mod (length (vin), 2) <> 0)
+    signal ('23000', 'VZ000', 'vector_zap_empty_options needs a vector of even length');
+  vectorbld_init (vout);
+  for (i := 0; i < length (vin); i := i + 2)
+    {
+      if (vin[i+1] is not null and vin[i+1] <> '')
+        {
+          vectorbld_acc (vout, vin[i]);
+          vectorbld_acc (vout, vin[i + 1]);
+        }
+    }
+  vectorbld_final (vout);
+  return vout;
+}
+;
+
+create trigger SYS_HTTP_LISTENERS_U after update on DB.DBA.SYS_HTTP_LISTENERS order 1 referencing old as O, new as N
+{
+  declare opts any;
+  if (N.HL_TYPE <> O.HL_TYPE)
+    signal ('42000', 'VH001', 'The listener type cannot be changed from HTTP frem/to HTTPS');
+  if (N.HL_INTERFACE <> O.HL_INTERFACE)
+    signal ('42000', 'VH001', 'The listener address cannot be changed, should delete and create new');
+  if (N.HL_TYPE = 0)
+    return;
+  opts := vector ('https_protocols', N.HL_PROTOCOLS,
+                     'https_cipher_list', N.HL_CIPHERS,
+                     'https_dhparam', N.HL_DH_PARAM,
+                     'https_ecdh_curve', N.HL_ECDH_CURVE,
+                     'https_key', N.HL_KEY,
+                     'https_cert', N.HL_CERTIFICATE,
+                     'https_cv', N.HL_CA_LIST,
+                     'https_extra_chain_certificates', N.HL_EXTRA,
+                     'https_verify', N.HL_VERYFY,
+                     'https_cv_depth', N.HL_VERIFY_DEPTH
+               );
+  -- update existing mappings for compatibility
+  update DB.DBA.HTTP_PATH set HP_AUTH_OPTIONS = serialize (DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (opts))
+      where HP_LISTEN_HOST = N.HL_INTERFACE;
+  return;
+}
+;
+
+create trigger HTTP_PATH_I after insert on DB.DBA.HTTP_PATH order 1 referencing new as N
+{
+  declare opts any;
+  opts := NULL;
+  -- default interfaces are in the config file
+  if (N.HP_LISTEN_HOST = '*ini*' or N.HP_LISTEN_HOST = '*sslini*')
+    return;
+  -- look for existing HTTPS listener
+  for select HL_PROTOCOLS, HL_CIPHERS, HL_DH_PARAM, HL_ECDH_CURVE, HL_KEY, HL_CERTIFICATE, HL_CA_LIST, HL_EXTRA, HL_VERYFY, HL_VERIFY_DEPTH
+   from DB.DBA.SYS_HTTP_LISTENERS where HL_INTERFACE = N.HP_LISTEN_HOST and HL_TYPE = 1 do
+   {
+     opts := vector ('https_protocols', HL_PROTOCOLS,
+                     'https_cipher_list', HL_CIPHERS,
+                     'https_dhparam', HL_DH_PARAM,
+                     'https_ecdh_curve', HL_ECDH_CURVE,
+                     'https_key', HL_KEY,
+                     'https_cert', HL_CERTIFICATE,
+                     'https_cv', HL_CA_LIST,
+                     'https_extra_chain_certificates', HL_EXTRA,
+                     'https_verify', HL_VERYFY,
+                     'https_cv_depth', HL_VERIFY_DEPTH
+               );
+   }
+  -- for existing listener we update the mapping for backward compatibility
+  if (isvector (opts))
+    {
+      update DB.DBA.HTTP_PATH set HP_AUTH_OPTIONS = serialize (DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (opts))
+          where HP_LISTEN_HOST = N.HP_LISTEN_HOST and HP_HOST = N.HP_HOST and HP_LPATH = N.HP_LPATH and HP_PPATH = N.HP_PPATH;
+    }
+  else if (N.HP_SECURITY = 'SSL') -- new listener, register it
+    {
+      opts := deserialize (N.HP_AUTH_OPTIONS);
+      insert into DB.DBA.SYS_HTTP_LISTENERS (
+          HL_INTERFACE,
+          HL_TYPE,
+          HL_PROTOCOLS,
+          HL_CIPHERS,
+          HL_DH_PARAM,
+          HL_ECDH_CURVE,
+          HL_KEY,
+          HL_CERTIFICATE,
+          HL_CA_LIST,
+          HL_EXTRA,
+          HL_VERYFY,
+          HL_VERIFY_DEPTH)
+          values (
+          N.HP_LISTEN_HOST,
+          1,
+          get_keyword ('https_protocols', opts),
+          get_keyword ('https_cipher_list', opts),
+          get_keyword ('https_dhparam', opts),
+          get_keyword ('https_ecdh_curve', opts),
+          get_keyword ('https_key', opts),
+          get_keyword ('https_cert', opts),
+          get_keyword ('https_cv', opts),
+          get_keyword ('https_extra_chain_certificates', opts),
+          get_keyword ('https_verify', opts, 0),
+          get_keyword ('https_cv_depth', opts, 10));
+    }
+  else -- HTTP
+    {
+      insert soft DB.DBA.SYS_HTTP_LISTENERS (HL_INTERFACE, HL_TYPE) values (N.HP_LISTEN_HOST, 0);
+    }
+  return;
+}
+;
+
+create procedure DB.DBA.VHOST_UPGRADE ()
+{
+  if (not server_http_port ())
+    return;
+  if (registry_get ('http_port') and registry_get ('http_port') <> server_http_port ())
+    {
+      declare old_port, new_port varchar;
+      declare old_sslport, new_sslport varchar;
+      old_port := ':' || registry_get ('http_port');
+      new_port := ':' || server_http_port ();
+      old_sslport := ':' || registry_get ('https_port');
+      new_sslport := ':' || server_https_port ();
+      if (exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = new_port) or
+         (old_sslport <> ':' and exists (select 1 from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = new_sslport))
+         )
+        {
+          log_message ('Default HTTP server port is overlaps existing non-default virtual host(s).');
+          log_message ('Upgrading the conflicting records is required.');
+        }
+      else
+        {
+          registry_set ('http_port', server_http_port ());
+          registry_set ('https_port', coalesce (server_https_port (), ''));
+        }
+    }
+  for select HP_LISTEN_HOST as interface, deserialize (HP_AUTH_OPTIONS) as opts, HP_SECURITY as listener_type 
+    from DB.DBA.HTTP_PATH where HP_LISTEN_HOST is not null and HP_LISTEN_HOST <> server_http_port() 
+        and HP_LISTEN_HOST <> '*ini*' and HP_LISTEN_HOST <> '*sslini*'
+    do
+      {
+        if (interface = ':443' and (listener_type <> 'SSL' or get_keyword ('https_key', opts) is null))
+          {
+            log_message ('Wrong record in virtual hosts config, operator attention required.');
+            goto skip_bad_https;
+          }
+        if (listener_type = 'SSL') -- new listener, register it
+          {
+            insert soft DB.DBA.SYS_HTTP_LISTENERS (
+                HL_INTERFACE,
+                HL_TYPE,
+                HL_PROTOCOLS,
+                HL_CIPHERS,
+                HL_DH_PARAM,
+                HL_ECDH_CURVE,
+                HL_KEY,
+                HL_CERTIFICATE,
+                HL_CA_LIST,
+                HL_EXTRA,
+                HL_VERYFY,
+                HL_VERIFY_DEPTH)
+                values (
+                interface,
+                1,
+                get_keyword ('https_protocols', opts),
+                get_keyword ('https_cipher_list', opts),
+                get_keyword ('https_dhparam', opts),
+                get_keyword ('https_ecdh_curve', opts),
+                get_keyword ('https_key', opts),
+                get_keyword ('https_cert', opts),
+                get_keyword ('https_cv', opts),
+                get_keyword ('https_extra_chain_certificates', opts),
+                get_keyword ('https_verify', opts, 0),
+                get_keyword ('https_cv_depth', opts, 10));
+          }
+        else -- HTTP
+          {
+            insert soft DB.DBA.SYS_HTTP_LISTENERS (HL_INTERFACE, HL_TYPE) values (interface, 0);
+          }
+        skip_bad_https:;
+      }
+}
 ;
 
 -- Default mappings to be created on all existing listeners
@@ -356,8 +553,6 @@ declare ssl_opts any;
 declare varr, lport any;
 if (length (lpath) > 1 and aref (lpath, length (lpath) - 1) = ascii ('/') )
 lpath := substring (lpath, 1, length (lpath) - 1);
---  if (aref (ppath, length (ppath) - 1) <> ascii ('/'))
---    ppath := concat (ppath, '/');
 if (lpath not like '/%' or (ppath not like '/%' and lower(ppath) not like 'http://%'))
 signal ('22023', 'Missing leading slash in lpath or ppath parameter.', 'HT058');
 
@@ -643,25 +838,6 @@ rc := 1;
 return rc;
 }
 ;
-
---create procedure
---HP_SSL_DEFAULT ()
---{
---  declare port, nam varchar;
---  port := virtuoso_ini_item_value ('HTTPServer', 'SSLPort');
---  nam := port;
---  if (strrchr (port, ':') is null and atoi (port) <> 0)
---    {
---      nam := sys_stat ('st_host_name') || ':' || port;
---      port := ':' || port;
---    }
---  if (port is not null)
---    result (nam, port);
---}
---;
---
---create procedure view HP_HTTPS_DEFAULT as HP_SSL_DEFAULT () (HP_HOST varchar, HP_LISTEN_HOST varchar)
---;
 
 create table WS.WS.SYS_RC_CACHE
     (RC_URI varchar,
@@ -1707,7 +1883,8 @@ create procedure WS.WS.host_meta_dss ()
 --/
 create procedure DB.DBA.CREATE_DEFAULT_VHOSTS (
   in vhost varchar := '*ini*',
-  in lhost varchar := '*ini*')
+  in lhost varchar := '*ini*',
+  in force int := 1)
 {
   declare auth any;
   declare sec, cert, sslKey varchar;
@@ -1743,6 +1920,8 @@ create procedure DB.DBA.CREATE_DEFAULT_VHOSTS (
         HPD_IS_DEFAULT_HOST
       from DB.DBA.HTTP_PATH_DEFAULT) do
     {
+      if (not force and (exists (select 1 from DB.DBA.HTTP_PATH where HP_LPATH = HPD_LPATH and HP_HOST = vhost and HP_LISTEN_HOST = lhost)))
+        goto next_entry;
       DB.DBA.VHOST_REMOVE (
         vhost=>vhost,
         lhost=>lhost,
@@ -1767,6 +1946,7 @@ create procedure DB.DBA.CREATE_DEFAULT_VHOSTS (
         auth_opts=>vector_concat (deserialize (HPD_AUTH_OPTIONS), auth),
         opts=>deserialize (HPD_OPTIONS),
         is_default_host=>HPD_IS_DEFAULT_HOST);
+      next_entry:;
     }
 }
 ;
@@ -1834,7 +2014,7 @@ create procedure DB.DBA.ADD_DEFAULT_VHOST (
 ;
 
 -- Trigger to create default vdirs on new listener
-create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH referencing new as N
+create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH order 100 referencing new as N
 {
   -- Check if this is the first entry for the listener
   if (not exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = N.HP_HOST and HP_LISTEN_HOST = N.HP_LISTEN_HOST and HP_LPATH <> N.HP_LPATH))
@@ -1854,4 +2034,75 @@ DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, is_brws=>1, 
 
 -- Default /.well-known mapping for all future http listeners
 DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta', overwrite=>1)
+;
+
+DB.DBA.VHOST_UPGRADE ()
+;
+
+-- check if PL call is in form of fn(kwd=>1(or 'value' etc), i.e. used constants for parameters
+create procedure DB.DBA.SYS_SQL_CHECK_CONST_KWD_CALL (in stmt varchar)
+{
+  declare tree any;
+  declare inx, len int;
+  tree := sql_parse (stmt);
+  if (not isvector (tree) or length (tree) < 3 or tree[0] <> 609 or not isvector (tree[2]))
+    return;
+  tree := tree[2];
+  len := length (tree);
+  for (inx := 0; inx < len; inx := inx + 1)
+    {
+      if (tree[inx][0] <> 629 or (isvector (tree[inx][2]) and length (tree[inx][2]) and tree[inx][2][0] = 201))
+        return 0;
+    }
+  return 1;
+}
+;
+
+-- extract VHOST_DEFINE from Virtuoso/SQL script and create starements to define default entries
+-- input is any of http://, file:, http://local.virt/DAV/...
+-- can be used to extract VDIRS created from VAD installation as well
+create procedure DB.DBA.VHOST_EXTRACT_VDIRS (in source_uri varchar)
+{
+  declare content, res, tree, sqls any;
+  content := cast (DB.DBA.XML_URI_GET (source_uri,'') as varchar);
+  sqls := sql_split_text (content);
+  res := '';
+  foreach (varchar stmt in sqls) do
+    {
+      tree := sql_parse (stmt);
+      if (/*isvector(tree) and tree[0] = 609 and */not strcasestr (stmt, 'DB.DBA.VHOST_DEFINE') is null)
+        {
+          declare parts any;
+          declare part varchar;
+          declare start_inx, inx, len, str_len, current_pos int;
+          current_pos := 0;
+          str_len := length (stmt);
+          parts := regexp_parse ('(DB.DBA.VHOST_DEFINE[^;]+)', stmt, current_pos);
+          while (isarray (parts) and current_pos < str_len)
+            {
+              len := length (parts);
+              start_inx := 0;
+              if (len > 2)
+                start_inx := 2;
+              for (inx := start_inx; inx < len; inx := inx + 2)
+                {
+                  part := subseq (stmt, parts[inx], parts[inx+1]);
+                  part := regexp_replace (part, '[vl]host=>[^,]+,', '');
+                  part := regexp_replace (part, 'sec=>[^,]+,', '');
+                  part := regexp_replace (part, 'auth_opts=>[^,]+,', '');
+                  if (DB.DBA.SYS_SQL_CHECK_CONST_KWD_CALL (part))
+                    {
+                      part := replace (part, '\n', '');
+                      part := regexp_replace (part, '[\\t\\s]+', ' ');
+                      part := replace (part, 'DB.DBA.VHOST_DEFINE' , 'DB.DBA.ADD_DEFAULT_VHOST');
+                        res := res || part || ';\n';
+                    }
+                  current_pos := parts[inx+1] + 1;
+                }
+              parts := regexp_parse ('(DB.DBA.VHOST_DEFINE[^;]+)', stmt, current_pos);
+            }
+        }
+    }
+  return res;
+}
 ;
