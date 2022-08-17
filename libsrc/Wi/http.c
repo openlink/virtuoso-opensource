@@ -5439,12 +5439,15 @@ bif_http_result (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   else if (IS_WIDE_STRING_DTP (dtp))
     {
-      caddr_t err_ret = NULL;
-      char *res = box_cast_to (qst, string, dtp, DV_LONG_STRING, 0, 0, &err_ret);
-      if (!err_ret)
-        session_buffered_write (out, res, box_length (res) - 1);
+      caddr_t err = NULL;
+      char *res = box_cast_to (qst, string, dtp, DV_LONG_STRING, 0, 0, &err);
+      if (!err)
+	session_buffered_write (out, res, box_length (res) - 1);
       else
-	sqlr_new_error ("22023", "HT007", "Incorrect wide string passed to http");
+	{
+	  dk_free_tree (err);
+	  sqlr_new_error ("22023", "HT007", "Incorrect wide string passed to http");
+	}
       dk_free_box (res);
     }
   else
