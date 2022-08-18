@@ -11879,17 +11879,13 @@ ws_thr_cache_clear ()
   DO_SET (ws_connection_t *, ws, &ws_threads)
       ws->ws_thr_cache_clear = 1;
   END_DO_SET();
-  if (ws_dbcs->rc_fill > WS_MIN_RC)
-    {
-      mutex_enter (ws_dbcs->rc_mtx);
-      n = ws_dbcs->rc_fill;
-      memcpy (wst, ws_dbcs->rc_items, n * sizeof (void*));
-      ws_dbcs->rc_fill = WS_MIN_RC;
-      mutex_leave (ws_dbcs->rc_mtx);
-    }
-  else
+  n = ws_dbcs->rc_fill - WS_MIN_RC;
+  if (0 >= n)
     return;
-  for (i = WS_MIN_RC; i < n; i++)
+  if (n > http_threads)
+    GPF_T1 ("unexpected number of ws connections");
+  resource_get_batch (ws_dbcs, wst, n, 0);
+  for (i = 0; i < n; i++)
     {
       ws = (ws_connection_t *) wst[i];
       thr_alloc_cache_clear (ws->ws_thread);
