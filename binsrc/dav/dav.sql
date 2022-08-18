@@ -4138,9 +4138,14 @@ create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, i
 create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar, in path any, inout lines any)
 {
   declare params, data any;
+  declare document_uri, query_string varchar;
 
   connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
-  params := vector ('query', string_output_string (content), 'default-graph-uri', WS.WS.DAV_IRI (full_path));
+  query_string := string_output_string (content);
+  document_uri := WS.WS.DAV_IRI (full_path);
+  if (regexp_match ('^(\\s+)?(base)\\s+<[^>]+>', query_string, 0, 'i') is null)
+    query_string := concat (sprintf ('BASE <%s> \n', document_uri), query_string);
+  params := vector ('query', query_string, 'default-graph-uri', document_uri);
   WS.WS."/!sparql/" (path, params, lines);
   data := http_get_string_output ();
   if (data like 'Virtuoso %')
