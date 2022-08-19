@@ -476,10 +476,7 @@ rdf_repl_gs_batch (query_instance_t * qi, caddr_t * batch, int ins)
     }
   pars = (caddr_t *) list (1, batch);
   err = qr_exec (qi->qi_client, ins ? insqr : delqr, qi, NULL, NULL, NULL, pars, NULL, 0);
-  if (err)
-    {
-      PRINT_ERR (err);
-    }
+  PRINT_ERR (err);
   dk_free_box ((caddr_t)pars);
 }
 
