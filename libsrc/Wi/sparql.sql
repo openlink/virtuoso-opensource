@@ -8935,8 +8935,8 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1,
 {
   declare specials, specials_vec any;
   declare last_iri_id, cur_iri_id IRI_ID;
-  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index G, index order) where G > last_iri_id and not (dict_get (specials, G, 0));
-  declare cr_cl cursor for select G from DB.DBA.RDF_QUAD table option (index G, index order)  where G > last_iri_id and 0 >= position (G, specials_vec);
+  declare cr cursor for select G from DB.DBA.RDF_QUAD table option (index G, index_only, index order)  
+      where G > last_iri_id and 0 >= position (G, specials_vec);
   declare GRAPH_IRI varchar;
   declare GRAPH_IID IRI_ID;
   declare ctr, len integer;
@@ -8966,49 +8966,30 @@ create procedure DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS (in return_iris integer := 1,
     goto done_all;
   last_iri_id := #i0;
 
---  if (1 <> sys_stat ('cl_run_local_only'))
---    {
-      specials_vec := dict_list_keys (specials, 0);
-      whenever not found goto done_rdf_quad_cl;
-      open cr_cl (prefetch 1);
+  specials_vec := dict_list_keys (specials, 0);
+  whenever not found goto done_rdf_quad;
+  open cr (prefetch 1);
 
-next_fetch_cr_cl:
-      fetch cr_cl into cur_iri_id;
-      if (return_iris)
-        result (id_to_iri (cur_iri_id));
-      else
-        result (cur_iri_id);
-      lim := lim - 1;
-      if (len >= lim)
-        goto done_rdf_quad_cl;
+  while (1)
+    {
+      fetch cr into cur_iri_id;
+      if (exists (select top 1 1 from DB.DBA.RDF_QUAD table option (index G) where G = cur_iri_id))
+        {
+          if (return_iris)
+            result (id_to_iri (cur_iri_id));
+          else
+            result (cur_iri_id);
+          lim := lim - 1;
+          if (len >= lim)
+            goto done_rdf_quad;
+        }
       last_iri_id := cur_iri_id;
-      close cr_cl;
-      open cr_cl (prefetch 1);
-      goto next_fetch_cr_cl;
+      close cr;
+      open cr (prefetch 1);
+    }
 
-done_rdf_quad_cl:
-      close cr_cl;
---    }
---  else
---    {
---      whenever not found goto done_rdf_quad;
---      open cr (prefetch 1);
-
---next_fetch_cr:
---      fetch cr into cur_iri_id;
---      if (return_iris)
---        result (id_to_iri (cur_iri_id));
---      else
---        result (cur_iri_id);
---      lim := lim - 1;
---      if (len >= lim)
---        goto done_rdf_quad;
---      last_iri_id := cur_iri_id;
---      goto next_fetch_cr;
-
---done_rdf_quad:
---      close cr;
---    }
+done_rdf_quad:
+  close cr;
 
 done_all:
   specials := dict_list_keys (specials, 1);
