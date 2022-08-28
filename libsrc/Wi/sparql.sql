@@ -7549,16 +7549,21 @@ create procedure DB.DBA.RDF_INSERT_TRIPLES (in graph_iid any, inout triples any,
       for (ctr := length (triples) - 1; ctr >= 0; ctr := ctr - 1)
 	{
 	  declare s_iid, p_iid, obj, o_type, o_lang any;
-	s_iid := triples[ctr][0];
-	p_iid := triples[ctr][1];
-	obj :=   triples[ctr][2];
+	  s_iid := triples[ctr][0];
+	  p_iid := triples[ctr][1];
+	  obj :=   triples[ctr][2];
 	  if (isiri_id (obj))
 	    dpipe_input (dp, s_iid, p_iid, obj, null);
 	  else
             {
               __rdf_obj_set_is_text_if_ft_rule_check (obj, graph_iid, p_iid, null);
-	    dpipe_input (dp, s_iid, p_iid, null, obj);
-	}
+	      dpipe_input (dp, s_iid, p_iid, null, obj);
+	    }
+          if (dpipe_count (dp) >= sys_stat ('dc_max_batch_sz'))
+            {
+              DB.DBA.RL_FLUSH (dp, graph_iid);
+              dp := DB.DBA.RL_LOCAL_DPIPE ();
+            }
         }
       DB.DBA.RL_FLUSH (dp, graph_iid);
       return;
