@@ -73,7 +73,7 @@ create procedure DB.DBA.SPARQL_RSET_XML_HTTP_INIT (inout env any)
 create function DB.DBA.SPARQL_RSET_XML_HTTP_FINAL (inout env any)
 {
   http ('\n </results>');
-  http ('\n</sparql>');
+  http ('\n</sparql>\n');
 }
 ;
 
@@ -981,7 +981,7 @@ create procedure "querySoap"  (in  "Command" varchar
    SPARQL_RESULTS_XML_WRITE_RES (ses, mdta, dta);
 
    -- dbg_obj_princ (mdta);
-   http ('</sparql>', ses);
+   http ('</sparql>\n', ses);
 
    ses := string_output_string (ses);
    string_to_file ('out.xml', ses, -2);
@@ -2018,7 +2018,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             concat (
               '\n <head></head>\n <boolean>',
               case (ask_result) when 0 then 'false' else 'true' end,
-              '</boolean>\n</sparql>'),
+              '</boolean>\n</sparql>\n'),
             ses );
         }
       else if (ret_format = 'TTL')
@@ -2251,7 +2251,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
       http ('\n  </rdf:Description>', ses);
-      http ('\n</rdf:RDF>', ses);
+      http ('\n</rdf:RDF>\n', ses);
       goto body_complete;
     }
   if ((ret_format = 'CXML') or (ret_format = 'CXML;QRCODE'))
@@ -2283,7 +2283,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   SPARQL_RSET_XML_WRITE_NS (ses);
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
   SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
-  http ('\n</sparql>', ses);
+  http ('\n</sparql>\n', ses);
 
 body_complete:
   if (bit_and (flags, 2))
@@ -2297,17 +2297,17 @@ body_complete:
         log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
       else
         vectorbld_final (log_array);
-      if (ret_format like 'HTML%')
+      if (ret_format like '%HTML%' or ret_format like '%XML%')
         {
-          line_begin := '<!-' || '- '; line_end := '-' || '->';
+          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
         }
       else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
         {
-          line_begin := '<!-' || '- '; line_end := '-' || '->';
+          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
         }
       else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
         {
-          line_begin := '# '; line_end := '';
+          line_begin := '# '; line_end := '\n';
         }
       else
         line_begin := null;
