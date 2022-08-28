@@ -172,6 +172,7 @@ extern char * http_soap_client_id_string;
 extern long http_ses_trap;
 extern int http_check_rdf_accept;
 extern int32 http_limited;
+extern int32 enable_https_vd_renegotiate;
 
 extern int vd_use_mts;
 
@@ -1557,6 +1558,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "WriteTimeout", &ws_write_timeout) == -1)
     ws_write_timeout = 0;
+
+  if (cfg_getlong (pconfig, section, "EnableHTTPSRenegotiate", &enable_https_vd_renegotiate) == -1)
+    enable_https_vd_renegotiate = 0;
 
   if (cfg_getstring (pconfig, section, "AccessControlAllowDefaultHeaders", &c_http_access_control_allow_default_headers) != -1)
     http_access_control_allow_default_headers = box_dv_short_string (c_http_access_control_allow_default_headers);

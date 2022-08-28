@@ -91,6 +91,7 @@ caddr_t dns_host_name;
 caddr_t temp_aspx_dir;
 char *www_maintenance_page = NULL;
 char *http_proxy_address = NULL;
+int32 enable_https_vd_renegotiate = 0;
 
 static id_hash_t * http_acls = NULL; /* ACL lists */
 static id_hash_t * http_url_cache = NULL; /* WS cached URLs */
@@ -8910,8 +8911,29 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (nargs > 15)
     { /* Authentication function options */
+      int inx, verify, verify_depth, https_client_verify = HTTPS_VERIFY_NONE;
       caddr_t * opts = (caddr_t *) bif_array_or_null_arg (qst, args, 15, "http_map_table");
       map->hm_auth_opts =  (caddr_t *) box_copy_tree ((box_t) opts);
+#ifdef _SSL
+      map->hm_ssl_verify_mode = verify = SSL_VERIFY_NONE;
+      verify_depth = 15;
+      DO_BOX_FAST_STEP2 (caddr_t, op, caddr_t, v, inx, opts)
+	{
+	  if (DV_STRINGP (op) && !strcmp (op, "https_verify"))
+	    {
+	      https_client_verify = unbox (v);
+	      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
+		verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
+	      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
+		verify |= SSL_VERIFY_PEER;
+	      map->hm_ssl_verify_mode = verify;
+	    }
+	  else if (DV_STRINGP (op) && !strcmp (op, "https_cv_depth"))
+	    verify_depth = unbox (v);
+	}
+      END_DO_BOX;
+      map->hm_ssl_verify_ap = ((0xff & https_client_verify) << 24) | (0xffffff & verify_depth);
+#endif
     }
   if (nargs > 16)
     { /* Global options */
@@ -9706,6 +9728,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
   int is_https = 0;
 #ifdef _SSL
   SSL *ssl = NULL;
+  int verify_mode = SSL_VERIFY_NONE;
 #endif
   socklen_t len = sizeof (sa);
   int port = 0;
@@ -9725,7 +9748,11 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
 
 #ifdef _SSL
   ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
-  is_https = (NULL != ssl);
+  if (ssl != NULL)
+    {
+      is_https = 1;
+      verify_mode = SSL_get_verify_mode (ssl);
+    }
 #endif
 
   tcpses_addr_info (ws->ws_session->dks_session, listen_host, sizeof (listen_host), 80, 1);
@@ -9764,6 +9791,57 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
     }
   ws->ws_p_path_string = ppath;
   ws->ws_p_path = (caddr_t *) http_path_to_array (ppath, 1);
+#ifdef _SSL
+  if (enable_https_vd_renegotiate && is_https && ws->ws_map && ws->ws_map->hm_ssl_verify_mode != verify_mode)
+    {
+      int ctr = 0;
+      uptrlong ap = ws->ws_map->hm_ssl_verify_ap;
+      int i, verify = ws->ws_map->hm_ssl_verify_mode;
+      static int s_server_auth_session_id_context;
+      char err_buf [1024];
+
+      err_buf [0] = '\0';
+      s_server_auth_session_id_context ++;
+      SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
+      SSL_set_app_data (ssl, ap);
+      SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+      i = SSL_renegotiate (ssl);
+#else
+      if (SSL_version(ssl) >= TLS1_3_VERSION)
+	i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
+      else
+	i = SSL_renegotiate (ssl);
+#endif
+      if (i <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+          goto tls_failed;
+	}
+      i = SSL_do_handshake (ssl);
+      if (i <= 0)
+	{
+	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+          goto tls_failed;
+	}
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+      SSL_set_state (ssl, SSL_ST_ACCEPT);
+#else
+      SSL_set_accept_state (ssl);
+#endif
+      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
+	{
+	  timeout_t to = { 0, 1000 };
+	  i = SSL_do_handshake (ssl);
+	  if (i <= 0)
+	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
+	  ctr ++;
+	}
+tls_failed:
+      if (*err_buf)
+        log_error ("SSL Renegotiate: %s", err_buf);
+    }
+#endif
   dk_free_box (host);
   dk_free_box (host_hf);
 }

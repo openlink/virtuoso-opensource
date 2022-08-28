@@ -82,6 +82,8 @@ typedef struct ws_http_map_s
     id_hash_t * hm_cors_allow_headers;
     int 	hm_cors_restricted;
     caddr_t     hm_expiration_fn;
+    int 	hm_ssl_verify_mode;
+    uptrlong 	hm_ssl_verify_ap;
   } ws_http_map_t;
 #endif
 
