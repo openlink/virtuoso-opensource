@@ -49,14 +49,14 @@
 /*
  *   Handle Validation
  */
-static id_hash_t  *hdl_hash = NULL;
+static dk_hash_t  *hdl_ht = NULL;
 static dk_mutex_t *hdl_mtx = NULL;
 
 void
 virt_handle_init ()
 {
-  hdl_hash = id_hash_allocate (1001, sizeof (caddr_t), sizeof (int), voidptrhash, voidptrhashcmp);
-  if (!hdl_hash)
+  hdl_ht = hash_table_allocate (1001);
+  if (!hdl_ht)
     return;
 
   hdl_mtx = mutex_allocate ();
@@ -65,51 +65,54 @@ virt_handle_init ()
 void
 virt_handle_cleanup ()
 {
-  if (hdl_hash)
-    id_hash_free (hdl_hash);
-  hdl_hash = NULL;
+  if (!hdl_ht || !hdl_mtx)
+    return;
 
-  if (hdl_mtx)
-    mutex_free (hdl_mtx);
+  hash_table_free (hdl_ht);
+  hdl_ht = NULL;
+
+  mutex_free (hdl_mtx);
   hdl_mtx = NULL;
 }
 
 void
 virt_handle_register (void *handle, int type)
 {
-  if (!hdl_hash || !hdl_mtx)
+  if (!hdl_ht || !hdl_mtx)
     return;
 
   mutex_enter (hdl_mtx);
-  id_hash_set (hdl_hash, &handle, (caddr_t) &type);
+  sethash (handle, hdl_ht, (void *) (ptrlong) type);
   mutex_leave (hdl_mtx);
 }
 
 void
 virt_handle_unregister (void *handle)
 {
-  if (!hdl_hash || !hdl_mtx)
+  if (!hdl_ht || !hdl_mtx)
     return;
 
   mutex_enter (hdl_mtx);
-  id_hash_remove (hdl_hash, &handle);
+  remhash (handle, hdl_ht);
   mutex_leave (hdl_mtx);
 }
 
 int
 virt_handle_check_type (void *handle, int type, int nullable)
 {
-  int *type_p;
+  void *type_p;
 
-  if (!hdl_hash || !hdl_mtx)
+  if (!hdl_ht || !hdl_mtx)
     return 0;
 
   if (!handle)
     return nullable ? 1 : 0;
 
-  type_p = (int *) id_hash_get (hdl_hash, &handle);
+  mutex_enter (hdl_mtx);
+  type_p = gethash (handle, hdl_ht);
+  mutex_leave (hdl_mtx);
 
-  if (type_p != NULL && *type_p == type)
+  if (type_p != NULL && type_p == (void *) (ptrlong) type)
     return 1;
 
   return 0;
@@ -118,25 +121,17 @@ virt_handle_check_type (void *handle, int type, int nullable)
 void
 virt_handle_debug (void)
 {
-#ifdef DEBUG
-  id_hash_iterator_t it;
-  caddr_t **handle;
   int *type;
 
-  if (!hdl_hash || !hdl_mtx)
+  if (!hdl_ht || !hdl_mtx)
     return;
 
-  mutex_enter (hdl_mtx);
-  id_hash_iterator (&it, hdl_hash);
-
-  dbg_printf (("virt_handle_debug:\n"));
-  while (hit_next (&it, (caddr_t *) & handle, (caddr_t *) & type))
-    {
-      dbg_printf (("DBG: hdl=%p type=%d\n", *handle, *type));
-    }
-  dbg_printf (("\n"));
-  mutex_leave (hdl_mtx);
-#endif
+  printf (("virt_handle_debug:\n"));
+  DO_HT (void *, k, void *, d, hdl_ht)
+  {
+    printf ("%p -> %p\n", k, d);
+  }
+  END_DO_HT;
 }
 
 
