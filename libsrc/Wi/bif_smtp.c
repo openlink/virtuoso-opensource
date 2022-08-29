@@ -329,7 +329,17 @@ type_connection_destroy (caddr_t box)
       mutex_leave (ws_cli_mtx);
 
       PrpcDisconnect (ses);
-      PrpcSessionFree (ses);
+      if (ses->dks_waiting_http_recall_session != NULL) /* don't free, leave thr sem other thread will free it */
+        {
+          du_thread_t * thr = ses->dks_waiting_http_recall_session;
+          ses->dks_n_threads--;
+          ses->dks_waiting_http_recall_session = NULL;
+          semaphore_leave (thr->thr_sem);
+        }
+      else
+        {
+          PrpcSessionFree (ses);
+        }
     }
   if (BOX_ELEMENTS (type) > 2)
     dk_free_tree (type[2]);
