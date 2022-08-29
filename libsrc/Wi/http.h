@@ -132,7 +132,7 @@ typedef struct ws_connection_s
     wcharset_t *	ws_charset;
     char		ws_in_charset;
     int			ws_ignore_disconnect;
-    caddr_t 		ws_store_in_cache;     /* the url to be cached */
+    caddr_t 		ws_store_in_cache;	/*!< the url to be cached */
     int			ws_proxy_request;
     OFF_T		ws_body_limit;
 #ifdef _SSL
@@ -150,32 +150,32 @@ typedef struct ws_connection_s
 /* Cached proxy connections record */
 typedef struct ws_cached_connection_s
   {
-    caddr_t 		host;		/* target host:port value */
-    dk_session_t * 	ses;		/* cached session */
-    unsigned long	hit;		/* last hit in msecs */
-    int			timeout; 	/* max keep-alive timeout value */
+    caddr_t 		host;	/*!< target host:port value */
+    dk_session_t * 	ses;	/*!< cached session */
+    unsigned long	hit;		/*!< last hit in msecs */
+    int			timeout;	/*!< max keep-alive timeout value */
   } ws_cached_connection_t;
 
 typedef struct ws_acl_s
   {
-    long 	ha_order;		/* ordinary position */
-    caddr_t 	ha_mask; 		/* client address pattern */
-    int		ha_flag;		/* deny/allow 1/0 */
-    caddr_t 	ha_dest;		/* destination address pattern */
-    long	ha_obj;			/* sublist item */
-    int 	ha_rw;			/* sublist flag */
-    float 	ha_rate;		/* rate speed */
-    id_hash_t *	ha_cli_ip_r;		/* hash client IP'S reads*/
-    id_hash_t *	ha_cli_ip_w;		/* hash client IP'S writes */
+    long 	ha_order;	/*!< ordinary position */
+    caddr_t 	ha_mask;	/*!< client address pattern */
+    int		ha_flag;	/*!< deny/allow 1/0 */
+    caddr_t 	ha_dest;	/*!< destination address pattern */
+    long	ha_obj;	/*!< sublist item */
+    int 	ha_rw;	/*!< sublist flag */
+    float 	ha_rate;	/*!< rate speed */
+    id_hash_t *	ha_cli_ip_r;	/*!< hash client IP'S reads*/
+    id_hash_t *	ha_cli_ip_w;	/*!< hash client IP'S writes */
     id_hash_t * ha_hits;
     OFF_T	ha_limit;
   } ws_acl_t;
 
 typedef struct acl_hit_s
   {
-    int64 ah_initial; /* initial time */
-    long ah_count;    /* hits since initial */
-    float ah_avg;     /* for statistics */
+    int64 ah_initial;	/*!< initial time */
+    long ah_count;	/*!< hits since initial */
+    float ah_avg;	/*!< for statistics */
   } acl_hit_t;
 
 /* TLS options */
@@ -196,7 +196,7 @@ extern long  tws_bad_request;
 #define WM_GET 1
 #define WM_POST 2
 #define WM_UNKNOWN 3
-#define WM_ERROR 4 /* comment out this definition to stop sending 401 Bad request */
+#define WM_ERROR 4	/*!< comment out this definition to stop sending 401 Bad request */
 #define WM_HEAD 5
 #define WM_OPTIONS 6
 
@@ -211,11 +211,11 @@ extern long  tws_bad_request;
 #define PATH_ELT_MAX_CHARS 512
 
 long ws_content_length (caddr_t * head);
-char * ws_header_field (caddr_t * head, const char * f, char * deflt);
-caddr_t ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode);
+extern const char * ws_header_field (caddr_t * head, const char * f, const char * deflt);
+caddr_t ws_mime_header_field (caddr_t * head, const char * f, const char *subf, int initial_mode);
 void ws_keep_alive_ready (dk_session_t * ses);
-int http_method_id (char * method);
-char * http_get_method_string (int id);
+int http_method_id (const char * method);
+const char * http_get_method_string (int id);
 
 
 
@@ -288,12 +288,12 @@ void connection_set (client_connection_t *cli, caddr_t name, caddr_t val);
 
 /* values of dks_ws_status */
 
-#define DKS_WS_ACCEPTED 0 /* accepted, reading init request, not checked into the select yet */
-#define DKS_WS_STARTED 1 	/* checked in for disconnect watch but not in select yet */
-#define DKS_WS_RUNNING 2	/* there is a running thread associated with this session. The session is in the select to detect async cancellation */
-#define DKS_WS_KEEP_ALIVE 3	/* the connection is waiting for next request, no computation active */
-#define DKS_WS_INPUT_PENDING 4	/* there is a running ws and input has been detected and the session has been checked out of the select, to be read by the ws thread when it is done with current business */
-#define DKS_WS_DISCONNECTED 5	/*  There is a running ws and an async cancellation by client has been detected. The connection is checked out of the select and the ws is expected to close it */
+#define DKS_WS_ACCEPTED 0	/*!< accepted, reading init request, not checked into the select yet */
+#define DKS_WS_STARTED 1 	/*!< checked in for disconnect watch but not in select yet */
+#define DKS_WS_RUNNING 2	/*!< there is a running thread associated with this session. The session is in the select to detect async cancellation */
+#define DKS_WS_KEEP_ALIVE 3	/*!< the connection is waiting for next request, no computation active */
+#define DKS_WS_INPUT_PENDING 4	/*!< there is a running ws and input has been detected and the session has been checked out of the select, to be read by the ws thread when it is done with current business */
+#define DKS_WS_DISCONNECTED 5	/*!<  There is a running ws and an async cancellation by client has been detected. The connection is checked out of the select and the ws is expected to close it */
 #define DKS_WS_FLUSHED	6
 #define DKS_WS_CLIENT 7
 #define DKS_WS_CACHED 8

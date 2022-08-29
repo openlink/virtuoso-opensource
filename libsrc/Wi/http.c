@@ -69,11 +69,13 @@
 #define closesocket close
 #endif
 
-char *http_methods[] = { "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS", /* HTTP/1.1 */
-  			 "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",  /* WebDAV */
-			 "MGET", "MPUT", "MDELETE", 	/* URIQA */
-			 "REPORT", /* CalDAV */
-			 "TRACE", "PATCH", NULL };
+const char *http_methods[] = {
+  "NONE", "GET", "HEAD", "POST", "PUT", "DELETE", "OPTIONS",		/* HTTP/1.1 */
+  "PROPFIND", "PROPPATCH", "COPY", "MOVE", "LOCK", "UNLOCK", "MKCOL",	/* WebDAV */
+  "MGET", "MPUT", "MDELETE",						/* URIQA */
+  "REPORT",								/* CalDAV */
+  "TRACE", "PATCH", NULL
+};
 resource_t *ws_dbcs;
 basket_t ws_queue;
 dk_mutex_t * ws_queue_mtx;
@@ -186,7 +188,7 @@ get_qualified_host_name (void)
   return qualified ? box_copy (qualified) : box_dv_short_string ("localhost");
 }
 
-char * ws_url_escapes = ";/?:@&=+ \"#%<>";
+const char * ws_url_escapes = ";/?:@&=+ \"#%<>";
 
 void ws_proc_error (ws_connection_t * ws, caddr_t err);
 #ifdef _SSL
@@ -225,7 +227,7 @@ int http_ses_size = 0; /* init on viconfig */
 void ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path);
 #define IS_DAV_DOMAIN(ws, path1) (ws && ws->ws_map && ws->ws_map->hm_is_dav)
 void pop_user_id (client_connection_t * cli);
-caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, char * deflt);
+caddr_t ws_get_packed_hf (ws_connection_t * ws, const char * fld, const char * deflt);
 #else
 #define IS_DAV_DOMAIN(ws, path1) (dav_root != NULL && (!strcmp (path1, dav_root) || !strcmp ("/", dav_root)))
 #define ws_get_packed_hf(ws,path1,deflt) NULL
@@ -493,7 +495,7 @@ http_acl_match (caddr_t *alist, caddr_t name, ccaddr_t dst, int obj_id, int rw_f
 static int
 ws_check_acl (ws_connection_t * ws, acl_hit_t ** hit)
 {
-  static char * szHttpAclName = "HTTP";
+  static const char * szHttpAclName = "HTTP";
   caddr_t *list, **plist;
   int rc = 1; /* all enabled by default */
 
@@ -961,7 +963,7 @@ error_end:
 }
 
 #define WS_LOG_DEFAULT_FMT "%h %u %t \"%r\" %s %b \"%{Referer}i\" \"%{User-agent}i\""
-char * http_log_format = WS_LOG_DEFAULT_FMT;
+const char * http_log_format = WS_LOG_DEFAULT_FMT;
 
 #define TZ_TO_HHMM(x)  ((x / 60) * 100 + (x % 60))
 
@@ -986,9 +988,9 @@ log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
   int tmp_len = sizeof (tmp) - sizeof (ws->ws_proto) - 1;
   char format[100];
   char buf[DKSES_OUT_BUFFER_LENGTH];
-  char *volatile ptr;
-  char *volatile start;
-  char * str;
+  const char *volatile ptr;
+  const char *volatile start;
+  const char * str;
   int volatile len;
   int http_resp_code = 0;
   time_t now;
@@ -1456,7 +1458,7 @@ ws_write_failed (ws_connection_t * ws)
 static int
 ws_check_caps (ws_connection_t * ws)
 {
-  char *expect, *end;
+  const char *expect, *end;
   expect = ws_header_field (ws->ws_lines, "Expect:", NULL);
   if (!expect || !strlen (expect))
     return 1;
@@ -1474,8 +1476,7 @@ ws_check_caps (ws_connection_t * ws)
 static void
 ws_req_expect100 (ws_connection_t * ws)
 {
-  char *expect100;
-
+  const char *expect100;
   expect100 = ws_header_field (ws->ws_lines, "Expect:", NULL);
   if (!expect100)
     return;
@@ -1550,7 +1551,7 @@ ws_url_rewrite (ws_connection_t *ws)
   err = qr_quick_exec (url_rewrite_qr, cli, NULL, &lc, 3,
       ":0", ws->ws_path_string, QRP_STR,
       ":1", ws->ws_map->hm_url_rewrite_rule, QRP_STR,
-      ":2", NULL == ws->ws_params ? list (0)  : box_copy_tree (ws->ws_params), QRP_RAW  /* compatibility with old execution sequence */
+      ":2", NULL == ws->ws_params ? list (0)  : box_copy_tree ((caddr_t)(ws->ws_params)), QRP_RAW  /* compatibility with old execution sequence */
       );
 
   if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret)
@@ -1662,10 +1663,10 @@ ws_path_and_params (ws_connection_t * ws)
   if (ws->ws_proto_no > 10)
     tws_1_1_requests++;
 
-  ws->ws_try_pipeline = (nc_strstr ((unsigned char *) ws_header_field (ws->ws_lines, "Connection:", ""),
+  ws->ws_try_pipeline = (nc_strstr ((unsigned const char *) ws_header_field (ws->ws_lines, "Connection:", ""),
 	(unsigned char *) "Keep-Alive") ||
                           (ws->ws_proto_no > 10
-			  && !nc_strstr ((unsigned char *) ws_header_field (ws->ws_lines, "Connection:", ""),
+			  && !nc_strstr ((const unsigned char *) ws_header_field (ws->ws_lines, "Connection:", ""),
 			    (unsigned char *) "close")));
 #ifndef VIRTUAL_DIR
     {
@@ -1678,10 +1679,10 @@ ws_path_and_params (ws_connection_t * ws)
       char *szSlashSlash = strstr (ws->ws_req_line + inx + 1, "://");
       if (szSlashSlash)
 	ws->ws_try_pipeline = (NULL !=
-	    nc_strstr (ws_header_field (ws->ws_lines, "Proxy-Connection:", ""), "Keep-Alive"));
+	    nc_strstr ((const unsigned char *)ws_header_field (ws->ws_lines, "Proxy-Connection:", ""), "Keep-Alive"));
       else if (ws->ws_proto_no < 11)
 	ws->ws_try_pipeline = (NULL !=
-	    nc_strstr (ws_header_field (ws->ws_lines, "Connection:", ""), "Keep-Alive"));
+	    nc_strstr ((const unsigned char *)ws_header_field (ws->ws_lines, "Connection:", ""), "Keep-Alive"));
     }*/
   n_fill = 0;
   ch = '\x0';
@@ -1780,7 +1781,7 @@ ws_path_and_params (ws_connection_t * ws)
   if (!is_proxy_request && body_like_post)
     {
       caddr_t *params = NULL;
-      char *szContentType = ws_header_field (ws->ws_lines, "Content-type:",
+      const char *szContentType = ws_header_field (ws->ws_lines, "Content-type:",
 	  "application/octet-stream");
 
       while (*szContentType && *szContentType <= '\x20')
@@ -1839,7 +1840,7 @@ ws_path_and_params (ws_connection_t * ws)
 }
 
 int
-http_method_id (char * method)
+http_method_id (const char * method)
 {
   int inx, meth = 0;
   if (!method)
@@ -1858,7 +1859,7 @@ http_method_id (char * method)
 void
 http_set_default_options (ws_connection_t * ws)
 {
-  static char * defs[] = { "GET", "HEAD", "POST", "OPTIONS", NULL };
+  static const char * defs[] = { "GET", "HEAD", "POST", "OPTIONS", NULL };
   int inx, m;
   memset (ws->ws_options, 0, sizeof (ws->ws_options));
   for (inx = 0; NULL != defs[inx]; inx ++)
@@ -1868,7 +1869,7 @@ http_set_default_options (ws_connection_t * ws)
     }
 }
 
-char *
+const char *
 http_get_method_string (int id)
 {
   return http_methods [id];
@@ -1965,7 +1966,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
   ws->ws_req_len = 0;
   if (ws->ws_req_body)
     {
-      dk_free_tree (ws->ws_req_body);
+      dk_free_tree ((caddr_t)(ws->ws_req_body));
       ws->ws_req_body = NULL;
     }
   ws->ws_map = NULL;
@@ -1985,7 +1986,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
 
 char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
-char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
+const char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 uint32 http_default_client_req_timeout = 100;
 
 static char hsts_header_buf[128];
@@ -2094,15 +2095,15 @@ ws_header_line_to_array (caddr_t string)
 
     }
   END_READ_FAIL (ses);
-  dk_free_box (ses);
+  dk_free_box ((caddr_t)ses);
   headers = (caddr_t *) list_to_array (dk_set_nreverse (lines));
   return headers;
 }
 
-static char *
-ws_get_mime_variant (char * mime, char ** found)
+static const char *
+ws_get_mime_variant (char * mime, const char ** found)
 {
-  static char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
+  static const char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
   int inx;
   *found = NULL;
   for (inx = 0; NULL != compat[inx]; inx += 2)
@@ -2120,7 +2121,7 @@ ws_get_mime_variant (char * mime, char ** found)
 static const char *
 ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int check_only, OFF_T clen, const char * charset)
 {
-  static char *fmt =
+  static const char *fmt =
       "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n"
       "<html><head>\n"
       "<title>406 Not Acceptable</title>\n"
@@ -2136,7 +2137,8 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
   char buf [1000];
   caddr_t ctype = NULL, cenc = NULL;
   caddr_t * asked;
-  char * match = NULL, * found = NULL;
+  const char * match = NULL;
+  const char * found = NULL;
   int inx;
   float maxq = 0;
   int ignore = (ws->ws_p_path_string ?
@@ -2156,7 +2158,7 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
       cenc = ws_mime_header_field (headers, "Content-Type", "charset", 0);
       if (NULL != cenc)
 	charset = cenc;
-      dk_free_tree (headers);
+      dk_free_tree ((caddr_t)headers);
     }
   if (!mime)
     mime = "text/html";
@@ -2177,7 +2179,7 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
   END_DO_BOX;
   if (!match)
     {
-      char * cname = ws->ws_resource ? ws->ws_resource : ( ws->ws_map && ws->ws_map->hm_def_page ? ws->ws_map->hm_def_page : "index.html");
+      const char * cname = ws->ws_resource ? ws->ws_resource : ( ws->ws_map && ws->ws_map->hm_def_page ? ws->ws_map->hm_def_page : "index.html");
       caddr_t tmpbuf;
 
       code = "HTTP/1.1 406 Unacceptable";
@@ -2218,12 +2220,12 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
 
       dk_free_tree (ws->ws_header);
       ws->ws_header = strses_string (ses);
-      dk_free_tree (headers);
-      dk_free_box (ses);
+      dk_free_tree ((caddr_t)headers);
+      dk_free_box ((caddr_t)ses);
     }
   dk_free_tree (ctype);
   dk_free_tree (cenc);
-  dk_free_tree (asked);
+  dk_free_tree ((caddr_t)asked);
   dk_free_tree (accept);
   return check_only ? NULL : code;
 }
@@ -2432,18 +2434,18 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
               http_ac_max_age); /* max age, for now a constant, should be a config param */
         }
       if (rc)
-		{
-	  char ach[2000] = {0};
+	{
+	  char ach[2000] = { 0 };
           /* preflight next, allow or disallow  headers  */
-          if (WS_NOT_HDR (ws, "Access-Control-Expose-Headers:"))
-		    {
+	  if (WS_NOT_HDR (ws, "Access-Control-Expose-Headers:"))
+	    {
               http_add_cors_expose_headers (ws, ach, sizeof(ach));
 	    }
 	  if (WS_NOT_HDR (ws, "Access-Control-Allow-Headers:"))
 	    {
-              http_add_cors_allow_headers (ws, ach, sizeof(ach));
+	      http_add_cors_allow_headers (ws, ach, sizeof (ach));
 	    }
-          strcat_size_ck (buf, ach, buf_len);
+	  strcat_size_ck (buf, ach, buf_len);
 	}
       if (orgs != WS_CORS_STAR)
 	dk_free_tree ((caddr_t)orgs);
@@ -2760,7 +2762,7 @@ static char *fmt1 =
   "  </head>\n"
   "  <body>\n"
   "    <h3>Error %.5s</h3><pre>\n";
-static char *fmt2 = "\n"
+static const char *fmt2 = "\n"
   "  </pre></body>\n"
   "</html>\n";
 
@@ -2809,7 +2811,7 @@ static char *fmt1 =
 
 #define REPLY_SENT "reply sent"
 
-char * www_root = ".";
+const char *www_root = ".";
 
 
 static int
@@ -3793,7 +3795,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   caddr_t err = NULL;
   int rc = LTE_OK, retc = 0;
   local_cursor_t * lc = NULL;
-  char * accept;
+  const char * accept;
 
   if (!http_check_rdf_accept || ws->ws_status_code != 404)
     return 0;
@@ -3834,7 +3836,7 @@ ws_check_rdf_accept (ws_connection_t *ws)
   err = qr_quick_exec (qr, cli, NULL, &lc, 4,
       ":0", ws->ws_path_string, QRP_STR,
       ":1", ws->ws_map->hm_l_path, QRP_STR,
-      ":2", box_copy_tree (ws->ws_lines), QRP_RAW,
+      ":2", box_copy_tree ((ccaddr_t)(ws->ws_lines)), QRP_RAW,
       ":3", (ptrlong) http_check_rdf_accept, QRP_INT
       );
 
@@ -3881,7 +3883,7 @@ extern int64 dk_n_total;
 void
 ws_mem_record (ws_connection_t * ws)
 {
-  char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
+  const char * h = ws_header_field (ws->ws_lines, "X-Recording:", NULL);
   static FILE *fp;
   if (!h) return;
   while (isspace (*h)) h ++;
@@ -4752,7 +4754,7 @@ ws_switch_to_keep_alive (ws_connection_t * ws)
 
 int32 ws_write_timeout = 0;
 
-void 
+void
 ws_set_write_timeout (ws_connection_t * ws)
 {
   int block = 0;
@@ -4763,7 +4765,7 @@ ws_set_write_timeout (ws_connection_t * ws)
   client->dks_session->ses_w_status = SST_OK;
   client->dks_session->ses_status = SST_OK;
   client->dks_write_block_timeout.to_sec = ws_write_timeout;
-  session_set_control (client->dks_session, SC_BLOCKING, (void*)&block, sizeof (int));
+  session_set_control (client->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
 }
 
 void
@@ -5531,7 +5533,7 @@ again:
     }
   else if (DV_RDF == dtp)
     {
-      rdf_box_t *rb = val;
+      rdf_box_t *rb = (rdf_box_t *)val;
       if (!rb->rb_is_complete)
         rb_complete (rb, qi->qi_trx, qi);
       val = rb->rb_box;
@@ -5735,7 +5737,7 @@ bif_http_host (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void
 ws_lt_trace (lock_trx_t * lt)
 {
-  static char * fname = "http_trace.txt";
+  static const char * fname = "http_trace.txt";
   dk_session_t * ses;
   int to_read, fd = -1;
   char buffer[4096];
@@ -5936,7 +5938,7 @@ bif_http_limited (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)
     {
-      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && !lt->lt_client->cli_terminate_requested && 
+      if ((lt->lt_threads > 0 || lt_has_locks (lt)) && lt->lt_client && !lt->lt_client->cli_terminate_requested &&
 	  lt->lt_client->cli_ws && lt->lt_client->cli_ws->ws_limited)
 	limited ++;
     }
@@ -6071,7 +6073,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 	ws->ws_redirect_from = ws->ws_path_string;
       else
 	dk_free_tree (ws->ws_path_string);
-      dk_free_tree (ws->ws_path);
+      dk_free_tree ((caddr_t)(ws->ws_path));
       ws->ws_path_string = box_copy (new_path);
       parr = (caddr_t *) http_path_to_array (new_path, 1);
       ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
@@ -6084,7 +6086,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   if (new_phy_path != NULL)
     {
       dk_free_tree (ws->ws_p_path_string);
-      dk_free_tree (ws->ws_p_path);
+      dk_free_tree ((caddr_t)(ws->ws_p_path));
       ws->ws_p_path_string = box_copy (new_phy_path);
       parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
@@ -6271,7 +6273,7 @@ http_write_req (dk_session_t * ses, char * host, caddr_t * head, caddr_t * body,
   volatile long new_len = -1;
   char http_11_head [2048];
   int is_mp = body && BOX_ELEMENTS(body) > 0  && (0 == strcmp (body[0], "multipart"));
-  char *szContentType = NULL;
+  const char *szContentType = NULL;
   volatile int url_enc = 1;
   char *proto = NULL;
 
@@ -6520,7 +6522,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
     close = 1;
   else
     {
-      char * connection = ws_header_field (head, "Connection:", "");
+      const char * connection = ws_header_field (head, "Connection:", "");
       while (*connection && *connection <= '\x20')
 	connection++;
       close = 1;
@@ -6528,7 +6530,7 @@ http_proxy (ws_connection_t * ws, char * host, caddr_t * req, caddr_t * body, dk
 	close = 1;
       if (0 == strnicmp (connection, "Keep-Alive", 10))
 	{
-	  char * keep_alive;
+	  const char * keep_alive;
 	  close = 0;
 	  keep_alive = ws_header_field (head, "Keep-Alive:", "");
 	  while (*keep_alive && *keep_alive <= '\x20')
@@ -7079,8 +7081,8 @@ ws_content_length (caddr_t * head)
 }
 
 
-char *
-ws_header_field (caddr_t * head, const char * f, char * deflt)
+const char *
+ws_header_field (caddr_t * head, const char * f, const char * deflt)
 {
   int inx;
   DO_BOX (caddr_t, line, inx, head)
@@ -7094,7 +7096,7 @@ ws_header_field (caddr_t * head, const char * f, char * deflt)
 
 
 caddr_t
-ws_mime_header_field (caddr_t * head, char * f, char *subf, int initial_mode)
+ws_mime_header_field (caddr_t * head, const char * f, const char *subf, int initial_mode)
 {
   int inx;
   dk_session_t *ses = NULL;
@@ -7335,7 +7337,7 @@ http_client_cache_get (query_instance_t * qi, caddr_t url, caddr_t header, caddr
 	  if (BOX_ELEMENTS (args) > arg_pos && ssl_is_settable (args[arg_pos]))
 	    {
 	      caddr_t * head = (caddr_t *) lc_nth_col (lc, 0);
-	      qst_set ((caddr_t *) qi, args[arg_pos], box_copy_tree (head));
+	      qst_set ((caddr_t *) qi, args[arg_pos], box_copy_tree ((caddr_t)head));
 	    }
 	  if (IS_BLOB_HANDLE_DTP (dtp))
 	    {
@@ -7381,7 +7383,7 @@ http_client_cache_register (query_instance_t * qi, caddr_t url, caddr_t header, 
     }
   err = qr_rec_exec (qr, qi->qi_client, NULL, qi, NULL, 4,
       ":0", url, QRP_STR,
-      ":1", box_copy_tree (head), QRP_RAW,
+      ":1", box_copy_tree ((caddr_t)head), QRP_RAW,
       ":2", body, QRP_STR,
       ":3", http_client_cache_hash (header, req_body), QRP_RAW);
 
@@ -7418,10 +7420,10 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t header = NULL;
   caddr_t body = NULL;
   caddr_t volatile proxy = NULL;
-  char * trf_enc = NULL;
-  char * cont_enc = NULL;
+  const char * trf_enc = NULL;
+  const char * cont_enc = NULL;
   int resp_code = 0, no_body = 0;
-  char * code_pos = NULL;
+  const char * code_pos = NULL;
 #ifdef _USE_CACHED_SES
   volatile int close = 1;
   char host[1000];
@@ -7594,7 +7596,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	close = 1;
       else
 	{
-	  char * connection = ws_header_field (head, "Connection:", "");
+	  const char * connection = ws_header_field (head, "Connection:", "");
 	  while (*connection && *connection <= '\x20')
 	    connection++;
 	  close = 0;
@@ -7602,7 +7604,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    close = 1;
 	  if (0 == strnicmp (connection, "Keep-Alive", 10))
 	    {
-	      char * keep_alive;
+	      const char * keep_alive;
 	      close = 0;
 	      keep_alive = ws_header_field (head, "Keep-Alive:", "");
 	      while (*keep_alive && *keep_alive <= '\x20')
@@ -7677,8 +7679,8 @@ bif_string_output (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_flush");
-  strses_flush ((dk_session_t *) strses);
+  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_flush");
+  strses_flush (strses);
   return (NULL);
 }
 
@@ -7698,8 +7700,8 @@ bif_http_output_flush (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_string_output_string (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t strses = bif_strses_arg (qst, args, 0, "string_output_string");
-  if (!STRSES_CAN_BE_STRING ((dk_session_t *) strses))
+  dk_session_t *strses = bif_strses_arg (qst, args, 0, "string_output_string");
+  if (!STRSES_CAN_BE_STRING (strses))
     {
       *err_ret = STRSES_LENGTH_ERROR ("string_output_string");
       return NULL;
@@ -7922,7 +7924,7 @@ bif_http_request_header (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  char * szMe = "http_request_header_full";
+  const char * szMe = "http_request_header_full";
   query_instance_t * qi = (query_instance_t *) qst;
   int n_args = BOX_ELEMENTS (args);
   caddr_t *lines = (caddr_t *) ((n_args > 0) ?   bif_array_arg (qst, args, 0, szMe) : NULL);
@@ -8008,7 +8010,7 @@ caddr_t
 bif_http_set_params (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  char * pars = bif_arg (qst, args, 0, "http_set_params");
+  caddr_t *pars = (caddr_t *)bif_arg (qst, args, 0, "http_set_params");
   if (qi->qi_client->cli_ws)
     {
       int n_pars;
@@ -8017,8 +8019,8 @@ bif_http_set_params (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       n_pars = BOX_ELEMENTS (pars);
       if (0 != (n_pars % 2))
 	sqlr_new_error ("22023", "HTXXX", "A name value pairs are expected as parameter");
-      dk_free_tree (qi->qi_client->cli_ws->ws_params);
-      qi->qi_client->cli_ws->ws_params = box_copy_tree (pars);
+      dk_free_tree ((caddr_t)(qi->qi_client->cli_ws->ws_params));
+      qi->qi_client->cli_ws->ws_params = (caddr_t *)box_copy_tree ((caddr_t)pars);
     }
   return NULL;
 }
@@ -8370,7 +8372,7 @@ char * ws_def_1 =
 "  return 1; \n"
 "}";
 
-char * ws_def_2_name = "WS.WS.DEFAULT";
+const char * ws_def_2_name = "WS.WS.DEFAULT";
 
 char * ws_def_2 =
 "create procedure WS.WS.\"DEFAULT\" (in path varchar, in params varchar, inout lines varchar)\n"
@@ -8744,11 +8746,11 @@ http_map_fill_cors_allow_headers (caddr_t option_value)
       if (NULL == ht)
         ht = id_strcase_hash_create (7);
       if (h[0] != '!' || 0 == stricmp (h, "!ALL")) /* expilicitly added header, or all custom disabled */
-        id_hash_set (ht, &h, (caddr_t) & one);
+        id_hash_set (ht, &h, (caddr_t) &one);
       else /* explicitly denied header */
         {
           caddr_t he = box_dv_short_string (h+1);
-          id_hash_set (ht, &he, (caddr_t)&two);
+          id_hash_set (ht, &he, (caddr_t) &two);
         }
     }
   END_DO_SET();
@@ -8759,7 +8761,7 @@ http_map_fill_cors_allow_headers (caddr_t option_value)
       ptrlong * flag = id_hash_get (ht, (caddr_t) &h);
       if (flag && 2 == flag[0])
         continue;
-      id_hash_set (ht, &h, (caddr_t)&one);
+      id_hash_set (ht, &h, (caddr_t) &one);
     }
   END_DO_SET();
 
@@ -9667,9 +9669,11 @@ get_http_map (ws_http_map_t ** ws_map, char * lpath, int dir, char * host, char 
 * Note: result should be freed
 **************************************************************/
 caddr_t
-ws_get_packed_hf (ws_connection_t * ws, const char * fld, char * deflt)
+ws_get_packed_hf (ws_connection_t * ws, const char * fld, const char * deflt)
 {
-  caddr_t ret, p1, val = ws_header_field (ws->ws_lines, fld, deflt);
+  caddr_t ret;
+  const char *val = ws_header_field (ws->ws_lines, fld, deflt);
+  const char *p1;
   size_t len = 0;
   if (!val)
     return NULL;
@@ -10230,7 +10234,7 @@ bif_http_is_flushed (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 static caddr_t
 bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 {
-  char * me = "https_renegotiate";
+  const char * me = "https_renegotiate";
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
   int ctr = 0;
@@ -10283,7 +10287,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
 	}
       i = SSL_do_handshake (ssl);
-      if (i <= 0) 
+      if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
@@ -10302,7 +10306,7 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 	  ctr ++;
 	}
       END_IO_SECT (err_ret);
-      if (i <= 0) 
+      if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..003", "SSL_do_handshake failed %s", err_buf);
@@ -10595,7 +10599,7 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static void
 http_acl_stats ()
 {
-  static char * szHttpAclName = "HTTP";
+  static const char * szHttpAclName = "HTTP";
   caddr_t *alist, **plist;
 
   plist = (caddr_t **) id_hash_get (http_acls, (caddr_t) &szHttpAclName);
@@ -10844,7 +10848,7 @@ bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   QNCAST (query_instance_t, qi, qst);
   db_buf_t set_mask = qi->qi_set_mask;
   int argcount, set, n_sets = qi->qi_n_sets, first_set = 0;
-  state_slot_t * sysacl_ssl, *user_ssl;
+  state_slot_t * sysacl_ssl, *user_ssl = NULL;
   user_t *curr_user = NULL;
 
   if (!ret)
@@ -10852,7 +10856,7 @@ bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   argcount = BOX_ELEMENTS (args);
   if (argcount < 1)
-    sqlr_new_error ("42001", "VEC..", "Not enough arguments for sysacl_bit1_of_tree()");
+    sqlr_new_error ("42001", "VEC04", "Not enough arguments for sysacl_bit1_of_tree()");
   sysacl_ssl = args[0];
   sysacl_arg = QST_BOX (data_col_t *, qst, sysacl_ssl->ssl_index);
   if (argcount < 2)
@@ -10893,7 +10897,7 @@ bif_sysacl_bit1_of_tree_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
         {
           if (DV_DB_NULL == DV_TYPE_OF (sysacl))
             { bit1 = 0; goto ans_done; }
-          sqlr_new_error ("42001", "VEC..", "Wrong dadatype of sysacl");
+          sqlr_new_error ("42001", "VEC05", "Wrong dadatype of sysacl");
         }
       if (NULL != user_arg)
         {
@@ -11027,7 +11031,7 @@ ws_cache_store (ws_connection_t * ws, int store)
 static caddr_t
 bif_http_url_cache_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char * szMe = "http_url_cache_set";
+  static const char *szMe = "http_url_cache_set";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
   caddr_t check = bif_string_arg (qst, args, 1, szMe);
   caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
@@ -11048,7 +11052,7 @@ bif_http_url_cache_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_http_url_cache_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char * szMe = "http_url_cache_get";
+  static const char *szMe = "http_url_cache_get";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
   caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
   if (place)
@@ -11059,7 +11063,7 @@ bif_http_url_cache_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_http_url_cache_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  static char * szMe = "http_url_cache_remove";
+  static const char *szMe = "http_url_cache_remove";
   caddr_t url = bif_string_arg (qst, args, 0, szMe);
   caddr_t *place = (caddr_t *)id_hash_get (http_url_cache, (caddr_t)&url);
   if (place)
@@ -11108,7 +11112,7 @@ bif_tcpip_gethostbyaddr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 static caddr_t
 bif_tcpip_local_interfaces (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return box_copy_tree (local_interfaces);
+  return box_copy_tree ((caddr_t)local_interfaces);
 }
 
 
@@ -11894,15 +11898,13 @@ ws_thr_cache_clear ()
     }
 }
 
-size_t dk_alloc_cache_total (void * cache);
-
 size_t
-http_threads_mem_report ()
+http_threads_mem_report (void)
 {
   size_t cache_fill = 0;
   DO_SET (ws_connection_t *, ws, &ws_threads)
     {
-      cache_fill += dk_alloc_cache_total (ws->ws_thread->thr_alloc_cache);  
+      cache_fill += dk_alloc_cache_total (ws->ws_thread->thr_alloc_cache);
     }
   END_DO_SET();
   return cache_fill;

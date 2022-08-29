@@ -823,7 +823,7 @@ extern int enable_gzip;
 extern int isdts_mode;
 extern FILE *http_log;
 extern char * http_soap_client_id_string;
-extern char * http_client_id_string;
+extern const char * http_client_id_string;
 extern char * http_server_id_string;
 extern uint32 http_default_client_req_timeout;
 extern long http_ses_trap;
@@ -853,7 +853,7 @@ extern char *denied_dirs;
 extern char *backup_dirs;
 extern char *safe_execs;
 extern char *dba_execs;
-extern char *www_root;
+extern const char *www_root;
 extern char *temp_dir;
 
 /* Externals from virtuoso */
