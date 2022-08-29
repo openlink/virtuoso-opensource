@@ -2588,7 +2588,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   accept_gz = ws_get_packed_hf (ws, "Accept-Encoding:", "");
   if (IS_CHUNKED_OUTPUT (ws))
     cnt_enc = WS_CE_CHUNKED;
-  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11)
+  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11 && ws->ws_status_code > 199)
     {
       cnt_enc = WS_CE_GZIP;
       ws->ws_try_pipeline = 0; /* browsers based on webkit workaround */
@@ -11560,7 +11560,7 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (DV_CONNECTION == DV_TYPE_OF (conn))
     {
       ses = (dk_session_t *) conn[0];
-      if (DKSESSTAT_ISSET (ses, SST_OK))
+      if (ses && DKSESSTAT_ISSET (ses, SST_OK))
         conn[0] = NULL;
       else
 	ses = NULL;
@@ -11605,10 +11605,18 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
+  /* we have to check if this id exists to do not overlap existing one */
+  mutex_enter (ws_cli_mtx);
+  if (NULL != gethash ((void *) (ptrlong) id, ws_cli_sessions))
+    {
+      *err_ret = srv_make_new_error ("22023", "HT000", "The id specified already exists in the cache");
+      goto err;
+    }
+
   if (DV_CONNECTION == DV_TYPE_OF (conn))
     {
       ses = (dk_session_t *) conn[0];
-      if (DKSESSTAT_ISSET (ses, SST_OK))
+      if (ses && DKSESSTAT_ISSET (ses, SST_OK))
         conn[0] = NULL;
       else
 	ses = NULL;
@@ -11617,7 +11625,10 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       /* We should mark the session so it will not be disconnected nor freed */
       if (ws->ws_flushed)
-	sqlr_new_error ("42000", "HT000", "The client session is already flushed");
+        {
+          *err_ret = srv_make_new_error ("42000", "HT000", "The client session is already flushed");
+          goto err;
+        }
       ses = qi->qi_client->cli_ws->ws_session;
       mutex_enter (thread_mtx);
       ws->ws_session->dks_ws_status = DKS_WS_CACHED;
@@ -11627,17 +11638,14 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   if (ses == NULL)
-    sqlr_new_error ("22023", "HT000", "The http_keep_session expects an open connection as 1-st argument");
-
-  /* we have to check if this id exists to do not overlap existing one */
-  mutex_enter (ws_cli_mtx);
-  if (NULL == gethash ((void *) (ptrlong) id, ws_cli_sessions))
     {
-      sethash ((void *) (ptrlong) id, ws_cli_sessions, (void *) ses);
-      ses->dks_cache_id = id;
+      *err_ret = srv_make_new_error ("22023", "HT000", "The http_keep_session expects an open connection as 1-st argument");
+      goto err;
     }
-  else
-    *err_ret = srv_make_new_error ("22023", "HT000", "The id specified already exists in the cache");
+
+  sethash ((void *) (ptrlong) id, ws_cli_sessions, (void *) ses);
+  ses->dks_cache_id = id;
+err:
   mutex_leave (ws_cli_mtx);
   return NEW_DB_NULL;
 }
