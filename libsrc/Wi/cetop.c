@@ -36,7 +36,7 @@ extern int allow_non_unq_range;
 int
 itc_is_any_key (it_cursor_t * itc, int nth)
 {
-  /* true if the nth key part is a any type col */
+  /* true if the nth key part is an ANY type col */
   search_spec_t *sp = itc->itc_key_spec.ksp_spec_array;
   int inx;
   for (inx = 0; sp && inx < nth; inx++)
@@ -182,7 +182,7 @@ itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp)
   col_dtp = itc->itc_insert_key->key_row_var[nth_key].cl_sqt.sqt_col_dtp;
   dv = (db_buf_t) (ptrlong) i;
   if (DV_ANY != col_dtp && DV_BOX_FLAGS == dv[0])
-    dv += 5;			/* a box flags prefix in a dv for any col other than an any is dropped, not part of comparison */
+    dv += 5;			/* a box flags prefix in a dv for any col other than an ANY is dropped, not part of comparison */
   return dv;
 }
 
@@ -335,7 +335,7 @@ itc_num_cast_search (it_cursor_t * itc, db_buf_t ce, int64 delta, int dtp_cmp, i
     {
       if (set == itc->itc_range_fill)
 	{
-	  /* must be a leading eq situation because end of set and repeat of value are  checked before getting new val */
+	  /* must be a leading eq situation because end of set and repeat of value are checked before getting new val */
 	  itc_range (itc, itc->itc_ranges[set - 1].r_end, COL_NO_ROW);
 	}
       from = itc->itc_ranges[set].r_first - row_of_ce;
@@ -391,7 +391,7 @@ itc_num_cast_search (it_cursor_t * itc, db_buf_t ce, int64 delta, int dtp_cmp, i
       itc->itc_ranges[set].r_first = range.r_first + itc->itc_row_of_ce;
       if (COL_NO_ROW == range.r_end)
 	{
-	  /* there was no gt in the scanned part of the ce.  If range extends beyond, contimue search, else leave end unchanged and take next set */
+	  /* there was no gt in the scanned part of the ce.  If range extends beyond, continue search; else leave end unchanged and take next set */
 	  if (itc->itc_ranges[set].r_end <= row_of_ce + ce_rows)
 	    return CE_NEXT_SET;
 	return CE_CONTINUES;
@@ -434,7 +434,7 @@ itc_bad_len_ins (it_cursor_t * itc, db_buf_t ce, int64 delta, int dtp_cmp, int r
   if (1 || ASC_NUMBERS == dtp_cmp)
     return itc_num_cast_search (itc, ce, delta, dtp_cmp, rc);
   GPF_T1
-      ("not to come here.  All comparisons needing cast or with different length intlike compressed strings go via the general case");
+      ("not to come here.  All comparisons needing CAST or with different length INT-like compressed strings go via the general case");
   set = itc->itc_set - itc->itc_col_first_set;
   if (ASC_NUMBERS != dtp_cmp && CE_FIND_LAST == rc)
     {
@@ -537,15 +537,15 @@ ce_bad_dtp (it_cursor_t * itc, db_buf_t ce, int set, int row_of_ce, int ce_n_val
     {
       if (DVC_DTP_LESS == dtp_cmp && (!(nth_key && itc->itc_ranges[set].r_end <= row_of_ce)))
 	{
-	  /* if range extends to the ce and the ce is dtp lt the previous ce then the index is out of order */
+	  /* if range extends to the ce and the ce is dtp lt the previous ce, then the index is out of order */
 	  if (!allow_non_unq_range)
 	    {
 	      itc->itc_reset_after_seg = col_ins_error = 1;
-	      GPF_T1 ("can't have a range that shifts from compatble to less dtp in next ce");
+	      GPF_T1 ("can't have a range that shifts from compatible to less dtp in next ce");
 	    }
 	}
       itc->itc_ranges[set].r_end = row_of_ce;
-      /* could be the same params repeat, so will need to replicate the just closed set for each repeat of nth_key first keys */
+      /* could be the same params repeat, so will need to replicate the just-closed set for each repeat of nth_key first keys */
       for (;;)
 	{
 	  if (set + itc->itc_col_first_set + 1 >= itc->itc_n_sets)
@@ -608,7 +608,7 @@ ce_bad_dtp (it_cursor_t * itc, db_buf_t ce, int set, int row_of_ce, int ce_n_val
 	}
       else
 	{
-	  /* all in this ce are less.  If range extends after the ce, take next ce, else the range starts at its end and we look at next set */
+	  /* all in this ce are less.  If range extends after the ce, take next ce; else the range starts at its end, and we look at next set */
 	  if (itc->itc_ranges[set].r_end > row_of_ce + ce_n_values)
 	    {
 	      itc->itc_ranges[set].r_first = COL_NO_ROW;
@@ -932,7 +932,7 @@ ce_body (db_buf_t ce, db_buf_t ce_first)
 int64
 itc_ce_value_offset (it_cursor_t * itc, db_buf_t ce, db_buf_t * body_ret, int *dtp_cmp)
 {
-  /* take a rl, rld or bitmap or int delta.  Decode 1st value in ce and return the int difference between this and the search param.  Byte 0 of body is returned body_ret.  If incomparable, body_ret is 0 and dtp_cmp is the orer of the dtps. *
+  /* take a rl, rld, or bitmap or int delta.  Decode first value in ce and return the int difference between this and the search param.  Byte 0 of body is returned body_ret.  If incomparable, body_ret is 0 and dtp_cmp is the orer of the dtps. *
    *  if int delta, consider that the last byte of val is length and special case with dv date */
   uint32 delta;
   dtp_t ctmp[MAX_FIXED_DV_BYTES];
@@ -1038,7 +1038,7 @@ ntype:
       return 0;
     }
   /* Because the range of num dtps is not contiguous, when comparing num to non-num by dtp, consider all nums as ints.
-   * could get a < b and b < c and a > c if ,c num and b not num. */
+   * could get a < b and b < c and a > c, if c num and b not num. */
   if (IS_NUM_DTP (ce_dtp))
     ce_dtp = DV_LONG_INT;
   if (IS_NUM_DTP (param_dtp))
@@ -1161,7 +1161,7 @@ ce_search_rld (it_cursor_t * itc, db_buf_t ce, row_no_t row_of_ce, int rc, int n
 		    }
 		  else
 		    {
-		      /* if range given and falls in mid of  a gt stretch, the insert point is first of range, else it is start of the gt run */
+		      /* if range given and falls in mid of a gt stretch, the insert point is first of range; else it is start of the gt run */
 		      row_no_t end = MAX (itc->itc_ranges[set].r_first, last_row + row_of_ce);
 		      if (COL_NO_ROW == end)
 			end = last_row + row_of_ce;
@@ -1185,7 +1185,7 @@ ce_search_rld (it_cursor_t * itc, db_buf_t ce, row_no_t row_of_ce, int rc, int n
 	      if (below > 0)
 		{
 		  if (!allow_non_unq_range)
-		    GPF_T1 ("In rld it is suspect to find lt value in range when looking for last match");
+		    GPF_T1 ("In rld, it is suspect to find lt value in range when looking for last match");
 		  itc->itc_reset_after_seg = col_ins_error = 1;
 		}
 	      goto next_set;
@@ -1288,7 +1288,7 @@ next_set:
 	at_or_above = itc->itc_ranges[set - 1].r_end - row_of_ce;
 	if (at_or_above < 0)
 	  at_or_above = 0;
-	itc->itc_ranges[set].r_first = at_or_above + row_of_ce;	/* sure to be here or later, if were not set, here, we could get a lower number based on last row and rl since a matching run can start below the end of last range.  The last range need not be a match, could also have been a bounded interval determined by prev key part with no match in this ce */
+	itc->itc_ranges[set].r_first = at_or_above + row_of_ce;	/* sure to be here or later, if were not set here, we could get a lower number based on last row and rl since a matching run can start below the end of last range.  The last range need not be a match, could also have been a bounded interval determined by prev key part with no match in this ce */
 	below = ce_n_values;
 	goto new_val;
       }
@@ -1912,7 +1912,7 @@ new_val:
 	  itc->itc_ranges[set].r_end = COL_NO_ROW;
 	  return CE_CONTINUES;
 	}
-      GPF_T1 ("not supposed to hity end with eq still looking for 1st");
+      GPF_T1 ("not supposed to hit end with eq still looking for 1st");
     }
   if (0 == nth_key && CE_FIND_FIRST == rc)
     itc_range (itc, COL_NO_ROW, COL_NO_ROW);
