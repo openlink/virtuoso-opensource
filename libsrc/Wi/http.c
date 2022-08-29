@@ -9242,6 +9242,44 @@ ssl_server_set_certificate (SSL_CTX* ssl_ctx, char * cert_name, char * key_name,
   return 1;
 }
 
+static int
+https_ssl_ctx_set_dhparam (SSL_CTX * ctx, char * dhparam)
+{
+  char err_buf [1024];
+  if (dhparam && strstr (dhparam, "db:") == dhparam)
+    {
+      xenc_key_t * k;
+      client_connection_t * cli = GET_IMMEDIATE_CLIENT_OR_NULL;
+      user_t * saved_user;
+      if (!cli)
+	{
+	  log_error ("SSL: The DH param stored in the database cannot be accessed");
+          goto err_exit;
+	}
+      saved_user = cli->cli_user;
+      if (!cli->cli_user)
+	cli->cli_user = sec_name_to_user ("dba");
+      k = xenc_get_key_by_name (dhparam + 3, 1);
+      cli->cli_user = saved_user;
+      if (!k || k->xek_type != DSIG_KEY_DH)
+	{
+	  log_error ("SSL: The stored DH param '%s' is invalid", dhparam);
+          goto err_exit;
+	}
+      SSL_CTX_set_options (ctx, SSL_OP_SINGLE_DH_USE);
+      SSL_CTX_set_tmp_dh (ctx, k->xek_dh);
+    }
+  else if (!ssl_ctx_set_dhparam (ctx, dhparam))
+    {
+      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+      log_error ("HTTPS: Error setting SSL DH param [%s]: %s", dhparam, err_buf);
+      goto err_exit;
+    }
+  return 1;
+err_exit:
+  return 0;
+}
+
 int
 http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 {
@@ -9326,12 +9364,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       goto err_exit;
     }
 
-  if (!ssl_ctx_set_dhparam (ssl_ctx, dhparam))
-    {
-      cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-      log_error ("HTTPS: Error setting SSL DH param [%s]: %s", dhparam, err_buf);
-      goto err_exit;
-    }
+  if (!https_ssl_ctx_set_dhparam (ssl_ctx, dhparam))
+    goto err_exit;
 
   if (!ssl_ctx_set_ecdh_curve (ssl_ctx, curve))
     {
@@ -12120,12 +12154,8 @@ http_init_part_two ()
 	  goto init_ssl_exit;
 	}
 
-      if (!ssl_ctx_set_dhparam (ssl_ctx, https_dhparam))
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Error setting SSL DH param [%s]: %s", https_dhparam, err_buf);
-	  goto init_ssl_exit;
-	}
+      if (!https_ssl_ctx_set_dhparam (ssl_ctx, https_dhparam))
+        goto init_ssl_exit;
 
       if (!ssl_ctx_set_ecdh_curve (ssl_ctx, https_ecdh_curve))
 	{
