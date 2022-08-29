@@ -322,6 +322,12 @@ type_connection_destroy (caddr_t box)
 
   if (ses && to_close)
     {
+      mutex_enter (ws_cli_mtx);
+      if (ses->dks_cache_id)
+        remhash ((void *) (ptrlong) ses->dks_cache_id, ws_cli_sessions);
+      ses->dks_cache_id = 0;
+      mutex_leave (ws_cli_mtx);
+
       PrpcDisconnect (ses);
       PrpcSessionFree (ses);
     }

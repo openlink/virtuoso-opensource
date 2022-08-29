@@ -11531,11 +11531,20 @@ http_on_message_input_ready (dk_session_t * ses)
 
 }
 
+dk_hash_t * ws_cli_sessions;
+dk_mutex_t * ws_cli_mtx;
+
+
 static void
 http_on_message_ses_dropped (dk_session_t * ses)
 {
   if (DKSESSTAT_ISSET (ses, SST_NOT_OK))
     remove_from_served_sessions (ses);
+  mutex_enter (ws_cli_mtx);
+  if (ses->dks_cache_id)
+    remhash ((void *) (ptrlong) ses->dks_cache_id, ws_cli_sessions);
+  ses->dks_cache_id = 0;
+  mutex_leave (ws_cli_mtx);
 }
 
 static caddr_t
@@ -11586,15 +11595,13 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
-dk_hash_t * ws_cli_sessions;
-dk_mutex_t * ws_cli_mtx;
-
 static caddr_t
 bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t * conn = (caddr_t *) bif_arg (qst, args, 0, "http_keep_session");
   long id = bif_long_arg (qst, args, 1, "http_keep_session");
+  long flush_flag = BOX_ELEMENTS(args) > 2 ? bif_long_arg (qst, args, 2, "http_keep_session") : 1;
   dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
@@ -11615,7 +11622,7 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       mutex_enter (thread_mtx);
       ws->ws_session->dks_ws_status = DKS_WS_CACHED;
       ws->ws_session->dks_n_threads++;
-      ws->ws_flushed = 1;
+      ws->ws_flushed = flush_flag;
       mutex_leave (thread_mtx);
     }
 
@@ -11625,18 +11632,23 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   /* we have to check if this id exists to do not overlap existing one */
   mutex_enter (ws_cli_mtx);
   if (NULL == gethash ((void *) (ptrlong) id, ws_cli_sessions))
-    sethash ((void *) (ptrlong) id, ws_cli_sessions, (void *) ses);
+    {
+      sethash ((void *) (ptrlong) id, ws_cli_sessions, (void *) ses);
+      ses->dks_cache_id = id;
+    }
   else
     *err_ret = srv_make_new_error ("22023", "HT000", "The id specified already exists in the cache");
   mutex_leave (ws_cli_mtx);
   return NEW_DB_NULL;
 }
 
+/* XXX: return cached session, silently return if missing */
 static caddr_t
 bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   long id = bif_long_arg (qst, args, 0, "http_recall_session");
+  long blocking = BOX_ELEMENTS(args) > 1 ? bif_long_arg (qst, args, 1, "http_recall_session") : 1;
   dk_session_t * ses = NULL;
   caddr_t * ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
   ws_connection_t * ws = qi->qi_client->cli_ws;
@@ -11645,6 +11657,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   mutex_enter (ws_cli_mtx);
   ses = (dk_session_t *) gethash ((void *) (ptrlong) id, ws_cli_sessions);
   remhash ((void *) (ptrlong) id, ws_cli_sessions);
+  if (ses) ses->dks_cache_id = 0;
   mutex_leave (ws_cli_mtx);
 
   ret[0] = (caddr_t) ses;
@@ -11661,7 +11674,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   mutex_enter (thread_mtx);
-  if (ses && ses->dks_n_threads > 0)
+  if (ses && ses->dks_n_threads > 0 && blocking)
     {
       ses->dks_waiting_http_recall_session = THREAD_CURRENT_THREAD;
       sem = ses->dks_waiting_http_recall_session->thr_sem;

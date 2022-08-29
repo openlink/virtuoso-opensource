@@ -430,4 +430,9 @@ void ws_http_body_read (ws_connection_t * ws, dk_session_t **out);
 #define WS_CE_CHUNKED 2
 #define WS_CE_GZIP 3
 
+
+size_t http_threads_mem_report (void);
+extern dk_hash_t * ws_cli_sessions;
+extern dk_mutex_t * ws_cli_mtx;
+
 #endif /* _HTTP_H */
