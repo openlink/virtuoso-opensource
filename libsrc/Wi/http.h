@@ -417,7 +417,8 @@ typedef enum {
   	HTTPS_VERIFY_NONE = 0,
 	HTTPS_VERIFY_REQUIRED = 1,
 	HTTPS_VERIFY_OPTIONAL = 2,
-	HTTPS_VERIFY_OPTIONAL_NO_CA = 3
+	HTTPS_VERIFY_OPTIONAL_NO_CA = 3,
+        HTTPS_VERIFY_REQUIRED_LAX = 4           /* always ask for certificate even self-signed */
 } https_verify_t;
 
 #endif

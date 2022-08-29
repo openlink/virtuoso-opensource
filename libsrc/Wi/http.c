@@ -8722,6 +8722,22 @@ http_virtual_host_normalize (caddr_t _host, caddr_t lhost)
   return host1;
 }
 
+/* can be or-ed with SSL_VERIFY_CLIENT_ONCE but renegotiaton will fail*/
+#define HTTPS_SET_OPENSSL_VERIFY_FLAGS(verify,flag) \
+      switch (flag) \
+        { \
+          case HTTPS_VERIFY_REQUIRED: \
+          case HTTPS_VERIFY_REQUIRED_LAX: \
+              verify = SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT; \
+              break; \
+          case HTTPS_VERIFY_OPTIONAL: \
+          case HTTPS_VERIFY_OPTIONAL_NO_CA: \
+              verify = SSL_VERIFY_PEER; \
+              break; \
+          default: \
+              verify = SSL_VERIFY_NONE; \
+        }
+
 static id_hash_t *
 http_map_fill_cors_allow_headers (caddr_t option_value)
 {
@@ -8915,23 +8931,19 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t * opts = (caddr_t *) bif_array_or_null_arg (qst, args, 15, "http_map_table");
       map->hm_auth_opts =  (caddr_t *) box_copy_tree ((box_t) opts);
 #ifdef _SSL
+      /* these are used only when enable_https_vd_renegotiate is on */
       map->hm_ssl_verify_mode = verify = SSL_VERIFY_NONE;
       verify_depth = 15;
       DO_BOX_FAST_STEP2 (caddr_t, op, caddr_t, v, inx, opts)
 	{
 	  if (DV_STRINGP (op) && !strcmp (op, "https_verify"))
-	    {
-	      https_client_verify = unbox (v);
-	      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
-		verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-	      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
-		verify |= SSL_VERIFY_PEER;
-	      map->hm_ssl_verify_mode = verify;
-	    }
+            https_client_verify = unbox (v);
 	  else if (DV_STRINGP (op) && !strcmp (op, "https_cv_depth"))
 	    verify_depth = unbox (v);
 	}
       END_DO_BOX;
+      HTTPS_SET_OPENSSL_VERIFY_FLAGS (verify, https_client_verify);
+      map->hm_ssl_verify_mode = verify;
       map->hm_ssl_verify_ap = ((0xff & https_client_verify) << 24) | (0xffffff & verify_depth);
 #endif
     }
@@ -9024,53 +9036,54 @@ bif_http_map_del (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (box_num (0));
 }
 
+
 #ifdef _SSL
+
+#define HTTPS_CHECK_VERIFY(errnum,verify,ssl,ok) \
+  switch (errnum) \
+    { \
+      case X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT: \
+      case X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN: \
+      case X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY: \
+      case X509_V_ERR_CERT_UNTRUSTED: \
+      case X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE: \
+          if (HTTPS_VERIFY_OPTIONAL_NO_CA == verify || HTTPS_VERIFY_REQUIRED_LAX == verify) \
+            { \
+              SSL_set_verify_result(ssl, X509_V_OK); \
+              ok = 1; \
+              break; \
+            } \
+    }
+
 int
-https_cert_verify_callback (int ok, X509_STORE_CTX *x509_store)
+https_ssl_ctx_verify_callback (int ok, X509_STORE_CTX *x509_store)
 {
   SSL *ssl;
-  X509 *xs;
+  SSL_CTX *ssl_ctx;
   int errnum, verify, depth;
   int errdepth;
-  char *cp, cp_buf[1024];
-  char *cp2, cp2_buf[1024];
-  SSL_CTX *ssl_ctx;
   uptrlong ap;
 
   ssl = (SSL *) X509_STORE_CTX_get_ex_data(x509_store, SSL_get_ex_data_X509_STORE_CTX_idx());
   ssl_ctx = SSL_get_SSL_CTX (ssl);
   ap = (uptrlong) SSL_CTX_get_ex_data (ssl_ctx, 0);
 
-  xs       = X509_STORE_CTX_get_current_cert(x509_store);
   errnum   = X509_STORE_CTX_get_error(x509_store);
   errdepth = X509_STORE_CTX_get_error_depth(x509_store);
-
-  cp = X509_NAME_oneline (X509_get_subject_name (xs), cp_buf, sizeof (cp_buf));
-  cp2 = X509_NAME_oneline (X509_get_issuer_name (xs), cp2_buf, sizeof (cp2_buf));
-
   verify = (int) ((0xff000000 & ap) >> 24);
   depth = (int) (0xffffff & ap);
-
-  if ((errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
-	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
-	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-	  || errnum == X509_V_ERR_CERT_UNTRUSTED
-	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
-    {
-      SSL_set_verify_result (ssl, X509_V_OK);
-      ok = 1;
-    }
-
+  HTTPS_CHECK_VERIFY (errnum, verify, ssl, ok);
   if (!ok)
     {
-      log_error ("HTTPS Certificate Verification: Error (%d): %s",
-	  errnum, X509_verify_cert_error_string(errnum));
+      /*
+       * The http(s) verification errors in production should not be logged, these are more for debugging.
+       * Otherwise we can be intentionally flooded with bad errors in the log
+       */
+      log_debug ("HTTPS Certificate Verification: Error (%d): %s", errnum, X509_verify_cert_error_string(errnum));
     }
-
   if (errdepth > depth)
     {
-      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
+      log_debug ("HTTPS Certificate Verification: Certificate Chain too long "
 	  "(chain has %d certificates, but maximum allowed are only %ld)",
 	  errdepth, depth);
       ok = 0;
@@ -9082,47 +9095,26 @@ int
 https_ssl_verify_callback (int ok, X509_STORE_CTX *x509_store)
 {
   SSL *ssl;
-  X509 *xs;
   int errnum, verify, depth;
   int errdepth;
-  char *cp, cp_buf[1024];
-  char *cp2, cp2_buf[1024];
   uptrlong ap;
 
   ssl = (SSL *) X509_STORE_CTX_get_ex_data(x509_store, SSL_get_ex_data_X509_STORE_CTX_idx());
-
   ap = (uptrlong) SSL_get_ex_data (ssl, 0);
-
-  xs       = X509_STORE_CTX_get_current_cert(x509_store);
   errnum   = X509_STORE_CTX_get_error(x509_store);
   errdepth = X509_STORE_CTX_get_error_depth(x509_store);
 
-  cp  = X509_NAME_oneline(X509_get_subject_name(xs), cp_buf, sizeof (cp_buf));
-  cp2 = X509_NAME_oneline(X509_get_issuer_name(xs),  cp2_buf, sizeof (cp2_buf));
-
   verify = (int) ((0xff000000 & ap) >> 24);
   depth =  (int) (0xffffff & ap);
-
-  if (( errnum == X509_V_ERR_DEPTH_ZERO_SELF_SIGNED_CERT
-	|| errnum == X509_V_ERR_SELF_SIGNED_CERT_IN_CHAIN
-	|| errnum == X509_V_ERR_UNABLE_TO_GET_ISSUER_CERT_LOCALLY
-	|| errnum == X509_V_ERR_CERT_UNTRUSTED
-	|| errnum == X509_V_ERR_UNABLE_TO_VERIFY_LEAF_SIGNATURE)
-      && verify == HTTPS_VERIFY_OPTIONAL_NO_CA )
-    {
-      SSL_set_verify_result(ssl, X509_V_OK);
-      ok = 1;
-    }
-
+  HTTPS_CHECK_VERIFY (errnum, verify, ssl, ok);
   if (!ok)
     {
-      log_error ("HTTPS Certificate Verification: Error (%d): %s",
+      log_debug ("HTTPS Certificate Verification: Error (%d): %s",
 	  errnum, X509_verify_cert_error_string(errnum));
     }
-
   if (errdepth > depth)
     {
-      log_error ("HTTPS Certificate Verification: Certificate Chain too long "
+      log_debug ("HTTPS Certificate Verification: Certificate Chain too long "
 	  "(chain has %d certificates, but maximum allowed are only %ld)",
 	  errdepth, depth);
       ok = 0;
@@ -9366,11 +9358,8 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
       uptrlong ap;
 
-      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
-      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-      SSL_CTX_set_verify (ssl_ctx, verify, https_cert_verify_callback);
+      HTTPS_SET_OPENSSL_VERIFY_FLAGS (verify, https_client_verify);
+      SSL_CTX_set_verify (ssl_ctx, verify, https_ssl_ctx_verify_callback);
       SSL_CTX_set_verify_depth (ssl_ctx, https_cvdepth);
       ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_cvdepth);
       SSL_CTX_set_ex_data (ssl_ctx, 0, (void *) ap);
@@ -9387,7 +9376,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 
       if (sk_X509_NAME_num (skCAList) == 0)
 	log_warning ("HTTPS: Client authentication requested but no CA known for verification");
-
+#if 0
       for (i = 0; i < sk_X509_NAME_num (skCAList); i++)
 	{
 	  char ca_buf[1024];
@@ -9395,6 +9384,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
 	  if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 	    log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	}
+#endif
     }
   tcpses_set_sslctx (listening->dks_session, (void *) ssl_ctx);
   return 1;
@@ -9685,6 +9675,69 @@ get_http_map (ws_http_map_t ** ws_map, char * lpath, int dir, char * host, char 
   return res;
 }
 
+int32 https_renegotiate_timeout = 1000000; /* µSec */
+int32 https_handshake_retries = 1000;
+
+#ifdef _SSL
+
+#define HTTPS_CHECK_RENEGOTIATE_PENDING(i, ws, ssl) \
+    do { \
+      int ctr = 0; \
+      while (SSL_renegotiate_pending_compat (ssl) && ctr < https_handshake_retries) \
+	{ \
+	  timeout_t to = { 0, https_renegotiate_timeout}; \
+	  if (i <= 0) \
+	    tcpses_is_read_ready ((ws)->ws_session->dks_session, &to); \
+	  i = SSL_do_handshake (ssl); \
+	  ctr ++; \
+	} \
+    } while (0)
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+#define HTPS_SET_ACCEPT_STATE(ssl) SSL_set_state (ssl, SSL_ST_ACCEPT)
+#else
+#define HTPS_SET_ACCEPT_STATE(ssl)
+#endif
+
+/*
+ * according to the docs:
+ * SSL_key_update: returns type of the pending key update operation if there is one, or SSL_KEY_UPDATE_NONE otherwise.
+ * SSL_renegotiate_pending: returns  1 if a renegotiation has been scheduled but not yet acted on, or 0 otherwise.
+*/
+
+int
+SSL_renegotiate_pending_compat (SSL * ssl)
+{
+  int i = 0;
+#if OPENSSL_VERSION_NUMBER < 0x10100000L
+  i = SSL_renegotiate_pending (ssl);
+#else
+  if (SSL_version(ssl) >= TLS1_3_VERSION)
+    i = (SSL_KEY_UPDATE_NONE != SSL_get_key_update_type (ssl));
+  else
+    i = SSL_renegotiate_pending (ssl);
+#endif
+  return i;
+}
+
+int
+SSL_renegotiate_compat (SSL * ssl)
+{
+  int i = 0;
+#if OPENSSL_VERSION_NUMBER < 0x10000000L
+  i = SSL_renegotiate (ssl);
+#elif OPENSSL_VERSION_NUMBER < 0x10100000L
+  i = SSL_renegotiate_abbreviated (ssl);
+#else /* OPENSSL_VERSION_NUMBER >= 0x10100000L*/
+  if (SSL_version(ssl) >= TLS1_3_VERSION)
+    i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
+  else
+    i = SSL_renegotiate_abbreviated (ssl);
+#endif
+  return i;
+}
+#endif
+
 /*##***********************************************************
 * Return HTTP header field value w/o leading space and
 * trailing \r\n
@@ -9794,7 +9847,6 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
 #ifdef _SSL
   if (enable_https_vd_renegotiate && is_https && ws->ws_map && ws->ws_map->hm_ssl_verify_mode != verify_mode)
     {
-      int ctr = 0;
       uptrlong ap = ws->ws_map->hm_ssl_verify_ap;
       int i, verify = ws->ws_map->hm_ssl_verify_mode;
       static int s_server_auth_session_id_context;
@@ -9805,14 +9857,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
       SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
       SSL_set_app_data (ssl, ap);
       SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-      i = SSL_renegotiate (ssl);
-#else
-      if (SSL_version(ssl) >= TLS1_3_VERSION)
-	i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
-      else
-	i = SSL_renegotiate (ssl);
-#endif
+      i = SSL_renegotiate_compat (ssl);
       if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
@@ -9824,19 +9869,8 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
           goto tls_failed;
 	}
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-      SSL_set_state (ssl, SSL_ST_ACCEPT);
-#else
-      SSL_set_accept_state (ssl);
-#endif
-      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
-	{
-	  timeout_t to = { 0, 1000 };
-	  i = SSL_do_handshake (ssl);
-	  if (i <= 0)
-	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
-	  ctr ++;
-	}
+      HTPS_SET_ACCEPT_STATE (ssl);
+      HTTPS_CHECK_RENEGOTIATE_PENDING(i, ws, ssl);
 tls_failed:
       if (*err_buf)
         log_error ("SSL Renegotiate: %s", err_buf);
@@ -10315,7 +10349,6 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   const char * me = "https_renegotiate";
   query_instance_t *qi = (query_instance_t *)qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
-  int ctr = 0;
 #ifdef _SSL
   SSL *ssl = NULL;
 #endif
@@ -10323,6 +10356,11 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   if (!ws)
     return box_num (0);
 #ifdef _SSL
+#if OPENSSL_VERSION_NUMBER >= 0x10100000L
+  /* not supported in 1.1.x the rest of code break the state engine flow
+     and causes unpredictable errors in PL calling https_renegotiate(3) */
+  return box_num (0);
+#endif
   ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
   if (ssl)
     {
@@ -10341,48 +10379,32 @@ bif_https_renegotiate (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
 
       ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
 
-      if (HTTPS_VERIFY_REQUIRED == https_client_verify)
-	verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT;
-      if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
-	verify |= SSL_VERIFY_PEER;
-
-      SSL_set_verify (ssl, verify, (int (*)(int, X509_STORE_CTX *)) https_ssl_verify_callback);
+      HTTPS_SET_OPENSSL_VERIFY_FLAGS (verify, https_client_verify);
+      SSL_set_verify (ssl, verify, https_ssl_verify_callback);
       SSL_set_ex_data (ssl, 0, (void *) ap);
-      SSL_set_session_id_context (ssl, (void*)&s_server_auth_session_id_context, sizeof(s_server_auth_session_id_context));
+      SSL_set_session_id_context (ssl, (const unsigned char *)((void*)&s_server_auth_session_id_context), sizeof(s_server_auth_session_id_context));
       i = 0;
       IO_SECT (qst);
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-      i = SSL_renegotiate (ssl);
-#else
-      if (SSL_version(ssl) >= TLS1_3_VERSION)
-	i = SSL_key_update (ssl, SSL_KEY_UPDATE_REQUESTED);
-      else
-        i = SSL_renegotiate (ssl);
-#endif
+      /*
+       * For tls1.2 or earlier we can do renegotiate, in tls1.3 we can only key update
+       * the SSL_key_update should be called with SSL_KEY_UPDATE_REQUESTED
+       */
+      i = SSL_renegotiate_compat (ssl);
       if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..001", "SSL_renegotiate failed %s", err_buf);
 	}
+      /* we set accept state before to call handshake to force tls1.2 to do r/w */
       i = SSL_do_handshake (ssl);
       if (i <= 0)
 	{
 	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
 	  sqlr_new_error ("42000", "..002", "SSL_do_handshake failed %s", err_buf);
 	}
-#if OPENSSL_VERSION_NUMBER < 0x10100000L
-      SSL_set_state (ssl, SSL_ST_ACCEPT);
-#else
-      SSL_set_accept_state (ssl);	/*FIXME:This does not work in OpenSSL 1.1.1 */
-#endif
-      while (SSL_renegotiate_pending (ssl) && ctr < 1000)
-	{
-	  timeout_t to = { 0, 1000 };
-	  i = SSL_do_handshake (ssl);
-	  if (i <= 0)
-	    tcpses_is_read_ready (ws->ws_session->dks_session, &to);
-	  ctr ++;
-	}
+      /* cannot move accept state before 1st handshake */
+      HTPS_SET_ACCEPT_STATE (ssl);
+      HTTPS_CHECK_RENEGOTIATE_PENDING(i, ws, ssl);
       END_IO_SECT (err_ret);
       if (i <= 0)
 	{
@@ -12130,27 +12152,25 @@ http_init_part_two ()
 	  int verify = SSL_VERIFY_NONE, session_id_context = srv_pid;
 	  uptrlong ap;
 
-	  if (HTTPS_VERIFY_REQUIRED == https_client_verify)
-	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_FAIL_IF_NO_PEER_CERT | SSL_VERIFY_CLIENT_ONCE;
-	  if (HTTPS_VERIFY_OPTIONAL == https_client_verify || HTTPS_VERIFY_OPTIONAL_NO_CA == https_client_verify)
-	    verify |= SSL_VERIFY_PEER | SSL_VERIFY_CLIENT_ONCE;
-	  SSL_CTX_set_verify (ssl_ctx, verify, https_cert_verify_callback);
+          HTTPS_SET_OPENSSL_VERIFY_FLAGS (verify, https_client_verify);
+	  SSL_CTX_set_verify (ssl_ctx, verify, https_ssl_ctx_verify_callback);
 	  SSL_CTX_set_verify_depth (ssl_ctx, https_client_verify_depth);
 	  ap = ((0xff & https_client_verify) << 24) | (0xffffff & https_client_verify_depth);
 	  SSL_CTX_set_ex_data (ssl_ctx, 0, (void *) ap);
 	  SSL_CTX_set_session_id_context(ssl_ctx, (unsigned char  *)&session_id_context, sizeof session_id_context);
 	}
 
-      if (https_client_verify_file)
+      if (https_client_verify_file && HTTPS_VERIFY_REQUIRED == https_client_verify)
 	{
 	  int i;
-	  STACK_OF(X509_NAME) *skCAList = SSL_load_client_CA_file (https_client_verify_file);
 
+          STACK_OF (X509_NAME) * skCAList = SSL_load_client_CA_file (https_client_verify_file);
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 	  if (sk_X509_NAME_num(skCAList) == 0)
 	    log_warning ("HTTPS: Client authentication requested but no CA known for verification");
 
+#ifndef NDEBUG
 	  for (i = 0; i < sk_X509_NAME_num(skCAList); i++)
 	    {
 	      char ca_buf[1024];
@@ -12158,6 +12178,7 @@ http_init_part_two ()
               if (X509_NAME_oneline (ca_name, ca_buf, sizeof (ca_buf)))
 		log_debug ("HTTPS: Using X509 Client CA %s", ca_buf);
 	    }
+#endif
 	}
 
       ssl_port = atoi (https_port);

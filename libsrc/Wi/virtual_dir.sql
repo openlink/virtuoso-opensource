@@ -83,6 +83,30 @@ create procedure DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (in vin any)
 }
 ;
 
+create procedure HTTP_LISTENER_CTL (in interface varchar, in stop int := 0)
+{
+  declare opts any;
+  opts := NULL;
+  for select HL_PROTOCOLS, HL_CIPHERS, HL_DH_PARAM, HL_ECDH_CURVE, HL_KEY, HL_CERTIFICATE, HL_CA_LIST, HL_EXTRA, HL_VERYFY, HL_VERIFY_DEPTH
+    from DB.DBA.SYS_HTTP_LISTENERS where HL_INTERFACE = interface do
+    {
+      opts := vector ('https_protocols', HL_PROTOCOLS,
+                         'https_cipher_list', HL_CIPHERS,
+                         'https_dhparam', HL_DH_PARAM,
+                         'https_ecdh_curve', HL_ECDH_CURVE,
+                         'https_key', HL_KEY,
+                         'https_cert', HL_CERTIFICATE,
+                         'https_cv', HL_CA_LIST,
+                         'https_extra_chain_certificates', HL_EXTRA,
+                         'https_verify', HL_VERYFY,
+                         'https_cv_depth', HL_VERIFY_DEPTH
+                   );
+          opts := DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (opts);
+    }
+  return http_listen_host (interface, stop, opts);
+}
+;
+
 create trigger SYS_HTTP_LISTENERS_U after update on DB.DBA.SYS_HTTP_LISTENERS order 1 referencing old as O, new as N
 {
   declare opts any;
