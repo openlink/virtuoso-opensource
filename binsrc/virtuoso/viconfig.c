@@ -91,7 +91,7 @@ extern int prefix_in_result_col_names;
 extern int disk_no_mt_write;
 extern long vd_param_batch;
 extern long vd_opt_arrayparams;
-extern char *www_root;
+extern const char *www_root;
 extern char *dav_root;
 extern long vsp_in_dav_enabled;
 extern long http_proxy_enabled;
@@ -166,12 +166,13 @@ extern long http_max_keep_alives;
 extern long http_max_cached_proxy_connections;
 extern long http_proxy_connection_cache_timeout;
 extern char * http_server_id_string;
-extern char * http_client_id_string;
+extern const char * http_client_id_string;
 extern char * http_access_control_allow_default_headers;
 extern char * http_soap_client_id_string;
 extern long http_ses_trap;
 extern int http_check_rdf_accept;
 extern int32 http_limited;
+extern int32 enable_https_vd_renegotiate;
 
 extern int vd_use_mts;
 
@@ -1557,6 +1558,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "WriteTimeout", &ws_write_timeout) == -1)
     ws_write_timeout = 0;
+
+  if (cfg_getlong (pconfig, section, "EnableHTTPSRenegotiate", &enable_https_vd_renegotiate) == -1)
+    enable_https_vd_renegotiate = 0;
 
   if (cfg_getstring (pconfig, section, "AccessControlAllowDefaultHeaders", &c_http_access_control_allow_default_headers) != -1)
     http_access_control_allow_default_headers = box_dv_short_string (c_http_access_control_allow_default_headers);

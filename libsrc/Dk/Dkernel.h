@@ -113,7 +113,8 @@ struct dk_session_s
   du_thread_t *			dks_fixed_thread;	/*!< note: also used to pass the http ses for chunked write */
   basket_t 			dks_fixed_thread_reqs;
 
-  du_thread_t *			dks_waiting_http_recall_session;
+  du_thread_t *			dks_waiting_http_recall_session; /* thr waitin on semaphore to write on it for half-duplex op */
+  long                          dks_cache_id; /* if cached, the id in cache */
   dk_hash_t *			dks_pending_futures;
   caddr_t			dks_top_obj;
   dk_set_t			dks_pending_obj;
