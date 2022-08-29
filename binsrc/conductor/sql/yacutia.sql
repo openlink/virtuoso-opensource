@@ -5188,7 +5188,7 @@ create procedure yac_vec_add (in k varchar, in v varchar, inout opts any)
 
 
 create procedure
-yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any)
+yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any, in ca_certs varchar := null)
 {
   if (k = 'none' or not length (k))
     {
@@ -5196,7 +5196,7 @@ yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any)
       new_opts := vector ();
       for (declare i, l int, i := 0, l := length (opts); i < l; i := i + 2)
         {
-	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth', 'https_extra_chain_certificates'))
+	  if (opts[i] not in ('https_cert', 'https_key', 'https_verify', 'https_cv_depth', 'https_extra_chain_certificates', 'https_cv'))
 	    new_opts := vector_concat (new_opts, vector (opts[i], opts[i+1]));
 	}
       opts := new_opts;
@@ -5208,6 +5208,7 @@ yac_set_ssl_key (in k varchar, in v varchar, in extra varchar, inout opts any)
       yac_vec_add ('https_extra_chain_certificates', extra, opts);
       yac_vec_add ('https_verify', cast (v as int), opts);
       yac_vec_add ('https_cv_depth', 10, opts);
+      yac_vec_add ('https_cv', ca_certs, opts);
     }
 }
 ;
@@ -6006,7 +6007,7 @@ INTO GRAPH <http://%{WSHost}s/pki>
     key_iri, cert_modulus, cert_exponent,
     webid, cer_iri,
     cer_iri, cert_fingerprint, digest_type, cert_subject, cert_issuer,
-    DB..date_iso8601 (DB.DBA.X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB.DBA.X509_STRING_DATE (cert_val_not_after)),
+    DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_before)), DB..date_iso8601 (DB..X509_STRING_DATE (cert_val_not_after)),
     cert_serial, tag,
     case when san is not null then sprintf ('oplcert:subjectAltName <%s> ; ', san) else '' end,
     case when ian is not null then sprintf ('oplcert:issuerAltName <%s> ;', ian) else '' end,
@@ -6171,5 +6172,165 @@ create procedure y_sys_stat(
   }
 
   return val;
+}
+;
+
+create procedure DB.DBA.x509_DN_RFC_check (in dn any)
+{
+  declare dno any;
+  declare len, i int;
+  len := length (dn);
+  dno := vector ('C', NULL, 'ST', NULL,  'L', NULL, 'O', NULL, 'OU', NULL, 'CN', NULL, 'email', NULL);
+
+  for (i := 0; i < len; i := i + 2)
+    {
+      declare pos int;
+      if (0 < (pos := position (dn[i], dno)))
+        {
+          dno[pos] := dn[i+1];
+        }
+      else
+        {
+          dno := vector_concat (dno, vector (dn[i], dn[i+1]));
+        }
+    }
+  return DB.DBA.VECTOR_ZAP_EMPTY_OPTIONS (dno);
+}
+;
+
+create procedure DB.DBA.LOCAL_CA_GEN (in ca_key_name varchar := 'id_rsa', in bits int := 2048, in dn any := null, in days int := 356, in force int := 0)
+{
+  declare serial int;
+  declare san varchar;
+  declare exts any;
+
+  serial := deserialize (hex2bin('F700' || subseq (bin2hex (xenc_digest (uuid(), 'sha256')), 0, 14)));
+  if (xenc_key_exists (ca_key_name) and force)
+    xenc_key_remove (ca_key_name);
+  if (xenc_key_exists (ca_key_name))
+    return 'KEY EXISTS';
+  if (dn is null)
+    dn := vector ('CN', 'ROOT CA');
+  dn := x509_DN_RFC_check (dn);
+  if (0 = length (dn))
+    return 'DIRECTORY NAME IS EMPTY';
+  san := null;
+  if (vad_check_version ('conductor') is not null)
+    san := vector ('subjectAltName', 'URI:' || DB.DBA.make_cert_iri (ca_key_name));
+
+  exts :=  vector_concat (
+    vector ('basicConstraints', 'critical,CA:TRUE',
+            'authorityKeyIdentifier', 'keyid,issuer:always',
+            'keyUsage', 'critical,nonRepudiation,keyEncipherment,dataEncipherment,cRLSign,keyCertSign,digitalSignature,keyAgreement'),
+    san);
+
+  xenc_key_RSA_create (ca_key_name, bits);
+  xenc_x509_ss_generate (ca_key_name, 1, days, dn, exts, 0, 'sha256');
+  string_to_file (ca_key_name || '.p12', xenc_pkcs12_export (ca_key_name, 'CA ROOT Key', ''), -2);
+  USER_KEY_STORE (user, ca_key_name, 'X.509', 2, NULL, cast (xenc_pkcs12_export (ca_key_name, ca_key_name, '') as varchar));
+  commit work;
+  if (san is not null and vad_check_version ('conductor') is not null)
+    exec (DB.DBA.make_cert_stmt (ca_key_name));
+  return 'CREATED';
+}
+;
+
+create procedure DB.DBA.LOCAL_CA_RENEW (in ca_key_name varchar := 'id_rsa', in days int := 356, in force int := 0)
+{
+  declare serial int;
+  declare key_backup_name, key_iri varchar;
+  declare expiration_date datetime;
+  declare exts, san any;
+
+  expiration_date := X509_STRING_DATE (get_certificate_info (5, ca_key_name, 3)); -- for newer builds get_certificate_info (17, ca_key_name, 3)
+  if (0 = force and datediff ('day', now(), expiration_date) > 0)
+    return 'NOT EXPIRED';
+  key_backup_name := ca_key_name || '.backup';
+  serial := deserialize (hex2bin('F700' || subseq (bin2hex (xenc_digest (uuid(), 'sha256')), 0, 14)));
+  if (xenc_key_exists (key_backup_name) and force)
+    xenc_key_remove (key_backup_name);
+  USER_KEY_LOAD (key_backup_name, cast (xenc_pkcs12_export (ca_key_name, ca_key_name, '') as varchar), 'X.509', 'PKCS12', '');
+  xenc_key_remove (ca_key_name);
+  xenc_key_pem_import (ca_key_name, xenc_pem_export (key_backup_name, 1));
+  if (vad_check_version ('conductor') is not null)
+    {
+      key_iri := DB.DBA.make_cert_iri (ca_key_name);
+      san := vector ('subjectAltName', 'URI:' || key_iri);
+    }
+  exts :=  vector_concat (
+    vector ('basicConstraints', 'critical,CA:TRUE',
+            'authorityKeyIdentifier', 'keyid,issuer:always',
+            'keyUsage', 'critical,nonRepudiation,keyEncipherment,dataEncipherment,cRLSign,keyCertSign,digitalSignature,keyAgreement'), san);
+  xenc_x509_ss_generate (ca_key_name, serial, days, get_certificate_info (11, key_backup_name, 3), exts, 0, 'sha256');
+  USER_KEY_STORE (user, ca_key_name, 'X.509', 2, NULL, cast (xenc_pkcs12_export (ca_key_name, ca_key_name, '') as varchar));
+  commit work;
+  if (san is not null and vad_check_version ('conductor') is not null)
+    {
+      exec (sprintf ('SPARQL WITH <http://%{WSHost}s/pki> DELETE { ?s ?p ?o } WHERE { ?s ?p ?o . FILTER (?s = <%s>) }', key_iri));
+      exec (DB.DBA.make_cert_stmt (ca_key_name));
+    }
+  return 'RENEWED';
+}
+;
+
+create procedure DB.DBA.HTTPS_MAKE_HOST_KEY (in cname varchar)
+{
+  declare kname varchar;
+  declare serial int;
+  serial := deserialize (hex2bin('F700' || subseq (bin2hex (xenc_digest (uuid(), 'sha256')), 0, 14)));
+  kname := 'https_key_' || replace (cname, '.', '_');
+  xenc_key_RSA_create (kname, 2048);
+  xenc_x509_generate ('id_rsa', kname, serial, 365,
+      vector ('CN', cname),
+      vector (
+        'keyUsage', 'critical,keyEncipherment,digitalSignature',
+        'extendedKeyUsage', 'serverAuth',
+        'basicConstraints', 'critical,CA:FALSE',
+        'authorityKeyIdentifier', 'keyid,issuer:always',
+        'subjectAltName', 'DNS:'||cname
+        ));
+  USER_KEY_STORE (user, kname, 'X.509', 2, '', cast (xenc_pkcs12_export (kname, cname || ' key', '') as varchar));
+  return kname;
+}
+;
+
+create procedure DB.DBA.GET_CERT_DNS_NAMES (in kname varchar)
+{
+  declare san, sans, dns, dns_names varchar;
+  declare pos int;
+  san := get_certificate_info (7, kname, 3, null, 'subjectAltName');
+  san := replace (san, ' ', '');
+  sans := split_and_decode (san, 0, '\0\0,:');
+  dns_names := vector ();
+  pos := 0;
+  while (sans is not null and (pos := position ('DNS', sans, pos)) > 0)
+    {
+      dns := sans[pos];
+      pos := pos + 2;
+      dns_names := vector_concat (dns_names, vector (dns));
+    }
+  return dns_names;
+}
+;
+
+create procedure DB.DBA.CHECK_VHOST_NAME_CERT (in vhost varchar, in kname varchar)
+{
+  declare x509, subj, dns_names, cname any;
+  if (not xenc_key_exists (kname))
+    signal ('VH001', 'Key is required to setup HTTPS listener');
+  x509 := xenc_X509_certificate_serialize (kname);
+  if (x509 is null)
+    signal ('VH002',  'Can not get certificate from key, please generate new or use key with certificate assigned.');
+  x509 := decode_base64 (x509);
+  subj := get_certificate_info (11, kname, 3);
+  cname := get_keyword ('CN', subj, '');
+  dns_names := DB.DBA.GET_CERT_DNS_NAMES (kname);
+  if (length (vhost) = 0 and length (dns_names) > 1)
+    return NULL;
+  if (length (vhost) = 0)
+    signal ('VH003',  'You should provide a valid host name'); 
+  if (0 = matches_like (vhost, cname) and 0 = position (vhost, dns_names))
+    signal ('VH004',  'The certificate common name do not match host name, please generate new or select appropriate key.');
+  return NULL;
 }
 ;
