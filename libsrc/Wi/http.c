@@ -11534,7 +11534,6 @@ http_on_message_input_ready (dk_session_t * ses)
 dk_hash_t * ws_cli_sessions;
 dk_mutex_t * ws_cli_mtx;
 
-
 static void
 http_on_message_ses_dropped (dk_session_t * ses)
 {
@@ -11545,6 +11544,37 @@ http_on_message_ses_dropped (dk_session_t * ses)
     remhash ((void *) (ptrlong) ses->dks_cache_id, ws_cli_sessions);
   ses->dks_cache_id = 0;
   mutex_leave (ws_cli_mtx);
+}
+
+static caddr_t
+bif_http_get_cli_sessions (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  long add_args = bif_long_arg (qst, args, 0, "http_keep_session");
+  long sid;
+  dk_session_t * ses;
+  dk_hash_iterator_t hit;
+  dk_set_t set = NULL;
+  mutex_enter (ws_cli_mtx);
+  dk_hash_iterator (&hit, ws_cli_sessions);
+  while (dk_hit_next (&hit, (void**) &sid, (void**) &ses))
+    {
+      caddr_t * args = (caddr_t *) DKS_DB_DATA (ses);
+      dk_set_push (&set, list (2, box_num(sid), add_args ? box_copy_tree (args) : NEW_DB_NULL));
+    }
+  mutex_leave (ws_cli_mtx);
+  return list_to_array (dk_set_nreverse (set));
+}
+
+static caddr_t
+bif_http_client_session_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long id = bif_long_arg (qst, args, 0, "http_client_session_cached");
+  long ret;
+  mutex_enter (ws_cli_mtx);
+  ret = ((NULL != gethash ((void *) (ptrlong) id, ws_cli_sessions)) ? 1 : 0);
+  mutex_leave (ws_cli_mtx);
+  return box_num (ret);
 }
 
 static caddr_t
@@ -11941,6 +11971,8 @@ http_init_part_one ()
   bif_define ("http_on_message", bif_http_on_message);
   bif_define ("http_keep_session", bif_http_keep_session);
   bif_define ("http_recall_session", bif_http_recall_session);
+  bif_define ("http_get_cli_sessions", bif_http_get_cli_sessions);
+  bif_define ("http_client_session_cached", bif_http_client_session_cached);
   bif_define ("http_current_charset", bif_http_current_charset);
   bif_define_ex ("http_status_set", bif_http_status_set, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("http_methods_set", bif_http_methods_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
