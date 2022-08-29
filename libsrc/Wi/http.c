@@ -9286,7 +9286,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   char err_buf[1024];
   SSL_CTX *ssl_ctx = NULL;
   const SSL_METHOD *ssl_meth = NULL;
-  char *https_cvfile = NULL;
+  char * https_cvfile = https_client_verify_file;
   char *cert = NULL, *extra = NULL;
   char *skey = NULL;
   char *ciphers = https_cipher_list;
@@ -9377,15 +9377,7 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
   if (!ssl_server_set_certificate (ssl_ctx, cert, skey, extra))
     goto err_exit;
 
-  if (https_cvfile)
-    {
-      if (!SSL_CTX_load_verify_locations (ssl_ctx, https_cvfile, NULL))
-	{
-	  cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	  log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_cvfile, err_buf);
-	  goto err_exit;
-	}
-    }
+  xenc_load_verify_CA_list (ssl_ctx, https_cvfile);
 
   if (https_client_verify > 0)
     {
@@ -9400,10 +9392,10 @@ http_set_ssl_listen (dk_session_t * listening, caddr_t * https_opts)
       SSL_CTX_set_session_id_context (ssl_ctx, (unsigned char *) &session_id_context, sizeof session_id_context);
     }
 
-  if (https_cvfile)
+  if (https_cvfile && HTTPS_VERIFY_REQUIRED == https_client_verify)
     {
       int i = 0;
-      STACK_OF (X509_NAME) * skCAList = SSL_load_client_CA_file (https_cvfile);
+      STACK_OF(X509_NAME) *skCAList = xenc_CA_names_stack (https_cvfile);
 
       SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
       skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
@@ -12223,15 +12215,7 @@ http_init_part_two ()
       if (!ssl_server_set_certificate (ssl_ctx, https_cert, https_key, https_extra))
 	goto init_ssl_exit;
 
-      if (https_client_verify_file)
-	{
-	if (!SSL_CTX_load_verify_locations (ssl_ctx, https_client_verify_file, NULL))
-	  {
-	    cli_ssl_get_error_string (err_buf, sizeof (err_buf));
-	    log_error ("HTTPS: Invalid X509 client CA file %s : %s", https_client_verify_file, err_buf);
-	      goto init_ssl_exit;
-	  }
-	}
+      xenc_load_verify_CA_list (ssl_ctx, https_client_verify_file);
 
       if (https_client_verify > 0)
 	{
@@ -12249,8 +12233,8 @@ http_init_part_two ()
       if (https_client_verify_file && HTTPS_VERIFY_REQUIRED == https_client_verify)
 	{
 	  int i;
+	  STACK_OF(X509_NAME) *skCAList = xenc_CA_names_stack (https_client_verify_file);
 
-          STACK_OF (X509_NAME) * skCAList = SSL_load_client_CA_file (https_client_verify_file);
 	  SSL_CTX_set_client_CA_list (ssl_ctx, skCAList);
 	  skCAList = SSL_CTX_get_client_CA_list (ssl_ctx);
 	  if (sk_X509_NAME_num(skCAList) == 0)

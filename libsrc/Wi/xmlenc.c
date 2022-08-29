@@ -1815,8 +1815,7 @@ bif_xenc_key_rsa_create (caddr_t * qst, caddr_t * err_r, state_slot_t ** args)
   caddr_t name = bif_string_arg (qst, args, 0, "xenc_key_RSA_create");
   int num = (int) bif_long_arg (qst, args, 1, "xenc_key_RSA_create");
   RSA *rsa;
-  BIGNUM *bn;
-  EVP_PKEY *pk = NULL;
+  BIGNUM *bn = NULL;
 
   rsa = RSA_new ();
   if (!rsa)
@@ -1863,7 +1862,6 @@ out:
   sqlr_new_error ("42000", "XENC06", "RSA generation error");
   return NULL;
 }
-
 
 xenc_key_t *
 xenc_key_create_from_utok (u_tok_t * utok, caddr_t seed, wsse_ctx_t * ctx)
@@ -7723,7 +7721,6 @@ bif_xenc_x509_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
   caddr_t * ca_certs  = bif_arg (qst, args, 1, me);
   xenc_key_t * cert = xenc_get_key_by_name (cert_name, 1);
   int rc = 0, inx;
-  BIO *buf;
   X509 *ca_cert;
 
   if (!cert)
@@ -7760,7 +7757,6 @@ bif_xenc_x509_cert_verify_array (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   caddr_t * ca_certs  = bif_arg (qst, args, 1, me);
   X509 * cert = x509_from_pem (cert_text);
   int rc = 0, inx;
-  BIO *buf;
   X509 *ca_cert;
 
   if (!cert)
@@ -7820,6 +7816,95 @@ bif_xenc_x509_ca_certs_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t **
   CA_certs = X509_STORE_new ();
   mutex_leave (xenc_keys_mtx);
   return NULL;
+}
+
+static int
+x509_name_cmp(const X509_NAME *const *a, const X509_NAME *const *b)
+{
+  return (X509_NAME_cmp(*a, *b));
+}
+
+STACK_OF(X509_NAME)*
+xenc_CA_names_stack (char * ca_file_name)
+{
+  STACK_OF(X509_NAME) *ret = NULL, *sk;
+  STACK_OF (X509_OBJECT) * certs;
+  int i, len;
+
+  if (NULL != ca_file_name && strcmp (ca_file_name, INTERNAL_CA_STORE))
+    {
+      ret = SSL_load_client_CA_file (ca_file_name);
+      return ret;
+    }
+
+  sk = sk_X509_NAME_new (x509_name_cmp);
+  ret = sk_X509_NAME_new_null();
+
+  mutex_enter (xenc_keys_mtx);
+  certs = X509_STORE_get0_objects(CA_certs);
+  len = sk_X509_OBJECT_num (certs);
+  for (i = 0; i < len; i++)
+    {
+      X509_OBJECT * obj = sk_X509_OBJECT_value (certs, i);
+      if (X509_OBJECT_get_type(obj) == X509_LU_X509)
+	{
+	  X509 *x = X509_OBJECT_get0_X509(obj);
+          X509_NAME *xn = X509_get_subject_name(x);
+          if (!xn)
+            {
+              /* skip invalid certificates */
+              continue;
+            }
+          xn = X509_NAME_dup(xn);
+          if (sk_X509_NAME_find(sk, xn) >= 0)
+            X509_NAME_free(xn);
+          else
+            {
+              sk_X509_NAME_push(sk, xn);
+              sk_X509_NAME_push(ret, xn);
+            }
+        }
+    }
+  mutex_leave (xenc_keys_mtx);
+  sk_X509_NAME_free(sk);
+  return ret;
+}
+
+int
+xenc_load_verify_CA_list (SSL_CTX * ctx, char * ca_file_name)
+{
+  char err_buf [1024];
+  STACK_OF (X509_OBJECT) * certs;
+  int i, len, rc = 0;
+
+  if (NULL != ca_file_name && strlen (ca_file_name) > 0 && strcmp (ca_file_name, INTERNAL_CA_STORE))
+    {
+      if (1 != (rc = SSL_CTX_load_verify_locations (ctx, ca_file_name, NULL)))
+        {
+          cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+          log_error ("HTTPS: Invalid X509 CA file %s : %s", ca_file_name, err_buf);
+        }
+      return rc;
+    }
+
+  mutex_enter (xenc_keys_mtx);
+  certs = X509_STORE_get0_objects(CA_certs);
+  len = sk_X509_OBJECT_num (certs);
+  for (i = 0; i < len; i++)
+    {
+      X509_OBJECT * obj = sk_X509_OBJECT_value (certs, i);
+      if (X509_OBJECT_get_type(obj) == X509_LU_X509)
+	{
+	  X509 *x = X509_OBJECT_get0_X509(obj);
+          if (1 != X509_STORE_add_cert (SSL_CTX_get_cert_store (ctx), X509_dup (x)))
+            {
+              cli_ssl_get_error_string (err_buf, sizeof (err_buf));
+              log_error ("Can not add CA certificate %s", err_buf);
+            }
+        }
+    }
+  mutex_leave (xenc_keys_mtx);
+  return 1;
 }
 
 static caddr_t
