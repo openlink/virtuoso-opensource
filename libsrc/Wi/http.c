@@ -11688,7 +11688,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long id = bif_long_arg (qst, args, 0, "http_recall_session");
   long blocking = BOX_ELEMENTS(args) > 1 ? bif_long_arg (qst, args, 1, "http_recall_session") : 1;
   dk_session_t * ses = NULL;
-  caddr_t * ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
+  caddr_t * ret = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
   semaphore_t * volatile sem = NULL;
 
@@ -11698,8 +11698,12 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (ses) ses->dks_cache_id = 0;
   mutex_leave (ws_cli_mtx);
 
-  ret[0] = (caddr_t) ses;
-  ret[1] = (caddr_t) 1;
+  if (ses)
+    {
+      ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
+      ret[0] = (caddr_t) ses;
+      ret[1] = (caddr_t) 1;
+    }
 
   if (ws && ses == ws->ws_session)
     {
@@ -11723,7 +11727,6 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       semaphore_enter (sem);
     }
-
   return (caddr_t)ret;
 }
 
