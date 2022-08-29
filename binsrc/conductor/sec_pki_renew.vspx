@@ -1,0 +1,100 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2022 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="pki_drop"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
+    <vm:pagebody>
+      <vm:help id="sec_pki" sect=""/>
+      <v:form name="form1" type="simple" method="POST">
+      <!-- top of security layout -->
+        <div class="main_tab_page">
+          <div class="page_tab_selected">
+            Public Key Infrastructure
+          </div>
+          <div class="page_tab">
+            <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
+          </div>
+          <div class="page_tab">
+            <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
+          </div>
+
+          <div class="tab_page_new">
+            <!-- end of top security layout -->
+            <div class="confirm_dialog">
+              <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+              <div class="confirm_text">
+                  The Local CA certificate will be replaced permanently with new.<br/> 
+                  The expired certificate will be saved as `id_rsa.backup`. <br/>
+                  <br/>
+                Please confirm.
+              </div>
+              <div class="dialog_buttons">
+              <label>Renewal interval:</label>
+              <v:select-list name="validity_year">
+                <v:item name="2 Years" value="2"/>
+                <v:item name="3 Years" value="3"/>
+                <v:item name="5 Years" value="5"/>
+              </v:select-list>
+              </div>
+              <div class="dialog_buttons">
+                <v:button action="simple" name="renew_btn" value="Renew Cerificate">
+                  <v:on-post>
+                    <![CDATA[
+                    declare validity, validity_days integer;
+                    validity := atoi (self.validity_year.ufl_value);
+                    validity_days := datediff ('day', now(), dateadd ('year', validity, now()));
+                    DB.DBA.LOCAL_CA_RENEW ('id_rsa', validity_days, 1);
+                    commit work;
+                    self.vc_redirect ('sec_pki_1.vspx');
+                    ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="cancel" value="Go back">
+                  <v:on-post>
+                    self.vc_redirect ('sec_pki_1.vspx');
+                  </v:on-post>
+                </v:button>
+              </div>
+            </div>
+            <!-- bottom of security layout -->
+          </div>
+        </div>
+      <!-- end of bottom security layout -->
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>
+

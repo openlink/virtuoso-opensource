@@ -418,6 +418,7 @@ conductor/sec_pki_3.vspx
 conductor/sec_pki_4.vspx
 conductor/sec_pki_download.vsp
 conductor/sec_pki_drop.vspx
+conductor/sec_pki_renew.vspx
 conductor/site.vspx
 conductor/soap_del_path.vspx
 conductor/soap_options_edit.vspx
