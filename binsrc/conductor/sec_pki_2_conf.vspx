@@ -136,6 +136,7 @@
                                        from DB.DBA.HTTP_PATH
                                        where HP_HOST = self.chost and HP_LISTEN_HOST = self.clhost) do
                                   VHOST_REMOVE (HP_HOST, HP_LISTEN_HOST, HP_LPATH, 0);
+                                delete from DB.DBA.SYS_HTTP_LISTENERS where HL_INTERFACE = self.clhost;
 
                                 self.vc_redirect ('sec_pki_2.vspx');
                               ]]>
