@@ -937,7 +937,7 @@ bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
   cl_req_group_t * clrg;
   cucurbit_t * cu;
   int is_cl = CL_RUN_CLUSTER == cl_run_local_only;
-  if (1 != n_args)
+  if (1 != n_args || !rdf_rpid64_mode)
     {
       *err_ret = BIF_NOT_VECTORED;
       return;
