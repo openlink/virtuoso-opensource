@@ -1986,6 +1986,7 @@ sec_read_users (void)
   if (!sec_users)
     {
       sec_users = id_str_hash_create (101);
+      id_hash_set_rehash_pct (sec_users, 200);
       sec_user_by_id = hash_table_allocate (101);
 
       read_users_qr = sql_compile_static (
