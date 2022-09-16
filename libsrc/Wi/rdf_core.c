@@ -3333,14 +3333,31 @@ rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
   sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
 }
 
+int debug_invalid_iri_id = 0;
+
 caddr_t
 bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
   iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  int is_prefix = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
   if (0 == iid) return uname_nodeID_ns_0;
   if (8192 == iid) return uname_nodeID_ns_8192;
+  if (debug_invalid_iri_id)
+    {
+      caddr_t buf[100];
+      caddr_t b;
+
+      if (is_prefix)
+        return box_dv_short_string ("no prefix");
+
+      /* Generate temp iri */
+      snprintf (buf, sizeof (buf), "iri_id_" BOXINT_FMT "_with_no_name_entry", (boxint) iid);
+      b = box_dv_short_string (buf);
+      box_flags (b) = BF_IRI;
+      return b;
+    }
   rdf_handle_invalid_iri_id (qst, msg, iid);
   return NULL; /* never reached */
 }
