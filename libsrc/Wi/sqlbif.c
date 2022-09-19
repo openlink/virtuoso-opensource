@@ -84,6 +84,11 @@ extern "C" {
 #include <sys/resource.h>
 #endif
 
+#ifdef WIN32
+#include <windows.h>
+#include <psapi.h>
+#endif
+
 #define box_bool(n) ((caddr_t)((ptrlong)((n) ? 1 : 0)))
 
 id_hash_t *icc_locks;
@@ -14965,13 +14970,18 @@ bif_self_meter (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-#ifdef HAVE_GETRUSAGE
-  caddr_t * res = dk_alloc_box_zero (sizeof (caddr_t) * 10, DV_ARRAY_OF_POINTER);
+#if defined(HAVE_GETRUSAGE)
+
+  caddr_t *res = dk_alloc_list (10);
   struct rusage ru;
   getrusage (RUSAGE_SELF, &ru);
   res[0] = box_num (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000);
   res[1] = box_num (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
+#if defined (__APPLE__)
+  res[2] = box_num (ru.ru_maxrss / 1024);	/* Apple returns this in bytes instead of KB */
+#else
   res[2] = box_num (ru.ru_maxrss);
+#endif
   res[3] = box_num (ru.ru_minflt);
   res[4] = box_num (ru.ru_majflt);
   res[5] = box_num (ru.ru_nswap);
@@ -14979,6 +14989,34 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   res[7] = box_num (ru.ru_oublock);
   res[8] = box_num (ru.ru_nvcsw);
   res[9] = box_num (ru.ru_nivcsw);
+  return (caddr_t) res;
+
+#elif defined (WIN32)
+
+  caddr_t *res = dk_alloc_list_zero (10);
+  HANDLE hProcess = GetCurrentProcess ();
+  PROCESS_MEMORY_COUNTERS pmc;
+  FILETIME creation_time;
+  FILETIME exit_time;
+  FILETIME kernel_time;
+  FILETIME user_time;
+
+  if (GetProcessTimes (hProcess, &creation_time, &exit_time, &kernel_time, &user_time))
+    {
+      /* Convert to microseconds with rounding */
+      uint64 kernel_usec = ((((uint64) kernel_time.dwHighDateTime << 32) | (uint64) kernel_time.dwLowDateTime) + 5) / 10;
+      uint64 user_usec = ((((uint64) user_time.dwHighDateTime << 32) | (uint64) user_time.dwLowDateTime) + 5) / 10;
+
+      res[0] = box_num (user_usec / 1000);
+      res[1] = box_num (kernel_usec / 1000);
+    }
+
+  if (GetProcessMemoryInfo (hProcess, &pmc, sizeof (pmc)))
+    {
+      res[2] = box_num (pmc.PeakWorkingSetSize / 1024);	/* Microsoft returns this in bytes instead of KB */
+      res[4] = box_num (pmc.PageFaultCount);
+    }
+
   return (caddr_t) res;
 #else
   return box_num (0);
@@ -14989,15 +15027,34 @@ bif_getrusage (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 void 
 sti_init (sys_timer_t* sti)
 {
-#ifdef HAVE_GETRUSAGE
+#if defined (HAVE_GETRUSAGE)
+
   struct rusage ru;
   getrusage (RUSAGE_SELF, &ru);
-#endif
-  sti->sti_real = get_msec_real_time ();
-#ifdef HAVE_GETRUSAGE
   sti->sti_cpu = ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000;
   sti->sti_sys = ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000;
+
+#elif defined (WIN32)
+
+  HANDLE hProcess = GetCurrentProcess ();
+  FILETIME creation_time;
+  FILETIME exit_time;
+  FILETIME kernel_time;
+  FILETIME user_time;
+
+  if (GetProcessTimes (hProcess, &creation_time, &exit_time, &kernel_time, &user_time))
+    {
+      /* Convert to microseconds with rounding */
+      uint64 kernel_usec = ((((uint64) kernel_time.dwHighDateTime << 32) | (uint64) kernel_time.dwLowDateTime) + 5) / 10;
+      uint64 user_usec = ((((uint64) user_time.dwHighDateTime << 32) | (uint64) user_time.dwLowDateTime) + 5) / 10;
+
+      sti->sti_cpu = (user_usec / 1000);
+      sti->sti_sys = (kernel_usec / 1000);
+    }
+
 #endif
+
+  sti->sti_real = get_msec_real_time ();
 }
 
 
