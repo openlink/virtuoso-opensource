@@ -498,6 +498,8 @@ static long thr_cli_vdb;
 static long db_max_col_bytes = ROW_MAX_COL_BYTES;
 static long db_sizeof_wide_char = sizeof (wchar_t);
 
+extern int debug_invalid_iri_id;
+
 void
 process_status_report (void)
 {
