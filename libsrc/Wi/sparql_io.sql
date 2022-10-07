@@ -3242,12 +3242,13 @@ host_found:
   if (client_supports_partial_res and (timeout >= 1000))
     {
       set RESULT_TIMEOUT = timeout;
-      -- dbg_obj_princ ('anytime timeout is set to', timeout);
-      set TRANSACTION_TIMEOUT=timeout + 10000;
+      set TRANSACTION_TIMEOUT = timeout + 10000;
     }
   else if (max_timeout >= 1000)
     {
-      set TRANSACTION_TIMEOUT=max_timeout;
+      set RESULT_TIMEOUT = max_timeout;
+      set TRANSACTION_TIMEOUT = max_timeout + 10000;
+      timeout := 0;
     }
   connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
