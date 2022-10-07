@@ -78,6 +78,7 @@
 #include "../Wi/2pc.h"
 #include "../Wi/geo.h"
 #include "../Wi/rdf_core.h"
+#include "../Wi/numeric.h"
 
 
 #include "gate_virtuoso_stubs.h"
