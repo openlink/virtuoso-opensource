@@ -64,8 +64,9 @@ extern long srv_max_clients;
 
 /* srvstat.c */
 extern char *product_version_string (void);
+extern int64 get_total_sys_mem (void);
 extern time_t st_started_since;
-extern long st_sys_ram;
+extern int64 st_sys_ram;
 
 extern long first_id;
 

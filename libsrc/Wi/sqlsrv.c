@@ -3940,7 +3940,7 @@ srv_session_disconnect_action (dk_session_t *ses)
 
 void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
-long get_total_sys_mem ();
+int64 get_total_sys_mem ();
 
 extern int32 rdf_rpid64_mode;
 
