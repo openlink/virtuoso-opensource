@@ -3287,6 +3287,9 @@ again:
       http_header (http_header_get() ||
           sprintf ('Accept-Ranges: none\r\nX-SPARQL-Anytime: timeout=%d; max_timeout=%d\r\n', timeout, max_timeout));
 
+      DB.DBA.RDF_LOG_DEBUG_INFO ('SPARQL endpoint returned a partial result due to ANYTIME timeout (timeout=%s, max_timeout=%s)',
+	timeout, max_timeout);
+
       --reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
       --                 xmlelement ("complete", cplete),
       --                 xmlelement ("db-activity", db_activity ()), res[0][0]);
