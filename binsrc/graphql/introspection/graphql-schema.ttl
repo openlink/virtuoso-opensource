@@ -1,0 +1,137 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix gql: <http://www.openlinksw.com/schemas/graphql#> .
+@prefix gqi: <http://www.openlinksw.com/schemas/graphql/intro#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix : <http://www.openlinksw.com/schemas/graphql#> .
+
+:schema a owl:Ontology ;
+    rdfs:label "RDF Ontology to GraphQL mappings schema" ;
+    rdfs:comment """
+    This ontology descibes the GraphQL/SPARQL bridge annotation classes and properties.
+    These are used along with OWL/RDF ontology by a dataset published for access via GraphQL API.
+    """ ;
+    dct:created "2022-07-03"^^xsd:date ;
+    dct:modified "2022-07-14"^^xsd:date ;
+    <http://open.vocab.org/terms/defines>
+            gql:Map, gql:MappingObject,
+            gql:schemaObjects,
+            gql:dataGraph,
+            gql:schemaGraph,
+            gql:inferenceName,
+            gql:iriPattern,
+            gql:mutationType,
+            gql:sparqlQuery,
+            gql:rdfClass,
+            gql:field,
+            gql:type,
+            gql:Function,
+            gql:Scalar,
+            gql:Boolean,
+            gql:Object,
+            gql:Array .
+
+:Map a owl:Class ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "The root object of GraphQL/SPARQL bridge annotation properties" .
+
+:Scalar a gql:MappingObject ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Common object for all scalar types e.g. String, Int, Float etc., if a field is not present defaults to `null`" .
+
+:Boolean a gql:MappingObject ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Object for scalar type `Boolean`, when a field is not present defaults to `false`" .
+
+:Object a gql:MappingObject ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Class representing GraphQL type `OBJECT`" .
+
+:Function a gql:MappingObject ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Class representing `SPARQL` query" .
+
+:Array a gql:MappingObject ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Class representing GraphQL type `LIST`" .
+
+:MappingObject a owl:Class ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment """
+        This is a core mapping class, all objects representing GraphQL objects and fields are instance of that object.
+        All instances of MUST be in the namespace prefix `gql: <http://www.openlinksw.com/schemas/graphql#>`.
+        Example: query { planet { order_num } } will use `gql:planet` and `gql:order_num` to find RDF class and property.
+        In RDF terms mappings should be defined as:  `gql:planet gql:rdfClass ex:Planet` and `ex:planetOrder gql:field gql:order_num`.
+        """ .
+
+
+:schemaObjects a owl:ObjectProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "List of mappings between GraphQL and RDF objects and fields." ;
+    rdfs:range gql:MappingObject ;
+    rdfs:domain gql:Map .
+
+:dataGraph a owl:DatatypeProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "The IRI of graph containing the RDF Dataset." ;
+    rdfs:range rdf:Resource ;
+    rdfs:domain gql:Map .
+
+:schemaGraph a owl:DatatypeProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "The IRI of the schema (`self`)." ;
+    rdfs:range rdfs:Resource ;
+    rdfs:domain gql:Map .
+
+
+:inferenceName a owl:DatatypeProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "The label of RDF inference rule used to query RDF data" ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:Map .
+
+:iriPattern a owl:DatatypeProperty ;
+	rdfs:isDefinedBy :schema ;
+        rdfs:comment "A string `sprintf` format string for instances of `this` class" ;
+ 	rdfs:range xsd:string ;
+	rdfs:domain owl:Class .
+
+:mutationType a owl:DatatypeProperty ;
+	rdfs:isDefinedBy :schema ;
+        rdfs:comment "Type of operation to perform basic mutation on instances of `this` class, `INSERT` or `DELETE`" ;
+ 	rdfs:range xsd:string ;
+	rdfs:domain owl:Class .
+
+:sparqlQuery a owl:DatatypeProperty ;
+	rdfs:isDefinedBy :schema ;
+        rdfs:comment "`SPARQL` query text for `gql:Function` field types" ;
+ 	rdfs:range xsd:string ;
+	rdfs:domain owl:Class .
+
+:rdfClass a owl:ObjectProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment "Mapping between an OWL/RDF class and GraphQL mapping object, the ones listed in `schemaObjects` " ;
+    rdfs:range owl:Class ;
+    rdfs:domain rdfs:MappingObject .
+
+:field a owl:ObjectProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment """Mapping of a RDF property to a GraphQL field name.
+     This property is used to match given input field from GraphQL query
+     to a property of the matching OWL/RDF class""" ;
+    rdfs:range rdfs:MappingObject ;
+    rdfs:domain owl:ObjectProperty, owl:DatatypeProperty .
+
+:type a owl:ObjectProperty ;
+    rdfs:isDefinedBy :schema ;
+    rdfs:comment
+    """Mapping of a RDF property to `SCALAR`, `OBJECT` and `LIST` GraphQL types.
+    This property is used to in output serialisation (for ex. `JSON`)
+    how to represent nodes and leafs in the results tree""" ;
+    rdfs:range gql:Scalar, gql:Object, gql:Array ;
+    rdfs:domain owl:ObjectProperty, owl:DatatypeProperty .

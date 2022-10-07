@@ -3198,6 +3198,7 @@ AC_CONFIG_FILES([
 	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
 	binsrc/fct/Makefile
+	binsrc/graphql/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile

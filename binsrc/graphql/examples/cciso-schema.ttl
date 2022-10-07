@@ -1,0 +1,164 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix foaf: <http://xmlns.com/foaf/0.1/> .
+@prefix geo: <http://www.w3.org/2003/01/geo/wgs84_pos#> .
+@prefix gql: <http://www.openlinksw.com/schemas/graphql#> .
+@prefix r: <http://example.org/region/> .
+@prefix c: <http://example.org/country/> .
+@prefix s: <http://example.org/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+
+s:schema a owl:Ontology ;
+    rdfs:label "Countries & Regions Dataset" ;
+    rdfs:comment "Basic example data" ;
+    dct:created "2022-06-02"^^xsd:date ;
+    dct:modified "2022-07-08"^^xsd:date ;
+    <http://open.vocab.org/terms/defines> r:Region, c:Country,
+    c:code, c:code3, c:name, c:country_code, c:region,
+    r:code, r:ccode, r:name, r:countries, r:population .
+
+gql:Map gql:schemaObjects gql:country, gql:region, gql:countries, gql:regions, gql:updateRegion, gql:insertCountry, gql:deleteCountry ;
+                          gql:dataGraph <urn:cciso:data> ;
+                          gql:schemaGraph <urn:cciso:schema> ;
+                          gql:inferenceName "cciso" .
+
+### Basic mutation on a single OWL/RDF Class
+gql:updateRegion gql:type gql:Object ;
+    rdfs:label "Region update mutaion mapping" ;
+    gql:mutationType "UPDATE";
+    gql:rdfClass r:Region .
+
+### Custom SPASQL mutation classes
+gql:insertCountry gql:type gql:Function ;
+    rdfs:label "Country insert mutaion mapping" ;
+    gql:mutationType "SPARQL";
+    gql:sparqlQuery """
+    prefix c: <http://example.org/country/>
+    WITH <urn:cciso:data>
+    INSERT {
+            `iri(?::ID)` a c:Country ;
+                c:code ?::code ;
+                c:name ?::name ;
+                c:code3 ?::code3 ;
+                c:country_code ?::country_code ;
+                c:region `iri(?::region)`.
+    }
+    """;
+    gql:rdfClass c:Country .
+
+gql:deleteCountry gql:type gql:Function ;
+    rdfs:label "Delete country record mutaion mapping" ;
+    gql:mutationType "SPARQL";
+    gql:sparqlQuery """
+    prefix c: <http://example.org/country/>
+    WITH <urn:cciso:data> DELETE { ?s ?p ?o } WHERE { ?s a c:Country ; ?p ?o . FILTER (?s = iri(?::ID)) }
+    """;
+    gql:rdfClass c:Country .
+
+### Bridge annotaions (mappings)
+gql:country gql:type gql:Object ;
+    rdfs:label "Maping between country object and RDF class Country" ;
+    gql:rdfClass c:Country .
+
+gql:countries gql:type gql:Array ;
+    rdfs:label "Array of Country objects" ;
+    gql:rdfClass c:Country .
+
+gql:region gql:type gql:Object ;
+    rdfs:label "Maping between country region and RDF class Region" ;
+    gql:rdfClass r:Region .
+
+gql:regions gql:type gql:Array ;
+    rdfs:label "Array of Region objects" ;
+    gql:rdfClass r:Region .
+
+### Ontology itself with field annoatations
+r:Region a owl:Class ;
+    rdfs:isDefinedBy s:schema ;
+    gql:iriPattern "http://example.org/region/%s";
+    rdfs:label "Region" ;
+    gql:field gql:region .
+
+c:Country a owl:Class ;
+    rdfs:isDefinedBy s:schema ;
+    gql:iriPattern "http://example.org/country/%s";
+    rdfs:label "Country" ;
+    gql:field gql:country .
+
+c:code a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain c:Country ;
+    gql:type gql:ID ;
+    gql:field gql:code .
+
+c:code3 a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain c:Country ;
+    gql:type gql:Scalar ;
+    gql:field gql:code3 .
+
+c:name a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain c:Country ;
+    rdfs:subPropertyOf rdfs:label ;
+    gql:type gql:Scalar ;
+    gql:field gql:name .
+
+c:country_code a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:int ;
+    rdfs:domain c:Country ;
+    gql:type gql:Scalar ;
+    gql:field gql:country_code .
+
+c:region a owl:ObjectProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range r:Region ;
+    rdfs:domain c:Country ;
+    gql:type gql:Object ;
+    gql:field gql:region .
+
+r:code a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain r:Region ;
+    gql:type gql:ID ;
+    gql:field gql:code .
+
+r:ccode a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:int ;
+    rdfs:domain r:Region ;
+    gql:type gql:Scalar ;
+    gql:field gql:ccode .
+
+r:population a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:float ;
+    rdfs:domain r:Region ;
+    gql:type gql:Scalar ;
+    gql:field gql:population .
+
+r:name a owl:DatatypeProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain r:Region ;
+    rdfs:subPropertyOf rdfs:label ;
+    gql:type gql:Scalar ;
+    gql:field gql:name .
+
+#
+# these are materialised dataset from reverse relation to avoid inference
+# see ccio.sql for details
+#
+r:countries a owl:ObjectProperty ;
+    rdfs:isDefinedBy s:schema ;
+    rdfs:domain r:Region ;
+    rdfs:range c:Country ;
+    gql:type gql:Array ;
+    gql:field gql:countries .
