@@ -3088,7 +3088,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             throws RepositoryException
     {
         sb.append("<");
-        escapeString(uri.toString(), sb);
+        sb.append(uri.toString());
         sb.append(">");
     }
 
