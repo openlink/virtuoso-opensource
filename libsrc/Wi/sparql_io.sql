@@ -2602,7 +2602,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
   declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
-  declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
+  declare def_max, add_http_headers, max_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
   declare reported_unknown_services any;
   declare state, msg varchar;
@@ -2661,7 +2661,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := virtuoso_ini_item_value ('SPARQL', 'DefaultGraph');
-  hard_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
+  max_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
   timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ExecutionTimeout'), '0')) * 1000;
   client_supports_partial_res := 0;
 
@@ -2684,12 +2684,12 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   -- Get the max values as specified by the client but always stick to the system-wide max if there is any
   if (not connection_get ('SPARQL/MaxQueryExecutionTime') is null)
-    hard_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, hard_timeout);
+    max_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, max_timeout);
   if (not connection_get ('SPARQL/ResultSetMaxRows') is null)
     def_max := __min (cast (connection_get ('SPARQL/ResultSetMaxRows') as int), def_max);
 
   -- If MaxQueryExecutionTime is set, assume we can return a partial result
-  if (hard_timeout >= 1000)
+  if (max_timeout >= 1000)
     client_supports_partial_res := 1;
 
   save_dir := trim (get_keyword ('dname', params, ''));
@@ -3230,10 +3230,12 @@ host_found:
   rset := null;
   commit work;
 
-  -- If timeout is outside of range 1000..hard_timeout, use the hard_timeout limit
-  if (hard_timeout >= 1000 and (timeout < 1000 or timeout > hard_timeout))
+  -- If timeout is outside of range 1000..max_timeout, use the max_timeout limit
+  if (max_timeout < 1000) max_timeout := 0;
+  if (timeout < 1000) timeout := 0;
+  if (max_timeout >= 1000 and (timeout > max_timeout))
     {
-      timeout := hard_timeout;
+      timeout := max_timeout;
     }
 
   -- If timeout is set (>=1000) then enable ANYTIME query unless a partial result is not allowed
@@ -3243,9 +3245,9 @@ host_found:
       -- dbg_obj_princ ('anytime timeout is set to', timeout);
       set TRANSACTION_TIMEOUT=timeout + 10000;
     }
-  else if (hard_timeout >= 1000)
+  else if (max_timeout >= 1000)
     {
-      set TRANSACTION_TIMEOUT=hard_timeout;
+      set TRANSACTION_TIMEOUT=max_timeout;
     }
   connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
@@ -3383,7 +3385,7 @@ write_results:
               else
                 fname := sprintf ('%.100s - cached and renewable SPARQL result - made by %.100s', cast (now() as varchar), user_id);
             }
-          refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (hard_timeout, 1000)/100) end;
+          refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (max_timeout, 1000)/100) end;
           ttl_sec := 172800;
           full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
           "DynaRes_INSERT_RESOURCE" (
@@ -3394,7 +3396,7 @@ write_results:
               ttl_seconds => ttl_sec,
               mime => accept,
               exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
-              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, max_timeout, jsonp_callback),
               exec_uname => user_id,
               content => ses,
               overwrite => atoi (overwrite)
@@ -3829,17 +3831,17 @@ registry_set ('/!sparql-graph-crud/', 'no_vsp_recompile')
 ;
 
 
-create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in hard_timeout integer, in jsonp_callback any)
+create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in max_timeout integer, in jsonp_callback any)
 {
-  -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, hard_timeout, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, max_timeout, ')');
   declare state, msg varchar;
   declare metas, rset any;
   declare RES any;
   declare ses any;
   result_names (RES);
   set_user_id (user_id, 1);
-  if (hard_timeout >= 1000)
-    set TRANSACTION_TIMEOUT = hard_timeout;
+  if (max_timeout >= 1000)
+    set TRANSACTION_TIMEOUT = max_timeout;
   set_user_id (user_id);
   state := '00000';
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);
