@@ -1501,9 +1501,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
     }
     else
     {
-        DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
-            '500', 'Request Failed',
-            '(no query)', '00000', 'Invalid help topic', format);
+        http_rewrite();
+        http_request_status ('HTTP/1.1 500 Request Failed');
+        http_header ('Content-Type: text/plain\r\n');
+        http ('Virtuoso SPARQL endpoint: Unknown help topic\r\n');
+        return;
     }
 
     http('');
