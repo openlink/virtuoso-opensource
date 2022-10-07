@@ -2202,7 +2202,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'HTML')
     {
       if (bit_and (flags, 1))
-        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table', ses);
+        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table' || partial_title, ses);
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0, 1, case when ret_mime = 'text/html' then 1 else 0 end);
       if (bit_and (flags, 1))
         WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
@@ -2282,7 +2282,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'HTML;TR')
     {
       ret_mime := 'text/html';
-      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table (faceted browsing links)', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table (faceted browsing links)' || partial_title, ses);
       DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (ses, metas, rset);
       WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       goto body_complete;
