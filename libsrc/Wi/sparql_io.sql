@@ -3267,6 +3267,26 @@ again:
     {
       exec_time := msec_time () - start_time;
       exec_db_activity := db_activity ();
+
+      --
+      --  If client did not request a timeout, return a HTTP 500 error
+      --
+      if (timeout < 1000)
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '500', 'SPARQL Request Failed', NULL, 'S1TAT', 'Query did not complete due to ANYTIME timeout.\r\n', format);
+          return;
+        }
+
+      --
+      --  Return an appropriate HTTP status code for "Partial result" (default 206)
+      --
+      declare anytime_status integer;
+      anytime_status := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'HTTPAnytimeStatus'), '206'));
+      http_status_set (anytime_status);
+      http_header (http_header_get() ||
+          sprintf ('Accept-Ranges: none\r\nX-SPARQL-Anytime: timeout=%d; max_timeout=%d\r\n', timeout, max_timeout));
+
       --reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
       --                 xmlelement ("complete", cplete),
       --                 xmlelement ("db-activity", db_activity ()), res[0][0]);
