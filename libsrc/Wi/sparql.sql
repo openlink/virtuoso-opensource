@@ -4719,7 +4719,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare env, prev_subj, subj_text, pred_text, nsdict, nslist any;
   declare ctr, len, tcount, tctr, status integer;
@@ -4953,7 +4953,7 @@ create function DB.DBA.RDF_PIVOT_DESCRIBE_LINK (in iri varchar)
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_UL (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_UL (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare env, prev_subj, prev_pred any array;
   declare can_pivot, ctr, len, tcount, tctr, status, obj_needs_br integer;
@@ -5117,7 +5117,7 @@ This time the service made zero such statements, sorry.</p>', ses);
 ;
 
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_TR (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_TR (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare env, prev_subj, prev_pred any;
   declare can_pivot, ctr, len, tcount, tctr, status integer;
@@ -5278,7 +5278,7 @@ This time the service made zero such statements, sorry.</p>', ses);
 ;
 
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare ctr, len, tcount, tctr, status, obj_needs_br integer;
@@ -5472,7 +5472,7 @@ skip_obj: ;
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare env, prev_subj, prev_pred, nsdict, nslist any;
   declare val, p_itemprop, describe_path, about_path varchar;
@@ -7092,7 +7092,7 @@ create function DB.DBA.RDF_FORMAT_TRIPLE_DICT_AS_HTML_SCRIPT_TTL (inout triples_
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare tcount integer;
   tcount := length (triples);
@@ -7121,7 +7121,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (inout triples any, inout s
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare tcount integer;
   tcount := length (triples);
@@ -7148,7 +7148,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (inout triples any, inout
 }
 ;
 
-create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (inout triples any, inout ses any)
+create procedure DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (inout triples any, inout ses any, in partial_title varchar := '')
 {
   declare tcount integer;
   tcount := length (triples);

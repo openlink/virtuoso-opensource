@@ -1983,8 +1983,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 {
   declare singlefield varchar;
   declare ret_mime, ret_format varchar;
+
+  declare partial_title varchar;
+  partial_title := '';
+
   if (status is not null)
     {
+      if (status[0] in ('S1TAT'))
+      {
+         partial_title := ' (partial result: anytime timeout)';
+      }
       http_header (concat (coalesce (http_header_get (), ''),
           'X-SQL-State: ', status[0], '\r\nX-SQL-Message: ', status[1],
           '\r\nX-Exec-Milliseconds: ', cast (status[2] as varchar), '\r\nX-Exec-DB-Activity: ', cast (status[3] as varchar),
@@ -2065,25 +2073,25 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'RDFA;XHTML')
-        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses, partial_title);
       else if (ret_format = 'HTML;UL')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_UL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_UL (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;TR')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_TR (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_TR (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;MICRODATA')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;NICE_MICRODATA')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'JSON;MICRODATA')
@@ -2107,7 +2115,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       else if (ret_format = 'HTML;NICE_TTL')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else if (ret_format = 'SOAP')
@@ -2134,12 +2142,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 	}
       else if (ret_format = 'HTML;SCRIPT_TTL')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else if (ret_format = 'HTML;SCRIPT_LD_JSON')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else
