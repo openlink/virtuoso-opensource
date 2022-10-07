@@ -1571,7 +1571,7 @@ detalize_done:
 
     <h5>SPARQL query translated to SQL</h5>
     <p>
-    <i>For security reasons, code responsible for graph-level security is not generated and some account-specific data are intentionally made wrong.</i>
+    <i>For security reasons, code responsible for graph-level security is not generated and some account-specific data is deliberately obfuscated.</i>
 <?vsp
     whenever sqlstate '*' goto sql_text_error;
     report := sparql_to_sql_text (concat ('{ define sql:comments 0 ', full_query, '\n}'));
