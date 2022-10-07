@@ -537,6 +537,7 @@ typedef struct sql_tree_s
 	    char *	name;
 	    ST **	cols;
 	    ptrlong	flags;
+	    ptrlong	if_not_exists;
 	  } table_def;
 	struct {
 	  caddr_t	name;
@@ -573,6 +574,7 @@ typedef struct sql_tree_s
 	    char *	table;
 	    caddr_t *	cols;
 	    caddr_t *	opts;
+	    ptrlong	if_not_exists;
 	  } index;
 	struct
 	  {
