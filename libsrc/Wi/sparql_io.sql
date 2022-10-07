@@ -3409,6 +3409,9 @@ write_results:
           declare sparql_uid integer;
           declare refresh_sec, ttl_sec integer;
           declare full_uri varchar;
+	  declare _host, _http  any;
+	  _host := http_request_header (lines, 'Host', null, registry_get ('URIQADefaultHost'));
+	  _http := case when is_https_ctx() then 'https' else 'http' end;
           sparql_uid := (SELECT COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = save_dir_id);
           if (fname is null)
             {
@@ -3419,7 +3422,7 @@ write_results:
             }
           refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (max_timeout, 1000)/100) end;
           ttl_sec := 172800;
-          full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
+          full_uri := concat (_http, '://', _host, DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
           "DynaRes_INSERT_RESOURCE" (
               detcol_id => save_dir_id,
               fname => fname,
