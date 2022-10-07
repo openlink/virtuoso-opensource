@@ -15019,6 +15019,11 @@ create procedure DB.DBA.RDF_QUAD_FT_UPGRADE ()
   delete from DB.DBA.RDF_GRAPH_USER where not exists (select 1 from DB.DBA.SYS_USERS where RGU_USER_ID = U_ID);
   if (row_count ())
     log_message ('Non-existing users are removed from graph security list');
+  -- for every DB, set the default permissions for nobody, must not be default to rwx
+  if (not exists (select 1 from DB.DBA.RDF_GRAPH_USER where RGU_GRAPH_IID = #i0 and RGU_USER_ID = http_nobody_uid()))
+    {
+      RDF_DEFAULT_USER_PERMS_SET('nobody', 1);
+    }
   fake := (select count (__rdf_graph_specific_perms_of_user (RGU_GRAPH_IID, RGU_USER_ID, RGU_PERMISSIONS))
     from DB.DBA.RDF_GRAPH_USER where RGU_USER_ID <> http_nobody_uid () and not (RGU_GRAPH_IID in (#i0, #i8192)) );
   if (coalesce (virtuoso_ini_item_value ('SPARQL', 'RecoveryMode'), '0') > '0')
