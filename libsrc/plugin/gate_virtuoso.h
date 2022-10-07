@@ -68,7 +68,7 @@
 #include "../Wi/bif_text.h"
 #include "../Xml.new/xmlparser.h"
 #include "../Wi/xmltree.h"
-#include "../Wi/sql3.h"
+/*#include "../Wi/sql3.h"*/
 #include "../Wi/repl.h"
 #include "../Wi/replsr.h"
 #include "../langfunc/langfunc.h"
