@@ -771,12 +771,12 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
                                 id_to_iri (g_iid), id_to_iri(gcls_iid), id_to_iri(gcls_iid)));
 
           for select "class", "class_type", "iri_pattern", "data_graph0", "sparql_op0", "qry0" from (sparql select * where
-                    { graph ?:g_iid { gql:Map gql:schemaObjects ?:gcls_iid .
-                            ?:gcls_iid gql:rdfClass ?class ; gql:type ?class_type ; gql:mutationType ?sparql_op0 .
-                            optional { ?:gcls_iid gql:sparqlQuery ?qry0 }
+                    { graph ?:g_iid { gql:Map gql:schemaObjects ?gcls .
+                            ?gcls gql:rdfClass ?class ; gql:type ?class_type ; gql:mutationType ?sparql_op0 .
+                            optional { ?gcls gql:sparqlQuery ?qry0 }
                             optional { ?class gql:iriPattern ?iri_pattern }
-                            optional { gql:Map gql:dataGraph ?data_graph0 }
-                            }}) dt0 do
+                            gql:Map gql:dataGraph ?data_graph0 .
+                            filter (?gcls = ?:gcls_iid) }}) dt0 do
             {
               cls := "class";
               cls_type := "class_type";
