@@ -6243,7 +6243,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_FIN (inout _env any) returns
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_INIT (_env);
 
   http ('\n    ] .', _env);
-  return string_output_string (_env);
+  return (_env);
 }
 ;
 
@@ -6289,7 +6289,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_FIN (inout _env any) returns 
 {
   if (__tag of vector <> __tag(_env))
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_NT_INIT (_env);
-  return string_output_string (_env[2]);
+  return (_env[2]);
 }
 ;
 
@@ -6385,7 +6385,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_FIN (inout _env any) ret
     DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_INIT (_env);
 
   http ('\n </rs:results>\n</rdf:RDF>', _env);
-  return string_output_string (_env);
+  return (_env);
 }
 ;
 
@@ -6449,7 +6449,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_JSON_FIN (inout _env any) return
       http ('\n{ "head": { "link": [], "vars": [] },\n  "results": { "distinct": false, "ordered": true, "bindings": [', _env);
     }
   http (' ] } }', _env);
-  return string_output_string (_env);
+  return (_env);
 }
 ;
 
@@ -6529,7 +6529,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CSV_FIN (inout _env any) returns
 {
   if (__tag of stream <> __tag(_env))
     return '';
-  return string_output_string (_env);
+  return (_env);
 }
 ;
 
@@ -6621,7 +6621,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_CXML_FIN (inout _env any) return
       metas := vector (cols, vector ());
       DB.DBA.SPARQL_RESULTS_CXML_WRITE (ses, metas, rset, accept, add_http_headers);
     }
-  return string_output_string (ses);
+  return (ses);
 }
 ;
 
@@ -6682,7 +6682,7 @@ create function DB.DBA.RDF_FORMAT_RESULT_SET_AS_BINDINGS_FIN (inout _env any) re
   ses := aref_set_0 (_env, 2);
   if (not isinteger (_env[1]))
     http ('\n}', ses);
-  return string_output_string (ses);
+  return (ses);
 }
 ;
 
