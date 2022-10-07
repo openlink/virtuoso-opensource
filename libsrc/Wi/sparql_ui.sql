@@ -777,6 +777,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     in ini_dflt_graph varchar,
     in def_qry varchar,
     in timeout integer,
+    in max_timeout integer,
     in signal_void varchar,
     in signal_unconnected varchar,
     in quiet_geo varchar,
@@ -956,8 +957,12 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
             <label for="timeout" class="col-lg-2 col-form-label">Execution timeout</label>
             <div class="col-lg-10">
                 <div class="input-group input-group-sm">
-                    <input class="form-control" name="timeout" id="timeout" type="number" value="<?V timeout ?>" />
-                    <div class="input-group-append"><span class="input-group-text">milliseconds</span></div>
+                    <input class="form-control" name="timeout" id="timeout" type="number"
+                        value="<?V timeout ?>"
+                        min="0"
+                        <?vsp if (max_timeout > 0) { http(sprintf('max="%d"', max_timeout)); } ?>
+                        />
+                    <span class="input-group-text">milliseconds</span>
                 </div>
             </div>
         </div>

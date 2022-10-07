@@ -2830,7 +2830,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       if ('' <> get_keyword ('debug', params, ''))
         signal_void := signal_unconnected := '1';
       log_debug_info := get_keyword ('log_debug_info', params, '');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, signal_void, signal_unconnected, quiet_geo, log_debug_info, save_mode, dav_refresh, overwrite, explain_report);
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, max_timeout, signal_void, signal_unconnected, quiet_geo, log_debug_info, save_mode, dav_refresh, overwrite, explain_report);
       return;
     }
 
