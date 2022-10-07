@@ -555,8 +555,8 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                       id_to_iri (g_iid), id_to_iri (cls), id_to_iri(arg_iid), id_to_iri (cls), id_to_iri(fld_iid), id_to_iri(arg_iid) ));
 
                 for select "prop0", "prop1", "tp0", "range0" from (sparql select ?prop0 ?prop1 ?tp0 ?range0 where { graph ?:g_iid {
-                    ?prop0 rdfs:domain ?:cls ; gql:type ?tp0 ; rdfs:range ?range0 ; gql:field ?:arg_iid .
-                    optional {  [] rdfs:domain ?:cls  ; rdfs:range ?range ; gql:field ?:fld_iid .
+                    ?prop0 rdfs:domain `iri(?:cls)` ; gql:type ?tp0 ; rdfs:range ?range0 ; gql:field ?:arg_iid .
+                    optional {  [] rdfs:domain `iri(?:cls)`  ; rdfs:range ?range ; gql:field ?:fld_iid .
                                 ?prop1 rdfs:domain ?range ; gql:field ?:arg_iid .
                              }
                     }}) dt0 do
@@ -807,7 +807,7 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
           fld_iid := GQL_IID (var_name_only);
           id_prop := id_field := null;
           for select "prop0", "field0" from (sparql select ?prop0 ?field0
-                where { graph ?:g_iid { ?prop0 rdfs:domain ?:cls ; gql:type gql:ID ; gql:field ?field0 . }}) dt0 do
+                where { graph ?:g_iid { ?prop0 rdfs:domain `iri(?:cls)` ; gql:type gql:ID ; gql:field ?field0 . }}) dt0 do
             {
               id_prop := "prop0";
               id_field := iri_split ("field0", null, 0, 1);
@@ -835,8 +835,8 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
                     id_to_iri (g_iid), id_to_iri (cls), id_to_iri(arg_iid), id_to_iri (cls), id_to_iri(fld_iid), id_to_iri(arg_iid) ));
 
               for select "prop0", "prop1", "tp0" from (sparql select ?prop0 ?prop1 ?tp0 where { graph ?:g_iid {
-                  ?prop0 rdfs:domain ?:cls ; gql:type ?tp0 ; gql:field ?:arg_iid .
-                  optional {  [] rdfs:domain ?:cls  ; rdfs:range ?range ; gql:field ?:fld_iid .
+                  ?prop0 rdfs:domain `iri(?:cls)` ; gql:type ?tp0 ; gql:field ?:arg_iid .
+                  optional {  [] rdfs:domain `iri(?:cls)`  ; rdfs:range ?range ; gql:field ?:fld_iid .
                               ?prop1 rdfs:domain ?range ; gql:field ?:arg_iid .
                            }
                   }}) dt0 do
