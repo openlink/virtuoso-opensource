@@ -18,12 +18,37 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = demo hslookup image_magick JDBC odp sparql_demo webapp xpath xquery wbxml2 websocket
 
+if WITH_WEBSOCKETS_VAD
+nodist_vad_DATA = websockets_dav.vad
+endif
+
+CLEANFILES = \
+	make_websockets_vad.log \
+	make_websockets_vad.xml \
+	websockets_dav.vad \
+	virtuoso.db \
+	virtuoso.ini \
+	virtuoso.lck \
+	virtuoso.log \
+	virtuoso.pxa \
+	virtuoso.tdb \
+	virtuoso.trx
+
+websockets_dav.vad: $(EXTRA_DIST)
+	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./make_vad.sh
+
+clean-local:
+	$(RM) -rf vad
+	$(RM) *.vad
 
 # ----------------------------------------------------------------------
 #
 #  Additional files to distribute
 #
 # ----------------------------------------------------------------------
-EXTRA_DIST=
+EXTRA_DIST = \
+	*.html \
+	*.sql \
+	*.vsp \
+	vad_version
