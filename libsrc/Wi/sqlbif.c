@@ -15755,12 +15755,111 @@ caddr_t bif_bit_v_count (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_num(len);
 }
 
+static
+caddr_t bif_short_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "short_tweak", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "short_tweak");
+  uint16 word = (uint16)bif_long_arg (qst, args, 2, "short_tweak");
+  if (0 != (len % 2))
+    sqlr_new_error ("22023", "SR051", "short_tweak() expects a binary string of even length, not of length %d", len);
+  pos *= 2;
+  if (pos < 0 || pos > (len - 2))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  SHORT_SET_NA (&bin[pos], word);
+  NO_CADDR_T;
+}
+
+
+static
+caddr_t bif_short_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "short_set", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "short_set");
+  uint16 word = (uint16)bif_long_arg (qst, args, 2, "short_set");
+  if (0 != (len % 2))
+    sqlr_new_error ("22023", "SR051", "short_set() expects a binary string of even length, not of length %d", len);
+  pos *= 2;
+  if (pos < 0 || pos > (len - 2))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  bin = box_copy (bin);
+  SHORT_SET_NA (&bin[pos], word);
+  return bin;
+}
+
+static
+caddr_t bif_short_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "short_ref", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "short_ref");
+  uint16 word = 0x0;
+  if (0 != (len % 2))
+    sqlr_new_error ("22023", "SR051", "short_ref() expects a binary string of even length, not of length %d", len);
+  pos *= 2;
+  if (pos < 0 || pos > (len - 2))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  word = SHORT_REF_NA (&bin[pos]);
+  return box_num (word);
+}
+
+static
+caddr_t bif_long_tweak (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "long_tweak", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "long_tweak");
+  uint32 word = (uint32)bif_long_arg (qst, args, 2, "long_tweak");
+  if (0 != (len % sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "long_tweak() expects a binary string of even length, not of length %d", len);
+  pos *= sizeof (uint32);
+  if (pos < 0 || pos > (len - sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  LONG_SET_NA (&bin[pos], word);
+  NO_CADDR_T;
+}
+
+
+static
+caddr_t bif_long_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "long_set", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "long_set");
+  uint32 word = (uint32)bif_long_arg (qst, args, 2, "long_set");
+  if (0 != (len % sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "long_set() expects a binary string of even length, not of length %d", len);
+  pos *= sizeof (uint32);
+  if (pos < 0 || pos > (len - sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  bin = box_copy (bin);
+  LONG_SET_NA (&bin[pos], word);
+  return bin;
+}
+
+static
+caddr_t bif_long_ref (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int32 len;
+  unsigned char * bin = bif_string_or_bin_arg (qst, args, 0, "long_ref", &len);
+  uint32 pos = (uint32)bif_long_arg (qst, args, 1, "long_ref");
+  uint32 word = 0x0;
+  if (0 != (len % sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "long_ref() expects a binary string of even length, not of length %d", len);
+  pos *= sizeof (uint32);
+  if (pos < 0 || pos > (len - sizeof (uint32)))
+    sqlr_new_error ("22023", "SR051", "Index position out of range %d", pos);
+  word = LONG_REF_NA (&bin[pos]);
+  return box_num (word);
+}
 
 void ssl_constant_init ();
 void bif_diff_init ();
 void bif_aq_init ();
 void rdf_box_init ();
-void   dbs_cache_check (dbe_storage_t *, int);
+void dbs_cache_check (dbe_storage_t *, int);
 
 
 caddr_t
@@ -17303,6 +17402,12 @@ sql_bif_init (void)
   bif_define_ex ("fct_level", bif_fct_level, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("sum_rank", bif_sum_rank, BMD_RET_TYPE, &bt_double, BMD_DONE);
   bif_set_vectored (bif_fct_level, bif_fct_level_vec);
+  bif_define ("short_set", bif_short_set);
+  bif_define ("short_tweak", bif_short_tweak);
+  bif_define ("short_ref", bif_short_ref);
+  bif_define ("long_set", bif_long_set);
+  bif_define ("long_tweak", bif_long_tweak);
+  bif_define ("long_ref", bif_long_ref);
 
   sqlbif2_init ();
   bif_sparql_init ();
