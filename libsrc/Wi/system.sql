@@ -5354,7 +5354,7 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   else if (v is null)
     return 'NULL';
   else if (isinteger (v))
-    return sprintf ('%d', v);
+    return sprintf ('%ld', v);
   else if (isfloat (v) or isdouble (v))
     return sprintf ('%f', v);
   else if (isnumeric (v))

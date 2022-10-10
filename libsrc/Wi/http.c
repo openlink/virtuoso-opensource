@@ -11542,8 +11542,8 @@ static caddr_t
 bif_http_get_cli_sessions (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  long add_args = bif_long_arg (qst, args, 0, "http_keep_session");
-  long sid;
+  long add_args = bif_long_arg (qst, args, 0, "http_get_cli_sessions");
+  boxint sid;
   dk_session_t * ses;
   dk_hash_iterator_t hit;
   dk_set_t set = NULL;
@@ -11561,8 +11561,8 @@ bif_http_get_cli_sessions (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 static caddr_t
 bif_http_client_session_cached (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  long id = bif_long_arg (qst, args, 0, "http_client_session_cached");
-  long ret;
+  boxint id = bif_long_arg (qst, args, 0, "http_client_session_cached");
+  boxint ret;
   mutex_enter (ws_cli_mtx);
   ret = ((NULL != gethash ((void *) (ptrlong) id, ws_cli_sessions)) ? 1 : 0);
   mutex_leave (ws_cli_mtx);
@@ -11622,7 +11622,7 @@ bif_http_keep_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
   caddr_t * conn = (caddr_t *) bif_arg (qst, args, 0, "http_keep_session");
-  long id = bif_long_arg (qst, args, 1, "http_keep_session");
+  boxint id = bif_long_arg (qst, args, 1, "http_keep_session");
   long flush_flag = BOX_ELEMENTS(args) > 2 ? bif_long_arg (qst, args, 2, "http_keep_session") : 1;
   dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
@@ -11677,7 +11677,7 @@ static caddr_t
 bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *)qst;
-  long id = bif_long_arg (qst, args, 0, "http_recall_session");
+  boxint id = bif_long_arg (qst, args, 0, "http_recall_session");
   long blocking = BOX_ELEMENTS(args) > 1 ? bif_long_arg (qst, args, 1, "http_recall_session") : 1;
   dk_session_t * ses = NULL;
   caddr_t * ret = NULL;
