@@ -1216,7 +1216,11 @@ buf_ext_check (buffer_desc_t * buf)
   if (!ext)
     {
       if (em == em->em_dbs->dbs_extent_map)
-	GPF_T1 ("freeing dp that is not part of the em");
+	{
+	  dbe_key_t * key = it->it_key;
+	  log_error ("Sanity check failed, key: %s, dp=%d", key->key_name ? key->key_name : "<unknown key>", dp);
+	  GPF_T1 ("freeing dp that is not part of the em");
+	}
       mutex_leave (em->em_mtx);
       em = em->em_dbs->dbs_extent_map;
       goto again;

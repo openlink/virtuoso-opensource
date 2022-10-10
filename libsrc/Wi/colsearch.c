@@ -814,7 +814,7 @@ itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, i
       ITC_LEAVE_MAPS (itc);
       if (PF_OF_DELETED == cr->cr_pages[cr_inx].cp_buf)
 	{
-	  log_error ("Broken index %s", key->key_name ? key->key_name : "temp key");
+	  log_error ("Broken key %s, dp=%d", key->key_name ? key->key_name : "temp key", dp);
 	  GPF_T1 ("ref to deld col page");
 	}
       cr->cr_pages[cr_inx].cp_string = cr->cr_pages[cr_inx].cp_buf->bd_buffer;
