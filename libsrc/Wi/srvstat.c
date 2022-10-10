@@ -657,6 +657,7 @@ dbms_status_report (void)
  extern long tc_n_flush;
  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
   char * bp_curr_ts;
+  caddr_t bp_curr_pref;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
   if (1)
@@ -741,6 +742,11 @@ dbms_status_report (void)
 	      dbs->dbs_log_name ? dbs->dbs_log_name : "none",
 	      (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
   rep_printf ("%ld pages have been changed since last backup (in checkpoint state)\n", dbs_count_incbackup_pages (dbs));
+
+  bp_curr_pref = bp_curr_prefix ();
+  if (box_length (bp_curr_pref) > 0)
+    rep_printf ("Current backup prefix: %s\n", bp_curr_pref);
+  dk_free_box (bp_curr_pref);
 
   bp_curr_ts = bp_curr_timestamp ();
   rep_printf ("Current backup timestamp: %s\n", bp_curr_ts);
