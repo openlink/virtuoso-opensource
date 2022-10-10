@@ -192,13 +192,14 @@ create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
   declare ses any;
   declare sid int;
   declare lines, params, opts any;
-  declare func varchar;
+  declare func, connect_func varchar;
 
   lines := http_request_header ();
   params := http_param ();
   opts := http_map_get ('options');
 
   func := get_keyword_ucase ('websocket_service_call', opts, null);
+  connect_func := get_keyword_ucase ('websocket_service_connect', opts, null);
   if (func is null or not __proc_exists (func))
     {
       http_status_set (400);
@@ -239,6 +240,8 @@ create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
 
      http_status_set (101);
      http_header (header);
+     if (connect_func is not null and __proc_exists (connect_func))
+       call (connect_func) (sid);
    }
   else
    {
