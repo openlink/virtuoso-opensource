@@ -88,9 +88,12 @@ create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd an
         return;
       -- simply echo back
       reponse := call (service_hook) (result, args);
-      reply := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
-      -- write a reply (optional)
-      ses_write(reply, ses);
+      if (reponse is not null)
+        {
+          -- write a reply (optional)
+          reply := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
+          ses_write(reply, ses);
+        }
     }
   -- set recv handler back
   http_on_message (ses, 'DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', cd);
