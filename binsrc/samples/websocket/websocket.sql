@@ -29,9 +29,25 @@ create procedure DB.DBA.WEBSOCKET_WRITE_MESSAGE (in sid int, in message varchar)
 }
 ;
 
+create procedure WSOCK_ECHO (in message varchar, in args any)
+{
+  return message;
+}
+;
+
 create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd any)
 {
   declare data any;
+  declare service_hook, args, reponse any;
+  if (isvector (cd) and length (cd) > 1)
+    {
+      service_hook := aref (cd, 0);
+      args := aref (cd, 1);
+    }
+  else
+    {
+      return;
+    }
   -- input is there, read a line
   data := ses_read (ses, 2);
   if (0 <> data)
@@ -71,7 +87,8 @@ create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd an
       if (opcode = 8)
         return;
       -- simply echo back
-      reply := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (result);
+      reponse := call (service_hook) (result, args);
+      reply := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
       -- write a reply (optional)
       ses_write(reply, ses);
     }
@@ -163,3 +180,63 @@ create procedure DB.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (
 }
 ;
 
+
+create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
+{
+  declare upgrade, host, x, connection, content, sec_websocket_key, service_name, sec_websocket_version, origin, sec_websocket_protocol, s any;
+  declare sec_websocket_extensions any;
+  declare sec_websocket_accept, header any;
+  declare ses any;
+  declare sid int;
+  declare lines, params, opts any;
+  declare func varchar;
+
+  lines := http_request_header ();
+  params := http_param ();
+  opts := http_map_get ('options');
+
+  func := get_keyword_ucase ('websocket_service_call', opts, null);
+  if (func is null or not __proc_exists (func))
+    {
+      http_status_set (400);
+      return;
+    }
+
+  host := http_request_header (lines, 'Host', null, null);
+  upgrade := http_request_header (lines, 'Upgrade', null, null);
+  connection := http_request_header (lines, 'Connection', null, null);
+  sec_websocket_key := http_request_header (lines, 'Sec-WebSocket-Key', null, null);
+  sec_websocket_version := http_request_header (lines, 'Sec-WebSocket-Version', null, null);
+  sec_websocket_extensions := http_request_header (lines, 'Sec-WebSocket-Extensions', null, null);
+  origin := http_request_header (lines, 'Origin', null, null);
+  sec_websocket_protocol := http_request_header (lines, 'Sec-WebSocket-Protocol', null, null);
+  sid := atoi(get_keyword ('sid', params, '1'));
+
+  if (http_client_session_cached (sid))
+    {
+      http_status_set (400);
+      return;
+    }
+
+  if (upgrade = 'websocket' and sec_websocket_version = '13')
+   {
+     -- set callback for recv
+     http_on_message (null, 'DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector (func, sid));
+     -- cache session and send http status
+     http_keep_session (null, sid, 0);
+
+     sec_websocket_accept := sha1_digest (concat (sec_websocket_key, '258EAFA5-E914-47DA-95CA-C5AB0DC85B11'));
+     header := sprintf ('Upgrade: %s\r\nConnection: Upgrade\r\nSec-WebSocket-Accept: %s\r\n', upgrade, sec_websocket_accept);
+     if (sec_websocket_protocol is not null)
+       header := sprintf ('%sSec-WebSocket-Protocol: %s\r\n', header, sec_websocket_protocol);
+
+     http_status_set (101);
+     http_header (header);
+   }
+  else
+   {
+     http_status_set (400);
+   }
+ return '';
+}
+;
