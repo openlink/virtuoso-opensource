@@ -88,6 +88,8 @@ create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd an
         return;
       -- simply echo back
       reponse := call (service_hook) (result, args);
+      if (reponse = 0)
+        return;
       if (reponse is not null)
         {
           -- write a reply (optional)
