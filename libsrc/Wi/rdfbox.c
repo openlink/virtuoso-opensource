@@ -2425,6 +2425,8 @@ bif_rq_iid_of_o (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
+#define DT_MODE_MASK(v) ~((DT_TYPE_DATE == DT_DT_TYPE((v))) ? DT_PRINT_MODE_HMS : ((DT_TYPE_TIME == DT_DT_TYPE((v))) ? DT_PRINT_MODE_YMD : 0))
+
 caddr_t
 bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -2465,6 +2467,7 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         {
           char temp[100];
           int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+          mode &= DT_MODE_MASK(val);
           dt_to_iso8601_string_ext (val, temp, sizeof (temp), mode);
           return box_dv_short_string (temp);
           break;
@@ -2512,6 +2515,7 @@ bif_rdf_long_to_ttl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     case DV_DATETIME:
       {
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(val);
         dt_to_iso8601_string_ext (val, temp, sizeof (temp), mode);
         session_buffered_write (out, temp, strlen (temp));
         break;
@@ -3404,6 +3408,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         char temp [100];
         int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(obj_box_value);
         dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
@@ -3908,6 +3913,7 @@ http_rdfxml_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, 
         char temp [100];
         int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(obj_box_value);
         dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write (ses, temp, strlen (temp));
         break;
@@ -4160,6 +4166,7 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
         char temp [100];
         int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(obj_box_value);
         dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
@@ -4666,6 +4673,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         char temp [100];
         int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(obj_box_value);
         dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, temp, strlen (temp));
@@ -4945,6 +4953,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
         char temp [100];
         int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
         int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb_type);
+        mode &= DT_MODE_MASK(obj_box_value);
         dt_to_iso8601_string_ext (obj_box_value, temp, sizeof (temp), mode);
         session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, temp, strlen (temp));
@@ -5787,6 +5796,7 @@ literal_elt_printed:
               {
                 char temp [100];
                 int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
+                mode &= DT_MODE_MASK(rb->rb_box);
                 dt_to_iso8601_string_ext (rb->rb_box, temp, sizeof (temp), mode);
                 session_buffered_write (ses, temp, strlen (temp));
               }
