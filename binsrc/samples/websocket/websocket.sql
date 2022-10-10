@@ -213,7 +213,11 @@ create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
   sec_websocket_extensions := http_request_header (lines, 'Sec-WebSocket-Extensions', null, null);
   origin := http_request_header (lines, 'Origin', null, null);
   sec_websocket_protocol := http_request_header (lines, 'Sec-WebSocket-Protocol', null, null);
-  sid := atoi(get_keyword ('sid', params, '1'));
+  sid := get_keyword ('sid', params);
+  if (sid is null)
+    sid := long_ref (xenc_rand_bytes (4,0),0);
+  else
+    sid := atoi (sid);
 
   if (http_client_session_cached (sid))
     {
