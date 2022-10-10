@@ -19,13 +19,33 @@
 --
 create procedure DB.DBA.WEBSOCKET_WRITE_MESSAGE (in sid int, in message varchar)
 {
-  declare ses, data any;
+  declare ses, data, payload any;
+  payload := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (message);
   -- get cached
   ses := http_recall_session (sid, 0);
   -- write something
-  ses_write (DB.DBA.WEBSOCKET_ENCODE_MESSAGE (message), ses);
+  ses_write (payload, ses);
   -- put back in cache 
   http_keep_session (ses, sid);
+}
+;
+
+create procedure DB.DBA.WEBSOCKET_CLOSE_MESSAGE (in sid int, in code int, in message varchar)
+{
+  declare h, c, ses, payload any;
+  message := subseq (message, 0, 125 - 2); -- only short errors
+  if (code <> bit_and (code, 0hex7fff))
+    signal ('22023', 'Only short int is allowed for code');
+  h := '\x88\x00'; -- 10001000  FIN x80 | opcode 0x8
+  h[1] := length (message) + 2;
+  c := '00';
+  c := short_set (c, 0, code);
+  payload := concat (h,c,message);
+
+  ses := http_recall_session (sid, 0);
+  ses_write (payload, ses);
+  http_keep_session (ses, sid);
+  return;
 }
 ;
 
