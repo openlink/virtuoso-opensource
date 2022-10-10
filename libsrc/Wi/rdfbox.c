@@ -5584,11 +5584,13 @@ bif_sparql_rset_nt_write_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       ttl_iriref_t *col_ti = env->ne_cols + colctr;
       caddr_t obj = row[colctr];
       dtp_t obj_dtp = DV_TYPE_OF (obj);
+      char * colname = col_ti->colname ? col_ti->colname : "unnamed";
       if (DV_DB_NULL == obj_dtp)
         continue;
       sprintf (colid_label, "%sc%d", rowid_label, colctr);
       SES_PRINT (ses, rowid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#binding> "); SES_PRINT (ses, colid_label); SES_PRINT (ses, " .\n");
-      SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#variable> \""); dks_esc_write (ses, col_ti->colname, strlen (col_ti->colname), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ); SES_PRINT (ses, "\" .\n");
+      SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#variable> \""); 
+      dks_esc_write (ses, colname, strlen (colname), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ); SES_PRINT (ses, "\" .\n");
       SES_PRINT (ses, colid_label); SES_PRINT (ses, " <http://www.w3.org/2005/sparql-results#value> ");
       if (col_ti->is_iri)
         http_nt_write_ref (ses, env, col_ti, obj);

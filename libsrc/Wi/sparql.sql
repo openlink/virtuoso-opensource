@@ -6203,11 +6203,13 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TTL_ACC (inout _env any, inout 
       declare _name varchar;
       declare _val any;
       _name := colnames[col_ctr];
+      if (_name = 0)
+        _name := 'unnamed';
       _val := colvalues[col_ctr];
       if (_val is null)
         goto end_of_binding;
       http ('\n      rs:binding [ rs:name "', _env);
-      http_value (colnames[col_ctr], 0, _env);
+      http_value (_name, 0, _env);
       http ('" ; rs:value ', _env);
       if (isiri_id (_val))
         {
@@ -6325,11 +6327,13 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_RDF_XML_ACC (inout _env any, in
       declare _name varchar;
       declare _val any;
       _name := colnames[col_ctr];
+      if (_name = 0)
+       _name := 'unnamed';
       _val := colvalues[col_ctr];
       if (_val is null)
         goto end_of_binding;
       http ('\n   <rs:binding rdf:nodeID="sol' || sol_id || '-' || cast (col_ctr as varchar) || '" rs:name="', _env);
-      http_value (colnames[col_ctr], 0, _env);
+      http_value (_name, 0, _env);
       http ('"><rs:value', _env);
       if (isiri_id (_val))
         {
