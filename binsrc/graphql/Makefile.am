@@ -66,9 +66,9 @@ graphql_intro.c: Makefile introspection/graphql-intro.ttl introspection/graphql-
 generated: sql_code_graphql.c
 
 install-data-local:
-	$(INSTALL) -d $(hostingdir)/graphql/introspection
-	$(INSTALL) -m 644 $(srcdir)/introspection/*.sql $(hostingdir)/graphql/introspection
-	$(INSTALL) -m 644 $(srcdir)/introspection/*.ttl $(hostingdir)/graphql/introspection
+	$(INSTALL) -d $(DESTDIR)$(hostingdir)/graphql/introspection
+	$(INSTALL) -m 644 $(srcdir)/introspection/*.sql $(DESTDIR)$(hostingdir)/graphql/introspection
+	$(INSTALL) -m 644 $(srcdir)/introspection/*.ttl $(DESTDIR)$(hostingdir)/graphql/introspection
 
 clean-local:
 	$(RM) $(BUILT_SOURCES) function.tmp texts.tmp
