@@ -84,6 +84,7 @@ sed	-e "s,[@]VADDIR[@],$VADDIR,g" \
         -e 's,[@]REM_GEOS[@],@REM_GEOS@,g' \
         -e 's,[@]REM_SHAPEFILEIO[@],@REM_SHAPEFILEIO@,g' \
         -e 's,[@]REM_RUBY[@],@REM_RUBY@,g' \
+        -e 's,[@]REM_GRAPHQL[@],@REM_GRAPHQL@,g' \
 	< default-virtuoso.ini > "$INIFILE"
 
 exit 0
