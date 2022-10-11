@@ -139,7 +139,7 @@ RDF_VIEW_NS_GET (in cols any, in f int)
   for (i := 0; i < length (cols); i := i + 2)
     RDF_VIEW_NS_GET_1 (cols[i+1], dict);
   nss := dict_to_vector (dict, 1);
-  for (declare i int, i := 0; i < length (nss); i := i + 2)
+  for (i := 0; i < length (nss); i := i + 2)
     {
       if (nss [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
 	{
@@ -711,7 +711,7 @@ RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
 ;
 
 create procedure
-DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv varchar)
+DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv any)
 {
   if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'int';
   if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
@@ -825,35 +825,59 @@ RDF_VIEW_GET_RELATIONS (in _tbl varchar, in _tbls varchar, in _suff varchar)
 ;
 
 create procedure
-DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
+DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null, in gql_annotate int := 1)
 {
   declare ses, cols_arr, pkcols any;
   declare ns varchar;
-  declare inx int;
+  declare inx, tb_no int;
+  declare gql_ses any;
 
   RDF_VIEW_TBL_PK_COLS (_tbls, pkcols);
   cols := RDF_VIEW_TBL_OPTS (_tbls, cols);
   ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, virtuoso_ini_item_value ('URIQA','DefaultHost'), qual);
   ses := string_output ();
+  gql_ses := string_output ();
   http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', ses);
   http ('@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .\n', ses);
   http ('@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .\n', ses);
+  if (gql_annotate)
+    http ('@prefix gql: <http://www.openlinksw.com/schemas/graphql#> .\n', ses);
   http (ns, ses);
   http (RDF_VIEW_NS_GET (cols, 1), ses);
   http (sprintf ('\n%s: a owl:Ontology .\n', qual), ses);
+  http (sprintf ('\n\ngql:Map gql:dataGraph <http://%s/%s#> ;\n  gql:schemaGraph %s: ;\n  gql:schemaObjects ', 
+        virtuoso_ini_item_value ('URIQA','DefaultHost'), qual,  qual), gql_ses);
+  tb_no := 0;
   foreach (varchar tbl in _tbls) do
     {
       declare cls, ltb varchar;
       cls := RDF_VIEW_CLS_NAME (name_part (tbl, 2));
       ltb := RDF_VIEW_TB (name_part (tbl, 2));
 
-      http (sprintf ('\n# %s\n', tbl), ses);
-      http (sprintf ('%s:%s a rdfs:Class .\n', qual, cls), ses);
-      http (sprintf ('%s:%s rdfs:isDefinedBy %s: .\n', qual, cls, qual), ses);
-      http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, cls, tbl), ses);
+      if (tb_no > 0)
+        http (', ', gql_ses);
+      http (sprintf ('gql:%s', cls), gql_ses);
+
+      http (sprintf ('\n# %s\n\n', tbl), ses);
+
+      if (gql_annotate)
+        {
+          http (sprintf ('gql:%s gql:type gql:Array;\n', cls), ses);
+          http (sprintf ('  gql:rdfClass %s:%s .\n\n', qual, cls), ses);
+          http (sprintf ('gql:%sObject gql:type gql:Object;\n', cls), ses);
+          http (sprintf ('  gql:rdfClass %s:%s .\n\n', qual, cls), ses);
+        }
+
+
+      http (sprintf ('%s:%s a rdfs:Class ;\n', qual, cls), ses);
+      http (sprintf ('  rdfs:isDefinedBy %s: ;\n', qual), ses);
+      if (gql_annotate)
+        http (sprintf ('  gql:field gql:%s ;\n', cls), ses);
+      http (sprintf ('  rdfs:label "%s" .\n\n', tbl), ses);
+
       inx := 0;
       cols_arr := get_keyword (tbl, cols);
       if (length (cols_arr[0]))
@@ -868,25 +892,33 @@ DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 	    goto skip_this;
 	  else if (isstring (cols_arr[1][inx][0]))
 	    {
-	      http (sprintf ('%s:%s a owl:ObjectProperty .\n', qual, col), ses);
+	      http (sprintf ('%s:%s a owl:ObjectProperty ;\n', qual, col), ses);
 	      --if (length (cols_arr[1][inx][1]))
 	      --   http (sprintf ('%s:%s rdfs:subPropertyOf %s .\n', qual, col, RDF_VIEW_URI_CURIE (cols_arr[1][inx][1])), ses);
-	      http (sprintf ('%s:%s rdfs:range aowl:Content .\n', qual, col), ses);
+	      http ('  rdfs:range aowl:Content ;\n', ses);
+              if (gql_annotate)
+                http ('  gql:type gql:Object ;\n', ses);
 	    }
 	  else if (cols_arr[1][inx][0] = 4)
 	    {
-	      http (sprintf ('%s:%s rdfs:subPropertyOf virtrdf:label . \n', qual, col), ses);
-	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
+	      http (sprintf ('  rdfs:subPropertyOf virtrdf:label ;\n'), ses);
+	      http (sprintf ('  rdfs:range xsd:%s ;\n', xsd), ses);
+              if (gql_annotate)
+                http          ('  gql:type gql:Scalar ;\n', ses);
 	    }
 	  else
 	    {
-	      http (sprintf ('%s:%s a owl:DatatypeProperty .\n', qual, col), ses);
-	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
+	      http (sprintf ('%s:%s a owl:DatatypeProperty ;\n', qual, col), ses);
+	      http (sprintf ('  rdfs:range xsd:%s ;\n', xsd), ses);
+              if (gql_annotate)
+                http ('  gql:type gql:Scalar ;\n', ses);
 	    }
 
-	  http (sprintf ('%s:%s rdfs:domain %s:%s .\n', qual, col, qual, cls), ses);
-	  http (sprintf ('%s:%s rdfs:isDefinedBy %s: .\n', qual, col, qual), ses);
-	  http (sprintf ('%s:%s rdfs:label "%S" .\n', qual, col, label), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:isDefinedBy %s: ;\n', qual), ses);
+          if (gql_annotate)
+            http (sprintf ('  gql:field gql:%s ;\n', col), ses);
+	  http (sprintf ('  rdfs:label "%S" .\n\n', label), ses);
 skip_this:
 	  inx := inx + 1;
 	}
@@ -896,24 +928,38 @@ skip_this:
 	  pkcls := RDF_VIEW_CLS_NAME (name_part (pkt, 2));
 	  lpkt := RDF_VIEW_TB (name_part (pkt, 2));
 
-	  http (sprintf ('%s:has_%s a owl:ObjectProperty .\n', qual, lpkt), ses);
-	  http (sprintf ('%s:has_%s rdfs:domain %s:%s .\n', qual, lpkt, qual, cls), ses);
-	  http (sprintf ('%s:has_%s rdfs:range %s:%s .\n', qual, lpkt, qual, pkcls), ses);
-	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, lpkt, pkt), ses);
-	  http (sprintf ('%s:has_%s rdfs:isDefinedBy %s: .\n', qual, lpkt, qual), ses);
+	  http (sprintf ('%s:has_%s a owl:ObjectProperty ;\n', qual, lpkt), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:range %s:%s ;\n', qual, pkcls), ses);
+	  http (sprintf ('  rdfs:label "Relation to %s" ;\n', pkt), ses);
+          if (gql_annotate)
+            {
+              http (sprintf ('  gql:field gql:has_%s ;\n', lpkt), ses);
+              http          ('  gql:type gql:Object ;\n', ses);
+            }
+	  http (sprintf ('  rdfs:isDefinedBy %s: .\n\n', qual), ses);
 	}
       for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, _tbls) do
 	{
 	  declare pkcls varchar;
 	  pkcls := RDF_VIEW_CLS_NAME (name_part (pkt, 2));
 
-	  http (sprintf ('%s:%s_of a owl:ObjectProperty .\n', qual, ltb), ses);
-	  http (sprintf ('%s:%s_of rdfs:domain %s:%s .\n', qual, ltb, qual, cls), ses);
-	  http (sprintf ('%s:%s_of rdfs:range %s:%s .\n', qual, ltb, qual, pkcls), ses);
-	  http (sprintf ('%s:%s_of rdfs:label "Relation to %s" .\n', qual, ltb, pkt), ses);
-	  http (sprintf ('%s:%s_of rdfs:isDefinedBy %s: .\n', qual, ltb, qual), ses);
+	  http (sprintf ('%s:%s_of a owl:ObjectProperty ;\n', qual, ltb), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:range %s:%s ;\n', qual, pkcls), ses);
+	  http (sprintf ('  rdfs:label "Relation to %s" ;\n', pkt), ses);
+          if (gql_annotate)
+            {
+              http (sprintf ('  gql:field gql:%s_of ;\n', ltb), ses);
+              http          ('  gql:type gql:Array ;\n', ses);
 	}
+	  http (sprintf ('  rdfs:isDefinedBy %s: .\n\n', qual), ses);
+	}
+      tb_no := tb_no + 1;
     }
+  http ('.\n', gql_ses);
+  if (gql_annotate)
+    http (gql_ses, ses);
   return string_output_string (ses);
 }
 ;

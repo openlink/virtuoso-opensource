@@ -1467,6 +1467,31 @@ AC_SUBST(SHAPEFILEIO_LIBS)
 
 ##########################################################################
 #                                                                        #
+# graphql  								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(graphql, [dnl
+AC_HELP_STRING([--enable-graphql(=DIR)], [enable the graphql plugin (default)])
+AC_HELP_STRING([--disable-graphql], [disable the graphql plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_graphql="yes" ;;
+       no)	with_graphql="no" ;;
+       /*)	with_graphql="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-graphql) ;;
+     esac
+  ],
+  [ with_graphql="yes" ]
+)
+
+AM_CONDITIONAL(WITH_GRAPHQL, test "x$with_graphql" != "xno" )
+AC_SUBST(GRAPHQL_CPPFLAGS)
+AC_SUBST(GRAPHQL_LDFLAGS)
+AC_SUBST(GRAPHQL_LIBS)
+
+
+##########################################################################
+#                                                                        #
 # HSLookup								 #
 #                                                                        #
 ##########################################################################
@@ -3173,6 +3198,7 @@ AC_CONFIG_FILES([
 	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
 	binsrc/fct/Makefile
+	binsrc/graphql/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile

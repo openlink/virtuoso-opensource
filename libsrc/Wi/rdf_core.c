@@ -4192,13 +4192,19 @@ caddr_t
 bif_iri_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_args = BOX_ELEMENTS (args);
-  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
   caddr_t iri = bif_string_arg (qst, args, 0, "iri_split");
+  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
+  int is_local = n_args > 3 ? bif_long_arg (qst, args, 3, "iri_split") : 0;
   caddr_t local, pref;
   if (is_int)
     iri_split (iri, &pref, &local);
   else
     iri_split_ttl_qname (iri, &pref, &local, 0);
+  if (is_local)
+    {
+      dk_free_box (pref);
+      return local;
+    }
   if (n_args > 1 && ssl_is_settable (args[1]))
     qst_set (qst, args[1], local);
   else

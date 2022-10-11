@@ -1255,7 +1255,7 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
 dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli);
 
-boxint safe_atoi (const char *data, caddr_t *err_ret);
+EXE_EXPORT (boxint, safe_atoi, (const char *data, caddr_t *err_ret));
 double safe_atof (const char *data, caddr_t *err_ret, int allow_non_finite);
 double box_to_double (caddr_t data, dtp_t dtp);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
@@ -1794,5 +1794,7 @@ extern int32 enable_vec_reuse;
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
 #define tlsf_base_alloc(s) dk_alloc(s)
 #endif
+
+EXE_EXPORT (void, virt_bootstrap_cache_resource, (const char **src_text, const char *uri, const char *pubid, const char *dat, const char *comment));
 
 #endif /* _SQLFN_H */

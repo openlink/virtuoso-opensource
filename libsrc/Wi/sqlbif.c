@@ -14435,6 +14435,18 @@ bif_exec_metadata (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       else
         dk_free_tree ((caddr_t) proc_comp);
     }
+  if (n_args > 4 && ssl_is_settable (args[4]))
+    {
+      dk_set_t set = NULL;
+      caddr_t params;
+      DO_SET (state_slot_t *, ssl, &qr->qr_parms)
+        {
+          dk_set_push (&set, box_copy_tree (ssl->ssl_name));
+        }
+      END_DO_SET();
+      params = list_to_array (dk_set_nreverse (set));
+      qst_set (qst, args[4], (caddr_t) params);
+    }
   qr_free (qr);
   return (box_num (0));
 }

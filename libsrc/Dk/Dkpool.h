@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 
-void mp_free (mem_pool_t * mp);
+EXE_EXPORT (void, mp_free, (mem_pool_t * mp));
 void mp_free_large (mem_pool_t * mp, void * ptr);
 void mp_cache_large (size_t sz, int n);
 extern size_t mp_large_in_use;
@@ -302,16 +302,17 @@ extern t_list_impl_ptr_t t_list_cock (const char *file, int line);
 #define t_list 					(t_list_cock (__FILE__, __LINE__))
 #else
 caddr_t t_box_num (boxint box);
-caddr_t t_box_num_and_zero (boxint box);
-box_t t_box_double (double d);
+EXE_EXPORT (caddr_t, t_box_num_and_zero, (boxint box));
+EXE_EXPORT (box_t, t_box_double, (double d));
 box_t t_box_float (float d);
 caddr_t t_box_iri_id (int64 n);
-extern caddr_t *t_list (long n, ...);
+EXE_EXPORT (caddr_t *, t_list, (long n, ...));
 #endif
 
 #define t_alloc(sz) 				t_alloc_box ((sz), DV_CUSTOM)
 #define t_box_num_nonull 			t_box_num_and_zero
 #define t_box_dv_short_string 			t_box_string
+#define t_list_0() t_alloc_list(0)
 
 #define TNEW(dt, v) \
   dt * v = (dt *) t_alloc (sizeof (dt))
@@ -354,7 +355,7 @@ dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define t_set_copy(s)				dbg_t_set_copy (__FILE__, __LINE__, (s))
 #else
 void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
-dk_set_t t_cons (void *car, dk_set_t cdr);
+EXE_EXPORT (dk_set_t, t_cons, (void *car, dk_set_t cdr));
 void t_set_push (dk_set_t * set, void *elt);
 int t_set_pushnew (s_node_t ** set, void *item);
 int t_set_push_new_string (s_node_t ** set, char *item);
@@ -362,7 +363,7 @@ void *t_set_pop (dk_set_t * set);
 dk_set_t t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_intersect (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_diff (dk_set_t s1, dk_set_t s2);
-caddr_t *t_list_to_array (dk_set_t list);
+EXE_EXPORT (caddr_t *, t_list_to_array, (dk_set_t list));
 caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
 void * t_set_delete_nth (dk_set_t * set, int nth);
