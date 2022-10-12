@@ -97,6 +97,7 @@ void TY_(freeFileSource)( TidyInputSource* inp, Bool closeIt )
 
 
 #if defined(_WIN32)
+#include <windows.h>
 #include "streamio.h"
 #include "tidy-int.h"
 #include "message.h"
@@ -105,7 +106,6 @@ void TY_(freeFileSource)( TidyInputSource* inp, Bool closeIt )
 #if defined(_MSC_VER) && (_MSC_VER < 1300)  /* less than msvc++ 7.0 */
 #pragma warning(disable:4115) /* named type definition in parentheses in windows headers */
 #endif
-#include <windows.h>
 
 typedef struct _fp_input_mapped_source
 {

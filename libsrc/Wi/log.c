@@ -268,6 +268,11 @@ log_time (caddr_t * box)
 
 int32 log_extent_if_needed = 1;
 
+#ifdef WIN32
+#define PATH_MAX	 MAX_PATH
+#endif
+
+
 int
 log_change_if_needed (lock_trx_t * lt, int rewrite)
 {
