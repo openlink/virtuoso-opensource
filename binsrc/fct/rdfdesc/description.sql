@@ -992,7 +992,8 @@ again:
 	     u := _url;
 	   else
 	     u := b3s_http_url (_url, sid, _from);
-	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, u, _url));
+	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" class="external" height="160" style="border-width:0" alt="%s" /></a>', 
+                 rdfa, u, _url, _url));
 	 }
        else
 	 {
