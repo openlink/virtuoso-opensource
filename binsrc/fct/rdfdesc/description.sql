@@ -1080,7 +1080,7 @@ again:
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8')));
+       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8'), 2));
        http ('</span>');
      }
    else if (__tag (_object) = 238)
