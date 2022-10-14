@@ -163,6 +163,11 @@ again:
       langs := lang_parm;
     }
   gr := get_keyword ('g', params, 'unknown');
+  if (not length (gr))
+    {
+      gr := 'unknown';
+      err := 'An empty or invalid IRI requested.';
+    }
   gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
