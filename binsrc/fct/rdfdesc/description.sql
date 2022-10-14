@@ -1283,8 +1283,6 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 }
 ;
 
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
 create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
 {
@@ -1593,7 +1591,6 @@ create procedure b3s_uri_percent_decode (in uri any)
 }
 ;
 
-grant execute on b3s_gs_check_needed to public;
 
 create procedure fct_set_graphs (in sid any, in graphs any)
 {

@@ -230,8 +230,6 @@ create procedure fct_svc () __soap_http 'text/xml'
 }
 ;
 
-grant execute on fct_svc to SPARQL_SELECT;
-grant execute on fct_search to SPARQL_SELECT;
 
 select DB.DBA.soap_dt_define ('',
 '<element xmlns="http://www.w3.org/2001/XMLSchema" name="facets" targetNamespace="http://openlinksw.com/services/facets/1.0/">
@@ -278,4 +276,3 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
 }
 ;
 
-grant execute on fct.fct.query to SPARQL_SELECT;
