@@ -2635,7 +2635,7 @@ log_error_report_event (caddr_t box, int print_full_content, const char *fmt, ..
   va_start (ap, fmt);
   int ctx_cycle = 0;
   mutex_enter (error_report_log_mutex);
-  fprintf (error_report_log, "\n{{{ERR %p ", box);
+  fprintf (error_report_log, "\n{{{ERR %p THR %p | ", box, THREAD_CURRENT_THREAD);
   if (!ERROR_REPORT_P (box))
     fprintf (error_report_log, "TAG %d ", DV_TYPE_OF (box));
   vfprintf (error_report_log, fmt, ap);
