@@ -316,6 +316,11 @@ again:
       else
         refr := atoi (get_keyword ('sr', params, '0'));
 
+      declare exit handler for sqlstate '42000' {
+	 rollback work;
+	 err := 'No permissions to sponge.';
+	 goto errend;
+      };
       DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%s> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
       sp_done := 1;
     }
