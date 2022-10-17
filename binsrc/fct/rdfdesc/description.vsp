@@ -162,7 +162,14 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-  gr := get_keyword ('g', params, 'unknown');
+
+  -- all possible inputs for IRI to be described
+  gr := get_keyword ('g', params);
+  if (gr is null)
+    gr := get_keyword ('url', params);
+  if (gr is null)
+    gr := get_keyword ('uri', params);
+
   if (not length (gr))
     {
       gr := 'unknown';
