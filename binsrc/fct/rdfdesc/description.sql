@@ -985,14 +985,18 @@ again:
                 goto usual_iri;
            }
 	 }
-       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
+       else if (http_mime_type (_url) like 'image/%' or
+            http_mime_type (_url) = 'application/x-openlink-photo' or
+            b3s_o_is_img (prop) or
+            _url like 'data:image/%')
 	 {
 	   declare u any;
 	   if (b3s_o_is_out (prop))
 	     u := _url;
 	   else
 	     u := b3s_http_url (_url, sid, _from);
-	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, u, _url));
+	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" class="external" height="160" style="border-width:0" alt="%s" /></a>', 
+                 rdfa, u, _url, _url));
 	 }
        else
 	 {
@@ -1037,7 +1041,7 @@ again:
    else if (__tag (_object) = 182)
      {
        declare vlbl any;
-       if (b3s_o_is_img (prop))
+       if (b3s_o_is_img (prop) or _object like 'data:image/%')
 	 {
 	   __box_flags_set (_object, 1);
 	   goto again;
@@ -1076,7 +1080,7 @@ again:
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8')));
+       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8'), 2));
        http ('</span>');
      }
    else if (__tag (_object) = 238)
@@ -1279,8 +1283,6 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 }
 ;
 
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
 create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
 {
@@ -1589,7 +1591,6 @@ create procedure b3s_uri_percent_decode (in uri any)
 }
 ;
 
-grant execute on b3s_gs_check_needed to public;
 
 create procedure fct_set_graphs (in sid any, in graphs any)
 {

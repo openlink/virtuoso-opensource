@@ -57,10 +57,6 @@ create procedure s_sum_fin (inout env any)
 create aggregate DB.DBA.S_SUM (in s_rank double precision, in p iri_id, in o any, in sc int) returns any from
   s_sum_init, s_sum_acc, s_sum_fin;
 
-grant execute on DB.DBA.S_SUM_INIT to "SPARQL";
-grant execute on DB.DBA.S_SUM_ACC to "SPARQL";
-grant execute on DB.DBA.S_SUM_FIN to "SPARQL";
-grant execute on DB.DBA.S_SUM to "SPARQL";
 
 create procedure sum_rank (inout arr any)
 {
@@ -70,7 +66,6 @@ create procedure sum_rank (inout arr any)
 }
 ;
 
-grant execute on DB.DBA.SUM_RANK to "SPARQL";
 
 create procedure sum_o_p_score (inout o any, inout p any)
 {
@@ -114,8 +109,8 @@ create procedure sum_result (inout final any,
   --dbg_obj_print ('sorted = ', sorted);
   gvector_sort (sorted, 3, 2, 0);
   for (inx := 0; inx < length (sorted); inx := inx + 3)
-  tot	 := tot || cast (rdf_box_data (sorted[inx]) as varchar);
-  tot := __bft (tot, 2);
+    tot := tot || cast (rdf_box_data (sorted[inx]) as varchar);
+  -- tot := __bft (tot, 2); XXX: disabled until fixed excerpt to make ∞ loop
   s := charset_recode (s, 'UTF-8', '_WIDE_');
  exc := fct_bold_tags (search_excerpt (text_exp, tot));
 -- dbg_obj_print (' summaries of ', tot, ' ', lbl, ' ', exc);
@@ -242,9 +237,6 @@ create procedure s_sum_page (in rows any, in text_exp varchar)
   else
     return s_sum_page_c (rows, text_exp);
 }
-;
-
-grant execute on s_sum_page to "SPARQL"
 ;
 
 --create procedure sum_tst (in text_exp varchar, in text_words varchar := null)

@@ -55,7 +55,7 @@
   declare page, n_per_page, lim, ofs, dis_next, deadl int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
-  declare curr_pred any;
+  declare curr_pred any, curr_flag any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept, view_mode varchar;
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
@@ -162,7 +162,19 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-  gr := get_keyword ('g', params, 'unknown');
+
+  -- all possible inputs for IRI to be described
+  gr := get_keyword ('g', params);
+  if (gr is null)
+    gr := get_keyword ('url', params);
+  if (gr is null)
+    gr := get_keyword ('uri', params);
+
+  if (not length (gr))
+    {
+      gr := 'unknown';
+      err := 'An empty or invalid IRI requested.';
+    }
   gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
@@ -287,7 +299,6 @@ again:
       http (' where { ?x ?y ?z . }', q_txt);
       DB.DBA.EXEC_AS (string_output_string (q_txt), 'SPARQL', 1);
 
-      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
@@ -305,8 +316,12 @@ again:
       else
         refr := atoi (get_keyword ('sr', params, '0'));
 
+      declare exit handler for sqlstate '42000' {
+	 rollback work;
+	 err := 'No permissions to sponge.';
+	 goto errend;
+      };
       DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%s> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
-      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
     errend:;
@@ -719,6 +734,7 @@ if (_subject <> '') {
       -- dbg_obj_princ ('qry_str = ', qry_str);
       exec (qry_str, null, null, vector (), 0, null, null, h1);
       curr_pred := '';
+      curr_flag := 0;
       inx := 0;
       data := null;
       while (0 = exec_next (h1, null, null, data))
@@ -734,11 +750,12 @@ if (_subject <> '') {
 	   if (not length (PRED))
 	     goto nxt1;
 
-	   if (curr_pred <> pred)
+	   if (curr_pred <> pred or curr_flag <> FLAG)
 	     {
                if (curr_pred <> '') http ('</ul></td></tr>');
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
+               curr_flag := FLAG;
 	     }
            vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;

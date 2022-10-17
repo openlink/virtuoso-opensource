@@ -75,7 +75,7 @@
 
   connection_set ('fct_dbg_mode', dbg_mode);
 
-  if (dbg_mode := 'page')
+  if (dbg_mode = 'page')
     {
       dbg_out := string_output();
       connection_set ('__fct_dbg_out', dbg_out);

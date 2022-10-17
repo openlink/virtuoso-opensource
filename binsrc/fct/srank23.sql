@@ -112,11 +112,6 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
 }
 ;
 
-grant execute on S_F to "SPARQL";
-grant execute on rnk_scale to "SPARQL";
-grant execute on DB.DBA.IR_SRV to "SPARQL";
-grant execute on IR_SRV to "SPARQL";
-grant execute on IRI_RANK to "SPARQL";
 
 create procedure rnk_store_w (inout first int, inout str varchar, inout fill int)
 {

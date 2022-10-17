@@ -952,11 +952,11 @@ fct_view (in tree any, in this_s int, in txt any, in pre any, in post any, in fu
 	loc := '?anyloc';
       if (length (loc) > 1)	
 	{
-	  http (sprintf ('define input:inference "facets" select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+	  http (sprintf ('define input:inference "facets" select distinct ?s%d as ?c1 (round (xsd:float(?lat%d) * 10000) /10000) as ?c2 (round (xsd:float(?lng%d) * 10000) /10000) as ?c3 ',
                          this_s, this_s, this_s, this_s), pre);
 	}
       else
-        http (sprintf ('select distinct ?s%d as ?c1 ?lat%d as ?c2 ?lng%d as ?c3 ', 
+        http (sprintf ('select distinct ?s%d as ?c1 (round (xsd:float(?lat%d) * 10000) /10000) as ?c2 (round (xsd:float(?lng%d) * 10000) /10000) as ?c3 ',
                        this_s, this_s, this_s), pre);
 
       if (length (loc) < 2)
