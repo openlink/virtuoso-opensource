@@ -511,7 +511,7 @@ struct hash_index_s
   chash_t *		hi_chash;
   uint64		hi_cl_id; /* if cluster hash join temp, id for reference */
   dk_hash_t *	hi_thread_cha; /* when filling hash join chash, maps from thread to cha */
-  int			hi_size;
+  uint32		hi_size;
   char			hi_is_unique;
   int64			hi_count;
 #ifdef OLD_HASH
