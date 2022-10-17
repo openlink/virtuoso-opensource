@@ -689,10 +689,14 @@ cfg_open_syslog (int level, char *c_facility)
 int cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz);
 int cfg2_getsize (PCONFIG pc,  char * sec, char * attr, size_t * sz);
 
+static int cfg_get_number_of_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz);
+static int cfg_get_max_dirty_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz);
+
 extern LOG *virtuoso_log;
 extern int tn_step_refers_to_input;
 
 static char *prefix;
+
 int
 cfg_setup (void)
 {
@@ -849,7 +853,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "CheckpointInterval", &c_checkpoint_interval) == -1)
     c_checkpoint_interval = 0;
 
-  if (cfg_getlong (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
+  if (cfg_get_number_of_buffers (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
     c_number_of_buffers = 2000;
   if (c_number_of_buffers < 20000)
     c_number_of_buffers = 20000;
@@ -857,7 +861,7 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "LockInMem", &c_lock_in_mem) == -1)
     c_lock_in_mem = 0;
 
-  if (cfg_getlong (pconfig, section, "MaxDirtyBuffers", &c_max_dirty_buffers) == -1)
+  if (cfg_get_max_dirty_buffers (pconfig, section, "MaxDirtyBuffers", &c_max_dirty_buffers) == -1)
     c_max_dirty_buffers = 0;
 
   if (cfg_getlong (pconfig, section, "UnremapQuota", &cp_unremap_quota) == -1)
@@ -2250,6 +2254,105 @@ cfg_getsize (PCONFIG pc, char * sec, char * attr, size_t * sz)
 
 #define cslentry dk_cslentry
 #define csl_free(f) dk_free_box (f)
+
+
+extern int64 get_total_sys_mem (void);
+
+static int
+cfg_get_number_of_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
+{
+  char *valstr;
+  int64 val;
+  char suffix;
+  int64 nbufs;
+  int64 total_mem = get_total_sys_mem ();
+
+  if (-1 == cfg_getstring (pc, sec, attr, &valstr))
+    return -1;
+
+  val = (int64) atol (valstr);
+  if (val <= 0)
+    return -1;
+
+  suffix = toupper (valstr[strlen (valstr) - 1]);
+  switch (suffix)
+    {
+    case 'M':
+      val *= 1024 * 1024;
+      nbufs = val / PAGE_SZ;
+      nbufs -= nbufs % 1000;
+      break;
+
+    case 'G':
+      val *= 1024 * 1024 * 1024;
+      nbufs = val / PAGE_SZ;
+      nbufs -= nbufs % 1000;
+      break;
+
+    case '%':
+      if (val > 100)
+	return -1;
+      val = (int64) ((total_mem / 100) * val);
+      nbufs = val / PAGE_SZ;
+      nbufs -= nbufs % 1000;
+      break;
+
+    default:
+      if (!isdigit (suffix))
+	return -1;
+      nbufs = val;
+    }
+
+#ifndef NDEBUG
+  log_debug ("NumberOfBuffers=%ld", nbufs);
+#endif
+
+  if (nbufs < INT_MAX)
+    *sz = (int32) nbufs;
+
+  return 0;
+}
+
+
+static int
+cfg_get_max_dirty_buffers (PCONFIG pc, char *sec, char *attr, int32 * sz)
+{
+  char *valstr;
+  int32 val;
+  char suffix;
+
+  if (-1 == cfg_getstring (pc, sec, attr, &valstr))
+    return -1;
+
+  val = (int32) atol (valstr);
+  if (val <= 0)
+    return -1;
+
+  suffix = toupper (valstr[strlen (valstr) - 1]);
+  switch (suffix)
+    {
+    case '%':
+      if (val > 100)
+	val = 50;
+      val = (int32) ((c_number_of_buffers / 100) * val);
+      val -= val % 1000;
+      break;
+
+    default:
+      if (!isdigit (suffix))
+	return -1;
+      break;
+    }
+
+#ifndef NDEBUG
+  log_info ("MaxDirtyBuffers=%ld", (long) val);
+#endif
+
+  *sz = val;
+
+  return 0;
+}
+
 
 void
 new_dbs_read_cfg (dbe_storage_t * dbs, char *ignore_file_name)
