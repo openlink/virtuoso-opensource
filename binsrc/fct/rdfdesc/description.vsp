@@ -55,7 +55,7 @@
   declare page, n_per_page, lim, ofs, dis_next, deadl int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
-  declare curr_pred any;
+  declare curr_pred any, curr_flag any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept, view_mode varchar;
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
@@ -734,6 +734,7 @@ if (_subject <> '') {
       -- dbg_obj_princ ('qry_str = ', qry_str);
       exec (qry_str, null, null, vector (), 0, null, null, h1);
       curr_pred := '';
+      curr_flag := 0;
       inx := 0;
       data := null;
       while (0 = exec_next (h1, null, null, data))
@@ -749,11 +750,12 @@ if (_subject <> '') {
 	   if (not length (PRED))
 	     goto nxt1;
 
-	   if (curr_pred <> pred)
+	   if (curr_pred <> pred or curr_flag <> FLAG)
 	     {
                if (curr_pred <> '') http ('</ul></td></tr>');
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
+               curr_flag := FLAG;
 	     }
            vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
