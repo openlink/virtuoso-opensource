@@ -1339,17 +1339,26 @@ cfg_setup (void)
   section = "Flags";
   {
     stat_desc_t *sd = &dbf_descs[0];
-    int32 v;
+    int64 v;
+    int32 v32;
     while (sd->sd_name)
       {
-	if (cfg_getlong (pconfig, section, sd->sd_name, &v) != -1)
+        v32 = INT32_MAX;
+        if (cfg_getsize (pconfig, section, sd->sd_name, &v) != -1 ||
+            cfg_getlong (pconfig, section, sd->sd_name, &v32) != -1) /* this is for cases of negative flags or zero */
 	  {
-	    if (dbf_protected_param (sd))
-	      log_error ("Cannot set protected flag %s", sd->sd_name);
-	    else if ((ptrlong) SD_INT32 == (ptrlong) sd->sd_str_value)
-	      *((int32 *) sd->sd_value) = v;
+            if (v32 != INT32_MAX) v = v32;
+	    if ((ptrlong)SD_INT32 == (ptrlong) sd->sd_str_value)
+              {
+                if (v > INT32_MIN && v < INT32_MAX)
+                  *((int32*)sd->sd_value) = (int32)v;
+                else
+                  log_error ("Cannot set flag %s, value out of int32 range", sd->sd_name);
+              }
+	    else if ((ptrlong)SD_INT64 == (ptrlong) sd->sd_str_value)
+	      *((int64*)sd->sd_value) = v;
 	    else if (sd->sd_value)
-	      *(sd->sd_value) = (long) v;
+	      *(long *)(sd->sd_value) = (long) v;
 	    else
 	      log_error ("Cannot set flag %s", sd->sd_name);
 	  }
