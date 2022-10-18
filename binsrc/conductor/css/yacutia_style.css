@@ -1599,3 +1599,35 @@ div.nav_separator1 {
   background-color: #B0CDE4;
   padding: 0px;
 }
+
+.help_tooltip {
+    display: inline;
+    position: relative;
+    text-decoration: none;
+}
+
+.help_tooltip:hover:after {
+    background: lightyellow;
+    border-radius: 5px;
+    bottom: 30px;
+    color: black;
+    content: attr(helptext);
+    left: 20%;
+    padding: 5px 15px;
+    position: absolute;
+    z-index: 98;
+    width: 350px;
+    text-decoration: none;
+}
+
+.help_tooltip:hover:before {
+    border: solid;
+    border-color: lightyellow transparent;
+    bottom: 30px;
+    content: "";
+    left: 50%;
+    position: absolute;
+    z-index: 99;
+    text-decoration: none;
+}
+
