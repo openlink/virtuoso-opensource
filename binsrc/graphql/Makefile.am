@@ -23,6 +23,8 @@ GEN=$(SHELL) ${top_srcdir}/bin/generate
 
 hosting_LTLIBRARIES = graphql.la
 
+noinst_HEADERS = graphql.h
+
 graphql_la_SOURCES = \
 	graphql_plugin.c \
 	graphql_l.c \
@@ -80,6 +82,9 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	$(srcdir)/cache_ttl.sh \
+	$(srcdir)/graphql_l.l \
+	$(srcdir)/graphql_p.y \
 	$(srcdir)/graphql.exp \
 	$(srcdir)/graphql.def \
 	$(srcdir)/graphql.sql \

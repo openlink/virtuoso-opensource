@@ -48,7 +48,8 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	*.html \
-	*.sql \
-	*.vsp \
-	vad_version
+	$(srcdir)/*.html \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.vsp \
+	$(srcdir)/make_vad.sh \
+	$(srcdir)/vad_version
