@@ -2054,8 +2054,12 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
       range_seq = box_dv_short_string ("RDF_URL_IID_NAMED");
     }
   IN_TXN;
-  id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  do {
+    id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  }
+  while (8192 == id); /* magic perms IRI ID, should skip */
   id_max = sequence_set (iri_seq_max[nth], 0, SEQUENCE_GET, INSIDE_MAP);
+
   if (id < id_max)
     {
       LEAVE_TXN;
