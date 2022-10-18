@@ -1,5 +1,78 @@
 # NEWS
 
+## October 18, 2022, v7.2.8-rc1:
+
+  * Virtuoso Engine
+    - Added support for IF EXISTS and IF NOT EXISTS in SQL DDL
+    - Added more EXPORTS for plugins
+    - Added current value of backup prefix to status report
+    - Added support for changing the request timeout on http_client connections
+    - Added support for internal x509 CA list
+    - Added support for storing DH param in database
+    - Added handle validation to ODBC calls
+
+    - Updated CORS header handling
+    - Fixed issue with 64bit indicators in sys_stat
+    - Fixed http_keep_session and related funcs require 64bit id
+    - Fixed use separate table to keep HTTP(S) listeners settings
+    - Fixed issue with OpenSSL 3.0.x
+    - Fixed issue with bad stats pending rpc counter
+    - Fixed issues with http renegotiate
+    - Fixed compiler warnings and other small cleanups
+    - Updated Windows build
+
+  * SPARQL
+    - Added GraphQL to SPARQL bridge
+    - Added support for HTTP status code 206 to signal partial result
+    - Optimized selecting distinct graphs
+    - Upgraded SPARQL endpoint to latest version of bootstrap
+    - Fixed system crash on 'Generate SPARQL compilation report" (fixes #1068)
+    - Fixed crash on vec temp res w/ nulls (fixes #1065)
+    - Fixes issue printing datetime boxes
+    - Fixed issue with unnamed result col from rdf view
+    - Fixed check for non-existing iri id
+    - Fixed grants for rdf views
+    - Fixed do not return the reserved 0x2000 IRI ID
+    - Fixed anonymous sponging is not allowed
+    - Fixed timeout validation
+    - Fixed error report on unknown help topic
+    - Removed cast to string which limited output to 10Mb
+
+  * JDBC, Jena and RDF4j
+    - Optimized finalizers
+    - Fixed IRI escape
+    - Fixed issue with insert Literal with Language
+    - Fixed issue with query param binding
+    - Fixed parameter binding issues RDF4J provider
+    - Fixed issues with query param binding
+
+  * Faceted Browser
+    - Added support to try loading external images w/ referer policy
+    - Added support to show users location on map
+    - Fixed round lat/long to 4 digits to get true distinction on map
+    - Fixed JSON result from FCT service
+    - Fixed handling of inline images
+    - Fixed IRI search requires 64bit prefix
+    - Fixed issue when an empty IRI is requested
+    - Fixed url rewrite rules
+    - Fixed pages should not call batch FT procedures
+    - Fixed small PL warnings
+
+  * Conductor
+    - Added support for CORS allow headers in conductor UI
+    - Added support for local CA renewal
+    - Added support for multi-domain certificates in HTTPS listener UI
+    - Fixed HTTPS endpoints
+    - Fixed disable VAD re-install if no such file
+    - Fixed https setup was missing CA x509 verify list option
+    - Fixed missing delete from listeners table
+    - Fixed update of existing listener did not write changes to table
+    - Fixed use common API for adding new listener
+
+  * DAV
+    - Fixed issue with delete on LDP resource 
+    - Fixed CORS header handling
+
 ## May 17, 2022, v7.2.7:
 
 The Virtuoso engine has been enhanced to use 64-bit prefix IDs in `RDF_IRI` which allows for
