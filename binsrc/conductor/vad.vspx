@@ -263,12 +263,14 @@
                       url="--sprintf ('vad_install_batch.vspx?mode=%d&packs=%U&dir=%U&dirmode=%d',
                       self.src_folder_type, encode_base64 (serialize (vector (self.src_folder || (control.vc_parent as vspx_row_template).te_rowset[7]))), self.src_folder, self.src_folder_type)"
                       >
-                      <v:on-init>
+                      <v:before-render>
                         <![CDATA[
-                         if ((control.vc_parent as vspx_row_template).te_rowset[2] is not null)
+                         declare rows any;
+                         rows := (control.vc_parent as vspx_row_template).te_rowset;
+                         if (rows[7] is null)
                            control.vc_enabled := 0;
                         ]]>
-                      </v:on-init>
+                      </v:before-render>
                     </v:button>
                     <v:button action="simple" style="image" name="bt_up1"
                       value="images/icons/edit_16.png"
