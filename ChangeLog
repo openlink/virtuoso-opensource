@@ -1,4 +1,661 @@
+2022-10-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added release notes for the upcoming release
+
+	Added article on Virtuoso Anytime query functionality
+
+	Fixed no need to flush at every write for sesstr file
+
+	Fixed use correct index
+
+2022-10-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not even try to return the reserved 0x2000 IRI ID which can break metadata etc.
+
+2022-10-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD package
+
+2022-10-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use common API for adding new listener
+
+	Added support for local CA renewal
+
+	Added support for CORS allow headers in conductor UI
+
+2022-10-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed disable VAD re-install if no such file
+
+2022-10-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed compiler warning
+
+	Added thread info in debug log
+
+2022-10-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with bad stats pending rpc counter
+
+2022-10-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue starting TPC-D testsuite
+
+2022-10-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for more flexible buffer configuration
+
+	Traditionally we provide a number of precalculated configurations
+	in the virtuoso.ini, based on the amount of free memory in the
+	system, e.g.:
+
+	  ;; Uncomment next two lines if there is 8 GB system memory free
+	  NumberOfBuffer  = 680000
+	  MaxDirtyBuffers = 500000
+
+	The user has to manually remove comments from the appropriate lines
+	and not forget to modify the values when moving to a bigger/smaller
+	system.
+
+	If the user forgets to modify the virtuoso.ini, the defaults will
+	take very little memory, but will result in very poor performance.
+
+	Most users do not know how to calculate the amount of memory used
+	by the NumberOfBufffers which uses the following formula:
+
+	  amount memory allocated = NumberOfBuffers * 8192 bytes
+
+	This makes it difficult for users to tune Virtuoso memory consumption.
+
+	To solve this problem, NumberOfBuffers can now be expressed as an
+	amount of memory, e.g.:
+
+	  NumberofBuffers = 5000M      ; calculate max NumberOfBuffers that will fit in 5000MB mem
+	  NumberOfBuffers = 5G         ; calculate max NumberOfBuffers that will fit in 5GB mem
+
+	When using EC2, Azure, or containers like kubernetes and docker,
+	we need a more flexible configuration, which allows for a single
+	Virtuoso configuration to scale to the amount of memory installed
+	on the machine.
+
+	To scale automatically, NumberOfBuffers can now be expressed as a
+	percentage, e.g.:
+
+	  NumberOfBuffers = 50%        ; use 50% of installed memory for buffers
+
+	This will allow OpenLink to create new marketplace instances for
+	BYOL, PAYGO and DBpedia instances that will automatically scale
+	when the enduser instantiates it on a 16GB, or a 64GB or larger
+	system.
+
+	Additionally we now allow MaxDirtyBuffers to be expressed as a
+	percentage of the NumberOfBuffers that can be dirty.
+
+	  MaxDirtyBuffers = 75%        ; allow upto 75% of NumberOfBuffers to be dirty
+
+2022-10-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with int64 flags not handled via config
+
+	Fixed signed/unsigned overflow
+
+2022-10-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with 64bit indicators in sys_stat
+
+	Merge branch 'feature/fct-fixes' into develop/7
+
+	Updated FCT VAD version
+
+2022-10-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed when flag is reverse change the relation
+
+	Fixed show missing error on sponge
+
+	Fixed small PL warnings
+
+	Fixed url rewrite rules
+
+2022-10-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing argument to __box_flags_tweak
+
+2022-10-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed IRI search needs a 64bit prefix
+
+	Fixed issue when an empty IRI is requested
+
+	Moved all grants together
+
+	Fixed handling of inline images
+
+	Fixed possible inf loop
+
+	Fixed pages should not call batch FT procedures
+
+2022-10-14  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed skip bad encodings (for now)
+
+	Added support to try loading external images w/ referer policy
+
+	Fixed JSON result from FCT service
+
+	Added support to show users location on map
+
+	Fixed round lat/long to 4 digits to get true distinction on map
+
+2022-10-12  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Updated Windows build
+
+	    * Added GraphQL plugin
+	    * Fixed small portability issue
+	    * Fixed small issues in VC project files
+
+2022-10-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with make install of graphql introspection files
+
+	Merge branch 'feature/graphql_plugin' into develop/7
+
+2022-10-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed graphql to use join on class for v7
+
+2022-10-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use iri() as v7 cannot handle IRI string
+
+2022-10-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added initial testsuite for GraphQL
+
+	Added initial support for GraphQL endpoint
+
+2022-10-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for configuring  graphql plugin (--enable-graphql)
+
+2022-10-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added query params in exec_metadata() as 5-th param
+
+	Added 4th param for iri_split to return local part
+
+2022-10-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added bif pldbg_last_line
+
+2022-10-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed grants for views
+
+2022-10-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed bad include
+
+	Added more EXPORTS for plugins
+
+2022-10-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed http_keep_session and related funcs require 64bit id
+
+	Added current value of backup prefix to status report
+
+	Fixed show dp in error for free dp
+
+	Fixed issue with unnamed result col from view
+
+	Fixes issue printing datetime boxes
+
+	Added close message to websocket server
+
+	Fixed additional check for response
+
+	Added connect func hook for websocket service
+
+	Fixed if sid is not given, use a random sid
+
+	Fixed websocket service response can be optional
+
+	Added a service proc API for websocket
+
+2022-10-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/websocket' into develop/7
+
+2022-10-09  VOS maintainer  <vos.admin@openlinksw.com>
+
+	Added initial support for websockets
+
+2022-10-09  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added new bif functions
+
+	    * short_set
+	    * short_tweak
+	    * short_ref
+	    * long_set
+	    * long_tweak
+	    * long_ref
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added partial result hint to HTML based SPARQL output (part 2)
+
+2022-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed anonymous sponging is not allowed
+
+	Removed cast ot string which limited output to 10Mb
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed st_sys_ram and get_total_sys_mem need to be int64
+
+	    On Windows a long is 32bit, so it returned a truncated value.
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed dynares URL
+
+	Fixed timeout validation
+
+	Fixed error report on unknown help topic
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Upgraded bootstrap packages
+
+	    * Bootstrap 5.2.1
+	    * Bootstrap Icons 1.9.1
+	    * JQuery 3.6.10
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added partial result hint to HTML based SPARQL output
+
+	Added partial result hint as a comment to the bottom of some output formats
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed HTTP status code to signal partial result
+
+	    If timeout = 0 then return 500 status and no data
+	    else return 206 status + partial result
+
+	    Note that the status code for partial result can be overruled:
+
+	        [SPARQL]
+	        HTTPAnytimeStatus = 206     ; default is 206
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed if max_timeout >= 1000 we always perform an anytime query internally
+
+	    If no timeouts set or query finishes within timeout then the server
+	    returns http status 200 and the full query result in the requested format.
+
+	      max_timeout   timeout         description
+	      >=1000        >=1000          return 206 + partial result if timeout is reached
+	      >=1000        0               return 500 if timeout is reached
+	      0             >=1000          return 206 + partial result if timeout is reached
+	      0             0               return 200 + full result
+
+2022-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Renamed variable to max_timeout
+
+	Fixed grammar
+
+	Fixed memory usage in footer
+
+	Rebuild RDF4j v4 provider
+
+	Updated version of RDF4j v4 provider
+
+	Merge branch 'feature/2022_09_30_fix_escape_rdf4j' into develop/7
+
+	Regenerated RDF4j provider
+
+	Updated version of RDF4j provider
+
+2022-10-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix escape IRI
+
+2022-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for IF EXISTS and IF NOT EXISTS in SQL DDL
+
+	To prevent SQL errors if object already exists in the database:
+
+	    create table XXX (....) IF NOT EXISTS;
+	    create index XXX .... IF NOT EXISTS;
+
+	To prevent SQL errors if object does not exist in the database:
+
+	    drop table XXX IF EXISTS;
+	    drop index XXX IF EXISTS;
+	    drop view  XXX IF EXISTS;
+
+2022-09-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing declaration (fixes #1076)
+
+2022-09-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for Windows
+
+2022-09-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added flag to return temp iri when lookup fails
+
+	[Flags]
+	debug_invalid_iri_id = 1
+
+2022-09-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed instead of rehash, use parameter to control hash size
+
+	       [Flags]
+	       users_cache_sz = 101
+
+2022-09-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed bad parameter type
+
+2022-09-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed enable rehash in case db contains large number of users
+
+	Added missing checks when db is not upgraded to 64bit prefixes
+
+2022-08-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing delete from listeners table
+
+2022-08-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed HTTPS endpoints
+
+	* Added support for multi-domain certificates in HTTPS listener UI
+	* Fixed https setup was missing CA x509 verify list option
+	* Fixed update of existing listener did not write changes to table
+
+2022-08-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing page
+
+	Merge branch 'feature/https_fixes' into develop/7
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for internal x509 CA list
+
+	Fixed issue freeing session
+
+	Fixed avoid alloc and connection obj free if not existing
+
+	Added status functions for cached client connections
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed http issues
+
+	* fixed http keep sessions
+	* fixed error handling
+	* fixed no chunk on 101 or continue
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed keep/onmessage for websocket
+
+	Added support for storing DH param in database
+
+	Fixed issues with http renegotiate
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support to renegotiate https when VDir opts different
+
+	This is controlled by a new option:
+
+	    [HTTPServer]
+	    EnableHTTPSRenegotiate = 1 		; default = 0
+
+2022-08-29  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed comments and small cleanups
+
+2022-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with log mode 1 and large batch
+
+2022-08-28  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use different hash algorithm
+
+	Fixed end tags to include a \n
+
+2022-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed on old db delete triples w/o dpipe
+
+2022-08-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Optimized selecting distinct graphs (fixes #1069)
+
+	    select distinct ?g where {graph ?g {?s ?p ?o}}
+
+2022-08-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Small cleanup
+
+2022-08-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with delete on LDP resource
+
+	The INSERT/DELETE PATCH ops, should have a base, since empty iris
+	are not allowed but <> is a valid in context of the ldp document
+
+2022-08-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use resource_get_batch
+
+2022-08-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed error handling
+
+	Fixed ssl messages
+
+	Fixed missing error handler
+
+2022-08-17  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed do not send duplicate Accept-Ranges header
+
+2022-08-17  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added new bif inet_aton() and inet_ntoa() ipv4 funcs
+
+	Updated CORS header handling
+
+	Fixed use separate table to keep HTTP(S) listeners settings
+
+2022-08-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Moved OS specific file defines into common header
+
+2022-08-16  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/odbc_client' into develop/7
+
+	Fixed compiler warning
+
+	Fixed compiler reports on implicit fallthrough
+
+	Added handle validation to ODBC calls
+
+2022-08-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed check return value of cli_get_stmt_access
+
+	Fixed move IN_CLIENT before cli_get_stmt_access
+
+	Fixed double free in SQLFreeStmt
+
+	Fixed use same macro everywhere
+
+2022-08-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed ODBC client may try to free stmt which is already freed or non-existing
+
+	Fixed system crash on 'Generate SPARQL compilation report" (fixes #1068)
+
+2022-08-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed crash on vec temp res w/ nulls (closes #1065)
+
+2022-07-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_07_26_fix_jena' into develop/7
+
+	Rebuild Jena 3/4 providers
+
+2022-07-26  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update build_id
+
+	Optimize finalizers
+
+2022-07-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+	Updated version to 3.122
+
+2022-07-26  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix ResultSet.close
+
+2022-07-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for changing the request timeout on http_client connections
+
+	The default setting can be changed in the virtuoso.ini file:
+
+	    [HTTP]
+	    ..
+	    ClientRequestTimeout = 100	; Default = 100
+	    ..
+
+	or inside a PL or VSP page using:
+
+	    set HTTP_CLIENT_REQUEST_TIMEOUT = 200;
+	    select http_client ('http://dbpedia.org/resource/Berlin');
+
+2022-07-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for non-existing iri id
+
+	Fixed issue with text ptr
+
+	Added log_error to show name of broken index
+
+	Added check to not exceed batch size
+
+2022-07-25  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_07_25_fix_jdbc' into develop/7
+
+	Rebuild JDBC drivers
+
+2022-07-25  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update JDBC version
+
+	Optimize finalizers
+
+	Fix issue with get NCHAR data
+
+2022-07-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_07_06_fix_rdf4j' into develop/7
+
+	Rebuild RDFj4 providers
+
+2022-07-06  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue with insert Literal with Language
+
+	https://github.com/openlink/virtuoso-opensource/issues/1056
+
+2022-07-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild Jena3/4 providers
+
+2022-07-01  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issues with query param binding
+
+2022-06-29  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2022_06_28_fix_rdf4j' into develop/7
+
+2022-06-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix issue with query param binding
+
+2022-06-28  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix parameter binding issues RDF4J provider bug19226, bug19229, bug19230
+
+2022-06-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when delimiter can be found but prefix is not in the cache
+
+2022-06-20  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Add provider for RDF4J ver:4.x
+
+2022-05-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'develop/7' of github:openlink/virtuoso-opensource into develop/7
+
+	Fixed documentation on OpenSSL versions / packages
+
+	Fixed missing include file for OpenSSL 3.0.x (fixes #1048)
+
+2022-05-24  OpenLink Software  <github@openlinksw.com>
+
+	Corrected direct URLs to installers
+
+2022-05-24  OpenLink Software  <github@openlinksw.com>
+
+	Exposed installer programs
+
+	Added section about the various installer programs that offer a download and install option.
+
+2022-05-19  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Win projects for use -MT compiler options, update version to 7.2.7 in Win resources
+
 2022-05-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Updated version to 7.2.8-dev to mark the start of a new development cycle
 
