@@ -40,6 +40,7 @@
       <v:variable name="fp1" type="varchar" default="''" persist="temp"/>
       <v:variable name="sdt" type="varchar" default="''" persist="temp"/>
       <v:variable name="edt" type="varchar" default="''" persist="temp"/>
+      <v:variable name="ca_is_expired" type="integer" default="0" persist="temp"/>
     </vm:variables>
     <vm:menu>
       <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
@@ -55,6 +56,7 @@
             tmp := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
             if (tmp is not null)
             {
+              declare expiration_date datetime;
               arr := split_and_decode (tmp, 0, '\0\0/=');
               self.c1 := get_keyword ('C', arr, '');
               self.st1 := get_keyword ('ST', arr, '');
@@ -66,6 +68,9 @@
               self.uri1 := get_certificate_info (7, 'id_rsa', 3, '', '2.5.29.17');
               self.sdt := get_certificate_info (4, 'id_rsa', 3);
               self.edt := get_certificate_info (5, 'id_rsa', 3);
+              expiration_date := DB.DBA.X509_STRING_DATE(self.edt);
+              if (datediff ('day', now(), expiration_date) <= 0)
+                self.ca_is_expired := 1;
               if (self.uri1 is null)
                 self.uri1 := '';
 
@@ -85,7 +90,30 @@
             self.uri1 := make_cert_iri ('id_rsa');
         ]]>
       </v:on-init>
-      <v:form name="form1" type="simple" method="POST">
+      <script tyep="text/javascript">
+        <![CDATA[
+        function guessFileType (f, sel_name)
+          {
+              var sel = document.getElementById(sel_name);
+              var filePath = f.value;
+              if (filePath.match (/\.pem$/) || filePath.match (/\.crt$/))
+                  sel.value = 'PEM';
+              else if (filePath.match (/\.cer$/))
+                  sel.value = 'DER';
+              if (filePath.match (/\.p12$/) || filePath.match (/\.pfx$/))
+                  sel.value = 'PKCS12';
+          }
+        ]]>
+      </script>
+      <v:template type="simple" name="cert_expired" condition="equ (self.ca_is_expired, 1)">
+      <div class="confirm_dialog">
+          <img class="dialog_icon" src="images/icons/warning_32.png" alt="Stop" title="Stop"/>
+          <div class="confirm_text">
+              The local CA certificate has expired and new certificates issued from it will be invalid, consider renewal.
+          </div>
+      </div>
+      </v:template>
+      <v:form name="form1" type="simple" method="POST" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
       <!-- top of security layout -->
         <div class="main_tab_page">
           <div class="page_tab_selected">
@@ -195,6 +223,17 @@
                     control.vc_add_attribute ('disabled', '1');
                 </v:before-render>
               </v:select-list>
+              <br />
+              <label>Validity</label>
+              <v:select-list name="validity_year">
+                <v:item name="2 Years" value="2"/>
+                <v:item name="3 Years" value="3"/>
+                <v:item name="5 Years" value="5"/>
+                <v:before-render>
+                  if (xenc_key_exists ('id_rsa'))
+                    control.vc_add_attribute ('disabled', '1');
+                </v:before-render>
+              </v:select-list>
               <br /><br />
               <v:button action="simple" name="createcert" value="Generate" enabled="--equ (0, xenc_key_exists ('id_rsa'))">
                 <v:on-post>
@@ -209,25 +248,17 @@
                       return 0;
                     }
 
-                    declare w varchar;
-                    w := get_keyword ('uri', params);
-                    if (length (w))
-                      w := 'URI:'||w;
-
-                    xenc_key_RSA_create ('id_rsa', atoi (get_keyword ('num', params, '2048')));
-                    xenc_x509_ss_generate ('id_rsa', sequence_next ('ca_id_rsa'), 365,
-                      vector ('C',  get_keyword ('country', params),
+                    declare dn any;
+                    declare validity, validity_days integer;
+                    validity := atoi (self.validity_year.ufl_value);
+                    validity_days := datediff ('day', now(), dateadd ('year', validity, now()));
+                    dn := vector ('C',  get_keyword ('country', params),
                               'ST', get_keyword ('st', params),
                               'O',  get_keyword ('o', params),
                               'OU', get_keyword ('ou', params),
                               'CN', get_keyword ('name', params),
-                              'emailAddress',  get_keyword ('email', params)),
-                      vector ('basicConstraints', 'critical,CA:TRUE',
-                              'authorityKeyIdentifier', 'keyid,issuer:always',
-                              'subjectAltName', w,
-                              'nsComment', 'Virtuoso Generated Certificate'));
-                    USER_KEY_STORE (user, 'id_rsa', 'X.509', 2, '', cast (xenc_pkcs12_export ('id_rsa', 'CA Certificate', '') as varchar));
-                    exec (make_cert_stmt ('id_rsa'));
+                              'emailAddress',  get_keyword ('email', params));
+                    DB.DBA.LOCAL_CA_GEN ('id_rsa', atoi (get_keyword ('num', params, '2048')), dn, validity_days);
                     commit work;
                     control.vc_enabled := 0;
                     self.delcert.vc_enabled := 1;
@@ -266,6 +297,71 @@
                   ]]>
                 </v:on-post>
               </v:button>
+              <v:button action="simple" name="renew_cert_btn" value="Renew CA ceritificate" enabled="--equ (self.ca_is_expired, 1)">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect ('sec_pki_renew.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:template type="simple" name="import_input" condition="equ(0, xenc_key_exists ('id_rsa'))">
+                  <div>
+                      <label for="k_value">Import File</label>
+                      <input type="file" name="k_value" id="k_value" onchange="guessFileType(this, 'k_type')"/>
+                  </div>
+                  <div>
+                  <label for="k_type">File Format</label>
+                  <v:select-list xhtml_id="k_type" name="k_type">
+                      <v:item name="PKCS12" value="PKCS12" />
+                      <v:item name="PEM" value="PEM" />
+                      <v:item name="DER" value="DER" />
+                  </v:select-list>
+                  </div>
+                  <div>
+                  <label for="k_pwd">Password</label>
+                  <v:text name="k_pwd" id="k_pwd" type="password" value="" />
+                  </div>
+                  <div>
+                        <v:button action="simple" name="imp_key" value="Import Key">
+                          <v:on-post>
+                            <![CDATA[
+                              declare key_file_format, key_value any;
+                              declare import_pk_from_pem int;
+                              if (self.vc_is_valid = 0)
+                                return;
+
+                              declare exit handler for sqlstate '*', not found
+                              {
+                                rollback work;
+                                self.vc_error_message := __SQL_MESSAGE;
+                                self.vc_is_valid := 0;
+                                return;
+                              };
+                              key_value := get_keyword ('k_value', params);
+                              key_file_format := self.k_type.ufl_value;
+                              import_pk_from_pem := 0;
+                              if (key_file_format = 'PEM' and strstr (key_value, 'PRIVATE KEY') is not null)
+                                import_pk_from_pem := 1;
+                              set_user_id ('dba');
+                              set_qualifier ('DB');
+
+                              USER_KEY_LOAD ('id_rsa',
+                                    key_value,
+                                    'X.509',
+                                    key_file_format,
+                                    self.k_pwd.ufl_value,
+                                    case when import_pk_from_pem then key_value else null end,
+                                    1);
+
+                              EXEC_STMT (make_cert_stmt ('id_rsa'), 0);
+                              commit work;
+                              http_request_status ('HTTP/1.1 302 Found');
+                              http_header (sprintf ('Location: sec_pki_1.vspx?sid=%s&realm=%s\r\n',self.sid ,self.realm));
+                            ]]>
+                          </v:on-post>
+                        </v:button>
+                    </div>
+                </v:template>
               <!-- bottom of security layout -->
             </div> <!-- #pki_form -->
           </div>
