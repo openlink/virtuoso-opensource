@@ -1855,7 +1855,7 @@ mm_cache_trim (size_t target_sz, int age_limit, int old_only)
       uint32 * times = rc->rc_item_time;
       for (inx2 = 0; inx2 < fill; inx2++)
 	{
-	  if (now - times[inx] >= age_limit)
+	  if (now - times[inx2] >= age_limit)
 	    {
 	      old_bytes[inx] += mm_sizes[inx];
 	      old_total += mm_sizes[inx];
