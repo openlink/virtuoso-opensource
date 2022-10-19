@@ -1,5 +1,11 @@
 2022-10-19  Patrick van Kleef  <pkleef@openlinksw.com>
 
+	Updated version to 7.2.8 engine 3235
+
+	Updated NEWS.md with final notes
+
+	Updated ChangeLog
+
 	Fixed readme documents in make install
 
 	Updated FCT version
