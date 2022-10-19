@@ -525,7 +525,7 @@ neq:
 extern int col_ins_error;
 
 int
-ce_bad_dtp (it_cursor_t * itc, db_buf_t ce, int set, int row_of_ce, int ce_n_values, int nth_key, int rc, int dtp_cmp)
+ce_bad_dtp (it_cursor_t * itc, db_buf_t ce, int set, row_no_t row_of_ce, int ce_n_values, int nth_key, int rc, int dtp_cmp)
 {
   if (ASC_NUMBERS == dtp_cmp)
     {

@@ -1887,6 +1887,7 @@ typedef struct client_connection_s
     struct xml_ns_2dict_s      *cli_ns_2dict;
     dk_set_t		cli_dae_blobs;
     char               cli_logged_in;
+    uint32              cli_http_client_req_timeout;
   } client_connection_t;
 
 
@@ -2084,6 +2085,9 @@ extern long blob_releases_noread;
 extern long blob_releases_dir;
 
 extern client_connection_t *autocheckpoint_cli;
+
+void qr_print (query_t * qr);
+
 #include "sqlcomp.h"
 #include "eqlcomp.h"
 #include "sqlfn.h"
@@ -2110,4 +2114,3 @@ extern void log_query_event (query_t *qr, int print_full_content, const char *fm
 #endif
 
 #endif /* _SQLNODE_H */
-void qr_print (query_t * qr);

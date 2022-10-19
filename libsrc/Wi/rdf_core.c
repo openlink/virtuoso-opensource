@@ -2054,8 +2054,12 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
       range_seq = box_dv_short_string ("RDF_URL_IID_NAMED");
     }
   IN_TXN;
-  id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  do {
+    id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  }
+  while (8192 == id); /* magic perms IRI ID, should skip */
   id_max = sequence_set (iri_seq_max[nth], 0, SEQUENCE_GET, INSIDE_MAP);
+
   if (id < id_max)
     {
       LEAVE_TXN;
@@ -3165,7 +3169,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       dk_free_box (id_box);
       if (!local)
 	return NULL;
-      if (qi && lt->lt_lock.ht_count)
+      if (qi && lt && lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
 	nic_set (iri_name_cache, local, iri_id_no);
@@ -3192,7 +3196,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	      dk_free_box (local);
 	      return NULL;
 	    }
-	  if (qi && lt->lt_lock.ht_count)
+	  if (qi && lt && lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
 	    nic_set (iri_prefix_cache, prefix, pref_id);
@@ -3333,14 +3337,31 @@ rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
   sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
 }
 
+int debug_invalid_iri_id = 0;
+
 caddr_t
 bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
   iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  int is_prefix = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
   if (0 == iid) return uname_nodeID_ns_0;
   if (8192 == iid) return uname_nodeID_ns_8192;
+  if (debug_invalid_iri_id)
+    {
+      caddr_t buf[100];
+      caddr_t b;
+
+      if (is_prefix)
+        return box_dv_short_string ("no prefix");
+
+      /* Generate temp iri */
+      snprintf (buf, sizeof (buf), "iri_id_" BOXINT_FMT "_with_no_name_entry", (boxint) iid);
+      b = box_dv_short_string (buf);
+      box_flags (b) = BF_IRI;
+      return b;
+    }
   rdf_handle_invalid_iri_id (qst, msg, iid);
   return NULL; /* never reached */
 }
@@ -4175,13 +4196,19 @@ caddr_t
 bif_iri_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_args = BOX_ELEMENTS (args);
-  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
   caddr_t iri = bif_string_arg (qst, args, 0, "iri_split");
+  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
+  int is_local = n_args > 3 ? bif_long_arg (qst, args, 3, "iri_split") : 0;
   caddr_t local, pref;
   if (is_int)
     iri_split (iri, &pref, &local);
   else
     iri_split_ttl_qname (iri, &pref, &local, 0);
+  if (is_local)
+    {
+      dk_free_box (pref);
+      return local;
+    }
   if (n_args > 1 && ssl_is_settable (args[1]))
     qst_set (qst, args[1], local);
   else

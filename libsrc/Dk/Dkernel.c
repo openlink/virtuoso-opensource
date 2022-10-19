@@ -69,6 +69,9 @@ int LEVEL_VAR = 4;
 #include <openssl/rand.h>
 #include <openssl/ec.h>
 #include <openssl/dh.h>
+#if OPENSSL_VERSION_NUMBER >= 0x30000000L
+#include <openssl/provider.h>
+#endif
 
 #include "util/ssl_compat.h"
 
@@ -1222,11 +1225,11 @@ future_wrapper (void *ignore)
 	  future->rq_service->sr_postprocess (result, future);
 	  CB_DONE;
 	}
+      F_RETURNED;
     free_the_future:
       if (this_thread->thr_reset_code)
 	thr_set_error_code (this_thread, NULL);
       dbg_printf_2 (("Done Future %ld on thread %p", future->rq_condition, this_thread));
-      F_RETURNED;
       mutex_enter (thread_mtx);
       if (DKST_FINISH == client->dks_thread_state && !client->dks_to_close && !client->dks_fixed_thread
 	  && 1 == client->dks_n_threads && !in_basket.bsk_count)

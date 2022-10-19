@@ -628,6 +628,9 @@ caddr_t bif_dsig_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 caddr_t xenc_get_option (caddr_t *options, const char * opt, char * def);
 caddr_t certificate_encode (BIO * b, const char * encoding_type);
 caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * uri);
+#define INTERNAL_CA_STORE "db:internalCAlist"
+STACK_OF(X509_NAME)* xenc_CA_names_stack (char * ca_file_name);
+int xenc_load_verify_CA_list (SSL_CTX * ctx, char * ca_file_name);
 
 extern dk_mutex_t * xenc_keys_mtx;
 

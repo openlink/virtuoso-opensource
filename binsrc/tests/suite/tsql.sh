@@ -332,6 +332,14 @@ then
     exit 1
 fi
 
+LOG + running sql script tifnexists
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/tifnexists.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tifnexists.sql"
+    exit 1
+fi
+
 # XXX
 LOG + running sql script ttrans
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/ttrans.sql

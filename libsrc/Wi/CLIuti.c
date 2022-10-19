@@ -946,6 +946,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 
 	case QA_ROW_LAST_IN_BATCH:
 	  stmt->stmt_co_last_in_batch = 1;
+	  /*FALLTHROUGH*/
 
 	case QA_ROW:
 	case QA_ROW_ADDED:

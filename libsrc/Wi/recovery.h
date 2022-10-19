@@ -131,6 +131,7 @@ void wi_open_dbs ();
 extern const char* recover_file_prefix; /* from obackup.c */
 void ddl_obackup_init (void);
 char* bp_curr_timestamp();
+char* bp_curr_prefix();
 char* bp_curr_date();
 
 extern caddr_t * backup_patha;

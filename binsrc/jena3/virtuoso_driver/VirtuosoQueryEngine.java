@@ -89,19 +89,30 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
 
         VirtGraph vg = (VirtGraph) this.dataset.getDefaultGraph();
 
+        StringBuilder tok = new StringBuilder();
         StringBuilder buf = new StringBuilder();
-        String delim = " ,)(;.";
+        String delim = " \t\n\r\f,)(;.}{";
+        int inCurly = 0;
         int i = 0;
         char ch;
         int qlen = query.length();
+        boolean afterFROM = false;
+        boolean afterOrderBy = false;
+        boolean isSPARUL = false;
+
         while (i < qlen) {
             ch = query.charAt(i++);
             if (ch == '\\') {
                 buf.append(ch);
-                if (i < qlen)
-                    buf.append(query.charAt(i++));
+                tok.append(ch);
+                if (i < qlen) {
+                    ch = query.charAt(i++);
+                    buf.append(ch);
+                    tok.append(ch);
+                }
 
             } else if (ch == '"' || ch == '\'') {
+                tok.setLength(0);
                 char end = ch;
                 buf.append(ch);
                 while (i < qlen) {
@@ -110,24 +121,64 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
                     if (ch == end)
                         break;
                 }
+            } else if ( ch == '{' ) {
+                inCurly++;
+                buf.append(ch);
+                tok.setLength(0);
+            } else if ( ch == '{' ) {
+                inCurly--;
+                buf.append(ch);
+                tok.setLength(0);
             } else if (ch == '?') {  //Parameter
+                tok.setLength(0);
                 String varData = null;
                 int j = i;
-                while (j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
-                if (j != i) {
+                while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+                if (j != i && !afterOrderBy) {
+                    boolean useBackSlash = (isSPARUL || inCurly > 0);
                     String varName = query.substring(i, j);
                     Node val = args.get(Var.alloc(varName));
+
                     if (val != null) {
-                        varData = vg.Node2Str(val);
-                        i = j;
+                        if (inCurly==0 && !isSPARUL && !afterFROM && !afterOrderBy) //for values in SELECT before triple pattern
+                            varData = "( "+vg.Node2Str(val, useBackSlash)+" AS ?"+varName+" )";
+                        else
+                            varData = vg.Node2Str(val, useBackSlash);
+
+                        i=j;
                     }
                 }
                 if (varData != null)
                     buf.append(varData);
                 else
                     buf.append(ch);
+
             } else {
                 buf.append(ch);
+                if (delim.indexOf(ch) < 0) {
+                    tok.append(ch);
+                } else {
+                    if (tok.length()==4 
+                        && (tok.charAt(0)=='F' || tok.charAt(0)=='f')
+                        && tok.toString().equalsIgnoreCase("FROM")) {
+                      afterFROM = true;
+                    }
+                    else if (tok.length()==5
+                        && (tok.charAt(0)=='O' || tok.charAt(0)=='o')
+                        && tok.toString().equalsIgnoreCase("ORDER")) {
+                      int j0 = i;
+                      while(j0 < qlen && Character.isWhitespace(query.charAt(j0))) j0++;
+                      int j = j0;
+                      while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+                      if (j != j0) {
+                        String tok1 = query.substring(j0,j).toUpperCase();
+                        if (tok1.equals("BY"))
+                          afterOrderBy = true;
+                      }
+                    }
+
+                    tok.setLength(0);
+                }
             }
         }
         return buf.toString();
@@ -311,13 +362,6 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
             }
         }
 
-
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) { }
-        }
 
         /**
          * Propagates the cancellation request - called asynchronously with the iterator itself

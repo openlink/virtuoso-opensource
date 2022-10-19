@@ -114,6 +114,24 @@ fi
 
 export SERVER ISQL PORT DSN SERVICE BINDIR PATH DEBUG
 
+#
+#  Netstat
+#
+NETSTAT=`which netstat`
+if test -z "$NETSTAT"
+then
+    NETSTAT=`which ss`
+fi
+if test -z "$NETSTAT"
+then
+    echo ""
+    echo "***"
+    echo "*** ERROR: Please make sure either netstat or ss is installed and in your PATH before running the test suite."
+    echo "***"
+    exit 1
+fi
+export NETSTAT
+
 #===========================================================================
 #  Standard functions
 #===========================================================================

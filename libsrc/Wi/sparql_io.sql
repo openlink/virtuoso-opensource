@@ -73,7 +73,7 @@ create procedure DB.DBA.SPARQL_RSET_XML_HTTP_INIT (inout env any)
 create function DB.DBA.SPARQL_RSET_XML_HTTP_FINAL (inout env any)
 {
   http ('\n </results>');
-  http ('\n</sparql>');
+  http ('\n</sparql>\n');
 }
 ;
 
@@ -981,7 +981,7 @@ create procedure "querySoap"  (in  "Command" varchar
    SPARQL_RESULTS_XML_WRITE_RES (ses, mdta, dta);
 
    -- dbg_obj_princ (mdta);
-   http ('</sparql>', ses);
+   http ('</sparql>\n', ses);
 
    ses := string_output_string (ses);
    string_to_file ('out.xml', ses, -2);
@@ -1983,8 +1983,16 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 {
   declare singlefield varchar;
   declare ret_mime, ret_format varchar;
+
+  declare partial_title varchar;
+  partial_title := '';
+
   if (status is not null)
     {
+      if (status[0] in ('S1TAT'))
+      {
+         partial_title := ' (partial result: anytime timeout)';
+      }
       http_header (concat (coalesce (http_header_get (), ''),
           'X-SQL-State: ', status[0], '\r\nX-SQL-Message: ', status[1],
           '\r\nX-Exec-Milliseconds: ', cast (status[2] as varchar), '\r\nX-Exec-DB-Activity: ', cast (status[3] as varchar),
@@ -2018,7 +2026,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
             concat (
               '\n <head></head>\n <boolean>',
               case (ask_result) when 0 then 'false' else 'true' end,
-              '</boolean>\n</sparql>'),
+              '</boolean>\n</sparql>\n'),
             ses );
         }
       else if (ret_format = 'TTL')
@@ -2065,25 +2073,25 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;RES')
         DB.DBA.RDF_TRIPLES_TO_JSON (triples, ses);
       else if (ret_format = 'RDFA;XHTML')
-        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses);
+        DB.DBA.RDF_TRIPLES_TO_RDFA_XHTML (triples, ses, partial_title);
       else if (ret_format = 'HTML;UL')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_UL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_UL (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;TR')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_TR (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_TR (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;MICRODATA')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_MICRODATA (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'HTML;NICE_MICRODATA')
 	{
-          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_MICRODATA (triples, ses, partial_title);
 	  ret_mime := 'text/html';
 	}
       else if (ret_format = 'JSON;MICRODATA')
@@ -2107,7 +2115,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
         }
       else if (ret_format = 'HTML;NICE_TTL')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_NICE_TTL (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else if (ret_format = 'SOAP')
@@ -2134,12 +2142,12 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
 	}
       else if (ret_format = 'HTML;SCRIPT_TTL')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_TTL (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else if (ret_format = 'HTML;SCRIPT_LD_JSON')
         {
-          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses);
+          DB.DBA.RDF_TRIPLES_TO_HTML_SCRIPT_LD_JSON (triples, ses, partial_title);
           ret_mime := 'text/html';
         }
       else
@@ -2194,7 +2202,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'HTML')
     {
       if (bit_and (flags, 1))
-        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table', ses);
+        WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table' || partial_title, ses);
       SPARQL_RESULTS_JAVASCRIPT_HTML_WRITE(ses, metas, rset, 0, 1, case when ret_mime = 'text/html' then 1 else 0 end);
       if (bit_and (flags, 1))
         WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
@@ -2251,7 +2259,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       SPARQL_RESULTS_RDFXML_WRITE_HEAD (ses, metas);
       SPARQL_RESULTS_RDFXML_WRITE_RES (ses, metas, rset);
       http ('\n  </rdf:Description>', ses);
-      http ('\n</rdf:RDF>', ses);
+      http ('\n</rdf:RDF>\n', ses);
       goto body_complete;
     }
   if ((ret_format = 'CXML') or (ret_format = 'CXML;QRCODE'))
@@ -2274,7 +2282,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   if (ret_format = 'HTML;TR')
     {
       ret_mime := 'text/html';
-      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table (faceted browsing links)', ses);
+      WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN ('HTML5 table (faceted browsing links)' || partial_title, ses);
       DB.DBA.SPARQL_RESULTS_HTML_TR_WRITE (ses, metas, rset);
       WS.WS.SPARQL_RESULT_HTML5_OUTPUT_END (ses);
       goto body_complete;
@@ -2283,7 +2291,7 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
   SPARQL_RSET_XML_WRITE_NS (ses);
   SPARQL_RESULTS_XML_WRITE_HEAD (ses, metas);
   SPARQL_RESULTS_XML_WRITE_RES (ses, metas, rset);
-  http ('\n</sparql>', ses);
+  http ('\n</sparql>\n', ses);
 
 body_complete:
   if (bit_and (flags, 2))
@@ -2297,17 +2305,17 @@ body_complete:
         log_array := vector (vector ('The debug log has no messages. The most probable reason is that the query has no sponging or similar activity.', '', ''));
       else
         vectorbld_final (log_array);
-      if (ret_format like 'HTML%')
+      if (ret_format like '%HTML%' or ret_format like '%XML%')
         {
-          line_begin := '<!-' || '- '; line_end := '-' || '->';
+          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
         }
       else if (ret_format in ('SOAP', 'RDFXML', 'CXML', 'CXML;QRCODE'))
         {
-          line_begin := '<!-' || '- '; line_end := '-' || '->';
+          line_begin := '<!-' || '- '; line_end := '-' || '->\n';
         }
       else if (ret_format in ('TTL', 'NICE_TTL', 'NT'))
         {
-          line_begin := '# '; line_end := '';
+          line_begin := '# '; line_end := '\n';
         }
       else
         line_begin := null;
@@ -2602,7 +2610,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   declare dflt_graphs, named_graphs, using_graphs, using_named_graphs any;
   declare paramctr, paramcount, qry_params, maxrows, can_sponge,  start_time integer;
   declare ses, content any;
-  declare def_max, add_http_headers, hard_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
+  declare def_max, add_http_headers, max_timeout, timeout, client_supports_partial_res, sp_ini, soap_ver int;
   declare http_meth, content_type, ini_dflt_graph, get_user, jsonp_callback varchar;
   declare reported_unknown_services any;
   declare state, msg varchar;
@@ -2661,7 +2669,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
   deadl := 0;
   http_meth := http_request_get ('REQUEST_METHOD');
   ini_dflt_graph := virtuoso_ini_item_value ('SPARQL', 'DefaultGraph');
-  hard_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
+  max_timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'MaxQueryExecutionTime'), '0')) * 1000;
   timeout := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'ExecutionTimeout'), '0')) * 1000;
   client_supports_partial_res := 0;
 
@@ -2684,12 +2692,12 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   -- Get the max values as specified by the client but always stick to the system-wide max if there is any
   if (not connection_get ('SPARQL/MaxQueryExecutionTime') is null)
-    hard_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, hard_timeout);
+    max_timeout := __min (cast (connection_get ('SPARQL/MaxQueryExecutionTime') as int) * 1000, max_timeout);
   if (not connection_get ('SPARQL/ResultSetMaxRows') is null)
     def_max := __min (cast (connection_get ('SPARQL/ResultSetMaxRows') as int), def_max);
 
   -- If MaxQueryExecutionTime is set, assume we can return a partial result
-  if (hard_timeout >= 1000)
+  if (max_timeout >= 1000)
     client_supports_partial_res := 1;
 
   save_dir := trim (get_keyword ('dname', params, ''));
@@ -2822,7 +2830,7 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
       if ('' <> get_keyword ('debug', params, ''))
         signal_void := signal_unconnected := '1';
       log_debug_info := get_keyword ('log_debug_info', params, '');
-      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, signal_void, signal_unconnected, quiet_geo, log_debug_info, save_mode, dav_refresh, overwrite, explain_report);
+      WS.WS.SPARQL_ENDPOINT_GENERATE_FORM(params, ini_dflt_graph, def_qry, timeout, max_timeout, signal_void, signal_unconnected, quiet_geo, log_debug_info, save_mode, dav_refresh, overwrite, explain_report);
       return;
     }
 
@@ -3230,22 +3238,25 @@ host_found:
   rset := null;
   commit work;
 
-  -- If timeout is outside of range 1000..hard_timeout, use the hard_timeout limit
-  if (hard_timeout >= 1000 and (timeout < 1000 or timeout > hard_timeout))
+  -- If timeout is outside of range 1000..max_timeout, use the max_timeout limit
+  if (max_timeout < 1000) max_timeout := 0;
+  if (timeout < 1000) timeout := 0;
+  if (max_timeout >= 1000 and (timeout > max_timeout))
     {
-      timeout := hard_timeout;
+      timeout := max_timeout;
     }
 
   -- If timeout is set (>=1000) then enable ANYTIME query unless a partial result is not allowed
   if (client_supports_partial_res and (timeout >= 1000))
     {
       set RESULT_TIMEOUT = timeout;
-      -- dbg_obj_princ ('anytime timeout is set to', timeout);
-      set TRANSACTION_TIMEOUT=timeout + 10000;
+      set TRANSACTION_TIMEOUT = timeout + 10000;
     }
-  else if (hard_timeout >= 1000)
+  else if (max_timeout >= 1000)
     {
-      set TRANSACTION_TIMEOUT=hard_timeout;
+      set RESULT_TIMEOUT = max_timeout;
+      set TRANSACTION_TIMEOUT = max_timeout + 10000;
+      timeout := 0;
     }
   connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
@@ -3264,6 +3275,29 @@ again:
     {
       exec_time := msec_time () - start_time;
       exec_db_activity := db_activity ();
+
+      --
+      --  If client did not request a timeout, return a HTTP 500 error
+      --
+      if (timeout < 1000)
+        {
+          DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+            '500', 'SPARQL Request Failed', NULL, 'S1TAT', 'Query did not complete due to ANYTIME timeout.\r\n', format);
+          return;
+        }
+
+      --
+      --  Return an appropriate HTTP status code for "Partial result" (default 206)
+      --
+      declare anytime_status integer;
+      anytime_status := atoi (coalesce (virtuoso_ini_item_value ('SPARQL', 'HTTPAnytimeStatus'), '206'));
+      http_status_set (anytime_status);
+      http_header (http_header_get() ||
+          sprintf ('Accept-Ranges: none\r\nX-SPARQL-Anytime: timeout=%d; max_timeout=%d\r\n', timeout, max_timeout));
+
+      DB.DBA.RDF_LOG_DEBUG_INFO ('SPARQL endpoint returned a partial result due to ANYTIME timeout (timeout=%s, max_timeout=%s)',
+	timeout, max_timeout);
+
       --reply := xmlelement ("facets", xmlelement ("sparql", qr), xmlelement ("time", msec_time () - start_time),
       --                 xmlelement ("complete", cplete),
       --                 xmlelement ("db-activity", db_activity ()), res[0][0]);
@@ -3375,6 +3409,9 @@ write_results:
           declare sparql_uid integer;
           declare refresh_sec, ttl_sec integer;
           declare full_uri varchar;
+	  declare _host, _http  any;
+	  _host := http_request_header (lines, 'Host', null, registry_get ('URIQADefaultHost'));
+	  _http := case when is_https_ctx() then 'https' else 'http' end;
           sparql_uid := (SELECT COL_OWNER from WS.WS.SYS_DAV_COL where COL_ID = save_dir_id);
           if (fname is null)
             {
@@ -3383,9 +3420,9 @@ write_results:
               else
                 fname := sprintf ('%.100s - cached and renewable SPARQL result - made by %.100s', cast (now() as varchar), user_id);
             }
-          refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (hard_timeout, 1000)/100) end;
+          refresh_sec := case (save_mode) when 'tmpstatic' then null else __max (600, coalesce (max_timeout, 1000)/100) end;
           ttl_sec := 172800;
-          full_uri := concat ('http://', registry_get ('URIQADefaultHost'), DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
+          full_uri := concat (_http, '://', _host, DAV_SEARCH_PATH (save_dir_id, 'C'), fname);
           "DynaRes_INSERT_RESOURCE" (
               detcol_id => save_dir_id,
               fname => fname,
@@ -3394,7 +3431,7 @@ write_results:
               ttl_seconds => ttl_sec,
               mime => accept,
               exec_stmt => 'DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (?, ?, ?, ?, ?, ?, ?)',
-              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, hard_timeout, jsonp_callback),
+              exec_params => vector (full_query, qry_params, maxrows, accept, user_id, max_timeout, jsonp_callback),
               exec_uname => user_id,
               content => ses,
               overwrite => atoi (overwrite)
@@ -3659,31 +3696,31 @@ good_host_found:
   WS.WS.SPARQL_ENDPOINT_HTML_DOCTYPE();
 
   http('<head>\n');
-  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form');
+  WS.WS.SPARQL_ENDPOINT_HTML_HEAD('Virtuoso SPARQL 1.1 Graph Store');
   WS.WS.SPARQL_ENDPOINT_STYLE (1);
   http('</head>\n');
 
   http('<body>\n');
   http('<div class="container">\n');
-  http('    <div id="header">\n');
-  http('	<h1>Virtuoso SPARQL 1.1 Uniform RDF Graph Query Form</h1>\n');
-  http('    </div>\n\n');
+  WS.WS.SPARQL_ENDPOINT_HTML_MENU('SPARQL 1.1 Graph Store', 0);
   http('    <div id="intro">\n');
   http('	<p>This page is designed to help you test support for <a href="http://www.w3.org/TR/sparql11-http-rdf-update">SPARQL 1.1 Graph Store HTTP Protocol</a> in OpenLink Virtuoso.</p>\n');
   http('    </div>\n\n');
   http('    <div id="main">\n');
   http('	<form action="" method="post" enctype="multipart/form-data">\n');
   http('	<fieldset>\n');
-  http('		<label for="graph-uri">Graph URI</label>\n');
-  http('		<br />\n');
-  http('		<input type="text" name="graph-uri" id="graph-uri" ');
+  http('            <div class="mb-3">\n');
+  http('                <label class="form-label" for="graph-uri">Graph URI</label>\n');
+  http('		<input class="form-control form-control-sm" type="url" name="graph-uri" id="graph-uri" ');
   http(sprintf ('value="%s" size="80"/>\n', coalesce ('')));
-  http('		<br /><br />\n');
-  http('		<label for="res-file">File to upload</label>\n');
-  http('		<br />\n');
-  http('		<input type="file" name="res-file" id="res-file"/>\n');
-  http('		<br /><br />\n');
-  http('		<input type="submit" value="Upload the resource"/>');
+  http('            </div>\n');
+  http('            <div class="mb-3">\n');
+  http('		<label class="form-label" for="res-file">File to upload</label>\n');
+  http('		<input class="form-control" type="file" name="res-file" id="res-file"/>\n');
+  http('            </div>\n');
+  http('            <div class="mb-3">\n');
+  http('                <input class="btn btn-primary" type="submit" id="run" value="Upload the resource"/>');
+  http('            </div>\n');
   http('	</fieldset>\n');
   http('	</form>\n');
   http('    </div>\n\n');
@@ -3829,17 +3866,17 @@ registry_set ('/!sparql-graph-crud/', 'no_vsp_recompile')
 ;
 
 
-create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in hard_timeout integer, in jsonp_callback any)
+create procedure DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (in full_query varchar, in qry_params any, in maxrows integer, in accept varchar, in user_id varchar, in max_timeout integer, in jsonp_callback any)
 {
-  -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, hard_timeout, ')');
+  -- dbg_obj_princ ('DB.DBA.SPARQL_REFRESH_DYNARES_RESULTS (', full_query, qry_params, maxrows, accept, user_id, max_timeout, ')');
   declare state, msg varchar;
   declare metas, rset any;
   declare RES any;
   declare ses any;
   result_names (RES);
   set_user_id (user_id, 1);
-  if (hard_timeout >= 1000)
-    set TRANSACTION_TIMEOUT = hard_timeout;
+  if (max_timeout >= 1000)
+    set TRANSACTION_TIMEOUT = max_timeout;
   set_user_id (user_id);
   state := '00000';
   exec ( concat ('sparql ', full_query), state, msg, qry_params, vector ('max_rows', maxrows, 'use_cache', 1), metas, rset);

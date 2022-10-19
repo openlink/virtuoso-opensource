@@ -21,35 +21,20 @@
 --
 --  Install rewrite rules
 --
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_1', 1,
-    '/describe/([^/\?\&]*)?/?([^/\?\&:]*)/(.*)', vector ('force', 'login', 'url'), 2,
-    '/describe?url=%U&force=%U&login=%U', vector ('url', 'force', 'login'), null, null, 2);
-
 DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_2', 1,
     '/describe/html/(.*)', vector ('g'), 1,
     '/fct/rdfdesc/description.vsp?g=%U', vector ('g'), null, null, 2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_3', 1,
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ext_fctabout_http_proxy_rule_3', 1,
     '/describe/\\?url=(.*)', vector ('g'), 1,
-    '/fct/rdfdesc/description.vsp?g=%s', vector ('g'), null, null, 2);
+    '/fct/rdfdesc/description.vsp?g=%s', vector ('g'), NULL, NULL, 2);
 
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_4', 1,
-    '/describe/\\?uri=(.*)', vector ('g'), 1,
-    '/fct/rdfdesc/description.vsp?g=%s', vector ('g'), null, null, 2);
-
-DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('ext_fctabout_http_proxy_rule_5', 1,
-    '/describe/\\?uri=([^\&]*)\&graph=([^\&]*)', vector ('g', 'graph'), 2,
-    '/fct/rdfdesc/description.vsp?g=%s&graph=%s', vector ('g', 'graph'), null, null, 2);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'ext_fctabout_http_proxy_rule_5', 1,
+    '/describe/\\?uri=([^&]*)&graph=([^&]*)', vector ('g', 'graph'),  2,
+    '/fct/rdfdesc/description.vsp?g=%s&graph=%s', vector ('g', 'graph'), NULL, NULL, 2);
 
 DB.DBA.URLREWRITE_CREATE_RULELIST ('ext_fctabout_http_proxy_rule_list1', 1,
-    vector (
-         -- 'ext_fctabout_http_proxy_rule_1', deprecated
-            'ext_fctabout_http_proxy_rule_2',
-            'ext_fctabout_http_proxy_rule_3',
-            'ext_fctabout_http_proxy_rule_4',
-            'ext_fctabout_http_proxy_rule_5'
-            ));
-
+    vector ( 'ext_fctabout_http_proxy_rule_2', 'ext_fctabout_http_proxy_rule_3', 'ext_fctabout_http_proxy_rule_5'));
 
 --
 -- Create all the VHOST entries for an endpoint

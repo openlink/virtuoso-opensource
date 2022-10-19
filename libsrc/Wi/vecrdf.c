@@ -813,6 +813,8 @@ rbs_string_range (dtp_t ** buf, int * len, int * is_string)
     *is_string = 0;
 }
 
+#define DT_MODE_MASK(v) ~((DT_TYPE_DATE == DT_DT_TYPE((v))) ? DT_PRINT_MODE_HMS : ((DT_TYPE_TIME == DT_DT_TYPE((v))) ? DT_PRINT_MODE_YMD : 0))
+
 extern int rb_type__xsd_boolean;
 
 void
@@ -864,6 +866,7 @@ bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot_
                     char temp[100];
                     int mode = DT_PRINT_MODE_XML | dt_print_flags_of_rb_type (rb->rb_type);
                     int save = dc->dc_n_values;
+                    mode &= DT_MODE_MASK(rb->rb_box);
                     dc->dc_n_values = set;
                     dt_to_iso8601_string_ext (rb->rb_box, temp, sizeof (temp), mode);
                     dc_append_box (dc, box_dv_short_string (temp));
@@ -937,7 +940,7 @@ bif_iri_to_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
   cl_req_group_t * clrg;
   cucurbit_t * cu;
   int is_cl = CL_RUN_CLUSTER == cl_run_local_only;
-  if (1 != n_args)
+  if (1 != n_args || !rdf_rpid64_mode)
     {
       *err_ret = BIF_NOT_VECTORED;
       return;

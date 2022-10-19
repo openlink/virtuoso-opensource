@@ -2739,6 +2739,8 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag)
 	  if (flag == CV_THIS_SET_ONLY && qi->qi_query->qr_proc_vectored)
 	    {
 	      data_col_t *dc = QST_BOX (data_col_t *, qst, ins->_.artm.result->ssl_index);
+              if (dc->dc_any_null)
+                dc_ensure_null_bits (dc);
 	      DC_CLR_NULL (dc, qi->qi_set);
 	      break;
 	    }

@@ -55,14 +55,18 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
 
     case SQL_HANDLE_ENV:
       cli_dbg_printf (("SQLAllocHandle(ENV, ...) called\n"));
+      if (inputHandle)
+        return SQL_INVALID_HANDLE;
       return virtodbc__SQLAllocEnv ((SQLHENV *) outputHandlePtr);
 
     case SQL_HANDLE_DBC:
       cli_dbg_printf (("SQLAllocHandle(DBC, ...) called\n"));
+      ASSERT_HANDLE_TYPE (inputHandle, SQL_HANDLE_ENV);
       return virtodbc__SQLAllocConnect ((SQLHENV) inputHandle, (SQLHDBC *) outputHandlePtr);
 
     case SQL_HANDLE_STMT:
       cli_dbg_printf (("SQLAllocHandle(STMT, ...) called\n"));
+      ASSERT_HANDLE_TYPE (inputHandle, SQL_HANDLE_DBC);
       return virtodbc__SQLAllocStmt ((SQLHDBC) inputHandle, (SQLHSTMT *) outputHandlePtr);
 
     case SQL_HANDLE_DESC:
@@ -71,8 +75,7 @@ virtodbc__SQLAllocHandle (SQLSMALLINT handleType,
 
     default:
       cli_dbg_printf (("SQLAllocHandle(UNKNOWN, ...) called\n"));
-      break;
-
+      return SQL_ERROR;
     }
 
   return (SQL_SUCCESS);
@@ -85,6 +88,8 @@ SQLRETURN SQL_API
 SQLFreeHandle (SQLSMALLINT handleType,
     SQLHANDLE handle)
 {
+  ASSERT_HANDLE_TYPE (handle, handleType);
+
   return virtodbc__SQLFreeHandle (handleType, handle);
 }
 
@@ -116,7 +121,7 @@ virtodbc__SQLFreeHandle (SQLSMALLINT handleType,
 
     default:
       cli_dbg_printf (("SQLFreeHandle(UNKNOWN, ...) called\n"));
-      break;
+      return SQL_ERROR;
     }
 
   return (SQL_SUCCESS);
@@ -132,8 +137,9 @@ SQLSetEnvAttr (SQLHENV environmentHandle,
     SQLINTEGER StringLength)
 {
   ENV (env, environmentHandle);
-  if (!env)
-    return (SQL_INVALID_HANDLE);
+
+  ASSERT_HANDLE_TYPE (environmentHandle, SQL_HANDLE_ENV);
+
   set_error (&env->env_error, NULL, NULL, NULL);
 
   switch (Attribute)
@@ -204,8 +210,7 @@ SQLGetEnvAttr (SQLHENV environmentHandle,
 {
   ENV (env, environmentHandle);
 
-  if (!env)
-    return (SQL_INVALID_HANDLE);
+  ASSERT_HANDLE_TYPE (environmentHandle, SQL_HANDLE_ENV);
 
   set_error (&env->env_error, NULL, NULL, NULL);
 
@@ -389,6 +394,8 @@ SQLGetDiagRec (SQLSMALLINT HandleType,
   SQLCHAR szSqlState[6];
   SQLRETURN rc;
   cli_connection_t *conn;
+
+  ASSERT_HANDLE_TYPE (Handle, HandleType);
 
   switch (HandleType)
     {
@@ -679,6 +686,8 @@ SQLGetDiagField (SQLSMALLINT nHandleType,
   STMT (stmt, Handle);
   DESC (desc, Handle);
 
+  ASSERT_HANDLE_TYPE (Handle, nHandleType);
+
   switch (nDiagIdentifier)
     {
     case SQL_DIAG_DYNAMIC_FUNCTION:
@@ -883,6 +892,8 @@ SQLGetStmtAttr (SQLHSTMT statementHandle,
     SQLINTEGER BufferLength,
     SQLINTEGER * StringLengthPtr)
 {
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
+
   return virtodbc__SQLGetStmtAttr (statementHandle, Attribute, ValuePtr, BufferLength, StringLengthPtr);
 }
 
@@ -1079,6 +1090,8 @@ SQLSetStmtAttr (SQLHSTMT statementHandle,
     SQLPOINTER ValuePtr,
     SQLINTEGER StringLength)
 {
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
+
   return virtodbc__SQLSetStmtAttr (statementHandle, Attribute, ValuePtr, StringLength);
 }
 
@@ -1178,6 +1191,9 @@ SQLSetConnectAttr (SQLHDBC connectionHandle,
     SQLINTEGER StringLength)
 {
   CON (con, connectionHandle);
+
+  ASSERT_HANDLE_TYPE (connectionHandle, SQL_HANDLE_DBC);
+
   switch (Attribute)
     {
     case SQL_CURRENT_QUALIFIER:
@@ -1255,6 +1271,7 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     case SQL_ATTR_MAX_ROWS:
       cli_dbg_printf (("SQLGetConnectAttr(..., MAX_ROWS, ...) called\n"));
       *((SQLUINTEGER *) ValuePtr) = con->con_max_rows;
+      break;
 
       /* ODBC 2 */
     case SQL_ATTR_TRACEFILE:
@@ -1266,6 +1283,8 @@ virtodbc__SQLGetConnectAttr (SQLHDBC connectionHandle,
     case SQL_NO_CHAR_C_ESCAPE:
       if (StringLengthPtr)
 	*StringLengthPtr = SQL_NTS;
+      /*FALLTHROUGH*/
+
     case SQL_ATTR_ACCESS_MODE:
     case SQL_ATTR_AUTOCOMMIT:
     case SQL_ATTR_ODBC_CURSORS:
@@ -1302,6 +1321,9 @@ SQLGetConnectAttr (SQLHDBC connectionHandle,
     SQLINTEGER * StringLengthPtr)
 {
   CON (con, connectionHandle);
+
+  ASSERT_HANDLE_TYPE (connectionHandle, SQL_HANDLE_DBC);
+
   switch (Attribute)
     {
     case SQL_ATTR_CURRENT_CATALOG:
@@ -2564,6 +2586,9 @@ SQLGetDescField (SQLHDESC descriptorHandle,
     SQLINTEGER * StringLengthPtr)
 {
   DESC (desc, descriptorHandle);
+
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
+
   switch (FieldIdentifier)
     {
     case SQL_DESC_NAME:
@@ -2844,6 +2869,9 @@ SQLSetDescField (SQLHDESC descriptorHandle,
     SQLINTEGER BufferLength)
 {
   DESC (desc, descriptorHandle);
+
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
+
   switch (FieldIdentifier)
     {
     case SQL_DESC_LITERAL_PREFIX:
@@ -2926,14 +2954,18 @@ SQLGetDescRec (SQLHDESC descriptorHandle,
 {
   SQLRETURN rc;
   DESC (desc, descriptorHandle);
-  NDEFINE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection, SQLSMALLINT);
 
-  NMAKE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
+  ASSERT_HANDLE_TYPE (descriptorHandle, SQL_HANDLE_DESC);
+  {
+    NDEFINE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection, SQLSMALLINT);
 
-  rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName,
-      _pcbName, TypePtr, SubTypePtr, LengthPtr, PrecisionPtr, ScalePtr, NullablePtr);
+    NMAKE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
 
-  NSET_AND_FREE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
+    rc = virtodbc__SQLGetDescRec (descriptorHandle, RecNumber, szName, _cbName,
+	_pcbName, TypePtr, SubTypePtr, LengthPtr, PrecisionPtr, ScalePtr, NullablePtr);
+
+    NSET_AND_FREE_OUTPUT_CHAR_NARROW (Name, desc->d_stmt->stmt_connection);
+  }
 
   return rc;
 }
@@ -2955,6 +2987,8 @@ SQLSetDescRec (SQLHDESC arg0,
 {
   cli_dbg_printf (("SQLSetDescRec called\n"));
 
+  ASSERT_HANDLE_TYPE (arg0, SQL_HANDLE_DESC);
+
   return (SQL_SUCCESS);
 }
 
@@ -2967,6 +3001,9 @@ SQLCopyDesc (SQLHDESC arg0,
 {
   DESC (desc, arg1);
   cli_dbg_printf (("SQLCopyDesc called\n"));
+
+  ASSERT_HANDLE_TYPE (arg0, SQL_HANDLE_DESC);
+  ASSERT_HANDLE_TYPE (arg1, SQL_HANDLE_DESC);
 
   set_error (&desc->d_stmt->stmt_connection->con_environment->env_error, "IM001", "CL026", "Driver does not support this function");
 
@@ -2989,6 +3026,8 @@ SQLColAttribute (SQLHSTMT statementHandle,
 #endif
     )
 {
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
+
   return virtodbc__SQLColAttribute (statementHandle,
       ColumnNumber, FieldIdentifier, CharacterAttributePtr, BufferLength, StringLengthPtr, NumericAttributePtr);
 }
@@ -3121,6 +3160,9 @@ SQLEndTran (SQLSMALLINT handleType,
     SQLSMALLINT completionType)
 {
   cli_dbg_printf (("SQLEndTran called\n"));
+
+  ASSERT_HANDLE_TYPE (Handle, handleType);
+
   switch (handleType)
     {
     case SQL_HANDLE_DBC:
@@ -3160,8 +3202,7 @@ SQLBulkOperations (SQLHSTMT statementHandle,
 {
   STMT (stmt, statementHandle);
 
-  if (!statementHandle)
-    return (SQL_INVALID_HANDLE);
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
 
   switch (Operation)
     {
@@ -3197,8 +3238,7 @@ SQLFetchScroll (SQLHSTMT statementHandle,
   STMT (stmt, statementHandle);
   cli_dbg_printf (("SQLFetchScroll called\n"));
 
-  if (!stmt)
-    return (SQL_INVALID_HANDLE);
+  ASSERT_HANDLE_TYPE (statementHandle, SQL_HANDLE_STMT);
 
   stmt->stmt_fetch_mode = FETCH_EXT;
 
@@ -3220,6 +3260,8 @@ SQLRETURN SQL_API
 SQLCloseCursor (SQLHSTMT hstmt)
 {
   STMT (stmt, hstmt);
+
+  ASSERT_HANDLE_TYPE (hstmt, SQL_HANDLE_STMT);
 
   if (stmt->stmt_compilation && stmt->stmt_compilation->sc_is_select)
     return virtodbc__SQLFreeStmt (hstmt, SQL_CLOSE);

@@ -131,8 +131,4 @@ public class VirtResSetQIter implements ClosableIterator<Quad> {
     }
 
 
-    protected void finalize() throws SQLException {
-        if (!v_finished && v_curTriples != null) close();
-    }
-
 }

@@ -1,0 +1,134 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix	gql: <http://www.openlinksw.com/schemas/graphql#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix : <http://www.openlinksw.com/schemas/graphql/intro#> .
+@prefix gqi: <http://www.openlinksw.com/schemas/graphql/intro#> .
+@prefix r: <http://example.org/region/> .
+@prefix c: <http://example.org/country/> .
+
+### GraphQL introspection dataset for CCISO data
+
+:__schema :types r:region, c:country, r:countries, r:updateRegion, c:insertCountry, c:regionInput .
+:Query :fields r:region, r:regions, c:country, r:countries .
+:Mutation :fields r:updateRegion, c:insertCountry, c:deleteCountry .
+
+### Country & Region typedef
+
+r:updateRegion rdf:type gql:Object ;
+        gql:rdfClass r:Region ;
+        :name "updateRegion" ;
+        :kind "OBJECT" ;
+        :type [ :kind "OBJECT" ; :name "region" ; :ofType rdf:nil ] ;
+        :args [ :name "code" ; :type [ :kind "NON_NULL" ; :ofType :String  ] ];
+        :args r:ccode ;
+        :args r:name ;
+        :args r:population ;
+        :description "Modify Geographical region" ;
+        :fields r:code, r:ccode, r:name, r:countries, r:population .
+
+c:insertCountry rdf:type gql:Object ;
+        gql:rdfClass c:Country ;
+        :name "insertCountry" ;
+        :kind "OBJECT" ;
+        :type [ :kind "OBJECT" ; :name "country" ; :ofType rdf:nil ] ;
+        :args [ :name "code" ; :type [ :kind "NON_NULL" ; :ofType :String  ] ];
+        :args c:code3 ;
+        :args c:name ;
+        :args c:country_code ;
+        :args [ :name "region"; :type [ :kind "NON_NULL" ; :ofType :String  ] ];
+        #:args [ :name "region"; :type c:regionInput ] ;
+        :description "Modify Country" ;
+        :fields c:code, c:code3, c:name, c:country_code, r:region .
+
+c:deleteCountry rdf:type gql:Object ;
+        gql:rdfClass c:Country ;
+        :name "deleteCountry" ;
+        :kind "OBJECT" ;
+        :type [ :kind "OBJECT" ; :name "country" ; :ofType rdf:nil ] ;
+        :args [ :name "code" ; :type [ :kind "NON_NULL" ; :ofType :String  ] ];
+        :description "Delete Country" ;
+        :fields c:code .
+
+c:regionInput rdf:type gql:Object ;
+        :name "regionInput";
+        :kind "INPUT_OBJECT";
+        :inputFields r:name, r:code, r:population, r:ccode .
+
+c:country rdf:type gql:Object ;
+        :name "country" ;
+        :kind "OBJECT" ;
+        :type [ :kind "OBJECT" ; :name "country" ; :ofType rdf:nil ] ;
+        :args [ :name "code" ; :type [ :kind "NON_NULL" ; :ofType :String  ] ];
+        :description "Country object with references to ISO codes" ;
+        :fields c:iri, c:code, c:country_code, c:name, c:code3, r:region .
+
+r:countries rdf:type gql:Array ;
+        :name "countries" ;
+        :kind "OBJECT" ;
+        :type [ :kind "LIST" ; :ofType c:country ] ;
+        :args [ :name "code" ; :type [ :kind "LIST" ; :ofType :String ] ] ;
+        :args [ :name "region" ; :type [ :kind "LIST" ; :ofType :String ] ] ;
+        :description "List of Countries" ;
+        :isDeprecated "false"^^xsd:boolean  ;
+        :fields c:iri, c:code, c:country_code, c:name, c:code3 .
+
+c:code rdf:type gql:Scalar ;
+      :name "code" ;
+      :type :String .
+
+c:code3 rdf:type gql:Scalar ;
+      :name "code3" ;
+      :type :String .
+
+c:name rdf:type gql:Scalar ;
+      :name "name" ;
+      :type :String .
+
+c:country_code rdf:type gql:Scalar ;
+      :name "country_code" ;
+      :type :Int .
+
+c:iri rdf:type gql:Scalar ;
+      :name "iri" ;
+      :type :IRI .
+
+
+r:region rdf:type gql:Object ;
+        :name "region" ;
+        :kind "OBJECT" ;
+        :type [ :kind "OBJECT" ; :name "region" ; :ofType rdf:nil ] ;
+        :args [ :name "code" ; :type :String ];
+        :description "Geographical region" ;
+        :fields r:iri, r:code, r:ccode, r:name, r:countries, r:population .
+
+r:regions rdf:type gql:Array ;
+        :name "regions" ;
+        :kind "OBJECT" ;
+        :type [ :kind "LIST" ; :ofType r:region ] ;
+        :args [ :name "code" ; :type [ :kind "LIST" ; :ofType :String ] ] ;
+        :description "List of geographical regions" ;
+        :fields r:iri, r:code, r:ccode, r:name, r:countries, r:population .
+
+r:iri rdf:type gql:Scalar ;
+      :name "iri" ;
+      :type :IRI .
+
+r:code rdf:type gql:Scalar ;
+      :name "code" ;
+      :type :String .
+
+r:ccode rdf:type gql:Scalar ;
+      :name "ccode" ;
+      :type :Int .
+
+r:population rdf:type gql:Scalar ;
+      :name "population" ;
+      :type :Float .
+
+r:name rdf:type gql:Scalar ;
+      :name "name" ;
+      :type :String .
+
+### EOF Country & Region typedef

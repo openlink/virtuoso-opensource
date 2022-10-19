@@ -211,3 +211,4 @@ EXPORTS
 	http_ses_size			@690
 	log_proc_overwrite		@691
 	rdtsc				@692
+	spar_unescape_strliteral	@693

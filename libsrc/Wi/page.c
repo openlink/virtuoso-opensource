@@ -913,13 +913,16 @@ void
 buf_order_ck (buffer_desc_t * buf)
 {
   int inx;
-  page_map_t * pm = buf->bd_content_map;
+  page_map_t *pm = buf->bd_content_map;
   if (buf->bd_tree->it_key->key_is_geo)
-    return; /* key order criteria do not apply */
+    return;			/* key order criteria do not apply */
   for (inx = 0; inx < pm->pm_count - 1; inx++)
     {
       if (DVC_LESS != buf_row_compare (buf, inx, buf, inx + 1, 1))
-	GPF_T1 ("insert not in order");
+	{
+	  log_error ("Broken index: %s", buf->bd_tree->it_key->key_name);
+	  GPF_T1 ("insert not in order");
+	}
     }
 }
 

@@ -1970,6 +1970,8 @@ sec_user_read_groups (char *name)
     user->usr_g_ids = NULL;
 }
 
+int64 users_cache_sz = 101;
+
 void
 sec_read_users (void)
 {
@@ -1985,7 +1987,7 @@ sec_read_users (void)
 
   if (!sec_users)
     {
-      sec_users = id_str_hash_create (101);
+      sec_users = id_str_hash_create (users_cache_sz);
       sec_user_by_id = hash_table_allocate (101);
 
       read_users_qr = sql_compile_static (

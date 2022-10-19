@@ -36,5 +36,7 @@ extern int cmp_like (const char *string, const char *pattern, collation_t *colla
 extern unsigned char *nc_strstr (const unsigned char *string1, const unsigned char *string2);
 extern wchar_t *nc_strstr__wide (const wchar_t *string1, const wchar_t *string2);
 
+#define ncs_strstr(x,y) nc_strstr ((unsigned char*)(x), (unsigned char*)(y))
+
 
 #endif /* _WI_STRLIKE_H */

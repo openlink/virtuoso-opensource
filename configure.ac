@@ -30,7 +30,7 @@ AC_PREREQ(2.59)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[7])
+m4_define(vos_patch,	[8])
 m4_define(vos_devel,	[])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
@@ -1467,6 +1467,31 @@ AC_SUBST(SHAPEFILEIO_LIBS)
 
 ##########################################################################
 #                                                                        #
+# graphql  								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(graphql, [dnl
+AC_HELP_STRING([--enable-graphql(=DIR)], [enable the graphql plugin (default)])
+AC_HELP_STRING([--disable-graphql], [disable the graphql plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_graphql="yes" ;;
+       no)	with_graphql="no" ;;
+       /*)	with_graphql="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-graphql) ;;
+     esac
+  ],
+  [ with_graphql="yes" ]
+)
+
+AM_CONDITIONAL(WITH_GRAPHQL, test "x$with_graphql" != "xno" )
+AC_SUBST(GRAPHQL_CPPFLAGS)
+AC_SUBST(GRAPHQL_LDFLAGS)
+AC_SUBST(GRAPHQL_LIBS)
+
+
+##########################################################################
+#                                                                        #
 # HSLookup								 #
 #                                                                        #
 ##########################################################################
@@ -2893,6 +2918,20 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)
   [ with_tutorial_vad="no" ]
 )
 
+AC_ARG_ENABLE(websockets-vad, [dnl
+AC_HELP_STRING([--enable-websockets-vad], [enable Websockets Demo vad package])
+AC_HELP_STRING([--disable-websockets-vad], [disable Websockets Demo vad package (default)])dnl
+], [
+     case "${enableval}" in
+       yes)	with_websockets_vad="yes";;
+       no)	with_websockets_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-websockets-vad) ;;
+     esac
+  ],
+  [ with_websockets_vad="no" ]
+)
+
+
 
 AC_ARG_ENABLE(all-vads, [dnl
 AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
@@ -2920,6 +2959,7 @@ then
     with_sparqldemo_vad="$with_all_vad"
     with_syncml_vad="$with_all_vad"
     with_tutorial_vad="$with_all_vad"
+    with_websockets_vad="$with_all_vad"
 fi
 
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
@@ -2934,6 +2974,7 @@ AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
 AM_CONDITIONAL(WITH_SPARQLDEMO_VAD, test "x$with_sparqldemo_vad" = "xyes")
 AM_CONDITIONAL(WITH_SYNCML_VAD, test "x$with_syncml_vad" = "xyes")
 AM_CONDITIONAL(WITH_TUTORIAL_VAD, test "x$with_tutorial_vad" = "xyes")
+AM_CONDITIONAL(WITH_WEBSOCKETS_VAD, test "x$with_websockets_vad" = "xyes")
 
 
 
@@ -3157,6 +3198,7 @@ AC_CONFIG_FILES([
 	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
 	binsrc/fct/Makefile
+	binsrc/graphql/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile
@@ -3179,6 +3221,7 @@ AC_CONFIG_FILES([
 	binsrc/rdf_mappers/Makefile
 	binsrc/rdb2rdf/Makefile
 	binsrc/rdf4j/Makefile
+	binsrc/rdf4j_4/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile
@@ -3188,6 +3231,7 @@ AC_CONFIG_FILES([
 	binsrc/samples/odp/Makefile
 	binsrc/samples/sparql_demo/Makefile
 	binsrc/samples/wbxml2/Makefile
+	binsrc/samples/websocket/Makefile
 	binsrc/samples/webapp/Makefile
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile

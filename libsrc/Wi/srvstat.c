@@ -420,6 +420,7 @@ extern int dbf_max_itc_samples;
 extern int32 c_pcre_match_limit;
 extern int32 c_pcre_match_limit_recursion;
 extern int32 pcre_max_cache_sz;
+extern int64 users_cache_sz;
 
 extern int32 shcompo_max_cache_sz;
 
@@ -471,7 +472,7 @@ long st_started_since_month;
 long st_started_since_day;
 long st_started_since_hour;
 long st_started_since_minute;
-long st_sys_ram;
+int64 st_sys_ram;
 
 long st_chkp_remap_pages;
 long st_chkp_mapback_pages;
@@ -496,6 +497,8 @@ static long thr_cli_vdb;
 
 static long db_max_col_bytes = ROW_MAX_COL_BYTES;
 static long db_sizeof_wide_char = sizeof (wchar_t);
+
+extern int debug_invalid_iri_id;
 
 void
 process_status_report (void)
@@ -654,6 +657,7 @@ dbms_status_report (void)
  extern long tc_n_flush;
  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
   char * bp_curr_ts;
+  caddr_t bp_curr_pref;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
   if (1)
@@ -738,6 +742,11 @@ dbms_status_report (void)
 	      dbs->dbs_log_name ? dbs->dbs_log_name : "none",
 	      (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
   rep_printf ("%ld pages have been changed since last backup (in checkpoint state)\n", dbs_count_incbackup_pages (dbs));
+
+  bp_curr_pref = bp_curr_prefix ();
+  if (box_length (bp_curr_pref) > 0)
+    rep_printf ("Current backup prefix: %s\n", bp_curr_pref);
+  dk_free_box (bp_curr_pref);
 
   bp_curr_ts = bp_curr_timestamp ();
   rep_printf ("Current backup timestamp: %s\n", bp_curr_ts);
@@ -1235,30 +1244,30 @@ char *product_version_string ()
   return buf;
 }
 
-long
+int64
 get_total_sys_mem ()
 {
 #if defined (linux) || defined (SOLARIS)
-    long pages = sysconf(_SC_PHYS_PAGES);
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    return pages * page_size;
+  long pages = sysconf (_SC_PHYS_PAGES);
+  long page_size = sysconf (_SC_PAGE_SIZE);
+  return pages * page_size;
 #elif defined (__APPLE__)
-    int mib[2];
-    long physical_memory;
-    size_t length;
+  int mib[2];
+  size_t physical_memory;
+  size_t length;
 
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    length = sizeof(long);
-    sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    return physical_memory;
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  length = sizeof (physical_memory);
+  sysctl (mib, 2, &physical_memory, &length, NULL, 0);
+  return physical_memory;
 #elif defined (WIN32)
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof (status);
-    GlobalMemoryStatusEx (&status);
-    return status.ullTotalPhys;
+  MEMORYSTATUSEX status;
+  status.dwLength = sizeof (status);
+  GlobalMemoryStatusEx (&status);
+  return status.ullTotalPhys;
 #else
-    return 0;
+  return 0;
 #endif
 }
 
@@ -1702,7 +1711,7 @@ stat_desc_t stat_descs [] =
     {"st_started_since_hour", &st_started_since_hour, NULL},
     {"st_started_since_minute", &st_started_since_minute, NULL},
 
-    {"st_sys_ram", &st_sys_ram, NULL},
+    {"st_sys_ram", &st_sys_ram, SD_INT64},
 
     {"prof_on", &prof_on, NULL},
     {"prof_start_time", &prof_start_time, NULL},
@@ -1906,7 +1915,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
     {"enable_sslr_check", (long *)&enable_sslr_check, SD_INT32},
-    {"chash_space_avail", (long *)&chash_space_avail},
+    {"chash_space_avail", (long *)&chash_space_avail, SD_INT64},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
     {"enable_ksp_fast", (long *)&enable_ksp_fast, SD_INT32},
@@ -1939,12 +1948,11 @@ stat_desc_t dbf_descs [] =
     {"mp_sparql_cap", &mp_sparql_cap, NULL},
     {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
-    { "tn_max_memory",  (long *)&tn_max_memory, NULL},
-    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},
-    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},
-    {"tn_mem_cutoff", (long *)&tn_mem_cutoff, NULL},
-    {"tn_at_card_cutoff", (long *)&tn_at_card_cutoff, NULL},
-    {"tn_card_cutoff", (long *)&tn_card_cutoff, NULL},
+    {"tn_max_memory",  (long *)&tn_max_memory, SD_INT64},
+    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, SD_INT64},
+    {"tn_mem_cutoff", (long *)&tn_mem_cutoff, SD_INT64},
+    {"tn_at_card_cutoff", (long *)&tn_at_card_cutoff, SD_INT64},
+    {"tn_card_cutoff", (long *)&tn_card_cutoff, SD_INT64},
     {"dbf_max_itc_samples", (long *)&dbf_max_itc_samples, SD_INT32},
     {"enable_mt_ft_inx", (long *)&enable_mt_ft_inx, SD_INT32},
     {"disable_rdf_init", (long *)&disable_rdf_init, SD_INT32},
@@ -1967,13 +1975,15 @@ stat_desc_t dbf_descs [] =
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
-  {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
+    {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
+    {"debug_invalid_iri_id", &debug_invalid_iri_id, SD_INT32},
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
     {"enable_spar_logfile", (long *) &enable_spar_logfile, SD_INT32},
     {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
+    {"users_cache_sz", &users_cache_sz, SD_INT64},
     {NULL, NULL, NULL}
   };
 

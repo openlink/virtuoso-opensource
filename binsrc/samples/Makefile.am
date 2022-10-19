@@ -18,7 +18,7 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #  
 #  
-SUBDIRS = demo hslookup image_magick JDBC odp sparql_demo webapp xpath xquery wbxml2
+SUBDIRS = demo hslookup image_magick JDBC odp sparql_demo webapp xpath xquery wbxml2 websocket
 
 
 # ----------------------------------------------------------------------

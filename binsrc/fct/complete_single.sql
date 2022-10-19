@@ -38,6 +38,9 @@ urilbl_ac_init_db ()
 	  goto cont;
         }
 
+      if (not isstring (o_str))
+        goto cont;
+
       n_ins := n_ins + 1;
 
       o_str := "LEFT"(o_str, 512);

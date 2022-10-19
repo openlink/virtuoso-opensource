@@ -3910,6 +3910,8 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	ST *prime = NULL;
 	int inx;
 	caddr_t *cols = (caddr_t *) tree->_.table_def.cols;
+	if (tree->_.table_def.if_not_exists && sch_name_to_table (wi_inst.wi_schema, tree->_.table_def.name))
+	  break;
 	for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
 	  {
 	    if (!cols[inx])
@@ -4038,7 +4040,8 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 
 	tb = qi_name_to_table (qi, tree->_.index.table);
 	tb_name = tb ? tb->tb_name : tree->_.index.table;
-
+	if (tree->_.index.if_not_exists && sch_table_key (wi_inst.wi_schema, tb_name, tree->_.index.name, 0))
+	  break;
 	ddl_index_def (qi, tree->_.index.name, tb_name,
 	  tree->_.index.cols, tree->_.index.opts);
 	break;
@@ -4056,9 +4059,16 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
       ddl_rename_table (qi, tree->_.op.arg_1, tree->_.op.arg_2);
       break;
     case INDEX_DROP:
-      ddl_drop_index (state, tree->_.op.arg_2, tree->_.op.arg_1, 1);
-      break;
+      {
+	key_id_t key_id = ddl_key_name_to_id (qi, tree->_.op.arg_1, NULL);
+	if (tree->_.op.arg_3 && !sch_id_to_key (wi_inst.wi_schema, key_id))
+	  break;
+	ddl_drop_index (state, tree->_.op.arg_2, tree->_.op.arg_1, 1);
+	break;
+      }
     case TABLE_DROP:
+      if (tree->_.op.arg_2 && !sch_name_to_table (wi_inst.wi_schema, tree->_.table_def.name))
+	break;
       ddl_drop_table (qi, tree->_.op.arg_1);
       break;
 

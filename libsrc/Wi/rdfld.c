@@ -122,6 +122,8 @@ cu_rl_local_exec (cucurbit_t * cu)
   cl_req_group_t *clrg = cu->cu_clrg;
   QNCAST (query_instance_t, qi, cu->cu_qst);
   cll_in_box_t *clib;
+  if (!rdf_rpid64_mode)
+    sqlr_new_error ("42000", "CL...", "Can not use dpipe IRI operations before upgrading the RDF_IRI table to 64-bit prefix IDs");
   if (!clrg->clrg_clibs)
     return;			/* this is possible if all rows in dpipe are without lits with id  and all iris came from cache, so iriu resolutions or literals with id */
   clib = (cll_in_box_t *) clrg->clrg_clibs->data;
@@ -927,6 +929,8 @@ bif_rl_dp_ids (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   save = cu->cu_ready_cb;
   cu->cu_ready_cb = NULL; /* local exec, CBs are for clustered operation */
   cu_rl_local_exec (cu);
+  if (cu->cu_fill > dc_max_batch_sz)
+    sqlr_new_error ("42000", "RLD01",  "Too many row in vectored batch (%d), exceeds max vector length %d", cu->cu_fill, dc_max_batch_sz);
   cu_rl_cols (cu, g_iid);
   cu->cu_ready_cb = save;
   return NULL;

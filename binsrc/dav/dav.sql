@@ -34,6 +34,8 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
 
   _path := DB.DBA.DAV_CONCAT_PATH ('/', DB.DBA.DAV_CONCAT_PATH (path, '/'));
   _path_id := DB.DBA.DAV_SEARCH_ID (_path, 'C');
+
+  -- CalDAV OPTIONS method specific, need code review
   if (DB.DBA.DAV_HIDE_ERROR (_path_id) is not null)
   {
     _det := DB.DBA.DAV_DET_NAME (_path_id);
@@ -65,6 +67,7 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
   _etag := '';
   _ldp_head := '';
 
+  -- LDP/Etag specifics for DETs
   if (DB.DBA.DAV_HIDE_ERROR (_path_id) is not null)
   {
     -- Collection
@@ -99,24 +102,17 @@ create procedure WS.WS."OPTIONS" (in path varchar, inout params varchar, in line
   }
 
 not_found: ;
-  declare headers, acceptPatch, acceptPost, msAuthor any;
+  declare headers, msAuthor any;
 
-  http_methods_set ('COPY', 'DELETE', 'GET', 'HEAD', 'LOCK', 'MKCOL', 'MOVE', 'OPTIONS', 'PATCH', 'POST', 'PROPFIND', 'PROPPATCH', 'PUT', 'TRACE', 'UNLOCK');
+  -- Common case, pure WebDAV or pre-flight to SPARQL endpoint
+  http_methods_set ('COPY', 'DELETE', 'GET', 'HEAD', 'LOCK', 'MKCOL', 'MOVE',
+      'OPTIONS', 'PATCH', 'POST', 'PROPFIND', 'PROPPATCH', 'PUT', 'TRACE', 'UNLOCK');
   WS.WS.GET (path, params, lines);
   http_rewrite ();
-
   headers := http_header_array_get ();
-  acceptPatch := WS.WS.FINDPARAM (headers, 'Accept-Patch');
-  if (acceptPatch <> '')
-    acceptPatch := sprintf ('Accept-Patch: %s\r\n', acceptPatch);
-
-  acceptPost := WS.WS.FINDPARAM (headers, 'Accept-Post');
-  if (acceptPost <> '')
-    acceptPost := sprintf ('Accept-Post: %s\r\n', http_request_header (headers, 'Accept-Post', null, 'text/turtle, text/html, application/xhtml+xml, application/ld+json'));
   msAuthor := WS.WS.FINDPARAM (headers, 'MS-Author-Via');
   if (msAuthor <> '')
     msAuthor := sprintf ('MS-Author-Via: %s\r\n', http_request_header (headers, 'MS-Author-Via', null, 'DAV'));
-
   DB.DBA.DAV_SET_HTTP_STATUS (204);
   http_header (
     'X-Powered-By: Virtuoso Universal Server ' || sys_stat ('st_dbms_ver') || '\r\n' ||
@@ -124,14 +120,7 @@ not_found: ;
     'DAV: 1,2,<http://www.openlinksw.com/virtuoso/webdav/1.0>\r\n' ||
     _ldp_head ||
     'Access-Control-Allow-Methods: COPY, DELETE, GET, HEAD, LOCK, MOVE, MKCOL, OPTIONS, PATCH, POST, PROPFIND, PROPPATCH, PUT, TRACE, UNLOCK\r\n' ||
-    'Access-Control-Allow-Headers: Accept, Authorization, Content-Length, Content-Type, Depth, If-None-Match, Link, Location, On-Behalf-Of, Origin, WebID-TLS, Slug, X-Requested-With\r\n' ||
-    'Access-Control-Expose-Headers: Accept-Patch, Accept-Post, Access-Control-Allow-Headers, Access-Control-Allow-Methods, Access-Control-Allow-Origin, Allow, Authorization, Content-Length, Content-Type, ETag, Last-Modified, Link, Location, Updates-Via, User, Vary, WAC-Allow, WWW-Authenticate\r\n' ||
-    'Access-Control-Allow-Credentials: true\r\n' ||
-    'Access-Control-Max-Age: 1728000\r\n' ||
-    acceptPatch ||
-    acceptPost ||
-    msAuthor
-  );
+    msAuthor);
 }
 ;
 
@@ -4149,9 +4138,14 @@ create procedure WS.WS.SPARQL_QUERY_GET (in content any, in full_path varchar, i
 create procedure WS.WS.SPARQL_QUERY_UPDATE (in content any, in full_path varchar, in path any, inout lines any)
 {
   declare params, data any;
+  declare document_uri, query_string varchar;
 
   connection_set ('SPARQLUserId', 'SPARQL_ADMIN');
-  params := vector ('query', string_output_string (content), 'default-graph-uri', WS.WS.DAV_IRI (full_path));
+  query_string := string_output_string (content);
+  document_uri := WS.WS.DAV_IRI (full_path);
+  if (regexp_match ('^(\\s+)?(base)\\s+<[^>]+>', query_string, 0, 'i') is null)
+    query_string := concat (sprintf ('BASE <%s> \n', document_uri), query_string);
+  params := vector ('query', query_string, 'default-graph-uri', document_uri);
   WS.WS."/!sparql/" (path, params, lines);
   data := http_get_string_output ();
   if (data like 'Virtuoso %')

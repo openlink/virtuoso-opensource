@@ -235,6 +235,8 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 
 %type <intval> opt_with_data
 %type <intval> base_table_opt
+%type <intval> opt_not_exists
+%type <intval> opt_if_exists
 %type <tree> base_table_def
 %type <tree> view_def
 %type <tree> view_def_select_and_opt
@@ -840,11 +842,20 @@ base_table_opt
 	| DISTINCT COLUMN { $$ = T_DISTINCT_COLUMNS; }
 	;
 
+opt_not_exists
+	:			{ $$ = 0; }
+	| IF NOT EXISTS		{ $$ = 1; }
+	;
+
+opt_if_exists
+	:			{ $$ = 0; }
+	| IF EXISTS		{ $$ = 1; }
+	;
 
 base_table_def
-	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt
-		{ $$ = t_listst (4, TABLE_DEF, $3,
-				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7); }
+	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt opt_not_exists
+		{ $$ = t_listst (5, TABLE_DEF, $3,
+				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7, (ptrlong) $8); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
 		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
 	;
@@ -1044,16 +1055,16 @@ opt_index_option_list
 
 create_index_def
 	: CREATE opt_index_option_list INDEX index
-		ON q_table_name '(' index_column_commalist ')'
-		{ $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), $2); }
+		ON q_table_name '(' index_column_commalist ')' opt_not_exists
+		{ $$ = t_listst (6, INDEX_DEF, $4, $6, t_list_to_array ($8), $2, (ptrlong) $10); }
 	| CREATE opt_index_option_list INDEX index
-	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list
+	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list opt_not_exists
 { ST * opts = (ST *) t_box_append_1  ((caddr_t) $2, (caddr_t) t_listst (5, PARTITION_DEF,  NULL, NULL, $11, t_list_to_array ($12)));
-		 $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), opts); }
+		 $$ = t_listst (6, INDEX_DEF, $4, $6, t_list_to_array ($8), opts, (ptrlong) $13); }
 	;
 
 drop_index
-	: DROP INDEX identifier opt_table   { $$ = t_listst (3, INDEX_DROP, $3, $4); }
+	: DROP INDEX identifier opt_table opt_if_exists  { $$ = t_listst (4, INDEX_DROP, $3, $4, $5); }
 	;
 
 opt_table
@@ -1062,8 +1073,8 @@ opt_table
 	;
 
 drop_table
-	: DROP TABLE q_table_name	{ $$ = t_listst (2, TABLE_DROP, $3); }
-	| DROP VIEW q_table_name	{ $$ = t_listst (2, TABLE_DROP, $3); }
+	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
+	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
 	;
 
 opt_col_add_column

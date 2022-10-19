@@ -32,8 +32,6 @@ public class VirtuosoUpdateRequest {
     private VirtGraph graph;
     private String virt_query;
 
-    java.sql.Statement stmt = null;
-
 
     public VirtuosoUpdateRequest(VirtGraph _graph) {
         graph = _graph;
@@ -46,6 +44,7 @@ public class VirtuosoUpdateRequest {
     }
 
     public void exec() {
+        java.sql.Statement stmt = null;
         try {
             stmt = graph.createStatement(true);
             for ( Iterator<String> iter = requests.iterator() ; iter.hasNext(); )

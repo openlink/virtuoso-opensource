@@ -1642,6 +1642,14 @@ bif_pldbg_stats_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) NEW_DB_NULL;
 }
 
+static caddr_t
+bif_pldbg_last_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long add_file_line = (long)(BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_last_line") : 1);
+  QNCAST (query_instance_t, qi, qst);
+  int line = add_file_line && qi->qi_query ? qi->qi_query->qr_line : 0;
+  return box_num (QI_LINE_NO (qi) + line);
+}
 
 void
 pldbg_init (void)
@@ -1650,6 +1658,7 @@ pldbg_init (void)
   bif_define ("pldbg_stats", bif_pldbg_stats);
   bif_define ("pldbg_stats_load", bif_pldbg_stats_load);
   bif_define ("pldbg_stats_clear", bif_pldbg_stats_clear);
+  bif_define ("pldbg_last_line", bif_pldbg_last_line);
 
   pldbg_mtx = mutex_allocate ();
   pldbg_brk_mtx = mutex_allocate ();
