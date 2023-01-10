@@ -54,7 +54,7 @@ the GUI in Administration Interface at http://127.0.0.1:8890/conductor/ under
 "WebDAV Administration / WebDAV services / Users Administrator" or use the SQL
 statement:
 
-update WS.WS.SYS_DAV_USER set U_PASSWORD='<new password>'
+update WS.WS.SYS_DAV_USER set U_PWD='<new password>'
 where U_NAME='<username>'
     
  -- Obey Arthur Liu <arthur@milliways.fr>  Tue, 22 Dec 2009 16:49:42 +0100
