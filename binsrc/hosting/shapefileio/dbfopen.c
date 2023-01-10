@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 2011-2022 OpenLink Software
+ *  Copyright (C) 2011-2023 OpenLink Software
  *
  *  The file is a modified version of source file of the Shapelib library.
  *  The original version was obtained via http://shapelib.maptools.org
