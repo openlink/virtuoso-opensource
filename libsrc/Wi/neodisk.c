@@ -48,7 +48,7 @@
 extern long tc_atomic_wait_2pc;
 extern int32 enable_flush_all;
 extern long tc_n_flush;
-long atomic_cp_msecs;
+int64 atomic_cp_msecs;
 long tc_dirty_at_cpt_start;
 sys_timer_t sti_cpt_atomic;
 sys_timer_t sti_cpt_sync;
@@ -99,9 +99,9 @@ long busy_pre_image_scrap;
 
 
 
-int32  cp_is_over = 0;
+time_msec_t  cp_is_over = 0;
 #ifdef CHECKPOINT_TIMING
-long start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0;
+time_msec_t start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0;
 #endif
 
 void
@@ -1331,7 +1331,7 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 {
   int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
   dp_addr_t initial_remaps = 0;
-  uint32 start_unremap, end_unremap;
+  time_msec_t start_unremap, end_unremap;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
   cpt_remap_free_logical_pages = cpt_reamp_free_physical_pages = cpt_reamp_free_pages = 0;
@@ -2024,7 +2024,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   sys_timer_t _atm;
   char dt_start[DT_LENGTH];
   int mcp_delta_count, inx;
-  long start_atomic;
+  time_msec_t start_atomic;
   uint32 start;
   FILE *checkpoint_flag_fd = NULL;
   if (!c_checkpoint_sync)
@@ -2039,7 +2039,7 @@ dbs_checkpoint (char *log_name, int shutdown)
 	  float rate = 0;
 	  int n_dirty = dbs_dirty_count (), dirty_after;
 	  long n_flush = tc_n_flush;
-	  uint32 start = get_msec_real_time ();
+	  time_msec_t start = get_msec_real_time ();
 	  bp_flush (NULL, 1);
 	  start = get_msec_real_time () - start;
 	  dirty_after = dbs_dirty_count ();
@@ -2099,7 +2099,7 @@ dbs_checkpoint (char *log_name, int shutdown)
     if (checkpoint_flag_fd != NULL)
       {
 	fprintf(checkpoint_flag_fd,
-		"If this file exists then a checkpoint started at %d "
+		"If this file exists then a checkpoint started at " BOXINT_FMT " "
 		"and has not finished yet",
 		get_msec_real_time ());
 	fclose(checkpoint_flag_fd);

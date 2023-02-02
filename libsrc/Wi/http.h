@@ -154,7 +154,7 @@ typedef struct ws_cached_connection_s
   {
     caddr_t 		host;	/*!< target host:port value */
     dk_session_t * 	ses;	/*!< cached session */
-    unsigned long	hit;		/*!< last hit in msecs */
+    time_msec_t	hit;		/*!< last hit in msecs */
     int			timeout;	/*!< max keep-alive timeout value */
   } ws_cached_connection_t;
 

@@ -50,7 +50,7 @@ int32 enable_batch_sz_reserve;
 int qp_thread_min_usec = 5000;
 int qp_range_split_min_rows = 20;
 int dc_init_sz = 10000;
-int32 dc_adjust_batch_sz_min_anytime = 12000;
+uint32 dc_adjust_batch_sz_min_anytime = 12000;
 int dc_default_var_len = 8;
 int32 dc_batch_sz = 10000;
 int32 dc_max_batch_sz = 100000 /*(1024 * 1024 * 4)  - 16 */ ;

@@ -1437,7 +1437,7 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   client_connection_t * cli = sqlc_client ();
   lock_trx_t * lt = cli->cli_trx;
   user_t * usr = cli->cli_user;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   int rpc_timeout = cli->cli_rpc_timeout;
   local_cursor_t * lc = NULL;
   caddr_t err = NULL;
@@ -1641,7 +1641,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
   client_connection_t * cli = sqlc_client ();
   lock_trx_t * lt = cli->cli_trx;
   user_t * usr = cli->cli_user;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   int rpc_timeout = cli->cli_rpc_timeout;
   query_t * proc;
   static query_t * call, *call2;
@@ -1848,8 +1848,9 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
 void
 sqlo_timeout_text_count ()
 {
-  int now = approx_msec_real_time (), inx;
-  static int last_time;
+  time_msec_t now = approx_msec_real_time ();
+  int inx;
+  static time_msec_t last_time;
   if (last_time && now - last_time < 60000)
     return;
   last_time = now;

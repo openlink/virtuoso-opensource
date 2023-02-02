@@ -3903,7 +3903,7 @@ ws_request (ws_connection_t * ws)
   static query_t * http_call = NULL;
 
   char p_name [PATH_ELT_MAX_CHARS + 20];
-  long start;
+  time_msec_t start;
   char * path1;
   caddr_t err;
   int rc;
@@ -4412,7 +4412,7 @@ error_in_procedure:
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
   if (prof_on && start)
-    prof_exec (NULL, p_name, get_msec_real_time () - start, PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
+    prof_exec (NULL, p_name, (long) (get_msec_real_time () - start), PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
   if (rc != LTE_OK)
     {
       MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
@@ -5202,9 +5202,9 @@ ws_keep_alive_ready (dk_session_t * ses)
 void
 http_timeout_keep_alives (int must_kill)
 {
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   long timeout = http_keep_alive_timeout * 1000;
-  long oldest_used = 0;
+  time_msec_t oldest_used = 0;
   dk_session_t * oldest = NULL;
   int n_killed = 0;
   dk_set_t clients = PrpcListPeers ();
@@ -6180,7 +6180,7 @@ http_cached_session (char * host)
 void
 remove_old_cached_sessions (void)
 {
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   if (!ws_proxy_cache)
     return;
   http_trace (("------ HTTP PROXY CACHED SESSIONS -----\n"));

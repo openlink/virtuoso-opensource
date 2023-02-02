@@ -51,7 +51,7 @@ log_dav (ws_connection_t * ws, int where)
 #if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
   struct tm tm1;
 #endif
- long msec = get_msec_real_time ();
+  time_msec_t msec = get_msec_real_time ();
 
   if (!debug_log || !ws)
     return;
@@ -67,11 +67,11 @@ log_dav (ws_connection_t * ws, int where)
 
   if (!where)
     {
-      snprintf (buf, sizeof (buf), ">>> [%s] [%s] [%ld] %s", ws->ws_client_ip, time_buf, msec, ws->ws_lines[0]);
+      snprintf (buf, sizeof (buf), ">>> [%s] [%s] [" BOXINT_FMT "] %s", ws->ws_client_ip, time_buf, msec, ws->ws_lines[0]);
     }
   else
     {
-      snprintf (buf, sizeof (buf), "<<< [%s] [%s] [%ld] %s\r\n", ws->ws_client_ip, time_buf, msec,
+      snprintf (buf, sizeof (buf), "<<< [%s] [%s] [" BOXINT_FMT "] %s\r\n", ws->ws_client_ip, time_buf, msec,
 	  ws->ws_status_line ? ws->ws_status_line : "HTTP/1.1 200 OK");
     }
 

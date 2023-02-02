@@ -1769,7 +1769,7 @@ stmt_start_scroll (client_connection_t * cli, srv_stmt_t * stmt,
   caddr_t volatile err = NULL;
   int is_timeout;
   cursor_state_t * volatile cs = NULL;
-  volatile long start = prof_on ? get_msec_real_time () : 0;
+  volatile time_msec_t start = prof_on ? get_msec_real_time () : 0;
 
   lock_trx_t *lt = cli->cli_trx;
   if (!STMT_IS_PL_CURSOR (stmt))
@@ -1889,7 +1889,7 @@ stmt_start_scroll (client_connection_t * cli, srv_stmt_t * stmt,
       DKST_RPC_DONE (IMMEDIATE_CLIENT);
       session_flush (IMMEDIATE_CLIENT); /* flush blob only after you've left the statement */
       if (start && prof_on)
-	prof_exec (stmt->sst_query, NULL, get_msec_real_time () - start,
+	prof_exec (stmt->sst_query, NULL, (long) (get_msec_real_time () - start),
 	    PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
       dk_free_tree (err);
     }

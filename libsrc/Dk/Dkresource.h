@@ -40,7 +40,7 @@ typedef struct resource_s
   uint32 		rc_fill;
   uint32 		rc_size;
   void **		rc_items;
-  uint32 *		rc_item_time;
+  time_msec_t *		rc_item_time;
   void *		rc_client_data;
   rc_constr_t 		rc_constructor;
   rc_destr_t 		rc_destructor;

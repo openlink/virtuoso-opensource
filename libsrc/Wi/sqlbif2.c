@@ -557,7 +557,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
   caddr_t score_box;
   float score;
   int save_qp = enable_qp;
-  float start_time, end_time;
+  time_msec_t start_time, end_time;
   local_cursor_t *lc_tim = NULL;
   query_t *qr = NULL;
   dbe_table_t *sys_cols_tb = sch_name_to_table (isp_schema (NULL), "DB.DBA.SYS_COLS");
@@ -574,7 +574,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
       stmt = COL_COUNT;
     }
   qr = sql_compile (stmt, cli, &err, SQLC_DEFAULT);
-  start_time = (float) get_msec_real_time ();
+  start_time = get_msec_real_time ();
   enable_qp = 1;
   for (inx = 0; inx < SQLO_NITERS; inx++)
     { /* repeat enough times as sys_cols is usually not very big */
@@ -589,7 +589,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
           break;
         }
     }
-  end_time = (float) get_msec_real_time ();
+  end_time = get_msec_real_time ();
   enable_qp = save_qp;
   qr_free (qr);
 
@@ -597,7 +597,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
   score = unbox_float (score_box);
   /*printf ("cu score = %f\n", score);*/
   dk_free_tree (score_box);
-  compiler_unit_msecs = (end_time - start_time) / (score * inx);
+  compiler_unit_msecs = (float)(end_time - start_time) / (score * inx);
   if (deflt_stmt && enable_vec_cost)
     compiler_unit_msecs /= 4.339062;
   sys_cols_tb->tb_count = old_tb_count;

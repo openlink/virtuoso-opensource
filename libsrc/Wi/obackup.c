@@ -832,7 +832,7 @@ backup_context_allocate(const char* fileprefix,
     {
       ctx->octx_dbs = wi_inst.wi_master;
       if (!restored)
-	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + approx_msec_real_time ();
+	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + (uint32) approx_msec_real_time ();
 
       ctx->octx_cpt_remap_r = hash_reverse (ctx->octx_dbs->dbs_cpt_remap);
       if (!ctx->octx_cpt_remap_r)

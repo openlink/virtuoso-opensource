@@ -157,8 +157,8 @@ typedef struct http_cli_ctx_s
   int               hcctx_retry_max;
   int               hcctx_method;
   int               hcctx_algorithm;
-  long              hcctx_req_start_time;
-  long              hcctx_req_time_msec;
+  time_msec_t       hcctx_req_start_time;
+  time_msec_t       hcctx_req_time_msec;
   long              hcctx_peer_max_timeout;
   int 		    hcctx_no_cached;
   uint32 	    hcctx_timeout;

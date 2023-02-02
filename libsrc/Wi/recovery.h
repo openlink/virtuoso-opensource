@@ -87,7 +87,7 @@ typedef struct ol_backup_context_s
   char *	octx_error_string;
 
   /* deadline time (in msecs) */
-  long		octx_deadline;
+  time_msec_t	octx_deadline;
 
   /* copy of wi_inst.wi_master->dbs_incbackup_set to rollback all changes over this set if error occurs (e.g. timeout). */
   buffer_desc_t *	octx_incset;

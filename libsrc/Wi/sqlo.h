@@ -487,7 +487,7 @@ struct sqlo_s
   df_elt_t *	so_crossed_oby; /* If placing exp and there is an oby that is crossed, then set this to be the oby so that the exp can be added to its deps */
   dk_set_t	so_crossed_setps;
   df_elt_t *	so_context_dt;
-  uint32	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
+  time_msec_t	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
   int32		so_max_layouts;
   int32		so_max_memory;
   int		so_nth_select_col; /* the position in select list for which an exp is being generated.  Used for adding dependent cols to oby when adding cols to dts  when doing ref from enclosing dt */
@@ -557,7 +557,7 @@ typedef struct tb_sample_s
   data_col_t *	smp_dcs;
   float		smp_card;
   float		smp_inx_card;
-  int		smp_time;
+  time_msec_t	smp_time;
   float *	smp_dep_sel; /* if contains samples on dependent cols, selectivity in order of dep conditions */
 } tb_sample_t;
 

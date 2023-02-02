@@ -140,7 +140,7 @@ void
 wi_free_schemas ()
 {
 #if !defined (PURIFY) && !defined (VALGRIND)
-  long now = approx_msec_real_time ();
+  time_msec_t now = approx_msec_real_time ();
   int any_freed;
   /* ASSERT_IN_MAP; */
   do

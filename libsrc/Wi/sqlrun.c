@@ -3610,7 +3610,7 @@ qn_without_ac_at (data_source_t * qn, qn_input_fn inp, caddr_t * inst, caddr_t *
 {
   QNCAST (QI, qi, inst);
   client_connection_t * cli = qi->qi_client;
-  int save_at = cli->cli_anytime_timeout_orig;
+  uint32 save_at = cli->cli_anytime_timeout_orig;
   int save_ac = cli->cli_row_autocommit;
   cli->cli_row_autocommit = 0;
   cli->cli_anytime_timeout_orig = cli->cli_anytime_timeout = 0;
@@ -4092,7 +4092,7 @@ qi_set_options (query_instance_t * qi, stmt_options_t * opts)
 }
 
 
-long last_exec_time;		/* used to know when the system is idle */
+time_msec_t last_exec_time;		/* used to know when the system is idle */
 
 
 int
@@ -4732,8 +4732,8 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   user_t * saved_user = cli->cli_user;
   caddr_t saved_qual = NULL;
 #ifdef PLDBG
-  long start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
-  long end_time;
+  time_msec_t start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
+  time_msec_t end_time;
 #endif
 
   QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, parms);
@@ -4940,8 +4940,8 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
   caddr_t saved_qual = NULL;
 #ifdef PLDBG
-  long start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
-  long end_time;
+  time_msec_t start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
+  time_msec_t end_time;
 #endif
 
   QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, NULL);

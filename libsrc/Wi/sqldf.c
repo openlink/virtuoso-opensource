@@ -6839,7 +6839,7 @@ int
 sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
 {
   /* every so often, see if the best plan's time is less than the time to compile so far. If so, no point in further scenarios */
-  uint32 now;
+  time_msec_t now;
   if (!so->so_best || !so->so_any_with_this_first)
 	return 0;
   if (sqlo_max_mp_size > 0 && THR_TMP_POOL->mp_bytes > (so->so_max_memory / 20) * 19)

@@ -4304,7 +4304,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   client_connection_t * cli = qi->qi_client;
   dk_session_t * ses;
   uint64 rt;
-  uint32 now;
+  time_msec_t now;
   /* milos: allocate memory for the comment structure */
   qr_comment_t comm;
 
@@ -4327,7 +4327,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   session_buffered_write_char (DV_DATETIME, ses);
   session_buffered_write (ses, (char*)cli->cli_start_dt, DT_LENGTH);
   /*1*/
-  print_int (now - cli->cli_start_time, ses);
+  print_int ((boxint) (now - cli->cli_start_time), ses);
   /*2*/
   print_int (cli->cli_run_clocks, ses);
   /*3*/

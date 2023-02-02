@@ -1596,7 +1596,7 @@ http_cli_auth_new_cnonce (void)
   long x;
 
   memset (enc_buf, 0, sizeof (enc_buf));
-  t = get_msec_real_time ();
+  t = (long) get_msec_real_time ();
   x = rand () * rand ();
 
   snprintf (tmp_buf, sizeof (tmp_buf), "%08ldMopolla kuuhun!%08ld", t, x);
@@ -2515,7 +2515,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
   caddr_t *head = NULL;
   int to_free_head = 1;
   dtp_t dtp;
-  long start_dt;
+  time_msec_t start_dt;
 
 
   ctx = http_cli_std_init (url, qst);
@@ -2602,7 +2602,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     ret = box_dv_short_string ("");
 
   if (prof_on)
-    prof_exec (NULL, "http_client", get_msec_real_time () - start_dt, 1);
+    prof_exec (NULL, "http_client", (long) (get_msec_real_time () - start_dt), 1);
 
 #ifdef DEBUG
   fprintf (stderr, "bif_http_client: State: %d\n", ctx->hcctx_state);

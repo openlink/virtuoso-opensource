@@ -1268,7 +1268,7 @@ ins_subq (instruction_t * ins, caddr_t * qst)
   int n_sets_save = qi->qi_n_sets;
   db_buf_t sm_save = qi->qi_set_mask;
   client_connection_t * cli = qi->qi_client;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   if (!ins->_.subq.query->qr_select_node)
     cli->cli_anytime_started = 0;
   qi->qi_n_affected = 0;
@@ -1846,8 +1846,8 @@ ins_qnode (instruction_t * ins, caddr_t * qst, int from_vec)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   client_connection_t * cli = qi->qi_client;
-  int at_start = cli->cli_anytime_started;
-  int at_to = cli->cli_anytime_timeout;
+  time_msec_t at_start = cli->cli_anytime_started;
+  uint32 at_to = cli->cli_anytime_timeout;
   cli->cli_anytime_started = 0;
   QR_RESET_CTX_T (qi->qi_thread)
     {

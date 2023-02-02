@@ -1305,7 +1305,7 @@ it_root_image_invalidate (index_tree_t * tree)
   tree->it_root_image_version = 0;
   if ((old_image = tree->it_root_image))
     {
-      old_image->bd_timestamp = approx_msec_real_time ();
+      old_image->bd_timestamp = (uint32) approx_msec_real_time ();
       tree->it_root_image = NULL;
       mutex_enter (old_roots_mtx);
       old_image->bd_next = old_root_images;

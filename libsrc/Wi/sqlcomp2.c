@@ -1475,7 +1475,7 @@ query_t *
 DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
 {
-  volatile long msecs = prof_on ? get_msec_real_time () : 0;
+  volatile time_msec_t msecs = prof_on ? get_msec_real_time () : 0;
   db_activity_t da_before;
   caddr_t cc_error;
   char *string = NULL;

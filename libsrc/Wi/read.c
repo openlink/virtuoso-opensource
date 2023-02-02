@@ -48,7 +48,7 @@ itc_ra_extents (it_cursor_t * itc, ra_req_t * ra)
   dp_addr_t exts[MAX_EXTS];
   short ext_n[MAX_EXTS];
   int ext_fill = 0;
-  uint32 now;
+  time_msec_t now;
   int inx;
   if (!enable_vec_ext_ra)
     return 0;

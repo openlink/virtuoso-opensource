@@ -140,9 +140,12 @@ typedef struct dk_mutex_s 	dk_mutex_t;
 /* General type for specifying timeout values for select, read and write */
 typedef struct
 {
-  int32	to_sec;			/* seconds */
+  uint32 to_sec;		/* seconds */
   int32	to_usec;		/* microseconds */
 } timeout_t;
+
+/* General time for specifying timestamps in msec from EPOCH */
+typedef uint64 time_msec_t;
 
 #ifdef FILE64
 

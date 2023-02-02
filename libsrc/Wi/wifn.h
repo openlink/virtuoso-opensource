@@ -206,7 +206,7 @@ void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra, int flags);
 
 void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 struct ra_req_s * itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp);
-int em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold);
+int em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, time_msec_t now, int window, int threshold);
 int em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr_t * leaves, int max, dp_addr_t except_dp, dk_hash_t * except);
 
 void dbs_timeout_read_history (dbe_storage_t * dbs);
@@ -1282,8 +1282,8 @@ extern int is_crash_dump;
 extern int32 cpt_remap_recovery;
 
 extern void (*db_exit_hook) (void);
-extern long last_flush_time;
-extern long last_exec_time;	/* used to know when the system is idle */
+extern time_msec_t last_flush_time;
+extern time_msec_t last_exec_time;	/* used to know when the system is idle */
 
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */
 extern int32 c_checkpoint_interval;
@@ -1302,7 +1302,7 @@ extern int main_thread_ready;
 extern void resources_reaper (void);
 extern int auto_cpt_scheduled;
 
-extern long write_cum_time;
+extern int64 write_cum_time;
 extern int is_read_pending;
 extern int32 bp_n_bps;
 
@@ -1329,7 +1329,7 @@ extern long cfg_disable_vdb_stat_refresh;
 #define VD_ARRAY_PARAMS_ALL  2
 
 extern long vd_opt_arrayparams;
-extern unsigned long checkpointed_last_time;
+extern time_msec_t checkpointed_last_time;
 extern long vsp_in_dav_enabled;
 
 extern int disk_no_mt_write;

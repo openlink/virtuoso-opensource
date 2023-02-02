@@ -381,7 +381,7 @@ int iso_string_to_code (char * i);
 
 typedef struct bif_exec_stat_s
 {
-  uint32	exs_start;
+  time_msec_t	exs_start;
   client_connection_t * 	exs_cli;
   caddr_t 	exs_text;
 } bif_exec_stat_t;

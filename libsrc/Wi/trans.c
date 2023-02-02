@@ -169,7 +169,8 @@ int
 tn_lc_exec (trans_node_t * tn, caddr_t * inst, srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec)
 {
   QNCAST (QI, qi, inst);
-  int save_at, save_st;
+  uint32 save_at;
+  time_msec_t save_st;
   caddr_t err;
   int rc;
   client_connection_t * cli;

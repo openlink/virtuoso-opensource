@@ -29,6 +29,6 @@
 
 int cl_trx_inited;
 
-uint32 cl_last_wait_query;
+time_msec_t cl_last_wait_query;
 int cl_wait_query_queued;
 int32 cl_dead_w_interval = 12000;

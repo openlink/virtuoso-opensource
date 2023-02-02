@@ -97,76 +97,121 @@ void
 get_real_time (timeout_t * to)
 {
 #if defined (WIN32)
-#if 0
-  static DWORD prec_nsec = 0, dummy;
-  static BOOL b1;
+  FILETIME ft;
+  uint64 res = 0;
 
-  if (prec_nsec == 0)
-    GetSystemTimeAdjustment (&dummy, &prec_nsec, &dummy);
+  GetSystemTimeAsFileTime (&ft);
 
-  to->to_sec = time (NULL);
+  res |= ft.dwHighDateTime;
+  res <<= 32;
+  res |= ft.dwLowDateTime;
 
-  if (prec_nsec)
-    to->to_usec = (((long) (GetTickCount () / (prec_nsec * 10))) * (prec_nsec * 10)) % 1000;
-  else
-    to->to_usec = GetTickCount () % 1000;
-#else
-  ULARGE_INTEGER tim;
-  GetSystemTimeAsFileTime ((FILETIME *) & tim);	 /* 100ns ticks since Jan 1, 1601 */
-  tim.QuadPart -= 0x19DB1DED53E8000L;		 /* ticks between 1601 and 1970 year */
-  tim.QuadPart /= 10;				 /* convert to microseconds */
-  to->to_usec = (int32) (tim.QuadPart % 1000000);	/* microseconds */
-  to->to_sec = (int32) (tim.QuadPart / 1000000); /* seconds */
-#endif
+  /* converting file time to Unix epoch 1970/1/1 */
+  res -= 116444736000000000ULL;	/* ticks between 1601 and 1970 year */
+  res /= 10;			/* convert into microseconds */
+
+  to->to_sec = (uint32) (res / 1000000ULL);
+  to->to_usec = (int32) (res % 1000000ULL);
 #else
   struct timeval tv;
+
   gettimeofday (&tv, NULL);
+
   to->to_sec = tv.tv_sec;
   to->to_usec = tv.tv_usec;
 #endif
 }
 
 
-static timeout_t boot_time;
-uint32 last_approx_msec_real_time;
+time_msec_t time_now_msec;
 
-uint32
+time_msec_t
 approx_msec_real_time (void)
 {
-/*  return (time_now.to_sec * 1000 + time_now.to_usec / 1000); */
-  static timeout_t ret;
-
-  if (boot_time.to_sec == 0)
-    {
-      get_real_time (&boot_time);
-      return 0;
-    }
-  if (time_now.to_usec >= boot_time.to_usec)
-    {
-      ret.to_sec = time_now.to_sec - boot_time.to_sec;
-      ret.to_usec = time_now.to_usec - boot_time.to_usec;
-    }
-  else
-    {
-      ret.to_sec = time_now.to_sec - boot_time.to_sec - 1;
-      ret.to_usec = time_now.to_usec + 1000000 - boot_time.to_usec;
-    }
-  return last_approx_msec_real_time = ret.to_sec * 1000 + (ret.to_usec + 500) / 1000;
+  return time_now_msec;
 }
 
 
-uint32
+
+time_msec_t
 get_msec_real_time (void)
 {
-#if 0
-  struct timezone tz;
-  struct timeval time;
-  gettimeofday (&time, &tz);
-  return ((time.tv_sec * 1000) + (time.tv_usec / 1000));
+  int done = 0;
+  time_msec_t now_msec = 0;
+
+#if defined (WIN32)
+  /*
+   *  Use QueryPerformanceCounter for current versions of Windows
+   */
+  if (!done)
+    {
+      timeout_t time_now;
+      LARGE_INTEGER count;
+      static LARGE_INTEGER freq;
+      static int initialized = 0;
+
+      if (!initialized)
+	{
+	  QueryPerformanceFrequency (&freq);
+	  initialized = 1;
+	}
+
+      if (freq.QuadPart > 0 && QueryPerformanceCounter (&count))
+	{
+	  now.tv_sec = (time_t) (count.QuadPart / freq.QuadPart);
+	  now.tv_usec = (int) ((count.QuadPart % freq.QuadPart) * 1000000 / freq.QuadPart);
+
+	  now_msec = (time_msec_t) time_now.to_sec * 1000 + (time_now.to_usec + 500) / 1000;
+	  done = 1;
+	}
+    }
 #endif
 
-  get_real_time (&time_now);
-  return time_now_msec = approx_msec_real_time ();
+#if defined (CLOCK_MONOTONIC)
+  /*
+   *  Use clock_gettime which works on Linux/macOS/FreeBSD
+   */
+  if (!done)
+    {
+      struct timespec ts;
+      int have_clock_gettime = 1;
+
+#if defined (CLOCK_MONOTONIC_FAST)
+      clockid_t cop = CLOCK_MONOTONIC_FAST;	/* FreeBSD */
+#else
+      clockid_t cop = CLOCK_MONOTONIC;	/* Linux and macOS */
+#endif
+
+#if defined (__APPLE__)
+      have_clock_gettime = 0;
+      if (__builtin_available (macOS 10.12, iOS 10, tvOS 10, watchOS 3, *))
+	have_clock_gettime = 1;
+#endif
+
+      if (have_clock_gettime && clock_gettime (cop, &ts) == 0)
+	{
+	  now_msec = (time_msec_t) ts.tv_sec * 1000ULL + (ts.tv_nsec + 500000ULL) / 1000000ULL;
+	  done = 1;
+	}
+    }
+#endif
+
+  /*
+   *  Fallback if any of the above fail
+   */
+  if (!done)
+    {
+      timeout_t time_now;
+
+      get_real_time (&time_now);
+
+      now_msec = (time_msec_t) time_now.to_sec * 1000 + (time_now.to_usec + 500) / 1000;
+    }
+
+  /* 
+   *  Finally return the value
+   */
+  return time_now_msec = now_msec;
 }
 
 

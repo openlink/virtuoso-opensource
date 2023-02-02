@@ -40,7 +40,7 @@ typedef struct cl_status_s
   int 		cst_host;
   int		cst_status;
   int		cst_ch_status;
-  uint32	cst_ts;
+  time_msec_t	cst_ts;
   int64		cst_bytes_sent;
   int64		cst_messages_sent;
   int64		cst_cl_wait;
@@ -122,10 +122,10 @@ struct cl_host_s
   char 			ch_status;
   char			ch_disconnect_in_progress; /* set by listener thread for time of stopping and freeing activity on behalf of this.  Do not allow connects while this is set */
   char			ch_is_local_host; /* same machine, prefer unix domain */
-  uint32		ch_offline_since;
-  uint32		ch_atomic_since; /* if host in checkpoint or such, do not expect keep alives */
-  uint32		ch_last_disconnect_query_sent; /* last msec time local complained about this host being offline */
-  uint32		ch_last_disconnect_query_served; /* last msec time a disconnect query about this host was processed */
+  time_msec_t	ch_offline_since;
+  time_msec_t		ch_atomic_since; /* if host in checkpoint or such, do not expect keep alives */
+  time_msec_t		ch_last_disconnect_query_sent; /* last msec time local complained about this host being offline */
+  time_msec_t		ch_last_disconnect_query_served; /* last msec time a disconnect query about this host was processed */
   cl_interface_t **	ch_interfaces;
   caddr_t		ch_connect_string;
   dk_set_t		ch_replica;
@@ -384,7 +384,7 @@ struct cl_thread_s
   cl_thread_t *		clt_top_clt;	/* a recursive cm on a aq thread on non top coord must feed from a real clt, to which the recursive req is bound.  This is the clt for a temp clt 2nd rec clt */
   int 			clt_n_sample_rows;
   int 			clt_n_row_spec_matches;
-  uint32		clt_start_time; /* approx time, use for keep alive */
+  time_msec_t		clt_start_time; /* approx time, use for keep alive */
   uint32 		clt_reply_req_no;	/* use for req no in reply if dissociated from the pending cm, as in recursive dfg */
   int 			clt_id;
 } ;
@@ -441,7 +441,7 @@ typedef struct cll_in_box_s
   uint32 		clib_base_req_no;	/* req no on top coord for top level cl invocation.  Speeds up finding a descendent clib when scheduling recursive cl op */
   int			clib_n_selects;
   int			clib_n_selects_received; /* if less recd than requested, send a close when freeing the clrg */
-  uint32		clib_keep_alive; /* for long running, time of last keep alive from server */
+  time_msec_t		clib_keep_alive; /* for long running, time of last keep alive from server */
   int64			clib_n_affected; /* upd/del changed row count returned here */
   int64 		clib_alt_trx_no;	/* differentiate from other clibs on the same host */
   cl_host_t *		clib_host;
@@ -501,7 +501,7 @@ typedef struct cl_req_group_s
   short 		clrg_dbg_qf;
   uint32		clrg_send_buffered; /* total waiting send in clibs */
   int			clrg_clo_seq_no;
-  uint32		clrg_send_time;
+  time_msec_t	clrg_send_time;
   int32			clrg_timeout;
   uint32		clrg_dfg_req_no; /* if running a distr frag, use this req no and this host for cancel */
   int			clrg_dfg_host;
@@ -723,7 +723,7 @@ typedef struct cl_listener_s
   char			cll_is_flt; /* some logical clusters in multiple copies, fault tolerannt.  Extra logging and 2pc consensus protocols on */
   char			cll_need_network_check; /* if one interface to peer works and the other not, should check  */
   char			cll_is_map_uncertain; /* between change of map and commit of same */
-  uint32		cll_synced_time; /* msec time of receiving sync confirmation for flt rejoin */
+  time_msec_t	cll_synced_time; /* msec time of receiving sync confirmation for flt rejoin */
   uint32		cll_no_disable_of_unavailable;
 } cl_listener_t;
 
@@ -1128,7 +1128,7 @@ void cl_dae_blobs (query_instance_t * qi, state_slot_t ** ssls);
 void cl_ses_set_options (session_t * ses);
 int clm_is_colocated (cluster_map_t * clm1, cluster_map_t * clm2);
 slice_id_t clm_slice_in_host (cluster_map_t * clm, int ch);
-extern uint32 cl_last_ac_sync;
+extern time_msec_t cl_last_ac_sync;
 extern int32 cl_ac_interval;
 void qi_free_dfg_queue (query_instance_t * qi, query_t * qr);
 int clo_any_for_slice (cl_op_t * clo);
@@ -1186,7 +1186,7 @@ void clrg_cancel (cl_req_group_t * clrg);
   if (clrg->clrg_lt && clrg->clrg_lt->lt_client->cli_anytime_timeout) \
     cm_set_quota (clrg, cm, time);
 
-void cm_set_quota (cl_req_group_t * clrg, cl_message_t * cm, int time);
+void cm_set_quota (cl_req_group_t * clrg, cl_message_t * cm, time_msec_t time);
 table_source_t *qn_loc_ts (data_source_t * qn, int must_have);
 extern dbe_key_t *cl_blob_dae_key;
 void cli_set_slice (client_connection_t * cli, cluster_map_t * clm, slice_id_t slice, caddr_t * err_ret);

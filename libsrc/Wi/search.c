@@ -3044,7 +3044,7 @@ int32 em_ra_startup_threshold = 0;
 
 
 int
-em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold)
+em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, time_msec_t now, int window, int threshold)
 {
   ptrlong rh;
   if (main_bufs < 10000)
@@ -3149,7 +3149,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
   int fill = 0;
   dp_addr_t leaves[EXTENT_SZ];
   dp_addr_t ext_dp = EXT_ROUND (dp);
-  uint32 now;
+  time_msec_t now;
   ra_req_t *ra=NULL;
   if (disk_reads + tc_new_page < main_bufs)
     {
@@ -3184,7 +3184,8 @@ void
 dbs_timeout_read_history (dbe_storage_t * dbs)
 {
   int window = disk_reads < main_bufs ? em_ra_startup_window : em_ra_window;
-  int now = approx_msec_real_time (), inx, nth;
+  time_msec_t now = approx_msec_real_time ();
+  int inx, nth;
   if (wi_inst.wi_checkpoint_atomic)
     return;
   for (nth = 0; 1; nth++)

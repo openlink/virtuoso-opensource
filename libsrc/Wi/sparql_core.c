@@ -105,7 +105,7 @@ sparp_dump_weird_query (spar_query_env_t *sparqre, const char *reason, char *md5
       MD5_CTX ctx;
       unsigned char digest[16];
       int inx;
-      long msec = get_msec_real_time ();
+      time_msec_t msec = get_msec_real_time ();
       memset (&ctx, 0, sizeof (MD5_CTX));
       MD5_Init (&ctx);
       MD5_Update (&ctx, (unsigned char *) txt, strlen(txt));
@@ -677,7 +677,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
   local_cursor_t *lc = NULL;
   caddr_t err = NULL;
   user_t *saved_user = cli->cli_user;
-  int saved_anytime_started = cli->cli_anytime_started;
+  time_msec_t saved_anytime_started = cli->cli_anytime_started;
   if (cli->cli_clt) /* Branch of cluster transaction, can't initiate partitioned operations */
     return NULL;
   if (!lt->lt_threads)
