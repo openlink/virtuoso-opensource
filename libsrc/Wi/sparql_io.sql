@@ -3258,7 +3258,9 @@ host_found:
       set TRANSACTION_TIMEOUT = max_timeout + 10000;
       timeout := 0;
     }
-  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
+
+  if (log_debug_info <> '')
+    connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
 
 again:
