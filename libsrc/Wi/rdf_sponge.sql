@@ -2058,6 +2058,8 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   declare perms, log_mode integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
+  if (atoi(coalesce (virtuoso_ini_item_value ('SPARQL', 'IRIValidation'), '0')) > 0 and not iri_validate (graph_iri, 1))
+    signal ('RDFIX', 'Invalid IRI strings are not allowed to sponge');
   --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)

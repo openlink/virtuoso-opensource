@@ -321,6 +321,7 @@ caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);
 caddr_t regexp_match_01_const (const char* pattern, const char* str, int c_opts, void ** compiled_ret);
+int regexp_match_iri_const (int what, const char* str, caddr_t *err_ret);
 caddr_t regexp_split_match (const char* pattern, const char* str, int* next, int c_opts);
 int regexp_make_opts (const char* mode);
 int regexp_split_parse (const char* pattern, const char* str, int* offvect, int offvect_sz, int c_opts);
