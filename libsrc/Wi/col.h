@@ -57,6 +57,14 @@
 #define CE_DICT_MAX_VALUES ((PAGE_DATA_SZ / 3) * 2)
 #define COL_MAX_BYTES ((PAGE_DATA_SZ - 20) / 2) /* max bytes in non-blob col value before compression on column wise dependent part col */
 
+/* |0|1|2|3|4|5|6|7| 0xNN/0xNNNN 0xMM/0xMMMM */
+/*  bit0   : short flag
+ *  bit1-3 : dtp  int/iri/int64/string/any/nulls
+ *  bit4-7 : ce type
+ *  0xNN/0xNNNN : N values depends of bit0
+ *  0xMM/0xMMMM : if any/string N is bytes, M is n values
+ */
+
 #define CE_TYPE_MASK 0xf
 #define CE_DTP_MASK 0x70
 #define CE_INTLIKE(flags) (!(flags & CE_IS_STRING))

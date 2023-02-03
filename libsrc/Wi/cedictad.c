@@ -148,6 +148,8 @@ name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 	      CE_ANY_NTH (dict, n_distinct, v_inx, val, len);
 	      dc->dc_n_values = fill;
 	      dc_append_bytes (dc, val, len, NULL, 0);
+              if (DV_DB_NULL == *val)
+                dc->dc_any_null = 1;
 	      fill = dc->dc_n_values;
 	      value_ptr[v_inx] = ((db_buf_t *) dc->dc_values)[fill - 1];
 	    }
