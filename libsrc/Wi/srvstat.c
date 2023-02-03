@@ -1335,8 +1335,8 @@ status_report (const char * mode, query_instance_t * qi)
   if (gen_info)
     {
       rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
-      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
-		  build_thread_model, build_opsys_id, build_date);
+      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)\n",
+		  build_thread_model, build_opsys_id, build_date, git_head);
     }
   if (!st_started_since_year)
     {

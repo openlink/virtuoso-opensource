@@ -74,6 +74,7 @@ int in_srv_global_init = 0;
 int it_n_maps = 256;
 int rdf_obj_ft_rules_size;
 extern int disable_listen_on_tcp_sock;
+extern char * git_head;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
@@ -4070,8 +4071,8 @@ srv_global_init (char *mode)
 
   logins_list_initialize ();
   log_info ("%s", DBMS_SRV_NAME);
-  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
-      build_thread_model, build_opsys_id, build_date);
+  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)",
+      build_thread_model, build_opsys_id, build_date, git_head);
 
 #ifdef _SSL
   log_info ("uses " OPENSSL_VERSION_TEXT);
