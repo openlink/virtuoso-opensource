@@ -11576,6 +11576,7 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *conn = (caddr_t *) bif_arg (qst, args, 0, "http_on_message");
   caddr_t func = bif_string_arg (qst, args, 1, "http_on_message");
   caddr_t cd = bif_arg (qst, args, 2, "http_on_message");
+  int signal_on_disconnected = BOX_ELEMENTS(args) > 3 ? bif_long_arg (qst, args, 3, "http_on_message") : 1;
   dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
@@ -11607,7 +11608,12 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   if (ses == NULL)
-    sqlr_new_error ("22023", "HT000", "The http_on_message expects an open connection as 1-st argument");
+    {
+      if (signal_on_disconnected)
+        sqlr_new_error ("22023", "HT000", "The http_on_message expects an open connection as 1-st argument");
+      else
+        return NEW_DB_NULL;
+    }
   http_trace (("http_on_message ses=%p\n", ses));
   DKS_DB_DATA (ses) = (client_connection_t *) list (2, box_copy (func), box_copy_tree (cd));
   PrpcSetPartnerDeadHook (ses, (io_action_func) http_on_message_ses_dropped);
