@@ -4467,12 +4467,15 @@ create function DB.DBA.JSON_LD_CTX_MAKE_NEW_SHORTCUT (in p varchar, in otype var
   declare p_tail, otype_tail integer;
   declare orig_p, shortcut, short2, o_suffix varchar;
   orig_p := p;
+  -- dbg_obj_princ ('LD_CTX_NAME_NEW_SHORTCUT ( ' || p || ', ' || otype || ' )');
   otype_tail := strrchr (otype, '#');
+  if (otype_tail is null)
+    otype_tail := strrchr (otype, '/');
   if (otype_tail is null)
     o_suffix := otype;
   else
     {
-      o_suffix := subseq (otype, otype_tail+1);
+      o_suffix := '@' || subseq (otype, otype_tail+1);
       if (o_suffix = '')
         o_suffix := otype;
     }
