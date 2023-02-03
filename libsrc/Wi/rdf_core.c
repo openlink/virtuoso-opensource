@@ -190,6 +190,18 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
       dk_free_box (host);
       return res;
     }
+  if (!strcmp ("WSBaseUrl", varname))
+    {
+      int is_https;
+      caddr_t res, host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
+      if (!host)
+        return NULL;
+      res = dk_alloc_box (box_length (host) /* plus \x0 */ + is_https + 7, DV_STRING);
+      strcpy_box_ck (res, is_https ? "https://" : "http://");
+      strcat_box_ck (res, host);
+      dk_free_box (host);
+      return res;
+    }
   return NULL;
 }
 
