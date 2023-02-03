@@ -836,6 +836,11 @@ cha_new_gb (setp_node_t * setp, caddr_t * inst, db_buf_t ** key_vecs, chash_t * 
 	  GB_HAS_VALUE (ha, row, nth_col);
 	  row[nth_col + 1] = (ptrlong) cha_dt (cha, dt);
 	}
+      else if (DV_SINGLE_FLOAT == cha->cha_sqt[nth_col].sqt_dtp)
+	{
+	  GB_HAS_VALUE (ha, row, nth_col);
+	  row[nth_col + 1] = ((int32 **) key_vecs)[nth_col][row_no];
+	}
       else
 	{
 	  GB_HAS_VALUE (ha, row, nth_col);
