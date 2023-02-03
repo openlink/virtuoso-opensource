@@ -11773,6 +11773,16 @@ bif_http_methods_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NULL;
 }
 
+caddr_t
+bif_string_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t string = bif_string_or_null_arg (qst, args, 0, "string_split");
+  caddr_t tokens = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "string_split") : NULL;
+  dk_set_t set = NULL;
+  split_string (string, tokens, &set);
+  return list_to_array (dk_set_nreverse (set));
+}
+
 caddr_t *
 box_tpcip_get_interfaces ()
 {
@@ -11981,6 +11991,8 @@ http_init_part_one ()
   bif_define ("http_current_charset", bif_http_current_charset);
   bif_define_ex ("http_status_set", bif_http_status_set, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("http_methods_set", bif_http_methods_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("string_split", bif_string_split, BMD_RET_TYPE, &bt_any, BMD_DONE);
+
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR
