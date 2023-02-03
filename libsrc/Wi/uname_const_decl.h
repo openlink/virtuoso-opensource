@@ -237,6 +237,7 @@ extern caddr_t uname_rdf_ns_uri_RDF;
 extern caddr_t uname_rdf_ns_uri_Seq;
 extern caddr_t uname_rdf_ns_uri_Statement;
 extern caddr_t uname_rdf_ns_uri_XMLLiteral;
+extern caddr_t uname_rdf_ns_uri_langString;
 extern caddr_t uname_rdf_ns_uri_about;
 extern caddr_t uname_rdf_ns_uri_first;
 extern caddr_t uname_rdf_ns_uri_li;

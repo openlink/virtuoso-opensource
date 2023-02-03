@@ -175,6 +175,7 @@ caddr_t uname_rdf_ns_uri_RDF;
 caddr_t uname_rdf_ns_uri_Seq;
 caddr_t uname_rdf_ns_uri_Statement;
 caddr_t uname_rdf_ns_uri_XMLLiteral;
+caddr_t uname_rdf_ns_uri_langString;
 caddr_t uname_rdf_ns_uri_about;
 caddr_t uname_rdf_ns_uri_first;
 caddr_t uname_rdf_ns_uri_li;
@@ -480,6 +481,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_Seq			, RDF_NS_URI "Seq"		},
   { &uname_rdf_ns_uri_Statement			, RDF_NS_URI "Statement"	},
   { &uname_rdf_ns_uri_XMLLiteral		, RDF_NS_URI "XMLLiteral"	},
+  { &uname_rdf_ns_uri_langString			, RDF_NS_URI "langString"			},
   { &uname_rdf_ns_uri_about			, RDF_NS_URI "about"		},
   { &uname_rdf_ns_uri_first			, RDF_NS_URI "first"		},
   { &uname_rdf_ns_uri_li			, RDF_NS_URI "li"		},
