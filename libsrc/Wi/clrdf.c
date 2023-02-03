@@ -163,9 +163,10 @@ cu_rdf_ins_label_normalize (mem_pool_t * mp, caddr_t lbl)
 void
 cu_rdf_ins_label (cucurbit_t * cu, caddr_t * row)
 {
+  QNCAST (query_instance_t, qi, cu->cu_qst);
   dbe_table_t *tbl = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_LABEL");
   static char *col_names[] = { "RL_O", "RL_RO_ID", "RL_TEXT", "RL_LANG", NULL };
-  caddr_t oval, values[4];
+  caddr_t oval, values[4], prop;
   cl_req_group_t *clrg = cu->cu_clrg;
   static rdf_inf_ctx_t *ctx;
   static caddr_t err;
@@ -184,16 +185,25 @@ cu_rdf_ins_label (cucurbit_t * cu, caddr_t * row)
   if (!ctx)
     return;
 
-  if (DV_DB_NULL == DV_TYPE_OF (row[4]))
-    oval = row[5];
+  if ((RDF_LD_DEL_INS | RDF_LD_MULTIGRAPH) != cu->cu_rdf_load_mode)
+    {
+      prop = row[3];
+      if (DV_DB_NULL == DV_TYPE_OF (row[4]))
+	oval = row[5];
+      else
+	oval = row[4];
+    }
   else
-    oval = row[4];
+    {
+      prop = row[2];
+      oval = row[3];
+    }
 
-  if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, row[3], RI_SUBPROPERTY, 0))
+  if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, prop, RI_SUBPROPERTY, 0))
     {
       rdf_box_t *rb = (rdf_box_t *) oval;
       if (!rb->rb_is_complete)
-	GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb");
+	rb_complete (rb, qi->qi_trx, qi);	/*GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb"); */
       if (!DV_STRINGP (rb->rb_box))	/* labels are supposed to be strings */
 	return;
       values[0] = oval;
