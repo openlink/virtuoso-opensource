@@ -5361,12 +5361,18 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return cast (v as varchar);
   else if (__tag (v) = __tag of vector)
     return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
-  else if (__tag (v) = 211)
+  else if (__tag (v) = 195)
+    return concat ('dvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 209)
+    return concat ('lvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 202)
+    return concat ('fvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = __tag of datetime)
     return sprintf ('{ts ''%s''}', datestring (v));
   else if (__tag (v) = __tag of nvarchar)
     return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
   else if (isiri_id (v))
-    return sprintf ('__id2i (\'%s\')', __id2i (v));
+    return sprintf ('__i2id (\'%S\')', __id2i (v));
   else if (__tag of rdf_box = __tag (v))
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
   else if (__tag (v) = 255)
