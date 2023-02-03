@@ -4276,6 +4276,7 @@ create procedure DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (inout triples any, in trees4
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
       declare s_iid, o_iid IRI_ID;
+      declare o_val any;
       -- dbg_obj_princ ('Gathering ', tctr, '/', tcount, triples[tctr][0], triples[tctr][1], triples[tctr][2]);
       if (triples[tctr][0] is null or triples[tctr][1] is null or triples[tctr][2] is null)
         {
@@ -4283,7 +4284,11 @@ create procedure DB.DBA.RDF_TRIPLES_DOMINANCE_DATA (inout triples any, in trees4
           goto triple_skipped;
         }
       s_iid := iri_to_id_nosignal (triples[tctr][0]);
-      o_iid := iri_to_id_nosignal (triples[tctr][2]);
+      o_val := triples[tctr][2];
+      if (__tag (o_val) in (__tag of varchar, __tag of uname, __tag of rdf_box, __tag of nvarchar, __tag of xml, __tag of iri_id, __tag of iri_id_8))
+        o_iid := iri_to_id_nosignal (o_val);
+      else
+        o_iid := null;
       if (trees4all or is_bnode_iri_id (s_iid))
         {
           declare p_iid IRI_ID;
@@ -6774,7 +6779,10 @@ create procedure DB.DBA.RDF_TRIPLES_TO_NICE_TTL_IMPL (inout triples any, in env_
       p := triples[tctr][1];
       o := triples[tctr][2];
       s_iid := iri_to_id_nosignal (s);
-      o_iid := iri_to_id_nosignal (o);
+      if (__tag (o) in (__tag of varchar, __tag of uname, __tag of rdf_box, __tag of nvarchar, __tag of xml, __tag of iri_id, __tag of iri_id_8))
+        o_iid := iri_to_id_nosignal (o);
+      else
+        o_iid := null;
       if (is_bnode_iri_id (s_iid))
         {
           declare u any;
