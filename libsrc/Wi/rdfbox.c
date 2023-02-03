@@ -36,6 +36,7 @@
 #include "aqueue.h"	/* For aq_allocate() in RDF replication */
 #include "geo.h"
 
+int rb_type__rdf_XMLLiteral;
 int rb_type__xsd_ENTITY;
 int rb_type__xsd_ENTITIES;
 int rb_type__xsd_ID;
@@ -90,6 +91,7 @@ int rb_type__xsd_yearMonthDuration;
 
 stat_desc_t rdf_preset_datatypes_descs [] =
   {
+    {"rb_type__rdf:XMLLiteral"		, (long *)&rb_type__rdf_XMLLiteral		, SD_INT32	},
     {"rb_type__xsd:ENTITY"		, (long *)&rb_type__xsd_ENTITY			, SD_INT32	},
     {"rb_type__xsd:ENTITIES"		, (long *)&rb_type__xsd_ENTITIES		, SD_INT32	},
     {"rb_type__xsd:ID"			, (long *)&rb_type__xsd_ID			, SD_INT32	},

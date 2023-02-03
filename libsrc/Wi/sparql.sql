@@ -890,6 +890,7 @@ create function DB.DBA.RDF_PRESET_TWOBYTES_OF_DATATYPES ()
     {
       __dbf_set ('rb_type__xsd:' || n, DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id ('http://www.w3.org/2001/XMLSchema#' || n)));
     }
+  __dbf_set ('rb_type__rdf:XMLLiteral', DB.DBA.RDF_TWOBYTE_OF_DATATYPE (iri_to_id ('http://www.w3.org/1999/02/22-rdf-syntax-ns#XMLLiteral')));
   commit work;
 }
 ;
