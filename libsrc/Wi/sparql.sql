@@ -396,6 +396,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'fn'		, 'http://www.w3.org/2005/xpath-functions/#'			, 2);
   DB.DBA.XML_SET_NS_DECL (	'foaf'		, 'http://xmlns.com/foaf/0.1/'					, 2);
   DB.DBA.XML_SET_NS_DECL (	'ldp'		, 'http://www.w3.org/ns/ldp#'					, 2);
+  DB.DBA.XML_SET_NS_DECL (	'oa'		, 'http://www.w3.org/ns/oa#'		                        , 2);
   DB.DBA.XML_SET_NS_DECL (	'obo'		, 'http://www.geneontology.org/formats/oboInOwl#'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'ogc'		, 'http://www.opengis.net/'					, 2);
   DB.DBA.XML_SET_NS_DECL (	'ogcgml'	, 'http://www.opengis.net/ont/gml#'				, 2);
@@ -410,6 +411,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'nci'		, 'http://ncicb.nci.nih.gov/xml/owl/EVS/Thesaurus.owl#'		, 2);
   DB.DBA.XML_SET_NS_DECL (	'product'	, 'http://www.buy.com/rss/module/productV2/'			, 2);
   DB.DBA.XML_SET_NS_DECL (	'protseq'	, 'http://purl.org/science/protein/bysequence/'			, 2);
+  DB.DBA.XML_SET_NS_DECL (	'prov'	        , 'http://www.w3.org/ns/prov#'			                , 2);
   DB.DBA.XML_SET_NS_DECL (	'rdf'		, 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'			, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfa'		, 'http://www.w3.org/ns/rdfa#'					, 2);
   DB.DBA.XML_SET_NS_DECL (	'rdfdf'		, 'http://www.openlinksw.com/virtrdf-data-formats#'		, 2);
