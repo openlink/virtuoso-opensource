@@ -17,10 +17,10 @@
 --  with this program; if not, write to the Free Software Foundation, Inc.,
 --  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 --
-create procedure DB.DBA.WEBSOCKET_WRITE_MESSAGE (in sid int, in message varchar)
+create procedure WSOCK.DBA.WEBSOCKET_WRITE_MESSAGE (in sid int, in message varchar)
 {
   declare ses, data, payload any;
-  payload := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (message);
+  payload := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE (message);
   -- get cached
   ses := http_recall_session (sid, 0);
   -- write something
@@ -30,7 +30,7 @@ create procedure DB.DBA.WEBSOCKET_WRITE_MESSAGE (in sid int, in message varchar)
 }
 ;
 
-create procedure DB.DBA.WEBSOCKET_CLOSE_MESSAGE (in sid int, in code int, in message varchar)
+create procedure WSOCK.DBA.WEBSOCKET_CLOSE_MESSAGE (in sid int, in code int, in message varchar)
 {
   declare h, c, ses, payload any;
   message := subseq (message, 0, 125 - 2); -- only short errors
@@ -49,13 +49,13 @@ create procedure DB.DBA.WEBSOCKET_CLOSE_MESSAGE (in sid int, in code int, in mes
 }
 ;
 
-create procedure WSOCK_ECHO (in message varchar, in args any)
+create procedure WSOCK.DBA.WEBSOCKET_ECHO (in message varchar, in args any)
 {
   return message;
 }
 ;
 
-create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd any)
+create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd any)
 {
   declare data any;
   declare service_hook, args, reponse any;
@@ -113,16 +113,16 @@ create procedure DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd an
       if (reponse is not null)
         {
           -- write a reply (optional)
-          reply := DB.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
+          reply := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
           ses_write(reply, ses);
         }
     }
   -- set recv handler back
-  http_on_message (ses, 'DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', cd);
+  http_on_message (ses, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', cd, 0);
 }
 ;
 
-create procedure DB.DBA.WEBSOCKET_ENCODE_MESSAGE (in message any, in domask int := 0) returns any
+create procedure WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE (in message any, in domask int := 0) returns any
 {
   declare header, ret, mask any;
   declare i, len, first_byte, second_byte integer;
@@ -174,10 +174,10 @@ create procedure DB.DBA.WEBSOCKET_ENCODE_MESSAGE (in message any, in domask int 
 }
 ;
 
-create procedure DB.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (
+create procedure WSOCK.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (
   in key_str varchar) returns any
 {
-  -- dbg_obj_princ ('DB.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (', key_str, ')');
+  -- dbg_obj_princ ('WSOCK.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (', key_str, ')');
   declare i, key_length, spaceNumber, res integer;
   declare partialServerKey, cur, num64 varchar;
   declare bytesFormatted any;
@@ -206,7 +206,7 @@ create procedure DB.DBA.WEBSOCKET_BUILD_SERVER_PARTIAL_KEY (
 ;
 
 
-create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
+create procedure WSOCK.DBA."websockets" () __SOAP_HTTP 'text/plain'
 {
   declare upgrade, host, x, connection, content, sec_websocket_key, service_name, sec_websocket_version, origin, sec_websocket_protocol, s any;
   declare sec_websocket_extensions any;
@@ -251,7 +251,7 @@ create procedure WSOCK.WSOCK."websockets" () __SOAP_HTTP 'text/plain'
   if (upgrade = 'websocket' and sec_websocket_version = '13')
    {
      -- set callback for recv
-     http_on_message (null, 'DB.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector (func, sid));
+     http_on_message (null, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector (func, sid));
      -- cache session and send http status
      http_keep_session (null, sid, 0);
 

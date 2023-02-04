@@ -733,6 +733,7 @@ SQL_FILES_WS		= \
 	$(srcdir)/xmlrpc_soap.xsl \
 	$(srcdir)/soap_xmlrpc.xsl \
 	$(srcdir)/soap12_router.xsl \
+	$(top_srcdir)/binsrc/websocket/websocket.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_ddl.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_xsd.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcli.sql \

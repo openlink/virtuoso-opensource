@@ -165,7 +165,7 @@ directory_init() {
   mkdir vad/code/$VAD_NAME
   mkdir vad/vsp
   mkdir vad/vsp/$VAD_NAME/
-  cp websocket.sql vad/code/$VAD_NAME/
+  #cp websocket.sql vad/code/$VAD_NAME/
   cp index.vsp vad/vsp/$VAD_NAME/
   cp graph.html vad/vsp/$VAD_NAME/
 }
@@ -266,7 +266,7 @@ else
   echo "    DB.DBA.VHOST_REMOVE(lpath => '/ws');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE(lpath => '/ws', ppath => '/vad/vsp/$VAD_NAME/', is_dav => 0, is_brws => 0, vsp_user => 'dba', def_page => 'index.vsp');" >> $STICKER
 fi
-  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/websocket.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    -- DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/websocket.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
@@ -393,7 +393,6 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
-
 directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"

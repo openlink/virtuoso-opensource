@@ -3231,7 +3231,6 @@ AC_CONFIG_FILES([
 	binsrc/samples/odp/Makefile
 	binsrc/samples/sparql_demo/Makefile
 	binsrc/samples/wbxml2/Makefile
-	binsrc/samples/websocket/Makefile
 	binsrc/samples/webapp/Makefile
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile
@@ -3266,6 +3265,7 @@ AC_CONFIG_FILES([
 	binsrc/virtuoso_sink/Makefile
 	binsrc/vsp/Makefile
 	binsrc/vspx/Makefile
+	binsrc/websocket/Makefile
 	binsrc/ws/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile

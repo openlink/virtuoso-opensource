@@ -19,7 +19,7 @@
 #  
 #  
 
-SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting graphql bpel fct tutorial conductor samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena jena2 jena3 jena4 sesame sesame2 sesame3 sesame4 redland hibernate dbpedia rdb2rdf rdf4j rdf4j_4
+SUBDIRS = dav mono virtuoso tests rdf_mappers driver maildrop sqldoc hosting graphql bpel fct tutorial conductor samples vsp ws sync vspx vad cached_resources virtodbc virtoledb virtuoso_sink xddl VirtuosoClient.Net oat isparql jena jena2 jena3 jena4 sesame sesame2 sesame3 sesame4 redland hibernate dbpedia rdb2rdf rdf4j rdf4j_4 websocket
 
 
 # ----------------------------------------------------------------------
