@@ -8,780 +8,206 @@
 @prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
 @prefix schema: <http://schema.org/> .
 
-gql:intro-schema a owl:Ontology ;
+gql:introspection-schema a owl:Ontology ;
         rdfs:label "GraphQL Types Core Ontology" ;
         rdfs:comment """
             GraphQL Core Types RDF Ontology Mappings.
             It must be loaded in `urn:graphql:schema` RDF graph.
         """ ;
-        virtrdf:version "0.9.1" ;
+        virtrdf:version "0.9.3" ;
         schema:url <http://www.openlinksw.com/graphql/graphql-intro-schema.ttl> ;
         dct:created "2022-06-21"^^xsd:date ;
-        dct:modified "2022-07-07"^^xsd:date .
+        dct:modified "2022-10-12"^^xsd:date .
 
 ### GraphQL introspection schema
 
-gql:Map
+gql:Map gql:schemaObjects  gql:__Schema,
+                    gql:__Type,
+                    gql:__TypeKind,
+                    gql:__Directive,
+                    gql:__DirectiveLocation,
+                    gql:__Field,
+                    gql:__EnumValue,
+                    gql:__InputValue,
+                    gql:__schema,
+                    gql:__type ;
         gql:dataGraph <urn:graphql:intro> ;
-        gql:schemaGraph <urn:graphql:schema> ;
-	gql:schemaObjects	gql:reasonObject , gql:Boolean , gql:Float , gql:Int , gql:String, gql:DateTime, gql:IRI , gql:__Directive , gql:__DirectiveLocation , gql:__EnumValue , gql:__Field , gql:__InputValue , gql:__Schema , gql:__Type , gql:__TypeKind , gql:__schema , gql:args , gql:deprecationReason , gql:description , gql:directives , gql:directivesObject , gql:enumValues , gql:fields , gql:ifObject , gql:inputFields , gql:interfaces , gql:isDeprecated , gql:kind , gql:locations , gql:mutationType , gql:name , gql:possibleTypes , gql:queryType , gql:queryTypeObject , gql:subscriptionType , gql:type , gql:types , gql:typesObject , gql:ARGUMENT_DEFINITION , gql:ENUM , gql:ENUM_VALUE , gql:FIELD , gql:FIELD_DEFINITION , gql:FRAGMENT_DEFINITION , gql:FRAGMENT_SPREAD , gql:INLINE_FRAGMENT , gql:INPUT_FIELD_DEFINITION , gql:INPUT_OBJECT , gql:INTERFACE , gql:MUTATION , gql:OBJECT , gql:QUERY , gql:SCALAR , gql:SCHEMA , gql:SUBSCRIPTION , gql:UNION , gql:VARIABLE_DEFINITION , gql:includeDeprecated , gql:isRepeatable , gql:ofType , gql:specifiedByUrl , gql:deprecatedObject , gql:embeddedObject , gql:includeObject , gql:skipObject , gql:specifiedByObject, gql:__type .
+        gql:schemaGraph <urn:graphql:schema> .
 
-gql:reasonObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:reasonObject_Class .
+gql:__schema gql:type gql:Object ;
+        gql:rdfClass gql:__Schema ;
+        gql:field gql:__schema .
 
-gql:Boolean
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:Boolean_Class .
+gql:__type gql:type gql:Object ;
+           gql:rdfClass gql:__Type ;
+           gql:field gql:__type .
 
-gql:Float
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:Float_Class .
+gql:__Schema a owl:Class ;
+    gql:field gql:__schema .
 
-gql:Int
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:Int_Class .
+gql:__Type a owl:Class ;
+    gql:field gql:__type .
 
-gql:String
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:String_Class .
+gql:__Directive a owl:Class .
+gql:__Field a owl:Class .
+gql:__InputValue a owl:Class .
+gql:__EnumValue a owl:Class .
+gql:__DirectiveLocation a owl:Class .
 
-gql:DateTime
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:DateTime_Class .
-
-gql:IRI
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:IRI_Class .
-
-gql:__Directive
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__Directive_Class .
-
-gql:__DirectiveLocation
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__DirectiveLocation_Class .
-
-gql:__EnumValue
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__EnumValue_Class .
-
-gql:__Field
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__Field_Class .
-
-gql:__InputValue
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__InputValue_Class .
-
-gql:__Schema
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__Schema_Class .
-
-gql:__Type
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__Type_Class .
-
-gql:__type
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__Type_Class .
-
-gql:__TypeKind
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__TypeKind_Class .
-
-
-gql:__schema
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:__schema_Class .
-
-gql:args
+gqi:types a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:args_Class .
+    gql:field gql:types .
 
-gql:deprecationReason
+gqi:queryType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
 	gql:type	gql:Object ;
-	gql:rdfClass	gql:deprecationReason_Class .
+    gql:field gql:queryType .
 
-gql:description
+gqi:mutationType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
 	gql:type	gql:Object ;
-	gql:rdfClass	gql:description_Class .
+    gql:field gql:mutationType .
 
-gql:directives
+
+gqi:subscriptionType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Object ;
+    gql:field gql:subscriptionType .
+
+gqi:directives a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Directive ;
+    rdfs:domain gql:__Schema ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:directives_Class .
+    gql:field gql:directives .
 
-gql:directivesObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:directivesObject_Class .
+gqi:kind a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type ;
+    gql:type gql:Scalar ;
+    gql:field gql:kind .
 
-gql:enumValues
+gqi:name a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type, gql:__Field, gql:__InputValue, gql:__EnumValue, gql:__Directive ;
+    gql:type gql:Scalar ;
+    gql:field gql:name .
+
+gqi:description a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Schema, gql:__Type, gql:__Field, gql:__InputValue, gql:__EnumValue, gql:__Directive ;
+    gql:type gql:Scalar ;
+    gql:field gql:description .
+
+gqi:fields a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Field ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:enumValues_Class .
+    gql:field gql:fields .
 
-gql:fields
+gqi:interfaces a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:fields_Class .
+    gql:field gql:interfaces .
 
-gql:ifObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:ifObject_Class .
-
-gql:inputFields
+gqi:possibleTypes a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:inputFields_Class .
+    gql:field gql:possibleTypes .
 
-gql:interfaces
+gqi:enumValues a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__EnumValue ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:interfaces_Class .
+    gql:field gql:enumValues .
 
-gql:isDeprecated
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:isDeprecated_Class .
-
-gql:kind
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:kind_Class .
-
-gql:locations
+gqi:inputFields a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__InputValue ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Array ;
-	gql:rdfClass	gql:locations_Class .
+    gql:field gql:inputFields .
 
-gql:mutationType
+
+gqi:ofType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
 	gql:type	gql:Object ;
-	gql:rdfClass	gql:mutationType_Class .
+    gql:field gql:ofType .
 
-gql:name
+gqi:specifiedByURL a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type ;
+    gql:type gql:Scalar ;
+    gql:field gql:specifiedByURL .
+
+gqi:type a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Field, gql:__InputValue ;
 	gql:type	gql:Object ;
-	gql:rdfClass	gql:name_Class .
-
-gql:possibleTypes
-	gql:type	gql:Array ;
-	gql:rdfClass	gql:possibleTypes_Class .
-
-gql:queryType
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:queryType_Class .
-
-gql:queryTypeObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:queryTypeObject_Class .
-
-gql:subscriptionType
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:subscriptionType_Class .
-
-gql:type
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:type_Class .
-
-gql:types
-	gql:type	gql:Array ;
-	gql:rdfClass	gql:types_Class .
-
-gql:typesObject
-	gql:type	gql:Array ;
-	gql:rdfClass	gql:typesObject_Class .
-
-gql:ARGUMENT_DEFINITION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:ARGUMENT_DEFINITION_Class .
-
-gql:ENUM
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:ENUM_Class .
-
-gql:ENUM_VALUE
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:ENUM_VALUE_Class .
-
-gql:FIELD
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:FIELD_Class .
-
-gql:FIELD_DEFINITION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:FIELD_DEFINITION_Class .
-
-gql:FRAGMENT_DEFINITION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:FRAGMENT_DEFINITION_Class .
-
-gql:FRAGMENT_SPREAD
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:FRAGMENT_SPREAD_Class .
-
-gql:INLINE_FRAGMENT
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:INLINE_FRAGMENT_Class .
-
-gql:INPUT_FIELD_DEFINITION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:INPUT_FIELD_DEFINITION_Class .
-
-gql:INPUT_OBJECT
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:INPUT_OBJECT_Class .
-
-gql:INTERFACE
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:INTERFACE_Class .
-
-gql:MUTATION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:MUTATION_Class .
-
-gql:OBJECT
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:OBJECT_Class .
-
-gql:QUERY
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:QUERY_Class .
-
-gql:SCALAR
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:SCALAR_Class .
-
-gql:SCHEMA
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:SCHEMA_Class .
-
-gql:SUBSCRIPTION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:SUBSCRIPTION_Class .
-
-gql:UNION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:UNION_Class .
-
-gql:VARIABLE_DEFINITION
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:VARIABLE_DEFINITION_Class .
-
-gql:includeDeprecated
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:includeDeprecated_Class .
-
-gql:isRepeatable
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:isRepeatable_Class .
-
-gql:ofType
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:ofType_Class .
-
-gql:specifiedByUrl
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:specifiedByUrl_Class .
-
-gql:deprecatedObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:deprecatedObject_Class .
-
-gql:embeddedObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:embeddedObject_Class .
-
-gql:includeObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:includeObject_Class .
-
-gql:skipObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:skipObject_Class .
-
-gql:specifiedByObject
-	gql:type	gql:Object ;
-	gql:rdfClass	gql:specifiedByObject_Class .
-
-
-# Classes
-
-gql:ARGUMENT_DEFINITION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:Boolean_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:ENUM_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:ENUM_VALUE_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:FIELD_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:FIELD_DEFINITION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:FRAGMENT_DEFINITION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:FRAGMENT_SPREAD_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:Float_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:INLINE_FRAGMENT_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:INPUT_FIELD_DEFINITION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:INPUT_OBJECT_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:INTERFACE_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:Int_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:MUTATION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:OBJECT_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:QUERY_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:SCALAR_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:SCHEMA_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:SUBSCRIPTION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:String_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:DateTime_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:IRI_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:UNION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:VARIABLE_DEFINITION_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__DirectiveLocation_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__Directive_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__EnumValue_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__Field_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__InputValue_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__Schema_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__TypeKind_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__Type_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:__schema_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:args_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:deprecatedObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:deprecationReason_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:description_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:directivesObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:directives_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:embeddedObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:enumValues_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:fields_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:ifObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:includeDeprecated_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:includeObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:inputFields_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:interfaces_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:isDeprecated_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:isRepeatable_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:kind_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:locations_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:mutationType_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:name_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:ofType_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:possibleTypes_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:queryTypeObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:queryType_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:reasonObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:skipObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:specifiedByObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:specifiedByUrl_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:subscriptionType_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:type_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:typesObject_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-gql:types_Class
-	rdf:type	owl:Class ;
-	rdfs:isDefinedBy gql:intro-schema .
-
-
-# Properties
-
-gqi:Type
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:typesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class, gql:IRI_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:Type .
-
-gqi:args
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:args_Class , gql:deprecatedObject_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:embeddedObject_Class , gql:enumValues_Class , gql:fields_Class , gql:includeObject_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:skipObject_Class , gql:specifiedByObject_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string , gql:ifObject_Class , gql:includeDeprecated_Class , gql:reasonObject_Class ;
+    gql:field gql:type .
+
+gqi:args a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__InputValue ;
+    rdfs:domain gql:__Field, gql:__Directive ;
 	gql:type	gql:Array ;
 	gql:field	gql:args .
 
-gqi:defaultValue
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ifObject_Class , gql:includeDeprecated_Class , gql:reasonObject_Class, gql:inputFields_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string ;
-	gql:type	gql:Object , gql:Scalar ;
-	gql:field	gql:defaultValue .
-
-gqi:deprecated
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:directivesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:deprecatedObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:deprecated .
-
-gqi:includeDeprecated
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:args_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:enumValues_Class , gql:fields_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class, gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
+gqi:isDeprecated a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
 	rdfs:range	xsd:boolean ;
+    rdfs:domain gql:__Field, gql:__InputValue, gql:__EnumValue ;
 	gql:type	gql:Scalar ;
-	gql:field	gql:includeDeprecated .
+    gql:field gql:isDeprecated .
 
-
-gqi:deprecationReason
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:args_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:enumValues_Class , gql:fields_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
+gqi:deprecationReason a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
 	rdfs:range	xsd:string ;
-	gql:type	gql:Object ;
+    rdfs:domain gql:__Field, gql:__InputValue, gql:__EnumValue ;
+    gql:type gql:Scalar ;
 	gql:field	gql:deprecationReason .
 
-gqi:description
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:deprecatedObject_Class , gql:embeddedObject_Class , gql:ifObject_Class , gql:includeDeprecated_Class , gql:includeObject_Class , gql:reasonObject_Class , gql:skipObject_Class , gql:specifiedByObject_Class, gql:__Type_Class, gql:fields_Class, gql:inputFields_Class, gql:directives_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
+gqi:defaultValue a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
 	rdfs:range	xsd:string ;
-	gql:type	gql:Object , gql:Scalar ;
-	gql:field	gql:description .
-
-gqi:ofType
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:deprecatedObject_Class , gql:embeddedObject_Class , gql:ifObject_Class , gql:includeDeprecated_Class , gql:includeObject_Class , gql:reasonObject_Class , gql:skipObject_Class , gql:specifiedByObject_Class, gql:__Type_Class, gql:fields_Class, gql:possibleTypes_Class, gql:interfaces_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:__Type_Class ;
-	gql:type	gql:Object;
-	gql:field	gql:ofType .
-
-gqi:directives
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__schema_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:directives_Class ;
-	gql:type	gql:Array ;
-	gql:field	gql:directives .
-
-gqi:embedded
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:directivesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:embeddedObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:embedded .
-
-gqi:enumValues
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Schema_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string , gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class ;
-	gql:type	gql:Array ;
-	gql:field	gql:enumValues .
-
-gqi:fields
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class, gql:IRI_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string , gql:args_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:enumValues_Class , gql:fields_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class ;
-	gql:type	gql:Array ;
-	gql:field	gql:fields .
-
-gqi:include
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:directivesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:includeObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:include .
-
-gqi:inputFields
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:inputFields_Class ;
-	gql:type	gql:Array ;
-        gql:interfaces  rdf:nil;
-        gql:enumValues  rdf:nil;
-	gql:field	gql:inputFields .
-
-gqi:interfaces
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class, gql:IRI_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:interfaces_Class ;
-	gql:type	gql:Array ;
-	gql:field	gql:interfaces .
-
-gqi:isDeprecated
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:args_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:enumValues_Class , gql:fields_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:boolean ;
-	gql:type	gql:Boolean ;
-	gql:field	gql:isDeprecated .
-
-gqi:kind
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class, gql:IRI_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class ,
-        gql:__Type_Class, gql:possibleTypes_Class, gql:interfaces_Class, gql:inputFields_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string ;
+    rdfs:domain gql:__InputValue ;
 	gql:type	gql:Scalar ;
-	gql:field	gql:kind .
+    gql:field gql:defaultValue .
 
-gqi:locations
-	rdf:type	rdf:Property ;
-	rdfs:range	gql:deprecated_Class , gql:embedded_Class , gql:include_Class , gql:skip_Class , gql:specifiedBy_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:domain	gql:directives_Class ;
+gqi:locations a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Directive ;
 	gql:type	gql:Array ;
 	gql:field	gql:locations .
 
-gqi:mutationType
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__schema_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:mutationType_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:mutationType .
+gqi:isRepeatable a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:boolean ;
+    rdfs:domain gql:__Directive ;
+    gql:type gql:Boolean ;
+    gql:field gql:isRepeatable .
 
-gqi:name
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:ARGUMENT_DEFINITION_Class , gql:Boolean_Class , gql:ENUM_Class , gql:ENUM_VALUE_Class , gql:FIELD_Class , gql:FIELD_DEFINITION_Class , gql:FRAGMENT_DEFINITION_Class , gql:FRAGMENT_SPREAD_Class , gql:Float_Class , gql:INLINE_FRAGMENT_Class , gql:INPUT_FIELD_DEFINITION_Class , gql:INPUT_OBJECT_Class , gql:INTERFACE_Class , gql:Int_Class , gql:MUTATION_Class , gql:OBJECT_Class , gql:QUERY_Class , gql:SCALAR_Class , gql:SCHEMA_Class , gql:SUBSCRIPTION_Class , gql:String_Class , gql:DateTime_Class, gql:IRI_Class , gql:UNION_Class , gql:VARIABLE_DEFINITION_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class , gql:args_Class , gql:deprecatedObject_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:embeddedObject_Class , gql:enumValues_Class , gql:fields_Class , gql:ifObject_Class , gql:includeDeprecated_Class , gql:includeObject_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryTypeObject_Class , gql:queryType_Class , gql:reasonObject_Class , gql:skipObject_Class , gql:specifiedByObject_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string ;
-	gql:type	gql:Scalar ;
-	gql:field	gql:name .
-
-gqi:possibleTypes
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:Boolean_Class , gql:Float_Class , gql:Int_Class , gql:String_Class , gql:DateTime_Class , gql:IRI_Class , gql:__DirectiveLocation_Class , gql:__Directive_Class , gql:__EnumValue_Class , gql:__Field_Class , gql:__InputValue_Class , gql:__Schema_Class , gql:__TypeKind_Class , gql:__Type_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:possibleTypes_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:possibleTypes .
-
-gqi:queryType
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__schema_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:queryTypeObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:queryType .
-
-gqi:skip
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:directivesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:skipObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:skip .
-
-gqi:specifiedBy
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:directivesObject_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:specifiedByObject_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:specifiedBy .
-
-gqi:subscriptionType
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__schema_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:subscriptionType_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:subscriptionType .
-
-gqi:type
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:args_Class , gql:deprecationReason_Class , gql:description_Class , gql:directives_Class , gql:enumValues_Class , gql:fields_Class , gql:ifObject_Class , gql:includeDeprecated_Class , gql:inputFields_Class , gql:interfaces_Class , gql:isDeprecated_Class , gql:isRepeatable_Class , gql:kind_Class , gql:locations_Class , gql:mutationType_Class , gql:name_Class , gql:ofType_Class , gql:possibleTypes_Class , gql:queryType_Class , gql:reasonObject_Class , gql:specifiedByUrl_Class , gql:subscriptionType_Class , gql:type_Class , gql:types_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	xsd:string , gql:Boolean_Class , gql:String_Class , gql:__Type_Class ;
-	gql:type	gql:Object ;
-	gql:field	gql:type .
-
-gqi:types
-	rdf:type	rdf:Property ;
-	rdfs:domain	gql:__schema_Class ;
-	rdfs:isDefinedBy	gql:intro-schema ;
-	rdfs:range	gql:__Type_Class ;
-	gql:type	gql:Array ;
-	gql:field	gql:types .
-
+### END introspection schema ###
