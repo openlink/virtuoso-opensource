@@ -23,6 +23,6 @@
 VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy')
 ;
 
-VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy',ppath=>sprintf ('http://localhost:%s/', server_http_port()))
+VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy',ppath=>'http://localhost:65535/')
 ;
 
