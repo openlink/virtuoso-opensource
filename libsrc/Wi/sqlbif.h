@@ -29,6 +29,9 @@
 #define _SQLBIF_H
 
 #include "sqlnode.h"
+#ifdef _SSL
+#include <openssl/x509.h>
+#endif
 
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
 				 long *scale, caddr_t *collation, long * non_null);
@@ -282,6 +285,8 @@ caddr_t box_sha1 (caddr_t str);
 caddr_t box_hmac (caddr_t box, caddr_t key, int alg);
 #define HMAC_ALG_SHA1		0
 #define HMAC_ALG_RIPMD160	1
+caddr_t get_client_pem_certificate (caddr_t *qst, caddr_t *err_ret);
+X509 * get_client_certificate (caddr_t *qst, caddr_t *err_ret);
 #endif
 
 extern int32 sqlbif_rnd (int32* seed);

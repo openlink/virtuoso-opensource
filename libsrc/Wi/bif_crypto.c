@@ -1332,6 +1332,82 @@ BN_box (const BIGNUM * x)
   return buf;
 }
 
+#ifdef _SSL
+caddr_t
+get_client_pem_certificate (caddr_t *qst, caddr_t *err_ret)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+  caddr_t pem_cert = NULL;
+  char *ptr;
+  SSL *ssl = NULL;
+  X509 *cert = NULL;
+  BIO *in = NULL;
+  session_t * ses = (ws ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
+
+  if (ses)
+    ssl = (SSL *) tcpses_get_ssl (ses);
+
+  if (ssl)
+    cert = SSL_get_peer_certificate (ssl);
+
+  if (cert)
+    {
+      in = BIO_new (BIO_s_mem());
+      if (!in)
+        {
+          char err_buf[512];
+          if (err_ret)
+            *err_ret = srv_make_new_error ("22005", "SR402", "Cannot allocate temp space. SSL error : %s",
+              get_ssl_error_text (err_buf, sizeof (err_buf)));
+          return NULL;
+        }
+      BIO_reset(in);
+      PEM_write_bio_X509 (in, cert);
+      pem_cert = dk_alloc_box (BIO_get_mem_data (in, &ptr) + 1, DV_SHORT_STRING);
+      memcpy (pem_cert, ptr, box_length (pem_cert) - 1);
+      pem_cert[box_length (pem_cert) - 1] = 0;
+      BIO_free (in);
+      return pem_cert;
+    }
+  else if (!cert && NULL != ws && NULL != ws->ws_lines && (NULL != (pem_cert = ws_mime_header_field (ws->ws_lines, "X-SSL-CERT", NULL, 1))))
+    return pem_cert;
+  return NULL;
+}
+
+X509 *
+get_client_certificate (caddr_t *qst, caddr_t *err_ret)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  caddr_t pem_cert;
+  ws_connection_t *ws = qi->qi_client->cli_ws;
+  X509 *cert = NULL;
+  SSL *ssl = NULL;
+  BIO *in = NULL;
+  session_t * ses = (ws ? ws->ws_session->dks_session : (qi->qi_client->cli_session ? qi->qi_client->cli_session->dks_session : NULL));
+  if (ses)
+    ssl = (SSL *) tcpses_get_ssl (ses);
+
+  cert = SSL_get_peer_certificate (ssl);
+  if (NULL == cert && NULL != ws && ws->ws_lines && (pem_cert = ws_mime_header_field (ws->ws_lines, "X-SSL-CERT", NULL, 1)))
+    {
+      in = BIO_new_mem_buf (pem_cert, box_length (pem_cert) - 1);
+      if (!in)
+        {
+          char err_buf[512];
+          if (err_ret)
+            *err_ret = srv_make_new_error ("22005", "SR402", 
+                "Cannot allocate temp space. SSL error : %s", get_ssl_error_text (err_buf, sizeof (err_buf)));
+          return NULL;
+        }
+      cert = PEM_read_bio_X509 (in, NULL, NULL, NULL);
+      BIO_free (in);
+    }
+  return cert;
+}
+#endif
+
+
 /*
    1 - info type
    2 - certificate
@@ -1392,9 +1468,9 @@ bif_get_certificate_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
     }
   else
     {
-      if (!ssl)
+      cert = get_client_certificate (qst, NULL);
+      if (!cert)
 	sqlr_new_error ("22023", "SR309", "Non-encrypted session");
-      cert = SSL_get_peer_certificate (ssl);
     }
   if (!cert)
     return dk_alloc_box (0, DV_DB_NULL);

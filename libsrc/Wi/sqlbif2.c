@@ -718,44 +718,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
 #ifdef _SSL
       caddr_t ret = NULL;
-      char *ptr;
-      SSL *ssl = NULL;
-      X509 *cert = NULL;
-      BIO *in = NULL;
-      session_t * ses = (qi->qi_client->cli_ws ?
-	  qi->qi_client->cli_ws->ws_session->dks_session : (qi->qi_client->cli_session ?
-	  qi->qi_client->cli_session->dks_session : NULL));
-
-      if (ses)
-	ssl = (SSL *) tcpses_get_ssl (ses);
-
-      if (ssl)
-        cert = SSL_get_peer_certificate (ssl);
-      else
-	return NULL;
-
-      if (!cert)
-	return NULL;
-
-      in = BIO_new (BIO_s_mem());
-
-      if (!in)
-	{
-	  char err_buf[512];
-	  sqlr_new_error ("22005", "SR402", "Cannot allocate temp space. SSL error : %s",
-	      get_ssl_error_text (err_buf, sizeof (err_buf)));
-	  return NULL;
-	}
-
-      BIO_reset(in);
-
-      PEM_write_bio_X509 (in, cert);
-      ret = dk_alloc_box (BIO_get_mem_data (in, &ptr) + 1, DV_SHORT_STRING);
-      memcpy (ret, ptr, box_length (ret) - 1);
-      ret[box_length (ret) - 1] = 0;
-
-      BIO_free (in);
-
+      ret = get_client_pem_certificate (qst, err_ret);
       return ret;
 #else
       sqlr_new_error ("22005", "SR403", "'client_certificate' value of client_attr option is not supported by this build of the Virtuoso server");
