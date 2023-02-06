@@ -29,6 +29,7 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 cp $VIRTUOSO_TEST/cert.pem .
 cp $VIRTUOSO_TEST/pk.pem .
+gunzip -c $VIRTUOSO_TEST/actstrm_tests.tar.gz | tar xf -
 
 BANNER "STARTED VSP TEST (tvsp.sh)"
 
@@ -166,6 +167,14 @@ then
 else
     LOG "PASSED: login hook - logging in as masterdba"
 fi
+
+RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u BASE=$VIRTUOSO_TEST < $VIRTUOSO_TEST/tjsonld.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tjsonld.sql "
+    exit 3
+fi
+
 
 SHUTDOWN_SERVER
 CHECK_LOG
