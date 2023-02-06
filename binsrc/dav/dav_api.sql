@@ -5636,7 +5636,10 @@ create procedure DAV_RES_CONTENT_META_N3 (
       dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:BasicContainer'))), 0);
       dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Container'))), 0);
     }
-  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  if (item[9] in ('text/turtle', 'application/ld+json'))
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  else
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:NonRDFSource'))), 0);
   dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('sioc:has_creator')), creator_iri), 0);
   dict_put (dict, vector (creator_iri, iri_to_id (__xml_nsexpand_iristr('sioc:creator_of')), iri), 0);
   dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('foaf:maker')), person_iri), 0);

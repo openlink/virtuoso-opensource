@@ -475,7 +475,7 @@ create procedure XML_URI_PARSE_VIRT (in base_uri varchar, inout table_name varch
 
 create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
 {
-  declare head, str, proto varchar;
+  declare head, str, proto, accept varchar;
   declare inx, timeout integer;
   declare s_uri any;
   -- dbg_obj_princ ('XML_URI_GET (', base_uri, rel_uri, ')');
@@ -485,6 +485,9 @@ create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := charset_recode (base_uri, NULL, 'UTF-8');
+  accept := connection_get ('__XML_URI_GET_ACCEPT', null);
+  if (accept is not null)
+    accept := concat ('Accept:', accept);
 again:
   s_uri := rfc1808_parse_uri (base_uri);
   str := null;
@@ -527,10 +530,10 @@ try_http_get:
 	}
       else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15, http_headers=>accept);
  	}
       else
-        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15);
+        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15, http_headers=>accept);
       if (aref (head, 0) not like '% 200%')
 	signal ('H0001', concat ('HTTP request failed: ', aref (head, 0), 'for URI ', base_uri));
     }

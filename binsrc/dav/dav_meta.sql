@@ -222,12 +222,17 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     }
   else if (dflt_ret = 'application/x-openlink-image')
     {
-      declare image_format varchar;
+      declare image_format, image_blob varchar;
+      declare image_blob_len int;
 
-      image_format := "IM GetImageBlobFormat" (content, length(blob_to_string (content)));
+      image_blob := blob_to_string (content);
+      image_blob_len := length(image_blob);
+      if (not image_blob_len)
+        return 'application/x-openlink-image';
+      image_format := "IM GetImageBlobFormat" (image_blob, image_blob_len);
       if (image_format is not null)
         {
-          image_format := "IM GetImageBlobAttribute" (content, length(blob_to_string (content)), 'EXIF:Model');
+          image_format := "IM GetImageBlobAttribute" (image_blob, image_blob_len, 'EXIF:Model');
           if (image_format is not null and image_format <> '' and image_format <> 'unknown' and image_format <> '.')
             return 'application/x-openlink-photo';
 
@@ -394,6 +399,8 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-picture" (in rdf_schema 
   content := blob_to_string (content1);
 
   image_size := length (content);
+  if (not image_size)
+    goto errexit;
   image_format := "IM GetImageBlobFormat"(content, image_size);
   xsize := "IM GetImageBlobWidth"(content, image_size);
   ysize := "IM GetImageBlobHeight"(content, image_size);
