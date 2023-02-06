@@ -58,6 +58,8 @@
 #endif
 
 #if defined (PCTCP)
+# include <winsock2.h>
+# include <mstcpip.h>
 # include <windows.h>
 extern int last_errno;
 /*static int pctcp_started=0; */
