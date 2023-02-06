@@ -584,7 +584,7 @@ vad_create() {
     mkdir vad
   fi
   mv vad_files/vsp vad
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_FS', '.', 'tutorial_filesystem.vad')"
+  #do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_FS', '.', 'tutorial_filesystem.vad')"
   do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_DAV', '.', 'tutorial_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
@@ -627,14 +627,13 @@ else
 	directory_init
 	virtuoso_init
 	generate_files
-	sticker_init 0
+	#sticker_init 0
 	sticker_init 1
 	vad_create
 	virtuoso_shutdown
 	STOP_SERVER
 	chmod 644 tutorial_filesystem.vad
 	chmod 644 tutorial_dav.vad
-#        directory_clean
 fi
 
 CHECK_LOG
@@ -644,6 +643,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0
