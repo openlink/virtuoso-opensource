@@ -60,7 +60,7 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
+	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h json.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
 	col.h simd.h vec.h mhash.h qncache.h sparqlwords.h clq.h geo.h monitor.h
 
@@ -71,6 +71,8 @@ generated_code = \
 	json_l.c \
 	json_p.c \
 	json_p.h \
+	jsonld_p.c \
+	jsonld_p.h \
 	rdf_mapping_jso.c \
 	rdf_mapping_jso.h \
 	rdf_mapping_jso.ttl \
@@ -193,6 +195,7 @@ libwi_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	jsonld_p.c \
 	lisprdr.c \
 	lock.c \
 	monitor.c \
@@ -342,6 +345,7 @@ libwi_odbc_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	jsonld_p.c \
 	lisprdr.c \
 	lock.c \
 	monitor.c \
@@ -768,6 +772,8 @@ json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
+jsonld_p.c jsonld_p.h: $(srcdir)/jsonld.y Makefile.am
+	@$(GEN) $(YACC) -o jsonld_p.c -vd -pjsonldyy $(srcdir)/jsonld.y
 
 sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \

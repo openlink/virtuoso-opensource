@@ -385,6 +385,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
     {
       __xml_set_ns_decl (NS_PREFIX, NS_URL, 2);
     }
+  DB.DBA.XML_SET_NS_DECL (	'as'		, 'https://www.w3.org/ns/activitystreams#'	                , 2);
   DB.DBA.XML_SET_NS_DECL (	'bif'		, 'http://www.openlinksw.com/schemas/bif#'	                , 2);
   DB.DBA.XML_SET_NS_DECL (	'dawgt'		, 'http://www.w3.org/2001/sw/DataAccess/tests/test-dawg#'	, 2);
   DB.DBA.XML_SET_NS_DECL (	'dbpedia'	, 'http://dbpedia.org/resource/'				, 2);
@@ -393,6 +394,7 @@ create procedure DB.DBA.XML_LOAD_ALL_NS_DECLS ()
   DB.DBA.XML_SET_NS_DECL (	'dcterms'	, 'http://purl.org/dc/terms/'   				, 2);
   DB.DBA.XML_SET_NS_DECL (	'go'		, 'http://purl.org/obo/owl/GO#'					, 2);
   DB.DBA.XML_SET_NS_DECL (	'geo'		, 'http://www.w3.org/2003/01/geo/wgs84_pos#'			, 2);
+  DB.DBA.XML_SET_NS_DECL (	'gr'		, 'http://purl.org/goodrelations/v1#'   			, 2);
   DB.DBA.XML_SET_NS_DECL (	'fn'		, 'http://www.w3.org/2005/xpath-functions/#'			, 2);
   DB.DBA.XML_SET_NS_DECL (	'foaf'		, 'http://xmlns.com/foaf/0.1/'					, 2);
   DB.DBA.XML_SET_NS_DECL (	'ldp'		, 'http://www.w3.org/ns/ldp#'					, 2);

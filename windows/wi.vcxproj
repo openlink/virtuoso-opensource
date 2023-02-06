@@ -200,6 +200,7 @@
     <ClCompile Include="..\libsrc\Wi\jso.c" />
     <ClCompile Include="..\libsrc\Wi\json_l.c" />
     <ClCompile Include="..\libsrc\Wi\json_p.c" />
+    <ClCompile Include="..\libsrc\Wi\jsonld_p.c" />
     <ClCompile Include="..\libsrc\Wi\lisprdr.c" />
     <ClCompile Include="..\libsrc\Wi\lock.c" />
     <ClCompile Include="..\libsrc\Wi\log.c" />
@@ -634,6 +635,40 @@ cd $(ProjectDir)
       <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(AdditionalInputs)</AdditionalInputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\jsonld.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
     </CustomBuild>
     <CustomBuild Include="..\libsrc\Wi\nquad_p.y">
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
