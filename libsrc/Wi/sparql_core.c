@@ -144,8 +144,6 @@ sparp_mp_sparql_cap_cbk (mem_pool_t *mp, void *cbk_env)
 
 /*#define SPAR_ERROR_DEBUG*/
 
-extern void jsonyyerror_impl(const char *s);
-
 size_t
 spart_count_specific_elems_by_type (ptrlong type)
 {
@@ -939,7 +937,7 @@ next_u:
 err:
   dk_free_box (tmp_buf);
   if (SPAR_STRLITERAL_JSON_STRING == mode)
-    jsonyyerror_impl (err_msg);
+    sqlr_new_error ("37000", "JSON1", "JSON parser failed: %.200s", err_msg);
   else
     sparyyerror_impl (sparp, NULL, err_msg);
   return NULL;
