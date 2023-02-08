@@ -116,16 +116,7 @@
       <v:form name="form1" type="simple" method="POST" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
       <!-- top of security layout -->
         <div class="main_tab_page">
-          <div class="page_tab_selected">
-            Public Key Infrastructure
-          </div>
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
-          </div>
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-          </div>
-
+          <v:include url="sec_pki_menu.vspx"/>
           <div class="tab_page_new">
             <div id="pki_form">
               <h3>CA Root Certificate Details</h3>

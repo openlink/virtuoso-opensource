@@ -54,16 +54,7 @@
       <v:form name="form1" type="simple" method="POST">
       <!-- top of security layout -->
         <div class="main_tab_page">
-          <div class="page_tab_selected">
-            Public Key Infrastructure
-          </div>
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
-          </div>
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-          </div>
-
+          <v:include url="sec_pki_menu.vspx"/>
           <div class="tab_page_new">
             <h3>Configure Data Spaces Endpoints</h3>
             <!-- end of top security layout -->

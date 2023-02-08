@@ -120,15 +120,7 @@
       <v:form name="page_form" type="simple" method="POST">
         <!-- top of security layout -->
         <div class="main_tab_page">
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_pki_1.vspx" value="Public Key Infrastructure" render-only="1"/>
-          </div>
-          <div class="page_tab">
-            <v:url xhtml_style="page_tab" url="sec_ca.vspx" value="CA Root Certificates" render-only="1"/>
-          </div>
-          <div class="page_tab_selected">
-            Access Control
-          </div>
+          <v:include url="sec_pki_menu.vspx"/>
           <div class="tab_page_new">
             <!-- end of top security layout -->
             <table border="0" width="100%" cellpadding="10" cellspacing="0">

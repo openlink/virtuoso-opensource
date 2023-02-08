@@ -1135,6 +1135,22 @@ fm img {
   /*  clear: top;*/
 }
 
+div.fm_info span {
+    font-size:13px;
+    padding:3px;
+    display:inline;
+}
+
+div.fm_info div {
+   height: 23px;
+}
+
+div.fm_info label {
+    font-size:12px;
+    padding:3px;
+    display:inline;
+}
+
 span.fm_label {
   display: block;
   float: left;
