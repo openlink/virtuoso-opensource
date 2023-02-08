@@ -229,6 +229,7 @@ create procedure adm_menu_tree ()
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_create.vspx" id="5" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_remove.vspx" id="6" place="1" allowed="yacutia_accounts_page"/>
+     <node name="Accounts" url="account_key_remove.vspx" id="7" place="1" allowed="yacutia_accounts_page"/>
      <node name="Roles" url="roles.vspx" id="7" place="1" allowed="yacutia_accounts_page"/>
      <node name="Roles" url="role_remove.vspx" id="8" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="capabilities.vspx" id="9" place="1" allowed="yacutia_accounts_page"/>

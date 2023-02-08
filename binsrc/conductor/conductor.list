@@ -5,6 +5,7 @@
 ../../xddl_tables.xsd
 ../../xddl_views.xsd
 conductor/account_create.vspx
+conductor/account_key_remove.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
