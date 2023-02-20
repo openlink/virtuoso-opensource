@@ -2220,3 +2220,109 @@ create procedure DB.DBA.REPL_GETDATE (in _src varchar := null, in _type integer 
   return cast (datestring_GMT(now()) as datetime);
 }
 ;
+
+
+--
+-- Simple JSON -> Turtle translator
+--
+
+create function is_json_obj (in tree any)
+{
+  if (isvector (tree) and length (tree) >= 2 and __tag(tree[0]) = 255 and tree[1] = 'structure')
+    return 1;
+  return 0;
+}
+;
+
+create function is_json_node (in tree any)
+{
+  if (isvector (tree) and length (tree) = 2 and not is_json_obj (tree))
+    return 1;
+  return 0;
+}
+;
+
+create function is_json_array (in tree any)
+{
+  if (isvector (tree) and length (tree) > 0 and __tag (tree[0]) <> 255)
+    return 1;
+  return 0;
+}
+;
+
+create procedure json_print_node (inout ses any, in tree any, in ns varchar, in lvl int := 0)
+{
+  declare i, j, len, lenj int;
+
+  http (repeat ('  ', lvl), ses);
+  if (is_json_obj (tree))
+    tree := subseq (tree, 2);
+  len := length (tree);
+  for (i := 0; i < len; i := i + 2)
+   {
+     declare node, val any;
+     node := tree[i];
+     val := tree[i+1];
+     http (repeat ('  ', lvl), ses);
+     if (is_json_obj (val))
+       {
+         http (sprintf ('%s:%s [ \n', ns, node), ses);
+         json_print_node (ses, val, ns, lvl + 1);
+         http (' ]', ses);
+       }
+     else if (is_json_array (val))
+       {
+         http (sprintf ('%s:%s [ \n', ns, node), ses);
+         lenj := length (val);
+         for (j := 0; j < lenj; j := j + 1)
+          {
+            if (is_json_obj (val[j]) or is_json_array (val[j]))
+              {
+                http (sprintf ('rdf:_%d [ ', j), ses);
+                json_print_node (ses, val[j], ns, lvl + 1);
+                http ('] ', ses);
+              }
+            else
+              {
+                http (sprintf ('rdf:_%d ', j), ses);
+                http_nt_object (val[j], ses);
+              }
+            if (j < lenj - 1)
+              http ('; \n', ses);
+          }
+         http (' ]', ses);
+       }
+     else
+       {
+         -- TTL fck the long int
+         --declare env any;
+         --env := vector (dict_new (10), 0, '', '', '', 0, 0, 0, 0, ses);
+         if (isvector (val) and length (val) = 0)
+           http (sprintf ('%s:%s rdf:nil', ns, node), ses);
+         else
+           {
+             http (sprintf ('%s:%s ', ns, node), ses);
+             http_nt_object (val, ses);
+             --http_ttl_value (env, val, 2, ses);
+           }
+       }
+     if (i < len - 2)
+       http (';\n', ses);
+   }
+}
+;
+
+create procedure json_to_turtle (in content varchar, in ns varchar := '', in ns_url varchar := '#')
+{
+  declare tree, ses any;
+  tree := json_parse (content);
+  ses := string_output ();
+  http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> . \n', ses);
+  http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> . \n', ses);
+  http (sprintf ('@prefix %s: <%s> . \n\n', ns, ns_url), ses);
+  http ('[] ', ses);
+  json_print_node (ses, tree, ns);
+  http ('. \n', ses);
+  return string_output_string (ses);
+}
+;
