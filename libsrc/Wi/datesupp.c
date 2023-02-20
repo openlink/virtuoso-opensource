@@ -1515,7 +1515,7 @@ field_delim_checked:
     {
       if (DTFLAG_YY & dtflags)
         fld_values[0] = -(fld_values[0]);
-      else
+      else if (DTFLAG_TIME & dtflags)
         {
           err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
           return;
