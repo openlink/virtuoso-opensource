@@ -2201,7 +2201,7 @@ create procedure RDF_DUMP_NQUADS
     }
   IF (length (ses))
     {
-      file_name := sprintf ('%s/output%06d.nq', dir, inx);
+      file_name := sprintf ('%s/rdf-dump-%06d.nq', dir, inx);
       string_to_file (file_name, ses, -2);
       IF (comp)
 	{
@@ -2213,6 +2213,115 @@ create procedure RDF_DUMP_NQUADS
     }
 }
 ;
+
+
+create procedure DB.DBA.RDF_DUMP_NQUADS_MT (
+    in  n_threads          int,
+    in  dir                varchar := 'dumps',
+    in  file_length_limit  integer := 100000000,
+    in  comp               int := 1,
+    in  fix                int := 1
+    )
+{
+  declare  inx  int;
+  declare graphs any;
+  declare len, n_per_slice int;
+  declare aq any;
+
+
+  graphs := (SELECT VECTOR_AGG ("G") FROM (SELECT DISTINCT G as "G" FROM RDF_QUAD TABLE OPTION (INDEX G, INDEX_ONLY)) dt);
+  len := length (graphs);
+
+  n_per_slice := (((len / n_threads) + mod (len, n_threads)) * n_threads) / n_threads;
+  aq := async_queue (n_threads, 4);
+
+  for (inx := 0; inx < n_threads; inx := inx + 1)
+    {
+      declare start_pos, end_pos int;
+      declare rng any;
+
+      start_pos := inx * n_per_slice;
+      end_pos := start_pos + n_per_slice;
+      rng := subseq (graphs, start_pos, end_pos);
+      aq_request (aq, 'DB.DBA.RDF_DUMP_NQUADS_THR', vector (rng, inx, dir, file_length_limit, comp, fix));
+    }
+  aq_wait_all (aq);
+}
+;
+
+create procedure DB.DBA.RDF_DUMP_NQUADS_THR (
+    in graphs any,
+    in thr_no int,
+    in dir varchar,
+    in file_length_limit int,
+    in comp int,
+    in fix int
+    )
+{
+  declare  inx, ses_len  int;
+  declare  file_name     varchar;
+  declare  env, ses      any;
+  declare message varchar;
+  declare nth, total, g_no bigint;
+  declare prev_g any;
+
+  log_message (sprintf ('[%02d] [%D] STARTED %d', thr_no, curutcdatetime(), length (graphs)));
+  inx := 1;
+  nth := 0;
+  g_no := 0;
+  total := length (graphs);
+  SET ISOLATION = 'uncommitted';
+  env := vector (0,0,0);
+  ses := string_output (10000000);
+  prev_g := '';
+  FOREACH (iri_id_8 g_iid in graphs) DO {
+  g_no := g_no + 1;
+  FOR SELECT __id2in ("S") AS "s", __id2in ("P") AS "p", __ro2sq ("O") AS "o", __id2in ("G") AS "g"
+      FROM DB.DBA.RDF_QUAD TABLE OPTION (INDEX G) WHERE "G" = g_iid OPTION (QUIETCAST, LOOP) DO
+    {
+      if (fix and "p" = 'http://www.opengis.net/ont/geosparql#asWKT')
+        "o" := null;
+      if ("o" is null)
+        "o" := __box_flags_tweak ('http://www.w3.org/1999/02/22-rdf-syntax-ns#nil', 1);
+      http_nquad (env, "s", "p", "o", "g", ses);
+      ses_len := LENGTH (ses);
+      nth := nth + 1;
+      if (ses_len >= file_length_limit and prev_g <> "g")
+	{
+          prev_g := "g";
+	  file_name := sprintf ('%s/rdf-dump-%02d-%06d.nq', dir, thr_no, inx);
+	  string_to_file (file_name, ses, -2);
+	  if (comp)
+	    {
+	      gz_compress_file (file_name, concat (file_name, '.gz'));
+	      file_delete (file_name);
+	    }
+          log_message (sprintf ('[%02d] [%D] Dump written %s', thr_no, curutcdatetime(), file_name));
+	  inx := inx + 1;
+	  env := vector (0,0,0);
+	  ses := string_output (10000000);
+	}
+      if (mod (nth, 500000) = 0)
+        {
+          log_message (sprintf ('[%02d] [%D] %d %d/%d %s', thr_no, curutcdatetime(), nth, g_no, total, "g"));
+        }
+    }
+  }
+  if (length (ses))
+    {
+      file_name := sprintf ('%s/rdf-dump-%02d-%06d.nq', dir, thr_no, inx);
+      string_to_file (file_name, ses, -2);
+      if (comp)
+	{
+	  gz_compress_file (file_name, concat (file_name,'.gz'));
+	  file_delete (file_name);
+	}
+      log_message (sprintf ('[%02d] [%D] Dump written %s', thr_no, curutcdatetime(), file_name));
+    }
+  log_message (sprintf ('[%02d] [%D] DONE %d', thr_no, curutcdatetime(), nth));
+}
+;
+
 
 --!AWK PUBLIC
 create procedure DB.DBA.REPL_GETDATE (in _src varchar := null, in _type integer := 0) returns datetime
