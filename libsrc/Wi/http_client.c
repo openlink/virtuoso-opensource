@@ -929,6 +929,22 @@ int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret)
 }
 #endif
 
+static int
+check_connect_timeout (session_t *ses, timeout_t * to, int want)
+{
+  session_t *wses[] = {0}, *rses[] = {0};
+  int rc;
+
+  if (SSL_ERROR_WANT_WRITE == want)
+    wses[0] = ses;
+  else if (SSL_ERROR_WANT_READ == want)
+    rses[0] = ses;
+  else
+    return SSL_ERROR_SSL;
+  rc = session_select (1, rses, wses, to);
+  return (rc <= 0 ? SSL_ERROR_SSL : SSL_ERROR_NONE);
+}
+
 HC_RET
 http_cli_connect (http_cli_ctx * ctx)
 {
@@ -961,6 +977,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	  char * pkcs12_file = ctx->hcctx_pkcs12_file;
 	  char * pass = ctx->hcctx_cert_pass;
 	  timeout_t to = {100, 0};
+          int block = 0;
 
 	  /*
 	   *  Currently this only works for HTTP/HTTPS based proxies like squid.
@@ -1056,7 +1073,6 @@ http_cli_connect (http_cli_ctx * ctx)
 	  }
 #endif
 
-	  session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
 	  SSL_set_fd (ctx->hcctx_ssl, dst);
 
 	  if (ctx->hcctx_ssl_insecure)
@@ -1082,21 +1098,36 @@ http_cli_connect (http_cli_ctx * ctx)
 	      SSL_CTX_set_session_id_context(ctx->hcctx_ssl_ctx,
 		  (const unsigned char *)&session_id_context, sizeof session_id_context);
 	    }
+          block = 0;
+          session_set_control (ctx->hcctx_http_out->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
 	  ssl_err = SSL_connect (ctx->hcctx_ssl);
-	  if (ssl_err != 1)
+          if (1 != ssl_err)
 	    {
+              int con_err;
 	      char err1[2048];
 	      err1[0] = 0;
-	      if (ERR_peek_error ())
-		{
-		  cli_ssl_get_error_string (err1, sizeof (err1));
-		}
-	      else
-		strcpy_ck (err1, "Cannot connect via HTTPS");
-	      ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", "%s", err1);
+              con_err = SSL_get_error(ctx->hcctx_ssl, ssl_err);
+              if (SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err)
+                con_err = check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
+              if (SSL_ERROR_NONE == con_err)
+                ssl_err = 1;
+              else
+                {
+                  if (ERR_peek_error ())
+                    cli_ssl_get_error_string (err1, sizeof (err1));
+                  else
+                    strcpy_ck (err1, "Cannot connect via HTTPS");
+                  ctx->hcctx_err = srv_make_new_error ("08001", "HTS01", "%s", err1);
+                }
 	    }
-	  else
-	    tcpses_to_sslses (ctx->hcctx_http_out->dks_session, ctx->hcctx_ssl);
+	  if (1 == ssl_err)
+            {
+              int rc;
+              block = 1;
+              rc = session_set_control (ctx->hcctx_http_out->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
+              rc = session_set_control (ctx->hcctx_http_out->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
+              tcpses_to_sslses (ctx->hcctx_http_out->dks_session, ctx->hcctx_ssl);
+            }
 error_in_ssl:
 	  if (ctx->hcctx_err)
 	    {
