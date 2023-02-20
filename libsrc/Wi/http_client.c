@@ -858,6 +858,9 @@ http_client_load_ssl_ca_certs (SSL * ssl, const char *certs_pem)
   if (NULL == certs_pem) /* no CA list is given */
     goto end;
 
+  if (!strcmp (certs_pem, INTERNAL_CA_STORE) && xenc_load_verify_CA_list (ssl_ctx, certs_pem))
+    return;
+
   if ((in = BIO_new (BIO_s_mem())) == NULL)
     goto end;
 
