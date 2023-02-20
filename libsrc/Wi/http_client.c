@@ -2992,6 +2992,67 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects);
 }
 
+static char *http_cookie_av[] = { "comment", "discard", "domain", "path", "max-age", "expires", "secure", "version", NULL };
+
+static void
+http_get_cookies (caddr_t cookie_str, int split_flag, dk_set_t * set, dk_set_t * reserved)
+{
+  char *tmp, *tok_s = NULL, *tok, *sep;
+  caddr_t in;
+  char **cookie_av = http_cookie_av;
+
+  in = box_copy (cookie_str);
+  tok = strtok_r (in, ";", &tok_s);
+  while (tok)
+    {
+      while (*tok && isspace (*tok))
+	tok++;
+      if (tok_s)
+	tmp = tok_s - 2;
+      else if (tok && strlen (tok) > 1)
+	tmp = tok + strlen (tok) - 1;
+      else
+	tmp = NULL;
+      while (tmp && tmp >= tok && isspace (*tmp))
+	*(tmp--) = 0;
+      sep = strchr (tok, '=');
+      if (NULL != sep)
+	*sep++ = 0;
+      for (cookie_av = http_cookie_av; split_flag && NULL != cookie_av[0]; cookie_av++)
+	{
+	  if (0 == stricmp (tok, cookie_av[0]))	/* reserved names */
+	    break;
+	}
+      if (!split_flag || NULL == cookie_av[0])
+	{
+	  dk_set_push (set, box_dv_short_string (tok));
+	  dk_set_push (set, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+	}
+      else if (reserved)
+	{
+	  dk_set_push (reserved, box_dv_short_string (tok));
+	  dk_set_push (reserved, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+	}
+      tok = strtok_r (NULL, ";", &tok_s);
+    }
+  dk_free_box (in);
+}
+
+caddr_t
+bif_http_cookie_to_vector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  const char *me = "http_cookie_to_vector";
+  caddr_t cookie_str = bif_string_or_uname_arg (qst, args, 0, me);
+  boxint split_flag = BOX_ELEMENTS_0 (args) > 1 ? bif_long_arg (qst, args, 1, me) : 0;
+  state_slot_t *ret_arg = (split_flag && BOX_ELEMENTS_0 (args) > 2 && ssl_is_settable (args[2])) ? args[2] : NULL;
+  dk_set_t set = NULL, reserved = NULL;
+
+  http_get_cookies (cookie_str, split_flag, &set, ret_arg ? &reserved : NULL);
+  if (NULL != ret_arg)
+    qst_set (qst, ret_arg, list_to_array (dk_set_nreverse (reserved)));
+  return list_to_array (dk_set_nreverse (set));
+}
+
 void
 bif_http_client_init (void)
 {
@@ -2999,4 +3060,5 @@ bif_http_client_init (void)
   bif_define_ex ("http_client_internal", bif_http_client, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("http_pipeline", bif_http_pipeline, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("http_get", bif_http_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_cookie_to_vector", bif_http_cookie_to_vector, BMD_RET_TYPE, &bt_any, BMD_DONE);
 }
