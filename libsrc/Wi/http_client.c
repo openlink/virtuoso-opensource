@@ -391,22 +391,19 @@ HC_RET
 http_cli_negotiate_socks4 (dk_session_t * ses, char * in_host, char * name, char ** err_ret)
 {
   unsigned char socksreq[270];
-  int port, rc;
+  int port = 80, rc;
   unsigned short ip[4];
-  char *pos, host[1000], ip_addr[50];
+  char *pos, host[1024], ip_addr[50];
   int packetsize;
 
-  pos = strchr (in_host, ':');
-  if (pos)
+  strncpy (host, in_host, sizeof (host));
+  host[1023] = '\0';
+  if ((pos = strchr (host, ':')) != NULL)
     {
-      memcpy (host, in_host, pos - in_host);
+      *pos = '\0';
       port = atoi (pos + 1);
     }
-  else
-    {
-      strcpy_ck (host, in_host);
-      port = 80;
-    }
+
   socksreq[0] = 4;
   socksreq[1] = 1; /* connect */
   *((unsigned short*)&socksreq[2]) = htons((unsigned short) port);
@@ -462,22 +459,19 @@ HC_RET
 http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char * pass, int resolve, char ** err_ret)
 {
   unsigned char socksreq[600];
-  int port, rc;
+  int port = 80, rc;
   unsigned short ip[4];
-  char *pos, host[1000], ip_addr[50];
+  char *pos, host[1024], ip_addr[50];
   int packetsize;
 
-  pos = strchr (in_host, ':');
-  if (pos)
+  strncpy (host, in_host, sizeof (host));
+  host[1023] = '\0';
+  if ((pos = strchr (host, ':')) != NULL)
     {
-      memcpy (host, in_host, pos - in_host);
+      *pos = '\0';
       port = atoi (pos + 1);
     }
-  else
-    {
-      strcpy_ck (host, in_host);
-      port = 80;
-    }
+
   socksreq[0] = 5; /* version */
   socksreq[1] = (user ? 2 : 1); /* methods supported */
   socksreq[2] = 0; /* no auth */
@@ -561,6 +555,11 @@ http_cli_negotiate_socks5 (dk_session_t * ses, char * in_host, char * user, char
       int hostname_len = strlen (host);
       socksreq[3] = 3; /* dns name */
       packetsize = (size_t)(5 + hostname_len + 2);
+      if (packetsize >= sizeof (socksreq))
+        {
+	  *err_ret = "Can not resolve target host name";
+	  return (HC_RET_ERR_ABORT);
+        }
       socksreq[4] = (char) hostname_len;
       memcpy(&socksreq[5], host, hostname_len);
       *((unsigned short*)&socksreq[hostname_len+5]) = htons((unsigned short)port);
