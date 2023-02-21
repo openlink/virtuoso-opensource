@@ -1367,12 +1367,25 @@ echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
 echo both ": verify above with ibid with loop\n";
 
 
+sparql insert into <urn:test> { <#s> <#p> <#o> };
+create procedure sslvar_test()
+{
+  declare var any;
+  var := 'test';
+  result_names (var);
+  for (sparql select distinct ?test from <urn:test> where { ?s ?p ?o . BIND(?:var as ?test) . } order by ?s) do
+    {
+      result ("test");
+    }
+}
+;
+
+sslvar_test();
+ECHO BOTH $IF $EQU $LAST[1] 'test' "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": var out of query scope in distinct/oby: " $LAST[1] "\n";
 
 
-
--- End of test
---
-ECHO BOTH "COMPLETED: SQL Optimizer tests part 2 (sqlo2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 sparql clear graph <urn:gby:flt>;
 
 ttlp('
@@ -1408,3 +1421,8 @@ LIMIT 4
 ECHO BOTH $IF $EQU $LAST[2] $LAST[3] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": gby/float \n";
+
+--
+-- End of test
+--
+ECHO BOTH "COMPLETED: SQL Optimizer tests part 2 (sqlo2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
