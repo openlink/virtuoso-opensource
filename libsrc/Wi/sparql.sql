@@ -8224,6 +8224,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   declare old_log_mode integer;
   declare grab_params any;
   declare grabbed any;
+  declare get_soft varchar;
   declare res integer;
   __rgs_assert_cbk (graph_iri, uid, 2, 'SPARUL LOAD');
   old_log_mode := log_enable (log_mode, 1);
@@ -8231,10 +8232,13 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
   grabbed := dict_new();
   if (isiri_id (graph_iri))
     graph_iri := id_to_iri (graph_iri);
+  get_soft := get_keyword ('get:soft', options, 'add');
+  if ('no-sponge' = get_soft)
+    get_soft := 'add'; -- It's explicit SPARQL LOAD
   grab_params := vector_concat (vector (
       'base_iri', resource,
       'get:destination', graph_iri,
-      'get:soft', get_keyword ('get:soft', options, 'replacing'),
+      'get:soft', get_soft,
       'get:refresh', get_keyword ('get:refresh', options, -1),
       'get:error-recovery', get_keyword ('get:error-recovery', options, 'signal'),
       -- 'flags', flags,
