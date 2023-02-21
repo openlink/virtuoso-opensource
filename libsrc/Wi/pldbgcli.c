@@ -33,10 +33,40 @@
 #include "libutil.h"
 #include "pldebug.h"
 
+pldbg_cmd_t pld_cmds[] =
+{
+  { "BREAK", PD_BREAK, "procedure_name [line number]", "Set breakpoint at specified line or PL function"} ,
+  { "NEXT", PD_NEXT, NULL, "Step program, proceeding through PL subroutine calls."} ,
+  { "INFO", PD_INFO, "(THREAD|CLIENT|BREAK)", "Generic command for showing things about the program/process being debugged."} ,
+  { "ATTACH", PD_ATTACH, "thread_id|client_id", "Attach to a running process."} ,
+  { "STEP", PD_STEP, NULL, "Step PL program until it reaches a different source line."} ,
+  { "LIST", PD_LIST, "[procedure name] [line number]", "List specified procedure or line."} ,
+  { "WHERE", PD_WHERE, NULL, "Print backtrace of all stack frames."} ,
+  { "CONTINUE", PD_CONT, NULL, "Continue PL program being debugged after breakpoint."} ,
+  { "PRINT", PD_PRINT, "variable_name", "Print value of variables or arguments."} ,
+  { "SET", PD_SET, "variable_name new_value", "Assign a specified value to a variable."} ,
+  { "DELETE", PD_DELETE, "([breakpoint_number]|[procedure_name] [line_number])", "Delete some breakpoints."} ,
+  { "FRAME", PD_FRAME, "frame_number", "Select and print a stack frame."} ,
+  { "UP", PD_UP, NULL, "Select one frame up."} ,
+  { "DOWN", PD_DOWN, NULL, "Select one frame down."} ,
+  { "FINISH", PD_FINISH, NULL, "Execute until returns."} ,
+  { "UNTIL", PD_UNTIL, "line_number", "Execute until the program reaches a source line greater than the current."} ,
+  { "GLOBALS", PD_GLOBALS, NULL, "Print global variables on attached connection."} ,
+  { NULL, 0, NULL, NULL}
+};
+
+/* available infos */
+pldbg_cmd_t pld_infos[] =
+{
+  { "THREADS", PDI_THRE, NULL, "Running threads"} ,
+  { "CLIENTS", PDI_CLI, NULL, "Connected SQL/ODBC clients"} ,
+  { "BREAKPOINTS", PDI_BREAK, NULL, "Active breakpoints"} ,
+  { NULL, 0, NULL, NULL}
+};
 
 /* PL Debugger API */
 void *
-pldbg_connect (char * addr, char * usr, char * pwd1)
+pldbg_connect (char *addr, char *usr, char *pwd1)
 {
   char pwd[17];
   caddr_t result;
@@ -47,7 +77,7 @@ pldbg_connect (char * addr, char * usr, char * pwd1)
   if (!DKSESSTAT_ISSET (ses, SST_OK))
     {
       if (ses)
-      PrpcSessionFree (ses);
+	PrpcSessionFree (ses);
       return NULL;
     }
   else
@@ -68,9 +98,9 @@ pldbg_connect (char * addr, char * usr, char * pwd1)
 }
 
 int
-pldbg_command (void * ses1, char * cmd1)
+pldbg_command (void *ses1, char *cmd1)
 {
-  dk_session_t * ses = (dk_session_t *) ses1;
+  dk_session_t *ses = (dk_session_t *) ses1;
   caddr_t cmd = box_dv_short_string (cmd1);
   char *tok, *toks = NULL;
   dk_set_t set = NULL, set1;
@@ -79,7 +109,7 @@ pldbg_command (void * ses1, char * cmd1)
   if (NULL != cmd)
     do
       {
-	pldbg_cmd_t * tmp;
+	pldbg_cmd_t *tmp;
 
 	if (!i)
 	  tok = strtok_r (cmd, " \r\n", &toks);
@@ -161,9 +191,9 @@ pldbg_command (void * ses1, char * cmd1)
 }
 
 caddr_t
-pldbg_read_resp (void * ses1)
+pldbg_read_resp (void *ses1)
 {
-  dk_session_t * ses = (dk_session_t *) ses1;
+  dk_session_t *ses = (dk_session_t *) ses1;
   caddr_t res = (caddr_t) PrpcReadObject (ses);
   if (!DKSESSTAT_ISSET (ses, SST_OK))
     {
@@ -179,10 +209,7 @@ void
 pldbg_help (FILE * f)
 {
   pldbg_cmd_t *cmd = pld_cmds, *nfo = pld_infos;
-  fprintf (f,
-      "OpenLink Interactive PL Debugger (Virtuoso).\n"
-      "\n"
-      "Available commands:\n");
+  fprintf (f, "OpenLink Interactive PL Debugger (Virtuoso).\n" "\n" "Available commands:\n");
   for (; cmd->pld_name; cmd++)
     {
       fprintf (f, "   %s %s - %s\n", cmd->pld_name, cmd->pld_params ? cmd->pld_params : "", cmd->pld_descr);
