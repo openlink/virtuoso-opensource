@@ -233,6 +233,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
       final_gdest := get_keyword ('get:group-destination', env);
       opts := vector (
         'get:soft', get_keyword_ucase ('get:soft', env, 'soft'),
+        'get:accept', get_keyword ('get:accept', env, null),
         'get:refresh', get_keyword_ucase ('get:refresh', env),
         'get:method', get_method,
         'get:destination', final_dest,

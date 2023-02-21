@@ -8239,6 +8239,7 @@ create function DB.DBA.SPARUL_LOAD (in graph_iri any, in resource varchar, in ui
       'base_iri', resource,
       'get:destination', graph_iri,
       'get:soft', get_soft,
+      'get:accept', get_keyword ('get:accept', options, null),
       'get:refresh', get_keyword ('get:refresh', options, -1),
       'get:error-recovery', get_keyword ('get:error-recovery', options, 'signal'),
       -- 'flags', flags,
