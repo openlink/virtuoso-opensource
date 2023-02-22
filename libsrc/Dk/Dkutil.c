@@ -167,7 +167,7 @@ get_msec_real_time (void)
     }
 #endif
 
-#if defined (CLOCK_MONOTONIC)
+#if defined (HAVE_CLOCK_GETTIME)
   /*
    *  Use clock_gettime which works on Linux/macOS/FreeBSD
    */
