@@ -99,6 +99,7 @@ check_SCRIPTS = \
 #TESTS=test_server.sh
 TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
+	VIRTDEV_HOME="$(TOP)" \
 	HOST=localhost \
 	JDK4="@ac_jdk4_path@" \
 	JDK4_1="@ac_jdk4_1_path@" \

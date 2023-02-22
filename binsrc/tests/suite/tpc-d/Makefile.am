@@ -24,6 +24,7 @@ TOP=@TOP@
 #TESTS=runtests.sh
 TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
+	VIRTDEV_HOME="$(TOP)" \
 	HOST=localhost \
 	JDK2="@ac_jdk2_path@" \
 	JDK3="@ac_jdk3_path@" \

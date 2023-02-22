@@ -74,10 +74,10 @@ VIRTUOSO_CAPACITY="single"
 #
 #  Netstat
 #
-NETSTAT=`which netstat`
+NETSTAT=`which netstat 2>/dev/null`
 if test -z "$NETSTAT"
 then
-    NETSTAT=`which ss`
+    NETSTAT=`which ss 2>/dev/null`
 fi
 if test -z "$NETSTAT"
 then
