@@ -35,6 +35,7 @@ dist_doc_DATA = \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
 	$(srcdir)/LICENSE.md \
+	$(srcdir)/SECURITY.md \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README.md \
 	$(srcdir)/README.ANYTIME.md \
@@ -124,6 +125,7 @@ EXTRA_DIST = \
 	$(srcdir)/README.sesame3.md \
 	$(srcdir)/README.UPGRADE.md \
 	$(srcdir)/README.WINDOWS.md \
+	$(srcdir)/SECURITY.md \
 	$(srcdir)/autogen.sh \
 	$(srcdir)/bin/generate \
 	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
