@@ -1255,14 +1255,17 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
                        ' { gql:Map gql:schemaObjects <%s> . <%s> gql:rdfClass ?class ; gql:type ?class_type . }}'),
                                 id_to_iri (g_iid), id_to_iri(gcls_iid), id_to_iri(gcls_iid)));
 
+          cls := null;
           for select "class", "class_type", "iri_pattern", "data_graph0", "sparql_op0", "qry0" from (sparql select * where
                     { graph ?:g_iid { gql:Map gql:schemaObjects ?gcls .
                             ?gcls gql:rdfClass ?class ; gql:type ?class_type ; gql:mutationType ?sparql_op0 .
                             optional { ?gcls gql:sparqlQuery ?qry0 }
                             optional { ?class gql:iriPattern ?iri_pattern }
                             gql:Map gql:dataGraph ?data_graph0 .
-                            filter (?gcls = ?:gcls_iid) }}) dt0 do
+                            filter (?gcls = iri(?:gcls_iid)) }}) dt0 do
             {
+              if (cls is not null)
+                signal ('GQGPF', 'Not supposed to have more than one row here');
               cls := "class";
               cls_type := "class_type";
               iri_format := "iri_pattern";
