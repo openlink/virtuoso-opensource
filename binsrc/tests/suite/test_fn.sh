@@ -132,23 +132,6 @@ then
 fi
 export NETSTAT
 
-
-#
-#  Make sure the following binaries are installed
-#
-for i in curl wget gzip tar unzip
-do
-    B=`which $i 2>/dev/null`
-    if test -z "$B"
-    then
-	echo ""
-	echo "***"
-	echo "*** ERROR: Please make sure \'$i\' is installed and in your PATH before running the test suite."
-	echo "***"
-	exit 1
-    fi
-done
-
 #===========================================================================
 #  Standard functions
 #===========================================================================
