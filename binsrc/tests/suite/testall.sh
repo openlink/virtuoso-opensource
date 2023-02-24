@@ -136,7 +136,8 @@ tlubm \
 rtest \
 trepl_rdf \
 tsoap12 \
-tvspxex "
+tvspxex \
+tgraphql "
 
 QUICKTEST=1
 TPCDMODE=local

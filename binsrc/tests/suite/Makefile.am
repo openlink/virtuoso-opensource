@@ -59,6 +59,7 @@ check_SCRIPTS = \
 	test_server.sh \
 	testall.sh \
 	testlib.sh \
+	tgraphql.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
@@ -100,6 +101,7 @@ check_SCRIPTS = \
 TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
 	VIRTDEV_HOME="$(TOP)" \
+	VIRTUOSO_BUILD="$(TOP)" \
 	HOST=localhost \
 	JDK4="@ac_jdk4_path@" \
 	JDK4_1="@ac_jdk4_1_path@" \
