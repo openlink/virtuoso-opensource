@@ -1089,6 +1089,7 @@ EXTRA_DIST = \
 	iodbcinst.c \
 	jso_reformat.awk \
 	list_lex_props.sh \
+	mkgit_head.sh \
 	mts_client.c \
 	mts_com.cpp \
 	mtx.cpp \
