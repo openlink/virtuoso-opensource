@@ -1,4 +1,16 @@
+2023-02-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.9 engine 3236
+
+	Updated NEWS.md
+
+2023-02-27  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with LDP sparql queries and rdf views
+
 2023-02-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Updated version to 7.2.9-rc1
 
