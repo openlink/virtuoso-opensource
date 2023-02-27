@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3115,7 +3115,7 @@ bif_xslt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   caddr_t res;
   xml_tree_ent_t *res1;
-  long start = prof_on ? get_msec_real_time () : 0;
+  time_msec_t start = prof_on ? get_msec_real_time () : 0;
   caddr_t name = bif_string_arg (qst, args, 0, "xslt");
   xml_entity_t * xe = bif_entity_arg (qst, args, 1, "xslt");
   xslt_sheet_t * xsh = xslt_sheet ((query_instance_t *) qst, NULL, name, NULL, NULL);
@@ -3157,7 +3157,7 @@ bif_xslt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   dk_free_box ((caddr_t) xe);
 #endif
   if (prof_on && start)
-    prof_exec (NULL, name, get_msec_real_time () - start, PROF_EXEC);
+    prof_exec (NULL, name, (long) (get_msec_real_time () - start), PROF_EXEC);
   return (caddr_t)(res1);
 }
 

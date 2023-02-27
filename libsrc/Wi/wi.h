@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -573,7 +573,7 @@ struct index_tree_s
     dk_set_t 		it_waiting_hi_fill; /* if thi is a hash inx being filled, list of threads waiting for the fill to finish */
     index_tree_t *	it_hic_next; /* links for LRU queue of hash indices */
     index_tree_t *	it_hic_prev;
-    long		it_last_used;
+    time_msec_t		it_last_used;
     int			it_hi_reuses; /* if hash inx, count of reuses */
     bitf_t		it_all_in_own_em:1;
     bitf_t		it_blobs_with_index:1;
@@ -2185,7 +2185,7 @@ int dbf_protected_param(stat_desc_t *sd);
 
 typedef struct s_time_t
 {
-  uint32	sti_real;
+  time_msec_t	sti_real;
   uint32	sti_cpu;
   uint32	sti_sys;
 } sys_timer_t;

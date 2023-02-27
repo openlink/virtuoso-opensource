@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1532,9 +1532,40 @@ sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, 
     } \
 }
 
+#define RES_IF_NN_G(nth_v)		\
+{ \
+  if (!dc->dc_any_null) { \
+    group_sets[fill] = n + nth_v - 1; \
+    sets[fill++] = s##nth_v; \
+  } else  \
+    { \
+      if (dc->dc_nulls) \
+	{ \
+	  if (!DC_IS_NULL (dc, s##nth_v)) { \
+	    group_sets[fill] = n + nth_v - 1; \
+	    sets[fill++] = s##nth_v; \
+	  } \
+	}					\
+      else if ((DCT_BOXES & dc->dc_type))	\
+	{ \
+      caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v]; \
+      if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) { \
+      group_sets[fill] = n + nth_v - 1; \
+      sets[fill++] = s##nth_v;		\
+	}				\
+	}				\
+      else \
+      { \
+	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) \
+	  group_sets[fill] = n + nth_v - 1; \
+	  sets[fill++] = s##nth_v; \
+      } \
+    } \
+}
+
 
 int
-sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_sets)
+sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int *group_sets, int set, int n_sets)
 {
   int n, step, fill = 0;
   data_col_t *dc = QST_BOX (data_col_t *, inst, sslr->ssl_index);
@@ -1554,14 +1585,14 @@ sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_
 	  s7 = set_nos[s7];
 	  s8 = set_nos[s8];
 	}
-      RES_IF_NN (s1);
-      RES_IF_NN (s2);
-      RES_IF_NN (s3);
-      RES_IF_NN (s4);
-      RES_IF_NN (s5);
-      RES_IF_NN (s6);
-      RES_IF_NN (s7);
-      RES_IF_NN (s8);
+      RES_IF_NN_G (1);
+      RES_IF_NN_G (2);
+      RES_IF_NN_G (3);
+      RES_IF_NN_G (4);
+      RES_IF_NN_G (5);
+      RES_IF_NN_G (6);
+      RES_IF_NN_G (7);
+      RES_IF_NN_G (8);
 
     }
   for (n = n; n < n_sets; n++)
@@ -1572,7 +1603,7 @@ sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_
 	  int *set_nos = (int *) inst[sslr->sslr_set_nos[step]];
 	  s1 = set_nos[s1];
 	}
-      RES_IF_NN (s1);
+      RES_IF_NN_G (1);
     }
   return fill;
 }

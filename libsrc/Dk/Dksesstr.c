@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -65,7 +65,7 @@ extern box_destr_f box_destr[256];
 long strses_file_reads = 0;
 long strses_file_seeks = 0;
 long strses_file_writes = 0;
-long strses_file_wait_msec = 0;
+time_msec_t strses_file_wait_msec = 0;
 
 long read_wides_from_utf8_file (dk_session_t * ses, long nchars, unsigned char *dest, int copy_as_utf8, unsigned char **dest_ptr_out);
 
@@ -73,7 +73,7 @@ OFF_T
 strf_lseek (strsestmpfile_t * sesfile, OFF_T offset, int whence)
 {
   OFF_T ret;
-  long start_time = get_msec_real_time ();
+  time_msec_t start_time = get_msec_real_time ();
   strses_file_seeks ++;
   if (NULL != sesfile->ses_lseek_func)
     ret = sesfile->ses_lseek_func (sesfile, offset, whence);
@@ -87,7 +87,7 @@ size_t
 strf_read (strsestmpfile_t * sesfile, void *buf, size_t nbyte)
 {
   size_t ret;
-  long start_time = get_msec_real_time ();
+  time_msec_t start_time = get_msec_real_time ();
   strses_file_reads ++;
   if (NULL != sesfile->ses_read_func)
     ret = sesfile->ses_read_func (sesfile, buf, nbyte);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@ itc_ra_extents (it_cursor_t * itc, ra_req_t * ra)
   dp_addr_t exts[MAX_EXTS];
   short ext_n[MAX_EXTS];
   int ext_fill = 0;
-  uint32 now;
+  time_msec_t now;
   int inx;
   if (!enable_vec_ext_ra)
     return 0;

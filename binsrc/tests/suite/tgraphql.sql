@@ -10,7 +10,8 @@ create procedure GQL_TEST (in ql varchar, in xp varchar, in authenticate int := 
 {
   declare result_string, xe, xt any;
   declare user_name, passwd, state, message, auth varchar;
-
+  -- FIRST make sure JSON is correct
+  json_parse (ql);
   result_names (state, message);
   auth := '';
   if (authenticate)
@@ -130,6 +131,390 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $LAST[2] "\n";
 
 GQL_TEST('{"query":"{countries{code3 region(code:\\"AN\\") {ccode}}}"}', 'count(/data/countries/region) = 1',0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_INIT_TYPE_SCHEMA();
+
+SPARQL CLEAR GRAPH <urn:ex:map>;
+SPARQL CLEAR GRAPH <urn:ex:data>;
+
+SPARQL
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX gql: <http://www.openlinksw.com/schemas/graphql#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ex: <http://example.org/item/>
+
+WITH <urn:ex:map>
+INSERT {
+gql:Map gql:schemaObjects gql:insertItem, gql:deleteItem, gql:updateItem, gql:getItems ;
+    gql:dataGraph <urn:ex:data> ;
+    gql:schemaGraph <urn:ex:map> .
+
+gql:getItems gql:type gql:Array ;
+    gql:rdfClass ex:Item .
+
+gql:insertItem gql:type gql:Object ;
+    gql:rdfClass ex:Item ;
+    gql:mutationType "INSERT" .
+
+gql:updateItem gql:type gql:Object ;
+    gql:rdfClass ex:Item ;
+    gql:mutationType "UPDATE" .
+
+gql:deleteItem gql:type gql:Object ;
+    gql:rdfClass ex:Item ;
+    gql:mutationType "DELETE" .
+
+ex:Item a owl:Class ;
+    gql:iriPattern "%s" ;
+    gql:field gql:item .
+
+ex:stringAttr a owl:DatatypeProperty ;
+   rdfs:range xsd:string ;
+   rdfs:domain ex:Item ;
+   gql:field gql:stringField ;
+   gql:type gql:Scalar .
+
+ex:iri a owl:DatatypeProperty ;
+   rdfs:range xsd:anyURI ;
+   rdfs:domain ex:Item ;
+   gql:field gql:iri ;
+   gql:type gql:ID .
+
+ex:intAttr a owl:DatatypeProperty ;
+   rdfs:range xsd:int ;
+   rdfs:domain ex:Item ;
+   gql:type gql:Scalar ;
+   gql:field gql:intField .
+
+ex:floatAttr a owl:DatatypeProperty ;
+   rdfs:range xsd:float ;
+   rdfs:domain ex:Item ;
+   gql:type gql:Scalar ;
+   gql:field gql:floatField .
+
+ex:dateAttr a owl:DatatypeProperty ;
+   rdfs:range xsd:dateTime ;
+   rdfs:domain ex:Item ;
+   gql:type gql:Scalar ;
+   gql:field gql:dateField .
+
+ex:boolAttr a owl:DatatypeProperty ;
+   rdfs:range xsd:boolean ;
+   rdfs:domain ex:Item ;
+   gql:type gql:Scalar ;
+   gql:field gql:boolField .
+
+ex:objAttr a owl:ObjectProperty ;
+   rdfs:range ex:Item ;
+   rdfs:domain ex:Item ;
+   gql:type gql:Object ;
+   gql:field gql:objField .
+
+};
+
+GQL_TEST('{"query":"mutation ModifyItem {\\n  updateItem(\\n    iri: \\"urn:ex:1\\"\\n    stringField: \\"some string\\"\\n    intField: 100000\\n    floatField: 3.1415\\n    boolField: true\\n    dateField: \\"1999-07-14\\"\\n    objField: \\"urn:ex:0\\"\\n  ) {\\n    iri\\n    stringField\\n    intField\\n    floatField\\n    dateField\\n    boolField\\n    objField {\\n      iri\\n      stringField\\n    }\\n  }\\n}\\n\\nmutation RemoveItem {\\n  deleteItem(iri: \\"urn:ex:1\\") {\\n    iri\\n  }\\n}\\n\\nquery GetItems {\\n  getItems {\\n    iri\\n    stringField\\n    floatField\\n    dateField\\n    intField\\n    boolField\\n    objField {\\n      iri\\n      stringField\\n    }\\n  }\\n}\\n","operationName":"ModifyItem"}', '/data/updateItem/objField/iri[.="urn:ex:0"]', 1);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+sparql select count(*) from <urn:ex:data> { <urn:ex:1> ?p ?o };
+ECHO BOTH $IF $EQU $LAST[1] 7 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[1] " triples\n";
+
+
+GQL_TEST('{"query":"mutation ModifyItem {\\n  updateItem(\\n    iri: \\"urn:ex:1\\"\\n    stringField: \\"some string\\"\\n    intField: 100000\\n    floatField: 3.1415\\n    boolField: true\\n    dateField: \\"1999-07-14\\"\\n    objField: \\"urn:ex:0\\"\\n  ) {\\n    iri\\n    stringField\\n    intField\\n    floatField\\n    dateField\\n    boolField\\n    objField {\\n      iri\\n      stringField\\n    }\\n  }\\n}\\n\\nmutation RemoveItem {\\n  deleteItem(iri: \\"urn:ex:1\\") {\\n    iri\\n  }\\n}\\n\\nquery GetItems {\\n  getItems {\\n    iri\\n    stringField\\n    floatField\\n    dateField\\n    intField\\n    boolField\\n    objField {\\n      iri\\n      stringField\\n    }\\n  }\\n}\\n","operationName":"RemoveItem"}', '/data/deleteItem[.=""]', 1);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+sparql select count(*) from <urn:ex:data> { <urn:ex:1> ?p ?o };
+ECHO BOTH $IF $EQU $LAST[1] 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[1] " remaining triples\n";
+
+
+GQL_TEST ('{"query":"query CountryByCode(\\n  \x24code: String!\\n  \x24expand: Boolean! = true\\n  \x24rext: Boolean!\\n  \x24scp: Boolean!\\n) {\\n  kindzadza: country(code: \x24code) {\\n    code\\n    ... @include(if: \x24expand) {\\n      name\\n      code3\\n    }\\n    country_code @skip(if: \x24scp)\\n    region @include(if: \x24expand) {\\n      code\\n      ...regionFields @include(if: \x24rext)\\n    }\\n  }\\n}\\n\\nfragment regionFields on region {\\n  name\\n  ccode\\n  population @notNull\\n}\\n","variables":{"code":"AQ","expand":true,"scp":false,"rext":true},"operationName":"CountryByCode"}', '/data/kindzadza/region/code[.="AN"]', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST ('{"query":"query CountryByCode(\\n\x24code: String!\\n\x24expand: Boolean! = true\\n\x24rext: Boolean!\\n\x24scp: Boolean!\\n) {\\n  kindzadza: country(code: \x24code) {\\n    code\\n    ... @include(if: \x24expand) {\\n      name\\n      code3\\n    }\\n    country_code @skip(if: \x24scp)\\n    region @include(if: \x24expand) {\\n      code\\n      ...regionFields @include(if: \x24rext)\\n    }\\n  }\\n}\\n\\nfragment regionFields on region {\\n  name\\n  ccode\\n  population @notNull\\n}\\n","variables":{"code":"AQ","expand":false,"scp":false,"rext":true},"operationName":"CountryByCode"}', 'count(/data/kindzadza/region) = 0', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+-- Cleanup
+SPARQL CLEAR GRAPH <urn:inf:data>;
+SPARQL CLEAR GRAPH <urn:inf:schema>;
+SPARQL CLEAR GRAPH <urn:inf:intro>;
+SPARQL CLEAR GRAPH <urn:inf:inf>;
+
+-- Load some data
+SPARQL
+PREFIX ex: <http://example.org/ex/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+WITH <urn:inf:data>
+INSERT {
+
+    ex:bob a foaf:Person ;
+       foaf:mbox <mailto:bob@nowhere.no> ;
+       foaf:knows ex:ali;
+       foaf:name "Bob" .
+
+    ex:suzi a foaf:Person ;
+       foaf:mbox <mailto:suzi@nowhere.no> ;
+       foaf:knows ex:bob ;
+       foaf:name "Suzi" .
+
+    ex:ali a foaf:Person ;
+       foaf:mbox <mailto:ali@nowhere.no> ;
+       foaf:knows ex:suzi, ex:bob ;
+       foaf:name "Alice" .
+
+    ex:company a foaf:Organization ;
+       foaf:phone <tel:+1-00-001-000> ;
+       foaf:mbox <mailto:acme@nowhere.co.no> ;
+       rdfs:comment "ACME company, (c)2000" ;
+       foaf:name "Company" .
+}
+;
+
+SPARQL
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+WITH <urn:inf:inf>
+INSERT {
+  foaf:Person rdfs:subClassOf foaf:Agent .
+  foaf:Organization rdfs:subClassOf foaf:Agent .
+  foaf:Agent rdfs:subClassOf owl:Thing .
+};
+
+RDFS_RULE_SET ('foaf', 'urn:inf:inf', 1);
+RDFS_RULE_SET ('foaf', 'urn:inf:inf');
+
+-- Load annotated with mappings onotology, this is used to expose the urn:hello:data graph
+SPARQL
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX gql: <http://www.openlinksw.com/schemas/graphql#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX ex: <http://example.org/hello/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+
+WITH <urn:inf:schema>
+INSERT {
+
+  gql:Map gql:dataGraph <urn:inf:data> ;
+          gql:schemaGraph <urn:inf:schema> ;
+          gql:inferenceName "foaf" ;
+          gql:schemaObjects gql:individuals, gql:companies, gql:entities .
+
+  gql:individuals gql:type gql:Array ;
+     gql:rdfClass foaf:Person .
+
+  gql:companies gql:type gql:Array ;
+     gql:rdfClass foaf:Organization .
+
+  gql:entities gql:type gql:Array ;
+     gql:rdfClass foaf:Agent .
+
+  foaf:Person a owl:Class ;
+    rdfs:subClassOf foaf:Agent .
+
+  foaf:Organization a owl:Class ;
+    rdfs:subClassOf foaf:Agent .
+
+  foaf:Agent a owl:Class ;
+    rdfs:subClassOf owl:Thing .
+
+  foaf:name a owl:DatatypeProperty ;
+      rdfs:range xsd:string ;
+      rdfs:domain foaf:Agent ;
+      gql:field gql:name ;
+      gql:type gql:Scalar .
+
+  foaf:mbox a owl:DatatypeProperty ;
+     rdfs:range xsd:anyURI ;
+     rdfs:domain foaf:Agent ;
+     gql:field gql:email ;
+     gql:type gql:Scalar .
+
+  foaf:phone a owl:DatatypeProperty ;
+     rdfs:range xsd:anyURI ;
+     rdfs:domain foaf:Agent ;
+     gql:field gql:phone ;
+     gql:type gql:Scalar .
+
+  foaf:homepage a owl:DatatypeProperty ;
+     rdfs:range xsd:anyURI ;
+     rdfs:domain foaf:Agent ;
+     gql:field gql:link ;
+     gql:type gql:Scalar .
+
+  foaf:knows a owl:ObjectProperty ;
+    rdfs:range foaf:Person ;
+    rdfs:domain foaf:Person ;
+    gql:field gql:knows ;
+    gql:type gql:Array .
+
+  rdfs:label a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:domain owl:Thing ;
+    gql:field gql:label ;
+    gql:type gql:Scalar .
+
+  rdfs:comment a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:domain owl:Thing ;
+    gql:field gql:description ;
+    gql:type gql:Scalar .
+
+}
+;
+
+GQL_TEST( '{"query":"query Individuals { individuals { name knows { name } description @notNull email }}"}' ,
+  '/data/individuals[name[.="Alice"]]/knows/name[.="Suzi"]', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST( '{"query":"query Individuals { individuals { name knows { name } description @notNull email }}"}' ,
+  '/data/individuals[name[.="Alice"]]/knows/name[.="Bob"]', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST('{"query":"query Companies { companies { iri name email phone description }}"}', '/data/companies/name[.="Company"]', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST('{"query":"query Companies { companies { iri name email phone description }}"}', 'count(/data/companies)=1', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST('{"query":"query Entities { entities { iri name description @notNull phone @notNull email }}"}', 'count(/data/entities) = 4', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+
+SPARQL CLEAR GRAPH <urn:geo:data>;
+SPARQL CLEAR GRAPH <urn:geo:map>;
+SPARQL CLEAR GRAPH <urn:geo:intro>;
+
+SPARQL
+
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX owl: <http://www.w3.org/2002/07/owl#>
+PREFIX gql: <http://www.openlinksw.com/schemas/graphql#>
+PREFIX xsd: <http://www.w3.org/2001/XMLSchema#>
+PREFIX geo: <http://www.w3.org/2003/01/geo/wgs84_pos#>
+PREFIX dct: <http://purl.org/dc/terms/>
+PREFIX dc: <http://purl.org/dc/elements/1.1/>
+PREFIX schema: <https://schema.org/>
+
+WITH <urn:geo:map> INSERT {
+
+gql:Map gql:schemaObjects gql:addPlace, gql:removePlace, gql:searchPlace ;
+    gql:dataGraph <urn:geo:data> ;
+    gql:schemaGraph <urn:geo:map> .
+
+gql:searchPlace gql:type gql:Array ;
+    gql:rdfClass schema:Place .
+
+gql:addPlace gql:type gql:Object ;
+    gql:rdfClass schema:Place ;
+    gql:mutationType "UPDATE" .
+
+gql:removePlace gql:type gql:Object ;
+    gql:rdfClass schema:Place ;
+    gql:mutationType "DELETE" .
+
+
+geo:Point a owl:Class .
+
+geo:lat a owl:DatatypeProperty ;
+    rdfs:range xsd:float ;
+    rdfs:domain geo:Point ;
+    gql:field gql:lat ;
+    gql:type gql:Scalar .
+
+geo:long a owl:DatatypeProperty ;
+    rdfs:range xsd:float ;
+    rdfs:domain geo:Point ;
+    gql:field gql:long ;
+    gql:type gql:Scalar .
+
+schema:Place a owl:Class ;
+    gql:iriPattern "https://example.org/place/%U" .
+
+schema:geo a owl:ObjectProperty ;
+    rdfs:range geo:Point ;
+    rdfs:domain schema:Place ;
+    gql:field gql:location ;
+    gql:type gql:Object .
+
+dc:identifier a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:domain schema:Place ;
+    gql:field gql:id ;
+    gql:type gql:ID .
+
+schema:name a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:domain schema:Place ;
+    gql:field gql:name ;
+    gql:type gql:Scalar .
+
+dc:description a owl:DatatypeProperty ;
+    rdfs:range xsd:string ;
+    rdfs:domain schema:Place ;
+    gql:field gql:description ;
+    gql:type gql:Scalar .
+
+};
+
+
+GQL_TEST ('{"query":"mutation AddPlace { addPlace( id: \\"15\\" name: \\"Plovdiv\\" description: \\"ul.Il.Makarioploski 68\\" location: { long: 42.139233, lat: 24.761860 } ) { iri location { lat long } description name }}","operationName":"AddPlace"}', '/data/addPlace/location/lat[. > 0]', 1);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+sparql select * from <urn:geo:data> { <https://example.org/place/15> <https://schema.org/geo> [ <http://www.w3.org/2003/01/geo/wgs84_pos#lat> ?lat ; <http://www.w3.org/2003/01/geo/wgs84_pos#long> ?long  ] };
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[1] " " $LAST[2] " location\n";
+
+GQL_TEST ('{"query":"mutation AddPlaceWithParams( \x24id: ID! \x24name: String! \x24desc: String \x24loc: PointInput) { addPlace(id: \x24id, name: \x24name, description: \x24desc, location: \x24loc) { iri location { lat long } description name }}","variables":{"id":"14","name":"Home","desc":"ul.D-r Vlado 14","loc":{"long":42.139233,"lat":24.76186}},"operationName":"AddPlaceWithParams"}', '/data/addPlace/location/lat[. > 0]', 1);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+sparql select * from <urn:geo:data> { <https://example.org/place/14> <https://schema.org/geo> [ <http://www.w3.org/2003/01/geo/wgs84_pos#lat> ?lat ; <http://www.w3.org/2003/01/geo/wgs84_pos#long> ?long  ] };
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[1] " " $LAST[2] " location\n";
+
+GQL_TEST ('{"query":"query Mix { GB:country(code: \\"GB\\") { code } BG:country(code: \\"BG\\") { code }}"}', '/data/GB/code[.="GB"]', 0);
+ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $LAST[2] "\n";
+
+GQL_TEST ('{"query":"query Mix { GB:country(code: \\"GB\\") { code } BG:country(code: \\"BG\\") { code }}"}', '/data/BG/code[.="BG"]', 0);
 ECHO BOTH $IF $EQU $LAST[1] PASSED "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $LAST[2] "\n";

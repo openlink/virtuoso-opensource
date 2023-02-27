@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2872,21 +2872,49 @@ execute_query:
 	}
       else if ('default-graph-uri' = pname and length (pvalue))
         {
+	  if (iri_validate (pvalue) = 0)
+	    {
+		DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '400', 'Bad Request',
+                NULL, '22023', 'The value of the "default-graph-uri" parameter is not a valid URI' );
+	        return;
+	    }
 	  if (position (pvalue, dflt_graphs) <= 0)
 	    dflt_graphs := vector_concat (dflt_graphs, vector (pvalue));
 	}
       else if ('named-graph-uri' = pname and length (pvalue))
         {
+	  if (iri_validate (pvalue) = 0)
+	    {
+		DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '400', 'Bad Request',
+                NULL, '22023', 'The value of the "named-graph-uri" parameter is not a valid URI' );
+	        return;
+	    }
 	  if (position (pvalue, named_graphs) <= 0)
 	    named_graphs := vector_concat (named_graphs, vector (pvalue));
 	}
       else if ('using-graph-uri' = pname and length (pvalue))
         {
+	  if (iri_validate (pvalue) = 0)
+	    {
+		DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '400', 'Bad Request',
+                NULL, '22023', 'The value of the "using-graph-uri" parameter is not a valid URI' );
+	        return;
+	    }
 	  if (position (pvalue, using_graphs) <= 0)
 	    using_graphs := vector_concat (using_graphs, vector (pvalue));
 	}
       else if ('using-named-graph-uri' = pname and length (pvalue))
         {
+	  if (iri_validate (pvalue) = 0)
+	    {
+		DB.DBA.SPARQL_PROTOCOL_ERROR_REPORT (path, params, lines,
+                '400', 'Bad Request',
+                NULL, '22023', 'The value of the "using-named-graph-uri" parameter is not a valid URI' );
+	        return;
+	    }
 	  if (position (pvalue, using_named_graphs) <= 0)
 	    using_named_graphs := vector_concat (using_named_graphs, vector (pvalue));
 	}
@@ -3258,7 +3286,9 @@ host_found:
       set TRANSACTION_TIMEOUT = max_timeout + 10000;
       timeout := 0;
     }
-  connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
+
+  if (log_debug_info <> '')
+    connection_set ('DB.DBA.RDF_LOG_DEBUG_INFO', log_debug_info);
   set_user_id (user_id, 1);
 
 again:

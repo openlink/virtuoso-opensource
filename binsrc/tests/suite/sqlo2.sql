@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1367,9 +1367,62 @@ echo both $if $equ $last[1] 353 "PASSED" "***FAILED";
 echo both ": verify above with ibid with loop\n";
 
 
+sparql insert into <urn:test> { <#s> <#p> <#o> };
+create procedure sslvar_test()
+{
+  declare var any;
+  var := 'test';
+  result_names (var);
+  for (sparql select distinct ?test from <urn:test> where { ?s ?p ?o . BIND(?:var as ?test) . } order by ?s) do
+    {
+      result ("test");
+    }
+}
+;
+
+sslvar_test();
+ECHO BOTH $IF $EQU $LAST[1] 'test' "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": var out of query scope in distinct/oby: " $LAST[1] "\n";
 
 
+sparql clear graph <urn:gby:flt>;
 
+ttlp('
+<http://dbpedia.org/resource/Tryggve_Point>	<http://www.w3.org/2003/01/geo/wgs84_pos#lat>	"-77.65"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Boyle_Mountains>	<http://www.w3.org/2003/01/geo/wgs84_pos#lat>	"-67.35"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Boyle_Mountains>	<http://www.w3.org/2003/01/geo/wgs84_pos#long>	"-66.6333"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Museum_of_Geology,_Tashkent>	<http://www.w3.org/2003/01/geo/wgs84_pos#lat>	"41.3004"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Cassini_Glacier>	<http://www.w3.org/2003/01/geo/wgs84_pos#long>	"163.817"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Botijas>	<http://www.w3.org/2003/01/geo/wgs84_pos#lat>	"18.2243"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Cassini_Glacier>	<http://www.w3.org/2003/01/geo/wgs84_pos#lat>	"-77.9"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Tryggve_Point>	<http://www.w3.org/2003/01/geo/wgs84_pos#long>	"166.7"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Museum_of_Geology,_Tashkent>	<http://www.w3.org/2003/01/geo/wgs84_pos#long>	"69.2785"^^<http://www.w3.org/2001/XMLSchema#float> .
+<http://dbpedia.org/resource/Botijas>	<http://www.w3.org/2003/01/geo/wgs84_pos#long>	"-66.3634"^^<http://www.w3.org/2001/XMLSchema#float> .
+', '', 'urn:gby:flt');
+
+
+SPARQL
+SELECT ?subject ?float1 (sum(?float2) as ?float2Sum)
+FROM <urn:gby:flt>
+WHERE {
+  {
+    select ?subject where {
+      ?subject <http://www.w3.org/2003/01/geo/wgs84_pos#lat> []
+    } group by ?subject HAVING(count(*) = 1)
+  }
+  ?subject <http://www.w3.org/2003/01/geo/wgs84_pos#lat> ?float1 ,
+      ?float2 .
+}
+GROUP BY ?subject ?float1 ORDER BY ?subject
+LIMIT 4
+;
+
+ECHO BOTH $IF $EQU $LAST[2] $LAST[3] "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": gby/float \n";
+
+--
 -- End of test
 --
 ECHO BOTH "COMPLETED: SQL Optimizer tests part 2 (sqlo2.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

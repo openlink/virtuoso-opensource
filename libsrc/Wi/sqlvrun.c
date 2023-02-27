@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,7 +50,7 @@ int32 enable_batch_sz_reserve;
 int qp_thread_min_usec = 5000;
 int qp_range_split_min_rows = 20;
 int dc_init_sz = 10000;
-int32 dc_adjust_batch_sz_min_anytime = 12000;
+uint32 dc_adjust_batch_sz_min_anytime = 12000;
 int dc_default_var_len = 8;
 int32 dc_batch_sz = 10000;
 int32 dc_max_batch_sz = 100000 /*(1024 * 1024 * 4)  - 16 */ ;

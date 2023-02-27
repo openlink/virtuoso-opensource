@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2022 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@ AC_PREREQ(2.59)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[8])
+m4_define(vos_patch,	[9])
 m4_define(vos_devel,	[])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
@@ -591,7 +591,7 @@ AC_CHECK_FUNCS(getrusage)
 AC_CHECK_FUNCS(memmove memmem memcpy)
 AC_CHECK_FUNCS(mkstemp64 mkstemp)
 AC_CHECK_FUNCS(strftime stpcpy)
-AC_CHECK_FUNCS(clock_gettime gethrtime)
+AC_CHECK_FUNCS(gethrtime)
 
 AC_MSG_CHECKING(for sys_errlist)
 AC_TRY_LINK([
@@ -631,6 +631,17 @@ AC_CACHE_CHECK([whether __va_copy exists], ac_cv_have___va_copy, [
 if test "x$ac_cv_have___va_copy" = "xyes" ; then
 	AC_DEFINE(HAVE___VA_COPY, 1, [Define if __va_copy exists])
 fi
+
+
+##########################################################################
+##                                                                     ##
+##check for clock_gettime which may require an extra library           ##
+##                                                                     ##
+##########################################################################
+AC_SEARCH_LIBS(clock_gettime, [rt posix4], [
+       AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define to 1 if you have the clock_gettime function.])
+])
+
 
 ##########################################################################
 ##									##
@@ -3231,7 +3242,6 @@ AC_CONFIG_FILES([
 	binsrc/samples/odp/Makefile
 	binsrc/samples/sparql_demo/Makefile
 	binsrc/samples/wbxml2/Makefile
-	binsrc/samples/websocket/Makefile
 	binsrc/samples/webapp/Makefile
 	binsrc/samples/xpath/Makefile
 	binsrc/samples/xquery/Makefile
@@ -3266,6 +3276,7 @@ AC_CONFIG_FILES([
 	binsrc/virtuoso_sink/Makefile
 	binsrc/vsp/Makefile
 	binsrc/vspx/Makefile
+	binsrc/websocket/Makefile
 	binsrc/ws/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile

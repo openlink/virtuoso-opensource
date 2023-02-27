@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2022 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,27 +106,10 @@
     <vm:help id="sec_pki" sect=""/>
     <v:form name="form1" type="simple" method="POST">
 	<!-- top of security layout -->
-      <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
-        <tr valign='top'>
-          <td>
-            <table cellpadding='10' cellspacing='0' border='0' width='100%'>
-              <tr>
-                <td>
-                  <table cellpadding="0" cellspacing="0" border="0">
-                    <tr>
-		      <td class="page_tab_selected" align="center">
-			  Public Key Infrastructure	
-		      </td>
-		      <td class="page_tab" align="center">
-			<v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-		      </td>
-			<td class="page_tab_empty" align="right" width="100%">
-                        </td>
-                    </tr>
-                  </table>
-                  <table class="tab_page">
-                    <tr>
-			<td valign="top">
+        <div class="main_tab_page">
+          <v:include url="sec_pki_menu.vspx"/>
+          <div class="tab_page_new">
+            <div id="pki_form">
 		   <!-- end of top security layout -->
 		   <h3>Configure HTTPS listener</h3>
         <v:form name="frm_add_templ" method="POST" type="simple">
@@ -219,7 +202,7 @@
               </td>
             </tr>
             <tr>
-                <td><label class="help_tooltip" 
+                <td><label class="help_tooltip"
                             helptext="Server X.509 certificate and private key identifier">
                             SSL Key</label></td>
 	      <td>
@@ -260,8 +243,8 @@
               </td>
             </tr>
             <tr>
-                <td><label class="help_tooltip" 
-                    helptext="Certificates of Certification Authorities (CA) which form 
+                <td><label class="help_tooltip"
+                    helptext="Certificates of Certification Authorities (CA) which form
                     the certificate chain of the server certificate.">Extra Chain Certificates</label></td>
               <td>
 		<v:text name="extra_cert1" value="--self.extra_cert" xhtml_size="50">
@@ -269,8 +252,8 @@
               </td>
             </tr>
             <tr>
-                <td><label class="help_tooltip" 
-                    helptext="Certificates of Certification Authorities (CA) whose clients you deal with. 
+                <td><label class="help_tooltip"
+                    helptext="Certificates of Certification Authorities (CA) whose clients you deal with.
                     These are used for Client Authentication.">CA Certificates</label></td>
               <td>
 		<v:text name="ca_certs1" value="--self.ca_certs" xhtml_size="50">
@@ -358,7 +341,7 @@
 	       VHOST_DEFINE (vhost=>vhost, lhost=>lhost, lpath=>'/', ppath=>'/', sec=>'SSL', auth_opts=>opts);
 	       goto same_host;
 	     }
-	   if (self.vhost = vhost and lhost = self.lhost and kname = self.key1 and self.verify1 = verify and 
+	   if (self.vhost = vhost and lhost = self.lhost and kname = self.key1 and self.verify1 = verify and
               extra = self.extra_cert and ca_certs = self.ca_certs)
              {  
                declare opts varchar;
@@ -368,7 +351,7 @@
 	     goto same_host;
 	     }
            ssl_opts := null;
-           -- do not trigger defualt directories fck 
+           -- do not trigger defualt directories fck
            set triggers off;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,
@@ -464,15 +447,9 @@
 	?>
         </v:form>
 		   <!-- bottom of security layout -->
-                      </td>
-                    </tr>
-                  </table>
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
-      </table>
+            </div> <!-- #pki_form -->
+          </div>
+        </div>
 	<!-- end of bottom security layout -->
     </v:form>
     </vm:pagebody>

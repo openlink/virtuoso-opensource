@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -187,6 +187,18 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
           return box_dv_short_string ("80");
         }
       res = box_dv_short_string (colon + 1);
+      dk_free_box (host);
+      return res;
+    }
+  if (!strcmp ("WSBaseUrl", varname))
+    {
+      int is_https;
+      caddr_t res, host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
+      if (!host)
+        return NULL;
+      res = dk_alloc_box (box_length (host) /* plus \x0 */ + is_https + 7, DV_STRING);
+      strcpy_box_ck (res, is_https ? "https://" : "http://");
+      strcat_box_ck (res, host);
       dk_free_box (host);
       return res;
     }

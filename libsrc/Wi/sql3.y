@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -1253,11 +1253,9 @@ opt_with_admin_option
 	;
 
 privilege_revoke
-/* CAUSES GPF !
-	: REVOKE ALL PRIVILEGES FROM grantee_commalist
-		{ $$ = t_listst (4, GRANT_STMT, NULL, NULL, list_to_array ($5)); }
-*/
-	: REVOKE privileges ON table FROM grantee_commalist
+	: REVOKE ALL PRIVILEGES FROM user
+		{ $$ = t_listst (3, SET_GROUP_STMT, $5, $5); }
+	| REVOKE privileges ON table FROM grantee_commalist
 		{ $$ = t_listst (4, REVOKE_STMT, $2, $4, t_list_to_array ($6)); }
 
 	| REVOKE EXECUTE ON function_name FROM grantee_commalist

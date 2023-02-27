@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,7 +208,7 @@ srv_report_errno_trx_error (lock_trx_t *lt, const char *text, const char *name, 
 	"%.30s %.160s : %.100s", text, name, virt_strerror (eno)));
 }
 
-uint32 last_log_time_written = 0;
+time_msec_t last_log_time_written = 0;
 int log_in_cl_recov;
 
 
@@ -233,7 +233,7 @@ log_time (caddr_t * box)
   if (!box && log_in_cl_recov)
     return LTE_OK;
   if (!box && (!last_log_time_written
-	       || approx_msec_real_time () - last_log_time_written > 30000))
+	       || (approx_msec_real_time () - last_log_time_written) > 30000))
     {
       char dt[DT_LENGTH];
       dt_now (dt);
@@ -703,7 +703,7 @@ log_skip_blobs_1 (dk_session_t * ses)
   END_READ_FAIL (ses);
 }
 
-uint32 log_last_2pc_archive_time = 0;
+time_msec_t log_last_2pc_archive_time = 0;
 
 
 int
@@ -731,7 +731,7 @@ log_2pc_archive (int64 trx_id)
   CATCH_WRITE_FAIL (ses)
     {
       int64 bs = ses->dks_bytes_sent;
-      if (!log_last_2pc_archive_time || approx_msec_real_time () - log_last_2pc_archive_time > 30000)
+      if (!log_last_2pc_archive_time || (approx_msec_real_time () - log_last_2pc_archive_time) > 30000)
 	{
 	  caddr_t dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
 	  if (in_log_replay || log_in_cl_recov)
@@ -3374,8 +3374,9 @@ log_check_header (caddr_t * header)
 int
 log_report_time ()
 {
-  static unsigned int32 last_time = 0;
-  unsigned int32 now = get_msec_real_time (), r = 0;
+  static time_msec_t last_time = 0;
+  time_msec_t now = get_msec_real_time ();
+  int r = 0;
   if (now - last_time > 2000)
     {
       r = 1;

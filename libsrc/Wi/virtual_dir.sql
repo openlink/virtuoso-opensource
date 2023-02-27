@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -226,8 +226,8 @@ create procedure DB.DBA.VHOST_UPGRADE ()
           registry_set ('https_port', coalesce (server_https_port (), ''));
         }
     }
-  for select HP_LISTEN_HOST as interface, deserialize (HP_AUTH_OPTIONS) as opts, HP_SECURITY as listener_type 
-    from DB.DBA.HTTP_PATH where HP_LISTEN_HOST is not null and HP_LISTEN_HOST <> server_http_port() 
+  for select HP_LISTEN_HOST as interface, deserialize (HP_AUTH_OPTIONS) as opts, HP_SECURITY as listener_type
+    from DB.DBA.HTTP_PATH where HP_LISTEN_HOST is not null and HP_LISTEN_HOST <> server_http_port()
         and HP_LISTEN_HOST <> '*ini*' and HP_LISTEN_HOST <> '*sslini*'
     do
       {
@@ -1817,8 +1817,8 @@ create procedure WS.WS.host_meta_del (
 create procedure WS.WS."host-meta" (
   in format varchar := 'xml') __SOAP_HTTP 'application/xrd+xml'
 {
-  declare ses, lines any;
-  declare ret, accept varchar;
+  declare ses, lines, opts any;
+  declare ret, accept, skey varchar;
   ses := string_output ();
   http ('<?xml version="1.0" encoding="UTF-8"?>\n', ses);
   http ('<XRD xmlns="http://docs.oasis-open.org/ns/xri/xrd-1.0" xmlns:hm="http://host-meta.net/xrd/1.0" Id="host-meta">\n', ses);
@@ -1832,7 +1832,10 @@ create procedure WS.WS."host-meta" (
     }
   http ('</XRD>\n', ses);
   ret := string_output_string (ses);
-  if (xenc_key_exists ('id_rsa') and __proc_exists ('xml_sign', 2) is not null)
+  opts := http_map_get ('options');
+  set_user_id ('dba');
+  set_qualifier ('DB');
+  if (xenc_key_exists ('id_rsa') and isvector (opts) and get_keyword ('signature', opts, 'no') = 'xml')
     {
       ret := xml_sign (ret, WS.WS.host_meta_dss (), 'http://docs.oasis-open.org/ns/xri/xrd-1.0:XRD');
     }
@@ -1840,33 +1843,11 @@ create procedure WS.WS."host-meta" (
   accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (http_request_header_full (lines, 'Accept', '*/*'));
   if (format = 'json' or accept = 'application/json')
     {
-      http_header ('Content-Type: application/json\r\n');
+      http_header ('Content-Type: application/jrd+json\r\n');
     http_xslt ('http://local.virt/xrd2json');
     }
   return ret;
 }
-;
-
-create procedure WS.WS.host_meta_init ()
-{
-  if (registry_get ('host_meta_inited') = '1')
-    return;
-
-  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
-    {
-      DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
-      EXEC_STMT ('grant execute on WS.WS."host-meta" to WebMeta', 0);
-    }
-
-  DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
-  DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
-  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
-  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta');
-  registry_set ('host_meta_inited', '1');
-}
-;
-
-WS.WS.host_meta_init ()
 ;
 
 create procedure WS.WS.host_meta_dss ()
@@ -2056,10 +2037,40 @@ create trigger HTTP_PATH_ins_def after insert on DB.DBA.HTTP_PATH order 100 refe
 DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/DAV', ppath=>'/DAV/', is_dav=>1, is_brws=>1, vsp_user=>'dba', ses_vars=>0, overwrite=>1)
 ;
 
--- Default /.well-known mapping for all future http listeners
-DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta', overwrite=>1)
+create procedure WS.WS.host_meta_init ()
+{
+  if (registry_get ('host_meta_inited') = '1')
+    return;
+
+  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'WebMeta'))
+    {
+      DB.DBA.USER_CREATE ('WebMeta', uuid(), vector ('DISABLED', 1));
+      EXEC_STMT ('grant execute on WS.WS."host-meta" to WebMeta', 0);
+    }
+
+  DB.DBA.VHOST_REMOVE (lpath=>'/.well-known');
+  DB.DBA.VHOST_REMOVE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known');
+
+  DB.DBA.VHOST_DEFINE (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
+      opts=>vector ('url_rewrite', 'well_known_host_meta_rules'));
+  DB.DBA.VHOST_DEFINE (vhost=>'*sslini*', lhost=>'*sslini*', lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
+      opts=>vector ('url_rewrite', 'well_known_host_meta_rules'));
+  DB.DBA.ADD_DEFAULT_VHOST (lpath=>'/.well-known', ppath=>'/SOAP/Http', soap_user=>'WebMeta',
+      opts=>vector ('url_rewrite', 'well_known_host_meta_rules'), overwrite=>1);
+
+  DB.DBA.URLREWRITE_CREATE_RULELIST ('well_known_host_meta_rules', 1, vector ('host_meta_json_rule'));
+  DB.DBA.URLREWRITE_CREATE_REGEX_RULE ('host_meta_json_rule', 1, '/.well-known/host-meta.json', vector (), 0,
+      '/.well-known/host-meta?format=json', vector (), NULL, NULL, 2, 0, '');
+
+  registry_set ('host_meta_inited', '1');
+}
 ;
 
+--!AFTER
+WS.WS.host_meta_init ()
+;
+
+--!AFTER
 DB.DBA.VHOST_UPGRADE ()
 ;
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2021 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,7 @@ extern void graphqlyy_string_input_init (char *str);
 static dk_mutex_t *graphql_parse_mtx = NULL;
 extern int graphql_line;
 
-#define GQL_BRIDGE_VER "0.9.1"
+#define GQL_BRIDGE_VER "0.9.3"
 
 static
 caddr_t
@@ -102,7 +102,7 @@ bif_graphql_token (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #define is_frag_ref(x)      (ARRAYP(x) && 3 == BOX_ELEMENTS_0(x) && (((caddr_t*)x)[0]) == (caddr_t)GQL_FRAG_REF)
 #define is_inline_frag(x)   (ARRAYP(x) && 4 == BOX_ELEMENTS_0(x) && (((caddr_t*)x)[0]) == (caddr_t)GQL_INLINE_FRAG)
-#define is_frag(x)          (ARRAYP(x) && 4 == BOX_ELEMENTS_0(x) && (((caddr_t*)x)[0]) == (caddr_t)GQL_FRAG)
+#define is_frag(x)          (ARRAYP(x) && 5 == BOX_ELEMENTS_0(x) && (((caddr_t*)x)[0]) == (caddr_t)GQL_FRAG)
 #define is_top(x)           (ARRAYP(x) && BOX_ELEMENTS_0(x) > 1 && (((caddr_t*)x)[0]) == (caddr_t)GQL_TOP)
 #define is_field(x)           (ARRAYP(x) && 7 == BOX_ELEMENTS_0(x) && (((caddr_t*)x)[0]) == (caddr_t)GQL_FIELD)
 #define is_args(x)          (ARRAYP(x) && BOX_ELEMENTS_0(x) > 1 && (((caddr_t*)x)[0]) == (caddr_t)GQL_ARGS)
@@ -139,6 +139,57 @@ GQL_BIF (obj)
 GQL_BIF (directives)
 GQL_BIF (inline_frag)
 
+static
+caddr_t
+bif_gqt_is_obj (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_null_arg (qst, args, 0, "gqt_is_obj");
+  if (str && !strncasecmp (str, "Object", 6))
+    return box_num (1);
+  return box_num(0);
+}
+
+static
+caddr_t
+bif_gqt_is_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_null_arg (qst, args, 0, "gqt_is_list");
+  if (str && !strncasecmp (str, "Array", 5))
+    return box_num (1);
+  return box_num(0);
+}
+
+static
+caddr_t
+bif_gqt_is_scalar (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_null_arg (qst, args, 0, "gqt_is_scalar");
+  if (str && !strncasecmp (str, "Scalar", 6))
+    return box_num (1);
+  return box_num(0);
+}
+
+static
+caddr_t
+bif_gqt_not_null (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t str = bif_string_or_null_arg (qst, args, 0, "gqt_not_null");
+  int len = str ? strlen (str) : 0;
+  if (str && len && '-' == str[len-1])
+    return box_num (1);
+  return box_num(0);
+}
+
+static
+caddr_t
+bif_rdf_ns_type_iri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t ret;
+  ret = box_dv_short_string ("http://www.w3.org/1999/02/22-rdf-syntax-ns#type");
+  box_flags (ret) = BF_IRI;
+  return ret;
+}
+
 void sqls_define_graphql (void);
 void graphql_cache_resources (void);
 
@@ -156,6 +207,11 @@ graphql_plugin_connect ()
   graphql_parse_mtx = mutex_allocate ();
   bif_define ("graphql_parse", bif_graphql_parse);
   bif_define ("gql_token", bif_graphql_token);
+  bif_define ("gqt_is_obj", bif_gqt_is_obj);
+  bif_define ("gqt_is_list", bif_gqt_is_list);
+  bif_define ("gqt_is_scalar", bif_gqt_is_scalar);
+  bif_define ("gqt_not_null", bif_gqt_not_null);
+  bif_define ("rdf_ns_type_iri", bif_rdf_ns_type_iri);
   GQL_BIF_DEFINE (frag_ref);
   GQL_BIF_DEFINE (frag);
   GQL_BIF_DEFINE (top);

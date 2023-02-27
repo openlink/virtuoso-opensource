@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -112,6 +112,28 @@ extern caddr_t uname__txt;
 extern caddr_t uname__xslt;
 extern caddr_t uname_at_id;
 extern caddr_t uname_at_num;
+extern caddr_t uname_at_base;
+extern caddr_t uname_at_container;
+extern caddr_t uname_at_context;
+extern caddr_t uname_at_graph;
+extern caddr_t uname_at_index;
+extern caddr_t uname_at_language;
+extern caddr_t uname_at_list;
+extern caddr_t uname_at_reverse;
+extern caddr_t uname_at_set;
+extern caddr_t uname_at_type;
+extern caddr_t uname_at_value;
+extern caddr_t uname_at_vocab;
+extern caddr_t uname_at_direction;
+extern caddr_t uname_at_import;
+extern caddr_t uname_at_included;
+extern caddr_t uname_at_json;
+extern caddr_t uname_at_nest;
+extern caddr_t uname_at_none;
+extern caddr_t uname_at_prefix;
+extern caddr_t uname_at_propagate;
+extern caddr_t uname_at_protected;
+extern caddr_t uname_at_version;
 extern caddr_t uname_SPECIAL_cc_bif_c_AVG;
 extern caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 extern caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
@@ -237,6 +259,7 @@ extern caddr_t uname_rdf_ns_uri_RDF;
 extern caddr_t uname_rdf_ns_uri_Seq;
 extern caddr_t uname_rdf_ns_uri_Statement;
 extern caddr_t uname_rdf_ns_uri_XMLLiteral;
+extern caddr_t uname_rdf_ns_uri_langString;
 extern caddr_t uname_rdf_ns_uri_about;
 extern caddr_t uname_rdf_ns_uri_first;
 extern caddr_t uname_rdf_ns_uri_li;

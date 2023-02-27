@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -5636,7 +5636,10 @@ create procedure DAV_RES_CONTENT_META_N3 (
       dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:BasicContainer'))), 0);
       dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Container'))), 0);
     }
-  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  if (item[9] in ('text/turtle', 'application/ld+json'))
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  else
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:NonRDFSource'))), 0);
   dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('sioc:has_creator')), creator_iri), 0);
   dict_put (dict, vector (creator_iri, iri_to_id (__xml_nsexpand_iristr('sioc:creator_of')), iri), 0);
   dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('foaf:maker')), person_iri), 0);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,8 @@
 /* disk.c */
 extern unsigned long disk_reads;
 extern long disk_releases;
-extern long read_cum_time;
+extern int64 read_cum_time;
+extern int64 write_cum_time;
 extern long disk_writes;
 extern int64 bp_replace_age;
 extern int32 bp_replace_count;
@@ -56,7 +57,7 @@ extern long lock_leaves;
 
 /* neodisk.c */
 extern long busy_pre_image_scrap;
-extern long atomic_cp_msecs;
+extern int64 atomic_cp_msecs;
 
 /* sqlsrv.c */
 extern long srv_connect_ctr;

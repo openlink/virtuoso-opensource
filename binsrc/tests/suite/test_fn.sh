@@ -6,7 +6,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2022 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -117,10 +117,10 @@ export SERVER ISQL PORT DSN SERVICE BINDIR PATH DEBUG
 #
 #  Netstat
 #
-NETSTAT=`which netstat`
+NETSTAT=`which netstat 2>/dev/null`
 if test -z "$NETSTAT"
 then
-    NETSTAT=`which ss`
+    NETSTAT=`which ss 2>/dev/null`
 fi
 if test -z "$NETSTAT"
 then

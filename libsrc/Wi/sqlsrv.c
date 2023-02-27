@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -74,6 +74,7 @@ int in_srv_global_init = 0;
 int it_n_maps = 256;
 int rdf_obj_ft_rules_size;
 extern int disable_listen_on_tcp_sock;
+extern char * git_head;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
@@ -1757,7 +1758,7 @@ void
 sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
     caddr_t * params, caddr_t * current_ofs, stmt_options_t * options)
 {
-  long msecs = prof_on ? get_msec_real_time () : 0;
+  time_msec_t msecs = prof_on ? get_msec_real_time () : 0;
   query_instance_t *qi;
   int inx, first_set = 1, n_params = 0;
   caddr_t err = NULL;
@@ -2026,7 +2027,7 @@ report_rpc_format_error:
   DKST_RPC_DONE (client);
   session_flush (client);
   if (msecs && prof_on)
-    prof_exec (stmt->sst_query, NULL, get_msec_real_time () - msecs,
+    prof_exec (stmt->sst_query, NULL, (long) (get_msec_real_time () - msecs),
 	       PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
 
   ASSERT_OUTSIDE_TXN;
@@ -2401,7 +2402,7 @@ CLI_WRAPPER (sf_sql_tp_transact,(short op, char* xid_str),(op,xid_str))
 void
 sf_sql_fetch (caddr_t stmt_id, long cond_no)
 {
-  long start = prof_on ? get_msec_real_time () : 0;
+  time_msec_t start = prof_on ? get_msec_real_time () : 0;
   dk_session_t *client = IMMEDIATE_CLIENT;
   caddr_t err;
   client_connection_t *cli = DKS_DB_DATA (client);
@@ -2434,7 +2435,7 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
   DKST_RPC_DONE (IMMEDIATE_CLIENT);
   session_flush (client);
   if (start && prof_on)
-    prof_exec (stmt->sst_query, NULL, get_msec_real_time () - start,
+    prof_exec (stmt->sst_query, NULL, (long) (get_msec_real_time () - start),
 	       PROF_FETCH | (err != NULL ? PROF_ERROR : 0));
   dk_free_tree (err);
 }
@@ -2803,10 +2804,10 @@ sf_make_auto_cp(void)
   LEAVE_TXN;
   if (make_cp)
     {
-      long now;
+      time_msec_t now;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
       now = approx_msec_real_time ();
-      checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
+      checkpointed_last_time = now; /* the main thread still running so set last time auto cpt finished */
     }
 }
 
@@ -3261,9 +3262,9 @@ uint32 n_total_no_threads = 0;
 caddr_t
 sf_sql_no_threads_reply (void)
 {
-  static long last_checked_time = 0;
+  static time_msec_t last_checked_time = 0;
   static uint32 n_hits_per_period = 0;
-  long time_now;
+  time_msec_t time_now;
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   caddr_t err = srv_make_new_error ("40001", "SR214",
       "Out of server threads. Server temporarily unavailable. Transaction rolled back.");
@@ -3776,7 +3777,7 @@ sf_sql_cancel_hook (dk_session_t* session, caddr_t _request)
     return _request;
 }
 
-long msec_session_space_clear;
+time_msec_t msec_session_space_clear;
 
 static void
 futures_object_space_clear (caddr_t b, future_request_t *f)
@@ -4070,8 +4071,8 @@ srv_global_init (char *mode)
 
   logins_list_initialize ();
   log_info ("%s", DBMS_SRV_NAME);
-  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
-      build_thread_model, build_opsys_id, build_date);
+  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)",
+      build_thread_model, build_opsys_id, build_date, git_head);
 
 #ifdef _SSL
   log_info ("uses " OPENSSL_VERSION_TEXT);

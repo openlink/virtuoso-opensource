@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1475,7 +1475,7 @@ query_t *
 DBG_NAME(sql_compile_1) (DBG_PARAMS const char *string2, client_connection_t * cli,
 	     caddr_t * err, volatile int cr_type, ST *the_parse_tree, char *view_name)
 {
-  volatile long msecs = prof_on ? get_msec_real_time () : 0;
+  volatile time_msec_t msecs = prof_on ? get_msec_real_time () : 0;
   db_activity_t da_before;
   caddr_t cc_error;
   char *string = NULL;

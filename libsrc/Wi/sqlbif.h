@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,9 @@
 #define _SQLBIF_H
 
 #include "sqlnode.h"
+#ifdef _SSL
+#include <openssl/x509.h>
+#endif
 
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
 				 long *scale, caddr_t *collation, long * non_null);
@@ -282,6 +285,8 @@ caddr_t box_sha1 (caddr_t str);
 caddr_t box_hmac (caddr_t box, caddr_t key, int alg);
 #define HMAC_ALG_SHA1		0
 #define HMAC_ALG_RIPMD160	1
+caddr_t get_client_pem_certificate (caddr_t *qst, caddr_t *err_ret);
+X509 * get_client_certificate (caddr_t *qst, caddr_t *err_ret);
 #endif
 
 extern int32 sqlbif_rnd (int32* seed);
@@ -321,6 +326,7 @@ caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);
 caddr_t regexp_match_01_const (const char* pattern, const char* str, int c_opts, void ** compiled_ret);
+int regexp_match_iri_const (int what, const char* str, caddr_t *err_ret);
 caddr_t regexp_split_match (const char* pattern, const char* str, int* next, int c_opts);
 int regexp_make_opts (const char* mode);
 int regexp_split_parse (const char* pattern, const char* str, int* offvect, int offvect_sz, int c_opts);
@@ -381,7 +387,7 @@ int iso_string_to_code (char * i);
 
 typedef struct bif_exec_stat_s
 {
-  uint32	exs_start;
+  time_msec_t	exs_start;
   client_connection_t * 	exs_cli;
   caddr_t 	exs_text;
 } bif_exec_stat_t;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1108,9 +1108,9 @@ bp_flush (buffer_pool_t * bp, int wait)
 
 
 int bp_stat_action (buffer_pool_t * bp, int stat_only);
-extern uint32 col_ac_last_time;
+extern time_msec_t col_ac_last_time;
 extern uint32 col_ac_last_duration;
-int col_ac_is_due (uint32 now);
+int col_ac_is_due (time_msec_t now);
 int enable_flush_all = 1;
 
 void
@@ -2043,8 +2043,8 @@ dst_fd_done (disk_stripe_t * dst, int fd, ext_ref_t * er)
 
 unsigned long disk_reads = 0;
 long disk_writes = 0;
-long read_cum_time = 0;
-long write_cum_time = 0;
+int64 read_cum_time = 0;
+int64 write_cum_time = 0;
 int assertion_on_read_fail = 1;
 
 #if 0
@@ -2105,7 +2105,7 @@ pm_get (buffer_desc_t * buf, size_t sz)
 int
 buf_disk_read (buffer_desc_t * buf)
 {
-  long start;
+  time_msec_t start;
   OFF_T rc;
   dbe_storage_t * dbs = buf->bd_storage;
   short flags;
@@ -2219,7 +2219,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 {
   dtp_t c_buf[PAGE_SZ + 512];
   db_buf_t out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
-  long start;
+  time_msec_t start;
   int bytes, n_out;
   short flags;
   dbe_storage_t * dbs = buf->bd_storage;
@@ -3439,7 +3439,7 @@ dc_digit_sort (data_col_t ** dcs, int n_dcs, int * sets, int n_sets)
 
 
 
-long last_flush_time = 0;
+time_msec_t last_flush_time = 0;
 
 
 void
@@ -3754,7 +3754,8 @@ semaphore_t * dst_sync_sem;
 void
 dst_sync (caddr_t * xx)
 {
-  uint32 start, inx;
+  time_msec_t start; 
+  int inx;
   dbe_storage_t * dbs = (dbe_storage_t*)xx[0];
   io_queue_t * iq = (io_queue_t*)xx[1];
   DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)

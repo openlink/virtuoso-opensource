@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3134,7 +3134,10 @@ asc_cmp (dtp_t * dv1, dtp_t * dv2)
     case DV_DATE:
       break;
     case DV_DATETIME:
-      if (DT_TYPE_DATE != DT_DT_TYPE (dv1 + 1) || DT_TYPE_DATE != DT_DT_TYPE (dv2 + 1) || DT_TZ (dv1 + 1) != DT_TZ (dv2 + 1))
+      if (DT_TYPE_DATE != DT_DT_TYPE (dv1 + 1)
+	  || DT_TYPE_DATE != DT_DT_TYPE (dv2 + 1)
+	  || DT_TZ (dv1 + 1) != DT_TZ (dv2 + 1)
+	  || DT_TZL (dv1 + 1) != DT_TZL (dv2 + 1))
 	return -1;
       break;
     case DV_RDF:
@@ -3348,6 +3351,8 @@ asc_cmp_delta (dtp_t * dv1, dtp_t * dv2, uint32 * num_ret, int is_int_delta)
       return ASC_NUMBERS;
     case DV_DATETIME:
       if (DT_TZ (dv1 + 1) != DT_TZ (dv2 + 1))
+	return ASC_NUMBERS;
+      if (DT_TZL (dv1 + 1) != DT_TZL (dv2 + 1))
 	return ASC_NUMBERS;
       if (DT_TYPE_DATE != DT_DT_TYPE (dv1 + 1))
 	{
@@ -4476,7 +4481,7 @@ bif_cs_decode (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int fill = 0;
   memset (&cpo, 0, sizeof (cpo));
   memset (&dc, 0, sizeof (data_col_t));
-ITC_INIT (itc, NUL:NULL, NULL);
+  ITC_INIT (itc, NULL, NULL);
   if (n1 > n2)
     n1 = n2;
   res = (caddr_t *) dk_alloc_box ((n2 - n1) * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
@@ -4513,11 +4518,17 @@ ce_print_f (FILE * f, db_buf_t ce, int n1, int n2)
   data_col_t dc;
   memset (&cpo, 0, sizeof (cpo));
   memset (&dc, 0, sizeof (data_col_t));
-ITC_INIT (itc, NUL:NULL, NULL);
+  ITC_INIT (itc, NULL, NULL);
   itc->itc_n_matches = 0;
   cpo.cpo_itc = itc;
+  fprintf (f, "CE dtp:%d cet:%d n:%d\n", *ce & CE_DTP_MASK, *ce & CE_TYPE_MASK, n_values);
   if (n2 >= n_values)
     n2 = n_values;
+  if (n1 > n2)
+    {
+      fprintf (f, "n1:%d > n2:%d\n", n1, n2);
+      return;
+    }
   cpo.cpo_string = ce;
   cpo.cpo_bytes = ce_total_bytes (ce);
 
@@ -4547,6 +4558,8 @@ ITC_INIT (itc, NUL:NULL, NULL);
 void
 ce_print (db_buf_t ce, int n1, int n2)
 {
+  if (!ce)
+    return;
   ce_print_f (stdout, ce, n1, n2);
 }
 
@@ -4562,7 +4575,7 @@ cr_mp_array (col_data_ref_t * cr, mem_pool_t * mp, int from, int to, int print)
   data_col_t dc;
   memset (&cpo, 0, sizeof (cpo));
   memset (&dc, 0, sizeof (data_col_t));
-ITC_INIT (itc, NUL:NULL, NULL);
+  ITC_INIT (itc, NULL, NULL);
   itc->itc_tree = cr->cr_pages[0].cp_buf->bd_tree;
   itc->itc_n_matches = 0;
   cpo.cpo_itc = itc;

@@ -19,119 +19,19 @@ virtrdf:GqlTypesData a void:Dataset ;
             It must be loaded in `urn:graphql:intro:core` RDF graph, for mappings see `urn:graphql:schema`
             """ ;
     schema:url <http://www.openlinksw.com/graphql/graphql-intro.ttl> ;
-    virtrdf:version "0.9.1" ;
+    virtrdf:version "0.9.3" ;
     dct:created "2022-09-10"^^xsd:date ;
-    dct:modified "2022-09-10"^^xsd:date .
+    dct:modified "2022-10-12"^^xsd:date .
 
-:__schema rdf:type gql:__schema_Class ;
+:__schema rdf:type gql:__Schema ;
                 :queryType :Query;
                 :mutationType :Mutation;
                 :subscriptionType rdf:nil;
-                :types :String, :Float, :Int, :Boolean, :DateTime, :IRI, :__Schema, :__Type, :__TypeKind,
-                       :__Field, :__InputValue, :__EnumValue, :__Directive, :__DirectiveLocation, :Query, :Mutation ;
-                :directives :embedded, :specifiedBy, :deprecated, :skip, :include .
+                :types :String, :ID, :Float, :Int, :Boolean, :DateTime, :IRI, :Any, :__Schema, :__Type, :__TypeKind, :IndexOption, :TableOption,
+                       :__Field, :__InputValue, :__EnumValue, :__Directive, :__DirectiveLocation, :Query, :Mutation, :IfpOption, :SameAsOption ;
+                :directives :embedded, :specifiedBy, :deprecated, :skip, :include, :notNull, :sqlOption, :inferenceOption, :filter, :dataGraph .
 
-:deprecated rdf:type gql:deprecated_Class;
-                :name "deprecated";
-                :locations "ARGUMENT_DEFINITION", "INPUT_FIELD_DEFINITION", "ENUM_VALUE", "FIELD_DEFINITION" ;
-                :description "Marks an element of a GraphQL schema as no longer supported" ;
-                :args :reason .
-
-:skip rdf:type gql:skip_Class ;
-                :name "skip" ;
-                :locations "FRAGMENT_SPREAD", "INLINE_FRAGMENT", "FIELD" ;
-                :description "Directs the executor to skip this field or fragment when the `if` argument is true.";
-                :args :if .
-
-:include rdf:type gql:include_Class ;
-               :name "include" ;
-               :locations "FRAGMENT_SPREAD", "INLINE_FRAGMENT", "FIELD" ;
-               :description "Directs the executor to skip this field or fragment when the `if` argument is true" ;
-               :args :if .
-
-:specifiedBy rdf:type gql:specifiedBy_Class ;
-             :name "specifiedBy" ;
-             :locations "SCALAR" ;
-             :description "Exposes a URL that specifies the behaviour of this scalar" ;
-             :args rdf:nil .
-
-
-:embedded rdf:type gql:embedded_Class ;
-            :args rdf:nil ;
-            :description rdf:nil ;
-            :name "embedded" ;
-            :locations "OBJECT" .
-
-:reason rdf:type gql:reason_Class ;
-              :type :String ;
-              :description "Explains why this element was deprecated" ;
-              :defaultValue "\"No longer supported\"" ;
-              :name "reason" .
-
-:if rdf:type gql:if_Class ;
-          :name "if" ;
-          :description rdf:nil ;
-          :defaultValue rdf:nil ;
-          :type [ :kind "NON_NULL" ; :name rdf:nil ;
-                  :ofType [ :kind "SCALAR" ; :name "Boolean" ; :ofType rdf:nil ]
-          ] .
-
-
-:String rdf:type gql:String_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `String` scalar type represents textual data, represented as UTF-8 character sequences." ;
-        :name "String" .
-
-:Int rdf:type gql:Int_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `Int` scalar type represents non-fractional signed whole numeric values." ;
-        :name "Int" .
-
-:Float rdf:type gql:Float_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `Float` scalar type represents signed double-precision fractional values." ;
-        :name "Float" .
-
-:Boolean rdf:type gql:Boolean_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `Boolean` scalar type represents `true` or `false`." ;
-        :name "Boolean" .
-
-:DateTime rdf:type gql:DateTime_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `DateTime` scalar type represents `date/time` values in `ISO-8601` format." ;
-        :name "DateTime" .
-
-:IRI rdf:type gql:IRI_Class ;
-        :enumValues rdf:nil ;
-        :fields rdf:nil ;
-        :interfaces rdf:nil ;
-        :kind "SCALAR" ;
-        :possibleTypes rdf:nil ;
-        :description "The `IRI` scalar type represents Internationalized Resource Identifiers (IRIs) [RFC-3987](https://www.rfc-editor.org/rfc/rfc3987)" ;
-        :name "IRI" .
-
-:__Schema rdf:type gql:__Schema_Class ;
+:__Schema rdf:type gql:Object ;
         :enumValues rdf:nil ;
         :inputFields rdf:nil ;
         :kind "OBJECT" ;
@@ -141,7 +41,165 @@ virtrdf:GqlTypesData a void:Dataset ;
         :interfaces rdf:nil ;
         :fields :types, :queryType, :mutationType, :subscriptionType, :directives, :description .
 
-:types rdf:type gql:__Type_Class ;
+
+:deprecated rdf:type gql:Object;
+                :name "deprecated";
+                :locations "ARGUMENT_DEFINITION", "INPUT_FIELD_DEFINITION", "ENUM_VALUE", "FIELD_DEFINITION" ;
+                :description "Marks an element of a GraphQL schema as no longer supported" ;
+                :args :reason .
+
+:skip rdf:type gql:Object ;
+                :name "skip" ;
+                :locations "FRAGMENT_SPREAD", "INLINE_FRAGMENT", "FIELD" ;
+                :description "Directs the executor to skip this field or fragment when the `if` argument is true.";
+                :args :if .
+
+:include rdf:type gql:Object ;
+               :name "include" ;
+               :locations "FRAGMENT_SPREAD", "INLINE_FRAGMENT", "FIELD" ;
+               :description "Directs the executor to include this field or fragment when the `if` argument is true" ;
+               :args :if .
+
+:specifiedBy rdf:type gql:Object ;
+             :name "specifiedBy" ;
+             :locations "SCALAR" ;
+             :description "Exposes a URL that specifies the behaviour of this scalar" ;
+             :args :url .
+
+:url rdf:type gql:Object ;
+          :name "url" ;
+          :description rdf:nil ;
+          :defaultValue rdf:nil ;
+          :type [ :kind "NON_NULL" ; :name rdf:nil ;
+                  :ofType [ :kind "SCALAR" ; :name "String" ; :ofType rdf:nil ]
+          ] .
+
+:embedded rdf:type gql:Object ;
+            :args rdf:nil ;
+            :description rdf:nil ;
+            :name "embedded" ;
+            :locations "OBJECT" .
+
+:reason rdf:type gql:Object ;
+              :type :String ;
+              :description "Explains why this element was deprecated" ;
+              :defaultValue "\"No longer supported\"" ;
+              :name "reason" .
+
+:if rdf:type gql:Object ;
+          :name "if" ;
+          :description rdf:nil ;
+          :defaultValue rdf:nil ;
+          :type [ :kind "NON_NULL" ; :name rdf:nil ;
+                  :ofType [ :kind "SCALAR" ; :name "Boolean" ; :ofType rdf:nil ]
+          ] .
+
+:notNull rdf:type gql:Object ;
+                :name "notNull" ;
+                :locations "FIELD" ;
+                :description "Directs the executor to skip null values from result.";
+                :args rdf:nil .
+
+:sqlOption rdf:type gql:Object ;
+                :name "sqlOption" ;
+                :locations "FIELD" ;
+                :description "Directs the executor to use specific SQL pragmas to query this field.";
+                :args [ :name "option" ; :type :TableOption ],
+                      [ :name "index" ; :type :IndexOption ] .
+
+:inferenceOption rdf:type gql:Object ;
+                :name "inferenceOption" ;
+                :locations "QUERY" ;
+                :description "Directs the executor to use same-as pragma for SPARQL query.";
+                :args [ :name "sameAs" ; :type :SameAsOption ],
+                      [ :name "ifp" ; :type :IfpOption ] .
+
+:filter rdf:type gql:Object ;
+                :name "filter" ;
+                :locations "FIELD" ;
+                :description """Directs the executor to use SPARQL filter epression to query this field.\r\nThe current field must be referenced by `$` placeholder, e.g. `isIRI($)` """;
+                :args [ :name "expression" ; :type [ :kind "NON_NULL" ; :ofType :String ] ] .
+
+:dataGraph rdf:type gql:Object ;
+                :name "dataGraph" ;
+                :locations "QUERY", "MUTATION", "SUBSCRIPTION", "FRAGMENT_SPREAD", "INLINE_FRAGMENT", "FRAGMENT_DEFINITION", "FIELD" ;
+                :isRepeatable "true"^^xsd:boolean ;
+                :description """Directs the executor to use `uri` as a value for GRAPH scoping""";
+                :args [ :name "uri" ; :type [ :kind "NON_NULL" ; :ofType :IRI ] ] .
+
+:String rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `String` scalar type represents textual data, represented as UTF-8 character sequences." ;
+        :name "String" .
+
+:ID rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `ID` scalar type represents a unique identifier, it should always serialize as a String.";
+        :name "ID" .
+
+:Int rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `Int` scalar type represents non-fractional signed whole numeric values." ;
+        :name "Int" .
+
+:Float rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `Float` scalar type represents signed double-precision fractional values." ;
+        :name "Float" .
+
+:Boolean rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `Boolean` scalar type represents `true` or `false`." ;
+        :name "Boolean" .
+
+:DateTime rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `DateTime` scalar type represents `date/time` values in `ISO-8601` format." ;
+        :name "DateTime" .
+
+:IRI rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `IRI` scalar type represents Internationalized Resource Identifiers (IRIs) [RFC-3987](https://www.rfc-editor.org/rfc/rfc3987)" ;
+        :name "IRI" .
+
+:Any rdf:type gql:Object ;
+        :enumValues rdf:nil ;
+        :fields rdf:nil ;
+        :interfaces rdf:nil ;
+        :kind "SCALAR" ;
+        :possibleTypes rdf:nil ;
+        :description "The `Any` scalar type is a placeholder for all supported input values." ;
+        :name "Any" .
+
+:types rdf:type gql:__Type ;
         :name "types" ;
         :description "A list of all types supported by this server." ;
         :args rdf:nil ;
@@ -155,7 +213,7 @@ virtrdf:GqlTypesData a void:Dataset ;
                 ]
         ] .
 
-:queryType rdf:type gql:queryType_Class ;
+:queryType rdf:type gql:Object ;
         :name "queryType" ;
         :description "The type that query operations will be rooted at." ;
         :args rdf:nil ;
@@ -163,7 +221,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :deprecationReason rdf:nil ;
         :type [ :kind "NON_NULL" ; :name rdf:nil ; :ofType [ :kind "OBJECT" ; :name "__Type" ; :ofType rdf:nil ] ] .
 
-:mutationType rdf:type gql:mutationType_Class ;
+:mutationType rdf:type gql:Object ;
         :name "mutationType" ;
         :description "If this server supports mutation, the type that mutation operations will be rooted at." ;
         :args rdf:nil ;
@@ -171,7 +229,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :deprecationReason rdf:nil ;
         :type [ :kind "OBJECT" ; :name "__Type" ; :ofType rdf:nil ] .
 
-:subscriptionType rdf:type gql:subscriptionType_Class ;
+:subscriptionType rdf:type gql:Object ;
         :name "subscriptionType" ;
         :description  "If this server support subscription, the type that subscription operations will be rooted at." ;
         :args rdf:nil ;
@@ -179,7 +237,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :deprecationReason rdf:nil ;
         :type [ :kind "OBJECT" ; :name "__Type" ; :ofType rdf:nil ] .
 
-:directives rdf:type gql:directives_Class ;
+:directives rdf:type gql:Object ;
         :name "directives" ;
         :args rdf:nil ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -192,27 +250,15 @@ virtrdf:GqlTypesData a void:Dataset ;
                 ]
         ] .
 
-:Query rdf:type gql:Query_Class ;
+:Query rdf:type gql:Object ;
       :name "Query" ;
-      :kind "OBJECT" ;
-      :description rdf:nil ;
-      :specifiedByUrl  rdf:nil ;
-      :inputFields rdf:nil ;
-      :interfaces rdf:nil ;
-      :enumValues rdf:nil ;
-      :possibleTypes rdf:nil .
+      :kind "OBJECT" .
 
-:Mutation rdf:type gql:Mutation_Class ;
+:Mutation rdf:type gql:Object ;
       :name "Mutation" ;
-      :kind "OBJECT" ;
-      :description rdf:nil ;
-      :specifiedByUrl  rdf:nil ;
-      :inputFields rdf:nil ;
-      :interfaces rdf:nil ;
-      :enumValues rdf:nil ;
-      :possibleTypes rdf:nil .
+      :kind "OBJECT" .
 
-:description rdf:type gql:description_Class ;
+:description rdf:type gql:Object ;
         :name "description" ;
         :args rdf:nil ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -220,7 +266,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :type :String .
 
 
-:__Type rdf:type gql:__Type_Class ;
+:__Type rdf:type gql:Object ;
         :enumValues rdf:nil ;
         :description """The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\r\n Depending on the kind of a type, certain fields describe information about that type.\r\n Scalar types provide no information beyond a name, description and optional `specifiedByUrl`, while Enum types provide their values.\r\n Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.""" ;
         :inputFields rdf:nil ;
@@ -230,21 +276,21 @@ virtrdf:GqlTypesData a void:Dataset ;
         :interfaces rdf:nil ;
         :fields :name, :description, :specifiedByUrl, :fields, :interfaces, :kind, :possibleTypes, :enumValues, :inputFields, :ofType .
 
-:name rdf:type gql:name_Class ;
+:name rdf:type gql:Object ;
         :name "name" ;
         :args rdf:nil ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :type :String .
 
-:specifiedByUrl rdf:type gql:specifiedByUrl_Class ;
+:specifiedByUrl rdf:type gql:Object ;
         :name "specifiedByUrl" ;
         :args rdf:nil ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :type :String .
 
-:fields rdf:type gql:fields_Class ;
+:fields rdf:type gql:Object ;
         :name "fields" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
@@ -263,13 +309,13 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:includeDeprecated rdf:type gql:includeDeprecated_Class ;
+:includeDeprecated rdf:type gql:Object ;
         :name "includeDeprecated" ;
         :defaultValue "false"^^xsd:boolean ;
         :type :Boolean ;
         :description rdf:nil .
 
-:interfaces rdf:type gql:interfaces_Class ;
+:interfaces rdf:type gql:Object ;
         :args rdf:nil ;
         :name "interfaces" ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -288,7 +334,7 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:kind rdf:type gql:kind_Class ;
+:kind rdf:type gql:Object ;
         :args rdf:nil ;
         :name "kind" ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -302,7 +348,7 @@ virtrdf:GqlTypesData a void:Dataset ;
                          ]
         ] .
 
-:possibleTypes rdf:type gql:possibleTypes_Class ;
+:possibleTypes rdf:type gql:Object ;
         :args rdf:nil ;
         :name "possibleTypes" ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -322,7 +368,7 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:enumValues rdf:type gql:enumValues_Class ;
+:enumValues rdf:type gql:Object ;
         :args :includeDeprecated ;
         :name "enumValues" ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -341,7 +387,7 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:inputFields rdf:type gql:inputFields_Class ;
+:inputFields rdf:type gql:Object ;
         :args :includeDeprecated ;
         :name "inputFields" ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -360,14 +406,87 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:ofType rdf:type gql:ofType_Class ;
+:ofType rdf:type gql:Object ;
         :args rdf:nil ;
         :name "ofType" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :type :__Type .
 
-:__TypeKind rdf:type gql:__TypeKind_Class ;
+:IndexOption rdf:type gql:Object ;
+        :name "IndexOption" ;
+        :kind "ENUM" ;
+        :enumValues :RDF_QUAD, :RDF_QUAD_POGS, :RDF_QUAD_GS, :RDF_QUAD_SP, :RDF_QUAD_OP .
+
+:TableOption rdf:type gql:Object ;
+        :name "TableOption" ;
+        :kind "ENUM" ;
+        :enumValues :LOOP, :HASH .
+
+:IfpOption rdf:type gql:Object ;
+        :name "IfpOption" ;
+        :description "Inverse Functional Property";
+        :kind "ENUM" ;
+        :enumValues :IFP_OFF, :IFP_S, :IFP_O, :IFP .
+
+:IFP_OFF   rdf:type gql:Object ;
+        :name "IFP_OFF" ;
+        :description "Disabled (fastest)" ;
+        :isDeprecated false .
+
+:IFP_S   rdf:type gql:Object ;
+        :name "IFP_S" ;
+        :description "Apply to subjects only" ;
+        :isDeprecated false .
+
+:IFP_O   rdf:type gql:Object ;
+        :name "IFP_O" ;
+        :description "Apply to objects only" ;
+        :isDeprecated false .
+
+:IFP   rdf:type gql:Object ;
+        :name "IFP" ;
+        :description "Apply to both subjects and objects" ;
+        :isDeprecated false .
+
+
+:SameAsOption rdf:type gql:Object ;
+        :name "SameAsOption" ;
+        :description "Same As";
+        :kind "ENUM" ;
+        :enumValues :SAME_AS_OFF, :SAME_AS_S, :SAME_AS_O, :SAME_AS_S_O, :SAME_AS, :SAME_AS_P .
+
+:SAME_AS_OFF   rdf:type gql:Object ;
+        :name "SAME_AS_OFF" ;
+        :description "Disabled (fastest)" ;
+        :isDeprecated false .
+
+:SAME_AS_S   rdf:type gql:Object ;
+        :name "SAME_AS_S" ;
+        :description "Apply to subjects only" ;
+        :isDeprecated false .
+
+:SAME_AS_O   rdf:type gql:Object ;
+        :name "SAME_AS_O" ;
+        :description "Apply to objects only" ;
+        :isDeprecated false .
+
+:SAME_AS_S_O   rdf:type gql:Object ;
+        :name "SAME_AS_S_O" ;
+        :description "Apply to both subjects and objects (recommended)" ;
+        :isDeprecated false .
+
+:SAME_AS   rdf:type gql:Object ;
+        :name "SAME_AS" ;
+        :description "Apply to subjects, objects and predicates (not recommended on big datasets)" ;
+        :isDeprecated false .
+
+:SAME_AS_P   rdf:type gql:Object ;
+        :name "SAME_AS_P" ;
+        :description "Apply to predicates only (special use cases only)" ;
+        :isDeprecated false .
+
+:__TypeKind rdf:type gql:Object ;
         :name "__TypeKind" ;
         :description "An enum describing what kind of type a given `__Type` is." ;
         :fields rdf:nil ;
@@ -379,7 +498,7 @@ virtrdf:GqlTypesData a void:Dataset ;
 
 
 
-:__Field rdf:type gql:__Field_Class ;
+:__Field rdf:type gql:Object ;
         :name "__Field" ;
         :fields :description, :args, :type, :isDeprecated, :deprecationReason, :name ;
         :inputFields rdf:nil ;
@@ -387,7 +506,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :kind "OBJECT" ;
         :possibleTypes rdf:nil .
 
-:args rdf:type gql:args_Class ;
+:args rdf:type gql:Object ;
         :name "args" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
@@ -398,7 +517,7 @@ virtrdf:GqlTypesData a void:Dataset ;
                                     :ofType [ :kind "OBJECT" ; :name "__InputValue" ; :ofType rdf:nil ] ] ]
         ] .
 
-:type rdf:type gql:type_Class ;
+:type rdf:type gql:Object ;
         :name "type" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
@@ -412,14 +531,14 @@ virtrdf:GqlTypesData a void:Dataset ;
                          ]
         ] .
 
-:isDeprecated rdf:type gql:isDeprecated_Class ;
+:isDeprecated rdf:type gql:Object ;
         :name "isDeprecated" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :type rdf:nil ;
         :args rdf:nil .
 
-:deprecationReason rdf:type gql:deprecationReason_Class ;
+:deprecationReason rdf:type gql:Object ;
         :name "deprecationReason" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
@@ -427,7 +546,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :args rdf:nil .
 
 
-:__InputValue rdf:type gql:__InputValue_Class ;
+:__InputValue rdf:type gql:Object ;
         :name "__InputValue" ;
         :fields :description, :args, :type, :isDeprecated, :deprecationReason, :name ;
         :inputFields rdf:nil ;
@@ -436,7 +555,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :possibleTypes rdf:nil .
 
 
-:__EnumValue rdf:type gql:__EnumValue_Class ;
+:__EnumValue rdf:type gql:Object ;
         :name "__EnumValue" ;
         :enumValues rdf:nil ;
         :fields :description, :isDeprecated, :deprecationReason, :name ;
@@ -446,7 +565,7 @@ virtrdf:GqlTypesData a void:Dataset ;
         :possibleTypes rdf:nil .
 
 
-:__Directive rdf:type gql:__Directive_Class ;
+:__Directive rdf:type gql:Object ;
         :name "__Directive" ;
         :enumValues rdf:nil ;
         :fields :description, :isRepeatable, :locations, :args, :name ;
@@ -455,20 +574,20 @@ virtrdf:GqlTypesData a void:Dataset ;
         :kind "OBJECT" ;
         :possibleTypes rdf:nil .
 
-:isRepeatable rdf:type gql:isRepeatable_Class ;
+:isRepeatable rdf:type gql:Object ;
         :name "isRepeatable" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :type rdf:nil ;
         :args rdf:nil .
 
-:locations rdf:type gql:locations_Class ;
+:locations rdf:type gql:Object ;
         :name "locations" ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil ;
         :args rdf:nil ;
         :type [
-           kind "NON_NULL" ;
+           :kind "NON_NULL" ;
            :name rdf:nil ;
            :ofType [
               :kind "LIST";
@@ -485,9 +604,9 @@ virtrdf:GqlTypesData a void:Dataset ;
            ]
         ] .
 
-:__DirectiveLocation rdf:type gql:__DirectiveLocation_Class ;
+:__DirectiveLocation rdf:type gql:Object ;
         :name "__DirectiveLocation" ;
-        :enumValues :MUTATION, :SUBSCRIPTION, :FIELD, :FRAGMENT_DEFINITION, :FRAGMENT_SPREAD,
+        :enumValues :QUERY, :MUTATION, :SUBSCRIPTION, :FIELD, :FRAGMENT_DEFINITION, :FRAGMENT_SPREAD,
                 :INLINE_FRAGMENT, :VARIABLE_DEFINITION, :SCHEMA, :SCALAR, :OBJECT, :FIELD_DEFINITION,
                 :ARGUMENT_DEFINITION, :INTERFACE, :UNION, :ENUM, :ENUM_VALUE, :INPUT_OBJECT, :INPUT_FIELD_DEFINITION ;
         :fields rdf:nil ;
@@ -497,124 +616,159 @@ virtrdf:GqlTypesData a void:Dataset ;
         :possibleTypes rdf:nil .
 
 
-:QUERY rdf:type gql:QUERY_Class ;
+:QUERY rdf:type gql:Object ;
         :name "QUERY" ;
         :description "Query operation." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:MUTATION rdf:type gql:MUTATION_Class ;
+:MUTATION rdf:type gql:Object ;
         :name "MUTATION" ;
         :description "Mutation operation." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:SUBSCRIPTION rdf:type gql:SUBSCRIPTION_Class ;
+:SUBSCRIPTION rdf:type gql:Object ;
         :name "SUBSCRIPTION" ;
         :description "Subscription operation." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:FIELD rdf:type gql:FIELD_Class ;
+:FIELD rdf:type gql:Object ;
         :name "FIELD" ;
         :description "Field." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:FRAGMENT_DEFINITION rdf:type gql:FRAGMENT_DEFINITION_Class ;
+:FRAGMENT_DEFINITION rdf:type gql:Object ;
         :name "FRAGMENT_DEFINITION" ;
         :description "Fragment definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:FRAGMENT_SPREAD rdf:type gql:FRAGMENT_SPREAD_Class ;
+:FRAGMENT_SPREAD rdf:type gql:Object ;
         :name "FRAGMENT_SPREAD" ;
         :description "Fragment spread." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:INLINE_FRAGMENT rdf:type gql:INLINE_FRAGMENT_Class ;
+:INLINE_FRAGMENT rdf:type gql:Object ;
         :name "INLINE_FRAGMENT" ;
         :description "Inline fragment." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:VARIABLE_DEFINITION rdf:type gql:VARIABLE_DEFINITION_Class ;
+:VARIABLE_DEFINITION rdf:type gql:Object ;
         :name "VARIABLE_DEFINITION" ;
         :description "Variable definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:SCHEMA rdf:type gql:SCHEMA_Class ;
+:SCHEMA rdf:type gql:Object ;
         :name "SCHEMA" ;
         :description "Schema definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:SCALAR rdf:type gql:SCALAR_Class ;
+:SCALAR rdf:type gql:Object ;
         :name "SCALAR" ;
         :description "Scalar definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:OBJECT rdf:type gql:OBJECT_Class ;
+:OBJECT rdf:type gql:Object ;
         :name "OBJECT" ;
         :description "Object type definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:FIELD_DEFINITION rdf:type gql:FIELD_DEFINITION_Class ;
+:FIELD_DEFINITION rdf:type gql:Object ;
         :name "FIELD_DEFINITION" ;
         :description "Field definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:ARGUMENT_DEFINITION rdf:type gql:ARGUMENT_DEFINITION_Class ;
+:ARGUMENT_DEFINITION rdf:type gql:Object ;
         :name "ARGUMENT_DEFINITION" ;
         :description "Argument definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:INTERFACE rdf:type gql:INTERFACE_Class ;
+:INTERFACE rdf:type gql:Object ;
         :name "INTERFACE" ;
         :description "Interface definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:UNION rdf:type gql:UNION_Class ;
+:UNION rdf:type gql:Object ;
         :name "UNION" ;
         :description "Union definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
+:LOOP   rdf:type gql:Object ;
+        :name "LOOP" ;
+        :description "Use loop join" ;
+        :isDeprecated false .
 
-:ENUM rdf:type gql:ENUM_Class ;
+:HASH   rdf:type gql:Object ;
+        :name "HASH" ;
+        :description "Use hash join" ;
+        :isDeprecated false .
+
+:RDF_QUAD rdf:type gql:Object ;
+        :name "RDF_QUAD" ;
+        :description "Primary key" ;
+        :isDeprecated false .
+
+:RDF_QUAD_POGS rdf:type gql:Object ;
+        :name "RDF_QUAD_POGS" ;
+        :description "POGS index" ;
+        :isDeprecated false .
+
+:RDF_QUAD_SP rdf:type gql:Object ;
+        :name "S" ;
+        :description "SP index" ;
+        :isDeprecated false .
+
+:RDF_QUAD_OP rdf:type gql:Object ;
+        :name "O" ;
+        :description "OP index" ;
+        :isDeprecated false .
+
+:RDF_QUAD_GS rdf:type gql:Object ;
+        :name "G" ;
+        :description "GS index" ;
+        :isDeprecated false .
+
+
+:ENUM rdf:type gql:Object ;
         :name "ENUM" ;
         :description "Enum definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
-:LIST rdf:type gql:LIST_Class ;
+:LIST rdf:type gql:Object ;
         :name "LIST" ;
         :description "List type." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
-:NON_NULL rdf:type gql:NON_NULL_Class ;
+:NON_NULL rdf:type gql:Object ;
         :name "NON_NULL" ;
         :description "Indicate type is not null." ;
         :isDeprecated "false"^^xsd:boolean ;
@@ -622,21 +776,21 @@ virtrdf:GqlTypesData a void:Dataset ;
 
 
 
-:ENUM_VALUE rdf:type gql:ENUM_VALUE_Class ;
+:ENUM_VALUE rdf:type gql:Object ;
         :name "ENUM_VALUE" ;
         :description "Enum value definition." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:INPUT_OBJECT rdf:type gql:INPUT_OBJECT_Class ;
+:INPUT_OBJECT rdf:type gql:Object ;
         :name "INPUT_OBJECT" ;
         :description "Input object type." ;
         :isDeprecated "false"^^xsd:boolean ;
         :deprecationReason rdf:nil .
 
 
-:INPUT_FIELD_DEFINITION rdf:type gql:INPUT_FIELD_DEFINITION_Class ;
+:INPUT_FIELD_DEFINITION rdf:type gql:Object ;
         :name "INPUT_FIELD_DEFINITION" ;
         :description "Input object field." ;
         :isDeprecated "false"^^xsd:boolean ;

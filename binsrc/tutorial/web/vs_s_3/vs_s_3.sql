@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -23,6 +23,6 @@
 VHOST_REMOVE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy')
 ;
 
-VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy',ppath=>sprintf ('http://localhost:%s/', server_http_port()))
+VHOST_DEFINE (vhost=>'*ini*',lhost=>'*ini*',lpath=>'/proxy',ppath=>'http://localhost:65535/')
 ;
 

@@ -5,6 +5,7 @@
 ../../xddl_tables.xsd
 ../../xddl_views.xsd
 conductor/account_create.vspx
+conductor/account_key_remove.vspx
 conductor/account_remove.vspx
 conductor/accounts_page.vspx
 conductor/accounts.vspx
@@ -406,6 +407,7 @@ conductor/role_remove.vspx
 conductor/roles.vspx
 conductor/sec_acl_edit_sp.vspx
 conductor/sec_acl_edit.vspx
+conductor/sec_acme.vspx
 conductor/sec_auth_serv_sp.vspx
 conductor/sec_auth_serv.vspx
 conductor/sec_auth_sponger_1.vspx
@@ -418,6 +420,7 @@ conductor/sec_pki_3.vspx
 conductor/sec_pki_4.vspx
 conductor/sec_pki_download.vsp
 conductor/sec_pki_drop.vspx
+conductor/sec_pki_menu.vspx
 conductor/sec_pki_renew.vspx
 conductor/site.vspx
 conductor/soap_del_path.vspx
@@ -430,6 +433,7 @@ conductor/sparql_filters.vspx
 conductor/sparql_graph.vspx
 conductor/sparql_input.vspx
 conductor/sparql_load.vspx
+conductor/sql/acme.sql
 conductor/sqlbuilder.vsp
 conductor/sql/vdir_helper.sql
 conductor/sql/xddl_dav.sql

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -923,7 +923,7 @@ void dbg_print_box (caddr_t object, FILE * out);
 void dbg_page_structure_error (buffer_desc_t *bd, db_buf_t ptr);
 
 extern long  prof_on;
-extern unsigned long  prof_compile_time;
+extern int64 prof_compile_time;
 extern unsigned long prof_n_compile;
 extern unsigned long prof_n_reused;
 void prof_exec (query_t * qr, char * text, long msecs, int flags);

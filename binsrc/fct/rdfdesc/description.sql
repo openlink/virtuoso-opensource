@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1020,7 +1020,7 @@ again:
      }
    else if (__tag (_object) = 189)
      {
-       http (sprintf ('<span %s>%d</span>', rdfa, _object));
+       http (sprintf ('<span %s>%ld</span>', rdfa, _object));
        lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 190)
@@ -1030,7 +1030,7 @@ again:
      }
    else if (__tag (_object) = 191)
      {
-       http (sprintf ('<span %s>%d</span>', rdfa, _object));
+       http (sprintf ('<span %s>%f</span>', rdfa, _object));
        lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 219)

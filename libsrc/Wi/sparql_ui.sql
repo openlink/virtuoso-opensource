@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -81,8 +81,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_HEAD (in title varchar)
 create procedure WS.WS.SPARQL_ENDPOINT_STYLE (in enable_bootstrap integer := 0)
 {
     if (enable_bootstrap) {
-        http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.1/css/', 'bootstrap.min.css',
-            'sha512-siwe/oXMhSjGCwLn+scraPOWrJxHlUgMBMZXdPe2Tnk3I0x3ESCoLz7WZ5NTH6SZrywMY+PB1cjyqJ5jAluCOg=='));
+        http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/', 'bootstrap.min.css',
+            'sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=='));
         return;
     }
 ?>
@@ -675,7 +675,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_CXML_OPTION (in can_pivot integer, in par
 
 create procedure WS.WS.SPARQL_ENDPOINT_HTML_MENU( in title varchar, in display_submenu integer := 1)
 { ?>
-    <nav class="navbar navbar-expand-lg sticky-top navbar-light bg-light">
+    <nav class="navbar navbar-expand-md sticky-top bg-light">
     <div class="container-lg">
         <a class="navbar-brand" href="/sparql"><?V title ?></a>
         <button class="navbar-toggler"
@@ -1060,8 +1060,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Javascript
     --
     http('<div id="sparql-scripts">\n');
-    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.1/js/', 'bootstrap.bundle.min.js',
-            'sha512-1TK4hjCY5+E9H3r5+05bEGbKGyK506WaDPfPe1s/ihwRjr6OtL43zJLzOFQ+/zciONEd+sp7LwrfOCnyukPSsg=='));
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/', 'bootstrap.bundle.min.js',
+            'sha512-i9cEfJwUwViEPFKdC1enz4ZRGBj8YQo6QByFTF92YXHi7waCqyexvRD75S5NVTsSiTv7rKWqG9Y5eFxmRsOn0A=='));
     http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/', 'jquery.slim.min.js',
             'sha512-yBpuflZmP5lwMzZ03hiCLzA94N0K2vgBtJgqQ2E1meJzmIBfjbb7k4Y23k2i2c/rIeSUGc7jojyIY5waK3ZxCQ=='));
 
@@ -1522,8 +1522,8 @@ create procedure WS.WS.SPARQL_ENDPOINT_BRIEF_HELP (inout path varchar, inout par
     http('</div>\n');
 
     http('<div id="sparql-scripts">\n');
-    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.1/js/', 'bootstrap.bundle.min.js',
-            'sha512-1TK4hjCY5+E9H3r5+05bEGbKGyK506WaDPfPe1s/ihwRjr6OtL43zJLzOFQ+/zciONEd+sp7LwrfOCnyukPSsg=='));
+    http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/js/', 'bootstrap.bundle.min.js',
+            'sha512-i9cEfJwUwViEPFKdC1enz4ZRGBj8YQo6QByFTF92YXHi7waCqyexvRD75S5NVTsSiTv7rKWqG9Y5eFxmRsOn0A=='));
     http (WS.WS.SPARQL_ENDPOINT_CDN ('https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.1/', 'jquery.slim.min.js',
             'sha512-yBpuflZmP5lwMzZ03hiCLzA94N0K2vgBtJgqQ2E1meJzmIBfjbb7k4Y23k2i2c/rIeSUGc7jojyIY5waK3ZxCQ=='));
     http('</div>');
@@ -1678,10 +1678,10 @@ create procedure WS.WS.SPARQL_RESULT_HTML5_OUTPUT_BEGIN (in title varchar, inout
     http_value(title, 0, ses);
     http ('</title>\n', ses);
 
-    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.1/css/', 'bootstrap.min.css',
-            'sha512-siwe/oXMhSjGCwLn+scraPOWrJxHlUgMBMZXdPe2Tnk3I0x3ESCoLz7WZ5NTH6SZrywMY+PB1cjyqJ5jAluCOg=='), ses);
-    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.9.1/font/', 'bootstrap-icons.min.css',
-            'sha512-5PV92qsds/16vyYIJo3T/As4m2d8b6oWYfoqV+vtizRB6KhF1F9kYzWzQmsO6T3z3QG2Xdhrx7FQ+5R1LiQdUA=='), ses);
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/', 'bootstrap.min.css',
+            'sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=='), ses);
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/', 'bootstrap-icons.min.css',
+            'sha512-YFENbnqHbCRmJt5d+9lHimyEMt8LKSNTMLSaHjvsclnZGICeY/0KYEeiHwD1Ux4Tcao0h60tdcMv+0GljvWyHg=='), ses);
 
     http ('</head>\n', ses);
     http ('<body>\n', ses);
@@ -1731,10 +1731,10 @@ create procedure WS.WS.SPARQL_RESULT_XHTML_OUTPUT_BEGIN (in title varchar, inout
     http_value(title, 0, ses);
     http ('</title>\n', ses);
 
-    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.1/css/', 'bootstrap.min.css',
-            'sha512-siwe/oXMhSjGCwLn+scraPOWrJxHlUgMBMZXdPe2Tnk3I0x3ESCoLz7WZ5NTH6SZrywMY+PB1cjyqJ5jAluCOg=='));
-    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.9.1/font/', 'bootstrap-icons.min.css',
-            'sha512-5PV92qsds/16vyYIJo3T/As4m2d8b6oWYfoqV+vtizRB6KhF1F9kYzWzQmsO6T3z3QG2Xdhrx7FQ+5R1LiQdUA=='), ses);
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap/5.2.3/css/', 'bootstrap.min.css',
+            'sha512-SbiR/eusphKoMVVXysTKG/7VseWii+Y3FdHrt0EpKgpToZeemhqHeZeLWLhJutz/2ut2Vw1uQEj2MbRF+TVBUA=='));
+    http (WS.WS.SPARQL_ENDPOINT_CDN('https://cdnjs.cloudflare.com/ajax/libs/bootstrap-icons/1.10.3/font/', 'bootstrap-icons.min.css',
+            'sha512-YFENbnqHbCRmJt5d+9lHimyEMt8LKSNTMLSaHjvsclnZGICeY/0KYEeiHwD1Ux4Tcao0h60tdcMv+0GljvWyHg=='), ses);
 
     http ('</head>\n', ses);
     http ('<body>\n', ses);

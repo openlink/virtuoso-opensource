@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -475,7 +475,7 @@ create procedure XML_URI_PARSE_VIRT (in base_uri varchar, inout table_name varch
 
 create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
 {
-  declare head, str, proto varchar;
+  declare head, str, proto, accept varchar;
   declare inx, timeout integer;
   declare s_uri any;
   -- dbg_obj_princ ('XML_URI_GET (', base_uri, rel_uri, ')');
@@ -485,6 +485,9 @@ create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := charset_recode (base_uri, NULL, 'UTF-8');
+  accept := connection_get ('__XML_URI_GET_ACCEPT', null);
+  if (accept is not null)
+    accept := concat ('Accept:', accept);
 again:
   s_uri := rfc1808_parse_uri (base_uri);
   str := null;
@@ -527,10 +530,10 @@ try_http_get:
 	}
       else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15, http_headers=>accept);
  	}
       else
-        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15);
+        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15, http_headers=>accept);
       if (aref (head, 0) not like '% 200%')
 	signal ('H0001', concat ('HTTP request failed: ', aref (head, 0), 'for URI ', base_uri));
     }
@@ -5361,12 +5364,18 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return cast (v as varchar);
   else if (__tag (v) = __tag of vector)
     return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
-  else if (__tag (v) = 211)
+  else if (__tag (v) = 195)
+    return concat ('dvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 209)
+    return concat ('lvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 202)
+    return concat ('fvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = __tag of datetime)
     return sprintf ('{ts ''%s''}', datestring (v));
   else if (__tag (v) = __tag of nvarchar)
     return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
   else if (isiri_id (v))
-    return sprintf ('__id2i (\'%s\')', __id2i (v));
+    return sprintf ('__i2id (%s)', DB.DBA.SYS_SQL_VAL_PRINT (__id2i (v)));
   else if (__tag of rdf_box = __tag (v))
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
   else if (__tag (v) = 255)

@@ -1,4 +1,266 @@
+2023-02-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.9 engine 3236
+
+	Updated NEWS.md
+
+2023-02-27  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with LDP sparql queries and rdf views
+
+2023-02-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
+
+	Updated version to 7.2.9-rc1
+
+	Fixed typo in column name
+
+2023-02-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue in sparql query with variable in filter
+
+	The VOS 7.x sparql engine does not handle the case where filter on
+	equal does not contain a function call on the right hand side, so as a
+	workaround we use a call to iri().
+
+2023-02-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Published initial SECURITY.md
+
+	Reverted patch as this check is not needed during the build process
+
+	Fixed missing files in `make dist` tar file
+
+	Fixed issue running testsuite entry for GraphQL
+
+2023-02-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added check for binaries needed by the testsuite
+
+2023-02-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed portability issue finding the clock_gettime function
+
+	In Linux distributions pre glibc 2.17 this function was part of the
+	-lrt library.
+
+	In some versions of Solaris, this functions is part of the posix4
+	library.
+
+2023-02-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue running TPC-D testsuite
+
+2023-02-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added new tests for GraphQL
+
+	Added test for var out of query scope in distinct/oby
+
+	Fixed load get:accept not working
+
+2023-02-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed SPARQL LOAD into an existing graph
+
+2023-02-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with 'revoke all privileges from xx'
+
+2023-02-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Backported PL debugger changes to vos
+
+	* Added support for GLOBALS command
+	* Added support for UP, DOWN in frame select mode
+	* Added support for printing cli flags
+	* Added support for printing composite box
+	* Fixed support for printing datetime
+	* Show more lines in BREAK list
+	* Code cleanup and indentation
+
+2023-02-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for internal CA list in https client
+
+	Added http_cookie_to_vector() BIF
+
+2023-02-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with socks4 and socks5 proxy
+
+2023-02-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for https connection timeout
+
+	Fixed --MM-DD is a valid gMonthYear
+
+	Fixed issue with permissions; users with SPARQL_SELECT role can now use REST interface
+
+	Added function RDF_DUMP_NQUADS_MT() multi-threaded nquad dump of rdf store
+
+	Added simple JSON to Turtle translator
+
+2023-02-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added confirmation page when removing user account
+
+	Added Automatic Certificate Management Environment (ACME) client
+
+2023-02-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added validation to default-graph param
+
+2023-02-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support to calc length of DV_DICT_ITERATOR
+
+2023-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for X-SSL-CERT
+
+2023-02-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed fs vad
+
+	Fixed issue with loopback to local web server
+
+	Fixed build issue on Windows
+
+	Upgraded to Bootstrap 5.2.3 and Bootstrap-Icons 1.10.3
+
+2023-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing BIF alias
+
+2023-02-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/jsonld_parser_v7' into develop/7
+
+	Fixed building JSON/LD parser on windows
+
+2023-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added testsuite for JSON/LD parser
+
+	Added JSON/LD to LDP
+
+	Added new DB.DBA.RDF_LOAD_JSON_LD() loader
+
+	Added SPARQL prefix for activity stream and goodrelations
+
+	Added new JSON/LD parser
+
+	Added UNAME declarations for JSON-LD parser
+
+2023-02-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Merged enhancements for GraphQL
+
+2023-02-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Backported fixes for guessing content type
+
+	Moved winsock support into engine
+
+2023-02-04  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with var outside of query scope
+
+	Fixed .well-known/host-meta & co for jrd+json output
+
+	Added few more common prefixes
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added %{WSBaseUrl}s sprintf for current base of HTTP/S
+
+	Fixed issue with label insert when using with_delete
+
+	Added string_split BIF
+
+2023-02-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with empty debug info
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added read timeout parameter for ws client connection
+
+	Fixed issue when socket is closed prematurely
+
+	Fixed issue with literals that have both a datatype and a language
+
+2023-02-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added missing references of rdf:XMLLiteral
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with bad serialization
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues comparing timezoneless dates
+
+	In the case where a date can be used as a number, we should
+	also compare the TZL flag.
+
+	This patch solves the following error:
+
+	  Insert stopped becuase out of seg data here or elsewhere
+	  host 0 key RDF_QUAD_IP slice 0
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added IRI validation BIFs
+
+2023-02-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed generation of @context shortcut names in JSON/LD with context output
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed escape chars on iri strings
+
+	Fixed bad string for iri id output, missing vector types
+
+2023-02-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added git SHA1 signature to status and log output
+
+2023-02-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not try to make iri from non-compatible types
+
+	Fixed issue with group by on float (fixes #1081)
+
+	Fixed various aggregation issues
+
+2023-02-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for monotonic clock (fixes #1089)
+
+2023-01-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed duplicate entries
+
+	Fixed issue when building outside of GIT tree (fixes #1084)
+
+	Fixed format of 'integer' and 'double' fields
+
+	Fixed wrong column name when changing DAV password (fixes #1083)
+
+	Updated version to 7.2.9-dev to mark the start of a new development cycle
+
+	Updated Copyright
+
 2022-10-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.8' into stable/7
+
+	Updated ChangeLog
 
 	Updated version to 7.2.8 engine 3235
 

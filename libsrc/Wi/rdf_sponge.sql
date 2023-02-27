@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -233,6 +233,7 @@ create function DB.DBA.RDF_GRAB_SINGLE (in val any, inout grabbed any, inout env
       final_gdest := get_keyword ('get:group-destination', env);
       opts := vector (
         'get:soft', get_keyword_ucase ('get:soft', env, 'soft'),
+        'get:accept', get_keyword ('get:accept', env, null),
         'get:refresh', get_keyword_ucase ('get:refresh', env),
         'get:method', get_method,
         'get:destination', final_dest,
@@ -1293,64 +1294,70 @@ no_cr:
 }
 ;
 
-
 -- /* guess the content type */
 create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in ret_content_type varchar, inout ret_body any) returns varchar
 {
-  declare guessed_ret_type varchar;
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (', origin_uri, ret_content_type, '...)');
-  if (ret_content_type is not null)
-    {
-      if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
-        return 'application/sparql-results+xml';
-      if (strstr (ret_content_type, 'application/rdf+xml') is not null)
-        return 'application/rdf+xml';
-      if (strstr (ret_content_type, 'text/rdf+ttl') is not null or
-        strstr (ret_content_type, 'text/rdf+turtle') is not null or
-        strstr (ret_content_type, 'text/turtle') is not null or
-        strstr (ret_content_type, 'application/x-turtle') is not null or
-        strstr (ret_content_type, 'application/turtle') is not null )
-        return 'text/turtle';
-      if (strstr (ret_content_type, 'text/n3') is not null or
-        strstr (ret_content_type, 'text/rdf+n3') is not null )
-        return 'text/rdf+n3';
-      if (strstr (ret_content_type, 'application/x-trig') is not null)
-        return 'application/x-trig';
-      if (strstr (ret_content_type, 'text/x-nquads') is not null)
-        return 'text/x-nquads';
-    }
-  declare ret_begin, ret_html any;
-  ret_begin := subseq (ret_body, 0, 65535);
-  if (isstring_session (ret_begin))
-    ret_begin := string_output_string (ret_begin);
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_begin = ', ret_begin);
-  ret_html := xtree_doc (ret_begin, 2);
-  -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_html = ', ret_html);
-  if (xpath_eval ('[xmlns:xh="http://www.w3.org/1999/xhtml"] /html|/xhtml|/xh:html|/xh:xhtml', ret_html) is not null)
-    {
-      if (xpath_eval ('[xmlns:grddl="http://www.w3.org/2003/g/data-view#"] /*/@grddl:transformation', ret_html) is not null)
-        return 'text/html'; -- GRDDL stylesheet is most authoritative
-      if (xpath_eval ('/*/head/@profile', ret_html) is not null)
-        return 'text/html'; -- GRDDL inline profile is authoritative, too
-      if (xpath_eval ('//*[exists(@itemscope) or exists(@itemprop) or exists(@itemid) or exists(@itemtype)]', ret_html) is not null)
-        return 'text/microdata+html'; -- Microdata are tested before RDFa because metadata with @rel may be wrongly recognised as RDFa
-      -- if (xpath_eval ('//*[exists(@rel) or exists(@rev) or exists(@typeof) or exists(@property) or exists(@about)]', ret_html) is not null)
-      if (xpath_eval ('//*[exists(@typeof) or exists(@about)]', ret_html) is not null)
-        return 'application/xhtml+xml';
-    return 'text/html';
-    }
-  if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
-    or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
-    return 'application/sparql-results+xml';
-  if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:rdf', ret_html) is not null)
-    return 'application/rdf+xml';
-  if (strstr (ret_begin, '<html>') is not null or
-    strstr (ret_begin, '<xhtml>') is not null )
-    return 'text/html';
-  guessed_ret_type := DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE (origin_uri, ret_content_type, ret_body, ret_begin);
-  if (guessed_ret_type is not null)
-    return guessed_ret_type;
-  return ret_content_type;
+	declare guessed_ret_type varchar;
+	-- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (', origin_uri, ret_content_type, '...)');
+	if (ret_content_type is not null)
+	{
+		if (strstr (ret_content_type, 'application/sparql-results+xml') is not null)
+			return 'application/sparql-results+xml';
+		if (strstr (ret_content_type, 'application/rdf+xml') is not null)
+			return 'application/rdf+xml';
+		if (strstr (ret_content_type, 'text/rdf+ttl') is not null or
+			strstr (ret_content_type, 'text/rdf+turtle') is not null or
+			strstr (ret_content_type, 'text/turtle') is not null or
+			strstr (ret_content_type, 'application/x-turtle') is not null or
+			strstr (ret_content_type, 'application/turtle') is not null )
+			return 'text/turtle';
+		if (strstr (ret_content_type, 'text/n3') is not null or
+			strstr (ret_content_type, 'text/rdf+n3') is not null )
+			return 'text/rdf+n3';
+		if (strstr (ret_content_type, 'application/x-trig') is not null)
+			return 'application/x-trig';
+		if (strstr (ret_content_type, 'text/x-nquads') is not null)
+			return 'text/x-nquads';
+	}
+	declare ret_begin, ret_html any;
+	ret_begin := subseq (ret_body, 0, 65535);
+	if (isstring_session (ret_begin))
+		ret_begin := string_output_string (ret_begin);
+	-- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_begin = ', ret_begin);
+	ret_html := xtree_doc (ret_begin, 2);
+	-- dbg_obj_princ ('DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE: ret_html = ', ret_html);
+	if (xpath_eval ('[xmlns:xh="http://www.w3.org/1999/xhtml"] /html|/xhtml|/xh:html|/xh:xhtml', ret_html) is not null)
+	{
+		if (xpath_eval ('[xmlns:grddl="http://www.w3.org/2003/g/data-view#"] /*/@grddl:transformation', ret_html) is not null)
+			return 'text/html'; -- GRDDL stylesheet is most authoritative
+		if (xpath_eval ('/*/head/@profile', ret_html) is not null)
+			return 'text/html'; -- GRDDL inline profile is authoritative, too
+		if (xpath_eval ('//*[exists(@itemscope) or exists(@itemprop) or exists(@itemid) or exists(@itemtype)]', ret_html) is not null)
+			return 'text/microdata+html'; -- Microdata are tested before RDFa because metadata with @rel may be wrongly recognised as RDFa
+		-- if (xpath_eval ('//*[exists(@rel) or exists(@rev) or exists(@typeof) or exists(@property) or exists(@about)]', ret_html) is not null)
+		if (xpath_eval ('//*[exists(@typeof) or exists(@about)]', ret_html) is not null)
+			return 'application/xhtml+xml';
+		return 'text/html';
+	}
+	if (xpath_eval ('[xmlns:rset="http://www.w3.org/2005/sparql-results#"] /rset:sparql', ret_html) is not null
+		or xpath_eval ('[xmlns:rset2="http://www.w3.org/2001/sw/DataAccess/rf1/result2"] /rset2:sparql', ret_html) is not null)
+		return 'application/sparql-results+xml';
+	if (xpath_eval ('[xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"] /rdf:rdf', ret_html) is not null)
+		return 'application/rdf+xml';
+	if (strstr (ret_begin, '<html>') is not null or
+		strstr (ret_begin, '<xhtml>') is not null )
+		return 'text/html';
+	declare exit handler for sqlstate '*'
+	{
+		goto next;
+	};
+	if (length(json_parse(cast (ret_body as varchar))) > 0)
+		return 'application/json';
+	next:;
+	guessed_ret_type := DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE (origin_uri, ret_content_type, ret_body, ret_begin);
+	if (guessed_ret_type is not null)
+		return guessed_ret_type;
+	return ret_content_type;
 }
 ;
 
@@ -2058,6 +2065,8 @@ create function DB.DBA.RDF_SPONGE_UP_1 (in graph_iri varchar, in options any, in
   declare perms, log_mode integer;
   -- dbg_obj_princ ('DB.DBA.RDF_SPONGE_UP_1 (', graph_iri, options, ')');
   graph_iri := cast (graph_iri as varchar);
+  if (atoi(coalesce (virtuoso_ini_item_value ('SPARQL', 'IRIValidation'), '0')) > 0 and not iri_validate (graph_iri, 1))
+    signal ('RDFIX', 'Invalid IRI strings are not allowed to sponge');
   --set_user_id ('dba', 1);
   dest := get_keyword_ucase ('get:destination', options);
   if (dest is not null)

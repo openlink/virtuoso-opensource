@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2022 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -59,6 +59,7 @@ check_SCRIPTS = \
 	test_server.sh \
 	testall.sh \
 	testlib.sh \
+	tgraphql.sh \
 	thttp.sh \
 	timsg.sh \
 	tjdbc.sh \
@@ -99,6 +100,8 @@ check_SCRIPTS = \
 #TESTS=test_server.sh
 TESTS_ENVIRONMENT= \
 	HOME="$(TOP)" \
+	VIRTDEV_HOME="$(TOP)" \
+	VIRTUOSO_BUILD="$(TOP)" \
 	HOST=localhost \
 	JDK4="@ac_jdk4_path@" \
 	JDK4_1="@ac_jdk4_1_path@" \
@@ -127,33 +130,57 @@ clean-local:
 # ----------------------------------------------------------------------
 EXTRA_DIST= \
 	$(check_SCRIPTS) \
-	*.dtd \
-	*.eml \
-	*.nq \
-	*.pem \
-	*.sql \
-	*.txt \
-	*.vsp \
-	*.xml \
-	*.xsl \
-	cluster-test.ini \
-	grddl-tests.tar.gz \
-	ldp/*.ttl \
-	pdd_txt.gz \
-	spanish.coll \
-	spotlight_test.tar.gz \
-	tdav_meta_050512.zip \
-	tdav_meta_050528.zip \
-	tpcd.sh \
-	treplh-dsn-odbc.cfg \
-	treplh-test-odbc.cfg \
-	tvspxex.awk \
-	txslt.cmp \
-	virtuoso-1111.ini \
-	virtuoso-cl.ini \
-	virtuoso-striping.ini \
-	wi-striping-1-large.cfg \
-	wi-striping-large.cfg \
-	wi-striping.cfg \
-	witest.cfg \
-	words.esp
+	$(srcdir)/*.dtd \
+	$(srcdir)/*.eml \
+	$(srcdir)/*.nq \
+	$(srcdir)/*.pem \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.ttl \
+	$(srcdir)/*.txt \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsl \
+	$(srcdir)/actstrm_tests.tar.gz \
+	$(srcdir)/cluster-test.ini \
+	$(srcdir)/docsrc/*.xml \
+	$(srcdir)/docsrc/*.xsl \
+	$(srcdir)/etalon_ouput_gz \
+	$(srcdir)/grddl-tests.tar.gz \
+	$(srcdir)/ldp/*.ttl \
+	$(srcdir)/pdd_txt.gz \
+	$(srcdir)/r4/*.sql \
+	$(srcdir)/r4/*.xsd \
+	$(srcdir)/spanish.coll \
+	$(srcdir)/spotlight_test.tar.gz \
+	$(srcdir)/tdav_meta_050512.zip \
+	$(srcdir)/tdav_meta_050528.zip \
+	$(srcdir)/tgql_intro.ql \
+	$(srcdir)/tpcd.sh \
+	$(srcdir)/tpc-h/*.sql \
+	$(srcdir)/treplh-dsn-odbc.cfg \
+	$(srcdir)/treplh-test-odbc.cfg \
+	$(srcdir)/tsparup/*.sql \
+	$(srcdir)/tsparup/tsparup_1/*.xml \
+	$(srcdir)/tsparup/tsparup_2/*.xml \
+	$(srcdir)/tsparup/tsparup_3/*.xml \
+	$(srcdir)/tsparup/tsparup_4/*.xml \
+	$(srcdir)/tsparup/tsparup_5/*.xml \
+	$(srcdir)/tsparup/tsparup_6/*.xml \
+	$(srcdir)/tsparup/tsparup_7/*.xml \
+	$(srcdir)/tsparup/tsparup_8/*.xml \
+	$(srcdir)/tvspxex.awk \
+	$(srcdir)/txslt.cmp \
+	$(srcdir)/vad_test/vsp/vad_test1/*.sql \
+	$(srcdir)/vad_test/vsp/vad_test1/*.vsp \
+	$(srcdir)/vad_test/vsp/vad_test2/*.sql \
+	$(srcdir)/vad_test/vsp/vad_test2/*.vsp \
+	$(srcdir)/virtuoso-1111.ini \
+	$(srcdir)/virtuoso-cl.ini \
+	$(srcdir)/virtuoso-striping.ini \
+	$(srcdir)/wi-striping-1-large.cfg \
+	$(srcdir)/wi-striping.cfg \
+	$(srcdir)/wi-striping-large.cfg \
+	$(srcdir)/witest.cfg \
+	$(srcdir)/words.esp \
+	$(srcdir)/xsl_samples/*.xml \
+	$(srcdir)/xsl_samples/*.xsl

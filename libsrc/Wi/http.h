@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -154,7 +154,7 @@ typedef struct ws_cached_connection_s
   {
     caddr_t 		host;	/*!< target host:port value */
     dk_session_t * 	ses;	/*!< cached session */
-    unsigned long	hit;		/*!< last hit in msecs */
+    time_msec_t	hit;		/*!< last hit in msecs */
     int			timeout;	/*!< max keep-alive timeout value */
   } ws_cached_connection_t;
 

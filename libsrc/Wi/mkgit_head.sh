@@ -4,7 +4,8 @@ VALUE=000000
 
 if test \! -f git_head.c 
 then
-    echo "char * git_head = \"$VALUE\";" > git_head.c
+    echo "#define GIT_HEAD_STR \"$VALUE\"" > git_head.c
+    echo "char * git_head = \"$VALUE\";" >> git_head.c
 fi
 
 VALUE=`git rev-parse --verify HEAD --short` || exit

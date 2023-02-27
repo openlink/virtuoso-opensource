@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -832,7 +832,7 @@ backup_context_allocate(const char* fileprefix,
     {
       ctx->octx_dbs = wi_inst.wi_master;
       if (!restored)
-	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + approx_msec_real_time ();
+	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + (uint32) approx_msec_real_time ();
 
       ctx->octx_cpt_remap_r = hash_reverse (ctx->octx_dbs->dbs_cpt_remap);
       if (!ctx->octx_cpt_remap_r)

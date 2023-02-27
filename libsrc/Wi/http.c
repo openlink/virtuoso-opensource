@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3903,7 +3903,7 @@ ws_request (ws_connection_t * ws)
   static query_t * http_call = NULL;
 
   char p_name [PATH_ELT_MAX_CHARS + 20];
-  long start;
+  time_msec_t start;
   char * path1;
   caddr_t err;
   int rc;
@@ -4412,7 +4412,7 @@ error_in_procedure:
   lt_threads_set_inner (cli->cli_trx, 0);
   LEAVE_TXN;
   if (prof_on && start)
-    prof_exec (NULL, p_name, get_msec_real_time () - start, PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
+    prof_exec (NULL, p_name, (long) (get_msec_real_time () - start), PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
   if (rc != LTE_OK)
     {
       MAKE_TRX_ERROR (rc, err, LT_ERROR_DETAIL (cli->cli_trx));
@@ -4754,18 +4754,22 @@ ws_switch_to_keep_alive (ws_connection_t * ws)
 }
 
 int32 ws_write_timeout = 0;
+int32 ws_read_timeout = 0;
 
 void
-ws_set_write_timeout (ws_connection_t * ws)
+ws_set_timeouts (ws_connection_t * ws)
 {
   int block = 0;
   dk_session_t * client = ws->ws_session;
-  if (!ws_write_timeout)
+  if (!ws_write_timeout && !ws_read_timeout)
     return;
   client->dks_session->ses_fduplex = 1;
   client->dks_session->ses_w_status = SST_OK;
   client->dks_session->ses_status = SST_OK;
-  client->dks_write_block_timeout.to_sec = ws_write_timeout;
+  if (ws_read_timeout)
+    client->dks_read_block_timeout.to_sec = ws_read_timeout;
+  if (ws_write_timeout)
+    client->dks_write_block_timeout.to_sec = ws_write_timeout;
   session_set_control (client->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
 }
 
@@ -4814,7 +4818,7 @@ ws_serve_connection (ws_connection_t * ws)
 #endif
 
  next_input:
-  ws_set_write_timeout (ws);
+  ws_set_timeouts (ws);
   ws->ws_cli->cli_http_ses = ws->ws_session;
   ws_read_req (ws);
   try_pipeline = ws_can_try_pipeline (ws);
@@ -5019,7 +5023,7 @@ ws_init_func (ws_connection_t * ws)
 	  /* initialize ws stricture for ssl, pop3, imap, nntp & ftp service */
 	  ws_inet_session_init (ses, ws);
 #endif
-	  ws_set_write_timeout (ws);
+	  ws_set_timeouts (ws);
 	  http_trace (("connect from queue accept ws %p ses %p\n", ws, ws->ws_session));
 	  tws_connections ++;
 	  SESSION_SCH_DATA (ses)->sio_default_read_ready_action = (io_action_func) ws_ready;
@@ -5202,9 +5206,9 @@ ws_keep_alive_ready (dk_session_t * ses)
 void
 http_timeout_keep_alives (int must_kill)
 {
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   long timeout = http_keep_alive_timeout * 1000;
-  long oldest_used = 0;
+  time_msec_t oldest_used = 0;
   dk_session_t * oldest = NULL;
   int n_killed = 0;
   dk_set_t clients = PrpcListPeers ();
@@ -6180,7 +6184,7 @@ http_cached_session (char * host)
 void
 remove_old_cached_sessions (void)
 {
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   if (!ws_proxy_cache)
     return;
   http_trace (("------ HTTP PROXY CACHED SESSIONS -----\n"));
@@ -11576,6 +11580,7 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t *conn = (caddr_t *) bif_arg (qst, args, 0, "http_on_message");
   caddr_t func = bif_string_arg (qst, args, 1, "http_on_message");
   caddr_t cd = bif_arg (qst, args, 2, "http_on_message");
+  int signal_on_disconnected = BOX_ELEMENTS(args) > 3 ? bif_long_arg (qst, args, 3, "http_on_message") : 1;
   dk_session_t * ses = NULL;
   ws_connection_t * ws = qi->qi_client->cli_ws;
 
@@ -11607,7 +11612,12 @@ bif_http_on_message (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
 
   if (ses == NULL)
-    sqlr_new_error ("22023", "HT000", "The http_on_message expects an open connection as 1-st argument");
+    {
+      if (signal_on_disconnected)
+        sqlr_new_error ("22023", "HT000", "The http_on_message expects an open connection as 1-st argument");
+      else
+        return NEW_DB_NULL;
+    }
   http_trace (("http_on_message ses=%p\n", ses));
   DKS_DB_DATA (ses) = (client_connection_t *) list (2, box_copy (func), box_copy_tree (cd));
   PrpcSetPartnerDeadHook (ses, (io_action_func) http_on_message_ses_dropped);
@@ -11761,6 +11771,16 @@ bif_http_methods_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ws->ws_options [m] = '\x1';
     }
   return NULL;
+}
+
+caddr_t
+bif_string_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t string = bif_string_or_null_arg (qst, args, 0, "string_split");
+  caddr_t tokens = BOX_ELEMENTS (args) > 1 ? bif_string_or_null_arg (qst, args, 1, "string_split") : NULL;
+  dk_set_t set = NULL;
+  split_string (string, tokens, &set);
+  return list_to_array (dk_set_nreverse (set));
 }
 
 caddr_t *
@@ -11971,6 +11991,8 @@ http_init_part_one ()
   bif_define ("http_current_charset", bif_http_current_charset);
   bif_define_ex ("http_status_set", bif_http_status_set, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("http_methods_set", bif_http_methods_set, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("string_split", bif_string_split, BMD_RET_TYPE, &bt_any, BMD_DONE);
+
   ws_cli_sessions = hash_table_allocate (100);
   ws_cli_mtx = mutex_allocate ();
 #ifdef VIRTUAL_DIR

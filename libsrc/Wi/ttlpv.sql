@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1087,5 +1087,106 @@ create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_iri;
       delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_iri), '&graphMD5=%');
     }
+}
+;
+
+
+create function DB.DBA.RDF_JSONLD2HASH (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0) returns any
+{
+  declare res any;
+  res := dict_new (length (strg) / 100);
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    res);
+  return res;
+}
+;
+
+create function DB.DBA.RDF_JSONLD_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, in dict any, in flags integer := 0) returns any
+{
+  if (__tag (dict) <> __tag of dictionary reference)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    dict);
+  return;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_JSON_LD (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
+    in threads int := 3, in transactional int := 0, in log_enable int := null, in context varchar := null)
+{
+  declare ro_id_dict, app_env, g_iid, old_log_mode any;
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      -- error
+      return;
+    }
+  if (is_atomic ())
+    signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      -- error
+      return;
+    }
+  old_log_mode := null;
+  declare exit handler for sqlstate '37000' {
+    if (app_env <> 0)
+      {
+        DB.DBA.RL_SEND (app_env, g_iid);
+        commit work;
+        aq_wait_all (app_env[0]);
+      }
+    connection_set ('g_dict', null);
+    connection_set ('__XML_URI_GET_ACCEPT', null);
+    if (old_log_mode is not null)
+      log_enable (old_log_mode, 1);
+    signal (__SQL_STATE, '[Vectorized JSON-LD loader] ' || __SQL_MESSAGE);
+  };
+  if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
+        log_enable := 2 + log_enable;
+    }
+  else
+    threads := 0;
+
+  if (log_enable is not null)
+    old_log_mode := log_enable (log_enable, 1);
+
+  app_env := vector (async_queue (threads, 1), DB.DBA.RL_LOCAL_DPIPE (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  g_iid := iri_to_id (graph);
+  connection_set ('__XML_URI_GET_ACCEPT', 'application/ld+json, application/json;q=0.9');
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.TTLP_RL_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_RL_TRIPLE',
+      'DB.DBA.TTLP_RL_TRIPLE_L',
+      'DB.DBA.TTLP_RL_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env, context);
+  DB.DBA.RL_SEND (app_env, g_iid);
+  commit work;
+  aq_wait_all (app_env[0]);
+  connection_set ('g_dict', null);
+  connection_set ('__XML_URI_GET_ACCEPT', null);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;

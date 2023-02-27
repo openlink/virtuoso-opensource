@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,8 @@
 #include "aqueue.h"	/* For aq_allocate() in RDF replication */
 #include "geo.h"
 
+int rb_type__rdf_XMLLiteral;
+int rb_type__rdf_langString;
 int rb_type__xsd_ENTITY;
 int rb_type__xsd_ENTITIES;
 int rb_type__xsd_ID;
@@ -90,6 +92,8 @@ int rb_type__xsd_yearMonthDuration;
 
 stat_desc_t rdf_preset_datatypes_descs [] =
   {
+    {"rb_type__rdf:XMLLiteral"		, (long *)&rb_type__rdf_XMLLiteral		, SD_INT32	},
+    {"rb_type__rdf:langString"		, (long *)&rb_type__rdf_langString		, SD_INT32	},
     {"rb_type__xsd:ENTITY"		, (long *)&rb_type__xsd_ENTITY			, SD_INT32	},
     {"rb_type__xsd:ENTITIES"		, (long *)&rb_type__xsd_ENTITIES		, SD_INT32	},
     {"rb_type__xsd:ID"			, (long *)&rb_type__xsd_ID			, SD_INT32	},
@@ -3179,11 +3183,15 @@ ttl_http_write_prefix_if_needed (caddr_t *qst, dk_session_t *ses, ttl_env_t *env
 #define SES_WRITE(ses, str) \
 	session_buffered_write (ses, str, strlen (str))
 
+#define IS_VALID_IRIREF(ti) (ti && (NULL != ti->uri || (NULL != ti->loc && NULL != ti->prefix) || NULL != ti->loc))
+
 void
 ttl_http_write_ref (dk_session_t *ses, ttl_env_t *env, ttl_iriref_t *ti)
 {
   caddr_t loc = ti->loc;
   caddr_t full_uri = ((NULL != ti->uri) ? ti->uri : loc);
+  if (!IS_VALID_IRIREF (ti))
+    sqlr_new_error ("22023", "SR645", "Turtle serialization of RDF data has got NULL instead of an URI");
   if (ti->is_bnode)
     {
       session_buffered_write (ses, "_:", 2);
@@ -3413,7 +3421,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, temp, strlen (temp));
         session_buffered_write_char ('"', ses);
-        if (DV_RDF != obj_dtp)
+        if (DV_RDF != obj_dtp && IS_VALID_IRIREF (dt_ptr))
           {
             session_buffered_write (ses, "^^", 2);
             ttl_http_write_ref (ses, env, dt_ptr);
@@ -3531,17 +3539,18 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
       rb_dt_lang_check(rb);
-      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang &&
+          (RDF_BOX_DEFAULT_TYPE == rb->rb_type || rb_type__xsd_string == rb->rb_type || rb_type__rdf_langString == rb->rb_type))
         {
           caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
-          if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
+          if (NULL != lang_id &&  box_length (lang_id) > 1) /* just in case if lang cannot be found, may be signal an error ? */
             {
               session_buffered_write_char ('@', ses);
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
 	      dk_free_box (lang_id);
             }
         }
-      if (rb->rb_type > RDF_BOX_MIN_TYPE && RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+      else if (rb->rb_type > RDF_BOX_MIN_TYPE && RDF_BOX_DEFAULT_TYPE != rb->rb_type && IS_VALID_IRIREF(dt_ptr))
         {
           session_buffered_write (ses, "^^", 2);
           ttl_http_write_ref (ses, env, dt_ptr);
@@ -4238,17 +4247,18 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
     {
       rdf_box_t *rb = (rdf_box_t *)obj;
       rb_dt_lang_check(rb);
-      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang)
+      if (RDF_BOX_DEFAULT_LANG != rb->rb_lang &&
+          (RDF_BOX_DEFAULT_TYPE == rb->rb_type || rb_type__xsd_string == rb->rb_type || rb_type__rdf_langString == rb->rb_type))
         {
           caddr_t lang_id = rdf_lang_twobyte_to_string (rb->rb_lang);
-          if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
+          if (NULL != lang_id && box_length (lang_id) > 1) /* just in case if lang cannot be found, may be signal an error ? */
             {
               session_buffered_write_char ('@', ses);
               session_buffered_write (ses, lang_id, box_length (lang_id) - 1);
               dk_free_box (lang_id);
             }
         }
-      if (RDF_BOX_DEFAULT_TYPE != rb->rb_type)
+      else if (RDF_BOX_DEFAULT_TYPE != rb->rb_type && NULL != dt_ptr->uri)
         {
           session_buffered_write (ses, "^^", 2);
           http_nt_write_ref_1 (ses, env, dt_ptr, NULL, esc_mode == DKS_ESC_PTEXT);

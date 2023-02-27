@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -140,7 +140,7 @@ void
 wi_free_schemas ()
 {
 #if !defined (PURIFY) && !defined (VALGRIND)
-  long now = approx_msec_real_time ();
+  time_msec_t now = approx_msec_real_time ();
   int any_freed;
   /* ASSERT_IN_MAP; */
   do

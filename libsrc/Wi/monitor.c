@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,7 @@ extern timeout_t time_now;
 extern long disk_reads;
 extern long read_block_usec;
 extern long write_block_usec;
-extern long read_cum_time;
+extern int64 read_cum_time;
 extern long tc_no_thread_kill_idle;
 extern long tc_no_thread_kill_vdb;
 extern long tc_no_thread_kill_running;
@@ -107,7 +107,7 @@ int
 mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_t* prev, monitor_t *next)
 {
   int thr_run = n_threads - n_vdb_threads - n_lw_threads;
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
 #ifdef HAVE_GETRUSAGE
   struct rusage ru;
   next->mon_time_now = now;
@@ -251,7 +251,7 @@ mon_check ()
 {
   monitor_t *c, *p;
   int prev_inx, i = 0;
-  long now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   if (!mon_is_inited)
     return;
   prev_inx = 0 == current_inx ? DIMENSION_OF_STATISTICS - 1 : current_inx - 1;

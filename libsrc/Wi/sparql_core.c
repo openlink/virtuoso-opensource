@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -105,7 +105,7 @@ sparp_dump_weird_query (spar_query_env_t *sparqre, const char *reason, char *md5
       MD5_CTX ctx;
       unsigned char digest[16];
       int inx;
-      long msec = get_msec_real_time ();
+      time_msec_t msec = get_msec_real_time ();
       memset (&ctx, 0, sizeof (MD5_CTX));
       MD5_Init (&ctx);
       MD5_Update (&ctx, (unsigned char *) txt, strlen(txt));
@@ -143,8 +143,6 @@ sparp_mp_sparql_cap_cbk (mem_pool_t *mp, void *cbk_env)
 }
 
 /*#define SPAR_ERROR_DEBUG*/
-
-extern void jsonyyerror_impl(const char *s);
 
 size_t
 spart_count_specific_elems_by_type (ptrlong type)
@@ -677,7 +675,7 @@ sparp_exec_Narg (sparp_t *sparp, const char *pl_call_text, query_t **cached_qr_p
   local_cursor_t *lc = NULL;
   caddr_t err = NULL;
   user_t *saved_user = cli->cli_user;
-  int saved_anytime_started = cli->cli_anytime_started;
+  time_msec_t saved_anytime_started = cli->cli_anytime_started;
   if (cli->cli_clt) /* Branch of cluster transaction, can't initiate partitioned operations */
     return NULL;
   if (!lt->lt_threads)
@@ -939,7 +937,7 @@ next_u:
 err:
   dk_free_box (tmp_buf);
   if (SPAR_STRLITERAL_JSON_STRING == mode)
-    jsonyyerror_impl (err_msg);
+    sqlr_new_error ("37000", "JSON1", "JSON parser failed: %.200s", err_msg);
   else
     sparyyerror_impl (sparp, NULL, err_msg);
   return NULL;

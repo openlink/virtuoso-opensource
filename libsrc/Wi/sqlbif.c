@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2216,6 +2216,12 @@ bif_length (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     else
   sqlr_new_error ("22023", "SR015", "Function length is not applicable to XML tree entity");
 #endif
+    case DV_DICT_ITERATOR:
+      {
+	id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 0, "length", 0);
+	id_hash_t *ht = hit->hit_hash;
+	return box_num (ht->ht_inserts - ht->ht_deletes);
+      }
     }
   if (IS_BOX_POINTER (arg))
   len = box_length (arg);
@@ -17357,7 +17363,7 @@ sql_bif_init (void)
   bif_define ("__set_identity", bif_set_identity);
   bif_define_ex ("set_user_id", bif_set_user_id, BMD_ALIAS, "__set_user_id", BMD_DONE);
   bif_define ("get_user_id", bif_get_user_id);
-  bif_define ("get_user_id_by_name", bif_get_user_id_by_name);
+  bif_define_ex ("get_user_id_by_name", bif_get_user_id_by_name, BMD_ALIAS, "user_to_uid", BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("__pop_user_id", bif_pop_user_id);
   bif_define ("identity_value", bif_identity_value);
   fcache_init ();

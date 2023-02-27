@@ -1,5 +1,94 @@
 # NEWS
 
+## February 27, 2023, v7.2.9:
+
+This update introduces additional GraphQL enhancements for mutations and subscriptions, as documented in the recently published
+[GraphQL Introduction](https://community.openlinksw.com/t/introducing-native-graphql-support-in-virtuoso/3378)
+and [GraphQL Usage Guide](https://community.openlinksw.com/t/usage-guide-virtuoso-graphql-views-creation-management/3381)
+posts, plus enhancements to the existing 
+[AnyTime Query](https://community.openlinksw.com/t/technology-update-virtuoso-anytime-query-functionality-for-query-scalability/3388)functionality.
+
+  * Virtuoso Engine
+    - Added new JSON-LD parser
+    - Added IRI validation bif: functions
+    - Added `GIT SHA1` signature to status and log output
+    - Added current value of backup prefix to status report
+    - Added option for soft `CHECKPOINT`, i.e., only perform a `CHECKPOINT` when the server is in idle state
+    - Backported PL debugger enhancements
+    - Fixed overflow in msec-based timestamps such as those used for AnyTime queries
+    - Fixed PL debugger to produce better debug output for DateTime types
+    - Fixed issue with `NULL` in Aggregate groups
+    - Fixed issue comparing `NUMERIC` and `DOUBLE`
+    - Fixed issue comparing timezoneless and timezoned dates in columnstore index
+    - Fixed issue with `GROUP BY` on `FLOAT` values
+    - Fixed issue with `revoke all privileges from xx`
+    - Fixed issues running testsuite
+    - Fixed issues packaging source for distribution
+
+  * SPARQL
+    - Added default SPARQL namespace prefixes for ActivityStreams, GoodRelations, OA, and PROV vocabularies
+    - Added validation to default-graph parameter
+    - Added error logging for bad IRIs
+    - Added multi-threaded NQuads dump variant for RDF Quad Store via `RDF_DUMP_NQUADS_MT()`
+    - Fixed issue trying to make IRI from incompatible types
+    - Fixed issue with `SPARQL LOAD` into an existing graph
+    - Fixed issue with casting RDF `datetime` to a string
+    - Fixed issue with explicit datatype of literal class; must cast value to a string
+    - Fixed issue with label insert when using `with_delete`
+    - Fixed issue with literals that have both `LANG` & `TYPE`
+    - Fixed issue with load get:accept pragma
+    - Fixed issue with permissions; users with `SPARQL_SELECT` role can now use REST interface
+    - Fixed issue with serialization when `datatype` is missing, or `lang` is an empty string
+    - Fixed issue with unnamed result from view
+    - Fixed `DISTINCT` query compilation failure in certain cases where `SELECT` lists contain a reference to a parameter
+    - Fixed `--MM-DD` is a valid `gMonthYear`
+    - Updated Bootstrap to v5.2.3
+    - Updated Bootstrap Icons to v1.10.3
+
+  * Web Server and DAV
+    - Added support for Websockets protocol
+    - Added JSON-LD support to LDP protocol implementation
+    - Added correct HTTP(S) protocol to `%{WSBaseUrl}` variable
+    - Added support for https connection timeout
+    - Added support for internal CA list in https client
+    - Fixed `http_keep_session` and related functions require NN 64-bit id
+    - Fixed issue with `.well-known/host-meta` & co for `application/jrd+json` output
+    - Fixed issue with `Accept/profile`; should follow RFC media type field rules
+    - Fixed issue with `SOCKS4` and `SOCKS5` proxy handler
+    - Fixed issue when socket is closed prematurely
+    - Fixed issue with LDP sparql queries and rdf views
+    - Fixed missing JSON-LD in RDF-related DETs
+
+  * Faceted Browser
+    - Fixed format of `INTEGER` and `FLOAT` fields
+    - Fixed issue calculating Unicode labels
+    - Fixed issue calculating labels for blank nodes
+    - Fixed issue with Unicode text in `<span>`
+    - Fixed use `schema:description` as alt for `rdfs:comment`
+    - Updated JQuery to v3.6.3
+    - Updated JQuery UI to v1.13.2
+
+  * Conductor
+    - Added Automatic Certificate Management Environment (ACME) client protocol
+    - Fixed issue in `VAD` installer when composing the `VAD` package file path
+    - Fixed confirmation prompt behavior prior to removing user encryption keys from Virtuoso’s native key store
+
+  * R2RML
+    - Fixed issue with rr:template: default is IRI unless column, datatype, or lang are given
+
+  * GraphQL
+    - Added graphql-ws protocol
+    - Added GraphQL subscriptions support
+    - Added implementation-specific directives for SQL/SPARQL optimization hints
+    - Added transitivity for smarter and more concise GraphQL-to-RDF-Ontology mapping definitions
+    - Added debug options to endpoint
+    - Improved mutations support
+    - Improved SDL-type schema import
+    - Improved error reporting on conflicting schema & mapping/annotation definitions
+    - Cleaned up introspection schema
+
+
+
 ## October 19, 2022, v7.2.8:
 
 This update introduces native GraphQL support, as documented in the recently published

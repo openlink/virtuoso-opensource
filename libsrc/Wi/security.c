@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -690,7 +690,7 @@ sec_run_grant_revoke (query_instance_t * qi, ST * tree)
 typedef struct failed_login_s
 {
   char fl_from [16];
-  long fl_last;
+  time_msec_t fl_last;
   int fl_count;
 } failed_login_t;
 
@@ -717,7 +717,7 @@ failed_login_from (dk_session_t *ses)
   if (ses && ses->dks_session)
     {
       failed_login_t *login = NULL, **plogin = &login;
-      long now = approx_msec_real_time ();
+      time_msec_t now = approx_msec_real_time ();
 
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
 
@@ -752,7 +752,7 @@ failed_login_to_disconnect (dk_session_t *ses)
   if (ses && ses->dks_session)
     {
       failed_login_t *login = NULL, **plogin = &login;
-      long now = approx_msec_real_time ();
+      time_msec_t now = approx_msec_real_time ();
 
       tcpses_print_client_ip (ses->dks_session, from, sizeof (from));
 
@@ -817,8 +817,8 @@ failed_login_purge (void)
    id_hash_iterator_t hit;
    char **key;
    failed_login_t *login = NULL, **plogin;
-   long now = approx_msec_real_time ();
-   static long last_start_time = 0;
+   time_msec_t now = approx_msec_real_time ();
+   static time_msec_t last_start_time = 0;
 
    if (now - last_start_time > LOGIN_FAILED_INACTIVITY_PERIOD_MSEC)
      {

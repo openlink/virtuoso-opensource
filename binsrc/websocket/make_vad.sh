@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2022 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -165,7 +165,7 @@ directory_init() {
   mkdir vad/code/$VAD_NAME
   mkdir vad/vsp
   mkdir vad/vsp/$VAD_NAME/
-  cp websocket.sql vad/code/$VAD_NAME/
+  #cp websocket.sql vad/code/$VAD_NAME/
   cp index.vsp vad/vsp/$VAD_NAME/
   cp graph.html vad/vsp/$VAD_NAME/
 }
@@ -238,7 +238,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2022 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -266,7 +266,7 @@ else
   echo "    DB.DBA.VHOST_REMOVE(lpath => '/ws');" >> $STICKER
   echo "    DB.DBA.VHOST_DEFINE(lpath => '/ws', ppath => '/vad/vsp/$VAD_NAME/', is_dav => 0, is_brws => 0, vsp_user => 'dba', def_page => 'index.vsp');" >> $STICKER
 fi
-  echo "    DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/websocket.sql', 0, 'report', $ISDAV);" >> $STICKER
+  echo "    -- DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/websocket.sql', 0, 'report', $ISDAV);" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
@@ -393,7 +393,6 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
-
 directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"

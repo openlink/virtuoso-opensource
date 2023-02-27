@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -490,21 +490,21 @@ void
 DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz)
 {
   void * new_items;
-  void * new_time = NULL;
+  time_msec_t * new_time = NULL;
   new_items = DBG_NAME(malloc) (DBG_ARGS  sizeof (void*) * new_sz);
   if (rc->rc_item_time)
     {
-      new_time = malloc (sizeof (int32) * new_sz);
-      memzero (new_time, sizeof (int32) * new_sz);
+      new_time = (time_msec_t *) malloc (sizeof (time_msec_t) * new_sz);
+      memzero (new_time, sizeof (time_msec_t) * new_sz);
     }
   memcpy (new_items, rc->rc_items, sizeof (void*) * rc->rc_fill);
   if (rc->rc_item_time)
-    memcpy (new_time, rc->rc_item_time, sizeof (int32) * rc->rc_fill);
+    memcpy (new_time, rc->rc_item_time, sizeof (time_msec_t) * rc->rc_fill);
   DBG_NAME(free) (DBG_ARGS  rc->rc_items);
   if (rc->rc_item_time)
     free (rc->rc_item_time);
   rc->rc_items = (void**)new_items;
-  rc->rc_item_time = (unsigned int*)new_time;
+  rc->rc_item_time = new_time;
   rc->rc_size = new_sz;
 }
 
@@ -517,7 +517,7 @@ DBG_NAME(resource_store_timed) (DBG_PARAMS  resource_t * rc, void *item)
   malhdr_t *thing = resource_find_malhdr (item);
 #endif
   dk_mutex_t *rc_mtx = rc->rc_mtx;
-  uint32 time = approx_msec_real_time ();
+  time_msec_t time = approx_msec_real_time ();
   resource_check_dupes_and_enter_mutex (rc, item);
 #ifdef MALLOC_DEBUG
   if (NULL != thing)

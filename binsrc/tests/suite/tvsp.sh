@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2022 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@ export LOGFILE
 . $VIRTUOSO_TEST/testlib.sh
 cp $VIRTUOSO_TEST/cert.pem .
 cp $VIRTUOSO_TEST/pk.pem .
+gunzip -c $VIRTUOSO_TEST/actstrm_tests.tar.gz | tar xf -
 
 BANNER "STARTED VSP TEST (tvsp.sh)"
 
@@ -166,6 +167,14 @@ then
 else
     LOG "PASSED: login hook - logging in as masterdba"
 fi
+
+RUN $ISQL $DSN dba dba PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u BASE=$VIRTUOSO_TEST < $VIRTUOSO_TEST/tjsonld.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED: tjsonld.sql "
+    exit 3
+fi
+
 
 SHUTDOWN_SERVER
 CHECK_LOG

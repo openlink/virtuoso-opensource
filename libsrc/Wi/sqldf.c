@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -6839,7 +6839,7 @@ int
 sqlo_no_more_time (sqlo_t * so, op_table_t * ot)
 {
   /* every so often, see if the best plan's time is less than the time to compile so far. If so, no point in further scenarios */
-  uint32 now;
+  time_msec_t now;
   if (!so->so_best || !so->so_any_with_this_first)
 	return 0;
   if (sqlo_max_mp_size > 0 && THR_TMP_POOL->mp_bytes > (so->so_max_memory / 20) * 19)

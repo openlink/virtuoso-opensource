@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1896,7 +1896,7 @@ bh_is_ready:
       replaced_version = NULL;
     }
 
-  target_bh->bh_timestamp = sqlbif_rnd (&rnd_seed_b) + approx_msec_real_time ();
+  target_bh->bh_timestamp = sqlbif_rnd (&rnd_seed_b) + (uint32) approx_msec_real_time ();
   /* Too many messages...
   dbg_printf (("itc_set_blob_col: creating ts %ld\n", target_bh->bh_timestamp));
   ... Too many messages */

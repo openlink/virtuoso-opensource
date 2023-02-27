@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2022 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -80,26 +80,10 @@
       <vm:help id="sec_pki" sect="" />
       <v:form name="form1" type="simple" method="POST">
         <!-- top of security layout -->
-        <table border="0" width="100%" height="100%" cellpadding="10" cellspacing="0">
-          <tr valign='top'>
-            <td>
-              <table cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                  <td class="page_tab_selected" align="center">
-                    Public Key Infrastructure
-                  </td>
-                  <td class="page_tab" align="center">
-                    <v:url xhtml_style="page_tab" url="sec_auth_serv.vspx" value="Access Control" render-only="1"/>
-                  </td>
-                  <td class="page_tab_empty" align="right" width="100%">
-                    &amp;nbsp;
-                  </td>
-                </tr>
-              </table>
-
-              <table class="tab_page">
-                <tr>
-                  <td valign="top">
+        <div class="main_tab_page">
+          <v:include url="sec_pki_menu.vspx"/>
+          <div class="tab_page_new">
+            <div id="pki_form">
                   <!-- end of top security layout -->
                     <v:form name="frm_confirm" action="http_serv_mgmt.vspx" method="POST" type="simple">
                       <div class="confirm_dialog">
@@ -146,12 +130,9 @@
                       </div>
                     </v:form>
                     <!-- bottom of security layout -->
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-        </table>
+            </div> <!-- #pki_form -->
+          </div>
+        </div>
       <!-- end of bottom security layout -->
       </v:form>
     </vm:pagebody>

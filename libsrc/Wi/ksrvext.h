@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -590,7 +590,7 @@ struct dk_session_s
 
     short		dks_n_threads;
     /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
-    uint32		dks_last_used;
+    time_msec_t	dks_last_used;
     /*! burst mode */
     dks_thread_state_t  dks_thread_state;
     /*! web server thread associated to this if ws computation pending. Used to cancel upon client disconnect */

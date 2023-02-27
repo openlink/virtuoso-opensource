@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -169,7 +169,8 @@ int
 tn_lc_exec (trans_node_t * tn, caddr_t * inst, srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec)
 {
   QNCAST (QI, qi, inst);
-  int save_at, save_st;
+  uint32 save_at;
+  time_msec_t save_st;
   caddr_t err;
   int rc;
   client_connection_t * cli;

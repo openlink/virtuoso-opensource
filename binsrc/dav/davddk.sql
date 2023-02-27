@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1179,7 +1179,7 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
   DB.DBA.XML_SET_NS_DECL ('ldp', 'http://www.w3.org/ns/ldp#', 2);
 
   DB.DBA.TTLP (
-    '@prefix as: <http://www.w3.org/ns/activitystreams#> .
+    '@prefix as: <https://www.w3.org/ns/activitystreams#> .
      @prefix ldp: <http://www.w3.org/ns/ldp#> .
      @prefix owl: <http://www.w3.org/2002/07/owl#> .
      @prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
@@ -1190,7 +1190,6 @@ create procedure WS.WS.SYS_DAV_INIT_RDF ()
      'urn:activitystreams-owl:map'
   );
   DB.DBA.rdfs_rule_set ('asEquivalent', 'urn:activitystreams-owl:map');
-  DB.DBA.XML_SET_NS_DECL ('as', 'http://www.w3.org/ns/activitystreams#', 2);
 }
 ;
 

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1515,7 +1515,7 @@ field_delim_checked:
     {
       if (DTFLAG_YY & dtflags)
         fld_values[0] = -(fld_values[0]);
-      else
+      else if (DTFLAG_TIME & dtflags)
         {
           err_msg_ret[0] = box_sprintf (500, "Leading minus is allowed for year but not for time, the value is \"%.200s\"", str);
           return;

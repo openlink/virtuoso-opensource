@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2022 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -123,9 +123,16 @@
                         <v:form name="account_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data" xhtml_accept-charset="UTF-8">
                           <v:before-data-bind>
                             <![CDATA[
+                    declare error_message varchar;
+                    error_message := get_keyword ('error', params);
                               self.default_group_name := get_keyword ('dl_default_group', params, self.default_group_name);
                               self.mode := get_keyword ('mode', params, self.mode);
                               self.user_name := get_keyword ('user_name', params, '');
+                    if (error_message is not null)
+                      {
+                        self.vc_error_message := error_message;
+                        self.vc_is_valid := 0;
+                      }
                               if (self.mode = 'edit')
                               {
                                 declare _u_id, _u_group integer;
@@ -647,7 +654,7 @@
                                       <?V xenc_key ?> (<?V xenc_type ?>)
                                     </td>
                                     <td>
-                              <v:url name="dwn1" value="Download" render-only="1" 
+                              <v:url name="dwn1" value="Download" render-only="1"
                                   url="--sprintf ('sec_pki_download.vsp?key=%U&user=%U', xenc_key, self.user_name)"/>
                                     </td>
                                   </tr>
@@ -665,20 +672,43 @@
                                   <v:button action="simple" name="del_key" value="Remove Selected Keys" xhtml_tabindex="21">
                                     <v:on-post>
                                       <![CDATA[
-                                        declare username any;
+                              declare username, key_names, error_message any;
                                         if (self.vc_is_valid = 0)
                                           return;
 
+                              error_message := null;
                                         username := self.t_login_name.ufl_value;
-                                        set_user_id (username);
-                                        set_qualifier ('DB');
+                              vectorbld_init (key_names);
                                         for (declare i, l int, i := 0, l := length (params); i < l; i := i + 4)
                                         {
                                           if (params[i] = 'cb_key')
-                                            xenc_key_remove (params[i+1]);
+                                  {
+                                    declare xkey_name varchar;
+                                    xkey_name := params[i+1];
+                                    if (exists (select 1 from ACME.DBA.ACME_ACCOUNT where AA_KEY_NAME = xkey_name) or
+                                        exists (select 1 from ACME.DBA.ACME_ORDERS where AO_KEY = xkey_name)
+                                       )
+                                      {
+                                        error_message := concat (error_message, xkey_name, ';');
+                                      }
+                                    else
+                                      vectorbld_acc (key_names, xkey_name);
+                                  }
                                         }
-                                        http_request_status ('HTTP/1.1 302 Found');
-                                        http_header (sprintf ('Location: account_create.vspx?mode=edit&sid=%s&realm=%s&user_name=%U\r\n',self.sid ,self.realm, username));
+                              vectorbld_final (key_names);
+                              if (not (length (key_names)) or length (error_message))
+                                {
+                                  if (not length (error_message))
+                                    error_message := 'No key(s) are selected.';
+                                  else
+                                    error_message := concat ('The following keys:', error_message,' are used for ACME account(s) or orders.',
+                                            'Must revoke corresponding certificates before to drop keys.');
+                                  self.vc_redirect (sprintf ('account_create.vspx?mode=edit&user_name=%U&error=%U',username, error_message));
+                                  return;
+                                }
+                              self.vc_redirect (sprintf ('account_key_remove.vspx?user_name=%U&keys=%U',
+                                  username, encode_base64url(serialize (key_names))));
+                              return;
                                       ]]>
                                     </v:on-post>
                                   </v:button>
@@ -732,12 +762,12 @@
                                         set_user_id (username);
                               set_qualifier ('DB');
 
-                              USER_KEY_LOAD (self.k_name.ufl_value, 
+                              USER_KEY_LOAD (self.k_name.ufl_value,
                                     key_value,
                                     'X.509',
                                     key_file_format,
                                     self.k_pwd.ufl_value,
-                                    case when import_pk_from_pem then key_value else null end, 
+                                    case when import_pk_from_pem then key_value else null end,
                                     1);
 
                                         EXEC_STMT (make_cert_stmt (self.k_name.ufl_value), 0);

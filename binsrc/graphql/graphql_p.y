@@ -309,8 +309,9 @@ opt_variables
 	;
 
 directives_list
-	: SYM_AT name           { $$ = t_NCONC (t_CONS ($2, NULL), t_CONS (NEW_DB_NULL, NULL)); }
+	: SYM_AT name           { $$ = t_NCONC (t_CONS ($2, NULL), t_CONS (t_list (2, GQL_ARGS, t_list(0)), NULL)); }
 	| SYM_AT name arguments { $$ = t_NCONC (t_CONS ($2, NULL), t_CONS ($3, NULL)); }
+	| directives_list SYM_AT name { $$ = t_NCONC ($1,  t_NCONC (t_CONS ($3, NULL), t_CONS (t_list (2, GQL_ARGS, t_list(0)), NULL))); }
 	| directives_list SYM_AT name arguments { $$ = t_NCONC ($1,  t_NCONC (t_CONS ($3, NULL), t_CONS ($4, NULL))); }
 	;
 
@@ -322,8 +323,8 @@ opt_directives
 operation
 	: QUERY_L opt_name opt_variables opt_directives selection_set
                     { $$ = t_CONS (t_list (5, GQL_QRY, $2, $5, $3, $4), NULL); }
-	| FRAGMENT_L name opt_on_type selection_set
-                    { $$ = t_CONS (t_list (4, GQL_FRAG, $2, $3, $4), NULL); }
+	| FRAGMENT_L name opt_on_type opt_directives selection_set
+                    { $$ = t_CONS (t_list (5, GQL_FRAG, $2, $3, $5, $4), NULL); }
 	| MUTATION_L opt_name opt_variables opt_directives selection_set
                     { $$ = t_CONS (t_list (5, GQL_MUTATION, $2, $5, $3, $4), NULL); }
 	| SUBSCRIPTION_L opt_name opt_variables opt_directives selection_set

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -281,14 +281,14 @@ long  tft_seq_seek;
 extern int dbf_explain_level;
 long  prof_on;
 long  prof_stat_table;
-long prof_start_time;
+time_msec_t prof_start_time;
 time_t prof_start_time_st;
 unsigned long  prof_n_exec;
 unsigned long  prof_n_reused;
 unsigned long  prof_exec_time;
 unsigned long prof_avg_exec;
 unsigned long  prof_n_compile;
-unsigned long  prof_compile_time;
+int64 prof_compile_time;
 
 unsigned long vdb_n_exec;
 unsigned long vdb_n_fetch;
@@ -299,8 +299,8 @@ long ac_pages_in;
 long ac_pages_out;
 long ac_col_pages_in;
 long ac_col_pages_out;
-extern uint32 ac_cpu_time;
-extern uint32 ac_real_time;
+extern uint64 ac_cpu_time;
+extern uint64 ac_real_time;
 extern int ac_n_times;
 extern uint32 col_ac_last_duration;
 long ac_n_busy;
@@ -377,7 +377,7 @@ extern int enable_ro_rc;
 extern int32 dc_batch_sz;
 extern int32 dc_max_batch_sz;
 extern int32 enable_dyn_batch_sz;
-extern int32 dc_adjust_batch_sz_min_anytime;
+extern uint32 dc_adjust_batch_sz_min_anytime;
 extern int32 enable_vec_reuse;
 extern int enable_split_range;
 extern int enable_split_sets;
@@ -650,9 +650,11 @@ dbms_status_report (void)
   char rpc[200];
   char col_ac_str[100];
   char w_rate[40];
-  long read_percent = 0, write_percent = 0, interval_msec = 0;
-  static long last_time;
-  static long last_read_cum_time, last_write_cum_time;
+  long read_percent = 0, write_percent = 0;
+  time_msec_t interval_msec = 0;
+  static time_msec_t last_time;
+  static int64 last_read_cum_time;
+  static int64 last_write_cum_time;
   extern sys_timer_t sti_sync;
  extern long tc_n_flush;
  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
@@ -1001,7 +1003,7 @@ bif_exec_status ()
   id_hash_iterator_t hit;
   int64 *k;
   bif_exec_stat_t ** exs;
-  uint32 now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   mutex_enter (&bif_exec_pending_mtx);
   id_hash_iterator (&hit, bif_exec_pending);
   while (hit_next (&hit, (caddr_t*)&k, (caddr_t*)&exs))
@@ -1180,7 +1182,7 @@ semaphore_t * ps_sem;
 void
 st_collect_ps_info (dk_set_t * arr)
 {
-  long time_now = get_msec_real_time ();
+  time_msec_t time_now = get_msec_real_time ();
   dk_set_t clients;
 
   mutex_enter (thread_mtx);
@@ -1333,8 +1335,8 @@ status_report (const char * mode, query_instance_t * qi)
   if (gen_info)
     {
       rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
-      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
-		  build_thread_model, build_opsys_id, build_date);
+      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)\n",
+		  build_thread_model, build_opsys_id, build_date, git_head);
     }
   if (!st_started_since_year)
     {
@@ -1464,7 +1466,8 @@ stat_desc_t stat_descs [] =
     {"disk_reads", (long *)&disk_reads, NULL},
     {"disk_releases", &disk_releases, NULL},
     {"disk_writess", &disk_writes, NULL},
-    {"read_cum_time", &read_cum_time, NULL},
+    {"read_cum_time", &read_cum_time, NULL, SD_INT64},
+    {"write_cum_time", &write_cum_time, NULL, SD_INT64},
     {"lock_deadlocks", &lock_deadlocks, NULL},
     {"lock_2r1w_deadlocks", &lock_2r1w_deadlocks, NULL},
     {"lock_killed_by_force", &lock_killed_by_force, NULL},
@@ -1653,7 +1656,7 @@ stat_desc_t stat_descs [] =
 
     {"prof_avg_exec", (long *) &prof_avg_exec, NULL},
     {"prof_n_exec", (long *) &prof_n_exec, NULL},
-    {"prof_compile_time", (long *) &prof_compile_time, NULL},
+    {"prof_compile_time", &prof_compile_time, NULL, SD_INT64},
 
     {"st_dbms_name", NULL, &st_dbms_name},
     {"st_dbms_ver", NULL, &st_dbms_ver},
@@ -1703,7 +1706,7 @@ stat_desc_t stat_descs [] =
     {"st_chkp_mapback_pages", &st_chkp_mapback_pages, NULL},
     {"st_chkp_atomic_time", &st_chkp_atomic_time, NULL},
     {"st_chkp_autocheckpoint", (long *) &cfg_autocheckpoint, NULL},
-    {"st_chkp_last_checkpointed", (long *) &checkpointed_last_time, NULL},
+    {"st_chkp_last_checkpointed", (long *) &checkpointed_last_time, SD_INT64},
 
     {"st_started_since_year", &st_started_since_year, NULL},
     {"st_started_since_month", &st_started_since_month, NULL},
@@ -1793,8 +1796,8 @@ stat_desc_t stat_descs [] =
     {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"srv_init", (long *)&in_srv_global_init, SD_INT32},
-    {"ac_real_time", (long *)&ac_real_time, SD_INT32},
-    {"ac_cpu_time", (long *)&ac_cpu_time, SD_INT32},
+    {"ac_real_time", (long *)&ac_real_time, SD_INT64},
+    {"ac_cpu_time", (long *)&ac_cpu_time, SD_INT64},
     {"ac_n_times", (long *)&ac_n_times, SD_INT32},
     {"col_ac_last_duration", (long *)&col_ac_last_duration, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
@@ -2436,7 +2439,7 @@ prof_report (void)
   out = fopen ("virtprof.out", "w");
   if (out)
     {
-      real = 1 + get_msec_real_time () - prof_start_time;
+      real = 1 + (long) (get_msec_real_time () - prof_start_time);
       if (prof_stat_table == 1)
 	{
 	  char tmp_buf[1024];

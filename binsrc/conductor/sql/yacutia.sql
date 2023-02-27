@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2022 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -223,11 +223,13 @@ create procedure adm_menu_tree ()
       <node name="ACL Edit" url="sec_acl_edit.vspx" id="26" place="1" allowed="yacutia_acl_page"/>
      </node>
      <node name="CA Roots" url="sec_ca.vspx" id="271" place="1" allowed="yacutia_acl_page"/>
+     <node name="Automatic Certificate Management" url="sec_acme.vspx" id="272" place="1" allowed="yacutia_acl_page"/>
    </node>
    <node name="User Accounts" url="accounts_page.vspx" id="3" allowed="yacutia_accounts_page">
      <node name="Accounts" url="accounts.vspx" id="4" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_create.vspx" id="5" place="1" allowed="yacutia_accounts_page"/>
      <node name="Accounts" url="account_remove.vspx" id="6" place="1" allowed="yacutia_accounts_page"/>
+     <node name="Accounts" url="account_key_remove.vspx" id="7" place="1" allowed="yacutia_accounts_page"/>
      <node name="Roles" url="roles.vspx" id="7" place="1" allowed="yacutia_accounts_page"/>
      <node name="Roles" url="role_remove.vspx" id="8" place="1" allowed="yacutia_accounts_page"/>
      <node name="Grants" url="capabilities.vspx" id="9" place="1" allowed="yacutia_accounts_page"/>

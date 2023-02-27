@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2022 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -86,7 +86,7 @@ aqt_other_aq (aq_thread_t * aqt)
   /* called when own aq is exhausted. See if another can be served */
   async_queue_t *best = NULL;
   uint32 best_time;
-  uint32 now = 4000 + approx_msec_real_time ();
+  time_msec_t now = 4000 + approx_msec_real_time ();
   ASSERT_IN_MTX (all_aq_mtx);
   DO_HT (async_queue_t *, aq, caddr_t, ign, all_aqs)
   {
@@ -99,7 +99,7 @@ aqt_other_aq (aq_thread_t * aqt)
 	&& aq->aq_n_threads < aq->aq_max_threads && (!best || best_time < now - aq->aq_ts))
       {
 	best = aq;
-	best_time = now - aq->aq_ts;
+	  best_time = (uint32) (now - aq->aq_ts);
       }
   }
   END_DO_HT;
@@ -160,7 +160,7 @@ aq_thread_func (aq_thread_t * aqt)
       CLI_SET_QUAL (aqt->aqt_cli, aq->aq_qualifier);
       memzero (&aqt->aqt_cli->cli_activity, sizeof (db_activity_t));
       aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
-      if (0 && aq->aq_anytime_started && aq->aq_anytime_started + aq->aq_anytime_timeout < approx_msec_real_time ())
+      if (0 && aq->aq_anytime_started && (aq->aq_anytime_started + aq->aq_anytime_timeout) < approx_msec_real_time ())
 	aqr->aqr_error = srv_make_new_error (SQL_ANYTIME, "AQANY", "Aq request anytimed before starting execution");
       else
 	aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
@@ -264,13 +264,13 @@ aqr_call_w_ctx (aq_request_t * aqr)
   int old_ac = cli->cli_row_autocommit;
   cl_aq_ctx_t *old_claq = cli->cli_claq;
   cl_slice_t *old_csl = cli->cli_csl;
-  int old_qfs = cli->cli_anytime_qf_started;
+  time_msec_t old_qfs = cli->cli_anytime_qf_started;
   cli->cli_aqr = aqr;
   cli->cli_no_triggers = aq->aq_no_triggers;
   cli->cli_row_autocommit = aq->aq_row_autocommit;
   cli->cli_non_txn_insert = aq->aq_non_txn_insert;
   aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
-  if (0 && aq->aq_anytime_started && aq->aq_anytime_started + aq->aq_anytime_timeout < approx_msec_real_time ())
+  if (0 && aq->aq_anytime_started && (aq->aq_anytime_started + aq->aq_anytime_timeout) < approx_msec_real_time ())
     aqr->aqr_error = srv_make_new_error (SQL_ANYTIME, "AQANY", "Aq request anytimed before starting execution");
   else
     aqr->aqr_value = aqr->aqr_func (aqr->aqr_args, &aqr->aqr_error);
