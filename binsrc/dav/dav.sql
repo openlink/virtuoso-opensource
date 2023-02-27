@@ -3694,11 +3694,11 @@ create procedure WS.WS.POST (
         ppath := rtrim (http_physical_path (), '/');
         meta := iri_to_id (WS.WS.DAV_IRI (ppath || ',meta'));
         cont := iri_to_id (WS.WS.DAV_IRI (ppath || '/'));
-        p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
+        p := (sparql define input:storage "" select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
         if (p is null)
         {
           cont := iri_to_id (WS.WS.DAV_IRI (ppath));
-          p := (sparql select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
+          p := (sparql define input:storage "" select ?pref where { graph ?:meta { ?:cont <http://ns.rww.io/ldpx#ldprPrefix> ?pref . }});
         }
         if (p is not null)
         {
@@ -3849,7 +3849,7 @@ create procedure WS.WS.JSONLD_POST (in path varchar, inout ses varchar, in is_re
     }
   else
     {
-      sparql delete from graph ?:giid { ?s ?p ?o } where { graph ?:giid { ?s ?p ?o .  filter (?p not in (rdf:type, ldp:contains)) . }};
+      sparql define input:storage "" delete from graph ?:giid { ?s ?p ?o } where { graph ?:giid { ?s ?p ?o .  filter (?p not in (rdf:type, ldp:contains)) . }};
     }
   if (__tag (ses) = __tag of stream)
     content := string_output_string (ses);
@@ -3867,16 +3867,16 @@ create procedure WS.WS.JSONLD_POST (in path varchar, inout ses varchar, in is_re
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
       if (nsubj <> subj)
         {
-          sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-          sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+          sparql define input:storage "" insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+          sparql define input:storage "" delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
         }
       org_path := org_path || '/';
       subj := iri_to_id (WS.WS.DAV_LINK (org_path));
       nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
       if (nsubj <> subj)
         {
-          sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-          sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+          sparql define input:storage "" insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+          sparql define input:storage "" delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
         }
     }
   return 0;
@@ -3930,7 +3930,7 @@ create procedure WS.WS.TTL_QUERY_POST (
     }
   else
     {
-      sparql delete from graph ?:giid { ?s ?p ?o } where { graph ?:giid { ?s ?p ?o .  filter (?p not in (rdf:type, ldp:contains)) . }};
+      sparql define input:storage "" delete from graph ?:giid { ?s ?p ?o } where { graph ?:giid { ?s ?p ?o .  filter (?p not in (rdf:type, ldp:contains)) . }};
     }
 
   -- Varbinary
@@ -3979,16 +3979,16 @@ _exit:;
     nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
     if (nsubj <> subj)
   	{
-  	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-  	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+  	  sparql define input:storage "" insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+  	  sparql define input:storage "" delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
   	}
     org_path := org_path || '/';
     subj := iri_to_id (WS.WS.DAV_LINK (org_path));
     nsubj := iri_to_id (WS.WS.DAV_IRI (org_path));
     if (nsubj <> subj)
   	{
-  	  sparql insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
-  	  sparql delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+  	  sparql define input:storage "" insert into graph ?:giid { ?:nsubj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
+  	  sparql define input:storage "" delete from graph ?:giid { ?:subj ?p ?o } where { graph ?:giid { ?:subj ?p ?o }};
   	}
   }
   ses := ns;
@@ -7321,9 +7321,9 @@ create procedure DB.DBA.LDP_DELETE (
   else
    {
      tmpIdn := iri_to_id_nosignal ('http://www.w3.org/1999/02/22-rdf-syntax-ns#type');
-     SPARQL DELETE FROM ?:graphIdn { ?:graphIdn rdf:type ldp:Resource, ldp:RDFSource, ldp:NonRDFSource, rdfs:Resource };
+     SPARQL define input:storage "" DELETE FROM ?:graphIdn { ?:graphIdn rdf:type ldp:Resource, ldp:RDFSource, ldp:NonRDFSource, rdfs:Resource };
    }
-  SPARQL DELETE FROM ?:graphParentIdn { ?:graphIdn ?p0 ?o0 . ?s1 ?p1 ?:graphIdn . }
+  SPARQL define input:storage ""  DELETE FROM ?:graphParentIdn { ?:graphIdn ?p0 ?o0 . ?s1 ?p1 ?:graphIdn . }
          WHERE { GRAPH ?:graphParentIdn { ?:graphIdn ?p0 ?o0 . ?s1 ?p1 ?:graphIdn . }};
 }
 ;
