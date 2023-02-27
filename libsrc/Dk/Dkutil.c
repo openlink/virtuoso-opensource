@@ -158,8 +158,8 @@ get_msec_real_time (void)
 
       if (freq.QuadPart > 0 && QueryPerformanceCounter (&count))
 	{
-	  now.tv_sec = (time_t) (count.QuadPart / freq.QuadPart);
-	  now.tv_usec = (int) ((count.QuadPart % freq.QuadPart) * 1000000 / freq.QuadPart);
+	  time_now.to_sec = (time_t) (count.QuadPart / freq.QuadPart);
+	  time_now.to_usec = (int) ((count.QuadPart % freq.QuadPart) * 1000000 / freq.QuadPart);
 
 	  now_msec = (time_msec_t) time_now.to_sec * 1000 + (time_now.to_usec + 500) / 1000;
 	  done = 1;
