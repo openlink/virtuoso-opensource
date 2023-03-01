@@ -1466,8 +1466,8 @@ stat_desc_t stat_descs [] =
     {"disk_reads", (long *)&disk_reads, NULL},
     {"disk_releases", &disk_releases, NULL},
     {"disk_writess", &disk_writes, NULL},
-    {"read_cum_time", &read_cum_time, NULL, SD_INT64},
-    {"write_cum_time", &write_cum_time, NULL, SD_INT64},
+    {"read_cum_time", &read_cum_time, SD_INT64},
+    {"write_cum_time", &write_cum_time, SD_INT64},
     {"lock_deadlocks", &lock_deadlocks, NULL},
     {"lock_2r1w_deadlocks", &lock_2r1w_deadlocks, NULL},
     {"lock_killed_by_force", &lock_killed_by_force, NULL},
@@ -1656,7 +1656,7 @@ stat_desc_t stat_descs [] =
 
     {"prof_avg_exec", (long *) &prof_avg_exec, NULL},
     {"prof_n_exec", (long *) &prof_n_exec, NULL},
-    {"prof_compile_time", &prof_compile_time, NULL, SD_INT64},
+    {"prof_compile_time", &prof_compile_time, SD_INT64},
 
     {"st_dbms_name", NULL, &st_dbms_name},
     {"st_dbms_ver", NULL, &st_dbms_ver},
