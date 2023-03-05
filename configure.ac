@@ -57,7 +57,7 @@ dnl	AM_INIT_AUTOMAKE([1.7])
 dnl	AM_INIT_AUTOMAKE([1.8])
 dnl	AM_INIT_AUTOMAKE([1.9 tar-ustar])
 dnl
-AM_INIT_AUTOMAKE([1.9 tar-ustar])
+AM_INIT_AUTOMAKE([1.9 tar-ustar subdir-objects])
 
 AM_MAINTAINER_MODE
 
