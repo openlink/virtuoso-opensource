@@ -103,7 +103,8 @@
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
   label := ''; _subject := '';
 
-  exec (sprintf ('sparql define sql:table-option "index primary key" define input:inference "facets" select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S), 
+  exec (sprintf ('sparql define sql:table-option "index primary key" define input:inference "facets" 
+        select ?o (lang(?o)) where { <%S> virtrdf:label ?o }', _S),
                  null, null, vector (), 0, meta, data);
 
   label := b3s_label_get (data, langs);
@@ -111,7 +112,10 @@
   q_txt := string_output ();
   http (sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/>
                   select ?o (lang(?o)) where { ', inf), q_txt);
-  http_sparql_object (__box_flags_tweak (_S, 1), q_txt);
+  if (_S like 'nodeID:%')
+    http (sprintf ('<%S>', _S), q_txt);
+  else  
+    http_sparql_object (__box_flags_tweak (_S, 1), q_txt);
   http (' rdfs:comment ?o }', q_txt);
   exec (string_output_string (q_txt), null, null, vector (), 0, meta, data);
   _subject := b3s_label_get (data, langs);
