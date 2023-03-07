@@ -810,6 +810,9 @@ if (_subject <> '') {
 	      <input type="hidden" name="url" value="<?V page_resource_uri ?>" />
               <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
 	      <input type="hidden" name="distinct" value="<?V dist ?>" />
+	      <?vsp if (length(lang_parm) > 0) { ?>
+	      <input type="hidden" name="lang" value="<?V lang_parm ?>" />
+	      <?vsp } ?>
 	      <?vsp if (connection_get ('inf') is not null) { ?>
 	      <input type="hidden" name="inf" value="<?V connection_get ('inf') ?>" />
 	      <?vsp } ?>
