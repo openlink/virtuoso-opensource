@@ -38,7 +38,7 @@ urilbl_ac_init_db ()
 	  goto cont;
         }
 
-      if (not isstring (o_str))
+      if (not isstring (o_str) and not iswidestring (o_str))
         goto cont;
 
       n_ins := n_ins + 1;
