@@ -56,6 +56,7 @@ dnl	AM_INIT_AUTOMAKE([1.6])
 dnl	AM_INIT_AUTOMAKE([1.7])
 dnl	AM_INIT_AUTOMAKE([1.8])
 dnl	AM_INIT_AUTOMAKE([1.9 tar-ustar])
+dnl	AM_INIT_AUTOMAKE([1.16 tar-ustar subdir-objects])
 dnl
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
