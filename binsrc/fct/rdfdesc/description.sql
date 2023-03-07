@@ -164,7 +164,10 @@ b3s_e_type (in subj varchar)
       data := null;
       q_txt := string_output ();
       http ('sparql select ?tp where { ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      if (subj like 'nodeID://%')
+        http (sprintf ('<%s>', subj), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
       http (' a ?tp }', q_txt);
       exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
 
@@ -200,7 +203,10 @@ b3s_type (in subj varchar,
       declare q_txt any;
       q_txt := string_output ();
       http ('sparql select ?l ?tp ' || _from || ' where { ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      if (subj like 'nodeID://%')
+        http (sprintf ('<%s>', subj), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
       http (' a ?tp optional { ?tp rdfs:label ?l } }', q_txt);
       exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
       if (length (data))
@@ -257,13 +263,19 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   msg:= '';
   q_txt := string_output ();
   http ('sparql select ?to ' || _f || ' where { quad map virtrdf:DefaultQuadMap { ?to a ', q_txt);
-  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
+    http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
   http (' }}', q_txt);
   exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
   q_txt := string_output ();
   http ('sparql select ?to ' || _f || ' where { graph ?g { ?to a ', q_txt);
-  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
+    http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
   http (' }}', q_txt);
   exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
@@ -1365,7 +1377,10 @@ where
       http_sparql_object (qm, q_txt);
       http (' { ', q_txt);
       if ('O' = fld) http ('?s ?p ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
+      if (subj_iri like 'nodeID://%')
+        http (sprintf ('<%s>', subj_iri), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
       if ('S' = fld) http (' ?p ?o', q_txt);
       http (' } } } limit ' || tot_dict_size, q_txt);
       stat := '00000';
