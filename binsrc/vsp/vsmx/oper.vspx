@@ -105,7 +105,7 @@
 		      <v:template name="w1" type="simple">
 			<?vsp
 			declare xs any;
-			xs := xslt ('file:/vsmx/vsmx_oper.xsl', self.wsdl,
+                        xs := xslt ('file:vsmx/vsmx_oper.xsl', self.wsdl,
 			vector ('loc', self.loc, 'sid', self.sid, 'realm', self.realm, 'mode', self.mode));
 			http_value (xs);
 			?>
