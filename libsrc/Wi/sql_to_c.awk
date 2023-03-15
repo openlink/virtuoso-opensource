@@ -272,10 +272,14 @@ BEGIN   {
 				has_qualifier = 1
 				files[nfiles] = \
 				  "  /* " path_parts_array[n] " */\n" \
+				  " {\n" \
+				  "  caddr_t saved_qualifier = box_copy (bootstrap_cli->cli_qualifier);\n" \
+				  "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
 				  "  bootstrap_cli->cli_qualifier = box_string (\"" qualifier "\");\n" \
 				  defines "\n\n" \
 				  "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
-				  "  bootstrap_cli->cli_qualifier =  saved_qualifier;"
+				  "  bootstrap_cli->cli_qualifier = saved_qualifier;\n" \
+				  " }\n"
 			      }
 			    else
 				files[nfiles] = "  /* " path_parts_array[n] " */\n" defines
@@ -287,10 +291,14 @@ BEGIN   {
 				has_qualifier_arfw = 1
 				files_arfw[nfiles] = \
 				  "  /* " path_parts_array[n] " */\n" \
+				  " {\n" \
+				  "  caddr_t saved_qualifier = box_copy (bootstrap_cli->cli_qualifier);\n" \
+				  "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
 				  "  bootstrap_cli->cli_qualifier = box_string (\"" qualifier "\");\n" \
 				  defines_arfw "\n\n" \
 				  "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
-				  "  bootstrap_cli->cli_qualifier =  saved_qualifier;"
+				  "  bootstrap_cli->cli_qualifier = saved_qualifier;\n" \
+				  " }\n"
 			      }
 			    else
 				files_arfw[nfiles] = "  /* " path_parts_array[n] " */\n" defines_arfw
@@ -805,8 +813,6 @@ END 	{
 	     print "void\nsqls_define" init_name " (client_connection_t *bootstrap_cli)\n{"
            else
 	     print "void\nsqls_define" init_name " (void)\n{"
-	   if (has_qualifier > 0 || (length (defines) > 0 && qualifier != "DB"))
-	     print "  caddr_t saved_qualifier = bootstrap_cli->cli_qualifier;\n"
 	   if (n_upgraded_tables > 0)
 	     print "  dbe_table_t *macro_tb;\n"
 	   for (i = 1; i <= nfiles; i++)
@@ -819,10 +825,14 @@ END 	{
 		 {
 		   print \
 		     "  /* " end_name " */\n" \
+		     " {\n" \
+		     "  caddr_t saved_qualifier = box_copy(bootstrap_cli->cli_qualifier);\n" \
+		     "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
 		     "  bootstrap_cli->cli_qualifier = box_string (\"" qualifier "\");\n" \
 		     defines "\n\n" \
 		     "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
-		     "  bootstrap_cli->cli_qualifier =  saved_qualifier;"
+		     "  bootstrap_cli->cli_qualifier = saved_qualifier;\n" \
+		     " }\n"
 		 }
 	       else
 		 print "  /* " end_name " */\n" defines
@@ -832,8 +842,6 @@ END 	{
 
 	   print "\n\nvoid\nsqls_arfw_define" init_name " (void)\n{"
 
-	   if (has_qualifier_arfw > 0 || (length (defines_arfw) > 0 && qualifier != "DB"))
-	     print "  caddr_t saved_qualifier = bootstrap_cli->cli_qualifier;\n"
 	   if (n_upgraded_tables_arfw > 0)
 	     print "  dbe_table_t *macro_tb;\n"
 	   for (i = 1; i <= nfiles; i++)
@@ -846,10 +854,14 @@ END 	{
 		 {
 		   print \
 		     "  /* " filename " */\n" \
+		     " {\n" \
+		     "  caddr_t saved_qualifier = box_copy (bootstrap_cli->cli_qualifier);\n" \
+		     "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
 		     "  bootstrap_cli->cli_qualifier = box_string (\"" qualifier "\");\n" \
 		     defines_arfw "\n\n" \
 		     "  dk_free_box (bootstrap_cli->cli_qualifier);\n" \
-		     "  bootstrap_cli->cli_qualifier =  saved_qualifier;"
+		     "  bootstrap_cli->cli_qualifier = saved_qualifier;\n" \
+		     " }\n"
 		 }
 	       else
 		 print "  /* " filename " */\n" defines_arfw
