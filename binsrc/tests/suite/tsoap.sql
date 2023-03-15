@@ -25,6 +25,7 @@ ECHO BOTH "STARTED: SOAP tests\n";
 SET ARGV[0] 0;
 SET ARGV[1] 0;
 
+drop user SOAP;
 create user SOAP;
 grant all privileges to SOAP;
 
