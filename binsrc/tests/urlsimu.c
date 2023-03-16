@@ -35,8 +35,8 @@
 
 #include <signal.h>
 #include <sys/types.h>
-#include <Dk.h>
-#include <libutil.h>
+#include "Dk.h"
+#include "libutil.h"
 #include "timeacct.h"
 
 #ifndef WIN32
