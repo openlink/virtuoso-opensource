@@ -1840,7 +1840,8 @@ cr_done:
       sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE, NULL);
       text2 = box_copy (text);
       err = stmt_set_query (sst, lt->lt_client, text, opts);
-      LEAVE_CLIENT (lt->lt_client);
+      if (!lt->lt_client->cli_is_log)
+        LEAVE_CLIENT (lt->lt_client); /* not entered in log replay */
       if (err != NULL)
 	{
 	  if ((caddr_t)-1 == err)
@@ -3575,6 +3576,7 @@ log_replay_file (int fd)
   if (CL_RUN_LOCAL != cl_run_local_only)
     enable_mt_ft_inx = 0;
   cli->cli_user = sec_id_to_user (U_ID_DBA);
+  cli->cli_is_log = 1;
   total_size_bytes = LSEEK (fd, 0, SEEK_END);
   if (total_size_bytes == (OFF_T) -1)
     total_size_bytes = 0;

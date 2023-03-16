@@ -1365,9 +1365,11 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
   if (_SQL_CURSOR_FORWARD_ONLY == cr_type && unique_rows)
     cr_type = SQLC_UNIQUE_ROWS;
 
-  ASSERT_IN_MTX (cli->cli_mtx);
-  if (place && CORRECT_QUAL (*place, cli)
-      && CORRECT_CR_TYPE ((*place), cr_type))
+#ifdef MTX_DEBUG
+  if (!cli->cli_is_log)
+    ASSERT_IN_MTX (cli->cli_mtx);
+#endif
+  if (place && CORRECT_QUAL (*place, cli) && CORRECT_CR_TYPE ((*place), cr_type))
     {
       qr_cache_hits++;
       dk_free_box (text);
