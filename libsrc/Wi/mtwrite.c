@@ -548,14 +548,14 @@ iq_aio (io_queue_t * iq)
 		      dtp_t c_buf[PAGE_SZ + 512];
 		      db_buf_t copy;
 		      out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
-		      buf->bd_is_write = 1;
+                      BD_SET_IS_WRITE(buf, 1);
 		      if (PAGE_WRITE_COPY == page_prepare_write (buf, &out, &n_out, c_compress_mode))
 			{
 			  copy = dk_alloc_box (PAGE_SZ, DV_BIN);
 			  memcpy (copy, out, PAGE_SZ);
 			  out = copy;
 			}
-		      buf->bd_is_write = 0;
+                      BD_SET_IS_WRITE(buf, 0);
 		    }
 		  /* If the buffer hasn't moved out of sort order and
 		     hasn't been flushed by a sync write */
