@@ -104,7 +104,7 @@ int
 rwlock_tryrdlock (rwlock_t * l)
 {
 #ifdef HAVE_PTHREAD_RWLOCK_INIT
-  return pthread_rwlock_tryrdlock (l);
+  return (0 == pthread_rwlock_tryrdlock (l));
 #else
   mutex_enter (l->mtx);
   if (l->blocked_writers || l->state < 0)
@@ -144,7 +144,7 @@ int
 rwlock_trywrlock (rwlock_t * l)
 {
 #ifdef HAVE_PTHREAD_RWLOCK_INIT
-  return pthread_rwlock_trywrlock (l);
+  return (0 == pthread_rwlock_trywrlock (l));
 #else
   mutex_enter (l->mtx);
   if (l->state)
