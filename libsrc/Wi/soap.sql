@@ -2750,6 +2750,6 @@ create procedure SOAP_USER_INIT ()
 }
 ;
 
+--!AFTER
 SOAP_USER_INIT ()
 ;
-
