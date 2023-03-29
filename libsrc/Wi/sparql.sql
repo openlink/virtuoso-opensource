@@ -8799,11 +8799,12 @@ create function DB.DBA.SPARQL_DELETE_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
                       if (search_fields_are_ok)
                         {
                           declare rb_of_ro_id any;
-                          rb_of_ro_id := (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
+                          rb_of_ro_id := (select rdf_box_from_ro_id(RO_ID) from DB.DBA.RDF_OBJ
+                                where RO_VAL = o_val and RO_DT_AND_LANG = o_dt_and_lang_twobyte);
                           if (rb_of_ro_id is not null)
                             {
                               -- dbg_obj_princ ('delete by search fields, ro_id will be ', rb_of_ro_id);
-                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = rb_of_ro_id and rdf_box_dt_and_lang(O) = o_dt_and_lang_twobyte;
+                              delete from DB.DBA.RDF_QUAD where G = a_g and S = a_s and P = a_p and O = rb_of_ro_id;
                             }
                           else
                             {
