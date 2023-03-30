@@ -912,8 +912,8 @@ t_list_cock (const char *file, int line)
   return t_list_impl;
 }
 
-
-#else
+#endif
+#undef t_list
 caddr_t *
 t_list (long n, ...)
 {
@@ -930,7 +930,6 @@ t_list (long n, ...)
   va_end (ap);
   return ((caddr_t *) box);
 }
-#endif
 
 caddr_t *
 t_list_nc (long n, ...)
@@ -2311,9 +2310,19 @@ caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_ful
 caddr_t mp_box_num (mem_pool_t * mp, boxint num) { return dbg_mp_box_num (__FILE__, __LINE__, mp, num); }
 #undef mp_box_iri_id
 caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t num) { return dbg_mp_box_iri_id (__FILE__, __LINE__, mp, num); }
-#undef mp_box_double 
+#undef mp_box_double
 caddr_t mp_box_double (mem_pool_t * mp, double num) { return dbg_mp_box_double (__FILE__, __LINE__, mp, num); }
 #undef mp_box_float
 caddr_t mp_box_float (mem_pool_t * mp, float num) { return dbg_mp_box_float (__FILE__, __LINE__, mp, num); }
+#undef t_box_num
+caddr_t t_box_num (boxint n) { return dbg_t_box_num(__FILE__, __LINE__, n); }
+#undef t_box_double
+box_t t_box_double (double n) { return dbg_t_box_double(__FILE__, __LINE__, n); }
+#undef t_box_num_and_zero
+caddr_t t_box_num_and_zero (boxint n) { return dbg_t_box_num_and_zero(__FILE__, __LINE__, n); }
+#undef t_cons
+dk_set_t t_cons (void *car, dk_set_t cdr) { return dbg_t_cons (__FILE__, __LINE__, car, cdr); }
+#undef t_list_to_array
+caddr_t * t_list_to_array (dk_set_t list) { return dbg_t_list_to_array (__FILE__, __LINE__, list); }
 #endif
 

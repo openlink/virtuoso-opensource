@@ -108,14 +108,18 @@ void numeric_rc_clear (void);
 
 numeric_t mp_numeric_allocate (mem_pool_t * mp);
 
+EXE_EXPORT (numeric_t, numeric_allocate, (void));		/* dynamic allocation */
+EXE_EXPORT (numeric_t, t_numeric_allocate, (void));		/* thread space dynamic allocation */
 #ifdef MALLOC_DEBUG
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define numeric_allocate() dbg_numeric_allocate (__FILE__, __LINE__)
 #define t_numeric_allocate() dbg_t_numeric_allocate (__FILE__, __LINE__)
+#endif
+#endif
 numeric_t dbg_numeric_allocate (DBG_PARAMS_0);	/* dynamic allocation */
 numeric_t dbg_t_numeric_allocate (DBG_PARAMS_0);	/* thread space dynamic allocation */
 #else
-EXE_EXPORT (numeric_t, numeric_allocate, (void));		/* dynamic allocation */
-EXE_EXPORT (numeric_t, t_numeric_allocate, (void));		/* thread space dynamic allocation */
 #endif
 void numeric_free (numeric_t n);
 int numeric_copy (numeric_t y, numeric_t x);

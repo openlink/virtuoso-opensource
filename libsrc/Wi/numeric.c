@@ -1234,7 +1234,6 @@ DBG_NAME(numeric_allocate) (DBG_PARAMS_0)
 #endif
 }
 
-
 numeric_t
 DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 {
@@ -1254,6 +1253,13 @@ DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 #endif
 }
 
+#ifdef MALLOC_DEBUG
+#undef numeric_allocate
+numeric_t
+numeric_allocate () { return dbg_numeric_allocate (__FILE__, __LINE__); }
+#undef t_numeric_allocate
+numeric_t t_numeric_allocate () { return dbg_t_numeric_allocate (__FILE__, __LINE__); }
+#endif
 
 numeric_t
 mp_numeric_allocate (mem_pool_t * mp)

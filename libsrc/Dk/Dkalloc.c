@@ -67,9 +67,6 @@ int64 dk_n_max_allocs;
 #undef dk_free
 #endif
 
-extern void dk_box_initialize (void);
-extern void dk_box_finalize (void);
-
 #define NO_MALLOC_CACHE
 #undef CACHE_MALLOC
 
