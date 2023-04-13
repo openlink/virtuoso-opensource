@@ -904,6 +904,8 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       if (ST_P (tree->_.insert.vals, SELECT_STMT))
 	{
 	  ST *sel = tree->_.insert.vals;
+          if (!sel->_.select_stmt.table_exp)
+            sqlc_new_error (sc->sc_cc, "42S22", "SQ098", "Non-terminal query expression cannot be used.");
 	  if (sc->sc_client->cli_row_autocommit || enable_mt_txn)
 	    sc->sc_parallel_dml = 1;
 	  sc->sc_cc->cc_query->qr_is_mt_insert = 1;
