@@ -1594,8 +1594,12 @@ name (int64* res, int64 * l, int64* r, int n) \
   int inx; \
   if (is_div) \
     for (inx = 0; inx < n; inx++) \
-      if (0 == ((tp*)r)[inx]) \
-	sqlr_new_error ("22012", "SR084", "Division by 0."); \
+      { \
+        if (0 == ((tp*)r)[inx]) \
+          sqlr_new_error ("22012", "SR084", "Division by 0."); \
+        if (2 == is_div && ((tp*)l)[inx] <= INT64_MIN && -1 == ((tp*)r)[inx]) \
+          sqlr_new_error ("22012", "SR084", "Int64 overflow."); \
+      } \
   for (inx = 0; 0 && inx <= n - 2 * vec_len; inx += 2 * vec_len) \
     { \
       *(vect*)&((tp*)res)[inx] = *(vect*)&((tp*)l)[inx] op  *(vect*)&((tp*)r)[inx]; \
@@ -1618,7 +1622,7 @@ ARTM_VEC (artm_mpy_int, int64, v2di_t, 2, *, 0);
 ARTM_VEC (artm_mpy_float, float, v4sf_t, 4, *, 0);
 ARTM_VEC (artm_mpy_double, double, v2df_t, 2, *, 0);
 
-ARTM_VEC (artm_div_int, int64, v2di_t, 2, /, 1);
+ARTM_VEC (artm_div_int, int64, v2di_t, 2, /, 2);
 ARTM_VEC (artm_div_float, float, v4sf_t, 4, /, 1);
 ARTM_VEC (artm_div_double, double, v2df_t, 2, /, 1);
 
