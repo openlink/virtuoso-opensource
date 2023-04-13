@@ -632,7 +632,7 @@ sqlc_cursor (sql_comp_t * sc, ST ** ptree, int cr_type)
   if (IS_UNION_ST (tree))
     {
       tree = sqlp_view_def (NULL, tree, 1);
-      tree = sqlc_union_dt_wrap (tree);
+      tree = sqlc_union_dt_wrap (sc, tree);
       *ptree = tree;
     }
   sqlc_top_select_wrap_dt (sc, tree);
