@@ -2514,12 +2514,12 @@ ddl_table_and_subtables_changed (query_instance_t *qi, char *tb_name)
 
 
 void
-ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
+ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col, int if_not_exists)
 {
   caddr_t err;
   static query_t *add_col_proc;
   client_connection_t *cli = qi->qi_client;
-
+  dbe_column_t *col_ref;
   dbe_table_t *tb = qi_name_to_table (qi, table);
 
   if (!add_col_proc)
@@ -2528,6 +2528,9 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
   if (!tb)
     sqlr_new_error ("42S02", "SQ018", "No table %s.", table);
   sql_error_if_remote_table (tb);
+  col_ref = tb_name_to_column (tb, col[0]);
+  if (col_ref && if_not_exists)
+    return;
   AS_DBA (qi, err = qr_rec_exec (add_col_proc, cli, NULL, qi, NULL, 3,
       ":0", (0 == strcmp (tb->tb_name, "DB.DBA.SYS_TRIGGERS")) ? "SYS_TRIGGERS" : tb->tb_name, QRP_STR,
       ":1", col[0], QRP_STR,
@@ -2670,15 +2673,19 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
 
 
 void
-ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col)
+ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col, int if_exists)
 {
   static query_t *dc_qr;
   caddr_t err;
   dbe_table_t * tb;
+  dbe_column_t *col_ref;
 
   sql_error_if_remote_table (tb = qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+  col_ref = tb_name_to_column (tb, col);
+  if (!col_ref && if_exists)
+    return;
   AS_DBA (qi, err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
       ":0", table, QRP_STR,
       ":1", col, QRP_STR));
@@ -4047,13 +4054,13 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	break;
       }
     case ADD_COLUMN:
-      ddl_add_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
+      ddl_add_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2, (int)(ptrlong)tree->_.op.arg_3);
       break;
     case MODIFY_COLUMN:
       ddl_modify_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
       break;
     case DROP_COL:
-      ddl_drop_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
+      ddl_drop_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2, (int)(ptrlong)tree->_.op.arg_3);
       break;
     case TABLE_RENAME:
       ddl_rename_table (qi, tree->_.op.arg_1, tree->_.op.arg_2);

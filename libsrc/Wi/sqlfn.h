@@ -270,7 +270,7 @@ void ddl_create_primary_key (query_instance_t * cli, char * table, char * key,
 void ddl_create_key (query_instance_t * cli, char * table, char * key,
 		     caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique, int is_bitmap, caddr_t * opts);
 
-void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col);
+void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col, int if_not_exists);
 
 void ddl_drop_index (caddr_t * qst, const char * table, const char * name, int log_to_trx);
 

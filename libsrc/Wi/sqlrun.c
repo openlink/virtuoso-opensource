@@ -3592,7 +3592,7 @@ ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 		      box_is_string (stmt, "unique", 5, stmt_len), 0, NULL);
     }
   else if (0 == strcmp (stmt[0], "add_col"))
-    ddl_add_col (qi, stmt[1], (caddr_t *) stmt[2]);
+    ddl_add_col (qi, stmt[1], (caddr_t *) stmt[2], 0);
   else if (0 == strcmp (stmt[0], "build_index"))
     ddl_build_index (qi, stmt[1], stmt[2], qi->qi_trx->lt_replicate);
   else if (0 == strcmp (stmt[0], "drop_index"))

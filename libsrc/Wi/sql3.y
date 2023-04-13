@@ -1093,22 +1093,22 @@ add_col_column_list
 	;
 
 add_column
-	: ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list
+	: ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list opt_not_exists
 		{
 		  dk_set_t ret = NULL, col_defs_list = $6;
 		  DO_SET (dk_set_t, col_def, &col_defs_list)
 		    {
-		      t_set_push (&ret, t_listst (3, ADD_COLUMN, $3, t_list_to_array (col_def)));
+		      t_set_push (&ret, t_listst (4, ADD_COLUMN, $3, t_list_to_array (col_def), (ptrlong)$7));
 		    }
 		  END_DO_SET ();
 		  $$ = ret;
 		}
-	| ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list
+	| ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list opt_if_exists
 		{
 		  dk_set_t ret = NULL, col_ref_list = $6;
 		  DO_SET (caddr_t, col_ref, &col_ref_list)
 		    {
-		      t_set_push (&ret, t_listst (3, DROP_COL, $3, col_ref));
+		      t_set_push (&ret, t_listst (4, DROP_COL, $3, col_ref, (ptrlong)$7));
 		    }
 		  END_DO_SET ();
 		  $$ = ret;
