@@ -1354,6 +1354,8 @@ ddl_create_key (query_instance_t * qi,
   char *szTheTableName;
   dk_set_t to_free = NULL;
 
+  if (n_parts > K_MAX_PARTS)
+    sqlr_new_error ("42S12", "SQ017", "Too many key parts");
   memcpy (parts_tmp, parts, box_length ((caddr_t) parts));
 
   qr_rec_exec (find_primary_stmt, cli, &lc_keys, qi, NULL, 1,
