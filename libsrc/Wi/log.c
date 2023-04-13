@@ -2711,9 +2711,9 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       int inx = 0;
       int plen;
       query_t *qr = get_vec_query (request, key, flag, &err);
-      plen = dk_set_length (qr->qr_parms);
       if (err)
 	return err;
+      plen = dk_set_length (qr->qr_parms);
       request->lr_qr = qr;
       qr_pool = request->lr_pool = mem_pool_alloc ();
       qr_params_vec = request->lr_params_vec = (data_col_t**) mp_alloc_box(qr_pool, plen * sizeof (data_col_t*), DV_BIN);
