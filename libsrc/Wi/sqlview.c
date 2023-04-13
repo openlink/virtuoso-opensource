@@ -361,6 +361,10 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   tree->_.insert.table = (ST *) t_box_copy_tree (
       (caddr_t) view->_.select_stmt.table_exp->_.table_exp.from[0]->_.table_ref.table);
 
+  if (BOX_ELEMENTS_0(cols) != BOX_ELEMENTS_0(tree->_.insert.vals->_.ins_vals.vals))
+    sqlc_new_error (sc->sc_cc, "21S01", "SQ099",
+	"different number of cols and values in insert.");
+
   _DO_BOX (inx, tree->_.insert.cols)
     {
       sqlc_col_to_view_scope (sc, &cols[inx], view, &aliases);
