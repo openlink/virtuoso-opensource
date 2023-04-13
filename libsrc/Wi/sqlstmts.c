@@ -1625,6 +1625,8 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST
       SQL_NODE_INIT (delete_node_t, del, delete_node_input, del_free);
       if (tb && !sec_tb_check (tb, SC_G_ID (sc), SC_U_ID (sc), GR_DELETE))
 	sqlc_new_error (sc->sc_cc, "43000", "SQ108:SECURITY", "Permission denied for delete from %.300s (user ID = %lu)", tb->tb_name, SC_U_ID (sc));
+      if (!tb)
+        sqlc_new_error (sc->sc_cc, "42S02", "NOTBL", "No table '%s' for positioned statement", tree->_.delete_pos.table->_.table.name);
 
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
