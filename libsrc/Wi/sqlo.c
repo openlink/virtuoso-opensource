@@ -1705,7 +1705,8 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
       if (BOX_ELEMENTS(args) < 1 || !ST_COLUMN (args[0], COL_DOTTED))
 	sqlc_error (so->so_sc->sc_cc, "37000",
 	    "The first argument of %s must be a column", sqlo_spec_predicate_name (ctype));
-
+      if (args[0]->_.col_ref.name == STAR)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ064", "Illegal use of '*'.");
       ot = sco_is_defd (so->so_scope, args[0],
 	  args[0]->_.col_ref.prefix ? SCO_THIS_QUAL : SCO_UNQUALIFIED, 1);
       if (!ot || !ot->ot_table)
