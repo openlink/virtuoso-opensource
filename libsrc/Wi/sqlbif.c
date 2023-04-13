@@ -7404,6 +7404,9 @@ bif_mod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22012", "SR046", "Division by zero in mod(" BOXINT_FMT "," BOXINT_FMT ")",
       (boxint)long1, (boxint)long2);
   }
+  if (long1 <= INT64_MIN)
+    sqlr_new_error ("22012", "SR046", "Out of range in mod(" BOXINT_FMT "," BOXINT_FMT ")",
+      (boxint)long1, (boxint)long2);
 
   return (box_num (long1 % long2));
 }
