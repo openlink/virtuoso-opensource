@@ -509,7 +509,7 @@ dbe_table_t *  sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree);
 /* sqlview.c */
 void sqlc_union_stmt (sql_comp_t * sc, ST** ptree);
 void sqlc_union_order (sql_comp_t * sc, ST ** ptree);
-ST * sqlc_union_dt_wrap (ST * tree);
+ST * sqlc_union_dt_wrap (sql_comp_t * sc, ST * tree);
 
 void sqlc_ct_generate_derived (sql_comp_t * sc, comp_table_t * ct);
 

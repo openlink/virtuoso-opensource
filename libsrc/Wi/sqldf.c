@@ -8103,7 +8103,7 @@ sqlp_convert_or_to_union (sqlo_t * so, ST **ptree)
 	}
       END_DO_SET ();
       new_tree = sqlp_view_def (NULL, new_tree, 1);
-      new_tree = sqlc_union_dt_wrap (new_tree);
+      new_tree = sqlc_union_dt_wrap (so->so_sc, new_tree);
       sqlo_unor_replace_col_refs (so, &orig_sel, (ST *)new_tree->_.select_stmt.selection, sqlp_union_tree_select (tree));
       new_tree->_.select_stmt.selection = (caddr_t *) orig_sel;
       *ptree = new_tree;
@@ -8235,7 +8235,7 @@ sqlo_top (sql_comp_t * sc, ST ** volatile ptree, float * volatile score_ptr)
 	   ST_P (tree, INTERSECT_ALL_ST))
 	{
 	  tree = sqlp_view_def (NULL, tree, 1);
-	  tree = sqlc_union_dt_wrap (tree);
+	  tree = sqlc_union_dt_wrap (sc, tree);
 	  *ptree = tree;
 	}
       ret = sqlo_top_1 (so, sc, ptree);

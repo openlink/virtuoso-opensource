@@ -914,7 +914,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		ST_P (view, INTERSECT_ALL_ST))
 	      {
 		view = sqlp_view_def (NULL, view, 1);
-		view = sqlc_union_dt_wrap (view);
+		view = sqlc_union_dt_wrap (so->so_sc, view);
 	      }
 	    sqlo_scope (so, &view);
 	    if (ST_P (view, SELECT_STMT))
@@ -2024,7 +2024,7 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 
 	  *ptree = t_listst (5, UNION_ST, left_oj_tree->_.table_ref.table,
 	      right_oj_tree->_.table_ref.table, NULL, 0);
-	  *ptree = sqlc_union_dt_wrap (*ptree);
+	  *ptree = sqlc_union_dt_wrap (so->so_sc, *ptree);
 	  res ++;
 	}
     }
@@ -3317,9 +3317,9 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	{
 	  ST *left;
 	  if (IS_UNION_ST (tree->_.set_exp.left))
-	    tree->_.set_exp.left = sqlc_union_dt_wrap (tree->_.set_exp.left);
+	    tree->_.set_exp.left = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.left);
 	  if (IS_UNION_ST (tree->_.set_exp.right))
-	    tree->_.set_exp.right = sqlc_union_dt_wrap (tree->_.set_exp.right);
+	    tree->_.set_exp.right = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.right);
 	  left = sqlp_union_tree_select (tree);
 	  sqlo_union_scope (so, ptree, left);
 	  break;
