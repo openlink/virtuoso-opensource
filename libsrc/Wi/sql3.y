@@ -2451,12 +2451,12 @@ in_predicate
 	: scalar_exp NOT IN_L subquery
 		{
 		  ST *in = NULL;
-		  in = SUBQ_PRED (SOME_PRED, $1, sqlp_wpar_nonselect ($4), BOP_EQ, NULL);
+		  in = SUBQ_PRED (SOME_PRED, $1, sqlp_wrap_nonselect ($4, 0), BOP_EQ, NULL);
 		  NEGATE ($$, in);
 		}
 	| scalar_exp IN_L subquery
 		{
-		  $$ = SUBQ_PRED (SOME_PRED, $1, sqlp_wpar_nonselect ($3), BOP_EQ, NULL); }
+		  $$ = SUBQ_PRED (SOME_PRED, $1, sqlp_wrap_nonselect ($3, 0), BOP_EQ, NULL); }
 	| scalar_exp NOT IN_L '(' scalar_exp_commalist ')'
  		{ $$ = sqlp_in_exp ($1, $5, 1);
 		}
@@ -2474,7 +2474,7 @@ atom_commalist
 
 all_or_any_predicate
 	: scalar_exp COMPARISON any_all_some subquery
-		{ $$ = SUBQ_PRED ($3, $1, sqlp_wpar_nonselect ($4), $2, NULL); }
+		{ $$ = SUBQ_PRED ($3, $1, sqlp_wrap_nonselect ($4, 0), $2, NULL); }
 	;
 
 any_all_some
@@ -2487,7 +2487,7 @@ existence_test
 	: EXISTS subquery
 		{
 		  /* exists (select * ..) becomes exists (select 1 ...) */
-		  ST * ext_subq = $2;
+		  ST * ext_subq = sqlp_wrap_nonselect ($2, 1);
 		  ext_subq->_.select_stmt.selection = (caddr_t*) t_list (1, t_box_num (1));
 		  ext_subq->_.select_stmt.top = NULL;
 		  $$ = (ST *) SUBQ_PRED (EXISTS_PRED, NULL, ext_subq, NULL, NULL); }
