@@ -4362,7 +4362,7 @@ sqlo_is_constant_pred_arg (sqlo_t *so, df_elt_t *pred, df_elt_t *cmp, int cmp_to
 {
   unsigned inx;
   df_elt_t *col = pred->_.bin.right->_.call.args[0];
-  collation_t * coll = DFE_COLUMN == col->dfe_type ? col->_.col.col->col_sqt.sqt_collation : NULL;
+  collation_t * coll = DFE_COLUMN == col->dfe_type && NULL != col->_.col.col ? col->_.col.col->col_sqt.sqt_collation : NULL;
   for (inx = 1; inx < BOX_ELEMENTS (pred->_.bin.right->_.call.args); inx++)
     {
       if (cmp_to_find == cmp_boxes ((caddr_t) pred->_.bin.right->_.call.args[inx]->dfe_tree,
