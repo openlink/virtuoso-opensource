@@ -1797,10 +1797,10 @@ sqlc_table_from_select_view (query_t * view_qr, ST * view_def)
   t_dk_set_append_1 (&cols,
       t_list (5, INDEX_DEF, NULL, NULL, t_list_to_array (key_parts), NULL));
 
-  return ((ST *) t_list (3,
+  return ((ST *) t_list (5,
       TABLE_DEF,
       t_box_string (view_def->_.view_def.name),
-      t_list_to_array (cols)));
+      t_list_to_array (cols), 0, 0));
 }
 
 
@@ -1838,8 +1838,8 @@ sqlc_table_from_view (query_t * view_qr, ST * view_def)
       return ((ST*) t_list (3, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
 		    (caddr_t) col_defs));
 #else
-      return ((ST*) t_list (3, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
-		    t_box_copy_tree ((caddr_t) view_def->_.view_def.exp->_.proc_table.cols)));
+      return ((ST*) t_list (5, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
+		    t_box_copy_tree ((caddr_t) view_def->_.view_def.exp->_.proc_table.cols), 0, 0));
 #endif
     }
 }
