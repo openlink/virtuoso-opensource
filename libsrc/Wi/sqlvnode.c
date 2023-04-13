@@ -257,7 +257,12 @@ select_node_input_vec (select_node_t * sel, caddr_t * inst, caddr_t * state)
 	  print_int (is_full ? QA_ROW_LAST_IN_BATCH : QA_ROW, __ses);
 	  for (inx = 0; inx < slots; inx++)
 	    {
-	      caddr_t value = QST_GET (inst, sel->sel_out_slots[inx]);
+              state_slot_t * out_ssl = sel->sel_out_slots[inx];
+              caddr_t value;
+              if (out_ssl->ssl_is_alias && out_ssl->ssl_alias_of)
+                value = QST_GET (inst, out_ssl->ssl_alias_of);
+              else
+                value = QST_GET (inst, out_ssl);
 	      print_object (value, __ses, NULL, NULL);
 	    }
 	  b2 = __ses->dks_bytes_sent;
