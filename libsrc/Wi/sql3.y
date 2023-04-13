@@ -857,7 +857,7 @@ base_table_def
 		{ $$ = t_listst (5, TABLE_DEF, $3,
 				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7, (ptrlong) $8); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
-		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
+		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, sqlp_view_def (NULL, $5, 1), t_box_num ((ptrlong) $6)); }
 	;
 
 base_table_element_commalist
