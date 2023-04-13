@@ -4514,6 +4514,9 @@ sqlg_simple_fun_ref (sqlo_t * so, data_source_t ** head, df_elt_t * tb_dfe, dk_s
 
   sql_comp_t * sc = so->so_sc;
   op_table_t * ot = tb_dfe->_.sub.ot;
+  dk_set_t temp_save = sc->sc_fun_ref_temps;
+  dk_set_t def_save = sc->sc_fun_ref_defaults;
+  dk_set_t def_ssls = sc->sc_fun_ref_default_ssls;
 
   sc->sc_fun_ref_temps = NULL;
   sc->sc_fun_ref_defaults = NULL;
@@ -4545,8 +4548,11 @@ sqlg_simple_fun_ref (sqlo_t * so, data_source_t ** head, df_elt_t * tb_dfe, dk_s
       }
     fref->src_gen.src_after_code = code_to_cv (sc, post_fref_code);
     fref->fnr_default_values = dk_set_nreverse (sc->sc_fun_ref_defaults);
+    sc->sc_fun_ref_defaults = def_save;
     fref->fnr_default_ssls = dk_set_nreverse (sc->sc_fun_ref_default_ssls);
+    sc->sc_fun_ref_default_ssls = def_ssls;
     fref->fnr_temp_slots = sc->sc_fun_ref_temps;
+    sc->sc_fun_ref_temps = temp_save;
     sqlg_place_fref (sc, head, fref, tb_dfe);
   }
 }
