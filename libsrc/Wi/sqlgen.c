@@ -2363,6 +2363,8 @@ dfe_qexp_list (df_elt_t * dfe, int op, dk_set_t * res)
   if (DFE_DT == dfe->dfe_type)
     {
       df_elt_t * first = dfe->_.sub.first->dfe_next;
+      if (!first)
+        return 0;
       if (DFE_QEXP == first->dfe_type)
 	dfe = first;
       else if (DFE_DT == first->dfe_type)
