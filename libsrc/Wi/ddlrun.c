@@ -1882,7 +1882,7 @@ ddl_ensure_index (const char *table, const char * index_name, const char *text)
   client_connection_t *old_cli = sqlc_client();
   sqlc_set_client (NULL);
   dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, table);
-  dbe_key_t * key = tb ? tb_find_key (tb, index_name, NULL) : NULL;
+  dbe_key_t * key = tb ? tb_find_key (tb, index_name, 0) : NULL;
   if (!key)
     {
       caddr_t err = NULL;
@@ -2513,7 +2513,23 @@ ddl_table_and_subtables_changed (query_instance_t *qi, char *tb_name)
     }
 }
 
-
+int
+ddl_col_opt_set (caddr_t * col_def, caddr_t opt)
+{
+  caddr_t * col_meta = ARRAYP(col_def) && BOX_ELEMENTS_0(col_def) > 1 ? (caddr_t *)(col_def[1]) : NULL;
+  caddr_t * col_opts = ARRAYP(col_meta) && BOX_ELEMENTS_0(col_meta) > 1 ? (caddr_t *)(col_meta[1]) : NULL;
+  int inx;
+  if (!col_opts)
+    return 0;
+  DO_BOX (caddr_t, k, inx, col_opts)
+    {
+      caddr_t kn = ARRAYP(k) && BOX_ELEMENTS_0(k) > 0 ? ((caddr_t*)k)[0] : k;
+      if (opt == kn)
+        return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 void
 ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col, int if_not_exists)
@@ -2523,6 +2539,7 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col, int if_not
   client_connection_t *cli = qi->qi_client;
   dbe_column_t *col_ref;
   dbe_table_t *tb = qi_name_to_table (qi, table);
+  int not_empty;
 
   if (!add_col_proc)
     add_col_proc = sql_compile_static ("DB.DBA.add_col (?, ?,?)",
@@ -2533,10 +2550,13 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col, int if_not
   col_ref = tb_name_to_column (tb, col[0]);
   if (col_ref && if_not_exists)
     return;
+  not_empty = count_exceed (qi, tb->tb_name, 0, NULL);
+  if (not_empty && ddl_col_opt_set (col, (caddr_t)(ptrlong)COL_NOT_NULL) && !ddl_col_opt_set (col, (caddr_t)(ptrlong)COL_DEFAULT))
+    sqlr_new_error ("42000", "SQ018", "column '%s' of table '%s' contains null values", col[0], table);
   AS_DBA (qi, err = qr_rec_exec (add_col_proc, cli, NULL, qi, NULL, 3,
       ":0", (0 == strcmp (tb->tb_name, "DB.DBA.SYS_TRIGGERS")) ? "SYS_TRIGGERS" : tb->tb_name, QRP_STR,
       ":1", col[0], QRP_STR,
-			     ":2", box_copy_tree ((caddr_t) col), QRP_RAW));
+      ":2", box_copy_tree ((caddr_t) col), QRP_RAW));
 
   if (err != SQL_SUCCESS)
     {
