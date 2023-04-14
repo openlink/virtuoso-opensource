@@ -5856,7 +5856,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		  dfe_unit_col_loci (pred);
 		}
 	      END_DO_SET();
-	      if (dfe->dfe_type == DFE_VALUE_SUBQ)
+             if (org_dfe && dfe->dfe_type == DFE_VALUE_SUBQ)
 		org_dfe->_.sub = dfe->_.sub; /* find the copy with layout in sqlo_df, not the bare original */
 	    }
 	  break;
