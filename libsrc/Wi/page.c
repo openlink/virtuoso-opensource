@@ -139,7 +139,13 @@ kc_var_col (dbe_key_t * key, buffer_desc_t * buf, db_buf_t row, dbe_col_loc_t * 
   len = cl->cl_pos[rv];
   if (CL_FIRST_VAR == len)
     {
-      if (key->key_version != IE_KEY_VERSION (row))
+      key_ver_t kv = IE_KEY_VERSION (row);
+      if (KV_LEFT_DUMMY == kv)
+        {
+          dp_addr_t leaf = LONG_REF (row + LD_LEAF);
+          GPF_T1("Not supposed to have such layout");
+        }
+      if (key->key_version != kv)
 	key = key->key_versions[IE_KEY_VERSION (row)];
       off = 0 == IE_KEY_VERSION (row) ? key->key_key_var_start[rv] : key->key_row_var_start[rv];
       len = SHORT_REF (row + key->key_length_area[rv]) - off;
