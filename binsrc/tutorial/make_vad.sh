@@ -504,7 +504,12 @@ sticker_init() {
      else
 	     TYPE2="http"
      fi
-     echo "  <file overwrite=\"yes\" type=\"$TYPE2\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+     case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
+     echo "  <file overwrite=\"yes\" type=\"$TYPE2\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER

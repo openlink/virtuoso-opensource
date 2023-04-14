@@ -280,8 +280,8 @@ sticker_init() {
   oldIFS="$IFS"
   IFS='
 ' 
-  echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"dav\" source=\"data\" target_uri=\"SyncML/syncml_drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>" >> $STICKER
   IFS="$oldIFS"
   echo "</resources>" >> $STICKER
   echo "<registry>" >> $STICKER

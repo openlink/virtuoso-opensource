@@ -158,7 +158,7 @@ create procedure "VAD"."DBA"."VAD_MKDAV" (inout id integer, inout gd integer, in
         return -1;
       usr := 'dav';
       pwd := pwd_magic_calc('dav', (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME='dav'), 1);
-      curid := "DB"."DBA"."DAV_COL_CREATE" (p, '111101101N', usr, NULL, usr, pwd);
+      curid := "DB"."DBA"."DAV_COL_CREATE" (p, '111101000N', usr, NULL, usr, pwd);
       if (curid < 0)
         return curid;
     }
