@@ -358,13 +358,12 @@ sticker_init() {
 
   for file in `find vad -type f -print | LC_ALL=C sort`
   do
-     if echo "$file" | grep -v "\.vsp" >/dev/null
-     then
-	      perms="110100100NN"
-     else
-	      perms="111101101NN"
-     fi
      name=`echo "$file" | cut -b10-`
+     case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
      echo "  <file type=\"$TYPE\" overwrite=\"yes\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 

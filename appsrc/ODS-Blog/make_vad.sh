@@ -353,36 +353,52 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/index.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/dav_browser.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/trackback.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/atom_pub.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/gdata.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_integration.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/template.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/uninst.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/DET_Blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_search_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/conv.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/sioc_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog_api.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  perms='110100100NN'
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/index.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/dav_browser.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/trackback.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/atom_pub.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/gdata.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_integration.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/template.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/uninst.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/DET_Blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_search_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/conv.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/sioc_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog_api.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   cd vad/data/blog2 2>/dev/null
   oldIFS="$IFS"
   IFS='
 '
   for file in `find public/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find templates/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find widgets/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   cd ../../..
   IFS="$oldIFS"

@@ -465,17 +465,12 @@ sticker_init() {
 
   for file in `find vad/data/wa -type f -print | sort`
   do
-     if echo "$file" | grep -v ".vsp" | grep -v ".php" >/dev/null
-     then
-    	 if echo "$file" | grep -v "trs_export.xml" | grep -v "trs_export_all.xml" | grep -v "href_export.xml" | grep -v "foaf.xml" >/dev/null
-	 then
-	     perms="110100100NN"
-	 else
-	     perms="111101101NN"
-	 fi
-     else
-	 perms="111101101NN"
-     fi
+     name=`echo "$file" | cut -b10-`
+     case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
      if echo "$file" | grep -v "/users/" > /dev/null
      then
        if echo "$file" | grep -v "/webid/" > /dev/null

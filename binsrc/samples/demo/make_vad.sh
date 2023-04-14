@@ -464,39 +464,84 @@ sticker_init() {
 '
   for file in `find docsrc/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find images/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find releasenotes/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find sample_data/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find stylesheets/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find xmlsql/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find sql/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find interop3/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find Thalia/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"demo/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   cd ../../..
   IFS="$oldIFS"

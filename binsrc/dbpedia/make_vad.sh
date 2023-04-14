@@ -313,16 +313,22 @@ fi
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
 
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/dbpedia_init.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/dbpedia_local.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  perms='110100000NN'
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/dbpedia_init.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/dbpedia_local.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/description.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
 
   if test -d demos
   then
       cd demos >/dev/null 2>&1
       for file in `find . -type f -print | grep -v CVS | sort | cut -b3-`
       do
-	  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../$STICKER
+	  case "$file" in
+	    *.sql)  		perms='110100000NN' ;;
+	    *.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+	    *)			perms='110100100NN' ;;
+	  esac
+	  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> ../$STICKER
       done
       cd .. >/dev/null 2>&1
   fi
@@ -330,7 +336,12 @@ fi
   cd vsp >/dev/null 2>&1
   for file in `find . -type f -print | grep -v CVS | grep -v ".sql" | sort | cut -b3-`
   do
-      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../$STICKER
+	  case "$file" in
+	    *.sql)  		perms='110100000NN' ;;
+	    *.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+	    *)			perms='110100100NN' ;;
+	  esac
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> ../$STICKER
   done
   cd .. >/dev/null 2>&1
 

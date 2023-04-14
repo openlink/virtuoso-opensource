@@ -131,7 +131,7 @@ create procedure "VAD"."DBA"."VAD_DAV_MKCOL" (
   declare ret integer;
   usr := 'dav';
   pwd := pwd_magic_calc('dav', (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME='dav'), 1);
-  ret := "DB"."DBA"."DAV_COL_CREATE" (name, '110100100N', usr, NULL, usr, pwd);
+  ret := "DB"."DBA"."DAV_COL_CREATE" (name, '110100000N', usr, NULL, usr, pwd);
   return ret;
 }
 ;

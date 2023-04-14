@@ -320,7 +320,12 @@ sticker_init() {
     for file in `find vad -type f | grep -v '/CVS'`
     do
     name=`echo "$file" | cut -b22-`
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"sparql_demo/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"sparql_demo/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
     done
     IFS="$oldIFS"
     echo "</resources>" >> $STICKER

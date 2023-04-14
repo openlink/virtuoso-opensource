@@ -357,7 +357,7 @@ sticker_init() {
   do
     if echo "$file" | grep -v "/CVS/" >/dev/null
     then
-      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+      echo "  <file type=\"dav\" source=\"data\" target_uri=\"wiki/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>" >> $STICKER
     fi
   done
   cd http

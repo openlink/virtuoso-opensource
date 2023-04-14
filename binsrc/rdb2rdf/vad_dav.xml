@@ -34,8 +34,8 @@
       <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
     </name>
-    <version package="1.00.284">
-      <prop name="Release Date" value="2022-04-07 12:00"/>
+    <version package="1.00.285">
+      <prop name="Release Date" value="2023-04-14 12:00"/>
       <prop name="Build" value="Release, optimized"/>
     </version>
   </caption>
@@ -56,9 +56,9 @@
     </sql>
   </ddls>
   <resources>
-    <file type="dav" source="http" target_uri="rdb2rdf/ovl.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
-    <file type="dav" source="http" target_uri="rdb2rdf/r2rml.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
-    <file type="dav" source="http" target_uri="rdb2rdf/r2rml_validation_metas.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/ovl.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml_validation_metas.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
     <file type="dav" source="http" target_uri="rdb2rdf/northwind_r2rml.ttl" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
   </resources>
   <registry>

@@ -321,14 +321,20 @@ fi
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
 
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oauth.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  perms='110100000NN'
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oauth.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
 
 
   cd vad/vsp/$VAD_NAME
   for file in `find . -type f -print | grep -v CVS | grep -v ".sql" | sort | cut -b3-`
   do
-      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../../../$STICKER
+     case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
+     echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> ../../../$STICKER
   done
   cd ../../..
 

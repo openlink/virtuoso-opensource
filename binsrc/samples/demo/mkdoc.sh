@@ -61,7 +61,7 @@ STICKER_FS="doc_vad_filesystem.xml"
 VAD_NAME="doc"
 VAD_NAME_DEVEL="$VAD_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_NAME"_dav.vad
-VERSION="1.1.19"
+VERSION="1.1.20"
 PACKDATE=`date +"%Y-%m-%d %H:%M"`
 
 HOST_OS=`uname -s | grep WIN`
@@ -463,9 +463,11 @@ sticker_init() {
   for file in `find vad -type f -print | LC_ALL=C sort`
   do
     name=`echo "$file" | cut -b10-`
-    perms='110100100NN'
-    echo "$name" | egrep -e '.vspx$' > /dev/null && perms='111101101NN'
-    echo "$name" | egrep -e '.vsp$' > /dev/null && perms='111101101NN'
+    case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
     
     echo "  <file type=\"$TYPE\" overwrite=\"yes\" source=\"data\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
