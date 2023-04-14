@@ -1386,6 +1386,262 @@ SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": var out of query scope in distinct/oby: " $LAST[1] "\n";
 
 
+-- 1117.sql
+-- XXX: SELECT table_name as name, 'TABLE' as type, '' as parentname FROM information_schema.tables UNION SELECT column_name as name, data_type as type, table_name as parentname FROM information_schema.columns;
+select 1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1117 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- 1118.sql
+drop table test_table_t2 if exists;
+CREATE TABLE test_table_t2(x VARCHAR, y VARCHAR, c VARCHAR);
+CREATE VIEW test_table_t2 AS SELECT * FROM test_table_t2;
+INSERT INTO test_table_t2 VALUES(8,8,RDF_SYS.xsd_hexBinary_fromBinary(SYSTEM_BASE64_ENCODE(zeroblob(200))));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1118 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1119.sql
+CREATE TABLE hist (
+  cnt VARCHAR NOT NULL,
+  y VARCHAR NOT NULL,
+  z VARCHAR,
+  PRIMARY KEY (cnt,y)
+);
+CREATE TABLE t19d AS (SELECT * FROM hist UNION ALL SELECT 1234);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1119 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1120.sql
+CREATE TABLE test_table_t1(x VARCHAR, k VARCHAR);
+CREATE INDEX t1i1 ON test_table_t1(c1,c2,c3,c4,c5,c6,c7,c8,c9,c10,c11,c12,c13,c14,c15,c16,c17,c18,c19,c20,c21,c22,c23,c24,c25,c26,c27,c28,c29,c30,c31,c32,c33,c34,c35,c36,c37,c38,c39,c40,c41,c42,c43,c44,c45,c46,c47,c48,c49,c50,c51,c52,c53,c54,c55,c56,c57,c58,c59,c60,c61,c62,c63,c64,c65,c66,c67,c68,c69,c70,c71,c72,c73,c74,c75,c76,c77,c78,c79,c80,c81,c82,c83,c84,c85,c86,c87,c88,c89,c90,c91,c92,c93,c94,c95,c96,c97,c98,c99,c100,c101,c102,c103,c104,c105,c106,c107,c108,c109,c110,c111,c112,c113,c114,c115,c116,c117,c118,c119,c120,c121,c122,c123,c124,c125,c126,c127,c128,c129,c130,c131,c132,c133,c134,c135,c136,c137,c138,c139,c140,c141,c142,c143,c144,c145,c146,c147,c148,c149,c150,c151,c152,c153,c154,c155,c156,c157,c158,c159,c160,c161,c162,c163,c164,c165,c166,c167,c168,c169,c170,c171,c172,c173,c174,c175,c176,c177,c178,c179,c180,c181,c182,c183,c184,c185,c186,c187,c188,c189,c190,c191,c192,c193,c194,c195,c196,c197,c198,c199,c200,c201,c202,c203,c204,c205,c206,c207,c208,c209,c210,c211,c212,c213,c214,c215,c216,c217,c218,c219,c220,c221,c222,c223,c224,c225,c226,c227,c228,c229,c230,c231,c232,c233,c234,c235,c236,c237,c238,c239,c240,c241,c242,c243,c244,c245,c246,c247,c248,c249,c250,c251,c252,c253,c254,c255,c256,c257,c258,c259,c260,c261,c262,c263,c264,c265,c266,c267,c268,c269,c270,c271,c272,c273,c274,c275,c276,c277,c278,c279,c280,c281,c282,c283,c284,c285,c286,c287,c288,c289,c290,c291,c292,c293,c294,c295,c296,c297,c298,c299,c300,c301,c302,c303,c304,c305,c306,c307,c308,c309,c310,c311,c312,c313,c314,c315,c316,c317,c318,c319,c320,c321,c322,c323,c324,c325,c326,c327,c328,c329,c330,c331,c332,c333,c334,c335,c336,c337,c338,c339,c340,c341,c342,c343,c344,c345,c346,c347,c348,c349,c350,c351,c352,c353,c354,c355,c356,c357,c358,c359,c360,c361,c362,c363,c364,c365,c366,c367,c368,c369,c370,c371,c372,c373,c374,c375,c376,c377,c378,c379,c380,c381,c382,c383,c384,c385,c386,c387,c388,c389,c390,c391,c392,c393,c394,c395,c396,c397,c398,c399,c400,c401,c402,c403,c404,c405,c406,c407,c408,c409,c410,c411,c412,c413,c414,c415,c416,c417,c418,c419,c420,c421,c422,c423,c424,c425,c426,c427,c428,c429,c430,c431,c432,c433,c434,c435,c436,c437,c438,c439,c440,c441,c442,c443,c444,c445,c446,c447,c448,c449,c450,c451,c452,c453,c454,c455,c456,c457,c458,c459,c460,c461,c462,c463,c464,c465,c466,c467,c468,c469,c470,c471,c472,c473,c474,c475,c476,c477,c478,c479,c480,c481,c482,c483,c484,c485,c486,c487,c488,c489,c490,c491,c492,c493,c494,c495,c496,c497,c498,c499,c500,c501,c502,c503,c504,c505,c506,c507,c508,c509,c510,c511,c512,c513,c514,c515,c516,c517,c518,c519,c520,c521,c522,c523,c524,c525,c526,c527,c528,c529,c530,c531,c532,c533,c534,c535,c536,c537,c538,c539,c540,c541,c542,c543,c544,c545,c546,c547,c548,c549,c550,c551,c552,c553,c554,c555,c556,c557,c558,c559,c560,c561,c562,c563,c564,c565,c566,c567,c568,c569,c570,c571,c572,c573,c574,c575,c576,c577,c578,c579,c580,c581,c582,c583,c584,c585,c586,c587,c588,c589,c590,c591,c592,c593,c594,c595,c596,c597,c598,c599,c600,c601,c602,c603,c604,c605,c606,c607,c608,c609,c610,c611,c612,c613,c614,c615,c616,c617,c618,c619,c620,c621,c622,c623,c624,c625,c626,c627,c628,c629,c630,c631,c632,c633,c634,c635,c636,c637,c638,c639,c640,c641,c642,c643,c644,c645,c646,c647,c648,c649,c650,c651,c652,c653,c654,c655,c656,c657,c658,c659,c660,c661,c662,c663,c664,c665,c666,c667,c668,c669,c670,c671,c672,c673,c674,c675,c676,c677,c678,c679,c680,c681,c682,c683,c684,c685,c686,c687,c688,c689,c690,c691,c692,c693,c694,c695,c696,c697,c698,c699,c700,c701,c702,c703,c704,c705,c706,c707,c708,c709,c710,c711,c712,c713,c714,c715,c716,c717,c718,c719,c720,c721,c722,c723,c724,c725,c726,c727,c728,c729,c730,c731,c732,c733,c734,c735,c736,c737,c738,c739,c740,c741,c742,c743,c744,c745,c746,c747,c748,c749,c750,c751,c752,c753,c754,c755,c756,c757,c758,c759,c760,c761,c762,c763,c764,c765,c766,c767,c768,c769,c770,c771,c772,c773,c774,c775,c776,c777,c778,c779,c780,c781,c782,c783,c784,c785,c786,c787,c788,c789,c790,c791,c792,c793,c794,c795,c796,c797,c798,c799,c800,c801,c802,c803,c804,c805,c806,c807,c808,c809,c810,c811,c812,c813,c814,c815,c816,c817,c818,c819,c820,c821,c822,c823,c824,c825,c826,c827,c828,c829,c830,c831,c832,c833,c834,c835,c836,c837,c838,c839,c840,c841,c842,c843,c844,c845,c846,c847,c848,c849,c850,c851,c852,c853,c854,c855,c856,c857,c858,c859,c860,c861,c862,c863,c864,c865,c866,c867,c868,c869,c870,c871,c872,c873,c874,c875,c876,c877,c878,c879,c880,c881,c882,c883,c884,c885,c886,c887,c888,c889,c890,c891,c892,c893,c894,c895,c896,c897,c898,c899,c900,c901,c902,c903,c904,c905,c906,c907,c908,c909,c910,c911,c912,c913,c914,c915,c916,c917,c918,c919,c920,c921,c922,c923,c924,c925,c926,c927,c928,c929,c930,c931,c932,c933,c934,c935,c936,c937,c938,c939,c940,c941,c942,c943,c944,c945,c946,c947,c948,c949,c950,c951,c952,c953,c954,c955,c956,c957,c958,c959,c960,c961,c962,c963,c964,c965,c966,c967,c968,c969,c970,c971,c972,c973,c974,c975,c976,c977,c978,c979,c980,c981,c982,c983,c984,c985,c986,c987,c988,c989,c990,c991,c992,c993,c994,c995,c996,c997,c998,c999,c1000);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1120 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1121.sql
+drop table test_table_t1 if exists;
+drop table test_table_t2 if exists;
+CREATE TABLE test_table_t1 (c1 INT, c2 BINARY(100),c3 FLOAT);
+INSERT INTO test_table_t1 VALUES (100,'abcdefghij',3.0);
+CREATE TABLE test_table_t2 (c1 INT, c2 VARCHAR(100));
+INSERT INTO test_table_t2 VALUES (2,'abcde');
+-- XXX: UPDATE test_table_t1 SET c2 = (SELECT MAX(c1) FROM test_table_t2);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1121 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1122.sql
+SELECT MOD(-9223372036854775808, -1);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1122 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1123.sql
+SELECT CAST('-9223372036854775808' AS INTEGER) / CAST('-1' AS SMALLINT);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1123 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1124.sql
+drop table test_table_t1 if exists;
+drop table test_table_k if exists;
+CREATE TABLE test_table_t1(x INTEGER UNIQUE);
+CREATE TABLE test_table_k(v varchar(255), excluded varchar(255));
+
+INSERT INTO test_table_t1(x, x, x, x, x, x, x) VALUES(16183,15638,6,0,5,2,0);
+-- XXX: SELECT 'one', test_table_t1.* FROM test_table_t1 LEFT JOIN test_table_k ON test_table_t1.x=test_table_k.v WHERE test_table_k.v IS NULL;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1124 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1125.sql
+drop table test_table_t1 if exists;
+CREATE TABLE test_table_t1 (
+    x VARCHAR,
+    y VARCHAR
+ );
+SELECT IFNULL(MIN(x), -1), IFNULL(MAX(x), -1)
+FROM (
+  SELECT x FROM test_table_t1 UNION ALL
+  SELECT NULL
+) AS temp;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1125 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1126.sql
+drop table test_table_b if exists;
+CREATE TABLE test_table_b (
+      folders VARCHAR(80),
+      folderid VARCHAR(80),
+      parentid VARCHAR(80),
+      rootid VARCHAR(80),
+      c INTEGER,
+      path VARCHAR(80),
+      id VARCHAR(80),
+      i VARCHAR(80),
+      d VARCHAR(80),
+      e VARCHAR(80),
+      f VARCHAR(80)
+    );
+
+SELECT case test_table_b.d when coalesce((select max(17+coalesce((select max(coalesce((select (select count(distinct case f when 19 then coalesce((select coalesce((select max(11-(abs(d)/abs(11))) from test_table_b where not  -c in (19,test_table_b.d,17)),17) from test_table_b where (f in (d,f,test_table_b.c))),d) else d end) from test_table_b) from test_table_b where 17 between e and test_table_b.f),test_table_b.c)) from test_table_b where 13>=e),d)) from test_table_b where test_table_b.f>test_table_b.f),test_table_b.d) then 17 else test_table_b.f end FROM test_table_b WHERE not exists(select 1 from test_table_b where 13 between c+17 and (test_table_b.id));
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1126 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1127.sql
+drop table test_table_b if exists;
+CREATE TABLE test_table_b (
+      folders VARCHAR(80),
+      folderid VARCHAR(80),
+      parentid VARCHAR(80),
+      rootid VARCHAR(80),
+      c INTEGER,
+      path VARCHAR(80),
+      id VARCHAR(80),
+      i VARCHAR(80),
+      d VARCHAR(80),
+      e VARCHAR(80),
+      f VARCHAR(80)
+    );
+SELECT  -(coalesce((select max(coalesce((select test_table_b.f from test_table_b where not exists(select 1 from test_table_b where (abs(+rootid+19+19)/abs(test_table_b.rootid))<test_table_b.rootid) or 19+f>=(select  -max(19) from test_table_b)+test_table_b.f),test_table_b.e+test_table_b.f)* -test_table_b.e+19-f) from test_table_b where (( -test_table_b.id<19) or d>=id)),test_table_b.id))*id*((test_table_b.rootid))-17 FROM test_table_b WHERE NOT (test_table_b.e not between test_table_b.f*id and test_table_b.f+ -d);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1127 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1128.sql
+drop table element if exists;
+CREATE TABLE element (
+      name VARCHAR(80),
+      test1 VARCHAR(80),
+      f1 VARCHAR(80),
+      f2 VARCHAR(80),
+      code INTEGER,
+      test_table_t1 VARCHAR(80),
+      a VARCHAR(80),
+      example VARCHAR(80),
+      b VARCHAR(80),
+      c VARCHAR(80),
+      folders VARCHAR(80)
+    );
+INSERT INTO element(b,b) VALUES(38,1444);
+-- XXX: SELECT (select ( -count(distinct case case code when b then c*case when b<=element.b+b then code when (abs(element.c)/abs(case when b-coalesce((select max(element.c-element.b) from element where not exists(select 1 from element where 17 in (b,13,(b)) or b in (b,c,element.b))),element.b) not in (b,((c)),element.b) then  -19 when c between code and 13 then 19 else element.c end))=13 then c else 13 end else 17 end when 13 then element.c else element.b end-element.c)) from element) FROM element WHERE coalesce((select max(element.b) from element where element.c<>element.c-13),element.code)>=b or b*coalesce((select max((b)) from element where c not between +coalesce((select max(13) from element where b between  -(abs(( -coalesce((select max(case c when element.c then b else  -element.c end) from element where 11>b and element.b<element.b),element.c)))/abs(b)) and b),code) and element.b),element.b)* -19 not between (17) and element.c and (element.b<=code);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1128 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1129.sql
+drop table test_table_t4 if exists;
+CREATE TABLE test_table_t4 (
+  a VARCHAR,
+  b VARCHAR
+);
+SELECT MIN(b), MIN(b) FROM test_table_t4;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1129 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1130.sql
+drop table brin_test if exists;
+CREATE TABLE brin_test(a INTEGER NOT NULL);
+INSERT INTO brin_test (a) VALUES(5);
+INSERT INTO brin_test (a) VALUES(5); 
+ALTER TABLE brin_test ADD c1 VARCHAR(20)  NOT NULL ;
+-- XXX: UPDATE brin_test SET a = a + 1 WHERE a = 5;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1130 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1131.sql
+drop table test_table_t1 if exists;
+CREATE TABLE test_table_t1(
+    x INTEGER PRIMARY KEY,
+    k VARCHAR
+  );
+CREATE VIEW test_table_t1 AS SELECT k, k FROM test_table_t1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1131 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+UPDATE test_table_t1 SET k = k-1 WHERE k > 100 AND x = 128;
+-- 1132.sql
+drop table test_table_t1 if exists;
+CREATE TABLE test_table_t1 (
+    x LONG VARCHAR,
+    a INTEGER DEFAULT 0,
+    b LONG VARCHAR,
+    test_table_t2 LONG VARCHAR
+);
+CREATE VIEW test_table_t1 AS SELECT * FROM test_table_t1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1132 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+INSERT INTO test_table_t1(test_table_t2, x, x) VALUES('one-toasted,one-null', '', repeat('1234567890',50000));
+-- 1133.sql
+drop table test_table_t1 if exists;
+CREATE TABLE test_table_t1(x VARCHAR, k VARCHAR, v VARCHAR);
+CREATE VIEW test_table_t1 AS SELECT x, x FROM test_table_t1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1133 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+UPDATE test_table_t1 SET x = x + 100;
+-- 1134.sql
+drop table base_tbl if exists;
+drop view rw_view1;
+CREATE TABLE base_tbl (a int, b int);
+CREATE VIEW rw_view1 AS SELECT * FROM base_tbl;
+INSERT INTO rw_view1 VALUES (15);
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1134 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1135.sql
+DELETE FROM ucview WHERE CURRENT OF c1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1135 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1136.sql
+SELECT SUM(v), COUNT(*) FROM gstest_empty
+UNION ALL
+SELECT SUM(v), NULL FROM gstest_empty
+UNION ALL
+SELECT NULL, COUNT(*) FROM gstest_empty
+UNION ALL
+SELECT NULL, NULL
+;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1136 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1137.sql
+drop table test_table_t1 if exists;
+CREATE VIEW test_table_t1(a) AS SELECT 1;
+SELECT a, a, a FROM test_table_t1 WHERE a IN (1,5) AND a IN (9,8,3025,1000,3969)
+       ORDER BY a, a DESC;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1137 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1138.sql
+drop table mvtest_pdt1 if exists;
+CREATE TABLE mvtest_pdt1 AS (SELECT 1 AS col1) WITH DATA;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1138 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1139.sql
+drop table test_table_t2 if exists;
+create table test_table_t2 (x int, y int);
+SELECT CASE WHEN EXISTS (SELECT 1 FROM test_table_t2 WHERE x=1 INTERSECT SELECT 1 FROM test_table_t2 WHERE y=2) THEN 1 ELSE 0 END;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1139 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1140.sql
+CREATE TABLE test_table_t1 (
+  a varchar(255) DEFAULT NULL
+);
+SELECT * FROM test_table_t1 WHERE CONTAINS(*, 'tutorial & (mysql & -VÐƷWİ)');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1140 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+-- 1141.sql
+drop table test_table_t1 if exists;
+CREATE TABLE test_table_t1 (
+  x VARCHAR,
+  k VARCHAR
+);
+CREATE VIEW test_table_t1 AS SELECT x, k FROM test_table_t1;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": #1141 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+INSERT INTO test_table_t1 VALUES ('x', 'y');
+
 sparql clear graph <urn:gby:flt>;
 
 ttlp('
