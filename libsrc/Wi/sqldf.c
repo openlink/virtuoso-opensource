@@ -3339,9 +3339,7 @@ sqlo_merge_col_preds (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t col_preds, dk_set
 
 extern caddr_t uname_one_of_these;
 
-#define IS_ONE_OF_THESE(name)  (0 == stricmp (name, "one_of_these")) 
 #define IS_ONE_OF_THESE(n) (n == uname_one_of_these)
-
 
 int do_sqlo_in_list = 1;
 
