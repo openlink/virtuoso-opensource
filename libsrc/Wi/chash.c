@@ -2275,7 +2275,8 @@ setp_chash_distinct (setp_node_t * setp, caddr_t * inst)
       if (ssl->ssl_type < SSL_VEC)
 	goto no;
       dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-      if (cha && dc->dc_dtp != cha->cha_sqt[inx].sqt_dtp && !((DCT_BOXES & dc->dc_type) && DV_ANY == cha->cha_sqt[inx].sqt_dtp))
+      if (cha && inx < cha->cha_n_keys && dc->dc_dtp != cha->cha_sqt[inx].sqt_dtp
+	  && !((DCT_BOXES & dc->dc_type) && DV_ANY == cha->cha_sqt[inx].sqt_dtp))
 	goto no;
     }
   if (!cha)
