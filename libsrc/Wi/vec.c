@@ -588,6 +588,20 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
 	  return box;
 	}
       goto no_reuse;
+    case DV_BIN:
+      len = (unsigned char) string[1];
+      head_len = 2;
+      goto bin_data;
+    case DV_LONG_BIN:
+      len = LONG_REF_NA (string + 1);
+      head_len = 5;
+    bin_data:
+      if (DV_BIN == old_dtp && ALIGN_STR ((len)) == ALIGN_STR (box_length (box)))
+	{
+	  box_reuse (box, (caddr_t)string + head_len, len, DV_BIN);
+	  return box;
+	}
+      goto no_reuse;
     case DV_DATETIME:
       if (DV_DATETIME == old_dtp)
 	{
