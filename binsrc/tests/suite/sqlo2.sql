@@ -1539,10 +1539,10 @@ CREATE TABLE brin_test(a INTEGER NOT NULL);
 INSERT INTO brin_test (a) VALUES(5);
 INSERT INTO brin_test (a) VALUES(5); 
 ALTER TABLE brin_test ADD c1 VARCHAR(20)  NOT NULL ;
--- XXX: UPDATE brin_test SET a = a + 1 WHERE a = 5;
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": #1130 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+UPDATE brin_test SET a = a + 1 WHERE a = 5;
 -- 1131.sql
 drop table test_table_t1 if exists;
 CREATE TABLE test_table_t1(
