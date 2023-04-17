@@ -1425,7 +1425,7 @@ CREATE TABLE test_table_t1 (c1 INT, c2 BINARY(100),c3 FLOAT);
 INSERT INTO test_table_t1 VALUES (100,'abcdefghij',3.0);
 CREATE TABLE test_table_t2 (c1 INT, c2 VARCHAR(100));
 INSERT INTO test_table_t2 VALUES (2,'abcde');
--- XXX: UPDATE test_table_t1 SET c2 = (SELECT MAX(c1) FROM test_table_t2);
+UPDATE test_table_t1 SET c2 = (SELECT MAX(c1) FROM test_table_t2);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": #1121 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
