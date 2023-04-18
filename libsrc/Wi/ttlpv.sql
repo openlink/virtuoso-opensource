@@ -282,6 +282,8 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 	}
       else
         tid := 257;
+      if (tid = 256) -- cannot set geometry with non-geometry content
+        tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
       -- if (not bit_and (is_text, 1))
       --   {
