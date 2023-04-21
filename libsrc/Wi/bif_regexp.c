@@ -442,7 +442,7 @@ bif_rdf_regex_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   pattern = bif_regexp_str_arg (qst, args, 1, "rdf_regex_impl", REGEXP_YES, &utf8_mode, &p_to_free, &err);
   if (err) goto done;
-  str = bif_regexp_str_arg (qst, args, 0, "rdf_regex_impl", REGEXP_BF, &utf8_mode, &str_to_free, &err);
+  str = bif_regexp_str_arg (qst, args, 0, "rdf_regex_impl", REGEXP_YES, &utf8_mode, &str_to_free, &err);
   if (err) goto done;
 
   if (utf8_mode)
