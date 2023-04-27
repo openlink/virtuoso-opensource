@@ -1505,18 +1505,20 @@ struct buffer_desc_s
   io_queue_t *	 bd_iq; /* iq, if buffer in queue for read(write */
   buffer_desc_t *	bd_iq_prev; /* next and prev in double linked list of io queue */
   buffer_desc_t *	bd_iq_next;
-#if defined (PAGE_DEBUG) | defined (MTX_DEBUG)
+#if defined (PAGE_DEBUG) | defined (MTX_DEBUG) | defined(BUF_FLAGS_DEBUG)
   du_thread_t *	bd_writer; /* for debugging, the thread which has write access, if any */
   char * 		bd_enter_file;
   char * 		bd_leave_file;
-  short 			bd_enter_line;
-  short 			bd_leave_line;
-  short                  bd_set_wr_line;
-  short		bd_delta_line;
+  short 	        bd_enter_line;
+  short 		bd_leave_line;
+  short                 bd_set_wr_line;
+  short                 bd_set_dirty_line;
+  short		        bd_delta_line;
   char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
-  int		bd_ck_ts;
-  int		bd_delta_ts;
+  int		        bd_ck_ts;
+  int		        bd_delta_ts;
   char *                bd_set_wr_file;
+  char *                bd_set_dirty_file;
   thread_t *		bd_thr_el;
 #endif
 #ifdef PAGE_TRACE
@@ -1606,7 +1608,7 @@ struct buffer_desc_s
 #define BUF_NONE_WAITING(buf) \
 (!buf->bd_write_waiting && !buf->bd_read_waiting && !buf->bd_being_read)
 
-#if defined (PAGE_DEBUG) | defined (MTX_DEBUG)
+#if defined (PAGE_DEBUG) | defined (MTX_DEBUG) | defined(BUF_FLAGS_DEBUG)
 #define BD_SET_IS_WRITE(bd, f) \
 do { \
   (bd)->bd_is_write = f;			    \

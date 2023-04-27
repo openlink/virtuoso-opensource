@@ -259,7 +259,7 @@ void bing(void);
 #ifdef PAGE_DEBUG
 
 void buf_prot_read (buffer_desc_t * buf);
-void buf_prot_WRITE (buffer_desc_t * buf);
+void buf_prot_write (buffer_desc_t * buf);
 
 #define BUF_PW(buf) buf_prot_write (buf)
 #define BUF_PR(buf) buf_prot_read (buf)
@@ -567,12 +567,21 @@ void it_not_in_any (du_thread_t * self, index_tree_t * except);
 extern buffer_desc_t * buffer_allocate (int type);
 extern void buffer_free (buffer_desc_t * buf);
 extern void buffer_set_free (buffer_desc_t* ps);
-#ifdef MTX_DEBUG
-int buf_set_dirty (buffer_desc_t * buf);
-int buf_set_dirty_inside (buffer_desc_t * buf);
+
+#if defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
+#define BUF_SET_IS_DIRTY(b,f) do { ((b)->bd_is_dirty = (f)); (b)->bd_set_dirty_file = __FILE__; (b)->bd_set_dirty_line = __LINE__; } while(0)
 #else
-#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1)
-#define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
+#define BUF_SET_IS_DIRTY(b,f) ((b)->bd_is_dirty = (f))
+#endif
+
+#if defined(MTX_DEBUG) | defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
+int buf_set_dirty_1 (char *file, int line, buffer_desc_t * buf);
+int buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf);
+#define buf_set_dirty(b) buf_set_dirty_1(__FILE__, __LINE__, b)
+#define buf_set_dirty_inside(b) buf_set_dirty_inside_1(__FILE__, __LINE__, b)
+#else
+#define buf_set_dirty(b)  BUF_SET_IS_DIRTY(b,1)
+#define buf_set_dirty_inside(b)  BUF_SET_IS_DIRTY(b,1)
 #endif
 
 #define cl_enlist_ck(it, buf)

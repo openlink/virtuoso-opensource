@@ -676,7 +676,7 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 	  ASSERT_IN_MAP (itc->itc_tree, inx);
 	  if (buf->bd_tree && buf->bd_tree != it)
 	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
       if (BUF_WIRED (buf)
 	      ||buf->bd_iq)
 	{
@@ -702,7 +702,7 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 	}
       BUF_BACKDATE(buf);
 	  buf->bd_tree = NULL;
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
       buf_unregister_itcs (buf);
@@ -1436,27 +1436,26 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 
 long gpf_time = 0;
 
-#ifdef MTX_DEBUG
+#if defined(MTX_DEBUG) | defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
 int
-buf_set_dirty (buffer_desc_t * buf)
+buf_set_dirty_1 (char *file, int line, buffer_desc_t * buf)
 {
   /* Not correct, exception in pg_reloc_right_leaves.
     if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
   */
 
-#ifdef MTX_DEBUG
-    {
-    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
-    mutex_enter (&itm->itm_mtx);
-    assert (gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap));
-    mutex_leave (&itm->itm_mtx);
-    }
-#endif
+  it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+  mutex_enter (&itm->itm_mtx);
+  assert (gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap));
+  mutex_leave (&itm->itm_mtx);
+
   if (!buf->bd_is_dirty)
     {
       /* BUF_TICK (buf); */
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
+      buf->bd_set_dirty_file = file;
+      buf->bd_set_dirty_line = line;
       wi_inst.wi_n_dirty++;
       if (0 && wi_inst.wi_n_dirty > wi_inst.wi_max_dirty
 	  && !mt_write_pending)
@@ -1470,24 +1469,23 @@ buf_set_dirty (buffer_desc_t * buf)
 
 
 int
-buf_set_dirty_inside (buffer_desc_t * buf)
+buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf)
 {
+  it_map_t * itm;
   if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
 
-#ifdef MTX_DEBUG
-    {
-    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
-    ASSERT_IN_MTX (&itm->itm_mtx);
-    if (!gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap)) GPF_T1 ("not remapped when being set to dirty");
-    }
-#endif
+  itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+  ASSERT_IN_MTX (&itm->itm_mtx);
+  if (!gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap)) GPF_T1 ("not remapped when being set to dirty");
 
   if (!buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty++;
       /* BUF_TICK (buf); */
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
+      buf->bd_set_dirty_file = file;
+      buf->bd_set_dirty_line = line;
       return 1;
     }
   return 0;
@@ -1533,7 +1531,7 @@ buf_set_last (buffer_desc_t * buf)
   if (buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty--;
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
     }
   buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
 }
@@ -3479,7 +3477,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 		      /* If the buffer hasn't moved out of sort order and
 			 hasn't been flushed by a sync write */
 		      BD_SET_IS_WRITE (buf, 1);
-		      buf->bd_is_dirty = 0;
+                      BUF_SET_IS_DIRTY(buf,0);
 		      bufs[fill++] = buf;
 		    }
 		  mutex_leave (&itm->itm_mtx);
@@ -3501,7 +3499,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
     {
       /* dbg_printf ((" %ld ", bufs [n] -> bd_physical_page));  */
       buf_disk_write (bufs[n], 0);
-      bufs[n]->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(bufs[n],0);
       wi_inst.wi_n_dirty--;
       if (!force)
 	{

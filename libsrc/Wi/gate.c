@@ -840,7 +840,7 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 	      GPF_T1 ("fatal consistency check failure");
 	    }
 	  LONG_SET ((*buf)->bd_buffer + DP_PARENT, dp_from);
-	  (*buf)->bd_is_dirty = 1;
+          BUF_SET_IS_DIRTY(*buf,1);
 	  log_info ("Bad parent link corrected");
 	}
       page_leave_outside_map (parent);
@@ -1509,7 +1509,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
 		      buf->bd_page,
 		      LONG_REF (buf->bd_buffer + DP_PARENT), new_parent));
       LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
 
       itc_page_leave (itc, buf);
       itc->itc_page = prev_dp;
@@ -1548,7 +1548,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
   LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
 #endif
   BUF_TOUCH (buf);
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
 
   ITC_LEAVE_MAPS (itc);
   itc->itc_page = prev_dp;
