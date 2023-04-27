@@ -120,7 +120,7 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
-int enable_cpt_rb_ck = 0;
+int32 enable_cpt_rb_ck = 0;
 
 void
 cpt_rb_ck ()

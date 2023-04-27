@@ -421,6 +421,7 @@ extern int32 c_pcre_match_limit;
 extern int32 c_pcre_match_limit_recursion;
 extern int32 pcre_max_cache_sz;
 extern int64 users_cache_sz;
+extern int32 enable_cpt_rb_ck;
 
 extern int32 shcompo_max_cache_sz;
 
@@ -1987,6 +1988,7 @@ stat_desc_t dbf_descs [] =
     {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {"users_cache_sz", &users_cache_sz, SD_INT64},
+    {"enable_cpt_rb_ck", &enable_cpt_rb_ck, SD_INT32},
     {NULL, NULL, NULL}
   };
 
