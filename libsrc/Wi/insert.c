@@ -1580,7 +1580,7 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
     }
   CHECK_COMPACT;
   if (CP_CHANGED == any_change)
-    parent->bd_is_dirty = 1;
+    BUF_SET_IS_DIRTY(parent,1);
   if (COMPACT_DIRTY == mode)
     {
       parent_itm = IT_DP_MAP (it, parent->bd_page);

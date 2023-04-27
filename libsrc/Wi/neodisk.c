@@ -1173,7 +1173,7 @@ buf_unremap (buffer_desc_t * buf)
   em_free_dp (em, buf->bd_physical_page, EXT_REMAP);
   buf->bd_physical_page = buf->bd_page;
   remhash (DP_ADDR2VOID (buf->bd_page), cpt_dbs->dbs_cpt_remap);
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
   dp_set_backup_flag (cpt_dbs, buf->bd_page, 1);
   if (dbs_is_free_page (cpt_dbs, buf->bd_page))
     {
@@ -1310,7 +1310,7 @@ cpt_place_buffers ()
 	    GPF_T1 ("buf in cpt tree not supposed to be occupied");
 	  buf->bd_tree = NULL;
 	  buf->bd_page = 0;
-	  buf->bd_is_dirty = 0;
+          BUF_SET_IS_DIRTY(buf,0);
 	  buf->bd_storage = NULL;
 	}
       clrhash (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
@@ -1789,9 +1789,9 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 			cp_buf->bd_storage = dbs;
 			buf_disk_read (cp_buf);
 			cp_buf->bd_physical_page = logical;
-			cp_buf->bd_is_dirty = 1;
+                        BUF_SET_IS_DIRTY(cp_buf,1);
 			buf_disk_write (cp_buf, logical);
-			cp_buf->bd_is_dirty = 0;
+                        BUF_SET_IS_DIRTY(cp_buf,0);
 			npages ++;
 			em = dbs_dp_to_em (dbs, physical);
 			if (em)
@@ -1807,9 +1807,9 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 		cp_buf->bd_physical_page = logical;
 		cp_buf->bd_storage = dbs;
 		/*fprintf (stderr, "**remap l=%d\n", logical);*/
-		cp_buf->bd_is_dirty = 1;
+                BUF_SET_IS_DIRTY(cp_buf,1);
 		buf_disk_write (cp_buf, logical);
-		cp_buf->bd_is_dirty = 0;
+                BUF_SET_IS_DIRTY(cp_buf,0);
 		unpages ++;
 		break;
 	      }

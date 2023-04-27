@@ -171,7 +171,7 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 #endif
   if (gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
     {
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
       return (buf);
     }
   if (it_can_reuse_logical (itc->itc_tree, buf->bd_page))
@@ -199,7 +199,7 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
   buf->bd_physical_page = remap_to;
   sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap,
 	   DP_ADDR2VOID (remap_to));
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
   DBG_PT_DELTA_CLEAN (buf, old_dp);
   return buf;
 }

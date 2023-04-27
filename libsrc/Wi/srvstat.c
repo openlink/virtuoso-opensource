@@ -4357,7 +4357,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   sqlr_new_error ("42S02", "SR243", "No key %s in key_estimate", key_name);
  found:
-  dbe_key_count (key); /* max of the sample, must be defd */
+  if (DBE_NO_STAT_DATA == key->key_table->tb_count_estimate)
+    dbe_key_count (key); /* max of the sample, must be defd */
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc_clear_stats (itc);
   memset (&specs,0,  sizeof (specs));
