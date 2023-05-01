@@ -997,7 +997,8 @@ mtw_cpt_ck (buffer_desc_t * buf, int line)
     {
       if (!buf->bd_tree || !buf->bd_tree->it_key || KI_TEMP == buf->bd_tree->it_key->key_id)
 	return; /* no message for a temp because such can be wired down at cpt time and not writable */
-      log_error ("suspect to miss a flush of L=%d in cpt, line %d", buf->bd_page, line);
+      log_error ("suspect to miss a flush of key=%s L=%d P=%d in cpt, line %d",
+          buf->bd_tree->it_key->key_name, buf->bd_page, buf->bd_physical_page, line);
     }
 }
 
