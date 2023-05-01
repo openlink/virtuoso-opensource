@@ -122,9 +122,6 @@ typedef struct ext_ref_s ext_ref_t;
 #include "vec.h"
 
 
-#define IT_DP_MAP(it, dp) \
-  (&(it)->it_maps[(dp) & IT_N_MAPS_MASK])
-
 extern int it_n_maps;
 #define IT_N_MAPS it_n_maps
 #define IT_N_MAPS_MASK (it_n_maps - 1)
