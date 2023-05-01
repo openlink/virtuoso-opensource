@@ -5073,7 +5073,7 @@ key_dropped (dbe_key_t * key)
 	{
 	  itc->itc_page = buf->bd_page;
 	  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
-      itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
+          itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
 	  it_free_page (kf->kf_it, buf);
 	  ITC_LEAVE_MAP_NC (itc);
 	}

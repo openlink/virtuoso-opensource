@@ -1111,11 +1111,11 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       }
   }
   ITC_FAILED
-  {
-    rd_free (&right_rd);
-    mp_free (ins_mp);
-    itc_free_owned_params (itc);
-  }
+    {
+      rd_free (&right_rd);
+      mp_free (ins_mp);
+      itc_free_owned_params (itc);
+    }
   END_FAIL (itc);
   ITC_RESTORE_FAIL (itc);
 done:
