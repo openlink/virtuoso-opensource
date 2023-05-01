@@ -3162,7 +3162,7 @@ itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf
   db_buf_t row;
   key_ver_t kv;
   buffer_desc_t *buf;
-  CHECK_TRX_DEAD (itc, buf_ret, ITC_BUST_CONTINUABLE);
+  /* tested in itc_search do not stop here at middle CHECK_TRX_DEAD (itc, buf_ret, ITC_BUST_CONTINUABLE); */
   ITC_DFG_CK (itc);
   itc->itc_col_need_preimage = 0;
 start:
