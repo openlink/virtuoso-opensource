@@ -565,7 +565,7 @@ db_buf_t itc_dv_param (it_cursor_t * itc, int nth_key, db_buf_t ctmp);
 #define MAX_FIXED_DV_BYTES 50 /* max bytes in dv representation of fixed len box, e.g. date, decimal */
 int ce_dtp_compare (db_buf_t ce, dtp_t dtp);
 int ce_typed_vec_dtp_compare (db_buf_t ce, dtp_t dtp);
-#ifdef DEBUG
+#if defined(DEBUG) | defined(MTX_DEBUG)
 void bing (void);
 #endif
 dtp_t ce_dtp_f (db_buf_t ce);

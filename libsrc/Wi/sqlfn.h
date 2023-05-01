@@ -1518,8 +1518,6 @@ void outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_
 
 
 /* column store */
-void itc_col_init  (it_cursor_t * itc);
-col_data_ref_t * itc_new_cr (it_cursor_t * itc);
 void itc_col_free (it_cursor_t * itc);
 void pg_make_col_map (buffer_desc_t * buf);
 void itc_col_leave (it_cursor_t * itc, int flags);
@@ -1537,10 +1535,19 @@ int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, 
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
 int itc_col_row_check_dummy (it_cursor_t * itc, buffer_desc_t * buf);
 #ifdef MALLOC_DEBUG
+void  DBG_NAME (itc_range) (DBG_PARAMS it_cursor_t * itc, row_no_t lower, row_no_t upper);
 caddr_t DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp);
+void DBG_NAME (itc_col_init)  (DBG_PARAMS it_cursor_t * itc);
+col_data_ref_t * DBG_NAME(itc_new_cr) (DBG_PARAMS it_cursor_t * itc);
 #define itc_alloc_box(itc, len, dtp) dbg_itc_alloc_box (__FILE__, __LINE__, (itc), (len), (dtp))
+#define itc_col_init(itc) dbg_itc_col_init (__FILE__, __LINE__, (itc))
+#define itc_new_cr(itc) dbg_itc_new_cr (__FILE__, __LINE__, (itc))
+#define itc_range(itc,lower,upper) dbg_itc_range (__FILE__, __LINE__, (itc), (lower), (upper))
 #else
+void  itc_range (it_cursor_t * itc, row_no_t lower, row_no_t upper);
 caddr_t itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp);
+void itc_col_init  (it_cursor_t * itc);
+col_data_ref_t * itc_new_cr (it_cursor_t * itc);
 #endif
 
 #define itc_free_box(itc, b) \
