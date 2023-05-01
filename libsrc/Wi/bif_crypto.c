@@ -549,7 +549,7 @@ bif_asn1_to_xml (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       res = NEW_DB_NULL;
       goto err;
     }
-  res = box_dv_short_string (tmpbuf);
+  res = box_dv_short_nchars (tmpbuf, len);
 err:
   if (out != NULL)
     BIO_free_all (out);
