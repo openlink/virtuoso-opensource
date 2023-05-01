@@ -1932,12 +1932,10 @@ dbs_cpt_backup (void)
 	{
 	  print_int (0, ses);
 	  session_flush_1 (ses);
-	  LEAVE_TXN;
 	  dbs_recov_write_page_set (dbs, dbs->dbs_extent_set);
 	  dbs_cpt_recov_write_extents  (dbs);
 	  dbs_recov_write_page_set (dbs, dbs->dbs_free_set);
 	  dbs_recov_write_page_set (dbs, dbs->dbs_incbackup_set);
-	  IN_TXN;
 	  head = (caddr_t *)list (4, box_num (dbs->dbs_free_set->bd_page),
 				  box_num (dbs->dbs_incbackup_set->bd_page),
 				  box_num (dbs->dbs_registry), dbs_registry_to_array (dbs));

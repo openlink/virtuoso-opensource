@@ -1686,9 +1686,7 @@ em_save_dp (extent_map_t * em)
 {
   char xx[15];
   sprintf (xx, "%ld", (long) em->em_buf->bd_page);
-  IN_TXN;
   dbs_registry_set (em->em_dbs, em->em_name, xx, 0);
-  LEAVE_TXN;
 }
 
 
@@ -1696,6 +1694,7 @@ void
 dbs_cpt_recov_write_extents (dbe_storage_t * dbs)
 {
   /* write out the extent maps. */
+  ASSERT_IN_TXN;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       if (it->it_extent_map != dbs->dbs_extent_map
