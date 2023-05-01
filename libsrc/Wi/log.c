@@ -567,7 +567,7 @@ log_text_array_sync (lock_trx_t * lt, caddr_t box)
   lt->lt_blob_log = NULL;
   if(!sync_log)
     sync_log = strses_allocate ();
-  lt->lt_log =sync_log;
+  lt->lt_log = sync_log;
   session_buffered_write_char (LOG_TEXT, lt->lt_log);
   print_object (box, lt->lt_log, NULL, NULL);
   rc = log_commit (lt);

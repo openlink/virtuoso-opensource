@@ -762,7 +762,7 @@ typedef struct out_map_s
   char			itc_lock_mode; \
   short			itc_map_pos; \
   row_no_t		itc_col_row; \
-  volatile dp_addr_t		itc_page; \
+  volatile dp_addr_t	itc_page; \
   dp_addr_t		itc_owns_page;  /* cache last owned lock */ \
   buffer_desc_t *	itc_buf_registered; \
   it_cursor_t *		itc_next_on_page; \
@@ -2073,11 +2073,11 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
       CHECK_DK_MEM_RESERVE (__lt); \
       CHECK_SESSION_DEAD (__lt, it, buf);		   \
       if ((__lt && __lt->lt_status != LT_PENDING)  \
-|| (wi_inst.wi_is_checkpoint_pending && cpt_is_global_lock (__lt))) \
+          || (wi_inst.wi_is_checkpoint_pending && cpt_is_global_lock (__lt))) \
 	{ \
 	  if (__lt && !wi_inst.wi_checkpoint_atomic) \
 	itc_bust_this_trx (it, buf, may_ret); \
-}\
+        }\
  }								\
 
 #define LT_NEED_WAIT_CPT(lt) \

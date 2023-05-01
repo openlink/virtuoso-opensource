@@ -191,8 +191,7 @@ cpt_rollback (int may_freeze)
 	      if (!lt_has_locks (lt))
 		break;
 	    }
-	  if (lt->lt_lw_threads
-	      && LT_KILL_FREEZE == may_freeze)
+	  if (lt->lt_lw_threads && LT_KILL_FREEZE == may_freeze)
 	    break;
 	  TC (tc_cpt_rollback);
 	  rdbg_printf (("trx %lx killed by checkpoint\n", lt));
@@ -1000,7 +999,7 @@ cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
       return;
     }
   ITC_IN_KNOWN_MAP (itc, pl->pl_page);
-  itc_delta_this_buffer (itc, buf, 0);
+  itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
   ITC_LEAVE_MAP_NC (itc);  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
   buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
   page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY);

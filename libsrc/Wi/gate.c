@@ -1381,8 +1381,7 @@ DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
       dp = tree->it_root;
       buf = tree->it_root_buf;
       /* if we are in the confirmed map of dp in tree and buf has this dp and this tree, then it is safe since this can only change in another thread holding this same map */
-      if (buf && buf->bd_page == dp && buf->bd_tree == tree
-	  &&BUF_NONE_WAITING (buf))
+      if (buf && buf->bd_page == dp && buf->bd_tree == tree && BUF_NONE_WAITING (buf))
 	{
 	  if (PA_WRITE != it->itc_dive_mode)
 	    {

@@ -808,10 +808,9 @@ itc_fetch_col_vec (it_cursor_t * itc, buffer_desc_t * buf, dbe_col_loc_t * cl, i
       dp_addr_t dp = dps[cr_inx];
       do {
 	ITC_IN_KNOWN_MAP (itc, dp);
-	page_wait_access (itc, dp, 
-			  NULL, &cr->cr_pages[cr_inx].cp_buf, ITC_LANDED_PA (itc), RWG_WAIT_ANY);
+	page_wait_access (itc, dp, NULL, &cr->cr_pages[cr_inx].cp_buf, ITC_LANDED_PA (itc), RWG_WAIT_ANY);
 	if (itc->itc_to_reset > RWG_WAIT_ANY) TC (tc_col_rewait);
-      } 	while (itc->itc_to_reset > RWG_WAIT_ANY);
+      } while (itc->itc_to_reset > RWG_WAIT_ANY);
       ITC_LEAVE_MAPS (itc);
       if (PF_OF_DELETED == cr->cr_pages[cr_inx].cp_buf)
 	{
