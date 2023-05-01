@@ -20,7 +20,8 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-var $j = jQuery.noConflict();
+
+//var $j = jQuery.noConflict();
 
 function init() {
         LoadExternalImages();
