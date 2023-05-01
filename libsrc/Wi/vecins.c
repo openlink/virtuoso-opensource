@@ -322,6 +322,7 @@ itc_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   itc->itc_row_key = itc->itc_insert_key;
   itc->itc_lock_mode = PL_EXCLUSIVE;
   itc->itc_search_mode = SM_INSERT;
+  itc->itc_isolation = ins->ins_seq_col ? ISO_SERIALIZABLE : ISO_REPEATABLE;
 reset_search:
   first_set = itc->itc_set;
   ins_offset = 0;
