@@ -1,8 +1,3 @@
-USER_SET_QUALIFIER ('SPARQL', 'DB');
-grant select on WS.WS.SYS_DAV_RES to SPARQL_SELECT;
-grant insert,select,update,delete on DB.DBA.fct_state to SPARQL_SELECT;
-grant insert,select,update,delete on DB.DBA.fct_log to SPARQL_SELECT;
-
 grant execute on b3s_handle_ses to SPARQL_SELECT;
 grant execute on b3s_parse_inf to SPARQL_SELECT;
 grant execute on b3s_render_inf_clause to SPARQL_SELECT;
