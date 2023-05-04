@@ -9150,8 +9150,8 @@ create procedure DB.DBA.SPARQL_CONSTRUCT_ACC (inout _env any, in opcodes any, in
   declare blank_ids any;
   if (__tag of dictionary reference <> __tag(_env))
     {
-      _env := dict_new (31, sys_stat ('sparql_result_set_max_rows'), sys_stat ('sparql_max_mem_in_use'));
-      if (0 < length (stats))
+      _env := dict_new (31, sys_stat ('sparql_construct_max_triples'), sys_stat ('sparql_max_mem_in_use'));
+      if (isvector(stats) and (0 < length (stats))) -- The isvector(stats) check is a workaround for failed SQL compilation that turned constant vector() into uninitialized integer zero.
         DB.DBA.SPARQL_CONSTRUCT_ACC (_env, stats, vars, vector(), use_dict_limit);
     }
   blank_ids := 0;
