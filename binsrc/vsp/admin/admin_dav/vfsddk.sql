@@ -60,7 +60,6 @@ create table WS.WS.VFS_QUEUE (
     primary key (VQ_HOST, VQ_URL, VQ_ROOT))
 create index VQ_HOST_ROOT on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT)
 create index VQ_HOST_TIME on WS.WS.VFS_QUEUE (VQ_HOST, VQ_ROOT, VQ_STAT, VQ_TS, VQ_URL)
-create index VQ_TS on WS.WS.VFS_QUEUE (VQ_TS)
 create index VQ_ORIGIN on WS.WS.VFS_QUEUE (VQ_ORIGIN)
 ;
 
