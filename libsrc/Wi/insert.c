@@ -158,6 +158,7 @@ pg_make_map (buffer_desc_t * buf)
     }
   if (pos && !pg_key)
     {
+      log_error ("Page %d with unknown key id: %d", buf->bd_page, k_id);
       if (assertion_on_read_fail)
 	GPF_T1 ("page read with no key defd");
       map->pm_count = 0;
