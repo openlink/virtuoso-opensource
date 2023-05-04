@@ -926,7 +926,8 @@ buf_order_ck (buffer_desc_t * buf)
     {
       if (DVC_LESS != buf_row_compare (buf, inx, buf, inx + 1, 1))
 	{
-	  log_error ("Broken index: %s", buf->bd_tree->it_key->key_name);
+          log_error ("Broken index: %s L:%d", buf->bd_tree->it_key->key_name, buf->bd_page);
+          dbg_page_map_log (buf, "buf_noorder_dump.txt", "Index not in order");
 	  GPF_T1 ("insert not in order");
 	}
     }
