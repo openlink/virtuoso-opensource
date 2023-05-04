@@ -4761,6 +4761,8 @@ sparp_sql_function_name_is_unsafe (const char *buf)
 int
 sparp_bif_function_name_is_unsafe (const char *buf)
 {
+  if (buf && !strncmp (buf, "__", 2)) /* no internal bifs allowed as SPARQL bif:xx() */
+    return 1;
   return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names, spar_unsafe_bif_names__count, sizeof (caddr_t)));
 }
 
