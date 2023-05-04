@@ -942,6 +942,7 @@ dtp_to_soap_type (dtp_t dtp)
     {
       case DV_SHORT_INT:
       case DV_LONG_INT:
+      case DV_INT64:
 	  return "int";
 
 
