@@ -227,8 +227,8 @@ dv_iri_short_name (caddr_t x)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
-      int len = box_length (local) - 4 /* Remember that 4 bytes of \c local is placeholder for encoding namespace prefix */ ;
-      char *pure_local = local + 4;	/* that 4 bytes, yeah */
+      int len = box_length (local) - RPID_SZ;	/* Remember that 8 or 4 bytes of \c local is placeholder for encoding namespace prefix */
+      char *pure_local = local + RPID_SZ;	/* that 8 or 4 bytes, yeah */
       int inx = len - 2;
       int best_inx = 0;
       caddr_t r;
