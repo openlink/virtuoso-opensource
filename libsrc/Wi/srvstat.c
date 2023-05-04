@@ -484,6 +484,7 @@ long st_cli_n_current_connections = 0;
 long fe_replication_support = 0;
 
 long sparql_result_set_max_rows = 0;
+int32 sparql_construct_max_triples = 0;
 size_t sparql_max_mem_in_use = 0L;
 
 extern int rdf_create_graph_keywords;
@@ -1792,6 +1793,7 @@ stat_desc_t stat_descs [] =
 
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
+    {"sparql_construct_max_triples", &sparql_construct_max_triples, SD_INT32},
     {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"rdf_create_graph_keywords", &rdf_create_graph_keywords, SD_INT32},
     {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},

@@ -469,6 +469,7 @@ int32 c_temp_db_size = 0;
 int32 c_dbev_enable = 1;
 
 extern long sparql_result_set_max_rows;
+extern int32 sparql_construct_max_triples;
 extern size_t sparql_max_mem_in_use;
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
@@ -1697,6 +1698,9 @@ cfg_setup (void)
   if (cfg_getlong (pconfig, section, "ResultSetMaxRows", &c_sparql_result_set_max_rows) == -1)
     c_sparql_result_set_max_rows = 0;
 
+  if (cfg_getlong (pconfig, section, "MaxConstructTriples", &sparql_construct_max_triples) == -1)
+    sparql_construct_max_triples = 0;
+
   if (cfg_getsize (pconfig, section, "MaxMemInUse", &c_sparql_max_mem_in_use) == -1)
     c_sparql_max_mem_in_use = 0L;
 
@@ -2150,6 +2154,13 @@ new_db_read_cfg (dbe_storage_t * ignore, char *mode)
     }
   uriqa_dynamic_local = c_uriqa_dynamic_local;
   sparql_result_set_max_rows = c_sparql_result_set_max_rows;
+  if (!sparql_construct_max_triples && sparql_result_set_max_rows)
+    sparql_construct_max_triples = sparql_result_set_max_rows; /* for compatibility with previous rev. */
+  if (sparql_construct_max_triples > (MAX_BOX_ELEMENTS - 1))
+    {
+      log_error ("SPARQL/MaxConstructTriples parameter cannot be more than %d, will use maximum possible limit.", MAX_BOX_ELEMENTS - 1);
+      sparql_construct_max_triples = MAX_BOX_ELEMENTS - 1;
+    }
   sparql_max_mem_in_use = c_sparql_max_mem_in_use;
   rdf_create_graph_keywords = c_rdf_create_graph_keywords;
   rdf_query_graph_keywords = c_rdf_query_graph_keywords;
