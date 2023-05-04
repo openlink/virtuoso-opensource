@@ -1843,7 +1843,7 @@ wi_check_all_compact (int age_limit)
     {
       if (it->it_key && it->it_key->key_is_col)
 	{
-	      if (!enable_col_ac || 2 == (enable_col_ac && age_limit))
+	      if (!enable_col_ac || 2 == (enable_col_ac & age_limit))
 	    continue;
 	      if (col_ac_last_duration && age_limit && !col_ac_due)
 		continue; /* col ac may be going for max 10% of real time */
