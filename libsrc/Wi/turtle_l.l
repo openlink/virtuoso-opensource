@@ -245,7 +245,7 @@ ttlyyfree (void * ptr , yyscan_t yyscanner)
 %x UNREACHEABLE
 
 INTEGER_LITERAL ([0-9]+)
-DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
+DECIMAL_LITERAL (([0-9]+"."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 
 TTL_CR_IRIREF	([^\x00-\x20<>\\""{}|^`]|{TTL_CR_UCHAR})
@@ -565,6 +565,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
+<INITIAL>[+-]?{INTEGER_LITERAL}"."([ \t]*)[,;.]		{ int num_len = strchr (yytext, '.') + 1 - yytext; int res = ttlp_NUMBER_int (yylval, ttlp_arg, yyg); yyless (num_len); return res; }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DOUBLE_LITERAL}		{ return ttlp_NUMBER_double (yylval, ttlp_arg, yyg); }
 
