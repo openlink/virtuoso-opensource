@@ -218,6 +218,10 @@ ld_file (in f varchar, in graph varchar)
       else
 	TTLP (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
+  else if (f like '%.jsonld')
+    {
+      DB.DBA.RDF_LOAD_JSON_LD (file_to_string (f), base, graph);
+    }
   else
     {
       if (ld_is_rdfxml (f))
