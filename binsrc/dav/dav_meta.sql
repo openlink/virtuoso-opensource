@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -116,7 +116,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
   -- dbg_obj_princ ('DAV_GUESS_MIME_TYPE (', orig_res_name, '..., ...)');
   whenever sqlstate '*' goto no_op;
   content_len := length (content);
-  if (__tag (content) in (125, 126, 132, 133))
+  if (__tag (content) in (125, __tag of long varchar handle, 132, __tag of long nvarchar handle))
     {
       declare beginning varchar;
       if (content_len < 10000000)
@@ -139,7 +139,7 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
           html_start := null;
       if (html_start is null)
         {
-          if (230 = __tag (content))
+          if (__tag of XML = __tag (content))
             html_start := content;
           else
             {
@@ -222,12 +222,17 @@ create function DAV_GUESS_MIME_TYPE (in orig_res_name varchar, inout content any
     }
   else if (dflt_ret = 'application/x-openlink-image')
     {
-      declare image_format varchar;
+      declare image_format, image_blob varchar;
+      declare image_blob_len int;
 
-      image_format := "IM GetImageBlobFormat" (content, length(blob_to_string (content)));
+      image_blob := blob_to_string (content);
+      image_blob_len := length(image_blob);
+      if (not image_blob_len)
+        return 'application/x-openlink-image';
+      image_format := "IM GetImageBlobFormat" (image_blob, image_blob_len);
       if (image_format is not null)
         {
-          image_format := "IM GetImageBlobAttribute" (content, length(blob_to_string (content)), 'EXIF:Model');
+          image_format := "IM GetImageBlobAttribute" (image_blob, image_blob_len, 'EXIF:Model');
           if (image_format is not null and image_format <> '' and image_format <> 'unknown' and image_format <> '.')
             return 'application/x-openlink-photo';
 
@@ -394,6 +399,8 @@ create function "DAV_EXTRACT_RDF_application/x-openlink-picture" (in rdf_schema 
   content := blob_to_string (content1);
 
   image_size := length (content);
+  if (not image_size)
+    goto errexit;
   image_format := "IM GetImageBlobFormat"(content, image_size);
   xsize := "IM GetImageBlobWidth"(content, image_size);
   ysize := "IM GetImageBlobHeight"(content, image_size);
@@ -1459,7 +1466,7 @@ create function "DAV_EXTRACT_RDF_application/x-openlinksw-vad" (in orig_res_name
   declare s1, s2, s3, s4, len1 integer;
   -- dbg_obj_princ ('DAV_EXTRACT_RDF_application/x-openlinksw-vad (', orig_res_name, content, html_start, ')');
   whenever sqlstate '*' goto errexit;
-  if (aref(subseq(content, 0, 1), 0) <> 182)
+  if (aref(subseq(content, 0, 1), 0) <> __tag of varchar)
     goto errexit;
   if (subseq(content, 5, 8) <> 'VAD')
     goto errexit;
@@ -2223,7 +2230,7 @@ create function DAV_CONVERT_SPOTLIGHT_TO_VIRTUOSO (in sp_data any) returns any
                 'kMDItemDisplayName', 'kMDItemContentModificationDate', 'kMDItemFSName', 'kMDItemContentTypeTree'))
            goto end_loop;
 
-        if (__tag (vals) = 193)
+        if (__tag (vals) = __tag of vector)
             foreach (any val in line [1]) do
               DAV_SPOTLIGHT_ADD (res, name, val);
         else

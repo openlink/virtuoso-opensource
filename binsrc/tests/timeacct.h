@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,6 +62,7 @@ void ta_enter (timer_account_t * ta);
 void ta_leave (timer_account_t * ta);
 void ta_add_sample (timer_account_t * ta, long this_time);
 void ta_disable (timer_account_t * ta);
+  void sleep_msec (int msec);
 void set_rnd_seed (long seedval);
 long rnd (void);
 long random_1 (long scale);

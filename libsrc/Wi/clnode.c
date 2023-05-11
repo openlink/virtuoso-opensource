@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -449,8 +449,8 @@ cl_key_delete_op_vec (caddr_t * qst, dbe_key_t * key,
       {
   cl_op_t *clo = clrg_dml_clo (clrg, key, CLO_DELETE);
   int is_first = 0, fill = 0;
-  row_delta_t *rd = clo->_.delete.rd;
-  if (!clo->_.delete.rd->rd_values)
+  row_delta_t *rd = clo->_.delete_op.rd;
+  if (!clo->_.delete_op.rd->rd_values)
     {
       state_slot_t col_ssl;
       memzero (&col_ssl, sizeof (col_ssl));
@@ -479,7 +479,7 @@ cl_key_delete_op_vec (caddr_t * qst, dbe_key_t * key,
       END_DO_SET ();
       is_first = 1;
     }
-  rd = clo->_.delete.rd;
+  rd = clo->_.delete_op.rd;
   fill = 0;
   DO_SET (dbe_column_t *, col, &key->key_parts)
   {

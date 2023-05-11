@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2321,6 +2321,11 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
   int buffill = 0;
   dtp_t dtp = DV_TYPE_OF (box);
   buflen = 20 + (IS_BOX_POINTER(box) ? box_length (box) * 5 : 25);
+  /* we limit the space to print literal atom to max box len, then we check if it was (almost) at end,
+   * not precise, but buf len is quite a large and when tmpbuf fill is over max box len - 1
+   * then we consider that as an error.
+   */
+  buflen = MIN (buflen, MAX_BOX_LENGTH - 1);
   BOX_AUTO (tmpbuf, smallbuf, buflen, DV_STRING);
   ssg_putchar (' ');
   switch (dtp)
@@ -2355,6 +2360,8 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
                   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
                   BOX_DONE (tmpbuf, smallbuf);
                   ssg_puts (", 'UTF-8', '_WIDE_')");
+                  if (buffill >= (MAX_BOX_LENGTH - 1))
+                    spar_error (ssg->ssg_sparp, "Literal value is too long %d", buffill);
                   return;
                 }
           }
@@ -2524,6 +2531,8 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       }
   session_buffered_write (ssg->ssg_out, tmpbuf, buffill);
   BOX_DONE (tmpbuf, smallbuf);
+  if (buffill >= (MAX_BOX_LENGTH - 1))
+    spar_error (ssg->ssg_sparp, "Literal value is too long %d", buffill);
 }
 
 int
@@ -10709,9 +10718,15 @@ ssg_make_sql_query_text (spar_sqlgen_t *ssg, int some_top_retval_flags)
               ssg_puts (".__ask_retval) AS \"fmtaggret-");
               if (NULL != fmname)
                 ssg_puts (fmname);
-              ssg_puts ("\"");
+              ssg_puts ("\"  LONG VARCHAR");
             }
-          ssg_puts (" LONG VARCHAR \nFROM (");
+          ssg_puts (" \nFROM (");
+          ssg->ssg_indent += 1;
+        }
+      else if (SSG_VALMODE_LONG != retvalmode)
+        {
+          ssg_puts ("SELECT COUNT(1) AS __ask_retval INTEGER");
+          ssg_puts (" \nFROM (");
           ssg->ssg_indent += 1;
         }
       ssg_puts ("SELECT TOP 1 1 AS __ask_retval");
@@ -10855,7 +10870,9 @@ The fix is to avoid printing constant expressions at all, with only exception fo
           ssg_newline (0);
         }
     }
-  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) || (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
+  if ((COUNT_DISTINCT_L == subtype) || (NULL != formatter) || (NULL != agg_formatter) ||
+      (ASK_L == tree->_.req_top.subtype && (SSG_VALMODE_LONG != retvalmode)) ||
+      (SSG_RETVAL_DIST_SER_LONG & top_retval_flags))
     {
       switch (tree->_.req_top.subtype)
         {

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,9 @@
 #define _SQLBIF_H
 
 #include "sqlnode.h"
+#ifdef _SSL
+#include <openssl/x509.h>
+#endif
 
 typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
 				 long *scale, caddr_t *collation, long * non_null);
@@ -85,7 +88,8 @@ typedef struct spar_tree_s *bif_sparql_optimizer_t (sparp_ptr_t sparp, int bif_o
 #define BMD_NO_CLUSTER			14	/*!< Flags that the function is not cluster friendly and can not be relocated from node to node without the change in semantics, no associated value */
 #define BMD_OUT_OF_PARTITION		15	/*!< Flags that the function makes a cross partition cluster operation */
 #define BMD_NEED_ENLIST			16	/*!< Flags that the query should get \c qr_need_enlist set to 1 if it contains any call of this function */
-#define COUNTOF__BMD_OPTIONs		17
+#define BMD_NO_FOLD			17
+#define COUNTOF__BMD_OPTIONs		18
 
 /*! \brief Metadata about single BIF or similar object.
 These metadata are created once, remains constant after the creation and never deleted.
@@ -107,6 +111,7 @@ typedef struct bif_metadata_s {
   ptrlong			bmd_is_dba_only;		/*!< see \c BMD_IS_DBA_ONLY */
   ptrlong			bmd_uses_index;			/*!< see \c BMD_USES_INDEX */
   ptrlong			bmd_no_cluster;			/*!< see \c BMD_NO_CLUSTER, \c BMD_OUT_OF_PARTITION and \c BMD_NEED_ENLIST */
+  ptrlong			bmd_no_fold;			/*!< see \c BMD_NO_FOLD */
 } bif_metadata_t;
 
 extern id_hash_t *name_to_bif_metadata_idhash;			/*!< Metadata of all known BIFs (except \c BMD_SPARQL_ONLY records); results of sqlp_box_id_upcase() as keys, pointers to \c bif_metadata_t as values */
@@ -123,6 +128,7 @@ EXE_EXPORT (bif_metadata_t *, bif_define_typed, (const char * name, bif_t bif, b
 EXE_EXPORT (void, bif_set_uses_index, (bif_t bif));
 EXE_EXPORT (bif_t, bif_find, (const char *name));
 int bif_is_aggregate (bif_t bif);
+int bif_nofold (bif_t bif);
 void bif_set_is_aggregate (bif_t  bif);
 bif_vec_t bif_vectored (bif_t bif);
 void bif_set_vectored (bif_t bif, bif_vec_t vectored);
@@ -138,6 +144,7 @@ EXE_EXPORT (caddr_t, bif_arg_unrdf, (caddr_t * qst, state_slot_t ** args, int nt
 EXE_EXPORT (caddr_t, bif_arg_unrdf_ext, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, caddr_t *ret_orig));
 EXE_EXPORT (caddr_t, bif_string_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (caddr_t, bif_string_or_uname_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
+EXE_EXPORT (caddr_t, bif_string_or_bin_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func, int *len));
 EXE_EXPORT (caddr_t, bif_string_or_wide_or_uname_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (dk_session_t *, bif_strses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char * func));
 EXE_EXPORT (dk_session_t *, bif_strses_or_http_ses_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
@@ -153,6 +160,7 @@ EXE_EXPORT (caddr_t, bif_string_or_wide_or_null_or_strses_arg, (caddr_t * qst, s
 EXE_EXPORT (boxint, bif_long_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (ptrlong, bif_long_range_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low, ptrlong hi));
 EXE_EXPORT (ptrlong, bif_long_low_range_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, ptrlong low));
+EXE_EXPORT (boxint, bif_boxint_range_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, boxint low, boxint hi));
 EXE_EXPORT (boxint, bif_long_or_null_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func, int *isnull));
 EXE_EXPORT (float, bif_float_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
 EXE_EXPORT (double, bif_double_arg, (caddr_t * qst, state_slot_t ** args, int nth, const char *func));
@@ -277,6 +285,8 @@ caddr_t box_sha1 (caddr_t str);
 caddr_t box_hmac (caddr_t box, caddr_t key, int alg);
 #define HMAC_ALG_SHA1		0
 #define HMAC_ALG_RIPMD160	1
+caddr_t get_client_pem_certificate (caddr_t *qst, caddr_t *err_ret);
+X509 * get_client_certificate (caddr_t *qst, caddr_t *err_ret);
 #endif
 
 extern int32 sqlbif_rnd (int32* seed);
@@ -316,6 +326,7 @@ caddr_t get_ssl_error_text (char *buf, int len);
 
 caddr_t regexp_match_01 (const char *pattern, const char *str, int c_opts);
 caddr_t regexp_match_01_const (const char* pattern, const char* str, int c_opts, void ** compiled_ret);
+int regexp_match_iri_const (int what, const char* str, caddr_t *err_ret);
 caddr_t regexp_split_match (const char* pattern, const char* str, int* next, int c_opts);
 int regexp_make_opts (const char* mode);
 int regexp_split_parse (const char* pattern, const char* str, int* offvect, int offvect_sz, int c_opts);
@@ -376,7 +387,7 @@ int iso_string_to_code (char * i);
 
 typedef struct bif_exec_stat_s
 {
-  uint32	exs_start;
+  time_msec_t	exs_start;
   client_connection_t * 	exs_cli;
   caddr_t 	exs_text;
 } bif_exec_stat_t;
@@ -403,5 +414,42 @@ extern void trset_start (caddr_t *qst);
 extern void trset_printf (const char *str, ...);
 extern void trset_end (void);
 extern void trset_add_indent (int delta);
+
+#ifdef WIN32
+#include <windows.h>
+#define HAVE_DIRECT_H
+#endif
+
+#ifdef HAVE_DIRECT_H
+#include <direct.h>
+#include <io.h>
+#define mkdir(p,m)	_mkdir (p)
+#define FS_DIR_MODE	0777
+#define PATH_MAX	 MAX_PATH
+#define get_cwd(p,l)	_get_cwd (p,l)
+#else
+#include <dirent.h>
+#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG | S_IRWXO)
+#endif
+
+#ifdef WIN32
+#define DIR_SEP '\\'
+#define SINGLE_DOT "\\."
+#define DOUBLE_DOT "\\.."
+#define IS_DRIVE(p) (*(p+1) == ':')
+#define BEGIN_WITH(a,b) (0 == strnicmp (a,b,strlen(b)))
+#define STR_EQUAL(a,b) (0 == stricmp (a,b))
+#else
+#define DIR_SEP '/'
+#define SINGLE_DOT "/."
+#define DOUBLE_DOT "/.."
+#define IS_DRIVE(p) 0
+#define BEGIN_WITH(a,b) (0 == strncmp (a,b,strlen(b)))
+#define STR_EQUAL(a,b) (0 == strcmp (a,b))
+#endif
+
+#define PATH_SEP DIR_SEP
+
+void split_string (caddr_t str, char * chrs, dk_set_t * set);
 
 #endif /* _SQLBIF_H */

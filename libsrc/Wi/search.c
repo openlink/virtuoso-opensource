@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1231,10 +1231,10 @@ itc_row_check (it_cursor_t * itc, buffer_desc_t * buf)
 	  qi->qi_set = itc->itc_set;
 	}
       if (ks->ks_local_test
-	  && !code_vec_run_no_catch (ks->ks_local_test, itc))
+	  && !code_vec_run_no_catch (ks->ks_local_test, itc, 0))
 	return DVC_LESS;
       if (ks->ks_local_code)
-	code_vec_run_no_catch (ks->ks_local_code, itc);
+	code_vec_run_no_catch (ks->ks_local_code, itc, 0);
       if (ks->ks_setp)
 	{
 	  KEY_TOUCH (ks->ks_key);
@@ -3044,7 +3044,7 @@ int32 em_ra_startup_threshold = 0;
 
 
 int
-em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold)
+em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, time_msec_t now, int window, int threshold)
 {
   ptrlong rh;
   if (main_bufs < 10000)
@@ -3115,8 +3115,8 @@ em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr
 	  if (0 == (ext->ext_pages[inx] & (1 << b_idx)))
 	    ;
 	  else if (gethash (DP_ADDR2VOID(other_dp), em->em_uninitialized))
-#ifdef DEBUG
-	    bing  ()
+#if 0
+	    bing()
 #endif
 		;
 	  else
@@ -3149,7 +3149,7 @@ itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp)
   int fill = 0;
   dp_addr_t leaves[EXTENT_SZ];
   dp_addr_t ext_dp = EXT_ROUND (dp);
-  uint32 now;
+  time_msec_t now;
   ra_req_t *ra=NULL;
   if (disk_reads + tc_new_page < main_bufs)
     {
@@ -3184,7 +3184,8 @@ void
 dbs_timeout_read_history (dbe_storage_t * dbs)
 {
   int window = disk_reads < main_bufs ? em_ra_startup_window : em_ra_window;
-  int now = approx_msec_real_time (), inx, nth;
+  time_msec_t now = approx_msec_real_time ();
+  int inx, nth;
   if (wi_inst.wi_checkpoint_atomic)
     return;
   for (nth = 0; 1; nth++)
@@ -3732,16 +3733,16 @@ itc_page_split_search_1 (it_cursor_t * it, buffer_desc_t * buf,
 	    case DVC_MATCH:
 	    case DVC_LESS:
 	      {
-		row = page + map->pm_entries[at_or_above];
-	      it->itc_map_pos = at_or_above;
-	      kv = IE_KEY_VERSION (row);
-	      if (KV_LEAF_PTR == kv)
-		*leaf_ret = LONG_REF (row + it->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
-	      else if (KV_LEFT_DUMMY == kv)
-		*leaf_ret = LONG_REF (row + LD_LEAF);
-	      else
-		*leaf_ret = 0;
-		return at_or_above_res;
+                row = page + map->pm_entries[at_or_above];
+                it->itc_map_pos = at_or_above;
+                kv = IE_KEY_VERSION (row);
+                if (KV_LEAF_PTR == kv)
+                  *leaf_ret = LONG_REF (row + it->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
+                else if (KV_LEFT_DUMMY == kv)
+                  *leaf_ret = LONG_REF (row + LD_LEAF);
+                else
+                  *leaf_ret = 0;
+                return at_or_above_res;
 	      }
 	    case DVC_GREATER:
 	      {
@@ -3842,7 +3843,9 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	      was_left_leaf = have_left_leaf = 1;
 	      leaves[leaf_fill++] = LONG_REF (row + LD_LEAF);
 	      leaf_ctr++;
+#if 0
 	      if (leaf_fill > 1000) bing ();
+#endif
 	    }
 	}
       else
@@ -3868,7 +3871,9 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
 	    {
 	      dp_addr_t leaf1 = LONG_REF (row + itc->itc_insert_key->key_key_leaf[IE_ROW_VERSION (row)]);
 	      leaves[leaf_fill++] = leaf1;
+#if 0
 	      if (leaf_fill > 1000) bing ();
+#endif
 	      if (have_left_leaf)
 		{
 		  /* prefer giving the next to leftmost instead of leftmost leaf if leftmost is left dummy.
@@ -3934,10 +3939,12 @@ itc_matches_on_page (it_cursor_t * itc, buffer_desc_t * buf, int * leaf_ctr_ret,
     }
       else
     itc->itc_map_pos = save_pos;
+#if 0
   if (itc->itc_map_pos >= buf->bd_content_map->pm_count)
     {
       bing ();
     }
+#endif
   if (is_col)
     itc->itc_st.n_rows_sampled = itc->itc_st.rows_in_segs;
   else

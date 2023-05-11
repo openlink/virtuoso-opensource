@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -107,43 +107,48 @@ version_init()
   fi
 }
 
-
 virtuoso_start() {
-  echo "Starting $SERVER..."
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting $SERVER start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-    then
-      sleep 7
-      LOG "PASSED: $SERVER successfully started on port $PORT"
-      return 0
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
-    then
-      LOG "***FAILED: Could not start $SERVER within $timeout seconds"
-      exit 1
-    fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 do_command_safe () {
@@ -282,7 +287,7 @@ sticker_init() {
   echo "  <name package=\"Weblog\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"ODS Weblog\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/blog2/download\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/blog2/download\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -348,36 +353,52 @@ sticker_init() {
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/index.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/dav_browser.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/trackback.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/atom_pub.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/gdata.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110101001NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_integration.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/template.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/uninst.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/DET_Blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_search_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/conv.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/sioc_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog_api.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  perms='110100100NN'
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/index.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/dav_browser.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/trackback.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/atom_pub.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/gdata.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_integration.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/template.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/uninst.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/DET_Blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/wa_search_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/conv.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/sioc_blog.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/blog_api.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   cd vad/data/blog2 2>/dev/null
   oldIFS="$IFS"
   IFS='
 '
   for file in `find public/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find templates/* -type f | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   for file in `find widgets/* -type f -o -type l | grep -v '/CVS'`
   do
-    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+    echo "  <file overwrite=\"yes\" type=\"dav\" source=\"data\" target_uri=\"blog2/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
   cd ../../..
   IFS="$oldIFS"

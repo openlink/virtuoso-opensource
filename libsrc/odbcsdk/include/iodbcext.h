@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -164,6 +164,26 @@
 #define SQL_RE_OFF		0L	/* No regionalization occurs on output character conversions */
 #define SQL_RE_ON		1L	/* Regionalization occurs on output character conversions */
 #define SQL_RE_DEFAULT	SQL_RE_OFF
+
+
+#define SQL_ATTR_APP_WCHAR_TYPE		      1061
+
+#define SQL_ATTR_APP_UNICODE_TYPE             1064
+#define SQL_ATTR_DRIVER_UNICODE_TYPE          1065
+
+#define SQL_DM_CP_UTF16			1
+#define SQL_DM_CP_UTF8			2
+#define SQL_DM_CP_UCS4			3
+
+#if defined(SIZEOF_WCHAR)
+# if (SIZEOF_WCHAR == 2)
+#  define SQL_DM_CP_DEF  SQL_DM_CP_UTF16
+# else
+#  define SQL_DM_CP_DEF  SQL_DM_CP_UCS4
+# endif
+#else
+# define SQL_DM_CP_DEF  SQL_DM_CP_UCS4
+#endif
 
 
 /*

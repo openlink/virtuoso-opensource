@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -28,12 +28,29 @@ SUBDIRS = . docsrc libsrc binsrc appsrc
 dist_doc_DATA = \
 	$(srcdir)/AUTHORS \
 	$(srcdir)/COPYING \
+	$(srcdir)/COPYING.md \
 	$(srcdir)/CREDITS \
+	$(srcdir)/CREDITS.md \
 	$(srcdir)/INSTALL \
+	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
-	$(srcdir)/NEWS \
-	$(srcdir)/README* \
-	$(srcdir)/*.md
+	$(srcdir)/LICENSE.md \
+	$(srcdir)/SECURITY.md \
+	$(srcdir)/NEWS.md \
+	$(srcdir)/README.md \
+	$(srcdir)/README.ANYTIME.md \
+	$(srcdir)/README.GeoSPARQL.md \
+	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.hibernate.md \
+	$(srcdir)/README.jena.md \
+	$(srcdir)/README.jsse.md \
+	$(srcdir)/README.MACOSX.md \
+	$(srcdir)/README.OpenSSL.md \
+	$(srcdir)/README.php5.md \
+	$(srcdir)/README.sesame2.md \
+	$(srcdir)/README.sesame3.md \
+	$(srcdir)/README.UPGRADE.md \
+	$(srcdir)/README.WINDOWS.md
 
 # ----------------------------------------------------------------------
 #
@@ -51,9 +68,11 @@ if MAINTAINER_MODE
 #
 binary-tar:
 	-mkdir @build@
-	$(MAKE) install DESTDIR="`pwd`/@build@/tmp/" prefix=..
-	tar cvf @build@.tar @build@
-	gzip -9vf @build@.tar
+	$(MAKE) install DESTDIR="`pwd`/@build@/$(PACKAGE)/tmp/" prefix=..
+	(cd @build@/$(PACKAGE) && rm -f hosting/*.a hosting/*.la lib/*.a lib/*.la)
+	(cd @build@/$(PACKAGE)/database && mv virtuoso.ini virtuoso.ini.sample)
+	(cd @build@ && tar cvf ../$(PACKAGE).@build@.tar virtuoso-opensource)
+	gzip -9vf $(PACKAGE).@build@.tar
 	rm -rf @build@
 
 
@@ -85,13 +104,36 @@ snapshot:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	$(srcdir)/*.md \
-	$(srcdir)/README* \
+	$(srcdir)/AUTHORS \
+	$(srcdir)/COPYING \
+	$(srcdir)/COPYING.md \
+	$(srcdir)/CREDITS.md \
+	$(srcdir)/INSTALL.md \
+	$(srcdir)/LICENSE.md \
+	$(srcdir)/NEWS.md \
+	$(srcdir)/README.md \
+	$(srcdir)/README.ANYTIME.md \
+	$(srcdir)/README.GeoSPARQL.md \
+	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.hibernate.md \
+	$(srcdir)/README.jena.md \
+	$(srcdir)/README.jsse.md \
+	$(srcdir)/README.MACOSX.md \
+	$(srcdir)/README.OpenSSL.md \
+	$(srcdir)/README.php5.md \
+	$(srcdir)/README.sesame2.md \
+	$(srcdir)/README.sesame3.md \
+	$(srcdir)/README.UPGRADE.md \
+	$(srcdir)/README.WINDOWS.md \
+	$(srcdir)/SECURITY.md \
 	$(srcdir)/autogen.sh \
-	$(srcdir)/bin/makever \
 	$(srcdir)/bin/generate \
-	$(srcdir)/bin/libtool.macosx \
 	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
+	$(srcdir)/bin/libtool.macosx \
+	$(srcdir)/bin/makever \
+	$(srcdir)/debian/NEWS.Debian \
+	$(srcdir)/debian/README.Debian \
+	$(srcdir)/debian/TODO.Debian \
 	$(srcdir)/debian/changelog \
 	$(srcdir)/debian/compat \
 	$(srcdir)/debian/control \
@@ -100,22 +142,19 @@ EXTRA_DIST = \
 	$(srcdir)/debian/docs \
 	$(srcdir)/debian/libvirtjdbc0.dirs \
 	$(srcdir)/debian/libvirtjdbc0.install \
+	$(srcdir)/debian/libvirtmono0-cil.install \
 	$(srcdir)/debian/libvirtodbc0.config \
 	$(srcdir)/debian/libvirtodbc0.dirs \
 	$(srcdir)/debian/libvirtodbc0.install \
 	$(srcdir)/debian/libvirtodbc0.postinst \
 	$(srcdir)/debian/libvirtodbc0.prerm \
 	$(srcdir)/debian/libvirtodbc0.templates \
-	$(srcdir)/debian/libvirtmono0-cil.install \
-	$(srcdir)/debian/NEWS.Debian \
 	$(srcdir)/debian/odbc.ini \
 	$(srcdir)/debian/odbcinst.ini \
 	$(srcdir)/debian/po/*.po \
 	$(srcdir)/debian/po/POTFILES.in \
 	$(srcdir)/debian/po/templates.pot \
-	$(srcdir)/debian/README.Debian \
 	$(srcdir)/debian/rules \
-	$(srcdir)/debian/TODO.Debian \
 	$(srcdir)/debian/virtuoso-mono.pc \
 	$(srcdir)/debian/virtuoso-opensource-7-bin.install \
 	$(srcdir)/debian/virtuoso-opensource-7-common.install \
@@ -139,3 +178,11 @@ EXTRA_DIST = \
 	$(srcdir)/windows/*.bat \
 	$(srcdir)/windows/*.sln \
 	$(srcdir)/windows/*.vcxproj
+
+
+
+README: README.md
+	-pandoc -f markdown -t plain --wrap=none $< -o $@
+
+NEWS: NEWS.md
+	-pandoc -f markdown -t plain --wrap=none $< -o $@

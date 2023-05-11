@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -108,14 +108,18 @@ void numeric_rc_clear (void);
 
 numeric_t mp_numeric_allocate (mem_pool_t * mp);
 
+EXE_EXPORT (numeric_t, numeric_allocate, (void));		/* dynamic allocation */
+EXE_EXPORT (numeric_t, t_numeric_allocate, (void));		/* thread space dynamic allocation */
 #ifdef MALLOC_DEBUG
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define numeric_allocate() dbg_numeric_allocate (__FILE__, __LINE__)
 #define t_numeric_allocate() dbg_t_numeric_allocate (__FILE__, __LINE__)
+#endif
+#endif
 numeric_t dbg_numeric_allocate (DBG_PARAMS_0);	/* dynamic allocation */
 numeric_t dbg_t_numeric_allocate (DBG_PARAMS_0);	/* thread space dynamic allocation */
 #else
-numeric_t numeric_allocate (void);		/* dynamic allocation */
-numeric_t t_numeric_allocate (void);		/* thread space dynamic allocation */
 #endif
 void numeric_free (numeric_t n);
 int numeric_copy (numeric_t y, numeric_t x);
@@ -125,21 +129,21 @@ numeric_t numeric_init_static (numeric_t n, size_t size);/* stack allocation */
 int numeric_error (int code, char *sqlstate, int state_len, char *sqlerror, int error_length);
 
 /* conversion */
-int numeric_from_string (numeric_t n, const char *s);
-const char *numeric_from_string_is_ok (const char *s);
-int numeric_from_int32 (numeric_t n, int32 i);
-int numeric_from_int64 (numeric_t n, int64 i);
-int numeric_from_double (numeric_t n, double d);
-int numeric_from_dv (numeric_t n, dtp_t *buf, int n_bytes);
-int numeric_from_buf (numeric_t n, dtp_t *buf);
-int numeric_to_hex_array (numeric_t n, unsigned char * arr);
-void numeric_from_hex_array (numeric_t n, char len, char scale, char sign, unsigned char * arr, int a_len);
-int numeric_sign (numeric_t n);
+EXE_EXPORT (int, numeric_from_string, (numeric_t n, const char *s));
+EXE_EXPORT (const char *, numeric_from_string_is_ok, (const char *s));
+EXE_EXPORT (int, numeric_from_int32, (numeric_t n, int32 i));
+EXE_EXPORT (int, numeric_from_int64, (numeric_t n, int64 i));
+EXE_EXPORT (int, numeric_from_double, (numeric_t n, double d));
+EXE_EXPORT (int, numeric_from_dv, (numeric_t n, dtp_t *buf, int n_bytes));
+EXE_EXPORT (int, numeric_from_buf, (numeric_t n, dtp_t *buf));
+EXE_EXPORT (int, numeric_to_hex_array, (numeric_t n, unsigned char * arr));
+EXE_EXPORT (void, numeric_from_hex_array, (numeric_t n, char len, char scale, char sign, unsigned char * arr, int a_len));
+EXE_EXPORT (int, numeric_sign, (numeric_t n));
 /* int numeric_to_string_box (numeric_t n, char **pvalue); */
-int numeric_to_string (numeric_t n, char *pvalue, size_t max_pvalue);
-int numeric_to_int32 (numeric_t n, int32 *pvalue);
-int numeric_to_int64 (numeric_t n, int64 *pvalue);
-int numeric_to_double (numeric_t n, double *pvalue);
+EXE_EXPORT (int, numeric_to_string, (numeric_t n, char *pvalue, size_t max_pvalue));
+EXE_EXPORT (int, numeric_to_int32, (numeric_t n, int32 *pvalue));
+EXE_EXPORT (int, numeric_to_int64, (numeric_t n, int64 *pvalue));
+EXE_EXPORT (int, numeric_to_double, (numeric_t n, double *pvalue));
 int numeric_to_dv (numeric_t n, dtp_t *res, size_t reslength);
 int numeric_dv_len (numeric_t n);
 
@@ -147,14 +151,14 @@ int numeric_rescale (numeric_t y, numeric_t x, int prec, int scale);
 int numeric_rescale_noround (numeric_t y, numeric_t x, int prec, int scale);
 
 /* arithmetic & comparison */
-int numeric_compare (numeric_t x, numeric_t y);
-int numeric_add (numeric_t z, numeric_t x, numeric_t y);
-int numeric_subtract (numeric_t z, numeric_t x, numeric_t y);
-int numeric_multiply (numeric_t z, numeric_t x, numeric_t y);
-int numeric_divide (numeric_t z, numeric_t x, numeric_t y);
-int numeric_negate (numeric_t y, numeric_t x);
-int numeric_modulo (numeric_t z, numeric_t x, numeric_t y);
-int numeric_sqr (numeric_t z, numeric_t x);
+EXE_EXPORT (int, numeric_compare, (numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_add, (numeric_t z, numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_subtract, (numeric_t z, numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_multiply, (numeric_t z, numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_divide, (numeric_t z, numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_negate, (numeric_t y, numeric_t x));
+EXE_EXPORT (int, numeric_modulo, (numeric_t z, numeric_t x, numeric_t y));
+EXE_EXPORT (int, numeric_sqr, (numeric_t z, numeric_t x));
 
 /* marshalling */
 int numeric_serialize (numeric_t n, dk_session_t *session);

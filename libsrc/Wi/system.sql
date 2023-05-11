@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -122,8 +122,8 @@ create procedure REPL_COLTYPE_PS (
     in _col_dtp integer, in _col_prec integer, in _col_scale integer)
   returns varchar
 {
-  if ((_col_dtp = 181 or _col_dtp = 182 or _col_dtp = 192 or
-       _col_dtp = 222 or _col_dtp = 225)
+  if ((_col_dtp = 181 or _col_dtp = __tag of varchar or _col_dtp = 192 or
+       _col_dtp = 222 or _col_dtp = __tag of nvarchar)
       and _col_prec is not null and _col_prec <> 0)
     {
       -- (length) for char or varchar
@@ -141,7 +141,7 @@ create procedure REPL_COLTYPE_PS (
           _coltype := concat (_prefix, _len_spec, _suffix);
         }
     }
-  else if (_col_dtp = 219)
+  else if (_col_dtp = __tag of decimal)
     {
       -- (prec, scale) for numeric
       if (_col_prec < _col_scale or _col_scale is null)
@@ -159,7 +159,7 @@ create procedure REPL_COLTYPE (in _col any) returns varchar
   _col_scale := aref (_col, 2);
   _col_prec := aref (_col, 3);
 
-  if (_col_dtp = 219)
+  if (_col_dtp = __tag of decimal)
     {
       if (_col_scale > 15)
 	_col_scale := 15;
@@ -398,11 +398,11 @@ create procedure XML_URI_RESOLVE_LIKE_GET (in base_uri varchar, in rel_uri varch
 {
   declare res any;
   -- dbg_obj_princ ('XML_URI_RESOLVE_LIKE_GET (', base_uri, rel_uri, ')');
-  if (__tag (base_uri) in (225, 226))
+  if (__tag (base_uri) in (__tag of nvarchar, 226))
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := coalesce (cast (base_uri as varchar), '');
-  if (__tag (rel_uri) in (225, 226))
+  if (__tag (rel_uri) in (__tag of nvarchar, 226))
     rel_uri := charset_recode (rel_uri, '_WIDE_', 'UTF-8');
   else
     rel_uri := coalesce (cast (rel_uri as varchar), '');
@@ -418,7 +418,7 @@ create function XML_URI_GET_AND_CACHE (in absolute_uri varchar)
   declare head, content any;
   whenever not found goto try_http_get;
    -- dbg_obj_princ ('XML_URI_GET_AND_CACHE (', absolute_uri, ')');
-  if (__tag (absolute_uri) in (225, 226))
+  if (__tag (absolute_uri) in (__tag of nvarchar, 226))
     absolute_uri := charset_recode (absolute_uri, '_WIDE_', 'UTF-8');
   else
     absolute_uri := charset_recode (absolute_uri, NULL, 'UTF-8');
@@ -475,16 +475,19 @@ create procedure XML_URI_PARSE_VIRT (in base_uri varchar, inout table_name varch
 
 create procedure XML_URI_GET (in base_uri varchar, in rel_uri varchar)
 {
-  declare head, str, proto varchar;
+  declare head, str, proto, accept varchar;
   declare inx, timeout integer;
   declare s_uri any;
   -- dbg_obj_princ ('XML_URI_GET (', base_uri, rel_uri, ')');
   base_uri := XML_URI_RESOLVE_LIKE_GET (base_uri, rel_uri);
   -- dbg_obj_princ ('base URI after XML_URI_RESOLVE_LIKE_GET:', base_uri);
-  if (__tag (base_uri) in (225, 226))
+  if (__tag (base_uri) in (__tag of nvarchar, 226))
     base_uri := charset_recode (base_uri, '_WIDE_', 'UTF-8');
   else
     base_uri := charset_recode (base_uri, NULL, 'UTF-8');
+  accept := connection_get ('__XML_URI_GET_ACCEPT', null);
+  if (accept is not null)
+    accept := concat ('Accept:', accept);
 again:
   s_uri := rfc1808_parse_uri (base_uri);
   str := null;
@@ -527,10 +530,10 @@ try_http_get:
 	}
       else if (proto = 'https' or (length (hcli_uid) and length (hcli_pwd)) or (timeout is not null and timeout > 0))
         {
-	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15);
+	  str := http_client_ext (url=>base_uri, uid=>hcli_uid, pwd=>hcli_pwd, headers=>head, timeout=>timeout, n_redirects=>15, http_headers=>accept);
  	}
       else
-        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15);
+        str := http_client_ext (url=>base_uri, headers=>head, n_redirects=>15, http_headers=>accept);
       if (aref (head, 0) not like '% 200%')
 	signal ('H0001', concat ('HTTP request failed: ', aref (head, 0), 'for URI ', base_uri));
     }
@@ -604,7 +607,7 @@ skip_auth:;
 	  whenever not found goto cl_err;
 	  open cl (prefetch 1);
 	  fetch cl into tp;
-	  if (tp = 189 or tp = 188)
+	  if (tp = __tag of integer or tp = __tag of smallint)
 	    path1 := cast (path as integer);
 	  else if (tp = 191 or tp = 190)
 	    path1 := cast (path as double precision);
@@ -2179,27 +2182,6 @@ create procedure DB.DBA.col_of_type (in tb varchar, in col varchar, in type_need
 
 -- Added new columns for schema in SYS_VT_INDEX (backward compatibility)
 
---#IF VER=5
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_ID_CONSTR varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_OFFBAND_COLS varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_OPTIONS varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_LANGUAGE varchar
-;
-
---!AFTER
-alter table DB.DBA.SYS_VT_INDEX add VI_ENCODING varchar
-;
---#ENDIF
 
 
 charset_define ('MIK', N'\x1\x2\x3\x4\x5\x6\x7\x8\x9\xA\xB\xC\xD\xE\xF\x10\x11\x12\x13\x14\x15\x16\x17\x18\x19\x1A\x1B\x1C\x1D\x1E\x1F\x20\x21\x22\x23\x24\x25\x26\x27\x28\x29\x2A\x2B\x2C\x2D\x2E\x2F\x30\x31\x32\x33\x34\x35\x36\x37\x38\x39\x3A\x3B\x3C\x3D\x3E\x3F\x40\x41\x42\x43\x44\x45\x46\x47\x48\x49\x4A\x4B\x4C\x4D\x4E\x4F\x50\x51\x52\x53\x54\x55\x56\x57\x58\x59\x5A\x5B\x5C\x5D\x5E\x5F\x60\x61\x62\x63\x64\x65\x66\x67\x68\x69\x6A\x6B\x6C\x6D\x6E\x6F\x70\x71\x72\x73\x74\x75\x76\x77\x78\x79\x7A\x7B\x7C\x7D\x7E\x7F\x410\x411\x412\x413\x414\x415\x416\x417\x418\x419\x41A\x41B\x41C\x41D\x41E\x41F\x420\x421\x422\x423\x424\x425\x426\x427\x428\x429\x42A\x42B\x42C\x42D\x42E\x42F\x430\x431\x432\x433\x434\x435\x436\x437\x438\x439\x43A\x43B\x43C\x43D\x43E\x43F\x440\x441\x442\x443\x444\x445\x446\x447\x448\x449\x44A\x44B\x44C\x44D\x44E\x44F\x2514\x2534\x252C\x251C\x2500\x253C\x2563\x2551\x255A\x2554\x2569\x2566\x2560\x2550\x256C\x2510\x2591\x2592\x2593\x2502\x2524\x2116\xA7\x2557\x255D\x2518\x250C\x2588\x2584\x258C\x2590\x2580\x3B1\x3B2\x393\x3C0\x3A3\x3C3\x3BC\x3C4\x3A6\x398\x3A9\x3B4\x221E\x2205\x2208\x2229\x2261\xB1\x2265\x2264\x2320\x2321\xF7\x2248\xB0\x2219\xB7\x221A\x207F\xB2\x25A0\xA0', vector ('999', 'CP999'))
@@ -2322,7 +2304,7 @@ scheduler_init ()
 ;
 
 --!AWK PUBLIC
-create procedure SYS_GENERATE_ALL_OPS (in col_name varchar, in col_dtp integer := 193)
+create procedure SYS_GENERATE_ALL_OPS (in col_name varchar, in col_dtp integer := __tag of vector)
 {
   declare func, args varchar;
   func :=
@@ -2925,7 +2907,7 @@ done:
 	  http (sprintf (' if (rate = 0 AND vals_%I <> 0 ) { rate := 1; }; \n', col_name), proc);
 	  http (sprintf (' if (n_dist_%I < 20) { ndist_rate := 1; } else {ndist_rate := rate; }; \n', col_name), proc);
 
-	  if (col_dtp = 189 or col_dtp = 247) -- DV_INT & DV_INT64
+	  if (col_dtp = __tag of integer or col_dtp = __tag of bigint) -- DV_INT & DV_INT64
 	    {
 	      http (sprintf (' if ((n_dist_%I * ndist_rate) > (max_%I - min_%I)) { ndist_rate := 1; n_dist_%I := max_%I - min_%I; } \n',
 	      	col_name, col_name, col_name, col_name, col_name, col_name), proc);
@@ -3076,29 +3058,7 @@ alter index SYS_SOAP_DATATYPES on DB.DBA.SYS_SOAP_DATATYPES partition cluster re
 ;
 
 
---#IF VER=5
---!AFTER
-create procedure
-DB.DBA.SOAP_DATATYPES_UPGRADE ()
-{
-  if (exists (select 1 from SYS_COLS where \TABLE = 'DB.DBA.SYS_SOAP_DATATYPES' and \COLUMN = 'SDT_TYPE') and
-      exists (select 1 from SYS_COLS where \TABLE = 'DB.DBA.SYS_SOAP_DATATYPES' and \COLUMN = 'SDT_UDT') )
-    return;
-  log_message ('Upgrading the SYS_SOAP_DATATYPES table');
-  execstr ('alter table DB.DBA.SYS_SOAP_DATATYPES rename DB.DBA.SYS_SOAP_DATATYPES_OLD');
-  execstr ('create table DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME varchar, SDT_SCH long varchar, SDT_SOAP_SCH long varchar, SDT_TYPE integer, SDT_UDT varchar, primary key (SDT_NAME, SDT_TYPE))');
-  execstr ('insert into DB.DBA.SYS_SOAP_DATATYPES (SDT_NAME, SDT_SCH, SDT_SOAP_SCH, SDT_TYPE) select (case when strrchr (SDT_NAME, '':'') is null then concat (''services.wsdl:'',SDT_NAME) else SDT_NAME end) , SDT_SCH, SDT_SOAP_SCH, 0 from DB.DBA.SYS_SOAP_DATATYPES_OLD');
-}
-;
 
---!AFTER
-DB.DBA.SOAP_DATATYPES_UPGRADE ()
-;
---#ENDIF
-
---#IF VER=5
---!AFTER_AND_BEFORE DB.DBA.SYS_SOAP_DATATYPES SDT_TYPE !
---#ENDIF
 create procedure
 soap_dt_define (in name varchar, in sch varchar, in udt_name varchar := null)
 {
@@ -3412,185 +3372,6 @@ DB.DBA.__XML_TEMPLATE (in path any, in params any, in lines any, in enc any := n
 }
 ;
 
---#IF VER=5
---!AFTER
-create procedure vt_upgrade_text_index (
-    in tb varchar,
-    in is_xml integer := -1,
-    in _func integer :=  -1,
-    in _lang varchar := '*ini*',
-    in _enc varchar := '*ini*')
-{
-  declare text_id_col, kn, func, ufunc, col, obd, vtlog_suff, tb_suff varchar;
-  declare t1, t2, t3 any;
-  declare f_xml integer;
-
-  if (_lang is null)
-    _lang := '*ini*';
-
-  if (_enc is null)
-    _enc := '*ini*';
-
-  tb := complete_table_name ((tb), 1);
-
-  vtlog_suff := concat (name_part (tb, 0), '_', name_part (tb, 1), '_', name_part (tb, 2));
-  tb_suff := DB.DBA.SYS_ALFANUM_NAME (vtlog_suff);
-
-
-  if (not exists (select 1 from DB.DBA.SYS_KEYS where 0 = casemode_strcmp (KEY_TABLE,  tb)))
-    {
-      signal ('42S02', sprintf ('No table ''%s'' in create text index', tb), 'FT021');
-    }
-
-  if (not exists (select 1 from DB.DBA.SYS_VT_INDEX where 0 = casemode_strcmp (VI_TABLE,  tb)))
-    {
-      signal ('42S01', 'Text index is not defined for table', 'FT022');
-    }
-
-  select  VI_COL, VI_ID_COL, deserialize(VI_OFFBAND_COLS), VI_LANGUAGE, VI_ENCODING
-      into col, text_id_col, obd, _lang, _enc from SYS_VT_INDEX where VI_TABLE = tb;
-
-  func := null;
-  ufunc := null;
-
-  if (_func = 1 or _func < 0)
-    {
-       func := coalesce ((select P_NAME from DB.DBA.SYS_PROCEDURES where
-		   0 =  casemode_strcmp (P_NAME, sprintf ('%s_%s_INDEX_HOOK', tb, col))), NULL);
-       if (func is null)
-         func := __proc_exists (sprintf ('%s_%s_INDEX_HOOK', tb, col));
-
-       ufunc := coalesce ((select P_NAME from DB.DBA.SYS_PROCEDURES where
-		     0 = casemode_strcmp (P_NAME, sprintf ('%s_%s_UNINDEX_HOOK', tb, col))), NULL);
-
-       if (ufunc is null)
-         ufunc := __proc_exists (sprintf ('%s_%s_UNINDEX_HOOK', tb, col));
-    }
-
-  if (_func < 0 and (func is null or ufunc is null))
-    {
-      func := null;
-      ufunc := null;
-    }
-
-  if (_func = 1 and (func is null or ufunc is null))
-    signal ('37000', 'The hook functions are not available.', 'FT023');
-
-  whenever not found goto eof;
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t1 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTI_log');
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t2 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTU_log');
-  select coalesce (T_TEXT, blob_to_string (T_MORE)) into t3 from SYS_TRIGGERS
-    where T_TABLE = tb and T_NAME like concat ('%.', tb_suff, '_VTD_log');
-eof:
-
-  f_xml := 0;
-  if (isstring (t1) and strstr (t1, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-  if (isstring (t2) and strstr (t2, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-  if (isstring (t3) and strstr (t3, '(1 = 1)') is not null)
-    f_xml := f_xml + 1;
-
-  if (_func < 0 and isstring (t1) and isstring (func) and strstr (t1, name_part (func, 2)) is null)
-    {
-      func := NULL;
-      ufunc := NULL;
-    }
-  if (_func < 0 and isstring (t3) and isstring (ufunc) and strstr (t3, name_part (ufunc, 2)) is null)
-    {
-      func := NULL;
-      ufunc := NULL;
-    }
-
-  if (is_xml < 0 and f_xml = 3)
-    is_xml := 1;
-  else if (is_xml < 0)
-    is_xml := 0;
-
-  if (tb = 'DB.DBA.MAIL_MESSAGE' or
-      tb = 'DB.DBA.NEWS_MSG' or
-      tb = 'WS.WS.SYS_DAV_RES')
-    is_xml := 2;
-
-  if (_lang is null)
-    _lang := '*ini*';
-
-  if (_enc is null)
-    _enc := '*ini*';
-  declare hits_proc varchar;
-  hits_proc := NULL;
-  for select coalesce (P_TEXT, blob_to_string (P_MORE)) as txt from DB.DBA.SYS_PROCEDURES
-    where 0 = casemode_strcmp (P_NAME, concat (name_part (tb,0),'.',name_part(tb,1),'.VT_HITS_', name_part (tb, 2))) do
-      {
-        hits_proc := txt;
-      }
-
-  --dbg_obj_print (tb, ' is_xml: ', is_xml, ' hooks: ', func, ' & ', ufunc, _lang, _enc);
-  DB.DBA.vt_free_text_proc_gen (tb, text_id_col, col, is_xml, obd, func, ufunc, _lang, _enc);
-  DB.DBA.vt_create_update_log (tb, is_xml, 1, obd, func, ufunc, _lang, _enc, 0);
-  if (hits_proc is not null)
-    DB.DBA.execstr (hits_proc);
-  return 0;
-}
-;
-
---!AFTER
-create procedure
-VT_INDEX_UPGRADE ()
-{
-  declare st, msg varchar;
-  declare ver, db_ver any;
-  ver := registry_get ('__FTI_VERSION__');
-  db_ver := sys_stat ('db_ver_string');
-  db_ver := atoi (replace (db_ver, '.', ''));
-  if (not isstring (ver))
-    ver := 0;
-  else
-    ver := atoi (ver);
-
-  if (ver > 2204)
-    return;
-
-  registry_set ('__FTI_VERSION__', '2205');
-
-  if (db_ver > 250)
-    return;
-
-  log_message ('Upgrading the old type text indexes');
-  for select VI_TABLE from DB.DBA.SYS_VT_INDEX do
-    {
-      declare tablename, vtlog_suff,q,o varchar;
-      tablename := VI_TABLE;
-      q := name_part (tablename, 0);
-      o := name_part (tablename, 1);
-      tablename := complete_table_name ((tablename), 1);
-      vtlog_suff := concat (name_part (tablename, 0), '_', name_part (tablename, 1), '_', name_part (tablename, 2));
-      if ((not exists
-	  (select 1 from SYS_COLS where \COLUMN = 'VT_GZ_WORDUMP' and \TABLE =
-	   sprintf ('%s.%s.VTLOG_%s', q, o, vtlog_suff)))
-       or (not exists
-          (select 1 from SYS_COLS where \COLUMN = 'VT_OFFBAND_DATA' and \TABLE =
-	   sprintf ('%s.%s.VTLOG_%s', q, o, vtlog_suff))))
-        {
-          log_message (
-          sprintf ('The text index on table %s can''t be upgraded, please drop the index and recreate', VI_TABLE));
-	}
-      else
-	{
---          log_message (sprintf ('Upgrading the old type text indexes on %s', VI_TABLE));
-          vt_upgrade_text_index (VI_TABLE);
-	}
-    }
-}
-;
-
-
---!AFTER
-VT_INDEX_UPGRADE ()
-;
---#ENDIF
 
 --!AWK PUBLIC
 create procedure
@@ -3665,7 +3446,7 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 	    {
 	      if (isentity (elm))
 		http_value (elm, null, ses);
-	      else if (isstring (elm) or __tag (elm) = 185)
+	      else if (isstring (elm) or __tag (elm) = __tag of stream)
 		http (elm, ses);
 	    }
 	}
@@ -3676,9 +3457,6 @@ DB.DBA.SQLX_OR_SPARQL_TEMPLATE (inout q varchar, inout params any, inout ses any
 }
 ;
 
---#IF VER=5
---!AFTER
---#ENDIF
 xslt_sheet ('__xml_template_default', xml_tree_doc (xml_tree(
 '<?xml version="1.0"?>
 <xsl:stylesheet xmlns:xsl="http://www.w3.org/1999/XSL/Transform" version="1.0" >
@@ -4211,9 +3989,6 @@ create procedure exec_quiet (in expn varchar)
 
 -- __ANY is a placeholder in a long any col declaration, not to be instantiated.
 
---#IF VER=5
---!AFTER
---#ENDIF
 exec_quiet ('create type __ANY as (__any any)')
 ;
 
@@ -4258,40 +4033,12 @@ as (
   constructor method XMLType (_src any, _schema varchar, _validated integer, _wellformed integer)
 ;
 
---#IF VER=5
-call exec_quiet ('alter type XMLType add method transform (_xsl any) returns XMLType')
-;
-
-call exec_quiet ('alter type XMLType add method transform (_xsl any, _param_map any) returns XMLType')
-;
-
-call exec_quiet ('alter type XMLType drop method getStringVal () returns varchar')
-;
-
-call exec_quiet ('alter type XMLType drop method getNamespace () returns any')
-;
-
-call exec_quiet ('alter type XMLType add method query (_xquery varchar) returns any')
-;
-
-call exec_quiet ('alter type XMLType add method getStringVal () returns nvarchar')
-;
-
-call exec_quiet ('alter type XMLType add method getNamespace () returns nvarchar')
-;
-
-call exec_quiet ('alter type XMLType add method setSchemaValidated () returns integer')
-;
-
-call exec_quiet ('alter type XMLType add method setSchemaValidated (_flag integer) returns integer')
-;
---#ENDIF
 
 create method existsNode (in _xpath varchar) returns integer for XMLType
 {
   declare _hit any;
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return 1;
   return 0;
 }
@@ -4306,7 +4053,7 @@ create method existsNode (in _xpath varchar, in _nsmap varchar) returns integer 
     else
       _xpath := concat ('[', _nsmap, ']', _xpath);
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return 1;
   return 0;
 }
@@ -4316,7 +4063,7 @@ create method extract (in _xpath varchar) returns any for XMLType
 {
   declare _hit any;
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4326,7 +4073,7 @@ create method query (in _xquery varchar) returns any for XMLType
 {
   declare _hit any;
   _hit := xquery_eval (_xquery, self.xt_ent, 1);
-  if (__tag (_hit) = 230)
+  if (__tag (_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4341,7 +4088,7 @@ create method extract (in _xpath varchar, in _nsmap varchar) returns any for XML
     else
       _xpath := concat ('[', _nsmap, ']', _xpath);
   _hit := xpath_eval (_xpath, self.xt_ent, 1);
-  if (__tag(_hit) = 230)
+  if (__tag(_hit) = __tag of XML)
     return XMLType (_hit);
   return _hit;
 }
@@ -4540,9 +4287,9 @@ err:
 
 create constructor method XMLType (in _src any) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4553,9 +4300,9 @@ create constructor method XMLType (in _src any) for XMLType
 
 create constructor method XMLType (in _src any, in _schema varchar) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4566,9 +4313,9 @@ create constructor method XMLType (in _src any, in _schema varchar) for XMLType
 
 create constructor method XMLType (in _src any, in _schema varchar, in _validated integer) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4579,9 +4326,9 @@ create constructor method XMLType (in _src any, in _schema varchar, in _validate
 
 create constructor method XMLType (in _src any, in _schema varchar, in _validated integer, in _wellformed integer) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
-  else if (__tag (_src) = 193)
+  else if (__tag (_src) = __tag of vector)
     self.xt_ent := xml_tree_doc(_src);
   else
     self.xt_ent := xtree_doc (_src);
@@ -4592,7 +4339,7 @@ create constructor method XMLType (in _src any, in _schema varchar, in _validate
 
 create constructor method XMLType (in _src any, in _schema varchar := null, in _validated integer := 0, in _wellformed integer := 0) for XMLType
 {
-  if (__tag (_src) = 230)
+  if (__tag (_src) = __tag of XML)
     self.xt_ent := _src;
   else
     self.xt_ent := xtree_doc (_src);
@@ -4990,7 +4737,7 @@ HTTP_GET_HOST ()
 }
 ;
 
---!AWK PUBLIC
+--!AWK PLBIF date_rfc1123
 create procedure
 date_rfc1123 (in dt datetime)
 {
@@ -4998,7 +4745,7 @@ date_rfc1123 (in dt datetime)
 }
 ;
 
---!AWK PUBLIC
+--!AWK PLBIF date_iso8601
 create procedure
 date_iso8601 (in dt datetime)
 {
@@ -5444,7 +5191,7 @@ create procedure cl_new_db ()
   cl_wait_start ();
   log_message ('new clustered database:Init of RDF');
   rdf_dpipes ();
-  rdf_cl_init ();
+  DB.DBA.RDF_CL_INIT ();
   DB.DBA.RDF_CREATE_SPARQL_ROLES_CL ();
   WS.WS.SYS_DAV_INIT ();
   cl_exec ('checkpoint');
@@ -5610,19 +5357,25 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
   else if (v is null)
     return 'NULL';
   else if (isinteger (v))
-    return sprintf ('%d', v);
+    return sprintf ('%ld', v);
   else if (isfloat (v) or isdouble (v))
     return sprintf ('%f', v);
   else if (isnumeric (v))
     return cast (v as varchar);
-  else if (__tag (v) = 193)
+  else if (__tag (v) = __tag of vector)
     return concat ('vector (',SYS_SQL_VECTOR_PRINT (v),')');
-  else if (__tag (v) = 211)
+  else if (__tag (v) = 195)
+    return concat ('dvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 209)
+    return concat ('lvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = 202)
+    return concat ('fvector (',SYS_SQL_VECTOR_PRINT (v),')');
+  else if (__tag (v) = __tag of datetime)
     return sprintf ('{ts ''%s''}', datestring (v));
   else if (__tag (v) = __tag of nvarchar)
     return sprintf ('N\'%S\'', replace (charset_recode (v, '_WIDE_', 'UTF-8'), '\\', '\\\\'));
   else if (isiri_id (v))
-    return sprintf ('__id2i (\'%s\')', __id2i (v));
+    return sprintf ('__i2id (%s)', DB.DBA.SYS_SQL_VAL_PRINT (__id2i (v)));
   else if (__tag of rdf_box = __tag (v))
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
   else if (__tag (v) = 255)
@@ -5762,16 +5515,16 @@ create procedure view_create_view (in _tbls any, in _dir varchar)
 
 create procedure view_dv_to_printf_str_type (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188) return '%d';
-   if (_dv = 182) return '%U';
+   if (_dv = __tag of integer or _dv = __tag of smallint) return '%d';
+   if (_dv = __tag of varchar) return '%U';
    signal ('XXXXX', sprintf ('Unknown DV %i in view_dv_to_printf_str_type', _dv));
 }
 ;
 
 create procedure view_dv_to_sql_str_type (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188) return 'integer';
-   if (_dv = 182) return 'varchar';
+   if (_dv = __tag of integer or _dv = __tag of smallint) return 'integer';
+   if (_dv = __tag of varchar) return 'varchar';
    signal ('XXXXX', sprintf ('Unknown DV %i', _dv));
 }
 ;
@@ -6479,5 +6232,90 @@ create procedure elarestore (in p varchar := 'ela')
     {
       cl_slice_from_log (sprintf ('%s.%d.trx', p, s), sprintf ('ELASTIC.%d', s));
     }
+}
+;
+
+--
+-- Function to replace http_proxy, must be called in HTTP/HTTPS context
+-- Parameters:
+--   url - target URL
+--   params - request parameters
+---          if no 'content' parameter given, will try to get request body from HTTP session
+--   in_headers - HTTP headers for request
+--
+--   return - no value, the origin response will be sent back to current HTTP client connection
+--
+
+--!AWK PLBIF http_proxy_v2
+create procedure DB.DBA.HTTP_PROXY_V2 (in url varchar, in params any, in in_headers any)
+{
+  declare out_headers, in_header, out_header, content, out_content, meth varchar;
+  declare inx, len, is_post integer;
+  if (not is_http_ctx())
+    signal ('42000', 'HTPRX1', 'The http_proxy_v2 must be called in HTTP context');
+  if (url is null)
+    url := get_keyword ('url', params);
+  content := http_body_read ();
+  --dbg_obj_print_vars (params, url, in_headers, string_output_string (content));
+  if (length (in_headers) = 0)
+    meth := 'GET';
+  else
+    meth := subseq (in_headers[0], 0, strchr (in_headers[0], ' '));
+  len := length (in_headers);
+  in_header := '';
+  is_post := 0;
+  for (inx := 1; inx < len; inx := inx + 1)
+     {
+	declare line varchar;
+        line := in_headers [inx];
+        if (lower (line) not like 'host:%' and lower (line) not like 'content-length:%')
+          in_header := in_header || line;
+        if (lower (line) like 'content-type:%' and lower (line) like '%application/x-www-form-urlencoded%')
+          is_post := 1;
+     }
+  --dbg_obj_print_vars (url, meth, in_header);
+  if (length (content) = 0 and is_post)
+    {
+      declare first int;
+      content := string_output ();
+      len := length (params);
+      first := 1;
+      for (inx := 0; inx < len; inx := inx + 2)
+         {
+            declare name, value varchar;
+            name := params[inx];
+            value := params[inx + 1];
+            if (name = 'content')
+              {
+                http (value, content);
+              }
+            else if (name <> 'url')
+	      {
+		if (not first)
+		  http ('&');
+		first := 0;
+		http (sprintf ('%U=%U', name, value), content); 
+	      }
+         }
+    }
+  --dbg_obj_print_vars (string_output_string (content));
+  out_content := http_client_ext (url, http_method=>meth, http_headers=>in_header, body=>content, headers=>out_headers);
+  --dbg_obj_print_vars (out_headers, length (out_content));
+  http_request_status (rtrim (out_headers[0], '\r\n', ''));
+  out_header := '';
+  len := length (out_headers);
+  for (inx := 1; inx < len; inx := inx + 1)
+     {
+	declare line varchar;
+        line := out_headers [inx];
+        if (lower (line) not like 'server:%' 
+          and lower (line) not like 'connection:%'
+	  and not (meth <> 'HEAD' and lower (line) like 'content-length:%'))
+	out_header := out_header || line;
+     }
+  --dbg_obj_print_vars (out_header);
+  http_header (out_header);
+  http (out_content);
+  return; -- no empty line
 }
 ;

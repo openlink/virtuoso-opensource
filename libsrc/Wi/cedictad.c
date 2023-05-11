@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -148,6 +148,8 @@ name (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes)
 	      CE_ANY_NTH (dict, n_distinct, v_inx, val, len);
 	      dc->dc_n_values = fill;
 	      dc_append_bytes (dc, val, len, NULL, 0);
+              if (DV_DB_NULL == *val)
+                dc->dc_any_null = 1;
 	      fill = dc->dc_n_values;
 	      value_ptr[v_inx] = ((db_buf_t *) dc->dc_values)[fill - 1];
 	    }

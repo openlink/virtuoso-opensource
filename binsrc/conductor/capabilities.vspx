@@ -1,0 +1,218 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="capabilites"
+  doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+  xmlns:xhtml="http://www.w3.org/1999/xhtml"
+  xmlns:vm="http://www.openlinksw.com/vspx/macro">
+
+  <v:variable persist="1" name="search_mask3" type="varchar" default="'%'"/>
+  <v:variable persist="1" name="pattern_value3" type="varchar" default="'%'"/>
+  <v:variable persist="1" name="pattern_where3" type="varchar" default="'1'"/>
+  <v:variable name="ord3" type="varchar" default="'name'" />
+  <v:variable name="ord3_seq" type="varchar" default="'asc'" />
+
+  <v:method name="ord3_set" arglist="in x any, inout e vspx_event, inout ds vspx_data_set">
+    <![CDATA[
+      if (self.ord3 = x)
+		  {
+        self.ord3_seq := case when (self.ord3_seq = 'asc') then 'desc' else 'asc' end;
+		  }
+		else
+		  {
+        self.ord3 := x;
+        self.ord3_seq := 'asc';
+		  }
+		if (ds is not null)
+      {
+        ds.vc_reset();
+		  ds.vc_data_bind (e);
+      }
+    ]]>
+  </v:method>
+
+  <v:form name="sf3" type="simple" action="" method="POST">
+    <div class="search_area">Show grants
+      <v:select-list name="howto3" value="--self.pattern_where">
+        <v:item name="Starting with" value="1" />
+        <v:item name="Containing" value="2" />
+        <v:item name="Ending with" value="3" />
+        <v:item name="Exact match" value="4" />
+                     </v:select-list>
+      <v:text name="pattern_text3" value="--self.pattern_value"/>
+      <v:button name="submit3" action="simple" value="Filter">
+                  <v:on-post>
+                    <![CDATA[
+            self.pattern_where3 := self.howto3.ufl_value;
+            self.pattern_value3 := self.pattern_text3.ufl_value;
+            self.search_mask3 :=
+              case self.pattern_where3
+                when '1' then self.pattern_value3 || '%'
+                when '2' then '%' || self.pattern_value3 || '%'
+                when '3' then '%' || self.pattern_value3
+                else self.pattern_value3
+              end;
+
+            if (self.search_mask3 = '')
+              self.search_mask3 := '%';
+
+            self.ds3.vc_reset ();
+            self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                    </v:button>
+      <v:button name="reset3" action="simple" value="Clear">
+                  <v:on-post>
+                    <![CDATA[
+            self.pattern_where3 := '1';
+            self.pattern_value3 := '%';
+            self.search_mask3 := '%';
+
+            self.howto3.vc_data_bind (e);
+            self.pattern_text3.ufl_value := '';
+
+            self.ds3.vc_reset ();
+            self.vc_data_bind (e);
+                    ]]>
+                  </v:on-post>
+                    </v:button>
+    </div>
+            </v:form>
+
+  <v:data-source
+      name="dsrc3"
+      expression-type="sql"
+      nrows="20"
+      initial-offset="0">
+    <v:before-data-bind>
+      <![CDATA[
+        if (e.ve_is_post and e.ve_button is not null)
+        {
+          declare ord_button varchar;
+
+          ord_button := e.ve_button.vc_name;
+          if (ord_button like 'ord3_%')
+          {
+            ord_button := subseq (ord_button, 5);
+            self.ord3_set (ord_button, e, self.ds3);
+          }
+        }
+        control.ds_sql := 'select U_NAME, U_FULL_NAME, U_IS_ROLE from Y_SYS_USERS where mask = ? and ord = ? and seq = ?';
+        control.ds_parameters := null;
+        control.add_parameter (self.search_mask3);
+        control.add_parameter (self.ord3);
+        control.add_parameter (self.ord3_seq);
+      ]]>
+    </v:before-data-bind>
+    <v:after-data-bind>
+      control.ds_make_statistic ();
+    </v:after-data-bind>
+  </v:data-source>
+
+  <v:data-set name="ds3" data-source="self.dsrc3" scrollable="1">
+
+    <div class="navigation">
+      <vm:ds-navigation-new data-set="ds3"/>
+    </div>
+
+    <v:template name="ds3_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+          <table class="listing">
+                <thead>
+          <tr>
+	      <th>
+              <v:button action="simple" name="ord3_type" value="Account Type" style="url" />
+              <?vsp http (self.ord_show (self.ord3, self.ord3_seq, 'type')); ?>
+	      </th>
+	      <th>
+              <v:button action="simple" name="ord3_name" value="Login name" style="url" />
+              <?vsp http (self.ord_show (self.ord3, self.ord3_seq, 'name')); ?>
+	      </th>
+	      <th>
+              <v:button action="simple" name="ord3_fullname" value="Description" style="url" />
+              <?vsp http (self.ord_show (self.ord3, self.ord3_seq, 'fullname')); ?>
+	      </th>
+                    <th class="action">Action</th>
+            </tr>
+                </thead>
+          </table>
+        </v:template>
+
+    <v:template name="ds3_repeat" type="repeat">
+      <v:template name="ds3_empty" type="if-not-exists">
+              <tr>
+          <td class="listing_empty" colspan="4">
+            No user/group names match given pattern
+                </td>
+              </tr>
+          </v:template>
+
+      <v:template name="ds3_browse" type="browse">
+                  <tr>
+          <td>
+                  <v:template type="simple" name="tpl_cowntype_1" condition="(control.vc_parent as vspx_row_template).te_rowset[2] = 1">
+                    <img src="images/icons/group_16.png" alt="group" title="group"/>
+                  </v:template>
+                  <v:template type="simple" name="tpl_cowntype_2" condition="(control.vc_parent as vspx_row_template).te_rowset[2] <> 1">
+                    <img src="images/icons/user_16.png" alt="user" title="user"/>
+                  </v:template>
+                  <v:label name="label_utype" value="--case when (control.vc_parent as vspx_row_template).te_rowset[2] = 1 then 'Group' else 'User' end" format="%s" width="80"/>
+                </td>
+          <td>
+                  <v:label name="label61" value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s"  />
+                </td>
+          <td nowrap="1">
+                  <v:label name="label51" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" format="%s" width="80"/>
+                </td>
+          <td class="action">
+                      <v:button action="simple"
+                                style="image"
+                      name="edit3"
+                                value="images/icons/edit_16.png"
+		    xhtml_alt="Edit Grants"
+		    xhtml_title="Edit Grants"
+		    text="&nbsp;Edit"
+                    url="--concat('caps_browser.vspx?mode=edit&user_name=',(control.vc_parent as vspx_row_template).te_rowset[0])"/>
+                </td>
+                  </tr>
+          </v:template>
+        </v:template>
+
+    <v:template name="ds3_remain" type="simple">
+      <?vsp
+        declare n, n_remain integer;
+
+        n_remain := self.ds3.ds_data_source.ds_nrows - self.ds3.ds_data_source.ds_rows_fetched;
+        for (n := 0; n < n_remain; n := n + 1)
+        {
+          http ('<tr><td colspan="4">&nbsp;</td></tr>');
+        }
+     ?>
+    </v:template>
+
+    <v:template name="ds3_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+      <table>
+          </table>
+        </v:template>
+      </v:data-set>
+</v:page>

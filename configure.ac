@@ -1,12 +1,11 @@
 AC_PREREQ(2.59)
-AC_REVISION($Id$)
 #
 #  configure.ac
 #
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -31,8 +30,8 @@ AC_REVISION($Id$)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[5])
-m4_define(vos_devel,	[-rc2])
+m4_define(vos_patch,	[10])
+m4_define(vos_devel,	[-dev])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
 	vos_major.vos_minor.vos_patch[]vos_devel,
@@ -57,6 +56,7 @@ dnl	AM_INIT_AUTOMAKE([1.6])
 dnl	AM_INIT_AUTOMAKE([1.7])
 dnl	AM_INIT_AUTOMAKE([1.8])
 dnl	AM_INIT_AUTOMAKE([1.9 tar-ustar])
+dnl	AM_INIT_AUTOMAKE([1.16 tar-ustar subdir-objects])
 dnl
 AM_INIT_AUTOMAKE([1.9 tar-ustar])
 
@@ -338,6 +338,7 @@ AC_SUBST(INCDIR)
 ##########################################################################
 
 AC_PROG_CC
+AC_PROG_CXX
 AC_PROG_CC_C_O
 AC_LANG_C
 AC_PROG_LD
@@ -589,8 +590,9 @@ AC_CHECK_FUNCS(strerror)
 AC_CHECK_FUNCS(strdup)
 AC_CHECK_FUNCS(getrusage)
 AC_CHECK_FUNCS(memmove memmem memcpy)
+AC_CHECK_FUNCS(mkstemp64 mkstemp)
 AC_CHECK_FUNCS(strftime stpcpy)
-AC_CHECK_FUNCS(clock_gettime gethrtime)
+AC_CHECK_FUNCS(gethrtime)
 
 AC_MSG_CHECKING(for sys_errlist)
 AC_TRY_LINK([
@@ -630,6 +632,17 @@ AC_CACHE_CHECK([whether __va_copy exists], ac_cv_have___va_copy, [
 if test "x$ac_cv_have___va_copy" = "xyes" ; then
 	AC_DEFINE(HAVE___VA_COPY, 1, [Define if __va_copy exists])
 fi
+
+
+##########################################################################
+##                                                                     ##
+##check for clock_gettime which may require an extra library           ##
+##                                                                     ##
+##########################################################################
+AC_SEARCH_LIBS(clock_gettime, [rt posix4], [
+       AC_DEFINE([HAVE_CLOCK_GETTIME], [1], [Define to 1 if you have the clock_gettime function.])
+])
+
 
 ##########################################################################
 ##									##
@@ -830,7 +843,7 @@ AC_HELP_STRING([--disable-openssl], [disable OpenSSL support])dnl
 ], [
      case "${enableval}" in
        yes)	openssl_dir="/usr" ;;
-       no)	AC_MSG_ERROR(OpenSSL required for Virtuoso) ;;
+       no)	openssl_dir="no" ;;
        /*)	openssl_dir="${enableval}" ;;
        *)	AC_MSG_ERROR(bad value ${enableval} for --disable-openssl) ;;
      esac
@@ -838,11 +851,18 @@ AC_HELP_STRING([--disable-openssl], [disable OpenSSL support])dnl
   [ openssl_dir="/usr" ]
 )
 
-if test "x$openssl_dir" = "x/usr"
+if test "x$openssl_dir" = "xno"
 then
+    openssl_VERSION=""
+    openssl_CFLAGS=""
+    openssl_LDFLAGS=""
+elif test "x$openssl_dir" = "x/usr"
+then
+    openssl_VERSION=`openssl version`
     openssl_CFLAGS=""
     openssl_LDFLAGS="-lssl -lcrypto"
 else
+    openssl_VERSION=`$openssl_dir/bin/openssl version`
     openssl_CFLAGS="-I$openssl_dir/include"
     openssl_LDFLAGS="-L$openssl_dir/lib -lssl -lcrypto"
 fi
@@ -852,104 +872,118 @@ then
   openssl_CFLAGS="$openssl_CFLAGS -DOPENSSL_NO_KRB5"
 fi
 
-save_CFLAGS="$CFLAGS"
-save_LIBS="$LIBS"
+if test "x$openssl_dir" != "xno"
+then
+	save_CFLAGS="$CFLAGS"
+	save_LIBS="$LIBS"
 
-CFLAGS="$CFLAGS $openssl_CFLAGS"
-LIBS="$LIBS $openssl_LDFLAGS"
-case $host in
-*-solaris*)
-	LIBS="$LIBS -lsocket"
-	;;
+	CFLAGS="$CFLAGS $openssl_CFLAGS"
+	LIBS="$LIBS $openssl_LDFLAGS"
+	case $host in
+	*-solaris*)
+		LIBS="$LIBS -lsocket"
+		;;
 
-*-sunos*)
-	LIBS="$LIBS -lsocket"
-	;;
-esac
+	*-sunos*)
+		LIBS="$LIBS -lsocket"
+		;;
 
-AC_MSG_CHECKING([OpenSSL version])
-AC_TRY_COMPILE([
-#include <openssl/opensslv.h>
-], [
-#if OPENSSL_VERSION_NUMBER < 0x0090801fL
-#error OpenSSL version too old 
-#endif
-    ],[
-      AC_MSG_RESULT([>= 0.9.8e])
-    ],[
-      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
-    ])
+	*-linux*)
+		LIBS="$LIBS -ldl -lpthread"
+		;;
+	esac
 
-AC_MSG_CHECKING([OpenSSL version])
-AC_TRY_COMPILE([
-#include <openssl/opensslv.h>
-],[
-#if OPENSSL_VERSION_NUMBER >= 0x1010000fL
-#error OpenSSL version too new
-#endif
-    ],[
-      AC_MSG_RESULT([< 1.1.0])
-    ],[
-      AC_MSG_ERROR([OpenSSL version 1.1.0 or greater is currently not supported.])
-    ])
+	AC_MSG_CHECKING([OpenSSL version])
+	AC_TRY_COMPILE([
+	#include <openssl/opensslv.h>
+	], [
+	#if OPENSSL_VERSION_NUMBER < 0x0090801fL
+	#error OpenSSL version too old 
+	#endif
+	    ],[
+	      AC_MSG_RESULT([>= 0.9.8e])
+	    ],[
+	      AC_MSG_ERROR([OpenSSL version 0.9.8e or greater is required.])
+	    ])
 
-AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
-AC_TRY_RUN([
-#include <openssl/rsa.h>
-#include <openssl/crypto.h>
-#include <openssl/x509.h>
-#include <openssl/pem.h>
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/bio.h>
-#include <openssl/asn1.h>
-#include <openssl/pkcs12.h>
-#include <openssl/rand.h>
-#include <stdio.h>
-#include <string.h>
-int
-main ()
-{
-    SSL_METHOD *ssl_server_method = NULL;
-    SSL_CTX *ssl_server_ctx = NULL;
-    unsigned char tmp[1024];
+	AC_MSG_CHECKING([OpenSSL version])
+	AC_TRY_COMPILE([
+	#include <openssl/opensslv.h>
+	],[
+	#ifdef LIBRESSL_VERSION_NUMBER
+	/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
+	#elif OPENSSL_VERSION_NUMBER < 0x1020000fL
+	/* OpenSSL versions 0.9.8e - 1.1.1 are supported */
+       #elif OPENSSL_VERSION_NUMBER < 0x30100000L
+       /* OpenSSL version 3.0.x is supported */
+	#else
+	#error OpenSSL version too new
+	#endif
+	    ],[
+             AC_MSG_RESULT([$openssl_VERSION is supported])
+	    ],[
+             AC_MSG_ERROR([$openssl_VERSION is currently not supported.])
+	    ])
 
-    SSL_load_error_strings();
-    ERR_load_X509_strings();
-    ERR_load_PKCS12_strings();
-#ifndef WIN32
-    RAND_bytes (tmp, sizeof(tmp));
-    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
-#endif
-    SSLeay_add_ssl_algorithms();
-    PKCS12_PBE_add ();
+	AC_MSG_CHECKING([usability of the OpenSSL header files and library in ${openssl_dir}])
+	AC_TRY_RUN([
+	#include <openssl/rsa.h>
+	#include <openssl/crypto.h>
+	#include <openssl/x509.h>
+	#include <openssl/pem.h>
+	#include <openssl/ssl.h>
+	#include <openssl/err.h>
+	#include <openssl/bio.h>
+	#include <openssl/asn1.h>
+	#include <openssl/pkcs12.h>
+	#include <openssl/rand.h>
+	#include <stdio.h>
+	#include <string.h>
+	int
+	main ()
+	{
+	    SSL_METHOD *ssl_server_method = NULL;
+	    SSL_CTX *ssl_server_ctx = NULL;
+	    unsigned char tmp[1024];
 
-    ssl_server_method = SSLv23_client_method();
-    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
+	    SSL_load_error_strings();
+	    ERR_load_X509_strings();
+	    ERR_load_PKCS12_strings();
+	#ifndef WIN32
+	    RAND_bytes (tmp, sizeof(tmp));
+	    RAND_add (tmp, sizeof(tmp), (double)(sizeof(tmp)));
+	#endif
+	    SSLeay_add_ssl_algorithms();
+	    PKCS12_PBE_add ();
 
-    if (!ssl_server_ctx)
-    {
-	ERR_print_errors_fp(stderr);
-	return(-1);
-    }
+	    ssl_server_method = SSLv23_client_method();
+	    ssl_server_ctx = SSL_CTX_new (ssl_server_method);
 
-  return 0;
-}],
-[
- AC_MSG_RESULT(good)
- BUILD_OPTS="$BUILD_OPTS ssl"
- ccincl="$ccincl $openssl_CFLAGS"
- srvrlibs="$srvrlibs $openssl_LDFLAGS"
- clntlibs="$clntlibs $openssl_LDFLAGS"
- AC_DEFINE(_SSL, 1, [OpenSSL])
-],
-[
- AC_MSG_ERROR([bad. Check config.log for details])
-])
-LIBS="$save_LIBS"
-CFLAGS="$save_CFLAGS"
+	    if (!ssl_server_ctx)
+	    {
+		ERR_print_errors_fp(stderr);
+		return(-1);
+	    }
+
+	  return 0;
+	}],
+	[
+	 AC_MSG_RESULT(good)
+	 BUILD_OPTS="$BUILD_OPTS ssl"
+	 ccincl="$ccincl $openssl_CFLAGS"
+	 srvrlibs="$srvrlibs $openssl_LDFLAGS"
+	 clntlibs="$clntlibs $openssl_LDFLAGS"
+	 AC_DEFINE(_SSL, 1, [OpenSSL])
+	],
+	[
+	 AC_MSG_ERROR([bad. Check config.log for details])
+	])
+	LIBS="$save_LIBS"
+	CFLAGS="$save_CFLAGS"
+fi
 AC_SUBST(openssl_CFLAGS)
 AC_SUBST(openssl_LDFLAGS)
+
 
 
 ##########################################################################
@@ -1229,6 +1263,247 @@ AM_CONDITIONAL(HAVE_MCS, test "x$MCS" != "xnotfound")
 
 ##########################################################################
 #                                                                        #
+# Proj4 								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(proj4, [dnl
+AC_HELP_STRING([--enable-proj4(=DIR)], [enable the proj4 plugin (default)])
+AC_HELP_STRING([--disable-proj4], [disable the proj4 plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_proj4="yes" ;;
+       no)	with_proj4="no" ;;
+       /*)	with_proj4="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-proj4) ;;
+     esac
+  ],
+  [ with_proj4="yes" ]
+)
+
+if test "x$with_proj4" != "xno"
+then
+    AC_MSG_CHECKING([proj4 library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    if test "x$with_proj4" = "xyes"
+    then
+	PROJ4_CPPFLAGS=""
+	PROJ4_LDFLAGS=""
+    else
+        PROJ4_CPPFLAGS="-I$with_proj4/include"
+        PROJ4_LDFLAGS="-L$with_proj4/lib"
+    fi
+    PROJ4_LIBS="-lproj"
+
+    CPPFLAGS="$CPPFLAGS $PROJ4_CPPFLAGS"
+    LIBS="$LIBS $PROJ4_LDFLAGS $PROJ4_LIBS -lpthread -lm"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_proj4/lib"
+    export LD_LIBRARY_PATH
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <proj_api.h>
+int
+main ()
+{
+  projPJ pj_merc;
+
+  if (!(pj_merc = pj_init_plus("+proj=merc +ellps=clrk66 +lat_ts=33")) )
+  exit(1);
+
+  exit (0);
+}],
+[
+  BUILD_OPTS="$BUILD_OPTS proj"
+  AC_MSG_RESULT(good)
+],
+[
+  AC_MSG_RESULT([bad. Check config.log for details])
+  with_proj4="no"
+  AC_MSG_WARN([The proj4 plugin will not be build])
+])
+
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
+fi
+
+AM_CONDITIONAL(WITH_PROJ4, test "x$with_proj4" != "xno" )
+AC_SUBST(PROJ4_CPPFLAGS)
+AC_SUBST(PROJ4_LDFLAGS)
+AC_SUBST(PROJ4_LIBS)
+
+
+##########################################################################
+#                                                                        #
+# Geos  								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(geos, [dnl
+AC_HELP_STRING([--enable-geos(=DIR)], [enable the geos plugin (default)])
+AC_HELP_STRING([--disable-geos], [disable the geos plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_geos="yes" ;;
+       no)	with_geos="no" ;;
+       /*)	with_geos="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-geos) ;;
+     esac
+  ],
+  [ with_geos="yes" ]
+)
+
+if test "x$with_geos" != "xno"
+then
+    AC_MSG_CHECKING([geos library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    if test "x$with_geos" = "xyes"
+    then
+	GEOS_CPPFLAGS=""
+	GEOS_LDFLAGS=""
+    else
+        GEOS_CPPFLAGS="-I$with_geos/include"
+        GEOS_LDFLAGS="-L$with_geos/lib"
+    fi
+    GEOS_LIBS="-lgeos"
+
+    CPPFLAGS="$CPPFLAGS $GEOS_CPPFLAGS"
+    LIBS="$LIBS $GEOS_LDFLAGS -lgeos_c -lgeos -lstdc++ -lm"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_geos/lib"
+    export LD_LIBRARY_PATH
+
+    AC_TRY_RUN([
+#include <stdio.h>
+#include <stdlib.h>
+#include <geos_c.h>
+int
+main ()
+{
+  GEOSWKBReader GEOS_DLL *reader;
+
+  initGEOS(NULL, NULL);
+
+  reader = GEOSWKBReader_create();
+  if (!reader)
+    exit (1);
+
+  exit (0);
+}],
+[
+  BUILD_OPTS="$BUILD_OPTS geos"
+  AC_MSG_RESULT(good)
+],
+[
+  AC_MSG_RESULT([bad. Check config.log for details])
+  with_geos="no"
+  AC_MSG_WARN([The geos plugin will not be build])
+])
+
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
+fi
+
+AM_CONDITIONAL(WITH_GEOS, test "x$with_geos" != "xno" )
+AC_SUBST(GEOS_CPPFLAGS)
+AC_SUBST(GEOS_LDFLAGS)
+AC_SUBST(GEOS_LIBS)
+
+
+##########################################################################
+#                                                                        #
+# shapefileio  								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(shapefileio, [dnl
+AC_HELP_STRING([--enable-shapefileio(=DIR)], [enable the shapefileio plugin (default)])
+AC_HELP_STRING([--disable-shapefileio], [disable the shapefileio plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_shapefileio="yes" ;;
+       no)	with_shapefileio="no" ;;
+       /*)	with_shapefileio="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-shapefileio) ;;
+     esac
+  ],
+  [ with_shapefileio="yes" ]
+)
+
+if test "x$with_shapefileio" != "xno"
+then
+    AC_MSG_CHECKING([shapefileio library usability])
+
+    save_CPPFLAGS="$CPPFLAGS"
+    save_LIBS="$LIBS"
+    save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
+
+    if test "x$with_shapefileio" = "xyes"
+    then
+	SHAPEFILEIO_CPPFLAGS=""
+	SHAPEFILEIO_LDFLAGS=""
+    else
+        SHAPEFILEIO_CPPFLAGS="-I$with_shapefileio/include"
+        SHAPEFILEIO_LDFLAGS="-L$with_shapefileio/lib"
+    fi
+    SHAPEFILEIO_LIBS="-lshapefileio"
+
+    CPPFLAGS="$CPPFLAGS $SHAPEFILEIO_CPPFLAGS"
+    LIBS="$LIBS $SHAPEFILEIO_LDFLAGS -lshapefileio_c -lshapefileio -lc++"
+
+    LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_shapefileio/lib"
+    export LD_LIBRARY_PATH
+
+    BUILD_OPTS="$BUILD_OPTS shapefileio"
+    AC_MSG_RESULT(using internal library)
+
+    LIBS="$save_LIBS"
+    CPPFLAGS="$save_CPPFLAGS"
+    LD_LIBRARY_PATH="$save_LD_LIBRARY_PATH"
+fi
+
+AM_CONDITIONAL(WITH_SHAPEFILEIO, test "x$with_shapefileio" != "xno" )
+AC_SUBST(SHAPEFILEIO_CPPFLAGS)
+AC_SUBST(SHAPEFILEIO_LDFLAGS)
+AC_SUBST(SHAPEFILEIO_LIBS)
+
+
+##########################################################################
+#                                                                        #
+# graphql  								 #
+#                                                                        #
+##########################################################################
+AC_ARG_ENABLE(graphql, [dnl
+AC_HELP_STRING([--enable-graphql(=DIR)], [enable the graphql plugin (default)])
+AC_HELP_STRING([--disable-graphql], [disable the graphql plugin])dnl
+], [
+     case "${enableval}" in
+       yes)	with_graphql="yes" ;;
+       no)	with_graphql="no" ;;
+       /*)	with_graphql="${enableval}" ;;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-graphql) ;;
+     esac
+  ],
+  [ with_graphql="yes" ]
+)
+
+AM_CONDITIONAL(WITH_GRAPHQL, test "x$with_graphql" != "xno" )
+AC_SUBST(GRAPHQL_CPPFLAGS)
+AC_SUBST(GRAPHQL_LDFLAGS)
+AC_SUBST(GRAPHQL_LIBS)
+
+
+##########################################################################
+#                                                                        #
 # HSLookup								 #
 #                                                                        #
 ##########################################################################
@@ -1296,6 +1571,7 @@ main ()
   exit (1);
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS hslookup"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1359,7 +1635,7 @@ then
     save_LD_LIBRARY_PATH="$LD_LIBRARY_PATH"
 
     CFLAGS="$CFLAGS $IM_CFLAGS"
-    LIBS="$LIBS $IM_LIBS"
+    LIBS="$LIBS $IM_LIBS -lpthread"
 
     LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_im/lib"
     export LD_LIBRARY_PATH
@@ -1378,6 +1654,7 @@ main ()
   return 0;
 }],
 [
+  BUILD_OPTS="$BUILD_OPTS im"
   AC_MSG_RESULT(good)
 ],
 [
@@ -1450,6 +1727,7 @@ main ()
   return 0;
 }],
 [
+ BUILD_OPTS="$BUILD_OPTS wbxml2"
  AC_MSG_RESULT(good)
 ],
 [
@@ -1656,7 +1934,7 @@ then
 	   ;;
 	*)
 	   LZMA_CFLAGS="-I$with_lzma/include"
-	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma"
+	   LZMA_LDFLAGS="-L$with_lzma/lib -llzma -lpthread"
 	   LD_LIBRARY_PATH="$LD_LIBRARY_PATH:$with_lzma/lib"
 	   export LD_LIBRARY_PATH
 	   ;;
@@ -1954,6 +2232,7 @@ AC_HELP_STRING([--with-libs='lib1 ...'], [link against additional libs])dnl
 ##########################################################################
 
 LIBRDL=""
+RDLFLAGS=""
 _save_LIBS=$LIBS
 
 AC_MSG_CHECKING(for --with-editline)
@@ -1962,34 +2241,34 @@ AC_HELP_STRING([--with-editline(=DIR)], [use editline library])dnl
 ], [
   AC_MSG_RESULT($withval)
   AC_DEFINE(WITH_EDITLINE, 1, [editline])
-  if test -d "$withval"
+  if test -d "$withval/lib"
   then
-      LDFLAGS="$LDFLAGS -L$withval"
+      RDLFLAGS="-L$withval/lib"
   fi
   # first check if we can compile without lib termcap
   AC_MSG_CHECKING(for -ledit without -ltermcap)
   # check if libedit exists
-  LIBS="$LIBS -ledit"
+  LIBS="$RDLFLAGS -ledit"
   AC_TRY_LINK(extern char *readline();,char *line=readline();,
   [
 	BUILD_OPTS="$BUILD_OPTS editline"
-	LIBRDL="-ledit"
+	LIBRDL="$RDLFLAGS -ledit"
 	AC_MSG_RESULT(yes)
   ], [
 	AC_MSG_RESULT(no)
 	AC_CHECKING(for -ledit that needs -ltermcap)
 	termcap=
-	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
-	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
-	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_CHECK_LIB(ncurses, tgetent, [termcap=ncurses], [
+	AC_CHECK_LIB(termlib, tgetent, [termcap=termlib], [
+	AC_CHECK_LIB(termcap, tgetent, [termcap=termcap], [
+	AC_CHECK_LIB(curses,  tgetent, [termcap=curses],  [
 	AC_ERROR(no working -ltermcap/termlib found -- do not use --with-editline)])])])])
 	LIBS="$LIBS -l$termcap"
 	AC_MSG_CHECKING(for -ledit)
 	AC_TRY_LINK(extern char *readline();, char *line=readline();,
 	[
 	   BUILD_OPTS="$BUILD_OPTS editline"
-	   LIBRDL="-ledit -l$termcap"
+	   LIBRDL="$RDLFLAGS -ledit -l$termcap"
 	   AC_MSG_RESULT(yes)
 	], [
 	   AC_ERROR(no working editline library found -- do not use --with-editline)
@@ -2193,54 +2472,6 @@ AM_CONDITIONAL(WITH_IODBC, test "x$virt_with_iodbc" = "xyes" )
 
 AC_MSG_CHECKING(for Java options)
 
-ac_jdk2_path="none"
-AC_ARG_WITH(jdk2, [dnl
-AC_HELP_STRING([--with-jdk2=DIR], [use the Sun JDK 1.3.x at the specified location])
-], [
-    case "${withval}" in
-      yes)
-          AC_MSG_ERROR("You need to specify a directory")
-	  ;;
-
-      no)
-	  ac_jdk2_path="none"
-	  ;;
-
-      *)
-	  if test -d "${withval}" ; then
-	      ac_jdk2_path="${withval}"
-	  else
-	      AC_MSG_ERROR("Directory specified with --with-jdk2 does not exist")
-	  fi
-	  ;;
-    esac
-])
-
-ac_jdk3_path="none"
-AC_ARG_WITH(jdk3, [dnl
-AC_HELP_STRING([--with-jdk3=DIR], [use the Sun JDK 1.4.x or 1.5.x at the specified location])dnl
-], [
-    case "${withval}" in
-      yes)
-          AC_MSG_ERROR("You need to specify a directory")
-	  ;;
-
-      no)
-	  ac_jdk3_path="none"
-	  ;;
-
-      *)
-	  if test -d "${withval}" ; then
-	      ac_jdk3_path="${withval}"
-	  else
-	      AC_MSG_ERROR("Directory specified with --with-jdk3 does not exist")
-	  fi
-	  ;;
-    esac
-    ])
-AC_MSG_RESULT(done)
-
-
 ac_jdk4_path="none"
 AC_ARG_WITH(jdk4, [dnl
 AC_HELP_STRING([--with-jdk4=DIR], [use the Sun JDK 1.6.x at the specified location])dnl
@@ -2314,6 +2545,30 @@ AC_HELP_STRING([--with-jdk4_2=DIR], [use the Oracle JDK 1.8.x at the specified l
     ])
 AC_MSG_RESULT(done)
 
+ac_jdk4_3_path="none"
+AC_ARG_WITH(jdk4_3, [dnl
+AC_HELP_STRING([--with-jdk4_3=DIR], [use the Oracle JDK 9.x-14.x at the specified location])dnl
+], [
+    case "${withval}" in
+      yes)
+          AC_MSG_ERROR("You need to specify a directory")
+	  ;;
+
+      no)
+	  ac_jdk4_3_path="none"
+	  ;;
+
+      *)
+	  if test -d "${withval}" ; then
+	      ac_jdk4_3_path="${withval}"
+	  else
+	      AC_MSG_ERROR("Directory specified with --with-jdk4_3 does not exist")
+	  fi
+	  ;;
+    esac
+    ])
+AC_MSG_RESULT(done)
+
 
 #AC_PROG_JAVA_WORKS (jdk_path, min_acceptable_ver, max_acceptable_ver)
 
@@ -2326,16 +2581,23 @@ ac_cv_prog_java_works=no
 if test "x$ac_jw_jdk" != "xnone" ; then
   AC_MSG_CHECKING([for working Java 1.$ac_jw_min_minor.x-1.$ac_jw_max_minor.x in $ac_jw_jdk])
   if test -x "$ac_jw_jdk/Commands/java"; then
-    ac_jw_jdk="$ac_jw_jdk/Commands" 
+    ac_jw_jdk="$ac_jw_jdk/Commands"
   else
-    ac_jw_jdk="$ac_jw_jdk/bin" 
+    ac_jw_jdk="$ac_jw_jdk/bin"
   fi
   JAVAC=$ac_jw_jdk/javac
   JAVA=$ac_jw_jdk/java
   ac_java_version=`$JAVA -version 2>&1 | grep ' version' | cut -f 2 -d '"'`
   ac_java_ver_major=`echo $ac_java_version | cut -f 1 -d .`
   ac_java_ver_minor=`echo $ac_java_version | cut -f 2 -d .`
-  if test "x$ac_java_ver_major" != "x1" -o "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor" ; then
+  if test "0$ac_java_ver_major" -gt "1"
+  then
+    if test "0$ac_java_ver_major" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_major" -gt "0$ac_jw_max_minor"
+    then
+      AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
+    fi
+  elif test "0$ac_java_ver_minor" -lt "0$ac_jw_min_minor" -o "0$ac_java_ver_minor" -gt "0$ac_jw_max_minor"
+  then
       AC_MSG_ERROR([wrong version ($ac_java_ver_major.$ac_java_ver_minor)])
   fi
   JAVA_TEST=Test.java
@@ -2369,17 +2631,11 @@ EOF
 fi
 ])
 
-AC_PROG_JAVA_WORKS($ac_jdk2_path, 3, 3)
-ac_jdk2_works="$ac_cv_prog_java_works"
-ac_jdk2_path="$ac_jw_jdk"
-AM_CONDITIONAL(WITH_JDK2, test "x$ac_jdk2_works" = "xyes")
-AC_SUBST(ac_jdk2_path)
-
-AC_PROG_JAVA_WORKS($ac_jdk3_path, 4, 5)
-ac_jdk3_works="$ac_cv_prog_java_works"
-ac_jdk3_path="$ac_jw_jdk"
-AM_CONDITIONAL(WITH_JDK3, test "x$ac_jdk3_works" = "xyes")
-AC_SUBST(ac_jdk3_path)
+#
+#  Removed support for JDK1.2 - JDK1.5
+#
+AM_CONDITIONAL(WITH_JDK2, false)
+AM_CONDITIONAL(WITH_JDK3, false)
 
 AC_PROG_JAVA_WORKS($ac_jdk4_path, 6, 6)
 ac_jdk4_works="$ac_cv_prog_java_works"
@@ -2399,17 +2655,21 @@ ac_jdk4_2_path="$ac_jw_jdk"
 AM_CONDITIONAL(WITH_JDK4_2, test "x$ac_jdk4_2_works" = "xyes")
 AC_SUBST(ac_jdk4_2_path)
 
+AC_PROG_JAVA_WORKS($ac_jdk4_3_path, 9, 15)
+ac_jdk4_3_works="$ac_cv_prog_java_works"
+ac_jdk4_3_path="$ac_jw_jdk"
+AM_CONDITIONAL(WITH_JDK4_3, test "x$ac_jdk4_3_works" = "xyes")
+AC_SUBST(ac_jdk4_3_path)
+
 ac_integ_jdk=""
-if test "x$ac_jdk4_2_works" = "xyes" ; then
+if test "x$ac_jdk4_3_works" = "xyes" ; then
+  ac_integ_jdk="$ac_jdk4_3_path/.."
+elif test "x$ac_jdk4_2_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_2_path/.."
 elif test "x$ac_jdk4_1_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_1_path/.."
 elif test "x$ac_jdk4_works" = "xyes" ; then
   ac_integ_jdk="$ac_jdk4_path/.."
-elif test "x$ac_jdk3_works" = "xyes" ; then
-  ac_integ_jdk="$ac_jdk3_path/.."
-elif test "x$ac_jdk2_works" = "xyes"; then
-  ac_integ_jdk="ac_jdk2_path/.."
 fi
 
 if test "x$ac_integ_jdk" != "x" ; then
@@ -2670,6 +2930,20 @@ AC_HELP_STRING([--disable-tutorial-vad], [disable Tutorial vad package (default)
   [ with_tutorial_vad="no" ]
 )
 
+AC_ARG_ENABLE(websockets-vad, [dnl
+AC_HELP_STRING([--enable-websockets-vad], [enable Websockets Demo vad package])
+AC_HELP_STRING([--disable-websockets-vad], [disable Websockets Demo vad package (default)])dnl
+], [
+     case "${enableval}" in
+       yes)	with_websockets_vad="yes";;
+       no)	with_websockets_vad="no";;
+       *)	AC_MSG_ERROR(bad value ${enableval} for --enable-websockets-vad) ;;
+     esac
+  ],
+  [ with_websockets_vad="no" ]
+)
+
+
 
 AC_ARG_ENABLE(all-vads, [dnl
 AC_HELP_STRING([--disable-all-vads], [disable building all vad packages])dnl
@@ -2697,6 +2971,7 @@ then
     with_sparqldemo_vad="$with_all_vad"
     with_syncml_vad="$with_all_vad"
     with_tutorial_vad="$with_all_vad"
+    with_websockets_vad="$with_all_vad"
 fi
 
 AM_CONDITIONAL(WITH_BPEL_VAD, test "x$with_bpel_vad" = "xyes")
@@ -2711,6 +2986,7 @@ AM_CONDITIONAL(WITH_RDFMAPPERS_VAD, test "x$with_rdfmappers_vad" = "xyes")
 AM_CONDITIONAL(WITH_SPARQLDEMO_VAD, test "x$with_sparqldemo_vad" = "xyes")
 AM_CONDITIONAL(WITH_SYNCML_VAD, test "x$with_syncml_vad" = "xyes")
 AM_CONDITIONAL(WITH_TUTORIAL_VAD, test "x$with_tutorial_vad" = "xyes")
+AM_CONDITIONAL(WITH_WEBSOCKETS_VAD, test "x$with_websockets_vad" = "xyes")
 
 
 
@@ -2821,8 +3097,12 @@ alpha-dec-osf*)
 	OPSYS="BSDI"
 	;;
 
+*-darwin20*)
+	OPSYS="Mac\ OS\ 11"
+	;;
+
 *-darwin*)
-	OPSYS="Darwin"
+	OPSYS="Mac\ OS\ X"
 	;;
 
 *)
@@ -2925,29 +3205,35 @@ AC_CONFIG_FILES([
 	docsrc/Makefile
 	libsrc/Makefile
 	binsrc/bpel/Makefile
-	binsrc/b3s/Makefile
 	binsrc/cached_resources/Makefile
 	binsrc/dav/Makefile
 	binsrc/dbpedia/Makefile
 	binsrc/driver/Makefile
+	binsrc/fct/Makefile
+	binsrc/graphql/Makefile
 	binsrc/hibernate/Makefile
 	binsrc/hosting/Makefile
 	binsrc/hosting/mono/Makefile
 	binsrc/hosting/mono/tests/Makefile
+	binsrc/hosting/geos/Makefile
 	binsrc/hosting/perl/Makefile
 	binsrc/hosting/php/Makefile
+	binsrc/hosting/proj4/Makefile
 	binsrc/hosting/python/Makefile
 	binsrc/hosting/ruby/Makefile
+	binsrc/hosting/shapefileio/Makefile
 	binsrc/isparql/Makefile
 	binsrc/jena/Makefile
 	binsrc/jena2/Makefile
 	binsrc/jena3/Makefile
+	binsrc/jena4/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile
 	binsrc/rdf_mappers/Makefile
 	binsrc/rdb2rdf/Makefile
 	binsrc/rdf4j/Makefile
+	binsrc/rdf4j_4/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile
@@ -2991,10 +3277,11 @@ AC_CONFIG_FILES([
 	binsrc/virtuoso_sink/Makefile
 	binsrc/vsp/Makefile
 	binsrc/vspx/Makefile
+	binsrc/websocket/Makefile
 	binsrc/ws/Makefile
 	binsrc/ws/wsrm/Makefile
 	binsrc/xddl/Makefile
-	binsrc/yacutia/Makefile
+	binsrc/conductor/Makefile
 	docsrc/chm/Makefile
 	docsrc/docwiki/Makefile
 	docsrc/html_virt/Makefile
@@ -3006,10 +3293,8 @@ AC_CONFIG_FILES([
 	docsrc/xmlsource/Makefile
 	libsrc/Dk/Makefile
 	libsrc/JDBCDriverType4/Makefile
-	libsrc/JDBCDriverType4/testsuite_2.0/Makefile
-	libsrc/JDBCDriverType4/testsuite_3.0/Makefile
 	libsrc/JDBCDriverType4/testsuite_4.0/Makefile
-	libsrc/JDBCDriverType4/virtuoso/jdbc2/Makefile
+	libsrc/JDBCDriverType4/virtuoso/jdbc/Makefile
 	libsrc/JDBCDriverType4/virtuoso/Makefile
 	libsrc/langfunc/Makefile
 	libsrc/odbcsdk/Makefile

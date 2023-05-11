@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -367,7 +367,7 @@ struct query_s
     dk_hash_t 		*qr_line_counts; /* test coverage line stats */
     id_hash_t 		*qr_call_counts;  /* test coverage caller stats */
     long		qr_time_cumulative; /* test coverage cumulative time for execution */
-    long 		qr_self_time;
+    uint64 		qr_self_time;
     dk_mutex_t		*qr_stats_mtx;	  /* for protection on stats hash tables see above */
 #endif
     caddr_t		*qr_udt_mtd_info; /* not null if CREATE METHOD */
@@ -491,7 +491,7 @@ typedef struct query_instance_s
 #ifdef PLDBG
     void * 		qi_last_break;
     int 		qi_step;
-    int 		qi_child_time;
+    uint64 		qi_child_time;
 #endif
   } query_instance_t;
 
@@ -546,7 +546,7 @@ typedef struct hash_area_s
   char	ha_ch_unique;
 } hash_area_t;
 
-#define CHASH_GB_MAX_KEYS 20
+#define CHASH_GB_MAX_KEYS 32
 
 
 #define HA_DISTINCT 1
@@ -1587,7 +1587,7 @@ typedef struct srv_stmt_s
     caddr_t *		sst_param_array;
     int			sst_parms_processed;
     struct cursor_state_s * sst_cursor_state;
-    uint32		  sst_start_msec;
+    time_msec_t		  sst_start_msec;
 
 /* PL scrollable */
     int			sst_is_pl_cursor;
@@ -1728,7 +1728,7 @@ typedef struct db_activity_s
   int	da_disk_reads;
   int	da_spec_disk_reads;
   int	da_lock_waits;
-  int	da_lock_wait_msec;
+  int64	da_lock_wait_msec;
   int	da_batch_size_request;
   char		da_anytime_result; /* if set, this means the recipient has run out of time and should return an answer */
   char	da_trans_partial; /* if transitive ops incomplete due to time or mem limit */
@@ -1793,7 +1793,8 @@ typedef struct client_connection_s
     bitf_t		cli_log_qi_stats:1;
     bitf_t		cli_keep_csl:1;
     bitf_t		cli_cl_dae_blob;
-    char		cli_row_autocommit;
+    char		cli_row_autocommit; /* can be reset from many places eg. ddl_node_input */
+    char		cli_log_mode; /* keeps value from log_enable call, set only there */
     slice_id_t 		cli_slice;
     int			cli_n_to_autocommit;
     cl_slice_t *	cli_csl;
@@ -1808,12 +1809,12 @@ typedef struct client_connection_s
     int64		cli_csl_start_ts;
     db_activity_t	cli_activity;
     db_activity_t	cli_slice_activity;
-    int			cli_anytime_started;
-    int			cli_anytime_timeout;
-    int			cli_anytime_checked;
-    int			cli_anytime_qf_started; /* inside qf/dfg, start time of the slice thread, know when to finish */
-    int 		cli_anytime_timeout_orig;
-    uint32		cli_compile_msec;
+    time_msec_t		cli_anytime_started;
+    uint32		cli_anytime_timeout;
+    time_msec_t		cli_anytime_checked;
+    time_msec_t		cli_anytime_qf_started; /* inside qf/dfg, start time of the slice thread, know when to finish */
+    uint32 		cli_anytime_timeout_orig;
+    int64		cli_compile_msec;
     db_activity_t	cli_compile_activity;
     dk_session_t *	cli_ql_strses;
     user_t *		cli_user;
@@ -1877,8 +1878,8 @@ typedef struct client_connection_s
 #ifdef INPROCESS_CLIENT
     int			cli_inprocess;
 #endif
-    uint32		cli_start_time;
-    uint32		cli_ws_check_time;
+    time_msec_t		cli_start_time;
+    time_msec_t		cli_ws_check_time;
     caddr_t *		cli_info;
     cl_thread_t *	cli_clt; /* if cli of a cluster server thread, this is the clt */
     struct aq_request_s *	cli_aqr; /* if the cli is running an aq func, this is the aqr */
@@ -1886,6 +1887,7 @@ typedef struct client_connection_s
     struct xml_ns_2dict_s      *cli_ns_2dict;
     dk_set_t		cli_dae_blobs;
     char               cli_logged_in;
+    uint32              cli_http_client_req_timeout;
   } client_connection_t;
 
 
@@ -2083,6 +2085,9 @@ extern long blob_releases_noread;
 extern long blob_releases_dir;
 
 extern client_connection_t *autocheckpoint_cli;
+
+void qr_print (query_t * qr);
+
 #include "sqlcomp.h"
 #include "eqlcomp.h"
 #include "sqlfn.h"
@@ -2103,7 +2108,9 @@ extern int enable_vec;
 extern FILE *query_log;
 extern void log_cli_event (client_connection_t *cli, int print_full_content, const char *fmt, ...);
 extern void log_query_event (query_t *qr, int print_full_content, const char *fmt, ...);
+#else
+#define log_cli_event(cli,print_full_content,fmt,...) do { ; } while (0)
+#define log_query_event (qr,print_full_content,fmt,...) do { ; } while (0)
 #endif
 
 #endif /* _SQLNODE_H */
-void qr_print (query_t * qr);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -163,6 +163,9 @@ sqlc_decl_variable_list_1 (sql_comp_t * sc, ST ** params, int is_arg_list, dk_se
   /* procedure argument list or local variable list */
   query_t * qr = sc->sc_cc->cc_query;
   int inx;
+
+  if (BOX_ELEMENTS_0 (params) > MAX_STATE_SLOTS)
+    SQL_GPF_T1 (sc->sc_cc, "Query too large, variables in state over the limit");
 
   DO_BOX (ST *, decl, inx, params)
   {
@@ -826,25 +829,25 @@ sqlc_set_brk (query_t *qr, long line1, int what, caddr_t * inst)
 	inside_handler = 0;
       if (inside_handler && line1 <= 0)
 	continue;
-	if (instr->ins_type == INS_BREAKPOINT)
-	  {
-	    if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
-	      {
-		if (line1 >= 0)
-		  instr->_.breakpoint.brk_set = what;
-		else
-		  instr->_.breakpoint.brk_set = (instr->_.breakpoint.brk_set & 2) | (what & 1);
-/*		fprintf (stderr, "Set Brkp %p at (%ld)\n", instr, instr->_.breakpoint.line_no);*/
-		rc++;
-		if (line1 >= 0)
-		  {
-		    rc = instr->_.breakpoint.line_no;
-		    if (inst)
-		      *inst = (caddr_t) instr;
-		    break;
-		  }
-	      }
-	  }
+      if (instr->ins_type == INS_BREAKPOINT)
+        {
+          if ((line1 > 0 && instr->_.breakpoint.line_no >= line1) || line1 <= 0)
+            {
+              if (line1 >= 0)
+                instr->_.breakpoint.brk_set = what;
+              else
+                instr->_.breakpoint.brk_set = (instr->_.breakpoint.brk_set & 2) | (what & 1);
+              /* fprintf (stderr, "Set Brkp %p at (%ld)\n", instr, instr->_.breakpoint.line_no);*/
+              rc++;
+              if (line1 >= 0)
+                {
+                  rc = instr->_.breakpoint.line_no;
+                  if (inst)
+                    *inst = (caddr_t) instr;
+                  break;
+                }
+            }
+        }
     }
   END_DO_INSTR;
   return rc;
@@ -1263,7 +1266,9 @@ sch_set_ua_func_ua (caddr_t name, query_t * qr)
   if (!ua_func_to_ua)
     ua_func_to_ua = id_casemode_hash_create (23);
   name = box_copy (name);
+#if 0
   if (strstr (name, "DB.DBA.SPARQL_RSET_TTL_H")) bing ();
+#endif
   id_hash_set (ua_func_to_ua, (caddr_t)&name, (caddr_t)&qr);
 }
 

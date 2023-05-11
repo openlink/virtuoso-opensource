@@ -1,0 +1,480 @@
+<?xml version="1.0"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="sec_acme"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Public Key Infrastructure</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="page_mode" type="varchar" default="'orders'" param-name="page"/>
+      <v:variable name="url0" type="varchar" param-name="url0" />
+      <v:variable name="oid" type="varchar" param-name="oid" default="null" />
+      <v:variable name="kid" type="varchar" default="null" />
+      <v:variable name="dns" type="varchar" default="null" persist="temp"/>
+      <v:variable name="o_state" type="varchar" default="null" />
+      <v:variable name="cert_name" type="varchar" default="null" />
+      <v:variable name="res" type="varchar" default="null" param-name="res"/>
+      <v:variable name="message" type="varchar" default="null" param-name="message"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem name="PKI" value="Public Key Infrastructure"/>
+    </vm:menu>
+    <vm:header caption="Public Key Infrastructure">
+    </vm:header>
+    <vm:pagebody>
+      <v:form name="form1" type="simple" method="POST" xhtml_enctype="multipart/form-data">
+          <v:on-init>
+              self.dns := (select AO_DNS from ACME.DBA.ACME_ORDERS where AO_OID = self.oid);
+          </v:on-init>
+      <!-- top of security layout -->
+        <div class="main_tab_page">
+          <v:include url="sec_pki_menu.vspx"/>
+          <div class="tab_page_new">
+              <vm:if test="self.page_mode = 'orders'">
+              <v:data-source name="dsrc1" expression-type="sql" nrows="20" initial-offset="0">
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_sql := 'select AO_DNS,AO_OID,AO_KEY,AO_STATE from ACME.DBA.ACME_ORDERS';
+                    control.ds_parameters := null;
+                  ]]>
+                </v:before-data-bind>
+                <v:after-data-bind>
+                  control.ds_make_statistic ();
+                </v:after-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds1" data-source="self.dsrc1" scrollable="1">
+                <div class="navigation">
+                  <vm:ds-navigation-new data-set="ds1"/>
+                </div>
+
+                <v:template name="ds1_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="listing">
+                    <thead>
+                      <tr>
+                        <th class="checkbox">
+                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
+                        </th>
+                        <th>DNS Host Name</th>
+                        <th>Order</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template type="repeat" name="ds1_repeat">
+
+                  <v:template type="if-not-exists" name="ds1_empty">
+                    <tr>
+                      <td class="listing_empty" colspan="2">No Certificate Orders</td>
+                    </tr>
+                  </v:template>
+
+                  <v:template type="browse" name="ds1_browse">
+                    <tr>
+                      <td class="checkbox">
+                        <v:check-box name="cb_select" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[2]" initial-checked="0" />
+                      </td>
+                      <td><?V control.te_rowset[0] ?></td>
+                      <td><?V control.te_rowset[1] ?></td>
+                      <td><?V control.te_rowset[3] ?></td>
+                      <td>
+                          <v:url url="--sprintf ('sec_acme.vspx?page=cert&amp;oid=%U', (control.vc_parent as vspx_row_template).te_rowset[1])"
+                              value="--case (control.vc_parent as vspx_row_template).te_rowset[3]
+                                            when 'valid' then 'Register' when 'issued' then 'Revoke' else 'Delete' end" />
+                      </td>
+                    </tr>
+                  </v:template>
+                </v:template>
+
+                <v:template name="ds1_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+          <table class='ctl_grp'>
+            <tr>
+              <td>Host &amp; Domain Name</td>
+	      <td>
+		<v:text name="host" value="" xhtml_size="40" error-glyph="*">
+                    <v:validator test="regexp"
+                        regexp="^(([a-zA-Z0-9]|[a-zA-Z0-9][a-zA-Z0-9\-]*[a-zA-Z0-9])\.)*([A-Za-z0-9]|[A-Za-z0-9][A-Za-z0-9\-]*[A-Za-z0-9])$"
+                        empty-allowed="1"
+		    message="You should provide a valid host name" />
+		</v:text>
+              </td>
+            </tr>
+            <tr>
+              <td>Select ACME Account</td>
+	      <td>
+		  <v:data-list name="account" value=""
+                      sql="select KNAME, AA_KEY_NAME from
+                            (select 'no' as KNAME, '---' as AA_KEY_NAME) dt union all select AA_KEY_NAME as KNAME, AA_KEY_NAME from ACME.DBA.ACME_ACCOUNT"
+		      key-column="KNAME"
+		      value-column="AA_KEY_NAME"
+		      />
+                  &nbsp;
+                    or
+		  &nbsp;
+		  <v:button action="simple" name="newAcct_bt" value="Register New Account">
+                      <v:on-post><![CDATA[
+                          self.page_mode := 'accounts';
+                          self.vc_data_bind (e);
+			  ]]></v:on-post>
+		  </v:button>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" align="center">
+                <v:button action="simple" name="cancelbtn2" value="Clear">
+                  <v:on-post>
+                      <![CDATA[
+                          ;
+                      ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="save_btn2" value="Place New Order">
+                  <v:on-post>
+                      <![CDATA[
+                      declare url0, acct varchar;
+                      self.host.ufl_value := trim (self.host.ufl_value);
+                      if (self.host.ufl_value = '')
+                        {
+                          self.host.ufl_value := ' ';
+                          self.host.vc_validate ();
+                        }
+                      if (not self.vc_is_valid)
+                        return;
+                      if (self.account.ufl_value = 'no')
+                        {
+                           self.vc_is_valid := 0;
+                           self.vc_error_message := 'Must select valid account.';
+                           return;
+                        }
+                      acct := self.account.ufl_value;
+                      declare exit handler for sqlstate '*' {
+                             self.vc_is_valid := 0;
+                             self.vc_error_message := __SQL_MESSAGE;
+                             return;
+                          };
+                      ACME.DBA.new_order (ACME.DBA.new_nonce (kname=>acct), acct, vector (self.host.ufl_value));
+                      self.host.ufl_value := '';
+                      self.account.ufl_value := 'no';
+                      self.vc_data_bind (e);
+                      ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+	</table>
+              </vm:if>
+              <vm:if test="self.page_mode = 'accounts'">
+              <v:data-source name="dsrc2" expression-type="sql" nrows="20" initial-offset="0" >
+                <v:before-data-bind>
+                  <![CDATA[
+                    control.ds_sql := 'select AA_KID,AA_KEY_NAME from ACME.DBA.ACME_ACCOUNT';
+                    control.ds_parameters := null;
+                  ]]>
+                </v:before-data-bind>
+                <v:after-data-bind>
+                  control.ds_make_statistic ();
+                </v:after-data-bind>
+              </v:data-source>
+
+              <v:data-set name="ds2" data-source="self.dsrc2" scrollable="1">
+                <div class="navigation">
+                  <vm:ds-navigation-new data-set="ds2"/>
+                </div>
+
+                <v:template name="ds2_header" type="simple" name-to-remove="table" set-to-remove="bottom">
+                  <table class="listing">
+                    <thead>
+                      <tr>
+                        <th class="checkbox">
+                          <input type="checkbox" name="select_all" value="Select All" onclick="selectAllCheckboxes(this.form, this, 'cb_select')"/>
+                        </th>
+                        <th>Account Name</th>
+                        <th>Account ID</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+                  </table>
+                </v:template>
+
+                <v:template type="repeat" name="ds2_repeat">
+
+                  <v:template type="if-not-exists" name="ds2_empty">
+                    <tr>
+                      <td class="listing_empty" colspan="2">No Accounts registered</td>
+                    </tr>
+                  </v:template>
+
+                  <v:template type="browse" name="ds2_browse">
+                    <tr>
+                      <td class="checkbox">
+                        <v:check-box name="cb_select2" xhtml_id="cb_select" value="--(control.vc_parent as vspx_row_template).te_rowset[1]" initial-checked="0" />
+                      </td>
+                      <td><?V control.te_rowset[1] ?></td>
+                      <td><?V control.te_rowset[0] ?></td>
+                      <td></td>
+                    </tr>
+                  </v:template>
+                </v:template>
+
+                <v:template name="ds2_dummy" type="simple" name-to-remove="table" set-to-remove="top">
+                  <table>
+                  </table>
+                </v:template>
+
+              </v:data-set>
+          <table class='ctl_grp'>
+            <tr>
+            <tr>
+              <td>Account Name</td>
+	      <td>
+		<v:text name="name" value="" xhtml_size="120" error-glyph="*">
+		</v:text>
+              </td>
+            </tr>
+              <td>ACME Server Directory URI</td>
+              <td id="url0_td">
+		  <![CDATA[
+		  <script type="text/javascript">
+	           function init () {
+		      var sel = new OAT.Combolist([], "<?V self.url0 ?>");
+		      sel.input.name = "url0";
+		      sel.input.id = "url0_id";
+                      sel.input.size = 120;
+		      $("url0_td").appendChild(sel.div);
+		      sel.addOption("https://acme-staging-v02.api.letsencrypt.org/directory");
+		      sel.addOption("https://acme-v02.api.letsencrypt.org/directory");
+		     }
+		  </script>
+		  ]]>
+              </td>
+            </tr>
+            <tr>
+              <td>E-mail</td>
+	      <td>
+		<v:text name="email" value="" xhtml_size="120" error-glyph="*">
+		</v:text>
+              </td>
+            </tr>
+            <tr>
+              <td colspan="2" align="center">
+                <v:button action="simple" name="cancelbtn" value="Back to Orders">
+                  <v:on-post>
+                      <![CDATA[
+                          self.page_mode := 'orders';
+                          self.vc_data_bind (e);
+                      ]]>
+                  </v:on-post>
+                </v:button>
+                <v:button action="simple" name="save_btn" value="Register New Account">
+                  <v:on-post>
+                      <![CDATA[
+                      declare hf, new_acc_result any;
+                      self.url0 := get_keyword ('url0', e.ve_params, '');
+                      if (isnull (regexp_match ('^[A-Za-z0-9_\-]+$', self.name.ufl_value)))
+                        {
+                           self.vc_is_valid := 0;
+                           self.vc_error_message := 'Account name must contains only "A..z0..9_-" symbols.';
+                           return;
+                        }
+                      hf := rfc1808_parse_uri (self.url0);
+                      if (hf[0] = '' or hf[1] = '')
+                        {
+                           self.vc_is_valid := 0;
+                           self.vc_error_message := 'Invalid Server Directory URL';
+                           return;
+                        }
+                      if (isnull (regexp_match ('^[a-zA-Z0-9.! #$%&''*+/=? ^_`{|}~-]+@[a-zA-Z0-9-]+(?:\.[a-zA-Z0-9-]+)*$', self.email.ufl_value)))
+                        {
+                           self.vc_is_valid := 0;
+                           self.vc_error_message := 'Invalid e-mail address.';
+                           return;
+                        }
+                       new_acc_result := ACME.DBA.new_account (ACME.DBA.new_nonce (null, self.url0), self.name.ufl_value, self.email.ufl_value);
+                       self.email.ufl_value := '';
+                       self.name.ufl_value := '';
+                       self.vc_data_bind (e);
+                      ]]>
+                  </v:on-post>
+                </v:button>
+              </td>
+            </tr>
+	</table>
+              </vm:if>
+              <vm:if test="self.page_mode = 'cert'">
+                  <?vsp
+                     declare cert, certs varchar;
+                     certs := cert := null;
+                     for select AO_CRT from ACME.DBA.ACME_ORDERS where AO_OID = self.oid and AO_STATE in ('issued', 'valid') do {
+                        certs := AO_CRT;
+                      }
+                     if (certs is not null)
+                       cert := pem_certificates_to_array (blob_to_string (certs))[0];
+                  ?>
+                  <v:on-init>
+                  for select AO_STATE, AO_ACCT, AO_KEY from ACME.DBA.ACME_ORDERS where AO_OID = self.oid do {
+                     self.o_state := AO_STATE;
+                     self.kid := AO_ACCT;
+                     self.cert_name := AO_KEY;
+                  }
+                  </v:on-init>
+                <div id="pki_form" class="fm_info">
+                    <?vsp if (cert is not null) { ?>
+                    <h3>CA Root Certificate Details</h3>
+                    <div>
+                        <label>CN</label>
+                        <span><?V get_certificate_info (2, cert, 0) ?></span>
+                    </div>
+                    <div>
+                        <label>Issuer</label>
+                        <span><?V get_certificate_info (3, cert, 0) ?></span>
+                    </div>
+                    <div>
+                        <label>Not Before</label>
+                        <span><?V get_certificate_info (4, cert, 0) ?></span>
+                    </div>
+                    <div>
+                        <label>Not After</label>
+                        <span><?V get_certificate_info (5, cert, 0) ?></span>
+                    </div>
+                    <div>
+                        <label>SAN</label>
+                        <span><?V get_certificate_info (7, cert, 0, null, 'subjectAltName') ?></span>
+                    </div>
+                    <div>
+                        <label>Fingerprint (SHA1)</label>
+                        <span><?V get_certificate_info (6, cert, 0, null, 'sha1') ?></span>
+                    </div>
+                    <?vsp if (equ (self.o_state,'valid')) { ?>
+                    <div>
+                        <label>Key Name</label>
+                        <v:text name="kname" default_value="--concat ('key_', replace (self.dns, '.', '_'))" xhtml_size="40" error-glyph="*">
+                        </v:text>
+                    </div>
+                    <?vsp } ?>
+                  <br />
+                  <?vsp } else { ?>
+                  <div class="confirm_dialog">
+                      <img class="dialog_icon" src="images/icons/stop_32.png" alt="Stop" title="Stop"/>
+                      <div class="confirm_text">
+                          The order will be removed permanently and there is no way to restore it.<br/>
+                          How do we proceed from here?
+                      </div>
+                      <br/>
+                      <br/>
+                      <div class="dialog_buttons">
+                          <v:button action="simple" name="createcert1" value="Delete"
+                              enabled="--equ (self.o_state,'invalid') + equ (self.o_state,'revoked')">
+                              <v:on-post><![CDATA[
+                                  delete from ACME.DBA.ACME_ORDERS where AO_OID = self.oid;
+                                  self.vc_redirect ('sec_acme.vspx');
+                                  return;
+                                  ]]></v:on-post>
+                          </v:button>
+                          <v:button action="simple" name="cancelbtn3" value="Back to Orders">
+                              <v:on-post><![CDATA[
+                                  self.vc_redirect ('sec_acme.vspx');
+                                  ]]></v:on-post>
+                          </v:button>
+                      </div>
+                  </div>
+                  <?vsp } ?>
+                  <div class="dialog_buttons">
+                      <v:button action="simple" name="cancelbtn5" value="Back to Orders"
+                          enabled="--equ (self.o_state,'valid') + equ (self.o_state,'issued')">
+                          <v:on-post><![CDATA[
+                              self.vc_redirect ('sec_acme.vspx');
+                              ]]></v:on-post>
+                      </v:button>
+                      <v:button action="simple" name="createcert0" value="Generate" enabled="--equ (self.o_state,'valid')">
+                          <v:on-post><![CDATA[
+                              declare dns, results varchar;
+                              if (isnull (regexp_match ('^[A-Za-z0-9_\-]+$', self.kname.ufl_value)))
+                                {
+                                  self.vc_is_valid := 0;
+                                  self.vc_error_message := 'Key name must contains only "A..z0..9_-" symbols.';
+                                  return;
+                                }
+                              dns := (select AO_DNS from ACME.DBA.ACME_ORDERS where AO_OID = self.oid);
+                              results := ACME.DBA.make_cert (dns, self.oid, self.kname.ufl_value);
+                              results := encode_base64url(serialize (results));
+                              self.vc_redirect (sprintf ('sec_acme.vspx?page=result&res=%U&message=%U', results, 'Registered X.509 certificates'));
+                              return;
+                              ]]></v:on-post>
+                      </v:button>
+                      <v:button action="simple" name="createcert2" value="Revoke" enabled="--equ (self.o_state,'issued')">
+                          <v:on-post><![CDATA[
+                              declare results any;
+                              results := ACME.DBA.revoke_cert (ACME.DBA.new_nonce (kname=>self.kid), self.cert_name);
+                              results := trim (results);
+                              if (results = '')
+                                results := 'Revoked';
+                              results := encode_base64url(serialize (results));
+                              self.vc_redirect (sprintf ('sec_acme.vspx?page=result&res=%U&message=%U', results, 'Revoked X.509 certificate status'));
+                              return;
+                              ]]></v:on-post>
+                      </v:button>
+                  </div>
+                </div>
+              </vm:if>
+              <vm:if test="self.page_mode = 'result'">
+                  <?vsp
+                      declare res varchar;
+                      res := null;
+                      if (self.res is not null)
+                      res := decode_base64url (self.res);
+                      if (res is not null)
+                        res := deserialize (res);
+                  ?>
+                  <div class="confirm_dialog">
+                      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/>
+                      <div class="confirm_text"><?V self.message ?> : <?V  obj2json(res) ?></div>
+                      <br/>
+                      <br/>
+                      <div class="dialog_buttons">
+                          <v:button action="simple" name="cancelbtn6" value="Back to Orders">
+                              <v:on-post><![CDATA[
+                                  self.vc_redirect ('sec_acme.vspx');
+                                  ]]></v:on-post>
+                          </v:button>
+                      </div>
+                  </div>
+              </vm:if>
+          </div>
+        </div>
+        <!-- end of bottom security layout -->
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

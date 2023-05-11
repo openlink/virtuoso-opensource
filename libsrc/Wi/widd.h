@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,7 +72,7 @@ struct dbe_schema_s
     dk_hash_t *		sc_id_to_key;
     dk_hash_t *		sc_key_subkey;
     dk_hash_t *		sc_id_to_col;
-    long		sc_free_since; /* msec real time when became unreferenced*/
+    time_msec_t		sc_free_since; /* msec real time when became unreferenced*/
     dk_hash_t *		sc_id_to_type;
 #if defined (PURIFY) || defined (VALGRIND)
     dk_set_t		sc_old_views;
@@ -533,7 +533,7 @@ fragment instead of searching for the the fragment actually needed. */
 #define ITC_MARK_LOCK_WAIT(it, t) \
 { \
   dbe_key_t *k1 = it->itc_insert_key; \
-  uint32 delay = get_msec_real_time () - t; \
+  uint32 delay = (uint32) (get_msec_real_time () - t); \
   if (k1) \
     { \
       k1->key_lock_wait++; \

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,6 +47,8 @@
 #include <openssl/evp.h>
 #include <openssl/err.h>
 #include <openssl/hmac.h>
+
+#include "util/ssl_compat.h"
 
 #include "xmlenc_test.h"
 
@@ -113,6 +115,7 @@ static algo_store_t algo_stores[] = {
   {"canon_2", NULL},
   {"digest", NULL},
   {"dsig", NULL},
+  {"key", NULL},
   {"trans", NULL},
   {"verify", NULL}
 };
@@ -297,6 +300,13 @@ int add_algo_to_store (algo_store_t * s, const char * xmln, void * f)
 	else GPF
 */
 
+int dsig_key_algo_create (const char* xmln, DSIG_KEY_TYPE kt)
+{
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("key"), xmln + DSIG_URI_LEN, (void *) kt);
+  return add_algo_to_store (select_store ("key"), xmln, (void *) kt);
+}
+
 int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 {
   return add_algo_to_store (select_store ("digest"), xmln, (void *) f);
@@ -304,10 +314,14 @@ int dsig_digest_algo_create (const char* xmln, dsig_digest_f f)
 
 int dsig_sign_algo_create (const char * xmln, dsig_sign_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("dsig"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("dsig"), xmln, (void *) f);
 }
 int dsig_verify_algo_create (const char * xmln, dsig_verify_f f)
 {
+  if (strstr (xmln, DSIG_URI) == xmln)
+    add_algo_to_store (select_store ("verify"), xmln + DSIG_URI_LEN, (void *) f);
   return add_algo_to_store (select_store ("verify"), xmln, (void *) f);
 }
 
@@ -611,7 +625,7 @@ xml_c_nss_hash_add_item (id_hash_t * novo, id_hash_t * nss, caddr_t * tree, xml_
   caddr_t *namespaces;
   int inx;
 
-  if (!DV_TYPE_OF (tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (tree) != DV_ARRAY_OF_POINTER)
     return;
 
   namespaces = xenc_get_namespaces (tree, nss);
@@ -669,7 +683,7 @@ id_hash_t * xml_c_nss_hash_create (caddr_t * select_tree, id_hash_t * nss,
   int inx;
   dk_set_t pexc_list = 0;
 
-  if (!DV_TYPE_OF (select_tree) == DV_ARRAY_OF_POINTER)
+  if (DV_TYPE_OF (select_tree) != DV_ARRAY_OF_POINTER)
     return new_h;
 
   xml_c_namespaces_sort (new_namespaces);
@@ -1149,7 +1163,7 @@ int
 dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out)
 {
   unsigned char * data;
-  HMAC_CTX ctx;
+  HMAC_CTX *ctx;
   unsigned char key_data[32 * 8];
   unsigned char md [SHA256_DIGEST_LENGTH + 1];
   unsigned char md64 [SHA256_DIGEST_LENGTH * 2 + 1];
@@ -1162,17 +1176,15 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       case DSIG_KEY_RAW:
 	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
 	    return 0;
@@ -1183,6 +1195,8 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
 	  return 0;
     }
 
+  if ((ctx = HMAC_CTX_new ()) == NULL)
+    return 0;
 
   data = (unsigned char *) dk_alloc_box (len, DV_C_STRING);
   CATCH_READ_FAIL (ses_in)
@@ -1192,14 +1206,16 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   FAILED
     {
       dk_free_box ((box_t) data);
+      HMAC_CTX_free (ctx);
       return 0;
     }
   END_READ_FAIL (ses_in);
 
-  HMAC_Init(&ctx, (void*) key_data , key_len, EVP_sha256 ());
-  HMAC_Update(&ctx, data, len);
-  HMAC_Final(&ctx, md, &hmac_len);
-  HMAC_cleanup(&ctx);
+
+  HMAC_Init_ex(ctx, (void*) key_data , key_len, EVP_sha256 (),NULL);
+  HMAC_Update(ctx, data, len);
+  HMAC_Final(ctx, md, &hmac_len);
+  HMAC_CTX_free(ctx);
 
   if (hmac_len != SHA256_DIGEST_LENGTH)
     GPF_T;
@@ -1220,7 +1236,7 @@ dsig_hmac_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
 int
 dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest)
 {
-  HMAC_CTX ctx;
+  HMAC_CTX *ctx;
   unsigned char * data;
   unsigned char key_data[3 * 8];
   unsigned char md [SHA256_DIGEST_LENGTH + 1];
@@ -1234,21 +1250,27 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
+	  break;
       default:
 	  return 0;
     }
 
+  if ((ctx = HMAC_CTX_new ()) == NULL)
+    return 0;
 
   data = (unsigned char *) dk_alloc_box (len, DV_C_STRING);
   CATCH_READ_FAIL (ses_in)
@@ -1258,14 +1280,16 @@ dsig_hmac_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, cadd
   FAILED
     {
       dk_free_box ((box_t) data);
+      HMAC_CTX_free (ctx);
       return 0;
     }
   END_READ_FAIL (ses_in);
 
-  HMAC_Init(&ctx, (void*) key_data , key_len, EVP_sha256 ());
-  HMAC_Update(&ctx, data, len);
-  HMAC_Final(&ctx, md, &hmac_len);
-  HMAC_cleanup(&ctx);
+  HMAC_Init_ex(ctx, (void*) key_data , key_len, EVP_sha256 (), NULL);
+  HMAC_Update(ctx, data, len);
+  HMAC_Final(ctx, md, &hmac_len);
+  HMAC_CTX_free (ctx);
+
   dk_free_box ((box_t) data);
 
   len1 = xenc_encode_base64 ((char *)md, md64, hmac_len);
@@ -1286,8 +1310,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1311,6 +1335,8 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = DSA_size (key->xek_private_dsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   DSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->ki.dsa.dsa_st);
 
   if (sign_out)
@@ -1321,6 +1347,7 @@ dsig_dsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1363,7 +1390,7 @@ dsig_dsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA1_Final(&(md[0]),&ctx);
 
   i = DSA_verify (NID_sha1, md, SHA_DIGEST_LENGTH, sig, siglen, key->ki.dsa.dsa_st);
-  return i;
+  return (1 == i);
 }
 
 int
@@ -1386,8 +1413,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   SHA_CTX ctx;
   unsigned char md[SHA_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1398,7 +1425,6 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   if (!key->xek_private_rsa)
     return 0;
-
   memset (md, 0, sizeof (md));
   SHA1_Init(&ctx);
 
@@ -1418,6 +1444,8 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   SHA1_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign(NID_sha1, md, SHA_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1429,6 +1457,7 @@ dsig_rsa_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1444,6 +1473,9 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
   unsigned int siglen;
 
   if (NULL == key)
+    return 0;
+
+  if  (key->xek_type != DSIG_KEY_RSA)
     return 0;
 
 
@@ -1480,7 +1512,7 @@ dsig_rsa_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t
 
   dk_free_box ((box_t) sig);
 
-  return i;
+  return (1 == i);
 }
 
 #ifdef SHA256_ENABLE
@@ -1490,8 +1522,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
   SHA256_CTX ctx;
   unsigned char md[SHA256_DIGEST_LENGTH + 1];
   unsigned char buf[1];
-  unsigned char sig[256 + 1];
   unsigned int siglen;
+  dtp_t tmpbox[512 + BOX_AUTO_OVERHEAD], *sig;
   int i;
 
   if (NULL == key)
@@ -1522,6 +1554,8 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
 
   SHA256_Final(&(md[0]),&ctx);
 
+  siglen = RSA_size (key->xek_private_rsa);
+  BOX_AUTO_TYPED (db_buf_t, sig, tmpbox, siglen + 1, DV_STRING);
   RSA_sign (NID_sha256, md, SHA256_DIGEST_LENGTH, sig, &siglen, key->xek_private_rsa);
   sig[siglen] = 0;
 
@@ -1533,6 +1567,7 @@ dsig_rsa_sha256_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
       memcpy (sign_out[0], encoded_out, len);
       dk_free_box (encoded_out);
     }
+  BOX_DONE (sig, tmpbox);
   return len;
 }
 
@@ -1549,6 +1584,8 @@ dsig_rsa_sha256_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr
   if (NULL == key)
     return 0;
 
+  if  (key->xek_type != DSIG_KEY_RSA)
+    return 0;
 
   siglen = box_length (digest_base64);
   sig = (unsigned char *) dk_alloc_box_zero (siglen, DV_BIN);
@@ -1586,7 +1623,7 @@ int
 dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t * sign_out)
 {
   unsigned char * data;
-  HMAC_CTX ctx;
+  HMAC_CTX *ctx;
   unsigned char key_data[32 * 8];
   unsigned char md [SHA_DIGEST_LENGTH + 1];
   unsigned char md64 [SHA_DIGEST_LENGTH * 2 + 1];
@@ -1599,17 +1636,15 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
       case DSIG_KEY_RAW:
 	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
 	    return 0;
@@ -1620,6 +1655,8 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
 	  return 0;
     }
 
+  if ((ctx = HMAC_CTX_new ()) == NULL)
+    return 0;
 
   data = (unsigned char *) dk_alloc_box (len, DV_C_STRING);
   CATCH_READ_FAIL (ses_in)
@@ -1629,14 +1666,15 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   FAILED
     {
       dk_free_box ((box_t) data);
+      HMAC_CTX_free (ctx);
       return 0;
     }
   END_READ_FAIL (ses_in);
 
-  HMAC_Init(&ctx, (void*) key_data , key_len, EVP_sha1 ());
-  HMAC_Update(&ctx, data, len);
-  HMAC_Final(&ctx, md, &hmac_len);
-  HMAC_cleanup(&ctx);
+  HMAC_Init_ex(ctx, (void*) key_data , key_len, EVP_sha1 (), NULL);
+  HMAC_Update(ctx, data, len);
+  HMAC_Final(ctx, md, &hmac_len);
+  HMAC_CTX_free(ctx);
 
   if (hmac_len != SHA_DIGEST_LENGTH)
     GPF_T;
@@ -1657,7 +1695,7 @@ dsig_hmac_sha1_digest (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
 int
 dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_t digest)
 {
-  HMAC_CTX ctx;
+  HMAC_CTX *ctx;
   unsigned char * data;
   unsigned char key_data[3 * 8];
   unsigned char md [SHA_DIGEST_LENGTH + 1];
@@ -1671,21 +1709,27 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   switch (key->xek_type)
     {
       case DSIG_KEY_3DES:
-	  memcpy (key_data, key->ki.triple_des.k1, sizeof (DES_cblock));
-	  memcpy (key_data + 8, key->ki.triple_des.k2, sizeof (DES_cblock));
-	  memcpy (key_data + 16, key->ki.triple_des.k3, sizeof (DES_cblock));
-	  key_len = 3 * sizeof (DES_cblock);
+	  memcpy (key_data, key->ki.triple_des.k1, DES_KEY_SZ);
+	  memcpy (key_data + 8, key->ki.triple_des.k2, DES_KEY_SZ);
+	  memcpy (key_data + 16, key->ki.triple_des.k3, DES_KEY_SZ);
+	  key_len = 3 * DES_KEY_SZ;
 	  break;
-#ifdef AES_ENC_ENABLE
       case DSIG_KEY_AES:
 	  memcpy (key_data, key->ki.aes.k, key->ki.aes.bits / 8);
           key_len = key->ki.aes.bits / 8;
 	  break;
-#endif
+      case DSIG_KEY_RAW:
+	  if ((key->ki.raw.bits / 8) > sizeof (key_data))
+	    return 0;
+	  memcpy (key_data, key->ki.raw.k, key->ki.raw.bits / 8);
+	  key_len = key->ki.raw.bits / 8;
+	  break;
       default:
 	  return 0;
     }
 
+  if ((ctx = HMAC_CTX_new ()) == NULL)
+    return 0;
 
   data = (unsigned char *) dk_alloc_box (len, DV_C_STRING);
   CATCH_READ_FAIL (ses_in)
@@ -1695,14 +1739,16 @@ dsig_hmac_sha1_verify (dk_session_t * ses_in, long len, xenc_key_t * key, caddr_
   FAILED
     {
       dk_free_box ((box_t) data);
+      HMAC_CTX_free (ctx);
       return 0;
     }
   END_READ_FAIL (ses_in);
 
-  HMAC_Init(&ctx, (void*) key_data , key_len, EVP_sha1 ());
-  HMAC_Update(&ctx, data, len);
-  HMAC_Final(&ctx, md, &hmac_len);
-  HMAC_cleanup(&ctx);
+  HMAC_Init_ex(ctx, (void*) key_data , key_len, EVP_sha1 (), NULL);
+  HMAC_Update(ctx, data, len);
+  HMAC_Final(ctx, md, &hmac_len);
+  HMAC_CTX_free(ctx);
+
   dk_free_box ((box_t) data);
 
   len1 = xenc_encode_base64 ((char *)md, md64, hmac_len);
@@ -1753,7 +1799,6 @@ int xenc_write_cbc_buffer (unsigned char* buf, long len, dk_session_t * out)
   return len;
 }
 
-#ifdef AES_ENC_ENABLE
 int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
 			   xenc_key_t * key, xenc_try_block_t * t)
 {
@@ -1763,7 +1808,7 @@ int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
   caddr_t outbuf_beg;
   int len;
   caddr_t encoded_out;
-  EVP_CIPHER_CTX ctx;
+  EVP_CIPHER_CTX *ctx;
   unsigned char * ivec = &key->ki.aes.iv[0];
 
   CATCH_READ_FAIL (ses_in)
@@ -1778,7 +1823,7 @@ int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
   END_READ_FAIL (ses_in);
 
 #if 1
-  EVP_CIPHER_CTX_init(&ctx);
+  ctx = EVP_CIPHER_CTX_new();
   outbuf_beg = dk_alloc_box (box_length (text) + 16, DV_BIN);
   memcpy (outbuf_beg, ivec, 16);
   outbuf = outbuf_beg + 16;
@@ -1786,33 +1831,32 @@ int xenc_aes_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
   switch (key->ki.aes.bits)
     {
     case 128:
-      EVP_EncryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_EncryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     case 192:
-      EVP_EncryptInit_ex(&ctx, EVP_aes_192_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_EncryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     case 256:
-      EVP_EncryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_EncryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     default:
       GPF_T1 ("Unsupported key size");
     }
-  if(!EVP_EncryptUpdate(&ctx, (unsigned char *)outbuf, &outlen, (unsigned char *)text, box_length (text)))
+  if(!EVP_EncryptUpdate(ctx, (unsigned char *)outbuf, &outlen, (unsigned char *)text, box_length (text)))
     {
-      EVP_CIPHER_CTX_cleanup(&ctx);
       dk_free_box (text);
       dk_free_box (outbuf_beg);
       xenc_report_error (t, 500, XENC_ENC_ERR, "AES encryption internal error #2");
     }
-  /* if(!EVP_EncryptFinal_ex(&ctx, outbuf + outlen, &tmplen))
+  /* if(!EVP_EncryptFinal_ex(ctx, outbuf + outlen, &tmplen))
     {
-      EVP_CIPHER_CTX_cleanup(&ctx);
+      EVP_CIPHER_CTX_free(ctx);
       dk_free_box (text);
       dk_free_box (outbuf_beg);
       xenc_report_error (t, 500, XENC_ENC_ERR, "AES encryption internal error #3");
       } */
   /* outlen += tmplen; */
-  EVP_CIPHER_CTX_cleanup(&ctx);
+  EVP_CIPHER_CTX_free(ctx);
 
 #else
   outbuf_beg = dk_alloc_box (box_length (text) + 16 /* iv */, DV_BIN);
@@ -1877,42 +1921,42 @@ int xenc_aes_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
   text += 16;
 
 #if 0
-  EVP_CIPHER_CTX_init(&ctx);
+  EVP_CIPHER_CTX *ctx = EVP_CIPHER_CTX_new();
   switch (key->ki.aes.bits)
     {
     case 128:
-      EVP_DecryptInit_ex(&ctx, EVP_aes_128_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_DecryptInit_ex(ctx, EVP_aes_128_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     case 192:
-      EVP_DecryptInit_ex(&ctx, EVP_aes_192_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_DecryptInit_ex(ctx, EVP_aes_192_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     case 256:
-      EVP_DecryptInit_ex(&ctx, EVP_aes_256_cbc(), NULL, key->ki.aes.k, ivec);
+      EVP_DecryptInit_ex(ctx, EVP_aes_256_cbc(), NULL, key->ki.aes.k, ivec);
       break;
     default:
       GPF_T1 ("unsupported key size");
     }
   outbuf = dk_alloc_box (len + EVP_MAX_BLOCK_LENGTH, DV_STRING);
 
-  if(!EVP_DecryptUpdate(&ctx, outbuf, &outlen, text, len - 16))
+  if(!EVP_DecryptUpdate(ctx, outbuf, &outlen, text, len - 16))
     {
-      EVP_CIPHER_CTX_cleanup(&ctx);
+      EVP_CIPHER_CTX_free(ctx);
       dk_free_box (text_beg);
       dk_free_box (outbuf);
       xenc_report_error (t, 500, XENC_ENC_ERR, "AES decryption internal error #2");
     }
-  if(!EVP_DecryptFinal_ex (&ctx, outbuf + outlen, &tmplen))
+  if(!EVP_DecryptFinal_ex (ctx, outbuf + outlen, &tmplen))
     {
       unsigned long err = ERR_get_error();
       char buf [120];
-      EVP_CIPHER_CTX_cleanup(&ctx);
+      EVP_CIPHER_CTX_free(ctx);
       dk_free_box (text_beg);
       dk_free_box (outbuf);
       xenc_report_error (t, 500, XENC_ENC_ERR, "AES decryption internal error %s",
 			 ERR_error_string (err, buf));
     }
   outlen += tmplen;
-  EVP_CIPHER_CTX_cleanup(&ctx);
+  EVP_CIPHER_CTX_free(ctx);
 #else
   AES_set_decrypt_key(key->ki.aes.k, key->ki.aes.bits, &aes_schedule);
   outlen = len - 16;
@@ -1932,7 +1976,8 @@ int xenc_aes_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_o
 #endif
   return 1;
 }
-#endif
+
+
 int
 xenc_dsa_encryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out_base64,
 			xenc_key_t * key, xenc_try_block_t * t)
@@ -2050,6 +2095,7 @@ xenc_rsa_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
   int len = 0;
   int keysize;
   RSA * rsa = key->xek_private_rsa;
+  const BIGNUM *p, *q;
 
   if (!seslen)
     {
@@ -2062,9 +2108,14 @@ xenc_rsa_decryptor (dk_session_t * ses_in, long seslen, dk_session_t * ses_out,
       xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not RSA]", key->xek_name);
       return 0;
     }
+  if (NULL == rsa)
+    {
+      xenc_report_error (t, 500 + strlen (key->xek_name), XENC_ENC_ERR, "could not make RSA decryption [key %s is not Private]", key->xek_name);
+      return 0;
+    }
+  RSA_get0_factors(rsa, &p, &q);
   if (!rsa ||
-      !rsa->p ||
-      !rsa->q)
+      !p || !q)
     {
       if (key->xek_x509_KI)
 	key = xenc_get_key_by_keyidentifier (key->xek_x509_KI, 1);
@@ -2516,9 +2567,8 @@ void xenc_alloc_cbc_box_test()
 
 void xenc_aes_enctest_1 (const char * data)
 {
-#ifdef AES_ENC_ENABLE
   unsigned char key_data[16] = "0123456789ABCDEF";
-  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data);
+  xenc_key_t * k = xenc_key_aes_create ("aes_k128", 128, (unsigned char *) key_data, "sha512");
   dk_session_t *in, *out;
   xenc_try_block_t t;
 
@@ -2549,7 +2599,6 @@ void xenc_aes_enctest_1 (const char * data)
   strses_free (out);
   strses_free (in);
   xenc_key_remove (k, 1);
-#endif
 }
 
 void xenc_aes_enctest ()
@@ -3002,6 +3051,17 @@ generate_algo_accessor (canon_2, "canon_2")
 generate_algo_accessor (digest, "digest")
 generate_algo_accessor (transform, "trans")
 
+DSIG_KEY_TYPE 
+dsig_key_algo_get (const char * xmln)
+{
+  xxx_algo_t ** kt;
+  if (!xmln) xmln = "[unknown]";
+  kt = (xxx_algo_t **) id_hash_get (select_store ("key")->dat_hash, (caddr_t) & xmln);
+  if (!kt) 
+    return 0;
+  return (ptrlong)(kt[0]->func);
+}
+
 
 void algo_stores_init ()
 {
@@ -3039,6 +3099,22 @@ void dsig_sec_init ()
 #ifdef DEBUG
   log_info ("dsig_sec_init()");
 #endif
+
+  /* algo key type support */
+  dsig_key_algo_create (DSIG_RSA_SHA1_ALGO, DSIG_KEY_RSA);
+  dsig_key_algo_create (DSIG_RSA_SHA256_ALGO, DSIG_KEY_RSA);
+
+  dsig_key_algo_create (DSIG_DSA_SHA1_ALGO, DSIG_KEY_DSA);
+
+  dsig_key_algo_create (DSIG_DH_SHA1_ALGO, DSIG_KEY_DH);
+  dsig_key_algo_create (DSIG_DH_SHA256_ALGO, DSIG_KEY_DH);
+
+  dsig_key_algo_create (DSIG_HMAC_SHA1_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create (DSIG_HMAC_SHA256_ALGO, DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha1", DSIG_KEY_RAW);
+  dsig_key_algo_create ("hmac_sha256", DSIG_KEY_RAW);
+  /* end type support */
+
   dsig_digest_algo_create (DSIG_SHA1_ALGO, dsig_sha1_digest);
 
   dsig_sign_algo_create (DSIG_DSA_SHA1_ALGO, dsig_dsa_sha1_digest);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -353,3 +353,51 @@ mutex_enter (dk_mutex_t * mtx)
   return (mutex_enter_dbg (__LINE__, __FILE__, mtx));
 }
 #endif
+
+/******************************************************************************
+ *
+ *  rwlock
+ *
+ ******************************************************************************/
+
+rwlock_t *
+rwlock_allocate (void)
+{
+  return (rwlock_t *) 1L;
+}
+
+
+void
+rwlock_free (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_rdlock (rwlock_t * l)
+{
+}
+
+
+int
+rwlock_tryrdlock (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_wrlock (rwlock_t * l)
+{
+}
+
+
+int
+rwlock_trywrlock (rwlock_t * l)
+{
+}
+
+
+void
+rwlock_unlock (rwlock_t * l)
+{
+}

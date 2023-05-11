@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -139,13 +139,14 @@ clib_vec_read_into_clo (cll_in_box_t * clib)
     row[inx] = dre_box (&clib->clib_dc_read[inx], row[inx], inst);
 }
 
-
+#if 0
 void
 dc_any_trap (db_buf_t dv)
 {
   if (DV_DATETIME == dv[0] && 11 == dv[1] && 48 == dv[2] && 37 == dv[3] && 23 == dv[4])
     bing ();
 }
+#endif
 
 void
 clib_vec_read_into_slots (cll_in_box_t * clib, caddr_t * inst, dk_set_t slots)
@@ -439,14 +440,15 @@ clib_row_boxes (cll_in_box_t * clib)
   if (clib->clib_n_dcs && clib->clib_dc_read[0].dre_pos > clib->clib_first._.row.nth_val)
     {
       log_error ("dre read is ahead of clib read");
-      bing ();
       return;
     }
   for (inx = 0; inx < clib->clib_n_dcs; inx++)
     {
       row[inx] = dre_box (&clib->clib_dc_read[inx], row[inx], inst);
+#if 0
       if (clib_trap_qf == clib->clib_group->clrg_dbg_qf && clib_trap_col == inx && unbox (row[inx]))
 	bing ();
+#endif
     }
 }
 

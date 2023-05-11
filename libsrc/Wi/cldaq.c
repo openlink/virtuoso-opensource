@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -323,7 +323,7 @@ clrg_local_ins_del_single (cl_req_group_t * clrg)
 		sqlr_resignal (err);
 	      }
 	if (CLO_DELETE == clo->clo_op)
-	  cls_vec_del_rd_layout (clo->_.delete.rd);
+	  cls_vec_del_rd_layout (clo->_.delete_op.rd);
 	err = NULL;
 	qi->qi_client->cli_non_txn_insert = CLO_INSERT == clo->clo_op && clo->_.insert.non_txn;
 	err = cl_vec_exec (qr, qi->qi_client, clrg->clrg_pool, clo->_.insert.rd->rd_values, NULL, QI_NO_SLICE, &set_mask, NULL, 0);
@@ -1087,7 +1087,7 @@ cu_ld_str (caddr_t * row, int tmp)
   iri_id_write ((iri_id_t *) (row[0]), &ses);
   iri_id_write ((iri_id_t *) (row[1]), &ses);
   iri_id_write ((iri_id_t *) (row[2]), &ses);
-  if (DV_TYPE_OF (row[3]) == DV_RDF)
+  if (DV_TYPE_OF (row[3]) == DV_RDF && RDF_BOX (row[3])->rb_ro_id)
     rb_id_serialize ((rdf_box_t *) (row[3]), &ses);
   else
     print_object (row[3], &ses, NULL, NULL);

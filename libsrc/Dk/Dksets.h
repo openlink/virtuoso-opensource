@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -131,9 +131,9 @@ struct s_node_s
 
 
 /* Dksets.c */
-uint32 dk_set_length (s_node_t * set);
-dk_set_t dk_set_last (dk_set_t set);
-dk_set_t dk_set_conc (dk_set_t s1, dk_set_t s2);
+EXE_EXPORT (uint32, dk_set_length, (s_node_t * set));
+EXE_EXPORT (dk_set_t, dk_set_last, (dk_set_t set));
+EXE_EXPORT (dk_set_t, dk_set_conc, (dk_set_t s1, dk_set_t s2));
 
 EXE_EXPORT (caddr_t, list_to_array, (dk_set_t l));
 EXE_EXPORT (caddr_t, copy_list_to_array, (dk_set_t l));

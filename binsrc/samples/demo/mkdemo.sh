@@ -9,7 +9,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -146,34 +146,38 @@ START_SERVER()
   if [ "z$HOST_OS" != "z" ] 
   then
       "$SERVER" +foreground &
+      starth=`date | cut -f 2 -d :`
+      starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+      while true
+	do
+	  sleep 6
+	  if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
+	    then
+	      ECHO "Virtuoso server started"
+	      return 0
+	    fi
+	  nowh=`date | cut -f 2 -d :`
+	  nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	  nowh=`expr $nowh - $starth`
+	  nows=`expr $nows - $starts`
+
+	  nows=`expr $nows + $nowh \*  60`
+	  if test $nows -ge $timeout
+	    then
+	      ECHO "***FAILED: Could not start Virtuoso DEMO Server within $timeout seconds"
+	      exit 1
+	    fi
+      done
   else
       "$SERVER" +wait
-  fi
-
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-
-  while true
-    do
-      sleep 6
-      if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
-        then
-	  ECHO "Virtuoso server started"
-	  return 0
-	fi
-      nowh=`date | cut -f 2 -d :`
-      nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-
-      nowh=`expr $nowh - $starth`
-      nows=`expr $nows - $starts`
-
-      nows=`expr $nows + $nowh \*  60`
-      if test $nows -ge $timeout
-        then
+      if test $? -ne 0
+      then
 	  ECHO "***FAILED: Could not start Virtuoso DEMO Server within $timeout seconds"
 	  exit 1
-	fi
-  done
+      fi
+  fi
 }
 
 STOP_SERVER()
@@ -247,7 +251,7 @@ then
     if [ "x$HOST_OS" = "x" ]
     then
 	(cd $HOME/appsrc ; make)
-	(cd $HOME/binsrc/b3s ; make)
+	(cd $HOME/binsrc/fct ; make)
 	(cd $HOME/binsrc/bpel; make)
 	(cd $HOME/binsrc/isparql ; make)
 	(cd $HOME/binsrc/rdf_mappers ; make)
@@ -255,7 +259,7 @@ then
 	(cd $HOME/binsrc/samples/image_magick ; make)
 	(cd $HOME/binsrc/samples/sparql_demo ; make)
 	(cd $HOME/binsrc/tutorial ; make)
-	(cd $HOME/binsrc/yacutia ; make)
+	(cd $HOME/binsrc/conductor ; make)
     fi
 else
     (cd $HOME/binsrc/bpel; make )
@@ -339,14 +343,14 @@ fi
 BREAK
 ECHO "Collecting and installing VAD packages"
 
-$LN $HOME/binsrc/b3s/fct_dav.vad .
+$LN $HOME/binsrc/fct/fct_dav.vad .
 $LN $HOME/binsrc/bpel/bpel_dav.vad .
 $LN $HOME/binsrc/isparql/isparql_dav.vad .
 $LN $HOME/binsrc/rdf_mappers/rdf_mappers_dav.vad .
 $LN $HOME/binsrc/rdb2rdf/rdb2rdf_dav.vad .
 $LN $HOME/binsrc/samples/sparql_demo/sparql_demo_dav.vad .
 $LN $HOME/binsrc/tutorial/tutorial_dav.vad .
-$LN $HOME/binsrc/yacutia/conductor_dav.vad .
+$LN $HOME/binsrc/conductor/conductor_dav.vad .
 
 [ -f conductor_dav.vad ] && DO_COMMAND "vad_install ('conductor_dav.vad')" dba dba
 [ -f fct_dav.vad ] && DO_COMMAND "vad_install ('fct_dav.vad')" dba dba

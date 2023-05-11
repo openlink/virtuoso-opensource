@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -22,13 +22,13 @@
 --
 
 
-create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
+create procedure DB.DBA.L_O_LOOK (inout val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
 {
   vectored;
   -- dbg_obj_princ ('L_O_LOOK (', val_str, dt_lang, lng, is_text, id, ')');
   declare fetched int;
   set triggers off;
-  insert into rdf_obj index ro_val option (fetch id by 'RDF_RO_ID' set fetched) (ro_val, ro_dt_and_lang, ro_id) values (val_str, dt_lang, id);
+  insert into DB.DBA.RDF_OBJ index RO_VAL option (fetch id by 'RDF_RO_ID' set fetched) (RO_VAL, RO_DT_AND_LANG, RO_ID) values (val_str, dt_lang, id);
   if (0 = fetched)
     {
       declare flags int;
@@ -38,9 +38,9 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
       --     dbg_obj_princ ('zero ro_flags in ttlpv,sql:37 ', val_str, lng);
       --     ;
       --   }
-      insert into rdf_obj index rdf_obj (ro_id, ro_val, ro_flags, ro_dt_and_lang, ro_long) values (id, val_str, flags, dt_lang, lng);
+      insert into DB.DBA.RDF_OBJ index RDF_OBJ (RO_ID, RO_VAL, RO_FLAGS, RO_DT_AND_LANG, RO_LONG) values (id, val_str, flags, dt_lang, lng);
       if (1 = is_text)
-        insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+        insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
       if (2 = is_text)
 	{
 	  declare geo any;
@@ -56,7 +56,7 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
       pref := subseq (val_str, 0, case when length (val_str) < 10 then length (val_str) else 10 end);
       else
         pref := subseq (lng, 0, 10);
-      insert into ro_start option (no cluster) (rs_start, rs_dt_and_lang, rs_ro_id) values (pref, dt_lang, rdf_box (0, 257, 257, id, 0));
+      insert into DB.DBA.RO_START option (no cluster) (RS_START, RS_DT_AND_LANG, RS_RO_ID) values (pref, dt_lang, rdf_box (0, 257, 257, id, 0));
     }
   else if ((1 = is_text) and not __rdf_obj_ft_rule_check (null, null))
     {
@@ -64,43 +64,79 @@ create procedure L_O_LOOK (inout  val_str varchar, inout dt_lang int, inout lng 
       if (bit_and (is_text, 1) and exists (select 1 from DB.DBA.RDF_OBJ where RO_ID=id and not bit_and (RO_FLAGS, 1)))
         {
           update DB.DBA.RDF_OBJ set RO_FLAGS = bit_or (RO_FLAGS, 1) where RO_ID=id;
-          insert soft VTLOG_DB_DBA_RDF_OBJ option (no cluster) (vtlog_ro_id, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
+          insert soft DB.DBA.VTLOG_DB_DBA_RDF_OBJ option (no cluster) (VTLOG_RO_ID, SNAPTIME, DMLTYPE) values (id, curdatetime (), 'I');
         }
     }
 }
 ;
 
-create procedure RL_I2ID_NP (inout pref varchar, inout name varchar, inout id iri_id_8)
+create procedure DB.DBA.L_O_LOOK_NE (inout val_str varchar, inout dt_lang int, inout lng varchar, inout is_text int, inout id int)
 {
   vectored;
-  declare pref_fetched, id_fetched, pref_id int;
-  insert into rdf_prefix index rdf_prefix option (fetch pref_id by 'RDF_PREF_SEQ' set pref_fetched) (rp_name, rp_id) values (pref, pref_id);
-  if (0 = pref_fetched)
-    insert soft rdf_prefix index DB_DBA_RDF_PREFIX_UNQC_RP_ID (rp_name, rp_id) values (pref, pref_id);
-  rdf_cache_id ('p', pref, pref_id);
-  __rl_set_pref_id (name, pref_id);
---  name[0] := bit_shift (pref_id, -24);
---  name[1] := bit_shift (pref_id, -16);
---  name[2] := bit_shift (pref_id, -8);
---  name[3] := pref_id;
-
-  insert into rdf_iri index rdf_iri option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (ri_name, ri_id) values (name, id);
-  if (0 = id_fetched)
-    insert into RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
+  id := (select RO_ID from DB.DBA.RDF_OBJ table option (index RO_VAL) where RO_VAL = val_str and  RO_DT_AND_LANG = dt_lang);
+  if (id is null)
+    id := 0;
 }
 ;
 
-create procedure rl_i2id (inout name varchar, inout id iri_id_8)
+create procedure DB.DBA.RL_I2ID_NP (inout pref varchar, inout name varchar, inout id iri_id_8)
+{
+  vectored;
+  declare pref_fetched, id_fetched, pref_id int;
+  insert into DB.DBA.RDF_PREFIX index RDF_PREFIX option (fetch pref_id by 'RDF_PREF_SEQ' set pref_fetched) (RP_NAME, RP_ID) values (pref, pref_id);
+  if (0 = pref_fetched)
+    insert soft DB.DBA.RDF_PREFIX index DB_DBA_RDF_PREFIX_UNQC_RP_ID (RP_NAME, RP_ID) values (pref, pref_id);
+  rdf_cache_id ('p', pref, pref_id);
+  __rl_set_pref_id (name, pref_id);
+  insert into DB.DBA.RDF_IRI index RDF_IRI option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (RI_NAME, RI_ID) values (name, id);
+  if (0 = id_fetched)
+    insert into DB.DBA.RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
+}
+;
+
+create procedure DB.DBA.RL_I2ID (inout name varchar, inout id iri_id_8)
 {
   vectored;
   declare id_fetched int;
 
-  insert into rdf_iri index rdf_iri option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (ri_name, ri_id) values (name, id);
+  insert into DB.DBA.RDF_IRI index RDF_IRI option (fetch id by 'RDF_URL_IID_NAMED' set id_fetched) (RI_NAME, RI_ID) values (name, id);
   if (0 = id_fetched)
-    insert into RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
+    insert into DB.DBA.RDF_IRI index DB_DBA_RDF_IRI_UNQC_RI_ID (RI_ID, RI_NAME) values (id, name);
   rdf_cache_id ('i', name, id);
 }
 ;
+
+create procedure DB.DBA.RL_I2ID_NE (inout name varchar, inout id iri_id_8)
+{
+  vectored;
+  id := (select RI_ID from DB.DBA.RDF_IRI table option (index RDF_IRI) where RI_NAME = name);
+  if (id is not null)
+    rdf_cache_id ('i', name, id);
+  else
+    id := #i0;
+}
+;
+
+create procedure RL_I2ID_NPE (inout pref varchar, inout name varchar, inout id iri_id_8)
+{
+  vectored;
+  declare pref_fetched, id_fetched, pref_id int;
+  pref_id := (select RP_ID from DB.DBA.RDF_PREFIX table option (index RDF_PREFIX) where RP_NAME = pref);
+  if (pref_id is null)
+    id := #i0;
+  else
+    {
+      rdf_cache_id ('p', pref, pref_id);
+      __rl_set_pref_id (name, pref_id);
+      id := (select RI_ID from DB.DBA.RDF_IRI table option (index RDF_IRI) where RI_NAME = name);
+      if (id is not null)
+        rdf_cache_id ('i', name, id);
+      else
+        id := #i0;
+    }
+}
+;
+
 
 create procedure DB.DBA.TTLP_RL_TRIPLE (
   inout g_iid IRI_ID, inout s_uri varchar, inout p_uri varchar,
@@ -110,16 +146,15 @@ create procedure DB.DBA.TTLP_RL_TRIPLE (
   connection_set ('g_iid', g_iid);
   dpipe_input (app_env[1], s_uri, p_uri, o_uri, null);
   if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
-    rl_send (app_env, g_iid);
+    DB.DBA.RL_SEND (app_env, g_iid);
 }
 ;
 
-create procedure rdf_rl_type_id (in iri varchar)
+create procedure DB.DBA.RDF_RL_TYPE_ID (in iri varchar)
 {
   declare id, old_mode int;
-  declare t_iri_id, daq  any;
-  id := (select rdt_twobyte from rdf_datatype  where rdt_qname = iri);
-  if (id)
+  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
+  if (id is not null)
     {
       rdf_cache_id ('t', iri, id);
       return id;
@@ -131,39 +166,35 @@ create procedure rdf_rl_type_id (in iri varchar)
     rollback work;
     n_dead := n_dead + 1;
     if (n_dead > 10)
-      signal ('RDF..', 'Over 10 deadlocks getting language id.  Retry ref load');
+      signal ('RDF..', 'Over 10 deadlocks getting datatype id. Retry the RDF load');
     goto again;
   };
  again:
   if (2 = old_mode)
     log_enable (0, 1);
 
-  t_iri_id := iri_to_id (iri, 1);
-  id := (select rdt_twobyte from rdf_datatype  where rdt_qname = iri);
-  if (id)
+  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
+  if (id is null)
     {
-      commit work; -- if load non transactional, this is still a sharpp transaction boundary.
-      log_enable (old_mode, 1);
-      rdf_cache_id ('t', iri, id);
-      return id;
+      declare t_iri_id any;
+      t_iri_id := iri_to_id (iri, 1);
+      id:= sequence_next ('RDF_DATATYPE_TWOBYTE', 1, 1);
+      insert into DB.DBA.RDF_DATATYPE (RDT_TWOBYTE, RDT_IID, RDT_QNAME) values (id, t_iri_id, iri);
     }
-
-  id:= sequence_next ('RDF_DATATYPE_TWOBYTE', 1, 1);
-  insert into rdf_datatype (rdt_twobyte, rdt_iid, rdt_qname) values (id, t_iri_id, iri);
-  commit work; -- if load non transactional, this is still a sharpp transaction boundary.
+  commit work; -- if load non transactional, this is still a sharp transaction boundary.
   log_enable (old_mode, 1);
   rdf_cache_id ('t', iri, id);
   return id;
 }
 ;
 
-create procedure rdf_rl_lang_id (in ln varchar)
+create procedure DB.DBA.RDF_RL_LANG_ID (in ln varchar)
 {
   declare id, old_mode int;
   declare daq  any;
   ln := lower (ln);
   id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
-  if (id)
+  if (id is not null)
     {
       rdf_cache_id ('l', ln, id);
       return id;
@@ -175,24 +206,19 @@ create procedure rdf_rl_lang_id (in ln varchar)
     rollback work;
     n_dead := n_dead + 1;
     if (n_dead > 10)
-      signal ('RDF..', 'Over 10 deadlocks getting language id.  Retry ref load');
+      signal ('RDF..', 'Over 10 deadlocks getting language id. Retry the RDF load');
     goto again;
   };
  again:
   if (2 = old_mode)
     log_enable (0, 1);
   id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
-  if (id)
+  if (id is null)
     {
-      rdf_cache_id ('l', ln, id);
-      commit work; -- if load non transactional, this is still a sharpp transaction boundary.
-      log_enable (old_mode, 1);
-      return id;
+      id:= sequence_next ('RDF_LANGUAGE_TWOBYTE', 1, 1);
+      insert into DB.DBA.RDF_LANGUAGE (RL_TWOBYTE, RL_ID) values (id, ln);
     }
-
-  id:= sequence_next ('RDF_LANGUAGE_TWOBYTE', 1, 1);
-  insert into rdf_language (rl_twobyte, rl_id) values (id, ln);
-  commit work; -- if load non transactional, this is still a sharpp transaction boundary.
+  commit work; -- if load non transactional, this is still a sharp transaction boundary.
   log_enable (old_mode, 1);
   rdf_cache_id ('l', ln, id);
   return id;
@@ -216,7 +242,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 	{
 	  lid := rdf_cache_id ('l', o_lang);
 	    if (lid = 0)
-	      lid := rdf_rl_lang_id (o_lang);
+	      lid := DB.DBA.RDF_RL_LANG_ID (o_lang);
 	}
       else
         lid := 257;
@@ -230,7 +256,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
                 {
                   tid := rdf_cache_id ('t', o_type);
                   if (tid = 0)
-                    tid := rdf_rl_type_id (o_type);
+                    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                   rdf_box_set_type (parsed, tid);
                 }
               else if (__tag of XML = __tag (parsed))
@@ -238,7 +264,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
 		  parsed := rdf_box (parsed, 300, 257, 0, 1);
 		  tid := rdf_cache_id ('t', o_type);
 		  if (tid = 0)
-		    tid := rdf_rl_type_id (o_type);
+		    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 		  rdf_box_set_type (parsed, tid);
 		}
               -- if (not bit_and (is_text, 1))
@@ -252,9 +278,11 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
             }
 	  tid := rdf_cache_id ('t', o_type);
 	  if (tid = 0)
-	    tid := rdf_rl_type_id (o_type);
+	    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	}
       else
+        tid := 257;
+      if (tid = 256) -- cannot set geometry with non-geometry content
         tid := 257;
       o_val_2 := rdf_box (o_val, tid, lid, 0, 1);
       -- if (not bit_and (is_text, 1))
@@ -282,7 +310,7 @@ create procedure DB.DBA.TTLP_RL_TRIPLE_L (
     }
 do_flush:
   if (daq_buffered_bytes (app_env[1]) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
-    rl_send (app_env, g_iid);
+    DB.DBA.RL_SEND (app_env, g_iid);
 }
 ;
 
@@ -292,24 +320,24 @@ create procedure DB.DBA.TTLP_RL_NEW_GRAPH (inout g varchar, inout g_iid IRI_ID, 
   declare prev_g iri_id;
   prev_g := connection_get ('g_iid');
   if (dpipe_count (app_env[1]))
-    rl_send (app_env, prev_g);
+    DB.DBA.RL_SEND (app_env, prev_g);
 }
 ;
 
 
-create procedure rl_local_dpipe ()
+create procedure DB.DBA.RL_LOCAL_DPIPE ()
 {
-  return dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO');
+  return dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO');  -- the pipe with CU_DB_ORDERED
 }
 ;
 
-create procedure rl_local_dpipe_gs ()
+create procedure DB.DBA.RL_LOCAL_DPIPE_GS ()
 {
-  return dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+  return dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');  -- the pipe with CU_DB_ORDERED
 }
 ;
 
-create procedure RL_FLUSH (in dp any, in g_iid any)
+create procedure DB.DBA.RL_FLUSH (in dp any, in g_iid any)
 {
   declare ro_id_dict any;
   if (1 or '1' = registry_get ('cl_rdf_text_index'))
@@ -328,15 +356,15 @@ create procedure RL_FLUSH (in dp any, in g_iid any)
 }
 ;
 
-create procedure rl_send (inout env any, in g_iid any)
+create procedure DB.DBA.RL_SEND (inout env any, in g_iid any)
 {
   declare req, n_reqs int;
   commit work;
-  -- dbg_obj_princ ('rl_send (', env, g_iid, ')');
+  -- dbg_obj_princ ('DB.DBA.RL_SEND (', env, g_iid, ')');
   n_reqs := env[2];
   env[2] := n_reqs + 1;
   req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
-  env[1] := rl_local_dpipe ();
+  env[1] := DB.DBA.RL_LOCAL_DPIPE ();
   env[4 + mod (n_reqs, 5)] := req;
   if (n_reqs > 5)
     {
@@ -352,17 +380,17 @@ create procedure DB.DBA.TTLP_RL_COMMIT (inout g varchar, inout app_env any)
 }
 ;
 
-create procedure rl_send_gs (inout env any, in g_iid any)
+create procedure DB.DBA.RL_SEND_GS (inout env any, in g_iid any)
 {
   declare req, n_reqs int;
   if (bit_and (4, dpipe_rdf_load_mode (env[1])))
     return;
-  -- dbg_obj_princ ('rl_send_gs (', env, g_iid, ')');
+  -- dbg_obj_princ ('DB.DBA.RL_SEND_GS (', env, g_iid, ')');
   commit work;
   n_reqs := env[2];
   env[2] := n_reqs + 1;
   req := aq_request (env[0], 'DB.DBA.RL_FLUSH', vector (env[1], g_iid));
-  env[1] := rl_local_dpipe_gs ();
+  env[1] := DB.DBA.RL_LOCAL_DPIPE_GS ();
   env[4 + mod (n_reqs, 5)] := req;
   if (n_reqs > 5)
     {
@@ -383,7 +411,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE (
   dpipe_input (dp, s_uri, p_uri, o_uri, null, g_iid);
   if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz')) 
       and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
-    rl_send_gs (app_env, g_iid);
+    DB.DBA.RL_SEND_GS (app_env, g_iid);
 }
 ;
 
@@ -408,7 +436,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
 	{
 	  lid := rdf_cache_id ('l', o_lang);
 	    if (lid = 0)
-	      lid := rdf_rl_lang_id (o_lang);
+	      lid := DB.DBA.RDF_RL_LANG_ID (o_lang);
 	}
       else
         lid := 257;
@@ -422,7 +450,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
                 {
                   tid := rdf_cache_id ('t', o_type);
                   if (tid = 0)
-                    tid := rdf_rl_type_id (o_type);
+                    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                   rdf_box_set_type (parsed, tid);
                 }
               else if (__tag of XML = __tag (parsed))
@@ -441,7 +469,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
             }
 	  tid := rdf_cache_id ('t', o_type);
 	  if (tid = 0)
-	    tid := rdf_rl_type_id (o_type);
+	    tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	}
       else
         tid := 257;
@@ -472,7 +500,7 @@ create procedure DB.DBA.TTLP_RL_GS_TRIPLE_L (
 do_flush:
   if ((daq_buffered_bytes (dp) > 30000000 or dpipe_count (app_env[1]) >= sys_stat ('dc_max_batch_sz'))
       and 0 = bit_and (4, dpipe_rdf_load_mode (dp)))
-    rl_send_gs (app_env, g_iid);
+    DB.DBA.RL_SEND_GS (app_env, g_iid);
 }
 ;
 
@@ -492,13 +520,15 @@ create procedure DB.DBA.TTLP_EV_NULL_IID (inout uri varchar, inout g_iid IRI_ID,
 
 --/1d1/tpch1000
 --!!!
-create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads int, in log_mode int, in old_log_mode int)
+create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph varchar := null, in flags integer, in threads integer, in log_mode integer, in old_log_mode integer)
 {
   declare ro_id_dict, app_env, g_iid any;
   -- dbg_obj_princ ('DB.DBA.TTLP_V_GS (...', base, graph, flags, threads, log_mode, old_log_mode);
-  app_env := vector (async_queue (threads, 1), rl_local_dpipe_gs (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    signal ('22023', 'DB.DBA.TTLP_V_GS() cannot be used before upgrading the RDF_IRI table to 64-bit prefix IDs, use TTLP() instead');
+  app_env := vector (async_queue (threads, 1), DB.DBA.RL_LOCAL_DPIPE_GS (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   if (bit_and (flags, 2048))
-    dpipe_set_rdf_load (app_env[1], 6);
+    dpipe_set_rdf_load (app_env[1], 6); -- bit_or (RDF_DL_DEL_INS, RDF_LD_MULTIGRAPH)
   g_iid := case when length (graph) > 0 then iri_to_id (graph) else null end;
   rdf_load_turtle (strg, base, graph, flags,
     vector (
@@ -514,12 +544,13 @@ create procedure DB.DBA.TTLP_V_GS (in strg varchar, in base varchar, in graph va
     dpipe_exec_rdf_callback (app_env[1]);
   else
     {
-      rl_send_gs (app_env, g_iid);
+      DB.DBA.RL_SEND_GS (app_env, g_iid);
       commit work;
       aq_wait_all (app_env[0]);
     }
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
@@ -531,37 +562,44 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       DB.DBA.TTLP_CL (strg, 0, base, graph, flags);
       return;
     }
-
+  if (is_atomic ())
+    signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      DB.DBA.TTLP (strg, base, graph, flags);
+      return;
+    }
+  old_log_mode := null;
   declare exit handler for sqlstate '37000' {
     if (app_env <> 0)
       {
-    rl_send (app_env, g_iid);
+    DB.DBA.RL_SEND (app_env, g_iid);
     commit work;
     aq_wait_all (app_env[0]);
       }
     connection_set ('g_dict', null);
+    if (old_log_mode is not null)
     log_enable (old_log_mode, 1);
     signal (__SQL_STATE, '[Vectorized Turtle loader] ' || __SQL_MESSAGE);
   };
-  old_log_mode := log_enable (null, 1);
   if (transactional = 0)
     {
       if (log_enable = 0 or log_enable = 1)
-    log_enable (2 + log_enable, 1);
+        log_enable := 2 + log_enable;
     }
   else
     threads := 0;
+
   if (log_enable is not null)
-    {
       old_log_mode := log_enable (log_enable, 1);
-    }
+
   if (126 = __tag (strg))
     strg := cast (strg as varchar);
 
   if (bit_and (flags, 256+512))
     return DB.DBA.TTLP_V_GS (strg, base, graph, flags, threads, log_enable, old_log_mode);
 
- app_env := vector (async_queue (threads, 1),rl_local_dpipe (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+ app_env := vector (async_queue (threads, 1), DB.DBA.RL_LOCAL_DPIPE (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   g_iid := iri_to_id (graph);
   rdf_load_turtle (strg, base, graph, flags,
     vector (
@@ -573,11 +611,12 @@ create procedure DB.DBA.TTLP_V (in strg varchar, in base varchar, in graph varch
       'DB.DBA.TTLP_RL_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env);
-  rl_send (app_env, g_iid);
+  DB.DBA.RL_SEND (app_env, g_iid);
   commit work;
   aq_wait_all (app_env[0]);
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
@@ -585,28 +624,32 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
 {
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
-    return rdf_load_rdfxml_cl (strg, base, graph,0);
+    return DB.DBA.RDF_LOAD_RDFXML_CL (strg, base, graph,0);
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      DB.DBA.RDF_LOAD_RDFXML_IMPL (strg, base, graph, parse_mode, log_mode, transactional);
+      return;
+    }
 
   declare exit handler for sqlstate '37000' {
-    rl_send (app_env, g_iid);
+    DB.DBA.RL_SEND (app_env, g_iid);
     commit work;
     aq_wait_all (app_env[0]);
     connection_set ('g_dict', null);
+    if (old_log_mode is not null)
     log_enable (old_log_mode, 1);
     signal (__SQL_STATE, '[Vectorized RDF/XML loader] ' || __SQL_MESSAGE);
   };
-  old_log_mode := log_enable (null, 1);
+  old_log_mode := null;
   if (transactional = 0)
     {
       if (log_mode = 0 or log_mode = 1)
-	log_enable (2 + log_mode, 1);
+	log_mode := 2 + log_mode;
     }
   else
     threads := 0;
   if (log_mode is not null)
-    {
       old_log_mode := log_enable (log_mode, 1);
-    }
   if (126 = __tag (strg))
     {
       declare s any;
@@ -614,7 +657,7 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
       http (strg, s);
       strg := s;
     }
-  app_env := vector (async_queue (threads, 1), rl_local_dpipe (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  app_env := vector (async_queue (threads, 1), DB.DBA.RL_LOCAL_DPIPE (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
   g_iid := iri_to_id (graph);
   rdf_load_rdfxml (strg, parse_mode, graph,
     vector (
@@ -626,15 +669,16 @@ create procedure DB.DBA.RDF_LOAD_RDFXML_V (in strg varchar, in base varchar, in 
       'DB.DBA.TTLP_RL_COMMIT',
       'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
     app_env, base);
-  rl_send (app_env, g_iid);
+  DB.DBA.RL_SEND (app_env, g_iid);
   commit work;
   aq_wait_all (app_env[0]);
   connection_set ('g_dict', null);
-  log_enable (old_log_mode, 1);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;
 
-create procedure ID_TO_IRI_VEC (in id iri_id)
+create procedure DB.DBA.ID_TO_IRI_VEC (in id iri_id)
 {
   vectored;
   declare name, pref varchar;
@@ -648,17 +692,12 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
       if (__tag (id) = __tag of varchar and bit_and (__box_flags (id), 1))
         return id;
     }
-  idn := iri_id_num (id);
-  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
-    {
-      if (idn >= 4611686018427387904)
-        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
-      return sprintf_iri ('nodeID://%ld', idn);
-    }
-  name := rdf_cache_id_to_name ('i', idn, 0);
+  if (is_plain_bnode_iri_id (id))
+    return iri_id_to_blank_nodeid (id);
+  name := rdf_cache_id_to_name ('i', id, 0);
   if (0 = name)
     {
-      name := (select ri_name from rdf_iri where ri_id = id);
+      name := (select RI_NAME from DB.DBA.RDF_IRI where RI_ID = id);
       if (name is null)
         return sprintf_iri ('iri_id_%ld_with_no_name_entry', iri_id_num (id));
       else
@@ -667,7 +706,7 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
   pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
   if (pref <> 0)
     return iri_from_pref_name (pref, name);
-  pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
+  pref := (select RP_NAME from DB.DBA.RDF_PREFIX where RP_ID = iri_name_id (name));
   if (pref is null)
     pref := 'no prefix';
   else
@@ -677,7 +716,7 @@ create procedure ID_TO_IRI_VEC (in id iri_id)
 ;
 
 
-create procedure ID_TO_IRI_VEC_NS (in id any array)
+create procedure DB.DBA.ID_TO_IRI_VEC_NS (in id any array)
 {
   vectored;
   declare name, pref varchar;
@@ -687,17 +726,12 @@ create procedure ID_TO_IRI_VEC_NS (in id any array)
       when __tag of UNAME then id
       when __tag of varchar then case when bit_and (__box_flags (id), 1) then id else NULL end
       else NULL end );
-  idn := iri_id_num (id);
-  if ((id >= #ib0) and (id < min_named_bnode_iri_id()))
-    {
-      if (idn >= 4611686018427387904)
-        return sprintf_iri ('nodeID://b%ld', idn-4611686018427387904);
-      return sprintf_iri ('nodeID://%ld', idn);
-    }
+  if (is_plain_bnode_iri_id (id))
+    return iri_id_to_blank_nodeid (id);
   name := rdf_cache_id_to_name ('i', idn, 0);
   if (0 = name)
     {
-      name := (select ri_name from rdf_iri where ri_id = id);
+      name := (select RI_NAME from DB.DBA.RDF_IRI where RI_ID = id);
       if (name is null)
         return sprintf_iri ('iri_id_%ld_with_no_name_entry', iri_id_num (id));
       else
@@ -706,7 +740,7 @@ create procedure ID_TO_IRI_VEC_NS (in id any array)
   pref := rdf_cache_id_to_name ('p', iri_name_id (name), 0);
   if (pref <> 0)
     return iri_from_pref_name (pref, name);
-  pref := (select rp_name from rdf_prefix where rp_id = iri_name_id (name));
+  pref := (select RP_NAME from DB.DBA.RDF_PREFIX where RP_ID = iri_name_id (name));
   if (pref is null)
     pref := 'no prefix';
   else
@@ -743,31 +777,7 @@ create procedure DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (inout triples any)
 }
 ;
 
-create procedure DB.DBA.RDF_QUADS_BATCH_COMPLETE (inout triples any)
-{
-  declare tcount, tctr, vcount, vctr integer;
-  declare inx, nt int;
-  declare og, os, op, oo any array;
-  nt := length (triples);
-  for vectored (in t any array := triples, out og := g1, out os := s1, out op := p1, out oo := o1)
-    {
-      declare g1, s1, p1, o1 any array;
-      g1 := __ro2sq (t[0]);
-      s1 := __ro2sq (t[1]);
-      p1 := __ro2sq (t[2]);
-      o1 := __ro2sq (t[3]);
-    }
-  for (inx := 0; inx < nt; inx := inx + 1)
-    {
-      triples[inx][0] := og[inx];
-      triples[inx][1] := os[inx];
-      triples[inx][2] := op[inx];
-      triples[inx][3] := oo[inx];
-    }
-}
-;
-
-create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
+create procedure DB.DBA.RDF_VEC_INS_TRIPLES (in s any, in p any, in o any, in g any)
 {
   vectored;
   not vectored {
@@ -775,11 +785,11 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
     declare is_local int;
     is_local := sys_stat ('cl_run_local_only');
     if (is_local)
-      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID'); -- the pipe with CU_DB_ORDERED
     else
       {
-        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 2); -- multiple graphs flag as G is given
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1'); -- the pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
+        dpipe_set_rdf_load (dp, 2); -- RDF_LD_MULTIGRAPH multiple graphs flag as G is given
       }
   }
   dpipe_input (dp, s, p, null, o, g);
@@ -796,6 +806,23 @@ create procedure rdf_vec_ins_triples (in s any, in p any, in o any, in g any)
   }
 }
 ;
+
+--
+-- o_flags
+-- 0x0F: mask
+-- 0x10: text will go in ft index
+-- 0 - IRI
+-- 1: complete box
+-- 2: have lang in o_type
+-- 3: parse literal dt is in o_type
+-- 4: xmlliteral
+-- 5: integer
+-- 6: float
+-- 7: double
+-- 8: decimal
+-- 15: IRI string
+-- 0x100: S is BNode
+-- 0x200: O is BNode
 
 create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, inout o any, in o_type any, in o_and_bnode_flags int, in is_local int)
 {
@@ -829,7 +856,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (o, 258, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }
@@ -839,11 +866,11 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
       if (lid = 0)
 	{
 	  if (is_local)
-	    lid := rdf_rl_lang_id (lower (o_type));
+            lid := DB.DBA.RDF_RL_LANG_ID (lower (o_type));
 	  else
-	    lid := rdf_lang_id (lower (o_type));
+            lid := DB.DBA.RDF_LANG_ID (lower (o_type));
 	}
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       o := rdf_box (o, 257, lid, 0, 1);
       return;
@@ -868,9 +895,9 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
                   if (tid = 0)
                     {
                       if (is_local)
-                        tid := rdf_rl_type_id (o_type);
+                        tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
                       else
-                        tid := rdf_type_id (o_type);
+                        tid := DB.DBA.RDF_TYPE_ID (o_type);
                     }
                   rdf_box_set_type (parsed, tid);
                 }
@@ -884,12 +911,12 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
 	  if (tid = 0)
 	    {
 	      if (is_local)
-		tid := rdf_rl_type_id (o_type);
+                tid := DB.DBA.RDF_RL_TYPE_ID (o_type);
 	      else
-		tid := rdf_type_id (o_type);
+                tid := DB.DBA.RDF_TYPE_ID (o_type);
 	    }
           o := rdf_box (o, tid, 257, 0, 1);
-	  if (is_text and 246 = __tag (o))
+          if (is_text and __tag of rdf_box = __tag (o))
 	    rdf_box_set_is_text (o, 1);
           return;
 	}
@@ -898,7 +925,7 @@ create procedure DB.DBA.RDF_MAKE_S_O_FROM_PARTS_AND_FLAGS_C (inout s any array, 
     {
       o := rdf_box (xml_tree_doc (o), 300, 257, 0, 1);
       rdf_box_set_type (o, 257);
-      if (is_text and 246 = __tag (o))
+      if (is_text and __tag of rdf_box = __tag (o))
 	rdf_box_set_is_text (o, 1);
       return;
     }
@@ -945,11 +972,11 @@ create procedure DB.DBA.RDF_INSERT_TRIPLE_C (in s any array, in p any array, in 
   not vectored {
     declare dp any array;
     if (is_local)
-      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID'); -- the pipe with CU_DB_ORDERED
     else
       {
-	dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
-	dpipe_set_rdf_load (dp, 2);
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1'); -- the pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
+        dpipe_set_rdf_load (dp, 2); -- RDF_LD_MULTIGRAPH
       }
   }
   --dbg_obj_princ ('After bnodes check, will call dpipe_input (dp, ', s, p, null, o, g, ')...');
@@ -969,7 +996,7 @@ create procedure DB.DBA.RDF_INSERT_TRIPLE_C (in s any array, in p any array, in 
 ;
 
 
-create procedure rdf_replace_graph_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+create procedure DB.DBA.RDF_REPLACE_GRAPH_C (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
 {
   vectored;
   not vectored {
@@ -982,12 +1009,12 @@ create procedure rdf_replace_graph_c (in s any array, in p any array, in o any a
   not vectored {
     declare dp any array;
     if (is_local)
-      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+      dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID'); -- the pipe with CU_DB_ORDERED
     else
       {
-        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1'); -- the pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
       }
-    dpipe_set_rdf_load (dp, 6);
+    dpipe_set_rdf_load (dp, 6); -- bit_or (RDF_DL_DEL_INS, RDF_LD_MULTIGRAPH)
   }
   dpipe_input (dp, s, p, null, o, g);
   not vectored {
@@ -1006,7 +1033,7 @@ create procedure rdf_replace_graph_c (in s any array, in p any array, in o any a
 }
 ;
 
-create procedure rdf_delete_triple_c (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
+create procedure DB.DBA.RDF_DELETE_TRIPLE_C (in s any array, in p any array, in o any array, in o_type any array, in o_flags int, in g any array)
 {
   vectored;
   not vectored {
@@ -1019,10 +1046,10 @@ create procedure rdf_delete_triple_c (in s any array, in p any array, in o any a
   not vectored {
     declare dp any array;
     if (is_local)
-    dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID');
+    dp := dpipe (1, 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_IRI_TO_ID', 'L_MAKE_RO', 'L_IRI_TO_ID'); -- the pipe with CU_DB_ORDERED
     else
       {
-        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1');
+        dp := dpipe (5, 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'IRI_TO_ID_1', 'MAKE_RO_1', 'IRI_TO_ID_1'); -- the pipe with bit_or (CU_DB_ORDERED, CU_ALLOW_REDO)
       }
     dpipe_set_rdf_load (dp, 3);
   }
@@ -1041,14 +1068,127 @@ create procedure rdf_delete_triple_c (in s any array, in p any array, in o any a
 }
 ;
 
-create procedure rdf_clear_graphs_c (in graphs any array)
+create procedure DB.DBA.RDF_CLEAR_GRAPHS_C (in graphs any array)
 {
-  for vectored (in in_g any array := graphs)
+  declare  kesg integer;
+  foreach (any g_iri in graphs) do
     {
-      declare g_iid any;
-      g_iid := iri_to_id (in_g, 0);
-      delete from RDF_QUAD table option (index G) where G = g_iid;
-      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = g_iid option (index_only, index RDF_QUAD_GS);
+      kesg := __max (1, key_estimate('DB.DBA.RDF_QUAD', 'RDF_QUAD_GS', iri_to_id (g_iri, 0)));
+      if (kesg <= 1000)
+        {
+          -- if graph is relatively small
+          delete from DB.DBA.RDF_QUAD table option (index G) where G = iri_to_id (g_iri, 0);
+        }
+      else
+        {
+          delete from DB.DBA.RDF_QUAD where G = iri_to_id (g_iri, 0);
+        }
+      delete from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS, index_only) where G = iri_to_id (g_iri, 0) option (index_only, index RDF_QUAD_GS);
+
+      -- Sponging
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI = g_iri;
+      delete from DB.DBA.SYS_HTTP_SPONGE where HS_LOCAL_IRI like concat ('destMD5=', md5 (g_iri), '&graphMD5=%');
     }
+}
+;
+
+
+create function DB.DBA.RDF_JSONLD2HASH (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0) returns any
+{
+  declare res any;
+  res := dict_new (length (strg) / 100);
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    res);
+  return res;
+}
+;
+
+create function DB.DBA.RDF_JSONLD_LOAD_DICT (in strg varchar, in base varchar, in graph varchar, in dict any, in flags integer := 0) returns any
+{
+  if (__tag (dict) <> __tag of dictionary reference)
+    signal ('22023', 'RDFXX', 'The dict argument must be of type dictionary');
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_GRAPH',
+      'DB.DBA.RDF_TTL2HASH_EXEC_NEW_BLANK',
+      'DB.DBA.RDF_TTL2HASH_EXEC_GET_IID',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE',
+      'DB.DBA.RDF_TTL2HASH_EXEC_TRIPLE_L',
+      '',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    dict);
+  return;
+}
+;
+
+create procedure DB.DBA.RDF_LOAD_JSON_LD (in strg varchar, in base varchar, in graph varchar := null, in flags integer := 0,
+    in threads int := 3, in transactional int := 0, in log_enable int := null, in context varchar := null)
+{
+  declare ro_id_dict, app_env, g_iid, old_log_mode any;
+  if (1 <> sys_stat ('cl_run_local_only'))
+    {
+      -- error
+      return;
+    }
+  if (is_atomic ())
+    signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
+  if (0 = sys_stat ('rdf_rpid64_mode'))
+    {
+      -- error
+      return;
+    }
+  old_log_mode := null;
+  declare exit handler for sqlstate '37000' {
+    if (app_env <> 0)
+      {
+        DB.DBA.RL_SEND (app_env, g_iid);
+        commit work;
+        aq_wait_all (app_env[0]);
+      }
+    connection_set ('g_dict', null);
+    connection_set ('__XML_URI_GET_ACCEPT', null);
+    if (old_log_mode is not null)
+      log_enable (old_log_mode, 1);
+    signal (__SQL_STATE, '[Vectorized JSON-LD loader] ' || __SQL_MESSAGE);
+  };
+  if (transactional = 0)
+    {
+      if (log_enable = 0 or log_enable = 1)
+        log_enable := 2 + log_enable;
+    }
+  else
+    threads := 0;
+
+  if (log_enable is not null)
+    old_log_mode := log_enable (log_enable, 1);
+
+  app_env := vector (async_queue (threads, 1), DB.DBA.RL_LOCAL_DPIPE (), 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
+  g_iid := iri_to_id (graph);
+  connection_set ('__XML_URI_GET_ACCEPT', 'application/ld+json, application/json;q=0.9');
+  rdf_load_jsonld (strg, base, graph, flags,
+    vector (
+      'DB.DBA.TTLP_RL_NEW_GRAPH',
+      'DB.DBA.TTLP_EV_NEW_BLANK',
+      'DB.DBA.TTLP_EV_GET_IID',
+      'DB.DBA.TTLP_RL_TRIPLE',
+      'DB.DBA.TTLP_RL_TRIPLE_L',
+      'DB.DBA.TTLP_RL_COMMIT',
+      'DB.DBA.TTLP_EV_REPORT_DEFAULT' ),
+    app_env, context);
+  DB.DBA.RL_SEND (app_env, g_iid);
+  commit work;
+  aq_wait_all (app_env[0]);
+  connection_set ('g_dict', null);
+  connection_set ('__XML_URI_GET_ACCEPT', null);
+  if (old_log_mode is not null)
+    log_enable (old_log_mode, 1);
 }
 ;

@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="databases_udt" decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>Create New User Defined Type</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:menu>
+      <vm:menuitem value="Create New User Defined Type"/>
+    </vm:menu>
+    <vm:header caption="User Defined Types">
+    </vm:header>
+    <vm:pagebody>
+      <table border="0" width="100%" cellpadding="0" cellspacing="0">
+        <tr valign='top'>
+          <td>
+            <div class="<?V case when equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '1'), '1') then 'page_tab_selected' else 'page_tab' end ?>">
+              <v:url name="b_url21" value="--'Create UDT'" format="%s" url="--'databases_udt_edit.vspx?page=1'" />
+            </div>
+            <div class="<?V case when equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '2') then 'page_tab_selected' else 'page_tab' end ?>">
+              <v:url name="b_url12" value="--'Create UDT from WSDL'" format="%s" url="--'databases_udt_edit.vspx?page=2'" />
+            </div>
+            <div class="<?V case when equ (get_keyword ('page', control.vc_page.vc_event.ve_params), '3') then 'page_tab_selected' else 'page_tab' end ?>">
+              <v:url name="b_url13" value="--'Create UDT from .NET Assembly or Java Class'" format="%s" url="--'databases_udt_edit.vspx?page=3'" />
+            </div>
+            <div class="tab_page_new">
+              <v:template name="_tabtemplate1" type="simple" enabled="-- equ (get_keyword ('page', control.vc_page.vc_event.ve_params, '1'), '1')">
+                <v:include url="databases_udt_custom.vspx"/>
+              </v:template>
+              <v:template name="_tabtemplate2" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '2')">
+                <v:include url="wsdltree.vspx"/>
+              </v:template>
+              <v:template name="_tabtemplate3" type="simple" enabled="-- equ(get_keyword('page', control.vc_page.vc_event.ve_params), '3')">
+                <v:include url="hosted_import.vspx"/>
+              </v:template>
+            </div>
+          </td>
+        </tr>
+      </table>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

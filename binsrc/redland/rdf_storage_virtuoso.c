@@ -6,7 +6,7 @@
  *
  * Based in part on rdf_storage_virtuoso
  *
- * Copyright (C) 2000-2018 OpenLink Software,  http://www.openlinksw.com/
+ * Copyright (C) 2000-2023 OpenLink Software,  http://www.openlinksw.com/
  *
  * This package is Free Software and part of Redland http://librdf.org/
  *
@@ -1084,6 +1084,9 @@ librdf_storage_virtuoso_get_handle(librdf_storage* storage)
     }
 
   SQLSetEnvAttr (connection->henv, SQL_ATTR_ODBC_VERSION, (SQLPOINTER) SQL_OV_ODBC3,
+      SQL_IS_UINTEGER);
+
+  SQLSetEnvAttr (henv, SQL_ATTR_APP_UNICODE_TYPE, (SQLPOINTER) SQL_DM_CP_UCS4,
       SQL_IS_UINTEGER);
 
   rc = SQLAllocHandle (SQL_HANDLE_DBC, connection->henv, &connection->hdbc);

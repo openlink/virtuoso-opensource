@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -177,6 +177,8 @@ sqlc_make_sort_out_node (sql_comp_t * sc, dk_set_t out_cols, dk_set_t out_slots,
 	DO_SET (state_slot_t *, ssl, &out_slots)
 	  {
 	    ssl->ssl_type = SSL_VEC;
+            if (!ssl->ssl_box_index)
+              ssl->ssl_box_index = cc_new_instance_slot (sc->sc_cc);
 	    ssl->ssl_always_vec = 1;
 	  }
 	END_DO_SET();

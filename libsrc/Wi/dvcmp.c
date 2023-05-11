@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -227,12 +227,15 @@ dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t * collation, offset_t offset
 	break;
       case DV_RDF:
 	{
-	  dtp_t copy[50];
+         dtp_t copy[128];
 	  if (offset)
 	    {
 	      int len = rbs_length (dv1);
 	      if (len > sizeof (copy))
+               {
+                 log_error ("dv rdf serialization too long in dv compare with offset (len=%ld offset=%ld)", (long) len, (long) offset);
 		GPF_T1 ("dv rdf serialization too long in dv compare with offset");
+               }
 	      memcpy (copy, dv1, len);
 	      copy[len - 1] += offset;
 	      dv1 = copy;

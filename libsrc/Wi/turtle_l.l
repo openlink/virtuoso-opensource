@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -245,7 +245,7 @@ ttlyyfree (void * ptr , yyscan_t yyscanner)
 %x UNREACHEABLE
 
 INTEGER_LITERAL ([0-9]+)
-DECIMAL_LITERAL (([0-9]+"."[0-9]*)|("."[0-9]+))
+DECIMAL_LITERAL (([0-9]+"."[0-9]+))
 DOUBLE_LITERAL	(({INTEGER_LITERAL}|{DECIMAL_LITERAL})[eE][+-]?[0-9]+)
 
 TTL_CR_IRIREF	([^\x00-\x20<>\\""{}|^`]|{TTL_CR_UCHAR})
@@ -565,6 +565,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <TURTLE_DQ,TURTLE_BAD_DQ><<EOF>>		{ ttlp_arg[0].ttlp_flags |= TTLP_SNIFFER_COMPLETE; ttlyyerror ("Unterminated short double-quoted string"); }
 
 <INITIAL>[+-]?{INTEGER_LITERAL}		{ return ttlp_NUMBER_int (yylval, ttlp_arg, yyg); }
+<INITIAL>[+-]?{INTEGER_LITERAL}"."([ \t]*)[,;.]		{ int num_len = strchr (yytext, '.') + 1 - yytext; int res = ttlp_NUMBER_int (yylval, ttlp_arg, yyg); yyless (num_len); return res; }
 <INITIAL>[+-]?{DECIMAL_LITERAL}		{ return ttlp_NUMBER_decimal (yylval, ttlp_arg, yyg); }
 <INITIAL>[+-]?{DOUBLE_LITERAL}		{ return ttlp_NUMBER_double (yylval, ttlp_arg, yyg); }
 
@@ -599,7 +600,7 @@ int
 ttlyyerror_if_long_qname (ttlp_t *ttlp_arg, int lexcode, caddr_t box, const char *lex_type_descr, struct yyguts_t * yyg)
 {
   size_t boxlen = box_length (box);
-  char buf[100];
+  char buf[150];
   char *colon;
   if (boxlen > MAX_XML_QNAME_LENGTH)
     {
@@ -984,7 +985,25 @@ resume_sniffing:
         }
       else
         {
+          caddr_t msg = ERR_MESSAGE(err);
+          caddr_t longer_msg;
           /* ttlyydebug = 0; */
+          if ((strncmp (msg, "RDF29", 5) && strncmp (msg, "RDF30", 5)) && !THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &msg, 2000+2000))
+            { /* non-syntax error is not aware of file name and line, they should be imprinted */
+              char temp[2000];
+              int lineno = ttlp->ttlp_lexlineno;
+              const char *raw_text = ttlp->ttlp_raw_text;
+              snprintf (temp, sizeof (temp), "%.400s, line %d%.6s%.1000s%.6s: ",
+                ttlp->ttlp_err_hdr,
+                lineno,
+                ((NULL == raw_text) ? "" : " (at "),
+                ((NULL == raw_text) ? "" : raw_text),
+                ((NULL == raw_text) ? "" : ")" ) );
+              temp[sizeof(temp)-1] = '\0';
+              longer_msg = box_dv_short_strconcat (temp, msg);
+              ERR_MESSAGE(err) = longer_msg;
+              dk_free_box (msg);
+            }
           ttlp->ttlp_catched_error = err;
           if (NULL != ttlp->ttlp_iter_abend)
             {
@@ -1070,7 +1089,7 @@ bif_turtle_lex_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	continue;
       dk_set_push (&report, box_dv_short_string (""));
       dk_set_push (&report,
-        box_sprintf (0x100, "#define % 25s %d /* '%s' (%c) */",
+        box_sprintf (0x100, "#define %25s %d /* '%s' (%c) */",
 	  ld->ld_yname, ld->ld_val, ld->ld_fmt, ld->ld_fmttype ) );
       for (cmd_idx = 0; cmd_idx < BOX_ELEMENTS(ld->ld_tests); cmd_idx++)
 	{

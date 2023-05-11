@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -25,12 +25,8 @@
 
 #ifndef XMLENC_ALGO_H
 #define XMLENC_ALGO_H
+#ifdef _SSL
 #include <openssl/opensslv.h>
-#if (OPENSSL_VERSION_NUMBER < 0x00907000L)
-/*#warning aes is not supported*/
-#else
-#define AES_ENC_ENABLE
-#endif
 
 #define OPENSSL_DISABLE_OLD_DES_SUPPORT
 
@@ -39,9 +35,7 @@
 #include <openssl/rsa.h>
 #include <openssl/des.h>
 
-#ifdef AES_ENC_ENABLE
 #include <openssl/aes.h>
-#endif
 
 #include <openssl/x509.h>
 #include <openssl/rand.h>
@@ -64,12 +58,10 @@
 
 /* uris */
 /* from Web Services Security Addendum */
-#if 0
-#define WSS_SOAP_URI	"http://www.w3.org/2001/12/soap-envelope"
-#else
 #define WSS_SOAP_URI	SOAP_URI (11)
-#endif
+			/* 0123456789012345678901234567890123 */
 #define WSS_DSIG_URI	  "http://www.w3.org/2000/09/xmldsig#"
+#define WSS_DSIG_URI_LEN  34
 #define WSS_XENC_URI	  "http://www.w3.org/2001/04/xmlenc#"
 #define WSS_M_URI	  "http://schemas.xmlsoap.org/rp"
 
@@ -88,6 +80,7 @@
 
 #define XENC_URI WSS_XENC_URI
 #define DSIG_URI WSS_DSIG_URI
+#define DSIG_URI_LEN WSS_DSIG_URI_LEN
 
 /* aliases */
 #define WSSE_URI(sctx) (sctx ? wsse_uris[(sctx)->wsc_wsse] : WSS_WSS_URI)
@@ -285,6 +278,15 @@ typedef struct u_tok_s
 
 typedef uuid_t * xenc_id_t;
 
+# define AES_KEY_SZ_128 16
+# define AES_KEY_SZ_192 24
+# define AES_KEY_SZ_256 32
+# define AES_IV_LEN     16
+
+# define AES_KEY_SERIAL_LEN_128 33	/* + 1 to do not overlap with raw key material len */
+# define AES_KEY_SERIAL_LEN_192 41
+# define AES_KEY_SERIAL_LEN_256 49
+
 #define xek_rsa ki.rsa.rsa_st
 #define xek_private_rsa ki.rsa.private_rsa_st
 #define xek_dsa ki.dsa.dsa_st
@@ -326,7 +328,6 @@ struct xenc_key_s
 #define PKCS5_SALT_LEN			8
       unsigned char salt[PKCS5_SALT_LEN];
     } triple_des;
-#ifdef AES_ENC_ENABLE
     struct dsig_aes_keyinfo_s
     {
       /* key */
@@ -334,7 +335,6 @@ struct xenc_key_s
       int		bits;
       unsigned char	iv[16];
     } aes;
-#endif
 #ifdef _KERBEROS
     struct dsig_kerberos_s
     {
@@ -589,7 +589,7 @@ caddr_t wsse_get_content_val (caddr_t * curr);
 #endif
 
 
-xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const char * pwd);
+xenc_key_t * xenc_key_aes_create (const char * name, int keylen, const unsigned char * pwd, const char * digest_name);
 void xenc_key_remove (xenc_key_t * key, int lock);
 int __xenc_key_dsa_init (char *name, int lock, int num);
 int __xenc_key_dh_init (char *name, int lock);
@@ -628,8 +628,11 @@ caddr_t bif_dsig_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 caddr_t xenc_get_option (caddr_t *options, const char * opt, char * def);
 caddr_t certificate_encode (BIO * b, const char * encoding_type);
 caddr_t * xml_find_any_child (caddr_t * curr, const char * name, const char * uri);
+#define INTERNAL_CA_STORE "db:internalCAlist"
+STACK_OF(X509_NAME)* xenc_CA_names_stack (char * ca_file_name);
+int xenc_load_verify_CA_list (SSL_CTX * ctx, char * ca_file_name);
 
 extern dk_mutex_t * xenc_keys_mtx;
 
+#endif /* _SSL */
 #endif
-

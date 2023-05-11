@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,13 +36,16 @@
 #define IRI_TO_ID_IF_CACHED	2 /*!< Return IRI_ID if known and is in cache, integer zero (NULL) if not known or known but not cached or error is not NULL */
 #define IRI_TO_ID_GPF		3 /*!< The conversion must be avoided at all, GPF is signalled if the value is tried */
 
+/*!< Parses tail of "nodeID://..." IRI and returns the numeric value of IRI_ID. In case of error, 0 is returned and \c error_fmt_ret is set to printf format string for reporting an error */
+extern int64 iri_nodeid_to_iid (unsigned char *nodeid_tail, const char **error_fmt_ret);
 /*!< returns 0 for NULL or non-cached rdf box or error, 1 for ready to use iri_id, 2 for URI string */
 extern int iri_canonicalize (query_instance_t *qi, caddr_t name, int mode, caddr_t *res_ret, caddr_t *err_ret);
-extern caddr_t iri_to_id (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret);
-extern caddr_t key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern caddr_t key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no);
-extern caddr_t key_id_to_iri (query_instance_t * qi, iri_id_t iri_id_no);
-extern int key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret);
+EXE_EXPORT (void, rdf_handle_invalid_iri_id, (caddr_t * qst, const char *msg, iri_id_t iid));
+EXE_EXPORT (caddr_t, iri_to_id, (caddr_t *qst, caddr_t name, int mode, caddr_t *err_ret));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_canonicalized_iri_if_cached, (iri_id_t iri_id_no));
+EXE_EXPORT (caddr_t, key_id_to_iri, (query_instance_t * qi, iri_id_t iri_id_no));
+EXE_EXPORT (int, key_id_to_namespace_and_local, (query_instance_t *qi, iri_id_t iid, caddr_t *subj_ns_ret, caddr_t *subj_loc_ret));
 #define rdf_type_twobyte_to_iri(twobyte) nic_id_name (rdf_type_cache, (twobyte))
 #define rdf_lang_twobyte_to_string(twobyte) nic_id_name (rdf_lang_cache, (twobyte))
 #define RDF_TYPE_PARSEABLE 0x1
@@ -56,10 +59,10 @@ extern int rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-extern iri_id_t bnode_t_treshold;
+extern iri_id_t bnode_t_threshold;
 #ifndef NDEBUG
-#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_treshold) ? \
-  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_treshold)) : \
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_threshold) ? \
+  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_threshold)) : \
   (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
     (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
     (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) ) )
@@ -367,5 +370,13 @@ typedef struct rdf_obj_ft_rule_iri_hkey_s
    caddr_t hkey_iri_p;
 } rdf_obj_ft_rule_iri_hkey_t;
 
+extern int32 rdf_rpid64_mode;
+
+#define RPID_SZ			8
+#define RPID_64_FLAG		0x8000000000000000LL
+#define RPID_SET_NA(p,v) 	INT64_SET_NA((p),((v) | RPID_64_FLAG))
+#define RPID_REF_NA(p) 		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? (INT64_REF_NA(p) & ~RPID_64_FLAG)  : LONG_REF_NA(p) )
+#define RPID_IS_64(p)		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 1 : 0)
+#define RPID_HL(p,hl) 		( (hl) = (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 8  : 4 )
 
 #endif

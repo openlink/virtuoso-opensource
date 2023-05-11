@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -163,9 +163,10 @@ cu_rdf_ins_label_normalize (mem_pool_t * mp, caddr_t lbl)
 void
 cu_rdf_ins_label (cucurbit_t * cu, caddr_t * row)
 {
+  QNCAST (query_instance_t, qi, cu->cu_qst);
   dbe_table_t *tbl = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_LABEL");
   static char *col_names[] = { "RL_O", "RL_RO_ID", "RL_TEXT", "RL_LANG", NULL };
-  caddr_t oval, values[4];
+  caddr_t oval, values[4], prop;
   cl_req_group_t *clrg = cu->cu_clrg;
   static rdf_inf_ctx_t *ctx;
   static caddr_t err;
@@ -184,16 +185,25 @@ cu_rdf_ins_label (cucurbit_t * cu, caddr_t * row)
   if (!ctx)
     return;
 
-  if (DV_DB_NULL == DV_TYPE_OF (row[4]))
-    oval = row[5];
+  if ((RDF_LD_DEL_INS | RDF_LD_MULTIGRAPH) != cu->cu_rdf_load_mode)
+    {
+      prop = row[3];
+      if (DV_DB_NULL == DV_TYPE_OF (row[4]))
+	oval = row[5];
+      else
+	oval = row[4];
+    }
   else
-    oval = row[4];
+    {
+      prop = row[2];
+      oval = row[3];
+    }
 
-  if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, row[3], RI_SUBPROPERTY, 0))
+  if (DV_RDF == DV_TYPE_OF (oval) && ric_iri_to_sub (ctx, prop, RI_SUBPROPERTY, 0))
     {
       rdf_box_t *rb = (rdf_box_t *) oval;
       if (!rb->rb_is_complete)
-	GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb");
+	rb_complete (rb, qi->qi_trx, qi);	/*GPF_T1 ("The rb_box is supposed to be complete in cu_rdf_ins_cb"); */
       if (!DV_STRINGP (rb->rb_box))	/* labels are supposed to be strings */
 	return;
       values[0] = oval;
@@ -457,7 +467,7 @@ rdf_repl_gs_batch (query_instance_t * qi, caddr_t * batch, int ins)
   LEAVE_TXN;
   if (!reg)
     {
-      dk_free_tree (batch);
+      dk_free_tree ((caddr_t)batch);
       return;
     }
   dk_free_box (reg);
@@ -471,16 +481,13 @@ rdf_repl_gs_batch (query_instance_t * qi, caddr_t * batch, int ins)
   if (!delqr || !insqr)
     {
       log_error ("RDF replication failed.");
-      dk_free_tree (batch);
+      dk_free_tree ((caddr_t)batch);
       return;
     }
   pars = (caddr_t *) list (1, batch);
   err = qr_exec (qi->qi_client, ins ? insqr : delqr, qi, NULL, NULL, NULL, pars, NULL, 0);
-  if (err)
-    {
-      PRINT_ERR (err);
-    }
-  dk_free_box (pars);
+  PRINT_ERR (err);
+  dk_free_box ((caddr_t)pars);
 }
 
 
@@ -621,7 +628,7 @@ cl_rdf_call_insert_cb (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret)
   pre = id_hash_allocate (cu->cu_fill, sizeof (caddr_t), 0, treehash, treehashcmp);
   id_hash_set_rehash_pct (pre, 200);
   rdf_fetch_gs (qi, (caddr_t *) g_iid_to_delete, err_ret, pre);
-  dk_free_tree (g_iid_to_delete);
+  dk_free_tree ((caddr_t)g_iid_to_delete);
   ins = id_hash_allocate (cu->cu_fill, sizeof (caddr_t), 0, treehash, treehashcmp);
   id_hash_set_rehash_pct (ins, 200);
   cu_feed_ins (cu, pre, ins, 1, 0, qst);
@@ -640,7 +647,7 @@ cl_rdf_call_insert_cb (cucurbit_t * cu, caddr_t * qst, caddr_t * err_ret)
   cu_feed_ins (cu, pre, ins, 0, &inserted, qst);
   DO_SET (caddr_t *, row, &cu->cu_ld_rows)	/* release memory, not needed anymore */
   {
-    dk_free_tree (row);
+      dk_free_tree ((caddr_t)row);
   }
   END_DO_SET ();
   dk_set_free (cu->cu_ld_rows);

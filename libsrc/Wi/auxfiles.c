@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,6 +40,9 @@ char * https_port;
 char * https_cert;
 char * https_key;
 char * https_extra;
+char * https_dhparam;
+char * https_ecdh_curve;
+int32  https_hsts_max_age = -1;
 char * https_cipher_list;
 char * https_protocols;
 int32 https_client_verify = 0;
@@ -134,6 +137,7 @@ extern int32 sqlo_compiler_exceeds_run_factor;
 
 int32 c_dense_page_allocation = 0;
 int32 log_proc_overwrite = 1;
+int32 log_sql_code_init = 0;
 
 void _db_read_cfg (dbe_storage_t * dbs, char *mode);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
@@ -525,7 +529,7 @@ _db_read_cfg (dbe_storage_t * ignore, char *mode)
 
   dbe_auto_sql_stats = (long) (ptrlong) cfg_get_parm (wholefile, "\nauto_sql_stats:", 0);
   callstack_on_exception = (long) (ptrlong) cfg_get_parm (wholefile, "\ncallstack_on_exception:", 0);
-
+  public_debug = (long) (ptrlong) cfg_get_parm (wholefile, "\npublic_debug:", 0);
   pl_debug_all = (long) (ptrlong) cfg_get_parm (wholefile, "\npl_debug:", 0);
   pl_debug_cov_file = cfg_get_parm (wholefile, "\ntest_coverage:", 1);
 

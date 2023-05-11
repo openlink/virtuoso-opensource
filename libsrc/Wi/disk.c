@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,7 +24,7 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  *
  */
-
+#include "../Dk/Dkconfig.h"
 #ifdef HAVE_CONFIG_H
 # include <config.h>
 #endif
@@ -65,14 +65,13 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
 
-
+#if defined (HAVE_FLOCK_IN_SYS_FILE)
+#include <sys/file.h>
+#endif
 
 #define CHECK_PG(pg,name) \
       if (cfg_page.pg < 1 || cfg_page.pg > dbs->dbs_n_pages) \
@@ -486,10 +485,6 @@ it_temp_tree_check ()
 #endif
 
 
-#ifdef WIN32
-#define PATH_MAX	 MAX_PATH
-#endif
-
 void
 dbs_sys_db_file_remove (caddr_t file)
 {
@@ -681,7 +676,7 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 	  ASSERT_IN_MAP (itc->itc_tree, inx);
 	  if (buf->bd_tree && buf->bd_tree != it)
 	GPF_T1 ("it_temp_free with buffer that belongs to other tree");
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
       if (BUF_WIRED (buf)
 	      ||buf->bd_iq)
 	{
@@ -707,7 +702,7 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
 	}
       BUF_BACKDATE(buf);
 	  buf->bd_tree = NULL;
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
       buf->bd_page = 0;
       buf->bd_physical_page = 0;
       buf_unregister_itcs (buf);
@@ -1113,9 +1108,9 @@ bp_flush (buffer_pool_t * bp, int wait)
 
 
 int bp_stat_action (buffer_pool_t * bp, int stat_only);
-extern uint32 col_ac_last_time;
+extern time_msec_t col_ac_last_time;
 extern uint32 col_ac_last_duration;
-int col_ac_is_due (uint32 now);
+int col_ac_is_due (time_msec_t now);
 int enable_flush_all = 1;
 
 void
@@ -1441,27 +1436,26 @@ bp_get_buffer_1 (buffer_pool_t * bp, buffer_pool_t ** action_bp_ret, int mode)
 
 long gpf_time = 0;
 
-#ifdef MTX_DEBUG
+#if defined(MTX_DEBUG) | defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
 int
-buf_set_dirty (buffer_desc_t * buf)
+buf_set_dirty_1 (char *file, int line, buffer_desc_t * buf)
 {
   /* Not correct, exception in pg_reloc_right_leaves.
     if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
   */
 
-#ifdef MTX_DEBUG
-    {
-    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
-    mutex_enter (&itm->itm_mtx);
-    assert (gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap));
-    mutex_leave (&itm->itm_mtx);
-    }
-#endif
+  it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+  mutex_enter (&itm->itm_mtx);
+  assert (gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap));
+  mutex_leave (&itm->itm_mtx);
+
   if (!buf->bd_is_dirty)
     {
       /* BUF_TICK (buf); */
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
+      buf->bd_set_dirty_file = file;
+      buf->bd_set_dirty_line = line;
       wi_inst.wi_n_dirty++;
       if (0 && wi_inst.wi_n_dirty > wi_inst.wi_max_dirty
 	  && !mt_write_pending)
@@ -1475,24 +1469,23 @@ buf_set_dirty (buffer_desc_t * buf)
 
 
 int
-buf_set_dirty_inside (buffer_desc_t * buf)
+buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf)
 {
+  it_map_t * itm;
   if (!BUF_WIRED (buf))
     GPF_T1 ("can't set a buffer as dirty if not on it.");
 
-#ifdef MTX_DEBUG
-    {
-    it_map_t * itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
-    ASSERT_IN_MTX (&itm->itm_mtx);
-    if (!gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap)) GPF_T1 ("not remapped when being set to dirty");
-    }
-#endif
+  itm = IT_DP_MAP (buf->bd_tree, buf->bd_page);
+  ASSERT_IN_MTX (&itm->itm_mtx);
+  if (!gethash (DP_ADDR2VOID(buf->bd_page), &itm->itm_remap)) GPF_T1 ("not remapped when being set to dirty");
 
   if (!buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty++;
       /* BUF_TICK (buf); */
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
+      buf->bd_set_dirty_file = file;
+      buf->bd_set_dirty_line = line;
       return 1;
     }
   return 0;
@@ -1538,7 +1531,7 @@ buf_set_last (buffer_desc_t * buf)
   if (buf->bd_is_dirty)
     {
       wi_inst.wi_n_dirty--;
-      buf->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(buf,0);
     }
   buf->bd_timestamp = bp->bp_ts - bp->bp_n_bufs;
 }
@@ -2048,8 +2041,8 @@ dst_fd_done (disk_stripe_t * dst, int fd, ext_ref_t * er)
 
 unsigned long disk_reads = 0;
 long disk_writes = 0;
-long read_cum_time = 0;
-long write_cum_time = 0;
+int64 read_cum_time = 0;
+int64 write_cum_time = 0;
 int assertion_on_read_fail = 1;
 
 #if 0
@@ -2110,7 +2103,7 @@ pm_get (buffer_desc_t * buf, size_t sz)
 int
 buf_disk_read (buffer_desc_t * buf)
 {
-  long start;
+  time_msec_t start;
   OFF_T rc;
   dbe_storage_t * dbs = buf->bd_storage;
   short flags;
@@ -2224,7 +2217,7 @@ buf_disk_write (buffer_desc_t * buf, dp_addr_t phys_dp_to)
 {
   dtp_t c_buf[PAGE_SZ + 512];
   db_buf_t out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
-  long start;
+  time_msec_t start;
   int bytes, n_out;
   short flags;
   dbe_storage_t * dbs = buf->bd_storage;
@@ -3444,7 +3437,7 @@ dc_digit_sort (data_col_t ** dcs, int n_dcs, int * sets, int n_sets)
 
 
 
-long last_flush_time = 0;
+time_msec_t last_flush_time = 0;
 
 
 void
@@ -3484,7 +3477,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
 		      /* If the buffer hasn't moved out of sort order and
 			 hasn't been flushed by a sync write */
 		      BD_SET_IS_WRITE (buf, 1);
-		      buf->bd_is_dirty = 0;
+                      BUF_SET_IS_DIRTY(buf,0);
 		      bufs[fill++] = buf;
 		    }
 		  mutex_leave (&itm->itm_mtx);
@@ -3506,7 +3499,7 @@ bp_write_dirty (buffer_pool_t * bp, int force, int is_in_bp, int n_oldest)
     {
       /* dbg_printf ((" %ld ", bufs [n] -> bd_physical_page));  */
       buf_disk_write (bufs[n], 0);
-      bufs[n]->bd_is_dirty = 0;
+      BUF_SET_IS_DIRTY(bufs[n],0);
       wi_inst.wi_n_dirty--;
       if (!force)
 	{
@@ -3560,6 +3553,46 @@ dbs_open_ext_cache (dbe_storage_t * dbs)
 }
 
 
+
+static int
+dbs_open_lock_fd (int fd, const char *name)
+{
+#ifdef F_SETLK
+  struct flock fl = { 0 };
+
+  /* Set an advisory WRITE lock */
+  fl.l_type = F_WRLCK;
+  fl.l_whence = SEEK_SET;
+  fl.l_start = 0;
+  fl.l_len = 0;
+
+  if (fcntl (fd, F_SETLK, &fl))
+    {
+      log_error ("Unable to lock file %s (%m).", name);
+
+      /* If we could not set a lock, who owns it? */
+      if (fcntl (fd, F_GETLK, &fl))
+	log_error ("Unable to get lock information on file %s (%m)", name);
+      else
+	log_error ("Virtuoso is already running (pid %ld)", fl.l_pid);
+      return -1;
+    }
+#elif defined (HAVE_FLOCK_IN_SYS_FILE)
+  if (flock (fd, LOCK_EX | LOCK_NB))
+    {
+      log_error ("Unable to lock file %s (%m).", name);
+      return -1;
+    }
+#endif
+
+#ifdef DEBUG
+  log_info ("Set write lock on %s", name);
+#endif
+
+  return 0;
+}
+
+
 int
 dbs_open_disks (dbe_storage_t * dbs)
 {
@@ -3601,15 +3634,12 @@ dbs_open_disks (dbe_storage_t * dbs)
 			     dst->dst_file, errno);
 		  call_exit (1);
 		}
-#if 0
-#ifdef LOCK_EX
-	      if (flock (fd, LOCK_EX | LOCK_NB))
+
+	      if (!inx && dbs_open_lock_fd (fd, dst->dst_file))
 		{
-		  log_error ("Cannot lock stripe file on %s (%d), it may be used by other server instance", dst->dst_file, errno);
 		  call_exit (1);
 		}
-#endif /* HAVE_FLOCK */
-#endif
+
 	      dst_fd_done (dst, fd, NULL);
 	    }
 	}
@@ -3722,7 +3752,8 @@ semaphore_t * dst_sync_sem;
 void
 dst_sync (caddr_t * xx)
 {
-  uint32 start, inx;
+  time_msec_t start; 
+  int inx;
   dbe_storage_t * dbs = (dbe_storage_t*)xx[0];
   io_queue_t * iq = (io_queue_t*)xx[1];
   DO_SET (disk_segment_t *, seg, &dbs->dbs_disks)
@@ -3837,17 +3868,19 @@ dbs_init_id (char * str)
   char buf[100];
   MD5_CTX ctx;
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   DO_BOX (caddr_t, val, inx, local_interfaces)
     {
-      MD5Update (&ctx, (unsigned char *) val, box_length (val) - 1);
+      MD5_Update (&ctx, (unsigned char *) val, box_length (val) - 1);
     }
   END_DO_BOX;
-  MD5Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
+  MD5_Update (&ctx, (unsigned char *) srv_cwd, strlen (srv_cwd));
   snprintf (buf, sizeof (buf), "%ld,%p", srv_pid, &str);
-  MD5Update (&ctx, (unsigned char *) buf, strlen (buf));
-  MD5Final ((unsigned char*)str, &ctx);
+  MD5_Update (&ctx, (unsigned char *) buf, strlen (buf));
+  MD5_Final ((unsigned char*)str, &ctx);
 }
+
+extern int32 rdf_rpid64_mode;
 
 void
 dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
@@ -3899,6 +3932,8 @@ dbs_write_cfg_page (dbe_storage_t * dbs, int is_first)
   if (-1 == timezoneless_datetimes)
     timezoneless_datetimes = DT_TZL_BY_DEFAULT;
   db.db_timezoneless_datetimes = timezoneless_datetimes;
+  /* should we check it is set to true? */
+  db.db_rdf_id64 = rdf_rpid64_mode;
   LSEEK (fd, 0, SEEK_SET);
   memcpy (zero, &db, sizeof (db));
   rc = write (fd, zero, PAGE_SZ);
@@ -4336,6 +4371,7 @@ dbs_read_cfg_page (dbe_storage_t * dbs, wi_database_t * cfg_page)
         }
       timezoneless_datetimes = cfg_page->db_timezoneless_datetimes;
     }
+  rdf_rpid64_mode = cfg_page->db_rdf_id64;
   if (cfg_page->db_byte_order != DB_ORDER_UNKNOWN && cfg_page->db_byte_order != DB_SYS_BYTE_ORDER)
     {
 #ifdef BYTE_ORDER_REV_SUPPORT
@@ -4418,7 +4454,6 @@ dbs_delete_tempdb_files_if_big (dbe_storage_t * dbs)
 	}
   return 0;
 }
-
 /** returns nonzero if the main DBS file exists */
 char
 dbs_open_main_files (dbe_storage_t *dbs, char type)
@@ -4436,31 +4471,13 @@ dbs_open_main_files (dbe_storage_t *dbs, char type)
 	  call_exit (1);
 	}
 
-#if defined (F_SETLK)
  if (type != DBS_TEMP)
       {
-	struct flock fl;
-
-#ifdef DEBUG
-        log_info ("Setting write lock on %s", dbs->dbs_file);
-#endif
-
-	/* Get an advisory WRITE lock */
-	fl.l_type = F_WRLCK;
-	fl.l_whence = SEEK_SET;
-	fl.l_start = 0;
-	fl.l_len = 0;
-
-	if (fcntl (fd, F_SETLK, &fl) < 0)
+      if (dbs_open_lock_fd (fd, dbs->dbs_file))
 	  {
-  	    /* we could not get a lock, so who owns it? */
-	    fcntl (fd, F_GETLK, &fl);
-
-	    log_error ("Virtuoso is already running (pid %ld)", fl.l_pid);
  	    call_exit(1);
 	  }
       }
-#endif
 
       dbs->dbs_fd = fd;
   size = db_file_size (fd, dbs->dbs_file, DB_FILE_SIZE_FIX);
@@ -5056,7 +5073,7 @@ key_dropped (dbe_key_t * key)
 	{
 	  itc->itc_page = buf->bd_page;
 	  ITC_IN_KNOWN_MAP (itc, buf->bd_page);
-      itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
+          itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
 	  it_free_page (kf->kf_it, buf);
 	  ITC_LEAVE_MAP_NC (itc);
 	}

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -470,9 +470,9 @@ aio_fd_free (dk_hash_t * aio_ht)
 #define MAX_AIO_BATCH AIO_LISTIO_MAX
 #endif
 
-extern long read_cum_time;
-extern long disk_reads;
-extern long disk_writes;
+extern int64 read_cum_time;
+extern int64 disk_reads;
+extern int64 disk_writes;
 
 void
 iq_aio (io_queue_t * iq)
@@ -481,7 +481,8 @@ iq_aio (io_queue_t * iq)
   struct aiocb cb[MAX_AIO_BATCH];
   struct aiocb * list[MAX_AIO_BATCH];
   buffer_desc_t * bufs[MAX_AIO_BATCH];
-  int32 lio_time, n_reads = 0, n_writes = 0;
+  time_msec_t lio_time;
+  int32 n_reads = 0, n_writes = 0;
   int fill = 0, inx, rc;
   dp_addr_t last_read = 0, last_write = 0;
   dk_hash_t * aio_ht = hash_table_allocate (10);
@@ -547,19 +548,19 @@ iq_aio (io_queue_t * iq)
 		      dtp_t c_buf[PAGE_SZ + 512];
 		      db_buf_t copy;
 		      out = (db_buf_t)_RNDUP_PWR2  (((ptrlong)&c_buf), 512);
-		      buf->bd_is_write = 1;
+                      BD_SET_IS_WRITE(buf, 1);
 		      if (PAGE_WRITE_COPY == page_prepare_write (buf, &out, &n_out, c_compress_mode))
 			{
 			  copy = dk_alloc_box (PAGE_SZ, DV_BIN);
 			  memcpy (copy, out, PAGE_SZ);
 			  out = copy;
 			}
-		      buf->bd_is_write = 0;
+                      BD_SET_IS_WRITE(buf, 0);
 		    }
 		  /* If the buffer hasn't moved out of sort order and
 		     hasn't been flushed by a sync write */
 		  buf->bd_readers++;
-		  buf->bd_is_dirty = 0;
+                  BUF_SET_IS_DIRTY(buf,0);
 		  /* clear dirty flag BEFORE write because the buffer
 		   * can move and the flag can go back on DURING the write */
 		  mutex_leave (&buf_itm->itm_mtx);
@@ -805,7 +806,7 @@ iq_loop (io_queue_t * iq)
 {
   it_map_t * buf_itm;
   int leave_needed;
-  long start_write_cum_time = 0;
+  int64 start_write_cum_time = 0;
   buffer_desc_t * buf;
   dp_addr_t dp_to;
   iq->iq_sem = THREAD_CURRENT_THREAD->thr_sem;
@@ -883,7 +884,7 @@ iq_loop (io_queue_t * iq)
 		  /* If the buffer hasn't moved out of sort order and
 		     hasn't been flushed by a sync write */
 		  BD_SET_IS_WRITE (buf, 1);
-		  buf->bd_is_dirty = 0;
+                  BUF_SET_IS_DIRTY(buf,0);
 		  dp_to = buf->bd_physical_page;	/* dp may change once outside of map. */
 		  /* clear dirty flag BEFORE write because the buffer
 		   * can move and the flag can go back on DURING the write */
@@ -996,7 +997,8 @@ mtw_cpt_ck (buffer_desc_t * buf, int line)
     {
       if (!buf->bd_tree || !buf->bd_tree->it_key || KI_TEMP == buf->bd_tree->it_key->key_id)
 	return; /* no message for a temp because such can be wired down at cpt time and not writable */
-      log_error ("suspect to miss a flush of L=%d in cpt, line %d", buf->bd_page, line);
+      log_error ("suspect to miss a flush of key=%s L=%d P=%d in cpt, line %d",
+          buf->bd_tree->it_key->key_name, buf->bd_page, buf->bd_physical_page, line);
     }
 }
 

@@ -1,0 +1,79 @@
+<!DOCTYPE html lang="en">
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>pinger</title>
+  </head>
+  <body>
+    <p>
+      Ping stats for 
+      <input id="SockJSHost" size="100" value="" >
+      <input type="submit" value="reconnect" onclick="sock.close();" >
+    </p>
+    <canvas id="myCanvas" width="700" height="480" style="border:1px solid #000000;"></canvas>
+  </body>
+  <script>
+    var sock, graph = document.getElementById('myCanvas').getContext('2d');
+    var startTs = new Date().getTime();
+    var url = document.getElementById('SockJSHost');
+    var host = window.location.hostname;
+    var port = window.location.port;
+    if (port.length)
+      host = host + ':' + port;
+    url.value = 'ws://' + host + '/ws/index.vsp?sid=1';
+
+    function draw(time, rtt, colour) {
+      var x = ((time - startTs) % 1000) * 5;
+      graph.beginPath();
+      graph.moveTo(x, 480);
+      graph.lineWidth = 3;
+      var y = rtt * 10;
+      graph.lineTo(x, 480 - y);
+      graph.strokeStyle = colour;
+      graph.stroke();
+    }
+
+    function connect() { sock = new WebSocket(document.getElementById('SockJSHost').value);
+
+      sock.onopen = function() {
+        draw(startTs, 400, 'blue');
+      }
+
+      sock.onmessage = function(e) {
+        var sentTime = parseInt(e.data);
+        var now = new Date().getTime();
+        var roundTripTime = now - sentTime;
+        draw(sentTime, roundTripTime*10, 'green');
+      }
+
+      sock.onclose = function() {
+        draw(new Date().getTime(), 400, 'red');
+      }
+
+      sock.onerror= function() {
+        draw(new Date().getTime(), 400, 'red');
+      }
+    }
+    connect();
+
+    setInterval(function() {
+      var now = new Date().getTime();
+      if (sock.readyState == WebSocket.CONNECTING) {
+        draw(now, 5, 'green');
+      }
+      else if (sock.readyState == WebSocket.OPEN) {
+        //console.debug ('sending' + now);
+        sock.send(now);
+        draw(now, 5, 'black');
+      }
+      else if (sock.readyState == WebSocket.CLOSING) {
+        draw(now, 5, 'orange');
+      }
+      else {
+        // CLOSED or non-existent
+        draw(now, 10, 'red');
+        connect();
+      }
+    }, 1000);
+  </script>
+</html>

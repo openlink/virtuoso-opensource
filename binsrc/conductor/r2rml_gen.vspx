@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="r2rml_generate"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        vm:owner="yacutia_sparql_page"
+        fast-render="1"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <vm:pagetitle>R2RML Generate</vm:pagetitle>
+  <vm:pagewrapper>
+    <vm:variables>
+      <v:variable name="message" default="null" type="varchar" persist="0"/>
+      <v:variable name="graph" default="null" type="varchar" persist="0" param-name="graph"/>
+      <v:variable name="tgraph1" default="null" type="varchar" persist="0" />
+      <v:variable name="pgraph1" default="null" type="varchar" persist="0" />
+      <v:variable name="exec_ret" type="any" default="null" persist="temp"/>
+      <v:variable name="sync_ret" type="any" default="null" persist="temp"/>
+      <v:variable persist="0" name="body_v" type="any" default="null" param-name="cr_view"/>
+    </vm:variables>
+    <vm:menu>
+      <vm:menuitem value="Linked Data"/>
+    </vm:menu>
+    <vm:header caption="R2RML Generate"/>
+    <vm:pagebody>
+      <v:on-init>
+        <![CDATA[
+          set http_charset='utf-8';
+        ]]>
+      </v:on-init>
+      <v:form name="form1" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
+        <v:before-data-bind>
+          <![CDATA[
+            declare h, rml_graph, drop_stmt, view_def any;
+            rml_graph := self.graph;
+            self.pgraph1 := '';
+            self.tgraph1 := (SPARQL select distinct ?g  { graph ?:rml_graph {{ ?s rr:graph ?g } union { ?s rr:graphMap ?m . ?m rr:constant ?g }}});
+            if (self.tgraph1 is null)
+              self.tgraph1 := '';
+            if (self.tgraph1 <> '')
+              {
+                h := rfc1808_parse_uri (self.tgraph1);
+                self.pgraph1 := sprintf ('urn:%s:%s', h[1], trim (replace (h[2], '/', ':'), ':'));
+              }
+            self.graph := trim (self.graph);
+            drop_stmt := sprintf ('SPARQL DROP QUAD MAP <%s> ;\n\nSPARQL\n', self.graph);
+            view_def := DB.DBA.R2RML_MAKE_QM_FROM_G (self.graph, self.tgraph1);
+            self.body_v := drop_stmt || view_def || '\n;';
+
+          ]]>
+        </v:before-data-bind>
+        <?vsp
+          if (self.exec_ret is null)
+          {
+        ?>
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+          <tr>
+            <td>
+              <div class="fm">
+                <h2>Definitions</h2>
+                <v:textarea name="cr_view" xhtml_cols="120" xhtml_rows="20" value="--self.body_v"/>
+                <br style="clear: both;"/>
+                <label style="width: 250px; text-align: left;" 
+                    title="Identifies a Named Graph to be associated generated Quad Maps (RDF Views)">Default Virtual Named Graph IRI</label>
+                <v:text name="tgraph" value="--self.tgraph1" xhtml_size="70" />
+                <br />
+                <label style="width: 250px; text-align: left;">Default Physical Named Graph IRI</label>
+                <v:text name="pgraph" value="--self.pgraph1" xhtml_size="70" />
+                <br />
+                <label for="rdb_sync" style="margin-left: 250px; width: 450px; text-align: left;">
+                  <v:check-box name="rdb_sync" value="1" xhtml_id="rdb_sync" />Generate RDB2RDF triggers
+                </label>
+                <br />
+                <label for="fill" style="margin-left: 250px; width: 450px; text-align: left;">
+                  <v:check-box name="fill" value="0" xhtml_id="fill" />Enable Data Syncs with Physical Quad Store
+                </label>
+                <br />
+              </div>
+            </td>
+          </tr>
+          <tr valign='top'>
+            <td>
+              <div class="message">
+                <v:label name="msg" value="--self.message" />
+              </div>
+              <table border='0' width='100%'  class="ctl_grp">
+                <tr align="center">
+                  <td colspan="2">
+                    <v:button action="simple" name="cnl" value="Cancel">
+                      <v:on-post>
+                        self.vc_redirect ('r2rml_import.vspx');
+                      </v:on-post>
+                    </v:button>
+                    <v:button action="simple" name="bt1" value="Execute">
+                      <v:on-post>
+                        <![CDATA[
+                          declare arr, inx, res, stat, msg, meta, data, source, tmp_res any;
+
+                          stat := '00000';
+                          arr := sql_split_text (self.cr_view.ufl_value);
+                          res := make_array (length (arr), 'any');
+
+                          inx := 0;
+                          foreach (varchar q in arr) do
+                          {
+                            stat := '00000';
+                            exec (q, stat, msg, vector (), 0, meta, data);
+                            if (stat = '00000')
+                              res[inx] := data;
+                            else
+                              res[inx] := vector (vector (stat, msg));
+                              inx := inx + 1;
+                          }
+
+                          source := self.graph;
+                          if (self.rdb_sync.ufl_selected)
+                          {
+                            tmp_res := RDF_VIEW_SYNC_TO_PHYSICAL (self.tgraph.ufl_value, self.fill.ufl_selected, self.pgraph.ufl_value);
+                            res := vector_concat (res, vector (tmp_res));
+                            for select "g" from (sparql
+                                                 define input:storage ""
+                                                 prefix rr: <http://www.w3.org/ns/r2rml#>
+                                                     select distinct ?g  { graph `iri(?:source)`
+                                                        {{ ?s rr:graph ?g } union { ?s rr:graphMap ?m . ?m rr:constant ?g }}}) x do
+                            {
+                              if (self.tgraph.ufl_value <> "g")
+                            {
+                                    -- only in case where we have multiple graphs
+                                    tmp_res := RDF_VIEW_SYNC_TO_PHYSICAL ("g", self.fill.ufl_selected, self.pgraph.ufl_value);
+                                    res := vector_concat (res, vector (tmp_res));
+                            }
+                          }
+                          }
+                          self.exec_ret := res;
+                        ]]>
+                      </v:on-post>
+                    </v:button>
+                  </td>
+                </tr>
+              </table>
+            </td>
+          </tr>
+        </table>
+        <?vsp } else { ?>
+        <div>
+        <table border="0" width="100%" height="100%" cellpadding="0" cellspacing="0">
+        <h2>Execution Status</h2>
+          <table class="listing">
+            <tr class="listing_header_row">
+              <th>Status</th>
+              <th>Message</th>
+            </tr>
+            <?vsp { foreach (any _rset in self.exec_ret) do { foreach (any _row in _rset) do { ?>
+            <tr>
+              <td><?V _row[0] ?></td>
+              <td><?V _row[1] ?></td>
+            </tr>
+            <?vsp } } } ?>
+          </table>
+        </table>
+        <v:button name="back" action="simple" value="Back">
+          <v:on-post><![CDATA[ self.exec_ret := null; ]]></v:on-post>
+        </v:button>
+        </div>
+        <?vsp } ?>
+      </v:form>
+    </vm:pagebody>
+  </vm:pagewrapper>
+</v:page>

@@ -1,21 +1,14 @@
 Virtuoso and OpenSSL
 ====================
 
-*Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>*
+*Copyright (C) 1998-2023 OpenLink Software <vos.admin@openlinksw.com>*
 
 Virtuoso Open Source Edition uses the OpenSSL libraries for cryptographic operations as well as
 handling both client-side and server-side secure connections for both HTTPS as well as iSQL/ODBC
 transport layers.
 
-Virtuoso can be compiled against OpenSSL 0.9.8i upto OpenSSL v1.0.2p which is the current
-Long Term Support (LTS) release of OpenSSL.
-
-The OpenSSL v1.1.x API is incompatible with previous versions. The Virtuoso development team is 
-currently working on enhancing the Virtuoso code to support the new API, but this work is not 
-yet completed.
-
-Many new Linux distributions are including OpenSSL v1.1.0 as their base version, although they
-typically also supply an OpenSSL v1.0.x development kit for backward compatibility.
+Virtuoso can be compiled against OpenSSL 0.9.8i up to and including OpenSSL v3.0.x, which is the
+current Long Term Support (LTS) release of OpenSSL.
 
 Other operating systems like macOS and Windows do not supply OpenSSL at all, but require third
 party ports for this support.
@@ -29,17 +22,32 @@ Apple is actively deprecating OpenSSL from macOS, so your system likely has a pr
 of `openssl`, and as of High Sierra (10.13), Apple completely removed the required `include` files 
 from the `/usr/include/openssl` directory.
 
-We recommend installing the OpenSSL 1.0.2 library using:
 
-    $ brew install openssl
+We recommend installing the OpenSSL 1.0.2 library using:
+```shell
+$ brew install openssl
+```
 
 At configure time, you can then use the following:
-
-    $ sh ./configure \
-      ..... \
-      --enable-openssl=/usr/local/opt/openssl/
+```shell
+$ sh ./configure \
+..... \
+--enable-openssl=/usr/local/opt/openssl/
+```
 
 More information on porting VOS to macOS can be found in [`README.MACOSX.md`](README.MACOSX.md)
+
+
+Ubuntu 22.04 LTS
+----------------
+Ubuntu 22.04 ships with OpenSSL 3.0.2.
+
+As of VOS 7.2.7 VOS has been upgraded to work with that version.
+
+To install the OpenSSL 3.0.2 SDK you can use the following command:
+```shell
+$ sudo apt-get install libssl-dev
+```
 
 
 Ubuntu 18.04 LTS
@@ -50,40 +58,26 @@ of shared libraries which are installed side-by-side on the system.
 A developer can choose to install either the 1.0 or the 1.1 software development kit (SDK) which
 includes the necessary header files and development libraries.
 
-To build VOS, you need to run the following command which will uninstall the 1.1 SDK and
-replace it with the 1.0 SDK.
-
-    $ sudo apt-get install libssl1.0-dev
-
-Since Ubuntu installs runtime libraries for both versions of OpenSSL side-by-side, after compiling
-and installing VOS on your system, you can re-install the newer 1.1 SDK for compiling other programs
-by running:
-
-    $ sudo apt-get install libssl-dev
-
+As the current VOS release is compatible with OpenSSL 1.1.x, you can use the following command
+to install the OpenSSL development SDK.
+```shell
+$ sudo apt-get install libssl-dev
+```
 
 Debian 9
 --------
 Debian uses the same package names as Ubuntu:
-
-    $ sudo apt-get install libssl1.0-dev
-
-And to switch back:
-
-    $ sudo apt-get install libssl-dev
+```shell
+$ sudo apt-get install libssl-dev
+```
 
 Fedora 28
 ---------
-Fedora 28 also has separate SDKs for both versions of OpenSSL.
 
-To install the 1.0 SDK use:
-
-    $ sudo dnf install --allowerasing compat-openssl10-devel
-
-To switch back to the 1.1 SDK use:
-
-     $ sudo dnf install --allowerasign openssl-devel
-
+Fedora uses:
+```shell
+$ sudo dnf install --allowerasign openssl-devel
+```
 
 Windows
 -------
@@ -109,9 +103,11 @@ If you have performed a custom build of OpenSSL on your own system, and/or if Op
 in a non-standard location, you can use the following flag during `configure` to point the build
 system to the location where your OpenSSL headers and libraries are installed:
 
-    $ sh ./configure \
-      ..... \
-      --enable-openssl=/opt/openssl/
+```shell
+$ sh ./configure \
+..... \
+--enable-openssl=/opt/openssl/
+```
 
 The `configure` script will also check `/opt/openssl/include` for the required header files and
 `/opt/openssl/lib` for the libraries, before any standard locations embedded in the compiler.

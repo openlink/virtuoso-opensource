@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -210,7 +210,7 @@ sqlo_is_seq_in_oby_order (sqlo_t * so, df_elt_t * dfe, df_elt_t * last_tb)
   op_table_t * from_ot = so->so_this_dt;
   int n_ordered = from_ot ? dk_set_length (from_ot->ot_oby_ots) : -1;
   int n_in_order = 0;
-  for (dfe = dfe; dfe; dfe = dfe->dfe_next)
+  for (; dfe; dfe = dfe->dfe_next)
     {
       if (dfe == last_tb)
 	return 1;
@@ -794,7 +794,13 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
 		sqlo_place_exp (so, from_ot->ot_work_dfe, arg_dfe);
 	    }
 	  else
-	    sqlo_place_exp (so, from_ot->ot_work_dfe, arg_dfe);
+            {
+              char prev = so->so_place_code_forr_cond;
+              if (DFE_VALUE_SUBQ == from_ot->ot_work_dfe->dfe_type && !group) /* simple fref */
+                so->so_place_code_forr_cond = 0;
+              sqlo_place_exp (so, from_ot->ot_work_dfe, arg_dfe);
+              so->so_place_code_forr_cond = prev;
+            }
 	  if (fref->_.fn_ref.fn_code == AMMSC_COUNT || fref->_.fn_ref.fn_code == AMMSC_COUNTSUM)
 	    fref_dfe->dfe_sqt.sqt_dtp = DV_LONG_INT;
 	  else

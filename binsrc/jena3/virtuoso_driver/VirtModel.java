@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,21 +30,15 @@ import java.util.Iterator;
 import java.util.List;
 import javax.sql.*;
 
-import org.apache.jena.graph.*;
-import org.apache.jena.graph.impl.*;
 import org.apache.jena.query.ReadWrite;
 import org.apache.jena.rdf.model.Statement;
+import org.apache.jena.riot.system.StreamRDF;
 import org.apache.jena.shared.*;
-import org.apache.jena.util.iterator.*;
-import org.apache.jena.datatypes.*;
 import org.apache.jena.rdf.model.*;
 import org.apache.jena.rdf.model.impl.*;
 
 
 public class VirtModel extends ModelCom {
-
-    private final Object lck_add = new Object();
-    private int batch_worked = 0;
 
     /**
      * @param base
@@ -95,6 +89,10 @@ public class VirtModel extends ModelCom {
         return this;
     }
 
+
+    public StreamRDF getStreamRDF(boolean useAutoCommit, int chunkSize, VirtStreamRDF.DeadLockHandler dhandler) {
+        return new VirtStreamRDF(this, useAutoCommit, chunkSize, dhandler);
+    }
 
     public void createRuleSet(String ruleSetName, String uriGraphRuleSet) {
         ((VirtGraph) this.graph).createRuleSet(ruleSetName, uriGraphRuleSet);
@@ -244,13 +242,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(String url) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -258,13 +264,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(Reader reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -272,13 +286,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(InputStream reader, String base) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -286,13 +308,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(String url, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url, lang);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -300,13 +330,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(String url, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(url, base, lang);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -314,13 +352,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(Reader reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base, lang);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -328,13 +374,21 @@ public class VirtModel extends ModelCom {
     @Override
     public Model read(InputStream reader, String base, String lang) {
         VirtGraph g = (VirtGraph)getGraph();
-        synchronized (lck_add){
-            startBatchAdd();
+        synchronized (g.lck_add){
+            try {
+              g.startBatchAdd();
+            } catch(Exception e) {
+              throw new JenaException(e);
+            }
             try{
               Model ret = super.read(reader, base, lang);
               return ret;
             } finally {
-              stopBatchAdd();
+              try {
+                g.stopBatchAdd();
+              } catch(Exception e) {
+                throw new JenaException(e);
+              }
             }
         }
     }
@@ -355,8 +409,8 @@ public class VirtModel extends ModelCom {
     }
 
     protected Model add(Iterator<Statement> it) {
-        VirtGraph _g = (VirtGraph) this.graph;
-        _g.add(_g.getGraphName(), it);
+        VirtGraph g = (VirtGraph) this.graph;
+        g.add(g.getGraphName(), it);
         return this;
     }
 
@@ -377,34 +431,19 @@ public class VirtModel extends ModelCom {
     }
 
     protected Model remove(Iterator<Statement> it) {
-        VirtGraph _g = (VirtGraph) this.graph;
-        _g.delete(_g.getGraphName(), it);
+        VirtGraph g = (VirtGraph) this.graph;
+        g.delete(g.getGraphName(), it);
         return this;
     }
 
     @Override
     public Model remove(Model m)
     {
-        VirtGraph _g = (VirtGraph) this.graph;
-        _g.md_delete_Model(m.listStatements());
+        VirtGraph g = (VirtGraph) this.graph;
+        g.md_delete_Model(m.listStatements());
         return this;
     }
 
-    private void startBatchAdd()
-    {
-        VirtGraph g = (VirtGraph)getGraph();
-        if (batch_worked==0)
-          g.startBatchAdd();
-        batch_worked++;
-    }
-
-    private void stopBatchAdd()
-    {
-        VirtGraph g = (VirtGraph)getGraph();
-        batch_worked--;
-        if (batch_worked==0)
-          g.stopBatchAdd();
-    }
 
     /** Begin a new transation.
      *

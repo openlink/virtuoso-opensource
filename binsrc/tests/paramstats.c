@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -106,6 +106,9 @@ main(int argc, char *argv[])
       fprintf(stderr, "Cannot set environment attribute.\n");
       return 1;
     }
+
+  SQLSetEnvAttr (henv, SQL_ATTR_APP_UNICODE_TYPE, (SQLPOINTER) SQL_DM_CP_UCS4,
+    SQL_IS_UINTEGER);
 
   rc = SQLAllocHandle(SQL_HANDLE_DBC, (SQLHANDLE) henv, (SQLHANDLE *) &hdbc);
   if (rc != SQL_SUCCESS && rc != SQL_SUCCESS_WITH_INFO)

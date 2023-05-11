@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1223,18 +1223,18 @@ xte_vtb_feed (caddr_t * xte, vt_batch_t * vtb, lh_word_callback_t *cbk, char **t
       caddr_t name;
       size_t namelen;
       if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (head))
-	sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
-	name = head[0];
-	if (!DV_STRINGP (name))
-	  sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
-	if (' ' == name[0])
-	  {
-	    if (!strcmp(name," root"))
-	      goto process_tag; /* see below */
-	    return hider;
-	  }
-	if(box_length(name)>(XML_MAX_EXP_NAME-2))
-	  sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
+        sqlr_new_error ("22023", "FT011", "Bad XML entity tree in vt_batch_feed");
+      name = head[0];
+      if (!DV_STRINGP (name))
+        sqlr_new_error ("22023", "FT012", "Bad XML entity tree in vt_batch_feed");
+      if (' ' == name[0])
+        {
+          if (!strcmp(name," root"))
+            goto process_tag; /* see below */
+          return hider;
+        }
+      if(box_length(name)>(XML_MAX_EXP_NAME-2))
+        sqlr_new_error ("22023", "FT013", "Bad XML entity tree in vt_batch_feed");
 process_tag:
       attr_idx_max = BOX_ELEMENTS(head) - 1;
       for (attr_idx = 1; attr_idx < attr_idx_max; attr_idx += 2)
@@ -2191,8 +2191,8 @@ static char *vt_create_text_index_text =
 "  vt_name := concat (tb, \'_\', col, \'_WORDS\');\n"
 /*"  str := sprintf (\'create table \"%I\".\"%I\".\"%I\" (VT_WORD varchar, VT_D_ID any, VT_D_ID_2 any, VT_DATA varchar, VT_LONG_DATA long varchar, primary key (VT_WORD, VT_D_ID) not column)\',\n"*/
 /* the PK can be bigint */
-"  is_bigint_id := DB.DBA.col_of_type (tb, text_id_col, 247);\n"
-"  is_int_id := DB.DBA.col_of_type (tb, text_id_col, 189); \n"
+"  is_bigint_id := DB.DBA.col_of_type (tb, text_id_col, __tag of bigint);\n"
+"  is_int_id := DB.DBA.col_of_type (tb, text_id_col, __tag of integer); \n"
 "  if (is_bigint_id = 0 and is_int_id = 0)"
 "    signal (\'22023\', concat (\'the column \', text_id_col, \' is not an integer\'), \'FT024\'); \n"
 "  text_id_col_type := case when is_bigint_id then \'BIGINT\' when is_int_id then \'INTEGER\' else \'ANY\' end;\n"
@@ -2421,7 +2421,7 @@ static char *vt_free_text_proc_gen_text =
 "	\'{\n\',"
 "\'	   declare inx integer;\n"
 "	   inx := 0;\n"
-"	  if (__tag (invd) <> 193) return; \n"
+"	  if (__tag (invd) <> __tag of vector) return; \n"
 "	   while (inx < length (invd))\n"
 "	     {\\\n\',\n"
 "      sprintf (\n"
@@ -2844,8 +2844,8 @@ static char *vt_create_update_log_text =
 "  select VI_COL, VI_ID_COL, VI_ID_IS_PK, VI_INDEX into datacol, keycol, is_pk, key_name from DB.DBA.SYS_VT_INDEX where VI_TABLE = tablename; "
 "  if (datacol is null)"
 "    signal ('42000','Misc. error upon update log creation. The free text index cannot be created.', 'FT026');"
-"  is_bigint_id := DB.DBA.col_of_type (tablename, keycol, 247); \n"
-"  is_int_id := DB.DBA.col_of_type (tablename, keycol, 189); \n"
+"  is_bigint_id := DB.DBA.col_of_type (tablename, keycol, __tag of bigint); \n"
+"  is_int_id := DB.DBA.col_of_type (tablename, keycol, __tag of integer); \n"
 "  id_col_type := case when is_bigint_id then \'BIGINT\' when is_int_id then \'INTEGER\' else \'ANY\' end;\n"
 "  _lang_enc_args := concat (\', \\\'\', _lang, \'\\\', \\\'\', _enc, \'\\\'\');\n"
 "  cl_part := DB.DBA.VT_GET_CLUSTER (tablename, key_name); \n"

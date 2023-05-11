@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1467,9 +1467,9 @@ mutex_leave (dk_mutex_t *mtx)
 
 
 void
-mutex_stat ()
+mutex_stat (int mode, int max)
 {
-  #ifdef MTX_METER
+#ifdef MTX_METER
   DO_HT (dk_mutex_t *, mtx, void*, ign, all_mtxs)
     {
       if (!mtx->mtx_enters)
@@ -1484,7 +1484,7 @@ mutex_stat ()
 #endif
     }
   END_DO_SET();
-  #else
+#else
   printf ("Mutex stats not enabled.}\n");
 #endif
 }

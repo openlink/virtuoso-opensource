@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+-->
+<v:page name="logging_disk"
+        doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:xhtml="http://www.w3.org/1999/xhtml"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
+  <v:variable persist="1" name="sql_str" type="integer" default="3"/>
+  <v:variable persist="1" name="caption_str" type="varchar" default="'Disk Statistics (by Table)'"/>
+
+  <div class="scroll_area">
+    <table class="listing">
+      <tr class="listing_header_row">
+        <th>Table</th>
+        <th>Index name</th>
+        <th>Touches</th>
+        <th>Reads</th>
+        <th>Read %</th>
+      </tr>
+
+      <v:data-set name="data_set1" data='--disk_stat(3)' meta="--disk_stat_meta(self.sql_str)" nrows="0" scrollable="0" cursor-type="static" edit="0">
+        <input type="hidden" name="page" value="3"/>
+        <v:column name="KEY_TABLE" />
+        <v:column name="INDEX_NAME" />
+        <v:column name="TOUCHES" />
+        <v:column name="READS" />
+        <v:column name="READ_PCT" />
+
+        <v:template type="repeat" name="data_set1_repeat">
+          <v:template type="if-not-exists" name="data_set1_empty">
+            <tr>
+              <td class="listing_row_count" colspan="5">
+                No data available
+              </td>
+            </tr>
+          </v:template>
+
+          <v:template type="browse" name="data_set1_browse">
+            <tr>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[0]) ?>
+              </td>
+              <td>
+                <?V ((control as vspx_row_template).te_rowset[1]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[2]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[3]) ?>
+              </td>
+              <td align="right">
+                <?V ((control as vspx_row_template).te_rowset[4]) ?>
+              </td>
+            </tr>
+          </v:template>
+        </v:template>
+
+      </v:data-set>
+    </table>
+  </div>
+</v:page>

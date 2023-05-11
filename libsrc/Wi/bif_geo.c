@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -77,8 +77,7 @@ bif_earth_radius (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_double (EARTH_RADIUS_GEOM_MEAN_KM);
 }
 
-double
-haversine (double lat1, double lat2, double long_sep)
+double haversine (double lat1, double lat2, double long_sep)
 {
   double sqrthaversin_lat_sep = sin ((lat1 - lat2) / 2.0);
   double sqrthaversin_long_sep = sin (long_sep / 2.0);
@@ -95,13 +94,30 @@ haversine_deg_km (double long1, double lat1, double long2, double lat2)
   long2 *= (M_PI / 180.0);
   hs = haversine (lat1, lat2, long2 - long1);
   if (hs > 0.999999)
-    return (M_PI * (EARTH_RADIUS_GEOM_MEAN_KM + cos (lat1) * cos (lat2) * (EARTH_RADIUS_EQUATOR_KM - EARTH_RADIUS_GEOM_MEAN_KM)));
+    return  (M_PI * (EARTH_RADIUS_GEOM_MEAN_KM +
+        cos (lat1) * cos (lat2) * (EARTH_RADIUS_EQUATOR_KM - EARTH_RADIUS_GEOM_MEAN_KM) ) );
   else if (hs <= 0.0)
     return (0);
   else
     return (EARTH_RADIUS_GEOM_MEAN_KM * 2.0 * asin (sqrt (hs)));
 }
 
+double
+haversine_deg_deg (double long1, double lat1, double long2, double lat2)
+{
+  double hs;
+  lat1 *= (M_PI / 180.0);
+  long1 *= (M_PI / 180.0);
+  lat2 *= (M_PI / 180.0);
+  long2 *= (M_PI / 180.0);
+  hs = haversine (lat1, lat2, long2 - long1);
+  if (hs > 0.999999)
+    return  180.0;
+  else if (hs <= 0.0)
+    return 0.0;
+  else
+    return  2.0 * asin (sqrt (hs)) * 180.0 / M_PI;
+}
 
 caddr_t
 bif_haversine_deg_km (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -380,6 +396,8 @@ start_pass:
               int first_new_point_ofs, addon_count;
               switch (GEO_TYPE_NO_ZM (itm->geo_flags))
                 {
+                case GEO_NULL_SHAPE:
+                  continue;
                 case GEO_POINT:
                   if ((fabs (itm->XYbox.Xmin - prevX) <= geoc_EPSILON) && (fabs (itm->XYbox.Ymin - prevY) <= geoc_EPSILON))
                     continue;
@@ -747,7 +765,9 @@ bif_st_may_intersect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_st_astext (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  geo_t * g = bif_geo_arg (qst, args, 0, "st_wkt", GEO_ARG_ANY_NONNULL);
+  geo_t * g = bif_geo_arg (qst, args, 0, "st_wkt", GEO_ARG_ANY_NULLABLE);
+  if (NULL == g)
+    return box_dv_short_string ("EMPTY");
   return geo_wkt ((caddr_t)g);
 }
 
@@ -762,6 +782,8 @@ bif_is_geometry (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 int
 geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *b, double prec)
 {
+  if ((geoc_FARAWAY <= pX) || (geoc_FARAWAY <= b->Xmin))
+    return 0;
   if (0 < prec)
     {
       geoc boxproximaX = ((pX > b->Xmax) ? b->Xmax : ((pX < b->Xmin) ? b->Xmin : pX));
@@ -775,6 +797,8 @@ geo_point_intersects_XYbox (geo_srcode_t srcode, geoc pX, geoc pY, geo_XYbox_t *
 int
 geo_point_intersects_line (geo_srcode_t srcode, geoc pX, geoc pY, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y, double prec)
 {
+  if ((geoc_FARAWAY <= pX) || (geoc_FARAWAY <= p1X))
+    return 0;
   if ((0 < prec) && GEO_SR_SPHEROID_DEGREES (srcode))
     {
       double lat_prec_deg, lon_to_lat;
@@ -947,6 +971,8 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
     }
   switch (GEO_TYPE_NO_ZM (g2->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return 0;
     case GEO_BOX:
       return 1;
     case GEO_LINESTRING:
@@ -1011,8 +1037,21 @@ geo_point_intersects (geo_srcode_t srcode, geoc pX, geoc pY, geo_t *g2, double p
         return 0;
       }
     }
-  sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
-  return 0;
+  if (NULL != geo_fallback_pred_cbk)
+    {
+      caddr_t res;
+      char point_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
+      geo_t *g1;
+      BOX_AUTO_TYPED (geo_t *, g1, &point_buf, sizeof (geo_t), DV_GEO);
+      g1->geo_flags = GEO_POINT; g1->geo_srcode = srcode;
+      g1->XYbox.Xmax = g1->XYbox.Xmin = pX;
+      g1->XYbox.Ymax = g1->XYbox.Ymin = pY;
+      res = geo_fallback_pred_cbk (g1, g2, GSOP_INTERSECTS, prec);
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO4S", "Generic error in after check of geo intersects with a given point");
+      return unbox (res);
+    }
+  sqlr_new_error ("42000", "GEO4S", "for after check of geo intersects, and a given point, supported types of second argument are POINT, BOX, POLYGON, LINESTRING, POINTLIST, and their MULTI... and COLLECTIONs");
 }
 
 int
@@ -1068,6 +1107,8 @@ geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y
     }
   switch (GEO_TYPE_NO_ZM (g2->geo_flags))
     {
+    case GEO_NULL_SHAPE:
+      return 0;
     case GEO_BOX:
       return 1;
     case GEO_LINESTRING:
@@ -1162,7 +1203,23 @@ geo_line_intersects (geo_srcode_t srcode, geoc p1X, geoc p1Y, geoc p2X, geoc p2Y
       }
     }
 unsupported:
-  sqlr_new_error ("42000", "GEO..", "The check for spatial intersection is not implemented for a line and a shape of type %d", g2->geo_srcode);
+  if (NULL != geo_fallback_pred_cbk)
+    {
+      caddr_t res;
+      geoc Xs[2], Ys[2];
+      char point_buf[sizeof (geo_t) + BOX_AUTO_OVERHEAD];
+      geo_t *g1;
+      BOX_AUTO_TYPED (geo_t *, g1, &point_buf, sizeof (geo_t), DV_GEO);
+      g1->geo_flags = GEO_LINESTRING; g1->geo_srcode = srcode;
+      g1->_.pline.len = 2;
+      g1->_.pline.Xs = Xs; Xs[0] = p1X; Xs[1] = p2X; if (p1X < p2X) { g1->XYbox.Xmin = p1X; g1->XYbox.Xmax = p2X; } else { g1->XYbox.Xmin = p2X; g1->XYbox.Xmax = p1X; }
+      g1->_.pline.Ys = Ys; Ys[0] = p1Y; Ys[1] = p2Y; if (p1Y < p2Y) { g1->XYbox.Ymin = p1Y; g1->XYbox.Ymax = p2Y; } else { g1->XYbox.Ymin = p2Y; g1->XYbox.Ymax = p1Y; }
+      res = geo_fallback_pred_cbk (g1, g2, GSOP_INTERSECTS, prec);
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO4S", "Generic error in spatial intersection of a line and a shape of type %d", (int)(g2->geo_flags));
+      return unbox (res);
+    }
+  sqlr_new_error ("42000", "GEO4S", "The check for spatial intersection is not implemented for a line and a shape of type %d", (int)(g2->geo_flags));
   return 0;
 }
 
@@ -1310,6 +1367,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           }
         switch (GEO_TYPE_NO_ZM (g1->geo_flags))
           {
+          case GEO_NULL_SHAPE:
+            return 0;
           case GEO_LINESTRING:
             if (GEO_IS_CHAINBOXED & g1->geo_flags)
               {
@@ -1412,7 +1471,14 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
                       return 1;
                   }
               }
-            return 0;
+            if (GEO_A_CLOSED & g2->geo_flags)
+              {
+                geoc sampleX = (MAX (g1->XYbox.Xmin, g2->XYbox.Xmin) + MIN (g1->XYbox.Xmax, g2->XYbox.Xmax)) / 2;
+                geoc sampleY = (MAX (g1->XYbox.Ymin, g2->XYbox.Ymin) + MIN (g1->XYbox.Ymax, g2->XYbox.Ymax)) / 2;
+                if (geo_point_intersects (g1->geo_srcode, sampleX, sampleY, g1, prec) &&
+                  geo_point_intersects (g1->geo_srcode, sampleX, sampleY, g2, prec) )
+                  return 1;
+              }
           }
         goto unsupported_intersects;
       }
@@ -1450,6 +1516,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
           || (g1->XYbox.Ymax < g2->XYbox.Ymin - prec)
           || (g1->XYbox.Ymin > g2->XYbox.Ymax + prec) )
           return 0;
+        if (GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g1->geo_flags))
+          return 0;
         return 1;
       }
     case GSOP_CONTAINS:
@@ -1470,6 +1538,8 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
               return 1;
             return geo_point_intersects (g2->geo_srcode, Xkey(g2), Ykey(g2), g1, prec);
           }
+        if ((GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g1->geo_flags)) || (GEO_NULL_SHAPE == GEO_TYPE_NO_ZM (g2->geo_flags)))
+          return 0;
         sqlr_new_error ("42000", "GEO..", "for geo contains, only \"shape contains point\" case is supported in current version");
         break;
       }
@@ -1477,29 +1547,29 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
       {
         if ((NULL == g1) || (NULL == g2))
           return 0;
-          if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
-            {
-              if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
-                {
-                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
-                    return 1;
-                  return 0;
-                }
-              if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
-                {
-                  geoc boxproximaX = ((Xkey(g2) > g1->XYbox.Xmax) ? g1->XYbox.Xmax : ((Xkey(g2) < g1->XYbox.Xmin) ? g1->XYbox.Xmin : Xkey(g2)));
-                  geoc boxproximaY = ((Ykey(g2) > g1->XYbox.Ymax) ? g1->XYbox.Ymax : ((Ykey(g2) < g1->XYbox.Ymin) ? g1->XYbox.Ymin : Ykey(g2)));
-                  if (prec >= geo_distance (g1->geo_srcode, Xkey(g2), Ykey(g2), boxproximaX, boxproximaY))
-                    return 1;
-                  return 0;
-                }
-              if ( (Xkey(g2) < g1->XYbox.Xmin - prec)
-                || (Xkey(g2) > g1->XYbox.Xmax + prec)
-                || (Ykey(g2) < g1->XYbox.Ymin - prec)
-                || (Ykey(g2) > g1->XYbox.Ymax + prec) )
+        if (GEO_POINT == GEO_TYPE_NO_ZM (g2->geo_flags))
+          {
+            if (GEO_POINT == GEO_TYPE_NO_ZM (g1->geo_flags))
+              {
+                if (prec >= geo_distance (g1->geo_srcode, Xkey(g1), Ykey(g1), Xkey(g2), Ykey(g2)))
+                  return 1;
                 return 0;
-              return 1;
-            }
+              }
+            if (GEO_BOX == GEO_TYPE_NO_ZM (g1->geo_flags))
+              {
+                geoc boxproximaX = ((Xkey(g2) > g1->XYbox.Xmax) ? g1->XYbox.Xmax : ((Xkey(g2) < g1->XYbox.Xmin) ? g1->XYbox.Xmin : Xkey(g2)));
+                geoc boxproximaY = ((Ykey(g2) > g1->XYbox.Ymax) ? g1->XYbox.Ymax : ((Ykey(g2) < g1->XYbox.Ymin) ? g1->XYbox.Ymin : Ykey(g2)));
+                if (prec >= geo_distance (g1->geo_srcode, Xkey(g2), Ykey(g2), boxproximaX, boxproximaY))
+                  return 1;
+                return 0;
+              }
+            if ( (Xkey(g2) < g1->XYbox.Xmin - prec)
+              || (Xkey(g2) > g1->XYbox.Xmax + prec)
+              || (Ykey(g2) < g1->XYbox.Ymin - prec)
+              || (Ykey(g2) > g1->XYbox.Ymax + prec) )
+              return 0;
+            return 1;
+          }
         if ( (g2->XYbox.Xmin < g1->XYbox.Xmin - prec)
           || (g2->XYbox.Xmax > g1->XYbox.Xmax + prec)
           || (g2->XYbox.Ymin < g1->XYbox.Ymin - prec)
@@ -1509,8 +1579,119 @@ geo_pred (geo_t * g1, geo_t * g2, int op, double prec)
       }
     }
 unsupported_intersects:
+  if (NULL != geo_fallback_pred_cbk)
+    {
+      caddr_t res;
+      res = geo_fallback_pred_cbk (g1, g2, op, prec);
+      if (IS_BOX_POINTER (res))
+        sqlr_new_error ("42000", "GEO..", "Generic error in geo intersection");
+      return unbox (res);
+    }
   sqlr_new_error ("42000", "GEO..", "for after check of geo intersects, some shape types (e.g., polygon rings and curves) are not yet supported");
-  return 0;
+}
+
+id_hash_iterator_t *sr_iri_to_srid_iter = NULL;
+id_hash_iterator_t *sr_srid_to_iri_iter = NULL;
+
+id_hash_iterator_t **
+get_sr_iri_to_srid_iter (void)
+{
+  return &sr_iri_to_srid_iter;
+}
+
+id_hash_iterator_t **
+get_sr_srid_to_iri_iter (void)
+{
+  return &sr_srid_to_iri_iter;
+}
+
+boxint
+geo_sr_iri_to_srid (caddr_t sr_iri)
+{
+  if (NULL == sr_iri_to_srid_iter)
+    {
+      if (!strcmp (sr_iri, "http://www.opengis.net/def/crs/OGC/1.3/CRS84"))
+        return SRID_WGS84;
+      return -1;
+    }
+  else
+    {
+      id_hash_t *sr_iri_to_srid = sr_iri_to_srid_iter->hit_hash;
+      caddr_t *hit, res;
+      boxint unboxed_res;
+      HT_RDLOCK (sr_iri_to_srid);
+      hit = (caddr_t *)id_hash_get (sr_iri_to_srid, (caddr_t)(&sr_iri));
+      if (NULL == hit)
+        {
+          HT_UNLOCK (sr_iri_to_srid);
+          return -1;
+        }
+      res = hit[0];
+      if (DV_LONG_INT != DV_TYPE_OF (res))
+        {
+          HT_UNLOCK (sr_iri_to_srid);
+          return -2;
+        }
+      unboxed_res = unbox (res);
+      HT_UNLOCK (sr_iri_to_srid);
+      return unboxed_res;
+    }
+}
+
+caddr_t
+geo_sr_srid_to_iri (boxint srid)
+{
+  if (NULL == sr_srid_to_iri_iter)
+    {
+      if (SRID_WGS84 == srid)
+        return box_dv_uname_string ("http://www.opengis.net/def/crs/OGC/1.3/CRS84");
+      return NULL;
+    }
+  else
+    {
+      id_hash_t *sr_srid_to_iri = sr_srid_to_iri_iter->hit_hash;
+      caddr_t boxed_srid = box_num (srid);
+      caddr_t *hit, res;
+      HT_RDLOCK (sr_srid_to_iri);
+      hit = (caddr_t *)id_hash_get (sr_srid_to_iri, (caddr_t)(&boxed_srid));
+      if (NULL == hit)
+        {
+          HT_UNLOCK (sr_srid_to_iri);
+          return NULL;
+        }
+      res = hit[0];
+      if ((DV_STRING != DV_TYPE_OF (res)) && (DV_UNAME != DV_TYPE_OF (res)))
+        {
+          HT_UNLOCK (sr_srid_to_iri);
+          return NULL;
+        }
+      res = box_copy (res);
+      HT_UNLOCK (sr_srid_to_iri);
+      return res;
+    }
+}
+
+caddr_t
+bif_sr_iri_to_srid (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  caddr_t sr_iri = bif_string_arg (qst, args, 0, "sr_iri_to_srid");
+  boxint srid = geo_sr_iri_to_srid (sr_iri);
+  if (0 > srid)
+    return NEW_DB_NULL;
+  return box_num (srid);
+}
+
+caddr_t
+bif_sr_srid_to_iri (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  boxint srid = bif_long_arg (qst, args, 0, "sr_srid_to_iri");
+  caddr_t res;
+  if (0 > srid)
+    return NEW_DB_NULL;
+  res = geo_sr_srid_to_iri (srid);
+  if (NULL == res)
+    return NEW_DB_NULL;
+  return res;
 }
 
 caddr_t
@@ -1522,7 +1703,7 @@ bif_st_ewkt_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t err = NULL;
   if (1 < BOX_ELEMENTS (args))
     srid = bif_long_arg (qst, args, 1, "st_ewkt_read");
-  res = ewkt_parse_2 (strg, srid, &err);
+  res = ewkt_parse_2 (strg, GEO_SRCODE_OF_SRID(srid), &err);
   if (NULL != err)
     sqlr_resignal (err);
   geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);
@@ -1539,6 +1720,57 @@ bif_http_st_ewkt (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
+bif_st_wkb_read (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef DISABLE_WKB
+  sqlr_new_error ("41000", "GEO16", "Function st_wkb_read() is disabled in this build of Virtuoso");
+#else
+  geo_t *res;
+  caddr_t strg = bif_arg (qst, args, 0, "st_wkb_read");
+  int srid = SRID_DEFAULT;
+  if (1 < BOX_ELEMENTS (args))
+    srid = bif_long_arg (qst, args, 1, "st_wkb_read");
+  switch (DV_TYPE_OF (strg))
+    {
+    case DV_STRING_SESSION:
+      {
+        dk_session_t *ses = (dk_session_t *)strg;
+        CATCH_READ_FAIL_S (ses)
+          {
+            res = wkb_read_ses (ses, GEO_SRCODE_OF_SRID(srid), 0);
+          }
+        FAILED
+          {
+            THROW_READ_FAIL_S (ses);
+          }
+        END_READ_FAIL_S (ses);
+        break;
+      }
+    default:
+      sqlr_new_error ("22023", "GEO16", "Function st_wkb_read needs a string or string output as argument 0, not an arg of type %s (%d)",
+        dv_type_title (DV_TYPE_OF (strg)), DV_TYPE_OF (strg) );
+      return NULL; /* never reached */
+    }
+  geo_calc_bounding (res, GEO_CALC_BOUNDING_DO_ALL);
+  return (caddr_t)res;
+#endif
+}
+
+
+caddr_t
+bif_http_st_wkb (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+#ifdef DISABLE_WKB
+  sqlr_new_error ("41000", "GEO16", "Function http_st_wkb() is disabled in this build of Virtuoso");
+#else
+  geo_t *g = bif_geo_arg (qst, args, 0, "http_st_wkb", GEO_ARG_ANY_NONNULL);
+  dk_session_t *ses = bif_strses_or_http_ses_arg (qst, args, 1, "http_st_wkb");
+  wkb_print (g, ses, 1, 0);
+  return (caddr_t)NULL;
+#endif
+}
+
+caddr_t
 bif_http_st_dxf_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   geo_t *g = bif_geo_arg (qst, args, 0, "http_st_dxf_entity", GEO_ARG_ANY_NULLABLE);
@@ -1550,24 +1782,19 @@ bif_http_st_dxf_entity (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+bif_st_get_bounding_box_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, int get_prec_args, const char *fname, int geotype)
 {
-  geo_t *g = bif_geo_arg (qst, args, 0, "st_get_bounding_box", GEO_ARG_ANY_NULLABLE);
+  geo_t *g = bif_geo_arg (qst, args, 0, fname, geotype);
   double prec_x = 0, prec_y = 0;
   int argcount = BOX_ELEMENTS (args);
   geo_t *res, xy;
-  if (NULL == g)
+  if (DV_GEO != DV_TYPE_OF (g))
+    return (caddr_t)g;
+  if (get_prec_args)
     {
-#if 0
-      res = geo_alloc (GEO_BOX, 0, SRID_DEFAULT);
-      GEO_XYBOX_SET_EMPTY (res->XYbox);
-      return (caddr_t)res;
-#else
-      return NEW_DB_NULL;
-#endif
+      if (2 <= argcount) prec_y = prec_x = bif_double_arg (qst, args, 1, fname);
+      if (3 <= argcount) prec_y = bif_double_arg (qst, args, 2, fname);
     }
-  if (2 <= argcount) prec_y = prec_x = bif_double_arg (qst, args, 1, "st_get_bounding_box");
-  if (3 <= argcount) prec_y = bif_double_arg (qst, args, 2, "st_get_bounding_box");
   geo_get_bounding_XYbox (g, &xy, prec_x, prec_y);
   res = geo_alloc (GEO_BOX | (g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, g->geo_srcode);
   res->XYbox = xy.XYbox;
@@ -1586,6 +1813,15 @@ bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
         }
     }
   return (caddr_t)res;
+}
+
+caddr_t
+bif_st_get_bounding_box (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t res = bif_st_get_bounding_box_impl (qst, err_ret, args, 1, "st_get_bounding_box", GEO_ARG_ANY_NULLABLE);
+  if (DV_GEO != DV_TYPE_OF (res))
+    return NEW_DB_NULL;
+  return res;
 }
 
 caddr_t
@@ -1630,6 +1866,65 @@ bif_geometry_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     sqlr_new_error ("22023", "GEO..", "Unsupported shape type %u, geometry instance is corrupted or created by Virtuoso server of later version", GEO_TYPE (g->geo_flags));
   return box_dv_short_string (metas->kwd_name);
   
+}
+
+int
+st_n_points (geo_t *g)
+{
+  if (NULL == g)
+    return 0;
+  if (g->geo_flags & (GEO_A_COMPOUND | GEO_A_RINGS | GEO_A_MULTI | GEO_A_ARRAY))
+    {
+      int ctr, total = 0;
+      for (ctr = g->_.parts.len; ctr--; /* no step */) total += st_n_points (g->_.parts.items[ctr]);
+      return total;
+    }
+  switch (GEO_TYPE_CORE (g->geo_flags))
+    {
+    case GEO_NULL_SHAPE:	return 0;
+    case GEO_POINT:		return 1;
+    case GEO_LINESTRING:	return g->_.pline.len;
+    case GEO_BOX:		return 2;
+    case GEO_POINTLIST:		return g->_.pline.len;
+    case GEO_ARCSTRING:		return g->_.pline.len;
+    case GEO_GSOP:		return 1;
+    default:			return 0;
+    }
+}
+
+caddr_t
+bif_st_n_points (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_NPoints", GEO_ARG_ANY_NULLABLE);
+  return box_num (st_n_points (g));
+}
+
+caddr_t
+bif_st_point_n (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  geo_t *g = bif_geo_arg (qst, args, 0, "ST_PointN", GEO_ARG_ANY_NULLABLE);
+  geo_flags_t g_type_nozm;
+  boxint idx = bif_long_arg (qst, args, 1, "ST_PointN");
+  geo_t *res;
+  if (NULL == g)
+    return NEW_DB_NULL;
+  g_type_nozm = GEO_TYPE_NO_ZM (g->geo_flags);
+  if (!(((GEO_LINESTRING == g_type_nozm) || (GEO_ARCSTRING == g_type_nozm) || (GEO_POINTLIST == g_type_nozm) || (GEO_RING == g_type_nozm))))
+    return NEW_DB_NULL;
+  if ((0 == idx) || (idx > g->_.pline.len) || (-idx > g->_.pline.len))
+    sqlr_new_error ("22023", "GEO..", "Invalid index value " BOXINT_FMT ", valid values for this geometery are 1 to %ld and -%ld to -1", (boxint)idx, (long)(g->_.pline.len), (long)(g->_.pline.len));
+  if (0 > idx)
+    idx = (g->_.pline.len + idx);
+  else
+    idx--;
+  res = geo_alloc (GEO_POINT | (g->geo_flags & (GEO_A_Z | GEO_A_M)), 0, g->geo_srcode);
+  res->XYbox.Xmin = res->XYbox.Xmax = g->_.pline.Xs[idx];
+  res->XYbox.Ymin = res->XYbox.Ymax = g->_.pline.Ys[idx];
+  if (g->geo_flags & GEO_A_Z)
+    res->_.point.point_ZMbox.Zmin = res->_.point.point_ZMbox.Zmax = g->_.pline.Zs[idx];
+  if (g->geo_flags & GEO_A_M)
+    res->_.point.point_ZMbox.Mmin = res->_.point.point_ZMbox.Mmax = g->_.pline.Ms[idx];
+  return (caddr_t)res;
 }
 
 caddr_t
@@ -1869,24 +2164,46 @@ bif_st_transform_by_custom_projection (caddr_t * qst, caddr_t * err_ret, state_s
   return (caddr_t) res;
 }
 
+geo_pred_t *geo_fallback_pred_cbk = NULL;
+void geo_set_fallback_pred_cbk (geo_pred_t *cbk) { geo_fallback_pred_cbk = cbk; }
+
 geo_t *
 geo_dummy_srid_transform_cbk (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret)
 {
   int orig_srid = GEO_SRID (g->geo_srcode);
   if (dest_srid == orig_srid)
     return g;
-  err_ret[0] = srv_make_new_error ("22023", "GEOxx", "The function requires an implicit call of ST_Transform(), because argument with SRID %d should be transformed to SRID %d; please try plugin \"v7proj4\" or similar",
+  err_ret[0] = srv_make_new_error ("22023", "GEOxx", "The function requires an implicit call of ST_Transform(), because argument with SRID %d should be transformed to SRID %d; please try plugin \"proj4\" or similar",
      orig_srid, dest_srid );
   return NULL;
 }
 
 geo_srid_transform_cbk_t *geo_default_srid_transform_cbk = geo_dummy_srid_transform_cbk;
+void geo_set_default_srid_transform_cbk (geo_srid_transform_cbk_t *cbk) { geo_default_srid_transform_cbk = cbk; }
+geo_srid_transform_cbk_t *geo_get_default_srid_transform_cbk (void) { return geo_default_srid_transform_cbk; }
 
-void
-geo_set_default_srid_transform_cbk (geo_srid_transform_cbk_t *cbk)
+static void *
+geo_dummy_pj_by_srid_or_string_cbk (caddr_t * qst, caddr_t *err_ret, int srid, caddr_t strg_or_null, const char *bifname, const char *argname)
 {
-  geo_default_srid_transform_cbk = cbk;
+  err_ret[0] = srv_make_new_error ("22023", "GEOxx", "The function \"%.50s\"() requires access to data about spatial reference systems in order to process geometry with SRID %d; please try plugin \"proj4\" or similar",
+     bifname, srid );
+  return NULL;
 }
+
+geo_pj_by_srid_or_string_cbk_t *geo_default_pj_by_srid_or_string_cbk = geo_dummy_pj_by_srid_or_string_cbk;
+void geo_set_default_pj_by_srid_or_string_cbk (geo_pj_by_srid_or_string_cbk_t *cbk) { geo_default_pj_by_srid_or_string_cbk = cbk; }
+geo_pj_by_srid_or_string_cbk_t *geo_get_default_pj_by_srid_or_string_cbk (void) { return geo_default_pj_by_srid_or_string_cbk; }
+
+int geo_dummy_pj_is_latlong_cbk (void *pj) { return -1; }
+int geo_dummy_pj_is_geocent_cbk (void *pj) { return -1; }
+geo_pj_yn_cbk_t *geo_default_pj_is_latlong_cbk = geo_dummy_pj_is_latlong_cbk;
+geo_pj_yn_cbk_t *geo_default_pj_is_geocent_cbk = geo_dummy_pj_is_geocent_cbk;
+
+void geo_set_default_pj_yn_cbks (geo_pj_yn_cbk_t *is_latlong_cbk, geo_pj_yn_cbk_t *is_geocent_cbk) { geo_default_pj_is_latlong_cbk = is_latlong_cbk; geo_default_pj_is_geocent_cbk = is_geocent_cbk; }
+geo_pj_yn_cbk_t * geo_get_default_pj_is_latlong_cbk (void) { return geo_default_pj_is_latlong_cbk; }
+geo_pj_yn_cbk_t * geo_get_default_pj_is_geocent_cbk (void) { return geo_default_pj_is_geocent_cbk; }
+
+#include "bmcmp.c"
 
 void
 bif_geo_init ()
@@ -1894,8 +2211,7 @@ bif_geo_init ()
   bif_define ("earth_radius", bif_earth_radius);
   bif_define ("haversine_deg_km", bif_haversine_deg_km);
   bif_define ("dist_from_point_to_line_segment", bif_dist_from_point_to_line_segment);
-  bif_define_ex ("st_point", bif_st_point, BMD_ALIAS, "ST_Point", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT,
-      4, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_point"		, bif_st_point				, BMD_ALIAS, "ST_Point"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_linestring", bif_st_linestring, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_x", bif_st_x, BMD_ALIAS, "ST_X", BMD_RET_TYPE, &bt_double, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_y", bif_st_y, BMD_ALIAS, "ST_Y", BMD_RET_TYPE, &bt_double, BMD_IS_PURE, BMD_DONE);
@@ -1910,49 +2226,42 @@ bif_geo_init ()
   bif_define_ex ("st_zmax", bif_st_zmax, BMD_RET_TYPE, &bt_double, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_mmin", bif_st_mmin, BMD_RET_TYPE, &bt_double, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_mmax", bif_st_mmax, BMD_RET_TYPE, &bt_double, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_intersects", bif_st_intersects, BMD_ALIAS, "ST_Intersects", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2,
-      BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_may_intersect", bif_st_may_intersect, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3,
-      BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_contains", bif_st_contains, BMD_ALIAS, "ST_Contains", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2,
-      BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_may_contain", bif_st_may_contain, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3,
-      BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_within", bif_st_within, BMD_ALIAS, "ST_Within", BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 2,
-      BMD_MAX_ARGCOUNT, 3, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_intersects"	, bif_st_intersects			, BMD_ALIAS, "ST_Intersects"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_may_intersect"	, bif_st_may_intersect							, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_contains"		, bif_st_contains			, BMD_ALIAS, "ST_Contains"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_may_contain"	, bif_st_may_contain							, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_within"		, bif_st_within				, BMD_ALIAS, "ST_Within"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 3	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_distance"		, bif_st_distance						, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("isgeometry"		, bif_is_geometry		, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_astext"		, bif_st_astext			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_srid", bif_st_srid, BMD_ALIAS, "ST_SRID", BMD_RET_TYPE, &bt_integer, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_setsrid", bif_st_setsrid, BMD_ALIAS, "ST_SetSRID", BMD_DONE);
-  bif_define_ex ("st_ewkt_read", bif_st_ewkt_read, BMD_ALIAS, "st_geomfromtext", BMD_ALIAS, "ST_GeomFromText", BMD_ALIAS,
-      "ST_GeometryFromText", BMD_ALIAS, "ST_GeomFromEWKT", BMD_ALIAS, "ST_WKTToSQL", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 1,
-      BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sr_iri_to_srid"	, bif_sr_iri_to_srid							, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_DONE);
+  bif_define_ex ("sr_srid_to_iri"	, bif_sr_srid_to_iri							, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_DONE);
+  bif_define_ex ("st_ewkt_read"		, bif_st_ewkt_read			, BMD_ALIAS, "st_geomfromtext"
+										, BMD_ALIAS, "ST_GeomFromText"
+										, BMD_ALIAS, "ST_GeometryFromText"
+										, BMD_ALIAS, "ST_GeomFromEWKT"
+										, BMD_ALIAS, "ST_WKTToSQL"	, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("http_st_ewkt"		, bif_http_st_ewkt						, BMD_DONE);
+  bif_define_ex ("st_wkb_read"		, bif_st_wkb_read							, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("http_st_wkb"		, bif_http_st_wkb				, BMD_DONE);
   bif_define_ex ("http_st_dxf_entity"	, bif_http_st_dxf_entity					, BMD_DONE);
   bif_define_ex ("st_get_bounding_box"	, bif_st_get_bounding_box					, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_get_chainbox", bif_st_get_chainbox, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("st_dv_geo_length"	, bif_st_dv_geo_length						, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("geometrytype", bif_geometry_type, BMD_ALIAS, "GeometryType", BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
-      BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_numgeometries", bif_st_num_geometries, BMD_ALIAS, "ST_NumGeometries", BMD_RET_TYPE, &bt_integer,
-      BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_geometryn", bif_st_geometry_n, BMD_ALIAS, "ST_GeometryN", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 2,
-      BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_exteriorring", bif_st_exterior_ring, BMD_ALIAS, "ST_ExteriorRing", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT,
-      1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_numinteriorrings", bif_st_num_interior_rings, BMD_ALIAS, "ST_NumInteriorRings", BMD_RET_TYPE, &bt_integer,
-      BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_interiorringn", bif_st_interior_ring_n, BMD_ALIAS, "ST_InteriorRingN", BMD_RET_TYPE, &bt_any_box,
-      BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_get_bounding_box_n", bif_st_get_bounding_box_n, BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 2,
-      BMD_MAX_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_translate", bif_st_translate, BMD_ALIAS, "ST_Translate", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 3,
-      BMD_MAX_ARGCOUNT, 4, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_transscale", bif_st_transscale, BMD_ALIAS, "ST_TransScale", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 5,
-      BMD_MAX_ARGCOUNT, 5, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_affine", bif_st_affine, BMD_ALIAS, "ST_Affine", BMD_RET_TYPE, &bt_any_box, BMD_MIN_ARGCOUNT, 7,
-      BMD_MAX_ARGCOUNT, 7, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("st_transform_by_custom_projection", bif_st_transform_by_custom_projection, BMD_RET_TYPE, &bt_any_box,
-      BMD_MIN_ARGCOUNT, 2, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("geometrytype"			, bif_geometry_type		, BMD_ALIAS, "GeometryType"		, BMD_RET_TYPE, &bt_varchar	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_npoints"			, bif_st_n_points		, BMD_ALIAS, "ST_NPoints"		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_pointn"			, bif_st_point_n		, BMD_ALIAS, "ST_PointN"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_numgeometries"		, bif_st_num_geometries		, BMD_ALIAS, "ST_NumGeometries"		, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_geometryn"			, bif_st_geometry_n		, BMD_ALIAS, "ST_GeometryN"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_exteriorring"		, bif_st_exterior_ring		, BMD_ALIAS, "ST_ExteriorRing"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_numinteriorrings"		, bif_st_num_interior_rings	, BMD_ALIAS, "ST_NumInteriorRings"	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_interiorringn"		, bif_st_interior_ring_n	, BMD_ALIAS, "ST_InteriorRingN"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_get_bounding_box_n"	, bif_st_get_bounding_box_n						, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_translate"			, bif_st_translate		, BMD_ALIAS, "ST_Translate"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 3, BMD_MAX_ARGCOUNT, 4	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_transscale"		, bif_st_transscale		, BMD_ALIAS, "ST_TransScale"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 5, BMD_MAX_ARGCOUNT, 5	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_affine"		, bif_st_affine				, BMD_ALIAS, "ST_Affine"		, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 7, BMD_MAX_ARGCOUNT, 7	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("st_transform_by_custom_projection"	, bif_st_transform_by_custom_projection				, BMD_RET_TYPE, &bt_any_box	, BMD_MIN_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
+  bm_cmp_init ();
 }

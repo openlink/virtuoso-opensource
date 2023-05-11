@@ -1,7 +1,7 @@
 Using Virtuoso Open Source Edition GIT Tree
 ===========================================
 
-Copyright (C) 1998-2018 OpenLink Software <vos.admin@openlinksw.com>
+Copyright (C) 1998-2023 OpenLink Software <vos.admin@openlinksw.com>
 
 
 Introduction
@@ -19,7 +19,8 @@ itself, the general layout of open source and GNU projects, the use
 of autoconf and automake etc, which is beyond the scope of this
 document. 
 
-If you have any questions, please email us at <vos.admin@openlinksw.com>.
+If you have any questions, please email us at <vos.admin@openlinksw.com>
+or open a [GitHub issue](https://github.com/openlink/virtuoso-opensource/issues/).
 
 
 Git Archive Server Access
@@ -73,25 +74,29 @@ To generate the configure script and all other build files necessary,
 please make sure the following packages and recommended versions are
 installed on your system.
 
-    Package   Version  From
-    autoconf  2.57     http://www.gnu.org/software/autoconf/
-    automake  1.9      http://www.gnu.org/software/automake/
-    libtool   1.5      http://www.gnu.org/software/libtool/
-    flex      2.5.33   http://flex.sourceforge.net/
-    bison     2.3      http://www.gnu.org/software/bison/
-    gperf     2.7.2    http://www.gnu.org/software/gperf/
-    gawk      3.1.1    http://www.gnu.org/software/gawk/
-    m4        1.4.1    http://www.gnu.org/software/m4/
-    make      3.79.1   http://www.gnu.org/software/make/
-    OpenSSL   0.9.8e   http://www.openssl.org/
+| Package   | Minimum | Upto   | From                                  |
+| --------- | ------- | ------ | ------------------------------------- |
+| autoconf  | 2.57    | 2.69   | http://www.gnu.org/software/autoconf/ |
+| automake  | 1.9     | 1.16.1 | http://www.gnu.org/software/automake/ |
+| libtool   | 1.5     | 2.4.6  | http://www.gnu.org/software/libtool/  |
+| flex      | 2.5.33  | 2.6.4  | http://flex.sourceforge.net/          |
+| bison     | 2.3     | 3.5.1  | http://www.gnu.org/software/bison/    |
+| gperf     | 3.0.1   | 3.1    | http://www.gnu.org/software/gperf/    |
+| gawk      | 3.1.1   | 5.0.1  | http://www.gnu.org/software/gawk/     |
+| m4        | 1.4.1   | 1.4.18 | http://www.gnu.org/software/m4/       |
+| make      | 3.79.1  | 4.2.1  | http://www.gnu.org/software/make/     |
+| OpenSSL   | 0.9.8e  | 1.1.1  | http://www.openssl.org/               |
 
 and any GNU packages required by these. The autogen.sh and configure
 scripts check for the presence and right version of some of the required
 components.
 
-The above version are the minimum recommended versions of these
-packages. Older version of these packages can sometimes be used, but
-could cause build problems.
+The `Minimum` column contains the oldest known versions of these
+packages capable of building Virtuoso. Older versions of these
+packages can sometimes be used, but could cause build problems.
+
+The `Upto` column contains the most recently tested version of these
+packages.
 
 To check the version number of the tools installed on your system,
 use one of the following commands:
@@ -119,13 +124,24 @@ some other tools needed to build Virtuoso from a newly checked out
 GIT tree. We suggest using the HomeBrew package manager from
 http://brew.sh/ to install these tools.
 
+
 RedHat Enterprise Linux 7
 -------------------------
 On RedHat 7, the `gperf` tool is no longer available from the default
 repos, but can be installed using the following command:
 
-    $ sudo yum --enablerepo=rhui-REGION-rhel-server-optional info gperf
+```shell
+$ sudo yum --enablerepo=rhui-REGION-rhel-server-optional install gperf
+```
 
+RedHat Enterprise Linux 8
+-------------------------
+On RedHat 8, the gperf tool is no longer available from the default
+repos, but can be installed using the following command:
+
+```shell
+  $ sudo yum --enablerepo=PowerTools install gperf
+```
 
 Diskspace Requirements
 ======================

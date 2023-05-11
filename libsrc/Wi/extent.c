@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1216,7 +1216,11 @@ buf_ext_check (buffer_desc_t * buf)
   if (!ext)
     {
       if (em == em->em_dbs->dbs_extent_map)
-	GPF_T1 ("freeing dp that is not part of the em");
+	{
+	  dbe_key_t * key = it->it_key;
+	  log_error ("Sanity check failed, key: %s, dp=%d", key->key_name ? key->key_name : "<unknown key>", dp);
+	  GPF_T1 ("freeing dp that is not part of the em");
+	}
       mutex_leave (em->em_mtx);
       em = em->em_dbs->dbs_extent_map;
       goto again;
@@ -1682,9 +1686,7 @@ em_save_dp (extent_map_t * em)
 {
   char xx[15];
   sprintf (xx, "%ld", (long) em->em_buf->bd_page);
-  IN_TXN;
   dbs_registry_set (em->em_dbs, em->em_name, xx, 0);
-  LEAVE_TXN;
 }
 
 
@@ -1692,6 +1694,7 @@ void
 dbs_cpt_recov_write_extents (dbe_storage_t * dbs)
 {
   /* write out the extent maps. */
+  ASSERT_IN_TXN;
   DO_SET (index_tree_t *, it, &dbs->dbs_trees)
     {
       if (it->it_extent_map != dbs->dbs_extent_map

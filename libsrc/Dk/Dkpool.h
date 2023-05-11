@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
 
 #include <stdio.h>
 
-void mp_free (mem_pool_t * mp);
+EXE_EXPORT (void, mp_free, (mem_pool_t * mp));
 void mp_free_large (mem_pool_t * mp, void * ptr);
 void mp_cache_large (size_t sz, int n);
 extern size_t mp_large_in_use;
@@ -119,7 +119,11 @@ struct mem_pool_s
 EXE_EXPORT (mem_pool_t *, mem_pool_alloc, (void));
 #if defined (DEBUG) || defined (MALLOC_DEBUG)
 extern mem_pool_t *dbg_mem_pool_alloc (const char *file, int line);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define mem_pool_alloc() dbg_mem_pool_alloc (__FILE__, __LINE__)
+#endif
+#endif
 #endif
 
 EXE_EXPORT (caddr_t, mp_alloc_box, (mem_pool_t * mp, size_t len, dtp_t dtp));
@@ -279,39 +283,46 @@ extern caddr_t *t_list_memcpy (long n, ccaddr_t *src);
 extern caddr_t *t_list_concat_tail (caddr_t list, long n, ...);
 extern caddr_t *t_list_concat (caddr_t list1, caddr_t list2);
 extern caddr_t *t_list_remove_nth (caddr_t list, int pos);
+extern caddr_t *t_list_remove_many_after_nth (caddr_t list, int del_count, int first_pos_to_del);
 extern caddr_t *t_list_insert_before_nth (caddr_t list, caddr_t new_item, int pos);
 extern caddr_t *t_list_insert_many_before_nth (caddr_t list, caddr_t * new_items, int ins_count, int pos);
+
 caddr_t *t_sc_list (long n, ...);
 
 #define t_NEW_DB_NULL 				t_alloc_box (0, DV_DB_NULL)
 
+EXE_EXPORT (caddr_t, t_box_num_and_zero, (boxint box));
+EXE_EXPORT (box_t, t_box_double, (double d));
+EXE_EXPORT (caddr_t *, t_list, (long n, ...));
 #ifdef MALLOC_DEBUG
 caddr_t dbg_t_box_num (const char *file, int line, boxint box);
 caddr_t dbg_t_box_num_and_zero (const char *file, int line, boxint box);
 box_t dbg_t_box_double (const char *file, int line, double d);
 box_t dbg_t_box_float (const char *file, int line, float d);
 caddr_t dbg_t_box_iri_id (const char *file, int line, int64 n);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define t_box_num(box) 				dbg_t_box_num (__FILE__, __LINE__, (box))
 #define t_box_double(d) 			dbg_t_box_double (__FILE__, __LINE__, (d))
 #define t_box_float(d) 				dbg_t_box_float (__FILE__, __LINE__, (d))
 #define t_box_iri_id(d) 			dbg_t_box_iri_id (__FILE__, __LINE__, (d))
 #define t_box_num_and_zero(box) 		dbg_t_box_num_and_zero (__FILE__, __LINE__, (box))
+#define t_list 					(t_list_cock (__FILE__, __LINE__))
 extern caddr_t *t_list_impl (long n, ...);
 typedef caddr_t *(*t_list_impl_ptr_t) (long n, ...);
 extern t_list_impl_ptr_t t_list_cock (const char *file, int line);
-#define t_list 					(t_list_cock (__FILE__, __LINE__))
+#endif
+#endif
 #else
 caddr_t t_box_num (boxint box);
-caddr_t t_box_num_and_zero (boxint box);
-box_t t_box_double (double d);
 box_t t_box_float (float d);
 caddr_t t_box_iri_id (int64 n);
-extern caddr_t *t_list (long n, ...);
 #endif
 
 #define t_alloc(sz) 				t_alloc_box ((sz), DV_CUSTOM)
 #define t_box_num_nonull 			t_box_num_and_zero
 #define t_box_dv_short_string 			t_box_string
+#define t_list_0() t_alloc_list(0)
 
 #define TNEW(dt, v) \
   dt * v = (dt *) t_alloc (sizeof (dt))
@@ -323,6 +334,8 @@ extern caddr_t *t_list (long n, ...);
 #define t_NEW_VAR(dt, v) \
   TNEW(dt, v)
 
+EXE_EXPORT (dk_set_t, t_cons, (void *car, dk_set_t cdr));
+EXE_EXPORT (caddr_t *, t_list_to_array, (dk_set_t list));
 #ifdef MALLOC_DEBUG
 void dbg_mp_set_push (const char *file, int line, mem_pool_t * mp, dk_set_t * set, void *elt);
 dk_set_t dbg_t_cons (const char *file, int line, void *car, dk_set_t cdr);
@@ -330,6 +343,7 @@ void dbg_t_set_push (const char *file, int line, dk_set_t * set, void *elt);
 int dbg_t_set_pushnew (const char *file, int line, s_node_t ** set, void *item);
 int dbg_t_set_push_new_string (const char *file, int line, s_node_t ** set, char *item);
 void *dbg_t_set_pop (const char *file, int line, dk_set_t * set);
+void *dbg_t_set_pop_or_null (const char *file, int line, dk_set_t * set);
 dk_set_t dbg_t_set_union (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t dbg_t_set_intersect (const char *file, int line, dk_set_t s1, dk_set_t s2);
 dk_set_t dbg_t_set_diff (const char *file, int line, dk_set_t s1, dk_set_t s2);
@@ -338,12 +352,15 @@ caddr_t *dbg_t_revlist_to_array (const char *file, int line, dk_set_t list);
 int dbg_t_set_delete (const char *file, int line, dk_set_t * set, void *item);
 void * dbg_t_set_delete_nth (const char *file, int line, dk_set_t * set, int nth);
 dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
+#ifndef _USRDLL
+#ifndef EXPORT_GATE
 #define mp_set_push(mp,set,elt)			dbg_mp_set_push (__FILE__, __LINE__, (mp), (set), (elt))
 #define t_cons(car,cdr)				dbg_t_cons (__FILE__, __LINE__, (car), (cdr))
 #define t_set_push(set,elt)			dbg_t_set_push (__FILE__, __LINE__, (set), (elt))
 #define t_set_pushnew(set,item)			dbg_t_set_pushnew (__FILE__, __LINE__, (set), (item))
 #define t_set_push_new_string(set,item)		dbg_t_set_push_new_string (__FILE__, __LINE__, (set), (item))
 #define t_set_pop(set)				dbg_t_set_pop (__FILE__, __LINE__, (set))
+#define t_set_pop_or_null(set)			dbg_t_set_pop_or_null (__FILE__, __LINE__, (set))
 #define t_set_union(s1,s2)			dbg_t_set_union (__FILE__, __LINE__, (s1), (s2))
 #define t_set_intersect(s1,s2)			dbg_t_set_intersect (__FILE__, __LINE__, (s1), (s2))
 #define t_set_diff(s1,s2)			dbg_t_set_diff (__FILE__, __LINE__, (s1), (s2))
@@ -352,17 +369,18 @@ dk_set_t dbg_t_set_copy (const char *file, int line, dk_set_t s);
 #define t_set_delete(set,item)			dbg_t_set_delete (__FILE__, __LINE__, (set), (item))
 #define t_set_delete_nth(set,nth)		dbg_t_set_delete_nth (__FILE__, __LINE__, (set), (nth))
 #define t_set_copy(s)				dbg_t_set_copy (__FILE__, __LINE__, (s))
+#endif
+#endif
 #else
 void mp_set_push (mem_pool_t * mp, dk_set_t * set, void *elt);
-dk_set_t t_cons (void *car, dk_set_t cdr);
 void t_set_push (dk_set_t * set, void *elt);
 int t_set_pushnew (s_node_t ** set, void *item);
 int t_set_push_new_string (s_node_t ** set, char *item);
 void *t_set_pop (dk_set_t * set);
+void *t_set_pop_or_null (dk_set_t * set);
 dk_set_t t_set_union (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_intersect (dk_set_t s1, dk_set_t s2);
 dk_set_t t_set_diff (dk_set_t s1, dk_set_t s2);
-caddr_t *t_list_to_array (dk_set_t list);
 caddr_t *t_revlist_to_array (dk_set_t list);
 int t_set_delete (dk_set_t * set, void *item);
 void * t_set_delete_nth (dk_set_t * set, int nth);

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -251,40 +251,47 @@ directory_init() {
 }
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
-	then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-		then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 virtuoso_shutdown() {
@@ -318,7 +325,7 @@ sticker_init() {
   echo "  <name package=\"bpel4ws\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"BPEL4WS\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -391,44 +398,44 @@ fi
   echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_ddl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_eng.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_intrp.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  #echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/postinstall.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/process.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/filesystem.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/xsql.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/drop_prc.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_ddl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_eng.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/bpel_intrp.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/install.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  #echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/postinstall.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/process.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/drop.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/filesystem.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/xsql.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"bpel4ws/1.0/drop_prc.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100000NN\" makepath=\"yes\"/>"  >> $STICKER
 
   for css in `ls *.css`; do
-    echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/$css\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+    echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/$css\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>"  >> $STICKER
   done
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelstatus.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/raw.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelcomp.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelwsdl.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelexpn.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpeloper.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelmsg.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelmsgen.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/genwsdl.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/xsql2virtPL.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelstatus.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/raw.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelcomp.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelwsdl.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelexpn.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpeloper.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelmsg.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelmsgen.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/genwsdl.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/xsql2virtPL.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel.vsp\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelv.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelx.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/wsdl.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/xsql.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelv.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelx.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/wsdl.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/xsql.xsd\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/debug.vsp\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/asyncall.vsp\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/time.vsp\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/script.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/process.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/common.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_style.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/activity.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/script.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/process.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/common.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_style.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/activity.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/virtuoso_splash.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/script.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/process.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
@@ -448,15 +455,15 @@ fi
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/imsgpr.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/omsgpr.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/rmsgpr.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/plus.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/minus.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/plus.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/minus.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/status.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/plinks.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/plinks_props.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/wss_keys.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_banner.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_style_new.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_plinks.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_banner.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_style_new.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_plinks.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/reports.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/statendp.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/statproc.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
@@ -464,84 +471,89 @@ fi
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_ui_bpelwsdl_register.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_ui_import2.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_ui_import.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelimport.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpelimport.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/bpel_login_new.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help.xsl\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/error.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_activity.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_audit.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_graph.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_list.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_redef.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_redefine.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_status.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_upload.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/processes_list.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/configure.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/instances.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/confirm.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/imsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/incoming.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/message.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/omsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/rmsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/plinks_props.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/plinks.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/reports.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/statendp.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/statproc.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/wss_keys.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/browser.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/help_24.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/ref_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/first_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/last_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/next_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/previous_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/cancl_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/save_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/close_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/ref_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/del_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/back_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/edit_record_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/import_data_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/prefs_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/sinfo_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/find_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/tools_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/1pixdot.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blnav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav2.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav3.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/bpelheader350.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/brnznavlv2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/brnznavlv3.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/bronznav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/oplbpel350.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slnav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slvnav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slvnav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/user_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_activity.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_audit.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_graph.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_list.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_redef.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_redefine.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_status.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/process_upload.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/processes_list.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/configure.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/instances.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/confirm.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/imsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/incoming.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/message.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/omsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/rmsgpr.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/plinks_props.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/plinks.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/reports.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/statendp.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/statproc.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/wss_keys.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/help/browser.xml\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/help_24.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/ref_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/first_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/last_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/next_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/previous_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/cancl_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/save_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/close_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/ref_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/del_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/back_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/edit_record_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/import_data_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/prefs_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/sinfo_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/find_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/tools_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/1pixdot.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blnav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav2.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/blunav3.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/bpelheader350.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/brnznavlv2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/brnznavlv3.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/bronznav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/oplbpel350.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slnav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slvnav.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/slvnav2.jpg\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/user_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/home.vspx\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/about_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/confg_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/favs_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/open_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/opts_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/srch_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/web_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/PoweredByVirtuoso.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/stop_32.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/vglobe_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/about_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/confg_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/favs_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/open_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/opts_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/srch_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/web_24.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/PoweredByVirtuoso.gif\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/stop_32.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/i/vglobe_16.png\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"110100100NN\" makepath=\"yes\"/>" >> $STICKER
 
   echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpel4ws/1.0/start.vsp\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
   for file in `find vad/vsp/bpeldemo -type f -print | sort`
   do
       name=`echo "$file" | cut -b18-`
-      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpeldemo/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+      case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+      esac
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"bpeldemo/$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
 

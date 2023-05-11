@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -419,9 +419,9 @@ cmp_boxes_inx (caddr_t b1, caddr_t b2)
   if (dtp1 == dtp2)
     {
       if (DV_SINGLE_FLOAT == dtp1)
-	return NUM_COMPARE (*(float *) b1, *(float *) b2);
+	return NUM_COMPARE_DBL (*(float *) b1, *(float *) b2);
       if (DV_DOUBLE_FLOAT == dtp1)
-	return NUM_COMPARE (*(double *) b1, *(double *) b2);
+	return NUM_COMPARE_DBL (*(double *) b1, *(double *) b2);
     }
   return cmp_boxes (b1, b2, NULL, NULL);
 }
@@ -676,7 +676,6 @@ rq_check (it_cursor_t * itc)
     }
   if (n)
     {
-      bing ();
       col_ins_error = 1;
     }
 }
@@ -738,7 +737,6 @@ rq_range_check (it_cursor_t * itc, caddr_t * bounds)
   lc_free (lc);
   if (n)
     {
-      bing ();
       col_ins_error = 1;
     }
 }
@@ -1514,6 +1512,9 @@ ceic_int_value (ce_ins_ctx_t * ceic, int nth, dtp_t * dtp_ret)
       return *(int32*)val;
     }
   *dtp_ret = DV_TYPE_OF (val);
+#if 0
+  if (DV_DB_NULL == *dtp_ret) bing ();
+#endif
   return unbox_iri_int64 (val);
 }
 
@@ -1918,8 +1919,10 @@ ce_comp_check (compress_state_t * cs, db_buf_t ce, dk_set_t * org, int *nth)
   for (inx = 0; inx < BOX_ELEMENTS (res); inx++)
     {
       caddr_t ov = cs_next_org (cs, org, nth);
+#if 0
       if (!box_equal (ov, res[inx]))
 	bing ();
+#endif
     }
   dk_free_tree ((caddr_t) res);
 }
@@ -2206,8 +2209,10 @@ ce_ins_trap (ce_ins_ctx_t * ceic)
 		n_hits++;
 	    }
 	}
+#if 0
       if (n_hits >= n_trap_vals)
 	bing ();
+#endif
     }
 #endif
 }
@@ -3706,8 +3711,6 @@ ceic_no_split (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int *action)
 		    cr->cr_first_ce_page = 1;	/* if 1st value changed, and need to upd leaf row, find the 1st ce on page 1, not 0 of cr */
 		    if (cer->cer_next)
 		      new_first_ce_buf = cer->cer_next->cer_buf;
-		    else
-		      bing ();
 		  }
 		else
 		  mp_set_push (ceic->ceic_mp, &dps, DP_ADDR2VOID (buf->bd_page));
@@ -4455,8 +4458,10 @@ next_set:
       if (!dc)
 	goto next;
       new_v = dc_any_value (dc, ninx);
+#if 0
       if (new_v == new_v_end_trap)
 	bing ();
+#endif
       if (DCT_NUM_INLINE & dc->dc_type)
 	*(int64 *) itc->itc_search_params[inx] = new_v;
       else if (DV_ANY == sp->sp_cl.cl_sqt.sqt_dtp)
