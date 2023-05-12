@@ -1072,7 +1072,8 @@ again:
        else
          http_value (vlbl);
        http ('</span>');
-       --lang := '';
+       if ((lang is NULL or lang = '') and rdfs_type <> 'http://www.w3.org/2001/XMLSchema#string')
+         lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 211)
      {
