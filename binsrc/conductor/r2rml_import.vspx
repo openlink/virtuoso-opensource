@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -78,7 +78,8 @@
                   </td>
                 </tr>
                 <tr id="rd2">
-                  <th>Target Graph IRI<span class="redstar">*</span></th>
+                    <th><span title="Identifies a target Named Graph to be associated with imported R2RML triples.">Target Graph IRI</span>
+                        <span class="redstar">*</span></th>
                   <td>
                     <v:text name="rdf_graph_name" value="" default_value="-- 'http://' || cfg_item_value (virtuoso_ini_path (), 'URIQA', 'DefaultHost') || '/r2rml' " xhtml_size="100"/>
                   </td>
