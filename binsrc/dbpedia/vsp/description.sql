@@ -52,6 +52,7 @@ create procedure dbp_ldd_set_ns_decl ()
     dbp_domain || '/resource/' || dbp_category || ':',		'category-' || dbp_lang,
     dbp_domain || '/resource/' || dbp_template || ':', 		'template-' || dbp_lang,
 
+    'http://dbpedia.org/datatype/',				'dbd',
     'http://dbpedia.org/ontology/',				'dbo',
     'http://dbpedia.org/property/',				'dbp',
     'http://dbpedia.org/resource/',				'dbr',
@@ -734,7 +735,8 @@ again:
        http (sprintf ('<span %s>', rdfa));
        http_value (charset_recode (_object, 'UTF-8', '_WIDE_'));
        http ('</span>');
-       --lang := '';
+       if ((lang is NULL or lang = '') and rdfs_type <> 'http://www.w3.org/2001/XMLSchema#string')
+         lang := rdfs_type_short;
      }
    else if (__tag (_object) = 211)
      {
