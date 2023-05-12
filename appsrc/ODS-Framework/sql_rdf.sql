@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -95,6 +95,7 @@ create procedure rdf_import (
       if (not isnull (pFolder))
         DB.DBA.DAV_DELETE_INT (pFolder, 1, null, null, 0);
       signal ('ODS10', 'You have attempted to upload invalid data. You can only upload RDF/XML, Turtle, and N3 serializations of RDF Data to the RDF Data Store through this interface!');
+
     }
 
     if (is_ttl) {
