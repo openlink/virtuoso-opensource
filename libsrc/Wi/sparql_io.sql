@@ -3681,6 +3681,8 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   declare graph_uri varchar;
   declare colonspace_pos integer;
   declare graph_uri_is_relative integer;
+  declare res_file, res_content_type varchar;
+  declare n_quads_upload int;
   {
   whenever sqlstate '*' goto err; /* see below */
   -- dbg_obj_princ ('===============');
@@ -3719,7 +3721,25 @@ bad_host_found:
 good_host_found:
       ;
     }
-  if (graph_uri <> '')
+  n_quads_upload := 0;
+  if ((reqbegin like 'PUT%') or (reqbegin like 'POST%'))
+    {
+      res_file := get_keyword ('res-file', params, '');
+      if (0 = length (res_file))
+        res_file := get_keyword ('Content', params, '');
+      if (0 = length (res_file))
+        res_file := http_body_read();
+      if (0 = length (res_file))
+        res_file := http_body_read(1);
+      res_content_type := null;
+      if (get_keyword ('res-file', params) is null)
+        res_content_type := http_request_header (lines, 'Content-Type', null, null);
+      if (res_content_type is null or res_content_type = 'application/x-www-form-urlencoded' or res_content_type = 'multipart/form-data')
+        res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
+      if (res_content_type = 'application/n-quads')
+        n_quads_upload := 1;
+    }
+  if (graph_uri <> '' or n_quads_upload)
     goto graph_processing;
   http_methods_set ('GET', 'HEAD', 'POST', 'PUT', 'DELETE', 'PATCH');
 
@@ -3762,33 +3782,19 @@ good_host_found:
 graph_processing:
   commit work;
   graph_uri_is_relative := neq (graph_uri, DB.DBA.XML_URI_RESOLVE_LIKE_GET ('zZz://example.com/', graph_uri));
-  if (graph_uri_is_relative)
+  if (graph_uri_is_relative and not(n_quads_upload))
     {
       if (not (reqbegin like 'PUT%') and not (reqbegin like 'POST%'))
         signal ('22023', 'The graph URI <' || graph_uri || '> is relative and can be passed to SPARQL 1.1 Graph Store endpoint only in some PUT or POST requests');
     }
   if ((reqbegin like 'PUT%') or (reqbegin like 'POST%'))
     {
-      declare res_file, res_content_type varchar;
       declare full_graph_uri varchar;
       declare graph_exists integer;
       set_user_id (user_id, 1);
-      res_file := get_keyword ('res-file', params, '');
-      -- dbg_obj_princ ('res_file/1=', cast (res_file as varchar));
-      if (0 = length (res_file))
-        res_file := get_keyword ('Content', params, '');
-      -- dbg_obj_princ ('res_file/2=', string_output_string (res_file));
-      if (0 = length (res_file))
-        res_file := http_body_read();
-      -- dbg_obj_princ ('res_file/3=', string_output_string (res_file));
-      if (0 = length (res_file))
-        res_file := http_body_read(1);
-      -- dbg_obj_princ ('res_file/4=', string_output_string (res_file));
-      res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
-      -- dbg_obj_princ ('res_content_type=', res_content_type);
-      if (graph_uri_is_relative)
+      full_graph_uri := null;
+      if (graph_uri_is_relative and not(n_quads_upload))
         {
-          full_graph_uri := null;
           if (res_content_type in ('text/rdf+n3', 'text/turtle'))
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_TTL (res_file, graph_uri, 255);
           else if (res_content_type = 'application/rdf+xml')
@@ -3801,7 +3807,9 @@ graph_processing:
       else
         full_graph_uri := graph_uri;
       commit work;
-      graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
+      graph_exists := 0;
+      if (not n_quads_upload)
+        graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
       if (res_content_type in ('text/rdf+n3', 'text/turtle'))
         {
           if (reqbegin like 'PUT%')
@@ -3819,6 +3827,16 @@ graph_processing:
               commit work;
             }
           DB.DBA.RDF_LOAD_RDFXML (res_file, full_graph_uri, full_graph_uri);
+        }
+      else if (res_content_type = 'application/n-quads')
+        {
+          declare flags int;
+          flags := 512;
+          if (reqbegin like 'PUT%')
+            {
+              flags := flags + 2048;
+            }
+          DB.DBA.TTLP (res_file, '', 'urn:dummy', flags);
         }
       else if (res_content_type = 'text/microdata+html')
         {
