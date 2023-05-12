@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@ VAD_NAME_DEVEL="$VAD_PKG_NAME"_filesystem.vad
 VAD_NAME_RELEASE="$VAD_PKG_NAME"_dav.vad
 NEED_VERSION=06.00.3117
 DSN="$HOST:$PORT"
-SQLDEPS="ns.sql virt_rdf_label.sql facet.sql complete_ddl.sql"
+SQLDEPS="ns.sql virt_rdf_label.sql virt_rdf_url.sql facet.sql complete_ddl.sql vad_fct_config.sql fct_endpoints.sql"
 EXCEPT="b3sq.sql facet_test.sql fct_inx.sql srank.sql srank_1.sql srank23.sql complete_cl.sql complete_single.sql grants.sql"
 
 HOST_OS=`uname -s | grep WIN`
@@ -166,7 +166,7 @@ directory_init() {
 
   for d in `find . -type d | grep -v CVS | grep -v VirtTripleLoader`
   do
-     mkdir -p vad/vsp/fct/$d
+     mkdir -p -v vad/vsp/fct/$d
   done
 
   for f in `find . -name '*.sql'`
@@ -174,14 +174,14 @@ directory_init() {
       cp $f vad/code/fct/"`basename $f`"
   done
 
-  for f in `find . -type f | grep -v '.sql' | grep -v '.vad' | grep -v 'vad_' | grep -v 'CVS' | grep -v VirtTripleLoader`
+  for f in `find . -type f | grep -v '\\.sql' | grep -v '\\.vad' | grep -v '^vad_' | grep -v 'CVS' | grep -v VirtTripleLoader`
   do
       cp $f vad/vsp/fct/$f
   done
 
   # components which are not in their place
   cp -Rf $HOME/binsrc/oat vad/vsp/fct
-  cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
+  #cp -Rf $HOME/binsrc/samples/dbpedia/vsp/statics vad/vsp/fct/rdfdesc
   #cp -Rf $HOME/binsrc/rdf_mappers/virt_rdf_label.sql vad/vsp/fct
   cp -Rf styles vad/vsp/fct/rdfdesc
   cp -Rf s vad/vsp/fct/rdfdesc
@@ -191,40 +191,47 @@ directory_init() {
 }
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ]
-  then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-        then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 virtuoso_shutdown() {
@@ -258,7 +265,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -358,26 +365,46 @@ fi
 #  echo "        result ('00000', 'Cannot complete installation, read instructions at http://host:port/fct');" >> $STICKER
 #  echo "    } " >> $STICKER
   echo "      DB.DBA.VAD_LOAD_SQL_FILE('"$BASE_PATH_CODE"$VAD_NAME/grants.sql', 0, 'report', $ISDAV); " >> $STICKER
-
+  echo "" >> $STICKER
+  echo "      -- Copy FCT VAD configuration files to Conductor UI folder" >> $STICKER
+  echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.vspx');" >> $STICKER
+  echo "      DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.js');" >> $STICKER
+  echo ""  >> $STICKER
+  echo "       -- Check if automated label fill is enabled" >> $STICKER
+  echo "       if (virtuoso_ini_item_value ('SPARQL', 'LabelInferenceName') = 'facets')" >> $STICKER
+  echo "           registry_set ('urilbl_ac_init_status', '2');" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
   echo "  <sql purpose='pre-uninstall'>" >> $STICKER
   echo "    <![CDATA[" >> $STICKER
   echo "    ]]>" >> $STICKER
   echo "  </sql>" >> $STICKER
-#  echo "  <sql purpose='post-uninstall'>" >> $STICKER
-#  echo "  </sql>" >> $STICKER
+  echo "  <sql purpose='pre-uninstall'>" >> $STICKER
+  echo "  <![CDATA[" >> $STICKER
+  echo "    DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/fct/sql/fct_drop.sql', 1, 'report', 1);" >> $STICKER
+  echo "  ]]>" >> $STICKER
+  echo "  </sql>" >> $STICKER
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
 
   for file in `find vad/code/fct -type f -print | grep -v CVS | cut -b14- | sort`
   do
-      echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+      case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+      esac
+      echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
   done
 
   for file in `find vad/vsp/fct -type f -print | grep -v CVS | cut -b13- | sort`
   do
-      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+    case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER

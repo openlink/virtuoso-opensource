@@ -7,7 +7,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,12 +30,12 @@
     <name package="rdb2rdf">
       <prop name="Title" value="RDB2RDF support"/>
       <prop name="Developer" value="OpenLink Software"/>
-      <prop name="Copyright" value="(C) 2014-2018 OpenLink Software"/>
+      <prop name="Copyright" value="(C) 2013-2023 OpenLink Software"/>
       <prop name="Download" value="http://www.openlinksw.com/virtuoso/rdb2rdf/download"/>
       <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso/rdb2rdf/download"/>
     </name>
-    <version package="1.00.0003">
-      <prop name="Release Date" value="2011-09-05 12:01"/>
+    <version package="1.00.285">
+      <prop name="Release Date" value="2023-04-14 12:00"/>
       <prop name="Build" value="Release, optimized"/>
     </version>
   </caption>
@@ -56,9 +56,9 @@
     </sql>
   </ddls>
   <resources>
-    <file type="dav" source="http" target_uri="rdb2rdf/ovl.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
-    <file type="dav" source="http" target_uri="rdb2rdf/r2rml.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
-    <file type="dav" source="http" target_uri="rdb2rdf/r2rml_validation_metas.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/ovl.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
+    <file type="dav" source="http" target_uri="rdb2rdf/r2rml_validation_metas.sql" dav_owner='dav' dav_grp='administrators' dav_perm='110100000NN' makepath="yes"/>
     <file type="dav" source="http" target_uri="rdb2rdf/northwind_r2rml.ttl" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath="yes"/>
   </resources>
   <registry>

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,9 +19,9 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="vad_main_page"
+<v:page
+  name="vad_src"
   decor="yacutia_decor.vspx"
   style="yacutia_style.xsl"
   fast-render="1"
@@ -42,66 +40,73 @@
     </vm:menu>
     <vm:header caption="VAD packages"/>
     <vm:pagebody>
-      <v:on-init><![CDATA[
-	if (self.src_folder is null)
-	  self.src_folder := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
-	if (self.src_folder is null)
-          self.src_folder := '../vad/';
-      ]]></v:on-init>
-      <v:after-data-bind><![CDATA[
-        if (length (self.sid) = 0)
-	  {
-	    rollback work;
-	  }
-       ]]></v:after-data-bind>
+      <v:on-init>
+        <![CDATA[
+          if (self.src_folder is null)
+            self.src_folder := cfg_item_value (virtuoso_ini_path (), 'Parameters', 'VADInstallDir');
+
+          if (self.src_folder is null)
+            self.src_folder := '../vad/';
+        ]]>
+      </v:on-init>
+      <v:after-data-bind>
+        <![CDATA[
+          if (length (self.sid) = 0)
+          {
+            rollback work;
+          }
+        ]]>
+      </v:after-data-bind>
       <v:form name="inx_form" type="simple" method="POST" action="" xhtml_enctype="multipart/form-data">
-        <h3>Choose VAD packages source</h3>
+        <h3 class="clear">Choose VAD packages source</h3>
         <table class="ctl_grp">
           <tr class="ctl_grp_title">
             <th>Get packages from</th>
           </tr>
           <tr>
             <td>
-	      <v:radio-button name="rb_dav" xhtml_id="rb_dav" value="1" group-name="choice_source" initial-checked="1"
-		auto-submit="1"
-		/>
-              <label for="rb_dav">DAV folder</label>
+              <label>
+                <v:radio-button name="rb_dav" value="1" group-name="choice_source" initial-checked="1" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_1\'], \'hide\': [\'div_choice_2\']}});" />
+                DAV folder
+              </label>
             </td>
             <td>
-	      <?vsp if (self.rb_dav.ufl_selected) { ?>
-              <v:text name="package_path" xhtml_size="70"/>
-              <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
-	      <?vsp }  ?>
-            </td>
-          </tr>
-          <tr>
-            <td>
-	      <v:radio-button name="rb_fs" xhtml_id="rb_fs" value="0" group-name="choice_source"
-		auto-submit="1"
-		/>
-              <label for="rb_fs">Server-side file</label>
-            </td>
-            <td>
-	      <?vsp if (self.rb_fs.ufl_selected) { ?>
-              <v:text name="fs_package_path" xhtml_size="70"/>
-              <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="col" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
-	      <?vsp } ?>
+              <div id="div_choice_1">
+                <v:text name="package_path" xhtml_size="70"/>
+                <vm:dav_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="" path="DAV" browse_type="col" style_css="test.css" w_title="DAV Browser" title="DAV Browser" advisory="mega advisory text" lang="en" return_box="package_path"/>
+              </div>
             </td>
           </tr>
           <tr>
             <td>
+              <label>
+                <v:radio-button name="rb_fs" value="0" group-name="choice_source" xhtml_onchange="javascript: destinationChange(this, {\'checked\': {\'show\': [\'div_choice_2\'], \'hide\': [\'div_choice_1\']}});" />
+                Server-side file
+              </label>
+            </td>
+            <td>
+              <div id="div_choice_2" style="display: none;">
+                <v:text name="fs_package_path" xhtml_size="70"/>
+                <vm:file_browser ses_type="yacutia" render="popup" list_type="details" flt="yes" flt_pat="*.vad" path="DAV" browse_type="col" w_title="File Browser" title="File Browser" lang="en" return_box="fs_package_path"/>
+              </div>
+            </td>
+          </tr>
+          <tr>
+            <td>
+              <br />
               <v:button action="simple" value="Proceed" name="upl_btn">
                 <v:on-post>
-		    <![CDATA[
-		    declare mode, path any;
-		    mode := atoi(get_keyword('choice_source', control.vc_page.vc_event.ve_params));
+                  <![CDATA[
+                    declare mode, path any;
+
+                    mode := atoi (get_keyword ('choice_source', params));
                     if (mode = 1)
                     {
-                      path := get_keyword('package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword ('package_path', params);
                     }
                     else if (mode = 0)
                     {
-                      path := get_keyword('fs_package_path', control.vc_page.vc_event.ve_params);
+                      path := get_keyword ('fs_package_path', params);
                     }
                     if (path = '' or path is null)
                     {
@@ -110,9 +115,16 @@
                       return;
                     }
 
-		    self.src_folder := path;
-		    self.src_folder_type := mode;
-		    self.vc_redirect ('vad.vspx');
+                    self.src_folder := path;
+                    self.src_folder_type := mode;
+                    self.vc_redirect ('vad.vspx');
+                  ]]>
+                </v:on-post>
+              </v:button>
+              <v:button action="simple" value="Cancel" name="cancel_btn">
+                <v:on-post>
+                  <![CDATA[
+                    self.vc_redirect ('vad.vspx');
                   ]]>
                 </v:on-post>
               </v:button>

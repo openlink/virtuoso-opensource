@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,8 @@
 -- DAV_DIR_LIST         - simplest analog of dir command
 -- DAV_SEARCH_PATH      - return full path string from id
 -- DAV_SEARCH_ID        - return id from full path string
+-- DAV_LOCK             - lock item
+-- DAV_UNLOCK           - unlock item
 -- DAV_IS_LOCKED        - checks item for locks
 -- DAV_LIST_LOCKS       - list all locks of an item
 -- DAV_AUTHENTICATE     - checks authentication
@@ -48,7 +50,7 @@
 
 create procedure DAV_VERSION ()
 {
-  return '1.0';
+  return '1.1';
 }
 ;
 
@@ -429,7 +431,8 @@ create procedure DAV_DIR_LIST (
   in path varchar := '/DAV/',
   in recursive integer,
   in auth_uname varchar,
-  in auth_pwd varchar) returns any
+  in auth_pwd varchar,
+  in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST (', path, recursive, auth_uname, auth_pwd, auth_uid, ')');
   declare auth_uid integer;
@@ -438,7 +441,7 @@ create procedure DAV_DIR_LIST (
   if (auth_uid < 0)
     return -12;
 
-  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, '%', auth_uname, auth_pwd, auth_uid);
+  return DB.DBA.DAV_DIR_LIST_INT (path, recursive, '%', auth_uname, auth_pwd, auth_uid, options);
 }
 ;
 
@@ -526,8 +529,8 @@ create function DAV_DIR_SINGLE_INT (
               from WS.WS.SYS_DAV_RES
              where RES_ID = did );
 
-   --                    0                        1    2  3             4       5          6          7          8            9                     10        11                                    12
-  return (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR)
+  --                     0              1    2  3             4       5          6          7          8            9                     10        11                                    12
+  return (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR)
             from WS.WS.SYS_DAV_COL
            where COL_ID = did );
 }
@@ -536,13 +539,15 @@ create function DAV_DIR_SINGLE_INT (
 
 create function DAV_DIR_LIST_INT (
   in path varchar := '/DAV/',
-  in rec_depth integer := 0, in name_mask varchar,
+  in rec_depth integer := 0,
+  in name_mask varchar,
   in auth_uname varchar := null,
   in auth_pwd varchar := null,
-  inout auth_uid integer := null) returns any
+  inout auth_uid integer := null,
+  in options any := null) returns any
 {
   -- dbg_obj_princ ('DAV_DIR_LIST_INT (', path, rec_depth, name_mask, auth_uname, auth_pwd, auth_uid, ')');
-  declare rc, t, id, l integer;
+  declare rc, id integer;
   declare path_string, st, det varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
 
@@ -589,8 +594,8 @@ create function DAV_DIR_LIST_INT (
   }
   else if (rec_depth = -1)
   {
-    --                  0                        1    2  3             4       5          6          7          8            9                     10        11                                    12
-    for (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
+    --                  0              1    2  3             4       5          6          7          8            9                     10        11                                    12
+    for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
           from WS.WS.SYS_DAV_COL
          where COL_ID = did) do
     {
@@ -623,19 +628,69 @@ create function DAV_DIR_LIST_INT (
   }
   else if (det is null)
   {
-    --                  0              1    2                                       3             4       5          6          7          8            9         10        11                                    12
-    for (select vector (RES_FULL_PATH, 'R', DAV_RES_LENGTH (RES_CONTENT, RES_SIZE), RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME), RES_CREATOR) as i
-          from WS.WS.SYS_DAV_RES
-         where RES_NAME like name_mask and RES_COL = did) do
+    declare _st, _msg, _meta, _rows any;
+    declare _sql, _order, _direction, _limit, _order_sql, _limit_sql any;
+
+    _order := get_keyword ('order', options, '');
+    _direction := get_keyword ('direction', options, '');
+    _limit := get_keyword ('limit', options, '');
+    if ((_order = '') and (_limit = ''))
     {
-      vectorbld_acc (res, i);
+      --                  0              1    2                                       3             4       5          6          7          8            9         10        11                                    12
+      for (select vector (RES_FULL_PATH, 'R', DAV_RES_LENGTH (RES_CONTENT, RES_SIZE), RES_MOD_TIME, RES_ID, RES_PERMS, RES_GROUP, RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME), RES_CREATOR) as i
+            from WS.WS.SYS_DAV_RES
+           where RES_NAME like name_mask and RES_COL = did) do
+      {
+        vectorbld_acc (res, i);
+      }
+      --                  0              1    2  3             4       5          6          7          8            9                     10        11                                    12
+      for (select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
+             from WS.WS.SYS_DAV_COL
+            where COL_PARENT = did) do
+      {
+        vectorbld_acc (res, i);
+      }
     }
-    --                  0                        1    2  3             4       5          6          7          8            9                    10        11                                    12
-    for (select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME), COL_CREATOR) as i
-           from WS.WS.SYS_DAV_COL
-          where COL_PARENT = did) do
+    else
     {
-      vectorbld_acc (res, i);
+      _limit_sql := '';
+      if (_limit <> '')
+        _limit_sql := 'top ' || _limit;
+
+      -- Resources
+      _order_sql := '';
+      if (_order <> '')
+      {
+        _order_sql := 'order by RES_' || _order;
+        if (_direction <> '')
+          _order_sql := _order_sql || ' ' || _direction;
+      }
+
+      _sql := 'select <LIMIT> RES_FULL_PATH, \'R\' as RES_KIND, DAV_RES_LENGTH (RES_CONTENT, RES_SIZE) as RES_LENGTH, RES_MOD_TIME, RES_ID, RES_PERMS, coalesce (b.U_NAME, \'\') as RES_GROUP, coalesce (a.U_NAME, \'\') as RES_OWNER, RES_CR_TIME, RES_TYPE, RES_NAME, coalesce (RES_ADD_TIME, RES_CR_TIME) as RES_ADD_TIME, RES_CREATOR from WS.WS.SYS_DAV_RES left join DB.DBA.SYS_USERS a on RES_OWNER = a.U_ID left join DB.DBA.SYS_USERS b on RES_GROUP = b.U_ID where RES_NAME like ? and RES_COL = ? <ORDER>';
+      _sql := replace (_sql, '<LIMIT>', _limit_sql);
+      _sql := replace (_sql, '<ORDER>', _order_sql);
+
+      _st := '00000';
+      exec (_sql, _st, _msg, vector (name_mask, did), 0, _meta, _rows);
+      if (_st = '00000')
+        vectorbld_concat_acc (res, _rows);
+
+      -- Collections
+      _order_sql := '';
+      if (_order <> '')
+      {
+        _order_sql := 'order by COL_' || _order;
+        if (_direction <> '')
+          _order_sql := _order_sql || ' ' || _direction;
+      }
+
+      _sql := 'select <LIMIT> COL_FULL_PATH, \'C\' as COL_KIND, 0 as COL_LENGTH, COL_MOD_TIME, COL_ID, COL_PERMS, coalesce (b.U_NAME, \'\') as COL_GROUP, coalesce (a.U_NAME, \'\') as COL_OWNER, COL_CR_TIME, \'dav/unix-directory\' as COL_TYPE, COL_NAME, coalesce (COL_ADD_TIME, COL_CR_TIME) as COL_ADD_TIME, COL_CREATOR from WS.WS.SYS_DAV_COL left join DB.DBA.SYS_USERS a on COL_OWNER = a.U_ID left join DB.DBA.SYS_USERS b on COL_GROUP = b.U_ID where COL_NAME like ? and COL_PARENT = ? <ORDER>';
+      _sql := replace (_sql, '<LIMIT>', _limit_sql);
+      _sql := replace (_sql, '<ORDER>', _order_sql);
+      _st := '00000';
+      exec (_sql, _st, _msg, vector (name_mask, did), 0, _meta, _rows);
+      if (_st = '00000')
+        vectorbld_concat_acc (res, _rows);
     }
   }
   else
@@ -652,7 +707,7 @@ create function DAV_DIR_LIST_INT (
 create function
 DAV_DIR_FILTER_INT (in path varchar := '/DAV/', in rec_depth integer := 0, in compilation any, in auth_uname varchar := null, in auth_pwd varchar := null, in auth_uid integer := null) returns any
 {
-  declare rc, t, id, uid, gid, l integer;
+  declare rc, id, uid, gid integer;
   declare path_string, st, det, qry_text varchar;
   declare did, detcol_id, detcol_path, det_subpath, res any;
   -- dbg_obj_princ ('DAV_DIR_FILTER_INT (', path, rec_depth, compilation, auth_uname, auth_pwd, auth_uid, ')');
@@ -725,10 +780,9 @@ else 1 end';
     }
   else if (rec_depth = -1)
     {
-      for select vector (WS.WS.COL_PATH (COL_ID), 'C', 0, COL_MOD_TIME,
-            COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME) as i
-        from WS.WS.SYS_DAV_COL
-        where
+      for select vector (COL_FULL_PATH, 'C', 0, COL_MOD_TIME, COL_ID, COL_PERMS, COL_GROUP, COL_OWNER, COL_CR_TIME, 'dav/unix-directory', COL_NAME) as i
+            from WS.WS.SYS_DAV_COL
+           where
 --      (COL_OWNER = uid or uid = http_dav_uid() or DAV_CHECK_PERM (COL_PERMS, '1__', uid, gid, COL_GROUP, COL_OWNER)) and
         COL_ID = did do
           {
@@ -805,8 +859,6 @@ create procedure DAV_SEARCH_PATH (
   in id any,
   in what char (1)) returns any
 {
-  declare res varchar;
-
   what := upper (what);
   if (isvector (id))
     return call (cast (id[0] as varchar) || '_DAV_SEARCH_PATH') (id, what);
@@ -821,11 +873,7 @@ create procedure DAV_SEARCH_PATH (
 
   if (what = 'C')
   {
-    res := WS.WS.COL_PATH (id);
-    if (res = '/')
-      return -23;
-
-    return res;
+    return coalesce ((select COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_ID = id), -23);
   }
   if (what = 'R')
   {
@@ -836,72 +884,46 @@ create procedure DAV_SEARCH_PATH (
 }
 ;
 
-
 --!
 -- \brief Search the internal ID for a given path.
 --
 -- \b Warning: In the case of DET folders the ID is not an integer but a vector! FIXME: containing what exactly?
 --/
 --!AWK PUBLIC
-create function
-DAV_SEARCH_ID (in path any, in what char (1)) returns any
+create function DAV_SEARCH_ID (
+  in path any,
+  in what char (1)) returns any
 {
-  declare id integer;
+  --dbg_obj_princ ('DAV_SEARCH_ID (', path, what, ')');
+  declare id, len integer;
   declare par any;
-  id := -1;
-  what := upper (what);
-  -- dbg_obj_princ ('DAV_SEARCH_ID (', path, what, ')');
+
   if (isstring (path))
     {
-      -- dbg_obj_princ ('path is string, tag (', __tag(path), ')');
       par := split_and_decode (path, 0, '\0\0/');
-      -- dbg_obj_princ ('split_and_decode complete');
     }
   else
     {
-      -- dbg_obj_princ ('path is not string, tag (', __tag(path), ')');
       par := path;
     }
-  if (length (par) = 0)
+
+  len := length (par);
+  if ((len = 0) or (par[0] <> ''))
     {
-      -- dbg_obj_princ ('empty par');
       return -1;
     }
-  if (aref (par, 0) <> '')
-    {
-      -- dbg_obj_princ ('bad par[0]');
-      return -1;
-    }
-  if (what = 'P')
-    {
-      if (par [length (par) - 1] = '')
-        {
-          if (2 = length (par))
-            return -1;
-          if (3 = length (par))
-            return 0;
-          par := vector_concat (subseq (par, 0, length (par) - 2), vector (''));
-        }
-      else
-        {
-          if (2 = length (par))
-            return 0;
-          par := vector_concat (subseq (par, 0, length (par) - 1), vector (''));
-        }
-      path := null;
-      what := 'C';
-    }
 
-
+  id := -1;
+  what := upper (what);
   if (what = 'R')
+  -- Resources
     {
-      if (aref (par, length (par) - 1) = '')
-        {
-          -- dbg_obj_princ ('bad par[last()] for R');
-          return -1;
-        }
+      if (par [len-1] = '')
+        return -1;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
+
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
       if ((id <> -1) and (connection_get ('dav_store') is null))
       {
@@ -921,63 +943,40 @@ DAV_SEARCH_ID (in path any, in what char (1)) returns any
       }
     }
   else if (what = 'C')
+  -- Collections
     {
-      if (aref (par, length (par) - 1) <> '')
-        {
-          -- dbg_obj_princ ('bad par[last()] for C');
-          return -1;
-        }
+      if (par [len-1] <> '')
+        return -1;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
-      --id := coalesce ((select COL_ID from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) = path), -1);
-      id := -1;
+    }
+  else  if (what = 'P')
+  -- Parent
+    {
+      if (par [len-1] = '')
+        {
+          if (2 = len)
+            return -1;
+
+          if (3 = len)
+            return 0;
+
+          par := subseq (par, 0, len-1);
+          len := len - 1;
+        }
+      else if (2 = len)
+        {
+          return 0;
+        }
+      par[len-1] := '';
+      path := DAV_CONCAT_PATH (par, null);
+      what := 'C';
     }
   else
     {
-      -- dbg_obj_princ ('-14 ???');
       return -14;
     }
-  if (id = -1)
-    {
-      declare det_ret, detcol_id, detcol_path_parts, unreached_path_parts any;
-      return DAV_SEARCH_ID_OR_DET (par, what, det_ret, detcol_id, detcol_path_parts, unreached_path_parts);
-    }
-  return id;
-}
-;
-
---!AWK PUBLIC
-create function
-DAV_SEARCH_SOME_ID (in path any, out what char (1)) returns any
-{
-  declare id integer;
-  declare par any;
-  id := -1;
-  -- dbg_obj_princ ('DAV_SEARCH_SOME_ID (', path, '... )\n');
-  if (isstring (path))
-    par := split_and_decode (path, 0, '\0\0/');
-  else
-    par := path;
-  if (aref (par, 0) <> '')
-    {
-      -- dbg_obj_princ ('bad par[0]');
-      return -1;
-    }
-  if (aref (par, length (par) - 1) <> '')
-    {
-      what := 'R';
-      if (not isstring (path))
-        path := DAV_CONCAT_PATH (par, null);
-      id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
-    }
-  else
-    {
-      what := 'C';
-      if (not isstring (path))
-        path := DAV_CONCAT_PATH (par, null);
-      id := DAV_SEARCH_ID (path, 'C');
-    }
-  -- dbg_obj_princ ('Found ', id, ' of type ', what);
   if (id = -1)
     {
       declare det_ret, detcol_id, detcol_path_parts, unreached_path_parts any;
@@ -1109,37 +1108,47 @@ create function DAV_CONCAT_PATH (
     }
   if (strg1 = '')
     return strg2;
+
   if (strg2 = '')
     return strg1;
+
   if (strg1 [length(strg1) - 1] = 47)
+  {
     if (strg2 [0] = 47)
       return strg1 || subseq (strg2, 1);
-    else
-      return strg1 || strg2;
-  else
-    if (strg2 [0] = 47)
-      return strg1 || strg2;
-    else
-      return strg1 || '/' || strg2;
+
+    return strg1 || strg2;
+  }
+
+  if (strg2 [0] = 47)
+    return strg1 || strg2;
+
+  return strg1 || '/' || strg2;
 }
 ;
 
 
-create function
-DAV_SEARCH_SOME_ID_OR_DET (inout path any, out what char (1), out det_ret varchar, out detcol_id integer, out detcol_path_parts any, out unreached_path_parts any) returns integer
+create function DAV_SEARCH_SOME_ID_OR_DET (
+  inout path any,
+  out what char (1),
+  out det_ret varchar,
+  out detcol_id integer,
+  out detcol_path_parts any,
+  out unreached_path_parts any) returns integer
 {
+  declare len integer;
+
   if (isstring (path))
     path := split_and_decode (path, 0, '\0\0/');
-  else
-    path := path;
-  if (length (path) < 2)
+
+  len := length (path);
+  if (len < 2)
     goto bad_path_arg;
+
   if (aref (path, 0) <> '')
     goto bad_path_arg;
-  if (path [length (path) - 1] = '')
-    what := 'C';
-  else
-    what := 'R';
+
+  what := case when (path [len-1] = '') then 'C' else 'R' end;
   return DAV_SEARCH_ID_OR_DET (path, what, det_ret, detcol_id, detcol_path_parts, unreached_path_parts);
 
 bad_path_arg:
@@ -1150,59 +1159,74 @@ bad_path_arg:
 }
 ;
 
-create function
-DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out detcol_id integer, out detcol_path_parts any, out unreached_path_parts any) returns integer
+create function DAV_SEARCH_ID_OR_DET (
+  in path any,
+  in what char (1),
+  out det_ret varchar,
+  out detcol_id integer,
+  out detcol_path_parts any,
+  out unreached_path_parts any) returns integer
 {
-  declare id integer;
-  declare par, left_par, right_par any;
+  -- dbg_obj_princ ('DAV_SEARCH_ID_OR_DET (', path, what,')');
+  declare id, len integer;
+  declare par any;
   declare cname, det varchar;
   declare inx, depth, cur_id, parent_id integer;
+
   id := -1;
   what := upper (what);
-  -- dbg_obj_princ ('DAV_SEARCH_ID_OR_DET (', path, what,')');
   if (isstring (path))
     par := split_and_decode (path, 0, '\0\0/');
   else
     par := path;
-  if (length (par) < 2)
+
+
+  len := length (par);
+  if (len < 2)
     goto bad_path_arg;
-  if (aref (par, 0) <> '')
+
+  if (par[0] <> '')
     goto bad_path_arg;
+
   if (what = 'P')
     {
-      if (par [length (par) - 1] = '')
+      if (par [len-1] = '')
         {
-          if (2 = length (par))
+          if (2 = len)
             goto bad_path_arg;
-          if (3 = length (par))
+
+          if (3 = len)
             {
               detcol_id := null;
               detcol_path_parts := null;
               unreached_path_parts := null;
               return 0;
             }
-          par := vector_concat (subseq (par, 0, length (par) - 2), vector (''));
+          par := subseq (par, 0, len-1);
+          len := len -1;
         }
       else
         {
-          if (2 = length (par))
+          if (2 = len)
             {
               detcol_id := null;
               detcol_path_parts := null;
               unreached_path_parts := null;
               return 0;
             }
-          par := vector_concat (subseq (par, 0, length (par) - 1), vector (''));
         }
+      par[len-1] := '';
       path := null;
       what := 'C';
     }
   if (what = 'R')
     {
-      if (aref (par, length (par) - 1) = '')
+      if (par[len-1] = '')
         goto bad_path_arg;
+
       if (not isstring (path))
         path := DAV_CONCAT_PATH (par, null);
+
       id := coalesce ((select RES_ID from WS.WS.SYS_DAV_RES where RES_FULL_PATH = path), -1);
       if ((id <> -1) and (connection_get ('dav_store') is null))
       {
@@ -1219,18 +1243,19 @@ DAV_SEARCH_ID_OR_DET (in path any, in what char (1), out det_ret varchar, out de
             detcol_path_parts := subseq (par, 0, inx + 1);
             par := subseq (par, inx + 1);
             unreached_path_parts := par;
+
             return call (cast (det_ret as varchar) || '_DAV_MAKE_ID') (detcol_id, id, 'R');
           }
         }
       }
-     if (id > 0)
-      goto found_plain_id;
-
+      if (id > 0)
+        goto found_plain_id;
     }
   else if (what = 'C')
     {
-      if (aref (par, length (par) - 1) <> '')
+      if (par[len-1] <> '')
         goto bad_path_arg;
+
       goto descending_col_search;
     }
   else
@@ -1241,7 +1266,7 @@ descending_col_search:
   inx := 1;
   cur_id := 0;
   parent_id := 0;
-  depth := length (par) - 1;
+  depth := len - 1;
   -- dbg_obj_princ ('554: path=', path, ' par=', par);
   whenever not found goto not_found;
   while (inx < depth)
@@ -1272,22 +1297,21 @@ descending_col_search:
   goto found_plain_id;
 
 found_plain_id:
-  det_ret := NULL;
-  detcol_id := NULL;
+  det_ret := null;
+  detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
   return id;
 
 not_found:
-  det_ret := NULL;
+  det_ret := null;
   detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
   return -1;
 
 bad_path_arg:
-  -- dbg_obj_princ ('bad_path_arg');
-  det_ret := NULL;
+  det_ret := null;
   detcol_id := null;
   detcol_path_parts := null;
   unreached_path_parts := null;
@@ -1296,8 +1320,11 @@ bad_path_arg:
 ;
 
 
-create procedure
-DAV_OWNER_ID (in uid any, in gid any, out _uid integer, out _gid integer)
+create procedure DAV_OWNER_ID (
+  in uid any,
+  in gid any,
+  out _uid integer,
+  out _gid integer)
 {
   -- dbg_obj_princ ('DAV_OWNER_ID (', uid, gid, _uid, _gid, ')');
   if (uid is null)
@@ -1305,22 +1332,22 @@ DAV_OWNER_ID (in uid any, in gid any, out _uid integer, out _gid integer)
   else if (isinteger (uid))
     _uid := uid;
   else
-    _uid := coalesce (
-      (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uid),
-      case (uid) when 'anonymous' then http_nobody_uid () else -12 end);
+  {
+    _uid := (select U_ID from WS.WS.SYS_DAV_USER where U_NAME = uid);
+    if (isnull (_uid))
+      _uid := case (uid) when 'anonymous' then http_nobody_uid () else -12 end;
+  }
 
   if (gid is null)
     _gid := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_ID = _uid), http_nogroup_gid ());
   else if (isinteger (gid))
     _gid := gid;
   else
-    _gid := coalesce (
-      (select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid),
-      (select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = gid),
-      -12 );
--- This must be
---  _gid := coalesce ((select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid), -12);
-  -- dbg_obj_princ ('DAV_OWNER_ID translated ', uid, ' -> ', _uid, ', and ', gid, ' -> ', _gid);
+  {
+    _gid := (select G_ID from WS.WS.SYS_DAV_GROUP where G_NAME = gid);
+    if (isnull (_gid))
+      _gid := coalesce ((select U_GROUP from WS.WS.SYS_DAV_USER where U_NAME = gid), -12);
+  }
 }
 ;
 
@@ -1340,6 +1367,7 @@ create function DAV_IS_LOCKED_INT (
   in check_token varchar := '',
   in strict_mode integer := 0)
 {
+  --
   -- dbg_obj_princ ('DAV_IS_LOCKED_INT (', id, st, check_token, strict_mode, ')');
   declare first integer;
   declare rc varchar;
@@ -1491,7 +1519,10 @@ create function DAV_LOCK_INT (
 
   p_st := 'C';
   if (id is null)
-    id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+  {
+    st := DB.DBA.DAV_WHAT (path);
+    id := DB.DBA.DAV_SEARCH_ID (path, st);
+  }
 
   if (DB.DBA.DAV_HIDE_ERROR (id) is null)
   {
@@ -1566,7 +1597,7 @@ create function DAV_LOCK_INT (
 
   if ((scope <> 'R') and (old_scope = '') and (st ='C'))
   {
-    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where WS.WS.COL_PATH (COL_ID) between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
+    if (exists (select 1 from WS.WS.SYS_DAV_COL, WS.WS.SYS_DAV_LOCK where COL_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'C' and LOCK_PARENT_ID = COL_ID))
       return -1;
 
     if (exists (select 1 from WS.WS.SYS_DAV_RES, WS.WS.SYS_DAV_LOCK where RES_FULL_PATH between path and DB.DBA.DAV_COL_PATH_BOUNDARY (path) and LOCK_PARENT_TYPE = 'R' and LOCK_PARENT_ID = RES_ID))
@@ -1664,7 +1695,8 @@ create function DAV_UNLOCK (
   declare id any;
   declare st char (1);
 
-  id := DB.DBA.DAV_SEARCH_SOME_ID (path, st);
+  st := DB.DBA.DAV_WHAT (path);
+  id := DB.DBA.DAV_SEARCH_ID (path, st);
   if (DB.DBA.DAV_HIDE_ERROR (id) is null)
     return -1;
 
@@ -2115,9 +2147,12 @@ create function DAV_GET_UID_BY_SERVICE_ID (
   out a_uid int,
   out a_gid int,
   out a_uname varchar,
-  out a_perms int)
+  out a_perms varchar)
 {
   declare rows any;
+
+  if (table_exists ('DB.DBA.WA_USER_OL_ACCOUNTS') = 0)
+    return 0;
 
   rows := DB.DBA.DAV_EXEC_SQL ('select WUO_U_ID, U_GROUP, U_NAME, U_DEF_PERMS from DB.DBA.WA_USER_OL_ACCOUNTS, DB.DBA.SYS_USERS where WUO_U_ID=U_ID and WUO_URL=?', vector (serviceId));
   if (length (rows) = 0)
@@ -2252,6 +2287,8 @@ create function DAV_AUTHENTICATE_SSL_WEBID (
 ;
 
 create function DAV_CHECK_ACLS_INTERNAL (
+  in mode integer,
+  in netid varchar,
   in webid varchar,
   in webidGraph varchar,
   in graph varchar,
@@ -2359,10 +2396,12 @@ _exit:;
 
 create function DAV_CHECK_ACLS (
   in id any,
-  in webid varchar,
-  in webidGraph varchar,
   in what char(1),
   in path varchar,
+  in mode integer,
+  in netid varchar,
+  in webid varchar,
+  in webidGraph varchar,
   in req varchar,
   inout a_uid integer,
   inout a_gid integer,
@@ -2373,6 +2412,9 @@ create function DAV_CHECK_ACLS (
   declare rc integer;
   declare det varchar;
   declare graph, grpGraph, reqMode, realMode, IRIs any;
+
+  if (not isstring (path))
+    return 0;
 
   rc := 0;
   req := replace (req, '_', '0');
@@ -2392,7 +2434,7 @@ create function DAV_CHECK_ACLS (
     {
       graph := WS.WS.WAC_GRAPH (path);
       grpGraph := SIOC.DBA.get_graph () || '/private/%';
-      DB.DBA.DAV_CHECK_ACLS_INTERNAL (webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
+      DB.DBA.DAV_CHECK_ACLS_INTERNAL (mode, netid, webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
         if (not DB.DBA.DAV_GET_UID_BY_WEBID (a_uid, a_gid, a_cert))
@@ -2460,7 +2502,7 @@ create function DAV_AUTHENTICATE_SSL (
   DB.DBA.DAV_AUTHENTICATE_SSL_WEBID (a_webid, webidGraph, a_cert);
 
   a_perms := '___';
-  rc := DB.DBA.DAV_CHECK_ACLS (id, a_webid, webidGraph, what, path, req, a_uid, a_gid, a_perms, a_cert);
+  rc := DB.DBA.DAV_CHECK_ACLS (id, what, path, 0, a_webid, a_webid, webidGraph, req, a_uid, a_gid, a_perms, a_cert);
   if (rc)
   {
     DB.DBA.DAV_PERMS_FIX (a_perms, '000000000TM');
@@ -2522,22 +2564,30 @@ create procedure DAV_COL_CREATE_INT (
   if (extern and 0 > (rc := DAV_AUTHENTICATE (pid, 'C', '11_', auth_uname, auth_pwd)))
     {
       -- dbg_obj_princ ('authenticate OBLOM', rc);
-        return rc;
+      return rc;
     }
   if (DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (par, 0, length (par) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict');
       return -25;
     }
-  if ((0 = return_error_if_already_exists) and (rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
+  if ((rc := DAV_HIDE_ERROR (DAV_SEARCH_ID (path, 'C'))) is not null)
     {
       -- dbg_obj_princ ('not overwrite and exists', rc);
+      if (return_error_if_already_exists)
+        return -3;
+      else
         return rc;
     }
   if (check_locks and 0 <> (rc := DAV_IS_LOCKED (pid , 'C', check_locks)))
     {
       -- dbg_obj_princ ('lock OBLOM', rc);
-        return rc;
+      return rc;
+    }
+  name := aref (par, length (par) - 2);
+  if (name = '')
+    {
+      return -1;
     }
 
   if (isarray (pid))
@@ -2564,7 +2614,6 @@ create procedure DAV_COL_CREATE_INT (
       DAV_SEARCH_ID_OR_DET (par, 'C', det, detcol_id, detcol_path, unreached_path);
       return call (cast (det as varchar) || '_DAV_COL_CREATE') (detcol_id, unreached_path, permissions, ouid, ogid, auth_uid);
     }
-  name := aref (par, length (par) - 2);
   rc := WS.WS.GETID ('C');
   if (ouid is null)
     DAV_OWNER_ID (uid, gid, ouid, ogid);
@@ -2704,7 +2753,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
     {
       -- clear previous uploaded data
       id := DB.DBA.DAV_SEARCH_ID (path, 'R');
-      if (not isnull (DB.DBA.DAV_HIDE_ERROR (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
+      if (not isnull (DB.DBA.DAV_HIDE_ERROR (id)) and isinteger (DB.DBA.DAV_DET_DAV_ID (id)) and ('text/turtle' = (select RES_TYPE from WS.WS.SYS_DAV_RES where RES_ID = DB.DBA.DAV_DET_DAV_ID (id))))
         WS.WS.TTL_QUERY_POST_CLEAR (path);
 
       if (type = 'application/sparql-query')
@@ -2814,7 +2863,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     }
     else if (pid > 0)
     {
-      det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID=pid and connection_get ('dav_store') is null);
+      det := (select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = pid and connection_get ('dav_store') is null);
     }
     else
     {
@@ -3010,6 +3059,8 @@ create procedure DAV_RES_UPLOAD_STRSES_INT_INNER (
     if (_is_xper_res)
       update WS.WS.SYS_DAV_RES set RES_CONTENT = xml_persistent (RES_CONTENT) where current of res_cr;
   }
+  DB.DBA.LDP_CREATE_RES (path, type);
+
   return rc;
 
 unhappy_upload:
@@ -3270,7 +3321,7 @@ create procedure RDF_SINK_UPLOAD_CARTRIDGES (
       xrc := call (pname) (rdf_graph, rdf_iri, null, content, aq, ps, row[4], opts);
       -- dbg_obj_print (pname, xrc, (select count(*) from rdf_quad where g = iri_to_id (rdf_graph)));
       -- when no selection we stop processing when a given cartridge indicate to stop
-      if (not hasSelection and (__tag (xrc) = 193 or xrc < 0 or xrc > 0))
+      if (not hasSelection and (__tag (xrc) = __tag of vector or xrc < 0 or xrc > 0))
         return 1;
     }
   _try_next:;
@@ -3470,8 +3521,7 @@ create procedure DAV_DELETE (
   in path varchar,
   in silent integer := 0,
   in auth_uname varchar,
-  in auth_pwd varchar
-)
+  in auth_pwd varchar)
 {
   return DAV_DELETE_INT (path, silent, auth_uname, auth_pwd);
 }
@@ -3483,10 +3533,11 @@ create procedure DAV_DELETE_INT (
   in auth_uname varchar,
   in auth_pwd varchar,
   in extern integer := 1,
-  in check_locks any := 1
+  in check_locks integer := 1,
+  in check_token varchar := ''
 )
 {
-  declare id, id_meta, rc integer;
+  declare id, id_meta, rc, rrc integer;
   declare what char;
   declare auth_uid integer;
   declare par, path_meta any;
@@ -3494,11 +3545,11 @@ create procedure DAV_DELETE_INT (
   whenever sqlstate 'HT509' goto disabled_home;
 
   par := split_and_decode (path, 0, '\0\0/');
-  if (aref (par, 0) <> '')
+  if (par[0] <> '')
     return -1;
 
-  what := case when (aref (par, length (par) - 1) = '') then 'C' else 'R' end;
-  id := DAV_SEARCH_ID (par, what);
+  what := DB.DBA.DAV_WHAT (par);
+  id := DB.DBA.DAV_SEARCH_ID (par, what);
   if (isinteger (id) and (0 > id))
     return (case when silent then 1 else id end);
 
@@ -3509,16 +3560,18 @@ create procedure DAV_DELETE_INT (
       return (case when silent then 1 else auth_uid end);
   }
   else
+  {
     auth_uid := http_nobody_uid ();
+  }
 
-
-  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_locks))))
+  if (check_locks and (0 <> (rc := DAV_IS_LOCKED (id, what, check_token))))
     return rc;
 
   if (isarray (id))
   {
     declare det varchar;
     declare detcol_id, detcol_path, unreached_path any;
+
     DAV_SEARCH_ID_OR_DET (par, what, det, detcol_id, detcol_path, unreached_path);
     return call (cast (det as varchar) || '_DAV_DELETE') (detcol_id, unreached_path, what, silent, auth_uid);
   }
@@ -3539,9 +3592,8 @@ create procedure DAV_DELETE_INT (
   }
   else if (what = 'C')
   {
-    declare rrc integer;
     declare items any;
-    declare det, proc, graph varchar;
+    declare det, det_params, proc, graph varchar;
 
     det := cast (coalesce ((select COL_DET from WS.WS.SYS_DAV_COL where COL_ID = id), '') as varchar);
     if ((det = '') or DB.DBA.DAV_DET_IS_SPECIAL (det))
@@ -3554,11 +3606,7 @@ create procedure DAV_DELETE_INT (
         {
           rrc := call (det || '_DAV_DELETE') (id, split_and_decode (item[10] || case when (item[1] = 'C') then '/' else '' end, 0, '\0\0/'), item[1], silent, auth_uid);
           if (rrc <> 1)
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+            goto delete_error;
         }
         if (__proc_exists ('DB.DBA.IMAP__ownerErase') is not null)
         {
@@ -3571,25 +3619,18 @@ create procedure DAV_DELETE_INT (
         if (det <> '')
           connection_set ('dav_store', 1);
 
-        for select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id do
+        for (select RES_FULL_PATH from WS.WS.SYS_DAV_RES where RES_COL = id) do
         {
           rrc := DAV_DELETE_INT (RES_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
           if ((rrc <> 1) and (RES_FULL_PATH not like '%,acl'))
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+            goto delete_error;
         }
-        for select COL_ID, COL_NAME from WS.WS.SYS_DAV_COL where COL_PARENT = id do
+
+        for (select COL_NAME, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_PARENT = id) do
         {
-          rrc := DAV_DELETE_INT (WS.WS.COL_PATH(COL_ID), silent, auth_uname, auth_pwd, extern, check_locks);
-          if ((rrc <> 1) and (COL_NAME not like '%,acl'))
-          {
-            connection_set ('dav_store', null);
-            rollback work;
-            return rrc;
-          }
+          rrc := DAV_DELETE_INT (COL_FULL_PATH, silent, auth_uname, auth_pwd, extern, check_locks);
+          if ((rrc <> 1) and not ((rrc = -1) and (COL_NAME = 'Attic')))
+            goto delete_error;
         }
         if (det <> '')
           connection_set ('dav_store', null);
@@ -3602,6 +3643,10 @@ create procedure DAV_DELETE_INT (
         DB.DBA.RDF_GRAPH_GROUP_DEL ('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', graph);
       }
     }
+    det_params := null;
+    if ((det <> '') and __proc_exists ('DB.DBA.' || det || '__params') and __proc_exists ('DB.DBA.' || det || '_REVOKE'))
+      det_params := call ('DB.DBA.' || det || '__params') (id);
+
     delete from WS.WS.SYS_DAV_COL where COL_ID = id;
     DB.DBA.LDP_DELETE (path, 1);
 
@@ -3611,6 +3656,8 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta, 1);
     }
+    if (not isnull (det_params))
+      call ('DB.DBA.' || det || '_REVOKE') (det_params);
   }
   else if (not silent)
   {
@@ -3619,6 +3666,11 @@ create procedure DAV_DELETE_INT (
 
   return 1;
 
+delete_error:
+  connection_set ('dav_store', null);
+  rollback work;
+  return rrc;
+
 disabled_owner:
   return -42;
 
@@ -3626,7 +3678,6 @@ disabled_home:
   return -43;
 }
 ;
-
 
 create procedure DAV_TAG_LIST (
   in id any,
@@ -3708,7 +3759,8 @@ create procedure DAV_COPY_INT (
   in extern integer := 1,
   in check_locks any := 1,
   in ouid integer := null,
-  in ogid integer := null )
+  in ogid integer := null,
+  in depth varchar := 'infinity' )
 {
   declare id, d_id, dp_id, rc integer;
   declare auth_uid integer;
@@ -3730,15 +3782,12 @@ create procedure DAV_COPY_INT (
   if (aref (sar, 0) <> '')
     return -1;
 
-  if (aref (sar, length (sar) - 1) = '')
-    st := 'C';
-  else
-    st := 'R';
+  st := DB.DBA.DAV_WHAT (sar);
 
   if (aref (dar, 0) <> '')
     return -2;
 
-  if (aref (dar, length (dar) - 1) = '')
+  if (DB.DBA.DAV_WHAT (dar) = 'C')
     {
       if (st = 'R')
         {
@@ -3793,12 +3842,12 @@ create procedure DAV_COPY_INT (
       auth_uid := ouid;
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;
@@ -3836,7 +3885,7 @@ create procedure DAV_COPY_INT (
         }
     }
 
-  if (isarray (dp_id))
+  if (isvector (dp_id))
   {
     dp_det := dp_id[0];
   }
@@ -3859,7 +3908,7 @@ create procedure DAV_COPY_INT (
 
       if (d_id is not null) -- do update
         {
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -3939,7 +3988,7 @@ create procedure DAV_COPY_INT (
       if (isarray (id) and (id[0] like '%CatFilter'))
         return -39;
 
-      if (d_id is not null) -- do delete first
+      if (d_id is not null and depth = 'infinity') -- do delete first
         {
           declare rrc integer;
 
@@ -3949,22 +3998,29 @@ create procedure DAV_COPY_INT (
               rollback work;
               return rrc;
             }
+          d_id := null;
         }
+      if (d_id is null)
+        {
       newid := DAV_COL_CREATE_INT (destination, permissions, uid, gid, auth_uname, auth_pwd, 0, 0, 0, ouid, ogid);
       if (DAV_HIDE_ERROR (newid) is null)
         {
           rollback work;
           return newid;
         }
+        }
       DB.DBA.DAV_COPY_PROPS (0, id, 'C', destination, auth_uname, auth_pwd, extern, auth_uid);
+      if (depth = 'infinity')
       DB.DBA.DAV_COPY_SUBTREE (id , newid, sar, destination, 1, ouid, ogid, auth_uname, auth_pwd, extern, check_locks, auth_uid);
     }
   return 1;
 
 insufficient_storage:
   return -41;
+
 disabled_owner:
   return -42;
+
 disabled_home:
   return -43;
 }
@@ -4084,15 +4140,11 @@ create procedure DAV_MOVE_INT (
   if (aref (sar, 0) <> '')
     return -1;
 
-  if (aref (sar, length (sar) - 1) = '')
-    st := 'C';
-  else
-    st := 'R';
-
+  st := DB.DBA.DAV_WHAT (sar);
   if (aref (dar, 0) <> '')
     return -2;
 
-  if (aref (dar, length (dar) - 1) = '')
+  if (DB.DBA.DAV_WHAT (dar) = 'C')
     {
       if (st = 'R')
         {
@@ -4100,10 +4152,9 @@ create procedure DAV_MOVE_INT (
           dar := split_and_decode (destination, 0, '\0\0/');
         }
     }
-  else
+  else if (st = 'C')
     {
-      if (st = 'C')
-        return -4;
+      return -4;
     }
 
   id := DAV_SEARCH_ID (sar, st);
@@ -4145,12 +4196,12 @@ create procedure DAV_MOVE_INT (
       auth_uid := http_nobody_uid ();
     }
   -- dbg_obj_princ ('st = ', st, ', dar = ', dar);
-  if (('C' = st) and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
+  if (('C' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (subseq (dar, 0, length (dar) - 1), 'R')) is not null)
     {
       -- dbg_obj_princ ('conflict -25');
       return -25;
     }
-  if (('R' = st) and (0 = overwrite) and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
+  if (('R' = st) and not overwrite and DAV_HIDE_ERROR (DAV_SEARCH_ID (vector_concat (dar, vector ('')), 'C')) is not null)
     {
       -- dbg_obj_princ ('conflict -26');
       return -26;
@@ -4172,7 +4223,7 @@ create procedure DAV_MOVE_INT (
         return (case when rc = -8 then -9 else rc end);
     }
 
-  if (isarray (dp_id))
+  if (isvector (dp_id))
   {
     dp_det := dp_id[0];
   }
@@ -4195,7 +4246,7 @@ create procedure DAV_MOVE_INT (
       if (d_id is not null) -- do update of destination and delete of source
         {
           -- dbg_obj_princ ('DAV_MOVE_INT has a resource');
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -4228,7 +4279,7 @@ create procedure DAV_MOVE_INT (
           else
             {
               declare pid, rldp, nldp integer;
-              declare rname, rpath, rldp, npath varchar;
+              declare rname, rpath, npath varchar;
 
               select RES_NAME
                 into rname
@@ -4263,7 +4314,7 @@ create procedure DAV_MOVE_INT (
           if (rname = '')
             return -3;
 
-          if (isarray (id))
+          if (isvector (id))
             {
               declare rt varchar;
               declare rcnt any;
@@ -4339,7 +4390,7 @@ create procedure DAV_MOVE_INT (
             }
         }
 
-      if (isarray (id))
+      if (isvector (id))
         {
           declare dirsingle any;
 
@@ -4833,7 +4884,7 @@ DAV_PROP_SET_RAW_INNER (
   if (not isstring (propname) or (propname in ('creationdate', 'getcontentlength', 'getcontenttype', 'getetag', 'getlastmodified', 'lockdiscovery', 'resourcetype', 'activelock', 'supportedlock')))
     return -10;
 
-  if (__tag (propvalue) = 193)
+  if (__tag (propvalue) = __tag of vector)
     propvalue := serialize (propvalue);
   else if (not isstring (propvalue))
     return -17;
@@ -5013,10 +5064,8 @@ DAV_PROP_GET (
     in auth_pwd varchar := null) returns any
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_PROP_GET_INT (DAV_SEARCH_ID (path, st), st, propname, 1, auth_uname, auth_pwd);
 }
 ;
@@ -5265,10 +5314,8 @@ DAV_PROP_LIST (
     in auth_pwd varchar := null)
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_PROP_LIST_INT (DAV_SEARCH_ID (path, st), st, propmask, 1, auth_uname, auth_pwd);
 }
 ;
@@ -5559,39 +5606,51 @@ create procedure DAV_RES_CONTENT_META_N3 (
   in path varchar)
 {
   declare item any;
-  declare iri, creator_iri varchar;
+  declare iri, creator_iri, person_iri, pref, tp_iri varchar;
   declare stream, dict, triples any;
 
-  if (__proc_exists ('SIOC.DBA.get_graph') is null)
-    return -1;
-
-  dict := dict_new();
   item := DAV_DIR_LIST_INT (path, -1, '%', null, null, http_dav_uid ());
   if (DAV_HIDE_ERROR (item) is null)
     return -1;
 
+  pref := WS.WS.DAV_HOST();
   item := item[0];
-  iri := iri_to_id (WS.WS.DAV_HOST () || path);
+  iri := iri_to_id (pref || path);
 
-  -- creator
-  creator_iri := SIOC..user_iri (item[7]);
-	dict_put (dict, vector (iri, iri_to_id (SIOC..sioc_iri ('has_creator')), iri_to_id (creator_iri)), 0);
-	dict_put (dict, vector (iri_to_id (creator_iri), iri_to_id (SIOC..sioc_iri ('creator_of')), iri), 0);
-  dict_put (dict, vector (iri, SIOC..foaf_iri ('maker'), SIOC..person_iri (creator_iri)), 0);
-  dict_put (dict, vector (iri_to_id (SIOC..person_iri (creator_iri)), SIOC..foaf_iri ('made'), iri), 0);
+  creator_iri := iri_to_id (sprintf ('%s/dataspace/%U#this', pref, __sec_uid_to_user (item[7])));
+  person_iri := iri_to_id (sprintf ('%s/dataspace/person/%U#this', pref, __sec_uid_to_user (item[7])));
+  if (item[1] = 'R')
+    {
+      tp_iri := iri_to_id (sprintf ('http://www.w3.org/ns/iana/media-types/%s#Resource', item[9]));
+    }
 
-  -- name
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('title')), item[10]), 0);
-  dict_put (dict, vector (iri, iri_to_id (SIOC..rdfs_iri ('label')), item[10]), 0);
-
-  -- created
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('created')), item[8]), 0);
-
-  -- modified
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dcterms_iri ('modified')), item[3]), 0);
-
-  -- content type
-  dict_put (dict, vector (iri, iri_to_id (SIOC..dc_iri ('format')), item[9]), 0);
+  dict := dict_new();
+  if (item[1] = 'R')
+    {
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), tp_iri), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('rdfs:Resource'))), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Resource'))), 0);
+    }
+  if (item[1] = 'C')
+    {
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:BasicContainer'))), 0);
+      dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:Container'))), 0);
+    }
+  if (item[9] in ('text/turtle', 'application/ld+json'))
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:RDFSource'))), 0);
+  else
+    dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdf:type')), iri_to_id (__xml_nsexpand_iristr('ldp:NonRDFSource'))), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('sioc:has_creator')), creator_iri), 0);
+  dict_put (dict, vector (creator_iri, iri_to_id (__xml_nsexpand_iristr('sioc:creator_of')), iri), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('foaf:maker')), person_iri), 0);
+  dict_put (dict, vector (person_iri, iri_to_id (__xml_nsexpand_iristr('foaf:made')), iri), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dc:title')), item[10]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('rdfs:label')), item[10]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dcterms:created')), item[8]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dcterms:modified')), item[3]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('stat:mtime')), item[3]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('stat:size')), item[2]), 0);
+  dict_put (dict, vector (iri, iri_to_id (__xml_nsexpand_iristr('dc:format')), item[9]), 0);
 
   stream := string_output ();
  	triples := dict_list_keys (dict, 0);
@@ -5637,6 +5696,19 @@ create function DAV_RES_LENGTH (
 }
 ;
 
+create function DAV_WHAT (
+  in path any)
+{
+  if (isvector (path) and length (path))
+    return case when (path[length (path)-1] = '') then 'C' else 'R' end;
+
+  if (isstring (path) and length (path))
+    return case when (path[length (path)-1] = 47) then 'C' else 'R' end;
+
+  return null;
+}
+;
+
 create function DAV_COL_IS_ANCESTOR_OF (in a_id integer, in d_id integer) returns integer
 {
   declare p_id integer;
@@ -5657,10 +5729,7 @@ again:
 create function DAV_COL_PATH_BOUNDARY (
   in path varchar) returns varchar
 {
-  declare len integer;
-
-  len := length (path);
-  if ((len = 0) or (path[len-1] <> 47))
+  if (DB.DBA.DAV_WHAT (path) <> 'C')
     signal ('.....', sprintf ('Bad path in DAV_COL_PATH_BOUNDARY: %s', path));
 
   return path || '\377\377\377\377';
@@ -5807,8 +5876,8 @@ create trigger SYS_DAV_COL_WAC_U after update (COL_NAME, COL_PARENT) on WS.WS.SY
   if (aciContent is null)
     return;
 
-  oldPath := WS.WS.COL_PATH (O.COL_PARENT) || O.COL_NAME || '/';
-  newPath := WS.WS.COL_PATH (N.COL_PARENT) || N.COL_NAME || '/';
+  oldPath := O.COL_FULL_PATH;
+  newPath := N.COL_FULL_PATH;
   update_acl := 1;
 
   WS.WS.WAC_DELETE (oldPath, update_acl);
@@ -5824,7 +5893,7 @@ create trigger SYS_DAV_COL_WAC_D after delete on WS.WS.SYS_DAV_COL order 100 ref
   if (connection_get ('dav_acl_sync') = 1)
     return;
 
-  path := WS.WS.COL_PATH (O.COL_ID);
+  path := O.COL_FULL_PATH;
   update_acl := 1;
 
   WS.WS.WAC_DELETE (path, update_acl);
@@ -6017,7 +6086,7 @@ create procedure WS.WS.WAC_INSERT_PROP (
   }
   else
   {
-    select DAV_SEARCH_PATH (COL_ID, what), COL_OWNER, COL_GROUP
+    select COL_FULL_PATH, COL_OWNER, COL_GROUP
       into _path, _owner, _group
       from WS.WS.SYS_DAV_COL
      where COL_ID = id;
@@ -6055,7 +6124,10 @@ create procedure WS.WS.WAC_INSERT (
   subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
   sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
-  if (exists (sparql prefix foaf: <http://xmlns.com/foaf/0.1/>  prefix acl: <http://www.w3.org/ns/auth/acl#> ask where { graph ?:giid { [] acl:accessTo ?:giid ; acl:mode acl:Read  ; acl:agentClass foaf:Agent . }})) -- public read
+  if ((sparql define input:storage ""
+    prefix foaf: <http://xmlns.com/foaf/0.1/>
+    prefix acl: <http://www.w3.org/ns/auth/acl#>
+  ask where { graph ?:giid { [] acl:accessTo ?:giid ; acl:mode acl:Read  ; acl:agentClass foaf:Agent . }})) -- public read
   {
     set triggers off;
     permissions [6] := 49;
@@ -6134,13 +6206,20 @@ create procedure WS.WS.DAV_HOST ()
 create procedure WS.WS.DAV_IRI (
   in path varchar)
 {
-  declare S any;
+  declare parts any;
+  declare retValue varchar;
 
-  S := string_output ();
-  http_dav_url (path, null, S);
-  S := string_output_string (S);
-
-  return WS.WS.DAV_HOST () || S;
+  retValue := '';
+  if (not DB.DBA.is_empty_or_null (path))
+  {
+    parts := split_and_decode (path, 0, '\0\0/');
+    foreach (varchar part in parts) do
+    {
+      retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
+    }
+    retValue := subseq (retValue, 0, length(retValue)-1);
+  }
+  return WS.WS.DAV_HOST () || retValue;
 }
 ;
 
@@ -6381,7 +6460,7 @@ create procedure WS.WS.ACL_SERIALIZE_INT (
 create procedure WS.WS.ACL_DESERIALIZE_INT (
   in _value any) returns integer
 {
-  if (__tag (_value) <> 189)
+  if (__tag (_value) <> __tag of integer)
     _value := cast (_value as varchar);
 
   _value := right (repeat ('\0', 4) || _value, 4);
@@ -6548,15 +6627,15 @@ create procedure WS.WS.ACL_IS_GRANTED (
 
   ids := (select vector_concat (vector (uid), VECTOR_AGG (GI_SUB)) from DB.DBA.SYS_ROLE_GRANTS where GI_SUPER = uid);
   or_acc := 0;
-  foreach (any acl in aAcl) do
+  foreach (any a in aAcl) do
   {
-    if (position (acl[0], ids))
+    if (position (a[0], ids))
     {
-      anded := bit_and (acl[3], bitmask);
+      anded := bit_and (a[3], bitmask);
       if (anded)
       {
         -- revoke of any single bit invalidates the permission.
-        if (not acl[1])
+        if (not a[1])
           return 0;
 
         or_acc := bit_or (or_acc, anded);
@@ -6712,7 +6791,7 @@ ret_null:
 
 create function DAV_FC_CONST_AS_SQL (inout val any)
 {
-  if (193 = __tag (val))
+  if (__tag of vector = __tag (val))
     {
       declare res varchar;
       res := '';
@@ -6720,9 +6799,9 @@ create function DAV_FC_CONST_AS_SQL (inout val any)
         res := concat (res, ', ', DAV_FC_CONST_AS_SQL(item));
       return subseq (res, 2);
     }
-  if (182 = __tag (val))
+  if (__tag of varchar = __tag (val))
     return replace (WS.WS.STR_SQL_APOS (val), '^{', '\\136{');
-  if (189 = __tag (val))
+  if (__tag of integer = __tag (val))
     return sprintf ('%d', val);
   if (211 = __tag (val))
     return sprintf ('cast (''%s'' as datetime)', cast (val as varchar));
@@ -6855,17 +6934,17 @@ create function DAV_FC_PRINT_COMPARISON (inout pred any, inout pred_metas any, i
   pattern_sample := pred[2];
   if ('scalar' = cmp_meta[0])
     {
-      if (not (__tag (pattern_sample) in (182, 189, 211)))
+      if (not (__tag (pattern_sample) in (__tag of varchar, __tag of integer, 211)))
         goto bad_pattern_datatype;
     }
   else if ('vector' = cmp_meta[0])
     {
-      if (193 <> __tag (pattern_sample))
+      if (__tag of vector <> __tag (pattern_sample))
         goto bad_pattern_datatype;
       if (0 = length (pattern_sample))
         goto empty_array_pattern;
       pattern_sample := pattern_sample[0];
-      if (not (__tag (pattern_sample) in (182, 189, 211)))
+      if (not (__tag (pattern_sample) in (__tag of varchar, __tag of integer, 211)))
         goto bad_pattern_datatype;
       foreach (any itm in pred[2]) do
         {
@@ -7438,14 +7517,14 @@ again:
 create procedure DAV_GET_RDF_SCHEMA_N3 (
   in schema_uri varchar)
 {
-  for (select RS_LOCATION, RS_LOCAL_ADDONS, RS_PRECOMPILED from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri) do
+  for (select RS_LOCATION, RS_LOCAL_ADDONS, RS_PRECOMPILED as _RS_PRECOMPILED from WS.WS.SYS_RDF_SCHEMAS where RS_URI = schema_uri) do
   {
     declare std_schema, local_addon, mix any;
     declare schema_catname varchar;
     declare prop_list, prop_catnames, prop_catnames_hash any;
 
-    if (RS_PRECOMPILED is not null)
-      return RS_PRECOMPILED;
+    if (_RS_PRECOMPILED is not null)
+      return _RS_PRECOMPILED;
 
     if (RS_LOCATION is null)
     {
@@ -7629,10 +7708,8 @@ create procedure DAV_RDF_PROP_GET (
   in auth_pwd varchar := null) returns any
 {
   declare st varchar;
-  if ((path <> '') and (path[length(path)-1] = 47))
-    st := 'C';
-  else
-    st := 'R';
+
+  st := DB.DBA.DAV_WHAT (path);
   return DAV_RDF_PROP_GET_INT (DAV_SEARCH_ID (path, st), st, single_schema, 1, auth_uname, auth_pwd);
 }
 ;
@@ -8268,7 +8345,7 @@ create function DAV_NOBODY_DIR_UPDATE ()
   if (isstring (registry_get ('DAV_NOBODY_DIR_UPDATE')))
     return;
 
-  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH (COL_ID) like '/DAV/home/nobody/%') do
+  for (select COL_ID as cid, COL_OWNER as uid, COL_GROUP as gid from WS.WS.SYS_DAV_COL where COL_FULL_PATH like '/DAV/home/nobody/%') do
   {
     changed := 0;
     if (uid = http_nobody_uid())
@@ -8337,7 +8414,7 @@ create table WS.WS.SYS_DAV_QUEUE (
 
   PRIMARY KEY (DQ_ID)
 )
-create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE)
+create index SYS_DAV_QUEUE_STATE ON WS.WS.SYS_DAV_QUEUE (DQ_STATE, DQ_PRIORITY)
 ;
 
 create table WS.WS.SYS_DAV_QUEUE_LCK (DQL_ID int primary key)
@@ -8422,6 +8499,7 @@ create procedure DB.DBA.DAV_QUEUE_CLEAR ()
 create procedure DB.DBA.DAV_QUEUE_GET (
   in _count integer)
 {
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_GET (', _count, ')');
   declare dummy, items any;
 
   if (_count <= 0)
@@ -8454,8 +8532,7 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
   declare dt datetime;
   declare dummy any;
 
-  retValue := 0;
-  if (is_atomic ())
+  if (is_atomic () or sys_stat ('srv_init'))
   {
     retValue := 1;
   }
@@ -8480,18 +8557,34 @@ create procedure DB.DBA.DAV_QUEUE_ACTIVE ()
 }
 ;
 
+create procedure DB.DBA.DAV_QUEUE_REQUEST (
+  in aq any,
+  in delayNumber integer,
+  in item any)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_REQUEST ()');
+  declare exit handler for sqlstate '*'
+  {
+    delay (delayNumber);
+    return -1;
+  };
+
+  return aq_request (aq, item[1], vector_concat (vector (item[0]), item[2]));
+}
+;
+
 create procedure DB.DBA.DAV_QUEUE_INIT (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_INIT ()');
   declare aq any;
 
-  if (not DB.DBA.DAV_QUEUE_ACTIVE ())
-  {
-    set_user_id ('dba');
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
-  }
+  if (DB.DBA.DAV_QUEUE_ACTIVE ())
+    return;
+
+  set_user_id ('dba');
+  aq := async_queue (1, 4);
+  aq_request (aq, 'DB.DBA.DAV_QUEUE_RUN', vector (0, _delay));
 }
 ;
 
@@ -8500,14 +8593,17 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, L, waited, threads integer;
+  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount integer;
   declare retValue, error any;
-  declare aq, item, items, threadsArray any;
+  declare aq, items, threadsArray any;
   declare exit handler for sqlstate '*'
   {
     log_message (sprintf ('%s exit handler:\n %s', current_proc_name (), __SQL_MESSAGE));
     resignal;
   };
+
+  if (is_atomic () or sys_stat ('srv_init'))
+    return;
 
   if (_delay)
     delay (_delay);
@@ -8516,71 +8612,86 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
 
-  aq := null;
-  threads := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
-  if (threads <= 0)
-    threads := 1;
+  threadsCount := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
+  if (threadsCount <= 0)
+    threadsCount := 1;
 
-_new_batch:;
-  items := DB.DBA.DAV_QUEUE_GET (threads);
-  L := length (items);
-  if (not L)
+  items := DB.DBA.DAV_QUEUE_GET (threadsCount);
+  itemsCount := length (items);
+  if (not itemsCount)
     goto _exit;
 
+  if (itemsCount < threadsCount)
+    threadsCount := itemsCount;
 
-  if (isnull (aq))
+  threadsArray := make_array (threadsCount, 'any');
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (L + 1 < threads)
-    {
-      threads := length (items) + 1;
-    }
-    aq := async_queue (threads, 4);
+    threadsArray[N] := -1;
   }
 
-  threadsArray := make_array (threads, 'any');
-  for (N := 0; N < threads; N := N + 1)
+  aq := async_queue (threadsCount, 4);
+
+  delayNumber := 1;
+  maxDelayNumber := 10;
+
+_start:;
+  newThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
-    if (N < L)
+    if ((threadsArray[N] < 0) and itemsCount)
     {
-      threadsArray[N] := aq_request (aq, items[N][1], vector_concat (vector (items[N][0]), items[N][2]));
-    }
-    else
-    {
-      threadsArray[N] := -1;
+      threadsArray[N] := DB.DBA.DAV_QUEUE_REQUEST (aq, delayNumber, items[0]);
+      if (threadsArray[N] >= 0)
+      {
+        items := subseq (items, 1);
+        itemsCount := itemsCount - 1;
+        newThreads := newThreads + 1;
+      }
     }
   }
 
 _again:;
-  commit work;
-
-  waited := 0;
-  for (N := 0; N < threads; N := N + 1)
+  freeThreads := 0;
+  for (N := 0; N < threadsCount; N := N + 1)
   {
     if (threadsArray[N] >= 0)
-	  {
+    {
       error := 0;
-	    retValue := aq_wait (aq, threadsArray[N], 0, error);
-	    if (retValue = 100 or error = 100) -- done
+      retValue := aq_wait (aq, threadsArray[N], 0, error);
+      if (retValue = 100 or error = 100) -- done
         threadsArray[N] := -1;
     }
     if (threadsArray[N] < 0)
-	  {
-      item := DB.DBA.DAV_QUEUE_GET (1);
-      if (length (item) = 1)
-     	  threadsArray[N] := aq_request (aq, item[0][1], vector_concat (vector (item[0][0]), item[0][2]));
-    }
-    if (threadsArray[N] >= 0)
-    {
-      waited := 1;
-    }
+      freeThreads := freeThreads + 1;
   }
-  if (waited)
+
+  delay (delayNumber);
+  if (freeThreads and itemsCount and (newThreads = 0))
   {
-    delay (1);
+    delayNumber := delayNumber + 1;
+    if (delayNumber > maxDelayNumber)
+    {
+      log_message ('WS.WS.SYS_DAV_QUEUE - exit: no free threads');
+      goto _exit;
+    }
+
+    goto _again;
+  }
+  else if (freeThreads = 0)
+  {
+    delay (delayNumber);
     goto _again;
   }
 
-  goto _new_batch;
+  if (not length (items))
+    items := DB.DBA.DAV_QUEUE_GET (freeThreads);
+
+  itemsCount := length (items);
+  if (not itemsCount)
+    goto _exit;
+
+  goto _start;
 
 _exit:;
   DB.DBA.DAV_QUEUE_CLEAR ();
@@ -8679,3 +8790,26 @@ create procedure DB.DBA.DAV_RDF_SINK_UPDATE (
 --!AFTER
 DB.DBA.DAV_RDF_SINK_UPDATE ()
 ;
+
+create procedure WS.WS.COL_PATH_FX (in _id any)
+{
+  declare _path, _name varchar;
+  declare _p_id integer;
+  _path := '/';
+  whenever not found goto nf;
+  while (_id > 0)
+    {
+      select COL_NAME, COL_PARENT into _name, _p_id from WS.WS.SYS_DAV_COL where COL_ID = _id;
+      if (_id = _p_id)
+	{
+	  return NULL;
+	}
+      _id := _p_id;
+      _path := concat ('/', _name, _path);
+    }
+  return _path;
+nf:
+  return NULL;
+}
+;
+

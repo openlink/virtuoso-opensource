@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1354,6 +1354,8 @@ ddl_create_key (query_instance_t * qi,
   char *szTheTableName;
   dk_set_t to_free = NULL;
 
+  if (n_parts > K_MAX_PARTS)
+    sqlr_new_error ("42S12", "SQ017", "Too many key parts");
   memcpy (parts_tmp, parts, box_length ((caddr_t) parts));
 
   qr_rec_exec (find_primary_stmt, cli, &lc_keys, qi, NULL, 1,
@@ -1811,12 +1813,77 @@ err_first_line (const char * text)
     }
   return text;
 }
+
+
 void
-ddl_ensure_table (const char *name, const char *text)
+ddl_ensure_table (const char *table, const char *text)
 {
   client_connection_t *old_cli = sqlc_client();
   sqlc_set_client (NULL);
-  if (!sch_name_to_table (wi_inst.wi_schema, name))
+  if (!sch_name_to_table (wi_inst.wi_schema, table))
+    {
+      caddr_t err = NULL;
+      query_t *obj_create = eql_compile_2 (text, bootstrap_cli, &err, SQLC_DEFAULT);
+      if (err)
+	{
+	  log_error ("Error compiling a server init statement : %s: %s -- %s",
+	      ((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		     err_first_line (text));
+	  sqlc_set_client (old_cli);
+	  dk_free_tree (err);
+	  return;
+	}
+      sqlc_set_client (bootstrap_cli);
+      first_id = DD_FIRST_PRIVATE_OID;
+      err = qr_quick_exec (obj_create, bootstrap_cli, "", NULL, 0);
+      if (err)
+	{
+	  if (err == (caddr_t) SQL_NO_DATA_FOUND)
+	    log_error ("Error executing a server init statement : NO DATA FOUND -- %s",
+		       err_first_line (text));
+	  else
+	    log_error ("Error executing a server init statement : %s: %s -- %s",
+		((caddr_t *) err)[QC_ERRNO], ((caddr_t *) err)[QC_ERROR_STRING],
+		       err_first_line (text));
+	  dk_free_tree (err);
+	  qr_free (obj_create);
+	  sqlc_set_client (old_cli);
+	  return;
+	}
+      qr_free (obj_create);
+
+      first_id = DD_FIRST_FREE_OID;
+      sqlc_set_client (old_cli);
+      local_commit (bootstrap_cli);
+    }
+  else
+    sqlc_set_client (old_cli);
+}
+
+
+void
+ddl_exec_init_stmt (const char *table, const char *text, const char *fname, const char *stmt)
+{
+  int64 ts, msec;
+
+  ts = rdtsc ();
+  ddl_ensure_table (table, text);
+  msec = (rdtsc () - ts) / 2000000;
+  if (log_sql_code_init && msec > (int64) log_sql_code_init)
+    {
+      log_debug ("%s %s: " BOXINT_FMT " msec", fname, stmt, msec);
+    }
+}
+
+
+void
+ddl_ensure_index (const char *table, const char * index_name, const char *text)
+{
+  client_connection_t *old_cli = sqlc_client();
+  sqlc_set_client (NULL);
+  dbe_table_t * tb = sch_name_to_table (wi_inst.wi_schema, table);
+  dbe_key_t * key = tb ? tb_find_key (tb, index_name, 0) : NULL;
+  if (!key)
     {
       caddr_t err = NULL;
       query_t *obj_create = eql_compile_2 (text, bootstrap_cli, &err, SQLC_DEFAULT);
@@ -2446,16 +2513,33 @@ ddl_table_and_subtables_changed (query_instance_t *qi, char *tb_name)
     }
 }
 
-
+int
+ddl_col_opt_set (caddr_t * col_def, caddr_t opt)
+{
+  caddr_t * col_meta = ARRAYP(col_def) && BOX_ELEMENTS_0(col_def) > 1 ? (caddr_t *)(col_def[1]) : NULL;
+  caddr_t * col_opts = ARRAYP(col_meta) && BOX_ELEMENTS_0(col_meta) > 1 ? (caddr_t *)(col_meta[1]) : NULL;
+  int inx;
+  if (!col_opts)
+    return 0;
+  DO_BOX (caddr_t, k, inx, col_opts)
+    {
+      caddr_t kn = ARRAYP(k) && BOX_ELEMENTS_0(k) > 0 ? ((caddr_t*)k)[0] : k;
+      if (opt == kn)
+        return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 void
-ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
+ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col, int if_not_exists)
 {
   caddr_t err;
   static query_t *add_col_proc;
   client_connection_t *cli = qi->qi_client;
-
+  dbe_column_t *col_ref;
   dbe_table_t *tb = qi_name_to_table (qi, table);
+  int not_empty;
 
   if (!add_col_proc)
     add_col_proc = sql_compile_static ("DB.DBA.add_col (?, ?,?)",
@@ -2463,10 +2547,16 @@ ddl_add_col (query_instance_t * qi, const char *table, caddr_t * col)
   if (!tb)
     sqlr_new_error ("42S02", "SQ018", "No table %s.", table);
   sql_error_if_remote_table (tb);
+  col_ref = tb_name_to_column (tb, col[0]);
+  if (col_ref && if_not_exists)
+    return;
+  not_empty = count_exceed (qi, tb->tb_name, 0, NULL);
+  if (not_empty && ddl_col_opt_set (col, (caddr_t)(ptrlong)COL_NOT_NULL) && !ddl_col_opt_set (col, (caddr_t)(ptrlong)COL_DEFAULT))
+    sqlr_new_error ("42000", "SQ018", "column '%s' of table '%s' contains null values", col[0], table);
   AS_DBA (qi, err = qr_rec_exec (add_col_proc, cli, NULL, qi, NULL, 3,
       ":0", (0 == strcmp (tb->tb_name, "DB.DBA.SYS_TRIGGERS")) ? "SYS_TRIGGERS" : tb->tb_name, QRP_STR,
       ":1", col[0], QRP_STR,
-			     ":2", box_copy_tree ((caddr_t) col), QRP_RAW));
+      ":2", box_copy_tree ((caddr_t) col), QRP_RAW));
 
   if (err != SQL_SUCCESS)
     {
@@ -2605,15 +2695,19 @@ ddl_modify_col (query_instance_t * qi, char *table, caddr_t * column)
 
 
 void
-ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col)
+ddl_drop_col (query_instance_t * qi, char *table, caddr_t * col, int if_exists)
 {
   static query_t *dc_qr;
   caddr_t err;
   dbe_table_t * tb;
+  dbe_column_t *col_ref;
 
   sql_error_if_remote_table (tb = qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+  col_ref = tb_name_to_column (tb, col);
+  if (!col_ref && if_exists)
+    return;
   AS_DBA (qi, err = qr_rec_exec (dc_qr, qi->qi_client, NULL, qi, NULL, 2,
       ":0", table, QRP_STR,
       ":1", col, QRP_STR));
@@ -3845,6 +3939,8 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	ST *prime = NULL;
 	int inx;
 	caddr_t *cols = (caddr_t *) tree->_.table_def.cols;
+	if (tree->_.table_def.if_not_exists && sch_name_to_table (wi_inst.wi_schema, tree->_.table_def.name))
+	  break;
 	for (inx = 0; ((uint32) inx) < BOX_ELEMENTS (cols); inx += 2)
 	  {
 	    if (!cols[inx])
@@ -3973,27 +4069,35 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 
 	tb = qi_name_to_table (qi, tree->_.index.table);
 	tb_name = tb ? tb->tb_name : tree->_.index.table;
-
+	if (tree->_.index.if_not_exists && sch_table_key (wi_inst.wi_schema, tb_name, tree->_.index.name, 0))
+	  break;
 	ddl_index_def (qi, tree->_.index.name, tb_name,
 	  tree->_.index.cols, tree->_.index.opts);
 	break;
       }
     case ADD_COLUMN:
-      ddl_add_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
+      ddl_add_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2, (int)(ptrlong)tree->_.op.arg_3);
       break;
     case MODIFY_COLUMN:
       ddl_modify_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
       break;
     case DROP_COL:
-      ddl_drop_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2);
+      ddl_drop_col (qi, tree->_.op.arg_1, (caddr_t *) tree->_.op.arg_2, (int)(ptrlong)tree->_.op.arg_3);
       break;
     case TABLE_RENAME:
       ddl_rename_table (qi, tree->_.op.arg_1, tree->_.op.arg_2);
       break;
     case INDEX_DROP:
-      ddl_drop_index (state, tree->_.op.arg_2, tree->_.op.arg_1, 1);
-      break;
+      {
+	key_id_t key_id = ddl_key_name_to_id (qi, tree->_.op.arg_1, NULL);
+	if (tree->_.op.arg_3 && !sch_id_to_key (wi_inst.wi_schema, key_id))
+	  break;
+	ddl_drop_index (state, tree->_.op.arg_2, tree->_.op.arg_1, 1);
+	break;
+      }
     case TABLE_DROP:
+      if (tree->_.op.arg_2 && !sch_name_to_table (wi_inst.wi_schema, tree->_.table_def.name))
+	break;
       ddl_drop_table (qi, tree->_.op.arg_1);
       break;
 
@@ -6185,15 +6289,15 @@ const char *proc_add_col_row =
 "  else prec := 0; \n"
 "  if (length (dtp) > 3 and isstring (dtp[3]))\n"
 "    _col_options := vector_concat (_col_options, vector ('sql_class', dtp[3]));\n"
-"  if (length (dtp) > 4 and __tag (dtp[4]) = 193) -- DV_ARRAY_OF_POINTER\n"
+"  if (length (dtp) > 4 and __tag (dtp[4]) = __tag of vector)\n"
 "    _col_options := vector_concat (_col_options, dtp[4]);\n"
 "  if (prec = 0 or prec is null) --- duplicate of ddl_dv_default_prec\n"
 "    { \n"
 "      prec := case aref (dtp, 0) \n"
-"	     when 189 then 10 \n"
+"	     when __tag of integer then 10 \n"
 "	     when 188 then 10 \n"
 "	     when 181 then 0 \n"
-"	     when 182 then 0 \n"
+"	     when __tag of varchar then 0 \n"
 "	     when 190 then 14 \n"
 "	     when 191 then 16 \n"
 "	     when 129 then 26 \n"
@@ -6289,6 +6393,7 @@ const char * wsst =
 "  __tc_no ('tws_cached_connection_hits');\n"
 "  __tc_no ('tws_cached_connection_miss');\n"
 "  __tc_no ('tws_bad_request');\n"
+"  __tc_no ('tws_max_connects');\n"
 "}\n";
 
 
@@ -6300,7 +6405,7 @@ const char * bm_proc_1 =
 "  whenever not found goto err;\n"
 "  select kp_col into last_col from sys_key_parts where kp_key_id = bm_id and kp_nth = (select max (kp_nth) from sys_key_parts where kp_key_id = bm_id);\n"
 "  select col_dtp into last_col_dtp from sys_cols where col_id = last_col;\n"
-"  if (position ('bitmap', opts) and last_col_dtp not in (189, 243, 244, 247))\n"
+"  if (position ('bitmap', opts) and last_col_dtp not in (__tag of integer, __tag of IRI_ID, __tag of IRI_ID_8, __tag of bigint))\n"
 "    signal ('42000', 'BM001: The last effective part of a bitmap index must be an int or iri_id');\n"
 "    update sys_keys set key_options = opts where key_id = bm_id;\n"
 "  return;\n"

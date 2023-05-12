@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -21,14 +21,6 @@
 --
 
 cl_exec ('registry_set (''fct_max_timeout'',''10000'')');
-
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/service');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/service', ppath=>'/SOAP/Http/fct_svc', soap_user=>'SPARQL');
-
--- http://{cname}/fct/search(?q,view:type,c-term,s-term,same-as,inference,offet,limit,graph)
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/search');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/search', ppath=>'/SOAP/Http/fct_search', soap_user=>'SPARQL');
-
 
 create procedure fct_init ()
 {
@@ -56,15 +48,12 @@ create procedure fct_svc_log (in qr varchar, in lines varchar)
 ;
 
 create procedure
-fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
+fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any, in xmlout int := 1)
 {
   declare start_time int;
   declare sqls, msg, qr, qr2, act varchar;
-  declare ret, md, res, xmlout any;
-
-  xmlout := 1;
-  if (accept like '%/sparql-results+%' or accept = 'application/json')
-    xmlout := 0;
+  declare ret, md, res any;
+  http_rewrite ();
   set result_timeout = timeout;
   sqls := '00000';
   ret := '';
@@ -105,6 +94,7 @@ fct_svc_exec (in tree any, in timeout int, in accept varchar, in lines any)
       tmp := string_output_string (ses);
       if (accept like '%/json' or accept like '%+json')
       	{
+          http_header ('Content-Type: application/json\r\n');
       	  tmp := rtrim (tmp, '}');
       	  tmp := tmp || sprintf (', "facets": { "sparql":"%s", "complete":"%s", "time":"%d",  "timeout":"%d", "db-activity":"%s" } }',
       	    replace (qr,'"', '\\"'), case when sqls = 'S1TAT' then 'no' else 'yes' end, msec_time () - start_time, timeout, act);
@@ -184,14 +174,17 @@ ret:
 
 create procedure fct_svc () __soap_http 'text/xml'
 {
-  declare cnt, tp, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
+  declare cnt, in_ctype, ret, timeout, xt, xslt, maxt, tmp, lines, accept any;
+  declare http_method varchar;
+  declare xmlout int;
 
   lines := http_request_header ();
-  tp := http_request_header (lines, 'Content-Type');
+  in_ctype := http_request_header (lines, 'Content-Type');
   accept := http_request_header_full (lines, 'Accept', '*/*');
   accept := DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (accept);
   set http_charset='utf-8';
-  if (tp <> 'text/xml' and tp <> 'application/json')
+
+  if (in_ctype <> 'text/xml' and in_ctype <> 'application/json')
     {
       http_status_set (500);
       http_header ('Content-Type: text/plain\r\n');
@@ -199,7 +192,7 @@ create procedure fct_svc () __soap_http 'text/xml'
     }
   cnt := http_body_read ();
 
-  if (tp = 'application/json')
+  if (in_ctype = 'application/json')
     cnt := json2xml (string_output_string (cnt));
 
 --  dbg_obj_print ('fct_svc');
@@ -210,7 +203,12 @@ create procedure fct_svc () __soap_http 'text/xml'
       http_status_set (500);
       ret := sprintf ('<error><code>%V</code><message>Error while executing query</message><diagnostics>%V</diagnostics></error>',
 	  __SQL_STATE, __SQL_MESSAGE);
-      goto ret;
+      if (accept = 'application/json')
+        {
+          http_header ('Content-Type: application/json\r\n');
+          ret := xml2json (ret);
+        }
+      return ret;
     };
   xt := xtree_doc (cnt);
   xslt := xslt (registry_get ('_fct_xslt_') || 'fct_req.xsl', xt);
@@ -224,22 +222,14 @@ create procedure fct_svc () __soap_http 'text/xml'
   maxt := atoi (registry_get ('fct_timeout_max'));
   if (0 >= timeout or timeout > maxt)
     timeout := maxt;
-  ret := fct_svc_exec (xslt, timeout, accept, lines);
-ret:
-  if (tp = 'application/json')
-    {
-      http_header ('Content-Type: application/json\r\n');
-      ret := xml2json (ret);
-    }
+  xmlout := 1;
+  if (accept like '%/sparql-results+%' or accept = 'application/json')
+    xmlout := 0;
+  ret := fct_svc_exec (xslt, timeout, accept, lines, xmlout);
   return ret;
 }
 ;
 
-grant execute on fct_svc to SPARQL_SELECT;
-grant execute on fct_search to SPARQL_SELECT;
-
-DB.DBA.VHOST_REMOVE (lpath=>'/fct/soap');
-DB.DBA.VHOST_DEFINE (lpath=>'/fct/soap', ppath=>'/SOAP/', soap_user=>'SPARQL');
 
 select DB.DBA.soap_dt_define ('',
 '<element xmlns="http://www.w3.org/2001/XMLSchema" name="facets" targetNamespace="http://openlinksw.com/services/facets/1.0/">
@@ -286,4 +276,3 @@ __SOAP_DOC 'http://openlinksw.com/services/facets/1.0/:facets'
 }
 ;
 
-grant execute on fct.fct.query to SPARQL_SELECT;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -693,7 +693,9 @@ lt_add_pl (lock_trx_t * lt, page_lock_t * pl, int flags)
   /* if the lt is a branch of a mt write txn, set the main branch as (co) owner of the pl.  If the main is not on, set the branch to uncommittable but still finish with the lock, setting it on the branch.  Return the lt that will own the rl or clk under the pl */
   int is_new_pl = 1 & flags;
   int has_txn = 0;
+#if 0
   if (QFID_HOST (lt->lt_trx_no) != local_cll.cll_this_host && !lt->lt_cl_enlisted) ltbing2 ();
+#endif
   if (PL_IS_PAGE (pl))
     {
       LT_ADD_CK_BRANCH;
@@ -1207,6 +1209,10 @@ pl_finalize_page (page_lock_t * pl, it_cursor_t * itc)
 	  pl_release (pl, lt, NULL);
 	  return;
 	}
+#if 0
+      if (131 == pl->pl_page)
+	bing ();
+#endif
       ITC_IN_KNOWN_MAP (itc, pl->pl_page);
       page_wait_access (itc, pl->pl_page, NULL, &buf, PA_WRITE, RWG_WAIT_KEY);
       /* when free remap we do same as on deleted */
@@ -1689,6 +1695,8 @@ aq_transact_func (caddr_t av, caddr_t * err_ret)
   if (lt != wi_inst.wi_cpt_lt && wi_inst.wi_checkpoint_atomic)
     log_error ("transact while cpt atomic, trx no: %d, ", lt->lt_trx_no);
   ITC_LEAVE_MAPS (itc);
+  /* check for itc_is_col is inside free */
+  itc_col_free (itc);
   return NULL;
 }
 
@@ -1757,7 +1765,7 @@ lt_transact (lock_trx_t * lt, int op)
       char user[16];
       char peer[32];
       dks_client_ip (lt->lt_client, from, user, peer, sizeof (from), sizeof (user), sizeof (peer));
-      log_info ("LTRS_1 %s %s %s %s transact %p %d " BOXINT_FMT, user, from, peer,
+      log_info ("LTRS_1 %s %s %s %s transact %p %d " BOXINT_FMTX, user, from, peer,
 	  op == SQL_COMMIT ? "Commit" : "Rollback", lt,
           lt->lt_client ? (int)lt->lt_client->cli_autocommit : 0, lt->lt_w_id);
     }

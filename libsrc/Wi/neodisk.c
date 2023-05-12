@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,7 @@
 extern long tc_atomic_wait_2pc;
 extern int32 enable_flush_all;
 extern long tc_n_flush;
-long atomic_cp_msecs;
+int64 atomic_cp_msecs;
 long tc_dirty_at_cpt_start;
 sys_timer_t sti_cpt_atomic;
 sys_timer_t sti_cpt_sync;
@@ -99,9 +99,9 @@ long busy_pre_image_scrap;
 
 
 
-int32  cp_is_over = 0;
+time_msec_t  cp_is_over = 0;
 #ifdef CHECKPOINT_TIMING
-long start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0;
+time_msec_t start_killing = 0, all_trx_killed = 0, cp_is_attomic = 0;
 #endif
 
 void
@@ -120,7 +120,7 @@ lt_rb_check (lock_trx_t * lt)
   END_DO_HT;
 }
 
-int enable_cpt_rb_ck = 0;
+int32 enable_cpt_rb_ck = 0;
 
 void
 cpt_rb_ck ()
@@ -191,8 +191,7 @@ cpt_rollback (int may_freeze)
 	      if (!lt_has_locks (lt))
 		break;
 	    }
-	  if (lt->lt_lw_threads
-	      && LT_KILL_FREEZE == may_freeze)
+	  if (lt->lt_lw_threads && LT_KILL_FREEZE == may_freeze)
 	    break;
 	  TC (tc_cpt_rollback);
 	  rdbg_printf (("trx %lx killed by checkpoint\n", lt));
@@ -1000,7 +999,7 @@ cpt_pl_restore (page_lock_t * pl, it_cursor_t * itc)
       return;
     }
   ITC_IN_KNOWN_MAP (itc, pl->pl_page);
-  itc_delta_this_buffer (itc, buf, 0);
+  itc_delta_this_buffer (itc, buf, DELTA_MAY_LEAVE);
   ITC_LEAVE_MAP_NC (itc);  rds = (row_delta_t **) list_to_array (dk_set_nreverse (rd_list));
   buf_sort ((buffer_desc_t **) rds, BOX_ELEMENTS (rds), (sort_key_func_t) rd_pos_key);
   page_apply (itc, buf, BOX_ELEMENTS (rds), rds, PA_MODIFY);
@@ -1173,7 +1172,7 @@ buf_unremap (buffer_desc_t * buf)
   em_free_dp (em, buf->bd_physical_page, EXT_REMAP);
   buf->bd_physical_page = buf->bd_page;
   remhash (DP_ADDR2VOID (buf->bd_page), cpt_dbs->dbs_cpt_remap);
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
   dp_set_backup_flag (cpt_dbs, buf->bd_page, 1);
   if (dbs_is_free_page (cpt_dbs, buf->bd_page))
     {
@@ -1310,7 +1309,7 @@ cpt_place_buffers ()
 	    GPF_T1 ("buf in cpt tree not supposed to be occupied");
 	  buf->bd_tree = NULL;
 	  buf->bd_page = 0;
-	  buf->bd_is_dirty = 0;
+          BUF_SET_IS_DIRTY(buf,0);
 	  buf->bd_storage = NULL;
 	}
       clrhash (&cpt_dbs->dbs_cpt_tree->it_maps[inx].itm_dp_to_buf);
@@ -1331,7 +1330,7 @@ cpt_unremap (dbe_storage_t * dbs, it_cursor_t * itc)
 {
   int bufs_done = 0, bufs_done_total, buf_quota = main_bufs / 4, target;
   dp_addr_t initial_remaps = 0;
-  uint32 start_unremap, end_unremap;
+  time_msec_t start_unremap, end_unremap;
   dk_set_t bufs_list = NULL;
   cpt_remap_reverse = hash_table_allocate (cpt_dbs->dbs_cpt_remap->ht_actual_size);
   cpt_remap_free_logical_pages = cpt_reamp_free_physical_pages = cpt_reamp_free_pages = 0;
@@ -1789,9 +1788,9 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 			cp_buf->bd_storage = dbs;
 			buf_disk_read (cp_buf);
 			cp_buf->bd_physical_page = logical;
-			cp_buf->bd_is_dirty = 1;
+                        BUF_SET_IS_DIRTY(cp_buf,1);
 			buf_disk_write (cp_buf, logical);
-			cp_buf->bd_is_dirty = 0;
+                        BUF_SET_IS_DIRTY(cp_buf,0);
 			npages ++;
 			em = dbs_dp_to_em (dbs, physical);
 			if (em)
@@ -1807,9 +1806,9 @@ dbs_cpt_recov (dbe_storage_t * dbs)
 		cp_buf->bd_physical_page = logical;
 		cp_buf->bd_storage = dbs;
 		/*fprintf (stderr, "**remap l=%d\n", logical);*/
-		cp_buf->bd_is_dirty = 1;
+                BUF_SET_IS_DIRTY(cp_buf,1);
 		buf_disk_write (cp_buf, logical);
-		cp_buf->bd_is_dirty = 0;
+                BUF_SET_IS_DIRTY(cp_buf,0);
 		unpages ++;
 		break;
 	      }
@@ -1933,12 +1932,10 @@ dbs_cpt_backup (void)
 	{
 	  print_int (0, ses);
 	  session_flush_1 (ses);
-	  LEAVE_TXN;
 	  dbs_recov_write_page_set (dbs, dbs->dbs_extent_set);
 	  dbs_cpt_recov_write_extents  (dbs);
 	  dbs_recov_write_page_set (dbs, dbs->dbs_free_set);
 	  dbs_recov_write_page_set (dbs, dbs->dbs_incbackup_set);
-	  IN_TXN;
 	  head = (caddr_t *)list (4, box_num (dbs->dbs_free_set->bd_page),
 				  box_num (dbs->dbs_incbackup_set->bd_page),
 				  box_num (dbs->dbs_registry), dbs_registry_to_array (dbs));
@@ -2024,7 +2021,7 @@ dbs_checkpoint (char *log_name, int shutdown)
   sys_timer_t _atm;
   char dt_start[DT_LENGTH];
   int mcp_delta_count, inx;
-  long start_atomic;
+  time_msec_t start_atomic;
   uint32 start;
   FILE *checkpoint_flag_fd = NULL;
   if (!c_checkpoint_sync)
@@ -2039,7 +2036,7 @@ dbs_checkpoint (char *log_name, int shutdown)
 	  float rate = 0;
 	  int n_dirty = dbs_dirty_count (), dirty_after;
 	  long n_flush = tc_n_flush;
-	  uint32 start = get_msec_real_time ();
+	  time_msec_t start = get_msec_real_time ();
 	  bp_flush (NULL, 1);
 	  start = get_msec_real_time () - start;
 	  dirty_after = dbs_dirty_count ();
@@ -2099,7 +2096,7 @@ dbs_checkpoint (char *log_name, int shutdown)
     if (checkpoint_flag_fd != NULL)
       {
 	fprintf(checkpoint_flag_fd,
-		"If this file exists then a checkpoint started at %d "
+		"If this file exists then a checkpoint started at " BOXINT_FMT " "
 		"and has not finished yet",
 		get_msec_real_time ());
 	fclose(checkpoint_flag_fd);

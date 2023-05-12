@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -912,8 +912,8 @@ t_list_cock (const char *file, int line)
   return t_list_impl;
 }
 
-
-#else
+#endif
+#undef t_list
 caddr_t *
 t_list (long n, ...)
 {
@@ -930,7 +930,6 @@ t_list (long n, ...)
   va_end (ap);
   return ((caddr_t *) box);
 }
-#endif
 
 caddr_t *
 t_list_nc (long n, ...)
@@ -1525,8 +1524,8 @@ mm_cache_init (size_t sz, size_t min, size_t max, int steps, float step)
       m *= step;
       mm_rc[inx] = resource_allocate (20, NULL, NULL, NULL, NULL);
       mutex_option (mm_rc[inx]->rc_mtx, "mm_rc", NULL, NULL);
-      mm_rc[inx]->rc_item_time = (uint32*)malloc (sizeof (int32) * mm_rc[inx]->rc_size);
-      memzero (mm_rc[inx]->rc_item_time, sizeof (int32) * mm_rc[inx]->rc_size);
+      mm_rc[inx]->rc_item_time = (time_msec_t *) malloc (sizeof (time_msec_t ) * mm_rc[inx]->rc_size);
+      memzero (mm_rc[inx]->rc_item_time, sizeof (time_msec_t) * mm_rc[inx]->rc_size);
       mm_rc[inx]->rc_max_size = MAX (2, sz / (mm_sizes[inx] * 2));
     }
   dk_mutex_init (&map_fail_mtx, MUTEX_TYPE_SHORT);
@@ -1793,7 +1792,7 @@ mp_munmap (void* ptr, size_t sz)
 #define MM_FREE_BATCH 100
 
 size_t
-mm_free_n  (int nth, size_t target_bytes, int age_limit, uint32 now)
+mm_free_n  (int nth, size_t target_bytes, int age_limit, time_msec_t now)
 {
   size_t total_freed = 0;
   int inx, fill;
@@ -1818,7 +1817,7 @@ mm_free_n  (int nth, size_t target_bytes, int age_limit, uint32 now)
 	    }
 	}
       rc->rc_fill -= fill;
-      memmove_16 (rc->rc_item_time, &rc->rc_item_time[fill], rc->rc_fill * sizeof (uint32));
+      memmove_16 (rc->rc_item_time, &rc->rc_item_time[fill], rc->rc_fill * sizeof (time_msec_t));
       mutex_leave (rc->rc_mtx);
       /* free from the recently returned but shift the times down so that the older blocks get a younger */
       for (inx = 0; inx < fill; inx++)
@@ -1834,7 +1833,7 @@ mm_cache_trim (size_t target_sz, int age_limit, int old_only)
 {
   int inx;
   float old_ratio;
-  uint32 now = approx_msec_real_time ();
+  time_msec_t now = approx_msec_real_time ();
   size_t bytes = 0, old_total = 0, total_freed = 0;
   size_t old_bytes[N_LARGE_SIZES];
   size_t to_free;
@@ -1852,10 +1851,10 @@ mm_cache_trim (size_t target_sz, int age_limit, int old_only)
       int inx2;
       resource_t * rc = mm_rc[inx];
       int fill = rc->rc_fill;
-      uint32 * times = rc->rc_item_time;
+      time_msec_t * times = rc->rc_item_time;
       for (inx2 = 0; inx2 < fill; inx2++)
 	{
-	  if (now - times[inx] >= age_limit)
+	  if (now - times[inx2] >= age_limit)
 	    {
 	      old_bytes[inx] += mm_sizes[inx];
 	      old_total += mm_sizes[inx];
@@ -2017,24 +2016,25 @@ mp_free_all_large (mem_pool_t * mp)
 void
 mp_large_report ()
 {
-  uint32 now = approx_msec_real_time ();
+  time_msec_t now = approx_msec_real_time ();
   int inx;
   int64 bytes = 0;
   for (inx = 0; inx < mm_n_large_sizes; inx++)
     {
-      int inx2, max_age = 0, min_age = INT32_MAX, age_sum = 0;
+      int inx2;
+      int64 max_age = 0, min_age = INT64_MAX, age_sum = 0;
       resource_t * rc = mm_rc[inx];
       int fill = rc->rc_fill;
       for (inx2 = 0; inx2 < fill; inx2++)
 	{
-	  int age = now - rc->rc_item_time[inx2];
+	  uint32 age = (uint32) (now - rc->rc_item_time[inx2]);
 	  if (age > max_age)
 	    max_age = age;
 	  if (age < min_age)
 	    min_age = age;
 	  age_sum += age;
 	}
-      printf ("size %lu fill %lu max %lu  gets %lu stores %lu full %lu empty %lu ages %d/%d/%d\n",
+      printf ("size %lu fill %lu max %lu  gets %lu stores %lu full %lu empty %lu ages " BOXINT_FMT "/" BOXINT_FMT "/" BOXINT_FMT "\n",
         (unsigned long)(mm_sizes[inx]), (unsigned long)(rc->rc_fill), (unsigned long)(rc->rc_size),
         (unsigned long)(rc->rc_gets), (unsigned long)(rc->rc_stores), (unsigned long)(rc->rc_n_full), (unsigned long)(rc->rc_n_empty),
 	      fill ? min_age : 0, fill ? age_sum / fill : 0, max_age);
@@ -2310,9 +2310,19 @@ caddr_t mp_full_box_copy_tree (mem_pool_t * mp, caddr_t box) { return dbg_mp_ful
 caddr_t mp_box_num (mem_pool_t * mp, boxint num) { return dbg_mp_box_num (__FILE__, __LINE__, mp, num); }
 #undef mp_box_iri_id
 caddr_t mp_box_iri_id (mem_pool_t * mp, iri_id_t num) { return dbg_mp_box_iri_id (__FILE__, __LINE__, mp, num); }
-#undef mp_box_double 
+#undef mp_box_double
 caddr_t mp_box_double (mem_pool_t * mp, double num) { return dbg_mp_box_double (__FILE__, __LINE__, mp, num); }
 #undef mp_box_float
 caddr_t mp_box_float (mem_pool_t * mp, float num) { return dbg_mp_box_float (__FILE__, __LINE__, mp, num); }
+#undef t_box_num
+caddr_t t_box_num (boxint n) { return dbg_t_box_num(__FILE__, __LINE__, n); }
+#undef t_box_double
+box_t t_box_double (double n) { return dbg_t_box_double(__FILE__, __LINE__, n); }
+#undef t_box_num_and_zero
+caddr_t t_box_num_and_zero (boxint n) { return dbg_t_box_num_and_zero(__FILE__, __LINE__, n); }
+#undef t_cons
+dk_set_t t_cons (void *car, dk_set_t cdr) { return dbg_t_cons (__FILE__, __LINE__, car, cdr); }
+#undef t_list_to_array
+caddr_t * t_list_to_array (dk_set_t list) { return dbg_t_list_to_array (__FILE__, __LINE__, list); }
 #endif
 

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -106,12 +106,14 @@
         <tr>
           <td colspan="2">
             <v:template type="simple" enabled="--case when (self.pack_ready = 1) then 1 else 0 end">
-            <v:button action="simple" value="Proceed">
+               <v:button action="simple" value="Proceed" enabled="--(case when (get_user() = 'dba') then 1 else 0 end)">
               <v:on-post>
                 <![CDATA[
                   declare state, message, meta, result any;
                   declare res varchar;
 
+                    if (get_user() <> 'dba')
+                      signal ('42000', 'VAD Installation must be done as DBA');
                   exec('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector(self.pack_path, self.pack_mode, 1), 0, meta, result);
 		  set_qualifier ('DB');
                     res := case when (result[0][0] <> '00000') then result[0][1] else 'Installation complete' end;

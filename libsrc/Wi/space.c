@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,14 +69,13 @@ it_cache_check (index_tree_t * it, int mode)
 	      /* This can be legitimate if a thread is in freeze mode and one itc is on a table scan and another is in order by or hash fill, so that the freeze is in the temp space operation . */
 	      /* error = 1; */
 	    }
-	  if (dbs_cache_check_enable && DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)
-	      && IT_CHECK_FAST != mode)
+	  if (dbs_cache_check_enable && (DPF_INDEX == SHORT_REF (buf->bd_buffer + DP_FLAGS)) && (IT_CHECK_FAST != mode))
 	    pg_check_map_1 (buf);
-	    if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
-	      {
-		log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
-		dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
-	      }
+          if (buf->bd_is_dirty && !gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
+            {
+              log_error ("Buffer %p dirty but no remap, tree %s", buf, it->it_key ? it->it_key->key_name : "no key");
+              dbg_page_map_log (buf, "missed_flush.txt", "Dirty page with no remap");
+            }
 	  if (((dp_addr_t) dp) != buf->bd_page)
 	    {
 	      log_error ("*** Buffer %p cache dp %ld buf dp %ld \n",
@@ -172,7 +171,7 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
 #endif
   if (gethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap))
     {
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
       return (buf);
     }
   if (it_can_reuse_logical (itc->itc_tree, buf->bd_page))
@@ -198,9 +197,8 @@ itc_delta_this_buffer (it_cursor_t * itc, buffer_desc_t * buf, int stay_in_map)
     }
 
   buf->bd_physical_page = remap_to;
-  sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap,
-	   DP_ADDR2VOID (remap_to));
-  buf->bd_is_dirty = 1;
+  sethash (DP_ADDR2VOID (buf->bd_page), &itm->itm_remap, DP_ADDR2VOID (remap_to));
+  BUF_SET_IS_DIRTY(buf,1);
   DBG_PT_DELTA_CLEAN (buf, old_dp);
   return buf;
 }

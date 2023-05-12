@@ -15,7 +15,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -55,7 +55,7 @@
   declare page, n_per_page, lim, ofs, dis_next, deadl int;
   declare vis, printed, _skip, _last int;
   declare all_lang any;
-  declare curr_pred any;
+  declare curr_pred, curr_flag any;
   declare dt1, dt2, count_str, tbinf, tbsas, ua, doc, sp_mode, sp_accept, view_mode varchar;
   declare c_iri_a any;
   declare gs_user_id, gs_check_needed integer;
@@ -68,6 +68,15 @@
   declare metas, rset any;
   declare auto_sponge_on_empty_graph int;
   declare q_txt any;
+  declare safetolink integer;
+
+  set http_charset='utf-8';
+  { 
+    --  catch error when using old binaries
+    declare continue handler for sqlstate '*';
+    --  always treat narrow string boxes as UTF-8 encoded
+    set http_in_charset='UTF-8';
+  }
 
   if (registry_get ('fct_auto_sponge') = '1')
     auto_sponge_on_empty_graph := 1;
@@ -153,7 +162,19 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-  gr := get_keyword ('g', params, '');
+
+  -- all possible inputs for IRI to be described
+  gr := get_keyword ('g', params);
+  if (gr is null)
+    gr := get_keyword ('url', params);
+  if (gr is null)
+    gr := get_keyword ('uri', params);
+
+  if (not length (gr))
+    {
+      gr := 'unknown';
+      err := 'An empty or invalid IRI requested.';
+    }
   gr := replace (gr, ' ', '%20');
 
   _F := ''; _from := null;
@@ -222,6 +243,11 @@ again:
   _S := page_resource_uri;
   proxy_iri := page_resource_uri;
 
+  safetolink:=0;
+  if(lower(rfc1808_parse_uri(page_resource_uri)[0]) in ('http','https','ftp')) {
+    safetolink:=1;
+  }
+
   b3s_dbg_out (dbg_out, 'page_resource_uri: ' || page_resource_uri);
   sp_mode := get_keyword ('sponger:get', params, 'add');
   sp_accept := get_keyword ('sponger:accept', params, '');
@@ -245,6 +271,8 @@ again:
   graph_perms_allow_sponge := sponge_request;
   view_mode := 'full';
   graph_perms := b3s_get_user_graph_permissions (_G, pageUrl, sponge_request, 0, NULL, NULL, graph_perms_allow_sponge, view_mode); 
+
+  b3s_dbg_out (dbg_out, 'effective user graph permissions: ' || sprintf('%d', graph_perms));
   if (view_mode = 'none')
   {
     -- User doesn't have read permission
@@ -271,31 +299,29 @@ again:
       http (' where { ?x ?y ?z . }', q_txt);
       DB.DBA.EXEC_AS (string_output_string (q_txt), 'SPARQL', 1);
 
-      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
-  -- else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null) and 0 = length (_F))
   else if ((get_keyword ('sr', params) is not null or get_keyword ('sponger:get', params) is not null))
     {
       declare refr varchar;
       if (get_keyword ('sr', params, '') = 'clean')
 	{
 	  refr := 0;
-	  if (exists (select 1 from SYS_HTTP_SPONGE where HS_ORIGIN_URI = doc))
+	  if (DB.DBA.SPONGER_DOCUMENT_IS_SPONGED (doc))
 	    {
-	      -- Checks whether any Sponger ACLs will prevent sponging, even if the user's graph permissions allow it. 
-              -- if (SPONGING_ALLOWED())  -- only available on develop/7.x branch
-	      {
-		-- We're user SPARQL at this point
-		DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%s>', _G), 'dba');
-	      }
+              -- We're user SPARQL at this point
+              DB.DBA.EXEC_AS (sprintf ('sparql clear graph <%s>', _G), 'dba');
             }
         }
       else
         refr := atoi (get_keyword ('sr', params, '0'));
 
+      declare exit handler for sqlstate '42000' {
+	 rollback work;
+	 err := 'No permissions to sponge.';
+	 goto errend;
+      };
       DB.DBA.EXEC_AS (sprintf ('sparql define get:error-recovery "signal" define input:storage "" define get:refresh "%d" define get:soft "%s" %s SELECT * from <%s> where { ?x ?y ?z . }', refr, sp_mode, sp_accept, _G), 'SPARQL', 1);
-      DB.DBA.VT_INC_INDEX_DB_DBA_RDF_OBJ ();
       sp_done := 1;
     }
     errend:;
@@ -309,7 +335,6 @@ again:
   --set_user_id (http_map_get ('vsp_uid'));
 
   odd_position := 0;
-  set http_charset='utf-8';
   set isolation = 'uncommitted';
 
   http_header ('Cache-Control: no-cache, must-revalidate\r\nPragma: no-cache\r\n');
@@ -414,10 +439,13 @@ again:
   if (not length (label))
     label := b3s_trunc_uri (page_resource_uri);
   if (vlbl <> 0) label := vlbl;
+  if (label like 'http%://%')
+    label := b3s_uri_percent_decode(label);
+
   declare desc_resource_uri varchar;
   declare desc_qr varchar;
   desc_qr := sprintf ('define sql:describe-mode "SPO" DESCRIBE <%s>', page_resource_uri);
-  desc_resource_uri := sprintf ('http://%{WSHost}s/sparql?query=%U&format=cxml', desc_qr);
+  desc_resource_uri := sprintf ('%s://%{WSHost}s/sparql?query=%U&format=cxml', protocol, desc_qr);
   --http_flush (1);
 
   declare plink_href varchar;
@@ -426,7 +454,7 @@ again:
 
   if (page is not null and page > 0)
     {
-      plink_href := concat (plink_href, sprintf ('&gp=%d&go=', page+1));
+      plink_href := concat (plink_href, sprintf ('&gp=%d&go=&lp=%d', page+1, _last));
     }
   if (connection_get ('inf') is not null)
     {
@@ -448,7 +476,7 @@ again:
 ?>
 <head>
     <base href="/fct/rdfdesc/" />
-    <title>About: <?vsp if (length (label)) http_value (label); else http_value (b3s_uri_curie (page_resource_uri));?></title>
+    <title>About: <?vsp if (length (label)) http_value (label); else http (b3s_uri_percent_decode(b3s_uri_curie (page_resource_uri)));?></title>
     <!--link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" /-->
 
     <?vsp
@@ -464,6 +492,11 @@ again:
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
     <script type="text/javascript" src="s/description.js"></script>
+
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
 <?vsp fct_links_mup (_S, rdf_link); ?>
 </head>
 <body about="<?V page_resource_uri ?>">
@@ -478,11 +511,11 @@ again:
       <?vsp } else { ?>
       <li><a href="/fct/">Facets (new session)</a></li>
       <?vsp } ?>
-      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?U b3s_u2w(_S) ?><?V ses_parms ?>" class="sel">Description</a></li>
+      <li id="mnu_descr" class="sel"><a href="/describe/?uri=<?U b3s_u2w(_S) ?><?V ses_parms ?>" class="sel" rel="nofollow">Description</a></li>
       <li id="mnu_usage">
-        <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">Metadata</a>
+        <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>" rel="nofollow">Metadata</a>
       </li>
-      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>">Settings</a>
+      <li id="mnu_settings"><a href="settings.vsp?g=<?U b3s_u2w(_S) ?><?V ses_parms ?>" rel="nofollow">Settings</a>
         <div id="settings_popup" style="display: none">
           <ul>
             <li>
@@ -500,20 +533,54 @@ again:
   </div> <!-- #HD -->
   <div id="MD">
     <div class="page_resource_info">
-	<h2>About: <a href="<?= case when page_resource_uri like
-    'nodeID://%' then b3s_http_url (page_resource_uri) else
-    page_resource_uri end ?>"><?vsp if (length(label)) http_value
-    (label); else http_value(b3s_uri_curie (page_resource_uri));
-    ?></a>&nbsp;&nbsp;&nbsp;<a class="desc_permalink" href="<?= case when page_resource_uri like
-    'nodeID://%' then b3s_http_url (page_resource_uri) else
-    page_resource_uri end ?>">Goto</a>&nbsp;<a class="desc_sponge_link"
-    href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
+
+    <h2>About:
+
+      <?vsp
+      if (safetolink > 0)
+        {
+          http(sprintf('<a href="%s">',
+	    case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end));
+
+	  if (length (label))
+	    http_value (label);
+	  else
+	    http (b3s_uri_percent_decode(b3s_uri_curie(page_resource_uri)));
+	  http ('</a>\n');
+        }
+      else
+        {
+	  if (length(label))
+	    http_value(label);
+	  else
+	    http (b3s_uri_curie(page_resource_uri));
+        }
+      ?>
+    <a href="">
+    </a>&nbsp;&nbsp;&nbsp;
+    <?vsp
+      if(safetolink>0) {
+        http(sprintf('<a class="desc_permalink" href="%s" rel="nofollow">Goto</a>\n',
+          case when page_resource_uri like 'nodeID://%' then b3s_http_url (page_resource_uri) else page_resource_uri end
+        ));
+      }
+    ?>
+    &nbsp;
+    <a class="desc_sponge_link" href="/describe/?url=<?U page_resource_uri ?><?= case when sid is
     not null then '&sid=' || sid end ?>&amp;sponger:get=add"
     title="Click to generate local descriptor data for this entity"
-    id="sp_link" rel="nofollow">Sponge</a>
-&nbsp;<a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&distinct=%d',  plink_href, equ (dist, 0)), lines)); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator"><?vsp if (dist) http ('Not'); ?>Distinct</a>
-&nbsp;<a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&distinct=%d', plink_href, dist), lines)); ?>">Permalink</a>
+        id="sp_link" rel="nofollow">Sponge
+    </a>
+    &nbsp;
+    <a class="desc_permalink" href="<?vsp http (fct_make_curie (sprintf ('%s&amp;distinct=%d',  plink_href, equ (dist, 0)), lines)); ?>" title="This link enables you toggle between normalized and un-normalized views of data using by applying or note applying a DISTINCT operator">
+    <?vsp if (dist) http ('Not'); ?>Distinct
+    </a>
+    &nbsp;
+    <a class="desc_permalink" href="<?vsp http(fct_make_curie (sprintf ('%s&amp;distinct=%d', plink_href, dist), lines)); ?>" rel="nofollow">Permalink
+    </a>
+
     </h2>
+
       <div class="ds_inf_info">
 	    An Entity of Type : <a href="<?V e_type ?>"><?V e_type_label ?></a>,
 	    within Data Space : <a href="http://<?V host ?>"><?V host ?></a> associated with source <a href="usage.vsp?g=<?U _S ?><?V ses_parms ?>">document(s)</a><br/>
@@ -667,6 +734,7 @@ if (_subject <> '') {
       -- dbg_obj_princ ('qry_str = ', qry_str);
       exec (qry_str, null, null, vector (), 0, null, null, h1);
       curr_pred := '';
+      curr_flag := 0;
       inx := 0;
       data := null;
       while (0 = exec_next (h1, null, null, data))
@@ -682,11 +750,12 @@ if (_subject <> '') {
 	   if (not length (PRED))
 	     goto nxt1;
 
-	   if (curr_pred <> pred)
+	   if (curr_pred <> pred or curr_flag <> FLAG)
 	     {
                if (curr_pred <> '') http ('</ul></td></tr>');
 	       b3s_http_print_l (PRED, odd_position, flag, sid, langs);
 	       curr_pred := pred;
+               curr_flag := FLAG;
 	     }
            vis := b3s_http_print_r (OBJECT, sid, PRED, langs, 1, all_langs, _from, FLAG);
 	   nxt1:;
@@ -741,6 +810,9 @@ if (_subject <> '') {
 	      <input type="hidden" name="url" value="<?V page_resource_uri ?>" />
               <input type="submit" name="go" value="Go" style="width: 0px; height: 0px; margin: 0px; padding: 0px; outline: none; border: 0px;" />
 	      <input type="hidden" name="distinct" value="<?V dist ?>" />
+	      <?vsp if (length(lang_parm) > 0) { ?>
+	      <input type="hidden" name="lang" value="<?V lang_parm ?>" />
+	      <?vsp } ?>
 	      <?vsp if (connection_get ('inf') is not null) { ?>
 	      <input type="hidden" name="inf" value="<?V connection_get ('inf') ?>" />
 	      <?vsp } ?>
@@ -815,7 +887,7 @@ if (_subject <> '') {
 	<a href="/PivotViewer/?url=<?vsp http_url (desc_resource_uri); ?>" title="PivotViewer page for exploring results and generating new queries (Silverlight)" target="_blank">PivotViewer</a> 
 	|
 	<?vsp } ?>
-	<?vsp if (VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
+	<?vsp if (0 and VAD_CHECK_VERSION ('rdf_mappers') is not null) { ?>
 	<a href="<?vsp http (rdfdesc_http_url (page_resource_uri)); ?>" target="_blank">Sponger</a>
 	|
 	<?vsp } ?>
@@ -826,20 +898,20 @@ if (_subject <> '') {
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
 
         &nbsp; &nbsp; Content Formats: &nbsp; 
-	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img src="/fct/images/cxml_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img src="/fct/images/csv_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img alt="[cxml]" src="/fct/images/cxml_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img alt="[csv]" src="/fct/images/csv_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; RDF &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img src="/fct/images/ntriples_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img src="/fct/images/jsonld_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img src="/fct/images/xml_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img alt="[text]" src="/fct/images/ntriples_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/turtle') ?>"><img alt="[turtle]" src="/fct/images/n3turtle_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/ld+json')?>"><img alt="[ld+json]" src="/fct/images/jsonld_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+json')?>"><img alt="[rdf+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/rdf+xml') ?>"><img alt="[rdf+xml]" src="/fct/images/xml_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; ODATA &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img src="/fct/images/atom_doc.png" class="dicon"/></a> 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/atom+xml')?>"><img alt="[atom+xml]" src="/fct/images/atom_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/odata+json')?>"><img alt="[odata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; Microdata &nbsp; 
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img src="/fct/images/json_doc.png" class="dicon"/></a>
-	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img src="/fct/images/html_doc.png" class="dicon"/></a>  
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'application/microdata+json') ?>"><img alt="[microdata+json]" src="/fct/images/json_doc.png" class="dicon"/></a>
+	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/html') ?>"><img alt="[html]" src="/fct/images/html_doc.png" class="dicon"/></a>
         &nbsp; &nbsp;<a href="/fct/facet_doc.html">About</a>&nbsp; &nbsp;
       </div> <!-- #ft_t -->
       <div id="ft_b">
@@ -854,6 +926,7 @@ if (_subject <> '') {
 	    src="//www.w3.org/Icons/valid-xhtml-rdfa"
 	    alt="Valid XHTML + RDFa" height="27" /></a>
 	</span>
+<?vsp fct_cctr(); ?>
 	<br />
 	<?vsp fct_virt_info (); ?><br />
 	<?vsp

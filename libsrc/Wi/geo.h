@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -385,6 +385,10 @@ EXE_EXPORT (void, geo_modify_by_translate, (geo_t *g, geoc dX, geoc dY, geoc dZ)
 EXE_EXPORT (void, geo_modify_by_transscale, (geo_t *g, geoc dX, geoc dY, geoc Xfactor, geoc Yfactor));
 EXE_EXPORT (void, geo_modify_by_affine2d, (geo_t *g, geoc XXa, geoc XYb, geoc YXd, geoc YYe, geoc Xoff, geoc Yoff));
 
+typedef caddr_t geo_pred_t (geo_t * g1, geo_t * g2, int op, double prec);
+extern geo_pred_t *geo_fallback_pred_cbk;
+EXE_EXPORT (void, geo_set_fallback_pred_cbk, (geo_pred_t *cbk));
+
 typedef geo_t *geo_srid_transform_cbk_t (caddr_t *qst, geo_t *g, int dest_srid, caddr_t *err_ret);
 extern geo_srid_transform_cbk_t *geo_default_srid_transform_cbk;
 EXE_EXPORT (void, geo_set_default_srid_transform_cbk, (geo_srid_transform_cbk_t *cbk));
@@ -473,7 +477,7 @@ typedef uint64 geo_de9im_matrix_t;	/*!< An encoded DE9IM value or suboperation m
 #define GEO_DE9IM_BE		2
 #define GEO_DE9IM_EI		1
 #define GEO_DE9IM_EB		0
-#define GEO_DE9IM_EE		-1 /* EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
+#define GEO_DE9IM_EE		-1	/*!< EE is always GEO_DE9IM_HAS_AREA so there's no need to store it */
 #define GEO_DE9IM_TOTALBITS	64
 
 /* Hex notation of a mask code is readed left to right, two hex digits per cell.

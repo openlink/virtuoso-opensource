@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -141,9 +141,9 @@ public class VirtuosoConnection implements Connection
    protected Hashtable<String,Integer> rdf_type_rev = null;
    protected Hashtable<String,Integer> rdf_lang_rev = null;
 
-  private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
-  private boolean  useCachePrepStatements = false;
-  private Vector<VhostRec> hostList = new Vector<VhostRec>();
+   private LRUCache<String,VirtuosoPreparedStatement> pStatementCache;
+   private boolean  useCachePrepStatements = false;
+   private Vector<VhostRec> hostList = new Vector<VhostRec>();
    protected boolean rdf_type_loaded = false;
    protected boolean rdf_lang_loaded = false;
 
@@ -152,9 +152,19 @@ public class VirtuosoConnection implements Connection
    private static final SQLPermission ABORT_PERM = new SQLPermission("abort");
 #endif
 
-  private boolean useRoundRobin;
-  // The pingStatement to know if the connection is still available
-  private Statement pingStatement = null;
+   private boolean useRoundRobin;
+
+   private boolean oAutoCommit;
+   private int oTxnIsolation;
+   private boolean oReadOnly;
+   private int oNetworkTimeout;
+   private int oHoldability;
+   private String oCatalog;
+   private volatile SQLWarning oSqlWarnings;
+   private boolean oUseCachePrepStatements;
+   private HashMap<VirtuosoStatement,Object> objsToClose = new HashMap<VirtuosoStatement,Object>();
+   private volatile int requestStarted = 0;
+
 
 
    protected class VhostRec
@@ -272,7 +282,7 @@ public class VirtuosoConnection implements Connection
       }
       user = (String)prop.get("user");
       if(user == null || user.equals(""))
-         user = "anonymous";
+         user = "";
       password = (String)prop.get("password");
       if (password == null)
          password = "";
@@ -321,16 +331,16 @@ public class VirtuosoConnection implements Connection
 
       // Connect to the database
       connect(host,port,(String)prop.get("database"), sendbs, recvbs, (prop.get("log_enable") != null ? (Integer.parseInt(prop.getProperty("log_enable"))) : -1));
-
-      pingStatement = createStatement();
    }
 
    public synchronized boolean isConnectionLost(int timeout_sec)
    {
      ResultSet rs = null;
+     Statement st = null;
      try{
-	pingStatement.setQueryTimeout(timeout_sec);
-        rs = pingStatement.executeQuery("select 1");
+        st = createStatement();
+	st.setQueryTimeout(timeout_sec);
+        rs = st.executeQuery("select 1");
         return false;
      } catch (Exception e ) {
         return true;
@@ -338,6 +348,10 @@ public class VirtuosoConnection implements Connection
        if (rs!=null)
          try{
            rs.close();
+         } catch(Exception e){}
+       if (st!=null)
+         try{
+           st.close();
          } catch(Exception e){}
      }
    }
@@ -455,11 +469,11 @@ public class VirtuosoConnection implements Connection
    {
        Object[] ret = new Object[7];
        ret[0] = new String ("JDBC");
-       ret[1] = new Integer (0);
+       ret[1] = Integer.valueOf(0);
        ret[2] = new String ("");
        ret[3] = System.getProperty("os.name");
        ret[4] = new String ("");
-       ret[5] = new Integer (0);
+       ret[5] = Integer.valueOf(0);
        //System.out.println (con_delegate);
        ret[6] = new String (con_delegate != null ? con_delegate : "");
        return ret;
@@ -489,20 +503,20 @@ public class VirtuosoConnection implements Connection
       {
          // Establish the connection
         if(use_ssl || truststore_path != null || keystore_path != null)
-	  {
-	    //System.out.println ("Will do SSL");
+          {
+               //System.out.println ("Will do SSL");
                if (ssl_provider != null && ssl_provider.length() != 0) {
-		//System.out.println ("SSL Provider " + ssl_provider);
-		Security.addProvider((Provider)(Class.forName(ssl_provider).newInstance()));
-	      }
+                   //System.out.println ("SSL Provider " + ssl_provider);
+                   Security.addProvider((Provider) (Class.forName(ssl_provider).newInstance()));
+               }
 
                SSLContext ssl_ctx = SSLContext.getInstance("TLS");
                X509TrustManager tm = new VirtX509TrustManager();
-		KeyManager []km = null;
+               KeyManager[] km = null;
                TrustManager[] tma = null;
                KeyStore tks = null;
 
-               if (truststore_path.length() > 0) {
+               if (truststore_path != null && truststore_path.length() > 0) {
                    InputStream fis = null;
                    String keys_pwd = (truststore_pass != null) ? truststore_pass : "";
                    String alg = TrustManagerFactory.getDefaultAlgorithm();
@@ -527,8 +541,8 @@ public class VirtuosoConnection implements Connection
                                i++;
                              }
                            }
-	      }
-	    else
+                       }
+                     else
                        tks.load(fis, keys_pwd.toCharArray());
 
                    } finally {
@@ -543,22 +557,22 @@ public class VirtuosoConnection implements Connection
                    tma = new TrustManager[]{tm};
                }
 
-               if (keystore_path.length() > 0 && keystore_pass.length() > 0) {
+               if (keystore_path != null && keystore_path.length() > 0 && keystore_pass.length() > 0) {
                    String keys_file = (keystore_path != null) ? keystore_path : System.getProperty("user.home") + System.getProperty("file.separator");
                    String keys_pwd = (keystore_pass != null) ? keystore_pass : "";
 
                    fname = keys_file;
                    km = new KeyManager[]{new VirtX509KeyManager(cert_alias, keys_file, keys_pwd, tks)};
-	      }
+               }
 
                ssl_ctx.init(km, tma, new SecureRandom());
 
                socket = ((SSLSocketFactory) ssl_ctx.getSocketFactory()).createSocket(host, port);
-	    ((SSLSocket)socket).startHandshake();
+               ((SSLSocket)socket).startHandshake();
 
-	  }
-	else
-	 socket = new Socket(host,port);
+          }
+        else
+	      socket = new Socket(host,port);
 
 	 if (timeout > 0)
 	   socket.setSoTimeout(timeout);
@@ -582,7 +596,7 @@ public class VirtuosoConnection implements Connection
 	       {
 		 openlink.util.Vector caller_id_opts = (openlink.util.Vector)result_future.elementAt(2);
 		 //System.err.println ("caller_id_opts is " + caller_id_opts.toString());
-		 int pwd_clear_code = (int) cdef_param (caller_id_opts, "SQL_ENCRYPTION_ON_PASSWORD", -1);
+		 int pwd_clear_code = (int) cdef_param (caller_id_opts, "SQL_ENCRYPTION_ON_PASSWORD", 3);
 		 switch (pwd_clear_code)
 		   {
 		     case 1: pwdclear = "cleartext"; break;
@@ -654,15 +668,15 @@ public class VirtuosoConnection implements Connection
 				   {
 				     //System.err.println ("Mapping1 " + ((int)table.charAt(i)) + "=" + (i + 1));
 				     client_charset_hash.put (
-					 new Character (table.charAt(i)),
-					 new Byte ((byte) (i + 1)));
+					 Character.valueOf (table.charAt(i)),
+					 Byte.valueOf ((byte) (i + 1)));
 				   }
 				 else
 				   {
 				     //System.err.println ("Mapping2 " + (i + 1) + "=" + (i + 1));
 				     client_charset_hash.put (
-					 new Character ((char) (i + 1)),
-					 new Byte ((byte) (i + 1)));
+					 Character.valueOf ((char) (i + 1)),
+					 Byte.valueOf ((byte) (i + 1)));
 				   }
 			       }
 			   }
@@ -703,7 +717,7 @@ public class VirtuosoConnection implements Connection
 			       "but processing character escapes also disabled",
 			       VirtuosoException.MISCERROR);
 			 //System.err.println ("version=[" + version + " ver=" + version.substring (6, 10));
-			 //if ((new Integer (version.substring (6, 10))).intValue() > 2143)
+			 //if ((Integer.valueOf(version.substring (6, 10))).intValue() > 2143)
 			 //  utf8_execs = true;
 
 			 timezoneless_datetimes = (int) cdef_param (client_defaults, "SQL_TIMEZONELESS_DATETIMES", 0);
@@ -862,7 +876,7 @@ public class VirtuosoConnection implements Connection
      // Create a VirtuosoFuture instance
      fut = new VirtuosoFuture(this,rpcname,args,this_req_no, timeout);
      // Set the request id and put it into the hash table
-     futures.put(new Integer(this_req_no),fut);
+     futures.put(Integer.valueOf(this_req_no),fut);
      return fut;
    }
 
@@ -883,7 +897,7 @@ public class VirtuosoConnection implements Connection
    protected void removeFuture(VirtuosoFuture fut)
    {
      if (futures != null)
-       futures.remove(new Integer(fut.hashCode()));
+       futures.remove(Integer.valueOf(fut.hashCode()));
    }
 
    /**
@@ -940,7 +954,7 @@ public class VirtuosoConnection implements Connection
 	   return false;
 	 // Then put the message into the corresponding future queue
 	 //System.out.println("---------------> read_reqest for "+((Number)result.elementAt(1)).intValue());
-	 VirtuosoFuture fut = (VirtuosoFuture)futures.get(new Integer(((Number)result.elementAt(1)).intValue()));
+	 VirtuosoFuture fut = (VirtuosoFuture)futures.get(Integer.valueOf(((Number)result.elementAt(1)).intValue()));
 	 if(fut == null)
 	   return false;
 	 fut.putResult(result.elementAt(2));
@@ -1004,7 +1018,7 @@ public class VirtuosoConnection implements Connection
      {
        try
 	 {
-	   return (new Integer (version.substring (6, 10))).intValue();
+	   return (Integer.valueOf(version.substring (6, 10))).intValue();
 	 }
        catch (Exception e)
 	 {
@@ -1106,7 +1120,7 @@ public class VirtuosoConnection implements Connection
       {
 	// RPC transaction
 	Object[] args = new Object[2];
-	args[0] = new Long(VirtuosoTypes.SQL_COMMIT);
+	args[0] = Long.valueOf(VirtuosoTypes.SQL_COMMIT);
 	args[1] = null;
 	VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
 	openlink.util.Vector trsres = fut.nextResult();
@@ -1287,7 +1301,7 @@ public class VirtuosoConnection implements Connection
       {
          // RPC transaction
          Object[] args = new Object[2];
-         args[0] = new Long(VirtuosoTypes.SQL_ROLLBACK);
+         args[0] = Long.valueOf(VirtuosoTypes.SQL_ROLLBACK);
          args[1] = null;
          VirtuosoFuture fut = getFuture(VirtuosoFuture.transaction,args, this.timeout);
          openlink.util.Vector trsres = fut.nextResult();
@@ -1340,7 +1354,11 @@ public class VirtuosoConnection implements Connection
     */
    public Statement createStatement(int resultSetType, int resultSetConcurrency) throws VirtuosoException
    {
-      return new VirtuosoStatement(this,resultSetType,resultSetConcurrency);
+      VirtuosoStatement stmt = new VirtuosoStatement(this,resultSetType,resultSetConcurrency);
+      if (requestStarted != 0)
+        addStmtToClose(stmt);
+
+      return stmt;
    }
 
    /**
@@ -1360,7 +1378,11 @@ public class VirtuosoConnection implements Connection
     */
    public CallableStatement prepareCall(String sql, int resultSetType, int resultSetConcurrency) throws VirtuosoException
    {
-      return new VirtuosoCallableStatement(this,sql,resultSetType,resultSetConcurrency);
+      VirtuosoCallableStatement stmt = new VirtuosoCallableStatement(this,sql,resultSetType,resultSetConcurrency);
+      if (requestStarted != 0)
+        addStmtToClose((VirtuosoStatement)stmt);
+
+      return stmt;
    }
 
    /**
@@ -1382,8 +1404,8 @@ public class VirtuosoConnection implements Connection
     */
    public PreparedStatement prepareStatement(String sql, int resultSetType, int resultSetConcurrency) throws VirtuosoException
    {
+     VirtuosoPreparedStatement ps = null;
      if (useCachePrepStatements) {
-       VirtuosoPreparedStatement ps = null;
        synchronized(pStatementCache) {
          ps = pStatementCache.remove(""+resultSetType+"#"
                                        +resultSetConcurrency+"#"
@@ -1397,13 +1419,15 @@ public class VirtuosoConnection implements Connection
            ps.isCached = true;
          }
        }
-       return ps;
-
      }
      else
      {
-       return new VirtuosoPreparedStatement(this,sql,resultSetType,resultSetConcurrency);
+       ps = new VirtuosoPreparedStatement(this,sql,resultSetType,resultSetConcurrency);
      }
+
+     if (requestStarted != 0)
+       addStmtToClose((VirtuosoStatement)ps);
+     return ps;
    }
 
    // --------------------------- Object ------------------------------
@@ -2458,7 +2482,185 @@ public class VirtuosoConnection implements Connection
   }
 
 
+    // JDBC 4.3
+
+     /**
+     * Hints to the driver that a request, an independent unit of work, is beginning
+     * on this connection. Each request is independent of all other requests
+     * with regard to state local to the connection either on the client or the
+     * server. Work done between {@code beginRequest}, {@code endRequest}
+     * pairs does not depend on any other work done on the connection either as
+     * part of another request or outside of any request. A request may include multiple
+     * transactions. There may be dependencies on committed database state as
+     * that is not local to the connection.
+     * <p>
+     * Local state is defined as any state associated with a Connection that is
+     * local to the current Connection either in the client or the database that
+     * is not transparently reproducible.
+     * <p>
+     * Calls to {@code beginRequest} and {@code endRequest}  are not nested.
+     * Multiple calls to {@code beginRequest} without an intervening call
+     * to {@code endRequest} is not an error. The first {@code beginRequest} call
+     * marks the start of the request and subsequent calls are treated as
+     * a no-op
+     * <p>
+     * Use of {@code beginRequest} and {@code endRequest} is optional, vendor
+     * specific and should largely be transparent. In particular
+     * implementations may detect conditions that indicate dependence on
+     * other work such as an open transaction. It is recommended though not
+     * required that implementations throw a {@code SQLException} if there is an active
+     * transaction and {@code beginRequest} is called.
+     * Using these methods may improve performance or provide other benefits.
+     * Consult your vendors documentation for additional information.
+     * <p>
+     * It is recommended to
+     * enclose each unit of work in {@code beginRequest}, {@code endRequest}
+     * pairs such that there is no open transaction at the beginning or end of
+     * the request and no dependency on local state that crosses request
+     * boundaries. Committed database state is not local.
+     *
+     * @implSpec
+     * The default implementation is a no-op.
+     *
+     * @apiNote
+     * This method is to be used by Connection pooling managers.
+     * <p>
+     * The pooling manager should call {@code beginRequest} on the underlying connection
+     * prior to returning a connection to the caller.
+     * <p>
+     * The pooling manager does not need to call {@code beginRequest} if:
+     * <ul>
+     * <li>The connection pool caches {@code PooledConnection} objects</li>
+     * <li>Returns a logical connection handle when {@code getConnection} is
+     * called by the application</li>
+     * <li>The logical {@code Connection} is closed by calling
+     * {@code Connection.close} prior to returning the {@code PooledConnection}
+     * to the cache.</li>
+     * </ul>
+     * @throws SQLException if an error occurs
+     * @since 9
+     * @see endRequest
+     * @see javax.sql.PooledConnection
+     */
+    public synchronized void beginRequest() throws SQLException {
+      if (requestStarted == 0) {
+          oAutoCommit = getAutoCommit();
+          oTxnIsolation = getTransactionIsolation();
+          oReadOnly = isReadOnly();
+          oNetworkTimeout = getNetworkTimeout();
+          oHoldability = getHoldability();
+          oCatalog = getCatalog();
+          oSqlWarnings = getWarnings();
+          clearCache();
+          oUseCachePrepStatements = useCachePrepStatements;
+          requestStarted = 1;
+      }
+    }
+
+    /**
+     * Hints to the driver that a request, an independent unit of work,
+     * has completed. Calls to {@code beginRequest}
+     * and {@code endRequest} are not nested. Multiple
+     * calls to {@code endRequest} without an intervening call to {@code beginRequest}
+     * is not an error. The first {@code endRequest} call
+     * marks the request completed and subsequent calls are treated as
+     * a no-op. If {@code endRequest} is called without an initial call to
+     * {@code beginRequest} is a no-op.
+     *<p>
+     * The exact behavior of this method is vendor specific. In particular
+     * implementations may detect conditions that indicate dependence on
+     * other work such as an open transaction. It is recommended though not
+     * required that implementations throw a {@code SQLException} if there is an active
+     * transaction and {@code endRequest} is called.
+     *
+     * @implSpec
+     * The default implementation is a no-op.
+     * @apiNote
+     *
+     * This method is to be used by Connection pooling managers.
+     * <p>
+     * The pooling manager should call {@code endRequest} on the underlying connection
+     * when the applications returns the connection back to the connection pool.
+     * <p>
+     * The pooling manager does not need to call {@code endRequest} if:
+     * <ul>
+     * <li>The connection pool caches {@code PooledConnection} objects</li>
+     * <li>Returns a logical connection handle when {@code getConnection} is
+     * called by the application</li>
+     * <li>The logical {@code Connection} is closed by calling
+     * {@code Connection.close} prior to returning the {@code PooledConnection}
+     * to the cache.</li>
+     * </ul>
+     * @throws SQLException if an error occurs
+     * @since 9
+     * @see beginRequest
+     * @see javax.sql.PooledConnection
+     */
+    public synchronized void endRequest() throws SQLException {
+      if (requestStarted != 0) {
+        synchronized(this) {
+          if (!oAutoCommit) {
+              rollback();
+          }
+          if (getAutoCommit() != oAutoCommit) {
+              setAutoCommit(oAutoCommit);
+          }
+          if (getTransactionIsolation() != oTxnIsolation) {
+              setTransactionIsolation(oTxnIsolation);
+          }
+          if (isReadOnly() != oReadOnly) {
+              setReadOnly(oReadOnly);
+          }
+          if (getNetworkTimeout() != oNetworkTimeout) {
+              setNetworkTimeout(null, oNetworkTimeout);
+          }
+          if (getHoldability() != oHoldability) {
+              setHoldability(oHoldability);
+          }
+          if (!getCatalog().equals(oCatalog)) {
+              setCatalog(oCatalog);
+          }
+          warning = oSqlWarnings;
+          useCachePrepStatements = oUseCachePrepStatements;
+
+          clearCache();
+
+          requestStarted = 0;
+        }
+
+        if (!objsToClose.isEmpty()) {
+          synchronized (objsToClose) {
+            HashMap<VirtuosoStatement,Object> list = (HashMap<VirtuosoStatement,Object>)objsToClose.clone();
+            for (Iterator<VirtuosoStatement> i = list.keySet().iterator(); i.hasNext(); )
+              try {
+                i.next().close();
+              } catch(Exception e) { }
+            objsToClose.clear();
+          }
+        }
+      }
+    }
+
 #endif
+
+  protected void addStmtToClose(VirtuosoStatement obj)
+  {
+     if (requestStarted != 0) {
+       synchronized (objsToClose) {
+         objsToClose.put(obj, null);
+       }
+     }
+  }
+
+
+  protected void removeStmtFromClose(VirtuosoStatement obj)
+  {
+     if (!objsToClose.isEmpty()) {
+       synchronized (objsToClose) {
+         objsToClose.remove(obj);
+       }
+     }
+  }
 
 
   private void abortInternal() throws java.sql.SQLException
@@ -2499,6 +2701,27 @@ public class VirtuosoConnection implements Connection
 	  return remove;
 	}
     };
+  }
+
+  private void clearCache() 
+  {
+    if (useCachePrepStatements) {
+      synchronized (pStatementCache) {
+        VirtuosoPreparedStatement ps = null;
+
+        for (Iterator<VirtuosoPreparedStatement> i = pStatementCache.values().iterator(); i.hasNext(); ) {
+          ps = i.next();
+          if (ps != null) {
+            ps.isCached = false;
+            ps.setClosed(false);
+            try {
+              ps.close();
+            } catch(Exception e) { }
+          }
+        }
+        pStatementCache.clear();
+      }
+    }
   }
 
 

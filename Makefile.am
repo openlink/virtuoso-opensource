@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -35,11 +35,12 @@ dist_doc_DATA = \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE \
 	$(srcdir)/LICENSE.md \
-	$(srcdir)/NEWS \
+	$(srcdir)/SECURITY.md \
 	$(srcdir)/NEWS.md \
-	$(srcdir)/README \
-	$(srcdir)/README.GIT.md \
+	$(srcdir)/README.md \
+	$(srcdir)/README.ANYTIME.md \
 	$(srcdir)/README.GeoSPARQL.md \
+	$(srcdir)/README.GIT.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \
@@ -110,18 +111,21 @@ EXTRA_DIST = \
 	$(srcdir)/INSTALL.md \
 	$(srcdir)/LICENSE.md \
 	$(srcdir)/NEWS.md \
-	$(srcdir)/README \
+	$(srcdir)/README.md \
+	$(srcdir)/README.ANYTIME.md \
+	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.GIT.md \
-	$(srcdir)/README.MACOSX.md \
-	$(srcdir)/README.OpenSSL.md \
-	$(srcdir)/README.UPGRADE.md \
-	$(srcdir)/README.WINDOWS.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \
+	$(srcdir)/README.MACOSX.md \
+	$(srcdir)/README.OpenSSL.md \
 	$(srcdir)/README.php5.md \
 	$(srcdir)/README.sesame2.md \
 	$(srcdir)/README.sesame3.md \
+	$(srcdir)/README.UPGRADE.md \
+	$(srcdir)/README.WINDOWS.md \
+	$(srcdir)/SECURITY.md \
 	$(srcdir)/autogen.sh \
 	$(srcdir)/bin/generate \
 	$(srcdir)/bin/installer/virtuoso.ini bin/installer/demo.ini \
@@ -174,3 +178,11 @@ EXTRA_DIST = \
 	$(srcdir)/windows/*.bat \
 	$(srcdir)/windows/*.sln \
 	$(srcdir)/windows/*.vcxproj
+
+
+
+README: README.md
+	-pandoc -f markdown -t plain --wrap=none $< -o $@
+
+NEWS: NEWS.md
+	-pandoc -f markdown -t plain --wrap=none $< -o $@

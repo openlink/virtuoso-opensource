@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,7 +208,7 @@ srv_report_errno_trx_error (lock_trx_t *lt, const char *text, const char *name, 
 	"%.30s %.160s : %.100s", text, name, virt_strerror (eno)));
 }
 
-uint32 last_log_time_written = 0;
+time_msec_t last_log_time_written = 0;
 int log_in_cl_recov;
 
 
@@ -233,7 +233,7 @@ log_time (caddr_t * box)
   if (!box && log_in_cl_recov)
     return LTE_OK;
   if (!box && (!last_log_time_written
-	       || approx_msec_real_time () - last_log_time_written > 30000))
+	       || (approx_msec_real_time () - last_log_time_written) > 30000))
     {
       char dt[DT_LENGTH];
       dt_now (dt);
@@ -271,6 +271,7 @@ int32 log_extent_if_needed = 1;
 #ifdef WIN32
 #define PATH_MAX	 MAX_PATH
 #endif
+
 
 int
 log_change_if_needed (lock_trx_t * lt, int rewrite)
@@ -566,7 +567,7 @@ log_text_array_sync (lock_trx_t * lt, caddr_t box)
   lt->lt_blob_log = NULL;
   if(!sync_log)
     sync_log = strses_allocate ();
-  lt->lt_log =sync_log;
+  lt->lt_log = sync_log;
   session_buffered_write_char (LOG_TEXT, lt->lt_log);
   print_object (box, lt->lt_log, NULL, NULL);
   rc = log_commit (lt);
@@ -702,7 +703,7 @@ log_skip_blobs_1 (dk_session_t * ses)
   END_READ_FAIL (ses);
 }
 
-uint32 log_last_2pc_archive_time = 0;
+time_msec_t log_last_2pc_archive_time = 0;
 
 
 int
@@ -730,7 +731,7 @@ log_2pc_archive (int64 trx_id)
   CATCH_WRITE_FAIL (ses)
     {
       int64 bs = ses->dks_bytes_sent;
-      if (!log_last_2pc_archive_time || approx_msec_real_time () - log_last_2pc_archive_time > 30000)
+      if (!log_last_2pc_archive_time || (approx_msec_real_time () - log_last_2pc_archive_time) > 30000)
 	{
 	  caddr_t dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
 	  if (in_log_replay || log_in_cl_recov)
@@ -1839,7 +1840,8 @@ cr_done:
       sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE, NULL);
       text2 = box_copy (text);
       err = stmt_set_query (sst, lt->lt_client, text, opts);
-      LEAVE_CLIENT (lt->lt_client);
+      if (!lt->lt_client->cli_is_log)
+        LEAVE_CLIENT (lt->lt_client); /* not entered in log replay */
       if (err != NULL)
 	{
 	  if ((caddr_t)-1 == err)
@@ -2709,9 +2711,9 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       int inx = 0;
       int plen;
       query_t *qr = get_vec_query (request, key, flag, &err);
-      plen = dk_set_length (qr->qr_parms);
       if (err)
 	return err;
+      plen = dk_set_length (qr->qr_parms);
       request->lr_qr = qr;
       qr_pool = request->lr_pool = mem_pool_alloc ();
       qr_params_vec = request->lr_params_vec = (data_col_t**) mp_alloc_box(qr_pool, plen * sizeof (data_col_t*), DV_BIN);
@@ -3373,8 +3375,9 @@ log_check_header (caddr_t * header)
 int
 log_report_time ()
 {
-  static unsigned int32 last_time = 0;
-  unsigned int32 now = get_msec_real_time (), r = 0;
+  static time_msec_t last_time = 0;
+  time_msec_t now = get_msec_real_time ();
+  int r = 0;
   if (now - last_time > 2000)
     {
       r = 1;
@@ -3573,6 +3576,7 @@ log_replay_file (int fd)
   if (CL_RUN_LOCAL != cl_run_local_only)
     enable_mt_ft_inx = 0;
   cli->cli_user = sec_id_to_user (U_ID_DBA);
+  cli->cli_is_log = 1;
   total_size_bytes = LSEEK (fd, 0, SEEK_END);
   if (total_size_bytes == (OFF_T) -1)
     total_size_bytes = 0;
@@ -3736,7 +3740,10 @@ void
 log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
   if ((char*) -1 == new_log)
-    return;
+    {
+      log_info ("Checkpoint finished.");
+      return;
+    }
   mutex_enter (log_write_mtx);
   if (dbs->dbs_2pc_log_session)
     session_flush (dbs->dbs_2pc_log_session);

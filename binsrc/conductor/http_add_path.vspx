@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -121,6 +121,7 @@
       <v:variable name="is_dav" persist="0" type="integer" default="0" />
       <v:variable name="is_https" persist="0" type="integer" default="0" />
       <v:variable name="cors" persist="0" type="varchar" default="''" />
+      <v:variable name="cors_allow_headers" persist="0" type="varchar" default="''" />
       <v:variable name="cors_rej" persist="0" type="integer" default="0" />
     </vm:variables>
     <vm:header caption="HTTP Virtual Directory"/>
@@ -179,6 +180,7 @@
 		  self.ovrexec := NULL;
 		  self.ssbrow := '';
                   self.cors := '';
+                  self.cors_allow_headers := '';
                   self.cors_rej := 0;
                   self.global_opts_misc := vector();
 
@@ -201,6 +203,8 @@
                         self.cors := self.global_opts[i+1];
                       else if (self.global_opts[i] = 'cors_restricted')
                         self.cors_rej := self.global_opts[i+1];
+                      else if (self.global_opts[i] = 'cors_allow_headers')
+                        self.cors_allow_headers := self.global_opts[i+1];
                       else
                         self.global_opts_misc := vector_concat (self.global_opts_misc, vector (self.global_opts[i], self.global_opts[i+1]));
                     }
@@ -273,6 +277,7 @@
               self.t_auth_opt.ufl_value := opts;
             }
 	    self.t_cors.ufl_value := self.cors;
+	    self.t_cors_allow_headers.ufl_value := self.cors_allow_headers;
 	    self.c_cors_rej.ufl_selected := self.cors_rej;
           ]]>
         </v:script>
@@ -515,7 +520,7 @@
       </v:template>
       <v:template name="t_template2" type="simple" enabled="-- case when (self.mode<>'add1') then 1 else 0 end">
         <v:form name="frm_edit_path" action="http_add_path.vspx" method="POST" type="simple">
-          <table class="ctl_grp" align="left" border="0" cellspacing="0" cellpadding="3">
+          <table class="ctl_grp">
             <tr>
               <th align="left">Virtual Directory Information</th>
               <td/>
@@ -679,9 +684,22 @@
               </td>
             </tr>
             <tr>
-              <td valign="top"><label for="t_cors">Cross-Origin Resource Sharing</label></td>
+                <td valign="top">
+                    <a class="help_tooltip"
+                        helptext="CORS indicates any origins (domain, scheme, or port) other than its own from which a browser should permit loading resources, e.g. https://example.local, `*` for any">
+                        Cross-Origin Resource Sharing
+                </a></td>
               <td>
-		  <v:text name="t_cors" xhtml_cols="30" xhtml_rows="3" xhtml_size="70" xhtml_id="t_cors"/><br/>
+		  <v:text name="t_cors" xhtml_cols="30" xhtml_rows="3" xhtml_size="70" xhtml_id="t_cors"/>
+              </td>
+            </tr>
+            <tr>
+                <td valign="top">
+                    <a class="help_tooltip"
+                        helptext="The Access-Control-Allow-Headers response header is used in response to a preflight request (OPTIONS) to indicate which HTTP headers can be used during the actual request, e.g. `X-Custom-Header`.">
+                        Allowed Headers (CORS)</a></td>
+              <td>
+                  <v:text name="t_cors_allow_headers" xhtml_cols="30" xhtml_rows="3" xhtml_size="70" xhtml_id="t_cors_allow_headers"/><br/>
                 <v:check-box name="c_cors_rej" value="on" xhtml_id="c_cors_rej"/>
                 <label for="c_cors_rej">Reject Unintended CORs</label>
               </td>
@@ -786,6 +804,7 @@
 	              else
 		        self.cors_rej := 0;
 	              self.cors := get_keyword ('t_cors', params, NULL);
+	              self.cors_allow_headers := get_keyword ('t_cors_allow_headers', params, NULL);
                       self.auth_opt := self.t_auth_opt.ufl_value;
                       if (self.auth_opt = '' or self.auth_opt = 0)
                         self.auth_opt := NULL;
@@ -854,7 +873,9 @@
 	              if (length (self.cors))
 		        {
 			  self.global_opts := vector_concat ( coalesce (self.global_opts, vector()),
-			    vector('cors', self.cors, 'cors_restricted', self.cors_rej));
+                          vector ('cors', self.cors,
+                          'cors_allow_headers', self.cors_allow_headers,
+                          'cors_restricted', self.cors_rej));
 			}
 
 		      if (self.lpath <> self.edit_lpath and exists (select 1 from DB.DBA.HTTP_PATH where HP_HOST = self._httphost and HP_LISTEN_HOST = self._host and HP_LPATH = self.lpath))

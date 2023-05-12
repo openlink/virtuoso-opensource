@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -61,22 +61,11 @@
 #include "ltrx.h"
 #include "uname_const_decl.h"
 
-#ifdef WIN32
-#include <windows.h>
-#define HAVE_DIRECT_H
+#ifdef _SSL
+#include <openssl/opensslv.h>
 #endif
 
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#include <io.h>
-#define mkdir(p,m)	_mkdir (p)
-#define FS_DIR_MODE	0
-#define PATH_MAX	 MAX_PATH
-#define get_cwd(p,l)	_get_cwd (p,l)
-#else
-#include <dirent.h>
-#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
-#endif
+#include "strlike.h"
 
 int mode_pass_change;
 
@@ -85,6 +74,7 @@ int in_srv_global_init = 0;
 int it_n_maps = 256;
 int rdf_obj_ft_rules_size;
 extern int disable_listen_on_tcp_sock;
+extern char * git_head;
 #ifdef VIRTTP
 #include "2pc.h"
 #endif
@@ -397,7 +387,7 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
   query_instance_t **qip;
   for (;;)
     {
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       id_hash_iterator (&it, cli->cli_cursors);
       qi = 0;
       while (hit_next (&it, (char **) &kp, (char **) &qip))
@@ -422,12 +412,12 @@ cli_scrap_cursors (client_connection_t * cli, query_instance_t * exceptions,
 	  LEAVE_TXN;
 	  qi_enter (qi);
 	  dbg_cli_printf (("cli_scrap_cursors - killing %s %d\n", *kp, rc));
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  qi_kill (qi, QI_ERROR);
 	}
       else
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  return;
 	}
     }
@@ -449,6 +439,7 @@ client_connection_create (void)
       wi_inst.wi_master->dbs_log_name ? REPL_LOG : REPL_NO_LOG;
   else
     cli->cli_replicate = REPL_NO_LOG;
+  cli->cli_log_mode = 1;
   cli->cli_qualifier = box_string ("DB");
 #ifdef SERIAL_CLI
   cli->cli_test_mtx = mutex_allocate ();
@@ -1374,9 +1365,11 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
   if (_SQL_CURSOR_FORWARD_ONLY == cr_type && unique_rows)
     cr_type = SQLC_UNIQUE_ROWS;
 
-  ASSERT_IN_MTX (cli->cli_mtx);
-  if (place && CORRECT_QUAL (*place, cli)
-      && CORRECT_CR_TYPE ((*place), cr_type))
+#ifdef MTX_DEBUG
+  if (!cli->cli_is_log)
+    ASSERT_IN_MTX (cli->cli_mtx);
+#endif
+  if (place && CORRECT_QUAL (*place, cli) && CORRECT_CR_TYPE ((*place), cr_type))
     {
       qr_cache_hits++;
       dk_free_box (text);
@@ -1472,17 +1465,24 @@ stmt_set_query (srv_stmt_t * stmt, client_connection_t * cli, caddr_t text,
 
 int32 cli_max_cached_stmts = 10000;
 
+
 srv_stmt_t *
 cli_get_stmt_access (client_connection_t * cli, caddr_t id, int mode, caddr_t * err_ret)
 {
   caddr_t place;
   srv_stmt_t *stmt;
-  IN_CLIENT (cli);
+
+  if (!id)
+    {
+      if (err_ret)
+	*err_ret = srv_make_new_error ("HY000", "SR675", "Invalid Statement");
+      return NULL;
+    }
   place = id_hash_get (cli->cli_statements, (caddr_t) & id);
   if (!place && cli->cli_statements->ht_count >= cli_max_cached_stmts)
     {
       if (err_ret)
-	*err_ret = srv_make_new_error ("HY013", "SR491", "Too many open statements");
+	*err_ret = srv_make_new_error ("HY013", "SR676", "Too many open statements");
       return NULL;
     }
   if (!place)
@@ -1529,8 +1529,14 @@ cli_cached_sql_compile (caddr_t query_text, client_connection_t *cli, caddr_t *e
   caddr_t stmt_id = NULL;
   caddr_t stmt_boxed = box_dv_short_string (query_text);
 
+  IN_CLIENT (cli);
   stmt_id = box_dv_short_string (stmt_id_name);
   sst = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
+  if (!sst)
+  {
+    LEAVE_CLIENT (cli);
+    return NULL;
+  }
   old_log_val = cli->cli_is_log;
   cli->cli_is_log = 1;
   err = stmt_set_query (sst, cli, stmt_boxed, NULL);
@@ -1551,8 +1557,10 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
   caddr_t err = NULL;
+  srv_stmt_t *stmt;
 
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
   if (!stmt && err)
     goto report_error;
   cli->cli_terminate_requested = 0;
@@ -1562,7 +1570,7 @@ sf_stmt_prepare (caddr_t stmt_id, char *text, long explain,
       /* There's an instance. can't do it */
       err = srv_make_new_error ("S1010", "SR209", "Statement active");
 report_error:
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       dk_free_tree (err);
 
@@ -1591,7 +1599,7 @@ report_error:
 
   stmt_set_query (stmt, cli, text, opts);
   dk_free_box ((caddr_t) opts);
-  mutex_leave (cli->cli_mtx);
+  LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in prepare2\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
@@ -1752,7 +1760,7 @@ void
 sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
     caddr_t * params, caddr_t * current_ofs, stmt_options_t * options)
 {
-  long msecs = prof_on ? get_msec_real_time () : 0;
+  time_msec_t msecs = prof_on ? get_msec_real_time () : 0;
   query_instance_t *qi;
   int inx, first_set = 1, n_params = 0;
   caddr_t err = NULL;
@@ -1769,6 +1777,7 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       goto report_rpc_format_error;
     }
 
+  IN_CLIENT (cli);
   stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, &err);
   if (err)
     goto report_error;
@@ -1796,8 +1805,8 @@ sf_sql_execute (caddr_t stmt_id, char *text, char *cursor_name,
       /* Busy */
       err = srv_make_new_error ("S1010", "SR210", "Async exec busy");
 report_error:
-      mutex_leave (cli->cli_mtx);
-    report_rpc_format_error:
+      LEAVE_CLIENT (cli);
+report_rpc_format_error:
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
       DKST_RPC_DONE (client);
       dk_free_tree (err);
@@ -1832,7 +1841,7 @@ report_error:
       else if (TP_ABORT == cli->cli_tp_data->tpd_last_act)
 	{
 	  caddr_t err = srv_make_new_error ("41000", "SR211", "Aborted");
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
 	  dk_free_tree (err);
 
@@ -1872,7 +1881,7 @@ report_error:
       /* Exec direct RPC. Compile first */
       if (stmt_set_query (stmt, cli, text, options) != (caddr_t) SQL_SUCCESS)
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  dk_free_tree ((caddr_t) params);
 	  dk_free_box ((caddr_t) options);
 
@@ -1893,7 +1902,7 @@ report_error:
     {
       if (SQL_SUCCESS != stmt_check_recompile (stmt))
 	{
-	  mutex_leave (cli->cli_mtx);
+	  LEAVE_CLIENT (cli);
 	  if (DK_MEM_RESERVE)
 	    {
 	      IN_CLIENT (cli);
@@ -1910,7 +1919,7 @@ report_error:
   if (!stmt->sst_query)
     {
       caddr_t err = srv_make_new_error ("S1010", "SR212", "Statement not prepared.");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in execute3\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -1993,7 +2002,7 @@ report_error:
 
 	  if (!first_set)
 	    {
-	      mutex_enter (cli->cli_mtx);
+	      IN_CLIENT (cli);
 	    }
 	  first_set = 0;
 	  err = qr_exec (cli, stmt->sst_query, CALLER_CLIENT,
@@ -2015,12 +2024,12 @@ report_error:
       dk_free_tree ((caddr_t) params);
     }
   if (n_params == 0)
-    mutex_leave (cli->cli_mtx);
+    LEAVE_CLIENT (cli);
   thrs_printf ((thrs_fo, "ses %p thr:%p in execute4\n", client, THREAD_CURRENT_THREAD));
   DKST_RPC_DONE (client);
   session_flush (client);
   if (msecs && prof_on)
-    prof_exec (stmt->sst_query, NULL, get_msec_real_time () - msecs,
+    prof_exec (stmt->sst_query, NULL, (long) (get_msec_real_time () - msecs),
 	       PROF_EXEC | (err != NULL ? PROF_ERROR : 0));
 
   ASSERT_OUTSIDE_TXN;
@@ -2395,19 +2404,22 @@ CLI_WRAPPER (sf_sql_tp_transact,(short op, char* xid_str),(op,xid_str))
 void
 sf_sql_fetch (caddr_t stmt_id, long cond_no)
 {
-  long start = prof_on ? get_msec_real_time () : 0;
+  time_msec_t start = prof_on ? get_msec_real_time () : 0;
   dk_session_t *client = IMMEDIATE_CLIENT;
   caddr_t err;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
+  srv_stmt_t *stmt;
 
   CHANGE_THREAD_USER(cli->cli_user);
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_EXCLUSIVE, NULL);
 
   if (!stmt || !stmt->sst_inst)
     {
       /* Busy */
       caddr_t err = srv_make_new_error ("S1010", "SR213", "SQLFetch of busy");
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       thrs_printf ((thrs_fo, "ses %p thr:%p in fetch1\n", client, THREAD_CURRENT_THREAD));
       DKST_RPC_DONE (client);
       PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, 1, 1);
@@ -2425,7 +2437,7 @@ sf_sql_fetch (caddr_t stmt_id, long cond_no)
   DKST_RPC_DONE (IMMEDIATE_CLIENT);
   session_flush (client);
   if (start && prof_on)
-    prof_exec (stmt->sst_query, NULL, get_msec_real_time () - start,
+    prof_exec (stmt->sst_query, NULL, (long) (get_msec_real_time () - start),
 	       PROF_FETCH | (err != NULL ? PROF_ERROR : 0));
   dk_free_tree (err);
 }
@@ -2458,7 +2470,22 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   query_instance_t *qi = NULL;
   dk_session_t *client = IMMEDIATE_CLIENT;
   client_connection_t *cli = DKS_DB_DATA (client);
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  srv_stmt_t *stmt;
+  caddr_t err = NULL;
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, &err);
+
+  if (NULL == stmt)
+    {
+      if (!err)
+        err = srv_make_new_error ("HY000", "SR674", "Statement does not exist");
+      LEAVE_CLIENT (cli);
+      PrpcAddAnswer (err, DV_ARRAY_OF_POINTER, FINAL, 1);
+      dk_free_tree (err);
+      DKST_RPC_DONE (client);
+      return 0;
+    }
   dbg_printf (("sf_sql_free_stmt %s %d\n", stmt->sst_id, op));
   if (stmt->sst_cursor_state)
     stmt_scroll_close (stmt);
@@ -2501,7 +2528,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
   if (op == SQL_DROP)
     {
 
-      mutex_enter (cli->cli_mtx);
+      IN_CLIENT (cli);
       if (stmt->sst_query)
         {
 #ifdef QUERY_DEBUG
@@ -2510,7 +2537,7 @@ sf_sql_free_stmt (caddr_t stmt_id, int op)
 	  stmt->sst_query->qr_ref_count--;
         }
       id_hash_remove (cli->cli_statements, (caddr_t) & stmt->sst_id);
-      mutex_leave (cli->cli_mtx);
+      LEAVE_CLIENT (cli);
       dk_free_box (stmt->sst_id);
 
       dk_free ((caddr_t) stmt, sizeof (srv_stmt_t));
@@ -2779,10 +2806,10 @@ sf_make_auto_cp(void)
   LEAVE_TXN;
   if (make_cp)
     {
-      long now;
+      time_msec_t now;
       sf_makecp (sf_make_new_log_name(wi_inst.wi_master), NULL, 1, CPT_NORMAL);
       now = approx_msec_real_time ();
-      checkpointed_last_time = (unsigned long int) now; /* the main thread still running so set last time auto cpt finished */
+      checkpointed_last_time = now; /* the main thread still running so set last time auto cpt finished */
     }
 }
 
@@ -3031,8 +3058,11 @@ sf_sql_get_data (caddr_t stmt_id, long current_of, long nth_col,
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   client_connection_t *cli = DKS_DB_DATA (client);
   lock_trx_t *lt;
-  srv_stmt_t *stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
-  if (stmt->sst_inst)
+  srv_stmt_t *stmt;
+
+  IN_CLIENT (cli);
+  stmt = cli_get_stmt_access (cli, stmt_id, GET_ANY, NULL);
+  if (stmt && stmt->sst_inst)
     {
       query_instance_t *qi = stmt->sst_inst;
       caddr_t val;
@@ -3234,9 +3264,9 @@ uint32 n_total_no_threads = 0;
 caddr_t
 sf_sql_no_threads_reply (void)
 {
-  static long last_checked_time = 0;
+  static time_msec_t last_checked_time = 0;
   static uint32 n_hits_per_period = 0;
-  long time_now;
+  time_msec_t time_now;
   dk_session_t *client = IMMEDIATE_CLIENT_OR_NULL;
   caddr_t err = srv_make_new_error ("40001", "SR214",
       "Out of server threads. Server temporarily unavailable. Transaction rolled back.");
@@ -3749,7 +3779,7 @@ sf_sql_cancel_hook (dk_session_t* session, caddr_t _request)
     return _request;
 }
 
-long msec_session_space_clear;
+time_msec_t msec_session_space_clear;
 
 static void
 futures_object_space_clear (caddr_t b, future_request_t *f)
@@ -3763,7 +3793,28 @@ futures_object_space_clear (caddr_t b, future_request_t *f)
   if (cli && cli->cli_trx && cli->cli_trx->lt_is_excl)
     {
       while (srv_have_global_lock (THREAD_CURRENT_THREAD))
-	srv_global_unlock (cli, cli->cli_trx);
+	{
+	  if (CLI_TERMINATE == cli->cli_terminate_requested)
+	    {
+	      char *new_name;
+
+	      log_error ("An atomic transaction cannot be committed due to a client");
+	      log_error ("disconnect. The transaction will be rolled back to restore");
+	      log_error ("the database to its previous state.");
+
+	      new_name = setext (wi_inst.wi_master->dbs_log_name, "atomic-trx", EXT_SET);
+	      rename (wi_inst.wi_master->dbs_log_name, new_name);
+
+	      log_error ("The old transaction file has been renamed");
+	      log_error ("from : %s", wi_inst.wi_master->dbs_log_name);
+	      log_error ("to   : %s", new_name);
+
+	      log_error ("The database engine will need to be restarted");
+
+	      call_exit (0);
+	    }
+	  srv_global_unlock (cli, cli->cli_trx);
+	}
     }
 }
 
@@ -3892,7 +3943,9 @@ srv_session_disconnect_action (dk_session_t *ses)
 
 void   rdf_key_comp_init ();
 extern int enable_col_by_default, c_col_by_default;
-long get_total_sys_mem ();
+int64 get_total_sys_mem ();
+
+extern int32 rdf_rpid64_mode;
 
 dk_set_t srv_global_init_pre_log_actions = NULL;
 dk_set_t srv_global_init_postponed_actions = NULL;
@@ -3920,6 +3973,85 @@ srv_global_init_plugin_actions (dk_set_t *set_ptr, char *mode)
     }
 }
 
+
+/*
+ *  Wrappers for FUTURE calls
+ */
+
+static server_func
+sf_sql_connect_wrapper (caddr_t args[])
+{
+  return sf_sql_connect (args[0], args[1], args[2], (caddr_t *) args[3]);
+}
+
+static server_func
+sf_stmt_prepare_wrapper (caddr_t args[])
+{
+  sf_stmt_prepare (args[0], args[1], (long) args[2], (stmt_options_t *) args[3]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_execute_wrapper (caddr_t args[])
+{
+  sf_sql_execute (args[0], args[1], args[2], (caddr_t *) args[3], (caddr_t *) args[4], (stmt_options_t *) args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_fetch (args[0], (long) args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_transact_wrapper (caddr_t args[])
+{
+  sf_sql_transact ((long) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_free_stmt_wrapper (caddr_t args[])
+{
+  return (caddr_t) sf_sql_free_stmt (args[0], (int)args[1]);
+}
+
+static server_func
+sf_sql_get_data_wrapper (caddr_t args[])
+{
+  sf_sql_get_data (args[0], (long) args[1], (long)args[2], (long) args[3], (long) args[4]);
+  return NULL;			/* void function */
+}
+static server_func
+sf_sql_get_data_ac_wrapper (caddr_t args[])
+{
+  sf_sql_get_data_ac ((long) args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], (long) args[5],
+      args[6], (long) args[7], (long) args[8]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_extended_fetch_wrapper (caddr_t args[])
+{
+  sf_sql_extended_fetch (args[0], (long) args[1], (long) args[2], (long) args[3], (long) args[4], args[5]);
+  return NULL;			/* void function */
+}
+
+static server_func
+sf_sql_no_threads_reply_wrapper (caddr_t args[])
+{
+  return sf_sql_no_threads_reply ();
+}
+
+static server_func
+sf_sql_tp_transact_wrapper (caddr_t args[])
+{
+  sf_sql_tp_transact ((short) args[0], args[1]);
+  return NULL;			/* void function */
+}
+
 void
 srv_global_init (char *mode)
 {
@@ -3941,10 +4073,16 @@ srv_global_init (char *mode)
 
   logins_list_initialize ();
   log_info ("%s", DBMS_SRV_NAME);
-  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s",
-      build_thread_model, build_opsys_id, build_date);
+  log_info ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)",
+      build_thread_model, build_opsys_id, build_date, git_head);
 
-  log_info ("uses parts of OpenSSL, PCRE, Html Tidy");
+#ifdef _SSL
+  log_info ("uses " OPENSSL_VERSION_TEXT);
+#else
+  log_info ("build without SSL support");
+#endif
+  log_info ("uses parts of PCRE, Html Tidy");
+
 
   mode_pass_change = 0;
   in_srv_global_init = 1;
@@ -4022,6 +4160,26 @@ srv_global_init (char *mode)
     pl_debug_all = 0;
 #endif
   wi_open (mode);
+
+  if (!rdf_rpid64_mode)
+    {
+      log_warning ("");
+      log_warning ("NOTE: Your database is using 32-bit prefix IDs in RDF_IRI");
+      log_warning ("");
+      log_warning ("    This Virtuoso engine has been upgraded to use 64-bit prefix IDs");
+      log_warning ("    in RDF_IRI to allow for even larger databases.");
+      log_warning ("");
+      log_warning ("    To take advantage of this new feature, your database needs to");
+      log_warning ("    be upgraded.");
+      log_warning ("");
+      log_warning ("    The performance of your existing database should not be affected,");
+      log_warning ("    except when performing certain bulkload operations.");
+      log_warning ("");
+      log_warning ("    Please contact OpenLink Support <support@openlinksw.com> for ");
+      log_warning ("    more information.");
+      log_warning ("");
+    }
+
   srv_client_defaults_init ();
   sql_bif_init ();
   bif_daq_init ();
@@ -4068,19 +4226,19 @@ srv_global_init (char *mode)
   the_main_thread = current_process;	/* Used by the_grim_lock_reaper */
 
   sec_init ();
-  PrpcRegisterService ("SCON", (server_func) sf_sql_connect, NULL,
+  PrpcRegisterService ("SCON", (server_func) sf_sql_connect_wrapper, NULL,
       DV_ARRAY_OF_POINTER, (post_func) dk_free_tree);
-  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare);
-  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute);
-  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact);
-  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt);
-  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data);
-  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac);
-  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch);
-  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply);
+  PrpcRegisterServiceDesc1 (&s_sql_prepare, (server_func) sf_stmt_prepare_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_execute, (server_func) sf_sql_execute_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_fetch, (server_func) sf_sql_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_transact, (server_func) sf_sql_transact_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_free_stmt, (server_func) sf_sql_free_stmt_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data, (server_func) sf_sql_get_data_wrapper);
+  PrpcRegisterServiceDesc1 (&s_get_data_ac, (server_func) sf_sql_get_data_ac_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_extended_fetch, (server_func) sf_sql_extended_fetch_wrapper);
+  PrpcRegisterServiceDesc1 (&s_sql_no_threads, (server_func) sf_sql_no_threads_reply_wrapper);
 #ifdef VIRTTP
-  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact);
+  PrpcRegisterServiceDesc1 (&s_sql_tp_transact, (server_func) sf_sql_tp_transact_wrapper);
 #endif
 
   PrpcSetBackgroundAction ((background_action_func) the_grim_lock_reaper);
@@ -4243,7 +4401,10 @@ srv_global_init (char *mode)
       sf_shutdown (sf_make_new_log_name (wi_inst.wi_master), bootstrap_cli->cli_trx);
     }
   ddl_redo_undefined_triggers ();
-  srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
+  if (!f_read_from_rebuilt_database)
+    {
+      srv_global_init_plugin_actions (&srv_global_init_postponed_actions, mode);
+    }
   IN_TXN;
   lt_leave(bootstrap_cli->cli_trx);
   LEAVE_TXN;
@@ -4338,7 +4499,10 @@ DBG_NAME(srv_make_new_error) (DBG_PARAMS const char *code, const char *virt_code
 
   if (DO_LOG(LOG_SRV_ERROR))
     {
-      log_info ("ERRS_0 %s %s %s", code, virt_code, temp);
+      char * mark = "ERRS_0";
+      if (0 == strcmp (code, "01V01"))
+        mark = "WARN_0";
+      log_info ("%s %s %s %s", mark, code, virt_code, temp);
     }
   log_error_report_event ((caddr_t) box, 1, "MAKE_NEW_ERROR");
 #ifdef MALLOC_DEBUG
@@ -4415,7 +4579,7 @@ srv_make_trx_error (int code, caddr_t detail)
       case LTE_LOG_IMAGE:
 	  err = srv_make_new_error ("40005", "SR325",
 	      "Transaction aborted because it's log after image size "
-	      "went above the limit%s%s",
+	      "went above the " OFF_T_PRINTF_FMT " bytes limit%s%s", (OFF_T_PRINTF_DTP)txn_after_image_limit,
 	      detail ? " : " : "", detail ? detail : "");
 	  break;
       case LTE_OUT_OF_MEM:

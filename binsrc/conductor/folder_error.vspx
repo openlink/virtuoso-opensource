@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -23,7 +23,7 @@
 <html>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css"/>
     <link rel="stylesheet" href="dav/dav_browser.css" type="text/css"/>
     <style type="text/css">
       body {

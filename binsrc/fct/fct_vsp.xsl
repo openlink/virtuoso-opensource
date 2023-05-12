@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -25,7 +25,7 @@
 <xsl:stylesheet version="1.0"
                 xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
                 xmlns:addthis="http://www.addthis.com/help/api-spec">
-<xsl:output method="html" encoding="ISO-8859-1" indent="yes"/>
+<xsl:output method="html" encoding="UTF-8" indent="yes"/>
 <!-- Pager-related vars calculation -->
 
 <xsl:variable name="offs"

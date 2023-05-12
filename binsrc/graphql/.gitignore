@@ -1,0 +1,10 @@
+.libs
+.deps
+Makefile
+Makefile.in
+graphql_l.c
+graphql_p.c
+graphql_p.h
+sql_code_graphql.c
+graphql_intro.c
+graphql_p.output

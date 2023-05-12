@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -143,8 +143,7 @@ b3s_handle_ses (inout _path any, inout _lines any, inout _params any)
            sid := get_keyword ('sid', pars);
        }
    }
-
-   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', sid);
+   if (sid is not null and (regexp_match ('[0-9]*', sid) = sid)) connection_set ('sid', cast (sid as integer));
 }
 ;
 
@@ -165,7 +164,10 @@ b3s_e_type (in subj varchar)
       data := null;
       q_txt := string_output ();
       http ('sparql select ?tp where { ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      if (subj like 'nodeID://%')
+        http (sprintf ('<%s>', subj), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
       http (' a ?tp }', q_txt);
       exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
 
@@ -201,7 +203,10 @@ b3s_type (in subj varchar,
       declare q_txt any;
       q_txt := string_output ();
       http ('sparql select ?l ?tp ' || _from || ' where { ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
+      if (subj like 'nodeID://%')
+        http (sprintf ('<%s>', subj), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj, 1), q_txt);
       http (' a ?tp optional { ?tp rdfs:label ?l } }', q_txt);
       exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
       if (length (data))
@@ -258,13 +263,19 @@ create procedure b3s_find_class_type (in _s varchar, in _f varchar, inout types_
   msg:= '';
   q_txt := string_output ();
   http ('sparql select ?to ' || _f || ' where { quad map virtrdf:DefaultQuadMap { ?to a ', q_txt);
-  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
+    http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
   http (' }}', q_txt);
   exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
   q_txt := string_output ();
   http ('sparql select ?to ' || _f || ' where { graph ?g { ?to a ', q_txt);
-  http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
+    http_sparql_object (__box_flags_tweak (_s, 1), q_txt);
   http (' }}', q_txt);
   exec (string_output_string (q_txt), st, msg, vector(), 1, meta, data);
   if (length (data)) return 1;
@@ -307,6 +318,9 @@ b3s_get_types (in _s varchar,
   data := null;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { quad map virtrdf:DefaultQuadMap { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
@@ -322,6 +336,9 @@ b3s_get_types (in _s varchar,
     goto skip_virt_graphs;
   q_txt := string_output ();
   http ('sparql select distinct ?tp ' || _from || ' where { graph ?g { ', q_txt);
+  if (_s like 'nodeID://%')
+    http (sprintf ('<%s>', _s), q_txt);
+  else
   http_sparql_object (__bft (_s, 1), q_txt);
   http (' a ?tp . filter (isIRI(?tp)) } }', q_txt);
   exec (string_output_string (q_txt), stat, msg, vector (), 100, meta, data);
@@ -514,7 +531,7 @@ b3s_render_inf_clause ()
 ;
 
 create procedure
-b3s_render_ses_params (in with_graph int := 1) 
+b3s_render_ses_params (in with_graph int := 1, in with_ses int := 1)
 {
   declare i,s,ifp,sid varchar;
   declare grs any;
@@ -527,12 +544,12 @@ b3s_render_ses_params (in with_graph int := 1)
 
   if (i is not null) http (sprintf ('&inf=%U', i), ses);
   if (s is not null) http (sprintf ('&sas=%V', s), ses);
-  if (sid is not null) http (sprintf ('&sid=%V', sid), ses);
+  if (with_ses and sid is not null) http (sprintf ('&sid=%V', sid), ses);
   if (grs is not null and with_graph)
     {
       foreach (any x in grs) do
         http (sprintf ('&graph=%U', x), ses);
-	}
+    }
   return string_output_string (ses);
 }
 ;
@@ -852,24 +869,18 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
 }
 ;
 
-create procedure b3s_xsd_link (in t varchar)
+create procedure b3s_xsd_link (in dt varchar)
 {
-  return sprintf ('<a href="http://www.w3.org/2001/XMLSchema#%s">xsd:%s</a>', t, t);
+  return sprintf ('<a href="%s">%s</a>', dt, b3s_uri_curie(dt));
 }
 ;
 
 create procedure b3s_o_is_out (in x any)
 {
-  declare f, s, og any;
-  f := 'http://xmlns.com/foaf/0.1/';
-  s := 'http://schema.org/';
-  og := 'http://opengraphprotocol.org/schema/';
-  -- foaf:page, foaf:homePage, foaf:img, foaf:logo, foaf:depiction
-  if (__ro2sq (x) in (f||'page', f||'homePage', f||'img', f||'logo', f||'depiction', 'http://schema.org/url', 'http://schema.org/downloadUrl', 'http://schema.org/potentialAction', s||'logo', s||'image', s || 'mainEntityOfPage', og || 'image', 'http://www.openlinksw.com/ontology/webservices#usageExample'))
-    {
-      return 1;
-    }
-  return 0;
+  declare s, vr any;
+  s := iri_to_id (x);
+  vr := iri_to_id ('http://www.openlinksw.com/schemas/virtrdf#url');
+  return rdf_is_sub ('virtrdf-url', s,  vr, 3);
 }
 ;
 
@@ -931,7 +942,7 @@ again:
        _object := dat;
        goto again;
      }
-   else if (__tag (_object) = 243 or (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%' or _object like 'http://%')))
+   else if (__tag (_object) = 243 or (isstring (_object) and (__box_flags (_object)= 1 or _object like 'nodeID://%' or _object like 'http://%' or _object like 'https://%')))
      {
        declare _url, p_t any;
 
@@ -986,14 +997,18 @@ again:
                 goto usual_iri;
            }
 	 }
-       else if (http_mime_type (_url) like 'image/%' or http_mime_type (_url) = 'application/x-openlink-photo' or b3s_o_is_img (prop))
+       else if (http_mime_type (_url) like 'image/%' or
+            http_mime_type (_url) = 'application/x-openlink-photo' or
+            b3s_o_is_img (prop) or
+            _url like 'data:image/%')
 	 {
 	   declare u any;
 	   if (b3s_o_is_out (prop))
 	     u := _url;
 	   else
 	     u := b3s_http_url (_url, sid, _from);
-	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" height="160" style="border-width:0" alt="External Image" /></a>', rdfa, u, _url));
+	   http (sprintf ('<a class="uri" %s href="%s"><img src="%s" class="external" height="160" style="border-width:0" alt="%s" /></a>', 
+                 rdfa, u, _url, _url));
 	 }
        else
 	 {
@@ -1017,28 +1032,28 @@ again:
      }
    else if (__tag (_object) = 189)
      {
-       http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := b3s_xsd_link ('integer');
+       http (sprintf ('<span %s>%ld</span>', rdfa, _object));
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 190)
      {
        http (sprintf ('<span %s>%f</span>', rdfa, _object));
-       lang := b3s_xsd_link ('float');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 191)
      {
-       http (sprintf ('<span %s>%d</span>', rdfa, _object));
-       lang := b3s_xsd_link ('double');
+       http (sprintf ('<span %s>%f</span>', rdfa, _object));
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 219)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, cast (_object as varchar)));
-       lang := b3s_xsd_link ('double');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 182)
      {
        declare vlbl any;
-       if (b3s_o_is_img (prop))
+       if (b3s_o_is_img (prop) or _object like 'data:image/%')
 	 {
 	   __box_flags_set (_object, 1);
 	   goto again;
@@ -1062,7 +1077,7 @@ again:
    else if (__tag (_object) = 211)
      {
        http (sprintf ('<span %s>%s</span>', rdfa, datestring (_object)));
-       lang := b3s_xsd_link ('dateTime');
+       lang := b3s_xsd_link (rdfs_type);
      }
    else if (__tag (_object) = 230)
      {
@@ -1077,7 +1092,7 @@ again:
    else if (__tag (_object) = 225)
      {
        http (sprintf ('<span %s>', rdfa));
-       http (charset_recode (_object, '_WIDE_', 'UTF-8'));
+       http (__box_flags_tweak (charset_recode (_object, '_WIDE_', 'UTF-8'), 2));
        http ('</span>');
      }
    else if (__tag (_object) = 238)
@@ -1160,10 +1175,10 @@ create procedure fct_links_hdr (in subj any, in desc_link any)
   foreach (any elm in vec) do
     {
       links := links ||
-      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)",', desc_link, elm[0], elm[0], elm[1]);
+      sprintf ('<%s&output=%U>; rel="alternate"; type="%s"; title="Structured Descriptor Document (%s format)", ', desc_link, elm[0], elm[0], elm[1]);
     }
-  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic",', subj);
-  links := links || ' <?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
+  links := links || sprintf ('<%s>; rel="http://xmlns.com/foaf/0.1/primaryTopic", ', subj);
+  links := links || '<?first>; rel="first", <?last>; rel="last", <?next>; rel="next", <?prev>; rel="prev", ';
   links := links || sprintf ('<%s>; rev="describedby"\r\n', subj);
   http_header (http_header_get () || links);
 }
@@ -1280,8 +1295,6 @@ create procedure DB.DBA.SPARQL_DESC_DICT_LOD (in subj_dict any, in consts any, i
 }
 ;
 
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD_PHYSICAL to "SPARQL_SELECT";
-grant execute on DB.DBA.SPARQL_DESC_DICT_LOD to "SPARQL_SELECT";
 
 create procedure b3s_lbl_order (in p any, in lbl_order_pref_id int := 0)
 {
@@ -1364,7 +1377,10 @@ where
       http_sparql_object (qm, q_txt);
       http (' { ', q_txt);
       if ('O' = fld) http ('?s ?p ', q_txt);
-      http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
+      if (subj_iri like 'nodeID://%')
+        http (sprintf ('<%s>', subj_iri), q_txt);
+      else
+        http_sparql_object (__box_flags_tweak (subj_iri, 1), q_txt);
       if ('S' = fld) http (' ?p ?o', q_txt);
       http (' } } } limit ' || tot_dict_size, q_txt);
       stat := '00000';
@@ -1573,13 +1589,30 @@ create procedure b3s_get_user_graph_permissions (
 }
 ;
 
-grant execute on b3s_gs_check_needed to public;
+create procedure b3s_uri_percent_decode (in uri any)
+{
+  declare du any;
+  if (uri is null)
+    return '';
+  if (iswidestring (uri))
+    uri := charset_recode (uri, '_WIDE_', 'UTF-8');
+  if (length(uri) and strcontains(uri, '%'))
+  {
+    -- Assume the label is a percent-encoded URL/Curie. Percent-decode the label.
+    du := sprintf_inverse(uri, '%U', 0);
+    uri := case when length(du) > 0 then du[0] else uri end;
+  }
+  return uri;
+}
+;
+
 
 create procedure fct_set_graphs (in sid any, in graphs any)
 {
   declare xt, newx, s any;
   if (sid is null) return;
   xt := (select fct_state from fct_state where fct_sid = sid);
+  if (xt is null) return; -- bad sid
   s := string_output ();
   http ('<graphs>', s);
   foreach (any g in graphs) do

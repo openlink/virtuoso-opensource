@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -35,6 +35,8 @@
 extern int cmp_like (const char *string, const char *pattern, collation_t *collation, char escape_char, int strtype, int patterntype );
 extern unsigned char *nc_strstr (const unsigned char *string1, const unsigned char *string2);
 extern wchar_t *nc_strstr__wide (const wchar_t *string1, const wchar_t *string2);
+
+#define ncs_strstr(x,y) nc_strstr ((unsigned char*)(x), (unsigned char*)(y))
 
 
 #endif /* _WI_STRLIKE_H */

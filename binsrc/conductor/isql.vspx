@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -22,7 +22,7 @@
 -->
 <html>
   <head>
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css"/>
     <link type="text/css" rel="stylesheet" href="syntax/SyntaxHighlighter.css"></link>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>Interactive SQL</title>
@@ -38,7 +38,7 @@
         <vm:variables>
           <v:variable name="is_popup" persist="0" type="integer" default="1" />
         </vm:variables>
-<?vsp http('<script type="text/javascript" src="md5.js"></script>\n'); ?>
+        <?vsp http('<script type="text/javascript" src="js/md5.js"></script>\n'); ?>
         <script type="text/javascript">
           <![CDATA[
   function adm_post (f, btn)

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -165,7 +165,7 @@
 	  if (self.msg is null)
 	    {
 	      self.msg :=
-	       xslt ('file:/vsmx/vsmx_msg.xsl', self.wsdl, vector ('msg', self.get_nc_name (self.msg_name)));
+	       xslt ('file:vsmx/vsmx_msg.xsl', self.wsdl, vector ('msg', self.get_nc_name (self.msg_name)));
 	    }
 	  if (isstring (self.msg))
 	    {
@@ -332,7 +332,7 @@
 		    declare xt, xp, path any;
 		    xt := (control.vc_parent as vspx_tree_node).tn_element;
 		    nam := cast (xpath_eval ('@type',xt) as varchar);
-		    frag := xslt ('file://vsmx/vsmx_msg.xsl', self.wsdl,
+		    frag := xslt ('file:vsmx/vsmx_msg.xsl', self.wsdl,
 		    vector ('typ', nam, 'msg', ' none'));
 		    path := self.get_path (control);
 		    stub := xpath_eval ('/stub/*', frag, 0);
@@ -392,7 +392,7 @@
     if (self.res is not null)
       {
        declare xs any;
-       xs := xslt ('file:/vsmx/vsmx_res.xsl', self.res, vector ('service', self.oper));
+       xs := xslt ('file:vsmx/vsmx_res.xsl', self.res, vector ('service', self.oper));
        http_value (xs);
        }
     ?>
@@ -406,7 +406,7 @@
 	  </tr>
 	</table>
       </v:form>
-      <div class="foot"><span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&amp;copy; 1998-2018 OpenLink Software.</span></div>
+      <div class="foot"><span class="foot">Virtuoso Universal Server <?V sys_stat('st_dbms_ver')?> - Copyright&amp;copy; 1998-2023 OpenLink Software.</span></div>
     </body>
   </html>
 </v:page>

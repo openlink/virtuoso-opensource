@@ -61,7 +61,7 @@
       <PreprocessorDefinitions>_IMSG;_SSL;_LIBC;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;BIF_XML;REPLICATION_SUPPORT=1;REPLICATION_SUPPORT2=1;VIRTUAL_DIR;BIF_XPER;BIF_TIDY;VIRTTP;INC_BACKUP;VAD;_LDAP;YYTOKENTYPE;PLDBG;NDEBUG;YY_NO_UNISTD_H;_CRT_SECURE_NO_DEPRECATE;PCRE_STATIC;OLD_TIDY;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -200,6 +200,7 @@
     <ClCompile Include="..\libsrc\Wi\jso.c" />
     <ClCompile Include="..\libsrc\Wi\json_l.c" />
     <ClCompile Include="..\libsrc\Wi\json_p.c" />
+    <ClCompile Include="..\libsrc\Wi\jsonld_p.c" />
     <ClCompile Include="..\libsrc\Wi\lisprdr.c" />
     <ClCompile Include="..\libsrc\Wi\lock.c" />
     <ClCompile Include="..\libsrc\Wi\log.c" />
@@ -635,6 +636,40 @@ cd $(ProjectDir)
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)json_p.c;%(RootDir)%(Directory)json_p.h;%(Outputs)</Outputs>
     </CustomBuild>
+    <CustomBuild Include="..\libsrc\Wi\jsonld.y">
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
+rm -f jsonld_p.c
+rm -f jsonld_p.h
+bison -y -vd -pjsonldyy jsonld.y -ojsonld_p.c
+cd $(ProjectDir)
+</Command>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <AdditionalInputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(AdditionalInputs)</AdditionalInputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">%(RootDir)%(Directory)jsonld_p.c;%(RootDir)%(Directory)jsonld_p.h;%(Outputs)</Outputs>
+    </CustomBuild>
     <CustomBuild Include="..\libsrc\Wi\nquad_p.y">
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
 rm -f nquad_p.c
@@ -886,24 +921,24 @@ cd $(ProjectDir)
     <CustomBuild Include="..\libsrc\Wi\sqlwords.gperf">
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Command Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">cd %(RootDir)%(Directory)
 rm -f sqlwords.h
-gperf -aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *keiiyword/g%27 &gt;sqlwords.h
+gperf -aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$ sqlwords.gperf -Nlex_hash_kw | sed -e %27s/char \*keyword/char *kwd/g%27 &gt;sqlwords.h
 cd $(ProjectDir)
 </Command>
       <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(RootDir)%(Directory)\sqlwords.h;%(Outputs)</Outputs>

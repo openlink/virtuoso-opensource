@@ -3,7 +3,7 @@
  *
  *  This file is part of the OpenLink Software Ajax Toolkit (OAT) project.
  *
- *  Copyright (C) 2005-2018 OpenLink Software
+ *  Copyright (C) 2005-2023 OpenLink Software
  *
  *  See LICENSE file for details.
  */
@@ -229,7 +229,7 @@ OAT.WebDav = {
 		var wopts = {
 			buttons:"cr",
 			outerWidth:this.options.width,
-			outerHeight:this.options.height - 40,
+			// outerHeight:this.options.height - 40,
 			imagePath:this.options.imagePath,
 			title:"WebDAV Browser",
 			stackGroupBase:998

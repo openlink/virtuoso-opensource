@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -91,3 +91,11 @@ create procedure fct_load_oplweb ()
 
 fct_load_oplweb ();
 rdfs_rule_set ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#');
+
+DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 1);
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sonto');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sifp');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:rules.skos');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'virtrdf-label');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'facets');
+

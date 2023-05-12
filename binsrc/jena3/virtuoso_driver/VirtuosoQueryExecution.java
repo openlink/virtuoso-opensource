@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -24,12 +24,14 @@
 package virtuoso.jena.driver;
 
 import java.util.*;
-import java.io.*;
-import java.net.*;
-import java.sql.Connection;
-import java.sql.Statement;
 import java.sql.ResultSetMetaData;
 
+import org.apache.jena.atlas.json.JsonArray;
+import org.apache.jena.atlas.json.JsonObject;
+/**
+import org.apache.jena.atlas.json.JsonValue;
+import org.apache.jena.sparql.lib.RDFTerm2Json;
+**/
 import virtuoso.sql.*;
 
 import org.apache.jena.graph.NodeFactory;
@@ -50,12 +52,7 @@ import org.apache.jena.sparql.core.Quad;
 import org.apache.jena.sparql.engine.binding.BindingFactory;
 import org.apache.jena.sparql.engine.binding.Binding;
 import org.apache.jena.sparql.engine.binding.BindingMap;
-import org.apache.jena.sparql.engine.ResultSetStream;
-import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.iterator.QueryIterConcat;
-import org.apache.jena.sparql.engine.http.QueryEngineHTTP;
-import org.apache.jena.sparql.engine.iterator.QueryIterSingleton;
-import org.apache.jena.sparql.engine.iterator.QueryIteratorResultSet;
 import org.apache.jena.sparql.core.Var;
 import org.apache.jena.sparql.core.ResultBinding;
 import org.apache.jena.sparql.util.Context;
@@ -65,7 +62,6 @@ import org.apache.jena.query.*;
 
 import java.util.concurrent.TimeUnit;
 
-import virtuoso.jdbc4.VirtuosoConnectionPoolDataSource;
 
 public class VirtuosoQueryExecution implements QueryExecution {
     private QueryIterConcat output = null;
@@ -93,7 +89,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
 
     public ResultSet execSelect() {
-        ResultSet ret = null;
 
         try {
             stmt = graph.createStatement(false);
@@ -142,10 +137,9 @@ public class VirtuosoQueryExecution implements QueryExecution {
      * <p>
      * <b>Caution:</b> This method may return duplicate Quads.  This method may be useful if you only
      * need the results for stream processing, as it can avoid having to place the results in a Model.
-     * </p>
+     * <p>
      * @return An iterator of Quad objects (possibly containing duplicates) generated
      * by applying the CONSTRUCT template of the query to the bindings in the WHERE clause.
-     * </p>
      * <p>
      * See {@link #execConstructTriples} for usage and features.
      */
@@ -213,7 +207,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
@@ -224,11 +217,14 @@ public class VirtuosoQueryExecution implements QueryExecution {
                     model.add(st);
             }
             rs.close();
-            stmt.close();
-            stmt = null;
-
         } catch (Exception e) {
             throw new JenaException("Convert results has FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return model;
     }
@@ -265,7 +261,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
             while (rs.next()) {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
                 Node p = VirtGraph.Object2Node(rs.getObject(2));
@@ -276,11 +271,15 @@ public class VirtuosoQueryExecution implements QueryExecution {
                     model.add(st);
             }
             rs.close();
-            stmt.close();
-            stmt = null;
 
         } catch (Exception e) {
             throw new JenaException("Convert results are FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return model;
     }
@@ -315,20 +314,61 @@ public class VirtuosoQueryExecution implements QueryExecution {
             if (timeout > 0)
                 stmt.setQueryTimeout((int) (timeout / 1000));
             java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
-            ResultSetMetaData rsmd = rs.getMetaData();
 
             while (rs.next()) {
                 if (rs.getInt(1) == 1)
                     ret = true;
             }
             rs.close();
-            stmt.close();
-            stmt = null;
 
         } catch (Exception e) {
             throw new JenaException("Convert results has FAILED.:" + e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch (Exception e) { }
+          stmt = null;
         }
         return ret;
+    }
+
+    @Override
+    public JsonArray execJson() {
+        throw new JenaException("Unsupported Operation");
+/*** checkme
+        JsonArray jsonArray = new JsonArray() ;
+        try {
+            stmt = graph.createStatement(false);
+            if (timeout > 0)
+                stmt.setQueryTimeout((int) (timeout / 1000));
+            java.sql.ResultSet rs = stmt.executeQuery(getVosQuery());
+
+            VResultSet vrs = new VResultSet(graph, stmt, rs);
+
+            List<String> resultVars = vrs.getResultVars();
+            while(vrs.hasNext())
+            {
+                Binding binding = vrs.nextBinding();
+                JsonObject jsonObject = new JsonObject() ;
+                for (String resultVar : resultVars) {
+                    Node n = binding.get(Var.alloc(resultVar)) ;
+                    JsonValue value = RDFTerm2Json.fromNode(n) ;
+                    jsonObject.put(resultVar, value) ;
+                }
+                jsonArray.add(jsonObject) ;
+            }
+            return jsonArray;
+        } catch (Exception e) {
+            throw new JenaException("Can not create ResultSet.:" + e);
+        }
+ ***/
+    }
+
+
+    @Override
+    public Iterator<JsonObject> execJsonItems() {
+        throw new JenaException("Unsupported Operation");
     }
 
 
@@ -548,14 +588,6 @@ public class VirtuosoQueryExecution implements QueryExecution {
             return m;
         }
 
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {
-                }
-        }
-
         protected void moveForward() throws JenaException {
             try {
                 if (!v_finished && rs.next()) {
@@ -590,21 +622,19 @@ public class VirtuosoQueryExecution implements QueryExecution {
             throw new UnsupportedOperationException(this.getClass().getName() + ".remove");
         }
 
-        private void close() {
+        public void close() {
             if (!v_finished) {
                 if (rs != null) {
                     try {
                         rs.close();
-                        rs = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    rs = null;
                 }
                 if (stmt != null) {
                     try {
                         stmt.close();
-                        stmt = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    stmt = null;
                 }
             }
             v_finished = true;

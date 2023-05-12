@@ -8,7 +8,7 @@
  *  The iODBC driver manager.
  *  
  *  Copyright (C) 1995 by Ke Jin <kejin@empress.com> 
- *  Copyright (C) 1996-2018 OpenLink Software <iodbc@openlinksw.com>
+ *  Copyright (C) 1996-2023 OpenLink Software <iodbc@openlinksw.com>
  *  All Rights Reserved.
  *
  *  This software is released under the terms of either of the following
@@ -853,6 +853,7 @@ extern "C" {
 #define SQL_DDL_INDEX				170
 #define SQL_DM_VER				171
 #define SQL_INSERT_STATEMENT			172
+#define SQL_CONVERT_GUID			173
 #define SQL_UNION_STATEMENT			SQL_UNION
 
 #endif	/* ODBCVER >= 0x0300 */

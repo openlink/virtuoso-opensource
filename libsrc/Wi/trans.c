@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -169,7 +169,8 @@ int
 tn_lc_exec (trans_node_t * tn, caddr_t * inst, srv_stmt_t * lc, caddr_t * row, caddr_t last, int is_exec)
 {
   QNCAST (QI, qi, inst);
-  int save_at, save_st;
+  uint32 save_at;
+  time_msec_t save_st;
   caddr_t err;
   int rc;
   client_connection_t * cli;
@@ -1654,6 +1655,7 @@ sqlg_sas_input_ssl (sql_comp_t * sc, df_elt_t * s_dfe, df_elt_t * p_dfe, df_elt_
   return NULL;
 }
 
+int32 enable_g_inf_opt = 0;
 
 void
 sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_source_t * ts,
@@ -1700,7 +1702,7 @@ sqlg_leading_multistate_same_as (sqlo_t * so, data_source_t ** q_head, data_sour
     {
       tn->tn_ifp_ctx_name = box_copy (ctx->ric_name);
       tn->tn_max_depth = ssl_new_constant (so->so_sc->sc_cc, box_num (1));
-      if (g_dfe)
+      if (enable_g_inf_opt && g_dfe)
 	{
 	  tn->tn_prepared_step = tn_ifp_qr;
 	  tn->tn_ifp_g_list = ssl_new_variable (so->so_sc->sc_cc, "ifp_g_list", DV_ANY);

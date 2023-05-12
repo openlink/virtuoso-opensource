@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -322,6 +322,7 @@ itc_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   itc->itc_row_key = itc->itc_insert_key;
   itc->itc_lock_mode = PL_EXCLUSIVE;
   itc->itc_search_mode = SM_INSERT;
+  itc->itc_isolation = ins->ins_seq_col ? ISO_SERIALIZABLE : ISO_REPEATABLE;
 reset_search:
   first_set = itc->itc_set;
   ins_offset = 0;
@@ -1111,11 +1112,11 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       }
   }
   ITC_FAILED
-  {
-    rd_free (&right_rd);
-    mp_free (ins_mp);
-    itc_free_owned_params (itc);
-  }
+    {
+      rd_free (&right_rd);
+      mp_free (ins_mp);
+      itc_free_owned_params (itc);
+    }
   END_FAIL (itc);
   ITC_RESTORE_FAIL (itc);
 done:

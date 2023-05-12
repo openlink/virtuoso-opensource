@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -60,7 +60,7 @@ noinst_HEADERS = \
 	virtext.h virtpwd.h widd.h widisk.h widv.h wifn.h wi.h wirpce.h \
 	wiservic.h wi_xid.h xmlenc_algos.h xmlenc.h xmlenc_test.h xmlgen.h \
 	xml.h xmlnode.h xmlres.h xmltree.h xpath.h xpathp.h xpathp_impl.h \
-	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h \
+	xpf.h xqf.h xslt_impl.h aqueue.h rdf_mapping_jso.h bitmap.h jso.h json.h \
 	json_p.h bif_audio_tags.h shcompo.h cluster.h extent.h uname_const_decl.h \
 	col.h simd.h vec.h mhash.h qncache.h sparqlwords.h clq.h geo.h monitor.h
 
@@ -71,6 +71,8 @@ generated_code = \
 	json_l.c \
 	json_p.c \
 	json_p.h \
+	jsonld_p.c \
+	jsonld_p.h \
 	rdf_mapping_jso.c \
 	rdf_mapping_jso.h \
 	rdf_mapping_jso.ttl \
@@ -193,6 +195,7 @@ libwi_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	jsonld_p.c \
 	lisprdr.c \
 	lock.c \
 	monitor.c \
@@ -342,6 +345,7 @@ libwi_odbc_la_SOURCES = \
 	inxop.c \
 	json_l.c \
 	json_p.c \
+	jsonld_p.c \
 	lisprdr.c \
 	lock.c \
 	monitor.c \
@@ -694,6 +698,8 @@ SQL_FILES_SPARQL	= \
 	$(srcdir)/ttlpv.sql \
 	$(srcdir)/sparql.sql \
 	$(srcdir)/sparql_io.sql \
+	$(srcdir)/sparql_ui.sql \
+	$(srcdir)/sparql_qm.sql \
 	$(srcdir)/rdf_sponge.sql \
 	$(srcdir)/rdf_schema_objects.sql \
 	$(srcdir)/rdf_void.sql \
@@ -731,6 +737,7 @@ SQL_FILES_WS		= \
 	$(srcdir)/xmlrpc_soap.xsl \
 	$(srcdir)/soap_xmlrpc.xsl \
 	$(srcdir)/soap12_router.xsl \
+	$(top_srcdir)/binsrc/websocket/websocket.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_ddl.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrm_xsd.sql \
 	$(top_srcdir)/binsrc/ws/wsrm/wsrmcli.sql \
@@ -765,11 +772,13 @@ json_p.c json_p.h: $(srcdir)/json.y Makefile.am
 json_l.c: $(srcdir)/json.l json_p.h Makefile.am
 	@$(GEN) $(LEX) -o json_l.c -Pjsonyy $(srcdir)/json.l
 
+jsonld_p.c jsonld_p.h: $(srcdir)/jsonld.y Makefile.am
+	@$(GEN) $(YACC) -o jsonld_p.c -vd -pjsonldyy $(srcdir)/jsonld.y
 
 sqlwords.h: $(srcdir)/sqlwords.gperf Makefile.am
 	@${GEN} --stdout ${GPERF} \
 		-o sqlwords.h \
-		-aCDGptr -Kkeiiyword -L ANSI-C -k1,2,3,6,9,$$ \
+		-aCDGptr -Kkwd -L ANSI-C -k1,2,3,6,9,$$ \
 		-Nlex_hash_kw \
 		$(srcdir)/sqlwords.gperf
 
@@ -1080,6 +1089,7 @@ EXTRA_DIST = \
 	iodbcinst.c \
 	jso_reformat.awk \
 	list_lex_props.sh \
+	mkgit_head.sh \
 	mts_client.c \
 	mts_com.cpp \
 	mtx.cpp \

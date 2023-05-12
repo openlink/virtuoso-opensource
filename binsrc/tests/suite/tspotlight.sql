@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -59,7 +59,7 @@ create procedure check_res (in dav_path varchar, in _what varchar)
    return 0;
 }
 
-select check_res ('/DAV/u1/Image.jpg', 'JPEG image');
+select check_res ('/DAV/u1/Image.jpg', 'JPEG Image');
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": /DAV/u1/Image.jpg : JPEG Image $LAST[1]=" $LAST[1] " MESSAGE=" $MESSAGE "\n";

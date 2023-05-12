@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -158,7 +158,7 @@ create procedure "VAD"."DBA"."VAD_MKDAV" (inout id integer, inout gd integer, in
         return -1;
       usr := 'dav';
       pwd := pwd_magic_calc('dav', (select U_PWD from WS.WS.SYS_DAV_USER where U_NAME='dav'), 1);
-      curid := "DB"."DBA"."DAV_COL_CREATE" (p, '111101101N', usr, NULL, usr, pwd);
+      curid := "DB"."DBA"."DAV_COL_CREATE" (p, '111101000N', usr, NULL, usr, pwd);
       if (curid < 0)
         return curid;
     }

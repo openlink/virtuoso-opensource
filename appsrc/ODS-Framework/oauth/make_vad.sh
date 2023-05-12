@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -185,40 +185,47 @@ directory_init() {
 }
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
-  then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-        then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 virtuoso_shutdown() {
@@ -252,7 +259,7 @@ sticker_init() {
   echo "  <name package=\"$VAD_NAME\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"$VAD_DESC\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -314,14 +321,20 @@ fi
   echo "</ddls>" >> $STICKER
   echo "<resources>" >> $STICKER
 
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oauth.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
-  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>"  >> $STICKER
+  perms='110100000NN'
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/oauth.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
+  echo "  <file type=\"$TYPE\" source=\"code\" target_uri=\"$VAD_NAME/foaf_ssl.sql\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>"  >> $STICKER
 
 
   cd vad/vsp/$VAD_NAME
   for file in `find . -type f -print | grep -v CVS | grep -v ".sql" | sort | cut -b3-`
   do
-      echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> ../../../$STICKER
+     case "$file" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
+     echo "  <file type=\"$TYPE\" source=\"http\" target_uri=\"$VAD_NAME/$file\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> ../../../$STICKER
   done
   cd ../../..
 

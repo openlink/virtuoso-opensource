@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 #
 #  mkvad.sh
 #
@@ -7,7 +7,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -144,43 +144,52 @@ LOG()
     fi
 }
 
+
 START_SERVER()
 {
-  timeout=120
+    timeout=120
 
-  ECHO "Starting Virtuoso server ..."
-  if [ "z$HOST_OS" != "z" ]
-  then
-      "$SERVER" +foreground &
-      else
-      "$SERVER" +wait
-      fi
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
+    then
+	"$SERVER" +foreground &
 
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
 
-  while true
-    do
-      sleep 6
-      if (netstat -an | grep "$PORT" | grep LISTEN > /dev/null)
-        then
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
+    fi
+
     ECHO "Virtuoso server started"
     return 0
-  fi
-      nowh=`date | cut -f 2 -d :`
-      nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-
-      nowh=`expr $nowh - $starth`
-      nows=`expr $nows - $starts`
-
-      nows=`expr $nows + $nowh \*  60`
-      if test $nows -ge $timeout
-        then
-    ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-    exit 1
-  fi
-  done
 }
+
 
 STOP_SERVER()
 {
@@ -289,7 +298,7 @@ echo "  <caption>" >> $STICKER
 echo "    <name package=\"conductor\">" >> $STICKER
 echo "      <prop name=\"Title\" value=\"Virtuoso Conductor\"/>" >> $STICKER
 echo "      <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-echo "      <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+echo "      <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso/conductor/download\"/>" >> $STICKER
 echo "      <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso/conductor/download\"/>" >> $STICKER
 echo "    </name>" >> $STICKER
@@ -310,7 +319,7 @@ echo "        {" >> $STICKER
 echo "          result ('ERROR', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "          signal ('FATAL', 'The conductor package requires server version $NEED_VERSION or greater');" >> $STICKER
 echo "        }" >> $STICKER
-echo "      if (coalesce ((select 1 from DB.DBA.SYS_COLS where \"TABLE\" = 'DB.DBA.SYS_SCHEDULED_EVENT' and \"COLUMN\" = 'SE_DISABLED'), 0) = 0)" >> $STICKER
+echo "      if (coalesce ((select 1 from DB.DBA.SYS_COLS where \"TABLE\" = 'WS.WS.SYS_DAV_COL' and \"COLUMN\" = 'COL_FULL_PATH'), 0) = 0)" >> $STICKER
 echo "        {" >> $STICKER
 echo "          result ('ERROR', 'Please update server version');" >> $STICKER
 echo "          signal ('FATAL', 'Please update server version');" >> $STICKER
@@ -334,17 +343,18 @@ echo "    </sql>" >> $STICKER
 echo "    <sql purpose=\"post-install\">" >> $STICKER
 echo "      registry_set('__no_vspx_temp', '1');" >> $STICKER
 #echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/admin_dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/vdir_helper.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/yacutia.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/acme.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/dav/dav_browser.sql', 1, 'report', $ISDAV);" >> $STICKER
 echo "      \"WEBDAV\".\"DBA\".\"xsl_upload\"($ISDAV);" >> $STICKER
 echo "      vhost_remove (lpath=>'/conductor');" >> $STICKER
 echo "      vhost_remove (lpath=>'/vspx');" >> $STICKER
 echo "      vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');" >> $STICKER
-echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>1, def_page=>'main_tabs.vspx');" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
-echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
+echo "      vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');" >> $STICKER
+echo "      vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH/conductor/', is_dav=>$ISDAV, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/xddl.sql', 1, 'report', $ISDAV);" >> $STICKER
+echo "      \"DB\".\"DBA\".\"VAD_LOAD_SQL_FILE\"('$BASE_PATH/conductor/sql/$XDDLSQL', 1, 'report', $ISDAV);" >> $STICKER
 echo "      if ($ISDAV = 1) " >> $STICKER
 echo "      { " >> $STICKER
 echo "      for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '/DAV/VAD/conductor/%.xsl') do " >> $STICKER
@@ -373,13 +383,24 @@ echo "  <resources>" >> $STICKER
 for file in $FLIST
 do
     name=$file
-echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='111101101NN' makepath=\"yes\"/>" >> $STICKER
+    case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='$perms' makepath=\"yes\"/>" >> $STICKER
 done
+
 
 for file in `find vad/vsp/conductor/toolkit -type f -print | grep -v CVS | sort | cut -b9- `
 do
     name=$file
-echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='110100100NN' makepath=\"yes\"/>" >> $STICKER
+    case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+    esac
+echo "    <file type=\"$TYPE\" source=\"http\" target_uri=\"$name\" dav_owner='dav' dav_grp='administrators' dav_perm='$perms' makepath=\"yes\"/>" >> $STICKER
 done
 
 echo "  </resources>" >> $STICKER
@@ -415,21 +436,19 @@ curpwd=`pwd`
 cd $curpwd
 
 mkdir vad
-mkdir vad/code
 mkdir vad/vsp
-mkdir vad/vsp/vspx
-mkdir vad/vsp/vspx/browser
-mkdir vad/vsp/vspx/browser/images
-mkdir vad/vsp/vspx/browser/images/16x16
-mkdir vad/code/conductor
 mkdir vad/vsp/conductor
+mkdir vad/vsp/conductor/css
 mkdir vad/vsp/conductor/dav
 mkdir vad/vsp/conductor/dav/image
 mkdir vad/vsp/conductor/dav/image/dav
 mkdir vad/vsp/conductor/help
 mkdir vad/vsp/conductor/images
 mkdir vad/vsp/conductor/images/icons
+mkdir vad/vsp/conductor/images/pager
+mkdir vad/vsp/conductor/js
 mkdir vad/vsp/conductor/syntax
+mkdir vad/vsp/conductor/sql
 mkdir vad/vsp/conductor/toolkit
 mkdir vad/vsp/conductor/toolkit/images
 mkdir vad/vsp/conductor/toolkit/styles
@@ -440,21 +459,25 @@ cp -f $HOME/binsrc/xddl/xddl_exec.xsl .
 cp -f $HOME/binsrc/xddl/xddl_procs.xsd .
 cp -f $HOME/binsrc/xddl/xddl_views.xsd .
 cp -f $HOME/binsrc/xddl/xddl_tables.xsd .
-cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor
-cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor
-cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor
+cp -f $HOME/binsrc/xddl/xddl.sql vad/vsp/conductor/sql
+cp -f $HOME/binsrc/xddl/xddl_dav.sql vad/vsp/conductor/sql
+cp -f $HOME/binsrc/xddl/xddl_filesystem.sql vad/vsp/conductor/sql
 
 cp -f * vad/vsp/conductor
+cp -f css/* vad/vsp/conductor/css
 cp -f dav/* vad/vsp/conductor/dav
 cp -f dav/image/* vad/vsp/conductor/dav/image
 cp -f dav/image/dav/* vad/vsp/conductor/dav/image/dav
 cp -f images/* vad/vsp/conductor/images
 cp -f images/icons/* vad/vsp/conductor/images/icons
+cp -f images/pager/* vad/vsp/conductor/images/pager
+cp -f js/* vad/vsp/conductor/js
 cp -f syntax/* vad/vsp/conductor/syntax
+cp -f sql/* vad/vsp/conductor/sql
 cp -f $HOME/binsrc/oat/toolkit/*.js vad/vsp/conductor/toolkit/.
 cp -f $HOME/binsrc/oat/images/* vad/vsp/conductor/toolkit/images
 cp -f $HOME/binsrc/oat/styles/* vad/vsp/conductor/toolkit/styles
-cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor
+cp -f $HOME/binsrc/vspx/vdir_helper.sql vad/vsp/conductor/sql
 cp -f help/*.xml vad/vsp/conductor/help
 
 VERSION_INIT

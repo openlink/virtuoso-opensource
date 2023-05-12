@@ -67,7 +67,7 @@
       <ExceptionHandling>
       </ExceptionHandling>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>
@@ -87,10 +87,10 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtodbc.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32mt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCD.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>..\binsrc\virtodbc\virtodbc.def</ModuleDefinitionFile>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -139,10 +139,10 @@
     <Link>
       <AdditionalOptions>
       </AdditionalOptions>
-      <AdditionalDependencies>dk1t.lib;threadw.lib;util.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtodbc.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32mt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>LIBCD.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <ModuleDefinitionFile>..\binsrc\virtodbc\virtodbc.def</ModuleDefinitionFile>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -190,20 +190,12 @@
     <ResourceCompile Include="..\binsrc\virtodbc\virtodbc.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="dk1t.vcxproj">
-      <Project>{58f7dcef-d5de-402d-8f50-39b67c8b9e9e}</Project>
+    <ProjectReference Include="dk1t_mt.vcxproj">
+      <Project>{58f7dcef-d5de-402d-8f50-39b67c8b9e9f}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
-    <ProjectReference Include="threads.vcxproj">
-      <Project>{b619bb2c-a9ac-453d-ba98-3a8f3217b1ab}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="util.vcxproj">
-      <Project>{031db868-5294-4738-90ba-f80bb2cea9dc}</Project>
-      <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
-    </ProjectReference>
-    <ProjectReference Include="wic.vcxproj">
-      <Project>{a66e395b-18ee-4877-8f0d-386a7bbab370}</Project>
+    <ProjectReference Include="util_mt.vcxproj">
+      <Project>{031db868-5294-4738-90ba-f80bb2cea9dd}</Project>
       <ReferenceOutputAssembly>false</ReferenceOutputAssembly>
     </ProjectReference>
   </ItemGroup>

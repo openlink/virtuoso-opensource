@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -37,14 +37,20 @@ JDK4_2_TEST = jdk4_2-test
 JDK4_2_DOC = jdk4_2-doc
 endif
 
-JDK_TESTS = $(JDK4_TEST) $(JDK4_1_TEST) $(JDK4_2_TEST)
+if WITH_JDK4_3
+JDK4_3_TARGETS = jdk4_3-target
+JDK4_3_TEST = jdk4_3-test
+JDK4_3_DOC = jdk4_3-doc
+endif
 
-SUBDIRS	= . testsuite_4.0
+JDK_TESTS = $(JDK4_TEST) $(JDK4_1_TEST) $(JDK4_2_TEST) $(JDK4_3_TEST)
+
+SUBDIRS	= . virtuoso testsuite_4.0
 
 
-all-am: $(JDK4_TARGETS) $(JDK4_1_TARGETS) $(JDK4_2_TARGETS)
+all-am: $(JDK4_TARGETS) $(JDK4_1_TARGETS) $(JDK4_2_TARGETS) $(JDK4_3_TARGETS)
 
-doc:	$(JDK4_DOC) $(JDK4_1_DOC) $(JDK4_2_DOC)
+doc:	$(JDK4_DOC) $(JDK4_1_DOC) $(JDK4_2_DOC) $(JDK4_3_DOC)
 
 run-tests:
 	$(MAKE) $(JDK_TESTS)
@@ -76,7 +82,7 @@ jdk4_1-target:
 
 .PHONY: jdk4_1-test
 jdk4_1-test:
-	env "JDK4_1=@ac_jdk4_1_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+	env "JDK4_1=@ac_jdk4_1_path@" $(SHELL) ./test4_1.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 .PHONY: jdk4_1-doc
 jdk4_1-doc:
@@ -92,11 +98,27 @@ jdk4_2-target:
 
 .PHONY: jdk4_2-test
 jdk4_2-test:
-	env "JDK4_2=@ac_jdk4_2_path@" $(SHELL) ./test4.sh "jdbc:virtuoso://localhost:$(PORT)/"
+	env "JDK4_2=@ac_jdk4_2_path@" $(SHELL) ./test4_2.sh "jdbc:virtuoso://localhost:$(PORT)/"
 
 .PHONY: jdk4_2-doc
 jdk4_2-doc:
 	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) doc4_2
+
+
+#
+#  JDK 1.9 / JDBC 4.3
+#
+.PHONY: jdk4_3-target
+jdk4_3-target:
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) std4_3
+
+.PHONY: jdk4_3-test
+jdk4_3-test:
+	env "JDK4_3=@ac_jdk4_3_path@" $(SHELL) ./test4_3.sh "jdbc:virtuoso://localhost:$(PORT)/"
+
+.PHONY: jdk4_3-doc
+jdk4_3-doc:
+	@cd virtuoso/jdbc; $(MAKE) -$(MAKEFLAGS) doc4_3
 
 
 #
@@ -106,14 +128,17 @@ install-data-local:
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.0"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.1"
 	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.2"
+	-$(MKDIR_P) "$(DESTDIR)${libdir}/jdbc-4.3"
 	-cp virtjdbc4.jar   "$(DESTDIR)${libdir}/jdbc-4.0"
 	-cp virtjdbc4_1.jar "$(DESTDIR)${libdir}/jdbc-4.1"
 	-cp virtjdbc4_2.jar "$(DESTDIR)${libdir}/jdbc-4.2"
+	-cp virtjdbc4_3.jar "$(DESTDIR)${libdir}/jdbc-4.3"
 
 uninstall-local:
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.0"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.1"
 	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.2"
+	-rm -rf "$(DESTDIR)${libdir}/jdbc-4.3"
 
 
 MAINTAINERCLEANFILES = *.jar
@@ -136,4 +161,5 @@ EXTRA_DIST = \
 	test4_2.sh \
 	virtjdbc4.jar \
 	virtjdbc4_1.jar \
-	virtjdbc4_2.jar
+	virtjdbc4_2.jar \
+	virtjdbc4_3.jar

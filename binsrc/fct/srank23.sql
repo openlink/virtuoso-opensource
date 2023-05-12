@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -32,7 +32,9 @@ EXEC_STMT ('alter index RDF_IRI_RANK on RDF_IRI_RANK partition (rnk_iri int (0he
 EXEC_STMT ('create table RDF_IRI_STAT (rst_iri iri_id_8 primary key, rst_string varchar no compress)',0);
 EXEC_STMT ('alter index RDF_IRI_STAT on RDF_IRI_STAT partition (rst_iri int (0hexffff00))',0);
 
-create procedure f_s (in f double precision)
+
+-- calculate int scaled from double/float
+create procedure float2twobytes (in f double precision) returns int
 {
   declare i double precision;
   i := log (f) * 1000 + 0hex7fff;
@@ -42,38 +44,36 @@ create procedure f_s (in f double precision)
 }
 ;
 
-create procedure s_f (in i int)
+-- returns double scaled from int
+create procedure twobytes2float (in i int) returns double precision
 {
   return exp ((i - 0hex7fff) / 1e3);
 }
 ;
 
-grant execute on S_F to "SPARQL";
 
-create procedure rnk_scale (in i int)
+-- TBD: algorithm to scale int is not documented yet
+create procedure rnk_scale (in i int) returns double precision
 {
-  declare ret, tmp any;
+  declare ret double precision;
 
+  -- makes a double from int see twobytes2float()
   ret := exp ((i - 0hex7fff) / 1e3);
 
   if (ret < 1)
     {
       return (2 * atan (ret*5));
     }
-
-  if (ret > 1 and ret < 10)
+  else if (ret >= 1 and ret < 10)
     {
-      return 3 + ((atan (ret-1) * 4) / 3.14e0);
+      return 3 + ((atan (ret-1) * 4) / pi());
     }
-
   else
     {
-      return 7 + (atan ((ret-10)/50) * 2);
+      return 5 + (atan ((ret-10)/50) * 2);
     }
 }
 ;
-
-grant execute on rnk_scale to "SPARQL";
 
 create procedure DB.DBA.IR_SRV (in iri iri_id_8)
 {
@@ -91,7 +91,6 @@ create procedure DB.DBA.IR_SRV (in iri iri_id_8)
 }
 ;
 
-grant execute on DB.DBA.IR_SRV to "SPARQL";
 
 dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
 dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
@@ -113,8 +112,6 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
 }
 ;
 
-grant execute on IR_SRV to "SPARQL";
-grant execute on IRI_RANK to "SPARQL";
 
 create procedure rnk_store_w (inout first int, inout str varchar, inout fill int)
 {
@@ -145,6 +142,7 @@ create procedure rnk_count_refs_srv ()
   declare s, p iri_id;
   declare str varchar;
   whenever not found goto last;
+  -- ranges of 255 iris
   s_first := null;
   s_prev := null;
   open cr;
@@ -160,29 +158,37 @@ create procedure rnk_count_refs_srv ()
 	}
       if (sn = s_prev)
 	{
+	  -- count of S  IRI_STAT string
 	  cnt := cnt + 1;
 	}
       else
 	{
 	  if (not isstring (str))
 	    str := make_string (1536);
+	  -- position of S of rst_string, 6 byte per iri, two for count, 4 for ranking
 	  nth := 6 * (s_prev - s_first);
+	  -- twobytes for count of S in string, must ck for overflow of 64k
 	  str[nth] := bit_shift (cnt, -8);
 	  str[nth + 1] := cnt;
+	  -- how much to write in column rst_string
 	  fill := nth + 6;
+	  -- reset counter for S
 	  cnt := 1;
 	  s_prev := sn;
+	  -- reset anchors and store the range
+	  -- since P,S,O,G order can get something in between,
+	  -- thus take back rst_string and go ahead
 	  if (sn - s_first > 255 or s_first > sn)
 	    {
 	      rnk_store_w (s_first, str, fill);
 	      s_first := bit_and (sn, 0hexffffffffffffff00);
-	      --str := make_string (1536);
 	      str := rnk_get_stat (s_first);
 	      fill := 0;
 	    }
 	}
     }
   last:
+  -- see above
   if (not isstring (str))
     str := make_string (1536);
   nth := 6 * (s_prev - s_first);
@@ -229,21 +235,22 @@ create procedure DB.DBA.IRI_STAT (in iri iri_id_8)
   declare str varchar;
   declare n, nth, ni int;
   ni := iri_id_num (iri);
+  -- IRI range 256
   n := bit_and (0hexffffffffffffff00, ni);
+  -- block position inside string
   nth := 6 * bit_and (ni, 0hexff);
   str := (select rst_string from rdf_iri_stat where rst_iri = iri_id_from_num (n));
   if (str is null)
     return 0;
   if (nth > length (str) - 6)
     return 0;
-  return bit_shift (str[nth], 40) + bit_shift (str[nth + 1], 32) + bit_shift(str[nth + 2], 24)
-    + bit_shift (str[nth + 3], 16) + bit_shift (str[nth + 4], 8) + str[nth + 5];
-}
-;
-
-create procedure rst_old_sc (in rst int)
-{
-  return bit_and (0hexffff, bit_shift (rst, -16));
+  -- BIG-ENDIAN ordered number in string
+  return bit_shift (str[nth + 0], 40) +
+  	 bit_shift (str[nth + 1], 32) +
+	 bit_shift (str[nth + 2], 24) +
+	 bit_shift (str[nth + 3], 16) +
+	 bit_shift (str[nth + 4], 8) +
+	 str[nth + 5];
 }
 ;
 
@@ -256,8 +263,8 @@ create procedure rnk_inc (in rnk int, in nth_iter int)
     n_out := 1;
   if (1 = nth_iter)
     return 1e0 / n_out;
-  sc := s_f (bit_and (bit_shift (rnk, -16), 0hexffff));
-  prev_sc := s_f (bit_and (rnk, 0hexffff));
+  sc := twobytes2float (bit_and (bit_shift (rnk, -16), 0hexffff));
+  prev_sc := twobytes2float (bit_and (rnk, 0hexffff));
   inc := log (1 + sc - prev_sc) / log (2);
   return (1e0 / n_out) * (inc / nth_iter);
 }
@@ -265,8 +272,6 @@ create procedure rnk_inc (in rnk int, in nth_iter int)
 
 create procedure rnk_store_sc (inout first int, inout str varchar, inout fill int)
 {
-  --if (fill < 300)
-  --  str := subseq (str, 0, fill);
   insert replacing rdf_iri_rank option (no cluster)  values (iri_id_from_num (first), str);
   commit  work;
 }
@@ -284,10 +289,10 @@ create procedure rnk_get_ranks (in s_first int)
 }
 ;
 
-create procedure rnk_score (in nth_iter int)
+create procedure RNK_SCORE (in nth_iter int)
 {
   -- use the POGS instead of OP index and check for lower value
-  declare cr cursor for select o, p, iri_stat (s)
+  declare cr cursor for select o, p, IRI_STAT (s)
   	from rdf_quad table option (no cluster, index rdf_quad_pogs)
   	where o > #i0 and o < iri_id_from_num (0hexffffffffffffff00);
   declare s_first, s_prev, nth, sn, rnk, ssc, fill, n_iters int;
@@ -302,6 +307,7 @@ create procedure rnk_score (in nth_iter int)
   open cr;
   for (;;)
     {
+      -- go on O = S and take rank, order is POSG, take care about it
       fetch cr into s, p, rnk;
       sn := iri_id_num (s);
       if (s_first is null)
@@ -314,38 +320,47 @@ create procedure rnk_score (in nth_iter int)
 	  s_prev := sn;
 	  sc := 0;
 	}
-      if (sn = s_prev)
+      if (sn = s_prev) -- same S
 	{
+	  -- calculate new score
 	  sc := sc + rnk_inc (rnk, nth_iter);
-	  --dbg_obj_princ ('> sc of ', s, ' ', sc , ' rnk:', rnk, ' nth_iter:', nth_iter);
 	}
       else
 	{
 	  declare dst int;
 	  if (not isstring (str))
 	    str := make_string (512);
+	  -- two bytes for place
 	  nth := 2 * (s_prev - s_first);
-	  ssc := f_s (sc + s_f (str[nth] * 256 + str[nth + 1]));
+	  -- XXX: magic for f_s and s_f
+	  ssc := float2twobytes (sc + twobytes2float (str[nth] * 256 + str[nth + 1]));
+	  -- put new score back in string
 	  str[nth] := bit_shift (ssc, -8);
 	  str[nth + 1] := ssc;
+	  -- increment string fill
 	  fill := nth + 2;
+	  -- increment score ?
 	  sc := rnk_inc (rnk, nth_iter);
 	  s_prev := sn;
 	  dst := sn - s_first;
 	  if (dst > 255 or dst < 0)
 	    {
+	      -- save the scores
 	      rnk_store_sc (s_first, str, fill);
 	      s_first := bit_and (sn, 0hexffffffffffffff00);
 	      str := rnk_get_ranks (s_first);
+	      -- reset and score here, we change the IRI!!!
+	      sc := 0;
 	      fill := 0;
 	    }
 	}
     }
  last:
+  -- same as above
   if (not isstring (str))
     str := make_string (512);
   nth := 2 * (s_prev - s_first);
-  ssc := f_s (sc);
+  ssc := float2twobytes (sc);
   str[nth] := bit_shift (ssc, -8);
   str[nth + 1] := ssc;
   fill := nth + 2;
@@ -369,7 +384,6 @@ create procedure rnk_next_cycle ()
   declare iri iri_id;
   declare n_done int;
   declare cr cursor for select rst_iri, rst_string from rdf_iri_stat table option (no cluster);
---  log_enable (2);
   whenever not found goto done;
   open cr;
   for (;;)

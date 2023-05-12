@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1466,7 +1466,7 @@ int
 lock_wait (gen_lock_t * pl, it_cursor_t * it, buffer_desc_t * buf,
 	   int acquire)
 {
-  long time;
+  time_msec_t time;
   lock_trx_t * lt = it->itc_ltrx;
   ITC_LEAVE_MAPS (it);
   it->itc_acquire_lock = acquire;
@@ -2108,7 +2108,9 @@ pl_page_deleted (page_lock_t * pl, buffer_desc_t * buf)
     buf->bd_pl = NULL;
 }
 
+#ifdef DEBUG
 void ltbing2 () {}
+#endif
 
 void
 gl_print (gen_lock_t * gl)
@@ -2212,7 +2214,7 @@ unsigned long main_continuation_reason = 0; /* 0 - checkpoint; 1 - scheduler */
 
 dk_mutex_t *time_mtx;
 
-unsigned long checkpointed_last_time = 0;
+time_msec_t checkpointed_last_time = 0;
 
 #ifdef linux
 #include <sys/sysinfo.h>
@@ -2313,15 +2315,15 @@ the_grim_swap_guard ()
 
 
 unsigned long cfg_resources_clear_interval = 0;
-extern uint32 cl_last_wait_query;
+extern time_msec_t cl_last_wait_query;
 
-uint32 prev_reaper_time;
+time_msec_t prev_reaper_time;
 char srv_approx_dt[DT_LENGTH];
 
 void
 clear_old_root_images ()
 {
-  long now = approx_msec_real_time ();
+  time_msec_t now = approx_msec_real_time ();
   mutex_enter (old_roots_mtx);
   {
     buffer_desc_t ** prev = &old_root_images;
@@ -2347,10 +2349,10 @@ void
 the_grim_lock_reaper (void)
 {
   static int auto_f_count = 0;
-  static unsigned long schedule_last_time = 0;
-  static unsigned long thread_clear_last_time = 0;
-  static unsigned long resources_clear_last_time = 0;
-  long now = approx_msec_real_time ();
+  static time_msec_t schedule_last_time = 0;
+  static time_msec_t thread_clear_last_time = 0;
+  static time_msec_t resources_clear_last_time = 0;
+  time_msec_t now = approx_msec_real_time ();
   int server_is_idle = 1;
   int n_threads = 0, n_vdb_threads = 0, n_lw_threads = 0;
   dt_init ();
@@ -2396,7 +2398,7 @@ the_grim_lock_reaper (void)
 	{
 	  cli->cli_terminate_requested = CLI_RESULT;
 	  cli->cli_activity.da_anytime_result = 1;
-	  at_printf (("host %d set anytime flag after %ld\n", local_cll.cll_this_host, now - cli->cli_anytime_started));
+	  at_printf (("host %d set anytime flag after %ld\n", local_cll.cll_this_host, (long) (now - cli->cli_anytime_started)));
 	}
     }
   END_DO_SET ();
@@ -2435,12 +2437,11 @@ the_grim_lock_reaper (void)
     {
       if (0 != checkpointed_last_time)	/* Not the first time here? */
 	{
-	  if (main_thread_ready && (((unsigned long int) now) - checkpointed_last_time)
-	      >= cfg_autocheckpoint)
+	  if (main_thread_ready && (now - checkpointed_last_time) >= cfg_autocheckpoint)
 	    {
 	      /* Okay do it. I.e. let the loop in main in chil.c to do it. */
 	      main_continuation_reason = MAIN_CONTINUE_ON_CHECKPOINT;
-	      checkpointed_last_time = (unsigned long int) now;
+	      checkpointed_last_time = now;
 	      main_thread_ready = 0;
 	      semaphore_leave (background_sem);
 	    }
@@ -2449,7 +2450,7 @@ the_grim_lock_reaper (void)
 	/* First time here. Do it the next time, because we want to
 	   give initialization routines some time to do their job. */
 	{
-	  checkpointed_last_time = (unsigned long int) now;
+	  checkpointed_last_time = now;
 	}
     }
 
@@ -2457,18 +2458,17 @@ the_grim_lock_reaper (void)
     {
       if (0 != schedule_last_time)
 	{
-	  if (main_thread_ready && (((unsigned long int)now) - schedule_last_time)
-	      >= cfg_scheduler_period)
+	  if (main_thread_ready && (now - schedule_last_time) >= cfg_scheduler_period)
 	    {
 	      main_continuation_reason = MAIN_CONTINUE_ON_SCHEDULER;
-	      schedule_last_time = (unsigned long int) now;
+	      schedule_last_time = now;
 	      main_thread_ready = 0;
 	      semaphore_leave (background_sem);
 	    }
 	}
       else
 	{
-	  schedule_last_time = (unsigned long int) now;
+	  schedule_last_time = now;
 	}
     }
   clear_old_root_images ();
@@ -2477,7 +2477,7 @@ the_grim_lock_reaper (void)
     {
       if (0 != thread_clear_last_time)
 	{
-	  if ((((unsigned long int)now) - thread_clear_last_time) >= cfg_thread_live_period)
+	  if ((now - thread_clear_last_time) >= cfg_thread_live_period)
 	    {
 	      int thread_killed = thread_release_dead_threads (cfg_thread_threshold);
 	      if (DO_LOG(LOG_THR) && thread_killed)
@@ -2487,14 +2487,14 @@ the_grim_lock_reaper (void)
 	}
       else
 	{
-	  thread_clear_last_time = (unsigned long int) now;
+	  thread_clear_last_time = now;
 	}
     }
   if (cfg_resources_clear_interval)
     {
       if (0 != resources_clear_last_time)
 	{
-	  if ((((unsigned long int)now) - resources_clear_last_time) >= cfg_resources_clear_interval)
+	  if ((now - resources_clear_last_time) >= cfg_resources_clear_interval)
 	    {
 	      resources_reaper ();
 	      resources_clear_last_time = now;
@@ -2502,7 +2502,7 @@ the_grim_lock_reaper (void)
 	}
       else
 	{
-	  resources_clear_last_time = (unsigned long int) now;
+	  resources_clear_last_time = now;
 	}
     }
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_storage)

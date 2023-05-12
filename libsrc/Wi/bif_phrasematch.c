@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -515,10 +515,10 @@ void aps_unregister (query_instance_t *qst, ptrlong id)
 /* Now aps_tmp is OK */
   mutex_enter (ap_globals.apg_mutex);
   aps = (ap_set_t *) gethash ((void*)((ptrlong)id), ap_globals.apg_sets);
+  mutex_leave (ap_globals.apg_mutex);
   if (NULL == aps)
     return;
-  mutex_leave (ap_globals.apg_mutex);
-  rwlock_wrlock (aps->aps_rwlock);
+  /*rwlock_wrlock (aps->aps_rwlock); XXX: keeps a lock and process hangs, left for reference */
   dk_free_tree (aps->aps_app_env);
   aps->aps_app_env = NULL;
   aps_free (aps, AP_FREE_HASHTABLES | AP_FREE_LOCK | AP_FREE_MEMBERS | AP_FREE_STRUCT);

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2018 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -40,6 +40,7 @@ shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Dk
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Wi
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/plugin
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/langfunc
+shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/Xml.new
 shapefileio_la_CFLAGS  += -I$(top_srcdir)/libsrc/odbcsdk/include
 
 shapefileio_la_LDFLAGS = -module -avoid-version -export-dynamic

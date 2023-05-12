@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -69,7 +69,12 @@
 
 /* Dkalloc.c */
 void dk_memory_initialize (int do_malloc_cache);
-extern void dk_memory_finalize (void);
+void dk_memory_finalize (void);
+
+void dk_box_initialize (void);
+void dk_box_finalize (void);
+int all_allocs_at_line (const char *file, int line);
+int new_allocs_after (int res_no);
 
 int dk_is_alloc_cache (size_t sz);
 void dk_alloc_cache_status (void *cache);

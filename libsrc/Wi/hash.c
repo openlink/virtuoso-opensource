@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -478,7 +478,7 @@ hi_bp_set (hash_index_t * hi, it_cursor_t *itc, uint32 code, dp_addr_t dp, short
   memcpy (hb_buf->bd_buffer + DP_DATA + ofs, &l_buf, sizeof (int32));
 #endif
   SHORT_SET (hb_buf->bd_buffer + DP_DATA + ofs + sizeof (dp_addr_t), pos);
-  hb_buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(hb_buf,1);
 
   page_leave_outside_map (hb_buf);
 }
@@ -1557,7 +1557,7 @@ ha_rehash_row (hash_area_t * ha, index_tree_t * tree, it_cursor_t * itc, buffer_
 
   HI_BUCKET_PTR (hi, code, bp_ref_itc, &hibp, PA_WRITE);
   row = buf->bd_buffer + itc->itc_map_pos - HASH_HEAD_LEN;
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
   LONG_SET (row + HH_NEXT_DP, hibp.hibp_page);
   code_mask = (unsigned short) ((code >> 9) & 0x7);
   code_mask = code_mask << 13;

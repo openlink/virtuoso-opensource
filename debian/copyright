@@ -12,7 +12,7 @@ Upstream Authors:
 
 Copyright:
 
-    Copyright (C) 1998-2018 OpenLink Software
+    Copyright (C) 1998-2023 OpenLink Software
 
 License:
 
@@ -823,8 +823,11 @@ Additional copyrights:
     
     
     RedLand
+
+       Parts of Virtuoso may be linked against the Redland RDF API library
     
-       Copyright (C) 2000-2008, Openlink Software,  http://www.openlinksw.com/
+       Copyright (C) 2000-2012 David Beckett
+       Copyright (C) 2000-2005 University of Bristol. All Rights Reserved.
        
        This package is Free Software and part of Redland http://librdf.org/
        
@@ -879,7 +882,7 @@ Additional copyrights:
     
     iODBC driver manager (with updated FSF address)
     
-       Copyright (C) 1999-2005 by OpenLink Software <iodbc@openlinksw.com>
+       Copyright (C) 1999-2023 OpenLink Software <iodbc@openlinksw.com>
        All Rights Reserved.
      
        This software is released under the terms of either of the following
@@ -1402,7 +1405,7 @@ Additional copyrights:
 
 The Debian packaging is:
 
-    Copyright (C) 2008-2018 OpenLink Sofware <vos.admin@openlinksw.com>
+    Copyright (C) 2008-2023 OpenLink Sofware <vos.admin@openlinksw.com>
 
 and builds on work by:
 

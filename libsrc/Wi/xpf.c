@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4955,15 +4955,29 @@ x2f_define_builtin (
 void
 xpfm_store_alias (const char *alias_local_name, const char *alias_ns, const char *main_local_name, const char *main_ns, const char *alias_mid_chars, int insert_soft)
 {
-  caddr_t alias_n = (alias_ns ? box_sprintf (200, "%.100s%.10s:%.50s", alias_ns, alias_mid_chars, alias_local_name) : box_dv_short_string (alias_local_name));
-  caddr_t main_n = (main_ns ? box_sprintf (200, "%.100s:%s", main_ns, main_local_name) : box_dv_short_string (main_local_name));
-  xpf_metadata_t ** main_metas_ptr, **alias_metas_ptr;
-  alias_n = box_dv_uname_string (alias_n);
+  char temp[255];
+  caddr_t alias_n;
+  caddr_t main_n;
+  xpf_metadata_t **main_metas_ptr, **alias_metas_ptr;
+
+  if (alias_ns)
+    snprintf (temp, sizeof (temp), "%.100s%.10s:%.50s", alias_ns, alias_mid_chars, alias_local_name);
+  else
+    snprintf (temp, sizeof (temp), "%s", alias_local_name);
+
+  alias_n = box_dv_uname_string (temp);
   box_dv_uname_make_immortal (alias_n);
-  main_n = box_dv_uname_string (main_n);
+
+  if (main_ns)
+    snprintf (temp, sizeof (temp), "%.100s:%s", main_ns, main_local_name);
+  else
+    snprintf (temp, sizeof (temp), "%s", main_local_name);
+
+  main_n = box_dv_uname_string (temp);
   box_dv_uname_make_immortal (main_n);
-  alias_metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&alias_n));
-  main_metas_ptr = (xpf_metadata_t **)id_hash_get (xpf_metas, (caddr_t)(&main_n));
+
+  alias_metas_ptr = (xpf_metadata_t **) id_hash_get (xpf_metas, (caddr_t) (&alias_n));
+  main_metas_ptr = (xpf_metadata_t **) id_hash_get (xpf_metas, (caddr_t) (&main_n));
   if (NULL == main_metas_ptr)
     {
       log_info ("XPATH function %s is not defined so it can not be aliased as %s", main_n, alias_n);
@@ -4973,19 +4987,20 @@ xpfm_store_alias (const char *alias_local_name, const char *alias_ns, const char
     {
       int defs_match;
       if (insert_soft)
-        return;
+	return;
       defs_match = (
-        (main_metas_ptr[0]->xpfm_executable == alias_metas_ptr[0]->xpfm_executable) &&
-        (main_metas_ptr[0]->xpfm_defun == alias_metas_ptr[0]->xpfm_defun) &&
-        (main_metas_ptr[0]->xpfm_res_dtp == alias_metas_ptr[0]->xpfm_res_dtp) &&
-        (main_metas_ptr[0]->xpfm_min_arg_no == alias_metas_ptr[0]->xpfm_min_arg_no) );
+	  (main_metas_ptr[0]->xpfm_executable == alias_metas_ptr[0]->xpfm_executable) &&
+	  (main_metas_ptr[0]->xpfm_defun == alias_metas_ptr[0]->xpfm_defun) &&
+	  (main_metas_ptr[0]->xpfm_res_dtp == alias_metas_ptr[0]->xpfm_res_dtp) &&
+	  (main_metas_ptr[0]->xpfm_min_arg_no == alias_metas_ptr[0]->xpfm_min_arg_no));
 #ifndef DEBUG
       if (!defs_match)
 #endif
-      log_info ("XPATH function %s is defined but redefind as alias of %s, %s", alias_n, main_n, (defs_match ? "relatively safe" : "totally wrong"));
+	log_info ("XPATH function %s is defined but redefined as alias of %s, %s", alias_n, main_n,
+	    (defs_match ? "relatively safe" : "totally wrong"));
       return;
     }
-  id_hash_set (xpf_metas, (caddr_t)(&alias_n), (caddr_t)(main_metas_ptr));
+  id_hash_set (xpf_metas, (caddr_t) (&alias_n), (caddr_t) (main_metas_ptr));
 }
 
 void

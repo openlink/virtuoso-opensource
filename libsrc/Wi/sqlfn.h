@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -250,9 +250,11 @@ void ddl_ensure_univ_tables (void);
 #define DDL_STD_REENTRANT 0x40
 
 EXE_EXPORT (void, ddl_std_proc, (const char * text, int is_public));
-EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int ddl_std_flags, int to_recompile));
-EXE_EXPORT (void, ddl_ensure_table, (const char *name, const char *text));
+EXE_EXPORT (void, ddl_std_proc_1, (const char *text, int is_public, int to_recompile));
+EXE_EXPORT (void, ddl_ensure_table, (const char *table, const char *text));
+EXE_EXPORT (void, ddl_ensure_index, (const char *table, const char *index_name, const char *text));
 EXE_EXPORT (void, ddl_ensure_column, (const char *table, const char *col, const char *text, int is_drop));
+EXE_EXPORT (void, ddl_exec_init_stmt, (const char *table, const char *text, const char *fname, const char *stmt));
 EXE_EXPORT (void, ddl_sel_for_effect, (const char *str));
 
 caddr_t qi_sel_for_effect (query_instance_t * qi, char *str, int n_pars,...);
@@ -268,7 +270,7 @@ void ddl_create_primary_key (query_instance_t * cli, char * table, char * key,
 void ddl_create_key (query_instance_t * cli, char * table, char * key,
 		     caddr_t * parts, int cluster_on_id, int is_object_id, int is_unique, int is_bitmap, caddr_t * opts);
 
-void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col);
+void ddl_add_col (query_instance_t * cli, const char * table, caddr_t * col, int if_not_exists);
 
 void ddl_drop_index (caddr_t * qst, const char * table, const char * name, int log_to_trx);
 
@@ -512,6 +514,7 @@ void qi_detach_from_stmt (query_instance_t * qi);
 
 EXE_EXPORT (caddr_t, srv_make_new_error, (const char *code, const char *virt_code, const char *msg,...));
 EXE_EXPORT (void, sqlr_error, (const char * code, const char * msg, ...));
+EXE_EXPORT (void, sqlr_warning, (const char *code, const char *virt_code, const char *string, ...));
 EXE_EXPORT (void, sqlr_new_error, (const char *code, const char *virt_code, const char *msg, ...));
 
 #ifdef __GNUC__
@@ -519,6 +522,8 @@ extern caddr_t srv_make_new_error (const char *code, const char *virt_code, cons
     __attribute__ ((format (printf, 3, 4)));
 extern void sqlr_error (const char * code, const char * msg, ...)
     __attribute__ ((format (printf, 2, 3))) NORETURN;
+extern void sqlr_warning (const char * code, const char *virt_core, const char * msg, ...)
+    __attribute__ ((format (printf, 3, 4)));
 extern void sqlr_new_error (const char *code, const char *virt_code, const char *msg, ...)
     __attribute__ ((format (printf, 3, 4))) NORETURN;
 #endif
@@ -821,7 +826,7 @@ extern void DBG_NAME(local_start_trx) (DBG_PARAMS  client_connection_t * cli);
 caddr_t code_vec_run_1 (code_vec_t code_vec, caddr_t * qst, int offset);
 #define code_vec_run(c, i) code_vec_run_1 (c, i, 0)
 #define CV_THIS_SET_ONLY -1
-caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc);
+caddr_t code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag);
 
 void cv_free (code_vec_t cv);
 
@@ -918,7 +923,7 @@ void dbg_print_box (caddr_t object, FILE * out);
 void dbg_page_structure_error (buffer_desc_t *bd, db_buf_t ptr);
 
 extern long  prof_on;
-extern unsigned long  prof_compile_time;
+extern int64 prof_compile_time;
 extern unsigned long prof_n_compile;
 extern unsigned long prof_n_reused;
 void prof_exec (query_t * qr, char * text, long msecs, int flags);
@@ -1250,7 +1255,7 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 void db_replay_registry_setting (caddr_t ent, caddr_t *err_ret);
 dk_session_t * dbs_read_registry (dbe_storage_t * dbs, client_connection_t * cli);
 
-boxint safe_atoi (const char *data, caddr_t *err_ret);
+EXE_EXPORT (boxint, safe_atoi, (const char *data, caddr_t *err_ret));
 double safe_atof (const char *data, caddr_t *err_ret, int allow_non_finite);
 double box_to_double (caddr_t data, dtp_t dtp);
 caddr_t box_to_any (caddr_t data, caddr_t * err_ret);
@@ -1513,8 +1518,6 @@ void outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_
 
 
 /* column store */
-void itc_col_init  (it_cursor_t * itc);
-col_data_ref_t * itc_new_cr (it_cursor_t * itc);
 void itc_col_free (it_cursor_t * itc);
 void pg_make_col_map (buffer_desc_t * buf);
 void itc_col_leave (it_cursor_t * itc, int flags);
@@ -1532,10 +1535,19 @@ int ce_col_cmp (db_buf_t any, int64 offset, dtp_t ce_flags, dbe_col_loc_t * cl, 
 int itc_col_row_check (it_cursor_t * itc, buffer_desc_t ** buf_ret, dp_addr_t * leaf_ret);
 int itc_col_row_check_dummy (it_cursor_t * itc, buffer_desc_t * buf);
 #ifdef MALLOC_DEBUG
+void  DBG_NAME (itc_range) (DBG_PARAMS it_cursor_t * itc, row_no_t lower, row_no_t upper);
 caddr_t DBG_NAME (itc_alloc_box) (DBG_PARAMS it_cursor_t * itc, int len, dtp_t dtp);
+void DBG_NAME (itc_col_init)  (DBG_PARAMS it_cursor_t * itc);
+col_data_ref_t * DBG_NAME(itc_new_cr) (DBG_PARAMS it_cursor_t * itc);
 #define itc_alloc_box(itc, len, dtp) dbg_itc_alloc_box (__FILE__, __LINE__, (itc), (len), (dtp))
+#define itc_col_init(itc) dbg_itc_col_init (__FILE__, __LINE__, (itc))
+#define itc_new_cr(itc) dbg_itc_new_cr (__FILE__, __LINE__, (itc))
+#define itc_range(itc,lower,upper) dbg_itc_range (__FILE__, __LINE__, (itc), (lower), (upper))
 #else
+void  itc_range (it_cursor_t * itc, row_no_t lower, row_no_t upper);
 caddr_t itc_alloc_box (it_cursor_t * itc, int len, dtp_t dtp);
+void itc_col_init  (it_cursor_t * itc);
+col_data_ref_t * itc_new_cr (it_cursor_t * itc);
 #endif
 
 #define itc_free_box(itc, b) \
@@ -1718,6 +1730,7 @@ void cli_set_start_times (client_connection_t * cli);
 
 caddr_t * itc_bm_array (it_cursor_t * itc, buffer_desc_t * buf);
 extern int32 log_proc_overwrite;
+extern int32 log_sql_code_init;
 
 #ifdef MALLOC_DEBUG
 #define TMP_ARRAY_INIT_SZ 2
@@ -1788,5 +1801,7 @@ extern int32 enable_vec_reuse;
 #define B_NEW_VARZ(t, v) NEW_VARZ(t, v)
 #define tlsf_base_alloc(s) dk_alloc(s)
 #endif
+
+EXE_EXPORT (void, virt_bootstrap_cache_resource, (const char **src_text, const char *uri, const char *pubid, const char *dat, const char *comment));
 
 #endif /* _SQLFN_H */

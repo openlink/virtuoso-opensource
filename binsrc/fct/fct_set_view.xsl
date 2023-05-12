@@ -1,26 +1,25 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
---
---  $Id$
---
---  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
---  project.
---
---  Copyright (C) 1998-2018 OpenLink Software
---
---  This project is free software; you can redistribute it and/or modify it
---  under the terms of the GNU General Public License as published by the
---  Free Software Foundation; only version 2 of the License, dated June 1991.
---
---  This program is distributed in the hope that it will be useful, but
---  WITHOUT ANY WARRANTY; without even the implied warranty of
---  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
---  General Public License for more details.
---
---  You should have received a copy of the GNU General Public License along
---  with this program; if not, write to the Free Software Foundation, Inc.,
---  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
---
+ -
+ -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
+ -  project.
+ -
+ -  Copyright (C) 1998-2023 OpenLink Software
+ -
+ -  This project is free software; you can redistribute it and/or modify it
+ -  under the terms of the GNU General Public License as published by the
+ -  Free Software Foundation; only version 2 of the License, dated June 1991.
+ -
+ -  This program is distributed in the hope that it will be useful, but
+ -  WITHOUT ANY WARRANTY; without even the implied warranty of
+ -  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ -  General Public License for more details.
+ -
+ -  You should have received a copy of the GNU General Public License along
+ -  with this program; if not, write to the Free Software Foundation, Inc.,
+ -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
+ -
+ -
 -->
 <xsl:stylesheet version="1.0"
 		xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
@@ -57,6 +56,9 @@
 						  name () = 'property-of']))">
     <xsl:copy>
       <xsl:apply-templates select="@* | node()" />
+      <xsl:if test="local-name(.) = 'query'">
+	  <xsl:attribute name="limit"><xsl:value-of select="$limit"/></xsl:attribute>
+      </xsl:if>
 
       <xsl:if test="$op = 'view' and
 	            $pos = count (./ancestor::*[name () = 'query' or
@@ -159,7 +161,7 @@
         </cond-range>
       </xsl:if>
 
-      <xsl:if test="$op = 'cond' and 
+      <xsl:if test="$op = 'cond' and
 	            $pos = count (./ancestor::*[name () = 'query' or
 		                                name () = 'property' or
 			                        name () = 'property-of']) +

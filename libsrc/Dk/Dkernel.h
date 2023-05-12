@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -101,7 +101,7 @@ struct dk_session_s
   short				dks_n_threads;
 
   /*! time of last usage (get_msec_real_time) - use for dropping idle HTTP keep alives */
-  uint32 			dks_last_used;
+  time_msec_t 			dks_last_used;
 
   /*! burst mode */
   dks_thread_state_t 		dks_thread_state;
@@ -113,7 +113,8 @@ struct dk_session_s
   du_thread_t *			dks_fixed_thread;	/*!< note: also used to pass the http ses for chunked write */
   basket_t 			dks_fixed_thread_reqs;
 
-  du_thread_t *			dks_waiting_http_recall_session;
+  du_thread_t *			dks_waiting_http_recall_session; /* thr waitin on semaphore to write on it for half-duplex op */
+  long                          dks_cache_id; /* if cached, the id in cache */
   dk_hash_t *			dks_pending_futures;
   caddr_t			dks_top_obj;
   dk_set_t			dks_pending_obj;
@@ -179,7 +180,7 @@ struct future_request_s
   int 			rq_is_second;
 };
 
-typedef char *(*server_func) (caddr_t x, ...);
+typedef caddr_t (*server_func) (caddr_t args[]);
 typedef void (*post_func) (caddr_t b, future_request_t * f);
 
 /*
@@ -334,8 +335,8 @@ typedef struct future_s
   caddr_t 		ft_error;
   int 			ft_is_ready;
   timeout_t 		ft_timeout;
-  timeout_t 		ft_time_issued;
-  timeout_t 		ft_time_received;
+  time_msec_t 		ft_time_issued_msec;
+  time_msec_t 		ft_time_received_msec;
   future_request_t *	ft_waiting_requests;
 } future_t;
 
@@ -970,7 +971,6 @@ typedef struct ssl_ctx_info_s
   int32 *		ssci_depth_ptr;
   char *		ssci_name_ptr;
 } ssl_ctx_info_t;
-int ssl_cert_verify_callback (int ok, void *ctx);
 #  endif
 #endif
 
@@ -1009,7 +1009,7 @@ void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
 
 #ifndef NO_THREAD
 #define BURST_STOP_TIMEOUT 		1000		   /* 1 sec to switch off burst mode */
-extern uint32 time_now_msec;
+extern time_msec_t time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
 #endif
 

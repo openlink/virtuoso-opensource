@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -510,12 +510,10 @@ sqlo_col_scope_1 (sqlo_t * so, ST * col_ref, int generate)
     return 1;
   if (!generate)
     return 0;
-    {
-      char cn[MAX_NAME_LEN * 5 + 10];
-      if (col_ref->_.col_ref.prefix)
-	snprintf (cn, sizeof (cn), "%s.%s", col_ref->_.col_ref.prefix, col_ref->_.col_ref.name);
-      sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.", col_ref->_.col_ref.prefix ? cn : col_ref->_.col_ref.name);
-    }
+  if (col_ref->_.col_ref.prefix)
+    sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.%s.", col_ref->_.col_ref.prefix, col_ref->_.col_ref.name);
+  else
+    sqlc_error (so->so_sc->sc_cc, "S0022", "No column %s.", col_ref->_.col_ref.name);
   return 0; /* dummy */
 }
 
@@ -916,7 +914,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		ST_P (view, INTERSECT_ALL_ST))
 	      {
 		view = sqlp_view_def (NULL, view, 1);
-		view = sqlc_union_dt_wrap (view);
+		view = sqlc_union_dt_wrap (so->so_sc, view);
 	      }
 	    sqlo_scope (so, &view);
 	    if (ST_P (view, SELECT_STMT))
@@ -1625,9 +1623,11 @@ sqlo_check_ft_offband (sqlo_t * so, op_table_t * ot, ST ** args, char type)
 	  continue;
 	}
       if (inx >= surely_option_idx)
-	sqlc_error (sc->sc_cc, "37000",
-          "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION",
-	  inx + 1, sqlo_spec_predicate_name(type), arg );
+	{
+	  sqlc_error (sc->sc_cc, "37000",
+	      "Argument %d of %s is '%.300s', not a keyword from list OFFBAND, DESCENDING, RANGES, MAIN_RANGES, ATTR_RANGES, SCORE, SCORE_LIMIT, EXT_FTI, GEO, GEO_RDF, PRECISION",
+	      inx + 1, sqlo_spec_predicate_name (type), arg);
+	}
     }
   if (off)
     ot->ot_text_offband = (op_virt_col_t **) list_to_array (off);
@@ -1705,7 +1705,8 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
       if (BOX_ELEMENTS(args) < 1 || !ST_COLUMN (args[0], COL_DOTTED))
 	sqlc_error (so->so_sc->sc_cc, "37000",
 	    "The first argument of %s must be a column", sqlo_spec_predicate_name (ctype));
-
+      if (args[0]->_.col_ref.name == STAR)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ064", "Illegal use of '*'.");
       ot = sco_is_defd (so->so_scope, args[0],
 	  args[0]->_.col_ref.prefix ? SCO_THIS_QUAL : SCO_UNQUALIFIED, 1);
       if (!ot || !ot->ot_table)
@@ -2024,7 +2025,7 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 
 	  *ptree = t_listst (5, UNION_ST, left_oj_tree->_.table_ref.table,
 	      right_oj_tree->_.table_ref.table, NULL, 0);
-	  *ptree = sqlc_union_dt_wrap (*ptree);
+	  *ptree = sqlc_union_dt_wrap (so->so_sc, *ptree);
 	  res ++;
 	}
     }
@@ -3317,9 +3318,9 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	{
 	  ST *left;
 	  if (IS_UNION_ST (tree->_.set_exp.left))
-	    tree->_.set_exp.left = sqlc_union_dt_wrap (tree->_.set_exp.left);
+	    tree->_.set_exp.left = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.left);
 	  if (IS_UNION_ST (tree->_.set_exp.right))
-	    tree->_.set_exp.right = sqlc_union_dt_wrap (tree->_.set_exp.right);
+	    tree->_.set_exp.right = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.right);
 	  left = sqlp_union_tree_select (tree);
 	  sqlo_union_scope (so, ptree, left);
 	  break;

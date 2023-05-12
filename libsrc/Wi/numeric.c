@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,6 +26,7 @@
  */
 
 #include "Dk.h"
+#include "libutil.h"
 #include "numeric.h"
 
 /* activates code for divmod, modulo, powmod, pow, sqr */
@@ -1233,7 +1234,6 @@ DBG_NAME(numeric_allocate) (DBG_PARAMS_0)
 #endif
 }
 
-
 numeric_t
 DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 {
@@ -1253,6 +1253,13 @@ DBG_NAME(t_numeric_allocate) (DBG_PARAMS_0)
 #endif
 }
 
+#ifdef MALLOC_DEBUG
+#undef numeric_allocate
+numeric_t
+numeric_allocate () { return dbg_numeric_allocate (__FILE__, __LINE__); }
+#undef t_numeric_allocate
+numeric_t t_numeric_allocate () { return dbg_t_numeric_allocate (__FILE__, __LINE__); }
+#endif
 
 numeric_t
 mp_numeric_allocate (mem_pool_t * mp)

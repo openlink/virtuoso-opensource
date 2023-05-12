@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -299,7 +299,7 @@ session_buffered_write (dk_session_t * ses, const char *buffer, size_t _length)
 	  ses->dks_out_fill = length - written;
 	}
     }
-  if (ses->dks_session && ses->dks_session->ses_file && ses->dks_session->ses_file->ses_file_descriptor)
+  if (0 && ses->dks_session && ses->dks_session->ses_file && ses->dks_session->ses_file->ses_file_descriptor)
     session_flush_1 (ses);
   return 0;
 }

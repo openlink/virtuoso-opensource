@@ -12,8 +12,12 @@ You need the following development tools and software installed:
 	Package   Version 
 	flex      2.5.33
 	bison     2.3
-	gperf     2.7.2
+	gperf     3.0.1
 	gawk      3.1.1
+
+	The above version are the minimum recommended versions of these
+	packages. Older version of these packages can sometimes be used, but
+	could cause build problems.
 
   * Active Perl, available from http://www.activestate.com/ActivePerl
   * OpenSSL version 1.0.2 static libraries for Windows and header files.

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -113,7 +113,7 @@
                         where_to_go := WS.WS.EXPAND_URL(WS.WS.COL_PATH (current_col_id), where_to_go);
                       if (where_to_go not like '%/')
                         where_to_go := concat (where_to_go, '/');
-                      select COL_ID into current_col_id from WS.WS.SYS_DAV_COL where WS.WS.COL_PATH(COL_ID) = where_to_go;
+                      select COL_ID into current_col_id from WS.WS.SYS_DAV_COL where COL_FULL_PATH = where_to_go;
                       exec('insert into WS.WS.SYS_DAV_RES(RES_COL, RES_CONTENT, RES_CR_TIME, RES_FULL_PATH,
                         RES_GROUP, RES_ID, RES_MOD_TIME, RES_NAME, RES_OWNER, RES_PERMS, RES_TYPE)
                         values(?, ?, now(), ?, ?, ?, now (), ?, ?, ?, ?)', state, msg,

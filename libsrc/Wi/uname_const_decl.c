@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,6 +50,28 @@ caddr_t uname__txt;
 caddr_t uname__xslt;
 caddr_t uname_at_id;
 caddr_t uname_at_num;
+caddr_t uname_at_base;
+caddr_t uname_at_container;
+caddr_t uname_at_context;
+caddr_t uname_at_graph;
+caddr_t uname_at_index;
+caddr_t uname_at_language;
+caddr_t uname_at_list;
+caddr_t uname_at_reverse;
+caddr_t uname_at_set;
+caddr_t uname_at_type;
+caddr_t uname_at_value;
+caddr_t uname_at_vocab;
+caddr_t uname_at_direction;
+caddr_t uname_at_import;
+caddr_t uname_at_included;
+caddr_t uname_at_json;
+caddr_t uname_at_nest;
+caddr_t uname_at_none;
+caddr_t uname_at_prefix;
+caddr_t uname_at_propagate;
+caddr_t uname_at_protected;
+caddr_t uname_at_version;
 caddr_t uname_SPECIAL_cc_bif_c_AVG;
 caddr_t uname_SPECIAL_cc_bif_c_COUNT;
 caddr_t uname_SPECIAL_cc_bif_c_GROUPING;
@@ -175,6 +197,7 @@ caddr_t uname_rdf_ns_uri_RDF;
 caddr_t uname_rdf_ns_uri_Seq;
 caddr_t uname_rdf_ns_uri_Statement;
 caddr_t uname_rdf_ns_uri_XMLLiteral;
+caddr_t uname_rdf_ns_uri_langString;
 caddr_t uname_rdf_ns_uri_about;
 caddr_t uname_rdf_ns_uri_first;
 caddr_t uname_rdf_ns_uri_li;
@@ -355,6 +378,28 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname__xslt				, " xslt"			},
   { &uname_at_id					, "@id"						},
   { &uname_at_num					, "@num"					},
+  { &uname_at_base					, "@base"					},
+  { &uname_at_container					, "@container"					},
+  { &uname_at_context					, "@context"					},
+  { &uname_at_graph					, "@graph"					},
+  { &uname_at_index					, "@index"					},
+  { &uname_at_language					, "@language"					},
+  { &uname_at_list					, "@list"					},
+  { &uname_at_reverse					, "@reverse"					},
+  { &uname_at_set					, "@set"					},
+  { &uname_at_type					, "@type"					},
+  { &uname_at_value					, "@value"					},
+  { &uname_at_vocab					, "@vocab"					},
+  { &uname_at_direction                                 , "@direction"                                  },
+  { &uname_at_import                                    , "@import"                                     },
+  { &uname_at_included                                  , "@included"                                   },
+  { &uname_at_json                                      , "@json"                                       },
+  { &uname_at_nest                                      , "@nest"                                       },
+  { &uname_at_none                                      , "@none"                                       },
+  { &uname_at_prefix                                    , "@prefix"                                     },
+  { &uname_at_propagate                                 , "@propagate"                                  },
+  { &uname_at_protected                                 , "@protected"                                  },
+  { &uname_at_version                                   , "@version"                                    },
   { &uname_SPECIAL_cc_bif_c_AVG			, "SPECIAL::bif:AVG"		},
   { &uname_SPECIAL_cc_bif_c_COUNT		, "SPECIAL::bif:COUNT"		},
   { &uname_SPECIAL_cc_bif_c_GROUPING			, "SPECIAL::bif:GROUPING"			},
@@ -480,6 +525,7 @@ static uname_const_decl_t uname_const_decls[] = {
   { &uname_rdf_ns_uri_Seq			, RDF_NS_URI "Seq"		},
   { &uname_rdf_ns_uri_Statement			, RDF_NS_URI "Statement"	},
   { &uname_rdf_ns_uri_XMLLiteral		, RDF_NS_URI "XMLLiteral"	},
+  { &uname_rdf_ns_uri_langString			, RDF_NS_URI "langString"			},
   { &uname_rdf_ns_uri_about			, RDF_NS_URI "about"		},
   { &uname_rdf_ns_uri_first			, RDF_NS_URI "first"		},
   { &uname_rdf_ns_uri_li			, RDF_NS_URI "li"		},

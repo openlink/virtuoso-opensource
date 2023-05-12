@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -227,8 +227,8 @@ dv_iri_short_name (caddr_t x)
     return NULL;
   if (iri_split (name, &pref, &local))
     {
-      int len = box_length (local) - 4 /* Remember that 4 bytes of \c local is placeholder for encoding namespace prefix */ ;
-      char *pure_local = local + 4;	/* that 4 bytes, yeah */
+      int len = box_length (local) - RPID_SZ;	/* Remember that 8 or 4 bytes of \c local is placeholder for encoding namespace prefix */
+      char *pure_local = local + RPID_SZ;	/* that 8 or 4 bytes, yeah */
       int inx = len - 2;
       int best_inx = 0;
       caddr_t r;
@@ -3253,10 +3253,10 @@ node_print_xml (QI * qi, dk_session_t * s, data_source_t * qn)
 	    {
 	      if (!ik)
 		continue;
-		ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
-		if (ik->ik_slots)
-		  ssl_array_print_xml (ik->ik_slots, s);
-		SES_PRINT (s, "</key>");
+	      ses_sprintf (s, "<key name='%s'>", ik->ik_key->key_name);
+	      if (ik->ik_slots)
+		ssl_array_print_xml (ik->ik_slots, s);
+	      SES_PRINT (s, "</key>");
 	    }
 	  END_DO_BOX;
 	}
@@ -4304,7 +4304,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   client_connection_t * cli = qi->qi_client;
   dk_session_t * ses;
   uint64 rt;
-  uint32 now;
+  time_msec_t now;
   /* milos: allocate memory for the comment structure */
   qr_comment_t comm;
 
@@ -4327,7 +4327,7 @@ qi_log_stats_1 (query_instance_t * qi, caddr_t err, caddr_t ext_text)
   session_buffered_write_char (DV_DATETIME, ses);
   session_buffered_write (ses, (char*)cli->cli_start_dt, DT_LENGTH);
   /*1*/
-  print_int (now - cli->cli_start_time, ses);
+  print_int ((boxint) (now - cli->cli_start_time), ses);
   /*2*/
   print_int (cli->cli_run_clocks, ses);
   /*3*/

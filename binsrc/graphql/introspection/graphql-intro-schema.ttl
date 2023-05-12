@@ -1,0 +1,213 @@
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix	gql: <http://www.openlinksw.com/schemas/graphql#> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix gqi: <http://www.openlinksw.com/schemas/graphql/intro#> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix schema: <http://schema.org/> .
+
+gql:introspection-schema a owl:Ontology ;
+        rdfs:label "GraphQL Types Core Ontology" ;
+        rdfs:comment """
+            GraphQL Core Types RDF Ontology Mappings.
+            It must be loaded in `urn:graphql:schema` RDF graph.
+        """ ;
+        virtrdf:version "0.9.3" ;
+        schema:url <http://www.openlinksw.com/graphql/graphql-intro-schema.ttl> ;
+        dct:created "2022-06-21"^^xsd:date ;
+        dct:modified "2022-10-12"^^xsd:date .
+
+### GraphQL introspection schema
+
+gql:Map gql:schemaObjects  gql:__Schema,
+                    gql:__Type,
+                    gql:__TypeKind,
+                    gql:__Directive,
+                    gql:__DirectiveLocation,
+                    gql:__Field,
+                    gql:__EnumValue,
+                    gql:__InputValue,
+                    gql:__schema,
+                    gql:__type ;
+        gql:dataGraph <urn:graphql:intro> ;
+        gql:schemaGraph <urn:graphql:schema> .
+
+gql:__schema gql:type gql:Object ;
+        gql:rdfClass gql:__Schema ;
+        gql:field gql:__schema .
+
+gql:__type gql:type gql:Object ;
+           gql:rdfClass gql:__Type ;
+           gql:field gql:__type .
+
+gql:__Schema a owl:Class ;
+    gql:field gql:__schema .
+
+gql:__Type a owl:Class ;
+    gql:field gql:__type .
+
+gql:__Directive a owl:Class .
+gql:__Field a owl:Class .
+gql:__InputValue a owl:Class .
+gql:__EnumValue a owl:Class .
+gql:__DirectiveLocation a owl:Class .
+
+gqi:types a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Array ;
+    gql:field gql:types .
+
+gqi:queryType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Object ;
+    gql:field gql:queryType .
+
+gqi:mutationType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Object ;
+    gql:field gql:mutationType .
+
+
+gqi:subscriptionType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Object ;
+    gql:field gql:subscriptionType .
+
+gqi:directives a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Directive ;
+    rdfs:domain gql:__Schema ;
+	gql:type	gql:Array ;
+    gql:field gql:directives .
+
+gqi:kind a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type ;
+    gql:type gql:Scalar ;
+    gql:field gql:kind .
+
+gqi:name a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type, gql:__Field, gql:__InputValue, gql:__EnumValue, gql:__Directive ;
+    gql:type gql:Scalar ;
+    gql:field gql:name .
+
+gqi:description a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Schema, gql:__Type, gql:__Field, gql:__InputValue, gql:__EnumValue, gql:__Directive ;
+    gql:type gql:Scalar ;
+    gql:field gql:description .
+
+gqi:fields a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Field ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Array ;
+    gql:field gql:fields .
+
+gqi:interfaces a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Array ;
+    gql:field gql:interfaces .
+
+gqi:possibleTypes a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Array ;
+    gql:field gql:possibleTypes .
+
+gqi:enumValues a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__EnumValue ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Array ;
+    gql:field gql:enumValues .
+
+gqi:inputFields a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__InputValue ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Array ;
+    gql:field gql:inputFields .
+
+
+gqi:ofType a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Type ;
+	gql:type	gql:Object ;
+    gql:field gql:ofType .
+
+gqi:specifiedByURL a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Type ;
+    gql:type gql:Scalar ;
+    gql:field gql:specifiedByURL .
+
+gqi:type a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__Type ;
+    rdfs:domain gql:__Field, gql:__InputValue ;
+	gql:type	gql:Object ;
+    gql:field gql:type .
+
+gqi:args a owl:ObjectProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range gql:__InputValue ;
+    rdfs:domain gql:__Field, gql:__Directive ;
+	gql:type	gql:Array ;
+	gql:field	gql:args .
+
+gqi:isDeprecated a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+	rdfs:range	xsd:boolean ;
+    rdfs:domain gql:__Field, gql:__InputValue, gql:__EnumValue ;
+	gql:type	gql:Scalar ;
+    gql:field gql:isDeprecated .
+
+gqi:deprecationReason a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+	rdfs:range	xsd:string ;
+    rdfs:domain gql:__Field, gql:__InputValue, gql:__EnumValue ;
+    gql:type gql:Scalar ;
+	gql:field	gql:deprecationReason .
+
+gqi:defaultValue a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+	rdfs:range	xsd:string ;
+    rdfs:domain gql:__InputValue ;
+	gql:type	gql:Scalar ;
+    gql:field gql:defaultValue .
+
+gqi:locations a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:string ;
+    rdfs:domain gql:__Directive ;
+	gql:type	gql:Array ;
+	gql:field	gql:locations .
+
+gqi:isRepeatable a owl:DatatypeProperty ;
+    rdfs:isDefinedBy gql:introspection-schema ;
+    rdfs:range xsd:boolean ;
+    rdfs:domain gql:__Directive ;
+    gql:type gql:Boolean ;
+    gql:field gql:isRepeatable .
+
+### END introspection schema ###

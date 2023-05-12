@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,7 +19,6 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
 <xsl:output method="xml" version="1.0" encoding="UTF-8" indent="yes"/>
@@ -32,7 +29,7 @@
 <xsl:template match="v:page">
 <html xmlns="http://www.w3.org/1999/xhtml">
   <head>
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css"/>
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css"/>
       <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
       <title><xsl:value-of select="@title"/></title>
   </head>
@@ -74,7 +71,7 @@
                                 <tr class="NavBG"><td class="SubInfo"><v:browse-button style="url" name="browse_button1" value="Run ISQL" selector="isql.vspx" child-window-options="scrollbars=yes,resizable=no,menubar=no,height=480,width=640"/></td></tr>
                                 <tr class="NavBG"><td class="SubInfo"><v:browse-button style="url" name="browse_button2" value="Run DAV" action="browse" selector="/vspx/browser/dav_browser.vsp" child-window-options="resizable=yes, status=no, menubar=no, scrollbars=no, width=640, height=400" browser-type="dav" browser-mode="RES1" browser-xfer="DOM" browser-list="1" browser-current="1" browser-filter="*" super-mode="view"/></td></tr>
 			        <tr><td class="Advice">Version: <?V sys_stat('st_dbms_ver') ?></td></tr>
-			        <tr><td class="Advice">Build: <?V sys_stat('st_build_date') ?></td></tr>
+                                <tr><td class="Advice">Build: <?V sys_stat('st_build_date') ?> (<?V y_sys_stat('git_head') ?>)</td></tr>
                         </table>
                     </td>
                      </tr>

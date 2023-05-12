@@ -99,42 +99,47 @@ VERSION_INIT()
 }
 
 virtuoso_start() {
-  echo "Starting $SERVER"
-  echo $BUILD
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
-  if [ "z$HOST_OS" != "z" ] 
-  then
-      "$SERVER" +foreground &
-  else
-      "$SERVER" +wait
-      fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting $SERVER start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-		then
-      sleep 7
-      LOG "PASSED: $SERVER successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start $SERVER within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 do_command_safe () {
@@ -336,7 +341,7 @@ sticker_init() {
   echo "  <name package=\"tutorial\">" >> $STICKER
   echo "    <prop name=\"Title\" value=\"Virtuoso Developer Tutorial\"/>" >> $STICKER
   echo "    <prop name=\"Developer\" value=\"OpenLink Software\"/>" >> $STICKER
-  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2018 OpenLink Software\"/>" >> $STICKER
+  echo "    <prop name=\"Copyright\" value=\"(C) 1998-2023 OpenLink Software\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.com/virtuoso\"/>" >> $STICKER
   echo "    <prop name=\"Download\" value=\"http://www.openlinksw.co.uk/virtuoso\"/>" >> $STICKER
   echo "  </name>" >> $STICKER
@@ -499,7 +504,12 @@ sticker_init() {
      else
 	     TYPE2="http"
      fi
-     echo "  <file overwrite=\"yes\" type=\"$TYPE2\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"111101101NN\" makepath=\"yes\"/>" >> $STICKER
+     case "$name" in
+        *.sql)  		perms='110100000NN' ;;
+	*.vsp|*.vspx|*.php)	perms='111101101NN' ;;
+        *)			perms='110100100NN' ;;
+     esac
+     echo "  <file overwrite=\"yes\" type=\"$TYPE2\" source=\"http\" target_uri=\"$name\" dav_owner=\"dav\" dav_grp=\"administrators\" dav_perm=\"$perms\" makepath=\"yes\"/>" >> $STICKER
   done
 
   echo "</resources>" >> $STICKER
@@ -579,7 +589,7 @@ vad_create() {
     mkdir vad
   fi
   mv vad_files/vsp vad
-  do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_FS', '.', 'tutorial_filesystem.vad')"
+  #do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_FS', '.', 'tutorial_filesystem.vad')"
   do_command_safe $DSN "DB.DBA.VAD_PACK('$STICKER_DAV', '.', 'tutorial_dav.vad')"
   do_command_safe $DSN "commit work"
   do_command_safe $DSN "checkpoint"
@@ -622,14 +632,13 @@ else
 	directory_init
 	virtuoso_init
 	generate_files
-	sticker_init 0
+	#sticker_init 0
 	sticker_init 1
 	vad_create
 	virtuoso_shutdown
 	STOP_SERVER
 	chmod 644 tutorial_filesystem.vad
 	chmod 644 tutorial_dav.vad
-#        directory_clean
 fi
 
 CHECK_LOG
@@ -639,6 +648,8 @@ then
 	$myrm -f *.vad
 	exit 1
 fi
+
+directory_clean
 
 BANNER "COMPLETED VAD PACKAGING"
 exit 0

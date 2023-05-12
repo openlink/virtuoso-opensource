@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,7 @@
  *
  */
 
-#define PLUGIN_VERSION "1.0"
+#define PLUGIN_VERSION "1.2"
 
 #include <stdio.h>
 #include <iostream>
@@ -65,6 +65,7 @@ extern "C" {
 
 dk_mutex_t *srid2GeometryFactory_mtx;
 static dk_hash_t *srid2GeometryFactory;
+extern int Geometry_auto_ptr_argpair_int (caddr_t * qst, geo_t *arg1, geo_t *arg2, const char * f, int tp, int adjust_arg2_srid, int nulls_if_not_may_intersect, std::auto_ptr<geos::geom::Geometry> *arg1_ret, std::auto_ptr<geos::geom::Geometry> *arg2_ret);
 
 geos::geom::GeometryFactory *
 get_GeometryFactory_by_srid (int srcode)
@@ -99,7 +100,7 @@ export_geo_as_Geometry (geo_t *g)
       return gf->createPoint (geos::geom::Coordinate (g->XYbox.Xmin, g->XYbox.Ymin, g->_.point.point_ZMbox.Zmin));
     case GEO_BOX: /* but not case GEO_BOX_Z: */
     case GEO_LINESTRING: case GEO_LINESTRING_Z:
-    case GEO_POLYGON: case GEO_POLYGON_Z:
+    case GEO_RING: case GEO_RING_Z: case GEO_POLYGON: case GEO_POLYGON_Z:
     case GEO_POINTLIST: case GEO_POINTLIST_Z:
     case GEO_MULTI_LINESTRING: case GEO_MULTI_LINESTRING_Z: case GEO_MULTI_POLYGON: case GEO_MULTI_POLYGON_Z: case GEO_COLLECTION: case GEO_COLLECTION_Z:
       {
@@ -166,6 +167,12 @@ bif_Geometry_auto_ptr_argpair (caddr_t * qst, state_slot_t ** args, int inx1, in
 {
   geo_t *arg1 = bif_geo_arg (qst, args, inx1, f, tp);
   geo_t *arg2 = bif_geo_arg (qst, args, inx2, f, tp);
+  return Geometry_auto_ptr_argpair_int (qst, arg1, arg2, f, tp, adjust_arg2_srid, nulls_if_not_may_intersect, arg1_ret, arg2_ret);
+}
+
+int
+Geometry_auto_ptr_argpair_int (caddr_t * qst, geo_t *arg1, geo_t *arg2, const char * f, int tp, int adjust_arg2_srid, int nulls_if_not_may_intersect, std::auto_ptr<geos::geom::Geometry> *arg1_ret, std::auto_ptr<geos::geom::Geometry> *arg2_ret)
+{
   geo_t *arg2_cvt = NULL;
   arg2_ret->reset ();
   QR_RESET_CTX
@@ -177,6 +184,8 @@ bif_Geometry_auto_ptr_argpair (caddr_t * qst, state_slot_t ** args, int inx1, in
           if (srid2 != srid1)
             {
               caddr_t err = NULL;
+              if (NULL == qst)
+                sqlr_new_error ("42000", "GEO..", "%s has got a pair of shapes with different SRIDs (%d and %d) but no context for SRID transformation", f, srid1, srid2);
               arg2_cvt = geo_get_default_srid_transform_cbk() (qst, arg2, srid1, &err);
               if (NULL != err)
                 sqlr_resignal (err);
@@ -384,7 +393,7 @@ bif_geos_get_coordinate (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 }
 
 #define BIF_GEXXX(gexxx,unwind,bifname) do { \
-    if (((query_instance_t *)qst)->qi_query->qr_no_cast_error && strstr (gexxx.what(), " does not support ")) \
+    if ((qst) && ((query_instance_t *)qst)->qi_query->qr_no_cast_error && strstr (gexxx.what(), " does not support ")) \
       return NEW_DB_NULL; \
     unwind; \
     sqlr_new_error ("22023", "GEO22", "Error in \"%s\"() function: %s", (bifname), gexxx.what()); \
@@ -809,6 +818,25 @@ bif_geos_is_simple (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 }
 
 static caddr_t
+bif_geos_is_valid (caddr_t * qst, caddr_t * err, state_slot_t ** args)
+{
+  int arg_err;
+  std::auto_ptr<geos::geom::Geometry> arg1 = bif_Geometry_auto_ptr_arg_nosignal (qst, args, 0, "GEOS isValid", GEO_ARG_ANY_NONNULL, &arg_err);
+  if (arg_err)
+    return NEW_DB_NULL;
+  int res;
+  try
+    {
+      if (0 == arg1.get()->getNumGeometries())
+        res = 0;
+      else
+        res = arg1.get()->isValid();
+    }
+  CATCH_BIF_GEXXX((arg1.reset()), "GEOS isValid")
+  return box_num (res ? 1 : 0);
+}
+
+static caddr_t
 bif_geos_is_unsupported (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 {
   caddr_t res = NULL;
@@ -907,6 +935,41 @@ static caddr_t bif_geos_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** 
 static caddr_t bif_geos_overlaps	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::overlaps		, 1, "GEOS overlaps"	); }
 static caddr_t bif_geos_equals	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_g2g_relation (qst, err, args, &geos::geom::Geometry::equals		, 1, "GEOS equals"	); }
 
+caddr_t
+geo_geos_pred (geo_t * g1, geo_t * g2, int op, double prec)
+{
+  if (GSOP_NEGATION & op)
+    {
+      caddr_t negated = geo_geos_pred (g1, g2, op & ~GSOP_NEGATION, prec);
+      if (IS_BOX_POINTER (negated))
+        return negated;
+      return negated ? box_num(0) : box_num(1);
+    }
+  Geometry_g2g_relation_membptr_t op_membptr = NULL;
+  switch (op)
+    {
+    case GSOP_CONTAINS: op_membptr = &geos::geom::Geometry::contains; break;
+    case GSOP_INTERSECTS: op_membptr = &geos::geom::Geometry::intersects; break;
+    case GSOP_MAY_INTERSECT: return box_num(1);
+    case GSOP_MAY_CONTAIN: return box_num(1);
+    default: sqlr_new_error ("22023", "GEO..", "GEOS fallback for ST_xxx spatial predicates is called for unsupported predicate, opcode %d (outdated GEOS plugin? Plugin version " PLUGIN_VERSION "." DBMS_SRV_GEN_MAJOR DBMS_SRV_GEN_MINOR, op);
+    }
+  if (0 < prec)
+    sqlr_new_error ("22023", "GEO..", "GEOS fallback for ST_xxx spatial predicates does not support precision greater than 0");
+  int disjoin_always_false = 0;
+  const char *bifname = "GEOS fallback for ST_xxx spatial predicates";
+  std::auto_ptr<geos::geom::Geometry>arg1, arg2;
+  int argfail = Geometry_auto_ptr_argpair_int (NULL, g1, g2, bifname, GEO_ARG_ANY_NONNULL, 1, 1 /* for disjoin_always_false */, &arg1, &arg2);
+  if (argfail & GEO_ARGPAIR_NOT_MAY_INTERSECT)
+    return box_num(0);
+  const caddr_t * qst = NULL; /* fake, for CATCH_BIF_GEXXX, to not check for quietgeo etc. */
+  caddr_t res;
+  try { res = (caddr_t)((ptrlong)(((arg1.get())->*op_membptr)(arg2.get()))); }
+  CATCH_BIF_GEXXX((arg1.reset(), arg2.reset()), bifname)
+  return res;
+}
+
+
 static caddr_t
 bif_geos_g2g_silent_relation (caddr_t * qst, caddr_t * err, state_slot_t ** args, Geometry_g2g_relation_membptr_t op_membptr, int disjoin_always_false, const char *bifname)
 {
@@ -943,9 +1006,9 @@ bif_geos_relate1 (caddr_t * qst, caddr_t * err, state_slot_t ** args, const char
 }
 
 static caddr_t bif_geos_sf_eq		(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*F**FFF*"	, "GEOS SF equals"	); }
-static caddr_t bif_geos_eh_overlap	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*T***T**"	, "GEOS Egenohofer overlap"	); }
-static caddr_t bif_geos_eh_inside	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "TFF*FFT**"	, "GEOS Egenohofer inside"	); }
-static caddr_t bif_geos_eh_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*TFF*FF*"	, "GEOS Egenohofer contains"	); }
+static caddr_t bif_geos_eh_overlap	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*T***T**"	, "GEOS Egenhofer overlap"	); }
+static caddr_t bif_geos_eh_inside	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "TFF*FFT**"	, "GEOS Egenhofer inside"	); }
+static caddr_t bif_geos_eh_contains	(caddr_t * qst, caddr_t * err, state_slot_t ** args) { return bif_geos_relate1 (qst, err, args, "T*TFF*FF*"	, "GEOS Egenhofer contains"	); }
 
 static caddr_t
 bif_geos_rcc8 (caddr_t * qst, caddr_t * err, state_slot_t ** args, const char *de9im_pattern, int disjoin_always_false, const char *bifname)
@@ -1255,6 +1318,7 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS spatialDimension"	, bif_geos_spat_dimension	, BMD_ALIAS, "GEOS-spatialDimension"		, DF_GS_ALIASES("spatialDimension")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isEmpty"		, bif_geos_is_empty		, BMD_ALIAS, "GEOS-isEmpty"			, DF_GS_ALIASES("isEmpty")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isSimple"	, bif_geos_is_simple		, BMD_ALIAS, "GEOS-isSimple"			, DF_GS_ALIASES("isSimple")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("GEOS isValid"	, bif_geos_is_valid		, BMD_ALIAS, "GEOS-isValid"			, DF_GS_ALIASES("isValid")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_integer._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS isUnsupported"	, bif_geos_is_unsupported	, BMD_ALIAS, "GEOS-isUnsupported"						,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("GEOS asWKT"		, bif_geos_as_wkt		, BMD_ALIAS, "GEOS-asWKT"			, DF_GS_ALIASES("hasSerialization")	, DF_GS_ALIASES("asWKT")	,BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
 
@@ -1288,9 +1352,9 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS OGC equals"	, bif_geos_sf_eq		, BMD_ALIAS, "GEOS-OGC-equals", DF_DR_GS_ALIASES("sfEquals"), DF_DR_GS_ALIASES("ehEquals"), BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS SF touches"	, bif_geos_sf_touches			, BMD_ALIAS, "GEOS-SF-touches", BMD_ALIAS, "GEOS Egenhofer meet", BMD_ALIAS, "GEOS-Egenhofer-meet"	, DF_DR_GS_ALIASES("sfTouches"), DF_DR_GS_ALIASES("ehMeet")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS SF crosses"	, bif_geos_sf_crosses			, BMD_ALIAS, "GEOS-SF-crosses", DF_DR_GS_ALIASES("sfCrosses")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer overlap"	, bif_geos_eh_overlap		, BMD_ALIAS, "GEOS-Egenohofer-overlap"	, DF_DR_GS_ALIASES("ehOverlap")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer inside"	, bif_geos_eh_inside		, BMD_ALIAS, "GEOS-Egenohofer-inside"	, DF_DR_GS_ALIASES("ehInside")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
-  bif_define_ex ("GEOS Egenohofer contains"	, bif_geos_eh_contains	, BMD_ALIAS, "GEOS-Egenohofer-contains"	, DF_DR_GS_ALIASES("ehContains")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer overlap"	, bif_geos_eh_overlap		, BMD_ALIAS, "GEOS-Egenhofer-overlap"	, DF_DR_GS_ALIASES("ehOverlap")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer inside"	, bif_geos_eh_inside		, BMD_ALIAS, "GEOS-Egenhofer-inside"	, DF_DR_GS_ALIASES("ehInside")		,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
+  bif_define_ex ("GEOS Egenhofer contains"	, bif_geos_eh_contains	, BMD_ALIAS, "GEOS-Egenhofer-contains"	, DF_DR_GS_ALIASES("ehContains")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS Egenhofer covers"	, bif_geos_eh_covers			, BMD_ALIAS, "GEOS-Egenhofer-covers", DF_DR_GS_ALIASES("ehCovers")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
   bif_define_ex ("GEOS Egenhofer coveredBy"	, bif_geos_eh_covered_by		, BMD_ALIAS, "GEOS-Egenhofer-coveredBy", DF_DR_GS_ALIASES("ehCoveredBy")	,BINARY_BOOL_SILENT_RELATION, BMD_DONE);
 
@@ -1308,6 +1372,7 @@ virt_geos_pre_log_action (char *mode)
   bif_define_ex ("GEOS silent symDifference"	, bif_geos_s_sym_difference	, BMD_ALIAS, "GEOS-silent-symDifference"	, BMD_ALIAS, OPENGIS_DEF_FUNCTION_GS_NS_URI "symDifference"	,BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2, BMD_RET_TYPE, _gate._bt_any_box._ptr, BMD_IS_PURE, BMD_DONE);
   srid2GeometryFactory_mtx = mutex_allocate ();
   srid2GeometryFactory = hash_table_allocate (5000);
+  geo_set_fallback_pred_cbk (geo_geos_pred);
 }
 
 

@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -55,6 +55,7 @@ TTLP (
 @prefix oplog: <http://www.openlinksw.com/schemas/opengraph#> . 
 @prefix mo: <http://purl.org/ontology/mo/> .
 @prefix oplbase: <http://www.openlinksw.com/schemas/oplbase#> . 
+@prefix schema: <http://schema.org/> .
 
 foaf:primarytopic rdfs:subPropertyOf sioc:container_of .
 
@@ -89,6 +90,8 @@ foaf:topic rdfs:subPropertyOf dcterms:references .
 <http://aims.fao.org/aos/geopolitical.owl#hasMinLongitude> rdfs:subPropertyOf geo:long .
 og:latitude rdfs:subPropertyOf geo:lat .
 og:longitude rdfs:subPropertyOf geo:long .
+schema:latitude rdfs:subPropertyOf geo:lat .
+schema:longitude rdfs:subPropertyOf geo:long .
 <http://uberblic.org/ontology/latitude> rdfs:subPropertyOf geo:lat .
 <http://uberblic.org/ontology/longitude> rdfs:subPropertyOf geo:long .
 <http://www.ontosearch.com/2008/02/ontosminer-ns/domain/common/english#Person> rdfs:subClassOf foaf:Person .

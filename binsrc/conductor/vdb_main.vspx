@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2018 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -25,16 +25,11 @@
         style="yacutia_style.xsl"
         vm:owner="yacutia_vdb_link_page"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN"
-        fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
+        fast-render="1"
+        xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <vm:pagetitle>Virtuoso External Datasource Management</vm:pagetitle>
   <vm:pagewrapper>
-    <vm:scripts>
-      <?vsp
-        http ('<script language="JavaScript" type="text/javascript" src="admin_utils.js"></script>');
-      ?>
-    </vm:scripts>
-
     <vm:variables>
       <v:variable name="ds_name" type="varchar" default="null" persist="0"/>
       <v:variable name="dsn_to_connect" type="varchar" default="null" persist="0"/>

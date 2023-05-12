@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -53,15 +53,14 @@ extern "C" {
 #ifdef _SSL
 #include <openssl/crypto.h>
 #include <openssl/ssl.h>
-#define MD5Init MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final MD5_Final
+#include <openssl/md5.h>
 #else
-#include "../util/md5.h"
+#include "util/md5.h"
 #endif /* _SSL */
 #include "mhash.h"
 
 int uriqa_dynamic_local = 0;
+int32 rdf_rpid64_mode = 2; /* set to true for old existing databases */
 
 caddr_t
 uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
@@ -72,11 +71,23 @@ uriqa_get_host_for_dynamic_local (client_connection_t *cli, int * is_https)
       ws_connection_t *ws = cli->cli_ws;
       res = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0);
       if (NULL != is_https)
+	{
 #ifdef _SSL
-	*is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
+	  caddr_t xproto = NULL;
+
+	  *is_https = (NULL != tcpses_get_ssl (ws->ws_session->dks_session));
+
+	  xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1);
+	  if (xproto)
+	    {
+	      if (!strcmp (xproto, "https"))
+		*is_https = 1;
+	      dk_free_box (xproto);
+	    }
 #else
-	*is_https = 0;
+	  *is_https = 0;
 #endif
+	}
     }
   if (NULL == res)
     {
@@ -176,6 +187,18 @@ uriqa_get_default_for_connvar (query_instance_t *qi, const char *varname)
           return box_dv_short_string ("80");
         }
       res = box_dv_short_string (colon + 1);
+      dk_free_box (host);
+      return res;
+    }
+  if (!strcmp ("WSBaseUrl", varname))
+    {
+      int is_https;
+      caddr_t res, host = uriqa_get_host_for_dynamic_local (qi->qi_client, &is_https);
+      if (!host)
+        return NULL;
+      res = dk_alloc_box (box_length (host) /* plus \x0 */ + is_https + 7, DV_STRING);
+      strcpy_box_ck (res, is_https ? "https://" : "http://");
+      strcat_box_ck (res, host);
       dk_free_box (host);
       return res;
     }
@@ -1453,8 +1476,10 @@ nic_remove_some_elements_n (name_id_cache_t * nic, int nth_name, char cachelet_m
 
           NIC_IN_ID (nic, nth_id, el.nicel_id);
           remhash_64_f ( el.nicel_id, nic->nic_in_array[nth_id], flag);
+#ifndef NDEBUG
 	  if (!flag)
 	    log_debug ("missed delete of name id cache %s %L (%p %s)", el.nicel_name + 4, el.nicel_id, el.nicel_name, el.nicel_name);
+#endif
           NIC_LEAVE_ID (nic, nth_id);
 
           if (/* IvAn/121009 nic->nic_is_boxes && */ flag)
@@ -2041,8 +2066,12 @@ rdf_new_iri_id (lock_trx_t * lt, char ** value_seq_ret, int nth, query_instance_
       range_seq = box_dv_short_string ("RDF_URL_IID_NAMED");
     }
   IN_TXN;
-  id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  do {
+    id = sequence_next_inc (iri_seq[nth], INSIDE_MAP, 1);
+  }
+  while (8192 == id); /* magic perms IRI ID, should skip */
   id_max = sequence_set (iri_seq_max[nth], 0, SEQUENCE_GET, INSIDE_MAP);
+
   if (id < id_max)
     {
       LEAVE_TXN;
@@ -2244,9 +2273,9 @@ iri_shorten (char * iri, char * buf, size_t buf_len, int * ret_len)
 
   memcpy (buf, iri, buf_len - 33); /* hex md5 + zero byte */
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
-  MD5Update (&ctx, (unsigned char *) str, strlen (str));
-  MD5Final (digest, &ctx);
+  MD5_Init (&ctx);
+  MD5_Update (&ctx, (unsigned char *) str, strlen (str));
+  MD5_Final (digest, &ctx);
   while (tail < end)
     {
       unsigned c = (unsigned) digest[inx++];
@@ -2277,7 +2306,7 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
       goto local_start_found; /* see below */
     }
   local_start = strrchr (iri, '#');
-  if (!local_start)
+  if (!local_start && rdf_rpid64_mode < 2)
     local_start = strrchr (iri, '?');
   if (!local_start)
     {
@@ -2303,7 +2332,7 @@ iri_split (char * iri, caddr_t * pref, caddr_t * name)
 
 local_start_found:
   *pref = box_dv_short_nchars (iri, local_start - iri);
-  *name = box_dv_short_nchars (local_start - 4, 4 + strlen (local_start));
+  *name = box_dv_short_nchars (local_start - RPID_SZ, RPID_SZ + strlen (local_start));
   return 1;
 }
 
@@ -2366,8 +2395,8 @@ key_name_to_iri_id_1 (lock_trx_t * lt, caddr_t name, int make_new)
 {
   boxint pref_id_no, iri_id_no;
   caddr_t local_copy;
-  caddr_t prefix, local;
-  caddr_t pref_id, iri_id;
+  caddr_t prefix, local, local32 = NULL;
+  caddr_t pref_id = 0, iri_id = 0;
   if (DV_IRI_ID == DV_TYPE_OF (name))
     return box_copy (name);
 #ifdef DEBUG
@@ -2414,19 +2443,35 @@ key_name_to_iri_id_1 (lock_trx_t * lt, caddr_t name, int make_new)
     }
   else
     dk_free_box (prefix);
-  LONG_SET_NA (local, pref_id_no);
+  RPID_SET_NA (local, pref_id_no);
   iri_id_no = lt_nic_name_id (lt, iri_name_cache, local);
+  /* compatibility with 32bit rp_name header */
+  if (!rdf_rpid64_mode && !iri_id_no && INT32_MAX > pref_id_no)
+    {
+       local32 = box_dv_short_nchars (local + 4, box_length (local) - 1 - 4);
+       LONG_SET_NA (local32, pref_id_no);
+       iri_id_no = lt_nic_name_id (lt, iri_name_cache, local32);
+    }
   if (iri_id_no)
     {
       dk_free_box (local);
+      dk_free_box (local32);
       return box_iri_id (iri_id_no);
     }
-  local_copy = box_copy (local);
-  iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local,
-    (  make_new ?
-      ((('_' == name[0]) && (':' == name[1])) ?
-        "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
-      NULL ) );
+  if (!rdf_rpid64_mode && INT32_MAX > pref_id_no)
+    {
+      local_copy = box_copy (local32); /* local32 is released after next call */
+      iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local32, 0);
+    }
+  if (!iri_id)
+    {
+      local_copy = box_copy (local);
+      if (!iri_id)
+       iri_id = tb_name_to_id (lt, "DB.DBA.RDF_IRI", local, (  make_new ?
+             ((('_' == name[0]) && (':' == name[1])) ?
+              "RDF_URL_IID_NAMED_BLANK" : "RDF_URL_IID_NAMED" ) :
+             NULL ) );
+    }
   if(!iri_id)
     {
       dk_free_box (local_copy);
@@ -2629,8 +2674,16 @@ key_name_to_existing_cached_iri_id (lock_trx_t * lt, caddr_t name)
       dk_free_box (local);
       return NULL;
     }
-  LONG_SET_NA (local, pref_id_no);
+  RPID_SET_NA (local, pref_id_no);
   iri_id_no = lt_nic_name_id (lt, iri_name_cache, local);
+  /* compatibility with 32bit rp_name header */
+  if (!rdf_rpid64_mode && !iri_id_no && INT32_MAX > pref_id_no)
+    {
+       caddr_t local32 = box_dv_short_nchars (local + 4, box_length (local) - 1 - 4);
+       LONG_SET_NA (local32, pref_id_no);
+       iri_id_no = lt_nic_name_id (lt, iri_name_cache, local32);
+       dk_free_box (local32);
+    }
   dk_free_box (local);
   if (!iri_id_no)
     return NULL;
@@ -2654,6 +2707,49 @@ bif_iri_id_new (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id = rdf_new_iri_id (qi->qi_trx, &value_seq, nth, (query_instance_t *)qst);
   log_sequence (qi->qi_trx, value_seq, id + 1);
   return box_iri_id (id);
+}
+
+int64
+iri_nodeid_to_iid (unsigned char *nodeid_tail, const char **error_fmt_ret)
+{
+  int64 acc = 0;
+  int64 prefix_base = 0;
+  if ('b' == nodeid_tail[0])
+    {
+      prefix_base = MIN_64BIT_BNODE_IRI_ID;
+      nodeid_tail++;
+    }
+  else if ('t' == nodeid_tail[0])
+    {
+      if (bnode_t_threshold == ~((boxint) 0))
+	{
+	  error_fmt_ret[0] =
+	      "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_threshold() is not called";
+	  return 0;
+	}
+      prefix_base = bnode_t_threshold;
+      nodeid_tail++;
+    }
+  while (isdigit (nodeid_tail[0]))
+    acc = acc * 10 + ((nodeid_tail++)[0] - '0');
+  if ('\0' != nodeid_tail[0])
+    {
+      error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI";
+      return 0;
+    }
+  acc += prefix_base;
+  if ((acc > (2 * min_bnode_iri_id ())) || (acc < min_bnode_iri_id ()))
+    {
+      if ((0 == acc) || (8192 == acc))
+	return acc;
+      if ((bnode_iri_ids_are_huge) || (acc < 0))
+	error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI";
+      else
+	error_fmt_ret[0] = "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI for 32-bit RDF storage";
+      return 0;
+    }
+  error_fmt_ret[0] = NULL;
+  return acc;
 }
 
 int
@@ -2718,43 +2814,16 @@ again:
 /*                     0123456789 */
   if (!strncmp (name, "nodeID://", 9))
     {
-      unsigned char *tail = (unsigned char *)(name + 9);
-      int64 acc = 0;
-      int64 prefix_base = 0;
-      if ('b' == tail[0]) { prefix_base = MIN_64BIT_BNODE_IRI_ID; tail++; }
-      else if ('t' == tail[0])
+      const char *error_fmt = NULL;
+      int64 n = iri_nodeid_to_iid ((unsigned char *) (name + 9), &error_fmt);
+      if (NULL != error_fmt)
         {
-          if (bnode_t_treshold == ~((boxint)0))
-            {
-              err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-                "Bad argument to iri_to_id (), '%.100s' is not supported while __rdf_set_bnode_t_treshold() is not called", name );
-              goto return_error; /* see below */
-            }
-          prefix_base = bnode_t_treshold;
-          tail++;
-        }
-      while (isdigit (tail[0]))
-        acc = acc * 10 + ((tail++)[0] - '0');
-      if ('\0' != tail[0])
-        {
-          err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-            "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
-          goto return_error; /* see below */
-        }
-      acc += prefix_base;
-      if ((acc > (2 * min_bnode_iri_id())) || (acc < min_bnode_iri_id()))
-        {
-          if ((bnode_iri_ids_are_huge) || (acc < 0))
-            err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-              "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI", name );
-          else
-            err_ret[0] = srv_make_new_error ("RDFXX", ".....",
-              "Bad argument to iri_to_id (), '%.100s' is not valid bnode IRI for 32-bit RDF storage", name );
+	  err_ret[0] = srv_make_new_error ("RDFXX", ".....", error_fmt, name);
           goto return_error; /* see below */
         }
       if (NULL != box_to_delete)
         dk_free_box (box_to_delete);
-      res_ret[0] = box_iri_int64 (acc, DV_IRI_ID);
+      res_ret[0] = box_iri_int64 (n, DV_IRI_ID);
       return 1;
     }
   if (uriqa_dynamic_local)
@@ -3094,6 +3163,7 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
   lock_trx_t * lt = qi ? qi->qi_trx : NULL;
   lock_trx_t * nic_lt = lt ? lt : bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  int hl;
   if (0 == iri_id_no) return uname_nodeID_ns_0;
   if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
@@ -3111,12 +3181,12 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
       dk_free_box (id_box);
       if (!local)
 	return NULL;
-      if (qi && lt->lt_lock.ht_count)
+      if (qi && lt && lt->lt_lock.ht_count)
 	lt_nic_set (lt, iri_name_cache, local, iri_id_no);
       else
 	nic_set (iri_name_cache, local, iri_id_no);
     }
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = nic_id_name (iri_prefix_cache, pref_id);
   if (!prefix)
     {
@@ -3138,16 +3208,17 @@ key_id_to_canonicalized_iri (query_instance_t * qi, iri_id_t iri_id_no)
 	      dk_free_box (local);
 	      return NULL;
 	    }
-	  if (qi && lt->lt_lock.ht_count)
+	  if (qi && lt && lt->lt_lock.ht_count)
 	    lt_nic_set (lt, iri_prefix_cache, prefix, pref_id);
 	  else
 	    nic_set (iri_prefix_cache, prefix, pref_id);
 	}
     }
-  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  RPID_HL(local,hl);
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - hl - 1, DV_STRING);
   /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
   memcpy (name, prefix, box_length (prefix) - 1);
-  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  memcpy (name + box_length (prefix) - 1, local + hl, box_length (local) - hl);
   dk_free_box (prefix);
   dk_free_box (local);
   return name;
@@ -3159,19 +3230,21 @@ key_id_to_canonicalized_iri_if_cached (iri_id_t iri_id_no)
   boxint pref_id;
   lock_trx_t * nic_lt = bootstrap_cli->cli_trx;
   caddr_t local, prefix, name;
+  int hl;
   if (0 == iri_id_no) return uname_nodeID_ns_0;
   if (8192 == iri_id_no) return uname_nodeID_ns_8192;
   local = lt_nic_id_name (nic_lt, iri_name_cache, iri_id_no);
   if (!local)
     return NULL;
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = nic_id_name (iri_prefix_cache, pref_id);
   if (!prefix)
     return NULL;
-  name = dk_alloc_box (box_length (local) + box_length (prefix) - 5, DV_STRING);
+  RPID_HL(local,hl);
+  name = dk_alloc_box (box_length (local) + box_length (prefix) - hl - 1, DV_STRING);
   /* subtract 4 for the prefix id in the local and 1 for one of the terminating nulls */
   memcpy (name, prefix, box_length (prefix) - 1);
-  memcpy (name + box_length (prefix) - 1, local + 4, box_length (local) - 4);
+  memcpy (name + box_length (prefix) - 1, local + hl, box_length (local) - hl);
   dk_free_box (prefix);
   dk_free_box (local);
   return name;
@@ -3215,7 +3288,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
 	return 0;
       lt_nic_set (lt, iri_name_cache, local, iid);
     }
-  pref_id = LONG_REF_NA (local);
+  pref_id = RPID_REF_NA (local);
   prefix = lt_nic_id_name (lt, iri_prefix_cache, pref_id);
   if (!prefix)
     {
@@ -3265,7 +3338,7 @@ key_id_to_namespace_and_local (query_instance_t *qi, iri_id_t iid, caddr_t *subj
         }
     }
   subj_ns_ret[0] = prefix;
-  subj_loc_ret[0] = box_dv_short_nchars (local+4, box_length (local) - 5);
+  subj_loc_ret[0] = box_dv_short_nchars (local+8, box_length (local) - (RPID_SZ + 1));
   dk_free_tree (local);
   return 1;
 }
@@ -3276,14 +3349,31 @@ rdf_handle_invalid_iri_id (caddr_t * qst, const char *msg, iri_id_t iid)
   sqlr_new_error ("42000", "SR673", "%s" BOXINT_FMT "", msg, (boxint)iid);
 }
 
+int debug_invalid_iri_id = 0;
+
 caddr_t
 bif_rdf_handle_invalid_iri_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   caddr_t msg = bif_string_arg (qst, args, 0, "__rdf_handle_invalid_iri_id");
   iri_id_t iid = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
+  int is_prefix = bif_iri_id_arg (qst, args, 1, "__rdf_handle_invalid_iri_id");
   if (0 == iid) return uname_nodeID_ns_0;
   if (8192 == iid) return uname_nodeID_ns_8192;
+  if (debug_invalid_iri_id)
+    {
+      caddr_t buf[100];
+      caddr_t b;
+
+      if (is_prefix)
+        return box_dv_short_string ("no prefix");
+
+      /* Generate temp iri */
+      snprintf (buf, sizeof (buf), "iri_id_" BOXINT_FMT "_with_no_name_entry", (boxint) iid);
+      b = box_dv_short_string (buf);
+      box_flags (b) = BF_IRI;
+      return b;
+    }
   rdf_handle_invalid_iri_id (qst, msg, iid);
   return NULL; /* never reached */
 }
@@ -3453,14 +3543,21 @@ bif_iri_to_rdf_prefix_and_local (caddr_t * qst, caddr_t * err_ret, state_slot_t 
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_default_geo_type (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  return uname_virtrdf_ns_uri_Geometry;
+}
 
 caddr_t
 rdf_cache_id (query_instance_t * qi, caddr_t mode, caddr_t pref, boxint new_id, int is_set, int is_txn)
 {
-  name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
+  name_id_cache_t * cache =
+      mode[0] == 'p' ? iri_prefix_cache
     : mode[0] == 'l' ? rdf_lang_cache
     : mode[0] == 't' ? rdf_type_cache
-    : mode[0] == 'i'? iri_name_cache : NULL;
+    : mode[0] == 'i'? iri_name_cache
+    : NULL;
   if ('t' == mode[0] && !strcmp (pref, "http://www.opengis.net/ont/geosparql#wktLiteral"))
     return box_num (256);
   if (!cache)
@@ -3492,10 +3589,10 @@ bif_rdf_cache_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (BOX_ELEMENTS (args) > 2)
     {
       new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+	  : bif_iri_id_or_long_arg (qst, args, 2, "rdf_cache_id");
       is_set = 1;
     }
-  return  rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
+  return rdf_cache_id (qi, mode, pref, new_id, is_set, lt_has_delta (qi->qi_trx));
 }
 
 
@@ -3516,7 +3613,7 @@ bif_rdf_cache_id_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, st
   SET_LOOP
     {
       boxint new_id = 'i' == mode[0] ? (boxint)bif_iri_id_arg (qst, args, 2, "rdf_cache_id")
-	: bif_long_arg (qst, args, 2, "rdf_cache_id");
+	: bif_iri_id_or_long_arg (qst, args, 2, "rdf_cache_id");
       rdf_cache_id (qi, mode, bif_string_or_uname_arg (qst, args, 1, "rdf_cache_id"), new_id, 1, is_txn);
     }
   END_SET_LOOP;
@@ -3528,11 +3625,13 @@ bif_rdf_cache_id_to_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 {
   QNCAST (query_instance_t, qi, qst);
   caddr_t mode = bif_string_arg (qst, args, 0, "rdf_cache_id_to_name");
-  boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
-  name_id_cache_t * cache = mode[0] == 'p' ? iri_prefix_cache
-    : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 'i' ? iri_name_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+  boxint id = bif_iri_id_or_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+  name_id_cache_t *cache =
+	mode[0] == 'p' ? iri_prefix_cache
+      : mode[0] == 'l' ? rdf_lang_cache
+      : mode[0] == 'i' ? iri_name_cache
+      : mode[0] == 't' ? rdf_type_cache
+      : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
   if (cache == iri_name_cache || cache == iri_prefix_cache)
@@ -3558,15 +3657,17 @@ bif_rdf_cache_id_to_name_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
       return;
     }
   mode = bif_string_or_uname_arg (qst, args, 0, "rdf_cache_id");
-  cache = mode[0] == 'p' ? iri_prefix_cache
-    : mode[0] == 'l' ? rdf_lang_cache
-    : mode[0] == 'i' ? iri_name_cache
-    : mode[0] == 't' ? rdf_type_cache : NULL;
+  cache =
+        mode[0] == 'p' ? iri_prefix_cache
+      : mode[0] == 'l' ? rdf_lang_cache
+      : mode[0] == 'i' ? iri_name_cache
+      : mode[0] == 't' ? rdf_type_cache
+      : NULL;
   if (!cache)
     sqlr_new_error ("42000", "RDF..", "bad mode for rdf_cache_id_to_name");
   SET_LOOP
     {
-      boxint id = bif_long_arg (qst, args, 1, "rdf_cache_id_to_name");
+    boxint id = bif_iri_id_or_long_arg (qst, args, 1, "rdf_cache_id_to_name");
       if (id == prev)
 	{
 	  qst_set_copy (qst, ret, box);
@@ -3593,14 +3694,16 @@ bif_iri_from_pref_name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int pref_len = box_length (pref) - 1;
   int name_len = box_length (name) - 1;
   caddr_t res;
-  if (name_len < 4)
+  int hl;
+  RPID_HL(name, hl);
+  if (name_len < (hl - 1))
     res = box_dv_short_string ("iri_from_pref_name");
   else
     {
-      res = dk_alloc_box (pref_len + name_len - 3, DV_STRING);
+      res = dk_alloc_box (pref_len + name_len - (hl - 1), DV_STRING);
       memcpy_16 (res, pref, pref_len);
-      memcpy_16 (res + pref_len, name + 4, name_len - 4);
-      res[pref_len + name_len - 4] = 0;
+      memcpy_16 (res + pref_len, name + hl, name_len - hl);
+      res[pref_len + name_len - hl] = 0;
     }
   box_flags (res) = BF_IRI;
   return res;
@@ -4105,13 +4208,19 @@ caddr_t
 bif_iri_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int n_args = BOX_ELEMENTS (args);
-  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
   caddr_t iri = bif_string_arg (qst, args, 0, "iri_split");
+  int is_int = n_args > 2 ? bif_long_arg (qst, args, 2, "iri_split") : 0;
+  int is_local = n_args > 3 ? bif_long_arg (qst, args, 3, "iri_split") : 0;
   caddr_t local, pref;
   if (is_int)
     iri_split (iri, &pref, &local);
   else
     iri_split_ttl_qname (iri, &pref, &local, 0);
+  if (is_local)
+    {
+      dk_free_box (pref);
+      return local;
+    }
   if (n_args > 1 && ssl_is_settable (args[1]))
     qst_set (qst, args[1], local);
   else
@@ -4396,6 +4505,8 @@ rdf_core_init (void)
   bif_define_ex ("id_to_iri_nosignal"		, bif_id_to_iri_nosignal	, BMD_ALIAS, "__id2in"	, BMD_VECTOR_IMPL, bif_id2i_vec_ns, BMD_RET_TYPE, &bt_any /* was &bt_varchar */, BMD_USES_INDEX, BMD_OUT_OF_PARTITION, BMD_DONE);
   bif_define ("iri_to_rdf_prefix_and_local", bif_iri_to_rdf_prefix_and_local);
   bif_define_ex ("iri_from_pref_name", bif_iri_from_pref_name, BMD_RET_TYPE, &bt_any, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("default_geo_type"		, bif_default_geo_type	, BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
+
   bif_define ("rdf_cache_id", bif_rdf_cache_id);
   bif_set_vectored (bif_rdf_cache_id, bif_rdf_cache_id_vec);
   bif_define ("rdf_cache_id_to_name", bif_rdf_cache_id_to_name);

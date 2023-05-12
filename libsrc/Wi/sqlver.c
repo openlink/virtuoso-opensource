@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -39,6 +39,17 @@ const char *build_opsys_id = "Win64";
 const char *build_host_id = "i686-generic-win-32";
 const char *build_opsys_id = "Win32";
 #endif
+#elif (__APPLE__)
+const char *build_host_id = HOST;			/* eg. universal-apple-macosx10.9 */
+const char *build_opsys_id = OPSYS " "
+# if defined (__aarch64__)
+	"(Apple Silicon)"
+# elif defined (__x86_64__)
+	"(Intel x86_64)"
+# else
+	"(UNKNOWN)"
+# endif
+	;
 #else
 const char *build_host_id = HOST;			/* eg. i586-pc-linux-gnu */
 const char *build_opsys_id = OPSYS;			/* eg. Linux */

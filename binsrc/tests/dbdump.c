@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1536,7 +1536,24 @@ get_sql_type_title (int type)
 	return ("TINYINT");
       }				/* (-6) in sqlext.h */
 #endif
-
+#ifdef SQL_WCHAR
+    case SQL_WCHAR:
+      {
+	return "NCHAR";
+      }
+#endif
+#ifdef SQL_WVARCHAR
+    case SQL_WVARCHAR:
+      {
+	return "NVARCHAR";
+      }
+#endif
+#ifdef SQL_WLONGVARCHAR
+    case SQL_WLONGVARCHAR:
+      {
+	return "LONG NVARCHAR";
+      }
+#endif
     default:
       {
 	char tmp[33];

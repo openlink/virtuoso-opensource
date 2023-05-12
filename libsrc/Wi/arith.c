@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1153,8 +1153,8 @@ dvc_int_double (int64 i, double d)
       return NUM_COMPARE (i, i2);
     }
   if (d > -1 && d < 1)
-    return NUM_COMPARE (((double) i), d);
-  r = NUM_COMPARE ((double) i, d);
+    return NUM_COMPARE_DBL (((double) i), d);
+  r = NUM_COMPARE_DBL ((double) i, d);
   if (DVC_MATCH == r)
     {
       /* if int and double look like eq and the double is outside the int precise int range, then the int is seen as farther from zero */
@@ -1177,6 +1177,8 @@ dvc_num_double (numeric_t num1, double d2)
       return numeric_compare_dvc ((numeric_t) num1, (numeric_t) num2);
     }
   numeric_to_double (num1, &d1);
+  if (isnan (d2))
+    return DVC_LESS;
   if (d1 == d2)
     {
       if (d2 > MIN_INT_DOUBLE && d2 < MAX_INT_DOUBLE)
@@ -1235,7 +1237,7 @@ dv_num_compare (numeric_t dn1, numeric_t dn2, dtp_t dtp1, dtp_t dtp2)
 	case DV_LONG_INT:
 	  return NUM_COMPARE (*(int64 *) dn1, *(int64 *) dn2);
 	case DV_DOUBLE_FLOAT:
-	  return NUM_COMPARE (*(double *) dn1, *(double *) dn2);
+	  return NUM_COMPARE_DBL (*(double *) dn1, *(double *) dn2);
 	case DV_NUMERIC:
 	  return (numeric_compare_dvc ((numeric_t) dn1, (numeric_t) dn2));
 	default:
@@ -1592,8 +1594,12 @@ name (int64* res, int64 * l, int64* r, int n) \
   int inx; \
   if (is_div) \
     for (inx = 0; inx < n; inx++) \
-      if (0 == ((tp*)r)[inx]) \
-	sqlr_new_error ("22012", "SR084", "Division by 0."); \
+      { \
+        if (0 == ((tp*)r)[inx]) \
+          sqlr_new_error ("22012", "SR084", "Division by 0."); \
+        if (2 == is_div && ((tp*)l)[inx] <= INT64_MIN && -1 == ((tp*)r)[inx]) \
+          sqlr_new_error ("22012", "SR084", "Int64 overflow."); \
+      } \
   for (inx = 0; 0 && inx <= n - 2 * vec_len; inx += 2 * vec_len) \
     { \
       *(vect*)&((tp*)res)[inx] = *(vect*)&((tp*)l)[inx] op  *(vect*)&((tp*)r)[inx]; \
@@ -1616,7 +1622,7 @@ ARTM_VEC (artm_mpy_int, int64, v2di_t, 2, *, 0);
 ARTM_VEC (artm_mpy_float, float, v4sf_t, 4, *, 0);
 ARTM_VEC (artm_mpy_double, double, v2df_t, 2, *, 0);
 
-ARTM_VEC (artm_div_int, int64, v2di_t, 2, /, 1);
+ARTM_VEC (artm_div_int, int64, v2di_t, 2, /, 2);
 ARTM_VEC (artm_div_float, float, v4sf_t, 4, /, 1);
 ARTM_VEC (artm_div_double, double, v2df_t, 2, /, 1);
 

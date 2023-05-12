@@ -60,12 +60,12 @@
     </Midl>
     <ClCompile>
       <Optimization>Full</Optimization>
-      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\libsrc\openssl;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libsrc\xml.new;..\libsrc;..\libsrc\Dk;..\libsrc\util\win32;..\libsrc\Wi;..\libsrc\zlib;..\binsrc\driver;..\libsrc\plugin;..\libsrc\langfunc;..\SDK\$(ShortPlatform)\sslsdk\inc32;.;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;_CONSOLE;_SSL;YYTOKENTYPE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <PrecompiledHeader>
       </PrecompiledHeader>
@@ -80,7 +80,7 @@
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
       <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;advapi32.lib;Mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtuoso-clr-t.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32mt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)virtuoso_clr_t.pdb</ProgramDatabaseFile>
@@ -116,7 +116,7 @@
       </AdditionalOptions>
       <AdditionalDependencies>libvirtuoso-t.lib;ws2_32.lib;libeay32.lib;ssleay32.lib;advapi32.lib;Mscoree.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtuoso-clr-t.exe</OutputFile>
-      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32dll;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/out32mt;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <IgnoreSpecificDefaultLibraries>%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <ProgramDatabaseFile>$(OutDir)virtuoso_clr_t.pdb</ProgramDatabaseFile>
@@ -131,6 +131,7 @@
     <ClCompile Include="..\binsrc\hosting\mono\dotnet.cpp" />
     <ClCompile Include="..\binsrc\hosting\mono\sql_code_clr.c" />
     <ClCompile Include="..\binsrc\hosting\mono\sql_code_xslt.c" />
+    <ClCompile Include="..\SDK\x64\sslsdk\inc32\openssl\applink.c" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="..\binsrc\virtuoso\virtuoso_t.rc" />

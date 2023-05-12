@@ -6,7 +6,7 @@
 --
 --  RDF Schema objects, generator of RDF Views
 --
---  Copyright (C) 1998-2018 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -76,7 +76,7 @@ RDF_VIEW_TBL_PK_COLS (inout tbls any, out pkcols any)
     {
       for (i := 0; i < l; i := i + 2)
         {
-	  if (__tag (tbls[i+1]) = 193)
+	  if (__tag (tbls[i+1]) = __tag of vector)
 	    mixed := 1;
 	}
     }
@@ -90,7 +90,7 @@ RDF_VIEW_TBL_PK_COLS (inout tbls any, out pkcols any)
 	   declare cols any;
 	   declare j int;
 	   newtb[i/2] := tbls[i];
-	   if (__tag (tbls [i + 1]) = 193)
+	   if (__tag (tbls [i + 1]) = __tag of vector)
 	     {
 	       cols := make_array (length (tbls [i + 1]), 'any');
 	       j := 0;
@@ -139,7 +139,7 @@ RDF_VIEW_NS_GET (in cols any, in f int)
   for (i := 0; i < length (cols); i := i + 2)
     RDF_VIEW_NS_GET_1 (cols[i+1], dict);
   nss := dict_to_vector (dict, 1);
-  for (declare i int, i := 0; i < length (nss); i := i + 2)
+  for (i := 0; i < length (nss); i := i + 2)
     {
       if (nss [i] not in ('rdf', 'rdfs', 'scovo', 'sioc', 'aowl', 'xsd', 'virtrdf'))
 	{
@@ -366,7 +366,7 @@ RDF_VIEW_GET_NS (in uri varchar, out uriSearch varchar)
   nsPrefix := null;
   if (length (uri) = 0)
     return null;
-  while (nsPrefix is null and delim <> 0)
+  while (nsPrefix is null and delim <= 0)
     {
       delim := coalesce (strrchr (uriSearch, '/'), 0);
       delim := __max (delim, coalesce (strrchr (uriSearch, '#'), 0));
@@ -677,17 +677,17 @@ RDF_VIEW_GET_PK_FK_REL (in pref varchar, in suffix varchar, in tbl varchar, in t
 create procedure
 RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv varchar, in sc int)
 {
-   if (_dv = 189 or _dv = 188) return '%d';
-   if (_dv = 247) return '%ld';
+  if (_dv = __tag of integer or _dv = __tag of smallint) return '%d';
+  if (_dv = __tag of bigint) return '%ld';
    if (_dv in (__tag of double precision, __tag of numeric) and sc = 0) return '%d';
-   if (_dv = 182 or _dv = 225) return '%U';
+  if (_dv = __tag of varchar or _dv = __tag of nvarchar) return '%U';
    if (__tag of double precision = _dv) return '%g';
    if (__tag of real = _dv) return '%f';
    if (__tag of numeric = _dv) return '%g';
    if (__tag of date = _dv) return '%1D';
    if (__tag of time = _dv) return '%1D';
    if (__tag of datetime = _dv or __tag of timestamp = _dv) return '%1D';
-   if (_dv in (__tag of IRI_ID, 244)) return '%s';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return '%s';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
@@ -695,8 +695,8 @@ RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv varchar, in sc int)
 create procedure
 RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
 {
-   if (_dv = 189 or _dv = 188 or _dv = 247) return 'integer';
-   if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
+  if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'integer';
+  if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 222) return 'varchar';
    if (__tag of double precision = _dv) return 'numeric';
    if (__tag of real = _dv) return 'float';
    if (__tag of numeric = _dv) return 'numeric';
@@ -705,16 +705,16 @@ RDF_VIEW_DV_TO_SQL_STR_TYPE (in _dv varchar)
    if (__tag of datetime = _dv) return 'datetime';
    if (__tag of timestamp = _dv) return 'timestamp';
    if (__tag of nvarchar = _dv) return 'nvarchar';
-   if (_dv in (__tag of IRI_ID, 244)) return 'IRI_ID';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return 'IRI_ID';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
 
 create procedure
-DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv varchar)
+DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv any)
 {
-   if (_dv = 189 or _dv = 188 or _dv = 247) return 'int';
-   if (_dv = 182 or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
+  if (_dv = __tag of integer or _dv = __tag of smallint or _dv = __tag of bigint) return 'int';
+  if (_dv = __tag of varchar or _dv = 125 or _dv = 131 or _dv = 132 or _dv = 222) return 'string';
    if (__tag of double precision = _dv) return 'numeric';
    if (__tag of real = _dv) return 'float';
    if (__tag of numeric = _dv) return 'numeric';
@@ -723,7 +723,7 @@ DB.DBA.RDF_VIEW_DV_TO_XSD_STR_TYPE (in _dv varchar)
    if (__tag of datetime = _dv) return 'dateTime';
    if (__tag of timestamp = _dv) return 'dateTime';
    if (__tag of nvarchar = _dv) return 'string';
-   if (_dv in (__tag of IRI_ID, 244)) return 'anyURI';
+  if (_dv in (__tag of IRI_ID, __tag of IRI_ID_8)) return 'anyURI';
    signal ('42000', sprintf ('The current implementation does no support data type %s (%i) for IRI classes', dv_type_title (_dv), _dv));
 }
 ;
@@ -825,35 +825,59 @@ RDF_VIEW_GET_RELATIONS (in _tbl varchar, in _tbls varchar, in _suff varchar)
 ;
 
 create procedure
-DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
+DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null, in gql_annotate int := 1)
 {
   declare ses, cols_arr, pkcols any;
   declare ns varchar;
-  declare inx int;
+  declare inx, tb_no int;
+  declare gql_ses any;
 
   RDF_VIEW_TBL_PK_COLS (_tbls, pkcols);
   cols := RDF_VIEW_TBL_OPTS (_tbls, cols);
   ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, virtuoso_ini_item_value ('URIQA','DefaultHost'), qual);
   ses := string_output ();
+  gql_ses := string_output ();
   http ('@prefix owl: <http://www.w3.org/2002/07/owl#> .\n', ses);
   http ('@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .\n', ses);
   http ('@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .\n', ses);
   http ('@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .\n', ses);
   http ('@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .\n', ses);
   http ('@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .\n', ses);
+  if (gql_annotate)
+    http ('@prefix gql: <http://www.openlinksw.com/schemas/graphql#> .\n', ses);
   http (ns, ses);
   http (RDF_VIEW_NS_GET (cols, 1), ses);
   http (sprintf ('\n%s: a owl:Ontology .\n', qual), ses);
+  http (sprintf ('\n\ngql:Map gql:dataGraph <http://%s/%s#> ;\n  gql:schemaGraph %s: ;\n  gql:schemaObjects ', 
+        virtuoso_ini_item_value ('URIQA','DefaultHost'), qual,  qual), gql_ses);
+  tb_no := 0;
   foreach (varchar tbl in _tbls) do
     {
       declare cls, ltb varchar;
       cls := RDF_VIEW_CLS_NAME (name_part (tbl, 2));
       ltb := RDF_VIEW_TB (name_part (tbl, 2));
 
-      http (sprintf ('\n# %s\n', tbl), ses);
-      http (sprintf ('%s:%s a rdfs:Class .\n', qual, cls), ses);
-      http (sprintf ('%s:%s rdfs:isDefinedBy %s: .\n', qual, cls, qual), ses);
-      http (sprintf ('%s:%s rdfs:label "%s" .\n', qual, cls, tbl), ses);
+      if (tb_no > 0)
+        http (', ', gql_ses);
+      http (sprintf ('gql:%s', cls), gql_ses);
+
+      http (sprintf ('\n# %s\n\n', tbl), ses);
+
+      if (gql_annotate)
+        {
+          http (sprintf ('gql:%s gql:type gql:Array;\n', cls), ses);
+          http (sprintf ('  gql:rdfClass %s:%s .\n\n', qual, cls), ses);
+          http (sprintf ('gql:%sObject gql:type gql:Object;\n', cls), ses);
+          http (sprintf ('  gql:rdfClass %s:%s .\n\n', qual, cls), ses);
+        }
+
+
+      http (sprintf ('%s:%s a rdfs:Class ;\n', qual, cls), ses);
+      http (sprintf ('  rdfs:isDefinedBy %s: ;\n', qual), ses);
+      if (gql_annotate)
+        http (sprintf ('  gql:field gql:%s ;\n', cls), ses);
+      http (sprintf ('  rdfs:label "%s" .\n\n', tbl), ses);
+
       inx := 0;
       cols_arr := get_keyword (tbl, cols);
       if (length (cols_arr[0]))
@@ -868,25 +892,33 @@ DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null)
 	    goto skip_this;
 	  else if (isstring (cols_arr[1][inx][0]))
 	    {
-	      http (sprintf ('%s:%s a owl:ObjectProperty .\n', qual, col), ses);
+	      http (sprintf ('%s:%s a owl:ObjectProperty ;\n', qual, col), ses);
 	      --if (length (cols_arr[1][inx][1]))
 	      --   http (sprintf ('%s:%s rdfs:subPropertyOf %s .\n', qual, col, RDF_VIEW_URI_CURIE (cols_arr[1][inx][1])), ses);
-	      http (sprintf ('%s:%s rdfs:range aowl:Content .\n', qual, col), ses);
+	      http ('  rdfs:range aowl:Content ;\n', ses);
+              if (gql_annotate)
+                http ('  gql:type gql:Object ;\n', ses);
 	    }
 	  else if (cols_arr[1][inx][0] = 4)
 	    {
-	      http (sprintf ('%s:%s rdfs:subPropertyOf virtrdf:label . \n', qual, col), ses);
-	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
+	      http (sprintf ('  rdfs:subPropertyOf virtrdf:label ;\n'), ses);
+	      http (sprintf ('  rdfs:range xsd:%s ;\n', xsd), ses);
+              if (gql_annotate)
+                http          ('  gql:type gql:Scalar ;\n', ses);
 	    }
 	  else
 	    {
-	      http (sprintf ('%s:%s a owl:DatatypeProperty .\n', qual, col), ses);
-	      http (sprintf ('%s:%s rdfs:range xsd:%s .\n', qual, col, xsd), ses);
+	      http (sprintf ('%s:%s a owl:DatatypeProperty ;\n', qual, col), ses);
+	      http (sprintf ('  rdfs:range xsd:%s ;\n', xsd), ses);
+              if (gql_annotate)
+                http ('  gql:type gql:Scalar ;\n', ses);
 	    }
 
-	  http (sprintf ('%s:%s rdfs:domain %s:%s .\n', qual, col, qual, cls), ses);
-	  http (sprintf ('%s:%s rdfs:isDefinedBy %s: .\n', qual, col, qual), ses);
-	  http (sprintf ('%s:%s rdfs:label "%S" .\n', qual, col, label), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:isDefinedBy %s: ;\n', qual), ses);
+          if (gql_annotate)
+            http (sprintf ('  gql:field gql:%s ;\n', col), ses);
+	  http (sprintf ('  rdfs:label "%S" .\n\n', label), ses);
 skip_this:
 	  inx := inx + 1;
 	}
@@ -896,24 +928,38 @@ skip_this:
 	  pkcls := RDF_VIEW_CLS_NAME (name_part (pkt, 2));
 	  lpkt := RDF_VIEW_TB (name_part (pkt, 2));
 
-	  http (sprintf ('%s:has_%s a owl:ObjectProperty .\n', qual, lpkt), ses);
-	  http (sprintf ('%s:has_%s rdfs:domain %s:%s .\n', qual, lpkt, qual, cls), ses);
-	  http (sprintf ('%s:has_%s rdfs:range %s:%s .\n', qual, lpkt, qual, pkcls), ses);
-	  http (sprintf ('%s:has_%s rdfs:label "Relation to %s" .\n', qual, lpkt, pkt), ses);
-	  http (sprintf ('%s:has_%s rdfs:isDefinedBy %s: .\n', qual, lpkt, qual), ses);
+	  http (sprintf ('%s:has_%s a owl:ObjectProperty ;\n', qual, lpkt), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:range %s:%s ;\n', qual, pkcls), ses);
+	  http (sprintf ('  rdfs:label "Relation to %s" ;\n', pkt), ses);
+          if (gql_annotate)
+            {
+              http (sprintf ('  gql:field gql:has_%s ;\n', lpkt), ses);
+              http          ('  gql:type gql:Object ;\n', ses);
+            }
+	  http (sprintf ('  rdfs:isDefinedBy %s: .\n\n', qual), ses);
 	}
       for select distinct FK_TABLE as pkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and 0 < position (FK_TABLE, _tbls) do
 	{
 	  declare pkcls varchar;
 	  pkcls := RDF_VIEW_CLS_NAME (name_part (pkt, 2));
 
-	  http (sprintf ('%s:%s_of a owl:ObjectProperty .\n', qual, ltb), ses);
-	  http (sprintf ('%s:%s_of rdfs:domain %s:%s .\n', qual, ltb, qual, cls), ses);
-	  http (sprintf ('%s:%s_of rdfs:range %s:%s .\n', qual, ltb, qual, pkcls), ses);
-	  http (sprintf ('%s:%s_of rdfs:label "Relation to %s" .\n', qual, ltb, pkt), ses);
-	  http (sprintf ('%s:%s_of rdfs:isDefinedBy %s: .\n', qual, ltb, qual), ses);
+	  http (sprintf ('%s:%s_of a owl:ObjectProperty ;\n', qual, ltb), ses);
+	  http (sprintf ('  rdfs:domain %s:%s ;\n', qual, cls), ses);
+	  http (sprintf ('  rdfs:range %s:%s ;\n', qual, pkcls), ses);
+	  http (sprintf ('  rdfs:label "Relation to %s" ;\n', pkt), ses);
+          if (gql_annotate)
+            {
+              http (sprintf ('  gql:field gql:%s_of ;\n', ltb), ses);
+              http          ('  gql:type gql:Array ;\n', ses);
 	}
+	  http (sprintf ('  rdfs:isDefinedBy %s: .\n\n', qual), ses);
+	}
+      tb_no := tb_no + 1;
     }
+  http ('.\n', gql_ses);
+  if (gql_annotate)
+    http (gql_ses, ses);
   return string_output_string (ses);
 }
 ;
@@ -950,7 +996,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%23this%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -967,7 +1013,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fo+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E+WHERE+{+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/stat%%23%%3E+%%3Fp+%%3Fo+}&format=%U'',
     vector(''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -983,7 +1029,7 @@ RDF_VIEW_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>/objects/%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);
@@ -1096,7 +1142,7 @@ RDF_OWL_GEN_VD (in qual varchar)
     ''/sparql?query=DESCRIBE+%%3Chttp%%3A//^{URIQADefaultHost}^%U%%3E+FROM+%%3Chttp%%3A//^{URIQADefaultHost}^/schemas/<qual>%%23%%3E&format=%U'',
     vector(''path'', ''*accept*''),
     null,
-    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)'',
+    ''(text/rdf.n3)|(application/rdf.xml)|(text/n3)|(application/json)|(text/turtle)'',
     2,
     null
     );', ses);

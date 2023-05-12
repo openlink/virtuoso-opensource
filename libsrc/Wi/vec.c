@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -585,6 +585,20 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
 	{
 	  box_reuse (box, (caddr_t) string + head_len, len + 1, DV_STRING);
 	  box[len] = 0;
+	  return box;
+	}
+      goto no_reuse;
+    case DV_BIN:
+      len = (unsigned char) string[1];
+      head_len = 2;
+      goto bin_data;
+    case DV_LONG_BIN:
+      len = LONG_REF_NA (string + 1);
+      head_len = 5;
+    bin_data:
+      if (DV_BIN == old_dtp && ALIGN_STR ((len)) == ALIGN_STR (box_length (box)))
+	{
+	  box_reuse (box, (caddr_t)string + head_len, len, DV_BIN);
 	  return box;
 	}
       goto no_reuse;
@@ -1284,7 +1298,11 @@ dc_elt_size (data_col_t * dc)
 }
 
 extern int dbf_explain_level;
+#ifdef NDEBUG
 int32 enable_sslr_check = 0;
+#else
+int32 enable_sslr_check = 1;
+#endif
 
 caddr_t
 sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
@@ -1361,11 +1379,11 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
     case DV_SINGLE_FLOAT:
       SSL_FIXED_STR_BOX (DV_SINGLE_FLOAT, sizeof (float));
     default:
-      if (DCT_BOXES & val_dc->dc_type)
+      if (!(DCT_BOXES & val_dc->dc_type))
+	GPF_T1 ("dc of unsupported dtp for single value qst_get");
 	if (val_dc->dc_n_values <= (uint32) row_no)
 	  return NULL;
       return ((caddr_t *) val_dc->dc_values)[row_no];
-      GPF_T1 ("dc of unsupported dtp for single value qst_get");
     }
   return 0;
 }
@@ -1528,9 +1546,40 @@ sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, 
     } \
 }
 
+#define RES_IF_NN_G(nth_v)		\
+{ \
+  if (!dc->dc_any_null) { \
+    group_sets[fill] = n + nth_v - 1; \
+    sets[fill++] = s##nth_v; \
+  } else  \
+    { \
+      if (dc->dc_nulls) \
+	{ \
+	  if (!DC_IS_NULL (dc, s##nth_v)) { \
+	    group_sets[fill] = n + nth_v - 1; \
+	    sets[fill++] = s##nth_v; \
+	  } \
+	}					\
+      else if ((DCT_BOXES & dc->dc_type))	\
+	{ \
+      caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v]; \
+      if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) { \
+      group_sets[fill] = n + nth_v - 1; \
+      sets[fill++] = s##nth_v;		\
+	}				\
+	}				\
+      else \
+      { \
+	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) \
+	  group_sets[fill] = n + nth_v - 1; \
+	  sets[fill++] = s##nth_v; \
+      } \
+    } \
+}
+
 
 int
-sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_sets)
+sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int *group_sets, int set, int n_sets)
 {
   int n, step, fill = 0;
   data_col_t *dc = QST_BOX (data_col_t *, inst, sslr->ssl_index);
@@ -1550,14 +1599,14 @@ sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_
 	  s7 = set_nos[s7];
 	  s8 = set_nos[s8];
 	}
-      RES_IF_NN (s1);
-      RES_IF_NN (s2);
-      RES_IF_NN (s3);
-      RES_IF_NN (s4);
-      RES_IF_NN (s5);
-      RES_IF_NN (s6);
-      RES_IF_NN (s7);
-      RES_IF_NN (s8);
+      RES_IF_NN_G (1);
+      RES_IF_NN_G (2);
+      RES_IF_NN_G (3);
+      RES_IF_NN_G (4);
+      RES_IF_NN_G (5);
+      RES_IF_NN_G (6);
+      RES_IF_NN_G (7);
+      RES_IF_NN_G (8);
 
     }
   for (n = n; n < n_sets; n++)
@@ -1568,7 +1617,7 @@ sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_
 	  int *set_nos = (int *) inst[sslr->sslr_set_nos[step]];
 	  s1 = set_nos[s1];
 	}
-      RES_IF_NN (s1);
+      RES_IF_NN_G (1);
     }
   return fill;
 }
@@ -2340,7 +2389,7 @@ vc_anynn (data_col_t * target, data_col_t * source, int row, caddr_t * err_ret)
   dtp_t tmp[10];
   if (DCT_BOXES & source->dc_type)
     {
-      caddr_t box = ((caddr_t *) source->dc_values)[row];
+      box = ((caddr_t *) source->dc_values)[row];
       dtp_t dtp = DV_TYPE_OF (box);
       if (DV_DB_NULL == dtp)
 	return 0;
@@ -3207,8 +3256,10 @@ dcp_nz (data_col_t * dc)
 	  s += v;
 	}
     }
+#if 0
   if (s != n)
     bing ();
+#endif
   printf ("first %d last %d n %d sum %d\n", first, last, n, (int) s);
 }
 

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@ import java.util.*;
 
 
 import org.apache.jena.graph.*;
+import org.apache.jena.query.TxnType;
 import org.apache.jena.shared.*;
 import org.apache.jena.util.iterator.*;
 
@@ -109,14 +110,20 @@ public class VirtDataset extends VirtGraph implements Dataset {
         return defaultModel;
     }
 
+    @Override
+    public Model getUnionModel() {
+        throw new UnsupportedOperationException();
+    }
+
     /**
      * Set the background graph.  Can be set to null for none.
      */
-    public void setDefaultModel(Model model) {
+    public VirtDataset setDefaultModel(Model model) {
         if (model instanceof VirtModel && ((VirtGraph)model.getGraph()).getConnection()==this.connection ){
             VirtGraph g = (VirtGraph)model.getGraph();
             defaultModel = model;
             removeLink(g);
+            return this;
         } else
             throw new IllegalArgumentException("VirtDataset supports only VirtModel with the same DB connection");
     }
@@ -141,11 +148,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public boolean containsNamedModel(String name) {
         String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
         ResultSet rs = null;
+        PreparedStatement ps = null;
         int ret = 0;
 
         checkOpen();
         try {
-            java.sql.PreparedStatement ps = prepareStatement(query, false);
+            ps = prepareStatement(query, false);
             ps.setString(1, name);
             rs = ps.executeQuery();
             if (rs.next())
@@ -153,6 +161,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             rs.close();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (ps != null)
+              ps.close();
+          } catch(Exception e) {}
         }
         return (ret != 0);
     }
@@ -161,15 +174,16 @@ public class VirtDataset extends VirtGraph implements Dataset {
     /**
      * Set a named graph.
      */
-    public void addNamedModel(String name, Model model, boolean checkExists) throws LabelExistsException {
+    public VirtDataset addNamedModel(String name, Model model, boolean checkExists) throws LabelExistsException {
         String query = "select count(*) from (sparql select * where { graph `iri(??)` { ?s ?p ?o }})f";
         ResultSet rs = null;
         int ret = 0;
+        PreparedStatement ps = null;
 
         checkOpen();
         if (checkExists) {
             try {
-                java.sql.PreparedStatement ps = prepareStatement(query, false);
+                ps = prepareStatement(query, false);
                 ps.setString(1, name);
                 rs = ps.executeQuery();
                 if (rs.next())
@@ -177,6 +191,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 rs.close();
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+              try {
+                if (ps != null)
+                  ps.close();
+              } catch(Exception e) {}
             }
 
             if (ret != 0)
@@ -186,38 +205,47 @@ public class VirtDataset extends VirtGraph implements Dataset {
 
         Graph g = model.getGraph();
         add(name, g.find(Node.ANY, Node.ANY, Node.ANY), null);
+        return this;
     }
 
     /**
      * Set a named graph.
      */
-    public void addNamedModel(String name, Model model) throws LabelExistsException {
+    public VirtDataset addNamedModel(String name, Model model) throws LabelExistsException {
         addNamedModel(name, model, true);
+        return this;
     }
 
     /**
      * Remove a named graph.
      */
-    public void removeNamedModel(String name) {
+    public VirtDataset removeNamedModel(String name) {
         String exec_text = "sparql clear graph <" + name + ">";
+        java.sql.Statement stmt = null;
 
         checkOpen();
         try {
-            java.sql.Statement stmt = createStatement(true);
+            stmt = createStatement(true);
             stmt.executeQuery(exec_text);
-            stmt.close();
+            return this;
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch(Exception e) {}
         }
     }
 
     /**
      * Change a named graph for another uisng the same name
      */
-    public void replaceNamedModel(String name, Model model) {
+    public VirtDataset replaceNamedModel(String name, Model model) {
         try {
             removeNamedModel(name);
             addNamedModel(name, model, false);
+            return this;
         } catch (Exception e) {
             throw new JenaException("Could not replace model:", e);
         }
@@ -229,13 +257,13 @@ public class VirtDataset extends VirtGraph implements Dataset {
     public Iterator<String> listNames() {
         String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
         ResultSet rs = null;
-        int ret = 0;
+        java.sql.Statement stmt = null;
 
         checkOpen();
         try {
             List<String> names = new LinkedList<String>();
 
-            java.sql.Statement stmt = createStatement(false);
+            stmt = createStatement(false);
             rs = stmt.executeQuery(exec_text);
             while (rs.next())
                 names.add(rs.getString(1));
@@ -243,6 +271,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             return names.iterator();
         } catch (Exception e) {
             throw new JenaException(e);
+        } finally {
+          try {
+            if (stmt != null)
+              stmt.close();
+          } catch(Exception e) {}
         }
     }
 
@@ -277,12 +310,45 @@ public class VirtDataset extends VirtGraph implements Dataset {
     }
 
 
+    @Override
+    public void begin(TxnType txnType) {
+        VirtTransactionHandler handler = getTransactionHandler();
+        handler.begin(txnType);
+    }
+
     /**
      * Start either a READ or WRITE transaction
      */
     public void begin(ReadWrite readWrite) {
         VirtTransactionHandler handler = getTransactionHandler();
         handler.begin(readWrite);
+    }
+
+    /**
+     * Attempt to promote a transaction from "read" mode to "write" and the transaction. This
+     * method allows the form of promotion to be specified. The transaction must not have been started
+     * with {@code READ}, which is read-only. 
+     * <p>
+     * An argument of {@code READ_PROMOTE} treats the promotion as if the transaction was started
+     * with {@code READ_PROMOTE} (any other writer commiting since the transaction started
+     * blocks promotion) and {@code READ_COMMITTED_PROMOTE} treats the promotion as if the transaction was started
+     * with {@code READ_COMMITTED_PROMOTE} (intemediate writer commits become visible).
+     * <p> 
+     * Returns "true" if the transaction is in write mode after the call. The method
+     * always succeeds of the transaction is already "write".
+     * <p>
+     * This method returns true if a {@code READ_PROMOTE} or
+     * {@code READ_COMMITTED_PROMOTE} is promoted.
+     * <p>
+     * This method returns false if a {@code READ_PROMOTE} can't be promoted - the
+     * transaction is still valid and in "read" mode.
+     * <p>
+     * This method throws an exception if there is an attempt to promote a {@code READ}
+     * transaction.
+     */
+    @Override
+    public boolean promote(Promote promote) {
+        return true;
     }
 
 
@@ -336,6 +402,29 @@ public class VirtDataset extends VirtGraph implements Dataset {
  getConnection().setAutoCommit(true);
  } catch (Exception e) {}
  **/
+    }
+
+    /**
+     * Return the current mode of the transaction - "read" or "write".
+     * If the caller is not in a transaction, this method returns null.
+     */
+    @Override
+    public ReadWrite transactionMode() {
+        VirtTransactionHandler handler = getTransactionHandler();
+        return handler.getReadWrite();
+    }
+
+
+    /**
+     * Return the transaction type used in {@code begin(TxnType)}.
+     * If the caller is not in a transaction, this method returns null.
+     */
+    @Override
+    public TxnType transactionType() {
+        if (!isInTransaction())
+            return null;
+        VirtTransactionHandler handler = getTransactionHandler();
+        return handler.getTxnType();
     }
 
     public synchronized void close() {
@@ -396,6 +485,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             }
         }
 
+        @Override
+        public Graph getUnionGraph() {
+            throw new UnsupportedOperationException();
+        }
+
         public boolean containsGraph(Node graphNode) {
             return containsNamedModel(graphNode.toString());
         }
@@ -403,13 +497,13 @@ public class VirtDataset extends VirtGraph implements Dataset {
         protected List<Node> getListGraphNodes() {
             String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
             ResultSet rs = null;
-            int ret = 0;
+            java.sql.Statement stmt = null;
 
             vd.checkOpen();
             try {
                 List<Node> names = new LinkedList<Node>();
 
-                java.sql.Statement stmt = vd.createStatement(false);
+                stmt = vd.createStatement(false);
                 rs = stmt.executeQuery(exec_text);
                 while (rs.next())
                     names.add(NodeFactory.createURI(rs.getString(1))); //NodeFactory.createURI()
@@ -417,6 +511,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 return names;
             } catch (Exception e) {
                 throw new JenaException(e);
+            } finally {
+              try {
+                if (stmt != null)
+                  stmt.close();
+              } catch(Exception e) {}
             }
         }
 
@@ -466,7 +565,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 ExtendedIterator<Triple> it = graph.find(Node.ANY, Node.ANY, Node.ANY);
                 vd.add(graphName.toString(), it, null);
             } catch (Exception e) {
-                throw new JenaException("Error in addGraph:" + e);
+                throw new JenaException("Error in addGraph", e);
             }
         }
 
@@ -477,7 +576,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             try {
                 vd.clear(graphName);
             } catch (Exception e) {
-                throw new JenaException("Error in removeGraph:" + e);
+                throw new JenaException("Error in removeGraph", e);
             }
         }
 
@@ -514,6 +613,12 @@ public class VirtDataset extends VirtGraph implements Dataset {
          * Delete any quads matching the pattern
          */
         public void deleteAny(Node g, Node s, Node p, Node o) {
+
+            g = (g!=null? g: Node.ANY);
+            s = (s!=null? s: Node.ANY);
+            p = (p!=null? p: Node.ANY);
+            o = (o!=null? o: Node.ANY);
+
             Triple t = new Triple(s, p, o);
 
             if (Node.ANY.equals(g)) {
@@ -532,11 +637,10 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 } catch (Exception e) {
                     throw new JenaException("Error in deleteAny():" + e);
                 } finally {
+                  try {
                     if (stmt != null)
-                        try {
-                            stmt.close();
-                        } catch (Exception e) {
-                        }
+                      stmt.close();
+                  } catch(Exception e) {}
                 }
 
             } else {
@@ -556,6 +660,8 @@ public class VirtDataset extends VirtGraph implements Dataset {
          *
          */
         public Iterator<Quad> find(Quad quad) {
+            if (quad == null)
+                return find();
             return find(quad.getGraph(), quad.getSubject(), quad.getPredicate(), quad.getObject());
         }
 
@@ -565,11 +671,16 @@ public class VirtDataset extends VirtGraph implements Dataset {
          * @see Graph#find(Node, Node, Node)
          */
         public Iterator<Quad> find(Node g, Node s, Node p, Node o) {
+
+            s = (s!=null? s: Node.ANY);
+            p = (p!=null? p: Node.ANY);
+            o = (o!=null? o: Node.ANY);
+
             List<Node> graphs;
             if (isWildcard(g)) {
                 graphs = getListGraphNodes();
             } else {
-                graphs = new LinkedList();
+                graphs = new LinkedList<>();
                 graphs.add(g);
             }
 
@@ -589,6 +700,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
          * Test whether the dataset  (including default graph) contains a quad - may include wildcards, Node.ANY or null
          */
         public boolean contains(Node g, Node s, Node p, Node o) {
+
+            s = (s!=null? s: Node.ANY);
+            p = (p!=null? p: Node.ANY);
+            o = (o!=null? o: Node.ANY);
+
             if (isWildcard(g)) {
                 boolean save = vd.getReadFromAllGraphs();
                 vd.setReadFromAllGraphs(true);
@@ -618,7 +734,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             return contains(Node.ANY, Node.ANY, Node.ANY, Node.ANY);
         }
 
-        protected boolean isWildcard(Node g) {
+        boolean isWildcard(Node g) {
             return g == null || Node.ANY.equals(g);
         }
 
@@ -651,11 +767,21 @@ public class VirtDataset extends VirtGraph implements Dataset {
             return vd.isInTransaction();
         }
 
-        /** Start either a READ or WRITE transaction */ 
+        @Override
+        public void begin(TxnType txnType) {
+            vd.begin(txnType);
+        }
+
+        /** Start either a READ or WRITE transaction */
         public void begin(ReadWrite readWrite) {
             vd.begin(readWrite);
         }
-    
+
+        @Override
+        public boolean promote(Promote promote) {
+            return vd.promote(promote);
+        }
+
         /** Commit a transaction - finish the transaction and make any changes permanent (if a "write" transaction) */  
         public void commit() {
             vd.commit();
@@ -671,6 +797,15 @@ public class VirtDataset extends VirtGraph implements Dataset {
             vd.end();
         }
 
+        @Override
+        public ReadWrite transactionMode() {
+            return vd.transactionMode();
+        }
+
+        @Override
+        public TxnType transactionType() {
+            return vd.transactionType();
+        }
 
 
     }

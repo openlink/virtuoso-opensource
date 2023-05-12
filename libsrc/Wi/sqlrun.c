@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1959,9 +1959,9 @@ table_source_input (table_source_t * ts, caddr_t * inst,
 		{
 		  float pct = (float) (ptrlong) ts->ts_rnd_pcnt;
 		  order_itc->itc_random_search = RANDOM_SEARCH_ON;
-		  if (pct)
+		  if (pct < 1)
 		    pct = 1;
-		  if (pct >= 30)
+		  else if (pct > 30)
 		    pct = 30;
 		  order_itc->itc_st.sample_size = (((float) row_est) / 100) * pct;
 		  if (order_itc->itc_st.sample_size < 200)
@@ -2236,6 +2236,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
   QNCAST (query_instance_t, qi, inst);
   int k;
   dbe_table_t *tb = ins->ins_table;
+  int non_txn_insert;
 
   it_cursor_t auto_itc;
   it_cursor_t *itc;
@@ -2307,6 +2308,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  qi->qi_set_mask = mask_save;
 	  qi->qi_n_sets = n_sets;
 	}
+      non_txn_insert = qi->qi_non_txn_insert;
       for (k = 0; k < BOX_ELEMENTS_INT (ins->ins_keys); k++)
 	{
 	  if (qi->qi_client->cli_row_autocommit)
@@ -2317,6 +2319,7 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	  itc_col_free (itc);
 	}
 	}
+      qi->qi_non_txn_insert = non_txn_insert;
       qi->qi_set_mask = save_sets;
       qi->qi_n_sets = n_sets;
       if (itc->itc_siblings)
@@ -3589,7 +3592,7 @@ ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 		      box_is_string (stmt, "unique", 5, stmt_len), 0, NULL);
     }
   else if (0 == strcmp (stmt[0], "add_col"))
-    ddl_add_col (qi, stmt[1], (caddr_t *) stmt[2]);
+    ddl_add_col (qi, stmt[1], (caddr_t *) stmt[2], 0);
   else if (0 == strcmp (stmt[0], "build_index"))
     ddl_build_index (qi, stmt[1], stmt[2], qi->qi_trx->lt_replicate);
   else if (0 == strcmp (stmt[0], "drop_index"))
@@ -3607,7 +3610,7 @@ qn_without_ac_at (data_source_t * qn, qn_input_fn inp, caddr_t * inst, caddr_t *
 {
   QNCAST (QI, qi, inst);
   client_connection_t * cli = qi->qi_client;
-  int save_at = cli->cli_anytime_timeout_orig;
+  uint32 save_at = cli->cli_anytime_timeout_orig;
   int save_ac = cli->cli_row_autocommit;
   cli->cli_row_autocommit = 0;
   cli->cli_anytime_timeout_orig = cli->cli_anytime_timeout = 0;
@@ -4089,7 +4092,7 @@ qi_set_options (query_instance_t * qi, stmt_options_t * opts)
 }
 
 
-long last_exec_time;		/* used to know when the system is idle */
+time_msec_t last_exec_time;		/* used to know when the system is idle */
 
 
 int
@@ -4729,8 +4732,8 @@ qr_subq_exec (client_connection_t * cli, query_t * qr,
   user_t * saved_user = cli->cli_user;
   caddr_t saved_qual = NULL;
 #ifdef PLDBG
-  long start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
-  long end_time;
+  time_msec_t start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
+  time_msec_t end_time;
 #endif
 
   QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, parms);
@@ -4937,8 +4940,8 @@ qr_subq_exec_vec (client_connection_t * cli, query_t * qr,
   char saved_qual_buf[25 + BOX_AUTO_OVERHEAD];
   caddr_t saved_qual = NULL;
 #ifdef PLDBG
-  long start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
-  long end_time;
+  time_msec_t start_time = ((qr->qr_proc_name && qr->qr_brk) ? get_msec_real_time () : 0);
+  time_msec_t end_time;
 #endif
 
   QR_EXEC_CHECK_STACK (caller, &ret, CALL_STACK_MARGIN, NULL);

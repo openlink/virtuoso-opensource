@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -257,7 +257,12 @@ select_node_input_vec (select_node_t * sel, caddr_t * inst, caddr_t * state)
 	  print_int (is_full ? QA_ROW_LAST_IN_BATCH : QA_ROW, __ses);
 	  for (inx = 0; inx < slots; inx++)
 	    {
-	      caddr_t value = QST_GET (inst, sel->sel_out_slots[inx]);
+              state_slot_t * out_ssl = sel->sel_out_slots[inx];
+              caddr_t value;
+              if (out_ssl->ssl_is_alias && out_ssl->ssl_alias_of)
+                value = QST_GET (inst, out_ssl->ssl_alias_of);
+              else
+                value = QST_GET (inst, out_ssl);
 	      print_object (value, __ses, NULL, NULL);
 	    }
 	  b2 = __ses->dks_bytes_sent;
@@ -974,6 +979,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
 }
 
 
+#if 0
 void
 dbg_del_check (data_col_t * source_dc, int source_row)
 {
@@ -982,6 +988,7 @@ dbg_del_check (data_col_t * source_dc, int source_row)
     bing ();
   dk_free_tree (box);
 }
+#endif
 
 #define   CL_AC_RESET_CK(is_reset, del, qi) \
 { \

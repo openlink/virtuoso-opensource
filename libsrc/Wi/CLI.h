@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2018 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -417,6 +417,7 @@ SQLLEN dv_to_place (caddr_t it, int c_type, SQLSMALLINT sql_type, SQLLEN max, ca
 #ifndef MAP_DIRECT_BIN_CHAR
 void bin_dv_to_str_place (unsigned char *str, char *place, size_t nbytes);
 void bin_dv_to_wstr_place (unsigned char *str, wchar_t *place, size_t nbytes);
+void bin_dv_to_utf16_place (unsigned char *str, uint16 *place, size_t nbytes);
 #endif
 void stmt_set_columns (cli_stmt_t *stmt, caddr_t *row, int nth_in_set);
 unsigned char *strncasestr (unsigned char *string1, unsigned char *string2, size_t maxbytes);
@@ -430,6 +431,8 @@ caddr_t buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, lon
 	      cli_stmt_t * err_stmt, int inprocess);
 caddr_t stmt_param_place_ptr ( parm_binding_t * pb, int nth, cli_stmt_t * stmt, SQLULEN length );
 SQLULEN sqlc_sizeof (int sqlc, SQLULEN deflt);
+SQLULEN sqlc_sizeof_1 (int sqlc, SQLULEN cbColDef, SQLLEN cbValueMax, int wide_as_utf16);
+
 SQLCHAR * stmt_convert_brace_escapes (SQLCHAR * statement_text, SQLINTEGER * newCB);
 void stmt_free_current_rows (cli_stmt_t * stmt);
 
@@ -759,7 +762,8 @@ caddr_t cli_box_server_msg (char *msg);
 
 #define DESC_CHARSET1(hdesc)	\
   DESC (desc, hdesc); \
-  wcharset_t *charset = desc->d_stmt->stmt_connection->con_charset
+  wcharset_t *charset = desc->d_stmt->stmt_connection->con_charset; \
+  int wide_as_utf16 = desc->d_stmt->stmt_connection->con_wide_as_utf16
 
 #define DESC_CHARSET(Handle, HandleType)	\
   /*ENV (env, Handle);*/ \
@@ -985,5 +989,21 @@ SQLLEN _##len = ((len) < 0 ? strlen ((char *) wide) : (len)) ; \
 	    *ret_len = 0; \
 	}
 
+
+/*
+ * Validate handles
+ */
+extern void virt_handle_init (void);
+extern void virt_handle_cleanup (void);
+extern void virt_handle_register (void *handle, int type);
+extern void virt_handle_unregister (void *handle);
+extern int virt_handle_check_type (void *handle, int type, int nullable);
+extern void virt_handle_debug (void);
+
+#define ASSERT_HANDLE_TYPE(handle,type)	\
+	do { if (!virt_handle_check_type(handle, type, 0)) return SQL_INVALID_HANDLE; } while (0)
+
+#define ASSERT_OPT_HANDLE_TYPE(handle,type) \
+	do { if (!virt_handle_check_type(handle, type, 1)) return SQL_INVALID_HANDLE; } while (0)
 
 #endif /* _CLI_H */
