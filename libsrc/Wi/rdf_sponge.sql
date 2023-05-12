@@ -1253,9 +1253,9 @@ no_cr:
     return 'text/turtle';
   msg := DB.DBA.RDF_SPONGE_TRY_TTL (512, ret_begin);
   if ('' = msg)
-    return 'text/x-nquads';
+    return 'application/n-quads';
   if (last_cr_pos is not null and DB.DBA.RDF_SPONGE_TRY_TTL (512, shorter_ret_begin) <> msg)
-    return 'text/x-nquads';
+    return 'application/n-quads';
   msg := DB.DBA.RDF_SPONGE_TRY_TTL (256, ret_begin);
   if ('' = msg)
     return 'application/x-trig';
@@ -1316,8 +1316,8 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 			return 'text/rdf+n3';
 		if (strstr (ret_content_type, 'application/x-trig') is not null)
 			return 'application/x-trig';
-		if (strstr (ret_content_type, 'text/x-nquads') is not null)
-			return 'text/x-nquads';
+		if (strstr (ret_content_type, 'application/n-quads') is not null)
+			return 'application/n-quads';
 	}
 	declare ret_begin, ret_html any;
 	ret_begin := subseq (ret_body, 0, 65535);
@@ -1758,7 +1758,7 @@ retry_after_deadlock:
     strstr (ret_content_type, 'application/x-trig') is not null)
     ttl_mode := 256+255;
   else if (
-    strstr (ret_content_type, 'text/x-nquads') is not null)
+    strstr (ret_content_type, 'application/n-quads') is not null)
     ttl_mode := 512+255;
   if (ttl_mode is not null)
     {
