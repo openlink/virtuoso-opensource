@@ -3828,6 +3828,17 @@ graph_processing:
             }
           DB.DBA.RDF_LOAD_RDFXML (res_file, full_graph_uri, full_graph_uri);
         }
+      else if (res_content_type = 'application/ld+json')
+        {
+          if (reqbegin like 'PUT%')
+            {
+              sparql clear graph ?:full_graph_uri;
+              commit work;
+            }
+          if (__tag (res_file) = __tag of stream)
+            res_file := string_output_string (res_file);
+          DB.DBA.RDF_LOAD_JSON_LD (res_file, full_graph_uri, full_graph_uri);
+        }
       else if (res_content_type = 'application/n-quads')
         {
           declare flags int;

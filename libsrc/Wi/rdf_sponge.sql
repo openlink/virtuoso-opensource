@@ -1351,8 +1351,15 @@ create function DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (in origin_uri varchar, in 
 	{
 		goto next;
 	};
-	if (length(json_parse(cast (ret_body as varchar))) > 0)
-		return 'application/json';
+        declare jt any;
+        jt := json_parse(cast (ret_body as varchar));
+        if (length(jt) > 0 and
+            (get_keyword ('@context', jt) is not null or
+            get_keyword ('@id', jt) is not null or
+            get_keyword ('@type', jt) is not null))
+          return 'application/ld+json';
+	if (length(jt) > 0)
+	  return 'application/json';
 	next:;
 	guessed_ret_type := DB.DBA.RDF_SPONGE_GUESS_TTL_CONTENT_TYPE (origin_uri, ret_content_type, ret_body, ret_begin);
 	if (guessed_ret_type is not null)
