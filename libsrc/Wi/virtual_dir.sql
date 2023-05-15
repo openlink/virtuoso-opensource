@@ -1846,6 +1846,8 @@ create procedure WS.WS."host-meta" (
       http_header ('Content-Type: application/jrd+json\r\n');
     http_xslt ('http://local.virt/xrd2json');
     }
+  if (accept = 'application/xml')
+    http_header ('Content-Type: application/xml\r\n');
   return ret;
 }
 ;
