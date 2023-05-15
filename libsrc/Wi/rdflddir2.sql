@@ -197,6 +197,17 @@ ld_file (in f varchar, in graph varchar)
     {
       load_grdf (f);
     }
+  else if (base_name like '%.jsonld')
+    {
+      if (f like '%.gz')
+        DB.DBA.RDF_LOAD_JSON_LD (gz_file_open(f), base, graph);
+      else if (f like '%.bz2')
+        DB.DBA.RDF_LOAD_JSON_LD (bz2_file_open(f), base, graph);
+      else if (f like '%.xz')
+        DB.DBA.RDF_LOAD_JSON_LD (xz_file_open(f), base, graph);
+      else
+        DB.DBA.RDF_LOAD_JSON_LD (file_open(f), base, graph);
+    }
   else if (f like '%.gz')
     {
       if (ld_is_rdfxml (base_name))
@@ -217,10 +228,6 @@ ld_file (in f varchar, in graph varchar)
 	DB.DBA.RDF_LOAD_RDFXML_V (xz_file_open (f), base, graph);
       else
 	TTLP (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
-    }
-  else if (f like '%.jsonld')
-    {
-      DB.DBA.RDF_LOAD_JSON_LD (file_to_string (f), base, graph);
     }
   else
     {
