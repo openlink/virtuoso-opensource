@@ -103,11 +103,13 @@
                         <![CDATA[
                     declare _log, is_ttl, is_xml integer;
                     declare _file, _file_type, _file_path, _graph any;
+                    declare dummy_path, pars, dummy_lines, _file_type_guess any;
 
                     self.message := '';
                     _file := get_keyword ('t_rdf_file', params);
                     _file_path := get_keyword ('filename', get_keyword_ucase ('attr-t_rdf_file', params));
   _graph := trim (self.rdf_graph_name.ufl_value);
+
   if (not length (_graph))
     {
       self.vc_is_valid := 0;
@@ -130,69 +132,29 @@
       goto end_post;
     }
 
-                    _file_type := http_mime_type (_file_path);
                     if ((_file_path like '%.gz') and (length (_file) > 2))
       {
                       declare magic any;
-
         magic := subseq (_file, 0, 2);
 	if (magic[0] = 0hex1f and magic[1] = 0hex8b)
 	  _file := gzip_uncompress (_file);
       }
-
-                    -- start import
+                    _file_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, _file);
                     _log := log_enable (3, 1);
-
-                    is_xml := 0;
-                    is_ttl := 0;
-                    if (DB.DBA.is_rdf_type (_file_type))
-                    {
-                      if (not isnull (strstr (_file_type, 'application/rdf+xml')) or not isnull (strstr (_file_type, 'application/foaf+xml')))
-                        goto _xml;
-
-                      goto _ttl;
-                    }
-
-                  _ttl:;
-                    if (not is_ttl)
-    {
-                      declare exit handler for SQLSTATE '*'
-	{
-                        is_ttl := 1;
-
-                        goto _xml;
-	};
-      DB.DBA.TTLP (_file, '', _graph);
-                      is_ttl := 2;
-
-                      goto _exit;
-    }
-
-                  _xml:;
-                    if (not is_xml)
-      {
-                      declare exit handler for SQLSTATE '*'
-	  {
-                        is_xml := 1;
-
-                        goto _ttl;
-	  };
-	DB.DBA.RDF_LOAD_RDFXML (_file, '', _graph);
-                      is_xml := 2;
-
-                      goto _exit;
-      }
-
-                  _exit:;
-                    log_enable (_log, 1);
-                    -- end import
-
-                    if ((is_ttl <> 2) and (is_xml <> 2))
-      {
+                    dummy_path := vector (); pars := vector ('graph', _graph, 'Content', _file);
+                    dummy_lines := vector ('POST / HTTP/1.1', concat ('Content-Type:', _file_type));
+                    connection_set ('SPARQLUserId', 'dba');
+                    WS.WS."/!sparql-graph-crud/" (dummy_path, pars, dummy_lines);
+                    http_rewrite ();
+                    connection_set ('SPARQLUserId', NULL);
+                    if (http_request_status_code_get() > 299) {
 	self.vc_is_valid := 0;
-	self.vc_error_message := 'You have attempted to upload invalid data. You can only upload RDF, Turtle, N3 serializations of RDF Data to the RDF Data Store.';
+                      self.vc_error_message := concat ('You have attempted to upload invalid data.',
+                        ' You can only upload RDF, Turtle, N3, N-Quads and JSON-LD serializations of RDF Data to the RDF Data Store.');
 	return;
-      }
+                    };
+                    http_status_set (200);
+                    log_enable (_log, 1);
     if (self.persist_graph.ufl_selected)
       {
          SPARQL CREATE SILENT GRAPH iri (?:_graph) ;     
