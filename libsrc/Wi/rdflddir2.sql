@@ -199,14 +199,10 @@ ld_file (in f varchar, in graph varchar)
     }
   else if (base_name like '%.jsonld')
     {
+      tmp := file_to_string (f);
       if (f like '%.gz')
-        DB.DBA.RDF_LOAD_JSON_LD (gz_file_open(f), base, graph);
-      else if (f like '%.bz2')
-        DB.DBA.RDF_LOAD_JSON_LD (bz2_file_open(f), base, graph);
-      else if (f like '%.xz')
-        DB.DBA.RDF_LOAD_JSON_LD (xz_file_open(f), base, graph);
-      else
-        DB.DBA.RDF_LOAD_JSON_LD (file_open(f), base, graph);
+	tmp := string_output_string (gzip_uncompress (tmp));
+	DB.DBA.RDF_LOAD_JSON_LD (tmp, base, graph);
     }
   else if (f like '%.gz')
     {
