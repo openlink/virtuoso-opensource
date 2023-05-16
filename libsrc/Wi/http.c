@@ -6016,6 +6016,17 @@ bif_http_request_status_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return NEW_DB_NULL;
 }
 
+static caddr_t
+bif_http_request_status_code_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t * qi = (query_instance_t *) qst;
+  if (!qi->qi_client->cli_ws)
+    sqlr_new_error ("42000", "HT012", "The http_request_status_code_get function allowed only inside HTTP request");
+  if (qi->qi_client->cli_ws->ws_status_line)
+    return box_num (qi->qi_client->cli_ws->ws_status_code);
+  return NEW_DB_NULL;
+}
+
 caddr_t
 bif_http_root (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -11898,6 +11909,7 @@ http_init_part_one ()
   bif_define ("http_proxy", bif_http_proxy);
   bif_define ("http_request_status", bif_http_request_status);
   bif_define_ex ("http_request_status_get", bif_http_request_status_get, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("http_request_status_code_get", bif_http_request_status_code_get, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_typed (ENC_B64_NAME, bif_encode_base64, &bt_varchar);
   bif_define_typed (DEC_B64_NAME, bif_decode_base64, &bt_varchar);
   bif_define_ex ("encode_base64url", bif_encode_base64url, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
