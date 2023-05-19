@@ -166,7 +166,10 @@ create procedure
 ld_file (in f varchar, in graph varchar)
 {
   declare base_name, base varchar;
+  declare tmp varchar;
+
   base := '';
+  tmp := null;
   declare exit handler for sqlstate '*' {
     rollback work;
     update DB.DBA.LOAD_LIST
