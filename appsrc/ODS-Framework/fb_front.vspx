@@ -185,8 +185,8 @@
                  declare _sid varchar;
 
                 _sid :=  md5 (concat (datestring (now ()), http_client_ip (), http_path ()));
-                 insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY)
-                  values ('wa', _sid, _user_name, serialize (vector ('vspx_user', _user_name)), now());
+                 insert into DB.DBA.VSPX_SESSION (VS_REALM, VS_SID, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+                  values ('wa', _sid, _user_name, serialize (vector ('vspx_user', _user_name)), now(), http_client_ip());
                  http_request_status ('HTTP/1.1 302 Found');
                  http_header (sprintf('Location: %sfb_front.vspx?sid=%s&realm=wa\r\n', self.odsbar_ods_gpath, _sid));
                  return;

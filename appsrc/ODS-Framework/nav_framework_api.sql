@@ -126,8 +126,8 @@ create procedure sessionStart (in realm varchar :='wa') __SOAP_HTTP 'text/xml'
 
   sid:=DB.DBA.vspx_sid_generate ();
 
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) 
-         values (sid, realm, 'nobody', now ());
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_IP) 
+         values (sid, realm, 'nobody', now (), http_client_ip());
 
   http('<session>'||sid||'</session>',resXml);
 
@@ -1772,7 +1772,8 @@ create procedure openIdCheckAuthentication (
 
   declare sid varchar;
   sid := DB.DBA.vspx_sid_generate ();
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE) values (sid, realm, user_name, now (),serialize ( vector ( 'vspx_user', user_name)));
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_STATE, VS_IP) 
+      values (sid, realm, user_name, now (),serialize ( vector ( 'vspx_user', user_name)), http_client_ip());
 
   http('<session>'||sid||'</session>',resXml);
   http('<userName>'||user_name||'</userName>',resXml);

@@ -455,7 +455,7 @@ create procedure get_ses (in uname varchar)
   if (sid is null)
     {
       sid := DB.DBA.vspx_sid_generate ();
-      insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY) values (sid, 'wa', uname, now ());
+      insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_EXPIRY, VS_IP) values (sid, 'wa', uname, now (), http_client_ip());
     }
   return sid;
 }
@@ -4525,8 +4525,8 @@ create procedure ODS..ods_new_user_session (
 
   sid := DB.DBA.vspx_sid_generate ();
 
-  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY)
-    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now ());
+  insert into DB.DBA.VSPX_SESSION (VS_SID, VS_REALM, VS_UID, VS_STATE, VS_EXPIRY, VS_IP)
+    values (sid, 'wa', uname, serialize (vector ('vspx_user', uname)), now (), http_client_ip());
 
   return sid;
 }
