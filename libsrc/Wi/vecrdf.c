@@ -309,7 +309,7 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   rb->rb_lang = dt_lang & 0xffff;
   rb->rb_type = dt_lang >> 16;
   rb->rb_box = DV_DB_NULL == DV_TYPE_OF (lng) ? val : lng;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type)
+  if (RDF_BOX_GEO_TYPE == rb->rb_type || RB_IS_DURATION (rb->rb_type))
     rb->rb_box = box_deserialize_string (rb->rb_box, INT32_MAX, 0);
   DC_CHECK_LEN (dc, inx);
   DC_FILL_TO (dc, int64, inx);
@@ -317,7 +317,7 @@ dc_set_rb (data_col_t * dc, int inx, uint32 dt_lang, int flags, caddr_t val, cad
   dc->dc_n_values = inx;
   dc_append_rb (dc, (caddr_t) rb);
   dc->dc_n_values = save;
-  if (RDF_BOX_GEO_TYPE == rb->rb_type)
+  if (RDF_BOX_GEO_TYPE == rb->rb_type || RDF_BOX_INTERVAL == rb->rb_type)
     dk_free_box (rb->rb_box);
 }
 

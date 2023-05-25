@@ -1865,6 +1865,15 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 	    sqlr_resignal (err);
 	  return;
 	}
+      if (IS_NONLEAF_DTP((dtp_t)str[0]) && tb_is_rdf_quad (key->key_table))
+        {
+	  caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a VECTOR into O in RDF_QUAD.  RDF box is expected");
+	  if (err_ret)
+	    *err_ret = err;
+	  else
+	    sqlr_resignal (err);
+	  return;
+        }
       goto assign_str;
 
     case DV_OBJECT:

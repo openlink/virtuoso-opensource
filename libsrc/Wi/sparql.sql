@@ -1766,6 +1766,8 @@ create function DB.DBA.RDF_OBJ_OF_SQLVAL (in v any) returns any array
     {
       if (__tag of rdf_box = __tag(v) and 0 = rdf_box_ro_id (v))
         return DB.DBA.RDF_OBJ_ADD (257, v, 257);
+      if (__tag (v) = 195 and length (v) = 2) -- XXX: generic duration
+        return DB.DBA.RDF_OBJ_ADD (sys_stat ('rb_type__xsd:duration'), serialize (v), 257);
       return v;
     }
   if (__tag of UNAME = t)

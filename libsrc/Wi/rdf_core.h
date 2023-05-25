@@ -379,4 +379,14 @@ extern int32 rdf_rpid64_mode;
 #define RPID_IS_64(p)		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 1 : 0)
 #define RPID_HL(p,hl) 		( (hl) = (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 8  : 4 )
 
+extern int rb_type__xsd_duration;
+extern int rb_type__xsd_yearMonthDuration;
+extern int rb_type__xsd_dayTimeDuration;
+#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+
+extern int rb_type__xsd_duration;
+extern int rb_type__xsd_yearMonthDuration;
+extern int rb_type__xsd_dayTimeDuration;
+#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+
 #endif

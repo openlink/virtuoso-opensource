@@ -61,7 +61,8 @@ int file_mtime_to_dt (const char * name, char *dt);
 #endif
 void sec2time (int sec, int *day, int *hour, int *min, int *tsec);
 int time2sec (int day, int hour, int min, int sec);
-void ts_add (TIMESTAMP_STRUCT *ts, boxint n, const char *unit);
+extern void ts_add_month (TIMESTAMP_STRUCT* ts, int months, int oracle_style);
+extern void ts_add (TIMESTAMP_STRUCT *ts, boxint n, const char *unit);
 int dt_validate (caddr_t dt);
 extern int dt_compare (caddr_t dt1, caddr_t dt2, int cmp_is_safe);
 void dt_to_GMTimestamp_struct (ccaddr_t dt, GMTIMESTAMP_STRUCT *ts);
@@ -82,6 +83,7 @@ void dt_to_iso8601_string (const char *dt, char *str, int len);
 void dt_to_iso8601_string_ext (const char *dt, char *buf, int len, int mode);
 void dt_to_rfc1123_string (const char *dt, char *str, int len);
 int print_dt_to_buffer (char *buf, caddr_t arg, int mode);
+int snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration);
 
 #define DTFLAG_YY	0x1
 #define DTFLAG_MM	0x2
@@ -151,6 +153,8 @@ void dt_print (caddr_t dt);
 typedef caddr_t arithm_dt_operation_t (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret);
 extern arithm_dt_operation_t arithm_dt_add;
 extern arithm_dt_operation_t arithm_dt_subtract;
+extern arithm_dt_operation_t arithm_duration_multiply;
+extern arithm_dt_operation_t arithm_duration_divide;
 
 extern int rb_type__xsd_gDay;
 extern int rb_type__xsd_gMonth;

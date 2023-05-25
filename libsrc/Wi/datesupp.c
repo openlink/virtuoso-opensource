@@ -547,6 +547,32 @@ time2sec (int day, int hour, int min, int sec)
   return (day * SPERDAY + hour * 60 * 60 + min * 60 + sec);
 }
 
+void
+ts_add_month (TIMESTAMP_STRUCT* ts, int months, int oracle_style)
+{
+  static const int days_in_month[] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+  int set_to_last_day, new_month_0based;
+  if (!months)
+    return;
+  set_to_last_day = (oracle_style && (28 <= ts->day) && (ts->day >= ((2 == ts->month) ? days_in_february (ts->year) : days_in_month[ts->month-1])));
+  new_month_0based = (ts->month - 1) + months;
+  if (new_month_0based >= 0)
+    {
+      ts->year += new_month_0based / 12;
+      ts->month = 1 + (new_month_0based % 12);
+    }
+  else
+    {
+      ts->year -= (1 + ((-(1+new_month_0based)) / 12));
+      ts->month = (12 - ((-(1+new_month_0based)) % 12));
+    }
+  if (set_to_last_day || (28 <= ts->day))
+    {
+      int last_day_of_month = ((2 == ts->month) ? days_in_february (ts->year) : days_in_month[ts->month-1]);
+      if (set_to_last_day || (ts->day >= last_day_of_month))
+      ts->day = last_day_of_month;
+    }
+}
 
 void
 ts_add (TIMESTAMP_STRUCT * ts, boxint n, const char *unit)
@@ -557,30 +583,19 @@ ts_add (TIMESTAMP_STRUCT * ts, boxint n, const char *unit)
   int oyear, omonth, oday, ohour, ominute, osecond;
   if (0 == n)
     return;
-  day = date2num (ts->year, ts->month, ts->day);
-  sec = time2sec (0, ts->hour, ts->minute, ts->second);
-  frac = ts->fraction;
   if (0 == stricmp (unit, "year"))
     {
-      ts->year += n;
+      ts_add_month (ts, n * 12, 0);
       return;
     }
   if (0 == stricmp (unit, "month"))
     {
-      int m = (ts->month - 1) + n;
-      if (m >= 0)
-	{
-	  ts->year += m / 12;
-	  ts->month = 1 + (m % 12);
-	}
-      else
-	{
-	  ts->year -= 1 - ((m + 1) / 12);
-	  ts->month = 12 + ((m + 1) % 12);
-	}
+      ts_add_month (ts, n, 0);
       return;
     }
-
+  day = date2num (ts->year, ts->month, ts->day);
+  sec = time2sec (0, ts->hour, ts->minute, ts->second);
+  frac = ts->fraction;
   do {
       if (0 == stricmp (unit, "second")) { sec += n; break; }
       if (0 == stricmp (unit, "day")) { day += n; break; }
@@ -812,6 +827,77 @@ dt_date_round (char *dt)
     }
   DT_SET_DT_TYPE (dt, DT_TYPE_DATE);
 }
+
+
+int
+snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
+{
+  int inx = 0;
+  long ym = 0;
+  double dt = 0;
+  int is_neg;
+  long years, months;
+  long days, hours, minutes;
+  double seconds;
+
+  if (IS_GENERIC_DURATION (duration))
+    {
+      ym = GENERIC_DURATION_GET_YM (duration);
+      dt = GENERIC_DURATION_GET_DT (duration);
+    }
+  else
+    {
+      dt = unbox (duration);
+    }
+
+  is_neg = (ym < 0 || dt < 0);
+  ym = labs (ym);
+  dt = fabs (dt);
+
+  years = (long) (ym / 12);
+  months = ym % 12;
+
+  minutes = (long) (dt / 60);
+  hours = (long) (minutes / 60);
+  days = (long) (hours / 24);
+
+  minutes %= 60;
+  hours %= 24;
+  seconds = dt - (60 * minutes) - (3600 * hours) - (86400 * days);
+
+  inx += snprintf (buf, buf_size, "%sP", is_neg ? "-" : "");
+
+  if (ym)
+    {
+      if (years)
+	inx += snprintf (buf + inx, buf_size - inx, "%ldY", years);
+      if (months)
+	inx += snprintf (buf + inx, buf_size - inx, "%ldM", months);
+    }
+
+  if (dt)
+    {
+      if (days)
+	inx += snprintf (buf + inx, buf_size - inx, "%ldD", days);
+
+      if (hours || minutes || seconds)
+	inx += snprintf (buf + inx, buf_size - inx, "T");
+      if (hours)
+	inx += snprintf (buf + inx, buf_size - inx, "%ldH", hours);
+      if (minutes)
+	inx += snprintf (buf + inx, buf_size - inx, "%ldM", minutes);
+      if (seconds)
+	{
+	  if (seconds - (long) seconds > 0)
+	    inx += snprintf (buf + inx, buf_size - inx, "%.9lfS", seconds);
+	  else
+	    inx += snprintf (buf + inx, buf_size - inx, "%ldS", (long) seconds);
+	}
+    }
+
+  return inx;
+}
+
 
 int isdts_mode = 1;
 
