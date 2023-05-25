@@ -50,9 +50,14 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
   switch (DV_TYPE_OF (tree))
     {
     case DV_ARRAY_OF_POINTER:
-      if (SPAR_LIT != tree->type)
-        spar_sqlprint_error ("ssg_" "sdprin_literal: non-literal vector as argument");
-        if (DV_DATETIME == DV_TYPE_OF (tree->_.lit.val))
+      {
+        dtp_t val_dtp;
+        if (SPAR_LIT != tree->type)
+          spar_sqlprint_error ("ssg_" "sdprin_literal: non-literal vector as argument");
+        if (ssg_try_puts_literal_as_original (ssg, tree, 0))
+          return;
+        val_dtp = DV_TYPE_OF (tree->_.lit.val);
+        if (DV_DATETIME == val_dtp)
           {
             char temp [100];
             int mode = DT_PRINT_MODE_XML | dt_print_flags_of_xsd_type_uname (tree->_.lit.datatype);
@@ -62,22 +67,29 @@ void ssg_sdprin_literal (spar_sqlgen_t *ssg, SPART *tree)
             ssg_putchar ('"');
           }
         else if (NULL != tree->_.lit.original_text)
-          ssg_puts (tree->_.lit.original_text);
+          {
+            ssg_putchar ('"');
+            ssg_puts (tree->_.lit.original_text);
+            ssg_putchar ('"');
+          }
         else
-          ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
-      if (DV_STRING != DV_TYPE_OF (tree->_.lit.val))
+          {
+            ssg_sdprin_literal (ssg, (SPART *)(tree->_.lit.val));
+            if (!((DV_STRING == val_dtp) || (DV_WIDE == val_dtp) || (DV_STRING_SESSION == val_dtp)))
+              return;
+          }
+        if (NULL != tree->_.lit.datatype)
+          {
+            ssg_puts ("^^");
+            ssg_sdprin_qname (ssg, (SPART *)(tree->_.lit.datatype));
+          }
+        if (NULL != tree->_.lit.language)
+          {
+            ssg_putchar ('@');
+            ssg_puts (tree->_.lit.language);
+          }
         return;
-      if (NULL != tree->_.lit.datatype)
-        {
-          ssg_puts ("^^");
-          ssg_sdprin_qname (ssg, (SPART *)(tree->_.lit.datatype));
-        }
-      if (NULL != tree->_.lit.language)
-        {
-          ssg_putchar ('@');
-          ssg_puts (tree->_.lit.language);
-        }
-      return;
+      }
     case DV_STRING:
       ssg_putchar ('"');
       dks_esc_write (ssg->ssg_out, (caddr_t)tree, box_length (tree)-1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_TTL_DQ);

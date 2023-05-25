@@ -8835,17 +8835,23 @@ bif_fvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_dvector (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  int len = BOX_ELEMENTS (args);
-  double *res = (double *) dk_alloc_box (len * sizeof (double),
-    DV_ARRAY_OF_DOUBLE);
-  int inx;
-  for (inx = 0; inx < len; inx++)
-  {
-    res[inx] = bif_double_arg (qst, args, inx, "dvector");
-  }
-  return ((caddr_t) res);
+  int total_len = 0;
+  int argctr, argcount = BOX_ELEMENTS (args);
+  double *res;
+  int res_fill = 0;
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      double arg = bif_double_arg (qst, args, argctr, "dvector");
+      total_len++;
+    }
+  res = (double *)dk_alloc_box (sizeof (double) * total_len, DV_ARRAY_OF_DOUBLE);
+  for (argctr = 0; argctr < argcount; argctr++)
+    {
+      double arg = bif_double_arg (qst, args, argctr, "dvector");
+      res[res_fill++] = arg;
+    }
+  return (caddr_t)res;
 }
-
 
 #define boxes_match(X,Y) (DVC_MATCH == cmp_boxes((X),(Y), NULL, NULL))
 
@@ -9457,7 +9463,6 @@ bif_one_of_these (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   return (box_num (0));
 }
-
 
 void
 row_str_check (db_buf_t str)
@@ -10372,9 +10377,14 @@ do_long_string:
                     snprintf (tmp, sizeof (tmp), "#i" IIDBOXINT_FMT, (boxint)(iid) );
 		  break;
 		}
-	case DV_GEO:
-	  return geo_wkt (data);
+	  case DV_GEO:
+	      return geo_wkt (data);
 	  default:
+	      if (IS_GENERIC_DURATION (data))
+		{
+		  snprintf_generic_duration (tmp, sizeof (tmp), data);
+		  break;
+		}
 	      goto cvt_error;
 	}
       return (box_dv_short_string (tmp));
@@ -12439,7 +12449,6 @@ print_object_to_new_string (caddr_t xx, const char *fun_name, caddr_t * err_ret,
   strses_free (out);
   return (res);
 }
-
 
 caddr_t
 bif_serialize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -16944,7 +16953,7 @@ sql_bif_init (void)
 
 /* String manipulation. */
   bif_define_ex ("length", bif_length, BMD_ALIAS, "char_length", BMD_ALIAS, "character_length", BMD_ALIAS, "octet_length",
-      BMD_RET_TYPE, &bt_integer, BMD_DONE);
+      BMD_RET_TYPE, &bt_integer_nn, BMD_DONE);
   bif_define_ex ("vec_length", bif_vec_length, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("vec_ref", bif_vec_ref, BMD_RET_TYPE, &bt_any_box, BMD_DONE);
   bif_define_ex ("aref", bif_aref, BMD_RET_TYPE, &bt_any_box, BMD_DONE);

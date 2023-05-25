@@ -148,8 +148,6 @@ stat_desc_t rdf_preset_datatypes_descs [] =
     {NULL, NULL, NULL}
   };
 
-#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
-
 caddr_t boxed_iid_of_virtrdf_ns_uri = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_all = NULL;
 caddr_t boxed_iid_of_virtrdf_ns_uri_rdf_repl_graph_group = NULL;
@@ -415,7 +413,7 @@ rb_complete_1 (rdf_box_t * rb, lock_trx_t * lt, void * /*actually query_instance
         sqlr_new_error ("22023", "SR579", "RDF integrity issue: the type %ld of value retrieved from DB.DBA.RDF_OBJ with RO_ID = " BOXINT_FMT " is not equal to preset type %ld of RDF box",
           (long)DV_TYPE_OF (val), (boxint)(rb->rb_ro_id), ((long)(((rdf_bigbox_t *)rb)->rbb_box_dtp)) );
       dk_free_tree (rb->rb_box);
-      if (RDF_BOX_GEO == rb->rb_type)
+      if (RDF_BOX_GEO == rb->rb_type || RB_IS_DURATION (rb->rb_type))
 	rb->rb_box = box_deserialize_string (val, box_length (val) - 1, 0);
       else
 	rb->rb_box = box_copy_tree (val);
@@ -2447,8 +2445,17 @@ bif_rdf_strsqlval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       val = rb->rb_box;
       val_dtp = DV_TYPE_OF (val);
       rb_type = rb->rb_type;
-      if ((rb_type__xsd_boolean == rb_type) && (DV_LONG_INT == DV_TYPE_OF (val)))
-        val = unbox (val) ? uname_true : uname_false;
+      if (rb_type__xsd_boolean == rb_type)
+        {
+          if (DV_LONG_INT == DV_TYPE_OF (val))
+            val = unbox (val) ? uname_true : uname_false;
+        }
+      else if (rb_type__xsd_duration == rb_type)
+        {
+          char temp[255];
+          snprintf_generic_duration (temp, sizeof (temp), val);
+	  return box_dv_short_string (temp);
+        }
     }
   switch (val_dtp)
     {
@@ -3299,6 +3306,14 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
     case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
     case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
     case DV_GEO: dt_ret->uri = uname_virtrdf_ns_uri_Geometry; return;
+    case DV_ARRAY_OF_DOUBLE:
+      {
+        if (IS_GENERIC_DURATION (obj))
+          {
+            dt_ret->uri = ((0 == GENERIC_DURATION_GET_DT (obj)) ? uname_xmlschema_ns_uri_hash_yearMonthDuration : uname_xmlschema_ns_uri_hash_duration);
+            return;
+          }
+      }
     default: ;
     }
 }
@@ -3510,8 +3525,7 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
       {
         session_buffered_write_char ('"', ses);
         ewkt_print_sf12 ((geo_t *)obj_box_value, ses);
-        session_buffered_write_char ('"', ses);
-        session_buffered_write (ses, "^^", 2);
+        session_buffered_write (ses, "\"^^", 3);
         ttl_http_write_ref (ses, env, dt_ptr);
         return;
       }
@@ -3524,6 +3538,16 @@ http_ttl_write_obj (dk_session_t *ses, ttl_env_t *env, query_instance_t *qi, cad
 	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
 	    break;
 	  }
+        if (IS_GENERIC_DURATION (obj_box_value))
+          {
+            char buf[100];
+            int buffill = snprintf_generic_duration (buf, sizeof (buf), obj_box_value);
+            session_buffered_write_char ('"', ses);
+            session_buffered_write (ses, buf, buffill);
+            session_buffered_write (ses, "\"^^", 3);
+            ttl_http_write_ref (ses, env, dt_ptr);
+            return;
+          }
         tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value); /* not box_cast_to_UTF8_xsd(), because float and double are handled above and there are no other differences between xsd and sql so far */
         need_quotes = ((DV_RDF == obj_dtp) || (DV_BLOB_HANDLE == obj_dtp) || (DV_BLOB_WIDE_HANDLE == obj_dtp));
         if (need_quotes)
@@ -4220,10 +4244,31 @@ http_nt_write_obj (dk_session_t *ses, nt_env_t *env, query_instance_t *qi, caddr
       {
         caddr_t iri = xsd_type_of_box (obj_box_value);
         caddr_t tmp_utf8_box = box_cast_to_UTF8_xsd ((caddr_t *)qi, obj_box_value);
+        int rb_type = ((DV_RDF == obj_dtp) ? ((rdf_box_t *)obj)->rb_type : RDF_BOX_ILL_TYPE);
+	if (RB_IS_DURATION (rb_type) && DV_LONG_INT == obj_box_value_dtp)
+	  {
+	    http_ttl_write_duration (ses, unbox (obj_box_value), "month");
+	    goto print_dt_iri;
+	  }
+	if (RB_IS_DURATION (rb_type) && DV_DOUBLE_FLOAT == obj_box_value_dtp)
+	  {
+	    http_ttl_write_duration (ses, unbox_double (obj_box_value), "second");
+	    goto print_dt_iri;
+	  }
+        if (IS_GENERIC_DURATION (obj_box_value))
+          {
+            char buf[100];
+            int buffill = snprintf_generic_duration (buf, sizeof (buf), obj_box_value);
+            session_buffered_write_char ('"', ses);
+            session_buffered_write (ses, buf, buffill);
+            session_buffered_write_char ('"', ses);
+	    goto print_dt_iri;
+          }
         session_buffered_write_char ('"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
         dk_free_box (tmp_utf8_box);
         session_buffered_write_char ('"', ses);
+print_dt_iri:
         if ((DV_RDF != obj_dtp) && (DV_WIDE != obj_box_value_dtp))
           {
             if (!IS_BOX_POINTER (iri))

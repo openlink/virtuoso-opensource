@@ -1055,6 +1055,11 @@ extern void sparp_jso_validate_format (sparp_t *sparp, ssg_valmode_t fmt);
 /*! Prints an SQL identifier. 'prin' instead of 'print' because it does not print whitespace or delim before the text */
 extern void ssg_prin_id (spar_sqlgen_t *ssg, const char *name);
 extern void ssg_prin_id_with_suffix (spar_sqlgen_t *ssg, const char *name, const char *suffix);
+
+/*! Tries to print the original text of \c lit, returns non-zero if the \c lit is appropriate; if \c puts_sql_suffix then the type of constant is appended as 'D' or 'R'
+In absence of suffix, only double precision of types xsd:double and xsd:decimal and integer of type xsd:integer is printed this way */
+int ssg_try_puts_literal_as_original (spar_sqlgen_t *ssg, SPART *lit, int puts_sql_suffix);
+
 #define SQL_ATOM_ASCII_ONLY	10
 #define SQL_ATOM_NARROW_ONLY	11
 #define SQL_ATOM_UTF8_ONLY	12

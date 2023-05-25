@@ -966,67 +966,71 @@ retry_rdf_boxes: \
     goto int_case; \
   if (dtp1 == DV_DB_NULL || dtp2 == DV_DB_NULL) \
     goto null_result; \
-  if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, \
-	  dtp1, dtp2, &res_dtp)) \
+  if (n_coerce ((caddr_t) & dn1, (caddr_t) & dn2, dtp1, dtp2, &res_dtp)) \
     { \
       switch (res_dtp) \
-	{ \
-	case DV_LONG_INT: \
-	int_case: \
-	  if (isdiv && 0 == *(boxint *) &dn2) \
-	    sqlr_new_error ("22012", "SR084", "Division by 0."); \
-	  if (target) \
-	    return (qst_set_long (qst, target, \
-		(*(boxint *) &dn1 op * (boxint *) &dn2)), (caddr_t) 0); \
-	  return (box_num (*(boxint *) &dn1 op * (boxint *) &dn2)); \
-	case DV_SINGLE_FLOAT: \
-	  if (isdiv && 0 == *(float *) &dn2) \
-	    sqlr_new_error ("22012", "SR085", "Division by 0."); \
-	  if (target) \
-	    return (qst_set_float (qst, target, \
-		(*(float *) &dn1 op * (float *) &dn2)), (caddr_t) 0); \
-	  return (box_float (*(float *) &dn1 op * (float *) &dn2)); \
-	case DV_DOUBLE_FLOAT: \
-	  if (isdiv && 0 == *(double*) &dn2) \
-	    sqlr_new_error ("22012", "SR086", "Division by 0."); \
-	  if (target) \
-	    return (qst_set_double (qst, target, (*(double*) &dn1 op *(double*) &dn2)), (caddr_t) 0); \
-	  return (box_double (*(double*) &dn1 op *(double*) &dn2)); \
-	case DV_NUMERIC: \
-	  return (numeric_bin_op (num_op, (numeric_t) &dn1, (numeric_t) &dn2, qst, target)); \
-	} \
-    } \
-  else \
-    { \
-      if (dtp1 == DV_RDF || dtp2 == DV_RDF) \
         { \
-          if (dtp1 == DV_RDF) \
-            box1 = ((rdf_box_t *)(box1))->rb_box; \
-          if (dtp2 == DV_RDF) \
-            box2 = ((rdf_box_t *)(box2))->rb_box; \
-          goto retry_rdf_boxes; \
+        case DV_LONG_INT: \
+        int_case: \
+          if (isdiv && 0 == *(boxint *) &dn2) \
+            sqlr_new_error ("22012", "SR084", "Division by 0."); \
+          if (target) \
+            return (qst_set_long (qst, target, \
+                (*(boxint *) &dn1 op * (boxint *) &dn2)), (caddr_t) 0); \
+          return (box_num (*(boxint *) &dn1 op * (boxint *) &dn2)); \
+        case DV_SINGLE_FLOAT: \
+          if (isdiv && 0 == *(float *) &dn2) \
+            sqlr_new_error ("22012", "SR085", "Division by 0."); \
+          if (target) \
+            return (qst_set_float (qst, target, \
+                (*(float *) &dn1 op * (float *) &dn2)), (caddr_t) 0); \
+          return (box_float (*(float *) &dn1 op * (float *) &dn2)); \
+        case DV_DOUBLE_FLOAT: \
+          if (isdiv && 0 == *(double*) &dn2) \
+            sqlr_new_error ("22012", "SR086", "Division by 0."); \
+          if (target) \
+            return (qst_set_double (qst, target, (*(double*) &dn1 op *(double*) &dn2)), (caddr_t) 0); \
+          return (box_double (*(double*) &dn1 op *(double*) &dn2)); \
+        case DV_NUMERIC: \
+          return (numeric_bin_op (num_op, (numeric_t) &dn1, (numeric_t) &dn2, qst, target)); \
         } \
-      if ((NULL != dt_op) && ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2))) \
+    } \
+  if (dtp1 == DV_RDF || dtp2 == DV_RDF) \
+    { \
+      if (dtp1 == DV_RDF) \
         { \
-          caddr_t err = NULL; \
-          caddr_t res = ((arithm_dt_operation_t *)(dt_op)) (box1, box2, &err); \
-          if (NULL == err) \
-            { \
-              if (target) \
-                return (qst_set (qst, target, res), (caddr_t)0); \
-              return res; \
-            } \
-          if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
-            { \
-              dk_free_tree (err); \
-              goto null_result; \
-            } \
-          sqlr_resignal (err); \
+          if (!((rdf_box_t *)box1)->rb_is_complete) \
+            sqlr_new_error ("22003", "SR674", "Incomplete RDF box as left argument of arithmetic operation '%s'", opsymbol); \
+          box1 = ((rdf_box_t *)(box1))->rb_box; \
+        } \
+      if (dtp2 == DV_RDF) \
+        { \
+          if (!((rdf_box_t *)box2)->rb_is_complete) \
+            sqlr_new_error ("22003", "SR674", "Incomplete RDF box as right argument of arithmetic operation '%s'", opsymbol); \
+          box2 = ((rdf_box_t *)(box2))->rb_box; \
+        } \
+      goto retry_rdf_boxes; \
+    } \
+  if ((NULL != dt_op) && ((DV_DATETIME == dtp1) || (DV_DATETIME == dtp2) || IS_GENERIC_DURATION (box1) || IS_GENERIC_DURATION (box2))) \
+    { \
+      caddr_t err = NULL; \
+      caddr_t res = ((arithm_dt_operation_t *)(dt_op)) (box1, box2, &err); \
+      if (NULL == err) \
+        { \
+          if (target) \
+            return (qst_set (qst, target, res), (caddr_t)0); \
+          return res; \
         } \
       if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
-        goto null_result; \
-      sqlr_new_error ("22003", "SR087", "Non numeric argument(s) to arithmetic operation '%s'.", opsymbol); \
+        { \
+          dk_free_tree (err); \
+          goto null_result; \
+        } \
+      sqlr_resignal (err); \
     } \
+  if (((query_instance_t *)qst)->qi_query->qr_no_cast_error) \
+    goto null_result; \
+  sqlr_new_error ("22003", "SR087", "Non numeric argument(s) to arithmetic operation '%s'", opsymbol); \
 null_result: \
   if (target) \
     { \
@@ -1097,10 +1101,10 @@ null_result:
   return (dk_alloc_box (0, DV_DB_NULL));
 }
 
-ARTM_BIN_FUNC (box_add, "+", +, numeric_add		, arithm_dt_add		, 0)
-ARTM_BIN_FUNC (box_sub, "-", -, numeric_subtract	, arithm_dt_subtract	, 0)
-ARTM_BIN_FUNC (box_mpy, "*", *, numeric_multiply	, NULL			, 0)
-ARTM_BIN_FUNC (box_div, "/", /, numeric_divide		, NULL			, 1)
+ARTM_BIN_FUNC (box_add, "+", +, numeric_add		, arithm_dt_add			, 0)
+ARTM_BIN_FUNC (box_sub, "-", -, numeric_subtract		, arithm_dt_subtract		, 0)
+ARTM_BIN_FUNC (box_mpy, "*", *, numeric_multiply	, arithm_duration_multiply	, 0)
+ARTM_BIN_FUNC (box_div, "/", /, numeric_divide		, arithm_duration_divide	, 1)
 
 
 caddr_t

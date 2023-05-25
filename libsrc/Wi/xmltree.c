@@ -10186,9 +10186,18 @@ again:
       return uname_rdf_ns_uri_XMLLiteral;
     case DV_GEO:
       return uname_virtrdf_ns_uri_Geometry;
-    default:
-      return (caddr_t)((ptrlong)1);
+    case DV_ARRAY_OF_DOUBLE:
+      {
+        if (IS_GENERIC_DURATION (arg))
+          {
+            if (0 == GENERIC_DURATION_GET_DT (arg))
+              return uname_xmlschema_ns_uri_hash_yearMonthDuration;
+            return uname_xmlschema_ns_uri_hash_duration;
+          }
+        break;
+      }
     }
+  return (caddr_t)((ptrlong)1);
 }
 
 

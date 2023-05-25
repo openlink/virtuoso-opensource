@@ -33,6 +33,7 @@
 #include "aqueue.h"
 #include "sqlbif.h"
 #include "security.h"
+#include "date.h"
 
 
 query_t *rl_queries[10];
@@ -514,9 +515,9 @@ cu_rl_cols (cucurbit_t * cu, caddr_t g_iid)
 	  if (DV_DB_NULL == DV_TYPE_OF (row[4]))	/* inx 4  is for IRI, if null then we expect rdf_box, number or date at inx 5  */
 	{
 	  dtp_t dtp = DV_TYPE_OF (x); 
-	  if (DV_DB_NULL == dtp || DV_STRING == dtp || IS_WIDE_STRING_DTP (dtp))
+              if (DV_DB_NULL == dtp || DV_STRING == dtp || IS_WIDE_STRING_DTP (dtp) || IS_NONLEAF_DTP (dtp))
 	    sqlr_new_error ("42000",  "CL...",  "%s not allowed for O column value S=" BOXINT_FMT 
-		" P=" BOXINT_FMT , (DV_DB_NULL == dtp ? "NULL" : "string"), unbox_iri_id (quad[1]), unbox_iri_id (quad[2]));
+                    " P=" BOXINT_FMT , dv_type_title (dtp), unbox_iri_id (quad[1]), unbox_iri_id (quad[2]));
 	  quad[3] = x;
 
 	      if (rdf_label_inf_name)	/* rdf labels fill if enabled */
@@ -659,7 +660,7 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
 	      cu_set_value (cu, vs, box_copy_tree (box));
 	    return NULL;
 	  }
-	if (DV_GEO != cdtp
+	if (DV_GEO != cdtp && !IS_GENERIC_DURATION(content)
 	    && (DV_STRING != cdtp
 		|| (!rdf_no_string_inline && (box_length (content) - 1 < RB_MAX_INLINED_CHARS && !rb->rb_is_text_index))))
 	  {
@@ -680,6 +681,13 @@ l_make_ro_disp (cucurbit_t * cu, caddr_t * args, value_state_t * vs)
 	    allocd_content = content;
 	    is_text = 2;
 	  }
+        else if (IS_GENERIC_DURATION(content))
+          {
+            caddr_t err = NULL;
+            content = box_to_any_1 (content, &err, NULL, DKS_TO_DC);
+            allocd_content = content;
+            /*dt_lang = RDF_BOX_INTERVAL << 16 | RDF_BOX_DEFAULT_LANG;*/
+          }
 	else
 	  is_text = rb->rb_is_text_index;
 	if (!is_text)		/* check if all graphs are enabled */
