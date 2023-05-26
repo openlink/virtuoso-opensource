@@ -500,6 +500,7 @@ bif_string_or_uname_or_wide_or_null_arg (caddr_t * qst, state_slot_t ** args, in
   return arg;
 }
 
+/*                                 func , dtp                   , prec  , scale , non_null , sql_dml_name       */
 bif_type_t bt_varchar		= {NULL	, DV_LONG_STRING	, 0	, 0	, 0	, "varchar"		};
 bif_type_t bt_wvarchar		= {NULL	, DV_WIDE		, 0	, 0	, 0	, "nvarchar"		};
 bif_type_t bt_varbinary		= {NULL	, DV_BIN		, 0	, 0	, 0	, "varbinary"		};
@@ -508,7 +509,6 @@ bif_type_t bt_any_box		= {NULL	, DV_ARRAY_OF_POINTER	, 0	, 0	, 0	, "any array"		
 bif_type_t bt_iri_id		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
 bif_type_t bt_integer		= {NULL	, DV_LONG_INT		, 0	, 0	, 0	, "integer"		};
 bif_type_t bt_integer_nn	= {NULL	, DV_LONG_INT		, 0	, 0	, 1	, "integer not null"	};
-bif_type_t bt_iri		= {NULL	, DV_IRI_ID		, 0	, 0	, 0	, "IRI_ID"		};
 bif_type_t bt_double		= {NULL	, DV_DOUBLE_FLOAT	, 0	, 0	, 0	, "double precision"	};
 bif_type_t bt_float		= {NULL	, DV_SINGLE_FLOAT	, 0	, 0	, 0	, "float"		};
 bif_type_t bt_numeric		= {NULL	, DV_NUMERIC		, 40	, 20	, 0	, "decimal"		};
@@ -17094,24 +17094,24 @@ sql_bif_init (void)
 
   bif_define_ex ("iri_id_num", bif_iri_id_num, BMD_RET_TYPE, &bt_integer, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE,
       BMD_DONE);
-  bif_define_ex ("iri_id_from_num", bif_iri_id_from_num, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
+  bif_define_ex ("iri_id_from_num", bif_iri_id_from_num, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1,
       BMD_IS_PURE, BMD_DONE);
   bif_define ("__set_64bit_min_bnode_iri_id"	, bif_set_64bit_min_bnode_iri_id);
-  bif_define_ex ("min_bnode_iri_id", bif_min_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
+  bif_define_ex ("min_bnode_iri_id", bif_min_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
       BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("max_bnode_iri_id", bif_max_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
+  bif_define_ex ("max_bnode_iri_id", bif_max_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT, 0,
       BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_named_bnode_iri_id", bif_min_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+  bif_define_ex ("min_named_bnode_iri_id", bif_min_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
       0, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+  bif_define_ex ("min_32bit_bnode_iri_id", bif_min_32bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
       0, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_32bit_named_bnode_iri_id", bif_min_32bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
+  bif_define_ex ("min_32bit_named_bnode_iri_id", bif_min_32bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0,
       BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_64bit_bnode_iri_id", bif_min_64bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
+  bif_define_ex ("min_64bit_bnode_iri_id", bif_min_64bit_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0, BMD_MAX_ARGCOUNT,
       0, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 0,
+  bif_define_ex ("min_64bit_named_bnode_iri_id", bif_min_64bit_named_bnode_iri_id, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 0,
       BMD_MAX_ARGCOUNT, 0, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, BMD_RET_TYPE, &bt_iri, BMD_MIN_ARGCOUNT, 1,
+  bif_define_ex ("iri_id_bnode32_to_bnode64", bif_iri_id_bnode32_to_bnode64, BMD_RET_TYPE, &bt_iri_id, BMD_MIN_ARGCOUNT, 1,
       BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("iri_id_to_blank_nodeid", bif_iri_id_to_blank_nodeid, BMD_RET_TYPE, &bt_varchar, BMD_MIN_ARGCOUNT, 1,
       BMD_MAX_ARGCOUNT, 1, BMD_IS_PURE, BMD_DONE);
