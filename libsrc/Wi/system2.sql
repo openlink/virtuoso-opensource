@@ -1945,6 +1945,8 @@ create procedure VALIDATE.DBA.validate_ftext (
 {
   declare st, msg varchar;
 
+  if (not isstring (S) or not length (S))
+    return 0;
   st := '00000';
   exec ('vt_parse (?)', st, msg, vector (S));
   if ('00000' = st)
