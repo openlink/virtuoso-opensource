@@ -2572,7 +2572,8 @@ ssg_try_puts_literal_as_original (spar_sqlgen_t *ssg, SPART *lit, int puts_sql_s
         return 0;
       if (spar_name_same (lit->_.lit.datatype, uname_xmlschema_ns_uri_hash_dayTimeDuration)
         || spar_name_same (lit->_.lit.datatype, uname_xmlschema_ns_uri_hash_duration)
-        || spar_name_same (lit->_.lit.datatype, uname_xmlschema_ns_uri_hash_yearMonthDuration) )
+        || spar_name_same (lit->_.lit.datatype, uname_xmlschema_ns_uri_hash_yearMonthDuration)
+        || spar_name_same (lit->_.lit.datatype, uname_xmlschema_ns_uri_hash_boolean) )
         return 0;
     }
   else
