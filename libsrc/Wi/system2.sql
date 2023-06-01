@@ -1132,6 +1132,23 @@ create procedure DB.DBA.obj2json (
     }
     retValue := retValue || '}';
   }
+  else if (__tag(o) = 254 or __tag(o) = 206)
+    {
+      declare fields, nth any;
+      fields := udt_get_info (o, 'attributes');
+      nth := 0;
+      retValue := '{';
+      foreach (varchar field in fields) do
+        {
+          declare v, jv any;
+          v := udt_get (o, field);
+          if (nth)
+            retValue := retValue || ',';
+          retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
+          nth := nth + 1;
+        }
+      retValue := retValue || '}';
+    }
   else if (isarray (o))
   {
     retValue := '[';
