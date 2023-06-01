@@ -7138,12 +7138,13 @@ bif_iri_name_id_64_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, 
 		      memcpy (local + 4, name, box_length (name));
 		      RPID_SET_NA (local, rp_id);
 		      dc_append_box (dc, local);
-		      dk_free_box (name);
+		      dk_free_box (local);
 		    }
 		  else
 		    {
 		      dc_append_box (dc, name);
 		    }
+                  dk_free_box (name);
 		}
 	      break;
 	  default:
