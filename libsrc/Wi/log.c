@@ -2252,7 +2252,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
   client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
-  string_buffer sb;
+  string_buffer_t sb;
   caddr_t err;
   char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
   key_id_t old_key = key->key_migrate_to;
@@ -2272,12 +2272,13 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	char * mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
-	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
+	      const char *mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" :
+		  ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
+	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
 		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
-		  sb_printf(&sb, " INDEX \"%s\"", key->key_name); /* FIXME */
+		  sb_printf (&sb, " INDEX \"%s\"", ESC (key->key_name, 1));
 		}
 	      sb_printf(&sb, " OPTION (VECTORED, no identity %s) (", is_rfwd ? "" : ", no cluster");
 	      get_col_names (&names, &n_cols, key);
@@ -2307,33 +2308,35 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
       case LOG_DELETE:
       case LOG_KEY_DELETE:
 	    {
-	      int n_cols, k, need_comma = 0;
+	      int n_cols, k, need_and = 0;
 	      char **names;
-	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"", ESC(key_table->tb_qualifier,1), ESC(key_table->tb_owner,2), ESC(key_table->tb_name_only,3));
+	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"",
+	        ESC (key_table->tb_qualifier, 1), ESC (key_table->tb_owner, 2), ESC (key_table->tb_name_only, 3));
 	      if (op == LOG_KEY_DELETE)
 		{
-	    sb_printf(&sb, " table option (%s INDEX \"%s\") ", is_rfwd ? "": "no cluster, ", key->key_name);
+		  sb_printf (&sb, " TABLE OPTION (%s INDEX \"%s\") ", is_rfwd ? "" : "NO CLUSTER, ", ESC (key->key_name, 1));
 		}
 	      sb_printf(&sb, " WHERE (");
 	      get_key_col_names(&names, &n_cols, key);
 	      for (k=0; k<n_cols; k++)
 		{
-		  if (need_comma)
+		  if (need_and)
 		    sb_printf (&sb, " AND ");
 		  else
-		    need_comma = 1;
+		    need_and = 1;
 	          sb_printf(&sb, "\"%s\"=?", ESC(names[k],1));
 		}
-	if (LOG_KEY_DELETE == op)
-	  sb_printf(&sb, ") OPTION (%s index \"%s\", VECTORED) ", is_rfwd ? "" :  "no cluster, ", key->key_name);
-	else
-	  sb_printf(&sb, ") OPTION (no cluster, VECTORED) ");
+	      if (LOG_KEY_DELETE == op)
+		sb_printf (&sb, ") OPTION (%s INDEX \"%s\", VECTORED) ", is_rfwd ? "" : "NO CLUSTER, ", ESC (key->key_name, 1));
+	      else
+		sb_printf (&sb, ") OPTION (NO CLUSTER, VECTORED) ");
 	      dk_free (names, n_cols * sizeof(char*));
 	      break;
 	    }
       default:
-      GPF_T1 ("log_key_ins_del_qr: invalid operation");
+	GPF_T1 ("log_key_ins_del_qr: invalid operation");
     }
+  sb_done (&sb);
   res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
@@ -2357,9 +2360,10 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
-  string_buffer sb;
+  string_buffer_t sb;
   caddr_t err;
-  int n_cols, k, need_comma = 0, is_first, inx;
+  char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
+  int n_cols, k, need_and = 0, is_first, inx;
   query_t ** place;
   caddr_t h_key;
   char **names;
@@ -2382,13 +2386,14 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
     }
 
   sb_init (&sb);
-  sb_printf (&sb, "update \"%s\".\"%s\".\"%s\" set ", key_table->tb_qualifier, key_table->tb_owner, key_table->tb_name_only);
+  sb_printf (&sb, "UPDATE \"%s\".\"%s\".\"%s\" SET ",
+      ESC (key_table->tb_qualifier, 1), ESC (key_table->tb_owner, 2), ESC (key_table->tb_name_only, 3));
   is_first = 1;
   DO_BOX (caddr_t, col_id_box, inx, col_ids)
     {
       oid_t col_id = unbox (col_id_box);
       dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, col_id);
-      sb_printf (&sb, "%s\"%s\" = ? ", is_first ? "" : ",  ", col->col_name);
+      sb_printf (&sb, "%s\"%s\" = ? ", is_first ? "" : ",  ", ESC (col->col_name, 1));
       is_first = 0;
     }
   END_DO_BOX;
@@ -2396,15 +2401,16 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   get_key_col_names(&names, &n_cols, key);
   for (k=0; k<n_cols; k++)
     {
-      if (need_comma)
+      if (need_and)
 	sb_printf (&sb, " AND ");
       else
-	need_comma = 1;
-      sb_printf(&sb, "\"%s\"=?", names[k]);
+	need_and = 1;
+      sb_printf (&sb, "\"%s\" = ?", ESC (names[k], 1));
     }
-  sb_printf (&sb, " option (no identity, no trigger)");
+  sb_printf (&sb, " OPTION (NO IDENTITY, NO TRIGGER)");
   dk_free (names, n_cols * sizeof(char*));
 
+  sb_done (&sb);
   res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
