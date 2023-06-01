@@ -223,10 +223,13 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     function do_format_select (query_obg) {
         var query = query_obg.value;
         var format = query_obg.form.format;
-        var prev_value = format.options[format.selectedIndex].value;
+        var prev_value = 0;
         var prev_format = curr_format;
         var ctr = 0;
         var query_is_construct = (query.match(/\bconstruct\b\s/i) || query.match(/\bdescribe\b\s/i));
+
+        if (format.selectedIndex >= 0)
+          prev_value = format.options[format.selectedIndex].value;
 
         if (query_is_construct && curr_format != 2) {
             for (ctr = format.options.length - 1; ctr >= 0; ctr = ctr - 1)
@@ -428,8 +431,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
         }
         var b = document.getElementById ("explain");
         if (b) change_run_button (b);
+        var q = document.getElementById ("query");
+        if (q) do_format_select (q);
 
         sparqlSubmitFormWithCtrlEnter ();
+
     }
     /*]]>*/
     </script>
@@ -886,7 +892,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Main
     --
     http ('<main id="main">\n');
-    http ('<form id="sparql_form" method="get">\n');
+    http ('<form id="sparql_form" method="get" onreset="javascript:format_select(this.elements.query)">\n');
 ?>
 
     <fieldset class="">
@@ -898,8 +904,11 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
 
         <div class="mb-3">
             <label for="query">Query Text</label>
-            <textarea class="form-control" rows="10" name="query" id="query" onchange="javascript:format_select(this)"
-                onkeyup="javascript:format_select(this)"><?V def_qry ?></textarea>
+            <textarea class="form-control" rows="10" name="query" id="query"
+                onchange="javascript:do_format_select(this)"
+                onkeyup="javascript:format_select(this)">
+                <?V def_qry ?>
+                </textarea>
         </div>
 
         <div class="mb-3 row">
