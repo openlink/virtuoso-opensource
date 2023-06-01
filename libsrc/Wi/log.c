@@ -2472,7 +2472,7 @@ log_exec_batch(caddr_t av, caddr_t* err_ret)
   dk_session_t * save_ses = cli->cli_session;
   caddr_t * save_repl = cli->cli_trx->lt_replicate;
   cli->cli_trx->lt_replicate = REPL_NO_LOG;
-  dk_free_box (av);
+  dk_free_tree (av);
   cli->cli_session = executor->lre_in;
   cli->cli_is_log = 1;
   mutex_enter (executor->lre_mtx);
