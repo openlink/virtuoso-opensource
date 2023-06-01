@@ -29,7 +29,7 @@
     <xsl:template match="XRD">
         <xsl:text>{</xsl:text>
         <xsl:apply-templates select="Subject|Host|Alias"/>
-        <xsl:text>"link":[</xsl:text>
+        <xsl:text>"links":[</xsl:text>
         <xsl:for-each select="Link">
             <xsl:text>{</xsl:text>
             <xsl:for-each select="@*">"<xsl:value-of select="local-name(.)"/>":"<xsl:value-of select="."/>"<xsl:if test="position () != last ()">
