@@ -4773,6 +4773,23 @@ ws_set_timeouts (ws_connection_t * ws)
   session_set_control (client->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
 }
 
+int
+ws_check_connect_timeout (session_t *ses, timeout_t * to, int want)
+{
+  session_t *wses[] = {0}, *rses[] = {0};
+  int rc;
+
+  if (SSL_ERROR_WANT_WRITE == want)
+    wses[0] = ses;
+  else if (SSL_ERROR_WANT_READ == want)
+    rses[0] = ses;
+  else
+    return SSL_ERROR_SSL;
+  rc = session_select (1, rses, wses, to);
+  return (rc <= 0 ? SSL_ERROR_SSL : SSL_ERROR_NONE);
+}
+
+
 void
 ws_serve_connection (ws_connection_t * ws)
 {
@@ -4785,35 +4802,65 @@ ws_serve_connection (ws_connection_t * ws)
     {
       SSL_CTX * ssl_ctx = ws->ws_ssl_ctx;
       int dst = 0;
-      int ssl_err = 0;
-      timeout_t to = {100, 0};
+      int block = 0, status = 0;
+      timeout_t to = { 20, 0 };
       SSL * new_ssl = NULL;
 
       if (NULL != tcpses_get_ssl (ses->dks_session))
 	sslses_to_tcpses (ses->dks_session);
-      to = ses->dks_read_block_timeout;
-      session_set_control (ses->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
+      if (ws_read_timeout)
+	to.to_sec = ws_read_timeout;
+#if 0
+      else
+        to = ses->dks_read_block_timeout;
+       session_set_control (ses->dks_session, SC_TIMEOUT, (char *)(&to), sizeof (timeout_t));
+#endif
+      session_set_control (ses->dks_session, SC_BLOCKING, (char *) ((void *) &block), sizeof (int));
       dst = tcpses_get_fd (ses->dks_session);
       new_ssl = SSL_new (ssl_ctx);
       SSL_set_fd (new_ssl, dst);
-      ssl_err = SSL_accept (new_ssl);
-      if (ssl_err == -1)
+      do
 	{
+	  int connect_state;
+	  status = SSL_accept (new_ssl);
+	  connect_state = SSL_get_error (new_ssl, status);
+	  switch (connect_state)
+	    {
+	    case SSL_ERROR_NONE:
+	      status = 0;
+	      break;
+	    case SSL_ERROR_WANT_READ:
+	    case SSL_ERROR_WANT_WRITE:
+	      if (SSL_ERROR_NONE == ws_check_connect_timeout (ses->dks_session, &to, connect_state))
+		{
+		  status = 1;
+		  break;
+		}
+	    default:
+	      {
+		status = 0;
 #ifndef NDEBUG
-          unsigned long err = ERR_get_error();
-          char err_buf[1024];
-          ERR_error_string_n(err, err_buf, sizeof(err_buf));
-	  log_debug ("SSL_accept [%s]", err_buf);
+		unsigned long err = ERR_get_error ();
+		char err_buf[1024];
+		ERR_error_string_n (err, err_buf, sizeof (err_buf));
+		log_debug ("SSL_accept [%s]", err_buf);
 #endif
-	  SSL_free (new_ssl);
-	  ses->dks_ws_status = DKS_WS_DISCONNECTED;
-	  goto check_state;
+		SSL_free (new_ssl);
+		ses->dks_ws_status = DKS_WS_DISCONNECTED;
+		goto check_state;
+	      }
+	    }
 	}
-      else
+      while (1 == status && !SSL_is_init_finished (new_ssl));
+      SSL_set_verify_result(new_ssl, X509_V_OK);
+      if (!ws_write_timeout && !ws_read_timeout)	/* restore blocking socket if no timeout, old behaviour */
 	{
-	  SSL_set_verify_result(new_ssl, X509_V_OK);
-	  tcpses_to_sslses (ses->dks_session, (void *)(new_ssl));
+	  int rc;
+	  block = 1;
+	  rc = session_set_control (ses->dks_session, SC_BLOCKING, (char *) ((void *) &block), sizeof (int));
+	  rc = session_set_control (ses->dks_session, SC_TIMEOUT, (char *) (&to), sizeof (timeout_t));
 	}
+      tcpses_to_sslses (ses->dks_session, (void *) (new_ssl));
     }
 #endif
 
@@ -4828,8 +4875,7 @@ check_state:
   if (ses->dks_to_close)
     {
       try_pipeline = 0;
-      if (DKS_WS_INPUT_PENDING == ses->dks_ws_status
-	  || DKS_WS_ACCEPTED == ses->dks_ws_status)
+      if (DKS_WS_INPUT_PENDING == ses->dks_ws_status || DKS_WS_ACCEPTED == ses->dks_ws_status)
 	ses->dks_ws_status = DKS_WS_DISCONNECTED; /* this thread owns the connection and will drop it */
     }
 

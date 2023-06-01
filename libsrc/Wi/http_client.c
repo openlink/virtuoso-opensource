@@ -931,22 +931,6 @@ int ssl_client_use_db_key (SSL * ssl, char *key, char *ca, caddr_t * err_ret)
 }
 #endif
 
-static int
-check_connect_timeout (session_t *ses, timeout_t * to, int want)
-{
-  session_t *wses[] = {0}, *rses[] = {0};
-  int rc;
-
-  if (SSL_ERROR_WANT_WRITE == want)
-    wses[0] = ses;
-  else if (SSL_ERROR_WANT_READ == want)
-    rses[0] = ses;
-  else
-    return SSL_ERROR_SSL;
-  rc = session_select (1, rses, wses, to);
-  return (rc <= 0 ? SSL_ERROR_SSL : SSL_ERROR_NONE);
-}
-
 HC_RET
 http_cli_connect (http_cli_ctx * ctx)
 {
@@ -1110,7 +1094,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	      err1[0] = 0;
               con_err = SSL_get_error(ctx->hcctx_ssl, ssl_err);
               if (SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err)
-                con_err = check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
+                con_err = ws_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
               if (SSL_ERROR_NONE == con_err)
                 ssl_err = 1;
               else
