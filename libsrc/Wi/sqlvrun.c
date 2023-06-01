@@ -1061,12 +1061,16 @@ ks_vec_params (key_source_t * ks, it_cursor_t * itc, caddr_t * inst)
 	  data_col_t *target_dc = target[inx];
 	  if (!sslr[inx] && !cf[inx] && !(source_dc->dc_type & DCT_BOXES))
 	    {
+#if 0 /* do not do shadow of values, can ref and fck in distict via ssl ref to any gb */
 	      target_dc->dc_org_values = target_dc->dc_values;
 	      target_dc->dc_org_places = target_dc->dc_n_places;
 	      target_dc->dc_org_dtp = target_dc->dc_dtp;
 	      target_dc->dc_values = source_dc->dc_values;
 	      target_dc->dc_n_values = source_dc->dc_n_values;
 	      target_dc->dc_n_places = source_dc->dc_n_places;
+#else
+              dc_copy (target_dc, source_dc);
+#endif
 	      target_dc->dc_any_null = 0;
 	    }
 	  else if (!sslr[inx] && !cf[inx] && (source_dc->dc_type & DCT_BOXES))
