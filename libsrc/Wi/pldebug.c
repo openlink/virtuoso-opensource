@@ -419,7 +419,7 @@ pldbg_ssl_set (state_slot_t * ssl, caddr_t * qst, caddr_t value)
 }
 
 static void
-pldbg_ssl_print (char *buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
+pldbg_ssl_print (char *buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst, caddr_t opts)
 {
   query_instance_t *qi = (query_instance_t *) qst;
   if (!ssl)
@@ -1291,6 +1291,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
     case PD_PRINT:		/* print state */
       {
 	char *name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/* variable name */
+	caddr_t opts = BOX_ELEMENTS (args) > 2 ? args[2] : NULL;	/* format etc */
 	client_connection_t *cli = DKS_DB_DATA (ses);
 	query_instance_t *qi = cli && cli->cli_pldbg ? PLD_GET_FRAME (cli) : NULL;
 	tmp[0] = 0;
@@ -1308,7 +1309,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 	    if (!found)
 	      pldbg_printf (tmp, tmp_len, "No symbol '%s' in current context.", (name ? name : "(nil)"));
 	    else
-	      pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi);
+	      pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi, opts);
 	    msg = box_dv_short_string (tmp);
 	  }
 	else
@@ -1340,7 +1341,7 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 		if (!pldbg_ssl_set (found, (caddr_t *) qi, value))
 		  pldbg_printf (tmp, tmp_len, "Can't set '%s' to '%s'.", (name ? name : "(nil)"), (value ? value : "(nil)"));
 		else
-		  pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi);
+		  pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi, NULL);
 	      }
 	    msg = box_dv_short_string (tmp);
 	  }
