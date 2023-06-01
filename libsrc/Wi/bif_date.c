@@ -1376,6 +1376,32 @@ bif_strftime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string (szTmp);
 }
 
+caddr_t
+bif_date_iso8601 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char temp[100];
+  caddr_t arg = bif_date_arg (qst, args, 0, "date_iso8601");
+  dt_to_iso8601_string (arg, temp, sizeof (temp));
+  return (box_dv_short_string (temp));
+}
+
+caddr_t
+bif_date_rfc1123 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char temp[100];
+  caddr_t arg = bif_date_arg (qst, args, 0, "date_rfc1123");
+  caddr_t dt[DT_LENGTH];
+  memcpy (&dt[0], arg, sizeof (dt));
+  if (DT_TZL (dt))
+    {
+      DT_SET_TZ (dt, 0);
+      DT_SET_TZL (dt, 0);
+    }
+  dt_to_rfc1123_string (dt, temp, sizeof (temp));
+  return (box_dv_short_string (temp));
+}
+
+
 
 void
 bif_date_init ()
@@ -1430,5 +1456,7 @@ bif_date_init ()
   bif_define_ex ("__extract"			, bif_extract				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("strftime"			, bif_strftime				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("unix_timestamp"		, bif_unix_timestamp			, BMD_RET_TYPE, &bt_integer	, BMD_DONE);
+  bif_define_ex ("date_iso8601"			, bif_date_iso8601                      , BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("date_rfc1123"			, bif_date_rfc1123			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   dt_init ();
 }
