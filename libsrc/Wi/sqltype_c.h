@@ -104,6 +104,7 @@ typedef struct udt_parse_tree_s
     {
       caddr_t name;
       ptrlong drop_behaviour;
+      ptrlong drop_silent;
     }
     drop_udt;
     struct

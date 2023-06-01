@@ -4106,9 +4106,9 @@ user_defined_type
 	;
 
 user_defined_type_drop
-	: DROP TYPE q_old_type_name opt_drop_behavior
+	: DROP TYPE q_old_type_name opt_drop_behavior opt_if_exists
 	     {
-	       $$ = t_listst (3, UDT_DROP, $3, (ptrlong) $4);
+	       $$ = t_listst (4, UDT_DROP, $3, (ptrlong) $4, (ptrlong) $5);
 	     }
 	;
 
