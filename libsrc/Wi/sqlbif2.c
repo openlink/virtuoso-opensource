@@ -658,7 +658,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!stricmp ("client_protocol", mode))
     {
-      if (qi->qi_client->cli_ws && qi->qi_client->cli_ws->ws_proto)
+      if (qi->qi_client->cli_ws)
 	return box_dv_short_string (qi->qi_client->cli_ws->ws_proto);
       else
 	return box_dv_short_string ("SQL");
