@@ -2021,60 +2021,41 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
   return SQL_SUCCESS;
 }
 
-/* TODO move string_buffer to an utility file
- */
-typedef struct {
-  int sb_len;
-  char *sb_buf;
-  int sb_pos;
-} string_buffer;
+typedef struct
+{
+  dk_session_t *sb_ses;
+  caddr_t sb_buf;
+} string_buffer_t;
 
 void
-sb_init(string_buffer* sb) {
-  sb->sb_len=120;
-  sb->sb_buf=malloc(sb->sb_len);
-  sb->sb_pos=0;
+sb_init (string_buffer_t * sb)
+{
+  sb->sb_ses = strses_allocate ();
+  sb->sb_buf = NULL;
 }
 
 void
-sb_free_buf(string_buffer* sb) {
-  free(sb->sb_buf);
-  sb->sb_len=0;
-  sb->sb_buf=NULL;
-  sb->sb_pos=0;
+sb_done (string_buffer_t * sb)
+{
+  sb->sb_buf = strses_string (sb->sb_ses);
+  dk_free_box (sb->sb_ses);
+  sb->sb_ses = NULL;
 }
 
-/** after pasprintf.c
- *  http://perfec.to/vsnprintf/
- */
-int
-sb_printf(string_buffer* sb, const char *fmt, ...) {
-  int outsize;
-  for (;;) {
+void
+sb_printf (string_buffer_t * sb, const char *fmt, ...)
+{
+  char buf[PAGE_SZ];
+  int len;
     va_list args;
-    char *newbuf;
-    size_t nextsize;
-    size_t bufsize=sb->sb_len - sb->sb_pos;
     va_start(args, fmt);
-    outsize = vsnprintf(sb->sb_buf + sb->sb_pos, bufsize, fmt, args);
+  len = vsnprintf (buf, sizeof (buf), fmt, args);
     va_end(args);
-    if ((outsize != -1) && (outsize < bufsize - 1)) {/* Output was not truncated */
-      break;
-    }
-    nextsize = sb->sb_len * 2;
-    if ((newbuf = (char *)realloc(sb->sb_buf, nextsize)) != NULL) {
-      sb->sb_buf = newbuf;
-      sb->sb_len = nextsize;
-    } else {
-      /* free(buf); */
-      GPF_T1 ("sb_printf(): could not realloc");
-    }
-  }
-  sb->sb_pos+=outsize;
-  return outsize;
+  session_buffered_write (sb->sb_ses, buf, strlen (buf));
 }
 
-typedef struct {
+typedef struct
+{
   key_id_t lr_key_id;
   async_queue_t* lrq_aq;
   dk_hash_t *	lrq_qrs; /** operation =>query_t* */
