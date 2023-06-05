@@ -1108,6 +1108,11 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 
+  log_name = sf_make_new_log_name (wi_inst.wi_master);
+  IN_TXN;
+  dbs_checkpoint (log_name, CPT_INC_RESET);
+  cpt_over ();
+  LEAVE_TXN;
   OB_LEAVE_CPT_1 (need_mtx,qi);
   _pages = ctx->octx_page_count - _pages;
   backup_context_free(ctx);
