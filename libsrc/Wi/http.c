@@ -1425,11 +1425,10 @@ ws_read_multipart_mime_post (ws_connection_t *ws, int *is_stream)
 	{
 	  body_start_offset = (long) unbox (part_body[0]);
 	  body_end_offset = (long) unbox (part_body[1]);
-
+	  if (body_end_offset < body_start_offset)
+	    body_end_offset = body_start_offset;
 	  dk_set_push (&ret_attrs,
-	      box_varchar_string ((db_buf_t) (msg + body_start_offset),
-		body_end_offset - body_start_offset,
-		DV_SHORT_STRING));
+	    box_varchar_string ((db_buf_t) (msg + body_start_offset), body_end_offset - body_start_offset, DV_SHORT_STRING));
 	}
 
       dk_set_push (&ret_attrs, box_conc (attr_prefix, part_name));
