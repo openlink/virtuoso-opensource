@@ -1073,6 +1073,11 @@ create procedure DB.DBA.array2obj (
 }
 ;
 
+--
+-- IMPORTANT: Print canonical JSON, no spaces, no line breaks, just as for wire
+-- do not change, if needed make it conditional and keep canonical by default
+--
+
 create procedure DB.DBA.obj2json (
   in o any,
   in d integer := 10,
@@ -1080,13 +1085,12 @@ create procedure DB.DBA.obj2json (
   in attributePrefix varchar := null)
 {
   declare N, M integer;
-  declare R, T any;
+  declare R any;
   declare S, retValue any;
 
   if (d = 0)
-    return '[maximum depth achieved]';
+    return '{"error":"Max depth limit exceeded"}';
 
-  T := vector ('\b', '\\b', '\t', '\\t', '\n', '\\n', '\f', '\\f', '\r', '\\r', '"', '\\"', '\\', '\\\\');
   retValue := '';
   if (isnull (o))
   {
@@ -1098,19 +1102,25 @@ create procedure DB.DBA.obj2json (
   }
   else if (isstring (o))
   {
-    for (N := 0; N < length(o); N := N + 1)
-    {
-      R := chr (o[N]);
-      for (M := 0; M < length(T); M := M + 2)
-      {
-        if (R = T[M])
-          R := T[M+1];
+    declare ses any;
+    ses := string_output ();
+    http ('"', ses);
+    http_escape (o, 14, ses, 1, 1);
+    http ('"', ses);
+    retValue := string_output_string (ses);
       }
-      retValue := retValue || R;
+  else if (__tag(o) = __tag of datetime)
+  {
+    retValue := concat ('"', date_iso8601(o), '"');
     }
-    retValue := '"' || retValue || '"';
+  else if (isvector (o) and length (o) = 2 and __tag (o[0]) = 255 and __tag (o[1]) = __tag of integer)
+  { -- boolean
+    if (o[1])
+      retValue := 'true';
+    else
+      retValue := 'false';
   }
-  else if (isarray (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
+  else if (isvector (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
   {
     retValue := '{';
     for (N := 2; N < length (o); N := N + 2)
@@ -1156,7 +1166,7 @@ create procedure DB.DBA.obj2json (
     {
       retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
       if (N <> length(o)-1)
-        retValue := retValue || ',\n';
+        retValue := retValue || ',';
     }
     retValue := retValue || ']';
   }
