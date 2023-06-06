@@ -1,5 +1,72 @@
 # NEWS
 
+## June 6, 2023, v7.2.10-rc1:
+
+  * Virtuoso Engine
+    - Added checkpoint to end of online backup
+    - Added support for IF EXISTS and IF NOT EXISTS in ALTER TABLE
+    - Added support for DROP TYPE .... IF EXISTS
+    - Added support for bulkloading .jsonld and .jsonld.gz files
+    - Added new testsuite entries for recent fixes
+    - Fixed missing escape of identifiers in log replay
+    - Fixed issue if original dfe not there; see error in optimizer
+    - Fixed issue with transaction mutex inside checkpoint
+    - Fixed obj2json output should be canonical
+    - Fixed issue in short-circuit evaluation (fixes #777)
+    - Fixed compare only up to cha key parts (fixes #1117)
+    - Fixed missing arguments in table def (fixes #1118)
+    - Fixed expand column list during parsing (fixes #1119)
+    - Fixed missing check for max number of key parts (fixes #1120)
+    - Fixed missing reuse check for dv bin (fixes #1121)
+    - Fixed 64bit arith exception (fixes #1122)
+    - Fixed 64bit arith overflow (fixes #1123)
+    - Fixed do not change col_dtp if already set before (fixes #1124)
+    - Fixed save/restore temp refs (fixes #1127)
+    - Fixed issue using case/when inside arg simple functions like min/max/count fixes #1128)
+    - Fixed handling of aliases in output (fixes #1129)
+    - Fixed cannot add non-null column to existing data (fixes #1130)
+    - Fixed check number of values vs cols when inserting into view (fixes #1134)
+    - Fixed missing check for table in positioned delete (fixes #1135)
+    - Fixed non-terminal in union branch is not supported (fixes #1136)
+    - Fixed missing check if column exists (fixes #1137)
+    - Fixed missing check for non-terminals in WITH DATA (fixes #1138)
+    - Fixed wrap unions etc. if non-select for EXISTS ( subq ) (fixes #1139)
+    - Fixed first argument of CONTAINS() cannot be star (fixes #1140)
+    - Fixed missing variable declaration (fixes #1148)
+    - Fixed small memory leaks
+
+  * SPARQL
+    - Backported duration and interval fixes to v7 engine (fixes #1147)
+    - Added N-QUADS support for SPARQL CRUD using REST (fixes #1142)
+    - Added option to limit number of triples in a SPARQL CONSTRUCT query
+    - Fixed issue deleting strings with language tag (Fixes #1055)
+    - Fixed IRI patterns for SPARQL LOAD SERVICE (fixes #879)
+    - Fixed issues with Turtle 1.1 parser (fixes #1059)
+    - Fixed rdf_regex is set to work with UTF-8 by default (fixes #705)
+    - Fixed suppress errors on loading even for wktLiterals, just like dates/integer types etc.
+    - Fixed small SPARQL UI issues
+
+  * Web Server and DAV
+    - Added function to return the current HTTP status code 20x/30x/40x etc. or NULL if not set
+    - Fixed HTTPS accept timeout
+    - Fixed issue with client_protocol mode
+    - Fixed issue with TCN
+    - Fixed issues with SOAP endpoint
+
+  * Faceted Browser
+    - Added support for showing custom datatypes (fixes #963)
+    - Fixed issues truncating lists using '>>more>>'
+    - Fixed show language when available
+    - Fixed issue generating labels in urilbl_ac_init_db
+    - Fixed file permissions in VAD packages
+
+  * Conductor
+    - Added support for uploading N-QUADS and JSON_LD data via Conductor
+    - Fixed file permissions in VAD package
+
+  * JDBC
+    - Added small optimization to VirtuosoInputStream (fixes #1150)
+
 ## February 27, 2023, v7.2.9:
 
 This update introduces additional GraphQL enhancements for mutations and subscriptions, as documented in the recently published
