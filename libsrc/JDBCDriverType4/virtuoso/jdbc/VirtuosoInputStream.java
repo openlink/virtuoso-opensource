@@ -91,11 +91,6 @@ class VirtuosoInputStream extends BufferedInputStream
    {
      super (input, size);
       this.connection = connection;
-/*
-      this.in = input;
-      // Setup the buffer
-      buffer = new byte[size];
-*/
    }
 
    /**
@@ -502,10 +497,7 @@ class VirtuosoInputStream extends BufferedInputStream
                         c_arr[ch_count++]=(char)c;
                     } else {
                         c2 = (int) data[count-1];
-/***
-                        if ((c2 & 0xC0) != 0x80)
-                            throw new UTFDataFormatException("malformed input around byte " + count);
-***/
+
                         if ((c2 & 0xC0) != 0x80)
                           c_arr[ch_count++] = bad_char;
                         else
@@ -520,10 +512,7 @@ class VirtuosoInputStream extends BufferedInputStream
                     } else {
                         c2 = (int) data[count-2];
                         c3 = (int) data[count-1];
-/***
-                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                            throw new UTFDataFormatException("malformed input around byte " + (count-1));
-***/
+
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                           c_arr[ch_count++] = bad_char;
                         else
@@ -536,9 +525,6 @@ class VirtuosoInputStream extends BufferedInputStream
                     /* 10xx xxxx,  1111 xxxx */
                     count++;
                     c_arr[ch_count++] = bad_char;
-/**
-                    throw new UTFDataFormatException("malformed input around byte " + count);
-**/
             }
         }
         // The number of chars produced may be less than utflen
