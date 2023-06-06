@@ -40,7 +40,6 @@ class VirtuosoInputStream extends BufferedInputStream
 {
    // The connection attached to this stream
    private VirtuosoConnection connection;
-   private byte[] tmp = new byte[16];
 
 
     public int read () throws IOException
@@ -583,10 +582,9 @@ class VirtuosoInputStream extends BufferedInputStream
    private short readshort() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 2) ; i != 2 ; i+=read(tmp,i,2-i));
 
-      retVal = ((int) tmp[0] & 0xFF) << 8;
-      return (short)(retVal | ((int) tmp[1] & 0xFF));
+      retVal = ((int) read() & 0xFF) << 8;
+      return (short)(retVal | ((int) read() & 0xFF));
    }
 
    /**
@@ -598,27 +596,25 @@ class VirtuosoInputStream extends BufferedInputStream
    private int readlongint() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 4) ; i != 4 ; i+=read(tmp,i,4-i));
 
-      retVal  = ((int) tmp[0] & 0xFF) << 24;
-      retVal |= ((int) tmp[1] & 0xFF) << 16;
-      retVal |= ((int) tmp[2] & 0xFF) << 8;
-      return retVal | ((int) tmp[3] & 0xFF);
+      retVal  = ((int) read() & 0xFF) << 24;
+      retVal |= ((int) read() & 0xFF) << 16;
+      retVal |= ((int) read() & 0xFF) << 8;
+      return retVal | ((int) read() & 0xFF);
    }
 
    private long readlong() throws IOException
    {
       long retVal;
-      for(int i = read(tmp,0, 8) ; i != 8 ; i+=read(tmp,i,8-i));
 
-      retVal  = ((long) tmp[0] & 0xFF) << 56;
-      retVal |= ((long) tmp[1] & 0xFF) << 48;
-      retVal |= ((long) tmp[2] & 0xFF) << 40;
-      retVal |= ((long) tmp[3] & 0xFF) << 32;
-      retVal |= ((long) tmp[4] & 0xFF) << 24;
-      retVal |= ((long) tmp[5] & 0xFF) << 16;
-      retVal |= ((long) tmp[6] & 0xFF) << 8;
-      return retVal | ((long) tmp[7] & 0xFF);
+      retVal  = ((long) read() & 0xFF) << 56;
+      retVal |= ((long) read() & 0xFF) << 48;
+      retVal |= ((long) read() & 0xFF) << 40;
+      retVal |= ((long) read() & 0xFF) << 32;
+      retVal |= ((long) read() & 0xFF) << 24;
+      retVal |= ((long) read() & 0xFF) << 16;
+      retVal |= ((long) read() & 0xFF) << 8;
+      return retVal | ((long) read() & 0xFF);
    }
 
    /**
