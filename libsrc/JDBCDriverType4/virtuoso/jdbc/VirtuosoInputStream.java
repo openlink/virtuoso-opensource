@@ -40,7 +40,6 @@ class VirtuosoInputStream extends BufferedInputStream
 {
    // The connection attached to this stream
    private VirtuosoConnection connection;
-   private byte[] tmp = new byte[16];
 
 
     public int read () throws IOException
@@ -92,11 +91,6 @@ class VirtuosoInputStream extends BufferedInputStream
    {
      super (input, size);
       this.connection = connection;
-/*
-      this.in = input;
-      // Setup the buffer
-      buffer = new byte[size];
-*/
    }
 
    /**
@@ -503,10 +497,7 @@ class VirtuosoInputStream extends BufferedInputStream
                         c_arr[ch_count++]=(char)c;
                     } else {
                         c2 = (int) data[count-1];
-/***
-                        if ((c2 & 0xC0) != 0x80)
-                            throw new UTFDataFormatException("malformed input around byte " + count);
-***/
+
                         if ((c2 & 0xC0) != 0x80)
                           c_arr[ch_count++] = bad_char;
                         else
@@ -521,10 +512,7 @@ class VirtuosoInputStream extends BufferedInputStream
                     } else {
                         c2 = (int) data[count-2];
                         c3 = (int) data[count-1];
-/***
-                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                            throw new UTFDataFormatException("malformed input around byte " + (count-1));
-***/
+
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                           c_arr[ch_count++] = bad_char;
                         else
@@ -537,9 +525,6 @@ class VirtuosoInputStream extends BufferedInputStream
                     /* 10xx xxxx,  1111 xxxx */
                     count++;
                     c_arr[ch_count++] = bad_char;
-/**
-                    throw new UTFDataFormatException("malformed input around byte " + count);
-**/
             }
         }
         // The number of chars produced may be less than utflen
@@ -583,10 +568,9 @@ class VirtuosoInputStream extends BufferedInputStream
    private short readshort() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 2) ; i != 2 ; i+=read(tmp,i,2-i));
 
-      retVal = ((int) tmp[0] & 0xFF) << 8;
-      return (short)(retVal | ((int) tmp[1] & 0xFF));
+      retVal = ((int) read() & 0xFF) << 8;
+      return (short)(retVal | ((int) read() & 0xFF));
    }
 
    /**
@@ -598,27 +582,25 @@ class VirtuosoInputStream extends BufferedInputStream
    private int readlongint() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 4) ; i != 4 ; i+=read(tmp,i,4-i));
 
-      retVal  = ((int) tmp[0] & 0xFF) << 24;
-      retVal |= ((int) tmp[1] & 0xFF) << 16;
-      retVal |= ((int) tmp[2] & 0xFF) << 8;
-      return retVal | ((int) tmp[3] & 0xFF);
+      retVal  = ((int) read() & 0xFF) << 24;
+      retVal |= ((int) read() & 0xFF) << 16;
+      retVal |= ((int) read() & 0xFF) << 8;
+      return retVal | ((int) read() & 0xFF);
    }
 
    private long readlong() throws IOException
    {
       long retVal;
-      for(int i = read(tmp,0, 8) ; i != 8 ; i+=read(tmp,i,8-i));
 
-      retVal  = ((long) tmp[0] & 0xFF) << 56;
-      retVal |= ((long) tmp[1] & 0xFF) << 48;
-      retVal |= ((long) tmp[2] & 0xFF) << 40;
-      retVal |= ((long) tmp[3] & 0xFF) << 32;
-      retVal |= ((long) tmp[4] & 0xFF) << 24;
-      retVal |= ((long) tmp[5] & 0xFF) << 16;
-      retVal |= ((long) tmp[6] & 0xFF) << 8;
-      return retVal | ((long) tmp[7] & 0xFF);
+      retVal  = ((long) read() & 0xFF) << 56;
+      retVal |= ((long) read() & 0xFF) << 48;
+      retVal |= ((long) read() & 0xFF) << 40;
+      retVal |= ((long) read() & 0xFF) << 32;
+      retVal |= ((long) read() & 0xFF) << 24;
+      retVal |= ((long) read() & 0xFF) << 16;
+      retVal |= ((long) read() & 0xFF) << 8;
+      return retVal | ((long) read() & 0xFF);
    }
 
    /**
