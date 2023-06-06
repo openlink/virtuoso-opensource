@@ -921,7 +921,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
         </div>
 
         <div>
-            <input class="btn btn-primary" type="submit" id="run" value="Execute Query"/>
+            <input class="btn btn-primary" type="submit" onclick="javascript:sparqlSubmitForm()" id="run" value="Execute Query"/>
             <input class="btn btn-light" type="reset" value="Reset" id="reset"/>
         </div>
     </fieldset>
