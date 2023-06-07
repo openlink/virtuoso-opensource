@@ -1,4 +1,20 @@
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.10 engine 3237
+
+	Added check for OpenSSL 3.1.x
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with DV_REFERENCE
+
+2023-06-06  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed path to openssl libs
+
 2023-06-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
 
 	Updated NEWS.md for upcoming release
 
