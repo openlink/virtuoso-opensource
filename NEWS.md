@@ -1,6 +1,6 @@
 # NEWS
 
-## June 6, 2023, v7.2.10-rc1:
+## June 7, 2023, v7.2.10:
 
   * Virtuoso Engine
     - Added checkpoint to end of online backup
