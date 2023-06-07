@@ -4386,6 +4386,15 @@ DBG_NAME(qr_exec) (DBG_PARAMS  client_connection_t * cli, query_t * qr,
 	      dk_free_box ((caddr_t)prev);
 	    }
 	  }
+        if (ret && DV_ARRAY_OF_POINTER == DV_TYPE_OF (ret) && caller == CALLER_CLIENT)
+          {
+            DO_BOX (caddr_t, v, inx, ret)
+              {
+                if (DV_REFERENCE == DV_TYPE_OF(v)) /* non-copieable, will be released in qi_kill, furthermore no value for cli */
+                  ((caddr_t*)ret)[inx] = NULL;
+              }
+            END_DO_BOX;
+          }
       }
       qi->qi_proc_ret = NULL;
     }
