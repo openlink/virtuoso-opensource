@@ -14758,7 +14758,9 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.TTLP_V_GS to SPARQL_UPDATE',
     'grant execute on DB.DBA.TTLP_V to SPARQL_UPDATE',
     'grant execute on DB.DBA.RDF_LOAD_RDFXML_V to SPARQL_UPDATE',
-    'grant execute on DB.DBA.ID_TO_IRI_VEC to SPARQL_UPDATE' );
+    'grant execute on DB.DBA.ID_TO_IRI_VEC to SPARQL_UPDATE',
+    'grant execute on DB.DBA.L_O_LOOK_NE to SPARQL_UPDATE' );
+
   foreach (varchar cmd in cmds) do
     {
       exec (cmd, state, msg);
