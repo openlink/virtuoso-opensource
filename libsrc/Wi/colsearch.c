@@ -1327,6 +1327,20 @@ itc_any_param (it_cursor_t * itc, int nth_key, dtp_t * dtp_ret)
 	  numeric_to_dv ((numeric_t) n, tmp, NUMERIC_MAX_PRECISION_INT);
 	  return (int64) tmp;
 	}
+      case DV_ANY: /* usually we do not get heterogeneous data here, however transitivity may push rdf boxes in ssl column dc, should see if dc dtp can be reset before this point */
+        {
+          db_buf_t dv;
+          dv = ((db_buf_t*)dc->dc_values) [itc->itc_param_order[itc->itc_set]];
+          *dtp_ret = dtp_canonical[*dv];
+          if (DV_RDF == *dtp_ret)
+            {
+              dv += 2;
+              *dtp_ret = dtp_canonical[*dv];
+            }
+          if (DV_LONG_INT == *dtp_ret || DV_IRI_ID == *dtp_ret)
+            return dv_int (dv, dtp_ret);
+          return (int64)dv;
+        }
       default:
     return ((int64 *) dc->dc_values)[itc->itc_param_order[itc->itc_set]];
   }
