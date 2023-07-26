@@ -1360,6 +1360,7 @@ status_report (const char * mode, query_instance_t * qi)
 		  st_started_since_year, st_started_since_month, st_started_since_day,
 	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
+  rep_printf ("CPU: %.02f%% RSS: %ldMB\n", curr_cpu_pct, curr_mem_rss);
   if (!gen_info)
     return;
   if (lite_mode)
