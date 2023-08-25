@@ -3029,6 +3029,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
     {
       sc->sc_pre_code_of = qn;
       cv_vec_slots (sc, qn->src_pre_code, res, all_res, non_cl_local);
+      if (IS_QN (qn, end_node_input))
+	cv_vec_slots (sc, qn->src_after_test, res, all_res, non_cl_local);
       sc->sc_pre_code_of = NULL;
       sc->sc_ssl_prereset_only = sc->sc_vec_new_ssls;
     }
@@ -3400,7 +3402,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
     {
       int ign = 0;
       QNCAST (end_node_t, en, qn);
-      cv_vec_slots (sc, en->src_gen.src_after_test, NULL, NULL, &ign);
+      /* after test of an end node is done together with the precode above */
       if (en->src_gen.src_after_test && en->src_gen.src_after_code)
 	{
 	  dk_set_t save = sc->sc_vec_pred;
