@@ -810,7 +810,7 @@ typedef struct outer_seq_end_s
   state_slot_t *	ose_prev_set_no;
   state_slot_t **	ose_out_slots; /* the ssls that are null for the outer row */
   state_slot_t **	ose_out_shadow; /* If vectored, ssl vec (not ref) ssls for the nullable columns.  Values are a solid copy of ose out slots */
-  state_slot_t *	ose_bits;
+  state_slot_t *	ose_bits; /* keeps bitmask for outer join set/null */
   state_slot_t *	ose_buffered_row;
   int			ose_last_outer_set; /* set no of the last outer row.  inx of int in qi */
 } outer_seq_end_node_t;

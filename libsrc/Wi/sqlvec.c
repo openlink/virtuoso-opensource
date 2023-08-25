@@ -4271,7 +4271,7 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
       else if (IS_QN (qn, outer_seq_end_input)
 	       || (IS_QN (qn, select_node_input_subq) && ((select_node_t *)qn)->sel_subq_inlined))
 	prev_nodes = sc->sc_vec_pred;
-      if (IS_QN (qn, gs_union_node_input))
+      else if (IS_QN (qn, gs_union_node_input))
 	qn = qn_next (qn);
       t_set_push (&prev_nodes, (void *) qn);
       sc->sc_vec_pred = prev_nodes;
