@@ -497,17 +497,29 @@ dc_append_null (data_col_t * dc)
 }
 
 
+/* 
+ * deserialize and eventually re-use the same box or even box itself,
+ * very dangerous since it is used often via ssl_box_index could make a big confusion
+ * esp. if single ssl has cast to two distinct cast ssls think about that
+ */
 caddr_t
 box_deserialize_reusing (db_buf_t string, caddr_t box)
 {
   boxint n;
   iri_id_t iid;
   int len, head_len;
-  dtp_t old_dtp;
+  dtp_t old_dtp, dtp, flags = 0;
   if (!IS_BOX_POINTER (box))
     return box_deserialize_string ((caddr_t) string, INT32_MAX, 0);
   old_dtp = box_tag (box);
-  switch (string[0])
+  dtp = *string;
+  if (DV_BOX_FLAGS == dtp)
+    {
+      flags = LONG_REF_NA(string + 1);
+      string += 5;
+      dtp = *string;
+    }
+  switch (dtp)
     {
     case DV_SINGLE_FLOAT:
       if (DV_SINGLE_FLOAT == old_dtp)
@@ -585,6 +597,7 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
 	{
 	  box_reuse (box, (caddr_t) string + head_len, len + 1, DV_STRING);
 	  box[len] = 0;
+          box_flags (box) = flags;
 	  return box;
 	}
       goto no_reuse;
@@ -615,6 +628,8 @@ box_deserialize_reusing (db_buf_t string, caddr_t box)
 	/* read first so that there's no ref to freed if throw from read */
 	caddr_t x = box_deserialize_string ((caddr_t) string, INT32_MAX, 0);
 	dk_free_tree (box);
+        if (flags && NULL != x)
+          box_flags (x) = flags;
 	return x;
       }
     }
