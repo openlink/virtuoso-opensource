@@ -3104,6 +3104,18 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       sqs->sqs_query->qr_select_node->sel_vec_role = SEL_VEC_DT;
       sqs->sqs_query->qr_select_node->src_gen.src_sets = sqs->src_gen.src_sets;
       sqs->sqs_query->qr_select_node->src_gen.src_out_fill = sqs->src_gen.src_out_fill;
+#if 0
+      if (IS_QN(sqs->sqs_query->qr_head_node, union_node_input))
+        {
+          QNCAST (union_node_t, un, sqs->sqs_query->qr_head_node);
+          DO_SET (query_t *, term, &un->uni_successors)
+            {
+              term->qr_select_node->src_gen.src_sets = sqs->src_gen.src_sets;
+              term->qr_select_node->src_gen.src_out_fill = sqs->src_gen.src_out_fill;
+            }
+          END_DO_SET();
+        }
+#endif
       DO_BOX (state_slot_t *, out, inx, sqs->sqs_out_slots)
       {
 	state_slot_t *sh = (state_slot_t *) gethash ((void *) (ptrlong) out->ssl_index, sc->sc_vec_ssl_shadow);

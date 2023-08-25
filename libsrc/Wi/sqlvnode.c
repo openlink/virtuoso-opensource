@@ -578,6 +578,9 @@ set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 	}
       memzero (bits, box_length (bits));
       SRC_IN_STATE (sctr, inst) = inst;
+      /* reset outer's results as they will be never run, but filled further */
+      if (ose->src_gen.src_pre_reset)
+        dc_reset_array (inst, (data_source_t *)ose, ose->src_gen.src_pre_reset, n_sets);
     }
   QST_INT (inst, sctr->src_gen.src_out_fill) = 0;
   DC_CHECK_LEN (dc, n_sets - 1);
@@ -707,7 +710,6 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
       qi->qi_set_mask = NULL;
       qi->qi_n_sets = set_nos->dc_n_values;
       err = subq_next (sqs->sqs_query, inst, flag);
-      flag = CR_OPEN;
       if (IS_BOX_POINTER (err))
 	sqlr_resignal (err);
       if ((caddr_t) SQL_NO_DATA_FOUND == err)
@@ -715,6 +717,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  SRC_IN_STATE (sqs, inst) = NULL;
 	  return;
 	}
+      flag = CR_OPEN;
       if (uni)
 	{
 	  int nth = unbox (qst_get (inst, uni->uni_nth_output)) - 1;
