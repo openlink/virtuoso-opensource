@@ -3424,7 +3424,7 @@ soap_proc_opt_list
 	;
 
 soap_proc_opt
-	: NAME EQUALS signed_literal { $$ = t_CONS ($1, t_CONS ($3, NULL)); }
+	: NAME EQUALS signed_literal { caddr_t name = $1; box_tag_modify (name, DV_STRING); $$ = t_CONS (name, t_CONS ($3, NULL)); }
 	;
 
 soap_kwd
