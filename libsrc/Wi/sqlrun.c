@@ -2742,8 +2742,7 @@ op_node_input (op_node_t * op, caddr_t * inst, caddr_t * state)
     case OP_CHECKPOINT:
 	{
 	  ddl_commit (qi);
-	  sf_makecp (arg_1 ? box_dv_short_string (arg_1) : sf_make_new_log_name (wi_inst.wi_master),
-	      qi->qi_trx, 0, 0);
+	  sf_makecp (sf_make_new_log_name (wi_inst.wi_master), qi->qi_trx, 0, 0);
 	}
       break;
 
