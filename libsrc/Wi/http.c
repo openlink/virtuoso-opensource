@@ -2474,13 +2474,18 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
     {
       dk_session_t * strses = ws->ws_strses;
       client_connection_t * cli = ws->ws_cli;
-      caddr_t url,
-	  xslt_url = ws->ws_xslt_url, xslt_parms = ws->ws_xslt_params;
+      caddr_t url = ws->ws_xslt_doc_url, xslt_url = ws->ws_xslt_url, xslt_parms = ws->ws_xslt_params;
       caddr_t err = NULL, * exec_params = NULL;
-      size_t current_url_len = strlen (http_port) + strlen (ws->ws_path_string) + 18;
-      caddr_t current_url = dk_alloc_box (current_url_len, DV_SHORT_STRING);
-      snprintf (current_url, current_url_len, "http://localhost:%s%s", http_port, ws->ws_path_string);
-      url = current_url;
+
+      if (NULL == url)
+        {
+          /* The next is a guess, virtual path may not be on localhost:server_port,
+             unfortunately this lagacy is used by applications, so we keep it for now.
+           */
+          size_t url_len = strlen (http_port) + strlen (ws->ws_path_string) + 18;
+          ws->ws_xslt_doc_url = url = dk_alloc_box (url_len, DV_SHORT_STRING);
+          snprintf (url, url_len, "http://localhost:%s%s", http_port, ws->ws_path_string);
+        }
 
       if (!http_xslt_qr || http_xslt_qr->qr_to_recompile)
 	err = srv_make_new_error ("42001", "HT004", "No DB.DBA.__HTTP_XSLT defined");
@@ -2536,8 +2541,9 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       ws->ws_xslt_url = NULL;
       dk_free_tree (ws->ws_xslt_params);
       ws->ws_xslt_params = NULL;
+      dk_free_box (ws->ws_xslt_doc_url);
+      ws->ws_xslt_doc_url = NULL;
       len = strses_length (ws->ws_strses);
-      dk_free_box (current_url);
     }
 #endif
   if (http_print_warnings_in_output)
@@ -8312,10 +8318,13 @@ bif_http_xslt (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   query_instance_t * qi = (query_instance_t *) qst;
   ws_connection_t *ws = qi->qi_client->cli_ws;
   caddr_t xslt_url = bif_string_or_null_arg (qst, args, 0, "http_xslt");
-  caddr_t params = NULL;
+  caddr_t params = NULL, base = NULL;
 
   if (BOX_ELEMENTS (args) > 1)
     params = bif_array_or_null_arg (qst, args, 1, "http_xslt");
+
+  if (BOX_ELEMENTS (args) > 2)
+    base = bif_string_or_null_arg (qst, args, 2, "http_xslt");
 
   if (!ws)
     sqlr_new_error ("42000", "HT039", "Not allowed to call the http_xslt in an non VSP context");
@@ -8324,6 +8333,8 @@ bif_http_xslt (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   ws->ws_xslt_url = xslt_url ? box_dv_short_string (xslt_url) : NULL;
   dk_free_tree (ws->ws_xslt_params);
   ws->ws_xslt_params = box_copy_tree (params);
+  dk_free_box (ws->ws_xslt_doc_url);
+  ws->ws_xslt_doc_url = box_copy(base);
 #endif
   return NULL;
 }

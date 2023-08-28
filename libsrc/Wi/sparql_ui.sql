@@ -813,7 +813,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     endpoint_xsl := registry_get ('sparql_endpoint_xsl', '');
 
     if (length(endpoint_xsl))
-        http_xslt(endpoint_xsl);
+        http_xslt(endpoint_xsl, null, '');
 
 
     --

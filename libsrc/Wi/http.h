@@ -127,6 +127,7 @@ typedef struct ws_connection_s
 #ifdef BIF_XML
     caddr_t		ws_xslt_url;
     caddr_t		ws_xslt_params;
+    caddr_t             ws_xslt_doc_url;
     unsigned long 	ws_flushed;
 #endif
     caddr_t		ws_client_ip;
