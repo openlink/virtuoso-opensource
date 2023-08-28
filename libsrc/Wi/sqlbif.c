@@ -13583,6 +13583,10 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   c_checkpoint_interval = new_interval;
   cfg_autocheckpoint = new_interval > 0 ? (60000L * new_interval) : 0L;
+  if (!cfg_autocheckpoint)
+    log_info ("Checkpoint is disabled.");
+  else
+    log_info ("Checkpoint is enabled on every %d min.", new_interval);
 
   if (!atomic)
     {
@@ -13613,6 +13617,10 @@ bif_scheduler_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 > new_period)
     new_period = 0;
   cfg_scheduler_period = 60000L * new_period;
+  if (!cfg_scheduler_period)
+    log_info ("Scheduler events are disabled.");
+  else
+    log_info ("Scheduler events are enabled on every %d min.", new_period);
 
   if (!atomic)
     {
