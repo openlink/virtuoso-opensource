@@ -3840,6 +3840,19 @@ vec_fref_group_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 	  int set_in_sctr = agg_set_no ? qst_vec_get_int64 (inst, agg_set_no, set) : set;
 	((query_instance_t *) branch)->qi_set = set_in_sctr;
 	  fref_setp_trace (fref, branch);
+	  DO_SET (setp_node_t *, setp, &fref->fnr_setps)
+	    {
+	      hash_area_t * ha = setp->setp_ha;
+	      if (HA_GROUP != ha->ha_op)
+		continue;
+	      if (1 == n_sets && (tree = (index_tree_t*) (SSL_REF == ha->ha_tree->ssl_type || SSL_VEC == ha->ha_tree->ssl_type  ? sslr_qst_get (branch, (state_slot_ref_t*)ha->ha_tree, 0) : qst_get (branch, ha->ha_tree))))
+		{
+		  if (tree->it_hi && tree->it_hi->hi_chash)
+		    chash_to_memcache (inst, tree, ha);
+		}
+	    }
+	  END_DO_SET();
+
 	fref_setp_flush (fref, branch);
 	qi->qi_set = set_in_sctr;
 	DO_SET (setp_node_t *, setp, &fref->fnr_setps)
