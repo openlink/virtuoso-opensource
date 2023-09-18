@@ -8022,7 +8022,7 @@ bif_http_request_header_full (caddr_t * qst, caddr_t * err_ret, state_slot_t ** 
     }
   else
     {
-      if (lines)
+      if (lines && name)
 	{
 	  int inx;
 	  size_t len;
