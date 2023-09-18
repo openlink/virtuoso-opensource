@@ -6850,36 +6850,52 @@ base64_store24(char ** d, char * c)
 size_t
 decode_base64_impl (char * src, char * end, char * table)
 {
-    char * start = src;
-    char c0, c[4], *p;
-    size_t i=0;
-    char *d=src;
-    if (!src || !*src || src == end)
-      return 0;
-    while ((c0 = *src++) && src < end) {
-	if (c0=='=')
-	  break; /* a = symbol is end padding */
-	if ((p=strchr(table, c0))) {
-	  c[i++]=(char) (p-table);
-	  if (i==4) {
-	    base64_store24(&d, c);
-	    i=0;
-	  }
-       } /* unknown symbols are ignored */
+  char * start = src;
+  char c0, c[4], s[4], *p;
+  size_t i = 0;
+  char *d = src;
+  if (!src || !*src || src == end)
+    return 0;
+  memset (s, 0, sizeof (s));
+  while ((c0 = *src++) && src < end)
+    {
+      if ((p = strchr(table, c0)))
+        {
+          s[i] = c0;
+          c[i]= (char) (p - table);
+          if (i == 3)
+            {
+              base64_store24(&d, c);
+              if (s[2] == '=')
+                {
+                  d -= 2;
+                  i = 0;
+                  break;
+                }
+              else if (s[3] == '=')
+                {
+                  d -= 1;
+                  i = 0;
+                  break;
+                }
+              memset (s, 0, sizeof (s));
+              i = 0;
+            }
+          else
+            {
+              i ++;
+            }
+        } /* unknown symbols are ignored */
     }
-    if (i>0) {
-	for(;i<4;c[i++]=0)
-	  ; /* will leave padding nulls - does not matter here */
-       base64_store24(&d, c);
+  if (i > 0)
+    {
+      for(; i < 4; c[i++] = 0);
+      base64_store24(&d, c);
+      for (i = 0; i < 4; i ++)
+        if ('\0' == s[i]) d--;
     }
-    *d=0;
-    if (*(d - 1) == 0) {
-      if (*(d - 2) == 0)
-	d -= 2;
-      else
-	d -= 1;
-    }
-    return (d - start);
+  *d = 0;
+  return (d - start);
 }
 
 caddr_t
