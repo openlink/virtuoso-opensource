@@ -10436,30 +10436,40 @@ bif_is_http_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   return box_num(1);
 }
 
-static caddr_t
-bif_is_https_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+int
+ws_is_https (ws_connection_t * ws)
 {
-  query_instance_t *qi = (query_instance_t *)qst;
-  caddr_t xproto = NULL;
   int is_https = 0;
-  ws_connection_t *ws = qi->qi_client->cli_ws;
+
 #ifdef _SSL
-  SSL *ssl = NULL;
+  if (ws)
+    {
+      SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
+      is_https = (NULL != ssl);
+
+      if (ws->ws_lines)
+	{
+	  const char *xproto = ws_header_field (ws->ws_lines, "X-Forwarded-Proto:", "");
+	  while (*xproto && *xproto <= '\x20')
+	    xproto++;
+	  if (!strncmp (xproto, "https", 5))
+	    is_https = 1;
+	}
+    }
 #endif
 
-  if (!ws)
-    return box_num(0);
-#ifdef _SSL
-  ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
-  is_https = (NULL != ssl);
-#endif
+  return is_https;
+}
 
-  if (ws && ws->ws_lines  && NULL != (xproto = ws_mime_header_field (ws->ws_lines, "X-Forwarded-Proto", NULL, 1)))
-    if (!strcmp(xproto, "https"))
-       is_https = 1;
-  if (xproto) dk_free_box (xproto);
+static caddr_t
+bif_is_https_ctx (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  query_instance_t *qi = (query_instance_t *) qst;
+  int is_https = 0;
 
-  return box_num(is_https ? 1 : 0);
+  is_https = ws_is_https (qi->qi_client->cli_ws);
+
+  return box_num (is_https ? 1 : 0);
 }
 
 static caddr_t

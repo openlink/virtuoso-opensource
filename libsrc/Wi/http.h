@@ -436,5 +436,6 @@ int ws_check_connect_timeout (session_t *ses, timeout_t * to, int want);
 size_t http_threads_mem_report (void);
 extern dk_hash_t * ws_cli_sessions;
 extern dk_mutex_t * ws_cli_mtx;
+int ws_is_https (ws_connection_t * ws);
 
 #endif /* _HTTP_H */
