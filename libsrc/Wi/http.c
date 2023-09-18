@@ -11774,7 +11774,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       ret[1] = (caddr_t) 1;
     }
 
-  if (ws && ses == ws->ws_session)
+  if (NULL != ses && NULL != ws && ses == ws->ws_session)
     {
       mutex_enter (thread_mtx);
       ses->dks_n_threads--;
