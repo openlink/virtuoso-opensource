@@ -1988,8 +1988,18 @@ char http_server_id_string_buf [1024];
 char *http_server_id_string = NULL;
 const char *http_client_id_string = "Mozilla/4.0 (compatible; OpenLink Virtuoso)";
 uint32 http_default_client_req_timeout = 100;
+extern char * https_csp;
 
 static char hsts_header_buf[128];
+static char csp_header_buf[128];
+caddr_t http_host_domain_url = NULL;
+int32 upgrade_insecure_http = 0;
+
+#ifdef _SSL
+#define CSP_HEADER(ws) ((https_csp != NULL) ? csp_header_buf : "")
+#else
+#define CSP_HEADER(ws)  ""
+#endif
 
 static char *
 hsts_header_line (ws_connection_t * ws)
@@ -2697,6 +2707,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 
       SES_PRINT (ws->ws_session, hsts_header_line(ws));
+      SES_PRINT (ws->ws_session, CSP_HEADER(ws));
 
       if (ws->ws_header) /* user-defined headers */
 	{
@@ -3049,6 +3060,7 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       "Server: %.1000s\r\n"
       "Connection: %s\r\n"
       "%s"
+      "%s"
       "\r\n"
       "--THIS_STRING_SEPARATES\r\n"
       ,
@@ -3058,7 +3070,8 @@ send_multipart_byteranges (ws_connection_t *ws, int fd,
       date_now,
       http_server_id_string,
       ws->ws_try_pipeline ? "Keep-Alive" : "close",
-      hsts_header_line (ws));
+      hsts_header_line (ws),
+      CSP_HEADER(ws));
   SES_PRINT (ws->ws_session, head);
   fprintf (stdout, "Head_mp = %s\n", head);
 
@@ -3349,6 +3362,7 @@ ws_file (ws_connection_t * ws)
 	      "%s"
 	      "%s"
 	      "%s"
+	      "%s"
 	      "%s",
 	      head_beg,
 	      (OFF_T_PRINTF_DTP) off,
@@ -3360,6 +3374,7 @@ ws_file (ws_connection_t * ws)
 	      ws->ws_try_pipeline ? "Keep-Alive" : "close",
 	      hsts_header_line(ws),
 	      (MAINTENANCE) ? "Retry-After: 1800\r\n" : "",
+              CSP_HEADER(ws),
 	      ws->ws_header ? ws->ws_header : "",
 	      ranges_buffer
 	      );
@@ -12111,6 +12126,12 @@ http_init_part_one ()
     }
 
   snprintf (hsts_header_buf, sizeof (hsts_header_buf), "Strict-Transport-Security: max-age=%d\r\n", https_hsts_max_age);
+  if (https_csp != NULL)
+    {
+      snprintf (csp_header_buf, sizeof (csp_header_buf), "Content-Security-Policy: %s\r\n", https_csp);
+      if (NULL != strstr (https_csp, "upgrade-insecure-requests"))
+        upgrade_insecure_http = 1;
+    }
 
   dns_host_name = get_qualified_host_name ();
   split_string (WS_CORS_DEFAULT_ALLOW_HEADERS, NULL, &http_default_allow_headers_list);
