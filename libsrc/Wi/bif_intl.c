@@ -1243,6 +1243,8 @@ get_q_of_lang_in_http_accept_language (const char *lang, const char *line)
   int best_match_weight = 0;
   double best_q = 0;
 #define TAIL_SKIP_WS do { while ((' ' == tail[0]) || ('\t' == tail[0])) tail++; } while (0)
+  if (NULL == lang)
+    return 0;
   TAIL_SKIP_WS;
   while ('\0' != tail[0])
     {
@@ -1291,7 +1293,7 @@ caddr_t
 bif_langmatches_pct_http (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static const char * bifname = "langmatches_pct_http";
-  caddr_t lang = bif_string_arg (qst, args, 0, bifname);
+  caddr_t lang = bif_string_or_null_arg (qst, args, 0, bifname);
   caddr_t line = bif_string_arg (qst, args, 1, bifname);
   double q;
   if (!lang)
