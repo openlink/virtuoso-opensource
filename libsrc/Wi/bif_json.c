@@ -288,6 +288,8 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
           obj = jsonld_qname_resolve(jsonp_arg, obj,NULL);
           obj_iid = obj = jsonp_uri_resolve (jsonp_arg, obj); /* relative ref obj resloved here */
         }
+      if (DV_STRINGP(obj_iid) && !strlen(obj_iid))
+        goto done;
       tf_triple (jsonp_arg->jtf, subj_iid, prop, obj_iid);
     }
   else
@@ -300,6 +302,7 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
       if (!err)
         tf_triple_l (jsonp_arg->jtf, subj_iid, prop, obj, dt, lang);
     }
+done:
 #ifdef _JSONLD_DEBUG_Q
   printf ("QUAD: ");
   jsonld_item_print (itm);

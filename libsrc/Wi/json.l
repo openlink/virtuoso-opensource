@@ -67,15 +67,6 @@ extern VIRT_C_LINKAGE int jsonyylex (YYSTYPE *yylval, jsonp_t *jsonp_arg, yyscan
 #define TOKEN_OR_STRING(tok) \
     do { \
         jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
-        yylval->box = t_box_dv_short_nchars (yytext+1, strlen (yytext)-2); \
-        if (jsonp_arg->jpmode & JSON_LD) \
-          return tok; \
-        return STRING; \
-      } while (0)
-
-#define TOKEN_OR_URL_STRING(tok) \
-    do { \
-        jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
         yylval->box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
         if (jsonp_arg->jpmode & JSON_LD) \
           return tok; \
@@ -160,6 +151,7 @@ ISEGMENT_NZNC   ({IUNRESERVED}|{PERCENT}|{SUB_DELIMS}|@)
 IRIREF	        ([^\x00-\x20<>\\""{}|^`]|{UCHAR}|{UTF_8}|{SLASH})
 
 DQ              \"
+AT              ("@"|"\\u0040")
 
 %%
 
@@ -178,29 +170,29 @@ DQ              \"
 <INITIAL>":"	{ return COLON; }
 <INITIAL>","	{ return COMMA; }
 
-<INITIAL>{DQ}"@context"{DQ}     { TOKEN_OR_STRING(CONTEXT); }
-<INITIAL>{DQ}"@graph"{DQ}       { TOKEN_OR_STRING(GRAPH); }
-<INITIAL>{DQ}"@direction"{DQ}   { TOKEN_OR_STRING(DIRECTION); }
-<INITIAL>{DQ}"@id"{DQ}          { TOKEN_OR_STRING(ID); }
-<INITIAL>{DQ}"@type"{DQ}        { TOKEN_OR_STRING(TYPE); }
-<INITIAL>{DQ}"@language"{DQ}    { TOKEN_OR_STRING(LANGUAGE); }
-<INITIAL>{DQ}"@list"{DQ}        { TOKEN_OR_STRING(LIST); }
-<INITIAL>{DQ}"@base"{DQ}        { TOKEN_OR_STRING(BASE); }
-<INITIAL>{DQ}"@import"{DQ}      { TOKEN_OR_STRING(IMPORT); }
-<INITIAL>{DQ}"@included"{DQ}    { TOKEN_OR_STRING(INCLUDED); }
-<INITIAL>{DQ}"@index"{DQ}       { TOKEN_OR_STRING(INDEX); }
-<INITIAL>{DQ}"@json"{DQ}        { TOKEN_OR_STRING(JSON); }
-<INITIAL>{DQ}"@container"{DQ}   { TOKEN_OR_STRING(CONTAINER); }
-<INITIAL>{DQ}"@nest"{DQ}        { TOKEN_OR_STRING(NEST); }
-<INITIAL>{DQ}"@none"{DQ}        { TOKEN_OR_STRING(NONE); }
-<INITIAL>{DQ}"@prefix"{DQ}      { TOKEN_OR_STRING(PREFIX); }
-<INITIAL>{DQ}"@propagate"{DQ}   { TOKEN_OR_STRING(PROPAGATE); }
-<INITIAL>{DQ}"@protected"{DQ}   { TOKEN_OR_STRING(PROTECTED); }
-<INITIAL>{DQ}"@reverse"{DQ}     { TOKEN_OR_STRING(REVERSE); }
-<INITIAL>{DQ}"@set"{DQ}         { TOKEN_OR_STRING(SET); }
-<INITIAL>{DQ}"@value"{DQ}       { TOKEN_OR_STRING(VALUE); }
-<INITIAL>{DQ}"@vocab"{DQ}       { TOKEN_OR_STRING(VOCAB); }
-<INITIAL>{DQ}"@version"{DQ}     { TOKEN_OR_STRING(VERSION); }
+<INITIAL>{DQ}{AT}"context"{DQ}     { TOKEN_OR_STRING(CONTEXT); }
+<INITIAL>{DQ}{AT}"graph"{DQ}       { TOKEN_OR_STRING(GRAPH); }
+<INITIAL>{DQ}{AT}"direction"{DQ}   { TOKEN_OR_STRING(DIRECTION); }
+<INITIAL>{DQ}{AT}"id"{DQ}          { TOKEN_OR_STRING(ID); }
+<INITIAL>{DQ}{AT}"type"{DQ}        { TOKEN_OR_STRING(TYPE); }
+<INITIAL>{DQ}{AT}"language"{DQ}    { TOKEN_OR_STRING(LANGUAGE); }
+<INITIAL>{DQ}{AT}"list"{DQ}        { TOKEN_OR_STRING(LIST); }
+<INITIAL>{DQ}{AT}"base"{DQ}        { TOKEN_OR_STRING(BASE); }
+<INITIAL>{DQ}{AT}"import"{DQ}      { TOKEN_OR_STRING(IMPORT); }
+<INITIAL>{DQ}{AT}"included"{DQ}    { TOKEN_OR_STRING(INCLUDED); }
+<INITIAL>{DQ}{AT}"index"{DQ}       { TOKEN_OR_STRING(INDEX); }
+<INITIAL>{DQ}{AT}"json"{DQ}        { TOKEN_OR_STRING(JSON); }
+<INITIAL>{DQ}{AT}"container"{DQ}   { TOKEN_OR_STRING(CONTAINER); }
+<INITIAL>{DQ}{AT}"nest"{DQ}        { TOKEN_OR_STRING(NEST); }
+<INITIAL>{DQ}{AT}"none"{DQ}        { TOKEN_OR_STRING(NONE); }
+<INITIAL>{DQ}{AT}"prefix"{DQ}      { TOKEN_OR_STRING(PREFIX); }
+<INITIAL>{DQ}{AT}"propagate"{DQ}   { TOKEN_OR_STRING(PROPAGATE); }
+<INITIAL>{DQ}{AT}"protected"{DQ}   { TOKEN_OR_STRING(PROTECTED); }
+<INITIAL>{DQ}{AT}"reverse"{DQ}     { TOKEN_OR_STRING(REVERSE); }
+<INITIAL>{DQ}{AT}"set"{DQ}         { TOKEN_OR_STRING(SET); }
+<INITIAL>{DQ}{AT}"value"{DQ}       { TOKEN_OR_STRING(VALUE); }
+<INITIAL>{DQ}{AT}"vocab"{DQ}       { TOKEN_OR_STRING(VOCAB); }
+<INITIAL>{DQ}{AT}"version"{DQ}     { TOKEN_OR_STRING(VERSION); }
 
 <INITIAL>true	{ return TRUE_L; }
 <INITIAL>false	{ return FALSE_L; }
@@ -209,12 +201,12 @@ DQ              \"
 <INITIAL>{DQ}"_:"({ISEGMENT_NZNC})+{DQ}                      { TOKEN_OR_STRING(BNODE); }
 <INITIAL>{DQ}({ISEGMENT_NZNC})+":"({ISEGMENT_NZNC})+{DQ}        { TOKEN_OR_STRING(QNAME); }
 <INITIAL>{DQ}({ISEGMENT_NZNC})+{DQ}                          { TOKEN_OR_STRING(NCNAME); }
-<INITIAL>{DQ}({IRIREF})*{DQ}                                 { TOKEN_OR_URL_STRING(IRI); }
+<INITIAL>{DQ}({IRIREF})*{DQ}                                 { TOKEN_OR_STRING(IRI); }
 
 <INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
 <INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
-                   yylval->box = t_box_dv_short_nchars (yytext+1, strlen (yytext)-2);
+                   yylval->box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, yytext, 1, SPAR_STRLITERAL_JSON_STRING);
 		   return STRING;
 		}
 
