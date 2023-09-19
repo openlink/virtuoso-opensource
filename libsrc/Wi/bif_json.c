@@ -402,6 +402,8 @@ jsonld_frame_pop (jsonp_t *jsonp_arg)
           if (!jsonp_arg->curr_id)
             jsonp_arg->curr_id = gethash ((void*)jsonp_arg->curr_node_no, jsonp_arg->node2id);
         }
+      if (JSON_LD_MAP == jsonp_arg->jpmode)
+        jsonp_arg->curr_id = itm->id;
       if (jsonp_arg->curr_id)
         JF_SET(ID);
     }
