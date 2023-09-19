@@ -11368,6 +11368,7 @@ ws_soap_http (ws_connection_t * ws)
   query_t *qr = NULL;
   caddr_t err = NULL, *pars, text;
   dk_session_t *ses = ws->ws_strses;
+  ws_http_map_t *vd = ws->ws_map;
   wcharset_t *volatile charset = ws->ws_charset;
   int is_http = 0;
 
@@ -11478,6 +11479,11 @@ ws_soap_http (ws_connection_t * ws)
 	dk_free_tree ((box_t) pars);
 	goto end;
       }
+      if (NULL != vd && vd->hm_exec_opts && WM_OPTIONS == ws->ws_method)
+        {
+	  dk_free_tree ((box_t) pars);
+	  goto end;
+        }
       err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL,
 	  &lc, pars, NULL, 1);
     dk_free_box ((box_t) pars);

@@ -9071,6 +9071,8 @@ bif_http_map_table (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		map->hm_executable = 1;
 	      else if (!stricmp (option_name,"exec_as_get"))
 		map->hm_exec_as_get = 1;
+	      else if (!stricmp (option_name,"http_options_no_exec"))
+		map->hm_exec_opts = 1;
 	      else if (!stricmp (option_name,"url_rewrite"))
 		map->hm_url_rewrite_rule = box_copy_tree (option_value);
 	      else if (!stricmp (option_name,"url_rewrite_keep_lpath"))
