@@ -514,6 +514,7 @@ item	: CONTEXT {
                   }
         | LANGUAGE COLON STRING { JLD_SET_CURRENT(lang,NULL); $$ = NULL; } /* skip trple? */
         | DIRECTION COLON NCNAME { $$ = NULL; }
+        | BASE COLON IRI { $$ = NULL; jsonp_arg->curr_ctx->base = $3; }
         | TYPE COLON type_value {
                if (JSON_LD_DATA) {
                     caddr_t type;
