@@ -535,7 +535,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jsonp_t jsonp;
   yyscan_t scanner;
 
-  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
+  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS_0 (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS_0 (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_jsonld() should be a vector of %d to %d names of stored procedures",
       COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
