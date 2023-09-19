@@ -67,7 +67,10 @@ extern VIRT_C_LINKAGE int jsonyylex (YYSTYPE *yylval, jsonp_t *jsonp_arg, yyscan
 #define TOKEN_OR_STRING(tok) \
     do { \
         jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
-        yylval->box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
+        caddr_t box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
+        if (box && !jsonp_arg->jpmode) \
+          box_flags (box) = 0; \
+        yylval->box = box; \
         if (jsonp_arg->jpmode & JSON_LD) \
           return tok; \
         return STRING; \
@@ -206,7 +209,10 @@ AT              ("@"|"\\u0040")
 <INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
 <INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
-                   yylval->box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, yytext, 1, SPAR_STRLITERAL_JSON_STRING);
+                   caddr_t box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, yytext, 1, SPAR_STRLITERAL_JSON_STRING);
+                   if (box && !jsonp_arg->jpmode)
+                     box_flags (box) = 0;
+                   yylval->box = box;
 		   return STRING;
 		}
 
