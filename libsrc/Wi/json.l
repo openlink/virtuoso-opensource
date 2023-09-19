@@ -68,7 +68,7 @@ extern VIRT_C_LINKAGE int jsonyylex (YYSTYPE *yylval, jsonp_t *jsonp_arg, yyscan
     do { \
         jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
         caddr_t box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
-        if (box && !jsonp_arg->jpmode) \
+        if (box) \
           box_flags (box) = 0; \
         yylval->box = box; \
         if (jsonp_arg->jpmode & JSON_LD) \
@@ -210,7 +210,7 @@ AT              ("@"|"\\u0040")
 
 <INITIAL>"\""[^\\\"\n\r\t]*"\"" 	{
                    caddr_t box = spar_unescape_strliteral (NULL /* no sparp for JSON_LITERAL */, yytext, 1, SPAR_STRLITERAL_JSON_STRING);
-                   if (box && !jsonp_arg->jpmode)
+                   if (box)
                      box_flags (box) = 0;
                    yylval->box = box;
 		   return STRING;
