@@ -73,6 +73,18 @@ extern VIRT_C_LINKAGE int jsonyylex (YYSTYPE *yylval, jsonp_t *jsonp_arg, yyscan
         return STRING; \
       } while (0)
 
+#define TOKEN_OR_URL_STRING(tok) \
+    do { \
+        jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
+        if (jsonp_arg->jpmode & JSON_LD) \
+          yylval->box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
+        else \
+          yylval->box = t_box_dv_short_nchars (yytext+1, strlen (yytext)-2); \
+        if (jsonp_arg->jpmode & JSON_LD) \
+          return tok; \
+        return STRING; \
+      } while (0)
+
 struct sparp_s; /* forward */
 #define SPAR_STRLITERAL_SPARQL_STRING	0
 #define SPAR_STRLITERAL_JSON_STRING	1
@@ -143,11 +155,12 @@ U4A     \xF0[\x90-\xBF][\x80-\xBF]{2}
 U4B     [\xF1-\xF3][\x80-\xBF]{3}
 U4C     \xF4[\x80-\x8F][\x80-\xBF]{2}
 UTF_8   {U2A}|{U2B}|{U3A}|{U3B}|{U4A}|{U4B}|{U4C}
+SLASH   "\\/"
 
 IUNRESERVED	([A-Za-z0-9\x7f-\xfe]|[-.~_]|{UCHAR}|{UTF_8})
 SUB_DELIMS      ([!$&''()*+,;=])
 ISEGMENT_NZNC   ({IUNRESERVED}|{PERCENT}|{SUB_DELIMS}|@)
-IRIREF	        ([^\x00-\x20<>\\""{}|^`]|{UCHAR}|{UTF_8})
+IRIREF	        ([^\x00-\x20<>\\""{}|^`]|{UCHAR}|{UTF_8}|{SLASH})
 
 DQ              \"
 
@@ -199,7 +212,7 @@ DQ              \"
 <INITIAL>{DQ}"_:"({ISEGMENT_NZNC})+{DQ}                      { TOKEN_OR_STRING(BNODE); }
 <INITIAL>{DQ}({ISEGMENT_NZNC})+":"({ISEGMENT_NZNC})+{DQ}        { TOKEN_OR_STRING(QNAME); }
 <INITIAL>{DQ}({ISEGMENT_NZNC})+{DQ}                          { TOKEN_OR_STRING(NCNAME); }
-<INITIAL>{DQ}({IRIREF})*{DQ}                                 { TOKEN_OR_STRING(IRI); }
+<INITIAL>{DQ}({IRIREF})*{DQ}                                 { TOKEN_OR_URL_STRING(IRI); }
 
 <INITIAL>"\""[^\\\"\n\r\t]*	{ yymore(); BEGIN(STRLIT); }
 
