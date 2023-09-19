@@ -1856,7 +1856,8 @@ row_insert_cast (row_delta_t * rd, dbe_col_loc_t * cl, caddr_t data,
 	      return;
 	    }
 	}
-      if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0] || IS_WIDE_STRING_DTP ((dtp_t)str[0])) && tb_is_rdf_quad (key->key_table))
+      if ((DV_STRING == (dtp_t)str[0] || DV_SHORT_STRING_SERIAL == (dtp_t)str[0] || IS_WIDE_STRING_DTP ((dtp_t)str[0]) || DV_BIN == (dtp_t)str[0]) && 
+          tb_is_rdf_quad (key->key_table))
 	{
 	  caddr_t err = srv_make_new_error ("42000",  "RDFST", "Inserting a string into O in RDF_QUAD.  RDF box is expected");
 	  if (err_ret)
