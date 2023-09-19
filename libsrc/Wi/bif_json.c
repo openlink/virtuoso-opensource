@@ -464,6 +464,60 @@ jsonld_context_uri_get (jsonp_t * jsonp_arg, caddr_t uri, id_hash_t *ht)
   return;
 }
 
+caddr_t
+bif_jsonld_ctx_to_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_t *ht;
+  static char * fn = "jsonld_ctx_to_dict";
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, fn);
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 1, fn, 0);
+  uint64 flags = BOX_ELEMENTS_0 (args) > 2 ? bif_long_arg (qst, args, 2, fn) : 0;
+  jsonp_t jsonp;
+
+  MP_START();
+  memset (&jsonp, 0, sizeof (jsonp_t));
+  jsonp.qi = (query_instance_t *)qst;
+  ht = t_id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  jsonld_context_uri_get (&jsonp, uri, ht);
+
+  DO_IDHASH(caddr_t, k, jsonld_item_t *, v, ht)
+    {
+      if (!flags)
+        {
+          caddr_t url;
+          caddr_t pref, local;
+          caddr_t val = list (3, box_copy(k), box_copy_tree(v->type), box_num(v->flags));
+          url = NULL;
+          if (v->flags & JLD_LIST_CONT || v->flags & JLD_LANG_CONT) /* this is a heuristic/trick to maintain AP ordered list and lang containers */
+            {
+              iri_split_ttl_qname (v->id, &pref, &local, 0);
+              if (0 != strcmp (k, local))
+                url = box_dv_short_concat (pref, k);
+              dk_free_box (pref);
+              dk_free_box (local);
+            }
+          if (!url)
+            url = box_copy(v->id);
+          box_flags (url) = BF_IRI;
+          dict_put_impl (hit, url, val, 0);
+        }
+      else /* sparql compat */
+        {
+          caddr_t url = box_copy(v->id);
+          caddr_t type = box_copy_tree(v->type);
+          box_flags (url) = BF_IRI;
+          if (DV_STRING == DV_TYPE_OF(type))
+            box_flags (type) = BF_IRI;
+          if (!type)
+            type = uname_xmlschema_ns_uri_hash_string;
+          dict_put_impl (hit, list (2, url, type), list(1, box_copy(k)), 0);
+        }
+    }
+  END_DO_IDHASH;
+  MP_DONE();
+  return NULL;
+}
+
 static
 caddr_t
 bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -559,4 +613,5 @@ bif_json_init (void)
 {
   bif_define ("json_parse", bif_json_parse);
   bif_define ("rdf_load_jsonld", bif_rdf_load_jsonld);
+  bif_define ("jsonld_ctx_to_dict", bif_jsonld_ctx_to_dict);
 }
