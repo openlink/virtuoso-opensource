@@ -156,7 +156,7 @@ jsonld_ctx_allocate (jsonp_t *jsonp_arg)
 
 /* We MUST be carefull here, MUST  detect cycles in terms */
 caddr_t
-jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item, int direct)
+jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item, int direct, int use_ns)
 {
   jsonld_ctx_t * ctx = jsonp_arg->curr_ctx;
   id_hash_t * ht = ctx ? ctx->ns2iri : NULL;
@@ -177,13 +177,13 @@ jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_it
   /* use @base & @vocab if not */
   if (ret_item)
     ret_item[0] = item ? item[0] : NULL;
-  if (name == term)
+  if (name == term && use_ns)
     name = jsonp_term_uri_resolve (jsonp_arg, qname);
   return (name ? name : qname);
 }
 
 caddr_t
-jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_item)
+jsonld_qname_resolve_1 (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_item, int use_ns)
 {
   char * colon;
   caddr_t pref, local, ns_uri, abs_name;
@@ -194,10 +194,10 @@ jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_it
     (colon && strchr (qname, ':') != strrchr (qname, ':'))) /* must be more precise here ck for BF_IRI for ex. */
     return qname;
   if (!colon)
-    return jsonld_term_resolve (jsonp_arg, qname, ret_item);
+    return jsonld_term_resolve_1 (jsonp_arg, qname, ret_item, 1, use_ns);
   pref = t_box_dv_short_nchars (qname, (int)(colon - qname));
   local = t_box_dv_short_string (colon+1);
-  ns_uri = jsonld_term_resolve_1 (jsonp_arg, pref, &item, 0);
+  ns_uri = jsonld_term_resolve_1 (jsonp_arg, pref, &item, 0, use_ns);
   /* use @base & @vocab if not */
   if (ret_item)
     ret_item[0] = item;
@@ -211,7 +211,7 @@ jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_it
 caddr_t
 jsonld_term_resolve (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item)
 {
-  return jsonld_term_resolve_1 (jsonp_arg, term, ret_item, 1);
+  return jsonld_term_resolve_1 (jsonp_arg, term, ret_item, 1, 1);
 }
 
 void
@@ -278,15 +278,15 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
   if (0 == strncmp(subj, "_:", 2))
     subj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (subj));
   else
-    subj_iid = subj = jsonld_qname_resolve(jsonp_arg, subj,NULL);
+    subj_iid = subj = jsonld_qname_resolve (jsonp_arg, subj, NULL);
   if (is_bnode_obj)
     obj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (obj));
   if (is_ref)
     {
       if (!is_bnode_obj)
         {
-          obj = jsonld_qname_resolve(jsonp_arg, obj,NULL);
-          obj_iid = obj = jsonp_uri_resolve (jsonp_arg, obj); /* relative ref obj resloved here */
+          obj = jsonld_qname_resolve_1(jsonp_arg, obj, NULL, ((prop == uname_rdf_ns_uri_type)|(0 != itm->use_ns)));
+          obj_iid = obj = jsonp_uri_resolve (jsonp_arg, obj); /* relative ref obj resolved here */
         }
       if (DV_STRINGP(obj_iid) && !strlen(obj_iid))
         goto done;
@@ -379,6 +379,7 @@ jsonld_frame_push (jsonp_t *jsonp_arg)
       jsonp_arg->curr_value = NULL;
       jsonp_arg->curr_type = NULL;
       jsonp_arg->curr_lang = NULL;
+      jsonp_arg->curr_use_ns = 0;
     }
   jsonp_arg->last_node_no++;
   jsonp_arg->curr_node_no = jsonp_arg->last_node_no;
@@ -456,6 +457,8 @@ jsonld_context_uri_get (jsonp_t * jsonp_arg, caddr_t uri, id_hash_t *ht)
   END_QR_RESET;
   if (err) /* just free and forget */
     dk_free_tree (err);
+  if (NULL != jsonp_arg && NULL != jsonp_arg->curr_ctx && NULL != jctx.ns && 0 != strncmp (jctx.ns, "_:", 2))
+    jsonp_arg->curr_ctx->ns = jctx.ns;
   return;
 }
 
