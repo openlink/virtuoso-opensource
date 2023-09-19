@@ -76,10 +76,7 @@ extern VIRT_C_LINKAGE int jsonyylex (YYSTYPE *yylval, jsonp_t *jsonp_arg, yyscan
 #define TOKEN_OR_URL_STRING(tok) \
     do { \
         jsonp_t *jsonp_arg = jsonyyget_extra (yyscanner); \
-        if (jsonp_arg->jpmode & JSON_LD) \
-          yylval->box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
-        else \
-          yylval->box = t_box_dv_short_nchars (yytext+1, strlen (yytext)-2); \
+        yylval->box = spar_unescape_strliteral (NULL, yytext, 1, SPAR_STRLITERAL_JSON_STRING); \
         if (jsonp_arg->jpmode & JSON_LD) \
           return tok; \
         return STRING; \
