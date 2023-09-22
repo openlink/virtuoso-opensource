@@ -822,8 +822,9 @@ sparp_id_to_iri (sparp_t *sparp, iri_id_t iid)
   return NULL; /* to keep compiler happy */
 }
 
-caddr_t spar_unescape_strliteral (sparp_t *sparp, const char *strg, int count_of_quotes, int mode)
+caddr_t spar_unescape_strliteral (void *_sparp, const char *strg, int count_of_quotes, int mode)
 {
+  sparp_t *sparp = (sparp_t *)_sparp;
   caddr_t tmp_buf;
   caddr_t res;
   const char *err_msg;

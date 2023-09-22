@@ -17,7 +17,6 @@ struct sparp_s; /* forward */
 #define SPAR_STRLITERAL_SPARQL_STRING	0
 #define SPAR_STRLITERAL_JSON_STRING	1
 #define SPAR_STRLITERAL_SPARQL_QNAME	2
-extern caddr_t spar_unescape_strliteral (struct sparp_s *sparp, const char *strg, int count_of_quotes, int mode);
 #define BOX_TOKEN_L graphqlyylval.box = t_box_dv_short_nchars (graphqlyytext, strlen (graphqlyytext))
 %}
 
