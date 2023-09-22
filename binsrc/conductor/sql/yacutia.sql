@@ -5966,6 +5966,9 @@ make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
   if (san is null) san := make_cert_iri (key_name);
   if (ian is null) ian := make_cert_iri (key_name);
 
+  if (aref(info, 0) <> 'RSAPublicKey')
+    return 'SPARQL {}'; -- only RSA is supported in cert ontology(for now)
+
   cert_exponent    := info[1];
   cert_modulus     := bin2hex(info[2]);
   cert_fingerprint := replace (cert_fingerprint, ':', '');
