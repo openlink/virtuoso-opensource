@@ -639,6 +639,8 @@ create function DB.DBA."RDFData_DAV_RES_CONTENT" (in id any, inout content any, 
 	type := 'text/plain';
       else if (lpath like '%.json')
 	type := 'application/json';
+      else if (lpath like '%.jsonld')
+	type := 'application/ld+json';
       else
         type := 'text/turtle';
     }
