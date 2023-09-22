@@ -1073,8 +1073,8 @@ opt_table
 	;
 
 drop_table
-	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
-	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
+	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 0); }
+	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 1); }
 	;
 
 opt_col_add_column
