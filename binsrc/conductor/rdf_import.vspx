@@ -150,7 +150,7 @@
                     if (http_request_status_code_get() > 299) {
 	self.vc_is_valid := 0;
                       self.vc_error_message := concat ('You have attempted to upload invalid data.',
-                        ' You can only upload RDF, Turtle, N3, N-Quads and JSON-LD serializations of RDF Data to the RDF Data Store.');
+                        ' You can only upload RDF/XML, Turtle, N3, N-Quads, and JSON-LD serializations of RDF Data to the RDF Data Store through this interface.');
 	return;
                     };
                     http_status_set (200);
