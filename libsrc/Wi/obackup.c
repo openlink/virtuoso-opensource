@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,24 +38,6 @@
 #include "recovery.h"
 
 #include "security.h"
-
-
-#ifdef WIN32
-#include <windows.h>
-#define HAVE_DIRECT_H
-#endif
-
-#ifdef HAVE_DIRECT_H
-#include <direct.h>
-#include <io.h>
-#define mkdir(p,m)	_mkdir (p)
-#define FS_DIR_MODE	0
-#define PATH_MAX	 MAX_PATH
-#define get_cwd(p,l)	_get_cwd (p,l)
-#else
-#include <dirent.h>
-#define FS_DIR_MODE	 (S_IRWXU | S_IRWXG)
-#endif
 
 #undef DBG_BREAKPOINTS
 #undef INC_DEBUG
@@ -850,7 +832,7 @@ backup_context_allocate(const char* fileprefix,
     {
       ctx->octx_dbs = wi_inst.wi_master;
       if (!restored)
-	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + approx_msec_real_time ();
+	ctx->octx_timestamp = sqlbif_rnd (&rnd_seed_b) + (uint32) approx_msec_real_time ();
 
       ctx->octx_cpt_remap_r = hash_reverse (ctx->octx_dbs->dbs_cpt_remap);
       if (!ctx->octx_cpt_remap_r)
@@ -1126,6 +1108,11 @@ long ol_backup (const char* prefix, long pages, long timeout, caddr_t* backup_pa
   log_info ("Log = %s", wi_inst.wi_master->dbs_log_name);
 #endif
 
+  log_name = sf_make_new_log_name (wi_inst.wi_master);
+  IN_TXN;
+  dbs_checkpoint (log_name, CPT_INC_RESET);
+  cpt_over ();
+  LEAVE_TXN;
   OB_LEAVE_CPT_1 (need_mtx,qi);
   _pages = ctx->octx_page_count - _pages;
   backup_context_free(ctx);
@@ -1202,7 +1189,7 @@ caddr_t bif_backup_report (caddr_t* qst, caddr_t* err_ret, state_slot_t** args)
 
 
 static
-caddr_t* bif_backup_dirs_arg (caddr_t* qst, state_slot_t** args, int num, const char* func_name)
+caddr_t* bif_backup_dirs_arg (caddr_t* qst, state_slot_t** args, int num, const char* func_name, caddr_t ** ret_array)
 {
   caddr_t * ba = (caddr_t*) bif_arg (qst, args, num, func_name);
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (ba))
@@ -1215,6 +1202,11 @@ caddr_t* bif_backup_dirs_arg (caddr_t* qst, state_slot_t** args, int num, const 
 	}
       END_DO_BOX;
       return ba;
+    }
+  else if (ret_array != NULL && IS_STRING_DTP(DV_TYPE_OF(ba)))
+    {
+      (*ret_array)[0] = (caddr_t) ba;
+      return *ret_array;
     }
  err:
   sqlr_new_error ("42001", BACKUP_DIR_ARG_ERR_CODE, "The argument %d of %s must be array of strings", num+1, func_name);
@@ -1231,6 +1223,10 @@ bif_backup_online (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   long res = 0;
   caddr_t * backup_path_arr = backup_patha;
   ob_err_ctx_t e_ctx;
+  caddr_t buf_auto[BOX_AUTO_OVERHEAD + sizeof (caddr_t)];
+  caddr_t * backup_dirs;
+  BOX_AUTO_TYPED (caddr_t *, backup_dirs, buf_auto, sizeof (caddr_t), DV_ARRAY_OF_POINTER);
+
   memset (&e_ctx, 0, sizeof (ob_err_ctx_t));
   QI_CHECK_STACK (qi, &qi, OL_BACKUP_STACK_MARGIN);
   QR_RESET_CTX
@@ -1245,7 +1241,7 @@ bif_backup_online (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 /*      if (BOX_ELEMENTS (args) > 2)
 	timeout = (long) bif_long_arg (qst, args, 2, "backup_online"); */
       if (BOX_ELEMENTS (args) > 3)
-	backup_path_arr = bif_backup_dirs_arg (qst, args, 3, "backup_online");
+	backup_path_arr = bif_backup_dirs_arg (qst, args, 3, "backup_online", &backup_dirs);
 
       if (-1 == ob_foreach_dir (backup_path_arr, file_prefix, &e_ctx, ob_check_file))
 	sqlr_new_error ("42000", DIR_CLEARANCE_ERR_CODE, "directory %s contains backup file %s, backup aborted", backup_path_arr[e_ctx.oc_inx], e_ctx.oc_file);
@@ -1299,10 +1295,13 @@ bif_backup_dirs_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t * dirs = backup_patha;
   caddr_t prefix = bif_string_arg (qst, args, 0, "backup_dirs_clear");
   ob_err_ctx_t e_ctx;
+  caddr_t buf_auto[BOX_AUTO_OVERHEAD + sizeof (caddr_t)];
+  caddr_t * backup_dirs;
+  BOX_AUTO_TYPED (caddr_t *, backup_dirs, buf_auto, sizeof (caddr_t), DV_ARRAY_OF_POINTER);
   memset (&e_ctx, 0, sizeof (ob_err_ctx_t));
 
   if (BOX_ELEMENTS (args) > 1)
-    dirs = bif_backup_dirs_arg (qst, args, 1, "backup_dirs_clear");
+    dirs = bif_backup_dirs_arg (qst, args, 1, "backup_dirs_clear", &backup_dirs);
 
   ob_foreach_dir (dirs, prefix, &e_ctx, ob_unlink_file);
   return NEW_DB_NULL;

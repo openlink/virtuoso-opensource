@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -557,7 +557,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
   caddr_t score_box;
   float score;
   int save_qp = enable_qp;
-  float start_time, end_time;
+  time_msec_t start_time, end_time;
   local_cursor_t *lc_tim = NULL;
   query_t *qr = NULL;
   dbe_table_t *sys_cols_tb = sch_name_to_table (isp_schema (NULL), "DB.DBA.SYS_COLS");
@@ -574,7 +574,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
       stmt = COL_COUNT;
     }
   qr = sql_compile (stmt, cli, &err, SQLC_DEFAULT);
-  start_time = (float) get_msec_real_time ();
+  start_time = get_msec_real_time ();
   enable_qp = 1;
   for (inx = 0; inx < SQLO_NITERS; inx++)
     { /* repeat enough times as sys_cols is usually not very big */
@@ -589,7 +589,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
           break;
         }
     }
-  end_time = (float) get_msec_real_time ();
+  end_time = get_msec_real_time ();
   enable_qp = save_qp;
   qr_free (qr);
 
@@ -597,7 +597,7 @@ srv_calculate_sqlo_unit_msec (char* stmt)
   score = unbox_float (score_box);
   /*printf ("cu score = %f\n", score);*/
   dk_free_tree (score_box);
-  compiler_unit_msecs = (end_time - start_time) / (score * inx);
+  compiler_unit_msecs = (float)(end_time - start_time) / (score * inx);
   if (deflt_stmt && enable_vec_cost)
     compiler_unit_msecs /= 4.339062;
   sys_cols_tb->tb_count = old_tb_count;
@@ -658,7 +658,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   if (!stricmp ("client_protocol", mode))
     {
-      if (qi->qi_client->cli_ws && qi->qi_client->cli_ws->ws_proto)
+      if (qi->qi_client->cli_ws)
 	return box_dv_short_string (qi->qi_client->cli_ws->ws_proto);
       else
 	return box_dv_short_string ("SQL");
@@ -700,9 +700,13 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   else if (!stricmp ("client_ssl", mode))
     {
 #ifdef _SSL
-      SSL *ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws ?
-	  qi->qi_client->cli_ws->ws_session->dks_session :
-	     qi->qi_client->cli_session->dks_session);
+      SSL *ssl = NULL;
+      session_t * ses = (qi->qi_client->cli_ws ?
+	  qi->qi_client->cli_ws->ws_session->dks_session : (qi->qi_client->cli_session ?
+	  qi->qi_client->cli_session->dks_session : NULL));
+
+      if (ses)
+	ssl = (SSL *) tcpses_get_ssl (ses);
       if (ssl)
 	return box_num (1);
 #else
@@ -714,40 +718,7 @@ bif_client_attr (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
 #ifdef _SSL
       caddr_t ret = NULL;
-      char *ptr;
-      SSL *ssl = (SSL *) tcpses_get_ssl (qi->qi_client->cli_ws ?
-	  qi->qi_client->cli_ws->ws_session->dks_session :
-	     qi->qi_client->cli_session->dks_session);
-      X509 *cert = NULL;
-      BIO *in = NULL;
-
-      if (ssl)
-        cert = SSL_get_peer_certificate (ssl);
-      else
-	return NULL;
-
-      if (!cert)
-	return NULL;
-
-      in = BIO_new (BIO_s_mem());
-
-      if (!in)
-	{
-	  char err_buf[512];
-	  sqlr_new_error ("22005", "SR402", "Cannot allocate temp space. SSL error : %s",
-	      get_ssl_error_text (err_buf, sizeof (err_buf)));
-	  return NULL;
-	}
-
-      BIO_reset(in);
-
-      PEM_write_bio_X509 (in, cert);
-      ret = dk_alloc_box (BIO_get_mem_data (in, &ptr) + 1, DV_SHORT_STRING);
-      memcpy (ret, ptr, box_length (ret) - 1);
-      ret[box_length (ret) - 1] = 0;
-
-      BIO_free (in);
-
+      ret = get_client_pem_certificate (qst, err_ret);
       return ret;
 #else
       sqlr_new_error ("22005", "SR403", "'client_certificate' value of client_attr option is not supported by this build of the Virtuoso server");
@@ -1763,7 +1734,7 @@ sqlbif2_init (void)
   bif_define_ex ("query_instance_id", bif_query_instance_id, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("sql_warning", bif_sql_warning);
   bif_define ("sql_warnings_resignal", bif_sql_warnings_resignal);
-  bif_define_ex ("__sec_uid_to_user", bif_sec_uid_to_user, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("__sec_uid_to_user", bif_sec_uid_to_user, BMD_ALIAS, "uid_to_user", BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define ("current_proc_name", bif_current_proc_name);
   bif_define ("zorder_index", bif_zorder_index);
   bif_define ("rfc1808_parse_uri", bif_rfc1808_parse_uri);

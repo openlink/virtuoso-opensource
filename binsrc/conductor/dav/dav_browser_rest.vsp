@@ -3,7 +3,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -31,15 +31,14 @@
   vspx_user := connection_get ('vspx_user');
   if (isnull (vspx_user) or (vspx_user = 'nobody'))
   {
-    declare val_serviceId, val_uname varchar;
-    declare val_isRealUser integer;
+    declare  val_uname varchar;
 
-      val_uname := (select U.U_NAME
-                      from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
-                     where S.VS_REALM = realm
-                       and S.VS_SID   = sid
-                       and S.VS_UID   = U.U_NAME);
-      connection_set ('vspx_user', val_uname);
+    val_uname := (select U.U_NAME
+                    from DB.DBA.VSPX_SESSION S, DB.DBA.SYS_USERS U
+                   where S.VS_REALM = realm
+                     and S.VS_SID   = sid
+                     and S.VS_UID   = U.U_NAME);
+    connection_set ('vspx_user', val_uname);
   }
 
   action := get_keyword ('a', params, '');
@@ -74,19 +73,19 @@
     }
     else if (subAction = 'check')
     {
-    	;
+      ;
     }
     http_rewrite ();
     http_header ('Content-Type: text/plain\r\n');
-    http (WEBDAV.DBA.obj2json (returnData, 5));
+    http (DB.DBA.obj2json (returnData, 5));
   }
   else if (action = 'cartridges')
   {
-    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
+    http (DB.DBA.obj2json (WEBDAV.DBA.cartridges_get (), 5));
   }
   else if (action = 'metaCartridges')
   {
-    http (WEBDAV.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
+    http (DB.DBA.obj2json (WEBDAV.DBA.metaCartridges_get (), 5));
   }
   else if (action = 'mailVerify')
   {
@@ -166,7 +165,7 @@
   _exit_1:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'driveBuckets')
   {
@@ -183,7 +182,7 @@
   _exit_2:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'driveFolders')
   {
@@ -211,7 +210,7 @@
           _driveParams := vector_concat (_driveParams, vector ('refresh_token', _result[1]));
 
         if (not isnull (_result[2]))
-          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curdatetime(), _result[2])));
+          _driveParams := vector_concat (_driveParams, vector ('expires_in', datediff ('second', curutcdatetime (), _result[2])));
       }
     }
     else
@@ -230,7 +229,7 @@
   _exit_3:;
     http_rewrite ();
     http_header ('Access-Control-Allow-Origin: *\r\n');
-    http (WEBDAV.DBA.obj2json (_list, 5));
+    http (DB.DBA.obj2json (_list, 5));
   }
   else if (action = 'webdavVerify')
   {
@@ -279,11 +278,11 @@
     if      (subAction = 'validate')
     {
       command := get_keyword ('c', params);
-      if      ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp', params))))
+      if      ((command = 'tag') and (not VALIDATE.DBA.validate_tags (get_keyword ('tp', params))))
       {
         _error := 'The expression contains no valid tag(s)!';
       }
-      else if ((command = 'tag') and (not WEBDAV.DBA.validate_tags (get_keyword ('tp2', params))))
+      else if ((command = 'tag') and (not VALIDATE.DBA.validate_tags (get_keyword ('tp2', params))))
       {
         _error := 'The expression contains no valid tag(s)!';
       }
@@ -291,12 +290,14 @@
       {
         -- validate ACL rules
         {
+	  declare dav_aci any;
           declare exit handler for sqlstate '*'
           {
-            _error := WEBDAV.DBA.test_clear (__SQL_MESSAGE);
-          	goto _end_share;
+            _error := VALIDATE.DBA.clear (__SQL_MESSAGE);
+            goto _end_share;
           };
-          WEBDAV.DBA.aci_params (params);
+          dav_aci := WEBDAV.DBA.aci_params (params);
+          --DB.DBA.ACL_VALIDATE (dav_aci, 1);
         }
       _end_share:;
       }
@@ -320,27 +321,27 @@
       progressID := get_keyword ('id', params, uuid ());
       if      (subAction = 'init')
       {
-  	    registry_set ('progress_index_' || progressID, '0');
+        registry_set ('progress_index_' || progressID, '0');
 
-  	    http_rewrite ();
+        http_rewrite ();
         http_header ('Access-Control-Allow-Origin: *\r\n');
         http (DB.DBA.params2json (vector ('id', progressID, 'index', 0)));
-  	    http_flush ();
+        http_flush ();
 
         {
           declare exit handler for sqlstate '*'
           {
-          	goto _end;
+            goto _end;
           };
           command := get_keyword ('c', params);
           WEBDAV.DBA.progress_start (progressID, command, params);
         }
-  	  _end:;
+      _end:;
 
         delay (5);
-  	    registry_remove ('progress_index_'  || progressID);
-  	    registry_remove ('progress_action_' || progressID);
-  	    registry_remove ('progress_data_' || progressID);
+        registry_remove ('progress_index_'  || progressID);
+        registry_remove ('progress_action_' || progressID);
+        registry_remove ('progress_data_' || progressID);
       }
       else if (subAction = 'check')
       {
@@ -352,14 +353,14 @@
           if (isinteger (data))
             data := '[]';
 
-    	    http_rewrite ();
+          http_rewrite ();
           http_header ('Access-Control-Allow-Origin: *\r\n');
           http (DB.DBA.params2json (vector ('id', progressID, 'index', progressIndex, 'data', data)));
         }
       }
       else if (subAction = 'stop')
       {
-  	    registry_set ('progress_action_' || progressID, 'stop');
+        registry_set ('progress_action_' || progressID, 'stop');
       }
     }
   }
@@ -513,12 +514,14 @@
   }
   else if (action = 'imapFilter')
   {
+    declare owner varchar;
     declare predicateMetas, compareMetas, actionMetas, folders, headers, triplets any;
 
     MAIL.WA.dc_predicateMetas (predicateMetas);
     MAIL.WA.dc_compareMetas (compareMetas);
-    MAIL.WA.dc_actionMetas (actionMetas);
-    folders := MAIL.WA.folder_list (get_keyword ('owner', params));
+    MAIL.WA.dc_actionMetas (actionMetas, 1);
+    owner := get_keyword ('owner', params);
+    folders := MAIL.WA.external_account_folders (owner, DB.DBA.IMAP__mea_id (owner));
     headers := MAIL.WA.dc_headersList ();
     triplets := MAIL.WA.dc_tripletList ();
 

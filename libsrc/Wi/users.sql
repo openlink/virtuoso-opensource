@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -188,7 +188,7 @@ nf:
 
 create procedure DB.DBA.SECURITY_CL_EXEC_AND_LOG (in txt varchar, in args any)
 {
-  set_user_id ('dba');
+  if (user <> 'dba' ) set_user_id ('dba');
   cl_exec (txt, args);
   cl_exec ('log_text_array (?, ?)', vector (txt, args), 1);
 }

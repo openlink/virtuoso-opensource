@@ -267,7 +267,7 @@
         <xsl:apply-templates select="refsect1[not(@id) or @id != 'params' and @id != 'ret' and @id != 'errors' and @id != 'desc' and @id != 'examples' and @id != 'seealso']"/>
         <xsl:apply-templates select="refsect1[@id='examples']"/>
         <xsl:apply-templates select="refsect1[@id='seealso']"/>
-        <P CLASS="copyrightfooter">OpenLink Virtuoso eBusiness Integration Server (c) 2000, 2001 <A HREF="http://www.openlinksw.com">OpenLink Software</A></P>
+        <P CLASS="copyrightfooter">OpenLink Virtuoso eBusiness Integration Server (c) 2000-2020 <A HREF="http://www.openlinksw.com">OpenLink Software</A></P>
       </BODY>
     </HTML>
   </xsl:when>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -82,7 +82,7 @@ typedef struct rds_connection_s
     SQLHDBC		rc_hdbc;
     id_hash_t *		rc_stmts;
     int			rc_n_stmts_cached;
-    long		rc_last_used;
+    time_msec_t	rc_last_used;
     char		rc_to_disconnect; /* remote dead, formally disconnect
 					     at transact time */
     caddr_t		rc_dbms;

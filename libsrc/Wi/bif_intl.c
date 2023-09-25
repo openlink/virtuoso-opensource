@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1055,7 +1055,7 @@ intl_find_user_charset (const char *encname, int xml_input_is_wide)
   wcharset_t **charset;
   encoding_handler_t *eh = NULL;
 
-  if (!encname && !*encname)
+  if (!encname || !*encname)
     return eh;
 
   inx1 = 0;
@@ -1222,10 +1222,16 @@ wcharset_by_name_or_dflt (ccaddr_t cs_name, query_instance_t *qi)
 int
 lang_match_to_accept_language_range (const char *lang, const char *key, const char *key_end)
 {
+  char * ptr;
   if ('*' == key[0])
     return 1;
   if (!strncasecmp (lang, key, key_end-key) && (('\0' == lang[key_end-key]) || ('-' == lang[key_end-key])))
     return 1 + (key_end-key);
+  if (NULL != (ptr = (strchr (key, '-'))) && ptr < key_end)
+    {
+       if (!strncasecmp (lang, key, ptr-key))
+        return 1 + (key_end-key);
+    }
   return 0;
 }
 
@@ -1237,6 +1243,8 @@ get_q_of_lang_in_http_accept_language (const char *lang, const char *line)
   int best_match_weight = 0;
   double best_q = 0;
 #define TAIL_SKIP_WS do { while ((' ' == tail[0]) || ('\t' == tail[0])) tail++; } while (0)
+  if (NULL == lang)
+    return 0;
   TAIL_SKIP_WS;
   while ('\0' != tail[0])
     {
@@ -1285,9 +1293,12 @@ caddr_t
 bif_langmatches_pct_http (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   static const char * bifname = "langmatches_pct_http";
-  caddr_t lang = bif_string_arg (qst, args, 0, bifname);
+  caddr_t lang = bif_string_or_null_arg (qst, args, 0, bifname);
   caddr_t line = bif_string_arg (qst, args, 1, bifname);
-  double q = get_q_of_lang_in_http_accept_language (lang, line);
+  double q;
+  if (!lang)
+    return box_num (0);
+  q = get_q_of_lang_in_http_accept_language (lang, line);
   return box_num (q * 100);
 }
 

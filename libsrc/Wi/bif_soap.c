@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -299,7 +299,7 @@ static caddr_t
 ws_uddi_error (dk_session_t * ses, char *state, char *message, int soap_version)
 {
   char tmp[4096];
-  char * uddi_error = NULL, * uddi_code = uddi_errors[0];
+  const char * uddi_error = NULL, * uddi_code = uddi_errors[0];
   int ix = 0;
   caddr_t uddi_operator = NULL;
   strses_flush (ses);
@@ -493,7 +493,7 @@ ws_soap12_error (dk_session_t *ses, char *code, char *state, char *message, int 
   int len = code ? (int) strlen (code) : 0;
   int mcode = (len > 0 ? code[0] : '3') - '0';
   int scode = (len > 1 ? code[1] : '0') - '0';
-  char * code1 = soap12_errors[mcode], *code2 = soap12_sub_errors[scode];
+  const char * code1 = soap12_errors[mcode], *code2 = soap12_sub_errors[scode];
 
   if (http_resp_code)
     {
@@ -761,7 +761,7 @@ xml_find_child (caddr_t *entity, const char *szSearchName, const char *szURI, in
 caddr_t *
 xml_find_one_child (caddr_t *entity, char *szSearchName, char **szURIs, int nth, int *start_inx)
 {
-  char **urls = szURIs;
+  const char **urls = szURIs;
   caddr_t * rc = NULL;
   for (; urls[0]; urls++)
     {
@@ -942,6 +942,7 @@ dtp_to_soap_type (dtp_t dtp)
     {
       case DV_SHORT_INT:
       case DV_LONG_INT:
+      case DV_INT64:
 	  return "int";
 
 
@@ -2895,7 +2896,7 @@ soap12_custom_error (dk_session_t * ses, client_connection_t * cli, soap_ctx_t *
   int len = code ? (int) strlen (code) : 0;
   int mcode = (len > 0 ? code[0] : '3') - '0';
   int scode = (len > 1 ? code[1] : '0') - '0';
-  char * code1 = soap12_errors[0], *code2 = soap12_sub_errors[0];
+  const char * code1 = soap12_errors[0], *code2 = soap12_sub_errors[0];
 
   if (mcode >= 0 && mcode < (sizeof (soap12_errors) / sizeof (char*)))
     code1 = soap12_errors[mcode];
@@ -4333,7 +4334,7 @@ bif_soap_call (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 #ifdef _SSL
   SSL * ssl = NULL;
   SSL_CTX* ssl_ctx = NULL;
-  SSL_METHOD *ssl_meth = NULL;
+  const SSL_METHOD *ssl_meth = NULL;
 #endif
   soap_ctx_t ctx;
   query_instance_t *qi = (query_instance_t *) qst;
@@ -6214,11 +6215,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
   int inx, len;
   dk_session_t *out = strses_allocate ();
   caddr_t res;
-  int is_https = 0;
-#ifdef _SSL
-  SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
-  is_https = (NULL != ssl);
-#endif
+  int is_https = ws_is_https (ws);
 
   if (!(szHost = ws_mime_header_field (ws->ws_lines, "Host", NULL, 0)))
     {
@@ -6254,6 +6251,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
        SES_PRINT (out, "http:");
       SES_PRINT (out, "//");
       SES_PRINT (out, szHost);
+#if 0
       if (!strchr (szHost, ':'))
 	{
 	  struct sockaddr_in sa;
@@ -6269,6 +6267,7 @@ ws_soap_get_url (ws_connection_t *ws, int full_path)
 	        }
 	    }
 	}
+#endif
       if (szHost != szHostBuffer)
 	dk_free_box (szHost);
     }
@@ -10209,7 +10208,7 @@ soap_print_box_validating (caddr_t box, const char * tag, dk_session_t *ses,
    caddr_t type_name;
    caddr_t *e_ptr;
    caddr_t *schema_tree = NULL, new_box = NULL;
-   dtp_t proposed_type;
+   dtp_t proposed_type = '\0';
    char temp[1024];
    int is_in_schema;
    sql_class_t *check_udt = check_sqt ? check_sqt->sqt_class : NULL;
@@ -11369,6 +11368,7 @@ ws_soap_http (ws_connection_t * ws)
   query_t *qr = NULL;
   caddr_t err = NULL, *pars, text;
   dk_session_t *ses = ws->ws_strses;
+  ws_http_map_t *vd = ws->ws_map;
   wcharset_t *volatile charset = ws->ws_charset;
   int is_http = 0;
 
@@ -11412,7 +11412,7 @@ ws_soap_http (ws_connection_t * ws)
       qrs = get_granted_qrs (cli, NULL, NULL, 0);
       if (!(qr = proc_find_in_grants (szMethod, &qrs, NULL)))
 	{
-	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure: %.500s", (szFullProcName ? szFullProcName : "(null)"));
+	  err = srv_make_new_error ("37000", "SOH03", "There is no such procedure: %.500s", szFullProcName);
 	  goto end;
 	}
     }
@@ -11479,6 +11479,11 @@ ws_soap_http (ws_connection_t * ws)
 	dk_free_tree ((box_t) pars);
 	goto end;
       }
+      if (NULL != vd && vd->hm_exec_opts && WM_OPTIONS == ws->ws_method)
+        {
+	  dk_free_tree ((box_t) pars);
+	  goto end;
+        }
       err = qr_exec (cli, call_qry, CALLER_LOCAL, NULL, NULL,
 	  &lc, pars, NULL, 1);
     dk_free_box ((box_t) pars);

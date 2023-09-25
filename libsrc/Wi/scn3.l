@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -47,7 +47,7 @@
 #ifndef SCN3SPLIT
 #include "sqlwords.h"
 #else
-struct keyword { char *keiiyword; int token; };
+struct keyword { char *kwd; int token; };
 extern const struct keyword *lex_hash_kw (register const char *str, register unsigned int len);
 #endif
 #include "numeric.h"
@@ -59,6 +59,7 @@ struct yyguts_t;
 extern void *scn3yyalloc (yy_size_t ,yyscan_t yyscanner );
 extern void *scn3yyrealloc (void *,yy_size_t ,yyscan_t yyscanner );
 extern void scn3yyfree(void *ptr, yyscan_t scanner);
+extern void scn3yyerror(char *error);
 
 #ifdef SCN3SPLIT
 #define scn3splityyalloc(sz,scanner) scn3yyalloc(sz,scanner)
@@ -500,7 +501,7 @@ EXEC[ \t]+SQL		{ sqlp_bin_op_serial = 0; BEGIN SQL;  }
     {
       global_scs->scs_scn3c.last_keyword_yytext = yytext;
       global_scs->scs_scn3c.last_keyword_yyleng = yyleng;
-      yylval->strval = k->keiiyword;
+      yylval->strval = k->kwd;
       if (SPARQL_L == k->token)
         {
 #ifndef SCN3SPILT

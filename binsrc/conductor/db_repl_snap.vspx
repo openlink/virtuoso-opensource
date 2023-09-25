@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,19 +30,16 @@
       <vm:menuitem name="snap" value="Snapshot"/>
     </vm:menu>
     <vm:header caption="Incremental Snapshot Replication"/>
-    <vm:pagebody vdb_check="1">
-      <table cellpadding="0" cellspacing="0" border="0">
-        <tr>
-          <td class="page_tab" align="center">
-            <v:url name="b_url31" value="Remote to Local" url="db_repl_snap_pull.vspx"/>
-          </td>
-          <td class="page_tab_selected" align="center">Local to Remote</td>
-          <td class="page_tab" align="center">
-            <v:url name="b_url32" value="Local to Local" url="db_repl_snap_local.vspx"/>
-          </td>
-          <td class="page_tab_empty"></td>
-        </tr>
-      </table>
+    <vm:pagebody>
+      <div class="clear">
+        <div class="page_tab">
+          <v:url name="b_url31" value="Remote to Local" url="db_repl_snap_pull.vspx"/>
+        </div>
+        <div class="page_tab_selected">Local to Remote</div>
+        <div class="page_tab">
+          <v:url name="b_url32" value="Local to Local" url="db_repl_snap_local.vspx"/>
+        </div>
+      </div>
       <table class="tab_page">
         <tr>
           <td>
@@ -60,7 +57,7 @@
               </div>
 
               <div class="scroll_area">
-                <table class="listing" rules="groups">
+                <table class="listing">
                   <thead>
                     <tr class="listing_header_row">
                       <th class="checkbox">
@@ -114,7 +111,7 @@
                     }
                     if (_ex = 0)
                     {
-                      http ('<tr><td colspan="7" class="Attention">No snapshot replications</td></tr>');
+                      http ('<tfoot><tr><td colspan="7" class="listing_empty">No snapshot replications</td></tr></tfoot>');
                     }
                   ?>
                 </table>

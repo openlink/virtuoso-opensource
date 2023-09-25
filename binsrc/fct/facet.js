@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -355,11 +355,12 @@ function fct_add_loc_marker () {
     }
 }
 
+
+
 Geo_ui = function (form) {
     var self=this;
 
     this.form = $(form);
-    this.lc = new OAT.LocationCache (5, [], false);
     this.update = false;
 
 
@@ -368,6 +369,49 @@ Geo_ui = function (form) {
     }
 
     this.loc_marker = null;
+
+    this.getLocation = function () 
+    {
+        if (navigator.geolocation) 
+        {
+            navigator.geolocation.getCurrentPosition(self.showPosition, self.showError);
+        } else 
+        {
+            OAT.Dom.hide (self.loc_acq_thr_i);
+            alert ("Geolocation is not supported by this browser.");
+        }
+    }
+
+    this.showError = function (error) {
+        OAT.Dom.hide (self.loc_acq_thr_i);
+        switch(error.code) {
+            case error.PERMISSION_DENIED:
+                alert ("User denied the request for Geolocation.");
+                break;
+            case error.POSITION_UNAVAILABLE:
+                alert ("Location information is unavailable.");
+                break;
+            case error.TIMEOUT:
+                alert ("The request to get user location timed out.");
+                break;
+            case error.UNKNOWN_ERROR:
+                alert ("An unknown error occurred.");
+                break;
+        }
+    }
+
+    this.showPosition = function (position) 
+    {
+        OAT.Dom.hide (self.loc_acq_thr_i);
+        OAT.Dom.hide (self.loc_ctr);
+        self.lat_i.value = position.coords.latitude;
+        self.lon_i.value = position.coords.longitude;
+        self.acc_i.value = position.coords.accuracy;
+        OAT.Dom.hide (self.loc_ctr);
+        OAT.Dom.show (self.coord_ctr);
+        OAT.Dom.show (self.loc_use_b);
+    }
+
 
 
     this.loc_acq_h = function (s,m,l) {
@@ -401,7 +445,7 @@ Geo_ui = function (form) {
     this.acq_b_h = function (e) {
 	OAT.Event.prevent(e);
 	OAT.Dom.show (self.loc_acq_thr_i);
-	self.lc.acquireCurrent();
+        self.getLocation ();
     }
 
     this.loc_use_h = function (e) {
@@ -410,16 +454,16 @@ Geo_ui = function (form) {
 	    return;
         if ($('cond_dist').value == '')
             return;
-	if (self.loc_trig_sel.selectedIndex == 1) {
-	    self.lat_i.value='';
-	    self.lon_i.value='';
-	}
+//	if (self.loc_trig_sel.selectedIndex == 1) {
+//	    self.lat_i.value='';
+//	    self.lon_i.value='';
+//	}
         self.form.submit();
     }
 
     this.loc_update = function (cno) {
 	self.update = cno;
-	self.lc.acquireCurrent();
+        self.getLocation ();
     }
 
     this.loc_trig_sel_h = function (e) {
@@ -450,13 +494,6 @@ Geo_ui = function (form) {
 
 	self.loc_trig_sel = $('loc_trig_sel');
         OAT.Event.attach (self.loc_trig_sel, 'change', self.loc_trig_sel_h);
-
-        OAT.MSG.attach (self.lc, "LOCATION_ACQUIRED", self.loc_acq_h);
-        OAT.MSG.attach (self.lc, "LOCATION_ERROR", self.loc_err_h);
-        OAT.MSG.attach (self.lc, "LOCATION_TIMEOUT", self.loc_to_h);
-//        OAT.MSG.attach (self.lc, "GEOCODE_RESULT", self.loc_gc_h);
-//        OAT.MSG.attach (self.lc, "LOCATION_FAIL", self.gc_fail);
-//        OAT.MSG.attach (self.lc, "LOCATION_TIMEOUT", self.gc_to_h);
     }
 
     this.init();

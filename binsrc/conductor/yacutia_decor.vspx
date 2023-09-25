@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -24,9 +24,12 @@
   xmlns:v="http://www.openlinksw.com/vspx/"
   xmlns:xhtml="http://www.w3.org/1999/xhtml"
   xmlns="http://www.w3.org/1999/xhtml">
+  <?vsp
+    http_header (http_header_get () || 'X-Frame-Options: DENY\r\n');
+  ?>
   <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-    <link rel="stylesheet" href="yacutia_style.css" type="text/css" />
+    <link rel="stylesheet" href="css/yacutia_style.css" type="text/css" />
     <link type="text/css" rel="stylesheet" href="syntax/SyntaxHighlighter.css"></link>
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Screencast Demos" href="http://support.openlinksw.com/viewlets/virtuoso_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Virtuoso Tutorials" href="http://demo.openlinksw.com/tutorial/rss.vsp" />
@@ -35,6 +38,10 @@
     <link rel="alternate" type="application/rss+xml" title="ODBC for Mac OS X Screencast Demos" href="http://support.openlinksw.com/viewlets/mac_uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Data Access Drivers Screencast Demos" href="http://support.openlinksw.com/viewlets/uda_viewlets_rss.vsp" />
     <link rel="alternate" type="application/rss+xml" title="Benchmark & Troubleshooting Utilities Screencasts" href="http://support.openlinksw.com/viewlets/utilities_viewlets_rss.vsp" />
+    <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
+    <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />
+    <link rel="apple-touch-icon" href="/favicon/apple-touch-icon-180x180.png?v=1" />
+    <link rel="manifest" href="/favicon/manifest.webmanifest?v=1" />
     <title></title>
     <![CDATA[
       <script type="text/javascript" src="toolkit/loader.js"></script>
@@ -53,9 +60,8 @@
     </v:on-init>
     <v:placeholder />
     <?vsp
-      http('<script type="text/javascript" src="md5.js"></script>\n');
-      http('<script type="text/javascript" src="cond_common.js"></script>\n');
-      -- http('<script type="text/javascript" src="cond_help.js"></script>\n');
+      http('<script type="text/javascript" src="js/md5.js"></script>\n');
+      http('<script type="text/javascript" src="js/cond_common.js"></script>\n');
     ?>
   </body>
 </html>

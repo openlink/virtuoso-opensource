@@ -1,12 +1,10 @@
 <?xml version="1.0"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="vdb_link_page"
@@ -90,6 +87,7 @@
         ?>
         <v:include url="vdb_error_inc.vspx"/>
       </v:template>
+
       <v:template name="error_temp2" type="simple" condition="self.sql_stt = ''">
         <v:template name="mode_temp1" type="simple" condition="self.p_mode = '1'">
           <?vsp
@@ -115,7 +113,7 @@
                 <td>
                   <table class="MainSubData" border="0" cellspacing="0" cellpadding="3">
                     <tr>
-		      <td>Data Source<span class="attention_marker">*</span></td>
+                      <td>Data Source<span class="attention_marker">*</span></td>
                       <td>
                         <select name="ds_names">
                           <?vsp
@@ -128,11 +126,11 @@
                       </td>
                     </tr>
                     <tr>
-		      <td>Username<span class="attention_marker">*</span></td>
+                      <td>Username<span class="attention_marker">*</span></td>
                       <td><v:text name="user_name"/></td>
                     </tr>
                     <tr>
-		      <td>Password<span class="attention_marker">*</span></td>
+                      <td>Password<span class="attention_marker">*</span></td>
                       <td><v:text name="new_pass" type="password"/></td>
                     </tr>
                   </table>
@@ -175,31 +173,29 @@
                 <td colspan="3">
                   <v:button action="simple" name="list" value="List Resources">
                     <v:on-post>
-                      <v:script>
-                        <![CDATA[
-                          self.ds_name := get_keyword('ds_names', self.vc_page.vc_event.ve_params, '');
-                          self.ds_login := get_keyword('user_name', self.vc_page.vc_event.ve_params, '');
-                          self.ds_pwd := get_keyword('new_pass', self.vc_page.vc_event.ve_params, '');
-                          if (self.ds_name is null or self.ds_name = '')
-                            return;
-                          exec('vd_remote_data_source(?,?,?,?)', self.sql_stt, self.sql_msg, vector(self.ds_name, '', self.ds_login, self.ds_pwd));
-                          if ('' = self.sql_stt)
-                          {
-                            self.p_mode := '2';
-                            if( sys_stat('vdb_attach_autocommit') > 0)
-                              vd_autocommit (self.ds_name, 1);
-                            self.sh_t := case get_keyword('cb_show_tables', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
-                            self.sh_st:= case get_keyword('cb_show_stables', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
-                            self.sh_v := case get_keyword('cb_show_views', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
-                            self.sh_p := case get_keyword('cb_show_procs', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
-                          }
-                          else
-                          {
-                            http_request_status('HTTP/1.1 302 Found');
-                            http_header(sprintf('Location: %U\r\n', self.return_path));
-                          }
-                        ]]>
-                      </v:script>
+                      <![CDATA[
+                        self.ds_name := get_keyword('ds_names', self.vc_page.vc_event.ve_params, '');
+                        self.ds_login := get_keyword('user_name', self.vc_page.vc_event.ve_params, '');
+                        self.ds_pwd := get_keyword('new_pass', self.vc_page.vc_event.ve_params, '');
+                        if (self.ds_name is null or self.ds_name = '')
+                          return;
+                        exec('vd_remote_data_source(?,?,?,?)', self.sql_stt, self.sql_msg, vector(self.ds_name, '', self.ds_login, self.ds_pwd));
+                        if ('' = self.sql_stt)
+                        {
+                          self.p_mode := '2';
+                          if( sys_stat('vdb_attach_autocommit') > 0)
+                            vd_autocommit (self.ds_name, 1);
+                          self.sh_t := case get_keyword('cb_show_tables', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
+                          self.sh_st:= case get_keyword('cb_show_stables', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
+                          self.sh_v := case get_keyword('cb_show_views', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
+                          self.sh_p := case get_keyword('cb_show_procs', self.vc_page.vc_event.ve_params) when 'on' then 1 else 0 end;
+                        }
+                        else
+                        {
+                          http_request_status('HTTP/1.1 302 Found');
+                          http_header(sprintf('Location: %U\r\n', self.return_path));
+                        }
+                      ]]>
                     </v:on-post>
                   </v:button>
                 </td>
@@ -207,6 +203,7 @@
             </table>
           </v:form>
         </v:template>
+
         <v:template name="mode_temp2" type="simple" condition="self.p_mode = '2'">
           <?vsp
             self.return_path := sprintf('vdb_link.vspx?sid=%s&realm=%s',self.sid, self.realm);
@@ -324,96 +321,92 @@
                 <td colspan="2" align="center">
                   <v:button action="simple" name="cancel" value="Cancel">
                     <v:on-post>
-                      <v:script>
-                        <![CDATA[
-                          self.p_mode := '1';
-                        ]]>
-                      </v:script>
+                      <![CDATA[
+                        self.p_mode := '1';
+                      ]]>
                     </v:on-post>
                   </v:button>
                   <v:button action="simple" name="link" value="Link Selected">
                     <v:on-post>
-                      <v:script>
-                        <![CDATA[
-                          declare n, i integer;
-                          declare _data any;
-                          declare _param varchar;
-                          if (self.sh_t <> 0)
+                      <![CDATA[
+                        declare n, i integer;
+                        declare _data any;
+                        declare _param varchar;
+                        if (self.sh_t <> 0)
+                        {
+                          n := length(sql_tables (self.ds_name, NULL, NULL, NULL, 'TABLE'));
+                          i := 0;
+                          self.s_tables := vector();
+                          self.pks_t := vector();
+                          while (i < n)
                           {
-                            n := length(sql_tables (self.ds_name, NULL, NULL, NULL, 'TABLE'));
-                            i := 0;
-                            self.s_tables := vector();
-                            self.pks_t := vector();
-                            while (i < n)
+                            _param := get_keyword( sprintf('cbt_%d',i), self.vc_page.vc_event.ve_params,'');
+                            if (_param <> '')
                             {
-                              _param := get_keyword( sprintf('cbt_%d',i), self.vc_page.vc_event.ve_params,'');
-                              if (_param <> '')
-                              {
-                                _data := deserialize(decode_base64(_param));
-                                self.s_tables := vector_concat( self.s_tables, vector(_data) );
-                                self.pks_t := vector_concat(self.pks_t, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
-                              }
-                              i := i+1;
+                              _data := deserialize(decode_base64(_param));
+                              self.s_tables := vector_concat( self.s_tables, vector(_data) );
+                              self.pks_t := vector_concat(self.pks_t, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                             }
+                            i := i+1;
                           }
-                          if (self.sh_st <> 0)
+                        }
+                        if (self.sh_st <> 0)
+                        {
+                          n := length(sql_tables (self.ds_name, NULL, NULL, NULL, 'SYSTEM TABLE'));
+                          i := 0;
+                          self.s_stables := vector();
+                          self.pks_st := vector();
+                          while (i < n)
                           {
-                            n := length(sql_tables (self.ds_name, NULL, NULL, NULL, 'SYSTEM TABLE'));
-                            i := 0;
-                            self.s_stables := vector();
-                            self.pks_st := vector();
-                            while (i < n)
+                            _param := get_keyword( sprintf('cbs_%d',i), self.vc_page.vc_event.ve_params,'');
+                            if (_param <> '')
                             {
-                              _param := get_keyword( sprintf('cbs_%d',i), self.vc_page.vc_event.ve_params,'');
-                              if (_param <> '')
-                              {
-                                _data := deserialize(decode_base64(_param));
-                                self.s_stables := vector_concat( self.s_stables, vector(_data) );
-                                self.pks_st := vector_concat(self.pks_st, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
-                              }
-                              i := i+1;
+                              _data := deserialize(decode_base64(_param));
+                              self.s_stables := vector_concat( self.s_stables, vector(_data) );
+                              self.pks_st := vector_concat(self.pks_st, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                             }
+                            i := i+1;
                           }
-                          if (self.sh_v <> 0)
+                        }
+                        if (self.sh_v <> 0)
+                        {
+                          n := length(sql_tables(self.ds_name, NULL, NULL, NULL, 'VIEW'));
+                          i := 0;
+                          self.s_views := vector();;
+                          self.pks_v := vector();
+                          while (i < n)
                           {
-                            n := length(sql_tables(self.ds_name, NULL, NULL, NULL, 'VIEW'));
-                            i := 0;
-                            self.s_views := vector();;
-                            self.pks_v := vector();
-                            while (i < n)
-                            {
-                              _param := get_keyword(sprintf('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
-                              if( _param <> '' ) {
-                                _data := deserialize(decode_base64(_param));
-                                self.s_views := vector_concat(self.s_views, vector(_data));
-                                self.pks_v := vector_concat(self.pks_v, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
-                              }
-                              i := i+1;
+                            _param := get_keyword(sprintf('cbv_%d',i), self.vc_page.vc_event.ve_params,'');
+                            if( _param <> '' ) {
+                              _data := deserialize(decode_base64(_param));
+                              self.s_views := vector_concat(self.s_views, vector(_data));
+                              self.pks_v := vector_concat(self.pks_v, vector(adm_lt_getRPKeys2(self.ds_name, _data[0], _data[1], _data[2])));
                             }
+                            i := i+1;
                           }
-                          if (self.sh_p <> 0)
+                        }
+                        if (self.sh_p <> 0)
+                        {
+                          n := length(sql_procedures(self.ds_name, NULL, NULL, NULL));
+                          i := 0;
+                          self.s_procs := vector();
+                          while( i < n )
                           {
-                            n := length(sql_procedures(self.ds_name, NULL, NULL, NULL));
-                            i := 0;
-                            self.s_procs := vector();
-                            while( i < n )
+                            _param := get_keyword( sprintf('cbp_%d',i), self.vc_page.vc_event.ve_params,'');
+                            if (_param <> '')
                             {
-                              _param := get_keyword( sprintf('cbp_%d',i), self.vc_page.vc_event.ve_params,'');
-                              if (_param <> '')
-                              {
-                                _data := deserialize(decode_base64(_param));
-                                self.s_procs := vector_concat( self.s_procs, vector(_data) );
-                              }
-                              i := i+1;
+                              _data := deserialize(decode_base64(_param));
+                              self.s_procs := vector_concat( self.s_procs, vector(_data) );
                             }
+                            i := i+1;
                           }
-                          self.t_msgs := vector();
-                          self.s_msgs := vector();
-                          self.v_msgs := vector();
-                          self.p_msgs := vector();
-                          self.p_mode := '3';
-                        ]]>
-                      </v:script>
+                        }
+                        self.t_msgs := vector();
+                        self.s_msgs := vector();
+                        self.v_msgs := vector();
+                        self.p_msgs := vector();
+                        self.p_mode := '3';
+                      ]]>
                     </v:on-post>
                   </v:button>
                 </td>
@@ -421,6 +414,7 @@
             </table>
           </v:form>
         </v:template>
+
         <v:template name="mode_temp3" type="simple" condition="self.p_mode = '3'">
           <?vsp
             self.return_path := sprintf('vdb_link.vspx?sid=%s&realm=%s',self.sid, self.realm);
@@ -735,215 +729,246 @@
                     _deni := _deni + 1;
                   }
               ?>
-      <tr>
-        <td class="SubData">
-          <table class="MainSubData" BORDER="0" CELLPADDING="0" CELLSPACING="0">
-            <tr class="SubSubInfo">
-              <th>Remote Name</th>
-              <th>Catalog</th>
-              <th>Schema (Owner)</th>
-              <th>Local Name</th>
-              <th>Description</th>
-            </tr>
-            <tr class="SubAction">
-              <td><?vsp http(_den); ?><?V q ?>.<?V o ?>.<?V n ?></td>
-              <td><input type="text" name="<?V sprintf('Q_%d',i) ?>" value="<?V q1 ?>"/></td>
-              <td><input type="text" name="<?V sprintf('O_%d',i) ?>" value="<?V o1 ?>"/></td>
-              <td><input type="text" name="<?V sprintf('N_%d',i) ?>" value="<?V n1 ?>"/></td>
-              <td><input type="text" name="<?V sprintf('COMMENT_%d',i) ?>" value=""/></td>
-            </tr>
-            <tr>
-              <th class="SubSubInfo">PL Wrapper Requirements</th>
-              <td class="SubAction" colspan="4" align="left">
-                  <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="wrap" checked="true"/>SOAP Execution&nbsp;&nbsp;
-                  <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="rset"/>SQL Execution&nbsp;&nbsp;
-                  <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="attach"/>None
-              </td>
-            </tr>
-          </table>
-          <table class="MainSubData" BORDER="0" CELLPADDING="0" CELLSPACING="0">
-            <tr class="SubSubInfo"><th COLSPAN="4" align="center">Parameters</th></tr>
-            <tr class="SubSubInfo">
-              <th>Type</th>
-              <th>Name</th>
-              <th>Data Type</th>
-              <th>SOAP Type</th>
-            </tr>
-<?vsp
-          j := 0;
-          pars := '(';
-          declare cl integer;
-          cl := 0;
-          while (j < l) {
-            declare dt_type varchar;
-            if (not isarray(ncols[j]))
-               goto next_j;
-            dt_type := ncols[j][2];
-            if( dt_type = 'NVARCHAR'
-                and (driv like 'OPL%' or driv like 'SQL_%')
-                and upper (sys_stat ('st_build_opsys_id')) <> 'WIN32') {
-                dt_type := 'VARCHAR';
-            }
-            if (ncols[j][0] <> 'RETURNS') {
-               pars := concat (pars, ncols[j][0], ' ', ncols[j][1], ' ', dt_type, ', ');
-?>
-            <tr class="SubAction">
-              <td>
-<?vsp
-               if (ncols[j][0] = 'RESULTSET') {
-?>
-                  <?V ncols[j][0] ?>
-<?vsp
-               }
-               else {
-?>
-                <select name="<?V sprintf('parm_%d_%s_io',i, ncols[j][1]) ?>">
-                  <option name="IN" selected="<?V true_if('IN', ncols[j][0]) ?>">IN</option>
-                  <option name="OUT" selected="<?V true_if('OUT', ncols[j][0]) ?>">OUT</option>
-                  <option name="INOUT" selected="<?V true_if('INOUT', ncols[j][0]) ?>">INOUT</option>
-                </select>
-<?vsp
-               }
-?>
-              </td>
-              <td><?V ncols[j][1] ?></td>
-              <td><?vsp adm_make_option_list (type1, sprintf('parm_%d_%s_t', i, ncols[j][1]), dt_type, 0); ?></td>
-              <td><?vsp adm_make_option_list (type2, sprintf('parm_%d_%s_s', i, ncols[j][1]), '', 1); ?></td>
-            </tr>
-<?vsp
-            }
-            else {
-              pars := trim (pars, ', ');
-              pars := concat (pars, ') RETURNS ', dt_type);
-              cl := 1;
-?>
-            <tr class="SubAction">
-              <td><?V initcap(lcase(ncols[j][0]))?></td>
-              <td></td>
-              <td><?vsp adm_make_option_list (type1, sprintf('parm_%d_%s_t', i, ncols[j][1]), dt_type, 0); ?></td>
-              <td><?vsp adm_make_option_list (type2, sprintf('parm_%d_%s_s', i, ncols[j][1]), '', 1); ?></td>
-            </tr>
-<?vsp
-            }
-next_j:;
-            j:=j+1;
-          } -- end while ncols
-          if (not cl) {
-             pars := trim (pars, ', ');
-             pars := concat (pars, ')');
-          }
-?>
-          </table>
-        </td>
-      </tr>
-<?vsp
-          if( length(self.p_msgs) > i ) {
-?>
-      <tr class="AttentionData">
-        <td colspan="6">ERROR: <?V aref(self.p_msgs, i) ?></td>
-      </tr>
-<?vsp
-          }
-          i := i + 1;
-     }
-?>
-    </table>
-<?vsp
-     if (_deni) {
-?>
-      <!--tr><td--><span class="attention_marker">*</span> Denotes resource already linked.<br/>
-              You must select a primary key before VIEWS can be linked.<br/><!--/td></tr-->
-<?vsp
-     }
-?>
-     <!--tr><td align="center"-->
+              <tr>
+                <td class="SubData">
+                  <table class="MainSubData" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+                    <tr class="SubSubInfo">
+                      <th>Remote Name</th>
+                      <th>Catalog</th>
+                      <th>Schema (Owner)</th>
+                      <th>Local Name</th>
+                      <th>Description</th>
+                    </tr>
+                    <tr class="SubAction">
+                      <td><?vsp http(_den); ?><?V q ?>.<?V o ?>.<?V n ?></td>
+                      <td><input type="text" name="<?V sprintf('Q_%d',i) ?>" value="<?V q1 ?>"/></td>
+                      <td><input type="text" name="<?V sprintf('O_%d',i) ?>" value="<?V o1 ?>"/></td>
+                      <td><input type="text" name="<?V sprintf('N_%d',i) ?>" value="<?V n1 ?>"/></td>
+                      <td><input type="text" name="<?V sprintf('COMMENT_%d',i) ?>" value=""/></td>
+                    </tr>
+                    <tr>
+                      <th class="SubSubInfo">PL Wrapper Requirements</th>
+                      <td class="SubAction" colspan="4" align="left">
+                          <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="wrap" checked="true"/>SOAP Execution&nbsp;&nbsp;
+                          <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="rset"/>SQL Execution&nbsp;&nbsp;
+                          <input type="radio" name="<?V sprintf('wrap_%d',i) ?>" value="attach"/>None
+                      </td>
+                    </tr>
+                  </table>
+
+                  <table class="MainSubData" BORDER="0" CELLPADDING="0" CELLSPACING="0">
+                    <tr class="SubSubInfo"><th COLSPAN="4" align="center">Parameters</th></tr>
+                    <tr class="SubSubInfo">
+                      <th>Type</th>
+                      <th>Name</th>
+                      <th>Data Type</th>
+                      <th>SOAP Type</th>
+                    </tr>
+                    <?vsp
+                      j := 0;
+                      pars := '(';
+                      declare cl integer;
+                      cl := 0;
+                      while (j < l)
+                      {
+                        declare dt_type varchar;
+                        if (not isarray(ncols[j]))
+                           goto next_j;
+                        dt_type := ncols[j][2];
+                        if (dt_type = 'NVARCHAR'
+                            and (driv like 'OPL%' or driv like 'SQL_%')
+                            and upper (sys_stat ('st_build_opsys_id')) <> 'WIN32')
+                        {
+                          dt_type := 'VARCHAR';
+                        }
+                        if (ncols[j][0] <> 'RETURNS')
+                        {
+                          pars := concat (pars, ncols[j][0], ' ', ncols[j][1], ' ', dt_type, ', ');
+                      ?>
+                    <tr class="SubAction">
+                      <td>
+                      <?vsp
+                        if (ncols[j][0] = 'RESULTSET')
+                        {
+                      ?>
+                          <?V ncols[j][0] ?>
+                      <?vsp
+                        }
+                        else
+                        {
+                      ?>
+                        <select name="<?V sprintf('parm_%d_%s_io',i, ncols[j][1]) ?>">
+                          <option name="IN" selected="<?V true_if('IN', ncols[j][0]) ?>">IN</option>
+                          <option name="OUT" selected="<?V true_if('OUT', ncols[j][0]) ?>">OUT</option>
+                          <option name="INOUT" selected="<?V true_if('INOUT', ncols[j][0]) ?>">INOUT</option>
+                        </select>
+                      <?vsp
+                         }
+                      ?>
+                      </td>
+                      <td><?V ncols[j][1] ?></td>
+                      <td><?vsp adm_make_option_list (type1, sprintf('parm_%d_%s_t', i, ncols[j][1]), dt_type, 0); ?></td>
+                      <td><?vsp adm_make_option_list (type2, sprintf('parm_%d_%s_s', i, ncols[j][1]), '', 1); ?></td>
+                    </tr>
+                      <?vsp
+                        }
+                        else
+                        {
+                          pars := trim (pars, ', ');
+                          pars := concat (pars, ') RETURNS ', dt_type);
+                          cl := 1;
+                      ?>
+                    <tr class="SubAction">
+                      <td><?V initcap(lcase(ncols[j][0]))?></td>
+                      <td></td>
+                      <td><?vsp adm_make_option_list (type1, sprintf('parm_%d_%s_t', i, ncols[j][1]), dt_type, 0); ?></td>
+                      <td><?vsp adm_make_option_list (type2, sprintf('parm_%d_%s_s', i, ncols[j][1]), '', 1); ?></td>
+                    </tr>
+                      <?vsp
+                        }
+                      next_j:;
+                        j := j + 1;
+                      } -- end while ncols
+                      if (not cl)
+                      {
+                         pars := trim (pars, ', ');
+                         pars := concat (pars, ')');
+                      }
+                      ?>
+                  </table>
+                 </td>
+                </tr>
+                <?vsp
+                  if (length(self.p_msgs) > i )
+                  {
+                ?>
+                <tr class="AttentionData">
+                  <td colspan="6">ERROR: <?V aref(self.p_msgs, i) ?></td>
+                </tr>
+                <?vsp
+                  }
+                  i := i + 1;
+                }
+                ?>
+              </table>
+              <?vsp
+                if (_deni)
+                {
+              ?>
+              <!--tr><td--><span class="attention_marker">*</span> Denotes resource already linked.<br/>
+                You must select a primary key before VIEWS can be linked.<br/><!--/td></tr-->
+              <?vsp
+                }
+              ?>
+              <!--tr><td align="center"-->
               <v:button action="simple" name="cancel2" value="Cancel">
-                <v:on-post><v:script><![CDATA[
+                <v:on-post>
+                  <![CDATA[
                     self.p_mode := '1';
-                ]]></v:script></v:on-post>
+                  ]]>
+                </v:on-post>
               </v:button>
               <v:button action="simple" name="link2" value="Link">
-                <v:on-post><v:script><![CDATA[
-
+                <v:on-post>
+                  <![CDATA[
                     declare err_tables, err_messages, err_pks any;
 
-                    err_tables := vector(); err_messages := vector(); err_pks := vector();
+                    err_tables := vector();
+                    err_messages := vector();
+                    err_pks := vector();
                     vdb_link_tables( 't', self.vc_page.vc_event.ve_params, self.ds_name, self.s_tables, self.pks_t, err_tables, err_pks, err_messages );
-                    self.s_tables := err_tables; self.t_msgs := err_messages; self.pks_t := err_pks;
-                    err_tables := vector(); err_messages := vector(); err_pks := vector();
+                    self.s_tables := err_tables;
+                    self.t_msgs := err_messages;
+                    self.pks_t := err_pks;
+                    err_tables := vector();
+                    err_messages := vector();
+                    err_pks := vector();
                     return;
                     vdb_link_tables( 's', self.vc_page.vc_event.ve_params, self.ds_name, self.s_stables, self.pks_st, err_tables, err_pks, err_messages );
-                    self.s_stables := err_tables; self.s_msgs := err_messages; self.pks_st := err_pks;
-                    err_tables := vector(); err_messages := vector(); err_pks := vector();
+                    self.s_stables := err_tables;
+                    self.s_msgs := err_messages;
+                    self.pks_st := err_pks;
+                    err_tables := vector();
+                    err_messages := vector();
+                    err_pks := vector();
                     vdb_link_tables( 'v', self.vc_page.vc_event.ve_params, self.ds_name, self.s_views, self.pks_v, err_tables, err_pks, err_messages );
-                    self.s_views := err_tables; self.v_msgs := err_messages; self.pks_v := err_pks;
-                    err_tables := vector(); err_messages := vector(); err_pks := vector();
+                    self.s_views := err_tables;
+                    self.v_msgs := err_messages;
+                    self.pks_v := err_pks;
+                    err_tables := vector();
+                    err_messages := vector();
+                    err_pks := vector();
                     vdb_link_procedures( self.vc_page.vc_event.ve_params, self.ds_name, self.s_procs, err_tables, err_messages );
-                    self.s_procs := err_tables; self.p_msgs := err_messages;
+                    self.s_procs := err_tables;
+                    self.p_msgs := err_messages;
 
-                    if( length(self.s_tables) + length(self.s_stables) + length(self.s_views) + length(self.s_procs) = 0 )
+                    if (length(self.s_tables) + length(self.s_stables) + length(self.s_views) + length(self.s_procs) = 0)
                       self.p_mode := '1';
                     else
                       self.p_mode := '3'; -- stay on the same screen to show and fix errors
-                ]]></v:script></v:on-post>
-              </v:button>
-      <!--/td></tr-->
-    <!--/table-->
-      </v:form>
-  </v:template>
-  <v:template name="mode_temp4" type="simple" condition="self.p_mode = '4'">
-  <?vsp
-        self.return_path := sprintf('vdb_link.vspx?sid=%s&realm=%s',self.sid, self.realm);
-  ?>
-      <v:form name="pk_form" type="simple" method="POST" action="--self.return_path">
-        <?vsp
-          declare i, n integer;
-          declare num integer;
-          declare tables, all_pks, pks, fields, col_s any;
-          self.tbl_no := atof(get_keyword( 'idx', self.vc_page.vc_event.ve_params, '' ));
-          self.tbl_type := get_keyword( 'class', self.vc_page.vc_event.ve_params, '' );
-          tables := case self.tbl_type
-                       when 't' then self.s_tables
-                       when 's' then self.s_stables
-                       when 'v' then self.s_views
-                       else vector()
-                     end;
-          all_pks := case self.tbl_type
-                       when 't' then self.pks_t
-                       when 's' then self.pks_st
-                       when 'v' then self.pks_v
-                       else vector()
-                     end;
-          pks := all_pks[self.tbl_no];
-          fields := vector();
-          col_s := sql_columns (self.ds_name, tables[self.tbl_no][0], tables[self.tbl_no][1], tables[self.tbl_no][2], NULL);
-          n := length (col_s);
-          i := 0;
-          while (i < n) {
-            fields := vector_concat (fields, vector(col_s[i][3]));
-            i := i + 1;
-          }
-        ?>
-        <table class="MainSubData" border="0" cellspacing="0" cellpadding="3">
-          <tr>
-            <th>Available Fields for
-                <?V make_full_name( tables[self.tbl_no][0], tables[self.tbl_no][1], tables[self.tbl_no][2] ) ?>
-                <span class="attention_marker">*</span>
-            </th>
-          </tr>
-          <tr>
-            <td>
-              <select name="pk_fields" multiple="true">
+                  ]]>
+              </v:on-post>
+            </v:button>
+          </v:form>
+        </v:template>
+
+        <v:template name="mode_temp4" type="simple" condition="self.p_mode = '4'">
+          <?vsp
+            self.return_path := sprintf('vdb_link.vspx?sid=%s&realm=%s',self.sid, self.realm);
+          ?>
+          <v:form name="pk_form" type="simple" method="POST" action="--self.return_path">
+            <?vsp
+              declare i, n integer;
+              declare num integer;
+              declare tables, all_pks, pks, fields, col_s any;
+
+              self.tbl_no := atof(get_keyword( 'idx', self.vc_page.vc_event.ve_params, '' ));
+              self.tbl_type := get_keyword( 'class', self.vc_page.vc_event.ve_params, '' );
+              tables := case self.tbl_type
+                           when 't' then self.s_tables
+                           when 's' then self.s_stables
+                           when 'v' then self.s_views
+                           else vector()
+                         end;
+              all_pks := case self.tbl_type
+                           when 't' then self.pks_t
+                           when 's' then self.pks_st
+                           when 'v' then self.pks_v
+                           else vector()
+                         end;
+              pks := all_pks[self.tbl_no];
+              fields := vector();
+              col_s := sql_columns (self.ds_name, tables[self.tbl_no][0], tables[self.tbl_no][1], tables[self.tbl_no][2], NULL);
+              n := length (col_s);
+              i := 0;
+              while (i < n)
+              {
+                fields := vector_concat (fields, vector(col_s[i][3]));
+                i := i + 1;
+              }
+            ?>
+            <table class="MainSubData" border="0" cellspacing="0" cellpadding="3">
+              <tr>
+                <th>Available Fields for
+                  <?V make_full_name( tables[self.tbl_no][0], tables[self.tbl_no][1], tables[self.tbl_no][2] ) ?>
+                  <span class="attention_marker">*</span>
+                </th>
+              </tr>
+              <tr>
+                <td>
+                  <select name="pk_fields" multiple="true">
                   <?vsp
                     i := 0;
                     n := length (fields);
-                    while (i < n) {
+                    while (i < n)
+                    {
                       declare j, m integer;
                       declare selected varchar;
                       selected := '';
                       j := 0;
                       m := length(pks);
-                      while( j < m ) {
+                      while( j < m )
+                      {
                         if( fields[i] = pks[j] ) { selected := ' selected="true"'; goto next_; }
                         j := j + 1;
                       }
@@ -952,56 +977,56 @@ next_j:;
                       i := i + 1;
                     }
                   ?>
-              </select>
-            </td>
-          </tr>
-          <tr>
-            <td align="center">
-              <v:button action="simple" name="cancel3" value="Cancel">
-                <v:on-post>
-                  <v:script><![CDATA[
-                      self.p_mode := '3';
-                    ]]>
-                  </v:script>
-                </v:on-post>
-              </v:button>
-              <v:button action="simple" name="ok_pk" value="OK">
-                <v:on-post>
-                  <v:script><![CDATA[
-                    declare pos integer;
-                    declare all_pks, pks any;
-                    pks := vector();
-                    pos := position ('pk_fields', self.vc_page.vc_event.ve_params, 0, 2);
-                    while( pos > 0 ) {
-                      pks := vector_concat( pks, vector(aref(self.vc_page.vc_event.ve_params, pos)) );
-                      pos := pos + 2;
-                      pos := position ('pk_fields', self.vc_page.vc_event.ve_params, pos, 2);
-                    }
+                  </select>
+                </td>
+              </tr>
+              <tr>
+                <td align="center">
+                  <v:button action="simple" name="cancel3" value="Cancel">
+                    <v:on-post>
+                      <![CDATA[
+                        self.p_mode := '3';
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                  <v:button action="simple" name="ok_pk" value="OK">
+                    <v:on-post>
+                      <![CDATA[
+                        declare pos integer;
+                        declare all_pks, pks any;
 
-                    all_pks := case self.tbl_type
-                             when 't' then self.pks_t
-                             when 's' then self.pks_st
-                             when 'v' then self.pks_v
-                             else vector()
-                           end;
-                    aset( all_pks, self.tbl_no, pks );
-                    if( self.tbl_type = 't' )
-                      self.pks_t := all_pks;
-                    else if( self.tbl_type = 's' )
-                      self.pks_st := all_pks;
-                    else if( self.tbl_type = 'v' )
-                      self.pks_v := all_pks;
-                    self.p_mode := '3';
-                    ]]>
-                  </v:script>
-                </v:on-post>
-              </v:button>
-            </td>
-          </tr>
-        </table>
-      </v:form>
-  </v:template>
-</v:template>
+                        pks := vector();
+                        pos := position ('pk_fields', self.vc_page.vc_event.ve_params, 0, 2);
+                        while( pos > 0 )
+                        {
+                          pks := vector_concat( pks, vector(aref(self.vc_page.vc_event.ve_params, pos)) );
+                          pos := pos + 2;
+                          pos := position ('pk_fields', self.vc_page.vc_event.ve_params, pos, 2);
+                        }
+
+                        all_pks := case self.tbl_type
+                                 when 't' then self.pks_t
+                                 when 's' then self.pks_st
+                                 when 'v' then self.pks_v
+                                 else vector()
+                               end;
+                        aset( all_pks, self.tbl_no, pks );
+                        if( self.tbl_type = 't' )
+                          self.pks_t := all_pks;
+                        else if( self.tbl_type = 's' )
+                          self.pks_st := all_pks;
+                        else if( self.tbl_type = 'v' )
+                          self.pks_v := all_pks;
+                        self.p_mode := '3';
+                      ]]>
+                    </v:on-post>
+                  </v:button>
+                </td>
+              </tr>
+            </table>
+          </v:form>
+        </v:template>
+      </v:template>
     </vm:pagebody>
   </vm:pagewrapper>
 </v:page>

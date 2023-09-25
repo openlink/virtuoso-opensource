@@ -56,12 +56,12 @@
       <Optimization>Full</Optimization>
       <OmitFramePointers>false</OmitFramePointers>
       <AdditionalIncludeDirectories>..\libsrc\Dk;..\libsrc;..\libsrc\util;..\libsrc\util\win32;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
-      <PreprocessorDefinitions>_SSL;_LIBC;IN_LIBUTIL;_GNU_SOURCE;__WITH_LIBDK;BIF_TIDY;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_SSL;_LIBC;IN_LIBUTIL;__WITH_LIBDK;_GNU_SOURCE;BIF_TIDY;INPROCESS_CLIENT;_MBCS;WIN32;WINDOWS;_Windows;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <MinimalRebuild>false</MinimalRebuild>
       <ExceptionHandling>
       </ExceptionHandling>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
-      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <BufferSecurityCheck>false</BufferSecurityCheck>
       <FunctionLevelLinking>false</FunctionLevelLinking>
       <PrecompiledHeader>

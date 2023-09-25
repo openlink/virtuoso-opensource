@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -359,5 +359,38 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": B7386: log_enable(0) not nestable STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+create procedure base64test (in n int, in z int := 0)
+{
+  declare i int;
+  for (i := 0; i < n; i := i + 1)
+    {
+      declare bytes, e, r any;
+      if (z)
+        bytes := repeat ('\0', i);
+      else if (i > 0)
+        bytes := xenc_rand_bytes (i, 0);
+      else
+        bytes := '';
+      bytes := cast (bytes as varchar);
+      e := encode_base64 (bytes);
+      r := decode_base64 (e);
+      if (bytes <> r or length (bytes) <> length (r))
+        signal ('42000', sprintf ('FAILED: %s <> %s', bin2hex(bytes), bin2hex(r)));
+      e := encode_base64url (bytes);
+      r := decode_base64url (e);
+      if (bytes <> r or length (bytes) <> length (r))
+        signal ('42000', sprintf ('FAILED: %s <> %s', bin2hex(bytes), bin2hex(r)));
+    }
+  return 'PASSED';
+};
+
+select base64test(4000, 0);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": encode/decode b64/b64url STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+select base64test(4000, 1);
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": encode/decode b64/b64url with zeroes STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: VSP functions checkup (tvsp.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1816,14 +1816,14 @@ sqlp_bunion_flag (ST * l, ST * r, long f)
 }
 
 ST *
-sqlp_wpar_nonselect (ST *subq)
+sqlp_wrap_nonselect (ST *subq, int generate_names)
 {
   ST *tbl_ref, *from_clause, *tbl_exp, **selection, *wrapped_subq;
   char tname[100];
   if (ST_P (subq, SELECT_STMT))
     return subq;
   snprintf (tname, sizeof (tname), "_subq_%ld", (long)((ptrlong)(subq)));
-  tbl_ref = t_listst (3, DERIVED_TABLE, sqlp_view_def (NULL, subq, 0), t_box_string (tname));
+  tbl_ref = t_listst (3, DERIVED_TABLE, sqlp_view_def (NULL, subq, generate_names), t_box_string (tname));
   from_clause = t_listst (1, tbl_ref);
   tbl_exp = sqlp_infoschema_redirect (t_listst (9, TABLE_EXP, from_clause, NULL, NULL, NULL, NULL, (ptrlong) 0, NULL, NULL));
   selection = (ST **)t_list (1, t_listst (3, COL_DOTTED, (long) 0, STAR));

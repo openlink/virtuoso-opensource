@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -22,14 +22,25 @@
  *  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+
 #include "libutil.h"
+
+#ifdef _SSL
 #include "util/sslengine.h"
 #include <openssl/err.h>
+
+
+/*
+ *  Backward compatibility
+ */
+#ifndef OPENSSL_malloc_init
+#define OPENSSL_malloc_init    CRYPTO_malloc_init
+#endif
 
 int
 ssl_engine_startup (void)
 {
-  CRYPTO_malloc_init ();
+  OPENSSL_malloc_init ();
   ERR_load_crypto_strings();
   OpenSSL_add_all_algorithms();
 
@@ -86,3 +97,5 @@ ssl_load_x509 (const char *filename)
 
   return x509;
 }
+
+#endif /* _SSL */

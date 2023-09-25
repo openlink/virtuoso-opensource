@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -61,7 +61,7 @@ cc_new_instance_slot (comp_context_t * cc)
 {
   cc = cc->cc_super_cc;
   if (cc->cc_instance_fill > MAX_STATE_SLOTS)
-    GPF_T1 ("qi with state slots over the limit.");
+    SQL_GPF_T1 (cc, "Query too large, variables in state over the limit");
   return (cc->cc_instance_fill++);
 }
 

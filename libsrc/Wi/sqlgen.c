@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1630,7 +1630,8 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
 		}
 	      else
 		{
-		  hs->hs_ref_slots[nth]->ssl_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp; /* hash filler col must have this set */
+                  if (NULL == hs->hs_ref_slots[nth]->ssl_column) /* if there is a col col_dtp is set already and dc fill fn for it, do next otherwise */
+                    hs->hs_ref_slots[nth]->ssl_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp; /* hash filler col must have this set */
 		  if (!tb_dfe->_.table.ot->ot_is_outer)
 	    ssl_alias (ssl, hs->hs_ref_slots[nth]);
 	  else
@@ -2363,6 +2364,8 @@ dfe_qexp_list (df_elt_t * dfe, int op, dk_set_t * res)
   if (DFE_DT == dfe->dfe_type)
     {
       df_elt_t * first = dfe->_.sub.first->dfe_next;
+      if (!first)
+        return 0;
       if (DFE_QEXP == first->dfe_type)
 	dfe = first;
       else if (DFE_DT == first->dfe_type)
@@ -4514,6 +4517,9 @@ sqlg_simple_fun_ref (sqlo_t * so, data_source_t ** head, df_elt_t * tb_dfe, dk_s
 
   sql_comp_t * sc = so->so_sc;
   op_table_t * ot = tb_dfe->_.sub.ot;
+  dk_set_t temp_save = sc->sc_fun_ref_temps;
+  dk_set_t def_save = sc->sc_fun_ref_defaults;
+  dk_set_t def_ssls = sc->sc_fun_ref_default_ssls;
 
   sc->sc_fun_ref_temps = NULL;
   sc->sc_fun_ref_defaults = NULL;
@@ -4545,8 +4551,11 @@ sqlg_simple_fun_ref (sqlo_t * so, data_source_t ** head, df_elt_t * tb_dfe, dk_s
       }
     fref->src_gen.src_after_code = code_to_cv (sc, post_fref_code);
     fref->fnr_default_values = dk_set_nreverse (sc->sc_fun_ref_defaults);
+    sc->sc_fun_ref_defaults = def_save;
     fref->fnr_default_ssls = dk_set_nreverse (sc->sc_fun_ref_default_ssls);
+    sc->sc_fun_ref_default_ssls = def_ssls;
     fref->fnr_temp_slots = sc->sc_fun_ref_temps;
+    sc->sc_fun_ref_temps = temp_save;
     sqlg_place_fref (sc, head, fref, tb_dfe);
   }
 }
@@ -5389,15 +5398,6 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 	  inv_cond = en;
 	  sql_node_append (&head, (data_source_t*) en);
 	}
-      if (0 && IS_BOX_POINTER (dt_dfe->dfe_locus))
-	{
-	  data_source_t * rts = sqlg_locus_rts (so, dt_dfe, pre_code);
-	  t_set_push (&generated_loci, (void*) dt_dfe->dfe_locus);
-	  pre_code = NULL;
-	  sql_node_append (&head, rts);
-	  last_qn = rts;
-	  goto make_select;
-	}
       for (dfe = dt_dfe->_.sub.first; dfe; dfe = dfe->dfe_next)
 	{
 	  if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
@@ -5411,7 +5411,7 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		{
 		  data_source_t * rts;
 		  dfe_loc_ensure_out_cols (dfe);
-		  rts = sqlg_locus_rts (so, dfe, pre_code);
+                  rts = sqlg_locus_rts (so, dt_dfe, dfe, pre_code);
 		  t_set_push (&generated_loci, (void*) dfe->dfe_locus);
 		  pre_code = NULL;
 		  if (DFE_TABLE == dfe->dfe_type && HR_FILL == dfe->_.table.hash_role)
@@ -5438,11 +5438,11 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		if (dfe->dfe_tree)
 		  {
 		    caddr_t name = dfe->dfe_tree->_.call.name;
-		  if (DV_STRINGP (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
+		    if (DV_STRING_TYPE (name) && !stricmp (name, GROUPING_FUNC) && so->so_sc->sc_grouping)
 		      {
 		        ptrlong bitmap = 0;
 			dfe->dfe_tree->_.call.params[2] = (ST*) t_box_num (so->so_sc->sc_grouping->ssl_index);
-		      make_grouping_bitmap_set (NULL, dfe->dfe_tree->_.call.params[0], so->so_sc->sc_groupby_set, &bitmap);
+                        make_grouping_bitmap_set (NULL, dfe->dfe_tree->_.call.params[0], so->so_sc->sc_groupby_set, &bitmap);
 			dfe->dfe_tree->_.call.params[1] = (ST*) t_box_num (bitmap);
 		      }
 		  }
@@ -5526,14 +5526,16 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
 		    qn_ensure_prev (sc, &head, qn);
 		  sqlg_outer_with_iters (dfe, qn, &head);
 		}
-	      else if (DFE_DT== dfe->dfe_type && dfe->_.table.ot->ot_is_outer && dfe->_.sub.ot->ot_is_proc_view)
+	      else if (DFE_DT== dfe->dfe_type && dfe->_.table.ot->ot_is_outer 
+                  && (IS_QN (qn, hash_source_input) || dfe->_.sub.ot->ot_is_proc_view))
 		{
 		  sqlg_set_no_if_needed (sc, &head);
 		  qn_ensure_prev (sc, &head, qn);
 		  sqlg_outer_with_iters (dfe, qn, &head);
 		}
 	      else if (DFE_DT== dfe->dfe_type
-		  && dfe->_.sub.ot->ot_is_outer && (1 != cl_run_local_only || sqlg_is_vector) && IS_QN (qn, subq_node_input))
+		  && dfe->_.sub.ot->ot_is_outer
+		  && IS_QN (qn, subq_node_input))
 		{
 		  subq_source_t * sqs = (subq_source_t *)qn;
 		  outer_seq_end_node_t * ose;
@@ -5856,7 +5858,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		  dfe_unit_col_loci (pred);
 		}
 	      END_DO_SET();
-	      if (dfe->dfe_type == DFE_VALUE_SUBQ)
+             if (org_dfe && dfe->dfe_type == DFE_VALUE_SUBQ)
 		org_dfe->_.sub = dfe->_.sub; /* find the copy with layout in sqlo_df, not the bare original */
 	    }
 	  break;

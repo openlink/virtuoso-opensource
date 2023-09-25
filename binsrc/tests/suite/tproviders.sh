@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -29,6 +29,7 @@ CURRDIR=`pwd`
 JENADIR="$TOP/binsrc/jena"
 JENA2DIR="$TOP/binsrc/jena2"
 JENA3DIR="$TOP/binsrc/jena3"
+JENA4DIR="$TOP/binsrc/jena4"
 SESAME2DIR="$TOP/binsrc/sesame2"
 SESAME3DIR="$TOP/binsrc/sesame3"
 SESAME4DIR="$TOP/binsrc/sesame4"
@@ -105,6 +106,28 @@ fi
 cd $CURRDIR
 
 
+#
+#   Run Jena4 tests
+#
+cd $JENA4DIR
+
+RUN $MAKE
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Jena 4 compile"
+else
+    LOG "PASSED: Jena 4 compile"
+fi
+
+RUN $MAKE run-tests
+if test $STATUS -ne 0
+then
+    LOG "***FAILED: Jena 4 provider JUnit tests"
+else
+    LOG "PASSED: Jena 4 provider JUnit tests"
+fi
+
+cd $CURRDIR
 
 
 #

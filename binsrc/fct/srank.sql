@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -48,7 +48,6 @@ create procedure s_f (in i int)
 }
 ;
 
-grant execute on S_F to "SPARQL";
 
 create procedure rnk_scale (in i int)
 {
@@ -73,7 +72,6 @@ create procedure rnk_scale (in i int)
 }
 ;
 
-grant execute on rnk_scale to "SPARQL";
 
 create procedure DB.DBA.IR_SRV (in iri iri_id_8)
 {
@@ -91,7 +89,6 @@ create procedure DB.DBA.IR_SRV (in iri iri_id_8)
 }
 ;
 
-grant execute on DB.DBA.IR_SRV to "SPARQL";
 
 dpipe_define ('IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
 dpipe_define ('DB.DBA.IRI_RANK', 'DB.DBA.RDF_IRI_RANK', 'RDF_IRI_RANK', 'DB.DBA.IR_SRV', 128);
@@ -113,8 +110,6 @@ create procedure DB.DBA.IRI_RANK (in iri iri_id_8)
 }
 ;
 
-grant execute on IR_SRV to "SPARQL";
-grant execute on IRI_RANK to "SPARQL";
 
 create procedure rnk_store_w (inout first int, inout str varchar, inout fill int)
 {

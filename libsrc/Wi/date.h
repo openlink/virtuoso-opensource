@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -220,5 +220,17 @@ extern void dt_audit_fields (char *dt);
 #define memcmp_dt(dt1, dt2, neq)				\
   {if (*(int64*)(dt1) != *(int64*)(dt2)) goto neq;}
 #endif
+
+/* Durations are represented by arbitrary numeric (mostly DV_DOUBLE_FLOAT) for dayTimeDuration
+   yearMonthDuration and generic duration are represented as DV_ARRAY_OF_DOUBLE
+*/
+
+#define IS_GENERIC_DURATION(v) ((DV_ARRAY_OF_DOUBLE == DV_TYPE_OF (v)) && (2 * sizeof (double) == box_length (v)))
+#define GENERIC_DURATION_ALLOC() (dk_alloc_box (2 * sizeof (double), DV_ARRAY_OF_DOUBLE))
+#define GENERIC_DURATION_SET(v,ym,dt) do { double *__duration_set_tmp = ((double *)(v)); __duration_set_tmp[0] = (ym); __duration_set_tmp[1] = (dt); } while (0)
+#define GENERIC_DURATION_GET_YM(v) (((const double *)(v))[0])
+#define GENERIC_DURATION_GET_DT(v) (((const double *)(v))[1])
+
+
 
 #endif /* _DATE_H */

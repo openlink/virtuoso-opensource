@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,7 +40,6 @@ class VirtuosoInputStream extends BufferedInputStream
 {
    // The connection attached to this stream
    private VirtuosoConnection connection;
-   private byte[] tmp = new byte[16];
 
 
     public int read () throws IOException
@@ -92,11 +91,6 @@ class VirtuosoInputStream extends BufferedInputStream
    {
      super (input, size);
       this.connection = connection;
-/*
-      this.in = input;
-      // Setup the buffer
-      buffer = new byte[size];
-*/
    }
 
    /**
@@ -162,7 +156,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_NULL:
                    {
                      //System.out.println("DV_NULL");
-                     return new Short((short)0); //null; because off absence of TAG_BOX in O12
+                     return Short.valueOf((short)0); //null; because off absence of TAG_BOX in O12
                    }
              case VirtuosoTypes.DV_DB_NULL:
                    {
@@ -188,7 +182,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Long(readlongint());
+                       array[i] = Long.valueOf(readlongint());
                      res = new VectorOfLong(array);
                      //System.out.print("DV_ARRAY_OF_LONG");
 		     //System.out.println (res.toString());
@@ -201,7 +195,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Long(readlongint());
+                       array[i] = Long.valueOf(readlongint());
                      res = new VectorOfLong(array);
                      //System.out.print("DV_ARRAY_OF_LONG_PACKED: ");
 		     //System.out.println (res.toString());
@@ -213,7 +207,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Double(readdouble());
+                       array[i] = Double.valueOf(readdouble());
                      res = new VectorOfDouble(array);
                      //System.out.print("DV_ARRAY_OF_DOUBLE: ");
 		     //System.out.println (res.toString());
@@ -225,7 +219,7 @@ class VirtuosoInputStream extends BufferedInputStream
                      int n = readint();
                      Object[] array = new Object[(int)n];
                      for(int i = 0;i < n;i++)
-                       array[i] = new Float(readfloat());
+                       array[i] = Float.valueOf(readfloat());
                      res = new VectorOfFloat(array);
                      //System.out.print("DV_ARRAY_OF_FLOAT: ");
 		     //System.out.println (res.toString());
@@ -329,7 +323,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_SINGLE_FLOAT:
                    {
                      //System.out.println("DV_SINGLE_FLOAT");
-                     res = new Float(readfloat());
+                     res = Float.valueOf(readfloat());
                      //System.out.print("DV_SINGLE_FLOAT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -337,7 +331,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_DOUBLE_FLOAT:
                    {
                      //System.out.println("DV_DOUBLE_FLOAT");
-                     res = new Double(readdouble());
+                     res = Double.valueOf(readdouble());
                      //System.out.print("DV_DOUBLE_FLOAT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -348,7 +342,7 @@ class VirtuosoInputStream extends BufferedInputStream
 		     int ret = readshortint();
 		     if (ret > 127)
 		       ret = ret - 256;
-                     res = new Short((short)ret);
+                     res = Short.valueOf((short)ret);
                      //System.out.print("DV_SHORT_INT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -356,7 +350,7 @@ class VirtuosoInputStream extends BufferedInputStream
              case VirtuosoTypes.DV_LONG_INT:
                    {
                      //System.out.println("DV_LONG_INT");
-                     res = new Integer(readlongint());
+                     res = Integer.valueOf(readlongint());
                      //System.out.print("DV_LONG_INT: ");
 		     //System.out.println (res.toString());
                      return res;
@@ -439,13 +433,13 @@ class VirtuosoInputStream extends BufferedInputStream
                    }
              case VirtuosoTypes.DV_IRI_ID:
                    {
-                     res = new Integer(readlongint());
+                     res = Integer.valueOf(readlongint());
                      return res;
                    }
              case VirtuosoTypes.DV_IRI_ID_8:
              case VirtuosoTypes.DV_INT64:
                    {
-                     res = new Long(readlong());
+                     res = Long.valueOf(readlong());
                      return res;
                    }
 	     case VirtuosoTypes.DV_RDF:
@@ -503,10 +497,7 @@ class VirtuosoInputStream extends BufferedInputStream
                         c_arr[ch_count++]=(char)c;
                     } else {
                         c2 = (int) data[count-1];
-/***
-                        if ((c2 & 0xC0) != 0x80)
-                            throw new UTFDataFormatException("malformed input around byte " + count);
-***/
+
                         if ((c2 & 0xC0) != 0x80)
                           c_arr[ch_count++] = bad_char;
                         else
@@ -521,10 +512,7 @@ class VirtuosoInputStream extends BufferedInputStream
                     } else {
                         c2 = (int) data[count-2];
                         c3 = (int) data[count-1];
-/***
-                        if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
-                            throw new UTFDataFormatException("malformed input around byte " + (count-1));
-***/
+
                         if (((c2 & 0xC0) != 0x80) || ((c3 & 0xC0) != 0x80))
                           c_arr[ch_count++] = bad_char;
                         else
@@ -537,9 +525,6 @@ class VirtuosoInputStream extends BufferedInputStream
                     /* 10xx xxxx,  1111 xxxx */
                     count++;
                     c_arr[ch_count++] = bad_char;
-/**
-                    throw new UTFDataFormatException("malformed input around byte " + count);
-**/
             }
         }
         // The number of chars produced may be less than utflen
@@ -583,10 +568,9 @@ class VirtuosoInputStream extends BufferedInputStream
    private short readshort() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 2) ; i != 2 ; i+=read(tmp,i,2-i));
 
-      retVal = ((int) tmp[0] & 0xFF) << 8;
-      return (short)(retVal | ((int) tmp[1] & 0xFF));
+      retVal = ((int) read() & 0xFF) << 8;
+      return (short)(retVal | ((int) read() & 0xFF));
    }
 
    /**
@@ -598,27 +582,25 @@ class VirtuosoInputStream extends BufferedInputStream
    private int readlongint() throws IOException
    {
       int retVal;
-      for(int i = read(tmp,0, 4) ; i != 4 ; i+=read(tmp,i,4-i));
 
-      retVal  = ((int) tmp[0] & 0xFF) << 24;
-      retVal |= ((int) tmp[1] & 0xFF) << 16;
-      retVal |= ((int) tmp[2] & 0xFF) << 8;
-      return retVal | ((int) tmp[3] & 0xFF);
+      retVal  = ((int) read() & 0xFF) << 24;
+      retVal |= ((int) read() & 0xFF) << 16;
+      retVal |= ((int) read() & 0xFF) << 8;
+      return retVal | ((int) read() & 0xFF);
    }
 
    private long readlong() throws IOException
    {
       long retVal;
-      for(int i = read(tmp,0, 8) ; i != 8 ; i+=read(tmp,i,8-i));
 
-      retVal  = ((long) tmp[0] & 0xFF) << 56;
-      retVal |= ((long) tmp[1] & 0xFF) << 48;
-      retVal |= ((long) tmp[2] & 0xFF) << 40;
-      retVal |= ((long) tmp[3] & 0xFF) << 32;
-      retVal |= ((long) tmp[4] & 0xFF) << 24;
-      retVal |= ((long) tmp[5] & 0xFF) << 16;
-      retVal |= ((long) tmp[6] & 0xFF) << 8;
-      return retVal | ((long) tmp[7] & 0xFF);
+      retVal  = ((long) read() & 0xFF) << 56;
+      retVal |= ((long) read() & 0xFF) << 48;
+      retVal |= ((long) read() & 0xFF) << 40;
+      retVal |= ((long) read() & 0xFF) << 32;
+      retVal |= ((long) read() & 0xFF) << 24;
+      retVal |= ((long) read() & 0xFF) << 16;
+      retVal |= ((long) read() & 0xFF) << 8;
+      return retVal | ((long) read() & 0xFF);
    }
 
    /**
@@ -751,16 +733,6 @@ class VirtuosoInputStream extends BufferedInputStream
         if (0 != (flags & VirtuosoRdfBox.RBS_COMPLETE)){
             is_complete = true;
             box = read_object ();
-            if (type == VirtuosoRdfBox.RDF_BOX_GEO_TYPE) {
-                if (box instanceof String && ((String)box).length()>5  && ((String)box).substring(0,5).equalsIgnoreCase("point")) {
-                    String data = ((String)box).substring(6);
-                    try {
-                        box = new VirtuosoPoint(data.substring(0, data.length()-1));
-                    } catch (Exception e){
-                        throw new VirtuosoException(e, VirtuosoException.IOERROR);
-                    }
-                }
-            }
         }
 
       } else {

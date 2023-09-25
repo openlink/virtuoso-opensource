@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -206,7 +206,7 @@ void itc_read_ahead_blob (it_cursor_t * itc, struct ra_req_s *ra, int flags);
 
 void itc_read_ahead (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 struct ra_req_s * itc_read_aside (it_cursor_t * itc, buffer_desc_t * buf, dp_addr_t dp);
-int em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, uint32 now, int window, int threshold);
+int em_trigger_ra (extent_map_t * em, dp_addr_t ext_dp, time_msec_t now, int window, int threshold);
 int em_ext_ra_pages (extent_map_t * em, it_cursor_t * itc, dp_addr_t ext_dp, dp_addr_t * leaves, int max, dp_addr_t except_dp, dk_hash_t * except);
 
 void dbs_timeout_read_history (dbe_storage_t * dbs);
@@ -248,6 +248,10 @@ buffer_desc_t * page_fault (it_cursor_t * it, dp_addr_t dp);
 buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_inside);
 #define PF_STAY_ATOMIC 1
 
+#ifndef NDEBUG
+void bing(void);
+#endif
+
 #if defined (MTX_DEBUG) && !defined (PAGE_DEBUG)
 #define PAGE_DEBUG
 #endif
@@ -255,7 +259,7 @@ buffer_desc_t * page_fault_map_sem (it_cursor_t * it, dp_addr_t dp, int stay_ins
 #ifdef PAGE_DEBUG
 
 void buf_prot_read (buffer_desc_t * buf);
-void buf_prot_WRITE (buffer_desc_t * buf);
+void buf_prot_write (buffer_desc_t * buf);
 
 #define BUF_PW(buf) buf_prot_write (buf)
 #define BUF_PR(buf) buf_prot_read (buf)
@@ -563,12 +567,21 @@ void it_not_in_any (du_thread_t * self, index_tree_t * except);
 extern buffer_desc_t * buffer_allocate (int type);
 extern void buffer_free (buffer_desc_t * buf);
 extern void buffer_set_free (buffer_desc_t* ps);
-#ifdef MTX_DEBUG
-int buf_set_dirty (buffer_desc_t * buf);
-int buf_set_dirty_inside (buffer_desc_t * buf);
+
+#if defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
+#define BUF_SET_IS_DIRTY(b,f) do { ((b)->bd_is_dirty = (f)); (b)->bd_set_dirty_file = __FILE__; (b)->bd_set_dirty_line = __LINE__; } while(0)
 #else
-#define buf_set_dirty(b)  ((b)->bd_is_dirty = 1)
-#define buf_set_dirty_inside(b)  ((b)->bd_is_dirty = 1)
+#define BUF_SET_IS_DIRTY(b,f) ((b)->bd_is_dirty = (f))
+#endif
+
+#if defined(MTX_DEBUG) | defined(BUF_FLAGS_DEBUG) | defined(PAGE_DEBUG)
+int buf_set_dirty_1 (char *file, int line, buffer_desc_t * buf);
+int buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf);
+#define buf_set_dirty(b) buf_set_dirty_1(__FILE__, __LINE__, b)
+#define buf_set_dirty_inside(b) buf_set_dirty_inside_1(__FILE__, __LINE__, b)
+#else
+#define buf_set_dirty(b)  BUF_SET_IS_DIRTY(b,1)
+#define buf_set_dirty_inside(b)  BUF_SET_IS_DIRTY(b,1)
 #endif
 
 #define cl_enlist_ck(it, buf)
@@ -823,11 +836,13 @@ extern int enable_gzip;
 extern int isdts_mode;
 extern FILE *http_log;
 extern char * http_soap_client_id_string;
-extern char * http_client_id_string;
+extern const char * http_client_id_string;
 extern char * http_server_id_string;
+extern uint32 http_default_client_req_timeout;
 extern long http_ses_trap;
 extern unsigned long cfg_scheduler_period ;
 extern long callstack_on_exception;
+extern long public_debug;
 extern long pl_debug_all;
 extern char * pl_debug_cov_file;
 extern long vt_batch_size_limit;
@@ -851,7 +866,7 @@ extern char *denied_dirs;
 extern char *backup_dirs;
 extern char *safe_execs;
 extern char *dba_execs;
-extern char *www_root;
+extern const char *www_root;
 extern char *temp_dir;
 
 /* Externals from virtuoso */
@@ -1280,8 +1295,8 @@ extern int is_crash_dump;
 extern int32 cpt_remap_recovery;
 
 extern void (*db_exit_hook) (void);
-extern long last_flush_time;
-extern long last_exec_time;	/* used to know when the system is idle */
+extern time_msec_t last_flush_time;
+extern time_msec_t last_exec_time;	/* used to know when the system is idle */
 
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */
 extern int32 c_checkpoint_interval;
@@ -1300,7 +1315,7 @@ extern int main_thread_ready;
 extern void resources_reaper (void);
 extern int auto_cpt_scheduled;
 
-extern long write_cum_time;
+extern int64 write_cum_time;
 extern int is_read_pending;
 extern int32 bp_n_bps;
 
@@ -1327,7 +1342,7 @@ extern long cfg_disable_vdb_stat_refresh;
 #define VD_ARRAY_PARAMS_ALL  2
 
 extern long vd_opt_arrayparams;
-extern unsigned long checkpointed_last_time;
+extern time_msec_t checkpointed_last_time;
 extern long vsp_in_dav_enabled;
 
 extern int disk_no_mt_write;

@@ -9168,6 +9168,11 @@ CREATE PROCEDURE DB.DBA.PROJ4_INIT_DATA_87()
 
 CREATE PROCEDURE DB.DBA.PROJ4_INIT_DATA()
 {
+  if (exists (select 1 from DB.DBA.SYS_PROJ4_SRIDS))
+    return;
+
+  log_message ('Initializing DB.DBA.SYS_PROJ4_SRIDS using built-in data');
+
   DB.DBA.PROJ4_INIT_DATA_1();
   DB.DBA.PROJ4_INIT_DATA_2();
   DB.DBA.PROJ4_INIT_DATA_3();

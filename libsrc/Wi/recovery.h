@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ typedef struct ol_backup_context_s
   char *	octx_error_string;
 
   /* deadline time (in msecs) */
-  long		octx_deadline;
+  time_msec_t	octx_deadline;
 
   /* copy of wi_inst.wi_master->dbs_incbackup_set to rollback all changes over this set if error occurs (e.g. timeout). */
   buffer_desc_t *	octx_incset;
@@ -131,6 +131,7 @@ void wi_open_dbs ();
 extern const char* recover_file_prefix; /* from obackup.c */
 void ddl_obackup_init (void);
 char* bp_curr_timestamp();
+char* bp_curr_prefix();
 char* bp_curr_date();
 
 extern caddr_t * backup_patha;

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,7 +73,6 @@ lin_int_t li_dc_sort_cost = {3, sm_x, sm_y};
 float hm_x[] = {1, 10000, 1000000, 5000000, 30000000, 100000000, 200000000};
 float hm_y[] = { 0.042, 0.045, 0.09, 0.15, 0.24, 0.34, 0.4};
 lin_int_t li_hash_mem_cost = {sizeof (hm_x) /sizeof  (float), hm_x, hm_y};
-
 
 
 float
@@ -1438,7 +1437,7 @@ sqlo_p_stat_query (dbe_table_t * tb, caddr_t p)
   client_connection_t * cli = sqlc_client ();
   lock_trx_t * lt = cli->cli_trx;
   user_t * usr = cli->cli_user;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   int rpc_timeout = cli->cli_rpc_timeout;
   local_cursor_t * lc = NULL;
   caddr_t err = NULL;
@@ -1642,7 +1641,7 @@ sqlo_eval_text_count (dbe_table_t * tb, caddr_t str, caddr_t ext_fti)
   client_connection_t * cli = sqlc_client ();
   lock_trx_t * lt = cli->cli_trx;
   user_t * usr = cli->cli_user;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   int rpc_timeout = cli->cli_rpc_timeout;
   query_t * proc;
   static query_t * call, *call2;
@@ -1849,8 +1848,9 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
 void
 sqlo_timeout_text_count ()
 {
-  int now = approx_msec_real_time (), inx;
-  static int last_time;
+  time_msec_t now = approx_msec_real_time ();
+  int inx;
+  static time_msec_t last_time;
   if (last_time && now - last_time < 60000)
     return;
   last_time = now;
@@ -4207,7 +4207,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
       ic->ic_leading_constants = dfe->_.table.is_arity_sure = inx_const_fill * 2 + (0 != p_stat);
     no_sample: ;
     }
-#ifndef NDEBUG
+#if 0
   if (-INFINITY == inx_arity) bing ();
 #endif
   if (enable_vec_cost)
@@ -4324,7 +4324,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
   /* the right of left outer has never cardinality < 1.  But the join tests etc are costed at cardinality that can be < 1. So adjust this as last.*/
   dfe->dfe_arity = *a1 = total_arity;
   dfe->dfe_unit = *u1 = total_cost;
-#ifndef NDEBUG
+#if 0
   if (!isfinite (dfe->dfe_unit) || !isfinite (dfe->dfe_arity)) bing ();
 #endif
   if (IC_AS_IS != ic->ic_op && ic->ic_ric && empty_ric != ic->ic_ric)
@@ -4743,7 +4743,7 @@ dfe_unit_cost (df_elt_t * dfe, float input_arity, float * u1, float * a1, float 
       *a1 = 1;
       break;
     }
-#ifndef NDEBUG
+#if 0
   if (!isfinite (*a1) || !isfinite (*u1)) bing ();
 #endif
   dfe->dfe_unit = *u1;
@@ -4762,7 +4762,7 @@ dfe_list_cost (df_elt_t * dfe, float * unit_ret, float * arity_ret, float * over
       DO_BOX (df_elt_t *, elt, inx, dfe_arr)
 	{
 	  dfe_unit_cost (elt, 1, &u1, &a1, overhead_ret);
-#ifndef NDEBUG
+#if 0
 	  if (!isfinite (a1 * arity) || !isfinite (u1 + cum)) bing ();
 #endif
 	  if ((DFE_TABLE == elt->dfe_type || DFE_DT == elt->dfe_type)

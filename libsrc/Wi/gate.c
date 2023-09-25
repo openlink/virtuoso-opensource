@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -840,7 +840,7 @@ itc_fix_back_link (it_cursor_t * itc, buffer_desc_t ** buf, dp_addr_t dp_from,
 	      GPF_T1 ("fatal consistency check failure");
 	    }
 	  LONG_SET ((*buf)->bd_buffer + DP_PARENT, dp_from);
-	  (*buf)->bd_is_dirty = 1;
+          BUF_SET_IS_DIRTY(*buf,1);
 	  log_info ("Bad parent link corrected");
 	}
       page_leave_outside_map (parent);
@@ -1305,7 +1305,7 @@ it_root_image_invalidate (index_tree_t * tree)
   tree->it_root_image_version = 0;
   if ((old_image = tree->it_root_image))
     {
-      old_image->bd_timestamp = approx_msec_real_time ();
+      old_image->bd_timestamp = (uint32) approx_msec_real_time ();
       tree->it_root_image = NULL;
       mutex_enter (old_roots_mtx);
       old_image->bd_next = old_root_images;
@@ -1381,8 +1381,7 @@ DBGP_NAME (itc_reset) (DBGP_PARAMS it_cursor_t * it)
       dp = tree->it_root;
       buf = tree->it_root_buf;
       /* if we are in the confirmed map of dp in tree and buf has this dp and this tree, then it is safe since this can only change in another thread holding this same map */
-      if (buf && buf->bd_page == dp && buf->bd_tree == tree
-	  &&BUF_NONE_WAITING (buf))
+      if (buf && buf->bd_page == dp && buf->bd_tree == tree && BUF_NONE_WAITING (buf))
 	{
 	  if (PA_WRITE != it->itc_dive_mode)
 	    {
@@ -1509,7 +1508,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
 		      buf->bd_page,
 		      LONG_REF (buf->bd_buffer + DP_PARENT), new_parent));
       LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
-      buf->bd_is_dirty = 1;
+      BUF_SET_IS_DIRTY(buf,1);
 
       itc_page_leave (itc, buf);
       itc->itc_page = prev_dp;
@@ -1548,7 +1547,7 @@ itc_set_parent_link (it_cursor_t * itc, dp_addr_t child_dp, dp_addr_t new_parent
   LONG_SET (buf->bd_buffer + DP_PARENT, new_parent);
 #endif
   BUF_TOUCH (buf);
-  buf->bd_is_dirty = 1;
+  BUF_SET_IS_DIRTY(buf,1);
 
   ITC_LEAVE_MAPS (itc);
   itc->itc_page = prev_dp;

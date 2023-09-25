@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -65,15 +65,19 @@ extern SDWORD sql_timelen_array [];
 #endif
 
 long RandomNumber (long x, long y);
-void MakeAddress  (char *str1, char *str2, char *city,
-		   char *state,
-		   char *zip);
+void MakeAddress (char *str1, char *str2, char *city, char *state, char *zip);
 int MakeAlphaString (int sz1, int sz2, char * str);
 long random_i_id (void);
 long random_c_id (void);
+int other_w_id ();
 void Lastname (int num, char *name);
 
 
 void run_test (int argc, char ** argv);
 void run_timed_test (int argc, char **argv);
-
+void check_reconnect ();
+int new_order ();
+void payment ();
+void ostat ();
+void slevel ();
+void delivery_1 (long, long);

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -38,9 +38,7 @@
       }
     ]]>
   </script>
-  <table class="tab_page" style="border: 0px;">
-                    <tr>
-		      <td valign="top">
+  <v:form type="simple" name="ldsf1" method="POST" >
                         <b>
                           <v:label name="mm" value="--''" render-only="0">
 			  <v:before-render>
@@ -48,8 +46,7 @@
 			  </v:before-render>
                           </v:label>
                         </b>
-      <v:form type="simple" name="ldsf1" method="POST" >
-	<table class="ctl_grp">
+    <table class="ctl_form">
 	  <tr>
               <th>Host name</th>
               <td>
@@ -76,7 +73,7 @@
 	  </tr>
 	  <tr>
               <td></td>
-              <th><label><v:check-box name="ssl" xhtml_id="ssl" value="1" xhtml_onchange="sslTypeChange();" /> Try TLS</label></th>
+        <th style="text-align: left;"><label><v:check-box name="ssl" xhtml_id="ssl" value="1" xhtml_onchange="sslTypeChange();" /> Try TLS</label></th>
 	    </tr>
 	  <tr>
               <th>Base</th>
@@ -212,29 +209,33 @@
 	    </tr>
 	  </table>
 	</v:form>
+
+  <br />
 	<table class="listing">
+    <thead>
 	  <tr class="listing_header_row">
-	    <th>
-	      Address
-	    </th>
-	    <th>
-	      Base
-	    </th>
-	    <th>
-	      LDAP version
-	    </th>
-                            <th class="action">
-	      Action
-	    </th>
+        <th>Address</th>
+        <th>Base</th>
+        <th>LDAP version</th>
+        <th class="action">Action</th>
 	  </tr>
+    </thead>
 	<v:data-set name="lds" scrollable="1" nrows="1000" cursor="keyset" edit="0">
 	  <v:sql>
 	    select LS_ADDRESS, LS_BASE, LS_LDAP_VERSION, LS_BIND_DN, LS_UID_FLD, LS_ACCOUNT, pwd_magic_calc (LS_ACCOUNT, LS_PASSWORD, 1) as LS_PASSWORD, LS_TRY_SSL from SYS_LDAP_SERVERS
 	  </v:sql>
-	  <v:template type="repeat" name="ldst1">
+      <v:template type="repeat" name="lds_repeat">
 
-	    <v:template type="browse" name="ldst2">
-	      <tr class="<?V case when mod(control.te_ctr, 2) = 0 then 'listing_row_odd' else 'listing_row_even' end ?>">
+        <v:template name="lds_empty" type="if-not-exists">
+          <tr>
+            <td class="listing_empty" colspan="4">
+              No LDAP Servers
+            </td>
+          </tr>
+        </v:template>
+
+        <v:template type="browse" name="lds_browse">
+          <tr>
 		<td>
                                     <v:label value="--(control.vc_parent as vspx_row_template).te_rowset[0]" format="%s" />
 		</td>
@@ -274,7 +275,7 @@
 			      </v:button>
                     <v:button action="simple"
                               style="image"
-                              name="delete1"
+                        name="lds_delete"
                               value="images/icons/trash_16.png"
                               xhtml_alt="Delete"
                               xhtml_title="Delete"
@@ -287,10 +288,10 @@
 			    </td>
 	      </tr>
 	  </v:template>
+
 	  </v:template>
+
 	</v:data-set>
       </table>
-                      </td>
-                    </tr>
-                  </table>
+  <br />
 </v:page>

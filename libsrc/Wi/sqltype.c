@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -876,6 +876,8 @@ udt_drop_class_def (query_instance_t * qi, ST * _tree)
   sql_class_t *sub_udt;
 
   dbg_udt_print_class_hash (isp_schema (NULL), "before drop udt", tree->_.drop_udt.name);
+  if (!udt && tree->_.drop_udt.drop_silent)
+    return;
   if (!udt)
     sqlr_new_error ("42000", "UD021", "No user defined class %.200s", tree->_.drop_udt.name);
   if (NULL != (sub_udt = udt_is_supertype_of_any (udt)))

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -40,7 +40,7 @@ typedef struct resource_s
   uint32 		rc_fill;
   uint32 		rc_size;
   void **		rc_items;
-  uint32 *		rc_item_time;
+  time_msec_t *		rc_item_time;
   void *		rc_client_data;
   rc_constr_t 		rc_constructor;
   rc_destr_t 		rc_destructor;

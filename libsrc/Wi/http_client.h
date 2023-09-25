@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,9 +36,6 @@
 #include <openssl/bio.h>
 #include <openssl/asn1.h>
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
@@ -160,8 +157,8 @@ typedef struct http_cli_ctx_s
   int               hcctx_retry_max;
   int               hcctx_method;
   int               hcctx_algorithm;
-  long              hcctx_req_start_time;
-  long              hcctx_req_time_msec;
+  time_msec_t       hcctx_req_start_time;
+  time_msec_t       hcctx_req_time_msec;
   long              hcctx_peer_max_timeout;
   int 		    hcctx_no_cached;
   uint32 	    hcctx_timeout;
@@ -196,7 +193,7 @@ typedef struct http_cli_ctx_s
 #ifdef _SSL
   SSL *             hcctx_ssl;
   SSL_CTX *         hcctx_ssl_ctx;
-  SSL_METHOD *      hcctx_ssl_method;
+  const SSL_METHOD *      hcctx_ssl_method;
   caddr_t           hcctx_pkcs12_file;
   caddr_t           hcctx_cert_pass;
   caddr_t           hcctx_ca_certs;
@@ -242,7 +239,7 @@ http_cli_ctx * http_cli_ctx_init (void);
 HC_RET http_cli_ctx_free (http_cli_ctx *);
 void http_cli_inst_hook (http_cli_ctx *, int, http_cli_handler_frame_t *);
 void http_cli_push_resp_evt (http_cli_ctx *, int, http_cli_handler_frame_t *);
-char* http_cli_get_method_string (http_cli_ctx *);
+const char* http_cli_get_method_string (http_cli_ctx *);
 char* http_cli_get_resp_hdr (http_cli_ctx *, char *);
 HC_RET http_cli_connect (http_cli_ctx *);
 HC_RET http_cli_send_req (http_cli_ctx *);
@@ -273,7 +270,7 @@ HC_RET http_cli_set_auth (http_cli_ctx *, caddr_t, caddr_t);
 HC_RET http_cli_set_target_host (http_cli_ctx *, caddr_t);
 HC_RET http_cli_set_req_content_type (http_cli_ctx *, caddr_t);
 HC_RET http_cli_set_retries (http_cli_ctx *, int);
-HC_RET http_cli_set_ua_id (http_cli_ctx *, caddr_t);
+HC_RET http_cli_set_ua_id (http_cli_ctx *, ccaddr_t);
 HC_RET http_cli_set_authtype (http_cli_ctx *, int);
 HC_RET http_cli_set_method (http_cli_ctx *, int);
 caddr_t http_cli_get_err (http_cli_ctx *);
@@ -282,7 +279,7 @@ HC_RET http_cli_ssl_cert_pass (http_cli_ctx *, caddr_t);
 int http_cli_target_is_proxy_exception (char *);
 
 extern caddr_t
-bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, char * me,
+bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char * me,
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,

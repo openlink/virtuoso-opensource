@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -444,6 +444,8 @@ bif_##x##name (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args) \
 
 bif_x_name(day, "%A")
 bif_x_name(month, "%B")
+bif_x_name(dayshort, "%a")
+bif_x_name(monthshort, "%b")
 
 caddr_t
 bif_dayofweek (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -809,6 +811,26 @@ bif_timestampdiff (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static caddr_t
+bif_unix_timestamp (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  int64 res;
+  TIMESTAMP_STRUCT ts;
+  caddr_t box[DT_LENGTH  + BOX_AUTO_OVERHEAD], dt_auto;
+  caddr_t dt = BOX_ELEMENTS (args) > 0 ? bif_date_arg (qst, args, 0, "unix_timestamp") : NULL;
+
+  if (NULL == dt)
+    {
+      BOX_AUTO_TYPED (caddr_t, dt_auto, box, DT_LENGTH, DV_DATETIME);
+      dt_now_GMT (dt_auto);
+      dt = dt_auto;
+    }
+  dt_to_timestamp_struct (dt, &ts);
+  res = ((((int64)24) * 60 * 60 * date2num (ts.year, ts.month, ts.day)) + (ts.hour * 60 * 60) + (ts.minute * 60) + ts.second) 
+      - (((int64)24) * 60 * 60 * date2num (1970, 1, 1));
+  return box_num (res);
+}
+
+static caddr_t
 bif_extract (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t unit = bif_string_arg (qst, args, 0, "extract");
@@ -1049,10 +1071,10 @@ bif_curtime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t
-arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_ret)
+arithm_dt_add_num (ccaddr_t dt, ccaddr_t boxed_seconds, int subtraction, caddr_t *err_ret)
 {
-  int dt_type = DT_DT_TYPE (box1);
-  dtp_t dtp2 = DV_TYPE_OF (box2);
+  int dt_type = DT_DT_TYPE (dt);
+  dtp_t dtp2 = DV_TYPE_OF (boxed_seconds);
   boxint whole_seconds = 0;
   boxint nanoseconds = 0;
   TIMESTAMP_STRUCT ts;
@@ -1060,11 +1082,11 @@ arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_r
   switch (dtp2)
     {
     case DV_LONG_INT:
-      whole_seconds = unbox (box2);
+      whole_seconds = unbox (boxed_seconds);
       break;
     case DV_DOUBLE_FLOAT:
       {
-        double n = unbox_double (box2);
+        double n = unbox_double (boxed_seconds);
         double rest;
         whole_seconds = (n >= 0.0) ? floor(n + 0.5) : ceil(n - 0.5);
         rest = n - whole_seconds;
@@ -1074,10 +1096,11 @@ arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_r
       }
     case DV_NUMERIC:
       {
-        numeric_t n = (numeric_t)box2;
+        numeric_t n = (numeric_t)boxed_seconds;
         if (NUMERIC_STS_SUCCESS != numeric_to_int64 (n, &whole_seconds))
           {
-            err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic: decimal is out of range.");
+            if (NULL != err_ret)
+              err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic: decimal is out of range.");
             return NULL;
           }
         if (n->n_scale > 0)
@@ -1098,45 +1121,160 @@ arithm_dt_add_num (ccaddr_t box1, ccaddr_t box2, int subtraction, caddr_t *err_r
       return NULL;
     }
   DT_AUDIT_FIELDS (dt);
-  dt_to_GMTimestamp_struct (box1, &ts);
+  dt_to_GMTimestamp_struct (dt, &ts);
   ts_add (&ts, (subtraction ? -whole_seconds : whole_seconds), "second");
   if (nanoseconds)
     ts_add (&ts, (subtraction ? -nanoseconds : nanoseconds), "nanosecond");
   res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
   GMTimestamp_struct_to_dt (&ts, res);
-  DT_SET_TZ (res, DT_TZ (box1));
-  DT_SET_TZL (res, DT_TZL (box1));
-  if ((DT_TYPE_DATE == dt_type) && (0 == (((whole_seconds * 1000000000L) + nanoseconds) % (SPERDAY * 1000000000L))))
+  DT_SET_TZ (res, DT_TZ (dt));
+  DT_SET_TZL (res, DT_TZL (dt));
+  if ((DT_TYPE_DATE == dt_type) && (0 == (((whole_seconds * (boxint)1000000000L) + nanoseconds) % (SPERDAY * (boxint)1000000000L))))
     DT_SET_DT_TYPE (res, dt_type);
   DT_AUDIT_FIELDS (dt);
   return res;
 }
 
 caddr_t
+arithm_dt_add_generic_duration (ccaddr_t dt, ccaddr_t duration, int subtraction, caddr_t *err_ret)
+{
+  int dt_type = DT_DT_TYPE (dt);
+  double n, rest;
+  boxint whole_seconds = 0;
+  boxint nanoseconds = 0;
+  TIMESTAMP_STRUCT ts;
+  caddr_t res;
+  if (!IS_GENERIC_DURATION (duration))
+    return NULL;
+  DT_AUDIT_FIELDS (dt);
+  dt_to_GMTimestamp_struct (dt, &ts);
+  ts_add_month (&ts, GENERIC_DURATION_GET_YM (duration) * (subtraction ? -1 : 1), 0);
+  n = GENERIC_DURATION_GET_DT (duration) * (subtraction ? -1 : 1);
+  whole_seconds = (n >= 0.0) ? floor(n + 0.5) : ceil(n - 0.5);
+  rest = n - whole_seconds;
+  if (abs(rest/n) > (3 * DBL_EPSILON))
+    nanoseconds = (n - whole_seconds) * 1000000000L;
+  ts_add (&ts, (subtraction ? -whole_seconds : whole_seconds), "second");
+  if (nanoseconds)
+    ts_add (&ts, (subtraction ? -nanoseconds : nanoseconds), "nanosecond");
+  res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
+  GMTimestamp_struct_to_dt (&ts, res);
+  DT_SET_TZ (res, DT_TZ (dt));
+  DT_SET_TZL (res, DT_TZL (dt));
+  if ((DT_TYPE_DATE == dt_type) && (0 == (((whole_seconds * (boxint)1000000000L) + nanoseconds) % (SPERDAY * (boxint)1000000000L))))
+    DT_SET_DT_TYPE (res, dt_type);
+  DT_AUDIT_FIELDS (dt);
+  return res;
+}
+
+caddr_t
+arithm_duration_multiply_num (ccaddr_t duration, ccaddr_t boxed_factor, caddr_t *err_ret)
+{
+  dtp_t dtp2 = DV_TYPE_OF (boxed_factor);
+  caddr_t res;
+  switch (dtp2)
+    {
+    case DV_LONG_INT:
+      {
+        boxint factor = unbox (boxed_factor);
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, GENERIC_DURATION_GET_YM (duration) * factor, GENERIC_DURATION_GET_DT (duration) * factor);
+        return res;
+      }
+    case DV_DOUBLE_FLOAT:
+      {
+        double factor = unbox_double (boxed_factor);
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, round (GENERIC_DURATION_GET_YM (duration) * factor), GENERIC_DURATION_GET_DT (duration) * factor);
+        return res;
+      }
+    case DV_NUMERIC:
+      {
+        numeric_t num_factor = (numeric_t)boxed_factor;
+        double factor;
+        if (NUMERIC_STS_SUCCESS != numeric_to_double (num_factor, &factor))
+          {
+            if (NULL != err_ret)
+              err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic: decimal is out of range.");
+            return NULL;
+          }
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, round (GENERIC_DURATION_GET_YM (duration) * factor), GENERIC_DURATION_GET_DT (duration) * factor);
+        return res;
+      }
+    }
+  return NULL;
+}
+
+caddr_t
+arithm_duration_divide_num (ccaddr_t duration, ccaddr_t boxed_factor, caddr_t *err_ret)
+{
+  dtp_t dtp2 = DV_TYPE_OF (boxed_factor);
+  caddr_t res;
+  switch (dtp2)
+    {
+    case DV_LONG_INT:
+      {
+        boxint factor = unbox (boxed_factor);
+        if (0 == factor)
+          sqlr_new_error ("22012", "SR675", "Division by 0.");
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, round (GENERIC_DURATION_GET_YM (duration) / (double)factor), GENERIC_DURATION_GET_DT (duration) / factor);
+        return res;
+      }
+    case DV_DOUBLE_FLOAT:
+      {
+        double factor = unbox_double (boxed_factor);
+        if (0 == factor)
+          sqlr_new_error ("22012", "SR676", "Division by 0.");
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, round (GENERIC_DURATION_GET_YM (duration) / factor), GENERIC_DURATION_GET_DT (duration) / factor);
+        return res;
+      }
+    case DV_NUMERIC:
+      {
+        numeric_t num_factor = (numeric_t)boxed_factor;
+        double factor;
+        if (NUMERIC_STS_SUCCESS != numeric_to_double (num_factor, &factor))
+          {
+            if (NULL != err_ret)
+              err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic: decimal is out of range.");
+            return NULL;
+          }
+        if (0 == factor)
+          sqlr_new_error ("22012", "SR677", "Division by 0.");
+        res = GENERIC_DURATION_ALLOC();
+        GENERIC_DURATION_SET (res, round (GENERIC_DURATION_GET_YM (duration) / factor), GENERIC_DURATION_GET_DT (duration) / factor);
+        return res;
+      }
+    }
+  return NULL;
+}
+
+caddr_t
 arithm_dt_add (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
 {
   dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  caddr_t res = NULL;
   if ((DV_DATETIME == dtp1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    res = arithm_dt_add_num (box1, box2, 0, err_ret);
+  else if ((DV_DATETIME == dtp2) && ((DV_LONG_INT == dtp1) || (DV_DOUBLE_FLOAT == dtp1) || (DV_NUMERIC == dtp1)))
+    res = arithm_dt_add_num (box2, box1, 0, err_ret);
+  else if ((DV_DATETIME == dtp1) && IS_GENERIC_DURATION (box2))
+    res = arithm_dt_add_generic_duration (box1, box2, 0, err_ret);
+  else if ((DV_DATETIME == dtp2) && IS_GENERIC_DURATION (box1))
+    res = arithm_dt_add_generic_duration (box2, box1, 0, err_ret);
+  else if (IS_GENERIC_DURATION (box1) && IS_GENERIC_DURATION (box2))
     {
-      caddr_t res = arithm_dt_add_num (box1, box2, 0, err_ret);
-      if (NULL != err_ret)
-        return res;
-      if (NULL == res)
-        goto generic_err;
+      res = GENERIC_DURATION_ALLOC();
+      GENERIC_DURATION_SET (res, GENERIC_DURATION_GET_YM (box1) + GENERIC_DURATION_GET_YM (box2), GENERIC_DURATION_GET_DT (box1) + GENERIC_DURATION_GET_DT (box2));
       return res;
     }
-  if ((DV_DATETIME == dtp2) && ((DV_LONG_INT == dtp1) || (DV_DOUBLE_FLOAT == dtp1) || (DV_NUMERIC == dtp1)))
-    {
-      caddr_t res = arithm_dt_add_num (box2, box1, 0, err_ret);
-      if (NULL != err_ret)
-        return res;
-      if (NULL == res)
-        goto generic_err;
-      return res;
-    }
-generic_err:
-  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not add values of type %d (%s) and type %d (%s).",
-    dtp1, dv_type_title (dtp1), dtp2, dv_type_title (dtp2) );
+  if ((NULL != res) || (NULL == err_ret))
+    return res;
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not add values of type %d (%s) and type %d (%s)",
+    dtp1, (IS_GENERIC_DURATION (box1) ? "generic datetime interval" : dv_type_title (dtp1)),
+    dtp2, (IS_GENERIC_DURATION (box2) ? "generic datetime interval" : dv_type_title (dtp2)) );
   return NULL;
 }
 
@@ -1144,6 +1282,7 @@ caddr_t
 arithm_dt_subtract (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
 {
   dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  caddr_t res = NULL;
   if ((DV_DATETIME == dtp1) && (DV_DATETIME == dtp2))
     {
       boxint s1 = DT_CAST_TO_TOTAL_SECONDS(box1);
@@ -1162,25 +1301,115 @@ arithm_dt_subtract (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
         }
     }
   if ((DV_DATETIME == dtp1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    res = arithm_dt_add_num (box1, box2, 1, err_ret);
+  else if ((DV_DATETIME == dtp1) && IS_GENERIC_DURATION (box2))
+    res = arithm_dt_add_generic_duration (box1, box2, 1, err_ret);
+  else if (IS_GENERIC_DURATION (box1) && IS_GENERIC_DURATION (box2))
     {
-      caddr_t res = arithm_dt_add_num (box1, box2, 1, err_ret);
-      if (NULL != err_ret)
-        return res;
-      if (NULL == res)
-        goto generic_err;
+      res = GENERIC_DURATION_ALLOC();
+      GENERIC_DURATION_SET (res, GENERIC_DURATION_GET_YM (box1) - GENERIC_DURATION_GET_YM (box2), GENERIC_DURATION_GET_DT (box1) - GENERIC_DURATION_GET_DT (box2));
       return res;
     }
-generic_err:
-  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not subtract value of type %d (%s) from value type %d (%s).",
-    dtp2, dv_type_title (dtp2), dtp1, dv_type_title (dtp1) );
+  if ((NULL != res) || (NULL == err_ret))
+    return res;
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not subtract value of type %d (%s) from value type %d (%s)",
+    dtp1, (IS_GENERIC_DURATION (box1) ? "generic datetime interval" : dv_type_title (dtp1)),
+    dtp2, (IS_GENERIC_DURATION (box2) ? "generic datetime interval" : dv_type_title (dtp2)) );
   return NULL;
 }
+
+caddr_t
+arithm_duration_multiply (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
+{
+  dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  caddr_t res = NULL;
+  if (IS_GENERIC_DURATION (box1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    res = arithm_duration_multiply_num (box1, box2, err_ret);
+  else if (IS_GENERIC_DURATION (box2) && ((DV_LONG_INT == dtp1) || (DV_DOUBLE_FLOAT == dtp1) || (DV_NUMERIC == dtp1)))
+    res = arithm_duration_multiply_num (box2, box1, err_ret);
+  if ((NULL != res) || (NULL == err_ret))
+    return res;
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not multiply value of type %d (%s) by value of type %d (%s)",
+    dtp1, (IS_GENERIC_DURATION (box1) ? "generic datetime interval" : dv_type_title (dtp1)),
+    dtp2, (IS_GENERIC_DURATION (box2) ? "generic datetime interval" : dv_type_title (dtp2)) );
+  return NULL;
+}
+
+caddr_t
+arithm_duration_divide (ccaddr_t box1, ccaddr_t box2, caddr_t *err_ret)
+{
+  dtp_t dtp1 = DV_TYPE_OF (box1), dtp2 = DV_TYPE_OF (box2);
+  caddr_t res = NULL;
+  if (IS_GENERIC_DURATION (box1) && ((DV_LONG_INT == dtp2) || (DV_DOUBLE_FLOAT == dtp2) || (DV_NUMERIC == dtp2)))
+    res = arithm_duration_divide_num (box1, box2, err_ret);
+  if ((NULL != res) || (NULL == err_ret))
+    return res;
+  err_ret[0] = srv_make_new_error ("22003", "SR087", "Wrong arguments for datetime arithmetic, can not multiply value of type %d (%s) by value of type %d (%s)",
+    dtp1, (IS_GENERIC_DURATION (box1) ? "generic datetime interval" : dv_type_title (dtp1)),
+    dtp2, (IS_GENERIC_DURATION (box2) ? "generic datetime interval" : dv_type_title (dtp2)) );
+  return NULL;
+}
+
+
+caddr_t
+bif_strftime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t format = bif_string_arg (qst, args, 0, "strftime");
+  caddr_t dt = bif_date_arg (qst, args, 1, "strftime");
+  TIMESTAMP_STRUCT ts;
+  char szTmp[1024];
+  struct tm tm;
+
+  dt_to_timestamp_struct (dt, &ts);
+
+  memset (&tm, 0, sizeof (tm));
+  tm.tm_year = ts.year - 1900;
+  tm.tm_mon = ts.month - 1;
+  tm.tm_mday = ts.day;
+  tm.tm_hour = ts.hour;
+  tm.tm_min = ts.minute;
+  tm.tm_sec = ts.second;
+  tm.tm_isdst = -1;
+
+  strftime (szTmp, sizeof (szTmp), format, &tm);
+
+  return box_dv_short_string (szTmp);
+}
+
+caddr_t
+bif_date_iso8601 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char temp[100];
+  caddr_t arg = bif_date_arg (qst, args, 0, "date_iso8601");
+  dt_to_iso8601_string (arg, temp, sizeof (temp));
+  return (box_dv_short_string (temp));
+}
+
+caddr_t
+bif_date_rfc1123 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  char temp[100];
+  caddr_t arg = bif_date_arg (qst, args, 0, "date_rfc1123");
+  caddr_t dt[DT_LENGTH];
+  memcpy (&dt[0], arg, sizeof (dt));
+  if (DT_TZL (dt))
+    {
+      DT_SET_TZ (dt, 0);
+      DT_SET_TZL (dt, 0);
+    }
+  dt_to_rfc1123_string (dt, temp, sizeof (temp));
+  return (box_dv_short_string (temp));
+}
+
+
 
 void
 bif_date_init ()
 {
   bif_define_ex ("dayname"			, bif_dayname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("monthname"			, bif_monthname				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("dayshortname"			, bif_dayshortname			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("monthshortname"		, bif_monthshortname			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofmonth"	, bif_day		,BMD_ALIAS, "rdf_day_impl"	, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofweek"			, bif_dayofweek				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dayofyear"			, bif_dayofyear				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
@@ -1225,5 +1454,9 @@ bif_date_init ()
   bif_define_ex ("timestampdiff"		, bif_timestampdiff			, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("dt_set_tz"			, bif_dt_set_tz				, BMD_RET_TYPE, &bt_timestamp	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("__extract"			, bif_extract				, BMD_RET_TYPE, &bt_integer	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("strftime"			, bif_strftime				, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("unix_timestamp"		, bif_unix_timestamp			, BMD_RET_TYPE, &bt_integer	, BMD_DONE);
+  bif_define_ex ("date_iso8601"			, bif_date_iso8601                      , BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("date_rfc1123"			, bif_date_rfc1123			, BMD_RET_TYPE, &bt_varchar	, BMD_IS_PURE, BMD_DONE);
   dt_init ();
 }

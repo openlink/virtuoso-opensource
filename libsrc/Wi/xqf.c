@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -434,144 +434,162 @@ xqf_double (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 }
 
 static caddr_t
-xqf_YM_from_months (long months)
+xqf_YMduration_from_months (long months)
 {
-  /*
-  caddr_t * res = (caddr_t*) dk_alloc_box_zero (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  res[0] = box_num (1);
-  res[1] = box_num (months);
-  return (caddr_t) res;
-  */
   return box_num (months);
 }
 
 static caddr_t
-xqf_DT_from_secs (double secs)
+xqf_DTduration_from_secs (double secs)
 {
-  /*
-  caddr_t * res = (caddr_t*) dk_alloc_box_zero (2 * sizeof (caddr_t), DV_ARRAY_OF_POINTER);
-  res[0] = box_num (0);
-  res[1] = box_double (secs);
-  return (caddr_t) res;
-  */
   return box_double (secs);
 }
+
+#define XQ_DURATION_MODE_DT 1
+#define XQ_DURATION_MODE_YM 2
+#define XQ_DURATION_MODE_GEN 3
 
 static void
 __duration_from_string (caddr_t *n, const char *str, int do_what)
 {
-  const char *p, *pp;
+  const char *curr_token, *next_token;
   int sign = 0, val, timeflag = 0, dot_hit = 0;
+  long final_ym;
+  double final_daytime;
   caddr_t res;
-  signed long year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, frac = 0;
-
-  p = str;
-  if ('-' == *p)
+  signed long year = 0, month = 0, day = 0, hour = 0, minute = 0, second = 0, frac = 0, frac_factor = 1;
+  curr_token = str;
+  if ('-' == *curr_token)
     {
       sign ++;
-      p ++;
+      curr_token ++;
     }
-  if ('+' == *p)
-    p++;
-  if ('P' != *p++)
-    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (missing 'P' char):\"%s\"", str);
+  if ('+' == *curr_token)
+    curr_token++;
+  if ('P' != *curr_token++)
+    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (missing 'P' char): \"%s\"", str);
   for (;;)
     {
-      pp=p;
-      while (isdigit (pp[0])) pp++;
-      if (NULL == pp || '\0' == pp[0])
-	{
-	  if ('\0' != p[0])
-	    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor:\"%s\"", str);
-	  break;
-	}
-      val = atoi (p);
+      next_token=curr_token;
+      while (isdigit (next_token[0])) next_token++;
+      if ('\0' == next_token[0])
+        {
+          if ('\0' != curr_token[0])
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor: \"%s\"", str);
+          break;
+        }
+      val = atoi (curr_token);
       if (sign) val *= -1;
-      switch (pp[0]) {
-	default:;
-	  sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor:\"%s\"", str);
-	case 'T':
-	  if (timeflag)
-	    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (too many 'T' chars):\"%s\"", str);
-	  timeflag ++;
-	  break;
-	case 'Y':
-	  if (timeflag)
-	    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('Y' after 'T'):\"%s\"", str);
-	  year = val;
-	  break;
-	case 'M':
-	  if (timeflag)
-	    minute = val;
-	  else
-	    month = val;
-	  break;
-	case 'D':
-	  if (timeflag)
-	    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('D' after 'T'):\"%s\"", str);
-	  day = val;
-	  break;
-	case 'H':
-	  hour = val;
-	  break;
-	case 'S':
-	  if (!dot_hit)
-	    second = val;
-	  switch (pp-p) /* ???fraction??? */
-	    {
-	      case 0:
-		frac = 0;
-		break;
-	      case 1:
-		frac = 100 * (p[0] - '0');
-		break;
-	      case 2:
-		frac = 100 * p[0] + 10 * p[1] - 110 * '0';
-		break;
-	      case 3:
-		frac = 100 * p[0] + 10 * p[1] + p [2] - 111 * '0';
-		break;
-	      default:
-		if (dot_hit)
-		  sqlr_new_error ("42001", "XPQ??", "Incorrect length of fraction: \"%s\"", str);
-	    }
-	  break;
+      switch (next_token[0])
+        {
+        case 'T':
+          if (next_token != curr_token)
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (digits without field indicator before 'T' char): \"%s\"", str);
+          if (timeflag)
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (too many 'T' chars): \"%s\"", str);
+          timeflag ++;
+          break;
+        case 'Y':
+          if (timeflag)
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('Y' after 'T'): \"%s\"", str);
+          year = val;
+          break;
+        case 'M':
+          if (timeflag)
+            minute = val;
+          else
+            month = val;
+          break;
+        case 'D':
+          if (timeflag)
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('D' after 'T'): \"%s\"", str);
+          day = val;
+          break;
+        case 'H':
+          hour = val;
+          break;
+        case 'S':
+          if (!dot_hit)
+            second = val;
+          else
+            {
+              int ctr;
+              if (next_token == curr_token)
+                sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (no digits after decimal dot): \"%s\"", str);
+              if (next_token-curr_token > 9)
+                sqlr_new_error ("42001", "XPQ??", "Fraction of second is too long in duration constructor: \"%s\"", str);
+              for (ctr = next_token-curr_token; ctr--; /* no step*/) frac_factor *= 10;
+              frac = val;
+            }
+          break;
         case '.':
-	  if (dot_hit)
-	    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (double '.'):\"%s\"", str);
-	  second = val;
-	  dot_hit=1;
-	  break;
-      };
-      p = pp + 1;
+          if (dot_hit)
+            sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (double '.'):\"%s\"", str);
+          second = val;
+          dot_hit = 1;
+          break;
+        default:
+          sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (weird char '%c'): \"%s\"", next_token[0], str);
+        }
+      if (dot_hit && ('.' != next_token[0]) && ('S' != next_token[0]))
+        sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (dot in '%c' field, not in '.'):\"%s\"", next_token[0], str);
+      curr_token = next_token + 1;
     }
-  if (timeflag && 0 == hour && 0 == minute && 0 == second)
-    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('T' char is specified with no time data after it):\"%s\"", str);
-  if (timeflag && 0 != year && 0 != month)
-    sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor ('T' char is specified with no date data):\"%s\"", str);
-  if (year || month)
-    res = xqf_YM_from_months (year * 12 + month);
+  final_ym = year * 12 + month;
+  final_daytime = (day * 24 + hour) * 3600 + minute * 60 + second + ((double) frac / (double)(frac_factor));
+  if (final_ym && final_daytime)
+    {
+      if (XQ_DURATION_MODE_GEN != do_what)
+        sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (generic duration does not fit to the required restricted datatype): \"%s\"", str);
+      res = GENERIC_DURATION_ALLOC();
+      GENERIC_DURATION_SET (res, final_ym, final_daytime);
+    }
+  else if (final_ym)
+    {
+      if (XQ_DURATION_MODE_DT == do_what)
+        sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (year-month fields do not fit into to the required day-time duration datatype): \"%s\"", str);
+#if 0
+      res = xqf_YMduration_from_months (final_ym);
+#else
+      res = GENERIC_DURATION_ALLOC();
+      GENERIC_DURATION_SET (res, final_ym, final_daytime);
+#endif
+    }
   else
-    res = xqf_DT_from_secs ((day * 24 + hour) * 3600 + minute * 60 + second + (double) frac / 1000.0);/*!!! */
+    {
+      if (XQ_DURATION_MODE_YM == do_what)
+        sqlr_new_error ("42001", "XPQ??", "Incorrect argument in duration constructor (day-time fields do not fit into to the required year-month duration datatype): \"%s\"", str);
+      res = xqf_DTduration_from_secs (final_daytime);
+    }
   *n = res;
 }
-
 
 static void
 xqf_duration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __duration_from_string, 0);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __duration_from_string, XQ_DURATION_MODE_GEN);
 }
 
+static void
+xqf_dayTimeDuration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  __xqf_str_ctr (xqi, tree, ctx_xe, __duration_from_string, XQ_DURATION_MODE_DT);
+}
 
-#define XQ_DATETIME	0
-#define XQ_DATE		1
-#define XQ_TIME		2
-#define XQ_YEARMONTH	3
-#define XQ_YEAR		4
-#define XQ_MONTHDAY	5
-#define XQ_MONTH	6
-#define XQ_DAY		7
+static void
+xqf_yearMonthDuration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  __xqf_str_ctr (xqi, tree, ctx_xe, __duration_from_string, XQ_DURATION_MODE_YM);
+}
+
+#define XQ_DT_MODE_DATETIME	0
+#define XQ_DT_MODE_DATE		1
+#define XQ_DT_MODE_TIME		2
+#define XQ_DT_MODE_YEARMONTH	3
+#define XQ_DT_MODE_YEAR		4
+#define XQ_DT_MODE_MONTHDAY	5
+#define XQ_DT_MODE_MONTH	6
+#define XQ_DT_MODE_DAY		7
 #define COUNTOF__XQ_DT_MODE	8
 
 typedef struct xq_dt_mode_s {
@@ -620,14 +638,14 @@ __datetime_rcheck (caddr_t *n, int do_what)
   int dttype = DT_DT_TYPE (dt);
   switch (do_what)
     {
-    case XQ_DATETIME: return (DT_TYPE_DATETIME == dttype);
-    case XQ_DATE: if (DT_TYPE_TIME == dttype) return 0; break;
-    case XQ_TIME: if (DT_TYPE_DATE == dttype) return 0; break;
-    case XQ_YEARMONTH: case XQ_YEAR: case XQ_MONTHDAY: case XQ_MONTH: case XQ_DAY: if (DT_TYPE_TIME == dttype) return 0;
+    case XQ_DT_MODE_DATETIME: return (DT_TYPE_DATETIME == dttype);
+    case XQ_DT_MODE_DATE: if (DT_TYPE_TIME == dttype) return 0; break;
+    case XQ_DT_MODE_TIME: if (DT_TYPE_DATE == dttype) return 0; break;
+    case XQ_DT_MODE_YEARMONTH: case XQ_DT_MODE_YEAR: case XQ_DT_MODE_MONTHDAY: case XQ_DT_MODE_MONTH: case XQ_DT_MODE_DAY: if (DT_TYPE_TIME == dttype) return 0;
     }
   if (DT_TYPE_DATETIME == dttype)
     {
-      if (XQ_TIME == do_what)
+      if (XQ_DT_MODE_TIME == do_what)
         {
           DT_SET_DAY (dt, DAY_ZERO);
           DT_SET_FRACTION (dt, 0);
@@ -645,52 +663,52 @@ __datetime_rcheck (caddr_t *n, int do_what)
 static void
 xqf_datetime (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DATETIME);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_DATETIME);
 }
 
 
 static void
 xqf_date (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DATE);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_DATE);
 }
 
 
 static void
 xqf_time (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_TIME);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_TIME);
 }
 
 
 static void
 xqf_gYearMonth (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_YEARMONTH);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_YEARMONTH);
 }
 
 static void
 xqf_gYear (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_YEAR);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_YEAR);
 }
 
 static void
 xqf_gMonthDay (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_MONTHDAY);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_MONTHDAY);
 }
 
 static void
 xqf_gMonth (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_MONTH);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_MONTH);
 }
 
 static void
 xqf_gDay (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DAY);
+  __xqf_str_ctr (xqi, tree, ctx_xe, __datetime_from_string, XQ_DT_MODE_DAY);
 }
 
 
@@ -2797,24 +2815,30 @@ xqf_boolean_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
     XQI_SET (xqi, tree->_.xp_func.res, (caddr_t) 0L);
 }
 
-/* DV_DOUBLE_FLOAT for dayTimeDuration
-   DV_LONG_INT for yearMonthDuration
-*/
 static caddr_t
 xqf_duration_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe, int argnum, int is_ym)
 {
   caddr_t duration = xpf_arg (xqi, tree, ctx_xe, DV_UNKNOWN, argnum);
   dtp_t type = DV_TYPE_OF (duration);
-  if (!IS_NUM_DTP (type))
-    sqlr_new_error ("42001", "XQR??", "duration is expected as argument N %d", argnum);
-  return duration;
+  if (IS_NUM_DTP (type))
+    return duration;
+  if (IS_GENERIC_DURATION(duration))
+    return duration;
+  sqlr_new_error ("42001", "XQR??", "duration is expected as argument N %d", argnum);
+  return NULL; /* Naver happens */
 }
 
 static long
-xqf_YM_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
+xqf_YMduration_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
 {
   caddr_t val = xqf_duration_arg (xqi, tree, ctx_xq, argnum, 1);
   long res;
+  if (IS_GENERIC_DURATION(val))
+    {
+      if (0 != GENERIC_DURATION_GET_DT(val))
+        sqlr_new_error ("42001", "XQR??", "Year-month duration is expected, not a generic duration as argument N %d", argnum);
+      return (long)(GENERIC_DURATION_GET_YM(val));
+    }
   val = box_cast (NULL, val, (sql_tree_tmp*) st_integer, DV_TYPE_OF (val));
   res = unbox (val);
   dk_free_box (val);
@@ -2822,10 +2846,16 @@ xqf_YM_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
 }
 
 static double
-xqf_DT_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
+xqf_DTduration_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
 {
   caddr_t val = xqf_duration_arg (xqi, tree, ctx_xq, argnum, 0);
   double res;
+  if (IS_GENERIC_DURATION(val))
+    {
+      if (0 != GENERIC_DURATION_GET_YM(val))
+        sqlr_new_error ("42001", "XQR??", "Day-time is expected, not a generic duration as argument N %d", argnum);
+      return GENERIC_DURATION_GET_DT(val);
+    }
   val = box_cast (NULL, val, (sql_tree_tmp*) st_double, DV_TYPE_OF(val));
   res = unbox_double (val);
   dk_free_box (val);
@@ -2833,55 +2863,49 @@ xqf_DT_arg (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xq, int argnum)
 }
 
 static void
-xqf_YM_eq (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_YMduration_eq (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long arg1 = xqf_YM_arg (xqi, tree, ctx_xe, 0);
-  long arg2 = xqf_YM_arg (xqi, tree, ctx_xe, 1);
-
+  long arg1 = xqf_YMduration_arg (xqi, tree, ctx_xe, 0);
+  long arg2 = xqf_YMduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 == arg2));
 }
 
 static void
-xqf_YM_lt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_YMduration_lt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long arg1 = xqf_YM_arg (xqi, tree, ctx_xe, 0);
-  long arg2 = xqf_YM_arg (xqi, tree, ctx_xe, 1);
-
+  long arg1 = xqf_YMduration_arg (xqi, tree, ctx_xe, 0);
+  long arg2 = xqf_YMduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 < arg2));
 }
 
 static void
-xqf_YM_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_YMduration_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long arg1 = xqf_YM_arg (xqi, tree, ctx_xe, 0);
-  long arg2 = xqf_YM_arg (xqi, tree, ctx_xe, 1);
-
+  long arg1 = xqf_YMduration_arg (xqi, tree, ctx_xe, 0);
+  long arg2 = xqf_YMduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 > arg2));
 }
 static void
-xqf_DT_eq (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_DTduration_eq (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double arg1 = xqf_DT_arg (xqi, tree, ctx_xe, 0);
-  double arg2 = xqf_DT_arg (xqi, tree, ctx_xe, 1);
-
+  double arg1 = xqf_DTduration_arg (xqi, tree, ctx_xe, 0);
+  double arg2 = xqf_DTduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 == arg2));
 }
 
 static void
-xqf_DT_lt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_DTduration_lt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double arg1 = xqf_DT_arg (xqi, tree, ctx_xe, 0);
-  double arg2 = xqf_DT_arg (xqi, tree, ctx_xe, 1);
-
+  double arg1 = xqf_DTduration_arg (xqi, tree, ctx_xe, 0);
+  double arg2 = xqf_DTduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 < arg2));
 }
 
 static void
-xqf_DT_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+xqf_DTduration_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double arg1 = xqf_DT_arg (xqi, tree, ctx_xe, 0);
-  double arg2 = xqf_DT_arg (xqi, tree, ctx_xe, 1);
-
+  double arg1 = xqf_DTduration_arg (xqi, tree, ctx_xe, 0);
+  double arg2 = xqf_DTduration_arg (xqi, tree, ctx_xe, 1);
   XQI_SET (xqi, tree->_.xp_func.res, box_num_nonull (arg1 > arg2));
 }
 
@@ -2965,7 +2989,6 @@ int xqf_time_op_cmp (TIMESTAMP_STRUCT* t1, TIMESTAMP_STRUCT* t2)
   return 0;
 }
 
-
 typedef int (*xqf_dt_operation_f)(TIMESTAMP_STRUCT*,TIMESTAMP_STRUCT*);
 xqf_dt_operation_f xqf_dt_ops[] = {
   xqf_dT_op_eq,
@@ -3036,118 +3059,121 @@ static void xqf_time_gt (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
   xqf_dt_check(xqi, tree, ctx_xe, xqf_time_op_cmp, 1);
 }
 
-static void xqf_yMd_add (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_YMduration_add (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long a1 = xqf_YM_arg (xqi,tree,ctx_xe,0);
-  long a2 = xqf_YM_arg (xqi,tree,ctx_xe,1);
-
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months (a1+a2));
+  long a1 = xqf_YMduration_arg (xqi,tree,ctx_xe,0);
+  long a2 = xqf_YMduration_arg (xqi,tree,ctx_xe,1);
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_YMduration_from_months (a1+a2));
 }
-static void xqf_yMd_sub (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
-{
-  long a1 = xqf_YM_arg (xqi,tree,ctx_xe,0);
-  long a2 = xqf_YM_arg (xqi,tree,ctx_xe,1);
 
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months (a1-a2));
-}
-static void xqf_yMd_mult (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_YMduration_sub (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long a1 = xqf_YM_arg (xqi,tree,ctx_xe,0);
+  long a1 = xqf_YMduration_arg (xqi,tree,ctx_xe,0);
+  long a2 = xqf_YMduration_arg (xqi,tree,ctx_xe,1);
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_YMduration_from_months (a1-a2));
+}
+
+static void xqf_YMduration_mult (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  long a1 = xqf_YMduration_arg (xqi,tree,ctx_xe,0);
+  caddr_t a2 = xpf_arg (xqi,tree,ctx_xe, DV_NUMERIC, 1);
+  caddr_t d2 = box_cast (NULL, a2, (sql_tree_tmp*) st_double, DV_TYPE_OF(a2));
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_YMduration_from_months ((long)(virt_rint (a1*unbox_double (d2)))));
+  dk_free_box (d2);
+}
+
+static void xqf_YMduration_div (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+{
+  long a1 = xqf_YMduration_arg (xqi,tree,ctx_xe,0);
   caddr_t a2 = xpf_arg (xqi,tree,ctx_xe, DV_NUMERIC, 1);
   caddr_t d2 = box_cast (NULL, a2, (sql_tree_tmp*) st_double, DV_TYPE_OF(a2));
   if (0 == unbox_double (d2))
     sqlr_new_error ("42001", "XQR??", "divide to zero error");
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_YMduration_from_months ((long)(virt_rint (a1/unbox_double (d2)))));
+  dk_free_box (d2);
+}
 
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months ((long)(virt_rint (a1*unbox_double (d2)))));
-  dk_free_box (d2);
-}
-static void xqf_yMd_div (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_YMduration_div_YMduration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long a1 = xqf_YM_arg (xqi,tree,ctx_xe,0);
-  caddr_t a2 = xpf_arg (xqi,tree,ctx_xe, DV_NUMERIC, 1);
-  caddr_t d2 = box_cast (NULL, a2, (sql_tree_tmp*) st_double, DV_TYPE_OF(a2));
-  if (0 == unbox_double (d2))
-    sqlr_new_error ("42001", "XQR??", "divide to zero error");
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months ((long)(virt_rint (a1/unbox_double (d2)))));
-  dk_free_box (d2);
-}
-static void xqf_yMd_div_yMd (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
-{
-  long a1 = xqf_YM_arg (xqi,tree,ctx_xe,0);
-  long a2 = xqf_YM_arg (xqi,tree,ctx_xe,1);
+  long a1 = xqf_YMduration_arg (xqi,tree,ctx_xe,0);
+  long a2 = xqf_YMduration_arg (xqi,tree,ctx_xe,1);
   if (0 == a2)
     sqlr_new_error ("42001", "XQR??", "divide to zero error");
-
   XQI_SET (xqi, tree->_.xp_func.res, box_double ((double)a1/a2));
 }
 
 static void xqf_dT_add (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double a1 = xqf_DT_arg (xqi,tree,ctx_xe,0);
-  double a2 = xqf_DT_arg (xqi,tree,ctx_xe,1);
+  double a1 = xqf_DTduration_arg (xqi,tree,ctx_xe,0);
+  double a2 = xqf_DTduration_arg (xqi,tree,ctx_xe,1);
 
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_DT_from_secs (a1+a2));
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_DTduration_from_secs (a1+a2));
 }
+
 static void xqf_dT_sub (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double a1 = xqf_DT_arg (xqi,tree,ctx_xe,0);
-  double a2 = xqf_DT_arg (xqi,tree,ctx_xe,1);
+  double a1 = xqf_DTduration_arg (xqi,tree,ctx_xe,0);
+  double a2 = xqf_DTduration_arg (xqi,tree,ctx_xe,1);
 
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_DT_from_secs (a1-a2));
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_DTduration_from_secs (a1-a2));
 }
+
 static void xqf_dT_mult (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double a1 = xqf_DT_arg (xqi,tree,ctx_xe,0);
+  double a1 = xqf_DTduration_arg (xqi,tree,ctx_xe,0);
   caddr_t a2 = xpf_arg (xqi,tree,ctx_xe, DV_NUMERIC, 1);
   caddr_t d2 = box_cast (NULL, a2, (sql_tree_tmp*) st_double, DV_TYPE_OF(a2));
   if (0 == unbox_double (d2))
     sqlr_new_error ("42001", "XQR??", "divide to zero error");
 
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_DT_from_secs ( a1*unbox_double (d2)) );
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_DTduration_from_secs ( a1*unbox_double (d2)) );
   dk_free_box (d2);
 }
+
 static void xqf_dT_div (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double a1 = xqf_DT_arg (xqi,tree,ctx_xe,0);
+  double a1 = xqf_DTduration_arg (xqi,tree,ctx_xe,0);
   caddr_t a2 = xpf_arg (xqi,tree,ctx_xe, DV_NUMERIC, 1);
   caddr_t d2 = box_cast (NULL, a2, (sql_tree_tmp*) st_double, DV_TYPE_OF(a2));
   if (0 == unbox_double (d2))
     sqlr_new_error ("42001", "XQR??", "divide to zero error");
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_DT_from_secs ( a1/unbox_double (d2)) );
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_DTduration_from_secs ( a1/unbox_double (d2)) );
   dk_free_box (d2);
 }
+
 static void xqf_dT_div_dT (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double a1 = xqf_DT_arg (xqi,tree,ctx_xe,0);
-  double a2 = xqf_DT_arg (xqi,tree,ctx_xe,1);
+  double a1 = xqf_DTduration_arg (xqi,tree,ctx_xe,0);
+  double a2 = xqf_DTduration_arg (xqi,tree,ctx_xe,1);
   if (0 == a2)
     sqlr_new_error ("42001", "XQR??", "divide to zero error");
 
   XQI_SET (xqi, tree->_.xp_func.res, box_double (a1/a2));
 }
+
 static void xqf_adj_tz (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t dt = xpf_arg (xqi,tree,ctx_xe,DV_DATETIME,0);
-  double a2 = xqf_DT_arg (xqi,tree,ctx_xe,1);
+  double a2 = xqf_DTduration_arg (xqi,tree,ctx_xe,1);
   long mins = (long)(virt_rint (a2 / 60.0));
   caddr_t res = box_copy (dt);
   DT_SET_TZ (res, mins);
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
-static void xqf_dT_sub_yMD (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+
+static void xqf_dT_sub_dT_as_YMduration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t dt2 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 1);
   TIMESTAMP_STRUCT ts1,ts2;
   int sec1, sec2, c2 = 0;
-
   dt_to_timestamp_struct (dt1, &ts1);
   dt_to_timestamp_struct (dt2, &ts2);
   sec1 = ((ts1.day * 24) + ts1.hour)*3600 + ts1.minute*60 +ts1.second;
   sec2 = ((ts2.day * 24) + ts2.hour)*3600 + ts2.minute*60 +ts2.second;
   if ((sec2 > sec1) || ((sec2 == sec1) && (ts2.fraction > ts1.fraction)))
     c2 = 1;
-  XQI_SET (xqi, tree->_.xp_func.res, xqf_YM_from_months ((ts1.year * 12 + ts1.month) - (ts2.year * 12 + ts2.month) - c2));
+  XQI_SET (xqi, tree->_.xp_func.res, xqf_YMduration_from_months ((ts1.year * 12 + ts1.month) - (ts2.year * 12 + ts2.month) - c2));
 }
 
 static numeric_t xqf_num_from_ts (TIMESTAMP_STRUCT* ts1)
@@ -3156,8 +3182,6 @@ static numeric_t xqf_num_from_ts (TIMESTAMP_STRUCT* ts1)
   s1 = numeric_allocate();
   tmp = numeric_allocate();
   res = numeric_allocate();
-
-
   numeric_from_int32 (s1, date2num (ts1->year,ts1->month,ts1->day));
   numeric_from_int32 (tmp, 24 * 3600);
   numeric_multiply (res, s1, tmp);
@@ -3166,11 +3190,10 @@ static numeric_t xqf_num_from_ts (TIMESTAMP_STRUCT* ts1)
   numeric_add (res, s1, tmp);
   dk_free_box ((caddr_t) s1);
   dk_free_box ((caddr_t) tmp);
-
   return res;
 }
 
-static void xqf_dT_sub_dTD (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_dT_sub_dT_as_DTduration (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t dt2 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 1);
@@ -3189,9 +3212,9 @@ static void xqf_dT_sub_dTD (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_x
   dk_free_box ((caddr_t)s2);
 }
 
-static void xqf_add_yMD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_add_YMduration_to_dT (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  long ymd = xqf_YM_arg (xqi, tree, ctx_xe, 1);
+  long ymd = xqf_YMduration_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   GMTIMESTAMP_STRUCT ts;
@@ -3203,9 +3226,9 @@ static void xqf_add_yMD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
-static void xqf_add_dTD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_add_DTduration_to_dT (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double dtd = xqf_DT_arg (xqi, tree, ctx_xe, 1);
+  double dtd = xqf_DTduration_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   long secs= (long) dtd;
@@ -3217,40 +3240,22 @@ static void xqf_add_dTD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * c
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
-static void xqf_ts_add_year_month (TIMESTAMP_STRUCT* ts, int years,  int months)
+static void xqf_sub_YMduration_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  static int days_in_month[] = { 31, -1, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
-  days_in_month[1] = days_in_february (ts->year);
-  if (ts->day == days_in_month[ts->month-1])
-    {
-      ts_add (ts, years, "year");
-      ts_add (ts, months, "month");
-      days_in_month[1] = days_in_february (ts->year);
-      ts->day = days_in_month[ts->month-1];
-    }
-  else
-    {
-      ts_add (ts, years, "year");
-      ts_add (ts, months, "month");
-    }
-}
-
-static void xqf_sub_yMD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
-{
-  long ymd = xqf_YM_arg (xqi, tree, ctx_xe, 1);
+  long ymd = xqf_YMduration_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   GMTIMESTAMP_STRUCT ts;
   dt_to_GMTimestamp_struct (dt1, &ts);
-  xqf_ts_add_year_month (&ts,-ymd/12, -ymd % 12);
+  ts_add_month (&ts, -ymd, 0);
   GMTimestamp_struct_to_dt (&ts, res);
   DT_SET_TZ (res, DT_TZ (dt1));
   XQI_SET (xqi, tree->_.xp_func.res, res);
 }
 
-static void xqf_sub_dTD_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
+static void xqf_sub_DTduration_to_dT  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe)
 {
-  double dtd = xqf_DT_arg (xqi, tree, ctx_xe, 1);
+  double dtd = xqf_DTduration_arg (xqi, tree, ctx_xe, 1);
   caddr_t dt1 = xpf_arg (xqi, tree, ctx_xe, DV_DATETIME, 0);
   caddr_t res = box_copy (dt1);
   long secs= (long) dtd;
@@ -3281,7 +3286,6 @@ static void xqf_qname_eq  (xp_instance_t * xqi, XT * tree, xml_entity_t * ctx_xe
       dk_free_box (name2);
     }
 }
-
 
 static void
 xpf_current_date_impl  (xp_instance_t * xqi, XT * tree, dtp_t ret_type)
@@ -3382,40 +3386,40 @@ xdt_define_builtin (
 
 static xqf_str_parser_desc_t xqf_str_parser_descs[] = {
 /* Keep these strings sorted alphabetically by p_name! */
-/*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp	| p_typed_bif_name		| p_sql_cast_type */
-    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_boolean"	, NULL			},
-    {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DATE		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_date"	, NULL /* not "DATE" */	},
-    {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DATETIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_datetime"	, "DATETIME"		},
-    {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, "DECIMAL"		},
-    {	"double"		, __float_from_string		, NULL			, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
-    {	"duration"		, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			},
-    {	"float"			, __float_from_string		, NULL			, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT, "__xqf_str_parse_float"	, "REAL"		},
-    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_MONTHDAY		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_YEAR		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_YEARMONTH		, 0	, 1	, DV_DATETIME	, "__xqf_str_parse_datetime"	, NULL			},
-    {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, "INTEGER"		},
-    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"normalizedString"	, __gen_string_from_string	, __gen_string_rcheck	, XQ_NORM_STRING	, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC	, "__xqf_str_parse_numeric"	, NULL			},
-    {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING	, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
-    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_TIME		, 0	, 0	, DV_DATETIME	, "__xqf_str_parse_time"	, NULL /* not "TIME" */	},
-    {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0		, "__xqf_str_parse_nvarchar"	, NULL			},
-    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 1	, DV_LONG_INT	, "__xqf_str_parse_integer"	, NULL			},
-    {	"yearMonthDuration"	, __duration_from_string	, NULL /*???*/		, 0			, 0	, 1	, 0		, "__xqf_str_parse_datetime"	, NULL			} };
+/*	p_name			| p_proc			| p_rcheck		| p_opcode		| null	| box	| p_dest_dtp		| p_typed_bif_name		| p_sql_cast_type */
+    {	"boolean"		, __boolean_from_string		, __boolean_rcheck	, 0			, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_boolean"	, NULL			},
+    {	"byte"			, __integer_from_string		, __integer_rcheck	, XQ_INT8		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"currentDateTime"	, __cur_datetime		, NULL			, 0			, 0	, 0	, 0			, "__xqf_str_parse_datetime"	, NULL			},
+    {	"date"			, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_DATE	, 0	, 0	, DV_DATETIME		, "__xqf_str_parse_date"	, NULL /* not "DATE" */	},
+    {	"dateTime"		, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_DATETIME	, 0	, 0	, DV_DATETIME		, "__xqf_str_parse_datetime"	, "DATETIME"		},
+    {	"dayTimeDuration"	, __duration_from_string	, NULL /*???*/		, XQ_DURATION_MODE_DT	, 0	, 1	, DV_DOUBLE_FLOAT	, "__xqf_str_parse_datetime"	, NULL			},
+    {	"decimal"		, __numeric_from_string		, NULL			, 0			, 0	, 0	, DV_NUMERIC		, "__xqf_str_parse_numeric"	, "DECIMAL"		},
+    {	"double"		, __float_from_string		, NULL			, XQ_DOUBLE		, 0	, 0	, DV_DOUBLE_FLOAT	, "__xqf_str_parse_double"	, "DOUBLE PRECISION"	},
+    {	"duration"		, __duration_from_string	, NULL /*???*/		, XQ_DURATION_MODE_GEN	, 0	, 1	, 0			, "__xqf_str_parse_datetime"	, NULL			},
+    {	"float"			, __float_from_string		, NULL			, XQ_FLOAT		, 0	, 0	, DV_SINGLE_FLOAT	, "__xqf_str_parse_float"	, "REAL"		},
+    {	"gDay"			, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_DAY	, 0	, 1	, DV_DATETIME		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_MONTH	, 0	, 1	, DV_DATETIME		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gMonthDay"		, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_MONTHDAY	, 0	, 1	, DV_DATETIME		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYear"			, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_YEAR	, 0	, 1	, DV_DATETIME		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"gYearMonth"		, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_YEARMONTH	, 0	, 1	, DV_DATETIME		, "__xqf_str_parse_datetime"	, NULL			},
+    {	"int"			, __integer_from_string		, __integer_rcheck	, XQ_INT32		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"integer"		, __integer_from_string		, __integer_rcheck	, XQ_INT		, 0	, 0	, DV_LONG_INT		, "__xqf_str_parse_integer"	, "INTEGER"		},
+    {	"long"			, __integer_from_string		, __integer_rcheck	, XQ_INT64		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, "INTEGER"		},
+    {	"negativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NINT		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonNegativeInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NNINT		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"nonPositiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_NPINT		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"normalizedString"	, __gen_string_from_string	, __gen_string_rcheck	, XQ_NORM_STRING	, 0	, 1	, 0			, "__xqf_str_parse_nvarchar"	, NULL			},
+    {	"positiveInteger"	, __integer_from_string		, __integer_rcheck	, XQ_PINT		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"precisionDecimal"	, __numeric_from_string		, NULL /*???*/		, 0			, 0	, 1	, DV_NUMERIC		, "__xqf_str_parse_numeric"	, NULL			},
+    {	"short"			, __integer_from_string		, __integer_rcheck	, XQ_INT16		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"string"		, __gen_string_from_string	, __gen_string_rcheck	, XQ_STRING		, 0	, 1	, DV_STRING		, "__xqf_str_parse_nvarchar"	, "VARCHAR"		},
+    {	"time"			, __datetime_from_string	, __datetime_rcheck	, XQ_DT_MODE_TIME	, 0	, 0	, DV_DATETIME		, "__xqf_str_parse_time"	, NULL /* not "TIME" */	},
+    {	"token"			, __gen_string_from_string	, __gen_string_rcheck	, XQ_TOKEN		, 0	, 1	, 0			, "__xqf_str_parse_nvarchar"	, NULL			},
+    {	"unsignedByte"		, __integer_from_string		, __integer_rcheck	, XQ_UINT8		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedInt"		, __integer_from_string		, __integer_rcheck	, XQ_UINT32		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedLong"		, __integer_from_string		, __integer_rcheck	, XQ_UINT64		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"unsignedShort"		, __integer_from_string		, __integer_rcheck	, XQ_UINT16		, 0	, 1	, DV_LONG_INT		, "__xqf_str_parse_integer"	, NULL			},
+    {	"yearMonthDuration"	, __duration_from_string	, NULL /*???*/		, XQ_DURATION_MODE_YM	, 0	, 1	, 0			, "__xqf_str_parse_datetime"	, NULL			} };
 
 /* No parsing or validation for
 hexBinary
@@ -3437,6 +3441,11 @@ ENTITIES
 
 xqf_str_parser_desc_t *xqf_str_parser_descs_ptr = xqf_str_parser_descs;
 int xqf_str_parser_desc_count = sizeof (xqf_str_parser_descs)/sizeof (xqf_str_parser_desc_t);
+
+#define MAKE_XQ_DT_RES \
+		  GMTimestamp_struct_to_dt (&ts, res); \
+		  DT_SET_DT_TYPE (res, DT_TYPE_DATE); \
+		  DT_SET_TZL (res, tzl)
 
 caddr_t
 bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
@@ -3466,7 +3475,38 @@ bif_xqf_str_parse (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (DV_STRING != arg_dtp)
         {
           if (desc->p_dest_dtp == arg_dtp)
-            res = box_copy_tree (arg);
+	    {
+	      res = box_copy_tree (arg);
+	      if (desc->p_dest_dtp == DV_DATETIME)
+		{
+		  int tzl = DT_TZL (res);
+		  GMTIMESTAMP_STRUCT ts;
+		  dt_to_GMTimestamp_struct (res, &ts);
+		  switch (desc->p_opcode)
+		    {
+		      case XQ_DT_MODE_YEAR:
+			  ts.day = ts.month = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_DT_MODE_YEARMONTH:
+			  ts.day = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_DT_MODE_MONTH:
+			  ts.day = ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_DT_MODE_MONTHDAY:
+			  ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		      case XQ_DT_MODE_DAY:
+			  ts.month = ts.year = 1;
+			  MAKE_XQ_DT_RES;
+			  break;
+		    }
+		}
+	    }
           else
             {
               caddr_t err = NULL;
@@ -3728,6 +3768,8 @@ void xqf_init(void)
   /*xpf_define_alias   ("date", XFN_NS_URI, "date", XS_NS_URI);*/
   xsd_define_builtin ("dateTime"			, xqf_datetime			/* XQuery 1.0 */, DV_DATETIME	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   /*xpf_define_alias   ("dateTime", XFN_NS_URI, "dateTime", XS_NS_URI);*/
+  xsd_define_builtin ("dayTimeDuration"				, xqf_dayTimeDuration		/* ??? */	, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xpf_define_alias   ("dayTimeDuration", XDT_NS_URI, "dayTimeDuration", XS_NS_URI); /* XQuery 1.0 */
   xsd_define_builtin ("decimal"					, xqf_decimal			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xsd_define_builtin ("double"					, xqf_double			/* ??? */	, DV_UNKNOWN	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xsd_define_builtin ("duration"				, xqf_duration			/* ??? */	, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
@@ -3818,7 +3860,10 @@ void xqf_init(void)
   x2f_define_builtin ("tokenize"				, xqf_tokenize			/* ??? */	, DV_UNKNOWN, 2	, xpfmalist(3, xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1), xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
   xpf_define_alias   ("translate", XFN_NS_URI, "translate", NULL);
   xpf_define_alias   ("true", XFN_NS_URI, "true", NULL);
-  x2f_define_builtin ("upper-case"				, xqf_upper_case	/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
+  x2f_define_builtin ("upper-case"				, xqf_upper_case		/* XQuery 1.0 */	, DV_STRING , 1	, xpfmalist(1, xpfma(NULL,DV_STRING,1))	, NULL);
+  xsd_define_builtin ("yearMonthDuration"			, xqf_yearMonthDuration		/* ??? */	, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
+  xpf_define_alias   ("yearMonthDuration", XDT_NS_URI, "yearMonthDuration", XS_NS_URI); /* XQuery 1.0 */
+
 
 
   /* Operators */
@@ -3889,13 +3934,6 @@ void xqf_init(void)
   xpf_define_alias   ("seconds-from-time", XFN_NS_URI, "get-seconds-from-dateTime", XFN_NS_URI);
 
   /* duration functions */
-#if 1
-  xpf_define_alias   ("yearMonthDuration", XDT_NS_URI, "duration", XFN_NS_URI); /* XQuery 1.0 */
-  xpf_define_alias   ("dayTimeDuration", XDT_NS_URI, "duration", XFN_NS_URI); /* XQuery 1.0 */
-#else
-  xdt_define_builtin ("yearMonthDuration"			, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-  xdt_define_builtin ("dayTimeDuration"				, xqf_duration			/* XQuery 1.0 */, XPDV_DURATION	, 1	, xpfmalist(1, xpfma(NULL,DV_SHORT_STRING,1))	, NULL);
-#endif
   x2f_define_builtin ("year-from-duration"			, xqf_get_Year_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
   x2f_define_builtin ("day-from-duration"			, xqf_get_Day_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
   x2f_define_builtin ("month-from-duration"			, xqf_get_Month_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
@@ -3904,24 +3942,24 @@ void xqf_init(void)
   x2f_define_builtin ("seconds-from-duration"			, xqf_get_seconds_from_duration	/* XQuery 1.0 */, DV_LONG_INT	, 1	, xpfmalist(1, xpfma(NULL,XPDV_DURATION,1))	, NULL);
 
   /* duration operations */
-  xop_define_builtin ("yearMonthDuration-equal"		, xqf_YM_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("yearMonthDuration-less-than"	, xqf_YM_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("yearMonthDuration-greater-than"	, xqf_YM_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("dayTimeDuration-equal"		, xqf_DT_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("dayTimeDuration-less-than"	, xqf_DT_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("dayTimeDuration-greater-than"	, xqf_DT_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("yearMonthDuration-equal"		, xqf_YMduration_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("yearMonthDuration-less-than"	, xqf_YMduration_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("yearMonthDuration-greater-than"	, xqf_YMduration_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-equal"		, xqf_DTduration_eq			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-less-than"	, xqf_DTduration_lt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("dayTimeDuration-greater-than"	, xqf_DTduration_gt			/* XQuery 1.0 */, XPDV_BOOL	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
 
   /* arithmetic operations over durations */
-  xop_define_builtin ("add-yearMonthDurations"		, xqf_yMd_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("subtract-yearMonthDurations"	, xqf_yMd_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
-  xop_define_builtin ("multiply-yearMonthDuration"	, xqf_yMd_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xop_define_builtin ("divide-yearMonthDuration"		, xqf_yMd_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xop_define_builtin ("divide-yearMonthDuration-by-yearMonthDuration"	,xqf_yMd_div_yMd/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("add-yearMonthDurations"		, xqf_YMduration_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("subtract-yearMonthDurations"	, xqf_YMduration_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("multiply-yearMonthDuration"	, xqf_YMduration_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-yearMonthDuration"		, xqf_YMduration_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  xop_define_builtin ("divide-yearMonthDuration-by-yearMonthDuration"	, xqf_YMduration_div_YMduration/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
   xop_define_builtin ("add-dayTimeDurations"		, xqf_dT_add			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
   xop_define_builtin ("subtract-dayTimeDurations"	, xqf_dT_sub			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
   xop_define_builtin ("multiply-dayTimeDuration"		, xqf_dT_mult			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
   xop_define_builtin ("divide-dayTimeDuration"		, xqf_dT_div			/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  xop_define_builtin ("divide-dayTimeDuration-by-dayTimeDuration"	,xqf_dT_div_dT	/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
+  xop_define_builtin ("divide-dayTimeDuration-by-dayTimeDuration"	, xqf_dT_div_dT	/* XQuery 1.0 */, DV_UNKNOWN	, 2	, xpfmalist(2,  xpfma(NULL,DV_UNKNOWN,1), xpfma(NULL,DV_UNKNOWN,1)), NULL);
 
 
   /* dateTime operations */
@@ -3949,8 +3987,8 @@ void xqf_init(void)
 #endif
 
   /* Arithmetic functions on Durations, Dates and Times */
-  x2f_define_builtin ("subtract-dateTimes-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  x2f_define_builtin ("subtract-dateTimes-yielding-dayTimeDuration",xqf_dT_sub_dTD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dateTimes-yielding-yearMonthDuration", xqf_dT_sub_dT_as_YMduration		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dateTimes-yielding-dayTimeDuration", xqf_dT_sub_dT_as_DTduration		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
 #if 1
   xpf_define_alias ("subtract-dates-yielding-yearMonthDuration", XFN_NS_URI, "subtract-dateTimes-yielding-yearMonthDuration", XFN_NS_URI);
   xpf_define_alias ("subtract-dates-yielding-yearMonthDuration", XXF_NS_URI, "subtract-dateTimes-yielding-yearMonthDuration", XFN_NS_URI);
@@ -3959,15 +3997,15 @@ void xqf_init(void)
   xpf_define_alias ("subtract-times", XFN_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
   xpf_define_alias ("subtract-times", XXF_NS_URI, "subtract-dateTimes-yielding-dayTimeDuration", XFN_NS_URI);
 #else
-  x2f_define_builtin ("subtract-dates-yielding-yearMonthDuration",xqf_dT_sub_yMD		/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  x2f_define_builtin ("subtract-dates-yielding-dayTimeDuration",xqf_dT_sub_dTD			/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
-  x2f_define_builtin ("subtract-times",xqf_dT_sub_dTD						/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dates-yielding-yearMonthDuration", xqf_dT_sub_dT_as_YMduration	/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-dates-yielding-dayTimeDuration", xqf_dT_sub_dT_as_DTduration	/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
+  x2f_define_builtin ("subtract-times", xqf_dT_sub_DTduration					/* XQuery 1.0 */, DV_NUMERIC, 1	, xpfmalist(2,  xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1)), NULL);
 #endif
 
-  xop_define_builtin ("add-yearMonthDuration-to-dateTime", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xop_define_builtin ("add-dayTimeDuration-to-dateTime", xqf_add_dTD_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xop_define_builtin ("subtract-yearMonthDuration-from-dateTime", xqf_sub_yMD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
-  xop_define_builtin ("subtract-dayTimeDuration-from-dateTime", xqf_sub_dTD_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("add-yearMonthDuration-to-dateTime", xqf_add_YMduration_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-dateTime", xqf_add_DTduration_to_dT		/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("subtract-yearMonthDuration-from-dateTime", xqf_sub_YMduration_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-dateTime", xqf_sub_DTduration_to_dT	/* XQuery 1.0 */, DV_DATETIME	, 2	, xpfmalist(2, xpfma(NULL,DV_DATETIME,1), xpfma(NULL,DV_NUMERIC,1))	, NULL);
 #if 1
   xpf_define_alias ("add-yearMonthDuration-to-date"		, XOP_NS_URI  ,"add-yearMonthDuration-to-dateTime"		, XOP_NS_URI);
   xpf_define_alias ("add-dayTimeDuration-to-date"		, XOP_NS_URI  ,"add-dayTimeDuration-to-dateTime"			, XOP_NS_URI);
@@ -3976,12 +4014,12 @@ void xqf_init(void)
   xpf_define_alias ("add-dayTimeDuration-to-time"		, XOP_NS_URI  ,"add-dayTimeDuration-to-dateTime"			, XOP_NS_URI);
   xpf_define_alias ("subtract-dayTimeDuration-from-time"		, XOP_NS_URI  ,"subtract-dayTimeDuration-from-dateTime"		, XOP_NS_URI);
 #else
-  xop_define_builtin ("add-yearMonthDuration-to-date", xqf_add_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
-  xop_define_builtin ("add-dayTimeDuration-to-date", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
-  xop_define_builtin ("subtract-yearMonthDuration-from-date", xqf_sub_yMD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
-  xop_define_builtin ("subtract-dayTimeDuration-from-date", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
-  xop_define_builtin ("add-dayTimeDuration-to-time", xqf_add_dTD_to_dT			/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
-  xop_define_builtin ("subtract-dayTimeDuration-from-time", xqf_sub_dTD_to_dT		/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("add-yearMonthDuration-to-date", xqf_add_YMduration_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-date", xqf_add_DTduration_to_dT			/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-yearMonthDuration-from-date", xqf_sub_YMduration_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-date", xqf_sub_DTduration_to_dT		/* XQuery 1.0 */, DV_DATE	, 2	, xpfmalist(2, xpfma(NULL,DV_DATE,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("add-dayTimeDuration-to-time", xqf_add_DTduration_to_dT			/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
+  xop_define_builtin ("subtract-dayTimeDuration-from-time", xqf_sub_DTduration_to_dT		/* XQuery 1.0 */, DV_TIME	, 2	, xpfmalist(2, xpfma(NULL,DV_TIME,1), xpfma(NULL,DV_NUMERIC,1))		, NULL);
 #endif
 
   /* QNames */

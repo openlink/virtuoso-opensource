@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -213,6 +213,7 @@ extern long tc_log_write_clocks;
 
 extern int32 em_ra_window;
 extern int32 em_ra_threshold;
+extern int32 enable_g_inf_opt;
 extern int sqlo_max_layouts;
 extern size_t sqlo_max_mp_size;
 extern int enable_initial_plan;
@@ -230,6 +231,7 @@ extern int enable_no_free;
 #endif
 extern int32 enable_rdf_box_const;
 extern int32 simple_rdf_numbers;
+extern int32 rdf_rpid64_mode;
 extern int enable_subscore;
 extern int enable_dfg;
 extern int enable_feed_other_dfg;
@@ -279,14 +281,14 @@ long  tft_seq_seek;
 extern int dbf_explain_level;
 long  prof_on;
 long  prof_stat_table;
-long prof_start_time;
+time_msec_t prof_start_time;
 time_t prof_start_time_st;
 unsigned long  prof_n_exec;
 unsigned long  prof_n_reused;
 unsigned long  prof_exec_time;
 unsigned long prof_avg_exec;
 unsigned long  prof_n_compile;
-unsigned long  prof_compile_time;
+int64 prof_compile_time;
 
 unsigned long vdb_n_exec;
 unsigned long vdb_n_fetch;
@@ -297,8 +299,8 @@ long ac_pages_in;
 long ac_pages_out;
 long ac_col_pages_in;
 long ac_col_pages_out;
-extern uint32 ac_cpu_time;
-extern uint32 ac_real_time;
+extern uint64 ac_cpu_time;
+extern uint64 ac_real_time;
 extern int ac_n_times;
 extern uint32 col_ac_last_duration;
 long ac_n_busy;
@@ -318,6 +320,7 @@ long tws_disconnect_while_check_in;
 long tws_done_while_check_in;
 long tws_cancel;
 long tws_bad_request;
+long tws_max_connects;
 
 long tws_cached_connection_hits;
 long tws_cached_connection_miss;
@@ -374,7 +377,7 @@ extern int enable_ro_rc;
 extern int32 dc_batch_sz;
 extern int32 dc_max_batch_sz;
 extern int32 enable_dyn_batch_sz;
-extern int32 dc_adjust_batch_sz_min_anytime;
+extern uint32 dc_adjust_batch_sz_min_anytime;
 extern int32 enable_vec_reuse;
 extern int enable_split_range;
 extern int enable_split_sets;
@@ -417,6 +420,8 @@ extern int dbf_max_itc_samples;
 extern int32 c_pcre_match_limit;
 extern int32 c_pcre_match_limit_recursion;
 extern int32 pcre_max_cache_sz;
+extern int64 users_cache_sz;
+extern int32 enable_cpt_rb_ck;
 
 extern int32 shcompo_max_cache_sz;
 
@@ -468,7 +473,7 @@ long st_started_since_month;
 long st_started_since_day;
 long st_started_since_hour;
 long st_started_since_minute;
-long st_sys_ram;
+int64 st_sys_ram;
 
 long st_chkp_remap_pages;
 long st_chkp_mapback_pages;
@@ -479,7 +484,8 @@ long st_cli_n_current_connections = 0;
 long fe_replication_support = 0;
 
 long sparql_result_set_max_rows = 0;
-long sparql_max_mem_in_use = 0;
+int32 sparql_construct_max_triples = 0;
+size_t sparql_max_mem_in_use = 0L;
 
 extern int rdf_create_graph_keywords;
 extern int rdf_query_graph_keywords;
@@ -493,6 +499,8 @@ static long thr_cli_vdb;
 
 static long db_max_col_bytes = ROW_MAX_COL_BYTES;
 static long db_sizeof_wide_char = sizeof (wchar_t);
+
+extern int debug_invalid_iri_id;
 
 void
 process_status_report (void)
@@ -644,13 +652,16 @@ dbms_status_report (void)
   char rpc[200];
   char col_ac_str[100];
   char w_rate[40];
-  long read_percent = 0, write_percent = 0, interval_msec = 0;
-  static long last_time;
-  static long last_read_cum_time, last_write_cum_time;
+  long read_percent = 0, write_percent = 0;
+  time_msec_t interval_msec = 0;
+  static time_msec_t last_time;
+  static int64 last_read_cum_time;
+  static int64 last_write_cum_time;
   extern sys_timer_t sti_sync;
  extern long tc_n_flush;
  int n_dirty = 0, n_wired = 0, n_buffers = 0, n_used = 0, n_io = 0, n_crsr = 0, n_read_aside = 0;
   char * bp_curr_ts;
+  caddr_t bp_curr_pref;
   dk_mem_stat (mem, sizeof (mem));
   PrpcStatus (rpc, sizeof (rpc));
   if (1)
@@ -735,6 +746,11 @@ dbms_status_report (void)
 	      dbs->dbs_log_name ? dbs->dbs_log_name : "none",
 	      (OFF_T_PRINTF_DTP) dbs->dbs_log_length);
   rep_printf ("%ld pages have been changed since last backup (in checkpoint state)\n", dbs_count_incbackup_pages (dbs));
+
+  bp_curr_pref = bp_curr_prefix ();
+  if (box_length (bp_curr_pref) > 0)
+    rep_printf ("Current backup prefix: %s\n", bp_curr_pref);
+  dk_free_box (bp_curr_pref);
 
   bp_curr_ts = bp_curr_timestamp ();
   rep_printf ("Current backup timestamp: %s\n", bp_curr_ts);
@@ -989,7 +1005,7 @@ bif_exec_status ()
   id_hash_iterator_t hit;
   int64 *k;
   bif_exec_stat_t ** exs;
-  uint32 now = get_msec_real_time ();
+  time_msec_t now = get_msec_real_time ();
   mutex_enter (&bif_exec_pending_mtx);
   id_hash_iterator (&hit, bif_exec_pending);
   while (hit_next (&hit, (caddr_t*)&k, (caddr_t*)&exs))
@@ -1168,7 +1184,7 @@ semaphore_t * ps_sem;
 void
 st_collect_ps_info (dk_set_t * arr)
 {
-  long time_now = get_msec_real_time ();
+  time_msec_t time_now = get_msec_real_time ();
   dk_set_t clients;
 
   mutex_enter (thread_mtx);
@@ -1232,34 +1248,36 @@ char *product_version_string ()
   return buf;
 }
 
-long
+int64
 get_total_sys_mem ()
 {
 #if defined (linux) || defined (SOLARIS)
-    long pages = sysconf(_SC_PHYS_PAGES);
-    long page_size = sysconf(_SC_PAGE_SIZE);
-    return pages * page_size;
+  long pages = sysconf (_SC_PHYS_PAGES);
+  long page_size = sysconf (_SC_PAGE_SIZE);
+  return pages * page_size;
 #elif defined (__APPLE__)
-    int mib[2];
-    long physical_memory;
-    size_t length;
+  int mib[2];
+  size_t physical_memory;
+  size_t length;
 
-    mib[0] = CTL_HW;
-    mib[1] = HW_MEMSIZE;
-    length = sizeof(long);
-    sysctl(mib, 2, &physical_memory, &length, NULL, 0);
-    return physical_memory;
+  mib[0] = CTL_HW;
+  mib[1] = HW_MEMSIZE;
+  length = sizeof (physical_memory);
+  sysctl (mib, 2, &physical_memory, &length, NULL, 0);
+  return physical_memory;
 #elif defined (WIN32)
-    MEMORYSTATUSEX status;
-    status.dwLength = sizeof (status);
-    GlobalMemoryStatusEx (&status);
-    return status.ullTotalPhys;
+  MEMORYSTATUSEX status;
+  status.dwLength = sizeof (status);
+  GlobalMemoryStatusEx (&status);
+  return status.ullTotalPhys;
 #else
-    return 0;
+  return 0;
 #endif
 }
 
 extern int process_is_swapping;
+extern double curr_cpu_pct;
+extern unsigned long curr_mem_rss;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
@@ -1319,8 +1337,8 @@ status_report (const char * mode, query_instance_t * qi)
   if (gen_info)
     {
       rep_printf ("%s%.500s Server\n", PRODUCT_DBMS, build_special_server_model);
-      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s \n",
-		  build_thread_model, build_opsys_id, build_date);
+      rep_printf ("Version " DBMS_SRV_VER "%s for %s as of %s (%s)\n",
+		  build_thread_model, build_opsys_id, build_date, git_head);
     }
   if (!st_started_since_year)
     {
@@ -1342,6 +1360,7 @@ status_report (const char * mode, query_instance_t * qi)
 		  st_started_since_year, st_started_since_month, st_started_since_day,
 	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
+  rep_printf ("CPU: %.02f%% RSS: %ldMB\n", curr_cpu_pct, curr_mem_rss);
   if (!gen_info)
     return;
   if (lite_mode)
@@ -1404,6 +1423,7 @@ caddr_t
 bif_status (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   const char * mode = BOX_ELEMENTS (args) > 0 ? bif_string_arg (qst, args, 0, "status") : "dhrcl";
+  sec_check_dba ((query_instance_t*)qst, "status");
 /*  caddr_t cli_ws = (caddr_t) ((query_instance_t *)qst)->qi_client->cli_ws;
   if (!cli_ws)
     {*/
@@ -1449,7 +1469,8 @@ stat_desc_t stat_descs [] =
     {"disk_reads", (long *)&disk_reads, NULL},
     {"disk_releases", &disk_releases, NULL},
     {"disk_writess", &disk_writes, NULL},
-    {"read_cum_time", &read_cum_time, NULL},
+    {"read_cum_time", &read_cum_time, SD_INT64},
+    {"write_cum_time", &write_cum_time, SD_INT64},
     {"lock_deadlocks", &lock_deadlocks, NULL},
     {"lock_2r1w_deadlocks", &lock_2r1w_deadlocks, NULL},
     {"lock_killed_by_force", &lock_killed_by_force, NULL},
@@ -1550,6 +1571,7 @@ stat_desc_t stat_descs [] =
     {"mp_large_in_use", (long *)&mp_large_in_use, NULL},
     {"mp_max_large_in_use", (long *)&mp_max_large_in_use, NULL},
     {"mp_mmap_clocks", &mp_mmap_clocks, NULL},
+    {"dict_max_mp_bytes_in_use", &dict_max_mp_bytes_in_use, SD_INT64},
     {"tc_read_aside", &tc_read_aside, NULL},
     {"tc_merge_reads", &tc_merge_reads, NULL},
     {"tc_merge_read_pages", &tc_merge_read_pages, NULL},
@@ -1631,12 +1653,13 @@ stat_desc_t stat_descs [] =
     {"tws_cached_connection_hits", &tws_cached_connection_hits , NULL},
     {"tws_cached_connection_miss", &tws_cached_connection_miss , NULL},
     {"tws_bad_request", &tws_bad_request , NULL},
+    {"tws_max_connects", &tws_max_connects , NULL},
 
     {"vt_batch_size_limit", &vt_batch_size_limit, NULL},
 
     {"prof_avg_exec", (long *) &prof_avg_exec, NULL},
     {"prof_n_exec", (long *) &prof_n_exec, NULL},
-    {"prof_compile_time", (long *) &prof_compile_time, NULL},
+    {"prof_compile_time", &prof_compile_time, SD_INT64},
 
     {"st_dbms_name", NULL, &st_dbms_name},
     {"st_dbms_ver", NULL, &st_dbms_ver},
@@ -1686,7 +1709,7 @@ stat_desc_t stat_descs [] =
     {"st_chkp_mapback_pages", &st_chkp_mapback_pages, NULL},
     {"st_chkp_atomic_time", &st_chkp_atomic_time, NULL},
     {"st_chkp_autocheckpoint", (long *) &cfg_autocheckpoint, NULL},
-    {"st_chkp_last_checkpointed", (long *) &checkpointed_last_time, NULL},
+    {"st_chkp_last_checkpointed", (long *) &checkpointed_last_time, SD_INT64},
 
     {"st_started_since_year", &st_started_since_year, NULL},
     {"st_started_since_month", &st_started_since_month, NULL},
@@ -1694,7 +1717,7 @@ stat_desc_t stat_descs [] =
     {"st_started_since_hour", &st_started_since_hour, NULL},
     {"st_started_since_minute", &st_started_since_minute, NULL},
 
-    {"st_sys_ram", &st_sys_ram, NULL},
+    {"st_sys_ram", &st_sys_ram, SD_INT64},
 
     {"prof_on", &prof_on, NULL},
     {"prof_start_time", &prof_start_time, NULL},
@@ -1725,9 +1748,9 @@ stat_desc_t stat_descs [] =
     {"sqlc_add_views_qualifiers", &sqlc_add_views_qualifiers, NULL},
 
     {"db_ver_string", NULL, &db_version_string},
-#ifdef unix
+
     {"git_head", NULL, &git_head},
-#endif
+
     {"db_max_col_bytes", &db_max_col_bytes, NULL},
     {"db_sizeof_wide_char", &db_sizeof_wide_char, NULL},
 
@@ -1771,19 +1794,50 @@ stat_desc_t stat_descs [] =
 
     /* sparql vars */
     {"sparql_result_set_max_rows", &sparql_result_set_max_rows, NULL},
-    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, NULL},
+    {"sparql_construct_max_triples", &sparql_construct_max_triples, SD_INT32},
+    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"rdf_create_graph_keywords", &rdf_create_graph_keywords, SD_INT32},
     {"rdf_query_graph_keywords", &rdf_query_graph_keywords, SD_INT32},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"srv_init", (long *)&in_srv_global_init, SD_INT32},
-    {"ac_real_time", (long *)&ac_real_time, SD_INT32},
-    {"ac_cpu_time", (long *)&ac_cpu_time, SD_INT32},
+    {"ac_real_time", (long *)&ac_real_time, SD_INT64},
+    {"ac_cpu_time", (long *)&ac_cpu_time, SD_INT64},
     {"ac_n_times", (long *)&ac_n_times, SD_INT32},
     {"col_ac_last_duration", (long *)&col_ac_last_duration, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
     {NULL, NULL, NULL}
 };
+
+/*
+ the following are ptrs of protected system wide params, once are set to a value greater than zero
+ cannot be changed until server is running, also if they written in DB cfg page,
+ cannot be changed even after server restart.
+*/
+static void *
+dbf_protected_params[] = {
+  &timezoneless_datetimes,
+  &rdf_rpid64_mode,
+  NULL
+};
+
+int
+dbf_protected_param (stat_desc_t * sd)
+{
+  int inx;
+  void *ptr;
+  for (inx = 0; NULL != (ptr = dbf_protected_params[inx]); inx++)
+    if (sd->sd_value == ptr)
+      {
+	int64 val = 0;
+	if (SD_INT32 == (char **) sd->sd_str_value)
+	  val = *((int32 *) sd->sd_value);
+	else if (SD_INT64 == (char **) sd->sd_str_value)
+	  val = *((int64 *) sd->sd_value);
+	return (val != 0);
+      }
+  return 0;
+}
 
 
 stat_desc_t dbf_descs [] =
@@ -1809,6 +1863,7 @@ stat_desc_t dbf_descs [] =
     {"cl_res_buffer_bytes", (long *)&cl_res_buffer_bytes, SD_INT32},
     {"cl_batches_per_rpc", (long *)&cl_batches_per_rpc, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
+    {"enable_g_inf_opt", (long *)&enable_g_inf_opt, SD_INT32},
     {"enable_mem_hash_join", (long *)&    enable_mem_hash_join, SD_INT32},
     {"sqlo_max_layouts", &sqlo_max_layouts, SD_INT32},
     {"sqlo_max_mp_size", &sqlo_max_mp_size},
@@ -1842,6 +1897,7 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", (long *)&ha_rehash_pct, SD_INT32},
     {"c_use_aio", (long *)&c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception, NULL},
+    {"public_debug", &public_debug, NULL},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"enable_qp", (long *)&enable_qp, SD_INT32},
     {"enable_mt_txn", (long *)&enable_mt_txn, SD_INT32},
@@ -1866,7 +1922,7 @@ stat_desc_t dbf_descs [] =
     {"dbf_col_del_leaf", (long *)&dbf_col_del_leaf, SD_INT32},
     {"enable_pogs_check", (long *)&enable_pogs_check, SD_INT32},
     {"enable_sslr_check", (long *)&enable_sslr_check, SD_INT32},
-    {"chash_space_avail", (long *)&chash_space_avail},
+    {"chash_space_avail", (long *)&chash_space_avail, SD_INT64},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
     {"enable_ksp_fast", (long *)&enable_ksp_fast, SD_INT32},
@@ -1897,14 +1953,13 @@ stat_desc_t dbf_descs [] =
     {"mp_large_soft_cap", &mp_large_soft_cap},
     {"mp_large_hard_cap", &mp_large_hard_cap},
     {"mp_sparql_cap", &mp_sparql_cap, NULL},
-
+    {"sparql_max_mem_in_use", &sparql_max_mem_in_use, SD_INT64},
     {"iri_range_size", (long *)&iri_range_size, SD_INT32},
-    { "tn_max_memory",  (long *)&tn_max_memory, NULL},
-    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},
-    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, NULL},
-    {"tn_mem_cutoff", (long *)&tn_mem_cutoff, NULL},
-    {"tn_at_card_cutoff", (long *)&tn_at_card_cutoff, NULL},
-    {"tn_card_cutoff", (long *)&tn_card_cutoff, NULL},
+    {"tn_max_memory",  (long *)&tn_max_memory, SD_INT64},
+    {"tn_at_mem_cutoff", (long *)&tn_at_mem_cutoff, SD_INT64},
+    {"tn_mem_cutoff", (long *)&tn_mem_cutoff, SD_INT64},
+    {"tn_at_card_cutoff", (long *)&tn_at_card_cutoff, SD_INT64},
+    {"tn_card_cutoff", (long *)&tn_card_cutoff, SD_INT64},
     {"dbf_max_itc_samples", (long *)&dbf_max_itc_samples, SD_INT32},
     {"enable_mt_ft_inx", (long *)&enable_mt_ft_inx, SD_INT32},
     {"disable_rdf_init", (long *)&disable_rdf_init, SD_INT32},
@@ -1923,16 +1978,20 @@ stat_desc_t dbf_descs [] =
 #endif
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
     {"simple_rdf_numbers", &simple_rdf_numbers, SD_INT32},
+    {"rdf_rpid64_mode", (long *)&rdf_rpid64_mode, SD_INT32},
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},
-  {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
+    {"shcompo_max_cache_sz", &shcompo_max_cache_sz, SD_INT32},
+    {"debug_invalid_iri_id", &debug_invalid_iri_id, SD_INT32},
     {"enable_qr_comment", &enable_qr_comment, SD_INT32},
     {"timezoneless_datetimes", &timezoneless_datetimes, SD_INT32},
     {"lock_escalation_pct", &lock_escalation_pct, SD_INT32},
     {"enable_spar_logfile", (long *) &enable_spar_logfile, SD_INT32},
     {"enable_sqlc_logfile", (long *) &enable_sqlc_logfile, SD_INT32},
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
+    {"users_cache_sz", &users_cache_sz, SD_INT64},
+    {"enable_cpt_rb_ck", &enable_cpt_rb_ck, SD_INT32},
     {NULL, NULL, NULL}
   };
 
@@ -2071,6 +2130,8 @@ bif_dbf_set (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
   sd = *place;
+  if (dbf_protected_param (sd))
+    sqlr_new_error ("42000", "SR...", "sys_stat parameter '%.300s' is already set and cannot be changed", name);
   if (SD_INT32 == (char **) sd->sd_str_value)
 	    {
 	      int32 ov = *((int32*)sd->sd_value);
@@ -2173,9 +2234,9 @@ caddr_t
 bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   query_instance_t *qi = (query_instance_t *) qst;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
-  caddr_t stat_name = bif_string_arg (qst, args, 2, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_stat");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_stat");
+  caddr_t stat_name = bif_string_arg (qst, args, 2, "key_stat");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {
@@ -2238,6 +2299,8 @@ bif_key_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    return (box_num (key->key_ac_in));
 	  if (0 == strcmp (stat_name, "ac_out"))
 	    return (box_num (key->key_ac_out));
+	  if (0 == strcmp (stat_name, "key_count"))
+	    return (box_num (key->key_count));
 	  if (0 == strcmp (stat_name, "n_est_rows"))
 	    {
 	      return box_num (tb->tb_count_estimate + tb->tb_count_delta);
@@ -2381,7 +2444,7 @@ prof_report (void)
   out = fopen ("virtprof.out", "w");
   if (out)
     {
-      real = 1 + get_msec_real_time () - prof_start_time;
+      real = 1 + (long) (get_msec_real_time () - prof_start_time);
       if (prof_stat_table == 1)
 	{
 	  char tmp_buf[1024];
@@ -3991,7 +4054,6 @@ bif_sys_em_stat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       extent_map_t * em = it->it_extent_map;
       if (!em || em == sys_em) 
 	continue;
-      bing ();
       sys_em_stat_entry (&set, it->it_key, em);
     }
   END_DO_SET()
@@ -4279,8 +4341,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   search_spec_t ** prev_sp;
   query_instance_t *qi = (query_instance_t *) qst;
   dbe_key_t * key = NULL;
-  caddr_t tb_name = bif_string_arg (qst, args, 0, "sys_stat");
-  caddr_t key_name = bif_string_arg (qst, args, 1, "sys_stat");
+  caddr_t tb_name = bif_string_arg (qst, args, 0, "key_estimate");
+  caddr_t key_name = bif_string_arg (qst, args, 1, "key_estimate");
   dbe_table_t *tb = qi_name_to_table (qi, tb_name);
   if (!tb)
     {
@@ -4300,7 +4362,8 @@ bif_key_estimate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   sqlr_new_error ("42S02", "SR243", "No key %s in key_estimate", key_name);
  found:
-  dbe_key_count (key); /* max of the sample, must be defd */
+  if (DBE_NO_STAT_DATA == key->key_table->tb_count_estimate)
+    dbe_key_count (key); /* max of the sample, must be defd */
   ITC_INIT (itc, key->key_fragments[0]->kf_it, NULL);
   itc_clear_stats (itc);
   memset (&specs,0,  sizeof (specs));
@@ -4492,7 +4555,9 @@ caddr_t
 bif_lt_w_id (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int64 id = ((query_instance_t*)qst)->qi_trx->lt_w_id;
+#if 0
   if (!id) bing ();
+#endif
   return box_num (id);
 }
 
@@ -4827,6 +4892,7 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	{
       tb_sample_t smpl;
 	  caddr_t k = sc_ext_to_data (qi, smp[0]);
+#if 0				/* debug code dissabled */
 	  if (stat_trap)
 	    {
 	      caddr_t * k = (caddr_t*)smp[0];
@@ -4834,11 +4900,14 @@ bif_stat_import (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      for (inx = 2; inx < BOX_ELEMENTS (k); inx++)
 		{
 		  caddr_t * elt = k[inx];
+#if 0
 		  if (DV_STRINGP (elt) && strstr (elt, stat_trap))
 		    bing ();
+#endif
 		}
 	    }
 	  stat_adjust_key ((caddr_t *)k);
+#endif
 	  memzero (&smpl, sizeof (smpl));
 	  smpl.smp_time = approx_msec_real_time ();
 	  smpl.smp_card = unbox_float (smp[1]);

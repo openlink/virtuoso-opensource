@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -75,7 +75,7 @@ RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/obackup1.sq
 
 while test -f "$LOCKFILE" 
 do
-	sleep 1
+	sleep 5
 done
 
 rm -f $DBLOGFILE $DBFILE
@@ -93,7 +93,7 @@ RUN $ISQL $DSN '"EXEC=shutdown();"' ERRORS=STDOUT
 
 while test -f "$LOCKFILE" 
 do
-	sleep 1
+	sleep 5
 done
 
 rm -f $DBLOGFILE

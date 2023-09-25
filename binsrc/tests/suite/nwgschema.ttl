@@ -1,0 +1,163 @@
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix aowl: <http://bblfish.net/work/atom-owl/2006-06-06/> .
+@prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#> .
+@prefix gql: <http://www.openlinksw.com/schemas/graphql#> .
+@prefix Demo: <http://localhost:8890/schemas/Demo/> .
+
+Demo: a owl:Ontology .
+
+# Demo.demo.Categories
+
+gql:Categories gql:type gql:Array;
+  gql:rdfClass Demo:Categories .
+
+gql:CategoriesObject gql:type gql:Object;
+  gql:rdfClass Demo:Categories .
+
+Demo:Categories a rdfs:Class ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:Categories ;
+  rdfs:label "Demo.demo.Categories" .
+
+Demo:categoryid a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Categories ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:categoryid ;
+  rdfs:label "CategoryID" .
+
+Demo:categoryname a owl:DatatypeProperty ;
+  rdfs:range xsd:string ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Categories ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:categoryname ;
+  rdfs:label "CategoryName" .
+
+Demo:description a owl:DatatypeProperty ;
+  rdfs:range xsd:string ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Categories ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:description ;
+  rdfs:label "Description" .
+
+Demo:categories_of a owl:ObjectProperty ;
+  rdfs:domain Demo:Categories ;
+  rdfs:range Demo:Products ;
+  rdfs:label "Relation to Demo.demo.Products" ;
+  gql:field gql:categories_of ;
+  gql:type gql:Object ;
+  rdfs:isDefinedBy Demo: .
+
+
+# Demo.demo.Products
+
+gql:Products gql:type gql:Array;
+  gql:rdfClass Demo:Products .
+
+gql:ProductsObject gql:type gql:Object;
+  gql:rdfClass Demo:Products .
+
+Demo:Products a rdfs:Class ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:Products ;
+  rdfs:label "Demo.demo.Products" .
+
+Demo:productid a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:productid ;
+  rdfs:label "ProductID" .
+
+Demo:productname a owl:DatatypeProperty ;
+  rdfs:range xsd:string ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:productname ;
+  rdfs:label "ProductName" .
+
+Demo:supplierid a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:supplierid ;
+  rdfs:label "SupplierID" .
+
+Demo:categoryid a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:categoryid ;
+  rdfs:label "CategoryID" .
+
+Demo:quantityperunit a owl:DatatypeProperty ;
+  rdfs:range xsd:string ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:quantityperunit ;
+  rdfs:label "QuantityPerUnit" .
+
+Demo:unitprice a owl:DatatypeProperty ;
+  rdfs:range xsd:numeric ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:unitprice ;
+  rdfs:label "UnitPrice" .
+
+Demo:unitsinstock a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:unitsinstock ;
+  rdfs:label "UnitsInStock" .
+
+Demo:unitsonorder a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:unitsonorder ;
+  rdfs:label "UnitsOnOrder" .
+
+Demo:reorderlevel a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:reorderlevel ;
+  rdfs:label "ReorderLevel" .
+
+Demo:discontinued a owl:DatatypeProperty ;
+  rdfs:range xsd:int ;
+  gql:type gql:Scalar ;
+  rdfs:domain Demo:Products ;
+  rdfs:isDefinedBy Demo: ;
+  gql:field gql:discontinued ;
+  rdfs:label "Discontinued" .
+
+Demo:has_categories a owl:ObjectProperty ;
+  rdfs:domain Demo:Products ;
+  rdfs:range Demo:Categories ;
+  rdfs:label "Relation to Demo.demo.Categories" ;
+  gql:field gql:has_categories ;
+  gql:type gql:Object ;
+  rdfs:isDefinedBy Demo: .
+
+
+
+gql:Map gql:dataGraph <http://localhost:8890/Demo#> ;
+  gql:schemaGraph Demo: ;
+  gql:schemaObjects gql:Categories, gql:Products.

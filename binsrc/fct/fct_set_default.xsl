@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -24,6 +24,7 @@
 <xsl:stylesheet version="1.0"
 		xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
 
+<xsl:param name="limit"/>
 <xsl:template match = "view">
 </xsl:template>
 
@@ -33,7 +34,7 @@
       <xsl:apply-templates select="@* | node()" />
       <xsl:element name="view">
         <xsl:attribute name="type">classes</xsl:attribute>
-        <xsl:attribute name="limit">20</xsl:attribute>
+	<xsl:attribute name="limit"><xsl:value-of select="$limit"/></xsl:attribute>
       </xsl:element>
     </xsl:copy>
 </xsl:template>

@@ -1,0 +1,9 @@
+*.vad
+*.log
+vad
+virtuoso.db
+virtuoso.ini
+virtuoso.log
+virtuoso.pxa
+virtuoso.tdb
+virtuoso.trx

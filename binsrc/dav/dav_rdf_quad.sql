@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,7 @@ create function DB.DBA.DAV_FULL_PATH_TO_IRI (in dav_iri varchar, in _str varchar
   declare _ses any;
   _ses := string_output();
   http (dav_iri, _ses);
-  http_escape (subseq (_str, 4), 7, _ses, 0, 1);
+  http_escape (subseq (_str, 5), 7, _ses, 0, 1);
   return string_output_string(_ses);
 }
 ;
@@ -59,13 +59,13 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
     new_dav_graph := 'local:/DAV/';
   else
     new_dav_graph := sprintf ('http://%s/DAV/', uriqa_default_host);
-  exec ('checkpoint');
+  if (sys_stat ('db_exists')) exec ('checkpoint');
   __atomic (1);
   DB.DBA.RDF_DELETE_ENTIRE_GRAPH (new_dav_graph, 1);
   old_dav_graph := registry_get ('DB.DBA.DAV_RDF_GRAPH_URI');
   if (isstring (old_dav_graph) and old_dav_graph <> new_dav_graph and old_dav_graph <> '')
     DB.DBA.RDF_DELETE_ENTIRE_GRAPH (old_dav_graph, 1);
-  if (not enable)
+  if (not enable and sys_stat ('db_exists'))
     {
       registry_set ('DB.DBA.DAV_RDF_GRAPH_URI', '');
       __atomic (0);
@@ -108,7 +108,7 @@ create procedure DB.DBA.DAV_REPLICATE_ALL_TO_RDF_QUAD (in enable integer)
     }
   commit work;
   __atomic (0);
-  exec ('checkpoint');
+  if (sys_stat ('db_exists')) exec ('checkpoint');
   return;
 }
 ;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -80,7 +80,7 @@ public class VirtuosoResultSet implements ResultSet
    protected int totalRows;
 
    // Flag to let know if results processed
-   private boolean is_complete;
+   protected boolean is_complete;
 
    // The update count
    private int updateCount;
@@ -186,14 +186,14 @@ public class VirtuosoResultSet implements ResultSet
     * @param metaData   The metadata of the result. (It can be null)
     * @exception virtuoso.jdbc4.VirtuosoException An internal error occurred.
     */
-   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean isPrepare) throws VirtuosoException
+   VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean is_prepared) throws VirtuosoException
    {
       this.statement = statement;
       this.metaData = metaData;
       // Set some variables from the statement
       fetchDirection = statement.getFetchDirection();
       concurrency = statement.getResultSetConcurrency();
-      type = statement.getResultSetType();
+      this.type = statement.sparql_executed ?  VirtuosoResultSet.TYPE_FORWARD_ONLY : statement.getResultSetType();
       prefetch = statement.getFetchSize();
       maxRows = statement.getMaxRows();
       cursorName = (statement.cursorName == null) ? statement.statid : statement.cursorName;
@@ -201,11 +201,8 @@ public class VirtuosoResultSet implements ResultSet
       stmt_current_of = -1;
       stmt_n_rows_to_get = prefetch;
       stmt_co_last_in_batch = false;
-      is_prepared = isPrepare;
+      this.is_prepared = is_prepared;
       //System.err.print ("init: rows :");
-      //System.err.println (rows.toString());
-      process_result(isPrepare);
-      //System.err.print ("init: after process : rows :");
       //System.err.println (rows.toString());
    }
 
@@ -218,7 +215,7 @@ public class VirtuosoResultSet implements ResultSet
    {
       this.statement = new VirtuosoStatement (vc);
       this.metaData = new VirtuosoResultSetMetaData (null, vc);
-      type = VirtuosoResultSet.TYPE_FORWARD_ONLY;
+      this.type = VirtuosoResultSet.TYPE_FORWARD_ONLY;
       is_complete = true;
    }
 
@@ -226,9 +223,16 @@ public class VirtuosoResultSet implements ResultSet
    {
       this.statement = new VirtuosoStatement (vc);
       this.metaData = new VirtuosoResultSetMetaData (vc, col_names, col_dtps);
-      type = VirtuosoResultSet.TYPE_FORWARD_ONLY;
+      this.type = VirtuosoResultSet.TYPE_FORWARD_ONLY;
       is_complete = true;
    }
+
+    VirtuosoResultSet(VirtuosoStatement statement, VirtuosoResultSetMetaData metaData, boolean is_prepared, int kindop) throws VirtuosoException
+    {
+        this(statement, metaData, is_prepared);
+        this.kindop = kindop;
+    }
+
 
    /**
     * Method uses to get next rows of this result set.
@@ -290,7 +294,7 @@ public class VirtuosoResultSet implements ResultSet
 	    // Fill the statement id,the operation, and the beginning line
 	    args[0] = statement.statid;
 	    // the future number
-	    args[1] = new Long(statement.future.hashCode());
+	    args[1] = Long.valueOf(statement.future.hashCode());
 	    // Send the RPC message
 	    statement.connection.removeFuture(statement.connection.getFuture(
 		  VirtuosoFuture.fetch,args, statement.rpc_timeout));
@@ -320,11 +324,11 @@ public class VirtuosoResultSet implements ResultSet
 	    Object[] args = new Object[6];
 	    // Fill the statement id,the operation, and the beginning line
 	    args[0] = statement.statid;
-	    args[1] = new Long(op);
-	    args[2] = new Long(firstline);
-	    args[3] = new Long(nbline);
+	    args[1] = Long.valueOf(op);
+	    args[2] = Long.valueOf(firstline);
+	    args[3] = Long.valueOf(nbline);
 	    // Fill the autocommit mode
-	    args[4] = new Long((statement.connection.getAutoCommit()) ? 1 : 0);
+	    args[4] = Long.valueOf((statement.connection.getAutoCommit()) ? 1 : 0);
 	    // Fill the bookmark (never used for the moment in JDBC)
 	    args[5] = null;
 	    // Send the RPC message
@@ -486,7 +490,7 @@ public class VirtuosoResultSet implements ResultSet
 		  break;
                case VirtuosoTypes.QA_ROW_LAST_IN_BATCH:
 		  //System.out.println("--> QA_ROW_LAST_IN_BATCH");
-		  if (statement.type != TYPE_FORWARD_ONLY)
+		  if (this.type != TYPE_FORWARD_ONLY)
 		    is_complete = true;
 		  else
 		    stmt_co_last_in_batch = true;
@@ -500,7 +504,7 @@ public class VirtuosoResultSet implements ResultSet
                      rows.insertElementAt(new VirtuosoRow(this,result),i++);
                   else
                      rows.setElementAt(new VirtuosoRow(this,result),currentRow - 1);
-		  if (statement.type == TYPE_FORWARD_ONLY)
+		  if (this.type == TYPE_FORWARD_ONLY)
 		    return;
 		  else if (i >= ((prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch))
 		    return;
@@ -583,7 +587,7 @@ public class VirtuosoResultSet implements ResultSet
                case VirtuosoTypes.QA_ROWS_AFFECTED:
                   //System.out.println("---> QA_ROWS_AFFECTED");
                   //Set the number of rows affected
-                  if(type != VirtuosoResultSet.TYPE_FORWARD_ONLY)
+                  if(this.type != VirtuosoResultSet.TYPE_FORWARD_ONLY)
                   {
                      totalRows = ((Number)result.elementAt(1)).intValue();
                      updateCount = 0;
@@ -687,13 +691,6 @@ public class VirtuosoResultSet implements ResultSet
       }
    }
 
-   /**
-    * Method runs when the garbage collector want to erase the object
-    */
-   public void finalize() throws Throwable
-   {
-      close();
-   }
 
    void fixReturnedData(openlink.util.Vector data)
    {
@@ -2164,7 +2161,6 @@ public class VirtuosoResultSet implements ResultSet
     */
    public void close() throws VirtuosoException
    {
-     //System.err.println ("close");
       if(pstmt != null)
       {
          pstmt.close();
@@ -2173,23 +2169,14 @@ public class VirtuosoResultSet implements ResultSet
       if(rows != null)
       {
          rows.removeAllElements();
-         //rows = null;
       }
 #if JDK_VER >= 17
       if (statement != null && isLastResult && statement.closeOnCompletion)
       {
          statement.close();
-         statement = null;
       }
 #endif
-      if (statement != null)
-      {
-         statement.close_rs(false, is_prepared);
-         if (!is_prepared) {
-           statement = null;
-         }
-      }
-
+      statement = null;
       row = null;
       cursorName = null;
    }
@@ -2215,7 +2202,7 @@ public class VirtuosoResultSet implements ResultSet
 	       throw new VirtuosoException ("Activity on a closed statement 1", "IM001", VirtuosoException.SQLERROR);
 	   if (statement.isClosed()/*future == null*/)
 	       throw new VirtuosoException ("Activity on a closed statement 2", "IM001", VirtuosoException.SQLERROR);
-	   if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+	   if(this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
 	   {
 	       if (rowNum >= maxRows && maxRows > 0)
 	           return false;
@@ -2263,12 +2250,12 @@ public class VirtuosoResultSet implements ResultSet
 	       return true;
 	   }
 	   else
-	       if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+	       if(this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
 	       {
 		   currentRow = rows.size() + 1;
 		   return false;
 	       }
-	   if(type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE && getRow() == totalRows)
+	   if(this.type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE && getRow() == totalRows)
 	   {
 	       currentRow = rows.size() + 1;
 	       return false;
@@ -2306,11 +2293,11 @@ public class VirtuosoResultSet implements ResultSet
       {
          int r;
 
-         if (type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE)
+         if (this.type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE)
            r = ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getRow();
-         else if (type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
+         else if (this.type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
            r = ((Number)((openlink.util.Vector)(((VirtuosoRow)(rows.elementAt(currentRow - 1))).getBookmark()).elementAt(1)).elementAt(0)).intValue();
-         else if (type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+         else if (this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
            r = rowNum;
          else
            r = 0;
@@ -2335,7 +2322,7 @@ public class VirtuosoResultSet implements ResultSet
    public boolean previous() throws VirtuosoException
    {
       // The JDBC spec
-      if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+      if(this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
          throw new VirtuosoException("Cannot access to the previous row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       if (currentRow == 0)
 	return false;
@@ -2346,12 +2333,12 @@ public class VirtuosoResultSet implements ResultSet
          currentRow = previousRow;
          return true;
       }
-      if(type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE && getRow() == 1)
+      if(this.type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE && getRow() == 1)
       {
          currentRow = 0;
          return false;
       }
-      if(type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE)
+      if(this.type == VirtuosoResultSet.TYPE_SCROLL_INSENSITIVE)
       {
          // Get the row bookmark of the line
          int book = getRow();
@@ -2373,7 +2360,7 @@ public class VirtuosoResultSet implements ResultSet
             }
          }
       }
-      if(type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
+      if(this.type == VirtuosoResultSet.TYPE_SCROLL_SENSITIVE)
       {
 	//try {
 	 //System.err.println ("refetching: currentRow=" + currentRow);
@@ -2529,7 +2516,7 @@ public class VirtuosoResultSet implements ResultSet
    public boolean absolute(int row) throws VirtuosoException
    {
       // The JDBC spec
-      if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+      if(this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
          throw new VirtuosoException("Cannot go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       // Call the extended fetch RPC
       extended_fetch(VirtuosoTypes.SQL_FETCH_ABSOLUTE,row,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
@@ -2554,7 +2541,7 @@ public class VirtuosoResultSet implements ResultSet
    public boolean relative(int row) throws VirtuosoException
    {
       // The JDBC spec
-      if(type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
+      if(this.type == VirtuosoResultSet.TYPE_FORWARD_ONLY)
          throw new VirtuosoException("Cannot go before the first row, the type is forward only.",VirtuosoException.ERRORONTYPE);
       // Call the extended fetch RPC
       extended_fetch(VirtuosoTypes.SQL_FETCH_RELATIVE,row,(prefetch == 0) ? VirtuosoTypes.DEFAULTPREFETCH : prefetch);
@@ -2707,7 +2694,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Boolean(x);
+      row[columnIndex - 1] = Boolean.valueOf(x);
    }
 
    /**
@@ -2733,7 +2720,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Byte(x);
+      row[columnIndex - 1] = Byte.valueOf(x);
    }
 
    /**
@@ -2759,7 +2746,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Short(x);
+      row[columnIndex - 1] = Short.valueOf(x);
    }
 
    /**
@@ -2785,7 +2772,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Integer(x);
+      row[columnIndex - 1] = Integer.valueOf(x);
    }
 
    /**
@@ -2811,7 +2798,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Long(x);
+      row[columnIndex - 1] = Long.valueOf(x);
    }
 
    /**
@@ -2837,7 +2824,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Float(x);
+      row[columnIndex - 1] = Float.valueOf(x);
    }
 
    /**
@@ -2863,7 +2850,7 @@ public class VirtuosoResultSet implements ResultSet
          if(!(currentRow < 1 || currentRow > rows.size()))
             ((VirtuosoRow)(rows.elementAt(currentRow - 1))).getContent(row);
       }
-      row[columnIndex - 1] = new Double(x);
+      row[columnIndex - 1] = Double.valueOf(x);
    }
 
    /**

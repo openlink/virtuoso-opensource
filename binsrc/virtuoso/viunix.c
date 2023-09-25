@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -588,7 +588,7 @@ main (int argc, char **argv)
   initialize_program (&argc, &argv);
 
   /* all of the below means foreground ! */
-  if (f_backup_dump || recover_file_prefix || f_crash_dump)
+  if (f_backup_dump || recover_file_prefix || f_crash_dump || f_read_from_rebuilt_database)
     f_foreground = 1;
 #ifdef V5UPGRADE
   if (!f_backup_dump && !f_read_from_rebuilt_database)
@@ -636,6 +636,7 @@ main (int argc, char **argv)
       sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       sigh_action (SIGH_EXIT);
+      txn_after_image_limit = 0;
       db_to_log ();
       viunix_terminate (0);
     }
@@ -775,7 +776,7 @@ main (int argc, char **argv)
 #endif
 	  log_info ("Initiating quick shutdown");
 #ifdef _RENDEZVOUS
-	  stop_rendezvous ();
+	  /* stop_rendezvous (); */
 #endif
 	  sf_fastdown (NULL);
 	}

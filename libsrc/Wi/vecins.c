@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -322,6 +322,7 @@ itc_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   itc->itc_row_key = itc->itc_insert_key;
   itc->itc_lock_mode = PL_EXCLUSIVE;
   itc->itc_search_mode = SM_INSERT;
+  itc->itc_isolation = ins->ins_seq_col ? ISO_SERIALIZABLE : ISO_REPEATABLE;
 reset_search:
   first_set = itc->itc_set;
   ins_offset = 0;
@@ -585,7 +586,7 @@ dc_mp_insert_copy_any (mem_pool_t * mp, data_col_t * dc, int inx, dbe_column_t *
       db_buf_t rdf_id = mp_dv_rdf_to_db_serial (mp, dv);
       return (caddr_t) rdf_id;
     }
-  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0] ||
+  if ((DV_STRING == dv[0] || DV_SHORT_STRING_SERIAL == dv[0] || DV_DB_NULL == dv[0] || DV_BIN == dv[0] ||
 	  DV_UNAME == dv[0] || DV_SYMBOL == dv[0] || DV_BOX_FLAGS == dv[0] || IS_WIDE_STRING_DTP (dv[0]))
       && col && 'O' == col->col_name[0] && tb_is_rdf_quad (col->col_defined_in) && !f_read_from_rebuilt_database)
     {
@@ -1111,11 +1112,11 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
       }
   }
   ITC_FAILED
-  {
-    rd_free (&right_rd);
-    mp_free (ins_mp);
-    itc_free_owned_params (itc);
-  }
+    {
+      rd_free (&right_rd);
+      mp_free (ins_mp);
+      itc_free_owned_params (itc);
+    }
   END_FAIL (itc);
   ITC_RESTORE_FAIL (itc);
 done:

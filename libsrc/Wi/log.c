@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,7 +208,7 @@ srv_report_errno_trx_error (lock_trx_t *lt, const char *text, const char *name, 
 	"%.30s %.160s : %.100s", text, name, virt_strerror (eno)));
 }
 
-uint32 last_log_time_written = 0;
+time_msec_t last_log_time_written = 0;
 int log_in_cl_recov;
 
 
@@ -233,7 +233,7 @@ log_time (caddr_t * box)
   if (!box && log_in_cl_recov)
     return LTE_OK;
   if (!box && (!last_log_time_written
-	       || approx_msec_real_time () - last_log_time_written > 30000))
+	       || (approx_msec_real_time () - last_log_time_written) > 30000))
     {
       char dt[DT_LENGTH];
       dt_now (dt);
@@ -271,6 +271,7 @@ int32 log_extent_if_needed = 1;
 #ifdef WIN32
 #define PATH_MAX	 MAX_PATH
 #endif
+
 
 int
 log_change_if_needed (lock_trx_t * lt, int rewrite)
@@ -566,7 +567,7 @@ log_text_array_sync (lock_trx_t * lt, caddr_t box)
   lt->lt_blob_log = NULL;
   if(!sync_log)
     sync_log = strses_allocate ();
-  lt->lt_log =sync_log;
+  lt->lt_log = sync_log;
   session_buffered_write_char (LOG_TEXT, lt->lt_log);
   print_object (box, lt->lt_log, NULL, NULL);
   rc = log_commit (lt);
@@ -702,7 +703,7 @@ log_skip_blobs_1 (dk_session_t * ses)
   END_READ_FAIL (ses);
 }
 
-uint32 log_last_2pc_archive_time = 0;
+time_msec_t log_last_2pc_archive_time = 0;
 
 
 int
@@ -730,7 +731,7 @@ log_2pc_archive (int64 trx_id)
   CATCH_WRITE_FAIL (ses)
     {
       int64 bs = ses->dks_bytes_sent;
-      if (!log_last_2pc_archive_time || approx_msec_real_time () - log_last_2pc_archive_time > 30000)
+      if (!log_last_2pc_archive_time || (approx_msec_real_time () - log_last_2pc_archive_time) > 30000)
 	{
 	  caddr_t dt = dk_alloc_box (DT_LENGTH, DV_DATETIME);
 	  if (in_log_replay || log_in_cl_recov)
@@ -1839,7 +1840,8 @@ cr_done:
       sst = cli_get_stmt_access (lt->lt_client, stmt_id, GET_EXCLUSIVE, NULL);
       text2 = box_copy (text);
       err = stmt_set_query (sst, lt->lt_client, text, opts);
-      LEAVE_CLIENT (lt->lt_client);
+      if (!lt->lt_client->cli_is_log)
+        LEAVE_CLIENT (lt->lt_client); /* not entered in log replay */
       if (err != NULL)
 	{
 	  if ((caddr_t)-1 == err)
@@ -2019,60 +2021,41 @@ log_replay_entry (lock_trx_t * lt, dtp_t op, dk_session_t * in, int is_pushback)
   return SQL_SUCCESS;
 }
 
-/* TODO move string_buffer to an utility file
- */
-typedef struct {
-  int sb_len;
-  char *sb_buf;
-  int sb_pos;
-} string_buffer;
+typedef struct
+{
+  dk_session_t *sb_ses;
+  caddr_t sb_buf;
+} string_buffer_t;
 
 void
-sb_init(string_buffer* sb) {
-  sb->sb_len=120;
-  sb->sb_buf=malloc(sb->sb_len);
-  sb->sb_pos=0;
+sb_init (string_buffer_t * sb)
+{
+  sb->sb_ses = strses_allocate ();
+  sb->sb_buf = NULL;
 }
 
 void
-sb_free_buf(string_buffer* sb) {
-  free(sb->sb_buf);
-  sb->sb_len=0;
-  sb->sb_buf=NULL;
-  sb->sb_pos=0;
+sb_done (string_buffer_t * sb)
+{
+  sb->sb_buf = strses_string (sb->sb_ses);
+  dk_free_box (sb->sb_ses);
+  sb->sb_ses = NULL;
 }
 
-/** after pasprintf.c
- *  http://perfec.to/vsnprintf/
- */
-int
-sb_printf(string_buffer* sb, const char *fmt, ...) {
-  int outsize;
-  for (;;) {
+void
+sb_printf (string_buffer_t * sb, const char *fmt, ...)
+{
+  char buf[PAGE_SZ];
+  int len;
     va_list args;
-    char *newbuf;
-    size_t nextsize;
-    size_t bufsize=sb->sb_len - sb->sb_pos;
     va_start(args, fmt);
-    outsize = vsnprintf(sb->sb_buf + sb->sb_pos, bufsize, fmt, args);
+  len = vsnprintf (buf, sizeof (buf), fmt, args);
     va_end(args);
-    if ((outsize != -1) && (outsize < bufsize - 1)) {/* Output was not truncated */
-      break;
-    }
-    nextsize = sb->sb_len * 2;
-    if ((newbuf = (char *)realloc(sb->sb_buf, nextsize)) != NULL) {
-      sb->sb_buf = newbuf;
-      sb->sb_len = nextsize;
-    } else {
-      /* free(buf); */
-      GPF_T1 ("sb_printf(): could not realloc");
-    }
-  }
-  sb->sb_pos+=outsize;
-  return outsize;
+  session_buffered_write (sb->sb_ses, buf, strlen (buf));
 }
 
-typedef struct {
+typedef struct
+{
   key_id_t lr_key_id;
   async_queue_t* lrq_aq;
   dk_hash_t *	lrq_qrs; /** operation =>query_t* */
@@ -2269,7 +2252,7 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
   client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
-  string_buffer sb;
+  string_buffer_t sb;
   caddr_t err;
   char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
   key_id_t old_key = key->key_migrate_to;
@@ -2289,12 +2272,13 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
 	    {
 	      int n_cols, k, need_comma = 0;
 	      caddr_t * names;
-	char * mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" : ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
-	sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
+	      const char *mode = ((LOG_INSERT_SOFT == op || INS_SOFT == ins_mode || -1 == ins_mode) ? "SOFT" :
+		  ((op == LOG_INSERT_REPL || ins_mode == LOG_INSERT_REPL) ? "REPLACING" : "INTO"));
+	      sb_printf(&sb, "INSERT %s \"%s\".\"%s\".\"%s\"", mode, 
 		 ESC(key_table->tb_qualifier, 1), ESC(key_table->tb_owner, 2), ESC(key_table->tb_name_only,3));
 	      if (op == LOG_KEY_INSERT && !old_key)
 		{
-		  sb_printf(&sb, " INDEX \"%s\"", key->key_name); /* FIXME */
+		  sb_printf (&sb, " INDEX \"%s\"", ESC (key->key_name, 1));
 		}
 	      sb_printf(&sb, " OPTION (VECTORED, no identity %s) (", is_rfwd ? "" : ", no cluster");
 	      get_col_names (&names, &n_cols, key);
@@ -2324,33 +2308,35 @@ log_key_ins_del_qr (dbe_key_t * key, caddr_t * err_ret, int op, int ins_mode, in
       case LOG_DELETE:
       case LOG_KEY_DELETE:
 	    {
-	      int n_cols, k, need_comma = 0;
+	      int n_cols, k, need_and = 0;
 	      char **names;
-	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"", ESC(key_table->tb_qualifier,1), ESC(key_table->tb_owner,2), ESC(key_table->tb_name_only,3));
+	      sb_printf (&sb, "DELETE FROM \"%s\".\"%s\".\"%s\"",
+	        ESC (key_table->tb_qualifier, 1), ESC (key_table->tb_owner, 2), ESC (key_table->tb_name_only, 3));
 	      if (op == LOG_KEY_DELETE)
 		{
-	    sb_printf(&sb, " table option (%s INDEX \"%s\") ", is_rfwd ? "": "no cluster, ", key->key_name);
+		  sb_printf (&sb, " TABLE OPTION (%s INDEX \"%s\") ", is_rfwd ? "" : "NO CLUSTER, ", ESC (key->key_name, 1));
 		}
 	      sb_printf(&sb, " WHERE (");
 	      get_key_col_names(&names, &n_cols, key);
 	      for (k=0; k<n_cols; k++)
 		{
-		  if (need_comma)
+		  if (need_and)
 		    sb_printf (&sb, " AND ");
 		  else
-		    need_comma = 1;
+		    need_and = 1;
 	          sb_printf(&sb, "\"%s\"=?", ESC(names[k],1));
 		}
-	if (LOG_KEY_DELETE == op)
-	  sb_printf(&sb, ") OPTION (%s index \"%s\", VECTORED) ", is_rfwd ? "" :  "no cluster, ", key->key_name);
-	else
-	  sb_printf(&sb, ") OPTION (no cluster, VECTORED) ");
+	      if (LOG_KEY_DELETE == op)
+		sb_printf (&sb, ") OPTION (%s INDEX \"%s\", VECTORED) ", is_rfwd ? "" : "NO CLUSTER, ", ESC (key->key_name, 1));
+	      else
+		sb_printf (&sb, ") OPTION (NO CLUSTER, VECTORED) ");
 	      dk_free (names, n_cols * sizeof(char*));
 	      break;
 	    }
       default:
-      GPF_T1 ("log_key_ins_del_qr: invalid operation");
+	GPF_T1 ("log_key_ins_del_qr: invalid operation");
     }
+  sb_done (&sb);
   res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
@@ -2374,9 +2360,10 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   client_connection_t * cli = sqlc_client ();
   query_t * res;
   dbe_table_t * key_table = key->key_table;
-  string_buffer sb;
+  string_buffer_t sb;
   caddr_t err;
-  int n_cols, k, need_comma = 0, is_first, inx;
+  char temp1[MAX_NAME_LEN], temp2[MAX_NAME_LEN], temp3[MAX_NAME_LEN];
+  int n_cols, k, need_and = 0, is_first, inx;
   query_t ** place;
   caddr_t h_key;
   char **names;
@@ -2399,13 +2386,14 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
     }
 
   sb_init (&sb);
-  sb_printf (&sb, "update \"%s\".\"%s\".\"%s\" set ", key_table->tb_qualifier, key_table->tb_owner, key_table->tb_name_only);
+  sb_printf (&sb, "UPDATE \"%s\".\"%s\".\"%s\" SET ",
+      ESC (key_table->tb_qualifier, 1), ESC (key_table->tb_owner, 2), ESC (key_table->tb_name_only, 3));
   is_first = 1;
   DO_BOX (caddr_t, col_id_box, inx, col_ids)
     {
       oid_t col_id = unbox (col_id_box);
       dbe_column_t * col = sch_id_to_column (wi_inst.wi_schema, col_id);
-      sb_printf (&sb, "%s\"%s\" = ? ", is_first ? "" : ",  ", col->col_name);
+      sb_printf (&sb, "%s\"%s\" = ? ", is_first ? "" : ",  ", ESC (col->col_name, 1));
       is_first = 0;
     }
   END_DO_BOX;
@@ -2413,15 +2401,16 @@ log_key_upd_qr (dbe_key_t * key, oid_t * col_ids, caddr_t * err_ret)
   get_key_col_names(&names, &n_cols, key);
   for (k=0; k<n_cols; k++)
     {
-      if (need_comma)
+      if (need_and)
 	sb_printf (&sb, " AND ");
       else
-	need_comma = 1;
-      sb_printf(&sb, "\"%s\"=?", names[k]);
+	need_and = 1;
+      sb_printf (&sb, "\"%s\" = ?", ESC (names[k], 1));
     }
-  sb_printf (&sb, " option (no identity, no trigger)");
+  sb_printf (&sb, " OPTION (NO IDENTITY, NO TRIGGER)");
   dk_free (names, n_cols * sizeof(char*));
 
+  sb_done (&sb);
   res = sql_compile (sb.sb_buf, cli, &err, SQLC_DEFAULT);
   if (err != SQL_SUCCESS)
     {
@@ -2489,7 +2478,7 @@ log_exec_batch(caddr_t av, caddr_t* err_ret)
   dk_session_t * save_ses = cli->cli_session;
   caddr_t * save_repl = cli->cli_trx->lt_replicate;
   cli->cli_trx->lt_replicate = REPL_NO_LOG;
-  dk_free_box (av);
+  dk_free_tree (av);
   cli->cli_session = executor->lre_in;
   cli->cli_is_log = 1;
   mutex_enter (executor->lre_mtx);
@@ -2709,9 +2698,9 @@ repl_append_vec_entry_async (lre_queue_t *lq, client_connection_t * cli, lre_req
       int inx = 0;
       int plen;
       query_t *qr = get_vec_query (request, key, flag, &err);
-      plen = dk_set_length (qr->qr_parms);
       if (err)
 	return err;
+      plen = dk_set_length (qr->qr_parms);
       request->lr_qr = qr;
       qr_pool = request->lr_pool = mem_pool_alloc ();
       qr_params_vec = request->lr_params_vec = (data_col_t**) mp_alloc_box(qr_pool, plen * sizeof (data_col_t*), DV_BIN);
@@ -3373,8 +3362,9 @@ log_check_header (caddr_t * header)
 int
 log_report_time ()
 {
-  static unsigned int32 last_time = 0;
-  unsigned int32 now = get_msec_real_time (), r = 0;
+  static time_msec_t last_time = 0;
+  time_msec_t now = get_msec_real_time ();
+  int r = 0;
   if (now - last_time > 2000)
     {
       r = 1;
@@ -3573,6 +3563,7 @@ log_replay_file (int fd)
   if (CL_RUN_LOCAL != cl_run_local_only)
     enable_mt_ft_inx = 0;
   cli->cli_user = sec_id_to_user (U_ID_DBA);
+  cli->cli_is_log = 1;
   total_size_bytes = LSEEK (fd, 0, SEEK_END);
   if (total_size_bytes == (OFF_T) -1)
     total_size_bytes = 0;
@@ -3736,7 +3727,10 @@ void
 log_checkpoint (dbe_storage_t * dbs, char *new_log, int shutdown)
 {
   if ((char*) -1 == new_log)
-    return;
+    {
+      log_info ("Checkpoint finished.");
+      return;
+    }
   mutex_enter (log_write_mtx);
   if (dbs->dbs_2pc_log_session)
     session_flush (dbs->dbs_2pc_log_session);

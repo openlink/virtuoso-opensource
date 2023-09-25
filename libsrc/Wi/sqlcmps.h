@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -509,7 +509,7 @@ dbe_table_t *  sqlc_expand_remote_cursor (sql_comp_t * sc, ST * tree);
 /* sqlview.c */
 void sqlc_union_stmt (sql_comp_t * sc, ST** ptree);
 void sqlc_union_order (sql_comp_t * sc, ST ** ptree);
-ST * sqlc_union_dt_wrap (ST * tree);
+ST * sqlc_union_dt_wrap (sql_comp_t * sc, ST * tree);
 
 void sqlc_ct_generate_derived (sql_comp_t * sc, comp_table_t * ct);
 

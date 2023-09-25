@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,13 +34,9 @@
 
 #ifdef _SSL
 #include <openssl/md5.h>
-#define MD5Init   MD5_Init
-#define MD5Update MD5_Update
-#define MD5Final  MD5_Final
 #else
 #include "util/md5.h"
 #endif /* _SSL */
-
 
 void
 bh_free (blob_handle_t * bh)
@@ -508,10 +504,12 @@ bh_destroy (caddr_t box)
       dk_free_box ((box_t) bh->bh_pages);
       bh->bh_pages = NULL;
     }
-  if (NULL != bh->bh_state.buffer)
+  if (NULL != bh->bh_state.bs_buffer)
     {
-      dk_free_box (bh->bh_state.buffer);
-      bh->bh_state.buffer = NULL;
+      dk_free_box (bh->bh_state.bs_buffer);
+      bh->bh_state.bs_buffer = NULL;
+      bh->bh_state.bs_buffered_page = 0;
+      bh->bh_state.bs_next_of_buffered_page = 0;
     }
   if (bh->bh_source_session)
     {
@@ -530,7 +528,7 @@ bh_copy (caddr_t box)
   memcpy (bhcopy, bh, sizeof (*bhcopy));
   bhcopy->bh_pages = (dp_addr_t *) box_copy ((caddr_t) bhcopy->bh_pages);
   bh->bh_source_session = NULL;
-  bhcopy->bh_state.buffer = box_copy_tree (bhcopy->bh_state.buffer);
+  bhcopy->bh_state.bs_buffer = box_copy_tree (bhcopy->bh_state.bs_buffer);
   if (bh->bh_ask_from_client == 2 || bh->bh_ask_from_client == 2)
     bhcopy->bh_ask_from_client = 0;
   return (caddr_t) bhcopy;
@@ -545,7 +543,7 @@ bh_mp_copy (mem_pool_t * mp, caddr_t box)
   memcpy (bhcopy, bh, sizeof (*bhcopy));
   bhcopy->bh_pages = (dp_addr_t *) mp_box_copy (mp, (caddr_t) bhcopy->bh_pages);
   bh->bh_source_session = NULL;
-  bhcopy->bh_state.buffer = mp_full_box_copy_tree (mp, bhcopy->bh_state.buffer);
+  bhcopy->bh_state.bs_buffer = mp_full_box_copy_tree (mp, bhcopy->bh_state.bs_buffer);
   if (bh->bh_ask_from_client == 2 || bh->bh_ask_from_client == 2)
     bhcopy->bh_ask_from_client = 0;
   return (caddr_t) bhcopy;
@@ -632,11 +630,11 @@ xx_encrypt_passwd (char *thing, int thing_len, char *user_name)
   MD5_CTX ctx;
   calculate_pass ();
   memset (&ctx, 0, sizeof (MD5_CTX));
-  MD5Init (&ctx);
+  MD5_Init (&ctx);
   if (user_name && *user_name)
-    MD5Update (&ctx, (unsigned char *) user_name, (unsigned) strlen (user_name));
-  MD5Update (&ctx, (unsigned char *) the_pass, sizeof (the_pass));
-  MD5Final (md5, &ctx);
+    MD5_Update (&ctx, (unsigned char *) user_name, (unsigned) strlen (user_name));
+  MD5_Update (&ctx, (unsigned char *) the_pass, sizeof (the_pass));
+  MD5_Final (md5, &ctx);
   for (md5_inx = 0, thing_ptr = (unsigned char *) thing; thing_ptr - ((unsigned char *)thing) < thing_len;
       thing_ptr++, md5_inx = (md5_inx+1) % MD5_SIZE)
     *thing_ptr = *thing_ptr ^ md5[md5_inx];

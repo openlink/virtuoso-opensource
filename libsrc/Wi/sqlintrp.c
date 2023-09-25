@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1268,7 +1268,7 @@ ins_subq (instruction_t * ins, caddr_t * qst)
   int n_sets_save = qi->qi_n_sets;
   db_buf_t sm_save = qi->qi_set_mask;
   client_connection_t * cli = qi->qi_client;
-  int at_start = cli->cli_anytime_started;
+  time_msec_t at_start = cli->cli_anytime_started;
   if (!ins->_.subq.query->qr_select_node)
     cli->cli_anytime_started = 0;
   qi->qi_n_affected = 0;
@@ -1331,11 +1331,12 @@ ins_open (instruction_t * ins, caddr_t * qst)
   qst_set (qst, ins->_.open.cursor, (caddr_t) CR_INITIAL);
 }
 
-
+#if defined(DEBUG) | defined(MTX_DEBUG)
 void
 bing ()
 {
 }
+#endif
 
 
 #define AC_ENLIST_CK(qi)
@@ -1687,6 +1688,7 @@ opt_set_test ()
 #endif
 
 long callstack_on_exception = 0;
+long public_debug = 0;
 void err_append_callstack_procname (caddr_t err, caddr_t proc_name, caddr_t file_name, int line_no)
 {
   if (0 >= callstack_on_exception)
@@ -1844,8 +1846,8 @@ ins_qnode (instruction_t * ins, caddr_t * qst, int from_vec)
 {
   query_instance_t * qi = (query_instance_t *) qst;
   client_connection_t * cli = qi->qi_client;
-  int at_start = cli->cli_anytime_started;
-  int at_to = cli->cli_anytime_timeout;
+  time_msec_t at_start = cli->cli_anytime_started;
+  uint32 at_to = cli->cli_anytime_timeout;
   cli->cli_anytime_started = 0;
   QR_RESET_CTX_T (qi->qi_thread)
     {
@@ -1967,7 +1969,7 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
 	sqlr_new_error ("42000", "VEC..", "Input arrays  in for_vectored not of equal length");
       dc_reset (dc);
       if (len > dc_max_batch_sz)
-	sqlr_new_error ("42000", "FRVEC",  "array in for vectored over max vector length %d > %d", len, dc_max_batch_sz);
+        sqlr_new_error ("42000", "FRVEC", "Input array FOR VECTORED over max vector length %d > %d", len, dc_max_batch_sz);
       if (ins->_.for_vect.modify && (DCT_BOXES & dc->dc_type))
 	{
 	  int len = BOX_ELEMENTS (arr);
@@ -2718,7 +2720,7 @@ again:
 
 
 caddr_t
-code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
+code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc, int flag)
 {
   instruction_t * ins = code_vec;
   caddr_t *qst = itc->itc_out_state;
@@ -2727,6 +2729,24 @@ code_vec_run_no_catch (code_vec_t code_vec, it_cursor_t *itc)
     cli_anytime_timeout (qi->qi_client);
   for (;;)
     {
+      switch (ins->ins_type)
+	{
+	case IN_ARTM_PLUS:
+	case IN_ARTM_MINUS:
+	case IN_ARTM_TIMES:
+	case IN_ARTM_DIV:
+	case IN_ARTM_IDENTITY:
+	  if (flag == CV_THIS_SET_ONLY && qi->qi_query->qr_proc_vectored)
+	    {
+	      data_col_t *dc = QST_BOX (data_col_t *, qst, ins->_.artm.result->ssl_index);
+              if (dc->dc_any_null)
+                dc_ensure_null_bits (dc);
+	      DC_CLR_NULL (dc, qi->qi_set);
+	      break;
+	    }
+	default:
+	  break;
+	}
       switch (ins->ins_type)
 	{
 	case IN_ARTM_PLUS:	HANDLE_ARTM(box_add);

@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="iso8859-1"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -20,7 +18,6 @@
  -  You should have received a copy of the GNU General Public License along
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
- -
  -
 -->
 <v:page name="nav_bar_page"
@@ -39,7 +36,7 @@
     ]]>
   </v:method>
 
-  <v:form name="nav_bar_form" method="POST"  type="simple">
+  <v:form name="nav_bar_form" method="POST" type="simple">
     <v:before-data-bind>
       <![CDATA[
   self.vc_authenticated := self.vc_parent.vc_page.vc_authenticated;
@@ -87,7 +84,7 @@
         </v:before-data-bind>
 
         <v:node-template name="nav_bar_node">
-	    <td nowrap="1" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+        <li class="<?V case when control.tn_open then 'sel' else '' end ?>">
             <v:button name="nav_bar_toggle"
                       action="simple"
                       style="url"
@@ -129,33 +126,28 @@
                     ]]>
 		</v:on-post>
 	    </v:button>
-          </td>
+        </li>
         </v:node-template>
 
         <v:leaf-template name="nav_bar_leaf">
-          <td nowrap="1" class="<?V case when control.tn_open then 'sel' else '' end ?>">
+        <li class="<?V case when control.tn_open then 'sel' else '' end ?>">
             <v:button action="simple"
                       name="nav_bar_toggle1"
                       style="url"
                     xhtml_class="--(case when (control.vc_parent as vspx_tree_node).tn_open = 1 and (control.vc_parent as vspx_tree_node).tn_level then '' when (control.vc_parent as vspx_tree_node).tn_open = 1 then 'sel' when (control.vc_parent as vspx_tree_node).tn_level then 'les' else '' end)"
                       value="--(control.vc_parent as vspx_tree_node).tn_value" />
-          </td>
+        </li>
       </v:leaf-template>
 
       <v:horizontal-template name="ht">
-	  <table id="nav_bar" cellspacing="0" cellpadding="0">
-	      <tr>
+        <div class="nav_separator1">
+          <ul class="nav_bar1">
 		  <v:node-set />
-		  <?vsp if ((control as vspx_tree).vt_node <> control) { ?>
-		  <td class="filler"> </td>
-		  <?vsp } ?>
-	      </tr>
-	  </table>
+          </ul>
+        </div>
 	  <?vsp
 	  if ((control as vspx_tree).vt_node = control and not length (childs)) { ?>
-	  <table width="100%"  border="0" cellpadding="0" cellspacing="0" id="nav_separator">
-	      <tr><td>&nbsp;</td></tr>
-	  </table>
+        <div class="nav_separator1">&amp;nbsp;</div>
 	  <?vsp } ?>
       </v:horizontal-template>
 

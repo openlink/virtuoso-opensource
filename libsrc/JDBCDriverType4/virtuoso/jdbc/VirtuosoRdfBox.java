@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -209,7 +209,7 @@ public class VirtuosoRdfBox implements RdfBox
     private String _getType ()
     {
       ensureTypeHash ();
-      return (String) this.connection.rdf_type_hash.get (new Integer (this.rb_type));
+      return (String) this.connection.rdf_type_hash.get (Integer.valueOf (this.rb_type));
     }
 
     public String getType ()
@@ -230,7 +230,7 @@ public class VirtuosoRdfBox implements RdfBox
     private String _getLang ()
     {
       ensureLangHash ();
-      return (String) this.connection.rdf_lang_hash.get (new Integer (this.rb_lang));
+      return (String) this.connection.rdf_lang_hash.get (Integer.valueOf (this.rb_lang));
     }
 
     public String getLang ()

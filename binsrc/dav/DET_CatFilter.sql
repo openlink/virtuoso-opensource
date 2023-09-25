@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -124,7 +124,7 @@ create function "CatFilter_ENCODE_CATVALUE" (
   if (val is null)
     return '! property is not set !';
 
-  if (__tag (val) = 230)
+  if (__tag (val) = __tag of XML)
     val := cast (val as varchar);
 
   len := length (val);
@@ -2172,9 +2172,9 @@ create function "CatFilter_CONFIGURE" (
         commit work;
     }
     commit work;
-    for (select COL_ID, COL_DET, WS.WS.COL_PATH (COL_ID) as _c_path from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
+    for (select COL_ID, COL_DET, COL_FULL_PATH from WS.WS.SYS_DAV_COL where COL_DET is not null and not (COL_DET like '%Filter')) do
     {
-      if ("LEFT" (_c_path, length (path)) = path)
+      if ("LEFT" (COL_FULL_PATH, length (path)) = path)
       {
         insert replacing WS.WS.SYS_DAV_CATFILTER_DETS (CFD_CF_ID, CFD_DET_SUBCOL_ID, CFD_DET)
           values (cfid, COL_ID, COL_DET);
@@ -2261,7 +2261,7 @@ create function "CatFilter_FEED_DAV_RDF_INVERSE" (
   declare doc any;
   declare triplets any;
 
-  if (126 = __tag (propval))
+  if (__tag of long varchar handle = __tag (propval))
     {
       pv := blob_to_string (propval);
     }
@@ -2273,7 +2273,7 @@ create function "CatFilter_FEED_DAV_RDF_INVERSE" (
       pv := propval;
     }
 
-  if (193 <> pv[0])
+  if (__tag of vector <> pv[0])
     return;
 
   doc := null;

@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -48,10 +48,17 @@ JDK4_2=@ac_jdk4_2_path@
 JDK4_2_FLAGS=-g #-Xlint:deprecation -Xlint:unchecked
 endif
 
+if WITH_JDK4_3
+CLASSPATH4=$(CLASSPATH4)
+JDK4_3=@ac_jdk4_3_path@
+JDK4_3_FLAGS=-g -target 9 -source 9 #-Xlint:deprecation -Xlint:unchecked
+endif
+
 
 jdbc4_defs   = -DJDK_VER=16 -DVIRT_JDBC_VER="4.0"
 jdbc4_1_defs = -DJDK_VER=17 -DVIRT_JDBC_VER="4.1"
 jdbc4_2_defs = -DJDK_VER=18 -DVIRT_JDBC_VER="4.2"
+jdbc4_3_defs = -DJDK_VER=90 -DVIRT_JDBC_VER="4.3"
 
 
 ###########################################
@@ -309,6 +316,61 @@ outstd4_2/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
 
 outstd4_2/virtuoso/javax/%.java: ../javax/%.java
 	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_2_defs) $< >$@
+
+
+###########################################
+# JDBC 4.3
+###########################################
+std4_3javafiles = \
+	$(utilfiles:%.java=outstd4_3/openlink/util/%.java) \
+	$(sqlfiles:%.java=outstd4_3/virtuoso/sql/%.java) \
+	$(util3files:%.java=outstd4_3/openlink/util/%.java) \
+	$(util4files:%.java=outstd4_3/openlink/util/%.java) \
+	$(in3files:%.java=outstd4_3/virtuoso/jdbc4/%.java) \
+	$(in4files:%.java=outstd4_3/virtuoso/jdbc4/%.java) \
+	$(infiles:%.java=outstd4_3/virtuoso/jdbc4/%.java) \
+	$(javaxfiles:%.java=outstd4_3/virtuoso/javax/%.java)
+
+
+.PHONY: doc4_3
+doc4_3: ../../virtjdbc4_3.jar
+	@cd outstd4_3 ; $(JDK4_3)/javadoc -d ../../../doc/virtjdbc4_3 -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+
+
+
+.PHONY: std4_3
+std4_3: ../../virtjdbc4_3.jar
+
+../../virtjdbc4_3.jar: outstd4_3 $(std4_3javafiles)
+	@echo jdbc4_3 javac $(JDK4_3_FLAGS)
+	@cd outstd4_3 ; $(JDK4_3)/javac $(JDK4_3_FLAGS) -classpath . virtuoso/jdbc4/*.java openlink/util/*.java virtuoso/javax/*.java virtuoso/sql/*.java
+	@cd outstd4_3 ; $(JDK4_3)/jar cfm ../../../virtjdbc4_3.jar ../../../manifest4_3.main virtuoso/jdbc4/*.class openlink/util/*.class virtuoso/javax/*.class virtuoso/sql/*.class META-INF
+	@echo "............. Virtuoso pure Java 4.3 built"
+
+outstd4_3:
+	@mkdir outstd4_3
+	@mkdir outstd4_3/virtuoso
+	@mkdir outstd4_3/virtuoso/jdbc4
+	@mkdir outstd4_3/virtuoso/sql
+	@mkdir outstd4_3/openlink
+	@mkdir outstd4_3/openlink/util
+	@mkdir outstd4_3/virtuoso/javax
+	@mkdir outstd4_3/META-INF
+	@mkdir outstd4_3/META-INF/services
+	@cp ../../java.sql.Driver4 outstd4_3/META-INF/services/java.sql.Driver
+
+outstd4_3/virtuoso/jdbc4/%.java: %.java
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_3_defs) $< >$@
+
+outstd4_3/openlink/util/%.java: ../../openlink/util/%.java
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_3_defs) $< >$@
+
+outstd4_3/virtuoso/sql/%.java: ../../virtuoso/sql/%.java
+	cd outstd4_3/virtuoso/sql; cp ../../../$< .
+
+outstd4_3/virtuoso/javax/%.java: ../javax/%.java
+	$(JAVACPP) -P $(JCPPOPTS) $(jdbc4_3_defs) $< >$@
+
 
 
 ###########################################

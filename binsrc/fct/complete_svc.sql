@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -78,10 +78,6 @@ json_out_vec (in v any, inout ses any)
   http (s, ses);
 }
 ;
-
-DB.DBA.VHOST_REMOVE (lpath=>'/services/rdf/iriautocomplete.get');
-DB.DBA.VHOST_DEFINE (lpath=>'/services/rdf/iriautocomplete.get',
-                     ppath=>'/SOAP/Http/IRI_AUTOCOMPLETE', soap_user=>'PROXY');
 
 create procedure
 DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
@@ -177,5 +173,3 @@ DB.DBA.IRI_AUTOCOMPLETE () __SOAP_HTTP 'text/json'
 }
 ;
 
-grant execute on DB.DBA.IRI_AUTOCOMPLETE to PROXY;
-grant execute on DB.DBA.IR_SRV to "PROXY";

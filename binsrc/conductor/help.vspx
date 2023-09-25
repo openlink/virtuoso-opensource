@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
  -
- -  $Id$
- -
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -21,33 +19,34 @@
  -  with this program; if not, write to the Free Software Foundation, Inc.,
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
- -
 -->
-<v:page name="help" on-deadlock-retry="3" decor="yacutia_decor.vspx" style="yacutia_style.xsl" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:vm="http://www.openlinksw.com/vspx/macro">
+<v:page name="help"
+        on-deadlock-retry="3"
+        decor="yacutia_decor.vspx"
+        style="yacutia_style.xsl"
+        xmlns:v="http://www.openlinksw.com/vspx/"
+        xmlns:vm="http://www.openlinksw.com/vspx/macro">
   <v:on-init>
     set isolation='committed';
   </v:on-init>
   <vm:pagetitle>Virtuoso Conductor Help</vm:pagetitle>
   <vm:helppagewrapper>
-      <!--div style="font-size:15px;">
-        <form>
-	    <a href="#" style="text-decoration:none;" onclick="window.close (); return false;"><img title="Close" alt="Close" src="images/icons/close_24.png" border="0" />&nbsp; Close</a>
-        </form>
-      </div-->
-      <div class="help_content">
+    <form>
+      <a href="#" style="text-decoration:none;" onclick="window.close (); return false;"><img title="Close" alt="Close" src="images/icons/close_24.png" border="0" />&nbsp; Close</a>
+    </form>
+    <div class="help_content">
       <?vsp
-          declare sPath,sName,sId varchar;
-          declare aXml any;
-          sName := {?'name'};
-          if (sName is null) sName := '';
-          sId := {?'id'};
-          if (sId is null) sId := '';
+        declare sPath, sName, sId varchar;
+        declare aXml any;
 
-	  sPath := y_base_uri (concat ('help/', {?'id'},'.xml'));
-          aXml := xml_uri_get('', sPath);
-          aXml := xtree_doc(aXml);               ;
-          http_value (xslt (y_base_uri ('help.xsl'), aXml, vector ('id',sId,'name',sName)));
-       ?>
-       </div>
+        sName := get_keyword ('name', params, '');
+        sId := get_keyword ('id', params, '');
+
+        sPath := y_base_uri (concat ('help/', sId,'.xml'));
+        aXml := xml_uri_get ('', sPath);
+        aXml := xtree_doc (aXml);               ;
+        http_value (xslt (y_base_uri ('help.xsl'), aXml, vector ('id', sId, 'name', sName)));
+     ?>
+    </div>
   </vm:helppagewrapper>
 </v:page>

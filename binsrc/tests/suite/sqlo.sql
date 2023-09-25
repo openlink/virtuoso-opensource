@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1091,6 +1091,20 @@ echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
 echo both ": emppty agg with data independent false cond inits data independent exps\n";
 
 
+create table bug19085 (
+    id              varchar not null,
+    pos_start  integer,
+    pos_end    integer,
+    PRIMARY KEY(id)
+);
+
+insert into bug19085 values ('ID1', NULL, NULL);
+insert into bug19085 values ('ID2', 10, 20);
+
+
+select id from bug19085 where 0 < (pos_end - pos_start) and 100 > (pos_end - pos_start);
+echo both $if $equ $last[1] ID2 "PASSED" "***FAILED";
+echo both ": table source with local test vec\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

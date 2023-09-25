@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -62,7 +62,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
       {
          // Create the new column
          VirtuosoColumn col = new VirtuosoColumn(columns[i], dtps[i], conn);
-         hcolumns.put(col,new Integer(i));
+         hcolumns.put(col,Integer.valueOf(i));
          columnsMetaData.insertElementAt(col,i);
       }
    }
@@ -87,7 +87,7 @@ public class VirtuosoResultSetMetaData implements ResultSetMetaData
          VirtuosoColumn col =
 	     new VirtuosoColumn((openlink.util.Vector)((openlink.util.Vector)vect).elementAt(i),
 		 conn);
-         hcolumns.put(col,new Integer(i));
+         hcolumns.put(col,Integer.valueOf(i));
          columnsMetaData.insertElementAt(col,i);
       }
    }

@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -166,7 +166,10 @@ create procedure
 ld_file (in f varchar, in graph varchar)
 {
   declare base_name, base varchar;
+  declare tmp varchar;
+
   base := '';
+  tmp := null;
   declare exit handler for sqlstate '*' {
     rollback work;
     update DB.DBA.LOAD_LIST
@@ -197,33 +200,40 @@ ld_file (in f varchar, in graph varchar)
     {
       load_grdf (f);
     }
+  else if (base_name like '%.jsonld')
+    {
+      tmp := file_to_string (f);
+      if (f like '%.gz')
+	tmp := string_output_string (gzip_uncompress (tmp));
+	DB.DBA.RDF_LOAD_JSON_LD (tmp, base, graph);
+    }
   else if (f like '%.gz')
     {
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (gz_file_open (f), base, graph);
       else
-	TTLP_V (gz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (gz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else if (f like '%.bz2')
     {
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (bz2_file_open (f), base, graph);
       else
-	TTLP_V (bz2_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (bz2_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else if (f like '%.xz')
     {
       if (ld_is_rdfxml (base_name))
 	DB.DBA.RDF_LOAD_RDFXML_V (xz_file_open (f), base, graph);
       else
-	TTLP_V (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
+	TTLP (xz_file_open (f), base, graph, ld_ttlp_flags (base_name, graph));
     }
   else
     {
       if (ld_is_rdfxml (f))
 	DB.DBA.RDF_LOAD_RDFXML_V (file_open (f), base, graph);
       else
-	TTLP_V (file_open (f), base, graph, ld_ttlp_flags (f, graph));
+	TTLP (file_open (f), base, graph, ld_ttlp_flags (f, graph));
     }
 
   log_stats (sprintf ('RDF load %s', f));

@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -731,6 +731,7 @@ ServiceCtrlMain (int cmd)
 DWORD
 CreateApplicationConsole (void)
 {
+#if 0
   if (debugFlag && AllocConsole ())
     {
       SetConsoleTitle (DISPLAY_NAME);
@@ -754,7 +755,7 @@ CreateApplicationConsole (void)
       *stdin = *CInputHandle;
       setvbuf(stdin, NULL, _IONBF, 0);
     }
-
+#endif
   return NO_ERROR;
 }
 
@@ -1040,7 +1041,7 @@ main (int argc, char **argv)
   /*
    *  Don't execute maintenance commands running as a service
    */
-  if (f_backup_dump || f_crash_dump)
+  if (f_backup_dump || f_crash_dump || f_read_from_rebuilt_database)
     {
       f_cmd = CMD_NONE;
       f_foreground = 1;
@@ -1254,7 +1255,6 @@ usage (void)
   char version[400];
   char line[200];
   char *p;
-  extern char *git_head;
 #if LICENSE
   int lic;
 #endif
@@ -1266,15 +1266,6 @@ usage (void)
   sprintf (line, "Version %s.%s%s%s as of %s",
       PACKAGE_VERSION, DBMS_SRV_GEN_MAJOR, DBMS_SRV_GEN_MINOR, build_thread_model, build_date);
   p = stpcpy (p, line);
-
-  /*
-   *  Add git SHA1 of HEAD for easier identification of code base
-   */
-  if (git_head[0])
-    {
-      sprintf (line, " (%s)", git_head);
-      p = stpcpy (p, line);
-    }
 
   sprintf (line, "\nCompiled for %s (%s)\n", build_opsys_id, build_host_id);
   p = stpcpy (p, line);
@@ -1490,6 +1481,7 @@ ApplicationMain (int argc, char **argv)
       os_sigh_action (SIGH_BLOCK);
       srv_global_init (f_mode);
       os_sigh_action (SIGH_EXIT);
+      txn_after_image_limit = 0;
       db_to_log ();
       viwin32_terminate (0);
     }
@@ -1601,7 +1593,7 @@ ApplicationMain (int argc, char **argv)
 	  if (serviceFlag)
 	    UpdateRunningServiceStatus (SERVICE_STOP_PENDING, 0);
 #ifdef _RENDEZVOUS
-	  stop_rendezvous ();
+	  /*stop_rendezvous ();*/
 #endif
 	  sf_fastdown (NULL);
 	}

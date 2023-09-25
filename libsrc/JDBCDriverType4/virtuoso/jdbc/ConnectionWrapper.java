@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -152,7 +152,7 @@ public class ConnectionWrapper implements java.sql.Connection {
       check_conn();
 
       if (r_AutoCommit == null)  // save the initial autoCommit state
-         r_AutoCommit = new Boolean(getAutoCommit());
+         r_AutoCommit = Boolean.valueOf(getAutoCommit());
 
       rconn.setAutoCommit(autoCommit);
     } catch (SQLException ex) {
@@ -210,7 +210,7 @@ public class ConnectionWrapper implements java.sql.Connection {
       check_conn();
 
       if (r_ReadOnly == null)  // save the initial readOnly state
-         r_ReadOnly = new Boolean(isReadOnly());
+         r_ReadOnly = Boolean.valueOf(isReadOnly());
 
       rconn.setReadOnly(readOnly);
     } catch (SQLException ex) {
@@ -258,7 +258,7 @@ public class ConnectionWrapper implements java.sql.Connection {
       check_conn();
 
       if (r_TxnIsolation == null)  // save the initial TxnIsolation state
-         r_TxnIsolation = new Integer(getTransactionIsolation());
+         r_TxnIsolation = Integer.valueOf(getTransactionIsolation());
 
       rconn.setTransactionIsolation(level);
     } catch (SQLException ex) {
@@ -370,7 +370,7 @@ public class ConnectionWrapper implements java.sql.Connection {
       check_conn();
 
       if (r_Holdability == null)  // save the initial holdability state
-         r_Holdability = new Integer(getHoldability());
+         r_Holdability = Integer.valueOf(getHoldability());
 
       rconn.setHoldability(holdability);
     } catch (SQLException ex) {

@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -53,7 +53,10 @@ create function DB.DBA.DAV_DET_NAME (
   if (isnull (id) or isinteger (id))
     return null;
 
-  return cast (id[0] as varchar);
+  if (isvector (id))
+    return cast (id[0] as varchar);
+
+  return null;
 }
 ;
 
@@ -63,7 +66,10 @@ create function DB.DBA.DAV_DET_DETCOL_ID (
   if (isnull (id) or isinteger (id))
     return id;
 
-  return cast (id[1] as integer);
+  if (isvector (id))
+    return cast (id[1] as integer);
+
+  return null;
 }
 ;
 
@@ -73,7 +79,10 @@ create function DB.DBA.DAV_DET_DAV_ID (
   if (isnull (id) or isinteger (id))
     return id;
 
-  return id[2];
+  if (isvector (id))
+    return id[2];
+
+  return null;
 }
 ;
 
@@ -432,7 +441,7 @@ create function DB.DBA.DAV_DET_DAV_LIST (
     vectorbld_acc (retValue, i);
   }
 
-  for (select vector (WS.WS.COL_PATH (COL_ID),
+  for (select vector (COL_FULL_PATH,
                       'C',
                       0,
                       COL_MOD_TIME,
@@ -495,7 +504,7 @@ create function DB.DBA.DAV_DET_ACTIVITY (
   declare parentPath varchar;
   declare activity_id integer;
   declare activity, activityName, activityPath, activityContent, activityType varchar;
-  declare davEntry any;
+  declare davEntry, activitySize any;
   declare _errorCount integer;
   declare exit handler for sqlstate '*'
   {
@@ -546,9 +555,14 @@ _start:;
 
     activityContent := cast (activityContent as varchar);
     -- .log file size < 100KB
-    if (length (activityContent) > 1024)
+    activitySize := registry_get ('DETActivitySize');
+    if (activitySize = 0)
+      activitySize := '2048';
+
+    activitySize := atoi (activitySize);
+    if (length (activityContent) > activitySize)
     {
-      activityContent := right (activityContent, 1024);
+      activityContent := right (activityContent, activitySize);
       pos := strstr (activityContent, '\r\n20');
       if (not isnull (pos))
         activityContent := subseq (activityContent, pos+2);
@@ -574,6 +588,9 @@ create function DB.DBA.DAV_DET_HTTP_ERROR (
   in _header any,
   in _silent integer := 0)
 {
+  if (not isvector (_header))
+    return 0;
+
   if ((_header[0] like 'HTTP/1._ 4__ %') or (_header[0] like 'HTTP/1._ 5__ %'))
   {
     if (not _silent)
@@ -588,6 +605,9 @@ create function DB.DBA.DAV_DET_HTTP_ERROR (
 create function DB.DBA.DAV_DET_HTTP_CODE (
   in _header any)
 {
+  if (not isvector (_header))
+    return 500;
+
   return subseq (_header[0], 9, 12);
 }
 ;
@@ -595,6 +615,9 @@ create function DB.DBA.DAV_DET_HTTP_CODE (
 create function DB.DBA.DAV_DET_HTTP_MESSAGE (
   in _header any)
 {
+  if (not isvector (_header))
+    return 'Server Error';
+
   return subseq (_header[0], 13);
 }
 ;
@@ -875,6 +898,25 @@ create function DB.DBA.DAV_DET_ENTRY_XUPDATE (
 --
 -- RDF related proc
 --
+create function DB.DBA.DAV_DET_AQ (
+  in proc varchar,
+  in params varchar)
+{
+  -- dbg_obj_princ ('DB.DBA.DAV_DET_AQ (', proc, ')');
+  declare aq any;
+  declare exit handler for sqlstate '42000'
+  {
+    return 0;
+  };
+
+  set_user_id ('dba');
+  aq := async_queue (1, 4);
+  aq_request (aq, proc, params);
+
+  return 1;
+}
+;
+
 create function DB.DBA.DAV_DET_RDF (
   in det varchar,
   in detcol_id integer,
@@ -882,15 +924,13 @@ create function DB.DBA.DAV_DET_RDF (
   in what varchar)
 {
   declare rdf_params any;
-  declare aq any;
 
   rdf_params := DB.DBA.DAV_DET_RDF_PARAMS_GET (det, detcol_id);
   if (DB.DBA.is_empty_or_null (get_keyword ('graph', rdf_params)))
     return;
 
-  set_user_id ('dba');
-  aq := async_queue (1, 4);
-  aq_request (aq, 'DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params));
+  if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_RDF_AQ', vector (det, detcol_id, id, what, rdf_params)))
+    DB.DBA.DAV_DET_RDF_AQ (det, detcol_id, id, what, rdf_params);
 }
 ;
 
@@ -1364,7 +1404,7 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
   declare N integer;
   declare det, path, graph varchar;
   declare oldGraph, newGraph varchar;
-  declare aq, aci, acis, rdfParams any;
+  declare aci, acis, rdfParams any;
 
   oldGraph := get_keyword ('graph', oldRDFParams, '');
   newGraph := get_keyword ('graph', newRDFParams, '');
@@ -1413,8 +1453,8 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
     for (N := 0; N < length (newAcls); N := N + 1)
       newAcls[N] := cast (newAcls[N] as varchar);
 
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD', vector (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate));
+    if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD', vector (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate)))
+      DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (id, 'C', oldAcls, newAcls, oldRDFParams, newRDFParams, forceUpdate);
   }
 }
 ;
@@ -1431,7 +1471,6 @@ create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (
   declare path, detType varchar;
   declare oldGraph, newGraph, oldGraphSecurity, newGraphSecurity, oldSponger, newSponger, oldCartridges, newCartridges, oldMetaCartridges, newMetaCartridges varchar;
   declare oldAcls, newAcls any;
-  declare aq any;
 
   oldGraphSecurity := get_keyword ('graphSecurity', oldRDFParams, 'off');
   newGraphSecurity := get_keyword ('graphSecurity', newRDFParams, 'off');
@@ -1504,9 +1543,10 @@ create function DB.DBA.DAV_DET_RDF_GRAPH_UPDATE (
     );
 
     path := DB.DBA.DAV_SEARCH_PATH (id, 'C');
-    detType := DB.DBA.DAV_DET_COL_DET (id);
-    aq := async_queue (1, 4);
-    aq_request (aq, 'DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ', vector (path, cast (detType as varchar), oldRDFParams, newRDFParams));
+    detType := cast (DB.DBA.DAV_DET_COL_DET (id) as varchar);
+
+    if (not DB.DBA.DAV_DET_AQ ('DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ', vector (path, detType, oldRDFParams, newRDFParams)))
+      DB.DBA.DAV_DET_RDF_GRAPH_UPDATE_AQ (path, detType, oldRDFParams, newRDFParams);
   }
 }
 ;
@@ -1559,11 +1599,12 @@ create function DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (
 {
   -- dbg_obj_princ ('DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (', id, ')');
 
-  for (select COL_ACL    as _acl,
-              COL_OWNER  as _owner,
-              COL_GROUP  as _group,
-              COL_PERMS  as _perms,
-              COL_PARENT as _parent_id
+  for (select COL_ACL       as _acl,
+              COL_OWNER     as _owner,
+              COL_GROUP     as _group,
+              COL_PERMS     as _perms,
+              COL_FULL_PATH as _path,
+              COL_PARENT    as _parent_id
          from WS.WS.SYS_DAV_COL
         where COL_ID = id) do
   {
@@ -1574,7 +1615,7 @@ create function DB.DBA.DAV_DET_LDP_GRAPH_UPDATE (
     _newAcls := vector (_acl);
     DB.DBA.DAV_DET_PRIVATE_ACL_CHAIN (_parent_id, 'C', _oldAcls, _newAcls);
 
-    _rdfParams := vector ('graph', WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (id, 'C')));
+    _rdfParams := vector ('graph', WS.WS.DAV_IRI (_path));
 
     -- check for graph
     DB.DBA.DAV_DET_GRAPH_UPDATE (
@@ -1778,19 +1819,16 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_CURRENT (
 
   if (what = 'C')
   {
-    for (select COL_ID     as _id,
-                COL_ACL    as _acl,
-                COL_OWNER  as _owner,
-                COL_GROUP  as _group,
-                COL_PERMS  as _perms,
-                COL_PARENT as _parent_id
+    for (select COL_ID        as _id,
+                COL_ACL       as _acl,
+                COL_OWNER     as _owner,
+                COL_GROUP     as _group,
+                COL_PERMS     as _perms,
+                COL_FULL_PATH as _path,
+                COL_PARENT    as _parent_id
            from WS.WS.SYS_DAV_COL
           where COL_ID = id) do
     {
-      declare _path varchar;
-
-      _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
-
       -- ACLs
       _oldAcls := vector (_acl);
       _newAcls := vector (_acl);
@@ -1878,14 +1916,11 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE_CHILD (
               COL_ACL   as _acl,
               COL_OWNER as _owner,
               COL_GROUP as _group,
-              COL_PERMS as _perms
+              COL_PERMS as _perms,
+              COL_FULL_PATH as _path
          from WS.WS.SYS_DAV_COL
         where COL_PARENT = id) do
   {
-    declare _path varchar;
-
-    _path := DB.DBA.DAV_SEARCH_PATH (_id, 'C');
-
     -- ACLs
     if (length (_acl) > 8)
     {
@@ -1983,7 +2018,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_COL ord
   declare _acis, _rdfParams any;
 
   -- Paths
-  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+  _newPath := N.COL_FULL_PATH;
 
   -- ACLs
   _oldAcls := vector ();
@@ -2005,7 +2040,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_I after insert on WS.WS.SYS_DAV_COL ord
 }
 ;
 
-create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
+create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_FULL_PATH, COL_OWNER, COL_GROUP, COL_PERMS, COL_ACL) on WS.WS.SYS_DAV_COL order 111 referencing old as O, new as N
 {
   -- dbg_obj_print ('SYS_DAV_COL_PRIVATE_GRAPH_U ---------------');
   declare _oldPath, _newPath varchar;
@@ -2013,8 +2048,8 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_U after update (COL_NAME, COL_OWNER, CO
   declare _acis, _oldRDFParams, _newRDFParams any;
 
   -- Pahs
-  _oldPath := DB.DBA.DAV_SEARCH_PATH (N.COL_PARENT, 'C') || O.COL_NAME || '/';
-  _newPath := DB.DBA.DAV_SEARCH_PATH (N.COL_ID, 'C');
+  _oldPath := O.COL_FULL_PATH;
+  _newPath := N.COL_FULL_PATH;
 
   -- ACLs
   _oldAcls := vector (O.COL_ACL);
@@ -2055,7 +2090,7 @@ create trigger SYS_DAV_COL_PRIVATE_GRAPH_D after delete on WS.WS.SYS_DAV_COL ord
   DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (
     O.COL_ID,
     'C',
-    WS.WS.DAV_IRI (DB.DBA.DAV_SEARCH_PATH (O.COL_ID, 'C')),
+    WS.WS.DAV_IRI (O.COL_FULL_PATH),
     O.COL_OWNER,
     O.COL_GROUP,
     _oldAcls

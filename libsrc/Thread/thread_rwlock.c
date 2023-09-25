@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,7 +104,7 @@ int
 rwlock_tryrdlock (rwlock_t * l)
 {
 #ifdef HAVE_PTHREAD_RWLOCK_INIT
-  return pthread_rwlock_tryrdlock (l);
+  return (0 == pthread_rwlock_tryrdlock (l));
 #else
   mutex_enter (l->mtx);
   if (l->blocked_writers || l->state < 0)
@@ -144,7 +144,7 @@ int
 rwlock_trywrlock (rwlock_t * l)
 {
 #ifdef HAVE_PTHREAD_RWLOCK_INIT
-  return pthread_rwlock_trywrlock (l);
+  return (0 == pthread_rwlock_trywrlock (l));
 #else
   mutex_enter (l->mtx);
   if (l->state)

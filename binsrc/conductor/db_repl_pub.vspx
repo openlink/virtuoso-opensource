@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -89,7 +89,7 @@
       <?vsp
         }
         if (_lpu = 0)
-          http('<tr><td colspan="4" class="Attention">No publications defined</td></tr>');
+            http('<tr><td colspan="4" class="listing_empty">No publications defined</td></tr>');
       ?>
     </table>
   </div>

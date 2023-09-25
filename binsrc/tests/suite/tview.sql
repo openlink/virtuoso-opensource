@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -144,7 +144,7 @@ select * from TVUPDATE_LOW_10;
 ECHO BOTH $IF $EQU $ROWCNT 1  "PASSED" "***FAILED";
 ECHO BOTH ": deld from inserted view, now " $rowcnt "  rows\n";
 
-drop view TVUPDATE;
+drop table TVUPDATE;
 select * from TVUPDATE_LOW_10;
 ECHO BOTH $IF $NEQ $STATE OK  "PASSED" "***FAILED";
 ECHO BOTH ": trying to select from a view on a non-existent object STATE=" $STATE " MESSAGE=" $MESSAGE "\n";

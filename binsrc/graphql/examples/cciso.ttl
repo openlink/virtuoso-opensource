@@ -1,0 +1,2017 @@
+@prefix c: <http://example.org/country/> .
+@prefix r: <http://example.org/region/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+
+#################################################################
+#    Countries
+#################################################################
+
+###  http://example.org/country/AD
+c:AD rdf:type c:Country ; c:code "AD" ;
+    c:code3 "AND" ;
+    c:country_code 20 ;
+    c:region r:EU ;
+    c:name "Andorra" .
+
+
+###  http://example.org/country/AE
+c:AE rdf:type c:Country ; c:code "AE" ;
+    c:code3 "ARE" ;
+    c:country_code 784 ;
+    c:region r:AS ;
+    c:name "United Arab Emirates" .
+
+
+###  http://example.org/country/AF
+c:AF rdf:type c:Country ; c:code "AF" ;
+    c:code3 "AFG" ;
+    c:country_code 4 ;
+    c:region r:AS ;
+    c:name "Afghanistan" .
+
+
+###  http://example.org/country/AG
+c:AG rdf:type c:Country ; c:code "AG" ;
+    c:code3 "ATG" ;
+    c:country_code 28 ;
+    c:region r:AM ;
+    c:name "Antigua and Barbuda" .
+
+
+###  http://example.org/country/AI
+c:AI rdf:type c:Country ; c:code "AI" ;
+    c:code3 "AIA" ;
+    c:country_code 660 ;
+    c:region r:AM ;
+    c:name "Anguilla" .
+
+
+###  http://example.org/country/AL
+c:AL rdf:type c:Country ; c:code "AL" ;
+    c:code3 "ALB" ;
+    c:country_code 8 ;
+    c:region r:EU ;
+    c:name "Albania" .
+
+
+###  http://example.org/country/AM
+c:AM rdf:type c:Country ; c:code "AM" ;
+    c:code3 "ARM" ;
+    c:country_code 51 ;
+    c:region r:AS ;
+    c:name "Armenia" .
+
+
+###  http://example.org/country/AO
+c:AO rdf:type c:Country ; c:code "AO" ;
+    c:code3 "AGO" ;
+    c:country_code 24 ;
+    c:region r:AF ;
+    c:name "Angola" .
+
+
+###  http://example.org/country/AQ
+c:AQ rdf:type c:Country ; c:code "AQ" ;
+    c:code3 "ATA" ;
+    c:country_code 10 ;
+    c:region r:AN ;
+    c:name "Antarctica" .
+
+
+###  http://example.org/country/AR
+c:AR rdf:type c:Country ; c:code "AR" ;
+    c:code3 "ARG" ;
+    c:country_code 32 ;
+    c:region r:AM ;
+    c:name "Argentina" .
+
+
+###  http://example.org/country/AS
+c:AS rdf:type c:Country ; c:code "AS" ;
+    c:code3 "ASM" ;
+    c:country_code 16 ;
+    c:region r:OC ;
+    c:name "American Samoa" .
+
+
+###  http://example.org/country/AT
+c:AT rdf:type c:Country ; c:code "AT" ;
+    c:code3 "AUT" ;
+    c:country_code 40 ;
+    c:region r:EU ;
+    c:name "Austria" .
+
+
+###  http://example.org/country/AU
+c:AU rdf:type c:Country ; c:code "AU" ;
+    c:code3 "AUS" ;
+    c:country_code 36 ;
+    c:region r:OC ;
+    c:name "Australia" .
+
+
+###  http://example.org/country/AW
+c:AW rdf:type c:Country ; c:code "AW" ;
+    c:code3 "ABW" ;
+    c:country_code 533 ;
+    c:region r:AM ;
+    c:name "Aruba" .
+
+
+###  http://example.org/country/AX
+c:AX rdf:type c:Country ; c:code "AX" ;
+    c:code3 "ALA" ;
+    c:country_code 248 ;
+    c:region r:EU ;
+    c:name "Åland Islands" .
+
+
+###  http://example.org/country/AZ
+c:AZ rdf:type c:Country ; c:code "AZ" ;
+    c:code3 "AZE" ;
+    c:country_code 31 ;
+    c:region r:AS ;
+    c:name "Azerbaijan" .
+
+
+###  http://example.org/country/BA
+c:BA rdf:type c:Country ; c:code "BA" ;
+    c:code3 "BIH" ;
+    c:country_code 70 ;
+    c:region r:EU ;
+    c:name "Bosnia and Herzegovina" .
+
+
+###  http://example.org/country/BB
+c:BB rdf:type c:Country ; c:code "BB" ;
+    c:code3 "BRB" ;
+    c:country_code 52 ;
+    c:region r:AM ;
+    c:name "Barbados" .
+
+
+###  http://example.org/country/BD
+c:BD rdf:type c:Country ; c:code "BD" ;
+    c:code3 "BGD" ;
+    c:country_code 50 ;
+    c:region r:AS ;
+    c:name "Bangladesh" .
+
+
+###  http://example.org/country/BE
+c:BE rdf:type c:Country ; c:code "BE" ;
+    c:code3 "BEL" ;
+    c:country_code 56 ;
+    c:region r:EU ;
+    c:name "Belgium" .
+
+
+###  http://example.org/country/BF
+c:BF rdf:type c:Country ; c:code "BF" ;
+    c:code3 "BFA" ;
+    c:country_code 854 ;
+    c:region r:AF ;
+    c:name "Burkina Faso" .
+
+
+###  http://example.org/country/BG
+c:BG rdf:type c:Country ; c:code "BG" ;
+    c:code3 "BGR" ;
+    c:country_code 100 ;
+    c:region r:EU ;
+    c:name "Bulgaria" .
+
+
+###  http://example.org/country/BH
+c:BH rdf:type c:Country ; c:code "BH" ;
+    c:code3 "BHR" ;
+    c:country_code 48 ;
+    c:region r:AS ;
+    c:name "Bahrain" .
+
+
+###  http://example.org/country/BI
+c:BI rdf:type c:Country ; c:code "BI" ;
+    c:code3 "BDI" ;
+    c:country_code 108 ;
+    c:region r:AF ;
+    c:name "Burundi" .
+
+
+###  http://example.org/country/BJ
+c:BJ rdf:type c:Country ; c:code "BJ" ;
+    c:code3 "BEN" ;
+    c:country_code 204 ;
+    c:region r:AF ;
+    c:name "Benin" .
+
+
+###  http://example.org/country/BL
+c:BL rdf:type c:Country ; c:code "BL" ;
+    c:code3 "BLM" ;
+    c:country_code 652 ;
+    c:region r:AM ;
+    c:name "Saint Barthélemy" .
+
+
+###  http://example.org/country/BM
+c:BM rdf:type c:Country ; c:code "BM" ;
+    c:code3 "BMU" ;
+    c:country_code 60 ;
+    c:region r:AM ;
+    c:name "Bermuda" .
+
+
+###  http://example.org/country/BN
+c:BN rdf:type c:Country ; c:code "BN" ;
+    c:code3 "BRN" ;
+    c:country_code 96 ;
+    c:region r:AS ;
+    c:name "Brunei Darussalam" .
+
+
+###  http://example.org/country/BO
+c:BO rdf:type c:Country ; c:code "BO" ;
+    c:code3 "BOL" ;
+    c:country_code 68 ;
+    c:region r:AM ;
+    c:name "Bolivia (Plurinational State of)" .
+
+
+###  http://example.org/country/BQ
+c:BQ rdf:type c:Country ; c:code "BQ" ;
+    c:code3 "BES" ;
+    c:country_code 535 ;
+    c:region r:AM ;
+    c:name "Bonaire, Sint Eustatius and Saba" .
+
+
+###  http://example.org/country/BR
+c:BR rdf:type c:Country ; c:code "BR" ;
+    c:code3 "BRA" ;
+    c:country_code 76 ;
+    c:region r:AM ;
+    c:name "Brazil" .
+
+
+###  http://example.org/country/BS
+c:BS rdf:type c:Country ; c:code "BS" ;
+    c:code3 "BHS" ;
+    c:country_code 44 ;
+    c:region r:AM ;
+    c:name "Bahamas" .
+
+
+###  http://example.org/country/BT
+c:BT rdf:type c:Country ; c:code "BT" ;
+    c:code3 "BTN" ;
+    c:country_code 64 ;
+    c:region r:AS ;
+    c:name "Bhutan" .
+
+
+###  http://example.org/country/BV
+c:BV rdf:type c:Country ; c:code "BV" ;
+    c:code3 "BVT" ;
+    c:country_code 74 ;
+    c:region r:AM ;
+    c:name "Bouvet Island" .
+
+
+###  http://example.org/country/BW
+c:BW rdf:type c:Country ; c:code "BW" ;
+    c:code3 "BWA" ;
+    c:country_code 72 ;
+    c:region r:AF ;
+    c:name "Botswana" .
+
+
+###  http://example.org/country/BY
+c:BY rdf:type c:Country ; c:code "BY" ;
+    c:code3 "BLR" ;
+    c:country_code 112 ;
+    c:region r:EU ;
+    c:name "Belarus" .
+
+
+###  http://example.org/country/BZ
+c:BZ rdf:type c:Country ; c:code "BZ" ;
+    c:code3 "BLZ" ;
+    c:country_code 84 ;
+    c:region r:AM ;
+    c:name "Belize" .
+
+
+###  http://example.org/country/CA
+c:CA rdf:type c:Country ; c:code "CA" ;
+    c:code3 "CAN" ;
+    c:country_code 124 ;
+    c:region r:AM ;
+    c:name "Canada" .
+
+
+###  http://example.org/country/CC
+c:CC rdf:type c:Country ; c:code "CC" ;
+    c:code3 "CCK" ;
+    c:country_code 166 ;
+    c:region r:OC ;
+    c:name "Cocos (Keeling) Islands" .
+
+
+###  http://example.org/country/CD
+c:CD rdf:type c:Country ; c:code "CD" ;
+    c:code3 "COD" ;
+    c:country_code 180 ;
+    c:region r:AF ;
+    c:name "Congo, Democratic Republic of the" .
+
+
+###  http://example.org/country/CF
+c:CF rdf:type c:Country ; c:code "CF" ;
+    c:code3 "CAF" ;
+    c:country_code 140 ;
+    c:region r:AF ;
+    c:name "Central African Republic" .
+
+
+###  http://example.org/country/CG
+c:CG rdf:type c:Country ; c:code "CG" ;
+    c:code3 "COG" ;
+    c:country_code 178 ;
+    c:region r:AF ;
+    c:name "Congo" .
+
+
+###  http://example.org/country/CH
+c:CH rdf:type c:Country ; c:code "CH" ;
+    c:code3 "CHE" ;
+    c:country_code 756 ;
+    c:region r:EU ;
+    c:name "Switzerland" .
+
+
+###  http://example.org/country/CI
+c:CI rdf:type c:Country ; c:code "CI" ;
+    c:code3 "CIV" ;
+    c:country_code 384 ;
+    c:region r:AF ;
+    c:name "Côte d'Ivoire" .
+
+
+###  http://example.org/country/CK
+c:CK rdf:type c:Country ; c:code "CK" ;
+    c:code3 "COK" ;
+    c:country_code 184 ;
+    c:region r:OC ;
+    c:name "Cook Islands" .
+
+
+###  http://example.org/country/CL
+c:CL rdf:type c:Country ; c:code "CL" ;
+    c:code3 "CHL" ;
+    c:country_code 152 ;
+    c:region r:AM ;
+    c:name "Chile" .
+
+
+###  http://example.org/country/CM
+c:CM rdf:type c:Country ; c:code "CM" ;
+    c:code3 "CMR" ;
+    c:country_code 120 ;
+    c:region r:AF ;
+    c:name "Cameroon" .
+
+
+###  http://example.org/country/CN
+c:CN rdf:type c:Country ; c:code "CN" ;
+    c:code3 "CHN" ;
+    c:country_code 156 ;
+    c:region r:AS ;
+    c:name "China" .
+
+
+###  http://example.org/country/CO
+c:CO rdf:type c:Country ; c:code "CO" ;
+    c:code3 "COL" ;
+    c:country_code 170 ;
+    c:region r:AM ;
+    c:name "Colombia" .
+
+
+###  http://example.org/country/CR
+c:CR rdf:type c:Country ; c:code "CR" ;
+    c:code3 "CRI" ;
+    c:country_code 188 ;
+    c:region r:AM ;
+    c:name "Costa Rica" .
+
+
+###  http://example.org/country/CU
+c:CU rdf:type c:Country ; c:code "CU" ;
+    c:code3 "CUB" ;
+    c:country_code 192 ;
+    c:region r:AM ;
+    c:name "Cuba" .
+
+
+###  http://example.org/country/CV
+c:CV rdf:type c:Country ; c:code "CV" ;
+    c:code3 "CPV" ;
+    c:country_code 132 ;
+    c:region r:AF ;
+    c:name "Cabo Verde" .
+
+
+###  http://example.org/country/CW
+c:CW rdf:type c:Country ; c:code "CW" ;
+    c:code3 "CUW" ;
+    c:country_code 531 ;
+    c:region r:AM ;
+    c:name "Curaçao" .
+
+
+###  http://example.org/country/CX
+c:CX rdf:type c:Country ; c:code "CX" ;
+    c:code3 "CXR" ;
+    c:country_code 162 ;
+    c:region r:OC ;
+    c:name "Christmas Island" .
+
+
+###  http://example.org/country/CY
+c:CY rdf:type c:Country ; c:code "CY" ;
+    c:code3 "CYP" ;
+    c:country_code 196 ;
+    c:region r:AS ;
+    c:name "Cyprus" .
+
+
+###  http://example.org/country/CZ
+c:CZ rdf:type c:Country ; c:code "CZ" ;
+    c:code3 "CZE" ;
+    c:country_code 203 ;
+    c:region r:EU ;
+    c:name "Czechia" .
+
+
+###  http://example.org/country/DE
+c:DE rdf:type c:Country ; c:code "DE" ;
+    c:code3 "DEU" ;
+    c:country_code 276 ;
+    c:region r:EU ;
+    c:name "Germany" .
+
+
+###  http://example.org/country/DJ
+c:DJ rdf:type c:Country ; c:code "DJ" ;
+    c:code3 "DJI" ;
+    c:country_code 262 ;
+    c:region r:AF ;
+    c:name "Djibouti" .
+
+
+###  http://example.org/country/DK
+c:DK rdf:type c:Country ; c:code "DK" ;
+    c:code3 "DNK" ;
+    c:country_code 208 ;
+    c:region r:EU ;
+    c:name "Denmark" .
+
+
+###  http://example.org/country/DM
+c:DM rdf:type c:Country ; c:code "DM" ;
+    c:code3 "DMA" ;
+    c:country_code 212 ;
+    c:region r:AM ;
+    c:name "Dominica" .
+
+
+###  http://example.org/country/DO
+c:DO rdf:type c:Country ; c:code "DO" ;
+    c:code3 "DOM" ;
+    c:country_code 214 ;
+    c:region r:AM ;
+    c:name "Dominican Republic" .
+
+
+###  http://example.org/country/DZ
+c:DZ rdf:type c:Country ; c:code "DZ" ;
+    c:code3 "DZA" ;
+    c:country_code 12 ;
+    c:region r:AF ;
+    c:name "Algeria" .
+
+
+###  http://example.org/country/EC
+c:EC rdf:type c:Country ; c:code "EC" ;
+    c:code3 "ECU" ;
+    c:country_code 218 ;
+    c:region r:AM ;
+    c:name "Ecuador" .
+
+
+###  http://example.org/country/EE
+c:EE rdf:type c:Country ; c:code "EE" ;
+    c:code3 "EST" ;
+    c:country_code 233 ;
+    c:region r:EU ;
+    c:name "Estonia" .
+
+
+###  http://example.org/country/EG
+c:EG rdf:type c:Country ; c:code "EG" ;
+    c:code3 "EGY" ;
+    c:country_code 818 ;
+    c:region r:AF ;
+    c:name "Egypt" .
+
+
+###  http://example.org/country/EH
+c:EH rdf:type c:Country ; c:code "EH" ;
+    c:code3 "ESH" ;
+    c:country_code 732 ;
+    c:region r:AF ;
+    c:name "Western Sahara" .
+
+
+###  http://example.org/country/ER
+c:ER rdf:type c:Country ; c:code "ER" ;
+    c:code3 "ERI" ;
+    c:country_code 232 ;
+    c:region r:AF ;
+    c:name "Eritrea" .
+
+
+###  http://example.org/country/ES
+c:ES rdf:type c:Country ; c:code "ES" ;
+    c:code3 "ESP" ;
+    c:country_code 724 ;
+    c:region r:EU ;
+    c:name "Spain" .
+
+
+###  http://example.org/country/ET
+c:ET rdf:type c:Country ; c:code "ET" ;
+    c:code3 "ETH" ;
+    c:country_code 231 ;
+    c:region r:AF ;
+    c:name "Ethiopia" .
+
+
+###  http://example.org/country/FI
+c:FI rdf:type c:Country ; c:code "FI" ;
+    c:code3 "FIN" ;
+    c:country_code 246 ;
+    c:region r:EU ;
+    c:name "Finland" .
+
+
+###  http://example.org/country/FJ
+c:FJ rdf:type c:Country ; c:code "FJ" ;
+    c:code3 "FJI" ;
+    c:country_code 242 ;
+    c:region r:OC ;
+    c:name "Fiji" .
+
+
+###  http://example.org/country/FK
+c:FK rdf:type c:Country ; c:code "FK" ;
+    c:code3 "FLK" ;
+    c:country_code 238 ;
+    c:region r:AM ;
+    c:name "Falkland Islands (Malvinas)" .
+
+
+###  http://example.org/country/FM
+c:FM rdf:type c:Country ; c:code "FM" ;
+    c:code3 "FSM" ;
+    c:country_code 583 ;
+    c:region r:OC ;
+    c:name "Micronesia (Federated States of)" .
+
+
+###  http://example.org/country/FO
+c:FO rdf:type c:Country ; c:code "FO" ;
+    c:code3 "FRO" ;
+    c:country_code 234 ;
+    c:region r:EU ;
+    c:name "Faroe Islands" .
+
+
+###  http://example.org/country/FR
+c:FR rdf:type c:Country ; c:code "FR" ;
+    c:code3 "FRA" ;
+    c:country_code 250 ;
+    c:region r:EU ;
+    c:name "France" .
+
+
+###  http://example.org/country/GA
+c:GA rdf:type c:Country ; c:code "GA" ;
+    c:code3 "GAB" ;
+    c:country_code 266 ;
+    c:region r:AF ;
+    c:name "Gabon" .
+
+
+###  http://example.org/country/GB
+c:GB rdf:type c:Country ; c:code "GB" ;
+    c:code3 "GBR" ;
+    c:country_code 826 ;
+    c:region r:EU ;
+    c:name "United Kingdom of Great Britain and Northern Ireland" .
+
+
+###  http://example.org/country/GD
+c:GD rdf:type c:Country ; c:code "GD" ;
+    c:code3 "GRD" ;
+    c:country_code 308 ;
+    c:region r:AM ;
+    c:name "Grenada" .
+
+
+###  http://example.org/country/GE
+c:GE rdf:type c:Country ; c:code "GE" ;
+    c:code3 "GEO" ;
+    c:country_code 268 ;
+    c:region r:AS ;
+    c:name "Georgia" .
+
+
+###  http://example.org/country/GF
+c:GF rdf:type c:Country ; c:code "GF" ;
+    c:code3 "GUF" ;
+    c:country_code 254 ;
+    c:region r:AM ;
+    c:name "French Guiana" .
+
+
+###  http://example.org/country/GG
+c:GG rdf:type c:Country ; c:code "GG" ;
+    c:code3 "GGY" ;
+    c:country_code 831 ;
+    c:region r:EU ;
+    c:name "Guernsey" .
+
+
+###  http://example.org/country/GH
+c:GH rdf:type c:Country ; c:code "GH" ;
+    c:code3 "GHA" ;
+    c:country_code 288 ;
+    c:region r:AF ;
+    c:name "Ghana" .
+
+
+###  http://example.org/country/GI
+c:GI rdf:type c:Country ; c:code "GI" ;
+    c:code3 "GIB" ;
+    c:country_code 292 ;
+    c:region r:EU ;
+    c:name "Gibraltar" .
+
+
+###  http://example.org/country/GL
+c:GL rdf:type c:Country ; c:code "GL" ;
+    c:code3 "GRL" ;
+    c:country_code 304 ;
+    c:region r:AM ;
+    c:name "Greenland" .
+
+
+###  http://example.org/country/GM
+c:GM rdf:type c:Country ; c:code "GM" ;
+    c:code3 "GMB" ;
+    c:country_code 270 ;
+    c:region r:AF ;
+    c:name "Gambia" .
+
+
+###  http://example.org/country/GN
+c:GN rdf:type c:Country ; c:code "GN" ;
+    c:code3 "GIN" ;
+    c:country_code 324 ;
+    c:region r:AF ;
+    c:name "Guinea" .
+
+
+###  http://example.org/country/GP
+c:GP rdf:type c:Country ; c:code "GP" ;
+    c:code3 "GLP" ;
+    c:country_code 312 ;
+    c:region r:AM ;
+    c:name "Guadeloupe" .
+
+
+###  http://example.org/country/GQ
+c:GQ rdf:type c:Country ; c:code "GQ" ;
+    c:code3 "GNQ" ;
+    c:country_code 226 ;
+    c:region r:AF ;
+    c:name "Equatorial Guinea" .
+
+
+###  http://example.org/country/GR
+c:GR rdf:type c:Country ; c:code "GR" ;
+    c:code3 "GRC" ;
+    c:country_code 300 ;
+    c:region r:EU ;
+    c:name "Greece" .
+
+
+###  http://example.org/country/GS
+c:GS rdf:type c:Country ; c:code "GS" ;
+    c:code3 "SGS" ;
+    c:country_code 239 ;
+    c:region r:AM ;
+    c:name "South Georgia and the South Sandwich Islands" .
+
+
+###  http://example.org/country/GT
+c:GT rdf:type c:Country ; c:code "GT" ;
+    c:code3 "GTM" ;
+    c:country_code 320 ;
+    c:region r:AM ;
+    c:name "Guatemala" .
+
+
+###  http://example.org/country/GU
+c:GU rdf:type c:Country ; c:code "GU" ;
+    c:code3 "GUM" ;
+    c:country_code 316 ;
+    c:region r:OC ;
+    c:name "Guam" .
+
+
+###  http://example.org/country/GW
+c:GW rdf:type c:Country ; c:code "GW" ;
+    c:code3 "GNB" ;
+    c:country_code 624 ;
+    c:region r:AF ;
+    c:name "Guinea-Bissau" .
+
+
+###  http://example.org/country/GY
+c:GY rdf:type c:Country ; c:code "GY" ;
+    c:code3 "GUY" ;
+    c:country_code 328 ;
+    c:region r:AM ;
+    c:name "Guyana" .
+
+
+###  http://example.org/country/HK
+c:HK rdf:type c:Country ; c:code "HK" ;
+    c:code3 "HKG" ;
+    c:country_code 344 ;
+    c:region r:AS ;
+    c:name "Hong Kong" .
+
+
+###  http://example.org/country/HM
+c:HM rdf:type c:Country ; c:code "HM" ;
+    c:code3 "HMD" ;
+    c:country_code 334 ;
+    c:region r:OC ;
+    c:name "Heard Island and McDonald Islands" .
+
+
+###  http://example.org/country/HN
+c:HN rdf:type c:Country ; c:code "HN" ;
+    c:code3 "HND" ;
+    c:country_code 340 ;
+    c:region r:AM ;
+    c:name "Honduras" .
+
+
+###  http://example.org/country/HR
+c:HR rdf:type c:Country ; c:code "HR" ;
+    c:code3 "HRV" ;
+    c:country_code 191 ;
+    c:region r:EU ;
+    c:name "Croatia" .
+
+
+###  http://example.org/country/HT
+c:HT rdf:type c:Country ; c:code "HT" ;
+    c:code3 "HTI" ;
+    c:country_code 332 ;
+    c:region r:AM ;
+    c:name "Haiti" .
+
+
+###  http://example.org/country/HU
+c:HU rdf:type c:Country ; c:code "HU" ;
+    c:code3 "HUN" ;
+    c:country_code 348 ;
+    c:region r:EU ;
+    c:name "Hungary" .
+
+
+###  http://example.org/country/ID
+c:ID rdf:type c:Country ; c:code "ID" ;
+    c:code3 "IDN" ;
+    c:country_code 360 ;
+    c:region r:AS ;
+    c:name "Indonesia" .
+
+
+###  http://example.org/country/IE
+c:IE rdf:type c:Country ; c:code "IE" ;
+    c:code3 "IRL" ;
+    c:country_code 372 ;
+    c:region r:EU ;
+    c:name "Ireland" .
+
+
+###  http://example.org/country/IL
+c:IL rdf:type c:Country ; c:code "IL" ;
+    c:code3 "ISR" ;
+    c:country_code 376 ;
+    c:region r:AS ;
+    c:name "Israel" .
+
+
+###  http://example.org/country/IM
+c:IM rdf:type c:Country ; c:code "IM" ;
+    c:code3 "IMN" ;
+    c:country_code 833 ;
+    c:region r:EU ;
+    c:name "Isle of Man" .
+
+
+###  http://example.org/country/IN
+c:IN rdf:type c:Country ; c:code "IN" ;
+    c:code3 "IND" ;
+    c:country_code 356 ;
+    c:region r:AS ;
+    c:name "India" .
+
+
+###  http://example.org/country/IO
+c:IO rdf:type c:Country ; c:code "IO" ;
+    c:code3 "IOT" ;
+    c:country_code 86 ;
+    c:region r:AF ;
+    c:name "British Indian Ocean Territory" .
+
+
+###  http://example.org/country/IQ
+c:IQ rdf:type c:Country ; c:code "IQ" ;
+    c:code3 "IRQ" ;
+    c:country_code 368 ;
+    c:region r:AS ;
+    c:name "Iraq" .
+
+
+###  http://example.org/country/IR
+c:IR rdf:type c:Country ; c:code "IR" ;
+    c:code3 "IRN" ;
+    c:country_code 364 ;
+    c:region r:AS ;
+    c:name "Iran (Islamic Republic of)" .
+
+
+###  http://example.org/country/IS
+c:IS rdf:type c:Country ; c:code "IS" ;
+    c:code3 "ISL" ;
+    c:country_code 352 ;
+    c:region r:EU ;
+    c:name "Iceland" .
+
+
+###  http://example.org/country/IT
+c:IT rdf:type c:Country ; c:code "IT" ;
+    c:code3 "ITA" ;
+    c:country_code 380 ;
+    c:region r:EU ;
+    c:name "Italy" .
+
+
+###  http://example.org/country/JE
+c:JE rdf:type c:Country ; c:code "JE" ;
+    c:code3 "JEY" ;
+    c:country_code 832 ;
+    c:region r:EU ;
+    c:name "Jersey" .
+
+
+###  http://example.org/country/JM
+c:JM rdf:type c:Country ; c:code "JM" ;
+    c:code3 "JAM" ;
+    c:country_code 388 ;
+    c:region r:AM ;
+    c:name "Jamaica" .
+
+
+###  http://example.org/country/JO
+c:JO rdf:type c:Country ; c:code "JO" ;
+    c:code3 "JOR" ;
+    c:country_code 400 ;
+    c:region r:AS ;
+    c:name "Jordan" .
+
+
+###  http://example.org/country/JP
+c:JP rdf:type c:Country ; c:code "JP" ;
+    c:code3 "JPN" ;
+    c:country_code 392 ;
+    c:region r:AS ;
+    c:name "Japan" .
+
+
+###  http://example.org/country/KE
+c:KE rdf:type c:Country ; c:code "KE" ;
+    c:code3 "KEN" ;
+    c:country_code 404 ;
+    c:region r:AF ;
+    c:name "Kenya" .
+
+
+###  http://example.org/country/KG
+c:KG rdf:type c:Country ; c:code "KG" ;
+    c:code3 "KGZ" ;
+    c:country_code 417 ;
+    c:region r:AS ;
+    c:name "Kyrgyzstan" .
+
+
+###  http://example.org/country/KH
+c:KH rdf:type c:Country ; c:code "KH" ;
+    c:code3 "KHM" ;
+    c:country_code 116 ;
+    c:region r:AS ;
+    c:name "Cambodia" .
+
+
+###  http://example.org/country/KI
+c:KI rdf:type c:Country ; c:code "KI" ;
+    c:code3 "KIR" ;
+    c:country_code 296 ;
+    c:region r:OC ;
+    c:name "Kiribati" .
+
+
+###  http://example.org/country/KM
+c:KM rdf:type c:Country ; c:code "KM" ;
+    c:code3 "COM" ;
+    c:country_code 174 ;
+    c:region r:AF ;
+    c:name "Comoros" .
+
+
+###  http://example.org/country/KN
+c:KN rdf:type c:Country ; c:code "KN" ;
+    c:code3 "KNA" ;
+    c:country_code 659 ;
+    c:region r:AM ;
+    c:name "Saint Kitts and Nevis" .
+
+
+###  http://example.org/country/KP
+c:KP rdf:type c:Country ; c:code "KP" ;
+    c:code3 "PRK" ;
+    c:country_code 408 ;
+    c:region r:AS ;
+    c:name "Korea (Democratic People's Republic of)" .
+
+
+###  http://example.org/country/KR
+c:KR rdf:type c:Country ; c:code "KR" ;
+    c:code3 "KOR" ;
+    c:country_code 410 ;
+    c:region r:AS ;
+    c:name "Korea, Republic of" .
+
+
+###  http://example.org/country/KW
+c:KW rdf:type c:Country ; c:code "KW" ;
+    c:code3 "KWT" ;
+    c:country_code 414 ;
+    c:region r:AS ;
+    c:name "Kuwait" .
+
+
+###  http://example.org/country/KY
+c:KY rdf:type c:Country ; c:code "KY" ;
+    c:code3 "CYM" ;
+    c:country_code 136 ;
+    c:region r:AM ;
+    c:name "Cayman Islands" .
+
+
+###  http://example.org/country/KZ
+c:KZ rdf:type c:Country ; c:code "KZ" ;
+    c:code3 "KAZ" ;
+    c:country_code 398 ;
+    c:region r:AS ;
+    c:name "Kazakhstan" .
+
+
+###  http://example.org/country/LA
+c:LA rdf:type c:Country ; c:code "LA" ;
+    c:code3 "LAO" ;
+    c:country_code 418 ;
+    c:region r:AS ;
+    c:name "Lao People's Democratic Republic" .
+
+
+###  http://example.org/country/LB
+c:LB rdf:type c:Country ; c:code "LB" ;
+    c:code3 "LBN" ;
+    c:country_code 422 ;
+    c:region r:AS ;
+    c:name "Lebanon" .
+
+
+###  http://example.org/country/LC
+c:LC rdf:type c:Country ; c:code "LC" ;
+    c:code3 "LCA" ;
+    c:country_code 662 ;
+    c:region r:AM ;
+    c:name "Saint Lucia" .
+
+
+###  http://example.org/country/LI
+c:LI rdf:type c:Country ; c:code "LI" ;
+    c:code3 "LIE" ;
+    c:country_code 438 ;
+    c:region r:EU ;
+    c:name "Liechtenstein" .
+
+
+###  http://example.org/country/LK
+c:LK rdf:type c:Country ; c:code "LK" ;
+    c:code3 "LKA" ;
+    c:country_code 144 ;
+    c:region r:AS ;
+    c:name "Sri Lanka" .
+
+
+###  http://example.org/country/LR
+c:LR rdf:type c:Country ; c:code "LR" ;
+    c:code3 "LBR" ;
+    c:country_code 430 ;
+    c:region r:AF ;
+    c:name "Liberia" .
+
+
+###  http://example.org/country/LS
+c:LS rdf:type c:Country ; c:code "LS" ;
+    c:code3 "LSO" ;
+    c:country_code 426 ;
+    c:region r:AF ;
+    c:name "Lesotho" .
+
+
+###  http://example.org/country/LT
+c:LT rdf:type c:Country ; c:code "LT" ;
+    c:code3 "LTU" ;
+    c:country_code 440 ;
+    c:region r:EU ;
+    c:name "Lithuania" .
+
+
+###  http://example.org/country/LU
+c:LU rdf:type c:Country ; c:code "LU" ;
+    c:code3 "LUX" ;
+    c:country_code 442 ;
+    c:region r:EU ;
+    c:name "Luxembourg" .
+
+
+###  http://example.org/country/LV
+c:LV rdf:type c:Country ; c:code "LV" ;
+    c:code3 "LVA" ;
+    c:country_code 428 ;
+    c:region r:EU ;
+    c:name "Latvia" .
+
+
+###  http://example.org/country/LY
+c:LY rdf:type c:Country ; c:code "LY" ;
+    c:code3 "LBY" ;
+    c:country_code 434 ;
+    c:region r:AF ;
+    c:name "Libya" .
+
+
+###  http://example.org/country/MA
+c:MA rdf:type c:Country ; c:code "MA" ;
+    c:code3 "MAR" ;
+    c:country_code 504 ;
+    c:region r:AF ;
+    c:name "Morocco" .
+
+
+###  http://example.org/country/MC
+c:MC rdf:type c:Country ; c:code "MC" ;
+    c:code3 "MCO" ;
+    c:country_code 492 ;
+    c:region r:EU ;
+    c:name "Monaco" .
+
+
+###  http://example.org/country/MD
+c:MD rdf:type c:Country ; c:code "MD" ;
+    c:code3 "MDA" ;
+    c:country_code 498 ;
+    c:region r:EU ;
+    c:name "Moldova, Republic of" .
+
+
+###  http://example.org/country/ME
+c:ME rdf:type c:Country ; c:code "ME" ;
+    c:code3 "MNE" ;
+    c:country_code 499 ;
+    c:region r:EU ;
+    c:name "Montenegro" .
+
+
+###  http://example.org/country/MF
+c:MF rdf:type c:Country ; c:code "MF" ;
+    c:code3 "MAF" ;
+    c:country_code 663 ;
+    c:region r:AM ;
+    c:name "Saint Martin (French part)" .
+
+
+###  http://example.org/country/MG
+c:MG rdf:type c:Country ; c:code "MG" ;
+    c:code3 "MDG" ;
+    c:country_code 450 ;
+    c:region r:AF ;
+    c:name "Madagascar" .
+
+
+###  http://example.org/country/MH
+c:MH rdf:type c:Country ; c:code "MH" ;
+    c:code3 "MHL" ;
+    c:country_code 584 ;
+    c:region r:OC ;
+    c:name "Marshall Islands" .
+
+
+###  http://example.org/country/MK
+c:MK rdf:type c:Country ; c:code "MK" ;
+    c:code3 "MKD" ;
+    c:country_code 807 ;
+    c:region r:EU ;
+    c:name "North Macedonia" .
+
+
+###  http://example.org/country/ML
+c:ML rdf:type c:Country ; c:code "ML" ;
+    c:code3 "MLI" ;
+    c:country_code 466 ;
+    c:region r:AF ;
+    c:name "Mali" .
+
+
+###  http://example.org/country/MM
+c:MM rdf:type c:Country ; c:code "MM" ;
+    c:code3 "MMR" ;
+    c:country_code 104 ;
+    c:region r:AS ;
+    c:name "Myanmar" .
+
+
+###  http://example.org/country/MN
+c:MN rdf:type c:Country ; c:code "MN" ;
+    c:code3 "MNG" ;
+    c:country_code 496 ;
+    c:region r:AS ;
+    c:name "Mongolia" .
+
+
+###  http://example.org/country/MO
+c:MO rdf:type c:Country ; c:code "MO" ;
+    c:code3 "MAC" ;
+    c:country_code 446 ;
+    c:region r:AS ;
+    c:name "Macao" .
+
+
+###  http://example.org/country/MP
+c:MP rdf:type c:Country ; c:code "MP" ;
+    c:code3 "MNP" ;
+    c:country_code 580 ;
+    c:region r:OC ;
+    c:name "Northern Mariana Islands" .
+
+
+###  http://example.org/country/MQ
+c:MQ rdf:type c:Country ; c:code "MQ" ;
+    c:code3 "MTQ" ;
+    c:country_code 474 ;
+    c:region r:AM ;
+    c:name "Martinique" .
+
+
+###  http://example.org/country/MR
+c:MR rdf:type c:Country ; c:code "MR" ;
+    c:code3 "MRT" ;
+    c:country_code 478 ;
+    c:region r:AF ;
+    c:name "Mauritania" .
+
+
+###  http://example.org/country/MS
+c:MS rdf:type c:Country ; c:code "MS" ;
+    c:code3 "MSR" ;
+    c:country_code 500 ;
+    c:region r:AM ;
+    c:name "Montserrat" .
+
+
+###  http://example.org/country/MT
+c:MT rdf:type c:Country ; c:code "MT" ;
+    c:code3 "MLT" ;
+    c:country_code 470 ;
+    c:region r:EU ;
+    c:name "Malta" .
+
+
+###  http://example.org/country/MU
+c:MU rdf:type c:Country ; c:code "MU" ;
+    c:code3 "MUS" ;
+    c:country_code 480 ;
+    c:region r:AF ;
+    c:name "Mauritius" .
+
+
+###  http://example.org/country/MV
+c:MV rdf:type c:Country ; c:code "MV" ;
+    c:code3 "MDV" ;
+    c:country_code 462 ;
+    c:region r:AS ;
+    c:name "Maldives" .
+
+
+###  http://example.org/country/MW
+c:MW rdf:type c:Country ; c:code "MW" ;
+    c:code3 "MWI" ;
+    c:country_code 454 ;
+    c:region r:AF ;
+    c:name "Malawi" .
+
+
+###  http://example.org/country/MX
+c:MX rdf:type c:Country ; c:code "MX" ;
+    c:code3 "MEX" ;
+    c:country_code 484 ;
+    c:region r:AM ;
+    c:name "Mexico" .
+
+
+###  http://example.org/country/MY
+c:MY rdf:type c:Country ; c:code "MY" ;
+    c:code3 "MYS" ;
+    c:country_code 458 ;
+    c:region r:AS ;
+    c:name "Malaysia" .
+
+
+###  http://example.org/country/MZ
+c:MZ rdf:type c:Country ; c:code "MZ" ;
+    c:code3 "MOZ" ;
+    c:country_code 508 ;
+    c:region r:AF ;
+    c:name "Mozambique" .
+
+
+###  http://example.org/country/NA
+c:NA rdf:type c:Country ; c:code "NA" ;
+    c:code3 "NAM" ;
+    c:country_code 516 ;
+    c:region r:AF ;
+    c:name "Namibia" .
+
+
+###  http://example.org/country/NC
+c:NC rdf:type c:Country ; c:code "NC" ;
+    c:code3 "NCL" ;
+    c:country_code 540 ;
+    c:region r:OC ;
+    c:name "New Caledonia" .
+
+
+###  http://example.org/country/NE
+c:NE rdf:type c:Country ; c:code "NE" ;
+    c:code3 "NER" ;
+    c:country_code 562 ;
+    c:region r:AF ;
+    c:name "Niger" .
+
+
+###  http://example.org/country/NF
+c:NF rdf:type c:Country ; c:code "NF" ;
+    c:code3 "NFK" ;
+    c:country_code 574 ;
+    c:region r:OC ;
+    c:name "Norfolk Island" .
+
+
+###  http://example.org/country/NG
+c:NG rdf:type c:Country ; c:code "NG" ;
+    c:code3 "NGA" ;
+    c:country_code 566 ;
+    c:region r:AF ;
+    c:name "Nigeria" .
+
+
+###  http://example.org/country/NI
+c:NI rdf:type c:Country ; c:code "NI" ;
+    c:code3 "NIC" ;
+    c:country_code 558 ;
+    c:region r:AM ;
+    c:name "Nicaragua" .
+
+
+###  http://example.org/country/NL
+c:NL rdf:type c:Country ; c:code "NL" ;
+    c:code3 "NLD" ;
+    c:country_code 528 ;
+    c:region r:EU ;
+    c:name "Netherlands" .
+
+
+###  http://example.org/country/NO
+c:NO rdf:type c:Country ; c:code "NO" ;
+    c:code3 "NOR" ;
+    c:country_code 578 ;
+    c:region r:EU ;
+    c:name "Norway" .
+
+
+###  http://example.org/country/NP
+c:NP rdf:type c:Country ; c:code "NP" ;
+    c:code3 "NPL" ;
+    c:country_code 524 ;
+    c:region r:AS ;
+    c:name "Nepal" .
+
+
+###  http://example.org/country/NR
+c:NR rdf:type c:Country ; c:code "NR" ;
+    c:code3 "NRU" ;
+    c:country_code 520 ;
+    c:region r:OC ;
+    c:name "Nauru" .
+
+
+###  http://example.org/country/NU
+c:NU rdf:type c:Country ; c:code "NU" ;
+    c:code3 "NIU" ;
+    c:country_code 570 ;
+    c:region r:OC ;
+    c:name "Niue" .
+
+
+###  http://example.org/country/NZ
+c:NZ rdf:type c:Country ; c:code "NZ" ;
+    c:code3 "NZL" ;
+    c:country_code 554 ;
+    c:region r:OC ;
+    c:name "New Zealand" .
+
+
+###  http://example.org/country/OM
+c:OM rdf:type c:Country ; c:code "OM" ;
+    c:code3 "OMN" ;
+    c:country_code 512 ;
+    c:region r:AS ;
+    c:name "Oman" .
+
+
+###  http://example.org/country/PA
+c:PA rdf:type c:Country ; c:code "PA" ;
+    c:code3 "PAN" ;
+    c:country_code 591 ;
+    c:region r:AM ;
+    c:name "Panama" .
+
+
+###  http://example.org/country/PE
+c:PE rdf:type c:Country ; c:code "PE" ;
+    c:code3 "PER" ;
+    c:country_code 604 ;
+    c:region r:AM ;
+    c:name "Peru" .
+
+
+###  http://example.org/country/PF
+c:PF rdf:type c:Country ; c:code "PF" ;
+    c:code3 "PYF" ;
+    c:country_code 258 ;
+    c:region r:OC ;
+    c:name "French Polynesia" .
+
+
+###  http://example.org/country/PG
+c:PG rdf:type c:Country ; c:code "PG" ;
+    c:code3 "PNG" ;
+    c:country_code 598 ;
+    c:region r:OC ;
+    c:name "Papua New Guinea" .
+
+
+###  http://example.org/country/PH
+c:PH rdf:type c:Country ; c:code "PH" ;
+    c:code3 "PHL" ;
+    c:country_code 608 ;
+    c:region r:AS ;
+    c:name "Philippines" .
+
+
+###  http://example.org/country/PK
+c:PK rdf:type c:Country ; c:code "PK" ;
+    c:code3 "PAK" ;
+    c:country_code 586 ;
+    c:region r:AS ;
+    c:name "Pakistan" .
+
+
+###  http://example.org/country/PL
+c:PL rdf:type c:Country ; c:code "PL" ;
+    c:code3 "POL" ;
+    c:country_code 616 ;
+    c:region r:EU ;
+    c:name "Poland" .
+
+
+###  http://example.org/country/PM
+c:PM rdf:type c:Country ; c:code "PM" ;
+    c:code3 "SPM" ;
+    c:country_code 666 ;
+    c:region r:AM ;
+    c:name "Saint Pierre and Miquelon" .
+
+
+###  http://example.org/country/PN
+c:PN rdf:type c:Country ; c:code "PN" ;
+    c:code3 "PCN" ;
+    c:country_code 612 ;
+    c:region r:OC ;
+    c:name "Pitcairn" .
+
+
+###  http://example.org/country/PR
+c:PR rdf:type c:Country ; c:code "PR" ;
+    c:code3 "PRI" ;
+    c:country_code 630 ;
+    c:region r:AM ;
+    c:name "Puerto Rico" .
+
+
+###  http://example.org/country/PS
+c:PS rdf:type c:Country ; c:code "PS" ;
+    c:code3 "PSE" ;
+    c:country_code 275 ;
+    c:region r:AS ;
+    c:name "Palestine, State of" .
+
+
+###  http://example.org/country/PT
+c:PT rdf:type c:Country ; c:code "PT" ;
+    c:code3 "PRT" ;
+    c:country_code 620 ;
+    c:region r:EU ;
+    c:name "Portugal" .
+
+
+###  http://example.org/country/PW
+c:PW rdf:type c:Country ; c:code "PW" ;
+    c:code3 "PLW" ;
+    c:country_code 585 ;
+    c:region r:OC ;
+    c:name "Palau" .
+
+
+###  http://example.org/country/PY
+c:PY rdf:type c:Country ; c:code "PY" ;
+    c:code3 "PRY" ;
+    c:country_code 600 ;
+    c:region r:AM ;
+    c:name "Paraguay" .
+
+
+###  http://example.org/country/QA
+c:QA rdf:type c:Country ; c:code "QA" ;
+    c:code3 "QAT" ;
+    c:country_code 634 ;
+    c:region r:AS ;
+    c:name "Qatar" .
+
+
+###  http://example.org/country/RE
+c:RE rdf:type c:Country ; c:code "RE" ;
+    c:code3 "REU" ;
+    c:country_code 638 ;
+    c:region r:AF ;
+    c:name "Réunion" .
+
+
+###  http://example.org/country/RO
+c:RO rdf:type c:Country ; c:code "RO" ;
+    c:code3 "ROU" ;
+    c:country_code 642 ;
+    c:region r:EU ;
+    c:name "Romania" .
+
+
+###  http://example.org/country/RS
+c:RS rdf:type c:Country ; c:code "RS" ;
+    c:code3 "SRB" ;
+    c:country_code 688 ;
+    c:region r:EU ;
+    c:name "Serbia" .
+
+
+###  http://example.org/country/RU
+c:RU rdf:type c:Country ; c:code "RU" ;
+    c:code3 "RUS" ;
+    c:country_code 643 ;
+    c:region r:EU ;
+    c:name "Russian Federation" .
+
+
+###  http://example.org/country/RW
+c:RW rdf:type c:Country ; c:code "RW" ;
+    c:code3 "RWA" ;
+    c:country_code 646 ;
+    c:region r:AF ;
+    c:name "Rwanda" .
+
+
+###  http://example.org/country/SA
+c:SA rdf:type c:Country ; c:code "SA" ;
+    c:code3 "SAU" ;
+    c:country_code 682 ;
+    c:region r:AS ;
+    c:name "Saudi Arabia" .
+
+
+###  http://example.org/country/SB
+c:SB rdf:type c:Country ; c:code "SB" ;
+    c:code3 "SLB" ;
+    c:country_code 90 ;
+    c:region r:OC ;
+    c:name "Solomon Islands" .
+
+
+###  http://example.org/country/SC
+c:SC rdf:type c:Country ; c:code "SC" ;
+    c:code3 "SYC" ;
+    c:country_code 690 ;
+    c:region r:AF ;
+    c:name "Seychelles" .
+
+
+###  http://example.org/country/SD
+c:SD rdf:type c:Country ; c:code "SD" ;
+    c:code3 "SDN" ;
+    c:country_code 729 ;
+    c:region r:AF ;
+    c:name "Sudan" .
+
+
+###  http://example.org/country/SE
+c:SE rdf:type c:Country ; c:code "SE" ;
+    c:code3 "SWE" ;
+    c:country_code 752 ;
+    c:region r:EU ;
+    c:name "Sweden" .
+
+
+###  http://example.org/country/SG
+c:SG rdf:type c:Country ; c:code "SG" ;
+    c:code3 "SGP" ;
+    c:country_code 702 ;
+    c:region r:AS ;
+    c:name "Singapore" .
+
+
+###  http://example.org/country/SH
+c:SH rdf:type c:Country ; c:code "SH" ;
+    c:code3 "SHN" ;
+    c:country_code 654 ;
+    c:region r:AF ;
+    c:name "Saint Helena, Ascension and Tristan da Cunha" .
+
+
+###  http://example.org/country/SI
+c:SI rdf:type c:Country ; c:code "SI" ;
+    c:code3 "SVN" ;
+    c:country_code 705 ;
+    c:region r:EU ;
+    c:name "Slovenia" .
+
+
+###  http://example.org/country/SJ
+c:SJ rdf:type c:Country ; c:code "SJ" ;
+    c:code3 "SJM" ;
+    c:country_code 744 ;
+    c:region r:EU ;
+    c:name "Svalbard and Jan Mayen" .
+
+
+###  http://example.org/country/SK
+c:SK rdf:type c:Country ; c:code "SK" ;
+    c:code3 "SVK" ;
+    c:country_code 703 ;
+    c:region r:EU ;
+    c:name "Slovakia" .
+
+
+###  http://example.org/country/SL
+c:SL rdf:type c:Country ; c:code "SL" ;
+    c:code3 "SLE" ;
+    c:country_code 694 ;
+    c:region r:AF ;
+    c:name "Sierra Leone" .
+
+
+###  http://example.org/country/SM
+c:SM rdf:type c:Country ; c:code "SM" ;
+    c:code3 "SMR" ;
+    c:country_code 674 ;
+    c:region r:EU ;
+    c:name "San Marino" .
+
+
+###  http://example.org/country/SN
+c:SN rdf:type c:Country ; c:code "SN" ;
+    c:code3 "SEN" ;
+    c:country_code 686 ;
+    c:region r:AF ;
+    c:name "Senegal" .
+
+
+###  http://example.org/country/SO
+c:SO rdf:type c:Country ; c:code "SO" ;
+    c:code3 "SOM" ;
+    c:country_code 706 ;
+    c:region r:AF ;
+    c:name "Somalia" .
+
+
+###  http://example.org/country/SR
+c:SR rdf:type c:Country ; c:code "SR" ;
+    c:code3 "SUR" ;
+    c:country_code 740 ;
+    c:region r:AM ;
+    c:name "Suriname" .
+
+
+###  http://example.org/country/SS
+c:SS rdf:type c:Country ; c:code "SS" ;
+    c:code3 "SSD" ;
+    c:country_code 728 ;
+    c:region r:AF ;
+    c:name "South Sudan" .
+
+
+###  http://example.org/country/ST
+c:ST rdf:type c:Country ; c:code "ST" ;
+    c:code3 "STP" ;
+    c:country_code 678 ;
+    c:region r:AF ;
+    c:name "Sao Tome and Principe" .
+
+
+###  http://example.org/country/SV
+c:SV rdf:type c:Country ; c:code "SV" ;
+    c:code3 "SLV" ;
+    c:country_code 222 ;
+    c:region r:AM ;
+    c:name "El Salvador" .
+
+
+###  http://example.org/country/SX
+c:SX rdf:type c:Country ; c:code "SX" ;
+    c:code3 "SXM" ;
+    c:country_code 534 ;
+    c:region r:AM ;
+    c:name "Sint Maarten (Dutch part)" .
+
+
+###  http://example.org/country/SY
+c:SY rdf:type c:Country ; c:code "SY" ;
+    c:code3 "SYR" ;
+    c:country_code 760 ;
+    c:region r:AS ;
+    c:name "Syrian Arab Republic" .
+
+
+###  http://example.org/country/SZ
+c:SZ rdf:type c:Country ; c:code "SZ" ;
+    c:code3 "SWZ" ;
+    c:country_code 748 ;
+    c:region r:AF ;
+    c:name "Eswatini" .
+
+
+###  http://example.org/country/TC
+c:TC rdf:type c:Country ; c:code "TC" ;
+    c:code3 "TCA" ;
+    c:country_code 796 ;
+    c:region r:AM ;
+    c:name "Turks and Caicos Islands" .
+
+
+###  http://example.org/country/TD
+c:TD rdf:type c:Country ; c:code "TD" ;
+    c:code3 "TCD" ;
+    c:country_code 148 ;
+    c:region r:AF ;
+    c:name "Chad" .
+
+
+###  http://example.org/country/TF
+c:TF rdf:type c:Country ; c:code "TF" ;
+    c:code3 "ATF" ;
+    c:country_code 260 ;
+    c:region r:AF ;
+    c:name "French Southern Territories" .
+
+
+###  http://example.org/country/TG
+c:TG rdf:type c:Country ; c:code "TG" ;
+    c:code3 "TGO" ;
+    c:country_code 768 ;
+    c:region r:AF ;
+    c:name "Togo" .
+
+
+###  http://example.org/country/TH
+c:TH rdf:type c:Country ; c:code "TH" ;
+    c:code3 "THA" ;
+    c:country_code 764 ;
+    c:region r:AS ;
+    c:name "Thailand" .
+
+
+###  http://example.org/country/TJ
+c:TJ rdf:type c:Country ; c:code "TJ" ;
+    c:code3 "TJK" ;
+    c:country_code 762 ;
+    c:region r:AS ;
+    c:name "Tajikistan" .
+
+
+###  http://example.org/country/TK
+c:TK rdf:type c:Country ; c:code "TK" ;
+    c:code3 "TKL" ;
+    c:country_code 772 ;
+    c:region r:OC ;
+    c:name "Tokelau" .
+
+
+###  http://example.org/country/TL
+c:TL rdf:type c:Country ; c:code "TL" ;
+    c:code3 "TLS" ;
+    c:country_code 626 ;
+    c:region r:AS ;
+    c:name "Timor-Leste" .
+
+
+###  http://example.org/country/TM
+c:TM rdf:type c:Country ; c:code "TM" ;
+    c:code3 "TKM" ;
+    c:country_code 795 ;
+    c:region r:AS ;
+    c:name "Turkmenistan" .
+
+
+###  http://example.org/country/TN
+c:TN rdf:type c:Country ; c:code "TN" ;
+    c:code3 "TUN" ;
+    c:country_code 788 ;
+    c:region r:AF ;
+    c:name "Tunisia" .
+
+
+###  http://example.org/country/TO
+c:TO rdf:type c:Country ; c:code "TO" ;
+    c:code3 "TON" ;
+    c:country_code 776 ;
+    c:region r:OC ;
+    c:name "Tonga" .
+
+
+###  http://example.org/country/TR
+c:TR rdf:type c:Country ; c:code "TR" ;
+    c:code3 "TUR" ;
+    c:country_code 792 ;
+    c:region r:AS ;
+    c:name "Turkey" .
+
+
+###  http://example.org/country/TT
+c:TT rdf:type c:Country ; c:code "TT" ;
+    c:code3 "TTO" ;
+    c:country_code 780 ;
+    c:region r:AM ;
+    c:name "Trinidad and Tobago" .
+
+
+###  http://example.org/country/TV
+c:TV rdf:type c:Country ; c:code "TV" ;
+    c:code3 "TUV" ;
+    c:country_code 798 ;
+    c:region r:OC ;
+    c:name "Tuvalu" .
+
+
+###  http://example.org/country/TW
+c:TW rdf:type c:Country ; c:code "TW" ;
+    c:code3 "TWN" ;
+    c:country_code 158 ;
+    c:region r:AS ;
+    c:name "Taiwan, Province of China" .
+
+
+###  http://example.org/country/TZ
+c:TZ rdf:type c:Country ; c:code "TZ" ;
+    c:code3 "TZA" ;
+    c:country_code 834 ;
+    c:region r:AF ;
+    c:name "Tanzania, United Republic of" .
+
+
+###  http://example.org/country/UA
+c:UA rdf:type c:Country ; c:code "UA" ;
+    c:code3 "UKR" ;
+    c:country_code 804 ;
+    c:region r:EU ;
+    c:name "Ukraine" .
+
+
+###  http://example.org/country/UG
+c:UG rdf:type c:Country ; c:code "UG" ;
+    c:code3 "UGA" ;
+    c:country_code 800 ;
+    c:region r:AF ;
+    c:name "Uganda" .
+
+
+###  http://example.org/country/UM
+c:UM rdf:type c:Country ; c:code "UM" ;
+    c:code3 "UMI" ;
+    c:country_code 581 ;
+    c:region r:OC ;
+    c:name "United States Minor Outlying Islands" .
+
+
+###  http://example.org/country/US
+c:US rdf:type c:Country ; c:code "US" ;
+    c:code3 "USA" ;
+    c:country_code 840 ;
+    c:region r:AM ;
+    c:name "United States of America" .
+
+
+###  http://example.org/country/UY
+c:UY rdf:type c:Country ; c:code "UY" ;
+    c:code3 "URY" ;
+    c:country_code 858 ;
+    c:region r:AM ;
+    c:name "Uruguay" .
+
+
+###  http://example.org/country/UZ
+c:UZ rdf:type c:Country ; c:code "UZ" ;
+    c:code3 "UZB" ;
+    c:country_code 860 ;
+    c:region r:AS ;
+    c:name "Uzbekistan" .
+
+
+###  http://example.org/country/VA
+c:VA rdf:type c:Country ; c:code "VA" ;
+    c:code3 "VAT" ;
+    c:country_code 336 ;
+    c:region r:EU ;
+    c:name "Holy See" .
+
+
+###  http://example.org/country/VC
+c:VC rdf:type c:Country ; c:code "VC" ;
+    c:code3 "VCT" ;
+    c:country_code 670 ;
+    c:region r:AM ;
+    c:name "Saint Vincent and the Grenadines" .
+
+
+###  http://example.org/country/VE
+c:VE rdf:type c:Country ; c:code "VE" ;
+    c:code3 "VEN" ;
+    c:country_code 862 ;
+    c:region r:AM ;
+    c:name "Venezuela (Bolivarian Republic of)" .
+
+
+###  http://example.org/country/VG
+c:VG rdf:type c:Country ; c:code "VG" ;
+    c:code3 "VGB" ;
+    c:country_code 92 ;
+    c:region r:AM ;
+    c:name "Virgin Islands (British)" .
+
+
+###  http://example.org/country/VI
+c:VI rdf:type c:Country ; c:code "VI" ;
+    c:code3 "VIR" ;
+    c:country_code 850 ;
+    c:region r:AM ;
+    c:name "Virgin Islands (U.S.)" .
+
+
+###  http://example.org/country/VN
+c:VN rdf:type c:Country ; c:code "VN" ;
+    c:code3 "VNM" ;
+    c:country_code 704 ;
+    c:region r:AS ;
+    c:name "Viet Nam" .
+
+
+###  http://example.org/country/VU
+c:VU rdf:type c:Country ; c:code "VU" ;
+    c:code3 "VUT" ;
+    c:country_code 548 ;
+    c:region r:OC ;
+    c:name "Vanuatu" .
+
+
+###  http://example.org/country/WF
+c:WF rdf:type c:Country ; c:code "WF" ;
+    c:code3 "WLF" ;
+    c:country_code 876 ;
+    c:region r:OC ;
+    c:name "Wallis and Futuna" .
+
+
+###  http://example.org/country/WS
+c:WS rdf:type c:Country ; c:code "WS" ;
+    c:code3 "WSM" ;
+    c:country_code 882 ;
+    c:region r:OC ;
+    c:name "Samoa" .
+
+
+###  http://example.org/country/YE
+c:YE rdf:type c:Country ; c:code "YE" ;
+    c:code3 "YEM" ;
+    c:country_code 887 ;
+    c:region r:AS ;
+    c:name "Yemen" .
+
+
+###  http://example.org/country/YT
+c:YT rdf:type c:Country ; c:code "YT" ;
+    c:code3 "MYT" ;
+    c:country_code 175 ;
+    c:region r:AF ;
+    c:name "Mayotte" .
+
+
+###  http://example.org/country/ZA
+c:ZA rdf:type c:Country ; c:code "ZA" ;
+    c:code3 "ZAF" ;
+    c:country_code 710 ;
+    c:region r:AF ;
+    c:name "South Africa" .
+
+
+###  http://example.org/country/ZM
+c:ZM rdf:type c:Country ; c:code "ZM" ;
+    c:code3 "ZMB" ;
+    c:country_code 894 ;
+    c:region r:AF ;
+    c:name "Zambia" .
+
+
+###  http://example.org/country/ZW
+c:ZW rdf:type c:Country ; c:code "ZW" ;
+    c:code3 "ZWE" ;
+    c:country_code 716 ;
+    c:region r:AF ;
+    c:name "Zimbabwe" .
+
+
+#################################################################
+#    Continents
+#################################################################
+
+r:AN  rdf:type r:Region ; r:name "Antarctica" ; r:code "AN" ; r:ccode 1 .
+
+r:AS  rdf:type r:Region ; r:name "Asia" ; r:code "AS" ; r:ccode 142 .
+
+r:EU  rdf:type r:Region ; r:name "Europe" ; r:code "EU" ; r:ccode 150 .
+
+r:AM  rdf:type r:Region ; r:name "Americas" ; r:code "AM" ; r:ccode 19 .
+
+r:AF  rdf:type r:Region ; r:name "Africa" ; r:code "AF" ; r:ccode 2 .
+
+r:OC  rdf:type r:Region ; r:name "Oceania" ; r:code "OC" ; r:ccode 9 .

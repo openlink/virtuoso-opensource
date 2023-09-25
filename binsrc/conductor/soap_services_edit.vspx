@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -573,7 +573,7 @@
 			</v:button>
                         </td>
                         <td class="page_tab_empty" align="center" width="100%">
-                      &nbsp;
+                      &amp;nbsp;
                         </td>
                     </tr>
                   </table>
@@ -1070,7 +1070,7 @@
 			    o := name_part (fn, 1);
 			    tmp := q || '.' || o || '.';
 			    n := subseq (fn, length (tmp));
-			    exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO %s', q, o, n, self.soapuser));
+                                              exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO "%s"', q, o, n, self.soapuser));
                           }
                         }
                       }
@@ -1102,7 +1102,7 @@
 			    o := name_part (fn, 1);
 			    tmp := q || '.' || o || '.';
 			    n := subseq (fn, length (tmp));
-			    exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM %s', q, o, n, self.soapuser));
+                                              exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM "%s"', q, o, n, self.soapuser));
                           }
                         }
                       }
@@ -1317,7 +1317,7 @@
                           {
                             self.mod_grant_list := vector_concat(self.mod_grant_list,vector(_params[inx + 1]));
                             self.ensure_soapuser();
-			    exec (sprintf ('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+                                            exec (sprintf ('GRANT EXECUTE ON %s TO "%s"',_params[inx + 1], self.soapuser));
                           }
                         }
                         inx := inx + 2;
@@ -1344,7 +1344,7 @@
                           if (indx)
                           {
                             self.mod_grant_list := vector_concat(subseq(self.mod_grant_list,0,indx - 1),subseq(self.mod_grant_list,indx,length(self.mod_grant_list)));
-                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+                                            exec(sprintf('REVOKE EXECUTE ON %s FROM "%s"',_params[inx + 1], self.soapuser));
                           }
                         }
                       }
@@ -1490,7 +1490,7 @@
                           {
                             self.udt_grant_list := vector_concat(self.udt_grant_list,vector(_params[inx + 1]));
                             self.ensure_soapuser();
-                			      exec(sprintf('GRANT EXECUTE ON %s TO %s',_params[inx + 1], self.soapuser));
+                                          exec(sprintf('GRANT EXECUTE ON %s TO "%s"',_params[inx + 1], self.soapuser));
                 			      declare vho, lho, lp varchar;
                 			      vho := self._httphost;
                 			      lho := self._host;
@@ -1533,7 +1533,7 @@
                           if (indx)
                           {
                             self.udt_grant_list := vector_concat(subseq(self.udt_grant_list,0,indx - 1),subseq(self.udt_grant_list,indx,length(self.udt_grant_list)));
-                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',_params[inx + 1], self.soapuser));
+                                          exec(sprintf('REVOKE EXECUTE ON %s FROM "%s"',_params[inx + 1], self.soapuser));
                           }
                         }
                       }
@@ -1669,7 +1669,7 @@
                               from WS.WS.SYS_DAV_PROP, WS.WS.SYS_DAV_RES
                               where PROP_TYPE = 'R' and PROP_NAME = 'xml-soap-method' and RES_ID = PROP_PARENT_ID
                               and RES_FULL_PATH = _params[inx + 1];
-                			      exec(sprintf('REVOKE EXECUTE ON %s FROM %s',obj, self.soapuser));
+                                            exec(sprintf('REVOKE EXECUTE ON %s FROM "%s"',obj, self.soapuser));
                           }
                         }
                       }
@@ -1766,8 +1766,18 @@
                         <br />
 		  <table>
             <tr>
-                            <td>
 		<?vsp if (not (self.sp_desc or self.xml_desc or self.sp_add)) { ?>
+                              <td>
+                                <v:button action="simple" name="adv_btn" value="Generic Edit" enabled="--equ(self.tab1.tb_active.vc_name,'opt_tab1')">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      self.vc_redirect (sprintf ('http_svc_edit.vspx?_host=%U&_port=%U&_httphost=%U&path=%U&mode=edit',
+                                          self.edit_host, self.edit_port, self.edit_httphost, self.lpath));
+                                      return;
+                                    ]]></v:on-post>
+                                  </v:button>
+                              </td>
+                            <td>
                 <v:button action="simple" name="cancel" value="Cancel">
                   <v:on-post>
                       <![CDATA[
@@ -1973,7 +1983,7 @@
 			      o := name_part (fn, 1);
 			      tmp := q || '.' || o || '.';
 			      n := subseq (fn, length (tmp));
-			      exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM %s', q, o, n, _soapuser));
+                                          exec (sprintf ('REVOKE EXECUTE ON "%I"."%I"."%I" FROM "%s"', q, o, n, _soapuser));
                             }
                           }
                           nf_user2:
@@ -2017,19 +2027,19 @@
 			       o := name_part (fn, 1);
 			       tmp := q || '.' || o || '.';
 			       n := subseq (fn, length (tmp));
-			       exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO %s', q, o, n, self.soapuser));
+                                          exec (sprintf ('GRANT EXECUTE ON "%I"."%I"."%I" TO "%s"', q, o, n, self.soapuser));
                                inx := inx + 1;
                              }
                             inx := 0;
 			    while( inx < length(self.mod_grant_list) )
 			     {
-                                                 exec(sprintf('GRANT EXECUTE ON %s TO %s', self.mod_grant_list[inx], self.soapuser));
+                                         exec(sprintf('GRANT EXECUTE ON %s TO "%s"', self.mod_grant_list[inx], self.soapuser));
                                inx := inx + 1;
                              }
                             inx := 0;
 			    while( inx < length (self.udt_grant_list))
 			     {
-                                                exec(sprintf('GRANT EXECUTE ON %s TO %s', self.udt_grant_list[inx], self.soapuser));
+                                        exec(sprintf('GRANT EXECUTE ON %s TO "%s"', self.udt_grant_list[inx], self.soapuser));
 			       vho := self._httphost;
 			       lho := self._host;
 		               lp := self.lpath;
@@ -2059,8 +2069,8 @@
                       ]]>
                   </v:on-post>
 		</v:button>
-		<?vsp } ?>
               </td>
+                            <?vsp } ?>
 	    </tr>
 	  </table>
 	  <!-- END -->

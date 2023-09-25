@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -914,7 +914,7 @@ sqlo_add_table_ref (sqlo_t * so, ST ** tree_ret, dk_set_t *res)
 		ST_P (view, INTERSECT_ALL_ST))
 	      {
 		view = sqlp_view_def (NULL, view, 1);
-		view = sqlc_union_dt_wrap (view);
+		view = sqlc_union_dt_wrap (so->so_sc, view);
 	      }
 	    sqlo_scope (so, &view);
 	    if (ST_P (view, SELECT_STMT))
@@ -1705,7 +1705,8 @@ sqlo_implied_columns_of_contains (sqlo_t *so, ST *tree, int add_score)
       if (BOX_ELEMENTS(args) < 1 || !ST_COLUMN (args[0], COL_DOTTED))
 	sqlc_error (so->so_sc->sc_cc, "37000",
 	    "The first argument of %s must be a column", sqlo_spec_predicate_name (ctype));
-
+      if (args[0]->_.col_ref.name == STAR)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQ064", "Illegal use of '*'.");
       ot = sco_is_defd (so->so_scope, args[0],
 	  args[0]->_.col_ref.prefix ? SCO_THIS_QUAL : SCO_UNQUALIFIED, 1);
       if (!ot || !ot->ot_table)
@@ -2024,7 +2025,7 @@ sqlo_expand_jts (sqlo_t *so, ST **ptree, ST *select_stmt, int was_top)
 
 	  *ptree = t_listst (5, UNION_ST, left_oj_tree->_.table_ref.table,
 	      right_oj_tree->_.table_ref.table, NULL, 0);
-	  *ptree = sqlc_union_dt_wrap (*ptree);
+	  *ptree = sqlc_union_dt_wrap (so->so_sc, *ptree);
 	  res ++;
 	}
     }
@@ -3317,9 +3318,9 @@ sqlo_scope (sqlo_t * so, ST ** ptree)
 	{
 	  ST *left;
 	  if (IS_UNION_ST (tree->_.set_exp.left))
-	    tree->_.set_exp.left = sqlc_union_dt_wrap (tree->_.set_exp.left);
+	    tree->_.set_exp.left = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.left);
 	  if (IS_UNION_ST (tree->_.set_exp.right))
-	    tree->_.set_exp.right = sqlc_union_dt_wrap (tree->_.set_exp.right);
+	    tree->_.set_exp.right = sqlc_union_dt_wrap (so->so_sc, tree->_.set_exp.right);
 	  left = sqlp_union_tree_select (tree);
 	  sqlo_union_scope (so, ptree, left);
 	  break;

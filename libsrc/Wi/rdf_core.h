@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -59,10 +59,10 @@ extern int rb_twobyte_to_flags_of_parseable_datatype (unsigned short dt_twobyte)
 extern caddr_t xsd_type_of_box (caddr_t arg);
 /*! Casts \c new_val to some datatype appropriate for XPATH/XSLT and stores in an XSLT variable value or XQI slot passed as an address to free and set */
 extern void rb_cast_to_xpath_safe (query_instance_t *qi, caddr_t new_val, caddr_t *retval_ptr);
-extern iri_id_t bnode_t_treshold;
+extern iri_id_t bnode_t_threshold;
 #ifndef NDEBUG
-#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_treshold) ? \
-  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_treshold)) : \
+#define BNODE_FMT_IMPL(fn,arg1,pfx,iid) (((iri_id_t)(iid) >= bnode_t_threshold) ? \
+  (fn) ((arg1), pfx "t" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid) - bnode_t_threshold)) : \
   (((iri_id_t)(iid) >= MIN_64BIT_BNODE_IRI_ID) ? \
     (fn) ((arg1), pfx "b" IIDBOXINT_FMT, (boxint)((iri_id_t)(iid)-MIN_64BIT_BNODE_IRI_ID)) : \
     (fn) ((arg1), pfx IIDBOXINT_FMT, (boxint)((iri_id_t)(iid))) ) )
@@ -370,5 +370,23 @@ typedef struct rdf_obj_ft_rule_iri_hkey_s
    caddr_t hkey_iri_p;
 } rdf_obj_ft_rule_iri_hkey_t;
 
+extern int32 rdf_rpid64_mode;
+
+#define RPID_SZ			8
+#define RPID_64_FLAG		0x8000000000000000LL
+#define RPID_SET_NA(p,v) 	INT64_SET_NA((p),((v) | RPID_64_FLAG))
+#define RPID_REF_NA(p) 		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? (INT64_REF_NA(p) & ~RPID_64_FLAG)  : LONG_REF_NA(p) )
+#define RPID_IS_64(p)		( (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 1 : 0)
+#define RPID_HL(p,hl) 		( (hl) = (LONG_REF_NA(p) & (RPID_64_FLAG >> 32)) ? 8  : 4 )
+
+extern int rb_type__xsd_duration;
+extern int rb_type__xsd_yearMonthDuration;
+extern int rb_type__xsd_dayTimeDuration;
+#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+
+extern int rb_type__xsd_duration;
+extern int rb_type__xsd_yearMonthDuration;
+extern int rb_type__xsd_dayTimeDuration;
+#define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
 
 #endif

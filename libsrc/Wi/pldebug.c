@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,6 +36,7 @@
 #include "sqlintrp.h"
 #include "sqlbif.h"
 #include "sqltype.h"
+#include "datesupp.h"
 
 #ifdef WIN32
 #include "wiservic.h"
@@ -48,12 +49,12 @@
 #define QI_STATE(qi)	(qi->qi_last_break ? ((instruction_t *)(qi->qi_last_break))->_.breakpoint.scope  : NULL)
 #define QR_TEXT(qr) 	((qr) ? ((qr)->qr_module ? (qr)->qr_module->qr_text : (qr)->qr_text) : NULL)
 
-dk_mutex_t * pldbg_mtx;
-semaphore_t * pldbg_sem;
+dk_mutex_t *pldbg_mtx;
+semaphore_t *pldbg_sem;
 basket_t pldbg_queue;
 dk_set_t pldbg_brk = NULL;
-dk_mutex_t * pldbg_brk_mtx;
-resource_t * pldbg_rc;
+dk_mutex_t *pldbg_brk_mtx;
+resource_t *pldbg_rc;
 
 
 pldbg_message_t *
@@ -78,7 +79,7 @@ pd_clear (pldbg_message_t * pd)
 }
 
 static void
-pldbg_printf (char * buf, size_t buf_len, char *str, ...)
+pldbg_printf (char *buf, size_t buf_len, char *str, ...)
 {
   va_list ap;
   va_start (ap, str);
@@ -89,25 +90,25 @@ pldbg_printf (char * buf, size_t buf_len, char *str, ...)
 static void pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t * qi);
 
 void
-pldbg_break_delete (void * ins)
+pldbg_break_delete (void *ins)
 {
   mutex_enter (pldbg_brk_mtx);
   DO_SET (caddr_t *, elm, &pldbg_brk)
-    {
-      void * inst = elm[2];
-      if (inst == ins)
-	{
-	  dk_set_delete (&pldbg_brk, (void *)elm);
-	  dk_free_box ((box_t) elm);
-	  break;
-	}
-    }
-  END_DO_SET ()
+  {
+    void *inst = elm[2];
+    if (inst == ins)
+      {
+	dk_set_delete (&pldbg_brk, (void *) elm);
+	dk_free_box ((box_t) elm);
+	break;
+      }
+  }
+  END_DO_SET ();
   mutex_leave (pldbg_brk_mtx);
 }
 
 void
-pldbg_udt_print_object (caddr_t udi, dk_session_t *ses, query_instance_t * qi)
+pldbg_udt_print_object (caddr_t udi, dk_session_t * ses, query_instance_t * qi)
 {
   char tmp[1024];
   sql_class_t *udt = UDT_I_CLASS (udi);
@@ -117,36 +118,36 @@ pldbg_udt_print_object (caddr_t udi, dk_session_t *ses, query_instance_t * qi)
 	{
 	  int i;
 	  DO_BOX (sql_field_t *, fld, i, udt->scl_member_map)
-	    {
-	      caddr_t val = UDT_I_VAL(udi, i);
-	      snprintf (tmp, sizeof (tmp), "\t%s=", fld->sfl_name);
-	      SES_PRINT (ses, tmp);
-	      if (DV_TYPE_OF (val) != DV_REFERENCE)
-		{
-		  pldbg_print_value (ses, val, qi);
-		  SES_PRINT (ses, "\n");
-		}
-	      else
-		SES_PRINT (ses, "\t<object ref>\n");
-	    }
+	  {
+	    caddr_t val = UDT_I_VAL (udi, i);
+	    snprintf (tmp, sizeof (tmp), "\t%s=", fld->sfl_name);
+	    SES_PRINT (ses, tmp);
+	    if (DV_TYPE_OF (val) != DV_REFERENCE)
+	      {
+		pldbg_print_value (ses, val, qi);
+		SES_PRINT (ses, "\n");
+	      }
+	    else
+	      SES_PRINT (ses, "\t<object ref>\n");
+	  }
 	  END_DO_BOX;
 	}
       else
 	{
 	  switch (udt->scl_ext_lang)
 	    {
-	      case UDT_LANG_JAVA:
-		    {
-		      snprintf (tmp, sizeof (tmp), "\tjvm obj %s\n", udt->scl_ext_name);
-		      SES_PRINT (ses, tmp);
-		    }
-		  break;
-	      case UDT_LANG_CLR:
-		    {
-		      snprintf (tmp, sizeof (tmp), "\tclr obj %s\n", udt->scl_ext_name);
-		      SES_PRINT (ses, tmp);
-		    }
-		  break;
+	    case UDT_LANG_JAVA:
+	      {
+		snprintf (tmp, sizeof (tmp), "\tjvm obj %s\n", udt->scl_ext_name);
+		SES_PRINT (ses, tmp);
+	      }
+	      break;
+	    case UDT_LANG_CLR:
+	      {
+		snprintf (tmp, sizeof (tmp), "\tclr obj %s\n", udt->scl_ext_name);
+		SES_PRINT (ses, tmp);
+	      }
+	      break;
 	    }
 	}
     }
@@ -158,165 +159,237 @@ pldbg_udt_print_object (caddr_t udi, dk_session_t *ses, query_instance_t * qi)
 }
 
 static void
-pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t *qi)
+pldbg_print_value (dk_session_t * ses, box_t box, query_instance_t * qi)
 {
   char tmp[1024];
   dtp_t dtp = DV_TYPE_OF (box);
   switch (dtp)
     {
-      case DV_DB_NULL:
-	    {
-	      SES_PRINT (ses, "<DB_NULL>");
-	      break;
-	    }
-      case DV_ARRAY_OF_POINTER:
-      case DV_LIST_OF_POINTER:
-	    {
-	      int i, l = BOX_ELEMENTS (box);
-	      SES_PRINT (ses, "(");
-	      for (i = 0; i < l; i++)
-		{
-		  pldbg_print_value (ses, ((caddr_t *)box)[i], qi);
-		  SES_PRINT (ses, " ");
-		}
-	      SES_PRINT (ses, ")");
-	      break;
-	    }
-      case DV_ARRAY_OF_FLOAT:
-	    {
-	      int i, l = box_length (box) / sizeof (float);
-	      SES_PRINT (ses, "#F(");
-	      for (i = 0; i < l; i++)
-		{
-		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) box)[i]);
-		  SES_PRINT (ses, buffer);
-		}
-	      SES_PRINT (ses, ")");
-	      break;
-	    }
-      case DV_ARRAY_OF_DOUBLE:
-	    {
-	      int i, l = box_length (box) / sizeof (double);
-	      SES_PRINT (ses, "#D(");
-	      for (i = 0; i < l; i++)
-		{
-		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) box)[i]);
-		  SES_PRINT (ses, buffer);
-		}
-	      SES_PRINT (ses, ")");
-	      break;
-	    }
-      case DV_ARRAY_OF_LONG:
-	    {
-	      int i, l = box_length (box) / sizeof (ptrlong);
-	      SES_PRINT (ses, "L(");
-	      for (i = 0; i < l; i++)
-		{
-		  char buffer[50];
-		  snprintf (buffer, sizeof (buffer), "%ld ", (long) ((ptrlong *) box)[i]);
-		  SES_PRINT (ses, buffer);
-		}
-	      SES_PRINT (ses, ")");
-	      break;
-	    }
+    case DV_DB_NULL:
+      {
+	SES_PRINT (ses, "<DB_NULL>");
+	break;
+      }
+    case DV_ARRAY_OF_POINTER:
+    case DV_LIST_OF_POINTER:
+      {
+	int i, l = BOX_ELEMENTS (box);
+	SES_PRINT (ses, "(");
+	for (i = 0; i < l; i++)
+	  {
+	    pldbg_print_value (ses, ((caddr_t *) box)[i], qi);
+	    SES_PRINT (ses, " ");
+	  }
+	SES_PRINT (ses, ")");
+	break;
+      }
+    case DV_ARRAY_OF_FLOAT:
+      {
+	int i, l = box_length (box) / sizeof (float);
+	SES_PRINT (ses, "#F(");
+	for (i = 0; i < l; i++)
+	  {
+	    char buffer[50];
+	    snprintf (buffer, sizeof (buffer), SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, ((float *) box)[i]);
+	    SES_PRINT (ses, buffer);
+	  }
+	SES_PRINT (ses, ")");
+	break;
+      }
+    case DV_ARRAY_OF_DOUBLE:
+      {
+	int i, l = box_length (box) / sizeof (double);
+	SES_PRINT (ses, "#D(");
+	for (i = 0; i < l; i++)
+	  {
+	    char buffer[50];
+	    snprintf (buffer, sizeof (buffer), DOUBLE_E_STAR_FMT " ", DOUBLE_E_PREC, ((double *) box)[i]);
+	    SES_PRINT (ses, buffer);
+	  }
+	SES_PRINT (ses, ")");
+	break;
+      }
+    case DV_ARRAY_OF_LONG:
+      {
+	int i, l = box_length (box) / sizeof (ptrlong);
+	SES_PRINT (ses, "L(");
+	for (i = 0; i < l; i++)
+	  {
+	    char buffer[50];
+	    snprintf (buffer, sizeof (buffer), "%ld ", (long) ((ptrlong *) box)[i]);
+	    SES_PRINT (ses, buffer);
+	  }
+	SES_PRINT (ses, ")");
+	break;
+      }
 #ifdef BIF_XML
-	case DV_XML_ENTITY:
-	  {
-	     SES_PRINT (ses, "XML{\n");
-	     ((xml_entity_t *)box)->_->xe_serialize ((xml_entity_t *)box, ses);
-	     SES_PRINT (ses, "\n}");
-	     break;
-	  }
+    case DV_XML_ENTITY:
+      {
+	SES_PRINT (ses, "XML{\n");
+	((xml_entity_t *) box)->_->xe_serialize ((xml_entity_t *) box, ses);
+	SES_PRINT (ses, "\n}");
+	break;
+      }
 #endif
-	case DV_COMPOSITE:
-	  {
-	    snprintf (tmp, sizeof (tmp), "<COMPOSITE tag = %d>\n", (int) dtp);
-	    SES_PRINT (ses, tmp);
-	    break;
-	  }
-        case DV_BLOB:
-	case DV_BLOB_HANDLE:
-	case DV_BLOB_BIN:
-	case DV_BLOB_WIDE:
-	case DV_BLOB_WIDE_HANDLE:
-	case DV_BLOB_XPER:
-	case DV_BLOB_XPER_HANDLE:
-	  {
-	    SES_PRINT (ses, "<BLOB>");
-	    break;
-	  }
-	case DV_OBJECT:
-	  {
-	    sql_class_t * udt = UDT_I_CLASS (box);
-	    snprintf (tmp, sizeof (tmp), "{\n\t[obj:%p %s]\n", box, udt->scl_name);
-	    SES_PRINT (ses, tmp);
-	    pldbg_udt_print_object (box, ses, qi);
-	    SES_PRINT (ses, "}\n");
-	  }
+    case DV_BLOB:
+    case DV_BLOB_HANDLE:
+    case DV_BLOB_BIN:
+    case DV_BLOB_WIDE:
+    case DV_BLOB_WIDE_HANDLE:
+    case DV_BLOB_XPER:
+    case DV_BLOB_XPER_HANDLE:
+      {
+	SES_PRINT (ses, "<BLOB>");
 	break;
-	case DV_REFERENCE:
+      }
+    case DV_OBJECT:
+      {
+	sql_class_t *udt = UDT_I_CLASS (box);
+	snprintf (tmp, sizeof (tmp), "{\n\t[obj:%p %s]\n", box, udt->scl_name);
+	SES_PRINT (ses, tmp);
+	pldbg_udt_print_object (box, ses, qi);
+	SES_PRINT (ses, "}\n");
+      }
+      break;
+    case DV_REFERENCE:
+      {
+	caddr_t udi = udo_dbg_find_object_by_ref (qi, box);
+	sql_class_t *udt = udi ? UDT_I_CLASS (udi) : NULL;
+	SES_PRINT (ses, "{\n\tREF:");
+	if (!udt)
+	  SES_PRINT (ses, "(null)");
+	else
 	  {
-	    caddr_t udi = udo_dbg_find_object_by_ref (qi, box);
-	    sql_class_t * udt = udi ? UDT_I_CLASS (udi) : NULL;
-	    SES_PRINT (ses, "{\n\tREF:");
-	    if (!udt)
-	      SES_PRINT (ses, "(null)");
-	    else
+	    snprintf (tmp, sizeof (tmp), "[ref:%p obj:%p %s]\n", box, udi, udt->scl_name);
+	    SES_PRINT (ses, tmp);
+	    pldbg_udt_print_object (udi, ses, qi);
+	  }
+	SES_PRINT (ses, "}\n");
+      }
+      break;
+    case DV_BIN:
+      {
+	uint32 inx;
+	snprintf (tmp, sizeof (tmp), " LEN %d [", box_length (box));
+	SES_PRINT (ses, tmp);
+	for (inx = 0; inx < box_length (box) && inx < 1000 /*print elements */ ; inx++)
+	  {
+	    snprintf (tmp, sizeof (tmp), "%02x", (unsigned char) ((caddr_t) box)[inx]);
+	    SES_PRINT (ses, tmp);
+	  }
+	if (inx >= 1000)
+	  SES_PRINT (ses, "...");
+	SES_PRINT (ses, "]");
+      }
+      break;
+    case DV_RDF:
+      {
+	rdf_box_t *rb = (rdf_box_t *) box;
+	SES_PRINT (ses, "rdf_box(");
+	pldbg_print_value (ses, rb->rb_box, qi);
+	snprintf (tmp, sizeof (tmp),
+	    ",%ld,%ld,%ld,%ld", (long) (rb->rb_type), (long) (rb->rb_lang), (long) (rb->rb_ro_id), (long) (rb->rb_is_complete));
+	SES_PRINT (ses, tmp);
+	if (rb->rb_chksum_tail)
+	  {
+	    rdf_bigbox_t *rbb = (rdf_bigbox_t *) rb;
+	    SES_PRINT (ses, ",");
+	    pldbg_print_value (ses, rbb->rbb_chksum, qi);
+	    snprintf (tmp, sizeof (tmp), ",%ld", (long) (rbb->rbb_box_dtp));
+	    SES_PRINT (ses, tmp);
+	  }
+	SES_PRINT (ses, ")");
+	break;
+      }
+    case DV_DICT_ITERATOR:
+      {
+	id_hash_iterator_t *hit = (id_hash_iterator_t *) box;
+	id_hash_t *ht = hit->hit_hash;
+	snprintf (tmp, sizeof (tmp), "dictonary_reference (%d,%ld)", ht->ht_buckets, (ht->ht_inserts - ht->ht_deletes));
+	SES_PRINT (ses, tmp);
+	break;
+      }
+    case DV_COMPOSITE:
+      {
+	db_buf_t dv = (db_buf_t) box;
+	uint32 len;
+	db_buf_t dv_end;
+	if (box_length (box) < 3)
+	  {
+	    SES_PRINT (ses, "<COMPOSITE of 0 elements> ");
+	    break;
+	  }
+	len = dv[1];
+	dv_end = dv + len;
+	dv += 2;
+	SES_PRINT (ses, "<COMPOSITE ");
+	while (dv < dv_end)
+	  {
+	    caddr_t box2;
+	    int l2;
+	    DB_BUF_TLEN (l2, *dv, dv);
+	    box2 = box_deserialize_string ((caddr_t) dv, l2, 0);
+	    pldbg_print_value (ses, box2, qi);
+	    SES_PRINT (ses, " ");
+	    dk_free_tree (box2);
+	    dv += l2;
+	  }
+	SES_PRINT (ses, "> ");
+	break;
+      }
+    case DV_DATE:
+    case DV_DATETIME:
+    case DV_TIME:
+    case DV_TIMESTAMP:
+      {
+	dbg_dt_to_string (box, tmp, sizeof (tmp));
+	SES_PRINT (ses, tmp);
+	break;
+      }
+    default:
+      {
+	caddr_t err_ret = NULL;
+	caddr_t strval;
+	strval = box_cast_to (NULL, (caddr_t) box, dtp, DV_SHORT_STRING, NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err_ret);
+	if (!err_ret && strval)
+	  {
+	    if (IS_STRING_DTP (dtp))
 	      {
-		snprintf (tmp, sizeof (tmp), "[ref:%p obj:%p %s]\n", box, udi, udt->scl_name);
-		SES_PRINT (ses, tmp);
-		pldbg_udt_print_object (udi, ses, qi);
+		uint32 bf = box_flags (strval);
+		char *flag_str;
+		switch (bf)
+		  {
+		  case BF_IRI:
+		    flag_str = "IRI";
+		    break;
+		  case BF_UTF8:
+		    flag_str = "UTF8";
+		    break;
+		  case BF_DEFAULT_SERVER_ENC:
+		    flag_str = "DSE";
+		    break;
+		  case BF_UNAME_AS_STRING:
+		    flag_str = "UNAME";
+		    break;
+		  case BF_VALID_JSO:
+		    flag_str = "JSO";
+		    break;
+		  default:
+		    flag_str = "";
+		  }
+		SES_PRINT (ses, flag_str);
+		SES_PRINT (ses, "'");
 	      }
-	    SES_PRINT (ses, "}\n");
+	    SES_PRINT (ses, strval);
+	    if (IS_STRING_DTP (dtp))
+	      SES_PRINT (ses, "'");
 	  }
-	break;
-	case DV_BIN:
+	else
 	  {
-	    snprintf (tmp, sizeof (tmp), " LEN %d", box_length (box));
+	    snprintf (tmp, sizeof (tmp), "<box dtp=%d>", dtp);
 	    SES_PRINT (ses, tmp);
 	  }
-	break;
-        case DV_RDF:
-            {
-              rdf_box_t *rb = (rdf_box_t *)box;
-	      SES_PRINT (ses, "rdf_box(");
-	      pldbg_print_value (ses, rb->rb_box, qi);
-	      snprintf (tmp, sizeof (tmp), 
-		  ",%ld,%ld,%ld,%ld", (long)(rb->rb_type), (long)(rb->rb_lang), (long)(rb->rb_ro_id), (long)(rb->rb_is_complete));
-	      SES_PRINT (ses, tmp);
-              if (rb->rb_chksum_tail)
-                {
-                  rdf_bigbox_t *rbb = (rdf_bigbox_t *)rb;
-	          SES_PRINT (ses, ",");
-		  pldbg_print_value (ses, rbb->rbb_chksum, qi);
-	          snprintf (tmp, sizeof (tmp), ",%ld", (long)(rbb->rbb_box_dtp));
-		  SES_PRINT (ses, tmp);
-                }
-	      SES_PRINT (ses, ")");
-              break;
-            }
-      default:
-	    {
-	      caddr_t err_ret = NULL;
-	      caddr_t strval;
-	      strval = box_cast_to (NULL, (caddr_t)box, dtp, DV_SHORT_STRING,
-		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE, &err_ret);
-	      if (!err_ret && strval)
-		{
-		  if (IS_STRING_DTP (dtp))
-		    SES_PRINT (ses, "'");
-		  SES_PRINT (ses, strval);
-		  if (IS_STRING_DTP (dtp))
-		    SES_PRINT (ses, "'");
-		}
-	      else
-		{
-		  snprintf (tmp, sizeof (tmp), "<box dtp=%d>", dtp);
-		  SES_PRINT (ses, tmp);
-		}
-	    }
+      }
     }
 }
 
@@ -346,15 +419,15 @@ pldbg_ssl_set (state_slot_t * ssl, caddr_t * qst, caddr_t value)
 }
 
 static void
-pldbg_ssl_print (char * buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
+pldbg_ssl_print (char *buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst, caddr_t opts)
 {
-  query_instance_t * qi = (query_instance_t *) qst;
+  query_instance_t *qi = (query_instance_t *) qst;
   if (!ssl)
     {
       pldbg_printf (buf, buf_len, " <none> ");
       return;
     }
-  if (((state_slot_t *) -1L) == ssl)
+  if (((state_slot_t *) - 1L) == ssl)
     {
       pldbg_printf (buf, buf_len, " <proc table> ");
       return;
@@ -368,51 +441,95 @@ pldbg_ssl_print (char * buf, size_t buf_len, state_slot_t * ssl, caddr_t * qst)
     case SSL_REF_PARAMETER_OUT:
     case SSL_VEC:
     case SSL_REF:
-	  {
-	    caddr_t value = qst_get (qst, ssl);
-	    dtp_t dtp = DV_TYPE_OF (value);
-	    caddr_t strval;
-	    dk_session_t * out_ses = strses_allocate ();
-            pldbg_print_value (out_ses, value, qi);
-	    strval = strses_string (out_ses);
-	    strses_free (out_ses);
-	    pldbg_printf (buf, buf_len, "$%d \"%s\" %s (%d) %s", ssl->ssl_index, ssl->ssl_name,
-		  dv_type_title(dtp), dtp, strval);
-	  }
+      {
+	caddr_t value = qst_get (qst, ssl);
+	dtp_t dtp = DV_TYPE_OF (value);
+	caddr_t strval;
+	dk_session_t *out_ses = strses_allocate ();
+	pldbg_print_value (out_ses, value, qi);
+	strval = strses_string (out_ses);
+	strses_free (out_ses);
+	pldbg_printf (buf, buf_len, "$%d \"%s\" %s (%d) %s", ssl->ssl_index, ssl->ssl_name, dv_type_title (dtp), dtp, strval);
+      }
       break;
 
     case SSL_CONSTANT:
-	{
-	  caddr_t err_ret = NULL;
-	  if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
-	    pldbg_printf (buf, buf_len, "<constant DB_NULL>");
-	  else
-	    {
-	      caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
-		  DV_TYPE_OF (ssl->ssl_constant), DV_SHORT_STRING,
-		  NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
-		  &err_ret);
-	      if (!err_ret && strval)
-		pldbg_printf (buf, buf_len, "<constant (" EXPLAIN_LINE_MAX_STR_FORMAT ")>", strval);
-	      else
-		pldbg_printf (buf, buf_len, "<constant>");
-	      if (err_ret)
-		dk_free_tree (err_ret);
-	      if (strval)
-		dk_free_box (strval);
-	    }
-	}
+      {
+	caddr_t err_ret = NULL;
+	if (DV_TYPE_OF (ssl->ssl_constant) == DV_DB_NULL)
+	  pldbg_printf (buf, buf_len, "<constant DB_NULL>");
+	else
+	  {
+	    caddr_t strval = box_cast_to (NULL, ssl->ssl_constant,
+		DV_TYPE_OF (ssl->ssl_constant), DV_SHORT_STRING,
+		NUMERIC_MAX_PRECISION, NUMERIC_MAX_SCALE,
+		&err_ret);
+	    if (!err_ret && strval)
+	      pldbg_printf (buf, buf_len, "<constant (" EXPLAIN_LINE_MAX_STR_FORMAT ")>", strval);
+	    else
+	      pldbg_printf (buf, buf_len, "<constant>");
+	    if (err_ret)
+	      dk_free_tree (err_ret);
+	    if (strval)
+	      dk_free_box (strval);
+	  }
+      }
       break;
 
     default:
-      pldbg_printf (buf, buf_len, "<$%d \"%s\" spec %d>", ssl->ssl_index,
-	  ssl->ssl_name ? ssl->ssl_name : "-", ssl->ssl_type);
+      pldbg_printf (buf, buf_len, "<$%d \"%s\" spec %d>", ssl->ssl_index, ssl->ssl_name ? ssl->ssl_name : "-", ssl->ssl_type);
       break;
     }
 }
 
+void
+pldbg_print_conn_vars (dk_session_t * ses, query_instance_t * qi)
+{
+  caddr_t *name, *val;
+  id_hash_iterator_t it;
+  client_connection_t *cli = qi->qi_client;
+
+  if (!cli->cli_globals->ht_count)
+    return;
+
+  id_hash_iterator (&it, cli->cli_globals);
+  while (hit_next (&it, (caddr_t *) & name, (caddr_t *) & val))
+    {
+      pldbg_print_value (ses, *name, qi);
+      SES_PRINT (ses, ": ");
+      pldbg_print_value (ses, *val, qi);
+      SES_PRINT (ses, "\n");
+    }
+}
+
+void
+pldbg_print_cli_flags (dk_session_t * ses, query_instance_t * qi)
+{
+  client_connection_t *cli = qi->qi_client;
+  char buf[1024];
+  snprintf (buf, sizeof (buf), "log mode: %d\n", (int) cli->cli_log_mode);
+  SES_PRINT (ses, buf);
+  snprintf (buf, sizeof (buf), "autocommit mode: %s\n", cli->cli_row_autocommit ? "on" : "off");
+  SES_PRINT (ses, buf);
+  snprintf (buf, sizeof (buf), "triggers: %s\n", cli->cli_no_triggers ? "off" : "on");
+  if (cli->cli_user)
+    {
+      snprintf (buf, sizeof (buf), "user: %s (%ld)\n", cli->cli_user->usr_name, cli->cli_user->usr_id);
+      SES_PRINT (ses, buf);
+    }
+  else
+    {
+      SES_PRINT (ses, "user: none\n");
+    }
+  snprintf (buf, sizeof (buf), "DB name: %s\n", cli->cli_qualifier ? cli->cli_qualifier : "DB");
+  SES_PRINT (ses, buf);
+  da_string (&cli->cli_activity, buf, sizeof (buf));
+  SES_PRINT (ses, buf);
+  SES_PRINT (ses, "\n");
+}
+
 static long
-pldbg_count_lines (char * body)
+pldbg_count_lines (char *body)
 {
   long br = 0;
   char *ptr = body;
@@ -420,8 +537,7 @@ pldbg_count_lines (char * body)
     return 0;
   while (*ptr)
     {
-      if ((*ptr == 0x0A && *(ptr+1) == 0x0D) ||
-	  (*ptr == 0x0D && *(ptr+1) == 0x0A))
+      if ((*ptr == 0x0A && *(ptr + 1) == 0x0D) || (*ptr == 0x0D && *(ptr + 1) == 0x0A))
 	{
 	  br++;
 	  ptr++;
@@ -436,26 +552,25 @@ pldbg_count_lines (char * body)
 }
 
 static int
-pldbg_get_line (char * body, long line, char * buf, int buf_len)
+pldbg_get_line (char *body, long line, char *buf, int buf_len)
 {
   char *start = body, *ptr = body;
   char *end, *end1, *end2;
   long br = 1;
-  char l_no [10];
+  char l_no[10];
   if (!body || line < 1)
     return 0;
   while (*ptr && br < line)
     {
-      if ((*ptr == 0x0A && *(ptr+1) == 0x0D) ||
-	  (*ptr == 0x0D && *(ptr+1) == 0x0A))
+      if ((*ptr == 0x0A && *(ptr + 1) == 0x0D) || (*ptr == 0x0D && *(ptr + 1) == 0x0A))
 	{
-	   start = ptr+2;
-	   br++;
-	   ptr++;
+	  start = ptr + 2;
+	  br++;
+	  ptr++;
 	}
       else if (*ptr == 0x0A || *ptr == 0x0D)
 	{
-	  start = ptr+1;
+	  start = ptr + 1;
 	  br++;
 	}
       ptr++;
@@ -482,7 +597,7 @@ pldbg_get_line (char * body, long line, char * buf, int buf_len)
       if (end)
 	{
 	  if ((end - start) < PLD_LINE_LIMIT)
-	    strncat_size_ck (buf, start, (size_t)(end - start), buf_len);
+	    strncat_size_ck (buf, start, (size_t) (end - start), buf_len);
 	  else
 	    strncat_size_ck (buf, start, PLD_LINE_LIMIT, buf_len);
 	}
@@ -500,8 +615,8 @@ pldbg_session_cleanup (dk_session_t * ses)
 {
   int is_in_step;
   client_connection_t *cli = DKS_DB_DATA (ses);
-  query_instance_t * qi = cli && cli->cli_pldbg ? cli->cli_pldbg->pd_inst : NULL;
-  pldbg_t * dbginf;
+  query_instance_t *qi = cli && cli->cli_pldbg ? cli->cli_pldbg->pd_inst : NULL;
+  pldbg_t *dbginf;
   if (!cli)
     return;
   dbginf = cli->cli_pldbg;
@@ -512,11 +627,11 @@ pldbg_session_cleanup (dk_session_t * ses)
   cli->cli_pldbg->pd_is_step = 0;
   if (is_in_step && qi && qi->qi_query)
     {
-      query_instance_t * cur_qi = qi;
-      while (IS_POINTER(cur_qi))
+      query_instance_t *cur_qi = qi;
+      while (IS_POINTER (cur_qi))
 	{
 	  cur_qi->qi_step = PLDS_NONE;
-	  sqlc_set_brk (cur_qi->qi_query, -1, 2, NULL); /* must be more precise, remove all active brks for now */
+	  sqlc_set_brk (cur_qi->qi_query, -1, 2, NULL);	/* must be more precise, remove all active brks for now */
 	  cur_qi = cur_qi->qi_caller;
 	}
       semaphore_leave (dbginf->pd_sem);
@@ -540,15 +655,15 @@ pldbg_out_ready (dk_session_t * ses, caddr_t msg)
 }
 
 void
-pldbg_make_answer (void * cli1)
+pldbg_make_answer (void *cli1)
 {
-  client_connection_t * cli = (client_connection_t *) cli1;
+  client_connection_t *cli = (client_connection_t *) cli1;
   caddr_t msg;
-  char tmp [4096];
-  query_instance_t * qi = cli->cli_pldbg->pd_inst;
-  char * body = (qi && qi->qi_query ? QR_TEXT(qi->qi_query) : NULL);
+  char tmp[4096];
+  query_instance_t *qi = cli->cli_pldbg->pd_inst;
+  char *body = (qi && qi->qi_query ? QR_TEXT (qi->qi_query) : NULL);
   tmp[0] = 0;
-  if (qi && pldbg_get_line (body, QI_LINE_NO(qi), tmp, sizeof (tmp)))
+  if (qi && pldbg_get_line (body, QI_LINE_NO (qi), tmp, sizeof (tmp)))
     {
       if (srv_have_global_lock (qi->qi_thread))
 	strcat_ck (tmp, "\nWarning: You're stepping thru the code in atomic mode.");
@@ -560,11 +675,11 @@ pldbg_make_answer (void * cli1)
 }
 
 static query_t *
-pldbg_get_qr (char * name)
+pldbg_get_qr (char *name)
 {
   int inx;
-  query_t * qr = NULL;
-  const char * pname;
+  query_t *qr = NULL;
+  const char *pname;
 
   if (!name)
     return NULL;
@@ -572,38 +687,38 @@ pldbg_get_qr (char * name)
   pname = sch_full_proc_name (wi_inst.wi_schema, name, "DB", "DBA");
   if (pname)
     qr = sch_proc_def (wi_inst.wi_schema, pname);
-  if (!qr) /* triggers */
+  if (!qr)			/* triggers */
     {
       dbe_table_t *tb;
-      char * tb_name = strchr (name, '@'), *trig_name = name;
+      char *tb_name = strchr (name, '@'), *trig_name = name;
 
       if (!tb_name)
 	goto try_udt;
 
       *tb_name = 0;
-      tb_name ++;
+      tb_name++;
       tb = sch_name_to_table (isp_schema (NULL), tb_name);
 
       if (!tb)
 	goto try_udt;
 
       DO_SET (query_t *, trig_qr, &tb->tb_triggers->trig_list)
-	{
-	  if (!CASEMODESTRCMP (trig_name, trig_qr->qr_proc_name))
-	    {
-	      qr = trig_qr;
-	      break;
-	    }
-	}
+      {
+	if (!CASEMODESTRCMP (trig_name, trig_qr->qr_proc_name))
+	  {
+	    qr = trig_qr;
+	    break;
+	  }
+      }
       END_DO_SET ();
     }
 try_udt:
   if (!qr)
     {
       sql_class_t *udt;
-      char * method_name = strrchr (name, '.'), *class_name = name;
-      char * constructor_name = strrchr (name, ':');
-      int what = UDT_METHOD_INSTANCE; /* or UDT_METHOD_CONSTRUCTOR */
+      char *method_name = strrchr (name, '.'), *class_name = name;
+      char *constructor_name = strrchr (name, ':');
+      int what = UDT_METHOD_INSTANCE;	/* or UDT_METHOD_CONSTRUCTOR */
 
       if (!method_name && !constructor_name)
 	return NULL;
@@ -615,18 +730,18 @@ try_udt:
 	}
 
       *method_name = 0;
-      method_name ++;
+      method_name++;
       udt = sch_name_to_type (isp_schema (NULL), class_name);
       if (udt && udt->scl_method_map)
 	{
 	  DO_BOX (sql_method_t *, mtd, inx, udt->scl_method_map)
-	    {
-	      if (mtd->scm_type == what && !CASEMODESTRCMP (method_name, mtd->scm_name))
-		{
-		  qr = mtd->scm_qr;
-		  break;
-		}
-	    }
+	  {
+	    if (mtd->scm_type == what && !CASEMODESTRCMP (method_name, mtd->scm_name))
+	      {
+		qr = mtd->scm_qr;
+		break;
+	      }
+	  }
 	  END_DO_BOX;
 	}
     }
@@ -636,9 +751,9 @@ try_udt:
 int
 pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 {
-  int cmd = BOX_ELEMENTS (args) ? (int) unbox(args[0]) : -1;
-  char tmp [4096];
-  dk_session_t * out_ses = strses_allocate ();
+  int cmd = BOX_ELEMENTS (args) ? (int) unbox (args[0]) : -1;
+  char tmp[4096];
+  dk_session_t *out_ses = strses_allocate ();
   caddr_t msg = NULL, err = NULL;
   int send_answer = 1;
   size_t tmp_len = sizeof (tmp);
@@ -646,539 +761,606 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
   tmp[0] = 0;
   switch (cmd)
     {
-      case PD_BREAK: /* set a breakpoint  */
-      case PD_DELETE: /* delete a breakpoint  */
-	    {
-	      caddr_t inst = NULL;
-	      char * pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /*make it full*/
-	      int break_to_delete = 0;
-	      if (pname && alldigits (pname))
-		{
-		  break_to_delete = atoi (pname);
-		  pname = NULL;
-		}
-	      if (pname || cmd == PD_BREAK)
-		{
-		  int bre = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 0;
-		  int to_delete = (cmd == PD_DELETE ? 1 : 0);
-		  query_t * qr = pldbg_get_qr (pname);
-		  if (qr)
-		    {
-		      if (qr->qr_to_recompile)
-			qr = qr_recompile (qr, &err);
-		      if (!qr) /* can't be recompiled */
+    case PD_BREAK:		/* set a breakpoint  */
+    case PD_DELETE:		/* delete a breakpoint  */
+      {
+	caddr_t inst = NULL;
+	char *pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/*make it full */
+	int break_to_delete = 0;
+	if (pname && alldigits (pname))
+	  {
+	    break_to_delete = atoi (pname);
+	    pname = NULL;
+	  }
+	if (pname || cmd == PD_BREAK)
+	  {
+	    int bre = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 0;
+	    int to_delete = (cmd == PD_DELETE ? 1 : 0);
+	    query_t *qr = pldbg_get_qr (pname);
+	    if (qr)
+	      {
+		if (qr->qr_to_recompile)
+		  qr = qr_recompile (qr, &err);
+		if (!qr)	/* can't be recompiled */
+		  {
+		    msg = ERR_MESSAGE (err);
+		    ERR_MESSAGE (err) = NULL;
+		    dk_free_tree (err);
+		    break;
+		  }
+		mutex_enter (pldbg_brk_mtx);
+		bre = sqlc_set_brk (qr, bre, to_delete ? 0 : 2, &inst);
+		if (bre > 0)
+		  {
+		    if (!to_delete)
+		      {
+			int found = 0, nth = 0;
+			DO_SET (caddr_t *, elm, &pldbg_brk)
 			{
-			  msg = ERR_MESSAGE (err);
-			  ERR_MESSAGE (err) = NULL;
-			  dk_free_tree (err);
-			  break;
-			}
-		      mutex_enter (pldbg_brk_mtx);
-		      bre = sqlc_set_brk (qr, bre, to_delete ? 0 : 2, &inst);
-		      if (bre > 0)
-			{
-			  if (!to_delete)
-			    {
-			      int found = 0, nth = 0;
-			      DO_SET (caddr_t *, elm, &pldbg_brk)
-				{
-				  if (!strcmp (elm[0], qr->qr_proc_name) && bre == (long) (ptrlong) elm[1])
-				    {
-				      found++;
-				      break;
-				    }
-				  nth ++;
-				}
-			      END_DO_SET ();
-			      if (!found)
-				pldbg_brk = dk_set_conc (pldbg_brk,
-				    dk_set_cons ((void *) list (4, qr->qr_proc_name, bre, inst, ++nth), NULL));
-			    }
-			  else
-			    {
-			      DO_SET (caddr_t *, elm, &pldbg_brk)
-				{
-				  if (!strcmp (elm[0], qr->qr_proc_name) && bre == (long) (ptrlong) elm[1])
-				    {
-				      dk_set_delete (&pldbg_brk, (void *)elm);
-				      dk_free_box ((box_t) elm);
-				      break;
-				    }
-				}
-			      END_DO_SET ()
-			    }
-			}
-		      mutex_leave (pldbg_brk_mtx);
-		      if (0 < bre)
-			snprintf (tmp, sizeof (tmp), "%sBreakpoint at: procedure %s, line %d", to_delete ? "Deleted " : "",
-			    qr->qr_proc_name, bre);
-		      else
-			snprintf (tmp, sizeof (tmp), "Can't find a breakpoint at: procedure %s, line %d", qr->qr_proc_name, bre);
-		      msg = box_dv_short_string (tmp);
-		    }
-		  else
-		    msg = box_dv_short_string ("There is no such procedure");
-		}
-	      else
-		{
-		  int n = 0, found = 0;
-		  mutex_enter (pldbg_brk_mtx);
-		  DO_SET (caddr_t *, elm, &pldbg_brk)
-		    {
-		      n++;
-		      if (!break_to_delete || break_to_delete == (int) (ptrlong) elm[3])
-			{
-			  found++;
-			  inst = elm[2];
-			  sqlc_set_brk (NULL, 0, 0, &inst);
-			  dk_set_delete (&pldbg_brk, (void *)elm);
-			  dk_free_box ((box_t) elm);
-			}
-		    }
-		  END_DO_SET ()
-		  mutex_leave (pldbg_brk_mtx);
-		  if (found && break_to_delete)
-		    snprintf (tmp, sizeof (tmp), "Deleted: breakpoint number %d.", break_to_delete);
-		  else if (!found && break_to_delete)
-		    snprintf (tmp, sizeof (tmp), "No breakpoint number %d.", break_to_delete);
-		  else
-		    snprintf (tmp, sizeof (tmp), "All breakpoints are deleted");
-		  msg = box_dv_short_string (tmp);
-		}
-	    }
-	  break;
-      case PD_NEXT: /* do next */
-      case PD_STEP: /* step into */
-      case PD_FINISH: /* finish current */
-      case PD_UNTIL: /* finish current or stop at line */
-	    {
-	      caddr_t inst = NULL;
-	      int step = (cmd == PD_STEP ? PLDS_STEP : PLDS_NEXT);
-	      /* never set step to the PLDS_NONE as it's a test to leave the semaphore*/
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
-		{
-		  query_instance_t * qi = cli->cli_pldbg->pd_inst;
-		  query_instance_t * cur_qi = qi->qi_caller;
-
-		  if (cmd == PD_UNTIL)
-		    {
-		      char * pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /*make it full*/
-		      int bre;
-		      query_t * qr;
-		      if (alldigits (pname) && BOX_ELEMENTS (args) == 2)
-			{
-			  bre = atoi (pname);
-			  qr = qi->qi_query;
-			}
-		      else
-			{
-			  bre = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 0;
-			  qr = pldbg_get_qr (pname);
-			}
-
-		      if (qr)
-			{
-			  if (qr->qr_to_recompile)
-			    qr = qr_recompile (qr, &err);
-			  if (!qr) /* can't be recompiled */
-			    {
-			      msg = ERR_MESSAGE (err);
-			      ERR_MESSAGE (err) = NULL;
-			      dk_free_tree (err);
-			      break;
-			    }
-			  mutex_enter (pldbg_brk_mtx);
-			  bre = sqlc_set_brk (qr, bre, 1, &inst);
-			  mutex_leave (pldbg_brk_mtx);
-			}
-		    }
-
-		  if (!(cli->cli_pldbg->pd_step & (PLDS_STEP|PLDS_NEXT))) /* entering stepping mode */
-		    {
-		      while (IS_POINTER(cur_qi))
-			{
-			  cur_qi->qi_step = PLDS_STEP;
-			  cur_qi = cur_qi->qi_caller;
-			}
-		    }
-		  if (cmd == PD_FINISH || cmd == PD_UNTIL)
-		    qi->qi_step = PLDS_NONE;
-		  cli->cli_pldbg->pd_step = step;
-		  cli->cli_pldbg->pd_send = pldbg_make_answer;
-	          semaphore_leave (cli->cli_pldbg->pd_sem);
-		  send_answer = 0;
-		}
-	      else
-		msg = box_dv_short_string ("There is no active statements to step");
-	    }
-	  break;
-      case PD_INFO: /* miscellaneous info */
-	    {
-	      int infoi = BOX_ELEMENTS (args) > 1 ? (int) unbox(args[1]) : -1; /* what info requested */
-	      switch (infoi)
-		{
-		  case PDI_BREAK:
-			{
-			  int found = 0;
-			  mutex_enter (pldbg_brk_mtx);
-			  DO_SET (caddr_t *, elm, &pldbg_brk)
+			  if (!strcmp (elm[0], qr->qr_proc_name) && bre == (long) (ptrlong) elm[1])
 			    {
 			      found++;
-			      snprintf (tmp, sizeof (tmp), "%d %s:%ld\n", (int) (ptrlong) elm[3], elm[0], (long) (ptrlong) elm[1]);
-			      SES_WRITE (out_ses, tmp);
+			      break;
 			    }
-			  END_DO_SET ();
-			  mutex_leave (pldbg_brk_mtx);
-			  if (!found)
-			    msg = box_dv_short_string ("No breakpoints.");
-			  else
-			    msg = strses_string (out_ses);
-			  break;
+			  nth++;
 			}
-		  case PDI_CLI: /* XXX: clients */
+			END_DO_SET ();
+			if (!found)
+			  pldbg_brk = dk_set_conc (pldbg_brk,
+			      dk_set_cons ((void *) list (4, qr->qr_proc_name, bre, inst, ++nth), NULL));
+		      }
+		    else
+		      {
+			DO_SET (caddr_t *, elm, &pldbg_brk)
 			{
-			  dk_set_t clis;
-			  mutex_enter (thread_mtx);
-			  clis = srv_get_logons ();
-			  mutex_leave (thread_mtx);
-			  DO_SET (dk_session_t *, ses, &clis)
+			  if (!strcmp (elm[0], qr->qr_proc_name) && bre == (long) (ptrlong) elm[1])
 			    {
-			      if (ses->dks_peer_name && DKS_DB_DATA(ses))
-				{
-				  SES_WRITE (out_ses, ses->dks_peer_name);
-				  SES_WRITE (out_ses, "\n");
-				}
-			    }
-			  END_DO_SET ();
-			  msg = strses_string (out_ses);
-			  break;
-			}
-		  case PDI_THRE: /* stopped threads */
-			{
-			  char conn_id[30];
-			  client_connection_t * cli;
-			  IN_TXN;
-			  DO_SET (lock_trx_t *, lt, &all_trxs)
-			    {
-			      cli = lt->lt_client;
-			      ASSERT_IN_TXN;
-			      if (cli && lt->lt_threads > 0)
-				{
-				  query_instance_t * qi = cli->cli_pldbg->pd_inst;
-				  dk_session_t * c_ses = cli->cli_http_ses ? cli->cli_http_ses : cli->cli_session;
-
-				  if (!cli->cli_pldbg->pd_id)
-				    {
-				      if (c_ses && c_ses->dks_peer_name)
-					cli->cli_pldbg->pd_id = box_copy (c_ses->dks_peer_name);
-				      else
-					{
-					  char * ct = cli && cli->cli_ws ? "HTTP" : "INTERNAL";
-					  snprintf (conn_id, sizeof (conn_id), "%s:%lX", ct, (unsigned long) (uptrlong) cli);
-					  cli->cli_pldbg->pd_id = box_dv_short_string (conn_id);
-					}
-				    }
-
-
-				  snprintf (tmp, sizeof (tmp), "@%s in %s () at %ld\n",
-				     cli->cli_pldbg->pd_id,
-				     (qi && qi->qi_query && qi->qi_query->qr_proc_name ? qi->qi_query->qr_proc_name : "??"),
-				     (long) (qi ? QI_LINE_NO(qi) : -1));
-				  SES_PRINT (out_ses, tmp);
-				}
-			    }
-			  END_DO_SET ();
-			  LEAVE_TXN;
-			  msg = strses_string (out_ses);
-			  break;
-			}
-		  default:
-		      msg = box_dv_short_string ("There is no such info");
-		      break;
-		}
-	    }
-	  break;
-      case PD_LIST: /* do a list */
-	    {
-	      char * pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /*make it full*/
-	      int line_no = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 1;
-	      query_t * qr = pldbg_get_qr (pname);
-	      if (!pname)
-		{
-		  client_connection_t *cli = DKS_DB_DATA (ses);
-		  if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
-		    {
-		      query_instance_t * qi = PLD_GET_FRAME(cli);
-		      long line_no = QI_LINE_NO(qi);
-		      char * body = qi->qi_query ? QR_TEXT(qi->qi_query) : NULL;
-		      snprintf (tmp, sizeof (tmp), "Current breakpoint: procedure %s, line %ld\n",
-			  qi->qi_query->qr_proc_name, line_no);
-
-		      strcat_ck (tmp, " ");
-		      if (pldbg_get_line (body, line_no - 1, tmp, sizeof (tmp)))
-			strcat_ck (tmp, "\n*");
-		      if (pldbg_get_line (body, line_no, tmp, sizeof (tmp)))
-			strcat_ck (tmp, "\n ");
-		      pldbg_get_line (body, line_no + 1, tmp, sizeof (tmp));
-
-		      if (strlen (tmp) > 1)
-			msg = box_dv_short_string (tmp);
-		      else
-			msg = box_dv_short_string ("There is no such line");
-		    }
-		  else
-		    msg = box_dv_short_string ("There is no active statements");
-		}
-	      else if (qr)
-		{
-		  int i, have_one = 0;
-		  for (i = line_no; i < line_no + 10; i++)
-		    {
-		      tmp[0] = 0;
-		      if (!pldbg_get_line (QR_TEXT(qr), i, tmp, sizeof (tmp)))
-			{
-			  if (!have_one)
-			    {
-			      snprintf (tmp, sizeof (tmp), "Line number %d out of range\n", line_no);
-			      SES_PRINT (out_ses, tmp);
-			    }
-			  break;
-			}
-		      have_one ++;
-		      SES_PRINT (out_ses, tmp);
-		      SES_PRINT (out_ses, "\n");
-		    }
-		  msg = strses_string (out_ses);
-		}
-	      else
-		msg = box_dv_short_string ("There is no such procedure");
-	    }
-	  break;
-      case PD_WHERE: /* where, call stack */
-	    {
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
-		{
-		  int n = 0;
-		  query_instance_t * qi = cli->cli_pldbg->pd_inst, *cur_qi;
-		  const char * proc_name;
-
-		  cur_qi = qi;
-		  while (IS_POINTER(cur_qi))
-		    {
-		      long line_no = QI_LINE_NO(cur_qi);
-		      proc_name = cur_qi->qi_query && cur_qi->qi_query->qr_proc_name ?
-			  cur_qi->qi_query->qr_proc_name : "??";
-		      pldbg_printf (tmp, tmp_len, "#%d %s () at %ld\n", n++, proc_name, line_no);
-		      SES_PRINT (out_ses, tmp);
-		      cur_qi = cur_qi->qi_caller;
-		    }
-		  msg = strses_string (out_ses);
-		}
-	      else
-		msg = box_dv_short_string ("There is no active statements");
-	      break;
-	    }
-      case PD_FRAME: /* set the current frame */
-	    {
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      int fram = BOX_ELEMENTS (args) > 1 ? (int) unbox(args[1]) : -1;
-	      if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
-		{
-		  int n = 0, found = 0;
-		  query_instance_t * qi = cli->cli_pldbg->pd_inst, *cur_qi;
-		  char * proc_name;
-		  cur_qi = qi;
-		  cli->cli_pldbg->pd_frame = NULL;
-		  while (IS_POINTER(cur_qi))
-		    {
-		      long line_no = QI_LINE_NO(cur_qi);
-		      proc_name = cur_qi->qi_query && cur_qi->qi_query->qr_proc_name ?
-			  cur_qi->qi_query->qr_proc_name : NULL;
-		      if (n == fram && proc_name)
-			{
-			  pldbg_printf (tmp, tmp_len, "#%d %s () at %ld\n", n, proc_name, line_no);
-			  SES_PRINT (out_ses, tmp);
-			  cli->cli_pldbg->pd_frame = cur_qi;
-			  found ++;
-			  break;
-			}
-		      cur_qi = cur_qi->qi_caller;
-		      n++;
-		    }
-		  if (found)
-		    msg = strses_string (out_ses);
-		  else
-		    msg = box_dv_short_string ("Can't go to the specified frame number.");
-		}
-	      else
-		msg = box_dv_short_string ("There is no active statements");
-	      break;
-	    }
-      case PD_CONT: /* continue */
-	    {
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      query_instance_t * qi = cli && cli->cli_pldbg->pd_is_step ? cli->cli_pldbg->pd_inst : NULL;
-	      if (cli)
-		{
-		  cli->cli_pldbg->pd_step = PLDS_NONE;
-		  cli->cli_pldbg->pd_send = NULL;
-		}
-	      if (qi && qi->qi_query)
-		{
-		  query_instance_t * cur_qi = qi;
-		  while (IS_POINTER(cur_qi))
-		    {
-		      cur_qi->qi_step = PLDS_NONE;
-		      cur_qi = cur_qi->qi_caller;
-		    }
-		  semaphore_leave (cli->cli_pldbg->pd_sem);
-		  msg = box_dv_short_string ("Execution resumed");
-		}
-	      else
-		msg = box_dv_short_string ("There is no active statements to resume");
-	    }
-	 break;
-      case PD_ATTACH: /* attach */
-	    {
-	      char * name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /* connection ID */
-	      client_connection_t *cli = NULL;
-	      if (name && name[0] == '@')
-		{
-		  name++;
-		  IN_TXN;
-		  DO_SET (lock_trx_t *, lt, &all_trxs)
-		    {
-		      cli = lt->lt_client;
-		      if (cli && lt->lt_threads > 0)
-			{
-			  if (cli &&
-			      cli->cli_pldbg->pd_id && !strcmp (cli->cli_pldbg->pd_id, name))
-			    break;
-			}
-		      cli = NULL;
-		    }
-		  END_DO_SET ();
-		  LEAVE_TXN;
-		}
-	      else if (NULL == name) /* connect to first available */
-		{
-		  IN_TXN;
-		  DO_SET (lock_trx_t *, lt, &all_trxs)
-		    {
-		      cli = lt->lt_client;
-		      if (cli && lt->lt_threads > 0)
-			{
-			  if (cli && cli->cli_pldbg->pd_id)
-			    {
-			      name = cli->cli_pldbg->pd_id;
+			      dk_set_delete (&pldbg_brk, (void *) elm);
+			      dk_free_box ((box_t) elm);
 			      break;
 			    }
 			}
-		      cli = NULL;
-		    }
-		  END_DO_SET ();
-		  LEAVE_TXN;
-		}
-	      else
-		{
-		  dk_session_t *r_ses;
-                  r_ses = name ? PrpcFindPeer (name) : NULL;
-                  cli = r_ses ? DKS_DB_DATA (r_ses) : NULL;
-		}
-	      if (cli && (!cli->cli_pldbg || !cli->cli_pldbg->pd_session))
-		{
-		  int is_in_step;
-	          cli->cli_pldbg->pd_session = (dk_session_t *) ses;
-		  is_in_step = cli->cli_pldbg->pd_is_step;
-		  pldbg_session_cleanup (ses); /* detach if already attached */
-	          DKS_DB_DATA (ses) = cli;
-		  if (!is_in_step)
-		    cli->cli_pldbg->pd_step = PLDS_INT;
-		  msg = box_dv_short_string (name);
-		}
-	      else if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_session)
-		{
-		  msg = box_dv_short_string ("The connection is in use");
-		}
-	      else
-		msg = box_dv_short_string ("Can't find connection to attach");
-	    }
-	 break;
-      case PD_PRINT: /* print state */
+			END_DO_SET ();
+		      }
+		  }
+		mutex_leave (pldbg_brk_mtx);
+		if (0 < bre)
+		  snprintf (tmp, sizeof (tmp), "%sBreakpoint at: procedure %s, line %d", to_delete ? "Deleted " : "",
+		      qr->qr_proc_name, bre);
+		else
+		  snprintf (tmp, sizeof (tmp), "Can't find a breakpoint at: procedure %s, line %d", qr->qr_proc_name, bre);
+		msg = box_dv_short_string (tmp);
+	      }
+	    else
+	      msg = box_dv_short_string ("There is no such procedure");
+	  }
+	else
+	  {
+	    int n = 0, found = 0;
+	    mutex_enter (pldbg_brk_mtx);
+	    DO_SET (caddr_t *, elm, &pldbg_brk)
 	    {
-	      char * name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /* variable name */
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      query_instance_t * qi = cli && cli->cli_pldbg ? PLD_GET_FRAME(cli) : NULL;
-	      tmp[0] = 0;
-	      if (qi && qi->qi_query && name) /*XXX: for now only if specified*/
+	      n++;
+	      if (!break_to_delete || break_to_delete == (int) (ptrlong) elm[3])
 		{
-		  dk_set_t state_scope = QI_STATE(qi);
-		  state_slot_t * found = NULL;
-		  DO_SET (state_slot_t *, ssl, &state_scope)
-		    {
-		      char * name1 = ssl->ssl_name;
-		      if (name1 && !CASEMODESTRCMP (name1, name))
-			found = ssl; /*get the last one*/
-		    }
-		  END_DO_SET ();
-		  if (!found)
-		    pldbg_printf (tmp, tmp_len, "No symbol '%s' in current context.", (name ? name : "(nil)"));
-		  else
-		    pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi);
-		  msg = box_dv_short_string (tmp);
+		  found++;
+		  inst = elm[2];
+		  sqlc_set_brk (NULL, 0, 0, &inst);
+		  dk_set_delete (&pldbg_brk, (void *) elm);
+		  dk_free_box ((box_t) elm);
 		}
-	      else
-		msg = box_dv_short_string ("There is no active statement");
 	    }
-	 break;
-      case PD_SET: /* set state */
+	    END_DO_SET ();
+	    mutex_leave (pldbg_brk_mtx);
+	    if (found && break_to_delete)
+	      snprintf (tmp, sizeof (tmp), "Deleted: breakpoint number %d.", break_to_delete);
+	    else if (!found && break_to_delete)
+	      snprintf (tmp, sizeof (tmp), "No breakpoint number %d.", break_to_delete);
+	    else
+	      snprintf (tmp, sizeof (tmp), "All breakpoints are deleted");
+	    msg = box_dv_short_string (tmp);
+	  }
+      }
+      break;
+    case PD_NEXT:		/* do next */
+    case PD_STEP:		/* step into */
+    case PD_FINISH:		/* finish current */
+    case PD_UNTIL:		/* finish current or stop at line */
+      {
+	caddr_t inst = NULL;
+	int step = (cmd == PD_STEP ? PLDS_STEP : PLDS_NEXT);
+	/* never set step to the PLDS_NONE as it's a test to leave the semaphore */
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	  {
+	    query_instance_t *qi = cli->cli_pldbg->pd_inst;
+	    query_instance_t *cur_qi = qi->qi_caller;
+
+	    if (cmd == PD_UNTIL)
+	      {
+		char *pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/*make it full */
+		int bre;
+		query_t *qr;
+		if (alldigits (pname) && BOX_ELEMENTS (args) == 2)
+		  {
+		    bre = atoi (pname);
+		    qr = qi->qi_query;
+		  }
+		else
+		  {
+		    bre = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 0;
+		    qr = pldbg_get_qr (pname);
+		  }
+
+		if (qr)
+		  {
+		    if (qr->qr_to_recompile)
+		      qr = qr_recompile (qr, &err);
+		    if (!qr)	/* can't be recompiled */
+		      {
+			msg = ERR_MESSAGE (err);
+			ERR_MESSAGE (err) = NULL;
+			dk_free_tree (err);
+			break;
+		      }
+		    mutex_enter (pldbg_brk_mtx);
+		    bre = sqlc_set_brk (qr, bre, 1, &inst);
+		    mutex_leave (pldbg_brk_mtx);
+		  }
+	      }
+
+	    if (!(cli->cli_pldbg->pd_step & (PLDS_STEP | PLDS_NEXT)))	/* entering stepping mode */
+	      {
+		while (IS_POINTER (cur_qi))
+		  {
+		    cur_qi->qi_step = PLDS_STEP;
+		    cur_qi = cur_qi->qi_caller;
+		  }
+	      }
+	    if (cmd == PD_FINISH || cmd == PD_UNTIL)
+	      qi->qi_step = PLDS_NONE;
+	    cli->cli_pldbg->pd_step = step;
+	    cli->cli_pldbg->pd_send = pldbg_make_answer;
+	    semaphore_leave (cli->cli_pldbg->pd_sem);
+	    send_answer = 0;
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statements to step");
+      }
+      break;
+    case PD_INFO:		/* miscellaneous info */
+      {
+	int infoi = BOX_ELEMENTS (args) > 1 ? (int) unbox (args[1]) : -1;	/* what info requested */
+	switch (infoi)
+	  {
+	  case PDI_BREAK:
 	    {
-	      char * name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /* variable name */
-	      caddr_t value = BOX_ELEMENTS (args) > 2 ? args[2] : NULL; /* new value */
-	      client_connection_t *cli = DKS_DB_DATA (ses);
-	      query_instance_t * qi = cli && cli->cli_pldbg ? PLD_GET_FRAME(cli) : NULL;
-	      tmp[0] = 0;
-	      if (qi && qi->qi_query && name)
-		{
-		  state_slot_t * found = NULL;
-		  dk_set_t state_scope = QI_STATE(qi);
-		  DO_SET (state_slot_t *, ssl, &state_scope)
-		    {
-		      char * name1 = ssl->ssl_name;
-		      if (name1 && !CASEMODESTRCMP (name1, name))
-			found = ssl;
-		    }
-		  END_DO_SET ();
-		  if (!found)
-		    pldbg_printf (tmp, tmp_len, "No symbol '%s' in current context.", (name ? name : "(nil)"));
-		  else
-		    {
-		      if (!pldbg_ssl_set (found, (caddr_t *) qi, value))
-			pldbg_printf (tmp, tmp_len, "Can't set '%s' to '%s'.", (name ? name : "(nil)"),
-			    (value ? value : "(nil)"));
-		      else
-			pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi);
-		    }
-		  msg = box_dv_short_string (tmp);
-		}
-	      else if (!name)
-		pldbg_printf (tmp, tmp_len, "No symbol specified");
+	      int found = 0;
+	      mutex_enter (pldbg_brk_mtx);
+	      DO_SET (caddr_t *, elm, &pldbg_brk)
+	      {
+		found++;
+		snprintf (tmp, sizeof (tmp), "%d %s:%ld\n", (int) (ptrlong) elm[3], elm[0], (long) (ptrlong) elm[1]);
+		SES_WRITE (out_ses, tmp);
+	      }
+	      END_DO_SET ();
+	      mutex_leave (pldbg_brk_mtx);
+	      if (!found)
+		msg = box_dv_short_string ("No breakpoints.");
 	      else
-		msg = box_dv_short_string ("There is no active statement");
+		msg = strses_string (out_ses);
+	      break;
 	    }
-	 break;
-      default:
-	   {
-	     char * opt_name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL; /*name of command*/
-	     if (opt_name)
-	       snprintf (tmp, sizeof (tmp), "Undefined command: %s", opt_name);
-	     else
-	       snprintf (tmp, sizeof (tmp), "Undefined command: %d", cmd);
-	     msg = box_dv_short_string (tmp);
-	   }
-         break;
+	  case PDI_CLI:	/* XXX: clients */
+	    {
+	      dk_set_t clis;
+	      mutex_enter (thread_mtx);
+	      clis = srv_get_logons ();
+	      mutex_leave (thread_mtx);
+	      DO_SET (dk_session_t *, ses, &clis)
+	      {
+		if (ses->dks_peer_name && DKS_DB_DATA (ses))
+		  {
+		    SES_WRITE (out_ses, ses->dks_peer_name);
+		    SES_WRITE (out_ses, "\n");
+		  }
+	      }
+	      END_DO_SET ();
+	      msg = strses_string (out_ses);
+	      break;
+	    }
+	  case PDI_THRE:	/* stopped threads */
+	    {
+	      char conn_id[30];
+	      client_connection_t *cli;
+	      IN_TXN;
+	      DO_SET (lock_trx_t *, lt, &all_trxs)
+	      {
+		cli = lt->lt_client;
+		ASSERT_IN_TXN;
+		if (cli && lt->lt_threads > 0)
+		  {
+		    query_instance_t *qi = cli->cli_pldbg->pd_inst;
+		    dk_session_t *c_ses = cli->cli_http_ses ? cli->cli_http_ses : cli->cli_session;
+
+		    if (!cli->cli_pldbg->pd_id)
+		      {
+			if (c_ses && c_ses->dks_peer_name)
+			  cli->cli_pldbg->pd_id = box_copy (c_ses->dks_peer_name);
+			else
+			  {
+			    char *ct = cli && cli->cli_ws ? "HTTP" : "INTERNAL";
+			    snprintf (conn_id, sizeof (conn_id), "%s:%lX", ct, (unsigned long) (uptrlong) cli);
+			    cli->cli_pldbg->pd_id = box_dv_short_string (conn_id);
+			  }
+		      }
+
+
+		    snprintf (tmp, sizeof (tmp), "@%s in %s () at %ld\n",
+			cli->cli_pldbg->pd_id,
+			(qi && qi->qi_query && qi->qi_query->qr_proc_name ? qi->qi_query->qr_proc_name : "??"),
+			(long) (qi ? QI_LINE_NO (qi) : -1));
+		    SES_PRINT (out_ses, tmp);
+		  }
+	      }
+	      END_DO_SET ();
+	      LEAVE_TXN;
+	      msg = strses_string (out_ses);
+	      break;
+	    }
+	  default:
+	    msg = box_dv_short_string ("There is no such info");
+	    break;
+	  }
+      }
+      break;
+    case PD_LIST:		/* do a list */
+      {
+#define PD_LIST_NTL 5
+	char *pname = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/*make it full */
+	int line_no = BOX_ELEMENTS (args) > 2 ? (int) unbox (args[2]) : 1;
+	query_t *qr = pldbg_get_qr (pname);
+	if (!pname)
+	  {
+	    client_connection_t *cli = DKS_DB_DATA (ses);
+	    if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	      {
+		query_instance_t *qi = PLD_GET_FRAME (cli);
+		long line_no = QI_LINE_NO (qi);
+		int nth, end_no;
+		char *body = qi->qi_query ? QR_TEXT (qi->qi_query) : NULL;
+		snprintf (tmp, sizeof (tmp), "Current breakpoint: procedure %s, line %ld\n", qi->qi_query->qr_proc_name, line_no);
+
+		nth = MAX ((line_no - PD_LIST_NTL), 1);
+		end_no = nth + (2 * PD_LIST_NTL) + 1;
+
+		strcat_ck (tmp, " ");
+		for (; nth < end_no; nth++)
+		  {
+		    if (pldbg_get_line (body, nth, tmp, sizeof (tmp)))
+		      {
+			if (line_no == (nth + 1))
+			  strcat_ck (tmp, "\n*");	/* breakpoint is in the next line */
+			else if (nth < (end_no - 1))
+			  strcat_ck (tmp, "\n ");
+		      }
+		  }
+
+		if (strlen (tmp) > 1)
+		  msg = box_dv_short_string (tmp);
+		else
+		  msg = box_dv_short_string ("There is no such line");
+	      }
+	    else
+	      msg = box_dv_short_string ("There is no active statements");
+	  }
+	else if (qr)
+	  {
+	    int i, have_one = 0;
+	    for (i = line_no; i < line_no + 10; i++)
+	      {
+		tmp[0] = 0;
+		if (!pldbg_get_line (QR_TEXT (qr), i, tmp, sizeof (tmp)))
+		  {
+		    if (!have_one)
+		      {
+			snprintf (tmp, sizeof (tmp), "Line number %d out of range\n", line_no);
+			SES_PRINT (out_ses, tmp);
+		      }
+		    break;
+		  }
+		have_one++;
+		SES_PRINT (out_ses, tmp);
+		SES_PRINT (out_ses, "\n");
+	      }
+	    msg = strses_string (out_ses);
+	  }
+	else
+	  msg = box_dv_short_string ("There is no such procedure");
+      }
+      break;
+    case PD_WHERE:		/* where, call stack */
+      {
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	  {
+	    int n = 0;
+	    query_instance_t *qi = cli->cli_pldbg->pd_inst, *cur_qi;
+	    const char *proc_name;
+
+	    cur_qi = qi;
+	    while (IS_POINTER (cur_qi))
+	      {
+		long line_no = QI_LINE_NO (cur_qi);
+		proc_name = cur_qi->qi_query && cur_qi->qi_query->qr_proc_name ? cur_qi->qi_query->qr_proc_name : "??";
+		pldbg_printf (tmp, tmp_len, "#%d %s () at %ld\n", n++, proc_name, line_no);
+		SES_PRINT (out_ses, tmp);
+		cur_qi = cur_qi->qi_caller;
+	      }
+	    msg = strses_string (out_ses);
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statements");
+	break;
+      }
+    case PD_GLOBALS:		/* cli globals */
+      {
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	  {
+	    pldbg_print_conn_vars (out_ses, cli->cli_pldbg->pd_inst);
+	    pldbg_print_cli_flags (out_ses, cli->cli_pldbg->pd_inst);
+	    msg = strses_string (out_ses);
+	  }
+	else
+	  msg = box_dv_short_string ("There is no connection attached");
+	break;
+      }
+    case PD_UP:
+    case PD_DOWN:
+      {
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	  {
+	    query_instance_t *qi = cli->cli_pldbg->pd_inst, *prev_qi = NULL, *cur_qi, *frame_qi = cli->cli_pldbg->pd_frame;
+	    char *proc_name;
+	    int n = 0;
+	    cur_qi = qi;
+	    if (!frame_qi && PD_UP == cmd)
+	      cur_qi = cur_qi->qi_caller;
+	    else if (!frame_qi && PD_DOWN == cmd)
+	      cur_qi = NULL;
+	    else
+	      {
+		while (IS_POINTER (cur_qi))
+		  {
+		    if (frame_qi == cur_qi)
+		      {
+			if (cmd == PD_UP)
+			  cur_qi = cur_qi->qi_caller;
+			else
+			  cur_qi = prev_qi;
+			break;
+		      }
+		    n++;
+		    prev_qi = cur_qi;
+		    cur_qi = cur_qi->qi_caller;
+		  }
+	      }
+	    if (IS_POINTER (cur_qi) && cur_qi->qi_query && cur_qi->qi_query->qr_proc_name)
+	      {
+		long line_no = QI_LINE_NO (cur_qi);
+		proc_name = cur_qi->qi_query->qr_proc_name;
+		pldbg_printf (tmp, tmp_len, "#%d %s () at %ld\n", n, proc_name, line_no);
+		SES_PRINT (out_ses, tmp);
+		cli->cli_pldbg->pd_frame = cur_qi;
+		msg = strses_string (out_ses);
+		break;
+	      }
+	    else
+	      msg = box_dv_short_string ("Can not select frame.");
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statements");
+      }
+      break;
+    case PD_FRAME:		/* set the current frame */
+      {
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	int fram = BOX_ELEMENTS (args) > 1 ? (int) unbox (args[1]) : -1;
+	if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_is_step)
+	  {
+	    int n = 0, found = 0;
+	    query_instance_t *qi = cli->cli_pldbg->pd_inst, *cur_qi;
+	    char *proc_name;
+	    cur_qi = qi;
+	    cli->cli_pldbg->pd_frame = NULL;
+	    while (IS_POINTER (cur_qi))
+	      {
+		long line_no = QI_LINE_NO (cur_qi);
+		proc_name = cur_qi->qi_query && cur_qi->qi_query->qr_proc_name ? cur_qi->qi_query->qr_proc_name : NULL;
+		if (n == fram && proc_name)
+		  {
+		    pldbg_printf (tmp, tmp_len, "#%d %s () at %ld\n", n, proc_name, line_no);
+		    SES_PRINT (out_ses, tmp);
+		    cli->cli_pldbg->pd_frame = cur_qi;
+		    found++;
+		    break;
+		  }
+		cur_qi = cur_qi->qi_caller;
+		n++;
+	      }
+	    if (found)
+	      msg = strses_string (out_ses);
+	    else
+	      msg = box_dv_short_string ("Can't go to the specified frame number.");
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statements");
+	break;
+      }
+    case PD_CONT:		/* continue */
+      {
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	query_instance_t *qi = cli && cli->cli_pldbg->pd_is_step ? cli->cli_pldbg->pd_inst : NULL;
+	if (cli)
+	  {
+	    cli->cli_pldbg->pd_step = PLDS_NONE;
+	    cli->cli_pldbg->pd_send = NULL;
+	  }
+	if (qi && qi->qi_query)
+	  {
+	    query_instance_t *cur_qi = qi;
+	    while (IS_POINTER (cur_qi))
+	      {
+		cur_qi->qi_step = PLDS_NONE;
+		cur_qi = cur_qi->qi_caller;
+	      }
+	    semaphore_leave (cli->cli_pldbg->pd_sem);
+	    msg = box_dv_short_string ("Execution resumed");
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statements to resume");
+      }
+      break;
+    case PD_ATTACH:		/* attach */
+      {
+	char *name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/* connection ID */
+	client_connection_t *cli = NULL;
+	if (name && name[0] == '@')
+	  {
+	    name++;
+	    IN_TXN;
+	    DO_SET (lock_trx_t *, lt, &all_trxs)
+	    {
+	      cli = lt->lt_client;
+	      if (cli && lt->lt_threads > 0)
+		{
+		  if (cli && cli->cli_pldbg->pd_id && !strcmp (cli->cli_pldbg->pd_id, name))
+		    break;
+		}
+	      cli = NULL;
+	    }
+	    END_DO_SET ();
+	    LEAVE_TXN;
+	  }
+	else if (NULL == name)	/* connect to first available */
+	  {
+	    IN_TXN;
+	    DO_SET (lock_trx_t *, lt, &all_trxs)
+	    {
+	      cli = lt->lt_client;
+	      if (cli && lt->lt_threads > 0)
+		{
+		  if (cli && cli->cli_pldbg->pd_id)
+		    {
+		      name = cli->cli_pldbg->pd_id;
+		      break;
+		    }
+		}
+	      cli = NULL;
+	    }
+	    END_DO_SET ();
+	    LEAVE_TXN;
+	  }
+	else
+	  {
+	    dk_session_t *r_ses;
+	    r_ses = name ? PrpcFindPeer (name) : NULL;
+	    cli = r_ses ? DKS_DB_DATA (r_ses) : NULL;
+	  }
+	if (cli && (!cli->cli_pldbg || !cli->cli_pldbg->pd_session))
+	  {
+	    int is_in_step;
+	    cli->cli_pldbg->pd_session = (dk_session_t *) ses;
+	    is_in_step = cli->cli_pldbg->pd_is_step;
+	    pldbg_session_cleanup (ses);	/* detach if already attached */
+	    DKS_DB_DATA (ses) = cli;
+	    if (!is_in_step)
+	      cli->cli_pldbg->pd_step = PLDS_INT;
+	    msg = box_dv_short_string (name);
+	  }
+	else if (cli && cli->cli_pldbg && cli->cli_pldbg->pd_session)
+	  {
+	    msg = box_dv_short_string ("The connection is in use");
+	  }
+	else
+	  msg = box_dv_short_string ("Can't find connection to attach");
+      }
+      break;
+    case PD_PRINT:		/* print state */
+      {
+	char *name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/* variable name */
+	caddr_t opts = BOX_ELEMENTS (args) > 2 ? args[2] : NULL;	/* format etc */
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	query_instance_t *qi = cli && cli->cli_pldbg ? PLD_GET_FRAME (cli) : NULL;
+	tmp[0] = 0;
+	if (qi && qi->qi_query && name)	/*XXX: for now only if specified */
+	  {
+	    dk_set_t state_scope = QI_STATE (qi);
+	    state_slot_t *found = NULL;
+	    DO_SET (state_slot_t *, ssl, &state_scope)
+	    {
+	      char *name1 = ssl->ssl_name;
+	      if (name1 && !CASEMODESTRCMP (name1, name))
+		found = ssl;	/*get the last one */
+	    }
+	    END_DO_SET ();
+	    if (!found)
+	      pldbg_printf (tmp, tmp_len, "No symbol '%s' in current context.", (name ? name : "(nil)"));
+	    else
+	      pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi, opts);
+	    msg = box_dv_short_string (tmp);
+	  }
+	else
+	  msg = box_dv_short_string ("There is no active statement");
+      }
+      break;
+    case PD_SET:		/* set state */
+      {
+	char *name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/* variable name */
+	caddr_t value = BOX_ELEMENTS (args) > 2 ? args[2] : NULL;	/* new value */
+	client_connection_t *cli = DKS_DB_DATA (ses);
+	query_instance_t *qi = cli && cli->cli_pldbg ? PLD_GET_FRAME (cli) : NULL;
+	tmp[0] = 0;
+	if (qi && qi->qi_query && name)
+	  {
+	    state_slot_t *found = NULL;
+	    dk_set_t state_scope = QI_STATE (qi);
+	    DO_SET (state_slot_t *, ssl, &state_scope)
+	    {
+	      char *name1 = ssl->ssl_name;
+	      if (name1 && !CASEMODESTRCMP (name1, name))
+		found = ssl;
+	    }
+	    END_DO_SET ();
+	    if (!found)
+	      pldbg_printf (tmp, tmp_len, "No symbol '%s' in current context.", (name ? name : "(nil)"));
+	    else
+	      {
+		if (!pldbg_ssl_set (found, (caddr_t *) qi, value))
+		  pldbg_printf (tmp, tmp_len, "Can't set '%s' to '%s'.", (name ? name : "(nil)"), (value ? value : "(nil)"));
+		else
+		  pldbg_ssl_print (tmp, tmp_len, found, (caddr_t *) qi, NULL);
+	      }
+	    msg = box_dv_short_string (tmp);
+	  }
+	else if (!name)
+	  pldbg_printf (tmp, tmp_len, "No symbol specified");
+	else
+	  msg = box_dv_short_string ("There is no active statement");
+      }
+      break;
+    default:
+      {
+	char *opt_name = BOX_ELEMENTS (args) > 1 ? args[1] : NULL;	/*name of command */
+	if (opt_name)
+	  snprintf (tmp, sizeof (tmp), "Undefined command: %s", opt_name);
+	else
+	  snprintf (tmp, sizeof (tmp), "Undefined command: %d", cmd);
+	msg = box_dv_short_string (tmp);
+      }
+      break;
     }
 
   if (send_answer)
@@ -1190,18 +1372,18 @@ pldbg_cmd_execute (dk_session_t * ses, caddr_t * args)
 void
 pldbg_loop (void)
 {
-  client_connection_t * cli = client_connection_create ();
+  client_connection_t *cli = client_connection_create ();
   int mode;
   dk_session_t *ses;
   caddr_t cmd;
-  pldbg_message_t * pd;
+  pldbg_message_t *pd;
   IN_TXN;
   cli_set_new_trx (cli);
   LEAVE_TXN;
   sqlc_set_client (cli);
   SET_THR_ATTR (THREAD_CURRENT_THREAD, TA_IMMEDIATE_CLIENT, cli);
 
-  for(;;)
+  for (;;)
     {
       semaphore_enter (pldbg_sem);
       mutex_enter (pldbg_mtx);
@@ -1221,23 +1403,23 @@ pldbg_loop (void)
       /* do operation */
       switch (mode)
 	{
-	  case PD_IN:
-	      pldbg_cmd_execute (ses, (caddr_t *)cmd);
-	      PrpcCheckInAsync (ses);
-	      break;
-	  case PD_OUT:
-		{
-	          PrpcWriteObject (ses, cmd);
-		  if (!DKSESSTAT_ISSET (ses, SST_OK))
-		    {
-		      pldbg_session_cleanup (ses);
-		      PrpcDisconnect (ses);
-		      PrpcSessionFree (ses);
-		    }
-		}
-	      break;
-	  default:
-	      break;
+	case PD_IN:
+	  pldbg_cmd_execute (ses, (caddr_t *) cmd);
+	  PrpcCheckInAsync (ses);
+	  break;
+	case PD_OUT:
+	  {
+	    PrpcWriteObject (ses, cmd);
+	    if (!DKSESSTAT_ISSET (ses, SST_OK))
+	      {
+		pldbg_session_cleanup (ses);
+		PrpcDisconnect (ses);
+		PrpcSessionFree (ses);
+	      }
+	  }
+	  break;
+	default:
+	  break;
 	}
       dk_free_tree (cmd);
     }
@@ -1271,24 +1453,29 @@ pldbg_input_ready (dk_session_t * ses)
   semaphore_leave (pldbg_sem);
 }
 
-caddr_t
+static caddr_t
 sf_pl_debug (caddr_t name, caddr_t digest)
 {
   dk_session_t *client = IMMEDIATE_CLIENT;
-  user_t * user;
+  user_t *user;
   user = sec_check_login (name, digest, client);
   if (!user || !sec_user_has_group (G_ID_DBA, user->usr_id))
     {
       log_info ("Bad debug console login %s.", name);
       DKST_RPC_DONE (client);
       PrpcDisconnect (client);
-      return box_num(0);
+      return box_num (0);
     }
-  client->dks_is_server = 0; /* XXX: no auto dealloc when dead hook called */
+  client->dks_is_server = 0;	/* XXX: no auto dealloc when dead hook called */
   PrpcSetPartnerDeadHook (client, (io_action_func) pldbg_session_dropped);
-  SESSION_SCH_DATA (client)->sio_default_read_ready_action =
-	  (io_action_func) pldbg_input_ready;
-  return box_num(1);
+  SESSION_SCH_DATA (client)->sio_default_read_ready_action = (io_action_func) pldbg_input_ready;
+  return box_num (1);
+}
+
+static server_func
+sf_pl_debug_wrapper (caddr_t args[])
+{
+  return sf_pl_debug (args[0], args[1]);
 }
 
 /* source and line are from module's qr */
@@ -1296,30 +1483,28 @@ sf_pl_debug (caddr_t name, caddr_t digest)
 #define QR_LINE(qr)   (qr->qr_module ? qr->qr_module->qr_line : qr->qr_line)
 
 static void
-pldbg_stats (query_t *qr, caddr_t * result1, int add_line, caddr_t udt_name)
+pldbg_stats (query_t * qr, caddr_t * result1, int add_line, caddr_t udt_name)
 {
   dk_set_t setl = NULL, setc = NULL;
-  caddr_t * result;
+  caddr_t *result;
   long lines_cnt = 0;
   if (qr && !qr->qr_to_recompile)
     {
       if (add_line)
-	lines_cnt = pldbg_count_lines (QR_TEXT(qr));
+	lines_cnt = pldbg_count_lines (QR_TEXT (qr));
       result = (caddr_t *) list (3, list (7,
-	    box_copy_tree (qr->qr_proc_name),
-	    QR_SOURCE(qr) ? box_copy (QR_SOURCE(qr)) : box_dv_short_string ("unnamed"),
-	    box_num (qr->qr_calls),
-	    box_num (lines_cnt),
-	    box_num (qr->qr_time_cumulative),
-	    (udt_name ? box_copy (udt_name) : NEW_DB_NULL),
-	    box_num (qr->qr_self_time)),
-	  	NULL, NULL);
+	      box_copy_tree (qr->qr_proc_name),
+	      QR_SOURCE (qr) ? box_copy (QR_SOURCE (qr)) : box_dv_short_string ("unnamed"),
+	      box_num (qr->qr_calls),
+	      box_num (lines_cnt),
+	      box_num (qr->qr_time_cumulative),
+	      (udt_name ? box_copy (udt_name) : NEW_DB_NULL), box_num (qr->qr_self_time)), NULL, NULL);
     }
   else
     result = (caddr_t *) NEW_DB_NULL;
   if (qr && qr->qr_line_counts)
     {
-      char tmp [1024];
+      char tmp[1024];
       int32 line, cnt;
       ptrlong linel, cntl;
       ptrlong *pcnt;
@@ -1327,43 +1512,43 @@ pldbg_stats (query_t *qr, caddr_t * result1, int add_line, caddr_t udt_name)
       dk_hash_iterator_t hit;
       id_hash_iterator_t it;
 
-      if (add_line) /* ensure all lines in hash */
+      if (add_line)		/* ensure all lines in hash */
 	{
 	  DO_INSTR (instr, 0, qr->qr_head_node->src_pre_code)
-	    {
-	      if (instr->ins_type == INS_BREAKPOINT)
-		{
-		  line = (int32) instr->_.breakpoint.line_no;
-		  cnt = (int32) (ptrlong) gethash ((void *) (ptrlong) line, qr->qr_line_counts);
-		  if (!cnt)
-		    sethash ((void *) (ptrlong) line,  qr->qr_line_counts, (void *) (ptrlong) cnt);
-		}
-	    }
+	  {
+	    if (instr->ins_type == INS_BREAKPOINT)
+	      {
+		line = (int32) instr->_.breakpoint.line_no;
+		cnt = (int32) (ptrlong) gethash ((void *) (ptrlong) line, qr->qr_line_counts);
+		if (!cnt)
+		  sethash ((void *) (ptrlong) line, qr->qr_line_counts, (void *) (ptrlong) cnt);
+	      }
+	  }
 	  END_DO_INSTR;
 	}
 
       dk_hash_iterator (&hit, qr->qr_line_counts);
-      while (dk_hit_next (&hit, (void**) &linel, (void**) &cntl))
+      while (dk_hit_next (&hit, (void **) &linel, (void **) &cntl))
 	{
-          line = (int32) linel;
-          cnt = (int32) cntl;
+	  line = (int32) linel;
+	  cnt = (int32) cntl;
 	  if (!cnt && !add_line)
 	    continue;
 	  tmp[0] = 0;
 	  if (add_line)
 	    {
-	      pldbg_get_line (QR_TEXT(qr), line, tmp, sizeof (tmp));
-	      tmp [50] = 0;
+	      pldbg_get_line (QR_TEXT (qr), line, tmp, sizeof (tmp));
+	      tmp[50] = 0;
 	    }
-	  dk_set_push (&setl, list (3, box_num(line + QR_LINE(qr)), box_num(cnt), box_dv_short_string (tmp)));
+	  dk_set_push (&setl, list (3, box_num (line + QR_LINE (qr)), box_num (cnt), box_dv_short_string (tmp)));
 	}
       result[1] = list_to_array (dk_set_nreverse (setl));
       if (qr->qr_call_counts)
 	{
 	  id_hash_iterator (&it, qr->qr_call_counts);
-	  while (hit_next (&it, (char**) &calle, (char**) &pcnt))
+	  while (hit_next (&it, (char **) &calle, (char **) &pcnt))
 	    {
-	      dk_set_push (&setc, list (2, box_copy_tree (*calle), box_num(*pcnt)));
+	      dk_set_push (&setc, list (2, box_copy_tree (*calle), box_num (*pcnt)));
 	    }
 	}
       result[2] = list_to_array (dk_set_nreverse (setc));
@@ -1372,23 +1557,22 @@ pldbg_stats (query_t *qr, caddr_t * result1, int add_line, caddr_t udt_name)
     {
       if (ARRAYP (result))
 	{
-	  result [1] = NEW_DB_NULL;
-	  result [2] = NEW_DB_NULL;
+	  result[1] = NEW_DB_NULL;
+	  result[2] = NEW_DB_NULL;
 	}
     }
   if (result1)
-    *result1 = (caddr_t)result;
+    *result1 = (caddr_t) result;
 }
 
 static caddr_t
 bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t pname = BOX_ELEMENTS (args) > 0 ? bif_string_or_null_arg (qst, args, 0, "pldbg_stats") : NULL;
-  long add_line = (long)(BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_stats") : 0);
-  caddr_t udt_name = (caddr_t)(BOX_ELEMENTS (args) > 2 ?
-      bif_string_or_null_arg (qst, args, 2, "pldbg_stats") : NULL);
-  long all_udt = (long)(BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "pldbg_stats") : 0);
-  dbe_schema_t * sc = isp_schema (qi->qi_space);
+  long add_line = (long) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_stats") : 0);
+  caddr_t udt_name = (caddr_t) (BOX_ELEMENTS (args) > 2 ? bif_string_or_null_arg (qst, args, 2, "pldbg_stats") : NULL);
+  long all_udt = (long) (BOX_ELEMENTS (args) > 3 ? bif_long_arg (qst, args, 3, "pldbg_stats") : 0);
+  dbe_schema_t *sc = isp_schema (qi->qi_space);
   query_t *qr = NULL;
   caddr_t result = NULL;
 
@@ -1459,34 +1643,33 @@ bif_pldbg_stats (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       result = list_to_array (dk_set_nreverse (all_proc));
     }
 
-  return (caddr_t)result;
+  return (caddr_t) result;
 }
 
 /*TODO: make sure that array offsets are tested*/
 static caddr_t
 bif_pldbg_stats_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t * data = (caddr_t *)bif_strict_array_or_null_arg (qst, args, 0, "pldbg_stats_load");
+  caddr_t *data = (caddr_t *) bif_strict_array_or_null_arg (qst, args, 0, "pldbg_stats_load");
   query_t *qr = NULL;
   long calls, time, self_time;
-  caddr_t * pdata, pname, err = NULL, udt_name;
+  caddr_t *pdata, pname, err = NULL, udt_name;
 
   if (!(pl_debug_all & 2))
-    return box_num(0);
+    return box_num (0);
 
-  if (!data || BOX_ELEMENTS(data) < 3
-      || !ARRAYP(data[0]) || !ARRAYP(data[1]) || !ARRAYP(data[2]))
-    return box_num(0);
+  if (!data || BOX_ELEMENTS (data) < 3 || !ARRAYP (data[0]) || !ARRAYP (data[1]) || !ARRAYP (data[2]))
+    return box_num (0);
 
-  pdata = (caddr_t *)(data[0]);
+  pdata = (caddr_t *) (data[0]);
   pname = pdata[0];
   calls = (long) unbox (pdata[2]);
   time = (long) unbox (pdata[3]);
-  udt_name = (BOX_ELEMENTS (pdata) > 4 && DV_STRINGP(pdata[4]) ? pdata[4] : NULL);
-  self_time = (long)(BOX_ELEMENTS (pdata) > 5 ? unbox (pdata[5]) : 0);
+  udt_name = (BOX_ELEMENTS (pdata) > 4 && DV_STRINGP (pdata[4]) ? pdata[4] : NULL);
+  self_time = (long) (BOX_ELEMENTS (pdata) > 5 ? unbox (pdata[5]) : 0);
 
-  if (!IS_STRING_DTP(DV_TYPE_OF(pname)) && DV_C_STRING != DV_TYPE_OF(pname))
-    return box_num(0);
+  if (!IS_STRING_DTP (DV_TYPE_OF (pname)) && DV_C_STRING != DV_TYPE_OF (pname))
+    return box_num (0);
   if (udt_name)
     {
       sql_class_t *udt = sch_name_to_type (isp_schema (NULL), udt_name);
@@ -1513,48 +1696,48 @@ bif_pldbg_stats_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       int inx;
       if (qr->qr_to_recompile)
 	qr = qr_recompile (qr, &err);
-      if (!qr) /* can't be recompiled, skip */
-	return box_num(0);
-      DO_BOX (caddr_t *, elm, inx, (caddr_t *)(data[1]))
-	{
-	  int32 lineno, cnt, curct;
-	  lineno = (int32) (unbox(elm[0]) - QR_LINE(qr));
-	  cnt = (int32) unbox(elm[1]);
-	  curct = (int32) (ptrlong) gethash ((void *) (ptrlong) lineno, qr->qr_line_counts);
-	  cnt += curct;
-	  sethash ((void *) (ptrlong) lineno,  qr->qr_line_counts, (void *) (ptrlong) cnt);
-	}
+      if (!qr)			/* can't be recompiled, skip */
+	return box_num (0);
+      DO_BOX (caddr_t *, elm, inx, (caddr_t *) (data[1]))
+      {
+	int32 lineno, cnt, curct;
+	lineno = (int32) (unbox (elm[0]) - QR_LINE (qr));
+	cnt = (int32) unbox (elm[1]);
+	curct = (int32) (ptrlong) gethash ((void *) (ptrlong) lineno, qr->qr_line_counts);
+	cnt += curct;
+	sethash ((void *) (ptrlong) lineno, qr->qr_line_counts, (void *) (ptrlong) cnt);
+      }
       END_DO_BOX;
 
-      DO_BOX (caddr_t *, elm, inx, (caddr_t *)(data[2]))
-	{
-	  caddr_t caller_name;
-	  int32 cnt;
-	  ptrlong *callct;
-          caller_name = elm[0];
-	  cnt = (int32) unbox(elm[1]);
+      DO_BOX (caddr_t *, elm, inx, (caddr_t *) (data[2]))
+      {
+	caddr_t caller_name;
+	int32 cnt;
+	ptrlong *callct;
+	caller_name = elm[0];
+	cnt = (int32) unbox (elm[1]);
 
-	  callct = (ptrlong *) id_hash_get (qr->qr_call_counts, (caddr_t)&caller_name);
-	  if (callct)
-	    (*callct) += cnt;
-	  else
-	    {
-	      caddr_t caller_name1 = box_copy (caller_name);
-	      ptrlong callct = cnt;
-	      id_hash_set (qr->qr_call_counts, (caddr_t)&caller_name1, (caddr_t)&callct);
-	    }
+	callct = (ptrlong *) id_hash_get (qr->qr_call_counts, (caddr_t) & caller_name);
+	if (callct)
+	  (*callct) += cnt;
+	else
+	  {
+	    caddr_t caller_name1 = box_copy (caller_name);
+	    ptrlong callct = cnt;
+	    id_hash_set (qr->qr_call_counts, (caddr_t) & caller_name1, (caddr_t) & callct);
+	  }
 
-	}
+      }
       END_DO_BOX;
       qr->qr_calls += calls;
       qr->qr_time_cumulative += time;
       qr->qr_self_time += self_time;
     }
-  return box_num(1);
+  return box_num (1);
 }
 
 static void
-pldbg_stats_clear (query_t *qr)
+pldbg_stats_clear (query_t * qr)
 {
   qr->qr_calls = 0;
   qr->qr_self_time = 0;
@@ -1571,7 +1754,7 @@ pldbg_stats_clear (query_t *qr)
       ptrlong *pcnt;
 
       id_hash_iterator (&it, qr->qr_call_counts);
-      while (hit_next (&it, (char**) &calle, (char**) &pcnt))
+      while (hit_next (&it, (char **) &calle, (char **) &pcnt))
 	{
 	  dk_free_tree (calle[0]);
 	}
@@ -1583,7 +1766,7 @@ pldbg_stats_clear (query_t *qr)
 static caddr_t
 bif_pldbg_stats_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  dbe_schema_t * sc = isp_schema (qi->qi_space);
+  dbe_schema_t *sc = isp_schema (qi->qi_space);
   query_t *qr = NULL;
   query_t **ptp;
   sql_class_t **pcls;
@@ -1618,6 +1801,14 @@ bif_pldbg_stats_clear (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return (caddr_t) NEW_DB_NULL;
 }
 
+static caddr_t
+bif_pldbg_last_line (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  long add_file_line = (long) (BOX_ELEMENTS (args) > 1 ? bif_long_arg (qst, args, 1, "pldbg_last_line") : 1);
+  QNCAST (query_instance_t, qi, qst);
+  int line = add_file_line && qi->qi_query ? qi->qi_query->qr_line : 0;
+  return box_num (QI_LINE_NO (qi) + line);
+}
 
 void
 pldbg_init (void)
@@ -1626,13 +1817,14 @@ pldbg_init (void)
   bif_define ("pldbg_stats", bif_pldbg_stats);
   bif_define ("pldbg_stats_load", bif_pldbg_stats_load);
   bif_define ("pldbg_stats_clear", bif_pldbg_stats_clear);
+  bif_define ("pldbg_last_line", bif_pldbg_last_line);
 
   pldbg_mtx = mutex_allocate ();
   pldbg_brk_mtx = mutex_allocate ();
   pldbg_sem = semaphore_allocate (0);
   pldbg_rc = resource_allocate (100, (rc_constr_t) pd_allocate, (rc_destr_t) pd_free, (rc_destr_t) pd_clear, 0);
 
-  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug);
+  PrpcRegisterServiceDesc (&s_pl_debug, (server_func) sf_pl_debug_wrapper);
   pldbg_thr = PrpcThreadAllocate ((thread_init_func) pldbg_loop, 50000, NULL);
 
   if (!pldbg_thr)

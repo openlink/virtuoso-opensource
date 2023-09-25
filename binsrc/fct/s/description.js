@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -21,7 +21,10 @@
  *
  */
 
+//var $j = jQuery.noConflict();
+
 function init() {
+        LoadExternalImages();
 	init_long_list ();
 	init_long_literals();
 }
@@ -62,34 +65,43 @@ function init_long_list()
     var uls = document.getElementsByTagName('ul');
     for (i = 0; i < uls.length; i++)
       {
-	if (uls[i].className != 'obj') continue;
-	if (uls[i].childNodes.length <= 10) continue;
 	var ul = uls[i];
-	long_uls_nodes[long_ul_counter] = ul.cloneNode (true);
-	//alert (long_ul_counter + ' ' + ul.childNodes.length);
-	while (ul.childNodes.length > 10)
-	  {
-	    ul.removeChild (ul.lastChild);
-	  }
+	if (ul.className != 'obj') continue;
+
+        var cnt = 0;
+	var li = ul.getElementsByTagName('li');
+        for (var j = 0; j < li.length; j++) {
+	  if (li[j].style.display !== 'none') cnt = cnt + 1; // count number of visible
+        }
+	if (cnt == 0 && li.length > 0) li[0].style.display = ''; // if 0, unhide first
+	if (cnt <= 10) continue;
+
+	clone = ul.cloneNode (true);
+	var li = clone.getElementsByTagName('li');
+	for (var j = 10; j < li.length; j++) {
+	   li[j].style.display = 'none';  // hide rest
+        }
 	var link = document.createElement('a');
 	link.href = 'javascript:expand_ul(' + long_ul_counter + ');';
 	link.appendChild(document.createTextNode('\u00BBmore\u00BB'));
 	link.className = 'expander';
-	ul.insertBefore(link, ul.lastChild.nextSibling);
-	long_uls[long_ul_counter] = ul;
+	clone.insertBefore(link, clone.lastChild.nextSibling);
+        ul.parentNode.replaceChild (clone, ul);
+        long_uls[long_ul_counter] = clone;
 	long_ul_counter++;
       }
-
 }
 
 function expand_ul(n) {
     var ul = long_uls[n];
-    var copy = long_uls_nodes[n];
-    while (ul.childNodes.length > 0)
-      ul.removeChild (ul.lastChild);
-    //alert (n + ' ' + copy.childNodes.length);
-    for (i = 0; i < copy.childNodes.length; i++)
-      ul.appendChild (copy.childNodes[i].cloneNode (true));
+    var clone = ul.cloneNode (true);
+    clone.removeChild (clone.lastChild); // remove 'more'
+    var li = clone.getElementsByTagName('li');
+    for (var j = 0; j < li.length; j++) {
+	   li[j].style.display = '';  // make all visible
+    }
+
+    ul.parentNode.replaceChild (clone, ul);
 }
 
 function expand(i) {
@@ -137,4 +149,20 @@ function sponge_cb ()
 
     parms['should-sponge'] = $v('should-sponge');
     window.location = href+uri_parms_string(parms);
+}
+
+function LoadExternalImages()
+{
+  const collection = document.getElementsByClassName("external");
+  for (let i = 0; i < collection.length; i++) {
+    const image = collection[i];
+    var url = image.alt;
+    var isLoaded = image.complete && image.naturalHeight !== 0;
+    if (!isLoaded && image.alt == image.src)
+      {
+        fetch (url , { referrerPolicy: "no-referrer", mode: "no-cors"} )
+          .then (x => x.blob())
+          .then (y => image.src = URL.createObjectURL(y));
+      }
+  }
 }

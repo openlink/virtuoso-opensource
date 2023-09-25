@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -62,6 +62,14 @@
           margin: 3px 0 3px 0;
           padding: 5px;
           text-align: center;
+        }
+
+        div.footer {
+          font-size: 0.9em;
+          text-align: right;
+          padding-top: 3px;
+          padding-right: 5px;
+          border-top: 1px solid silver;
       }
     </style>
     <title>WebDAV Repository</title>
@@ -96,28 +104,12 @@
       <v:before-data-bind>
         <![CDATA[
           declare vspx_user varchar;
+          declare cookies any;
 
           vspx_user := connection_get ('vspx_user');
           if (isnull (vspx_user) or (vspx_user = 'nobody'))
           {
             self.account_id := http_nobody_uid ();
-            if (__proc_exists ('VAL.DBA.authentication_details_for_connection') is not null)
-            {
-              declare val_sid, val_serviceId, val_realm, val_uname varchar;
-              declare val_isRealUser integer;
-
-              val_realm := null;
-              if (VAL.DBA.authentication_details_for_connection (sid=>val_sid, serviceId=>val_serviceId, uname=>val_uname, isRealUser=>val_isRealUser, realm=>val_realm))
-              {
-                self.sid := val_sid;
-                self.realm := val_realm;
-                if (val_isRealUser)
-                {
-                  connection_set ('vspx_user', val_uname);
-                  self.account_id := WEBDAV.DBA.account_id (val_uname);
-                }
-              }
-            }
           }
           else
           {
@@ -184,6 +176,23 @@
           <v:variable persist="0" name="account_password" type="varchar" default="null"/>
           <?vsp http (sprintf ('<input type="hidden" name="mode" id="mode" value="%s" />', get_keyword ('mode', self.vc_page.vc_event.ve_params, 'webdav'))); ?>
           <vm:dav_browser mode="webdav" />
+          <script type="text/javascript">
+            <![CDATA[
+              document.onkeydown = function(e) {
+                e = e || window.event;
+                if (e.keyCode == 27) {
+                  var v = $$('WEBDAV_formFooter', 'RC', 'div');
+                  for (var i = 0; i < v.length; i++) {
+                    var vv = v[i].getElementsByTagName('input');
+                    for (var j = 0; j < vv.length; j++) {
+                      if (vv[j].value == 'Cancel')
+                        vv[j].click();
+                    }
+                  }
+                }
+              };
+            ]]>
+          </script>
         </v:form>
       </vm:popup_page_wrapper>
     </body>

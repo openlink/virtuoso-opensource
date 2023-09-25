@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -51,7 +51,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
   -- dbg_obj_princ ('JSO_MAKE_INHERITANCE (', jgraph, class, rootinst, destinst, ')');
   inh_stack := vector_concat (inh_stack, vector (destinst));
   baseinst := null;
-  if (not exists (sparql
+  if (not (sparql
       define input:storage ""
       prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
       ask where {
@@ -88,7 +88,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
       srcinst := id_to_iri_nosignal ("src_iid");
       if (baseinst is null)
         {
-          if (not exists (sparql
+          if (not (sparql
               define input:storage ""
               prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
               ask where { graph ?:jgraph { ?:"src_iid" rdf:type `iri(?:class)` } } ) )
@@ -142,7 +142,7 @@ create function DB.DBA.JSO_MAKE_INHERITANCE (in jgraph varchar, in class varchar
           graph ?:jgraph {
               ?:base_iid ?pred_id ?predval
             } } ) as "t00"
-      where not exists (sparql
+      where not (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           ask where { graph ?:jgraph { ?:"t00"."pred_id" virtrdf:loadAs virtrdf:jsoTriple } } )
@@ -223,7 +223,7 @@ create function DB.DBA.JSO_LOAD_INSTANCE (in jgraph varchar, in jinst varchar, i
               { ?:jsubj_iid ?p_id ?o1 }  optional { ?o1 rdf:name ?o2 }
             } }
         ) as "t00"
-      where not exists (sparql
+      where not (sparql
           define input:storage ""
           prefix virtrdf: <http://www.openlinksw.com/schemas/virtrdf#>
           ask where { graph ?:jgraph_iid { ?:"t00"."p_id" virtrdf:loadAs virtrdf:jsoTriple } } ) option (quietcast)

@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -43,9 +43,12 @@
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
       <v:variable name="extra_cert" persist="0" type="varchar" default="null"/>
+      <v:variable name="ca_certs" persist="0" type="varchar" default="null"/>
       <v:variable name="verify1" persist="0" type="varchar" default="0"/>
-      <v:variable name="port1" persist="0" type="varchar" default="'80'"/>
+      <v:variable name="port1" persist="0" type="varchar" default="'443'"/>
       <v:variable name="stopit" persist="0" type="int" default="1"/>
+      <v:variable name="v_ssl_enable" persist="0" type="int" default="1"/>
+      <v:variable name="v_host_exists" persist="0" type="int" default="0"/>
     </vm:variables>
     <vm:header caption="Virtual Host Properties"/>
     <vm:pagebody>
@@ -53,7 +56,7 @@
 	  declare pos int;
 	  if (self.vhost is null or self.lhost is null)
 	    return;
-	  for select top 1 HP_AUTH_OPTIONS from HTTP_PATH where HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost do
+	  for select top 1 HP_AUTH_OPTIONS, HP_SECURITY from HTTP_PATH where HP_HOST = self.vhost and HP_LISTEN_HOST = self.lhost do
 	    {
 	      declare cert, opts varchar;
 	      opts := deserialize (HP_AUTH_OPTIONS);
@@ -65,7 +68,11 @@
 		  self.key1 := cert;
 		  self.verify1 := cast (get_keyword ('https_verify', opts, 0) as varchar);
 		  self.extra_cert := get_keyword ('https_extra_chain_certificates', opts, null);
+		  self.ca_certs := get_keyword ('https_cv', opts, null);
 	        }
+              if (HP_SECURITY = 'SSL')
+                self.v_ssl_enable := 1;
+              self.v_host_exists := 1;
 	    }
 	  if (self.stopit and 1 = http_listen_host (self.lhost, 2))
 	    http_listen_host (self.lhost, 1);
@@ -108,6 +115,10 @@
               <td>Host &amp; Domain Name</td>
 	      <td>
 		<v:text name="vhost_nam" value="--self.vhost1" xhtml_size="40" error-glyph="*">
+                  <v:before-render>
+                    if (not length (control.ufl_value) and 0 = self.v_host_exists)
+                      control.ufl_value := sys_stat ('st_host_name');
+                  </v:before-render>
 		  <v:validator test="regexp" regexp="^[\.0-9A-Za-z-]+$" empty-allowed="1"
 		    message="You should provide a valid host name" />
 		</v:text>
@@ -149,7 +160,27 @@
               </td>
             </tr>
             <tr>
-              <td>SSL Key</td>
+              <td/>
+              <td>
+                  <v:check-box name="ssl_enable" value="1" xhtml_id="cb_ssl_enable" initial-checked="--self.v_ssl_enable" auto-submit="1">
+                      <v:on-post><![CDATA[
+                          if (self.vhosto is null)
+                            {
+                              if (not control.ufl_selected and self.lhost_port.ufl_value = '443')
+                                self.lhost_port.ufl_value := '8080';
+                              if (control.ufl_selected and self.lhost_port.ufl_value = '8080')
+                                self.lhost_port.ufl_value := '443';
+                            }
+		  ]]></v:on-post>
+                  </v:check-box>
+                  <label for="cb_ssl_enable">Enable SSL/TLS</label>
+              </td>
+            </tr>
+            <v:template name="ssl_listener_opts" type="simple" condition="equ(self.ssl_enable.ufl_selected,1)">
+            <tr>
+                <td><label class="help_tooltip" 
+                            helptext="Server X.509 certificate and private key identifier">
+                            SSL Key</label></td>
 	      <td>
 		  <v:data-list name="key_list" value="--self.key1"
 		      sql="select top 1 'none' as xenc_key from sys_keys union all
@@ -160,65 +191,72 @@
 		  &nbsp;
 		  <v:button action="simple" name="gen_key" value="Generate New" enabled="--xenc_key_exists ('id_rsa')">
 		      <v:on-post><![CDATA[
-			  declare k varchar;
+			  declare kname varchar;
 			  declare subj, host varchar;
 			  declare arr any;
 
-			  if (length (self.vhost))
+			  if (length (self.vhost_nam.ufl_value))
 			    {
-			      k := 'https_key_' || replace (self.vhost1, '.', '_');
-			      host := self.vhost1;
+			      host := self.vhost_nam.ufl_value;
 			    }
 			  else
 			    {
-			      k := 'https_key_' || cast (sequence_next ('https_key') as varchar);
-			      host := sys_stat ('st_host_name');
+                              self.vc_is_valid := 0;
+                              self.vc_error_message := 'Host name (CNAME) cannot be empty, cannot generate X.509 certificate.';
+                              rollback work;
+                              return;
 			    }
-			  subj := get_certificate_info (2, decode_base64 (xenc_X509_certificate_serialize ('id_rsa')), 1);
-			  arr := split_and_decode (ltrim (subj, '/'), 0, '\0\0/=');
-			  xenc_key_RSA_create (k, 2048);
-			  xenc_x509_generate ('id_rsa', k, sequence_next ('ca_id_rsa'), 365,
-			    vector (
-			      'C', get_keyword ('C', arr),
-			      'ST',  get_keyword ('ST', arr),
-			      'O',  get_keyword ('O', arr),
-			      'OU',  get_keyword ('OU', arr),
-			      'CN',  host,
-			      'emailAddress',  get_keyword ('emailAddress', arr)),
-			      vector ('basicConstraints', 'critical,CA:FALSE',
-			        'authorityKeyIdentifier', 'keyid,issuer:always',
-			        'nsComment', 'Virtuoso Generated Certificate'));
-			  USER_KEY_STORE (user, k, 'X.509', 2, '', cast (xenc_pkcs12_export (k, 'HTTPS Certificate', '') as varchar));
+                          kname := DB.DBA.HTTPS_MAKE_HOST_KEY (host);
 			  self.key_list.vc_data_bind (e);
-			  self.key_list.ufl_value := k;
+			  self.key_list.ufl_value := kname;
 			  self.key_list.vs_set_selected ();
 			  ]]></v:on-post>
 		  </v:button>
               </td>
             </tr>
             <tr>
-              <td>Extra Chain Certificates</td>
+                <td><label class="help_tooltip" 
+                    helptext="Certificates of Certification Authorities (CA) which form 
+                    the certificate chain of the server certificate.">Extra Chain Certificates</label></td>
               <td>
 		<v:text name="extra_cert1" value="--self.extra_cert" xhtml_size="50">
 		</v:text>
               </td>
             </tr>
             <tr>
-              <td>HTTPS verify</td>
+                <td><label class="help_tooltip" 
+                    helptext="Certificates of Certification Authorities (CA) whose clients you deal with. 
+                    These are used for Client Authentication.">CA Certificates</label></td>
+              <td>
+		<v:text name="ca_certs1" value="--self.ca_certs" xhtml_size="50">
+		</v:text>
+              </td>
+            </tr>
+            <tr>
+                <td><label class="help_tooltip" helptext="Certificate verification level for the Client Authentication.">HTTPS verify</label></td>
               <td>
 		  <v:select-list name="verify" value="--self.verify1" >
 		      <v:item name="none" value="0"/>
 		      <v:item name="required" value="1"/>
 		      <v:item name="optional" value="2"/>
-		      <v:item name="optional no ca" value="3"/>
+		      <v:item name="optional no CA" value="3"/>
 		</v:select-list>
               </td>
             </tr>
+            </v:template>
             <tr>
               <td colspan="2" align="center">
                 <v:button action="simple" name="cancel_templ" value="Cancel">
                   <v:on-post>
                       <![CDATA[
+                      declare ssl_opts any;
+                      ssl_opts := NULL;
+                      for select top 1 deserialize (HP_AUTH_OPTIONS) as old_ssl_opts from DB.DBA.HTTP_PATH where HP_LISTEN_HOST = self.lhosto do
+                        {
+                          ssl_opts := old_ssl_opts;
+                        }
+                      if (self.lhosto is not null and not http_listen_host (self.lhosto, 2))
+                        http_listen_host (self.lhosto, 0, ssl_opts);
 		      self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
                       ]]>
                   </v:on-post>
@@ -230,7 +268,7 @@
            if (not self.vc_is_valid)
              return;
 
-           declare vhost_o, lhost_o, vhost, lhost, st, msg, lhost_if, ssl_opts any;
+           declare vhost_o, lhost_o, vhost, lhost, state, message, lhost_if, ssl_opts any;
            vhost_o := self.vhosto;
 	   lhost_o := self.lhosto;
 
@@ -242,18 +280,24 @@
 	     return;
 	   };
 
+           declare kname, extra, verify, ca_certs any;
+           kname := self.key_list.ufl_value;
+           extra := self.extra_cert1.ufl_value;
+           ca_certs := self.ca_certs1.ufl_value;
+           verify := self.verify.ufl_value;
+
            lhost_if := get_keyword ('lhost_if', e.ve_params, '');
 
 	   y_check_host (self.vhost_nam.ufl_value, lhost_if, self.lhost_port.ufl_value);
 
 	   vhost := self.vhost_nam.ufl_value;
-	   lhost := concat (lhost_if, ':', self.lhost_port.ufl_value);
-	   lhost := replace (lhost, '0.0.0.0', '');
+	   lhost := replace (concat (lhost_if, ':', self.lhost_port.ufl_value), '0.0.0.0', '');
 
-	   if (self.vhost = vhost and lhost = self.lhost and self.key_list.ufl_value = self.key1 and self.verify1 = self.verify.ufl_value and
-	     self.extra_cert1.ufl_value = self.extra_cert)
+	   if (self.vhost = vhost and lhost = self.lhost and kname = self.key1 and self.verify1 = verify and
+              extra = self.extra_cert and ca_certs = self.ca_certs)
 	     goto same_host;
            ssl_opts := null;
+           set triggers off;
 	   for select
 	       HP_HOST, HP_LISTEN_HOST, HP_PPATH, HP_LPATH,
 	       HP_AUTH_FUNC, HP_AUTH_OPTIONS, HP_DEFAULT, HP_STORE_AS_DAV,
@@ -263,13 +307,13 @@
 	       from DB.DBA.HTTP_PATH where HP_HOST = vhost_o and HP_LISTEN_HOST = lhost_o do
 	     {
 	        declare opts any;
-      	        st := '00000';
-	        msg := '';
+      	        state := '00000';
+	        message := '';
 		VHOST_REMOVE (vhost_o, lhost_o, HP_LPATH, 0);
 		opts := deserialize (HP_AUTH_OPTIONS);
-		yac_set_ssl_key (self.key_list.ufl_value, self.verify.ufl_value, self.extra_cert1.ufl_value, opts);
+		yac_set_ssl_key (kname, verify, extra, opts, ca_certs);
 		HP_AUTH_OPTIONS := serialize (opts);
-		if (self.key_list.ufl_value <> 'none')
+		if (kname <> 'none')
 		  {
 		    HP_SECURITY := 'SSL';
 		    if (ssl_opts is null)
@@ -279,27 +323,60 @@
                   {
                     HP_SECURITY := null;
 		  }
-		exec('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', st, msg,
+		exec('VHOST_DEFINE (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)', state, message,
 		     vector (vhost, lhost, HP_LPATH, HP_PPATH, HP_STORE_AS_DAV, HP_DIR_BROWSEABLE,
 		             HP_DEFAULT, HP_AUTH_FUNC, HP_REALM, HP_POSTPROCESS_FUNC, HP_RUN_VSP_AS,
 			     HP_RUN_SOAP_AS, HP_SECURITY, HP_PERSIST_SES_VARS,
 			     deserialize (HP_SOAP_OPTIONS),
 			     deserialize (HP_AUTH_OPTIONS), deserialize(HP_OPTIONS), HP_IS_DEFAULT_HOST));
-                if (st <> '00000')
+                if (state <> '00000')
                   {
 		    rollback work;
 		    self.vc_is_valid := 0;
-		    self.vc_error_message := msg;
+		    self.vc_error_message := message;
 		    return;
                   }
+                self.v_host_exists := 1;
 	     }
+           set triggers on;
+           if (0 = self.v_host_exists) -- new listener 
+             {
+               declare security_flag varchar;
+               security_flag := NULL;
+               ssl_opts := NULL;
+               if (self.ssl_enable.ufl_selected)
+                 {
+                   security_flag := 'SSL';
+                   yac_set_ssl_key (kname, verify, extra, ssl_opts, ca_certs);
+                 }
+	       DB.DBA.VHOST_DEFINE (vhost=>vhost, lhost=>lhost, lpath=>'/', ppath=>'/', sec=>security_flag, auth_opts=>ssl_opts);
+             }
+           else
+            {
+                -- finally we update listeners table
+                if (kname = 'none')
+                  {
+                    extra := kname := null;
+                  }
+                if (lhost_o <> lhost)
+                  {
+                    delete from DB.DBA.SYS_HTTP_LISTENERS where HL_INTERFACE = lhost_o;
+                  }
+               else
+                  {
+                    kname := concat ('db:', kname);
+                     update DB.DBA.SYS_HTTP_LISTENERS set HL_CERTIFICATE = kname, HL_KEY = kname, HL_EXTRA = extra, HL_VERYFY = verify, 
+                          HL_CA_LIST = ca_certs
+                        where HL_INTERFACE = lhost;
+                  }
+            }
+            if (not http_listen_host (lhost, 2))
 	    http_listen_host (lhost, 0, ssl_opts);
 	    self.stopit := 0;
 	    commit work;
 	    same_host:
             self.vc_redirect (sprintf ('http_serv_mgmt.vspx'));
-                      ]]>
-                  </v:on-post>
+                      ]]></v:on-post>
                 </v:button>
               </td>
             </tr>

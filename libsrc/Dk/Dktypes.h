@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -140,9 +140,12 @@ typedef struct dk_mutex_s 	dk_mutex_t;
 /* General type for specifying timeout values for select, read and write */
 typedef struct
 {
-  int32	to_sec;			/* seconds */
+  uint32 to_sec;		/* seconds */
   int32	to_usec;		/* microseconds */
 } timeout_t;
+
+/* General time for specifying timestamps in msec from EPOCH */
+typedef uint64 time_msec_t;
 
 #ifdef FILE64
 

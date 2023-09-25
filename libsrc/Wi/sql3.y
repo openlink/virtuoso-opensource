@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
 %lex-param {yyscan_t scanner}
 /*%parse-param {sql_comp_context_t* scs_arg}*/
 /*%lex-param {sql_comp_context_t* scs_arg}*/
-%expect 18
+%expect 19
 
 
 %{
@@ -60,10 +60,19 @@
  */
 #define obe_keyword_to_bif_fun_name(X) ((X))
 
+extern void scn3yyerror (const char *strg);
+
 #ifdef DEBUG
 #define yyerror(scanner,strg) yyerror_1(/* no scanner */ yystate, yyssa, yyssp, strg)
 #define yyfatalerror(strg) yyfatalerror_1(/* no scanner */ yyssa, yyssp, strg)
+#else
+#define yyerror(scanner,strg) scn3yyerror(/* no scanner */ strg)
 #endif
+
+
+extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
+#define YY_DECL int scn3yylex (void *void_yylval, yyscan_t yyscanner)
+
 
 #define assert_ms_compat(text)
 
@@ -81,7 +90,6 @@
   sqlp_join_t join;
 }
 
-%expect 18
 %token <box> NAME
 %token <box> STRING
 %token <box> WSTRING
@@ -176,6 +184,7 @@
 %type <box> cursor
 %type <box> literal
 %type <box> signed_literal
+%type <box> tail_of_tag_of
 %type <tree> column_ref
 %type <tree> aggregate_ref
 
@@ -226,6 +235,8 @@
 
 %type <intval> opt_with_data
 %type <intval> base_table_opt
+%type <intval> opt_not_exists
+%type <intval> opt_if_exists
 %type <tree> base_table_def
 %type <tree> view_def
 %type <tree> view_def_select_and_opt
@@ -550,7 +561,7 @@
 %token <box> MODIFIES INPUT CALLED ADA C_L3 COBOL FORTRAN MUMPS PASCAL_L PLI NAME_L TEXT_L JAVA INOUT_L REMOTE KEYSET VALUE PARAMETER VARIABLE ADMIN_L ROLE_L TEMPORARY CLR ATTRIBUTE
 %token <box> __SOAP_DOC __SOAP_DOCW __SOAP_HEADER __SOAP_HTTP __SOAP_NAME __SOAP_TYPE __SOAP_XML_TYPE __SOAP_FAULT __SOAP_DIME_ENC __SOAP_ENC_MIME __SOAP_OPTIONS FOREACH POSITION_L
 %token ARE REF STATIC_L SPECIFIC DYNAMIC COLUMN START_L
-%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING
+%token __LOCK __TAG_L RDF_BOX_L VECTOR_L VECTORED FOR_VECTORED FOR_ROWS NOT_VECTORED VECTORING HANDLE_L STREAM_L
 
 %nonassoc ORDER FOR
 %left UNION EXCEPT
@@ -584,6 +595,7 @@
 
 /* Extensions */
 %token CONTIGUOUS OBJECT_ID BITMAPPED UNDER CLUSTER __ELASTIC CLUSTERED VARCHAR VARBINARY BINARY LONG_L REPLACING SOFT HASH LOOP IRI_ID IRI_ID_8 SAME_AS TRANSITIVE QUIETCAST_L SPARQL_L UNAME_L
+%token DICTIONARY_L REFERENCE_L
 
 /* Admin statements */
 %token SHUTDOWN CHECKPOINT BACKUP REPLICATION
@@ -653,8 +665,9 @@
 %token WS_PRAGMA_C_ESC WS_PGRAGMA_UTF8_ESC WS_PRAGMA_PL_DEBUG WS_PRAGMA_SRC
 %token WS_COMMENT_EOL WS_COMMENT_BEGIN WS_COMMENT_END WS_COMMENT_LONG __COST
 
+
 /* Important! Do NOT add meaningful SQL tokens at the end of this list!
-Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE is
+Instead, add them _before_ WS_WHITESPACE. Tokens after WS_WHITESPACE are
 treated as garbage by sql_split_text(). */
 
 %%
@@ -746,6 +759,7 @@ identifier
 	| SQL_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| GENERAL		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DETERMINISTIC		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | DICTIONARY_L          { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NO_L			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| DISABLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| NOVALIDATE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -769,6 +783,7 @@ identifier
 	| JAVA			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| INOUT_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| REMOTE		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+        | REFERENCE_L           { $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| KEYSET		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VALUE			{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| PARAMETER		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
@@ -811,6 +826,8 @@ identifier
 	| RDF_BOX_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| VECTOR_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	| UNAME_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| HANDLE_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
+	| STREAM_L		{ $$ = t_sqlp_box_id_upcase_nchars (global_scs->scs_scn3c.last_keyword_yytext, global_scs->scs_scn3c.last_keyword_yyleng); }
 	;
 
 opt_with_data
@@ -825,13 +842,22 @@ base_table_opt
 	| DISTINCT COLUMN { $$ = T_DISTINCT_COLUMNS; }
 	;
 
+opt_not_exists
+	:			{ $$ = 0; }
+	| IF NOT EXISTS		{ $$ = 1; }
+	;
+
+opt_if_exists
+	:			{ $$ = 0; }
+	| IF EXISTS		{ $$ = 1; }
+	;
 
 base_table_def
-	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt
-		{ $$ = t_listst (4, TABLE_DEF, $3,
-				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7); }
+	: CREATE TABLE new_table_name '(' base_table_element_commalist ')' base_table_opt opt_not_exists
+		{ $$ = t_listst (5, TABLE_DEF, $3,
+				 t_list_to_array (sqlc_ensure_primary_key (sqlp_process_col_options ($3, $5))), (ptrlong) $7, (ptrlong) $8); }
         | CREATE TABLE new_table_name AS query_exp opt_with_data
-		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, $5, t_box_num ((ptrlong) $6)); }
+		{ $$ = t_listst (4, CREATE_TABLE_AS, $3, sqlp_view_def (NULL, $5, 1), t_box_num ((ptrlong) $6)); }
 	;
 
 base_table_element_commalist
@@ -1029,16 +1055,16 @@ opt_index_option_list
 
 create_index_def
 	: CREATE opt_index_option_list INDEX index
-		ON q_table_name '(' index_column_commalist ')'
-		{ $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), $2); }
+		ON q_table_name '(' index_column_commalist ')' opt_not_exists
+		{ $$ = t_listst (6, INDEX_DEF, $4, $6, t_list_to_array ($8), $2, (ptrlong) $10); }
 	| CREATE opt_index_option_list INDEX index
-	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list
+	ON q_table_name '(' index_column_commalist ')' PARTITION opt_cluster col_part_list opt_not_exists
 { ST * opts = (ST *) t_box_append_1  ((caddr_t) $2, (caddr_t) t_listst (5, PARTITION_DEF,  NULL, NULL, $11, t_list_to_array ($12)));
-		 $$ = t_listst (5, INDEX_DEF, $4, $6, t_list_to_array ($8), opts); }
+		 $$ = t_listst (6, INDEX_DEF, $4, $6, t_list_to_array ($8), opts, (ptrlong) $13); }
 	;
 
 drop_index
-	: DROP INDEX identifier opt_table   { $$ = t_listst (3, INDEX_DROP, $3, $4); }
+	: DROP INDEX identifier opt_table opt_if_exists  { $$ = t_listst (4, INDEX_DROP, $3, $4, $5); }
 	;
 
 opt_table
@@ -1047,8 +1073,8 @@ opt_table
 	;
 
 drop_table
-	: DROP TABLE q_table_name	{ $$ = t_listst (2, TABLE_DROP, $3); }
-	| DROP VIEW q_table_name	{ $$ = t_listst (2, TABLE_DROP, $3); }
+	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 0); }
+	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 1); }
 	;
 
 opt_col_add_column
@@ -1067,22 +1093,22 @@ add_col_column_list
 	;
 
 add_column
-	: ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list
+	: ALTER TABLE q_table_name ADD opt_col_add_column add_col_column_def_list opt_not_exists
 		{
 		  dk_set_t ret = NULL, col_defs_list = $6;
 		  DO_SET (dk_set_t, col_def, &col_defs_list)
 		    {
-		      t_set_push (&ret, t_listst (3, ADD_COLUMN, $3, t_list_to_array (col_def)));
+		      t_set_push (&ret, t_listst (4, ADD_COLUMN, $3, t_list_to_array (col_def), (ptrlong)$7));
 		    }
 		  END_DO_SET ();
 		  $$ = ret;
 		}
-	| ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list
+	| ALTER TABLE q_table_name DROP opt_col_add_column add_col_column_list opt_if_exists
 		{
 		  dk_set_t ret = NULL, col_ref_list = $6;
 		  DO_SET (caddr_t, col_ref, &col_ref_list)
 		    {
-		      t_set_push (&ret, t_listst (3, DROP_COL, $3, col_ref));
+		      t_set_push (&ret, t_listst (4, DROP_COL, $3, col_ref, (ptrlong)$7));
 		    }
 		  END_DO_SET ();
 		  $$ = ret;
@@ -1227,11 +1253,9 @@ opt_with_admin_option
 	;
 
 privilege_revoke
-/* CAUSES GPF !
-	: REVOKE ALL PRIVILEGES FROM grantee_commalist
-		{ $$ = t_listst (4, GRANT_STMT, NULL, NULL, list_to_array ($5)); }
-*/
-	: REVOKE privileges ON table FROM grantee_commalist
+	: REVOKE ALL PRIVILEGES FROM user
+		{ $$ = t_listst (3, SET_GROUP_STMT, $5, $5); }
+	| REVOKE privileges ON table FROM grantee_commalist
 		{ $$ = t_listst (4, REVOKE_STMT, $2, $4, t_list_to_array ($6)); }
 
 	| REVOKE EXECUTE ON function_name FROM grantee_commalist
@@ -2427,12 +2451,12 @@ in_predicate
 	: scalar_exp NOT IN_L subquery
 		{
 		  ST *in = NULL;
-		  in = SUBQ_PRED (SOME_PRED, $1, sqlp_wpar_nonselect ($4), BOP_EQ, NULL);
+		  in = SUBQ_PRED (SOME_PRED, $1, sqlp_wrap_nonselect ($4, 0), BOP_EQ, NULL);
 		  NEGATE ($$, in);
 		}
 	| scalar_exp IN_L subquery
 		{
-		  $$ = SUBQ_PRED (SOME_PRED, $1, sqlp_wpar_nonselect ($3), BOP_EQ, NULL); }
+		  $$ = SUBQ_PRED (SOME_PRED, $1, sqlp_wrap_nonselect ($3, 0), BOP_EQ, NULL); }
 	| scalar_exp NOT IN_L '(' scalar_exp_commalist ')'
  		{ $$ = sqlp_in_exp ($1, $5, 1);
 		}
@@ -2450,7 +2474,7 @@ atom_commalist
 
 all_or_any_predicate
 	: scalar_exp COMPARISON any_all_some subquery
-		{ $$ = SUBQ_PRED ($3, $1, sqlp_wpar_nonselect ($4), $2, NULL); }
+		{ $$ = SUBQ_PRED ($3, $1, sqlp_wrap_nonselect ($4, 0), $2, NULL); }
 	;
 
 any_all_some
@@ -2463,7 +2487,7 @@ existence_test
 	: EXISTS subquery
 		{
 		  /* exists (select * ..) becomes exists (select 1 ...) */
-		  ST * ext_subq = $2;
+		  ST * ext_subq = sqlp_wrap_nonselect ($2, 1);
 		  ext_subq->_.select_stmt.selection = (caddr_t*) t_list (1, t_box_num (1));
 		  ext_subq->_.select_stmt.top = NULL;
 		  $$ = (ST *) SUBQ_PRED (EXISTS_PRED, NULL, ext_subq, NULL, NULL); }
@@ -2907,11 +2931,7 @@ literal
 	| BINARYNUM
 	| IRI_LIT
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
-	| __TAG_L OF data_type { $$ = ((caddr_t *)$3)[0]; }
-	| __TAG_L OF XML { $$ = (caddr_t) DV_XML_ENTITY; }
-	| __TAG_L OF RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
-	| __TAG_L OF VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
-	| __TAG_L OF UNAME_L { $$ = (caddr_t) DV_UNAME; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
 	;
 
 signed_literal
@@ -2939,6 +2959,24 @@ signed_literal
 	| '+' APPROXNUM %prec UMINUS { $$ = $2; }
 	| BINARYNUM
 	| NULLX		{ $$ = (caddr_t) t_NULLCONST; }
+	| __TAG_L OF tail_of_tag_of { $$ = $3; }
+	;
+
+tail_of_tag_of
+	: data_type { $$ = ((caddr_t *)$1)[0]; }
+	| data_type HANDLE_L
+		{
+		  $$ = ((caddr_t *)$1)[0];
+		  if (!IS_BLOB_DTP($$))
+		    yyerror (scanner, "__TAG OF ... HANDLE is valid only for LONG datatypes");
+		  $$ = DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP($$);
+		}
+	| DICTIONARY_L REFERENCE_L { $$ = (caddr_t) DV_DICT_ITERATOR; }
+	| STREAM_L { $$ = (caddr_t) DV_STRING_SESSION; }
+	| XML { $$ = (caddr_t) DV_XML_ENTITY; }
+	| RDF_BOX_L { $$ = (caddr_t) DV_RDF; }
+	| VECTOR_L { $$ = (caddr_t) DV_ARRAY_OF_POINTER; }
+	| UNAME_L { $$ = (caddr_t) DV_UNAME; }
 	;
 
 /* miscellaneous */
@@ -3386,7 +3424,7 @@ soap_proc_opt_list
 	;
 
 soap_proc_opt
-	: NAME EQUALS signed_literal { $$ = t_CONS ($1, t_CONS ($3, NULL)); }
+	: NAME EQUALS signed_literal { caddr_t name = $1; box_tag_modify (name, DV_STRING); $$ = t_CONS (name, t_CONS ($3, NULL)); }
 	;
 
 soap_kwd
@@ -4068,9 +4106,9 @@ user_defined_type
 	;
 
 user_defined_type_drop
-	: DROP TYPE q_old_type_name opt_drop_behavior
+	: DROP TYPE q_old_type_name opt_drop_behavior opt_if_exists
 	     {
-	       $$ = t_listst (3, UDT_DROP, $3, (ptrlong) $4);
+	       $$ = t_listst (4, UDT_DROP, $3, (ptrlong) $4, (ptrlong) $5);
 	     }
 	;
 

@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -58,14 +58,7 @@
             var wDims = OAT.Dom.getViewport()
             var hDims = OAT.Dom.getWH('FT')
             var cPos = OAT.Dom.position(content)
-            $(content).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
-          }
-          var lc = $('LC');
-          if (lc) {
-            var wDims = OAT.Dom.getViewport()
-            var hDims = OAT.Dom.getWH('FT')
-            var cPos = OAT.Dom.position(lc)
-            $(lc).style.height = (wDims[1] - hDims[1] - cPos[1] - 40) + 'px';
+            $(content).style.height = (wDims[1] - hDims[1] - cPos[1] - 35) + 'px';
           }
         }
 
@@ -73,6 +66,20 @@
           setFooter();
           window.onresize = function() {setFooter();}
         }
+
+        document.onkeydown = function(e) {
+          e = e || window.event;
+          if (e.keyCode == 27) {
+            var v = $$('WEBDAV_formFooter', 'RC', 'div');
+            for (var i = 0; i < v.length; i++) {
+              var vv = v[i].getElementsByTagName('input');
+              for (var j = 0; j < vv.length; j++) {
+                if (vv[j].value == 'Cancel')
+                  vv[j].click();
+              }
+            }
+          }
+        };
      ]]>
     </script>
   </v:form>

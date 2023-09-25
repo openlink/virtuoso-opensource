@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -248,7 +248,7 @@ create procedure MIME_BODY (in _parts any)
   declare _part any;
 
   _bnd := concat ('-','-','-','-', md5 (cast (now () as varchar)));
-  if (__tag (_parts) = 193)
+  if (__tag (_parts) = __tag of vector)
     _c_type := sprintf ('multipart/mixed; boundary="%s"', _bnd);
   else if (isstring (_parts))
     _c_type := 'text/plain';

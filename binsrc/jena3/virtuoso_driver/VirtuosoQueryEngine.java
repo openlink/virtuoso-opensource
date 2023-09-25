@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -22,15 +22,12 @@
  */
 package virtuoso.jena.driver;
 
-import java.util.*;
-
 import org.apache.jena.graph.NodeFactory;
 import org.apache.jena.shared.*;
 import org.apache.jena.graph.Node;
 
 import org.apache.jena.query.Query;
 import org.apache.jena.sparql.ARQInternalErrorException;
-import org.apache.jena.sparql.ARQConstants;
 import org.apache.jena.sparql.algebra.Op;
 import org.apache.jena.sparql.algebra.Transform;
 import org.apache.jena.sparql.algebra.TransformCopy;
@@ -46,7 +43,6 @@ import org.apache.jena.sparql.engine.QueryEngineFactory;
 import org.apache.jena.sparql.engine.QueryEngineRegistry;
 import org.apache.jena.sparql.engine.QueryIterator;
 import org.apache.jena.sparql.engine.iterator.QueryIteratorBase;
-import org.apache.jena.sparql.engine.binding.BindingMap;
 import org.apache.jena.sparql.engine.main.QueryEngineMain;
 import org.apache.jena.sparql.serializer.SerializationContext;
 import org.apache.jena.sparql.util.Context;
@@ -93,19 +89,30 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
 
         VirtGraph vg = (VirtGraph) this.dataset.getDefaultGraph();
 
+        StringBuilder tok = new StringBuilder();
         StringBuilder buf = new StringBuilder();
-        String delim = " ,)(;.";
+        String delim = " \t\n\r\f,)(;.}{";
+        int inCurly = 0;
         int i = 0;
         char ch;
         int qlen = query.length();
+        boolean afterFROM = false;
+        boolean afterOrderBy = false;
+        boolean isSPARUL = false;
+
         while (i < qlen) {
             ch = query.charAt(i++);
             if (ch == '\\') {
                 buf.append(ch);
-                if (i < qlen)
-                    buf.append(query.charAt(i++));
+                tok.append(ch);
+                if (i < qlen) {
+                    ch = query.charAt(i++);
+                    buf.append(ch);
+                    tok.append(ch);
+                }
 
             } else if (ch == '"' || ch == '\'') {
+                tok.setLength(0);
                 char end = ch;
                 buf.append(ch);
                 while (i < qlen) {
@@ -114,24 +121,64 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
                     if (ch == end)
                         break;
                 }
+            } else if ( ch == '{' ) {
+                inCurly++;
+                buf.append(ch);
+                tok.setLength(0);
+            } else if ( ch == '{' ) {
+                inCurly--;
+                buf.append(ch);
+                tok.setLength(0);
             } else if (ch == '?') {  //Parameter
+                tok.setLength(0);
                 String varData = null;
                 int j = i;
-                while (j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
-                if (j != i) {
+                while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+                if (j != i && !afterOrderBy) {
+                    boolean useBackSlash = (isSPARUL || inCurly > 0);
                     String varName = query.substring(i, j);
                     Node val = args.get(Var.alloc(varName));
+
                     if (val != null) {
-                        varData = vg.Node2Str(val);
-                        i = j;
+                        if (inCurly==0 && !isSPARUL && !afterFROM && !afterOrderBy) //for values in SELECT before triple pattern
+                            varData = "( "+vg.Node2Str(val, useBackSlash)+" AS ?"+varName+" )";
+                        else
+                            varData = vg.Node2Str(val, useBackSlash);
+
+                        i=j;
                     }
                 }
                 if (varData != null)
                     buf.append(varData);
                 else
                     buf.append(ch);
+
             } else {
                 buf.append(ch);
+                if (delim.indexOf(ch) < 0) {
+                    tok.append(ch);
+                } else {
+                    if (tok.length()==4 
+                        && (tok.charAt(0)=='F' || tok.charAt(0)=='f')
+                        && tok.toString().equalsIgnoreCase("FROM")) {
+                      afterFROM = true;
+                    }
+                    else if (tok.length()==5
+                        && (tok.charAt(0)=='O' || tok.charAt(0)=='o')
+                        && tok.toString().equalsIgnoreCase("ORDER")) {
+                      int j0 = i;
+                      while(j0 < qlen && Character.isWhitespace(query.charAt(j0))) j0++;
+                      int j = j0;
+                      while(j < qlen && delim.indexOf(query.charAt(j)) < 0) j++;
+                      if (j != j0) {
+                        String tok1 = query.substring(j0,j).toUpperCase();
+                        if (tok1.equals("BY"))
+                          afterOrderBy = true;
+                      }
+                    }
+
+                    tok.setLength(0);
+                }
             }
         }
         return buf.toString();
@@ -272,16 +319,14 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
                 if (rs != null) {
                     try {
                         rs.close();
-                        rs = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    rs = null;
                 }
                 if (stmt != null) {
                     try {
                         stmt.close();
-                        stmt = null;
-                    } catch (Exception e) {
-                    }
+                    } catch (Exception e) { }
+                    stmt = null;
                 }
             }
             v_finished = true;
@@ -317,14 +362,6 @@ public class VirtuosoQueryEngine extends QueryEngineMain {
             }
         }
 
-
-        protected void finalize() throws Throwable {
-            if (!v_finished)
-                try {
-                    close();
-                } catch (Exception e) {
-                }
-        }
 
         /**
          * Propagates the cancellation request - called asynchronously with the iterator itself

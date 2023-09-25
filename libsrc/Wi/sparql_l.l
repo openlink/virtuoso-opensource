@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -317,6 +317,16 @@ SPAR_ECHAR		(([\\][atbvnrf\\""''])|{SPAR_UCHAR})
 S_NL			((\r\n)|(\n\r)|\n|\r)
 HEX			([0-9A-Fa-f])
 
+U2A     [\xC2-\xDF][\x80-\xBF]
+U2B     \xE0[\xA0-\xBF][\x80-\xBF]
+U3A     [\xE1-\xEC\xEE\xEF][\x80-\xBF]{2}
+U3B     \xED[\x80-\x9F][\x80-\xBF]
+U4A     \xF0[\x90-\xBF][\x80-\xBF]{2}
+U4B     [\xF1-\xF3][\x80-\xBF]{3}
+U4C     \xF4[\x80-\x8F][\x80-\xBF]{2}
+UTF_8   {U2A}|{U2B}|{U3A}|{U3B}|{U4A}|{U4B}|{U4C}
+
+
 PN_LOCAL_ESC		([\\][_~.!$&''()*+,;=/?#@%-])
 PN_LOCAL_ESC_X		({PN_LOCAL_ESC}|([%]{HEX}{HEX}))
 PN_CHARS_BASE		([A-Za-z\x7f-\xfe]|{SPAR_UCHAR})
@@ -326,7 +336,7 @@ PN_CHARS		([A-Za-z0-9_\x7f-\xfe-]|{SPAR_UCHAR})
 PN_CHARS_C_PLX		([A-Za-z0-9_\x7f-\xfe:-]|{SPAR_UCHAR}|{PN_LOCAL_ESC_X})
 PN_PREFIX		({PN_CHARS_BASE}(([.]*{PN_CHARS})*))
 PN_LOCAL		({PN_CHARS_U_09_C_PLX}(([.]*{PN_CHARS_C_PLX})*))
-SPAR_VARNAME		([A-Za-z0-9_][A-Za-z0-9_\x7f-\xfe]*)
+SPAR_VARNAME		(([A-Za-z0-9_]|{UTF_8})*)
 SPAR_PLAIN_SQLNAME	([A-Za-z_][A-Za-z0-9_]*)
 SPAR_DQ_SQLNAME		([""][^""\\\r\n]*[""])
 SPAR_SQLNAME		(([A-Za-z_][A-Za-z0-9_]*)|([""][^""\\\r\n]*[""]))

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -422,7 +422,7 @@ sleep 2
 
 DoCommand $DS1 "vad_uninstall ('bpel4ws/'||registry_get('_bpel4ws_version_'));" "bpel_filesystem.vad uninstalled"
 DoCommand $DS1 "vad_install ('bpel_filesystem.vad', 0);" "bpel_filesystem.vad re-installed"
-sleep 1
+sleep 5
 if $ISQL $DS1 "EXEC=status();" VERBOSE=OFF ERRORS=STDOUT > ident.txt
 then
     if test -s ident.txt

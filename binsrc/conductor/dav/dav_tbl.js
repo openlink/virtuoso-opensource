@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -569,7 +569,7 @@ TBL.createCell70Ext = function (obj, fldOptions, fldUnlink)
   span.id = 'span_' + fldName;
   if (predicate[2] == 'sparql') {
     if (!fldOptions)
-      fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix nmo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#>\nprefix nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>\nASK\nWHERE\n  {\n    <%item_iri%> nmo:messageFrom \'value\'\n  }'};
+      fldOptions = {valueExt: 'prefix sioc: <http://rdfs.org/sioc/ns#>\nprefix rdfs: <http://www.w3.org/2000/01/rdf-schema#>\nprefix nmo: <http://www.semanticdesktop.org/ontologies/2007/03/22/nmo#>\nprefix nie: <http://www.semanticdesktop.org/ontologies/2007/01/19/nie#>\nASK\nWHERE\n  {\n    <%item_iri%> nmo:messageFrom <mailto:someone@example.com>\n  }'};
 
     var fld = OAT.Dom.create('textarea');
     fld.id = fldName;
@@ -773,13 +773,14 @@ TBL.createCell76 = function (td, prefix, fldName, No, fldOptions) {
       fld.type = fldParams[3];
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'folder')) {
-      OAT.Loader.load(["drag", "dav"], function(){OAT.WebDav.init(davOptions);});
       fld = OAT.Dom.create("input");
       fld.type = 'text';
+      if ($v('dirPath'))
+        fld.value = $v('dirPath');
       fldButton = OAT.Dom.create('img');
       fldButton.src = '/ods/images/select.gif';
       fldButton.className = "pointer";
-      fldButton.onclick = function(name){return function(){ WEBDAV.davFolderSelect (name);};}(fldName);
+      fldButton.onclick = function(name){return function(){ WEBDAV.davSelect (name, true);};}(fldName);
     }
     else if ((fldParams[2] == 'select') && (fldParams[3] == 'priority')) {
       fld = OAT.Dom.create("select");

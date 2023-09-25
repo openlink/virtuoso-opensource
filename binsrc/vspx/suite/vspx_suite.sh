@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -41,35 +41,47 @@ PORT=${PORT-1340}
 . $HOME/binsrc/tests/suite/test_fn.sh
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  rm -f *.lck
-  $SERVER
-  stat="true"
-  while true
-  do
-    sleep 4
-    LOG "CHECKING: Is Virtuoso Server successfully started on port $PORT?"
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-		then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    timeout=120
+
+    ECHO "Starting Virtuoso server ..."
+    if [ "z$HOST_OS" != "z" ]
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
-      exit 1
+	"$SERVER" +foreground &
+
+	starth=`date | cut -f 2 -d :`
+	starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+	while true
+	do
+	    sleep 6
+	    if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+	    then
+		break
+	    fi
+	    nowh=`date | cut -f 2 -d :`
+	    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+	    nowh=`expr $nowh - $starth`
+	    nows=`expr $nows - $starts`
+
+	    nows=`expr $nows + $nowh \*  60`
+	    if test $nows -ge $timeout
+	    then
+		ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+		exit 1
+	    fi
+	done
+    else
+	"$SERVER" +wait
+	if test $? -ne 0
+	then
+	    ECHO "***FAILED: Could not start Virtuoso Server"
+	    exit 1
+        fi
     fi
-  done
+
+    ECHO "Virtuoso server started"
+    return 0
 }
 
 do_command() {

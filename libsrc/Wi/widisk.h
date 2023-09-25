@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -366,6 +366,7 @@ struct wi_database_s
     char	db_dbs_name[DBS_NAME_MAX_LEN];
     char 	db_id[16];
     char	db_timezoneless_datetimes; /* The values for timezoneless_datetimes global, overrides one in virtuoso.ini in case of conflict */
+    char	db_rdf_id64;            /*!< The size of RI_NAME header */
   };
 
 #define DBS_INCOMPLETE 1 /*being copied or being created by split, can't open */

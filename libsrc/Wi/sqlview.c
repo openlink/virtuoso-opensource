@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -361,6 +361,10 @@ sqlc_insert_view (sql_comp_t * sc, ST * view, ST * tree, dbe_table_t * tb)
   tree->_.insert.table = (ST *) t_box_copy_tree (
       (caddr_t) view->_.select_stmt.table_exp->_.table_exp.from[0]->_.table_ref.table);
 
+  if (BOX_ELEMENTS_0(cols) != BOX_ELEMENTS_0(tree->_.insert.vals->_.ins_vals.vals))
+    sqlc_new_error (sc->sc_cc, "21S01", "SQ099",
+	"different number of cols and values in insert.");
+
   _DO_BOX (inx, tree->_.insert.cols)
     {
       sqlc_col_to_view_scope (sc, &cols[inx], view, &aliases);
@@ -535,6 +539,13 @@ void
 sqlc_union_constants (ST * sel)
 {
   int inx;
+  if (ST_P (sel, UNION_ALL_ST) || ST_P (sel, UNION_ST))
+    {
+      sqlc_union_constants (sel->_.bin_exp.left);
+      return;
+    }
+  if (!ST_P(sel, SELECT_STMT))
+    return;
   DO_BOX (ST *, tree, inx, sel->_.select_stmt.selection)
     {
       if (ST_P (tree, BOP_AS) && SQLC_IS_LIT (tree->_.as_exp.left))
@@ -946,14 +957,17 @@ next:;
 }
 
 ST *
-sqlc_union_dt_wrap (ST * tree)
+sqlc_union_dt_wrap (sql_comp_t * sc, ST * tree)
 {
   ST * left = sqlp_union_tree_select (tree);
   ST * right = sqlp_union_tree_right (tree);
+  ST * rtb_exp = right->_.select_stmt.table_exp;
+  if (!rtb_exp)
+     sqlc_new_error (sc->sc_cc, "42S22", "SQ098", "Non-terminal query expression cannot be used in union.");
   if (left != right)
     {
       ST * texp, * sel;
-      ST ** order =right->_.select_stmt.table_exp->_.table_exp.order_by;
+      ST ** order = right->_.select_stmt.table_exp->_.table_exp.order_by;
       ptrlong flags = right->_.select_stmt.table_exp->_.table_exp.flags;
       caddr_t * opts = right->_.select_stmt.table_exp->_.table_exp.opts;
       right->_.select_stmt.table_exp->_.table_exp.order_by = NULL;
@@ -973,7 +987,7 @@ sqlc_union_dt_wrap (ST * tree)
 void
 sqlc_union_order (sql_comp_t * sc, ST ** ptree)
 {
-  ST * out = sqlc_union_dt_wrap (*ptree);
+  ST * out = sqlc_union_dt_wrap (sc, *ptree);
   if (out != *ptree)
     {
       *ptree = out;

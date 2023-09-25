@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -208,7 +208,7 @@ dv_to_sql_type (dtp_t dv, int cli_binary_timestamp)
       return SQL_LONGVARCHAR;
 
     case DV_INT64:
-      return SQL_INTEGER;
+      return SQL_BIGINT;
 
     case DV_IRI_ID:
       return SQL_VARCHAR;
@@ -946,6 +946,7 @@ stmt_process_result (cli_stmt_t * stmt, int needs_evl)
 
 	case QA_ROW_LAST_IN_BATCH:
 	  stmt->stmt_co_last_in_batch = 1;
+	  /*FALLTHROUGH*/
 
 	case QA_ROW:
 	case QA_ROW_ADDED:
@@ -2496,6 +2497,17 @@ dv_to_str_place (caddr_t it, dtp_t dtp, SQLLEN max, caddr_t place,
 		        if (len >= max)
 		          {
 			    piece_len = max - 1;
+                        if (stmt->stmt_connection->con_wide_as_utf16)
+                          {
+                            eh_encode_wchar_buffer__UTF16LE (
+                              (wchar_t *) (it + str_from_pos),
+                              (wchar_t *) (it + str_from_pos) + piece_len,
+                              place,
+                              place + max);
+                            if (out_chars)
+                              *out_chars = piece_len * sizeof (short);
+                          }
+                        else
 			    memcpy (place, (wchar_t *) (it + str_from_pos), piece_len * sizeof (wchar_t));
 			    ((wchar_t *) place)[piece_len] = L'\x0';
 			    set_data_truncated_success_info (stmt, "CL075", nth_col);

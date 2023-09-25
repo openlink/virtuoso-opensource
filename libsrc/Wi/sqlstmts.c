@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -904,6 +904,8 @@ sqlc_insert (sql_comp_t * sc, ST * tree)
       if (ST_P (tree->_.insert.vals, SELECT_STMT))
 	{
 	  ST *sel = tree->_.insert.vals;
+          if (!sel->_.select_stmt.table_exp)
+            sqlc_new_error (sc->sc_cc, "42S22", "SQ098", "Non-terminal query expression cannot be used.");
 	  if (sc->sc_client->cli_row_autocommit || enable_mt_txn)
 	    sc->sc_parallel_dml = 1;
 	  sc->sc_cc->cc_query->qr_is_mt_insert = 1;
@@ -1625,6 +1627,8 @@ sqlc_delete_pos (sql_comp_t * sc, ST * tree, subq_compilation_t * cursor_sqc, ST
       SQL_NODE_INIT (delete_node_t, del, delete_node_input, del_free);
       if (tb && !sec_tb_check (tb, SC_G_ID (sc), SC_U_ID (sc), GR_DELETE))
 	sqlc_new_error (sc->sc_cc, "43000", "SQ108:SECURITY", "Permission denied for delete from %.300s (user ID = %lu)", tb->tb_name, SC_U_ID (sc));
+      if (!tb)
+        sqlc_new_error (sc->sc_cc, "42S02", "NOTBL", "No table '%s' for positioned statement", tree->_.delete_pos.table->_.table.name);
 
       del->del_table = tb;
       del->del_policy_qr = sqlc_make_policy_trig (sc->sc_cc, tb, TB_RLS_D);
@@ -1797,10 +1801,10 @@ sqlc_table_from_select_view (query_t * view_qr, ST * view_def)
   t_dk_set_append_1 (&cols,
       t_list (5, INDEX_DEF, NULL, NULL, t_list_to_array (key_parts), NULL));
 
-  return ((ST *) t_list (3,
+  return ((ST *) t_list (5,
       TABLE_DEF,
       t_box_string (view_def->_.view_def.name),
-      t_list_to_array (cols)));
+      t_list_to_array (cols), 0, 0));
 }
 
 
@@ -1838,8 +1842,8 @@ sqlc_table_from_view (query_t * view_qr, ST * view_def)
       return ((ST*) t_list (3, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
 		    (caddr_t) col_defs));
 #else
-      return ((ST*) t_list (3, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
-		    t_box_copy_tree ((caddr_t) view_def->_.view_def.exp->_.proc_table.cols)));
+      return ((ST*) t_list (5, TABLE_DEF, t_box_copy_tree (view_def->_.view_def.name),
+		    t_box_copy_tree ((caddr_t) view_def->_.view_def.exp->_.proc_table.cols), 0, 0));
 #endif
     }
 }

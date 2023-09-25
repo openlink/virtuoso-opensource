@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2019 OpenLink Software
+--  Copyright (C) 1998-2023 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -33,7 +33,7 @@ create function "PropFilter_DAV_AUTHENTICATE" (in id any, in what char(1), in re
 create function "PropFilter_NORM" (in value any) returns varchar
 {
   value := blob_to_string (value);
-  if (('' = value) or (193 <> value[0]))
+  if (('' = value) or (__tag of vector <> value[0]))
     return value;
   value := deserialize (value)[1];
   if (isstring (value))
@@ -62,7 +62,7 @@ create function "PropFilter_FIT_INTO_CONDITION" (in id integer, in what char (1)
 {
   declare old_value varchar;
   declare propid integer;
-  if (__tag (pfc_value) = 193)
+  if (__tag (pfc_value) = __tag of vector)
     pfc_value := serialize (pfc_value);
   else if (not isstring (pfc_value))
     return -17;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -183,9 +183,9 @@ public class VirtuosoExplicitString
        {
         for (int i = 0; i < str.length(); i++)
 	  {
-	    Character ch = new Character (str.charAt(i));
+	    Character ch = Character.valueOf (str.charAt(i));
 	    Byte b;
-	    b = (Byte)(charset_ht != null ? charset_ht.get (ch) : new Byte ((byte) (ch.charValue())));
+	    b = (Byte)(charset_ht != null ? charset_ht.get (ch) : Byte.valueOf ((byte) (ch.charValue())));
 	    if (b == null)
 	      {
 	        bytes[i] = (byte) '?';
@@ -218,7 +218,7 @@ public class VirtuosoExplicitString
 
 	  if (ht != null)
 	    {
-	      Character ch = new Character (curr);
+	      Character ch = Character.valueOf (curr);
 	      b = (Byte)ht.get (ch);
 	      if (b == null)
 		{

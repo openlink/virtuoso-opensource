@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -158,6 +158,7 @@ pg_make_map (buffer_desc_t * buf)
     }
   if (pos && !pg_key)
     {
+      log_error ("Page %d with unknown key id: %d", buf->bd_page, k_id);
       if (assertion_on_read_fail)
 	GPF_T1 ("page read with no key defd");
       map->pm_count = 0;
@@ -1580,7 +1581,7 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
     }
   CHECK_COMPACT;
   if (CP_CHANGED == any_change)
-    parent->bd_is_dirty = 1;
+    BUF_SET_IS_DIRTY(parent,1);
   if (COMPACT_DIRTY == mode)
     {
       parent_itm = IT_DP_MAP (it, parent->bd_page);
@@ -1592,8 +1593,8 @@ itc_cp_check_node (it_cursor_t * itc, buffer_desc_t *parent, int mode)
 }
 
 
-uint32 ac_cpu_time;
-uint32 ac_real_time;
+uint64 ac_cpu_time;
+uint64 ac_real_time;
 int ac_n_times;
 dk_mutex_t * dp_compact_mtx;
 
@@ -1601,7 +1602,8 @@ caddr_t
 ac_aq_func (caddr_t av, caddr_t * err_ret)
 {
   caddr_t *args = (caddr_t *) av;
-  uint32 ac_start = get_msec_real_time (), now;
+  time_msec_t ac_start = get_msec_real_time ();
+  time_msec_t now;
   it_cursor_t itc_auto;
   index_tree_t * it = (index_tree_t*)(ptrlong)unbox (args[0]);
   dp_addr_t parent_dp = unbox (args[1]);
@@ -1792,15 +1794,15 @@ dk_mutex_t * dbs_autocompact_mtx;
 int dbs_autocompact_in_progress;
 int enable_ac = 1;
 int enable_col_ac = 1;
-uint32 col_ac_last_time;
+time_msec_t col_ac_last_time;
 uint32 col_ac_last_duration;
 int col_ac_max_pct = 10; /* max this % of real time with col ac on */
 
-int
-col_ac_is_due (uint32 now)
+uint32
+col_ac_is_due (time_msec_t now)
 {
   /* enough time elapsed so col ac is not more than max pct of real time */
-  return now  - col_ac_last_time > ((100 * col_ac_last_duration) / col_ac_max_pct) - col_ac_last_duration;
+  return now - col_ac_last_time > ((100 * col_ac_last_duration) / col_ac_max_pct) - col_ac_last_duration;
 }
 
 
@@ -1809,11 +1811,12 @@ wi_check_all_compact (int age_limit)
 {
   /*  call before writing old dirty out. Also before pre-checkpoint flush of all things.
    * do not do many at the same time.  Also have in progress flag for background action which can autocompact and need a buffer, which can then recursively trigger autocompact which is not wanted */
-  uint32 ac_start;
+  time_msec_t ac_start;
   int any_col = 0;
   caddr_t err = NULL;
   du_thread_t * self;
-  uint32 now, col_ac_due;
+  time_msec_t now;
+  uint32 col_ac_due;
   dbe_storage_t * dbs = wi_inst.wi_master;
   /*return;*/
 #ifndef AUTO_COMPACT
@@ -1840,7 +1843,7 @@ wi_check_all_compact (int age_limit)
     {
       if (it->it_key && it->it_key->key_is_col)
 	{
-	      if (!enable_col_ac || 2 == (enable_col_ac && age_limit))
+	      if (!enable_col_ac || 2 == (enable_col_ac & age_limit))
 	    continue;
 	      if (col_ac_last_duration && age_limit && !col_ac_due)
 		continue; /* col ac may be going for max 10% of real time */
@@ -1862,7 +1865,7 @@ wi_check_all_compact (int age_limit)
   now = get_msec_real_time ();
   if (any_col)
     {
-      col_ac_last_duration = now - ac_start;
+      col_ac_last_duration = (uint32) (now - ac_start);
       col_ac_last_time = now;
     }
   dbs_autocompact_in_progress = 0;

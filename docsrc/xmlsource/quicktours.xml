@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -  
- -  Copyright (C) 1998-2019 OpenLink Software
+ -  Copyright (C) 1998-2023 OpenLink Software
  -  
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -92,6 +92,9 @@ password. The SQL statement to change a user's password is:
     </para>
     <programlisting>set password &lt;old password&gt; &lt;new password&gt;</programlisting>
     <para>The password is an identifier, so take care to use proper quotation.</para>
+    <para>The database administrator can also use the
+<link linkend="fn_user_set_password"><function>user_set_password()</function></link> function to set a new password:</para>
+    <programlisting>user_set_password(&apos;&lt;username&gt;&apos;, &apos;&lt;new password&gt;&apos;)</programlisting>
     <para>You can also use the graphical <link linkend="dbusersandgroups">Virtuoso Administration Interface</link>
 to administer Virtuoso database users.
     </para>
@@ -100,7 +103,7 @@ are 2 easy ways to change them. Either use the GUI in <link linkend="davuseradm"
 under WebDAV Administration / WebDAV services / Users Administrator or use the SQL statement:
     </para>
     <programlisting>
-update WS.WS.SYS_DAV_USER set U_PASSWORD=&apos;&lt;new password&gt;&apos;
+update WS.WS.SYS_DAV_USER set U_PWD=&apos;&lt;new password&gt;&apos;
 where U_NAME=&apos;&lt;username&gt;&apos;
     </programlisting>
     <para>Note quotation around varchar values. Please remember to perform these operations for

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -119,7 +119,7 @@ cp tmp.ini $CFGFILE
 rm tmp.ini
 
 START_SERVER $PORT 1000 
-sleep 1
+sleep 5
 RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT EXEC="'status()'"
 if test $STATUS -ne 0
 then

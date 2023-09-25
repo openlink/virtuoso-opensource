@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -103,7 +103,7 @@ void dbs_sys_db_check (caddr_t file);
 extern int32 cl_non_logged_write_mode;
 void log_skip_blobs_1 (dk_session_t * ses);
 int log_check_header (caddr_t * header);
-extern uint32 log_last_2pc_archive_time;
+extern time_msec_t log_last_2pc_archive_time;
 extern int log_in_cl_recov;
 int log_time (caddr_t * box);
 caddr_t * log_time_header (caddr_t dt);

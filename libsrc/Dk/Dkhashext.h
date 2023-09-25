@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -286,5 +286,6 @@ EXE_EXPORT (int, boxint_hashcmp, (char *x, char *y));
 
 #define END_DO_IDHASH }}
 
+extern size_t dict_max_mp_bytes_in_use;
 
 #endif

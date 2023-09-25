@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -73,6 +73,9 @@ struct data_col_s
   mem_pool_t *dc_mp;
   db_buf_t dc_org_values;	/* initial values array if values array is assigned by reference to another dc */
   db_buf_t dc_org_nulls;	/* when getting first null for a num inline dc, use this if this is set and large enough */
+#ifndef NDEBUG
+    state_slot_t * dc_ssl;
+#endif
 };
 
 #define dc_dtp dc_sqt.sqt_dtp
@@ -207,7 +210,7 @@ void qst_set_all (caddr_t * inst, state_slot_t * ssl, caddr_t val);
 int sslr_set_no (caddr_t * inst, state_slot_t * ssl, int row_no);
 void sslr_n_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int n_sets);
 void sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_sets);
-int sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, int n_sets);
+int sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int *group_sets, int set, int n_sets);
 int dc_nn_sets (data_col_t * dc, int *sets, int first_set, int n_sets);
 
 void dc_set_all_null (data_col_t * dc, int n_sets, db_buf_t set_mask);

@@ -5,7 +5,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2019 OpenLink Software
+#  Copyright (C) 1998-2023 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -164,6 +164,29 @@ Gen404VSP ()
     file=404.vsp
 cat > $file <<END_VSP
 <h4>404 subst vsp</h4>
+END_VSP
+    chmod 644 $file
+}
+
+GenSlowVSP ()
+{
+    ECHO "Creating slow VSP page for HTTP cient timeout test"
+    file=slow.vsp
+    cat > $file <<END_VSP
+<!DOCTYPE HTML PUBLIC "-//IETF//DTD HTML//EN">
+
+<html>
+  <head>
+    <title>OpenLink Virtuoso Server</title>
+    <meta name="description" content="OpenLink Virtuoso Server">
+  </head>
+  <body>
+<?vsp
+delay (10);
+http (cast (now () as varchar));
+?>
+  </body>
+</html>
 END_VSP
     chmod 644 $file
 }
@@ -642,7 +665,7 @@ waitAll ()
    while [ "$clients" -gt "0" ]
      do
        sleep 1
-       clients=`ps -e | grep urlsimu | grep -v .deps/ | grep -v grep | wc -l`
+       clients=`ps -e | grep urlsimu | grep -v grep | wc -l`
 #     echo -e "Running clients $clients\r" 
      done 
 }
@@ -713,9 +736,6 @@ NOLITE
 ECHO "HTTP Server test ($CLICKS per page)"
 ECHO "Two pages (html&vsp)"
 
-case $1 in 
-   *) #run test
-
    #CLEANUP
    STOP_SERVER
    MakeIni
@@ -737,6 +757,7 @@ case $1 in
    cp -f $VIRTUOSO_TEST/r4/* r4 
    GenHTML
    GenVSP
+   GenSlowVSP
    mkdir test_404
    cd test_404
    Gen404VSP
@@ -747,8 +768,8 @@ case $1 in
    START_SERVER $PORT 1000
    sleep 5
   cd ..
-    rm http/_virtrdf_log*.ttl
-    rm http/graphcrud*.log
+  rm -f http/_virtrdf_log*.ttl
+  rm -f http/graphcrud*.log
     curl --verbose --url "http://localhost:$HTTPPORT/sparql-graph-crud?graph-uri=http://www.openlinksw.com/schemas/virtrdf%23" > http/_virtrdf_log1.ttl 2> http/graphcrud_get0.log
     if grep 'virtrdf:' http/_virtrdf_log1.ttl > /dev/null ; then
       LOG 'PASSED: http/_virtrdf_log1.ttl contains data (old IRI syntax)'
@@ -1029,7 +1050,22 @@ fi
       LOG "***ABORTED: url_rewrite_test.sql"
       exit 1
    fi
+ 
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tjson.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: tjson.sql"
+      exit 1
+   fi
+
+   RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT -u "HTTPPORT=$HTTPPORT" < $VIRTUOSO_TEST/tcors.sql
+   if test $STATUS -ne 0
+   then
+      LOG "***ABORTED: tcors.sql"
+      exit 1
+   fi
 fi
+### end of main tests
 if [ -f $HOME/vad/cartridges_dav.vad ]
 then  
    cp $HOME/vad/cartridges_dav.vad http/ 
@@ -1059,8 +1095,5 @@ fi
    #
    rm -f http/result?.*
    rm -f test_gz.vsp 
-   ;;
-
-esac
 CHECK_LOG
 BANNER "COMPLETED SERIES OF HTTP SERVER TESTS"

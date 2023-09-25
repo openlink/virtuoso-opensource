@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,6 +104,7 @@ typedef struct udt_parse_tree_s
     {
       caddr_t name;
       ptrlong drop_behaviour;
+      ptrlong drop_silent;
     }
     drop_udt;
     struct

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2019 OpenLink Software
+ *  Copyright (C) 1998-2023 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -50,10 +50,10 @@ int32 enable_batch_sz_reserve;
 int qp_thread_min_usec = 5000;
 int qp_range_split_min_rows = 20;
 int dc_init_sz = 10000;
-int32 dc_adjust_batch_sz_min_anytime = 12000;
+uint32 dc_adjust_batch_sz_min_anytime = 12000;
 int dc_default_var_len = 8;
 int32 dc_batch_sz = 10000;
-int32 dc_max_batch_sz = 1000000 /*(1024 * 1024 * 4)  - 16 */ ;
+int32 dc_max_batch_sz = 100000 /*(1024 * 1024 * 4)  - 16 */ ;
 int32 dc_max_q_batch_sz = 1000000;
 int dc_str_buf_unit = 0x10000;
 size_t c_max_large_vec;
@@ -92,7 +92,7 @@ dc_double_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i1 = ((double*)dc->dc_values)[r1];
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -102,7 +102,7 @@ dc_float_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i1 = ((float *) dc->dc_values)[r1];
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 int
@@ -142,7 +142,7 @@ dc_double_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   double i2 = ((double*)dc->dc_values)[r2];
   __builtin_prefetch (&((double*)dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -153,7 +153,7 @@ dc_float_null_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
   float i2 = ((float *) dc->dc_values)[r2];
   __builtin_prefetch (&((float *) dc->dc_values)[r_prefetch]);
   NULL_CMP;
-  return NUM_COMPARE (i1, i2);
+  return NUM_COMPARE_DBL (i1, i2);
 }
 
 
@@ -304,7 +304,7 @@ dc_set_flags (data_col_t * dc, sql_type_t * sqt, dtp_t dcdtp)
       break;
     case DV_ANY:
       /* only set if dc_dtp does not contraditc, if it does, control falls through to default case */
-      if (0 == dcdtp || DV_ANY == dcdtp)
+      if (0 == dcdtp || DV_ANY == dcdtp || DCT_NUM_INLINE == dc->dc_type)
 	{
 	  dc->dc_dtp = DV_ANY;
 	  dc->dc_type = 0;
@@ -409,6 +409,9 @@ mp_data_col (mem_pool_t * mp, state_slot_t * ssl, int n_sets)
     dc->dc_sqt.sqt_col_dtp = ssl->ssl_sqt.sqt_col_dtp;
   dc->dc_n_places = n_sets;
   if (DV_STRING == dc->dc_dtp) GPF_T1 ("no dv string here");
+#ifndef NDEBUG
+  dc->dc_ssl = ssl;
+#endif
   return dc;
 }
 
@@ -463,7 +466,11 @@ DBG_NAME(qi_vec_init) (DBG_PARAMS query_instance_t * qi, int n_sets)
   if (!(mp = qi->qi_mp))
     {
       not_inited = 1;
+#ifdef MALLOC_DEBUG
       mp = qi->qi_mp = DBG_NAME(mem_pool_alloc) (DBG_ARGS_0);
+#else
+      mp = qi->qi_mp = mem_pool_alloc ();
+#endif
       if (qr->qr_vec_ssls)
 	{
 	  int ign;
@@ -868,7 +875,7 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 	      value = qst_get (inst, (state_slot_t *) source);
 	    }
 	  dtp = DV_TYPE_OF (value);
-	  if (dtp == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
+	  if (dtp_canonical[dtp] == dtp_canonical[cl->cl_sqt.sqt_col_dtp])
 	    {
 	      switch (dtp)
 		{
@@ -886,6 +893,13 @@ ssl_insert_cast (insert_node_t * ins, caddr_t * inst, int nth_col, caddr_t * err
 		  break;
 		case DV_STRING:
 		  if ((cl->cl_sqt.sqt_precision && box_length (value) - 1 > cl->cl_sqt.sqt_precision)
+		      || box_length (value) > 4095)
+		    goto general;
+		  dc_append_box (target_dc, value);
+		  break;
+		case DV_WIDE:
+		case DV_LONG_WIDE:
+		  if ((cl->cl_sqt.sqt_precision && (box_length (value) / sizeof (wchar_t)) - 1 > cl->cl_sqt.sqt_precision)
 		      || box_length (value) > 4095)
 		    goto general;
 		  dc_append_box (target_dc, value);
@@ -1020,7 +1034,8 @@ ks_vec_params (key_source_t * ks, it_cursor_t * itc, caddr_t * inst)
 	  dc_reset (target_dc);
 	  DC_CHECK_LEN (target_dc, n_rows - 1);
 	  cf[n_cols] = ks->ks_dc_val_cast[inx];
-	  if (target_dc->dc_dtp == source_dc->dc_dtp)
+	  if (target_dc->dc_dtp == source_dc->dc_dtp &&
+              (!target_dc->dc_sqt.sqt_col_dtp || dtp_canonical[target_dc->dc_sqt.sqt_col_dtp] == dtp_canonical[source_dc->dc_dtp]))
 	    cf[n_cols] = NULL;
 	  if (cf[n_cols] || source_dc->dc_any_null)
 	    cast_or_null = 1;
@@ -1046,12 +1061,16 @@ ks_vec_params (key_source_t * ks, it_cursor_t * itc, caddr_t * inst)
 	  data_col_t *target_dc = target[inx];
 	  if (!sslr[inx] && !cf[inx] && !(source_dc->dc_type & DCT_BOXES))
 	    {
+#if 0 /* do not do shadow of values, can ref and fck in distict via ssl ref to any gb */
 	      target_dc->dc_org_values = target_dc->dc_values;
 	      target_dc->dc_org_places = target_dc->dc_n_places;
 	      target_dc->dc_org_dtp = target_dc->dc_dtp;
 	      target_dc->dc_values = source_dc->dc_values;
 	      target_dc->dc_n_values = source_dc->dc_n_values;
 	      target_dc->dc_n_places = source_dc->dc_n_places;
+#else
+              dc_copy (target_dc, source_dc);
+#endif
 	      target_dc->dc_any_null = 0;
 	    }
 	  else if (!sslr[inx] && !cf[inx] && (source_dc->dc_type & DCT_BOXES))
@@ -2057,7 +2076,9 @@ ts_check_batch_sz (table_source_t * ts, caddr_t * inst, it_cursor_t * itc)
     }
   if (itc->itc_set < itc->itc_first_set)
     {
+#if 0
       bing ();			/* anomalous to have first set above set, will /0 so return. */
+#endif
       return;
     }
   if (itc->itc_rows_selected / (1 + itc->itc_set - itc->itc_first_set) > 30)
@@ -2119,7 +2140,9 @@ ins_check_batch_sz (insert_node_t * ins, caddr_t * inst, it_cursor_t * itc)
     }
   if (itc->itc_set < itc->itc_first_set)
     {
+#if 0
       bing (); /* anomalous to have first set above set, will /0 so return. */
+#endif
       return;
     }
   if (prev)
@@ -3817,6 +3840,19 @@ vec_fref_group_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 	  int set_in_sctr = agg_set_no ? qst_vec_get_int64 (inst, agg_set_no, set) : set;
 	((query_instance_t *) branch)->qi_set = set_in_sctr;
 	  fref_setp_trace (fref, branch);
+	  DO_SET (setp_node_t *, setp, &fref->fnr_setps)
+	    {
+	      hash_area_t * ha = setp->setp_ha;
+	      if (HA_GROUP != ha->ha_op)
+		continue;
+	      if (1 == n_sets && (tree = (index_tree_t*) (SSL_REF == ha->ha_tree->ssl_type || SSL_VEC == ha->ha_tree->ssl_type  ? sslr_qst_get (branch, (state_slot_ref_t*)ha->ha_tree, 0) : qst_get (branch, ha->ha_tree))))
+		{
+		  if (tree->it_hi && tree->it_hi->hi_chash)
+		    chash_to_memcache (inst, tree, ha);
+		}
+	    }
+	  END_DO_SET();
+
 	fref_setp_flush (fref, branch);
 	qi->qi_set = set_in_sctr;
 	DO_SET (setp_node_t *, setp, &fref->fnr_setps)
@@ -4041,7 +4077,9 @@ fun_ref_streaming_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 		    aq_request (aq, aq_qr_func, list (4, box_copy ((caddr_t)branch), box_num ((ptrlong)ts->src_gen.src_query), box_num (qi->qi_trx->lt_rc_w_id ? qi->qi_trx->lt_rc_w_id : qi->qi_trx->lt_w_id), box_num ((ptrlong)qi->qi_client->cli_csl)));
 		  else
 		    {
+#if 0
 		      bing ();
+#endif
 		      /*fnr_branch_done (fref, inst, branch) */ ;
 		    }
 		}
