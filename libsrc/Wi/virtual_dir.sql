@@ -1475,54 +1475,41 @@ create procedure DB.DBA.VHOST_DUMP_SQL (
 ;
 
 -- /* get a header field based on max of quality value */
-create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (
-  in accept varchar,
-  in mask any := null)
+create procedure DB.DBA.HTTP_RDF_GET_ACCEPT_BY_Q (in accept varchar, in mask any := null)
 {
-  declare format, item varchar;
-  declare arr, arr2, arr3 any;
-  declare i, l, j, k integer;
+  declare format, item, qstr varchar;
+  declare mime_vec, vec any;
+  declare pos integer;
   declare q, q_best double precision;
 
   q := 0;
   q_best := 0;
   format := null;
-  arr := split_and_decode (accept, 0, '\0\0,');
-  l := length (arr);
-  for (i := 0; i < l; i := i + 1)
-  {
-    arr2 := split_and_decode (trim (arr[i]), 0, '\0\0;');
-    k := length (arr2);
-    if (k > 0)
+  mime_vec := split_and_decode (accept, 0, '\0\0,');
+  foreach (varchar mime in mime_vec) do
     {
-      item := trim (arr2[0]);
-	    q := 1.0;
-      for (j := 1; j < k; j := j + 1)
-      {
-        arr3 := split_and_decode (trim (arr2[j]), 0, '\0\0=');
-	      if (length (arr3) = 2)
-	      {
-	        if (trim (arr3[0]) = 'q')
-	        {
-	          q := atof (arr3[1]);
-	          goto _break;
-	        }
-	        else if (trim (arr3[0]) = 'level')
-	        {
-	          q := atof (arr3[1]);
-	        }
-	      }
-      }
-    _break:;
+      item := mime := trim(mime);
+      vec := split_and_decode (mime, 0, '\0\0;');
+      -- known mime types default's to 1, unknown are minimal
+      if (not isnull(http_sys_find_best_sparql_accept(item, 0)) or not isnull(http_sys_find_best_sparql_accept(item, 1)))
+        q := 1.0;
+      else
+        q := 0.01;
+      if (length (vec) > 1)
+        {
+          item := trim (aref(vec,0));
+          qstr := regexp_match('q=[0-9\\.]+', mime);
+          if (qstr is not null)
+            q := q * atof (subseq (qstr, 2));
+        }
       if (q_best < q)
-      {
-    	  q_best := q;
-  	    format := item;
-  	  }
+        {
+          q_best := q;
+          format := item;
+        }
+      if (q = q_best and mask is not null and item like mask)
+        format := item;
     }
-    if (q = q_best and mask is not null and item like mask)
-	    format := item;
-  }
   return format;
 }
 ;
