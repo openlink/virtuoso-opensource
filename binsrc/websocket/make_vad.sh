@@ -171,41 +171,49 @@ directory_init() {
 }
 
 virtuoso_start() {
-  ddate=`date`
-  starth=`date | cut -f 2 -d :`
-  starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
-  timeout=600
-  $myrm -f *.lck
+  timeout=120
+
+  ECHO "Starting Virtuoso server ..."
   if [ "z$HOST_OS" != "z" ]
   then
-      "$SERVER" +foreground &
+    "$SERVER" +foreground &
+
+    starth=`date | cut -f 2 -d :`
+    starts=`date | cut -f 3 -d :|cut -f 1 -d " "`
+
+    while true
+    do
+      sleep 6
+      if (netstat -an | grep "[\.\:]$PORT" | grep LISTEN > /dev/null)
+      then
+	break
+      fi
+      nowh=`date | cut -f 2 -d :`
+      nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
+
+      nowh=`expr $nowh - $starth`
+      nows=`expr $nows - $starts`
+
+      nows=`expr $nows + $nowh \*  60`
+      if test $nows -ge $timeout
+      then
+	ECHO "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+	exit 1
+      fi
+    done
   else
-      "$SERVER" +wait
-  fi
-  stat="true"
-  while true
-  do
-    sleep 4
-    echo "Waiting Virtuoso Server start on port $PORT..."
-    stat=`netstat -an | grep "[\.\:]$PORT " | grep LISTEN`
-    if [ "z$stat" != "z" ]
-        then
-      sleep 7
-      LOG "PASSED: Virtuoso Server successfully started on port $PORT"
-      return 0
-    fi
-    nowh=`date | cut -f 2 -d :`
-    nows=`date | cut -f 3 -d : | cut -f 1 -d " "`
-    nowh=`expr $nowh - $starth`
-    nows=`expr $nows - $starts`
-    nows=`expr $nows + $nowh \*  60`
-    if test $nows -ge $timeout
+    "$SERVER" +wait
+    if test $? -ne 0
     then
-      LOG "***FAILED: Could not start Virtuoso Server within $timeout seconds"
+      ECHO "***FAILED: Could not start Virtuoso Server"
       exit 1
     fi
-  done
+  fi
+
+  ECHO "Virtuoso server started"
+  return 0
 }
+
 
 virtuoso_shutdown() {
   LOG "Shutdown Virtuoso Server..."
@@ -388,7 +396,7 @@ directory_clean
 directory_init
 version_init
 sticker_init 1
-sticker_init 0
+#sticker_init 0
 virtuoso_init
 #vad_create $STICKER_FS $VAD_NAME_DEVEL
 vad_create $STICKER_DAV $VAD_NAME_RELEASE
