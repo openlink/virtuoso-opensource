@@ -1,4 +1,52 @@
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.11 engine 3238
+
+2023-09-26  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with leading space before split
+
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed parameter name to XAnyNormalization in documentation
+
+	Reported-by: Arnoud Engelen
+
+2023-09-26  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Fixed wrong column name in debian/README.Debian
+
+	Fixed RDF to RDF/XML in human-facing serialization lists
+
+	Fixed human-facing typos in cetop.c
+
+	Fixed typos in viconfig.c
+
+	Fixed human-facing typos in configure.ac
+
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed startup time building VAD packages on linux/macos/unix
+
+2023-09-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues mixing valid and invalid MIME types in Accept header (fixes #786)
+
+	Fixed href is needed in PROPPATCH response
+
+	Fixed show failed argument value to convert
+
 2023-09-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing export symbol for graphql plugin on musl c library
+
+2023-09-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing entry for JSON-LD in RDF DET
+
+2023-09-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS.md and Changelog
 
 	Updated version to 7.2.11-rc1
 

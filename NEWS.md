@@ -1,6 +1,6 @@
 # NEWS
 
-## September 22, 2023, v7.2.11-rc1:
+## September 26, 2023, v7.2.11:
 
   * Virtuoso Engine
     - Added log info on manual enable/disable scheduler and checkpoint intervals
@@ -16,7 +16,9 @@
     - Fixed issue with get_keyword with soap options vector
     - Fixed issue with chash on many threads
     - Fixed issue with lang matches
+    - Fixed issue loading graphql plugin with musl C library
     - Fixed do not replace trx log prefix with CHECKPOINT command
+    - Fixed small typos in documentation and error messages
 
   * SPARQL
     - Fixed SPARQL property path query returning incorrect results
@@ -30,8 +32,10 @@
     - Added option http_options_no_exec for http virtual path
     - Added support for Content-Security-Policy header
     - Added optional base url to http_xslt function as 3rd parameter
+    - Fixed issues mixing valid and invalid MIME types in Accept header
     - Fixed issue writing log on delete/put/patch etc
     - Fixed missing entry for JSON-LD in RDF DET
+    - Fixed issue with missing href in PROPPATCH response
     - Fixed issue with base64 decode and trailing zeroes
     - Fixed issue with dead http session
 
