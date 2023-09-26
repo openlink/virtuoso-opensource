@@ -1225,6 +1225,7 @@ create procedure WS.WS.PROPPATCH_INT (
   declare _body any;
   declare rc, rc_all, xtree, xtd any;
   declare po, pn, pns, pv, prop_name, props, rc_prop any;
+  declare lpath varchar;
 
   rc_all := id;
   _body := aref_set_0 (params, 1);
@@ -1266,6 +1267,13 @@ create procedure WS.WS.PROPPATCH_INT (
   http ('<?xml version="1.0" encoding="utf-8" ?>\n', rc);
   http ('<D:multistatus xmlns:D="DAV:">\n', rc);
   http ('<D:response>\n', rc);
+  if (mode = 'proppatch')
+    {
+      lpath := http_path ();
+      if (st = 'C' and lpath not like '%/')
+        lpath := concat (lpath, '/');
+      http (sprintf ('<D:href>%V</D:href>\n', DB.DBA.DAV_HREF_URL (lpath)), rc);
+    }
 
   xtd := xml_tree_doc (xtree);
   props := xpath_eval ('/propertyupdate/*/prop/*', xtd, 0);

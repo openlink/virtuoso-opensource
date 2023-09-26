@@ -1073,8 +1073,8 @@ opt_table
 	;
 
 drop_table
-	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
-	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (3, TABLE_DROP, $3, (ptrlong) $4); }
+	: DROP TABLE q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 0); }
+	| DROP VIEW q_table_name opt_if_exists	{ $$ = t_listst (4, TABLE_DROP, $3, (ptrlong) $4, (ptrlong) 1); }
 	;
 
 opt_col_add_column
@@ -3424,7 +3424,7 @@ soap_proc_opt_list
 	;
 
 soap_proc_opt
-	: NAME EQUALS signed_literal { $$ = t_CONS ($1, t_CONS ($3, NULL)); }
+	: NAME EQUALS signed_literal { caddr_t name = $1; box_tag_modify (name, DV_STRING); $$ = t_CONS (name, t_CONS ($3, NULL)); }
 	;
 
 soap_kwd

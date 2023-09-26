@@ -742,7 +742,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_HTML_OPTION (in lbl varchar, in help varc
     if (enabled)
         color := 'bg-light text-primary';
 
-    http (sprintf ('<a href="/sparql/?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&nbsp;\n', help, color, lbl));
+    http (sprintf ('<a href="/sparql/?help=%U" class="badge rounded-pill %s text-decoration-none" role="button">%V</a>&#160;\n', help, color, lbl));
 }
 ;
 
@@ -813,7 +813,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     endpoint_xsl := registry_get ('sparql_endpoint_xsl', '');
 
     if (length(endpoint_xsl))
-        http_xslt(endpoint_xsl);
+        http_xslt(endpoint_xsl, null, '');
 
 
     --
@@ -880,7 +880,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_GENERATE_FORM (
     --  Show which options are enabled/disabled
     --
     http ('<div class="d-flex justify-content-end">\n');
-    http ('<span class="badge text-dark">Extensions:</span>&nbsp;\n');
+    http ('<span class="badge text-dark">Extensions:</span>&#160;\n');
     WS.WS.SPARQL_ENDPOINT_HTML_OPTION('cxml', 'enable_cxml', can_cxml);
     WS.WS.SPARQL_ENDPOINT_HTML_OPTION('save to dav', 'enable_det', isnotnull(save_dir));
     WS.WS.SPARQL_ENDPOINT_HTML_OPTION('sponge', 'enable_sponge', can_sponge);

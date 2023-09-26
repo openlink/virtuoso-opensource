@@ -907,7 +907,7 @@ create procedure DB.DBA.URLREWRITE_CALC_QS (in accept varchar, in s_accept varch
 	  else
 	    {
               declare qtok varchar;
-	      tmp := split_and_decode (q, 0, '\0\0=');
+             tmp := split_and_decode (trim(q), 0, '\0\0=');
               qtok := null;
               if (isvector (tmp) and 0 = mod (length(tmp), 2))
                 qtok := get_keyword ('q', tmp);

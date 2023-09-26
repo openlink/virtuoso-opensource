@@ -141,6 +141,7 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
 	    bits = sel_extend_bits (sel, inst, set_no, &bits_max);
 	  bits[set_no >> 3] |= 1 << (set_no & 7);
 	}
+      return;
     }
   else if (SEL_VEC_SCALAR == sel->sel_vec_role && sel->sel_scalar_ret)
     {
@@ -158,6 +159,7 @@ select_node_input_subq_vec (select_node_t * sel, caddr_t * inst, caddr_t * state
 	      dc_assign_copy (inst, sel->sel_scalar_ret, ext_set_no, sel->sel_out_slots[0], row);
 	    }
 	}
+      return;
     }
   else if (SEL_VEC_DT == sel->sel_vec_role)
     {
@@ -576,6 +578,9 @@ set_ctr_vec_input (set_ctr_node_t * sctr, caddr_t * inst, caddr_t * state)
 	}
       memzero (bits, box_length (bits));
       SRC_IN_STATE (sctr, inst) = inst;
+      /* reset outer's results as they will be never run, but filled further */
+      if (ose->src_gen.src_pre_reset)
+        dc_reset_array (inst, (data_source_t *)ose, ose->src_gen.src_pre_reset, n_sets);
     }
   QST_INT (inst, sctr->src_gen.src_out_fill) = 0;
   DC_CHECK_LEN (dc, n_sets - 1);
@@ -660,7 +665,7 @@ sqs_out_sets (subq_source_t * sqs, caddr_t * inst)
   QST_INT (inst, sqs->src_gen.src_out_fill) = 0;
   for (inx = 0; inx < n_res; inx++)
     {
-      int set = qst_vec_get_int64 (inst, sel->sel_set_no, inx);
+      int set = sel->sel_set_no ? qst_vec_get_int64 (inst, sel->sel_set_no, inx) : 0;
       qn_result ((data_source_t *) sqs, inst, set);
     }
 }
@@ -705,7 +710,6 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
       qi->qi_set_mask = NULL;
       qi->qi_n_sets = set_nos->dc_n_values;
       err = subq_next (sqs->sqs_query, inst, flag);
-      flag = CR_OPEN;
       if (IS_BOX_POINTER (err))
 	sqlr_resignal (err);
       if ((caddr_t) SQL_NO_DATA_FOUND == err)
@@ -713,6 +717,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
 	  SRC_IN_STATE (sqs, inst) = NULL;
 	  return;
 	}
+      flag = CR_OPEN;
       if (uni)
 	{
 	  int nth = unbox (qst_get (inst, uni->uni_nth_output)) - 1;
@@ -722,7 +727,7 @@ subq_node_vec_input (subq_source_t * sqs, caddr_t * inst, caddr_t * state)
       QST_INT (inst, sqs->src_gen.src_out_fill) = 0;
       for (inx = 0; inx < n_res; inx++)
 	{
-	  int set = qst_vec_get_int64 (inst, sel->sel_set_no, inx);
+	  int set = sel->sel_set_no ? qst_vec_get_int64 (inst, sel->sel_set_no, inx) : 0;
 	  qn_result ((data_source_t *) sqs, inst, set);
 	}
       if (QST_INT (inst, sqs->src_gen.src_out_fill))
@@ -769,7 +774,7 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
     if (!out)
       continue;
     out_dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-    shadow_dc = QST_BOX (data_col_t *, inst, ose->ose_out_shadow[inx]->ssl_index);
+      shadow_dc = QST_BOX (data_col_t *, inst, out->ssl_index);
     len = dc_elt_size (out_dc);
     dc_reset (shadow_dc);
       if (shadow_dc->dc_dtp != out_dc->dc_dtp)

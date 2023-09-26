@@ -213,6 +213,7 @@ conductor/hosted_modules_show_sql.vsp
 conductor/hosted_modules.vspx
 conductor/hosted_page.vspx
 conductor/http_add_path.vspx
+conductor/http_svc_edit.vspx
 conductor/http_del_path.vspx
 conductor/http_edit_paths.vspx
 conductor/http_host_clone.vspx

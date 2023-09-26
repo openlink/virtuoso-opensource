@@ -928,7 +928,10 @@ create procedure DB.DBA.SPARQL_SINV_IMP (in ws_endpoint varchar, in ws_params an
           declare qpos integer;
           qpos := qtext_posmap[qctr];
           http (subseq (qtext_template, prev_pos, qpos), qtext_ses);
-          http_sparql_object (param_row[qtext_posmap[qctr+1]-1], qtext_ses);
+          if (isvector (param_row))
+            http_sparql_object (param_row[qtext_posmap[qctr+1]-1], qtext_ses);
+          else -- conflict, join pred out of scope, mapped internally to null thus no match
+            http_sparql_object ( UNAME'http://www.w3.org/1999/02/22-rdf-syntax-ns#nil', qtext_ses);
           prev_pos := qpos+8;
         }
       http (subseq (qtext_template, prev_pos), qtext_ses);

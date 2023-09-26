@@ -2448,6 +2448,31 @@ bif_uuid (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return box_dv_short_string (p);
 }
 
+extern caddr_t iri_to_id (caddr_t *qst, caddr_t raw_name, int mode, caddr_t *err_ret);
+
+static caddr_t
+bif_rdf_uuid_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+    caddr_t res, name;
+    caddr_t err = NULL;
+    char p[100];
+
+    uuid_str (p, sizeof (p));
+    name = box_sprintf (128, "urn:uuid:%s", p);
+    box_flags (name) = BF_IRI;
+
+    res = iri_to_id (qst, name, /*IRI_TO_ID_WITH_CREATE*/ 1, &err);
+
+    if (NULL != err)
+      sqlr_resignal (err);
+
+    if (NULL == res)
+      return NEW_DB_NULL;
+
+  return res;
+}
+
+
 static const char __tohex[] = "0123456789abcdef";
 caddr_t
 md5 (caddr_t str)
@@ -7465,6 +7490,7 @@ bif_file_init (void)
   bif_define_ex ("md5_final", bif_md5_final, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("__vector_sort", bif_vector_sort, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("uuid", bif_uuid, BMD_ALIAS, "rdf_struuid_impl", BMD_RET_TYPE, &bt_varchar, BMD_NO_FOLD, BMD_DONE);
+  bif_define_ex ("rdf_uuid_impl", bif_rdf_uuid_impl, BMD_RET_TYPE, &bt_iri_id, BMD_NO_FOLD, BMD_DONE);
   bif_define ("dime_compose", bif_dime_compose);
   bif_define ("dime_tree", bif_dime_tree);
   bif_define_ex ("file_stat", bif_file_stat, BMD_RET_TYPE, &bt_any, BMD_DONE);

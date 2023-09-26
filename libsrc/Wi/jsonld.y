@@ -33,7 +33,7 @@
 #include "sqlfn.h"
 
 #ifdef _JSONLD_DEBUG
-static void bing () {}
+void bing () {}
 #endif
 #define LVL jsonp_arg->lvl
 #define NID jsonp_arg->curr_node_no
@@ -229,16 +229,20 @@ context_item /* tbd: more specific */
              }
         | ctx_item_name COLON scalar { /* @version, @protected etc. tba */ }
         | ctx_item_name COLON OBJ_BEGIN OBJ_END {}
-        | ctx_item_name COLON OBJ_BEGIN { CTX_DOWN; if (jsonp_arg->jpmode != JSON_LD) memset (&(jsonp_arg->curr_item), 0, sizeof (jsonld_item_t)); }
-                    context_term_definitions OBJ_END
+        | ctx_item_name COLON OBJ_BEGIN {
+            CTX_DOWN;
+            if (jsonp_arg->jpmode != JSON_LD)
+              memset (&(jsonp_arg->curr_item), 0, sizeof (jsonld_item_t));
+            }
+            context_term_definitions OBJ_END
             {
-                CTX_UP;
                 if (JSON_LD_META)
                   {
                     caddr_t item = t_alloc (sizeof (jsonld_item_t));
                     memcpy (item, &jsonp_arg->curr_item, sizeof (jsonld_item_t));
                     t_id_hash_set (jsonp_arg->curr_ctx->ns2iri, (caddr_t)&($1), (caddr_t)&item);
                   }
+                CTX_UP;
             }
         | ctx_item_name COLON array { /* xxx */ }
         | STRING COLON value { /* bad or skip? */ }
@@ -510,6 +514,7 @@ item	: CONTEXT {
                   }
         | LANGUAGE COLON STRING { JLD_SET_CURRENT(lang,NULL); $$ = NULL; } /* skip trple? */
         | DIRECTION COLON NCNAME { $$ = NULL; }
+        | BASE COLON IRI { $$ = NULL; jsonp_arg->curr_ctx->base = $3; }
         | TYPE COLON type_value {
                if (JSON_LD_DATA) {
                     caddr_t type;
@@ -814,7 +819,10 @@ item	: CONTEXT {
                            if (uname_at_vocab != itm->type)
                              JLD_SET_CURRENT(type, itm->type);
                            else if (uname_at_vocab == itm->type && DV_STRINGP(lit))
-                             JLD_SET_CURRENT(type, uname_at_id);
+                             {
+                               JLD_SET_CURRENT(type, uname_at_id);
+                               JLD_SET_CURRENT(use_ns, 1);
+                             }
                          }
                        jsonp_arg->curr_item.flags |= itm->flags;
                      }

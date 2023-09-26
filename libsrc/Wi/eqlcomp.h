@@ -197,6 +197,7 @@ void qr_garbage (query_t * qr, caddr_t garbage);
 void sqlc_ins_keys (comp_context_t * cc, insert_node_t * ins);
 void table_source_om (comp_context_t * cc, table_source_t * ts);
 void qr_set_freeable (comp_context_t * cc, query_t * qr);
+extern client_connection_t * recomp_cli;
 
 query_t *sqlc_make_policy_trig (comp_context_t *cc, dbe_table_t *tb, int op);
 

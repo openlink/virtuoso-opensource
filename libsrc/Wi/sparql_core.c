@@ -822,8 +822,9 @@ sparp_id_to_iri (sparp_t *sparp, iri_id_t iid)
   return NULL; /* to keep compiler happy */
 }
 
-caddr_t spar_unescape_strliteral (sparp_t *sparp, const char *strg, int count_of_quotes, int mode)
+caddr_t spar_unescape_strliteral (void *_sparp, const char *strg, int count_of_quotes, int mode)
 {
+  sparp_t *sparp = (sparp_t *)_sparp;
   caddr_t tmp_buf;
   caddr_t res;
   const char *err_msg;
@@ -5107,7 +5108,7 @@ const sparp_bif_desc_t sparp_bif_descs[] = {
   { "tz"		, SPAR_BIF_TZ			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_SQLVAL	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	},
   { "ucase"		, SPAR_BIF_UCASE		, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT	},
   { "uri"		, SPAR_BIF_URI			, '-'	, SSG_SD_BI_OR_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_LONG	, { SSG_VALMODE_SQLVAL, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_IS_REF	},
-  { "uuid"		, SPAR_BIF_UUID			, 'S'	, SSG_SD_SPARQL11_DRAFT	, 0	, 0	, SSG_VALMODE_LONG	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL	},
+  { "uuid"             , SPAR_BIF_UUID                 , 'B'   , SSG_SD_SPARQL11_DRAFT , 0     , 0     , SSG_VALMODE_LONG      , { SSG_VALMODE_LONG, NULL, NULL}                       , SPART_VARR_IS_IRI | SPART_VARR_NOT_NULL       },
   { "valid"		, SPAR_BIF_VALID		, 'B'	, SSG_SD_VOS_6		, 1	, 1	, SSG_VALMODE_BOOL	, { SSG_VALMODE_LONG, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL | SPART_VARR_IS_BOOL	},
   { "year"		, SPAR_BIF_YEAR			, 'B'	, SSG_SD_SPARQL11_DRAFT	, 1	, 1	, SSG_VALMODE_NUM	, { SSG_VALMODE_NUM, NULL, NULL}			, SPART_VARR_IS_LIT | SPART_VARR_NOT_NULL | SPART_VARR_LONG_EQ_SQL	}
 };

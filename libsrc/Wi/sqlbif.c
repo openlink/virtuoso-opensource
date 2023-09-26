@@ -3999,6 +3999,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int volatile len = box_length (str) - 1;
   int volatile arg_inx = 1;
   int arg_len = 0, arg_prec = 0;
+  char varc = '\0';
 
   ptr = str;
   *err_ret = NULL;
@@ -4023,6 +4024,7 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       }
 
     ptr = start + 1;
+    varc = '\0';
 
     switch (ptr[0])
       {
@@ -4033,9 +4035,11 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	session_buffered_write_char ('%', ses);
 	goto get_next_no_arg_inx_increment;	/* see below */
 
+      case '[':
+        varc = ptr[0];
       case '{':
 	{
-	  caddr_t connvar_name, connvar_value, *connvar_valplace;
+	  caddr_t connvar_name, connvar_value, *connvar_valplace = NULL;
 	  dtp_t connvar_dtp;
 	  query_instance_t *qi = (query_instance_t *) qst;
 	  client_connection_t *cli = qi->qi_client;
@@ -4045,9 +4049,12 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  while (isalnum ((unsigned char) (ptr[0])) || ('_' == ptr[0]))
 	    ptr++;
 
-	  if ('}' != ptr[0])
+	  if (!varc && '}' != ptr[0])
 	    sqlr_new_error ("22026", "SR585",
 		"sprintf format %%{ should have '}' immediately after the name of connection variable");
+	  if (']' == varc && ']' != ptr[0])
+	    sqlr_new_error ("22026", "SR585",
+		"sprintf format %%[ should have ']' immediately after the name of connection variable");
 
 	  ptr++;
 
@@ -4057,19 +4064,40 @@ bif_sprintf (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  memset (format, 0, sizeof (format));
 	  memcpy (format, start + 2, MIN ((ptr - start) - 3, sizeof (format) - 1));
 
-	  connvar_name = box_dv_short_string (format);
-	  connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
-	  dk_free_box (connvar_name);
+          if (!varc)
+            {
+              connvar_name = box_dv_short_string (format);
+              connvar_valplace = (caddr_t *) id_hash_get (cli->cli_globals, (caddr_t) & connvar_name);
+              dk_free_box (connvar_name);
 
-	  if (NULL != connvar_valplace)
-	    connvar_value = connvar_valplace[0];
-	  else
-	    {
-	      connvar_value = uriqa_get_default_for_connvar (qi, format);
-	      if (NULL == connvar_value)
-		sqlr_new_error ("22023", "SR587",
-		    "Connection variable is mentioned by sprintf format %%{%s} but it does not exist", format);
-	    }
+              if (NULL != connvar_valplace)
+                connvar_value = connvar_valplace[0];
+              else
+                {
+                  connvar_value = uriqa_get_default_for_connvar (qi, format);
+                  if (NULL == connvar_value)
+                    sqlr_new_error ("22023", "SR587",
+                        "Connection variable is mentioned by sprintf format %%{%s} but it does not exist", format);
+                }
+            }
+          else
+            {
+              connvar_valplace = NULL; /* this s to free value below */
+              IN_TXN;
+              connvar_value = registry_get (format);
+              LEAVE_TXN;
+              if (NULL == connvar_value)
+                {
+                  if (recomp_cli == cli)
+                    {
+                      log_error ("Registry setting is mentioned by sprintf format %%[%s] but it does not exist", format);
+                      connvar_value = box_dv_short_string ("(NULL)");
+                    }
+                  else
+                    sqlr_new_error ("22023", "SR587",
+                      "Registry setting is mentioned by sprintf format %%[%s] but it does not exist", format);
+                }
+            }
 
 	  connvar_dtp = DV_TYPE_OF (connvar_value);
 
@@ -10156,7 +10184,7 @@ box_cast (caddr_t * qst, caddr_t data, ST * dtp, dtp_t arg_dtp)
         }
       if (0 == rb->rb_is_complete)
 #ifdef DEBUG
-        sqlr_new_error ("22023", (IS_BOX_POINTER (qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "sR066" : "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
+        sqlr_new_error ("22023", (IS_BOX_POINTER (qst) && (((query_instance_t *)qst)->qi_no_cast_error)) ? "SR066" : "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
 #else
         sqlr_new_error ("22023", "SR066", "Unsupported case in CONVERT (incomplete RDF box -> %s)", dv_type_title((int) (dtp->type)));
 #endif
@@ -10533,7 +10561,12 @@ do_double_float:
 do_numeric:
     {
       numeric_t res = numeric_allocate ();
-      err = numeric_from_x (res, data, (int) unbox (((caddr_t*)dtp)[1]), (int) unbox (((caddr_t*)dtp)[2]), "CAST", 0, NULL);
+      char tmp[MAX_NAME_LEN], *cast_name;
+      if (IS_STRING_DTP (arg_dtp))
+        cast_name = data;
+      else
+        snprintf (tmp, MAX_NAME_LEN, "data of type %s", dv_type_title(arg_dtp)), cast_name = tmp;
+      err = numeric_from_x (res, data, (int) unbox (((caddr_t*)dtp)[1]), (int) unbox (((caddr_t*)dtp)[2]), cast_name, 0, NULL);
       if (err)
 	{
 	  numeric_free (res);
@@ -13555,6 +13588,10 @@ bif_checkpoint_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   c_checkpoint_interval = new_interval;
   cfg_autocheckpoint = new_interval > 0 ? (60000L * new_interval) : 0L;
+  if (!cfg_autocheckpoint)
+    log_info ("Checkpoint is disabled.");
+  else
+    log_info ("Checkpoint is enabled on every %d min.", new_interval);
 
   if (!atomic)
     {
@@ -13585,6 +13622,10 @@ bif_scheduler_interval (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (0 > new_period)
     new_period = 0;
   cfg_scheduler_period = 60000L * new_period;
+  if (!cfg_scheduler_period)
+    log_info ("Scheduler events are disabled.");
+  else
+    log_info ("Scheduler events are enabled on every %d min.", new_period);
 
   if (!atomic)
     {

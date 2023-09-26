@@ -539,6 +539,13 @@ void
 sqlc_union_constants (ST * sel)
 {
   int inx;
+  if (ST_P (sel, UNION_ALL_ST) || ST_P (sel, UNION_ST))
+    {
+      sqlc_union_constants (sel->_.bin_exp.left);
+      return;
+    }
+  if (!ST_P(sel, SELECT_STMT))
+    return;
   DO_BOX (ST *, tree, inx, sel->_.select_stmt.selection)
     {
       if (ST_P (tree, BOP_AS) && SQLC_IS_LIT (tree->_.as_exp.left))

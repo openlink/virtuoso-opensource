@@ -338,6 +338,8 @@ EXE_EXPORT (int, uudecode_base64, (char * src, char * tgt));
 EXE_EXPORT (caddr_t, sprintf_inverse, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors));
 EXE_EXPORT (caddr_t, sprintf_inverse_ex, (caddr_t *qst, caddr_t *err_ret, ccaddr_t str, ccaddr_t fmt, long hide_errors, unsigned char *expected_dtp_strg));
 
+EXE_EXPORT (caddr_t, spar_unescape_strliteral, (void *sparp, const char *sparyytext, int count_of_quotes, int mode));
+
 /* another 32 bit seed used in blobs */
 extern int32 rnd_seed_b;
 extern int no_free_set;

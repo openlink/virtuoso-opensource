@@ -156,7 +156,7 @@ jsonld_ctx_allocate (jsonp_t *jsonp_arg)
 
 /* We MUST be carefull here, MUST  detect cycles in terms */
 caddr_t
-jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item, int direct)
+jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item, int direct, int use_ns)
 {
   jsonld_ctx_t * ctx = jsonp_arg->curr_ctx;
   id_hash_t * ht = ctx ? ctx->ns2iri : NULL;
@@ -177,13 +177,13 @@ jsonld_term_resolve_1 (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_it
   /* use @base & @vocab if not */
   if (ret_item)
     ret_item[0] = item ? item[0] : NULL;
-  if (name == term)
+  if (name == term && use_ns)
     name = jsonp_term_uri_resolve (jsonp_arg, qname);
   return (name ? name : qname);
 }
 
 caddr_t
-jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_item)
+jsonld_qname_resolve_1 (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_item, int use_ns)
 {
   char * colon;
   caddr_t pref, local, ns_uri, abs_name;
@@ -194,10 +194,10 @@ jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_it
     (colon && strchr (qname, ':') != strrchr (qname, ':'))) /* must be more precise here ck for BF_IRI for ex. */
     return qname;
   if (!colon)
-    return jsonld_term_resolve (jsonp_arg, qname, ret_item);
+    return jsonld_term_resolve_1 (jsonp_arg, qname, ret_item, 1, use_ns);
   pref = t_box_dv_short_nchars (qname, (int)(colon - qname));
   local = t_box_dv_short_string (colon+1);
-  ns_uri = jsonld_term_resolve_1 (jsonp_arg, pref, &item, 0);
+  ns_uri = jsonld_term_resolve_1 (jsonp_arg, pref, &item, 0, use_ns);
   /* use @base & @vocab if not */
   if (ret_item)
     ret_item[0] = item;
@@ -211,7 +211,7 @@ jsonld_qname_resolve (jsonp_t *jsonp_arg, caddr_t qname, jsonld_item_t ** ret_it
 caddr_t
 jsonld_term_resolve (jsonp_t *jsonp_arg, caddr_t term, jsonld_item_t ** ret_item)
 {
-  return jsonld_term_resolve_1 (jsonp_arg, term, ret_item, 1);
+  return jsonld_term_resolve_1 (jsonp_arg, term, ret_item, 1, 1);
 }
 
 void
@@ -278,16 +278,18 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
   if (0 == strncmp(subj, "_:", 2))
     subj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (subj));
   else
-    subj_iid = subj = jsonld_qname_resolve(jsonp_arg, subj,NULL);
+    subj_iid = subj = jsonld_qname_resolve (jsonp_arg, subj, NULL);
   if (is_bnode_obj)
     obj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (obj));
   if (is_ref)
     {
       if (!is_bnode_obj)
         {
-          obj = jsonld_qname_resolve(jsonp_arg, obj,NULL);
-          obj_iid = obj = jsonp_uri_resolve (jsonp_arg, obj); /* relative ref obj resloved here */
+          obj = jsonld_qname_resolve_1(jsonp_arg, obj, NULL, ((prop == uname_rdf_ns_uri_type)|(0 != itm->use_ns)));
+          obj_iid = obj = jsonp_uri_resolve (jsonp_arg, obj); /* relative ref obj resolved here */
         }
+      if (DV_STRINGP(obj_iid) && !strlen(obj_iid))
+        goto done;
       tf_triple (jsonp_arg->jtf, subj_iid, prop, obj_iid);
     }
   else
@@ -300,6 +302,7 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
       if (!err)
         tf_triple_l (jsonp_arg->jtf, subj_iid, prop, obj, dt, lang);
     }
+done:
 #ifdef _JSONLD_DEBUG_Q
   printf ("QUAD: ");
   jsonld_item_print (itm);
@@ -376,6 +379,7 @@ jsonld_frame_push (jsonp_t *jsonp_arg)
       jsonp_arg->curr_value = NULL;
       jsonp_arg->curr_type = NULL;
       jsonp_arg->curr_lang = NULL;
+      jsonp_arg->curr_use_ns = 0;
     }
   jsonp_arg->last_node_no++;
   jsonp_arg->curr_node_no = jsonp_arg->last_node_no;
@@ -398,6 +402,8 @@ jsonld_frame_pop (jsonp_t *jsonp_arg)
           if (!jsonp_arg->curr_id)
             jsonp_arg->curr_id = gethash ((void*)jsonp_arg->curr_node_no, jsonp_arg->node2id);
         }
+      if (JSON_LD_MAP == jsonp_arg->jpmode)
+        jsonp_arg->curr_id = itm->id;
       if (jsonp_arg->curr_id)
         JF_SET(ID);
     }
@@ -453,7 +459,63 @@ jsonld_context_uri_get (jsonp_t * jsonp_arg, caddr_t uri, id_hash_t *ht)
   END_QR_RESET;
   if (err) /* just free and forget */
     dk_free_tree (err);
+  if (NULL != jsonp_arg && NULL != jsonp_arg->curr_ctx && NULL != jctx.ns && 0 != strncmp (jctx.ns, "_:", 2))
+    jsonp_arg->curr_ctx->ns = jctx.ns;
   return;
+}
+
+caddr_t
+bif_jsonld_ctx_to_dict (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  id_hash_t *ht;
+  static char * fn = "jsonld_ctx_to_dict";
+  caddr_t uri = bif_string_or_uname_arg (qst, args, 0, fn);
+  id_hash_iterator_t *hit = bif_dict_iterator_arg (qst, args, 1, fn, 0);
+  uint64 flags = BOX_ELEMENTS_0 (args) > 2 ? bif_long_arg (qst, args, 2, fn) : 0;
+  jsonp_t jsonp;
+
+  MP_START();
+  memset (&jsonp, 0, sizeof (jsonp_t));
+  jsonp.qi = (query_instance_t *)qst;
+  ht = t_id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
+  jsonld_context_uri_get (&jsonp, uri, ht);
+
+  DO_IDHASH(caddr_t, k, jsonld_item_t *, v, ht)
+    {
+      if (!flags)
+        {
+          caddr_t url;
+          caddr_t pref, local;
+          caddr_t val = list (3, box_copy(k), box_copy_tree(v->type), box_num(v->flags));
+          url = NULL;
+          if (v->flags & JLD_LIST_CONT || v->flags & JLD_LANG_CONT) /* this is a heuristic/trick to maintain AP ordered list and lang containers */
+            {
+              iri_split_ttl_qname (v->id, &pref, &local, 0);
+              if (0 != strcmp (k, local))
+                url = box_dv_short_concat (pref, k);
+              dk_free_box (pref);
+              dk_free_box (local);
+            }
+          if (!url)
+            url = box_copy(v->id);
+          box_flags (url) = BF_IRI;
+          dict_put_impl (hit, url, val, 0);
+        }
+      else /* sparql compat */
+        {
+          caddr_t url = box_copy(v->id);
+          caddr_t type = box_copy_tree(v->type);
+          box_flags (url) = BF_IRI;
+          if (DV_STRING == DV_TYPE_OF(type))
+            box_flags (type) = BF_IRI;
+          if (!type)
+            type = uname_xmlschema_ns_uri_hash_string;
+          dict_put_impl (hit, list (2, url, type), list(1, box_copy(k)), 0);
+        }
+    }
+  END_DO_IDHASH;
+  MP_DONE();
+  return NULL;
 }
 
 static
@@ -473,7 +535,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jsonp_t jsonp;
   yyscan_t scanner;
 
-  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS (cbk_names)))
+  if ((COUNTOF__TRIPLE_FEED__REQUIRED > BOX_ELEMENTS_0 (cbk_names)) || (COUNTOF__TRIPLE_FEED__ALL < BOX_ELEMENTS_0 (cbk_names)))
     sqlr_new_error ("22023", "RDF01",
       "The argument #4 of rdf_load_jsonld() should be a vector of %d to %d names of stored procedures",
       COUNTOF__TRIPLE_FEED__REQUIRED, COUNTOF__TRIPLE_FEED__ALL );
@@ -551,4 +613,5 @@ bif_json_init (void)
 {
   bif_define ("json_parse", bif_json_parse);
   bif_define ("rdf_load_jsonld", bif_rdf_load_jsonld);
+  bif_define ("jsonld_ctx_to_dict", bif_jsonld_ctx_to_dict);
 }

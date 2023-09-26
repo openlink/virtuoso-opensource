@@ -3029,6 +3029,8 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
     {
       sc->sc_pre_code_of = qn;
       cv_vec_slots (sc, qn->src_pre_code, res, all_res, non_cl_local);
+      if (IS_QN (qn, end_node_input))
+	cv_vec_slots (sc, qn->src_after_test, res, all_res, non_cl_local);
       sc->sc_pre_code_of = NULL;
       sc->sc_ssl_prereset_only = sc->sc_vec_new_ssls;
     }
@@ -3102,6 +3104,18 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
       sqs->sqs_query->qr_select_node->sel_vec_role = SEL_VEC_DT;
       sqs->sqs_query->qr_select_node->src_gen.src_sets = sqs->src_gen.src_sets;
       sqs->sqs_query->qr_select_node->src_gen.src_out_fill = sqs->src_gen.src_out_fill;
+#if 0
+      if (IS_QN(sqs->sqs_query->qr_head_node, union_node_input))
+        {
+          QNCAST (union_node_t, un, sqs->sqs_query->qr_head_node);
+          DO_SET (query_t *, term, &un->uni_successors)
+            {
+              term->qr_select_node->src_gen.src_sets = sqs->src_gen.src_sets;
+              term->qr_select_node->src_gen.src_out_fill = sqs->src_gen.src_out_fill;
+            }
+          END_DO_SET();
+        }
+#endif
       DO_BOX (state_slot_t *, out, inx, sqs->sqs_out_slots)
       {
 	state_slot_t *sh = (state_slot_t *) gethash ((void *) (ptrlong) out->ssl_index, sc->sc_vec_ssl_shadow);
@@ -3400,7 +3414,7 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
     {
       int ign = 0;
       QNCAST (end_node_t, en, qn);
-      cv_vec_slots (sc, en->src_gen.src_after_test, NULL, NULL, &ign);
+      /* after test of an end node is done together with the precode above */
       if (en->src_gen.src_after_test && en->src_gen.src_after_code)
 	{
 	  dk_set_t save = sc->sc_vec_pred;
@@ -4271,7 +4285,7 @@ sqlg_vec_qns (sql_comp_t * sc, data_source_t * qn, dk_set_t prev_nodes)
       else if (IS_QN (qn, outer_seq_end_input)
 	       || (IS_QN (qn, select_node_input_subq) && ((select_node_t *)qn)->sel_subq_inlined))
 	prev_nodes = sc->sc_vec_pred;
-      if (IS_QN (qn, gs_union_node_input))
+      else if (IS_QN (qn, gs_union_node_input))
 	qn = qn_next (qn);
       t_set_push (&prev_nodes, (void *) qn);
       sc->sc_vec_pred = prev_nodes;

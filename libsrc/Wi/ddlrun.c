@@ -3330,13 +3330,13 @@ ddl_droptable_pre (query_instance_t * qi, char *name)
 
 
 void
-ddl_drop_table (query_instance_t * qi, char *name)
+ddl_drop_table (query_instance_t * qi, char *name, int target_is_view)
 {
   client_connection_t *cli = qi->qi_client;
   caddr_t err;
   query_t *del_st;
   caddr_t drop_stmt;
-  int atomic;
+  int atomic, ddl_object_is_view;
   caddr_t * repl = qi->qi_trx->lt_replicate;
   name = ddl_complete_table_name (qi, name);
 
@@ -3344,6 +3344,13 @@ ddl_drop_table (query_instance_t * qi, char *name)
     atomic = count_exceed (qi, name, MIN_FOR_ATOMIC, NULL);
   else
     atomic = 0;
+
+  ddl_object_is_view = sch_view_def (wi_inst.wi_schema, name);
+
+  if (!ddl_object_is_view && target_is_view)
+    sqlr_new_error ("42S02", "SQ025", "The target name is a table.");
+  if (ddl_object_is_view && !target_is_view)
+    sqlr_new_error ("42S02", "SQ025", "The target name is a view.");
 
   if (ddl_droptable_pre (qi, name))
     return;
@@ -3385,7 +3392,7 @@ ddl_drop_table (query_instance_t * qi, char *name)
 
 #endif
 
-  if (!sch_view_def (wi_inst.wi_schema, name))
+  if (!ddl_object_is_view)
     {
       char temp[500];
       caddr_t escaped_name = box_sprintf_escaped (name, 1);
@@ -4048,7 +4055,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
 	    LEAVE_TXN;
 	    QR_RESET_CTX
 	      {
-		ddl_drop_table (qi, tree->_.table_def.name);
+		ddl_drop_table (qi, tree->_.table_def.name, 0);
 	      }
 	    QR_RESET_CODE
 	      {
@@ -4098,7 +4105,7 @@ sql_ddl_node_input_1 (ddl_node_t * ddl, caddr_t * inst, caddr_t * state)
     case TABLE_DROP:
       if (tree->_.op.arg_2 && !sch_name_to_table (wi_inst.wi_schema, tree->_.table_def.name))
 	break;
-      ddl_drop_table (qi, tree->_.op.arg_1);
+      ddl_drop_table (qi, tree->_.op.arg_1, (int)(ptrlong)tree->_.op.arg_3);
       break;
 
     case SET_PASS_STMT:

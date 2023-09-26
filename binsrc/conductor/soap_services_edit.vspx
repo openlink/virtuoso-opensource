@@ -1766,8 +1766,18 @@
                         <br />
 		  <table>
             <tr>
-                            <td>
 		<?vsp if (not (self.sp_desc or self.xml_desc or self.sp_add)) { ?>
+                              <td>
+                                <v:button action="simple" name="adv_btn" value="Generic Edit" enabled="--equ(self.tab1.tb_active.vc_name,'opt_tab1')">
+                                  <v:on-post>
+                                    <![CDATA[
+                                      self.vc_redirect (sprintf ('http_svc_edit.vspx?_host=%U&_port=%U&_httphost=%U&path=%U&mode=edit',
+                                          self.edit_host, self.edit_port, self.edit_httphost, self.lpath));
+                                      return;
+                                    ]]></v:on-post>
+                                  </v:button>
+                              </td>
+                            <td>
                 <v:button action="simple" name="cancel" value="Cancel">
                   <v:on-post>
                       <![CDATA[
@@ -2059,8 +2069,8 @@
                       ]]>
                   </v:on-post>
 		</v:button>
-		<?vsp } ?>
               </td>
+                            <?vsp } ?>
 	    </tr>
 	  </table>
 	  <!-- END -->

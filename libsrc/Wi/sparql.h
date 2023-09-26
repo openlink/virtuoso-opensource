@@ -944,7 +944,7 @@ extern ccaddr_t sparp_id_to_iri (sparp_t *sparp, iri_id_t iid);	/*!< returns t_b
 #define SPAR_STRLITERAL_SPARQL_STRING	0
 #define SPAR_STRLITERAL_JSON_STRING	1
 #define SPAR_STRLITERAL_SPARQL_QNAME	2
-extern caddr_t spar_unescape_strliteral (sparp_t *sparp, const char *sparyytext, int count_of_quotes, int mode);
+extern caddr_t spar_unescape_strliteral (void *sparp, const char *sparyytext, int count_of_quotes, int mode);
 extern caddr_t spar_mkid (sparp_t * sparp, const char *prefix);
 extern void spar_change_sign (caddr_t *lit_ptr);
 

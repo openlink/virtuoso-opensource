@@ -1,4 +1,700 @@
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.11 engine 3238
+
+2023-09-26  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with leading space before split
+
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed parameter name to XAnyNormalization in documentation
+
+	Reported-by: Arnoud Engelen
+
+2023-09-26  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Fixed wrong column name in debian/README.Debian
+
+	Fixed RDF to RDF/XML in human-facing serialization lists
+
+	Fixed human-facing typos in cetop.c
+
+	Fixed typos in viconfig.c
+
+	Fixed human-facing typos in configure.ac
+
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed startup time building VAD packages on linux/macos/unix
+
+2023-09-25  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues mixing valid and invalid MIME types in Accept header (fixes #786)
+
+	Fixed href is needed in PROPPATCH response
+
+	Fixed show failed argument value to convert
+
+2023-09-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing export symbol for graphql plugin on musl c library
+
+2023-09-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing entry for JSON-LD in RDF DET
+
+2023-09-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS.md and Changelog
+
+	Updated version to 7.2.11-rc1
+
+2023-09-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed import of .pem certificate bundle should load all keys
+
+	Fixed issue with DROP TABLE/VIEW not checking target
+
+2023-09-21  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when copying constants in union
+
+2023-09-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed small issue with lang matches
+
+2023-09-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed RDF quad sanity check for 'O' column
+
+	Fixed issue if no hooks are specified
+
+	Added new BIF jsonld_ctx_to_dict
+
+	Fixed issue restoreing id on 1st traversal; last nest could reset it
+
+	Fixed issue with @base outside of context; must be IRI
+
+	Fixed issue loading virtuoso generated json-ld+ctx
+
+	Fixed issue with type:vocan and vocab in context use
+
+	Fixed no flags for tokens
+
+	Fixed unset utf-8 flags for strings
+
+	Fixed always unescape keywords
+
+	Fixed strings should always be unescaped
+
+	Fixed issue with escaped slash in URI
+
+2023-09-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added  http_options_no_exec http virtual path option.
+
+	The http_options_no_exec when set stops execution of stored procedure
+	published as service in case of pre-flight request/OPTIONS, this
+	is to avoid checking http method is OPTIONS in every published
+	procedure on that service.
+
+2023-09-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Refactored https check into one function
+
+2023-09-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with base64 decode and trailing zeroes
+
+	Fixed issue with missing name
+
+2023-09-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for Content-Security-Policy header
+
+	This policy can be set in virtuoso.ini which will only allow loading of
+	resources (images, fonts, scripts etc) over https:
+
+	    [HTTP]
+	    CSP_Directives = default-src https:
+
+	See also:
+	https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy
+
+2023-09-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with log on delete/put/patch etc
+
+	WM_ERROR is common for everything except for post/get; must
+	log delete/put/patch etc.
+
+2023-09-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with dead http session
+
+2023-09-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2023-09-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added simple webservices UI
+
+	Fixed DAV browser to allow editing for json files
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added log info on manual enable/disable scheduler and checkpoint intervals
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with AREF error on conflict join pred of pview
+
+	If the join pred is out of scope, map internally to NULL thus no match
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with get_keyword with soap options vector
+
+	Added optional base url to http_xslt function as 3rd parameter
+
+	Fixed do not replace trx log prefix with CHECKPOINT command
+
+2023-08-28  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with uninitialized variable
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with chash on many threads
+
+	Using chash on many threads can result in one branch cache to
+	memcache. We need to merge them to get all results
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added sprintf format %[xx]s for registry settings
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed SPARQL property path query returning incorrect results (bug19390)
+
+	When the outer branch has no selection, the out code will not be reset
+	as the outer node is not run, therefore we reset here before leaving
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added input state in explain output where missing
+
+2023-08-28  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue reusing boxes
+
+	See if we can re-use boxed str values with flags
+
+2023-08-28  VOS maintainer  <vos.admin@openlinksw.com>
+
+	Fixed assignment must be recorded on the node before the end node (backport)
+
+	Fixed deterministic ordering with mixed dtps (backport)
+
+	Backported small fixes
+
+2023-08-28  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Used numeric entities for maximum X(HT)ML compatibility
+
+2023-07-26  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with heterogeneous data column leading to range assert
+
+	Usually this code block deals with data column with only numbers, dates
+	or any, but if the data col has reference to GROUP BY & DISTINCT it
+	eventually referenced RDF objects and it becomes heterogeneous.
+
+	This case was not handled, leading to a range assert where in fact the
+	column structure is fine.
+
+2023-07-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added CPU% and RSS usage to status() output
+
+2023-07-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with SPARQL UUID() function (fixes #515)
+
+	Replaced the PL code with a BIF function and let the compiler know
+	this function cannot be optimized out of the query loop.
+
+2023-07-04  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing grant from SPARQL_UPDATE role (fixes #1152)
+
+	Updated version to 7.2.11-dev to mark the start of a new development cycle
+
 2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.10' into develop/7
+
+	Tagged for release
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.10' into stable/7
+
+	Updated ChangeLog
+
+	Updated version to 7.2.10 engine 3237
+
+	Added check for OpenSSL 3.1.x
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with DV_REFERENCE
+
+2023-06-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed path to openssl libs
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
+
+	Updated NEWS.md for upcoming release
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with incomplete MIME part without body
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed "Run Query" button to use the sparqlSubmitForm function
+
+	This allows the form to switch from GET to POST submit method when
+	the resulting URL is getting too long.
+
+	The maximum length of the URL for a GET request can be
+	changed using:
+
+	   registry_set ('sparql-ui-max-url', '2000');
+
+	If you always want to use POST request use:
+
+	   registry_set ('sparql-ui-max-url', '1');
+
+	If you always want to use GET requests (the default)
+	use:
+
+	   registry_set ('sparql-ui-max-url', '0');
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.10-rc1
+
+	Fixed obj2json output should be canonical
+
+	Rebuild JDBC providers
+
+	Updated JDBC driver version
+
+2023-06-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Removed some commented out code
+
+2023-06-07  Jerven bolleman  <jerven.bolleman@sib.swiss>
+
+	Small optimization to VirtuosoInputStream
+
+	Removed shared tmp bytes[16] array as it blocks a number of
+	optimizations.
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added checkpoint to end of online backup
+
+	Fixed memory leak in bif_iri_name_id_64_vec
+
+	Fixed issue with client_protocol mode
+
+	Fixed check argument before calling vt_parse
+
+	Fixed issue with TCN
+
+	Fixed label
+
+	Added extra opts param to pldebug print
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added BIF function for iso and http dates
+
+	The PL wrapper of these procedures is left for compatibiluty in apps
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing escape of identifiers
+
+	Fixed small memory leak in log replay
+
+	Fixed string_buffer to use strses_string instead of malloc/realloc
+
+	Fixed HTTPS accept timeout
+
+	Added support for DROP TYPE .... IF EXISTS
+
+	Fixed missing tags in obj2json() for UDT
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed small SPARQL UI issues
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not make refs for dc_values
+
+2023-06-07  VOS maintainer  <vos.admin@openlinksw.com>
+
+	Fixed issue when inserting "true"^^xsd:boolean
+
+	Removed duplicate bif type
+
+	Backported duration and interval fixes to v7 engine (fixes #1147)
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing variable declaration (fixes #1148)
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added BIF http_request_status_code_get()
+
+	This function returns the current http status code 20x/30x/30x etc
+	or NULL of not set.
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed RDF_LOAD_JSON_LD does not work with streams
+
+	For now we can only load .jsonld and .jsonld.gz files
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for bulkloading compressed .jsonld files
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed allow old clients to get application/xml
+
+	Added support for uploading NQUAD and JSON_LD data via Conductor
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed IRI patterns for SPARQL LOAD SERVICE (fixes #879)
+
+	Some third party endpoints had a problem with the old pattern, which
+	causes Virtuoso to not properly detect the capabilities of these
+	endpoints.
+
+	Also the old pattern was not very descriptive, which could cause remote
+	admins to block us.
+
+	We have decided to use `urn:virtuoso:sparql:fed:probe:no-such-g` etc. as
+	the new IRI pattern.
+
+	Reported by: Jerven Bolleman
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for displaying custom dbpedia datatypes
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for showing custom datatypes (fixes #963)
+
+	Custom datatype is not shown when the value is treated as a string. When
+	there is no language and it is not `xsd:string`, it should be displayed.
+
+	Reported-by: IS4Code
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue in short-circuit evaluation (fixes #777)
+
+	When `encname` is a null pointer, there will be a null pointer dereference
+	in the short-circuit evaluation.
+
+	Found by the static analyzer of Qihoo360 CodeSafe Team!
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added n-quads support for SPARQL CRUD using REST (fixes #1142)
+
+	  $ curl -i --digest -u dba:dba http://localhost:8890/sparql-graph-crud-auth \
+	    -X POST -H 'Content-Type: application/n-quads' --data-binary @test.nq
+
+	A default POST request can add triples to the existing graph.
+
+	If you want to clean all the graphs mentioned in your .nq file,
+	you can use a PUT command, which will do a 'with-delete' similar
+	to the bulk loader. This feature has similar restriction:
+
+	  1. Graphs cannot be split over 2 or more files
+	  2. Graphs should be limited in size based on available memory
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use registered MIME type application/n-quads.
+
+	Added handler for .jsonld
+
+2023-06-07  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed issues with Turtle 1.1 parser (fixes #1059)
+
+	Fixed syntax for decimals and Turtle 1.1 rule re dot after object
+	without space in between.
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Removed old grants
+
+	Fixed use proper size for prefix
+
+	Fixed int from temp becomes bigint, so map appropriately
+
+	Fixed issue comparing column types against normalized source
+
+	Fixed issue with flag comparison
+
+	Fixed extra debug info on backup crash
+
+	Removed redundant index
+
+	Added debugging for bad buffer
+
+	Fixed system bifs that start with '__' are marked as unsafe
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added separate option to limit number of triples in a SPARQL CONSTRUCT query
+
+	  [SPARQL]
+	  MaxConstructTriples = 10000  ; if not set, use ResultSetMaxRows as fallback
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when BIO* does not write trailing zero
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with transaction mutex in checkpoint
+
+	Keep the transaction mutex until checkpoint is done.
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Removed duplicate define
+
+	Fixed missing setting of itx isolation level
+
+	Removed check for txn in itc_col_row_check; this is already done at top level call
+
+	Fixed whitespace
+
+	Added extra MALLOC_DEBUG code
+
+	Added enable_cpt_rb_ck flag
+
+	Added extra flag for testsuite
+
+	Added option to debug buffer flags (-DBUF_FLAGS_DEBUG)
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed merge artifact (fixes #1144)
+
+	Removed copying of images from dbpedia as fct already has them
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with rdf_regex (fixes #705)
+
+	This function is supposed to work on UTF-8 data not on narrow strings.
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed load unknown geometry as literal
+
+	Fixed compiler warning
+
+	Fixed issue placing simple functions inside control exp (fixes #1128)
+
+	Fixed compare only up to cha key parts (fixes #1117)
+
+	Added missing reuse check for dv bin (fixes #1121)
+
+	Fixed typo in testsuite
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed file permissions in VAD packages
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue if original dfe not there; see error in optimizer
+
+	Added tsuite entries for recent fixes
+
+	Fixed do not change col_dtp if already set before (fixes #1124)
+
+	Fixed cannot add non-null column to existing data (fixes #1130)
+
+	Fixed calculate set length after checking for errors
+
+	Fixed missing check for a qexp to continue with
+
+	Fixed first argument of CONTAINS() cannot be star (fixes #1140)
+
+	Fixed wrap unions etc. if non-select for EXISTS ( subq ) (fixes #1139)
+
+	Added check for non-terminals in WITH DATA (fixes #1138)
+
+	Fixed missing check if column exists (fixes #1137)
+
+	Fixed non-terminal in union branch is not supported (fixes #1136)
+
+	Fixed missing check for table in positioned delete (fixes #1135)
+
+	Fixed check number of values vs cols when inserting into view (fixes #1134)
+
+	Fixed handling of aliases in output (fixes #1129)
+
+	Fixed save/restore temp refs (fixes #1127)
+
+	Fixed 64bit arith overflow (fixes #1123)
+
+	Fixed 64bit arith exception (fixes #1122)
+
+	Fixed missing check for max number of key parts (fixes #1120)
+
+	Fixed expand column list during parsing (fixes #1119)
+
+	Fixed missing arguments in table def (fixes #1118)
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added additional testcases
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for IF EXISTS and IF NOT EXISTS in ALTER TABLE
+
+	To prevent SQL errors if column already exists in the table:
+
+	    alter table add column XXX .... IF NOT EXISTS;
+
+	To prevent SQL errors if column does not exist in the table:
+
+	    alter table drop column XXX .... IF EXISTS;
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues compiling with MALLOC_DEBUG (Fixes #1116)
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue deleting strings with language tag (Fixes #1055)
+
+	Fixed issue compiling with malloc_debug
+
+	Fixed use macro to set bd_is_write for MTX debug
+
+	Fixed issue compiling and running with mtx_debug enabled
+
+	Fixed issue with mutex lock in phrasematch
+
+	Fixed rwlock_tryrdlock() should return 1 on success
+
+	Fixed issue when already running as dba
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with save/restore qualifier
+
+	When the .sql script has a 'use XXX;' line we need to
+	duplicate the original qualifier and restore it at the end
+	of the script
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with SOAP tests; must recreate SOAP user if exists
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing AFTER decoration
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with SOAP endpoint
+
+	* Added missing SOAP user
+	* Fixed services.vsmx
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild JDBC drivers
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue generating labels in urilbl_ac_init_db
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated FCT vad version
+
+2023-06-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed use <nodeID:/..> notation to get labels internally; _:vb do not make solution as per spec
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed if set, pass lang param to navigation
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues truncating lists using '>>more>>'
+
+	* only count visible li entries
+	* if all entries are hidden, make first one visible
+	* use cloneNode to limit the amount of redraws in browser
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added note on `subdir-objects` setting for automake
+
+	This setting only removes some warning messages generated by
+	the automake program, but may become compulsary in automake v2.0.
+
+	Using automake versions v1.9 through v1.15, this setting actually breaks
+	the build with badly generated dependency files.
+
+	Without this setting, the build actually does the correct thing for
+	all versions of automake 1.9 and newer, so we leave it out for now
+
+2023-06-07  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Comment unnecessary include files
+
+	Fix Win projects
+
+	Fix issues with Win build
+
+2023-06-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.10-dev to mark the start of a new development cycle
+
+	Updated ChangeLog
 
 	Updated version to 7.2.10 engine 3237
 

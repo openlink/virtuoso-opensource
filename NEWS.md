@@ -1,5 +1,50 @@
 # NEWS
 
+## September 26, 2023, v7.2.11:
+
+  * Virtuoso Engine
+    - Added log info on manual enable/disable scheduler and checkpoint intervals
+    - Added sprintf format %[xx]s for registry settings
+    - Added CPU% and RSS usage to status() output
+    - Added BIF jsonld_ctx_to_dict
+    - Added input state in explain output where missing
+    - Fixed issue with SPARQL UUID() function (fixes #515)
+    - Fixed missing grant from SPARQL_UPDATE role (fixes #1152)
+    - Fixed issue with DROP TABLE/VIEW not checking target
+    - Fixed issue when copying constants in union
+    - Fixed several issues in json parser
+    - Fixed issue with get_keyword with soap options vector
+    - Fixed issue with chash on many threads
+    - Fixed issue with lang matches
+    - Fixed issue loading graphql plugin with musl C library
+    - Fixed do not replace trx log prefix with CHECKPOINT command
+    - Fixed small typos in documentation and error messages
+
+  * SPARQL
+    - Fixed SPARQL property path query returning incorrect results
+    - Fixed issue with conflict on join predicate of pview leading to AREF error
+    - Fixed issue with heterogeneous data column leading to range assert
+    - Fixed issue reusing boxes
+    - Fixed RDF quad sanity check for 'O' column
+    - Fixed entities in /sparql UI for maximum X(HT)ML compatibility
+
+  * Web Server and DAV
+    - Added option http_options_no_exec for http virtual path
+    - Added support for Content-Security-Policy header
+    - Added optional base url to http_xslt function as 3rd parameter
+    - Fixed issues mixing valid and invalid MIME types in Accept header
+    - Fixed issue writing log on delete/put/patch etc
+    - Fixed missing entry for JSON-LD in RDF DET
+    - Fixed issue with missing href in PROPPATCH response
+    - Fixed issue with base64 decode and trailing zeroes
+    - Fixed issue with dead http session
+
+  * Conductor
+    - Added simple webservices UI
+    - Fixed DAV browser to allow editing for json files
+    - Fixed import of all keys in a PEM certificate bundle
+
+
 ## June 7, 2023, v7.2.10:
 
   * Virtuoso Engine

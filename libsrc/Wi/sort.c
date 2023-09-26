@@ -46,7 +46,7 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
       int rc;
 
       right_v = qst_get (qst, right[inx]);
-      rc = cmp_boxes (left[inx], right_v, coll, coll);
+      rc = cmp_boxes_safe (left[inx], right_v, coll, coll);
       if (rc == DVC_UNKNOWN)
 	{ /* GK: the NULLs sort high */
 	  dtp_t dtp1 = DV_TYPE_OF (left[inx]);
@@ -63,8 +63,6 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
 	    rc = DVC_GREATER;
         }
       else if (DVC_NOORDER == rc)
-        rc = DVC_UNKNOWN;
-/*
         {
 	  dtp_t dtp1 = DV_TYPE_OF (left[inx]);
 	  dtp_t dtp2 = DV_TYPE_OF (right_v);
@@ -73,7 +71,7 @@ setp_comp_array (setp_node_t * setp, caddr_t * qst, caddr_t * left, state_slot_t
           else if (dtp1 > dtp2)
             rc = DVC_GREATER;
 	}
-*/
+
       if (is_rev && ORDER_DESC == (ptrlong) is_rev->data)
 	DVC_INVERT_CMP (rc);
       if (rc != DVC_MATCH)

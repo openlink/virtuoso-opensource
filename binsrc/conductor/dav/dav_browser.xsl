@@ -5606,6 +5606,7 @@
                                            or rowset[0] like '%.sql'
                                            or rowset[0] like '%.ini'
                                            or rowset[4] like 'text/%'
+                                           or rowset[4] = 'application/json'
                                            or rowset[4] = 'application/ld+json'
                                            or rowset[4] = 'application/sparql-query'
                                          )

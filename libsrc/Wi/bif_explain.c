@@ -1755,10 +1755,13 @@ node_print (data_source_t * node)
   if (node->src_sets)
     {
       if (dbf_explain_level > 2)
-	stmt_printf (("s# %d %d ", node->src_sets, node->src_in_state));
+	stmt_printf (("Set# %d i#%d ", node->src_sets, node->src_in_state));
       else
-    stmt_printf (("s# %d ", node->src_sets));
+	stmt_printf (("Set# %d ", node->src_sets));
     }
+  else if (dbf_explain_level > 2)
+    stmt_printf (("i#%d ", node->src_in_state));
+
   if (in == (qn_input_fn) table_source_input ||
       in == (qn_input_fn) table_source_input_unique)
     {
@@ -2310,14 +2313,14 @@ node_print (data_source_t * node)
 	  stmt_printf (("\n shadow: "));
 	  ssl_array_print (ose->ose_out_shadow);
 	}
-      stmt_printf (("\n"));
+      stmt_printf (("\n} /* end of outer */\n"));
     }
   else if (in == (qn_input_fn) set_ctr_input)
     {
       QNCAST (set_ctr_node_t, sctr, node);
-      stmt_printf (("cluster outer seq start, set no "));
+      stmt_printf (("Outer seq start, set no "));
       ssl_print (sctr->sctr_set_no);
-      stmt_printf (("    \nsave ctx:"));
+      stmt_printf ((" {    \nsave ctx:"));
       ssl_array_print (sctr->clb.clb_save);
       if (sctr->sctr_hash_spec)
 	{

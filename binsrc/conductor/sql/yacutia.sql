@@ -381,6 +381,7 @@ create procedure adm_menu_tree ()
    <node name="Virtual Domains &amp; Directories" url="http_serv_mgmt.vspx" id="153" allowed="yacutia_http_server_management_page">
       <node name="Edit Paths" url="http_edit_paths.vspx" id="154" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Add Path" url="http_add_path.vspx" id="155" place="1" allowed="yacutia_http_server_management_page"/>
+      <node name="Edit Path" url="http_svc_edit.vspx" id="155" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Edit Host" url="http_host_edit.vspx" id="170" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Clone Host" url="http_host_clone.vspx" id="175" place="1" allowed="yacutia_http_server_management_page"/>
       <node name="Delete Path" url="http_del_path.vspx" id="156" place="1" allowed="yacutia_http_server_management_page"/>
@@ -5964,6 +5965,9 @@ make_cert_stmt (in key_name varchar, in digest_type varchar := 'sha1')
   ian := get_certificate_info (7, key_name, 3, '', '2.5.29.18');
   if (san is null) san := make_cert_iri (key_name);
   if (ian is null) ian := make_cert_iri (key_name);
+
+  if (aref(info, 0) <> 'RSAPublicKey')
+    return 'SPARQL {}'; -- only RSA is supported in cert ontology(for now)
 
   cert_exponent    := info[1];
   cert_modulus     := bin2hex(info[2]);
