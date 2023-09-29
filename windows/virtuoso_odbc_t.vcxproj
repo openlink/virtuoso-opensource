@@ -84,7 +84,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libcrypto.lib;libssl.lib;tidy.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;tidy.lib;psapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtuoso-t.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -127,7 +127,7 @@
       <AdditionalIncludeDirectories>..\openlink\include;..\xOs\stubs;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ResourceCompile>
     <Link>
-      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libcrypto.lib;libssl.lib;tidy.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>threadw.lib;wi.lib;dksrv.lib;util.lib;xml.lib;zlib.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;tidy.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtuoso-t.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

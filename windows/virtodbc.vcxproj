@@ -87,7 +87,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;legacy_stdio_definitions.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtodbc.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -139,7 +139,7 @@
     <Link>
       <AdditionalOptions>
       </AdditionalOptions>
-      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>dk1t_mt.lib;threadw_mt.lib;util_mt.lib;odbc32.lib;odbccp32.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtodbc.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
