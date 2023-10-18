@@ -2600,7 +2600,7 @@ sst_merge_ands (search_stream_t * sst, int calc_score)
   DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
     {
       if (term->sst_op == BOP_AND
-	  && term->sst_not)
+	  && term->sst_not && sst_term_is_mergable (term))
 	{
 	  nots += dk_set_length (term->sst_not);
 	  total += BOX_ELEMENTS (term->sst_terms);
