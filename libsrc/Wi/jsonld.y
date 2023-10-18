@@ -563,6 +563,13 @@ item	: CONTEXT {
                         JLD_SET_CURRENT(lang,NULL);
                       }
                     }
+                  if (JSON_LD_MAP == jsonp_arg->jpmode) {
+                    caddr_t type = $3;
+                    if (DV_STRINGP(type))
+                      JLD_SET_CURRENT(type, type);
+                    else if (ARRAYP(type) && BOX_ELEMENTS_0(type) > 0)
+                      JLD_SET_CURRENT(type, ((caddr_t *)type)[0]);
+                  }
                 }
         | SET COLON {
               if (JSON_LD_DATA)
