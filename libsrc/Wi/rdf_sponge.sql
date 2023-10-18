@@ -1533,11 +1533,13 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 {
     declare default_host, cname, xhost varchar;
+    declare lines any;
     xhost := connection_get ('http_host');
     if (isstring (xhost))
       return xhost;
-    if (is_http_ctx ())
-        default_host := http_request_header(http_request_header (), 'Host', null, null);
+    lines := http_request_header ();
+    if (isvector(lines))
+        default_host := http_request_header(lines, 'Host', null, null);
     else if (connection_get ('__http_host') is not null)
         default_host := connection_get ('__http_host');
     else
