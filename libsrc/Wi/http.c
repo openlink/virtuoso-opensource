@@ -10444,7 +10444,7 @@ ws_is_https (ws_connection_t * ws)
   int is_https = 0;
 
 #ifdef _SSL
-  if (ws)
+  if (ws && ws->ws_session)
     {
       SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
       is_https = (NULL != ssl);
