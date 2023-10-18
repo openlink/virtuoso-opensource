@@ -354,6 +354,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %type <tree> opt_remote_name
 %type <tree> set_pass
 %type <box> user
+%type <box> user_password_opt
 %type <box> grantee
 %type <list> grantee_commalist
 
@@ -1349,8 +1350,14 @@ set_pass
 			{ $$ = t_listst (3, SET_PASS_STMT, $3, $4); }
 	;
 
+user_password_opt
+        :  /* dummy */              { $$ = NULL; }
+        |  WITH PASSWORD identifier { $$ = $3; }
+        |  IDENTIFIED BY identifier { $$ = $3; }
+        ;
+
 create_user_statement
-	: CREATE USER user	{ $$ = t_listst (2, CREATE_USER_STMT, $3); }
+	: CREATE USER user user_password_opt	{ $$ = t_listst (3, CREATE_USER_STMT, $3, (NULL != $4 ? $4 : $3)); }
 	| CREATE ROLE_L user    { $$ = t_listst (2, CREATE_ROLE_STMT, $3); }
 	;
 
