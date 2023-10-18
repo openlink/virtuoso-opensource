@@ -10160,7 +10160,7 @@ again:
         case DT_TYPE_TIME: return uname_xmlschema_ns_uri_hash_time;
         default : return uname_xmlschema_ns_uri_hash_dateTime;
         }
-    case DV_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
+    case DV_STRING: case DV_C_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
       return NULL;
     case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
     case DV_NUMERIC: return uname_xmlschema_ns_uri_hash_decimal;
