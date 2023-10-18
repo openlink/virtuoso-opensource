@@ -8674,6 +8674,7 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
 {
   declare ins_count, ins_grp_count integer;
   declare res_ses any;
+  res_ses := null;
   ins_count := 0;
   ins_grp_count := 0;
   if (__tag of vector = __tag (dflt_graph_iri))
@@ -8719,20 +8720,20 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
             repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
           if (compose_report and ins_grp_count < 1000)
             {
+              if (res_ses is null)
+                res_ses := string_output();
               if (group_ctr)
                 http ('\n', res_ses);
-              else
-                res_ses := string_output();
               http (sprintf ('Insert into <%s>, %d (or less) quads -- done', g, g_ins_count), res_ses);
             }
         }
     }
   if (compose_report)
     {
+      if (res_ses is not null)
+        return string_output_string (res_ses);
       if (ins_grp_count >= 1000)
         return sprintf ('Insert into %d (or more) graphs, total %d (or less) quads -- done', ins_grp_count, ins_count);
-      if (ins_count)
-        return string_output_string (res_ses);
       else if (dflt_graph_iri is null)
         return sprintf ('Insert of 0 quads -- nothing to do');
       else
