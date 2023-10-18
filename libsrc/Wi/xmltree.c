@@ -10185,7 +10185,7 @@ again:
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
     case DV_GEO:
-      return uname_virtrdf_ns_uri_Geometry;
+      return rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry ;
     case DV_ARRAY_OF_DOUBLE:
       {
         if (IS_GENERIC_DURATION (arg))

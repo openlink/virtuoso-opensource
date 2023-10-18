@@ -1979,6 +1979,7 @@ stat_desc_t dbf_descs [] =
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
     {"simple_rdf_numbers", &simple_rdf_numbers, SD_INT32},
     {"rdf_rpid64_mode", (long *)&rdf_rpid64_mode, SD_INT32},
+    {"rdf_geo_use_wkt", (long *)&rdf_geo_use_wkt, SD_INT32},
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},

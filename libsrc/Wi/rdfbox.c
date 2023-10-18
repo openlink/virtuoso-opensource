@@ -3273,6 +3273,8 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 }
 #endif
 
+int32 rdf_geo_use_wkt = 1;
+
 static void
 http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ret)
 {
@@ -3288,7 +3290,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
           return;
         if (RDF_BOX_GEO_TYPE == rb->rb_type)
           {
-            dt_ret->uri = uname_virtrdf_ns_uri_Geometry;
+            dt_ret->uri = rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry;
             return;
           }
         dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
@@ -3305,7 +3307,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         }
     case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
     case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
-    case DV_GEO: dt_ret->uri = uname_virtrdf_ns_uri_Geometry; return;
+    case DV_GEO: dt_ret->uri = rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry ; return;
     case DV_ARRAY_OF_DOUBLE:
       {
         if (IS_GENERIC_DURATION (obj))
