@@ -10133,6 +10133,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_xml_template);
   else if (!strcmp (member, "security_level"))
     res = box_copy (map->hm_sec);
+  else if (!strcmp (member, "security_realm"))
+    res = box_copy (map->hm_realm);
   else if (!strcmp (member, "auth_opts"))
     res = box_copy_tree ((box_t) map->hm_auth_opts);
   else if (!strcmp (member, "soap_opts"))
