@@ -1092,6 +1092,17 @@ create procedure DB.DBA.obj2json (
     return '{"error":"Max depth limit exceeded"}';
 
   retValue := '';
+  if (__tag (o) = __tag of long varchar or __tag (o) = __tag of long nvarchar or __tag (o) = 126 or __tag (o) = 133)
+    o := blob_to_string (o);
+  else if (__tag (o) = __tag of stream)
+    o := string_output_string(o);
+  else if (__tag(o) = __tag of rdf_box)
+    {
+      __rdf_box_make_complete (o);
+      o := rdf_box_data(o);
+    }
+  else if (__tag(o) = 127 or __tag(o) = 183)
+    o := cast (o as varchar);
   if (isnull (o))
   {
     retValue := 'null';
@@ -1100,7 +1111,7 @@ create procedure DB.DBA.obj2json (
   {
     retValue := cast (o as varchar);
   }
-  else if (isstring (o))
+  else if (isstring (o) or __tag of uname = __tag (o))
   {
     declare ses any;
     ses := string_output ();
@@ -1108,11 +1119,11 @@ create procedure DB.DBA.obj2json (
     http_escape (o, 14, ses, 1, 1);
     http ('"', ses);
     retValue := string_output_string (ses);
-      }
+  }
   else if (__tag(o) = __tag of datetime)
   {
     retValue := concat ('"', date_iso8601(o), '"');
-    }
+  }
   else if (isvector (o) and length (o) = 2 and __tag (o[0]) = 255 and __tag (o[1]) = __tag of integer)
   { -- boolean
     if (o[1])
