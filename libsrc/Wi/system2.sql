@@ -1078,6 +1078,7 @@ create procedure DB.DBA.array2obj (
 -- do not change, if needed make it conditional and keep canonical by default
 --
 
+--!AWK PUBLIC
 create procedure DB.DBA.obj2json (
   in o any,
   in d integer := 10,
