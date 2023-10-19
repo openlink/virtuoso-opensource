@@ -1515,8 +1515,16 @@ err_end:
   strses_flush(ses);
   if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
     {
-      ctx->hcctx_err = err;
-      return (HC_RET_ERR_ABORT);
+      if (0 != strncmp (ERR_STATE (err), "VSPRT", 5))
+        {
+          ctx->hcctx_err = err;
+          return (HC_RET_ERR_ABORT);
+        }
+      else
+        {
+          dk_free_tree(err);
+          return (HC_RET_STOP);
+        }
     }
   return (HC_RET_OK);
 }
@@ -1564,6 +1572,8 @@ http_cli_read_sse_content (http_cli_ctx * ctx)
     }
   END_READ_FAIL (ses);
 err_ret:
+  if (HC_RET_STOP == rc) /* we don't want to read more, signalled from hook, just disconnect */
+    rc = HC_RET_OK;
   strses_free (data);
   return (rc);
 }

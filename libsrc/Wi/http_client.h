@@ -72,10 +72,11 @@
 
 /* Hook/event handler return values */
 
-#define HC_RET_RETRY      1 /* Retry connection */
+#define HC_RET_STOP       2     /* Stopped inside event hook */
+#define HC_RET_RETRY      1	/* Retry connection */
 #define HC_RET_OK         0
-#define HC_RET_ERR_CONT  -1 /* Continue hook function dispatch */
-#define HC_RET_ERR_ABORT -2 /* Abort hook function dispatch */
+#define HC_RET_ERR_CONT  -1	/* Continue hook function dispatch */
+#define HC_RET_ERR_ABORT -2	/* Abort hook function dispatch */
 
 /* Flags */
 
