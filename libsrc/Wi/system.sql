@@ -5378,6 +5378,8 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
   else if (__tag (v) = 255)
     return '<tag 255>';
+  else if (__tag (v) = __tag of varbinary)
+    return sprintf ('hex2bin (\'%s\')', bin2hex (v));
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }
