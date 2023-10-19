@@ -1145,17 +1145,28 @@ create procedure DB.DBA.obj2json (
   else if (__tag(o) = 254 or __tag(o) = 206)
     {
       declare fields, nth any;
-      fields := udt_get_info (o, 'attributes');
+      fields := udt_get_info (o, 'attributes_info');
       nth := 0;
       retValue := '{';
-      foreach (varchar field in fields) do
+      foreach (any field_info in fields) do
         {
           declare v, jv any;
+          declare nullable int;
+          declare field, null_flag varchar;
+          field := aref (field_info, 0);
+          null_flag := aref (field_info, 4);
+          if (isstring(null_flag) and null_flag in ('nullable', 'nillable', 'xsi:nillable'))
+            nullable := 1;
+          else
+            nullable := 0;
           v := udt_get (o, field);
-          if (nth)
-            retValue := retValue || ',';
-          retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
-          nth := nth + 1;
+          if (v is not null or nullable)
+            {
+              if (nth)
+                retValue := retValue || ',';
+              retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
+              nth := nth + 1;
+            }
         }
       retValue := retValue || '}';
     }
