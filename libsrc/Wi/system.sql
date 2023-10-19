@@ -5350,7 +5350,7 @@ create procedure
 DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 {
   --no_c_escapes-
-  if (isstring (v) or __tag (v) = 183 or __tag (v) = 127)
+  if (isstring (v) or __tag (v) = 183 or __tag (v) = 127 or __tag (v) = 217)
     return sprintf ('\'%S\'', replace (cast (v as varchar), '\\', '\\\\'));
   else if (v is null)
     return 'NULL';
