@@ -150,6 +150,7 @@ typedef struct http_cli_ctx_s
   int               hcctx_http_min;
   int               hcctx_respcode;
   int               hcctx_is_chunked;
+  int               hcctx_is_event_stream;
   int               hcctx_is_gzip;
   int               hcctx_keep_alive;
   int               hcctx_close;
@@ -204,6 +205,8 @@ typedef struct http_cli_ctx_s
   dk_set_t          hcctx_hooks [HTTP_CLI_NO_HOOKS]; /* hook dispatch queues */
   int               hcctx_hook_ret;
   caddr_t *	    hcctx_qst;
+  caddr_t           hcctx_callback;
+  caddr_t *         hcctx_callback_args;
   int 		    hcctx_redirects;
 } http_cli_ctx;
 
@@ -283,5 +286,6 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
-    int follow_redirects);
+    int follow_redirects,
+    caddr_t callback, caddr_t * callback_args);
 #endif /* __HTTP_CLIENT_H__ */

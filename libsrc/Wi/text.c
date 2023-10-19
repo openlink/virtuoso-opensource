@@ -3754,7 +3754,8 @@ txs_ext_fti_get (query_instance_t * qi, slice_id_t slice, caddr_t ext_fti, caddr
     call_uri, NULL /*uid*/, NULL /*pwd*/, NULL /*method*/, NULL /*http_hdr*/, NULL /*body*/,
     NULL /*cert*/, NULL /*pk_pass*/, 600000 /*time_out*/, 0 /*time_out_is_null*/, NULL /*proxy*/, NULL /*ca_certs*/, 0 /*insecure*/,
     0 /* ret_arg_index */,
-    3);
+    3,
+    NULL, NULL);
 
 #ifdef EXT_FTI_LOG
   {
