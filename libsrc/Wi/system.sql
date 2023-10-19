@@ -5380,6 +5380,8 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return '<tag 255>';
   else if (__tag (v) = __tag of varbinary)
     return sprintf ('hex2bin (\'%s\')', bin2hex (v));
+  else if (__tag (v) = __tag of xml)
+    return SYS_SQL_VAL_PRINT(serialize_to_UTF8_xml (v));
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }
