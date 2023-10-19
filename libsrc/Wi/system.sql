@@ -5346,6 +5346,31 @@ DB.DBA.SYS_SQL_VECTOR_PRINT (in in_vector any)
 }
 ;
 
+create procedure DB.DBA.SYS_SQL_UDT_PRINT (in udt any, in inner_call int := 0)
+{
+  declare fields, type_name, vec any;
+  fields := udt_get_info (udt, 'attributes');
+  type_name := udt_instance_of (udt);
+  vec := null;
+  foreach (varchar field in fields) do
+    {
+      declare v, jv any;
+      v := udt_get (udt, field);
+      if (__tag (v) = 254 or __tag (v) = 206)
+        jv := DB.DBA.SYS_SQL_UDT_PRINT (v, 1);
+      else
+        jv := v;
+      if (vec is null)
+        vec := soap_box_structure (field, jv);
+      else
+        vec := vector_concat (vec, vector (field, jv));
+    }
+  if (inner_call)
+    return soap_box_structure (type_name, vec);
+  return DB.DBA.OBJ2JSON(soap_box_structure (type_name, vec));
+}
+;
+
 create procedure
 DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 {
@@ -5376,6 +5401,8 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return sprintf ('__i2id (%s)', DB.DBA.SYS_SQL_VAL_PRINT (__id2i (v)));
   else if (__tag of rdf_box = __tag (v))
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
+  else if (__tag (v) = 254 or __tag (v) = 206)
+    return SYS_SQL_UDT_PRINT (v);
   else if (__tag (v) = 255)
     return '<tag 255>';
   else if (__tag (v) = __tag of varbinary)
