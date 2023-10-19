@@ -1149,7 +1149,7 @@ create procedure DB.DBA.obj2json (
       }
       retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
       if (N <> length(o)-2)
-        retValue := retValue || ', ';
+        retValue := retValue || ',';
     }
     retValue := retValue || '}';
   }
