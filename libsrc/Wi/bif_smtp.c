@@ -340,6 +340,7 @@ type_connection_destroy (caddr_t box)
         {
           PrpcSessionFree (ses);
         }
+      type[0] = NULL;
     }
   if (BOX_ELEMENTS (type) > 2)
     dk_free_tree (type[2]);
