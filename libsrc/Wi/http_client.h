@@ -209,6 +209,7 @@ typedef struct http_cli_ctx_s
   caddr_t           hcctx_callback;
   caddr_t *         hcctx_callback_args;
   int 		    hcctx_redirects;
+  char              hcctx_accept_cookies;
 } http_cli_ctx;
 
 
@@ -288,5 +289,6 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
     int follow_redirects,
-    caddr_t callback, caddr_t * callback_args);
+    caddr_t callback, caddr_t * callback_args, int accept_cookies);
+
 #endif /* __HTTP_CLIENT_H__ */

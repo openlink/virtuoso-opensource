@@ -3182,7 +3182,8 @@ create procedure DB.DBA.HTTP_CLIENT (
     in insecure int := 0,
     in n_redirects int := 0,
     in event_callback varchar := null,
-    in event_callback_args any := null
+    in event_callback_args any := null,
+    in accept_cookies int := 0
   )
 {
 
@@ -3195,7 +3196,7 @@ create procedure DB.DBA.HTTP_CLIENT (
         http_headers := http_headers || '\r\n';
     }
   return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null,
-      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args);
+      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args, accept_cookies);
 }
 ;
 
@@ -3216,7 +3217,8 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
     in insecure int := 0,
     in n_redirects int := 0,
     in event_callback varchar := null,
-    in event_callback_args any := null
+    in event_callback_args any := null,
+    in accept_cookies int := 0
   )
 {
 
@@ -3229,7 +3231,7 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
         http_headers := http_headers || '\r\n';
     }
   return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers,
-      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args);
+      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args, accept_cookies);
 }
 ;
 

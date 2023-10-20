@@ -2104,6 +2104,52 @@ else \
     return (HC_RET_ERR_ABORT); \
   }
 
+static char * http_cookie_av[] = { "comment", "discard", "domain", "path", "max-age", "expires", "secure", "version", "httponly", "samesite", NULL };
+
+static
+void http_get_cookies (caddr_t cookie_str, int split_flag, dk_set_t * set, dk_set_t * reserved)
+{
+  char *tmp, *tok_s = NULL, *tok, *sep;
+  caddr_t in;
+  char ** cookie_av = http_cookie_av;
+
+  in = box_dv_short_string (cookie_str);
+  tok = strtok_r (in, ";", &tok_s);
+  while (tok)
+    {
+      while (*tok && isspace (*tok))
+	tok++;
+      if (tok_s)
+	tmp = tok_s - 2;
+      else if (tok && strlen (tok) > 1)
+	tmp = tok + strlen (tok) - 1;
+      else
+	tmp = NULL;
+      while (tmp && tmp >= tok && isspace (*tmp))
+	*(tmp--) = 0;
+      sep = strchr (tok, '=');
+      if (NULL != sep)
+        *sep++ = 0;
+      for (cookie_av = http_cookie_av; split_flag && NULL != cookie_av[0]; cookie_av++)
+        {
+          if (0 == stricmp (tok, cookie_av[0])) /* reserved names */
+            break;
+        }
+      if (!split_flag || NULL == cookie_av[0])
+        {
+          dk_set_push (set, box_dv_short_string (tok));
+          dk_set_push (set, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+        }
+      else if (reserved)
+        {
+          dk_set_push (reserved, box_dv_short_string (tok));
+          dk_set_push (reserved, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+        }
+      tok = strtok_r (NULL, ";", &tok_s);
+    }
+  dk_free_box (in);
+}
+
 
 /* Pick the last of the strongest authentication schemes offered */
 
@@ -2221,7 +2267,8 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 {
   int ret;
   char *s = NULL, *last;
-  caddr_t url, loc, err = NULL;
+  caddr_t url, loc, err = NULL, cookie_header = NULL;
+  dk_set_t cookies = NULL;
   CATCH_ABORT (http_cli_read_resp_hdrs, ctx, ret);
   CATCH_ABORT (http_cli_read_resp_body, ctx, ret);
 
@@ -2233,7 +2280,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 
   DO_SET (caddr_t, hdr, &ctx->hcctx_resp_hdrs)
     {
-      if (!strnicmp ("Location:", hdr, 9))
+      if (!s && !strnicmp ("Location:", hdr, 9))
 	{
 	  last = hdr + box_length (hdr) - 2;
 	  s = hdr + 10;
@@ -2243,8 +2290,11 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 	      last[0] = 0;
 	      last--;
 	    }
-	  break;
 	}
+      else if (ctx->hcctx_accept_cookies && !strnicmp ("Set-Cookie:", hdr, 11))
+        http_get_cookies (hdr + 11, 1, &cookies, NULL);
+      if (NULL != s && !ctx->hcctx_accept_cookies) /* no need to continue looking if location found */
+        break;
     }
   END_DO_SET ();
 
@@ -2264,6 +2314,24 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     url = box_copy (ctx->hcctx_url);
   if (url != loc)
     dk_free_box (loc);
+  if (NULL != cookies)
+    {
+      cookies = dk_set_nreverse(cookies);
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, "Cookie:");
+      DO_KEYWORD_SET (k, caddr_t, v, &cookies)
+        {
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, " ");
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, k);
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, "=");
+          if (DV_STRINGP(v))
+            SES_PRINT (ctx->hcctx_pub_req_hdrs, v);
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, ";");
+        }
+      END_DO_SET();
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, "\r\n");
+      dk_free_tree (list_to_array(cookies));
+      cookies = NULL;
+    }
   RELEASE (ctx->hcctx_host);
   RELEASE (ctx->hcctx_uri);
   RELEASE (ctx->hcctx_url);
@@ -2653,7 +2721,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
     int follow_redirects,
-    caddr_t callback, caddr_t * callback_args)
+    caddr_t callback, caddr_t * callback_args, int accept_cookies)
 {
   http_cli_ctx * ctx;
   const char* ua_id = http_client_id_string;
@@ -2674,6 +2742,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     http_cli_init_std_auth (ctx, uid, pwd);
   if (follow_redirects)
     http_cli_init_std_redir (ctx, follow_redirects);
+  ctx->hcctx_accept_cookies = accept_cookies;
 
   if (method)
     {
@@ -2825,7 +2894,7 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t uid = NULL, pwd = NULL;
   caddr_t http_hdr = NULL, body = NULL, method = NULL;
   uint32 time_out = 0;
-  int time_out_is_null = 1, insecure = 0, follow_redirects = 0;
+  int time_out_is_null = 1, insecure = 0, follow_redirects = 0, accept_cookies = 0;
   caddr_t cert = NULL, pk_pass = NULL;
   caddr_t proxy = NULL, ca_certs = NULL, cbk = NULL, *cbk_args = NULL;
 
@@ -2884,7 +2953,12 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       cbk = bif_string_or_null_arg (qst, args, 14, me);
       cbk_args = (caddr_t *)bif_strict_array_or_null_arg (qst, args, 15, me);
     }
-  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, ca_certs, insecure, 8, follow_redirects, cbk, cbk_args);
+  if (BOX_ELEMENTS (args) > 16) /* accept_cookies */
+    {
+      int dummy = 0;
+      accept_cookies = (int) bif_long_or_null_arg (qst, args, 16, me, &dummy);
+    }
+  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, ca_certs, insecure, 8, follow_redirects, cbk, cbk_args, accept_cookies);
 }
 
 caddr_t
@@ -3118,53 +3192,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (n_args > 7) /* time-out */
     to = (uint32) bif_long_or_null_arg (qst, args, 7, me, &to_is_null);
-  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects, NULL, NULL);
-}
-
-static char *http_cookie_av[] = { "comment", "discard", "domain", "path", "max-age", "expires", "secure", "version", NULL };
-
-static void
-http_get_cookies (caddr_t cookie_str, int split_flag, dk_set_t * set, dk_set_t * reserved)
-{
-  char *tmp, *tok_s = NULL, *tok, *sep;
-  caddr_t in;
-  char **cookie_av = http_cookie_av;
-
-  in = box_copy (cookie_str);
-  tok = strtok_r (in, ";", &tok_s);
-  while (tok)
-    {
-      while (*tok && isspace (*tok))
-	tok++;
-      if (tok_s)
-	tmp = tok_s - 2;
-      else if (tok && strlen (tok) > 1)
-	tmp = tok + strlen (tok) - 1;
-      else
-	tmp = NULL;
-      while (tmp && tmp >= tok && isspace (*tmp))
-	*(tmp--) = 0;
-      sep = strchr (tok, '=');
-      if (NULL != sep)
-	*sep++ = 0;
-      for (cookie_av = http_cookie_av; split_flag && NULL != cookie_av[0]; cookie_av++)
-	{
-	  if (0 == stricmp (tok, cookie_av[0]))	/* reserved names */
-	    break;
-	}
-      if (!split_flag || NULL == cookie_av[0])
-	{
-	  dk_set_push (set, box_dv_short_string (tok));
-	  dk_set_push (set, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
-	}
-      else if (reserved)
-	{
-	  dk_set_push (reserved, box_dv_short_string (tok));
-	  dk_set_push (reserved, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
-	}
-      tok = strtok_r (NULL, ";", &tok_s);
-    }
-  dk_free_box (in);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects, NULL, NULL, 0);
 }
 
 caddr_t
