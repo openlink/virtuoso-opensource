@@ -1056,20 +1056,18 @@ srv_lock_report (const char * mode)
     }
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
   {
+      mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
     for (inx = 0; inx < IT_N_MAPS; inx++)
       {
-	if (mutex_try_enter (it->it_lock_release_mtx))
-	  {			/* prevent read release as lock release is outside of TXN mtx */
-	    mutex_enter (&it->it_maps[inx].itm_mtx);
-	    if (0 == setjmp_splice (&locks_done))
-	      {
-		locks_printed = 0;
-		maphash (lock_status, &it->it_maps[inx].itm_locks);
-	      }
-	    mutex_leave (&it->it_maps[inx].itm_mtx);
-	    mutex_leave (it->it_lock_release_mtx);
-	  }
+          mutex_enter (&it->it_maps[inx].itm_mtx);
+          if (0 == setjmp_splice (&locks_done))
+            {
+              locks_printed = 0;
+              maphash (lock_status, &it->it_maps[inx].itm_locks);
+            }
+          mutex_leave (&it->it_maps[inx].itm_mtx);
       }
+      mutex_leave (it->it_lock_release_mtx);
   }
   END_DO_SET ();
   lt_wait_status ();
