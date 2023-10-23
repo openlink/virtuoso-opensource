@@ -6123,7 +6123,7 @@ create procedure WS.WS.WAC_INSERT (
   giid := iri_to_id (graph);
   subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
-  sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
+  sparql define input:storage "" insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
   if ((sparql define input:storage ""
     prefix foaf: <http://xmlns.com/foaf/0.1/>
     prefix acl: <http://www.w3.org/ns/auth/acl#>
