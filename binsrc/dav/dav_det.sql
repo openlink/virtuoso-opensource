@@ -1440,8 +1440,11 @@ create function DB.DBA.DAV_DET_GRAPH_UPDATE (
     {
       graph := get_keyword ('graph', rdfParams);
       newRDFParams := vector ('graph', graph, 'graphSecurityACI', get_keyword ('graphSecurityACI', newRDFParams));
-      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'C', graph, oldOwner, oldGroup, oldAcls);
-      DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'C', graph, newOwner, newGroup, newPermissions, newAcls, newRDFParams);
+      if (graph is not null)
+        {
+          DB.DBA.DAV_DET_GRAPH_PERMISSIONS_REMOVE (id, 'C', graph, oldOwner, oldGroup, oldAcls);
+          DB.DBA.DAV_DET_GRAPH_PERMISSIONS_SET (id, 'C', graph, newOwner, newGroup, newPermissions, newAcls, newRDFParams);
+        }
     }
   }
 
