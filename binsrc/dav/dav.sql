@@ -732,7 +732,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
       foreach (any prop in props) do
       {
         prop1 := prop[0];
-        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
+        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'oWiki:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
           goto _skip2;
 
         WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop1, prop1, prop[1]);
@@ -1221,7 +1221,7 @@ create procedure WS.WS.PROPPATCH_INT (
   in gid integer,
   in mode varchar := 'proppatch')
 {
-  -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, ')');
+  -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, id, st, auth_uid, auth_pwd, uid, gid, ')');
   declare _body any;
   declare rc, rc_all, xtree, xtd any;
   declare po, pn, pns, pv, prop_name, props, rc_prop any;
