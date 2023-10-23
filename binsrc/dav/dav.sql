@@ -3137,7 +3137,8 @@ again:
 
     if (client_etag <> server_etag)
     {
-      DB.DBA.DAV_SET_HTTP_STATUS (200);
+      if (isinteger (_res_id) or http_request_status_get() is null)
+        DB.DBA.DAV_SET_HTTP_STATUS (200);
       xpr := get_keyword ('XPATH', params, '/*');
       if (cont_type = 'xml/view')
       {
