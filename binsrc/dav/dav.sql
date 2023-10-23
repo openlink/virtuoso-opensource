@@ -3014,6 +3014,12 @@ again:
     if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
       return;
 
+      if (not isinteger (_res_id) and http_request_status_code_get() > 399)
+        {
+          http (content);
+          return;
+        }
+
     _sse_cont_type := cont_type;
     cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
