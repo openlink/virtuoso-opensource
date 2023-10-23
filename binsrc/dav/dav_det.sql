@@ -23,7 +23,7 @@
 --
 create function DB.DBA.DAV_DET_SPECIAL ()
 {
-  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
+  return vector ('IMAP', 'S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP', 'AZURE');
 }
 ;
 
@@ -36,7 +36,7 @@ create function DB.DBA.DAV_DET_IS_SPECIAL (
 
 create function DB.DBA.DAV_DET_WEBDAV_BASED ()
 {
-  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP');
+  return vector ('S3', 'RACKSPACE', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'FTP', 'LDP', 'AZURE');
 }
 ;
 

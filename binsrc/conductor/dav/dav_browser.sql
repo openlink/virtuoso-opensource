@@ -2707,6 +2707,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
     'RACKSPACE',  'Rackspace Cloud',
+    'AZURE',      'Azure Storage Account',
     'nntp',       'Discussion',
     'CardDAV',    'CardDAV',
     'Blog',       'Blog',
@@ -4854,7 +4855,7 @@ create procedure WEBDAV.DBA.aci_load (
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP', 'AZURE')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta', auth_name=>auth_name, auth_pwd=>auth_pwd);
     if (WEBDAV.DBA.DAV_ERROR (retValue))
@@ -4992,7 +4993,7 @@ create procedure WEBDAV.DBA.aci_save (
 
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP', 'AZURE')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci, auth_name=>auth_name, auth_pwd=>auth_pwd);
   }

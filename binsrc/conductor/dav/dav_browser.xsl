@@ -637,7 +637,7 @@
               else if (detClass = 'DynaRes')
                 retValue := vector ('delete', 'properties', 'share');
 
-              else if (detClass in ('Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
+              else if (detClass in ('Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP', 'AZURE'))
                 retValue := vector ('new', 'upload', 'create', 'edit', 'view', 'delete', 'rename', 'copy', 'move', 'properties', 'share');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
@@ -685,7 +685,7 @@
               else if (detClass in ('DynaRes', 'Share'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'owner', 'group', 'permissions', 'textSearch', 'inheritancePermissions', 'metadata', 'acl', 'aci');
 
-              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
+              else if (detClass in ('GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP', 'AZURE'))
                 retValue := vector ('source', 'name', 'mime', 'folderType', 'fileSize', 'creator', 'owner', 'group', 'permissions', 'ldp', 'turtleRedirect', 'sse', 'textSearch', 'inheritancePermissions', 'metadata', 'recursive', 'expireDate', 'acl', 'aci');
 
               else if (detClass in ('CalDAV', 'CardDAV'))
@@ -727,7 +727,7 @@
             <![CDATA[
               declare retValue any;
 
-              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFs', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'))
+              if      (detClass in ('', 'UnderVersioning', 'rdfSink', 'HostFs', 'DynaRes', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP', 'AZURE'))
                 retValue := self.viewFields (detClass, what, mode);
 
               else if (detClass = 'IMAP')
@@ -774,6 +774,10 @@
               else if (detClass = 'RACKSPACE')
               {
                 retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'Type', 'User', 'Container', 'API_Key', 'graph'));
+              }
+              else if (detClass = 'AZURE')
+              {
+                retValue := vector (0, 1, vector ('activity', 'checkInterval', 'path', 'account', 'container', 'key', 'graph'));
               }
               else if (detClass = 'S3')
               {
@@ -2446,33 +2450,34 @@
             </div>
              <div id="c1">
               <div class="tabs">
-                <vm:tabCaption2 tab="1"   tabs="21" caption="Main" />
+                <vm:tabCaption2 tab="1"   tabs="22" caption="Main" />
                 <v:template name="tform_5" type="simple" enabled="-- case when (self.viewField ('acl') or self.viewField ('aci')) then 1 else 0 end">
-                <vm:tabCaption2 tab="2"   tabs="21" caption="Sharing" />
+                <vm:tabCaption2 tab="2"   tabs="22" caption="Sharing" />
                 </v:template>
                 <v:template name="tform_7" type="simple" enabled="-- case when self.viewField ('version') and (self.command_mode = 10) and (self.dav_type = 'R') and not self.dav_is_redirect and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,acl') and (WEBDAV.DBA.DAV_GET (self.dav_item, 'name') not like '%,meta') then 1 else 0 end">
-                <vm:tabCaption2 tab="9"   tabs="21" caption="Versions" />
+                <vm:tabCaption2 tab="9"   tabs="22" caption="Versions" />
                 </v:template>
                 <v:template name="tform_8" type="simple" enabled="-- equ (self.dav_type, 'C')">
-                <vm:tabCaption2 tab="4"   tabs="21" caption="WebMail" hide="1" />
-                <vm:tabCaption2 tab="5"   tabs="21" caption="Filter" hide="1" />
-                <vm:tabCaption2 tab="6"   tabs="21" caption="S3 Properties" hide="1" />
-                <vm:tabCaption2 tab="7"   tabs="21" caption="Criteria" hide="1" />
-                <vm:tabCaption2 tab="8"   tabs="21" caption="Linked Data Import" hide="1" />
+                <vm:tabCaption2 tab="4"   tabs="22" caption="WebMail" hide="1" />
+                <vm:tabCaption2 tab="5"   tabs="22" caption="Filter" hide="1" />
+                <vm:tabCaption2 tab="6"   tabs="22" caption="S3 Properties" hide="1" />
+                <vm:tabCaption2 tab="7"   tabs="22" caption="Criteria" hide="1" />
+                <vm:tabCaption2 tab="8"   tabs="22" caption="Linked Data Import" hide="1" />
                 <v:template name="tform_17" type="simple" enabled="-- case when (isstring (DB.DBA.vad_check_version ('SyncML'))) then 1 else 0 end">
-                <vm:tabCaption2 tab="10"  tabs="21" caption="SyncML" hide="1" />
+                <vm:tabCaption2 tab="10"  tabs="22" caption="SyncML" hide="1" />
                 </v:template>
-                <vm:tabCaption2 tab="11"  tabs="21" caption="IMAP Account" hide="1" />
+                <vm:tabCaption2 tab="11"  tabs="22" caption="IMAP Account" hide="1" />
                 <v:template name="tform_171" type="simple" enabled="-- case when (self.dav_detClass = '') then 1 else 0 end">
-                <vm:tabCaption2 tab="12"  tabs="21" caption="Google Drive" hide="1" />
-                <vm:tabCaption2 tab="13"  tabs="21" caption="Dropbox" hide="1" />
-                <vm:tabCaption2 tab="14"  tabs="21" caption="OneDrive" hide="1" />
-                <vm:tabCaption2 tab="15"  tabs="21" caption="Box Net" hide="1" />
-                <vm:tabCaption2 tab="16"  tabs="21" caption="WebDAV" hide="1" />
-                <vm:tabCaption2 tab="17"  tabs="21" caption="Rackspace" hide="1" />
-                <vm:tabCaption2 tab="18"  tabs="21" caption="Social Networks" hide="1" />
-                <vm:tabCaption2 tab="19"  tabs="21" caption="FTP" hide="1" />
-                <vm:tabCaption2 tab="20"  tabs="21" caption="Linked Data Protocol" hide="1" />
+                <vm:tabCaption2 tab="12"  tabs="22" caption="Google Drive" hide="1" />
+                <vm:tabCaption2 tab="13"  tabs="22" caption="Dropbox" hide="1" />
+                <vm:tabCaption2 tab="14"  tabs="22" caption="OneDrive" hide="1" />
+                <vm:tabCaption2 tab="15"  tabs="22" caption="Box Net" hide="1" />
+                <vm:tabCaption2 tab="16"  tabs="22" caption="WebDAV" hide="1" />
+                <vm:tabCaption2 tab="17"  tabs="22" caption="Rackspace" hide="1" />
+                <vm:tabCaption2 tab="18"  tabs="22" caption="Social Networks" hide="1" />
+                <vm:tabCaption2 tab="19"  tabs="22" caption="FTP" hide="1" />
+                <vm:tabCaption2 tab="20"  tabs="22" caption="Linked Data Protocol" hide="1" />
+                <vm:tabCaption2 tab="21"  tabs="22" caption="Azure" hide="1" />
                 </v:template>
                 </v:template>
               </div>
@@ -2681,12 +2686,13 @@
                                               1, 'DynaRes',    'Dynamic Resources',
                                               2, 'SyncML',     'SyncML',
                                               1, 'S3',         'Amazon S3',
+                                              1, 'RACKSPACE',  'Rackspace Cloud Files',
+                                              1, 'AZURE',      'Azure Storage Account',
                                               1, 'GDrive',     'Google Drive',
                                               1, 'Dropbox',    'Dropbox',
                                               1, 'SkyDrive',   'OneDrive',
                                               1, 'Box',        'Box Net',
                                               1, 'WebDAV',     'WebDAV',
-                                              1, 'RACKSPACE',  'Rackspace Cloud Files',
                                               1, 'FTP',        'FTP',
                                               1, 'nntp',       'Discussion',
                                               1, 'CardDAV',    'CardDAV',
@@ -3440,12 +3446,14 @@
                   </v:template>
                   <v:template name="src_18" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'RACKSPACE') then 1 else 0 end">
                     <vm:search-dc-template18 />
-                  </v:template>
                   <v:template name="src_20" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'FTP') then 1 else 0 end">
                     <vm:search-dc-template20 />
                   </v:template>
                   <v:template name="src_21" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'LDP') then 1 else 0 end">
                     <vm:search-dc-template21 />
+                  </v:template>
+                  <v:template name="src_22" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'AZURE') then 1 else 0 end">
+                    <vm:search-dc-template22 />
                   </v:template>
                 </v:template>
                 <v:template type="simple" enabled="-- equ (self.dav_type, 'R')">
@@ -3985,7 +3993,11 @@
                         {
                           detParams := self.detParamsPrepare (dav_detType, 20);
                         }
-                        else if (dav_detType in ('DynaRes', 'Blog', 'Bookmark', 'Calendar', 'CalDAV', 'CardDAV', 'News3'))
+                        else if (dav_detType = 'AZURE')
+                        {
+                          detParams := self.detParamsPrepare (dav_detType, 21);
+                        }
+                        else if (dav_detType in ('DynaRes', 'Blog', 'Bookmark', 'Calendar', 'CalDAV', 'CardDAV', 'News3',  'RDFData'))
                         {
                           detParams := vector ();
                         }
@@ -4228,7 +4240,7 @@
                   ]]>
                 </v:on-post>
               </v:button>
-              <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when (self.dav_type = 'C') and (self.dav_detClass = '') and (self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP')) then 1 else 0 end">
+              <v:button action="simple" name="cUnmount" xhtml_id="cUnmount" value="Unmount" enabled="--case when (self.dav_type = 'C') and (self.dav_detClass = '') and (self.dav_subClass in ('S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP', 'AZURE')) then 1 else 0 end">
                 <v:on-post>
                   <![CDATA[
                     if ((self.mode = 'webdav') and (self.command_mode = 10))
@@ -7539,6 +7551,106 @@
           }
         </script>
       ]]>
+    </div>
+  </xsl:template>
+
+  <!--=========================================================================-->
+  <!-- AZURE DET -->
+  <xsl:template match="vm:search-dc-template22">
+    <div id="21" class="tabContent" style="display: none;">
+      <table class="WEBDAV_formBody WEBDAV_noBorder" cellspacing="0">
+        <tr>
+          <th width="30%">
+            <vm:label for="dav_AZURE_activity" value="Activity manager (on/off)" />
+          </th>
+          <td>
+            <?vsp
+              declare S varchar;
+
+              S := self.get_fieldProperty ('dav_AZURE_activity', self.dav_path, 'virt:AZURE-activity', 'on');
+              http (sprintf ('<input type="checkbox" name="dav_AZURE_activity" id="dav_AZURE_activity" %s disabled="disabled" value="on" />', case when S = 'on' then 'checked="checked"' else '' end));
+            ?>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_AZURE_checkInterval" value="Check for updates every" />
+          </th>
+          <td>
+            <v:text name="dav_AZURE_checkInterval" xhtml_id="dav_AZURE_checkInterval" format="%s" xhtml_disabled="disabled" xhtml_size="3">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_AZURE_checkInterval', self.dav_path, 'virt:AZURE-checkInterval', '15');
+                ]]>
+              </v:before-data-bind>
+            </v:text> minutes
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_AZURE_account" value="Account (*)" />
+          </th>
+          <td>
+            <v:text name="dav_AZURE_account" xhtml_id="dav_AZURE_account" format="%s" xhtml_disabled="disabled" xhtml_class="field-text">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_AZURE_account', self.dav_path, 'virt:AZURE-account', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_AZURE_API_key" value="Key (*)" />
+          </th>
+          <td>
+            <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
+              <v:before-data-bind>
+                <![CDATA[
+                  control.ufl_value := self.get_fieldProperty ('dav_AZURE_key', self.dav_path, 'AZURE', 'key', '');
+                ]]>
+              </v:before-data-bind>
+            </v:text>
+          </td>
+        </tr>
+        <tr>
+          <th>
+            <vm:label for="dav_AZURE_Container" value="Container (*)" />
+          </th>
+          <td id="td_dav_AZURE_Container">
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_AZURE_Container', 'dav_AZURE_container', "<?V self.get_fieldProperty ('dav_AZURE_container', self.dav_path, 'virt:AZURE-container', '') ?>", function(){WEBDAV.loadDriveFolders('AZURE', ['account', 'container', 'key']);});
+                    WEBDAV.loadDriveBuckets('AZURE', 'container', ['account', 'container', 'key']);
+                  }
+                );
+              ]]>
+            </script>
+          </td>
+        </tr>
+        <tr id="tr_dav_AZURE_path">
+          <th>Root Folder Path</th>
+          <td id="td_dav_AZURE_path">
+            <script type="text/javascript">
+              <![CDATA[
+                OAT.Loader.load(
+                  ["ajax", "json", "drag", "combolist"],
+                  function () {
+                    WEBDAV.comboListPath('td_dav_AZURE_path', 'dav_AZURE_path', "<?V self.get_fieldProperty ('dav_AZURE_path', self.dav_path, 'virt:AZURE-path', '/') ?>");
+                  }
+                );
+              ]]>
+            </script>
+          </td>
+        </tr>
+        <?vsp
+          self.detSpongerUI ('AZURE', 21);
+        ?>
+      </table>
     </div>
   </xsl:template>
 
