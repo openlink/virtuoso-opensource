@@ -408,6 +408,7 @@ extern size_t cha_max_gb_bytes;
 extern int64 chash_space_avail;
 extern int chash_per_query_pct;
 extern int enable_chash_gb;
+extern int64 chash_mempool_size_limit;
 extern long tc_slow_temp_insert;
 extern long tc_slow_temp_lookup;
 extern int enable_ksp_fast;
@@ -1923,6 +1924,7 @@ stat_desc_t dbf_descs [] =
     {"chash_space_avail", (long *)&chash_space_avail, SD_INT64},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
+    {"chash_mempool_size_limit", (long *)&chash_mempool_size_limit, SD_INT64},
     {"enable_ksp_fast", (long *)&enable_ksp_fast, SD_INT32},
     {"enable_ac", (long *)&enable_ac, SD_INT32},
     {"enable_col_ac", (long *)&enable_col_ac, SD_INT32},

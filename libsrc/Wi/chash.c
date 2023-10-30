@@ -1887,6 +1887,16 @@ cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
     }
 }
 
+int64 chash_mempool_size_limit = ~0LL;
+
+void
+chash_error (mem_pool_t *mp, void *cbk_env)
+{
+  log_error ("Hash memory pool uses " BOXINT_FMT " over the limit " BOXINT_FMT, mp->mp_bytes, chash_mempool_size_limit);
+  sqlr_new_error ("42000", "CHAME", "Hash memory pool uses " BOXINT_FMT " over the limit " BOXINT_FMT, 
+      mp->mp_bytes, chash_mempool_size_limit);
+}
+
 index_tree_t *
 DBG_NAME(cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 card)
 {
@@ -1906,6 +1916,13 @@ DBG_NAME(cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 car
   memset (cha, 0, sizeof (chash_t));
   cha->cha_pool = hi->hi_pool;
   cha->cha_pool->mp_block_size = chash_block_size;
+  if (chash_mempool_size_limit != ~0LL)
+    {
+      mem_pool_t * mp = cha->cha_pool;
+      mp->mp_size_cap.limit = chash_mempool_size_limit;
+      mp->mp_size_cap.cbk = chash_error;
+      mp->mp_size_cap.cbk_env = (void *)inst;
+    }
   if (setp->setp_fref && setp->setp_fref->fnr_parallel_hash_fill)
     cha->cha_is_parallel = 1;
   cha->cha_n_keys = ha->ha_n_keys;
