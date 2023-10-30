@@ -1662,6 +1662,8 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
   -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return case (rdf_box_lang (shortobj)) when 257 then __uname (dflt) else null end;
+  if (256 = twobyte and sys_stat('rdf_geo_use_wkt'))
+    return UNAME'http://www.opengis.net/ont/geosparql#wktLiteral';
   whenever not found goto badtype;
   select __uname (RDT_QNAME) into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
   return res;

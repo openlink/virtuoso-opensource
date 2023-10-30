@@ -388,5 +388,6 @@ extern int rb_type__xsd_duration;
 extern int rb_type__xsd_yearMonthDuration;
 extern int rb_type__xsd_dayTimeDuration;
 #define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+extern int32 rdf_geo_use_wkt;
 
 #endif

@@ -2271,7 +2271,7 @@ create procedure WS.WS.PATCH (
 
     giid := iri_to_id (WS.WS.DAV_IRI (full_path));
     set_user_id ('dba');
-    exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
+    exec ('sparql define input:storage "" define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
     if (not (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = __tag of stream))
       goto _skip;
 
@@ -3014,6 +3014,12 @@ again:
     if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
       return;
 
+      if (not isinteger (_res_id) and http_request_status_code_get() > 399)
+        {
+          http (content);
+          return;
+        }
+
     _sse_cont_type := cont_type;
     cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
@@ -3131,7 +3137,8 @@ again:
 
     if (client_etag <> server_etag)
     {
-      DB.DBA.DAV_SET_HTTP_STATUS (200);
+      if (isinteger (_res_id) or http_request_status_get() is null)
+        DB.DBA.DAV_SET_HTTP_STATUS (200);
       xpr := get_keyword ('XPATH', params, '/*');
       if (cont_type = 'xml/view')
       {

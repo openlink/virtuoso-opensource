@@ -10160,7 +10160,7 @@ again:
         case DT_TYPE_TIME: return uname_xmlschema_ns_uri_hash_time;
         default : return uname_xmlschema_ns_uri_hash_dateTime;
         }
-    case DV_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
+    case DV_STRING: case DV_C_STRING: case DV_BLOB_HANDLE: case DV_WIDE: case DV_LONG_WIDE:
       return NULL;
     case DV_LONG_INT: return uname_xmlschema_ns_uri_hash_integer;
     case DV_NUMERIC: return uname_xmlschema_ns_uri_hash_decimal;
@@ -10185,7 +10185,7 @@ again:
     case DV_XML_ENTITY:
       return uname_rdf_ns_uri_XMLLiteral;
     case DV_GEO:
-      return uname_virtrdf_ns_uri_Geometry;
+      return rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry ;
     case DV_ARRAY_OF_DOUBLE:
       {
         if (IS_GENERIC_DURATION (arg))

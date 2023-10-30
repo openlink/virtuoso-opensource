@@ -230,6 +230,46 @@ jsonld_resolve_refs (jsonp_t *jsonp_arg)
     }
 }
 
+caddr_t
+jsonld_new_bnode (jsonp_t *jsonp_arg)
+{
+  caddr_t bn;
+  if (0 == (jsonp_arg->jflags & JFLG_NO_BNODE))
+    {
+      bn = t_box_sprintf (20, "_:b" UBOXINT_FMT, jsonp_arg->bnode_iid++);
+    }
+  else
+    {
+      caddr_t type = JLD_CURRENT(type);
+      int64 seq = 1;
+      ptrlong *place;
+      char * local;
+
+      if (NULL != type)
+        {
+          local = strrchr (type, '#');
+          if (NULL == local)
+            local = strrchr (type, '/');
+          if (NULL == local)
+            local = type;
+          else
+            local ++;
+        }
+      else
+        {
+          local = JSON_LD_UNNAMED;
+        }
+      place = (ptrlong *)id_hash_get (jsonp_arg->bn2no, (caddr_t)&local);
+      if (place)
+        seq = (*(int64 *)place)++;
+      else
+        id_hash_set (jsonp_arg->bn2no, (caddr_t)&local, (caddr_t)&seq);
+      bn = t_box_sprintf (MAX_RULING_PART_BYTES/2, "%s#%s_" UBOXINT_FMT,
+          jsonp_arg->base_uri ? jsonp_arg->base_uri : "", local, seq);
+    }
+  return bn;
+}
+
 void
 jsonld_item_print (jsonld_item_t *itm)
 {
@@ -278,7 +318,7 @@ jsonld_quad_insert (jsonp_t * jsonp_arg, jsonld_item_t *itm)
   if (0 == strncmp(subj, "_:", 2))
     subj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (subj));
   else
-    subj_iid = subj = jsonld_qname_resolve (jsonp_arg, subj, NULL);
+    subj_iid = subj = jsonld_qname_resolve_1 (jsonp_arg, subj, NULL, itm->use_ns);
   if (is_bnode_obj)
     obj_iid = tf_bnode_iid (jsonp_arg->jtf, box_dv_short_string (obj));
   if (is_ref)
@@ -404,6 +444,8 @@ jsonld_frame_pop (jsonp_t *jsonp_arg)
         }
       if (JSON_LD_MAP == jsonp_arg->jpmode)
         jsonp_arg->curr_id = itm->id;
+      if (JSON_LD_MAP == jsonp_arg->jpmode)
+        jsonp_arg->curr_type = itm->type;
       if (jsonp_arg->curr_id)
         JF_SET(ID);
     }
@@ -542,6 +584,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
   JSONP_ARG_INIT(&jsonp, str, base_uri, graph_uri);
   jsonp.jtf = tf_alloc ();
+  jsonp.jflags = flags & 0xffff;
   tf = jsonp.jtf;
   jsonp.qi = tf->tf_qi = (query_instance_t *)qst;
   if (NULL != cbk_names && NULL != app_env)
@@ -567,6 +610,7 @@ bif_rdf_load_jsonld (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   jsonyylex_init (&scanner);
   jsonyyset_extra (&jsonp, scanner);
   jsonp.node2id = hash_table_allocate(101);
+  jsonp.bn2no = t_id_hash_allocate (11, sizeof (caddr_t), sizeof (caddr_t), strhash, strhashcmp);
   QR_RESET_CTX
     {
       jsonldyydebug = flags & 0x10000;

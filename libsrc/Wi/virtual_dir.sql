@@ -1283,8 +1283,6 @@ end_loop:;
 	    login := '';
 	  host := http_request_header(http_request_header(), 'Host', null, null);
 	  ids := vector ('rdf', 'id/entity', 'id');
-	  if (not exists (select 1 from RDF_QUAD where G = iri_to_id (url, 0)))
-	    {
 	  foreach (varchar idn in ids) do
 	    {
 	      pref := 'http://' || host || http_map_get ('domain') || '/' || idn || '/';
@@ -1298,7 +1296,6 @@ end_loop:;
 		  else if (url like 'nodeID/%')
 		    url := 'nodeID:/' || subseq (url, 6);
 		}
-	    }
 	    }
 	  -- escape chars which are not allowed
 	  url := replace (url, '''', '%27');

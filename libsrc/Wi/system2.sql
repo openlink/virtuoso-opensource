@@ -1078,6 +1078,7 @@ create procedure DB.DBA.array2obj (
 -- do not change, if needed make it conditional and keep canonical by default
 --
 
+--!AWK PUBLIC
 create procedure DB.DBA.obj2json (
   in o any,
   in d integer := 10,
@@ -1092,6 +1093,17 @@ create procedure DB.DBA.obj2json (
     return '{"error":"Max depth limit exceeded"}';
 
   retValue := '';
+  if (__tag (o) = __tag of long varchar or __tag (o) = __tag of long nvarchar or __tag (o) = 126 or __tag (o) = 133)
+    o := blob_to_string (o);
+  else if (__tag (o) = __tag of stream)
+    o := string_output_string(o);
+  else if (__tag(o) = __tag of rdf_box)
+    {
+      __rdf_box_make_complete (o);
+      o := rdf_box_data(o);
+    }
+  else if (__tag(o) = 127 or __tag(o) = 183)
+    o := cast (o as varchar);
   if (isnull (o))
   {
     retValue := 'null';
@@ -1100,7 +1112,7 @@ create procedure DB.DBA.obj2json (
   {
     retValue := cast (o as varchar);
   }
-  else if (isstring (o))
+  else if (isstring (o) or __tag of uname = __tag (o))
   {
     declare ses any;
     ses := string_output ();
@@ -1108,11 +1120,11 @@ create procedure DB.DBA.obj2json (
     http_escape (o, 14, ses, 1, 1);
     http ('"', ses);
     retValue := string_output_string (ses);
-      }
+  }
   else if (__tag(o) = __tag of datetime)
   {
     retValue := concat ('"', date_iso8601(o), '"');
-    }
+  }
   else if (isvector (o) and length (o) = 2 and __tag (o[0]) = 255 and __tag (o[1]) = __tag of integer)
   { -- boolean
     if (o[1])
@@ -1138,24 +1150,35 @@ create procedure DB.DBA.obj2json (
       }
       retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
       if (N <> length(o)-2)
-        retValue := retValue || ', ';
+        retValue := retValue || ',';
     }
     retValue := retValue || '}';
   }
   else if (__tag(o) = 254 or __tag(o) = 206)
     {
       declare fields, nth any;
-      fields := udt_get_info (o, 'attributes');
+      fields := udt_get_info (o, 'attributes_info');
       nth := 0;
       retValue := '{';
-      foreach (varchar field in fields) do
+      foreach (any field_info in fields) do
         {
           declare v, jv any;
+          declare nullable int;
+          declare field, null_flag varchar;
+          field := aref (field_info, 0);
+          null_flag := aref (field_info, 4);
+          if (isstring(null_flag) and null_flag in ('nullable', 'nillable', 'xsi:nillable'))
+            nullable := 1;
+          else
+            nullable := 0;
           v := udt_get (o, field);
-          if (nth)
-            retValue := retValue || ',';
-          retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
-          nth := nth + 1;
+          if (v is not null or nullable)
+            {
+              if (nth)
+                retValue := retValue || ',';
+              retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
+              nth := nth + 1;
+            }
         }
       retValue := retValue || '}';
     }

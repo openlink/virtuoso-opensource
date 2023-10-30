@@ -79,6 +79,11 @@
 #define JSON_LD_DATA (JSON_LD == jsonp_arg->jpmode)
 #define JSON_LD_META ((JSON_LD_CTX == jsonp_arg->jpmode) || (JSON_LD_MAP == jsonp_arg->jpmode))
 
+#define JFLG_DEBUG            0x10000
+#define JFLG_NO_BNODE         0x1
+
+#define JSON_LD_UNNAMED       "Entity"
+
 typedef struct jsonld_ctx_s jsonld_ctx_t;
 
 struct jsonld_ctx_s {
@@ -129,6 +134,8 @@ typedef struct jsonp_s {
   dk_set_t pending_quads; /* not used for now */
   triple_feed_t *jtf;     /* hooks for loader etc. */
   query_instance_t *qi;   /* self evident */
+  id_hash_t * bn2no;   /* for bnode node in sponge import mode keeps a counter for a node type */
+  uint32 jflags;         /* special parser mode */
 } jsonp_t;
 
 #define curr_id curr_item.id
@@ -168,7 +175,7 @@ typedef struct jsonp_s {
 
 #define JLD_CURRENT(xx) jsonp_arg->curr_##xx
 
-#define JLD_NEW_BNODE(jp) t_box_sprintf (20, "_:b" UBOXINT_FMT, jp->bnode_iid++)
+#define JLD_NEW_BNODE(jp) jsonld_new_bnode(jp)
 
 #define CTX_DOWN jsonld_frame_push(jsonp_arg)
 #define CTX_UP jsonld_frame_pop(jsonp_arg)
@@ -202,6 +209,7 @@ void jsonld_frame_push (jsonp_t *jsonp_arg);
 void jsonld_frame_pop (jsonp_t *jsonp_arg);
 void jsonld_resolve_refs (jsonp_t *jsonp_arg);
 void jsonld_item_print(jsonld_item_t *itm);
+caddr_t jsonld_new_bnode (jsonp_t *jsonp_arg);
 
 #ifdef _JSONLD_DEBUG
 #define jsonld_debug(x) printf x

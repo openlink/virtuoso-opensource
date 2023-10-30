@@ -1678,6 +1678,12 @@ ECHO BOTH $IF $EQU $LAST[2] $LAST[3] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": gby/float \n";
 
+select count(*) from WS.WS.SYS_DAV_RES where contains(RES_CONTENT,
+        'Lite and (jdbc or odbc) and (installation and not "configur*" and (windows or macos))');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": not-mergeble NOT text pred STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 --
 -- End of test
 --

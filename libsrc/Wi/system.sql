@@ -3180,7 +3180,10 @@ create procedure DB.DBA.HTTP_CLIENT (
     in proxy varchar := null,
     in ca_certs varchar := null,
     in insecure int := 0,
-    in n_redirects int := 0
+    in n_redirects int := 0,
+    in event_callback varchar := null,
+    in event_callback_args any := null,
+    in accept_cookies int := 0
   )
 {
 
@@ -3192,7 +3195,8 @@ create procedure DB.DBA.HTTP_CLIENT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null, timeout, proxy, ca_certs, insecure, n_redirects);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, null,
+      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args, accept_cookies);
 }
 ;
 
@@ -3211,7 +3215,10 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
     in proxy varchar := null,
     in ca_certs varchar := null,
     in insecure int := 0,
-    in n_redirects int := 0
+    in n_redirects int := 0,
+    in event_callback varchar := null,
+    in event_callback_args any := null,
+    in accept_cookies int := 0
   )
 {
 
@@ -3223,7 +3230,8 @@ create procedure DB.DBA.HTTP_CLIENT_EXT (
       if (length (http_headers))
         http_headers := http_headers || '\r\n';
     }
-  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers, timeout, proxy, ca_certs, insecure, n_redirects);
+  return http_client_internal (url, uid, pwd, http_method, http_headers, body, cert_file, cert_pwd, headers,
+      timeout, proxy, ca_certs, insecure, n_redirects, event_callback, event_callback_args, accept_cookies);
 }
 ;
 
@@ -5346,11 +5354,36 @@ DB.DBA.SYS_SQL_VECTOR_PRINT (in in_vector any)
 }
 ;
 
+create procedure DB.DBA.SYS_SQL_UDT_PRINT (in udt any, in inner_call int := 0)
+{
+  declare fields, type_name, vec any;
+  fields := udt_get_info (udt, 'attributes');
+  type_name := udt_instance_of (udt);
+  vec := null;
+  foreach (varchar field in fields) do
+    {
+      declare v, jv any;
+      v := udt_get (udt, field);
+      if (__tag (v) = 254 or __tag (v) = 206)
+        jv := DB.DBA.SYS_SQL_UDT_PRINT (v, 1);
+      else
+        jv := v;
+      if (vec is null)
+        vec := soap_box_structure (field, jv);
+      else
+        vec := vector_concat (vec, vector (field, jv));
+    }
+  if (inner_call)
+    return soap_box_structure (type_name, vec);
+  return DB.DBA.OBJ2JSON(soap_box_structure (type_name, vec));
+}
+;
+
 create procedure
 DB.DBA.SYS_SQL_VAL_PRINT (in v any)
 {
   --no_c_escapes-
-  if (isstring (v) or __tag (v) = 183 or __tag (v) = 127)
+  if (isstring (v) or __tag (v) = 183 or __tag (v) = 127 or __tag (v) = 217)
     return sprintf ('\'%S\'', replace (cast (v as varchar), '\\', '\\\\'));
   else if (v is null)
     return 'NULL';
@@ -5376,8 +5409,14 @@ DB.DBA.SYS_SQL_VAL_PRINT (in v any)
     return sprintf ('__i2id (%s)', DB.DBA.SYS_SQL_VAL_PRINT (__id2i (v)));
   else if (__tag of rdf_box = __tag (v))
     return sprintf ('rdf_box (0, 257, 257, %d, 0)', rdf_box_ro_id (v));
+  else if (__tag (v) = 254 or __tag (v) = 206)
+    return SYS_SQL_UDT_PRINT (v);
   else if (__tag (v) = 255)
     return '<tag 255>';
+  else if (__tag (v) = __tag of varbinary)
+    return sprintf ('hex2bin (\'%s\')', bin2hex (v));
+  else if (__tag (v) = __tag of xml)
+    return SYS_SQL_VAL_PRINT(serialize_to_UTF8_xml (v));
   else
     signal ('22023', sprintf('Unsupported type %d', __tag (v)));
 }

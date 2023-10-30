@@ -1101,6 +1101,13 @@ create table bug19085 (
 insert into bug19085 values ('ID1', NULL, NULL);
 insert into bug19085 values ('ID2', 10, 20);
 
+sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
+sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
+select __box_flags ("u") from (sparql select (URI(CONCAT('http://host/',?o)) as ?u) from <urn:b19410> { ?s <#pred> ?o  } order by ?u) dt;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": box flags are preserved on group by\n";
+
 
 select id from bug19085 where 0 < (pos_end - pos_start) and 100 > (pos_end - pos_start);
 echo both $if $equ $last[1] ID2 "PASSED" "***FAILED";

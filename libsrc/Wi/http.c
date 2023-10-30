@@ -10133,6 +10133,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_xml_template);
   else if (!strcmp (member, "security_level"))
     res = box_copy (map->hm_sec);
+  else if (!strcmp (member, "security_realm"))
+    res = box_copy (map->hm_realm);
   else if (!strcmp (member, "auth_opts"))
     res = box_copy_tree ((box_t) map->hm_auth_opts);
   else if (!strcmp (member, "soap_opts"))
@@ -10444,7 +10446,7 @@ ws_is_https (ws_connection_t * ws)
   int is_https = 0;
 
 #ifdef _SSL
-  if (ws)
+  if (ws && ws->ws_session)
     {
       SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
       is_https = (NULL != ssl);
@@ -11571,8 +11573,9 @@ ws_serve_client_connection (ws_connection_t * ws)
   if (err)
     goto err_end;
 
-  conn = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_CONNECTION);
+  conn = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
   conn[0] = (caddr_t) ses;
+  conn[1] = (caddr_t) 1L;
 
   IN_TXN;
   if (!cli->cli_trx->lt_threads)
@@ -11814,7 +11817,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
       ret[0] = (caddr_t) ses;
-      ret[1] = (caddr_t) 1;
+      ret[1] = (caddr_t) 0L;
     }
 
   if (NULL != ses && NULL != ws && ses == ws->ws_session)

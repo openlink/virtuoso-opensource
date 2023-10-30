@@ -408,6 +408,8 @@ extern size_t cha_max_gb_bytes;
 extern int64 chash_space_avail;
 extern int chash_per_query_pct;
 extern int enable_chash_gb;
+extern int64 chash_mempool_size_limit;
+extern int64 chash_mempool_size_max_used;
 extern long tc_slow_temp_insert;
 extern long tc_slow_temp_lookup;
 extern int enable_ksp_fast;
@@ -1056,20 +1058,18 @@ srv_lock_report (const char * mode)
     }
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
   {
+      mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
     for (inx = 0; inx < IT_N_MAPS; inx++)
       {
-	if (mutex_try_enter (it->it_lock_release_mtx))
-	  {			/* prevent read release as lock release is outside of TXN mtx */
-	    mutex_enter (&it->it_maps[inx].itm_mtx);
-	    if (0 == setjmp_splice (&locks_done))
-	      {
-		locks_printed = 0;
-		maphash (lock_status, &it->it_maps[inx].itm_locks);
-	      }
-	    mutex_leave (&it->it_maps[inx].itm_mtx);
-	    mutex_leave (it->it_lock_release_mtx);
-	  }
+          mutex_enter (&it->it_maps[inx].itm_mtx);
+          if (0 == setjmp_splice (&locks_done))
+            {
+              locks_printed = 0;
+              maphash (lock_status, &it->it_maps[inx].itm_locks);
+            }
+          mutex_leave (&it->it_maps[inx].itm_mtx);
       }
+      mutex_leave (it->it_lock_release_mtx);
   }
   END_DO_SET ();
   lt_wait_status ();
@@ -1806,6 +1806,7 @@ stat_desc_t stat_descs [] =
     {"col_ac_last_duration", (long *)&col_ac_last_duration, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
+    {"chash_mempool_size_max_used", (long *)&chash_mempool_size_max_used, SD_INT64},
     {NULL, NULL, NULL}
 };
 
@@ -1925,6 +1926,7 @@ stat_desc_t dbf_descs [] =
     {"chash_space_avail", (long *)&chash_space_avail, SD_INT64},
     {"chash_per_query_pct", (long *)&chash_per_query_pct, SD_INT32},
     {"enable_chash_gb", (long *)&enable_chash_gb, SD_INT32},
+    {"chash_mempool_size_limit", (long *)&chash_mempool_size_limit, SD_INT64},
     {"enable_ksp_fast", (long *)&enable_ksp_fast, SD_INT32},
     {"enable_ac", (long *)&enable_ac, SD_INT32},
     {"enable_col_ac", (long *)&enable_col_ac, SD_INT32},
@@ -1979,6 +1981,7 @@ stat_desc_t dbf_descs [] =
     {"enable_rdf_box_const", &enable_rdf_box_const, SD_INT32},
     {"simple_rdf_numbers", &simple_rdf_numbers, SD_INT32},
     {"rdf_rpid64_mode", (long *)&rdf_rpid64_mode, SD_INT32},
+    {"rdf_geo_use_wkt", (long *)&rdf_geo_use_wkt, SD_INT32},
     {"pcre_match_limit", &c_pcre_match_limit, SD_INT32},
     {"pcre_match_limit_recursion", &c_pcre_match_limit_recursion, SD_INT32},
     {"pcre_max_cache_sz", &pcre_max_cache_sz, SD_INT32},

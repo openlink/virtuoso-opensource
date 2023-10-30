@@ -1396,7 +1396,7 @@ create procedure DB.DBA.RDF_HTTP_URL_GET (inout url any, in base any, inout hdr 
   hdr := null;
   url := WS.WS.EXPAND_URL (base, url);
 
-  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy, n_redirects=>15);
+  content := http_client_ext (url=>url, headers=>hdr, http_method=>meth, http_headers=>req_hdr, body=>cnt, proxy=>proxy, n_redirects=>15, accept_cookies=>1);
 
   if (hdr[0] not like 'HTTP/1._ 200 %' and hdr[0] not like 'HTTP/1._ 203 %')
     {
@@ -1533,11 +1533,13 @@ create procedure DB.DBA.RDF_PROC_COLS (in pname varchar)
 create function DB.DBA.RDF_PROXY_GET_HTTP_HOST ()
 {
     declare default_host, cname, xhost varchar;
+    declare lines any;
     xhost := connection_get ('http_host');
     if (isstring (xhost))
       return xhost;
-    if (is_http_ctx ())
-        default_host := http_request_header(http_request_header (), 'Host', null, null);
+    lines := http_request_header ();
+    if (isvector(lines))
+        default_host := http_request_header(lines, 'Host', null, null);
     else if (connection_get ('__http_host') is not null)
         default_host := connection_get ('__http_host');
     else
