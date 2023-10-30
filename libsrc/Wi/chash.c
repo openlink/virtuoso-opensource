@@ -2035,12 +2035,16 @@ cha_clear (chash_t * cha, hash_index_t * hi)
 }
 
 
+int64 chash_mempool_size_max_used;
+
 void
 cha_free (chash_t * cha)
 {
   mutex_enter (&chash_rc_mtx);
   chash_space_avail += cha->cha_reserved;
   mutex_leave (&chash_rc_mtx);
+  if (chash_mempool_size_max_used < cha->cha_pool->mp_bytes)
+     chash_mempool_size_max_used = cha->cha_pool->mp_bytes;
   mp_free (cha->cha_pool);
 }
 

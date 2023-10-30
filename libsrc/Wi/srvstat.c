@@ -409,6 +409,7 @@ extern int64 chash_space_avail;
 extern int chash_per_query_pct;
 extern int enable_chash_gb;
 extern int64 chash_mempool_size_limit;
+extern int64 chash_mempool_size_max_used;
 extern long tc_slow_temp_insert;
 extern long tc_slow_temp_lookup;
 extern int enable_ksp_fast;
@@ -1805,6 +1806,7 @@ stat_desc_t stat_descs [] =
     {"col_ac_last_duration", (long *)&col_ac_last_duration, SD_INT32},
     {"col_ins_error", (long *)&col_ins_error, SD_INT32},
     {"cl_rdf_inf_inited", (long *)&cl_rdf_inf_inited, SD_INT32},
+    {"chash_mempool_size_max_used", (long *)&chash_mempool_size_max_used, SD_INT64},
     {NULL, NULL, NULL}
 };
 
