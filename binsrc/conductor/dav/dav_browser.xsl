@@ -3446,6 +3446,7 @@
                   </v:template>
                   <v:template name="src_18" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'RACKSPACE') then 1 else 0 end">
                     <vm:search-dc-template18 />
+                  </v:template>
                   <v:template name="src_20" type="simple" enabled="--case when (self.command_mode <> 10) or (self.dav_detType = 'FTP') then 1 else 0 end">
                     <vm:search-dc-template20 />
                   </v:template>
