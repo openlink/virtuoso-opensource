@@ -389,7 +389,7 @@ create procedure WS.WS.SPARQL_ENDPOINT_JAVASCRIPT (in can_cxml integer, in can_q
     function sparqlSubmitForm () {
         var link = sparqlGenerateLink(1);
 
-        if (max_url > 0 && max_url < link.length) {
+        if (link.length > 14000 || (max_url > 0 && max_url < link.length)) {
             $('#sparql_form').attr('method', 'post');
         }
         document.forms['sparql_form'].submit();
