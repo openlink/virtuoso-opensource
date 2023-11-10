@@ -2668,12 +2668,21 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400 &&
 	  (NULL == ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Allow:")))
 	{
-	  len = 0;
 	  strses_flush (ws->ws_strses);
 	  SES_PRINT (ws->ws_session, "Allow: ");
 	  http_options_print (ws, ws->ws_session);
 	  SES_PRINT (ws->ws_session, "\r\n");
 	}
+
+      if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400 &&
+	  (NULL == ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Methods:")))
+	{
+	  strses_flush (ws->ws_strses);
+	  SES_PRINT (ws->ws_session, "Access-Control-Allow-Methods: ");
+	  http_options_print (ws, ws->ws_session);
+	  SES_PRINT (ws->ws_session, "\r\n");
+	}
+
 
       /* timestamp */
       if (WS_NOT_HDR (ws, "Date:"))
