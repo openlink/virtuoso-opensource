@@ -2433,7 +2433,10 @@ create function DAV_CHECK_ACLS (
        )
     {
       graph := WS.WS.WAC_GRAPH (path);
-      grpGraph := SIOC.DBA.get_graph () || '/private/%';
+      if (__proc_exists ('SIOC.DBA.get_graph') is not null)
+        grpGraph := SIOC.DBA.get_graph () || '/private/%';
+      else
+        grpGraph := null;
       DB.DBA.DAV_CHECK_ACLS_INTERNAL (mode, netid, webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
