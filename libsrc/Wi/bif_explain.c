@@ -207,6 +207,7 @@ ssl_type (state_slot_t * ssl, char * str)
     case DV_DATETIME: str[0] = 't';  break;
     case DV_STRING: str[0] = 's'; break;
     case DV_ANY: str[0] = 'a'; break;
+    case DV_NUMERIC: str[0] = 'u'; break;
     case DV_WIDE: case DV_LONG_WIDE:
       str[0] = 'N'; break;
     default: str[0] = 'x';
