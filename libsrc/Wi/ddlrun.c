@@ -3631,8 +3631,16 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
     {
       ST *st = NULL;
       ST *cmpd;
+      int dummy = 0;
       query_t *qr;
       local_cursor_t *lc = NULL;
+
+      if (ST_P (check_cond, BOP_NOT) && NULL != sqlc_contains_args (check_cond->_.bin_exp.left, &dummy))
+        {
+          if (qi)
+            QI_POISON_TRX (qi);
+          sqlr_new_error ("42000", "SR362", "Check constraint cannot use CONTAINS/XCONTAINS predicates");
+        }
 
 
       if (qi)
