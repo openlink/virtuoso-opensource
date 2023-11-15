@@ -1002,6 +1002,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    t_NEW_VARZ (op_table_t, got);
 	    ot->ot_group_ot = got;
 	    got->ot_is_group_dummy = 1;
+            got->ot_fref_ot = ot;
 	    ot->ot_group_dfe = sqlo_new_dfe (so, DFE_GROUP, NULL);
 	    ot->ot_group_dfe->_.setp.specs = dt->_.select_stmt.table_exp->_.table_exp.group_by;
 	    ot->ot_group_dfe->_.setp.top_cnt = sqlo_select_top_cnt (so, SEL_TOP (dt));
@@ -2068,7 +2069,6 @@ sqlo_is_dt_state_func (char * name)
   return (!stricmp (name, "T_STEP") || !stricmp (name, "__TN_IN"));
 }
 
-
 df_elt_t *
 sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 {
@@ -2210,6 +2210,12 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	dfe->dfe_locus = pref_loc;
 	placed = dfe_latest_by_ot (so, n_deps, deps, 1);
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
+        DO_BOX (op_table_t *, ot, inx, deps)
+          {
+            if (ot->ot_is_group_dummy && ot->ot_fref_ot && ot->ot_fref_ot->ot_dfe && ot->ot_fref_ot->ot_dfe->dfe_is_placed)
+              placed = ot->ot_fref_ot->ot_dfe;
+          }
+        END_DO_BOX;
 	dfe->_.control.terms = (df_elt_t ***) t_box_copy ((caddr_t) dfe->dfe_tree->_.comma_exp.exps);
 	DO_BOX (ST *, elt, inx, dfe->dfe_tree->_.comma_exp.exps)
 	  {
@@ -2325,6 +2331,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 	sqlo_place_dfe_after (so, pref_loc, placed, dfe);
 	return dfe;
       }
+    case DFE_FUN_REF:
+      return dfe;
     default:
       SQL_GPF_T1 (so->so_sc->sc_cc, "Bad dfe in sqlo_place_exp");
     }

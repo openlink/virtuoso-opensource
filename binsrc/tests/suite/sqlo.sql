@@ -704,6 +704,21 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG2423: keyset and sqlo_expand_dt with 2 tables in the dt STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": single fun ref in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,0) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": fun ref and const in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain('select dt.maxa, tb.depstr from b18907 tb, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,tb.id) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": fun ref and outer col in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 explain('
     select
       case

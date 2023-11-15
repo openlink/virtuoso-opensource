@@ -78,6 +78,7 @@ typedef struct op_table_s
   df_elt_t *	ot_work_dfe;
   char 	ot_is_contradiction;
   char	ot_is_group_dummy;	/*!< Fictive table corresponding to a group by's results. fun refs depend alone on this and this depends on all other tables */
+  struct op_table_s *  ot_fref_ot; /*!< table to which belongs dummy fref */
   dk_set_t	ot_oby_ots;	/*!< For a dt, the component ots in the oby order */
   dk_set_t 	ot_order_cols;	/*!< for a table in an ordered from, the subset of the oby pertaining to this table */
   char 	ot_order_dir;
