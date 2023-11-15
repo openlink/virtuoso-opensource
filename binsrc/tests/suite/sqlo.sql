@@ -704,21 +704,6 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": BUG2423: keyset and sqlo_expand_dt with 2 tables in the dt STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
-explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa) is not null');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": single fun ref in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
-explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,0) is not null');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": fun ref and const in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
-explain('select dt.maxa, tb.depstr from b18907 tb, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,tb.id) is not null');
-ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": fun ref and outer col in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
-
 explain('
     select
       case
@@ -1103,6 +1088,7 @@ select a.row_no, b.row_no from t1 a, (select top 4 row_no from t1) b where a.row
 
 select __max (__min (1000), count (1)) from sys_users where u_id = 1111;
 echo both $if $equ $last[1] 1000 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 echo both ": emppty agg with data independent false cond inits data independent exps\n";
 
 
@@ -1127,6 +1113,138 @@ echo both ": box flags are preserved on group by\n";
 select id from bug19085 where 0 < (pos_end - pos_start) and 100 > (pos_end - pos_start);
 echo both $if $equ $last[1] ID2 "PASSED" "***FAILED";
 echo both ": table source with local test vec\n";
+
+drop table b18907 if exists;
+create table b18907 (id int primary key, depint int, depstr varchar);
+create index depint18907 on b18907 (depint);
+insert into b18907 values (1, 1, 1);
+insert into b18907 values (2, 2, 2);
+insert into b18907 values (3, 1, 3);
+insert into b18907 values (4, 2, 4);
+insert into b18907 values (5, 3, 5);
+select tb.depstr, dt.maxa from b18907 tb, (select min(depint) as maxa from b18907) dt where coalesce (null,dt.maxa) = tb.depint order by 1;
+echo both $if $equ $last[1] 3 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": derived table with aggregate exp in control exp in outer cond\n";
+
+explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": single fun ref in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain('select dt.maxa from b18907, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,0) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": fun ref and const in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain('select dt.maxa, tb.depstr from b18907 tb, (select min(depint) as maxa from b18907) dt where coalesce (dt.maxa,tb.id) is not null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": fun ref and outer col in control exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+explain('
+sparql
+PREFIX dbpedia-owl: <http://dbpedia.org/ontology/>
+PREFIX nobel: <http://data.nobelprize.org/terms/>
+PREFIX foaf: <http://xmlns.com/foaf/0.1/>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+SELECT ?name (if(COUNT(?nobel)=3,"Yes", "No") AS ?HaveMoreThanThree)
+WHERE
+{
+SERVICE <http://data.example.org/sparql>
+{
+SELECT ?name ?nobel
+WHERE {
+?persona foaf:name ?name .
+?persona rdf:type foaf:Person .
+?persona nobel:nobelPrize ?nobel .
+}
+}
+}GROUP BY (?name)
+HAVING (COUNT(?nobel) > 1)
+ORDER BY ASC(?name)');
+echo both $if $equ $state OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": Bug#18907 control exp with aggregate outside of dt\n";
+
+sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
+sparql with <urn:b19410> insert { <#subj> <#pred> "data" };
+select __box_flags ("u") from (sparql select (URI(CONCAT('http://host/',?o)) as ?u) from <urn:b19410> { ?s <#pred> ?o  } order by ?u) dt;
+echo both $if $equ $last[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+echo both ": box flags are preserved on group by\n";
+
+drop table case1172;
+CREATE TABLE case1172 ( v1 DECIMAL ) ;
+  INSERT INTO case1172 VALUES ( 0 ) ;
+  INSERT INTO case1172 ( v1 ) SELECT CASE v1 WHEN 49 THEN v1 ELSE -128 END FROM case1172 AS v2 , case1172 , case1172 AS v3 GROUP BY v1 , v1 ;
+  UPDATE case1172 SET v1 = ( SELECT DISTINCT * FROM case1172 ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Insert cast with case exp value STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1173;
+CREATE TABLE case1173 ( v1 FLOAT UNIQUE , v2 INT ) ;
+ INSERT INTO case1173 VALUES ( NULL , 57 ) ;
+ INSERT INTO case1173 VALUES ( -1 , ( SELECT 60 , v2 FROM case1173 WHERE v2 = -1 ) ) ;
+ UPDATE case1173 SET v1 = ( CASE WHEN v2 * v1 THEN 76 ELSE ( SELECT v2 FROM case1173 WHERE v1 = -2147483648 / CASE WHEN v2 = ( SELECT v1 FROM case1173 WHERE ( CASE WHEN v2 = v2 AND v2 = v2 AND v2 THEN v2 + v1 * -128 + 48100742.000000 END ) IN ( SELECT v1 FROM case1173 WHERE v2 BETWEEN 'x' AND 'x' OR ( CASE WHEN v2 = 16 THEN 46 ELSE v1 + ( 69175744.000000 , 10962973.000000 ) / 36 + 5 END ) GROUP BY 'x' ) ORDER BY v2 / 45 DESC ) THEN 32232158.000000 END ) END ) ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Insert cast on case exp value box_add crash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1174;
+CREATE TABLE case1174 ( v1 nvarchar ) ;
+ INSERT INTO case1174 VALUES ( 1 ) ;
+ INSERT INTO case1174 SELECT MAX ( DISTINCT v1 ) FROM case1174 ;
+ INSERT INTO case1174 SELECT v1 FROM case1174 WHERE ( SELECT ( SELECT v1 FROM case1174 ) ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": max distinct failed, any ssl ref changes after hash feed STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1175;
+CREATE TABLE case1175 ( v1 INT , v2 BIGINT PRIMARY KEY) ;
+ INSERT INTO case1175 VALUES ( 20 , -1 ) ;
+ SELECT v1 + 77 , v2 FROM case1175 UNION SELECT v2 , CASE WHEN 92 THEN 86 ELSE ( ( 32433852.000000 , 70038895.000000 ) , ( 64572024.000000 , 4442219.000000 ) ) END FROM case1175 ORDER BY v2 + -1 * 40 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Assign from box dc is general case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1176;
+CREATE TABLE case1176 ( v1 INTEGER NOT NULL PRIMARY KEY ) ;
+  INSERT INTO case1176 VALUES ( 95 ) ;
+  INSERT INTO case1176 VALUES ( ( SELECT ( -1 , -1 ) * ( 31 , 84 ) FROM case1176 WHERE v1 BETWEEN 'x' AND 'x' OR EXISTS ( SELECT v1 FROM case1176 WHERE v1 NOT IN ( SELECT 20 FROM case1176 WHERE ( v1 > 2147483647 AND v1 < 271514.000000 ) ) ) ) ) ;
+  INSERT INTO case1176 SELECT v1 + v1 + v1 FROM case1176 ORDER BY v1 ;
+  INSERT INTO case1176 VALUES ( ( SELECT ( 34 , 16 ) * ( 41 , -128 ) FROM case1176 WHERE v1 BETWEEN 'x' AND 'x' OR EXISTS ( SELECT v1 FROM case1176 WHERE v1 + v1 * 24 / 50820962.000000 - 0 / 86183090.000000 IN ( SELECT DISTINCT v1 FROM case1176 WHERE 'x' OR ( ( ( v1 / 0 ) ) [ 35 ] ) * 16 BETWEEN 'x' AND 'x' GROUP BY v1 , v1 ) ) ) ) ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": Div/0 with searched case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1177;
+CREATE TABLE case1177 ( v1 SMALLINT CHECK ( CONTAINS ( 'del' , 'reabbreviating' , 'diamonds' ) ) ) ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": CONTAINS() in check constraint not allowed STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1178;
+CREATE TABLE case1178 ( v1 INT ) ;
+  INSERT INTO case1178 VALUES ( 2147483647 ) ;
+  INSERT INTO case1178 VALUES ( -1 ) ;
+  INSERT INTO case1178 ( v1 , v1 , v1 ) SELECT 54 , v1 , -128 FROM case1178 AS v4 , case1178 , case1178 AS v3 NATURAL JOIN case1178 AS v2 ;
+  UPDATE case1178 SET v1 = NULL WHERE ( v1 * 2147483647 , CASE WHEN v1 = 'x' THEN 75 WHEN DENSE_RANK ( 'x' ) THEN 25942677.000000 END + 16 * 127 ) IN ( SELECT v1 FROM case1178 WHERE v1 >= 127 AND ( v1 * 16 , v1 , ( SELECT v1 FROM case1178 WHERE ( v1 , v1 ) IN ( SELECT v1 , v1 AS v8 FROM case1178 AS v6 NATURAL JOIN case1178 AS v7 NATURAL JOIN case1178 AS v5 NATURAL JOIN case1178 WHERE v1 ) ORDER BY v1 ) ) - 'x' GROUP BY 48002391.000000 ) ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": mutiply with numeric in assign via simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1179;
+CREATE TABLE case1179 ( v1 INT ) ;
+ INSERT INTO case1179 ( v1 , v1 , v1 ) VALUES ( 77 , -128 , -1 ) ;
+ INSERT INTO case1179 VALUES ( 4 ) ;
+ SELECT CASE -128 / 56 WHEN v1 THEN 20 ELSE v1 + -2147483648 END , v1 FROM case1179 UNION SELECT 19 , 0 * v1 FROM case1179 GROUP BY v1 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  union on case exp w/ group STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
