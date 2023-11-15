@@ -2991,7 +2991,7 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
 
   if (!set_mask && SSL_VEC == ssl_from->ssl_type)
     {
-      if (DV_ANY != dc_from->dc_dtp && !dc_to->dc_n_values)
+      if (DV_ANY != dc_from->dc_dtp && !dc_to->dc_n_values && !vec_box_dtps[dc_from->dc_dtp])
 	dc_convert_empty (dc_to, dv_ce_dtp[dc_from->dc_dtp]);
       if (dc_to->dc_dtp == dc_from->dc_dtp && dc_to->dc_type == dc_from->dc_type)
 	{
@@ -3011,7 +3011,7 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
     }
   if (SSL_REF == ssl_from->ssl_type)
     {
-      if (!set_mask && !dc_to->dc_n_values && DV_ANY != dc_from->dc_dtp)
+      if (!set_mask && !dc_to->dc_n_values && DV_ANY != dc_from->dc_dtp && !vec_box_dtps[dc_from->dc_dtp])
 	{
 	  dc_convert_empty (dc_to, dv_ce_dtp[dc_from->dc_dtp]);
 	}
