@@ -2279,6 +2279,8 @@ setp_chash_distinct (setp_node_t * setp, caddr_t * inst)
       if (!cha)
 	return 0;
     }
+  if (cha && cha->cha_n_keys != ha->ha_n_keys)
+    goto no;
   if (cha && cha->cha_oversized)
     goto no;
   if (ha->ha_n_keys >= CHASH_GB_MAX_KEYS)
