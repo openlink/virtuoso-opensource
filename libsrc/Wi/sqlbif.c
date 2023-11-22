@@ -7372,7 +7372,7 @@ bif_atod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_arg (qst, args, 0, "atod");
   double d = 0;
-  sscanf (str, "%lg", &d);
+  sscanf (str, "%lf", &d);
   return (box_double (d));
 }
 

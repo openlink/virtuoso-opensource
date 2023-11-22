@@ -1311,7 +1311,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	      char tmp[100];
 	      double d = 0;
 	      cli_wide_to_narrow (NULL, 0, (wchar_t *) place, 100, tmp, sizeof (tmp), "?", NULL);
-	      sscanf (tmp, "%lg", &d);
+	      sscanf (tmp, "%lf", &d);
 
 	      return (box_double (d));
 #else
@@ -1328,7 +1328,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	      else
 	        cli_wide_to_narrow (NULL, 0, (wchar_t *) place, 100, (unsigned char *)tmp, sizeof (tmp), "?", NULL);
 
-	      sscanf (tmp, "%lg", &d);
+	      sscanf (tmp, "%lf", &d);
 	      return (box_double (d));
 	    }
 
@@ -1415,7 +1415,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	  {
 	    double d = 0;
 
-	    sscanf (place, "%lg", &d);
+	    sscanf (place, "%lf", &d);
 
 	    return (box_double (d));
 	  }
@@ -1424,7 +1424,7 @@ buffer_to_dv (caddr_t place, SQLLEN * len, int c_type, int sql_type, long bhid,
 	  {
 	    float f = 0;
 
-	    sscanf (place, "%g", &f);
+	    sscanf (place, "%f", &f);
 
 	    return (box_double (f));
 	  }

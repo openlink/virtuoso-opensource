@@ -7091,7 +7091,7 @@ csv_field (dk_session_t * ses, int mode)
   else if (NULL != (regex = regexp_match_01_const ("^[\\+\\-]?[0-9]+\\.[0-9]*[Ee][\\+\\-]?[0-9]+$", str, 0, &r3)))
     {
       double d = 0;
-      sscanf (str, "%lg", &d);
+      sscanf (str, "%lf", &d);
       ret = box_double (d);
       dk_free_box (str);
       dk_free_box (regex);

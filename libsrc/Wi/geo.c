@@ -1342,7 +1342,7 @@ geo_parse_wkt (char *text, caddr_t * err_ret)
 	break;
       if (2 != sscanf (par + 6, "%20s %20s", ns1, ns2))
 	break;
-      if (2 != sscanf (par + 6, "%lg %lg", &x, &y))
+      if (2 != sscanf (par + 6, "%lf %lf", &x, &y))
 	break;
       g = geo_point (x, y);
       if (!(strlen (ns1) > 8 && strlen (ns2) > 8))
