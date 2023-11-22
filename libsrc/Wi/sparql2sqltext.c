@@ -2333,7 +2333,7 @@ ssg_print_double_as_sql_atom (spar_sqlgen_t *ssg, double val, int mode, caddr_t 
         buffill = sprintf (tmpbuf, ((DBL_POS_INF == val) ? "cast ('INF' as double precision)" : ((DBL_NEG_INF == val) ? "cast ('-INF' as double precision)" : "cast ('NaN' as double precision)")));
       else
         {
-          buffill = sprintf (tmpbuf, "%lg", val);
+	  buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, val);
           if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
             {
               strcpy (tmpbuf+buffill, ".0e0");
@@ -2441,7 +2441,7 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
           }
         else
           {
-            buffill = sprintf (tmpbuf, "cast (%lg", boxdbl);
+            buffill = sprintf (tmpbuf, "cast (" DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
             if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
               {
                 if (isalpha(tmpbuf[6+1]))
