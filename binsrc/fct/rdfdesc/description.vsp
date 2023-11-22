@@ -372,7 +372,7 @@ again:
   e_type := e_type_a[0];
   e_type_label := e_type_a[1];
   
-  qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> select ?o (lang(?o)) %s where { <%s> rdfs:comment ?o }', inf, _F, _S);
+  qry_str := sprintf ('sparql %s prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> prefix dc: <http://purl.org/dc/elements/1.1/> prefix schema: <http://schema.org/> select ?o (lang(?o)) %s where { <%s> rdfs:comment|schema:description ?o }', inf, _F, _S);
 
 --    dbg_obj_print (qry_str);
 
