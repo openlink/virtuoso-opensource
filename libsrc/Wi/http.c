@@ -2115,6 +2115,8 @@ ws_get_mime_variant (char * mime, const char ** found)
 {
   static const char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
   int inx;
+  if (!strchr(mime, '/'))
+    return "*";
   *found = NULL;
   for (inx = 0; NULL != compat[inx]; inx += 2)
     {
@@ -2173,6 +2175,8 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
   if (!mime)
     mime = "text/html";
   asked = ws_split_ac_header (accept);
+  if (!BOX_ELEMENTS(asked))
+    goto done;
   DO_BOX_FAST_STEP2 (caddr_t, p, caddr_t, q, inx, asked)
     {
       float qf = unbox_float (q);
@@ -2233,6 +2237,7 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
       dk_free_tree ((caddr_t)headers);
       dk_free_box ((caddr_t)ses);
     }
+done:
   dk_free_tree (ctype);
   dk_free_tree (cenc);
   dk_free_tree ((caddr_t)asked);
