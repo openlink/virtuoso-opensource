@@ -510,6 +510,8 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
   int elt_sz, inx, ninx;
   dtp_t chdtp = cha->cha_sqt[nth].sqt_dtp;
   char is_fill = HA_FILL == cha->cha_ha->ha_op;
+  if (!dc)
+    sqlr_new_error ("42000", "VEC..", "hash fill outer not supported");
   if (clear_nulls)
     {
       /* a group by or distinct has null flags for every col, a hash filler has one per row, so the first null skips the row */
