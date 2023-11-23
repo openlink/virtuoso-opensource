@@ -1359,8 +1359,11 @@ cv_subq_ret (sql_comp_t * sc, instruction_t * ins)
   qr->qr_select_node->sel_out_slots[0]->ssl_sqt.sqt_non_null = 0;
   if (qr->qr_proc_vectored)
     {
-      ins->_.subq.scalar_ret = sqlc_new_temp (sc, "scalar", sel->sel_out_slots[0]->ssl_sqt.sqt_dtp);
-      ins->_.subq.scalar_ret->ssl_sqt = sel->sel_out_slots[0]->ssl_sqt;
+      state_slot_t * out = sel->sel_out_slots[0];
+      ins->_.subq.scalar_ret = sqlc_new_temp (sc, "scalar", out->ssl_sqt.sqt_dtp);
+      ins->_.subq.scalar_ret->ssl_sqt = out->ssl_sqt;
+      ins->_.subq.scalar_ret->ssl_is_callret = SSL_REF != out->ssl_type ?
+          out->ssl_is_callret : ((state_slot_ref_t *)out)->sslr_ssl->ssl_is_callret;
 
       if (sqlg_is_vector)
 	sel->sel_scalar_ret = ins->_.subq.scalar_ret;
