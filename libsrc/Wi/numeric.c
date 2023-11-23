@@ -1414,6 +1414,10 @@ numeric_copy (numeric_t result, numeric_t n)
     {
       int value_bytes = n->n_len + n->n_scale;
       *(int64*)result = *(int64*)n;
+#ifndef NDEBUG
+      if (value_bytes > NUMERIC_STACK_BYTES) /* if int or other type of data is in place of numeric_t *, then may happen to have unusual len */
+        return NUMERIC_STS_MARSHALLING;
+#endif
       if (value_bytes > 4)
 	{
 	  ((int64*)result)[1] = ((int64*)n)[1];
