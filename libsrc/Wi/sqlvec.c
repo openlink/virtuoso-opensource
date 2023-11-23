@@ -1051,8 +1051,9 @@ cv_artm_typed (instruction_t * ins)
 	  ins->_.artm.func = ti_func_no (IN_ARTM_IDENTITY, dtp);
 	}
     }
-  else if (SSL_IS_VEC_REF (ins->_.artm.left) && SSL_IS_VEC_REF (ins->_.artm.right)
-      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
+  else if (SSL_IS_VEC_REF (ins->_.artm.left) && SSL_IS_VEC_REF (ins->_.artm.right) && SSL_IS_VEC_REF (ins->_.artm.result)
+      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp
+      && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
     {
       switch (ins->_.artm.left->ssl_dtp)
 	{
