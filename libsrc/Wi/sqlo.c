@@ -2809,6 +2809,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
 	}
       sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by);
+      sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.group_by);
     }
   else
     sqlo_scope_array (so, (ST**) tree->_.select_stmt.selection);
