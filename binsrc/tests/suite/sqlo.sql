@@ -1246,5 +1246,49 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  union on case exp w/ group STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+drop table case1181 if exists;
+CREATE TABLE case1181 ( v1 DOUBLE PRECISION ) ;
+INSERT INTO case1181 VALUES ( -1 ) ;
+INSERT INTO case1181 ( v1 ) SELECT CASE v1 WHEN 42 THEN v1 ELSE 95 END FROM case1181 AS v3 , case1181 AS v4 , case1181 , case1181 AS v2 GROUP BY v1 , v1 ORDER BY CASE WHEN v1 >= 2147483647 THEN 'x' + ( SELECT ( CASE WHEN v1 NOT IN ( SELECT ( v1 / ( - v1 ) ) FROM case1181 GROUP BY 'x' ) THEN v1 ELSE NULL END ) AS v5 ) WHEN 1 THEN 'x' ELSE ( 44 * v1 ) END ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  insert with subq case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1182 if exists;
+drop view case1182v3 if exists;
+CREATE TABLE case1182 ( v1 INT , v2 INT ) ;
+CREATE VIEW case1182v3 AS SELECT * FROM case1182 GROUP BY 'x' ;
+INSERT INTO case1182v3 VALUES ( -1 , 127 ) ;
+SELECT v2 + v1 FROM case1182v3 WHERE v2 IN ( 127 ) AND v1 NOT IN ( SELECT DISTINCT v1 / 67 , 96 FROM case1182 GROUP BY NULL , 'x' , 'x' , 'x' ) ORDER BY 13647422.000000 / -1 / v2 + v1 + v2 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  select with not/in on a grouping by const exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1183 if exists;
+CREATE TABLE case1183 ( v1 DECIMAL NOT NULL PRIMARY KEY ) ;
+INSERT INTO case1183 VALUES ( -2147483648 ) ;
+INSERT INTO case1183 VALUES ( ( SELECT ALL CASE WHEN 0 THEN 77 / -128 WHEN 35 THEN -128 ELSE ( ( 30646101.000000 , 35055771.000000 ) , ( 91094082.000000 , 43147816.000000 ) ) / 0 END ) ) ;
+INSERT INTO case1183 ( v1 , v1 , v1 ) SELECT v1 FROM case1183 WHERE 27 / - 76 / ( v1 + 53 ) + 8 / -1 IN ( v1 / 51 , 'x' , 'x' ) ORDER BY v1 / v1 + 2147483647 + 37190275.000000 + 87 ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  insert on different columns, subselect with volatile exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1184 if exists;
+CREATE TABLE case1184 ( v1 INT NULL ) ;
+UPDATE case1184 SET v1 = ( SELECT 2 AS zero_value ) + ( SELECT 2 AS zero_value ) WHERE v1 IN ( SELECT v1 FROM case1184 ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  update with non vectored subq select with integer vectored exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1185 if exists;
+drop table case1185v3 if exists;
+CREATE TABLE case1185 ( v2 INTEGER UNIQUE , v1 INTEGER CHECK ( COALESCE ( v1 ) = v2 ) ) ;
+INSERT INTO case1185 ( v1 ) VALUES ( 2 ) ;
+CREATE TABLE case1185v3 ( v4 VARCHAR ( 255 ) ) ;
+SELECT '%password%' FROM case1185v3 LEFT JOIN case1185 ON case1185v3 . v4 = case1185 . v2 GROUP BY COALESCE ( v2 ) , v1 , v1 option (hash)
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  select with group by simple coalesce exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
