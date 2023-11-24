@@ -1285,10 +1285,10 @@ drop table case1185v3 if exists;
 CREATE TABLE case1185 ( v2 INTEGER UNIQUE , v1 INTEGER CHECK ( COALESCE ( v1 ) = v2 ) ) ;
 INSERT INTO case1185 ( v1 ) VALUES ( 2 ) ;
 CREATE TABLE case1185v3 ( v4 VARCHAR ( 255 ) ) ;
-SELECT '%password%' FROM case1185v3 LEFT JOIN case1185 ON case1185v3 . v4 = case1185 . v2 GROUP BY COALESCE ( v2 ) , v1 , v1 option (hash)
+SELECT '%password%' FROM case1185v3 LEFT JOIN case1185 ON case1185v3 . v4 = case1185 . v2 GROUP BY COALESCE ( v2 ) , v1 , v1 option (hash);
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ":  select with group by simple coalesce exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+ECHO BOTH ":  hash join with group by hash source on simple coalesce exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

@@ -2705,9 +2705,24 @@ sqlg_ts_preresets (sql_comp_t * sc, table_source_t * ts)
   return res;
 }
 
+static int
+sqlg_setp_hf_ref_changed (setp_node_t * setp, state_slot_t * ssl)
+{
+  int inx;
+  if (!setp || !setp->setp_ha)
+    return 0;
+  DO_BOX (state_slot_t *, sl, inx, setp->setp_ha->ha_slots)
+    {
+      /* hash key is changed to shadow ref */
+      if (SSL_REF == sl->ssl_type && ((state_slot_ref_t *)sl)->sslr_ssl == ssl)
+        return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 void
-sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
+sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs, setp_node_t * setp)
 {
   /* for a key of a hash source that is outer, use the cast ssl as nullable */
   dk_set_t iter;
@@ -2715,7 +2730,8 @@ sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
     {
       int nth = (ptrlong) iter->data;
       state_slot_t *key_out = (state_slot_t *) iter->next->data;
-      ssl_alias (key_out, hs->hs_ha->ha_slots[nth]);
+      if (!sqlg_setp_hf_ref_changed (setp, key_out)) /* don't do alias on shadow ref */
+        ssl_alias (key_out, hs->hs_ha->ha_slots[nth]);
     }
   hs->hs_out_aliases = NULL;
 }
@@ -2912,7 +2928,7 @@ ref_found:
     }
   sc->sc_vec_pred = save_pred;
   sc->sc_vec_current = save_cur;
-  sqlg_hs_realias_key_out (sc, hs);
+  sqlg_hs_realias_key_out (sc, hs, setp);
   if (!hs->hs_no_partition)
     hs->hs_no_partition = sqlg_hs_non_partitionable (sc, hs);
   DO_SET (fun_ref_node_t *, fref, &sc->sc_hash_fillers)
