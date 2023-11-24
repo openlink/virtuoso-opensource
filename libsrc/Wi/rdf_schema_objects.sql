@@ -1212,20 +1212,33 @@ RDF_VIEW_DO_SYNC (in qualifier varchar, in load_data int := 0, in pgraph varchar
 
 create function
 RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph varchar := null, in log_mode int := 3, in load_atomic int := 0,
-	in gr_is_qm int := 0) returns any array
+	in gr_is_qm int := 0, in report_errors int := 1) returns any array
 {
    declare mask varchar;
-   declare txt, tbls, err_ret, opt, usermaps any array;
+   declare txt, tbls, err_ret, opt, usermaps, md, rs any array;
    declare stat, msg, gr varchar;
    declare old_mode int;
+   declare SQL_STATE, SQL_MESSAGE varchar;
 
    old_mode := log_enable (log_mode, 1);
+  if (report_errors)
+    {
+      declare old_retval_names_count integer;
+      old_retval_names_count := result_names_get_count ();
+      if (old_retval_names_count is null)
+        report_errors := 0;
+      else if (old_retval_names_count = 0)
+        result_names (SQL_STATE, SQL_MESSAGE);
+      else if (old_retval_names_count <> 2)
+        report_errors := 0;
+    }
+  if (not report_errors)
+    err_ret := vector ();
    whenever sqlstate '*' goto err_catched;
 
    if (load_atomic)
      __atomic (1);
    tbls := vector ();
-   err_ret := vector ();
    opt := vector ();
    gr := vgraph;
    if (length (pgraph))
@@ -1243,11 +1256,34 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
    {
      if (qm not like '%/qm-VoidStatistics')
        {
-	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', qm), stat, msg);
 	 stat := '00000';
-	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', qm), stat, msg);
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', qm), stat, msg, null, 10000, md, rs);
+          if (report_errors)
+            foreach (any r in rs) do
+              result (r[0], r[1]);
+          else
+            err_ret := vector_concat (err_ret, rs);
+          if (stat <> '00000')
+            {
+              if (report_errors)
+                result (stat, msg);
+              else
+                err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+            }
+	 stat := '00000';
+	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', qm), stat, msg, null, 10000, md, rs);
+         if (report_errors)
+           foreach (any r in rs) do
+               result (r[0], r[1]);
+         else
+           err_ret := vector_concat (err_ret, rs);
 	 if (stat <> '00000')
-	   err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+           {
+             if (report_errors)
+               result (stat, msg);
+             else
+               err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+           }
 	 for select "tb" from (sparql define input:storage ""
 	    select distinct ?tb from virtrdf:
 	    {
@@ -1259,17 +1295,49 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	     if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
  	       tbls := vector_concat (tbls, vector ("tb"));
 	     else
-	       err_ret := vector_concat (err_ret, vector (vector ('42000', sprintf ('Reference to VIEW %s cannot be added automatically', "tb"))));
+               {
+                 stat := '42000';
+                 msg := sprintf ('Reference to VIEW %s cannot be added automatically', "tb");
+                  if (report_errors)
+                    result (stat, msg);
+                  else
+                    err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+                  stat := '00000';
+               }
 	   }
        }
    }
   if (gr_is_qm)
     {
-      exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', vgraph), stat, msg);
       stat := '00000';
-      exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', vgraph), stat, msg);
+      exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', vgraph), stat, msg, null, 10000, md, rs);
+      if (report_errors)
+         foreach (any r in rs) do
+           result (r[0], r[1]);
+      else
+         err_ret := vector_concat (err_ret, rs);
       if (stat <> '00000')
-	err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+         {
+           if (report_errors)
+             result (stat, msg);
+           else
+             err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+         }
+      stat := '00000';
+      exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { create <%s> using storage virtrdf:DefaultQuadStorage }', vgraph), stat, msg, null, 10000, md, rs);
+      if (report_errors)
+         foreach (any r in rs) do
+           result (r[0], r[1]);
+      else
+         err_ret := vector_concat (err_ret, rs);
+      if (stat <> '00000')
+         {
+           if (report_errors)
+             result (stat, msg);
+           else
+             err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+         }
+      stat := '00000';
      for select "tb" from (sparql define input:storage ""
 	select distinct ?tb from virtrdf:
 	{
@@ -1281,7 +1349,15 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	 if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
 	   tbls := vector_concat (tbls, vector ("tb"));
 	 else
-	   err_ret := vector_concat (err_ret, vector (vector ('42000', sprintf ('Reference to VIEW %s cannot be added automatically', "tb"))));
+           {
+             stat := '42000';
+             msg := sprintf ('Reference to VIEW %s cannot be added automatically', "tb");
+             if (report_errors)
+               result (stat, msg);
+             else
+               err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+             stat := '00000';
+           }
        }
     }
   foreach (varchar tb in tbls) do
@@ -1298,20 +1374,36 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
 	      exec (cast (txt[0] as varchar), stat, msg);
 	      if (stat <> '00000')
 		{
-		  err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+                  if (report_errors)
+                    result (stat, msg);
+                  else
+                    err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
 		  stat := '00000';
 		}
               -- dbg_obj_princ ('RDF_VIEW_SYNC_TO_PHYSICAL execs ', txt[1]); string_to_file ('_tmp.RDF_VIEW_SYNC_TO_PHYSICAL.' || sequence_next ('RDF_VIEW_SYNC_TO_PHYSICAL_debug'), '.txt', txt[1], -2);
+              stat := '00000';
 	      exec (cast (txt[1] as varchar), stat, msg);
 	      if (stat <> '00000')
-		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+                {
+                  if (report_errors)
+                    result (stat, msg);
+                  else
+                    err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+                }
 	    }
 	  else
 	    {
               -- dbg_obj_princ ('RDF_VIEW_SYNC_TO_PHYSICAL execs ', txt); string_to_file ('_tmp.RDF_VIEW_SYNC_TO_PHYSICAL.' || sequence_next ('RDF_VIEW_SYNC_TO_PHYSICAL_debug'), '.txt', txt, -2);
+              stat := '00000';
 	      exec (cast (txt as varchar), stat, msg);
 	      if (stat <> '00000')
-		err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+                {
+                  if (report_errors)
+                    result (stat, msg);
+                  else
+                    err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+		  stat := '00000';
+                }
 	    }
 	}
       nextp:;
@@ -1336,7 +1428,10 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
                 msg := pname || '(): OK';
               else
                 msg := pname || '(): ' || msg;
-              err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
+              if (report_errors)
+                result (stat, msg);
+              else
+                err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
             }
           else
             aq_request (aq, 'DB.DBA.RDB2RDF_FILL__' || tb_suffix, vector (2));
@@ -1350,10 +1445,16 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
       __atomic (0);
       exec ('checkpoint');
     }
-  return err_ret;
+  if (report_errors)
+    return null;
+  else
+    return err_ret;
 
 err_catched:
-  err_ret := vector_concat (err_ret, vector (vector (__SQL_STATE, __SQL_MESSAGE)));
+  if (report_errors)
+    result (__SQL_STATE, __SQL_MESSAGE);
+  else
+    err_ret := vector_concat (err_ret, vector (vector (__SQL_STATE, __SQL_MESSAGE)));
   log_enable (old_mode, 1);
   if (load_atomic)
     __atomic (0);
