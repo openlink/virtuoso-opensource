@@ -1250,12 +1250,27 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
        virtrdf:DefaultQuadStorage-UserMaps ?p ?o .
        ?o a virtrdf:QuadMap  .
        ?o virtrdf:qmGraphRange-rvrFixedValue `iri(?:gr)` .
-     }
-       order by asc (bif:aref (bif:sprintf_inverse (str (?p), bif:concat (str(rdf:_), "%d"), 2), 0)) ) x );
+     } order by asc (bif:aref (bif:sprintf_inverse (str (?p), bif:concat (str(rdf:_), "%d"), 2), 0)) ) x );
    foreach (varchar qm in usermaps) do
    {
      if (qm not like '%/qm-VoidStatistics')
        {
+	 for select "tb", "q" from (sparql define input:storage ""
+	    select distinct ?tb ?q from virtrdf:
+	    {
+	      ?:qm virtrdf:qmUserSubMaps ?sm .
+	      ?sm ?inx ?q .
+	      ?q virtrdf:qmTableName ?tb  .
+	    }) xx do
+	   {
+	     if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
+ 	       tbls := vector_concat (tbls, vector ("tb"));
+	     else
+               {
+                 msg := 'Quad map <' || "q" || '>' || case when ("q" <> qm) then ' (a part of <' || qm || '> RDF View)' else '' end;
+                 signal ('R2RML', msg || ' can not be used in "sync to physical triples" and similar actions becaue it uses an SQL view or an SQL query as a source');
+               }
+	   }
 	 stat := '00000';
 	 exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', qm), stat, msg, null, 10000, md, rs);
           if (report_errors)
@@ -1284,31 +1299,27 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
              else
                err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
            }
-	 for select "tb" from (sparql define input:storage ""
-	    select distinct ?tb from virtrdf:
-	    {
-	      ?:qm virtrdf:qmUserSubMaps ?sm .
-	      ?sm ?inx ?q .
-	      ?q virtrdf:qmTableName ?tb  .
-	    }) xx do
-	   {
-	     if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
- 	       tbls := vector_concat (tbls, vector ("tb"));
-	     else
-               {
-                 stat := '42000';
-                 msg := sprintf ('Reference to VIEW %s cannot be added automatically', "tb");
-                  if (report_errors)
-                    result (stat, msg);
-                  else
-                    err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
-                  stat := '00000';
-               }
-	   }
        }
    }
   if (gr_is_qm)
     {
+      stat := '00000';
+     for select "tb", "q" from (sparql define input:storage ""
+	select distinct ?tb ?q from virtrdf:
+	{
+	  ?:vgraph virtrdf:qmUserSubMaps ?sm .
+	  ?sm ?inx ?q .
+	  ?q virtrdf:qmTableName ?tb  .
+	}) xx do
+       {
+	 if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
+	   tbls := vector_concat (tbls, vector ("tb"));
+	 else
+           {
+             msg := 'Quad map <' || "q" || '>';
+             signal ('R2RML', msg || ' can not be used in "sync to physical triples" and similar actions becaue it uses an SQL view or an SQL query as a source');
+           }
+       }
       stat := '00000';
       exec (sprintf ('sparql alter quad storage virtrdf:SyncToQuads { drop quad map <%s> }', vgraph), stat, msg, null, 10000, md, rs);
       if (report_errors)
@@ -1337,28 +1348,6 @@ RDF_VIEW_SYNC_TO_PHYSICAL (in vgraph varchar, in load_data int := 0, in pgraph v
            else
              err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
          }
-      stat := '00000';
-     for select "tb" from (sparql define input:storage ""
-	select distinct ?tb from virtrdf:
-	{
-	  ?:vgraph virtrdf:qmUserSubMaps ?sm .
-	  ?sm ?inx ?q .
-	  ?q virtrdf:qmTableName ?tb  .
-	}) xx do
-       {
-	 if (RDF_VIEW_CHECK_SYNC_TB ("tb"))
-	   tbls := vector_concat (tbls, vector ("tb"));
-	 else
-           {
-             stat := '42000';
-             msg := sprintf ('Reference to VIEW %s cannot be added automatically', "tb");
-             if (report_errors)
-               result (stat, msg);
-             else
-               err_ret := vector_concat (err_ret, vector (vector (stat, msg)));
-             stat := '00000';
-           }
-       }
     }
   foreach (varchar tb in tbls) do
     {
