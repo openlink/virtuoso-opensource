@@ -3684,7 +3684,7 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   declare graph_uri varchar;
   declare colonspace_pos integer;
   declare graph_uri_is_relative integer;
-  declare res_file, res_content_type varchar;
+  declare res_file, res_content_type, res_format varchar;
   declare n_quads_upload int;
   {
   whenever sqlstate '*' goto err; /* see below */
@@ -3734,13 +3734,14 @@ good_host_found:
         res_file := http_body_read();
       if (0 = length (res_file))
         res_file := http_body_read(1);
-      res_content_type := null;
+      res_format := res_content_type := null;
       if (get_keyword ('res-file', params) is null)
         res_content_type := http_request_header (lines, 'Content-Type', null, null);
       if (res_content_type is null or res_content_type = 'application/x-www-form-urlencoded' or res_content_type = 'multipart/form-data')
         res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
       if (res_content_type = 'application/n-quads')
         n_quads_upload := 1;
+      http_sys_find_best_sparql_accept (res_content_type, 0, res_format);
     }
   if (graph_uri <> '' or n_quads_upload)
     goto graph_processing;
@@ -3798,7 +3799,7 @@ graph_processing:
       full_graph_uri := null;
       if (graph_uri_is_relative and not(n_quads_upload))
         {
-          if (res_content_type in ('text/rdf+n3', 'text/turtle'))
+          if (res_format in ('TTL', 'NT'))
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_TTL (res_file, graph_uri, 255);
           else if (res_content_type = 'application/rdf+xml')
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_RDFXML (res_file, graph_uri);
@@ -3813,7 +3814,7 @@ graph_processing:
       graph_exists := 0;
       if (not n_quads_upload)
         graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
-      if (res_content_type in ('text/rdf+n3', 'text/turtle'))
+      if (res_format in ('TTL', 'NT'))
         {
           if (reqbegin like 'PUT%')
             {
