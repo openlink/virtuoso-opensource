@@ -179,7 +179,7 @@ typedef struct df_inx_op_s
 
 #define DFE_TEXT_PRED 101
 
-
+#define DFE_SHORTCUT(dfe) (DFE_TRUE == (dfe) || DFE_FALSE == (dfe))
 
 
 #define DFE_PLACED 1	/* placed in a scenario */

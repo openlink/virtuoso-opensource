@@ -2809,6 +2809,9 @@ dfe_unit_gb_dependant (sqlo_t *so, df_elt_t * dfe,
 {
   int inx;
   df_elt_t *dfe_super;
+
+  if (DFE_SHORTCUT(dfe))
+    return;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
       dfe_list_gb_dependant (so, dfe, terminal, super, res, out, term_found);
