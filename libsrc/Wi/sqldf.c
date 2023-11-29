@@ -1443,6 +1443,8 @@ dfe_inx_op_col_def_table (df_inx_op_t * dio, df_elt_t * col_dfe, df_elt_t * exce
   if (dio->dio_table
       && dfe_defines (dio->dio_table, col_dfe))
     return dio->dio_table;
+  if (dio->dio_terms && !IS_BOX_POINTER(dio->dio_terms))
+    return NULL;
   DO_SET  (df_inx_op_t *, term, &dio->dio_terms)
     {
       df_elt_t *def_dfe = dfe_inx_op_col_def_table (term, col_dfe, except_tb);
@@ -7509,6 +7511,9 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
     }
   else
     {
+      if (!super->_.sub.first)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI03", "Internal error in SQL compiler: sub.first = 0");
+
       for (elt = super->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
 	{
 	  df_elt_t * copy_elt = sqlo_layout_copy_1 (copy_super->dfe_sqlo, elt, copy_super);
@@ -7551,6 +7556,8 @@ inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
   memcpy (copy, dio, sizeof (df_inx_op_t));
   if (dio->dio_table == org_tb_dfe)
     copy->dio_table = tb_dfe;
+  if (dio->dio_terms && !IS_BOX_POINTER(dio->dio_terms))
+    sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI05", "Internal error in SQL compiler: non inx op in inx copy");
   else if (dio->dio_table)
     {
       copy->dio_table = sqlo_layout_copy_1 (so, dio->dio_table, NULL);
