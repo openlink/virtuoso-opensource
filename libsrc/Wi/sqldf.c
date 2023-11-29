@@ -236,8 +236,11 @@ sqlo_df_size (int type)
 	  len += sizeof (df_elt_head.call);
 	  break;
       case DFE_FILTER:
-	  len += sizeof (df_elt_head.filter);
-	  break;
+          len += sizeof (df_elt_head.filter);
+          break;
+      case DFE_TABLE:
+          len += sizeof (df_elt_head.table);
+          break;
       default:
 	  len = sizeof (df_elt_t);
     }
@@ -1161,7 +1164,8 @@ void
 sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
 {
   /* if an exp is placed before a group by but is used after the group by then add it to the dependent of the gby */
-  df_elt_t * next;
+  df_elt_t * next, *next2;
+  int next_ctr = 0;
   so->so_mark_gb_dep = 0;
   if (!enable_gb_dep)
     return;
@@ -1171,8 +1175,12 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
       return;
     }
   
-  for (next = dfe->dfe_next; next; next = next->dfe_next)
+  for (next = dfe->dfe_next, next2 = dfe; next; next = next->dfe_next)
     {
+      if ((next_ctr++) % 2)
+        next2 = next2->dfe_next;
+      if (next2 == next)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: loop in dfe_next");
       if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed)
 	t_set_pushnew (&next->_.setp.gb_dependent, (void*)dfe);
     }
