@@ -3239,7 +3239,8 @@ always_null_agg_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon)
 	if (!sqlg_tree_has_aggregate (item))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
@@ -3266,7 +3267,8 @@ always_null_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon, ST ** subseq)
 	if (inx2 != BOX_ELEMENTS (subseq))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
