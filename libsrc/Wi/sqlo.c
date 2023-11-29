@@ -1001,7 +1001,7 @@ if (J_INNER == tree->_.join.type && right_ot->ot_is_outer)
 	sco_merge (old_sco, sco);
 	so->so_scope = old_sco;
 	if (tree->_.join.type == OJ_LEFT || tree->_.join.type == OJ_FULL)
-	  right_ot->ot_is_outer = 1;
+	  left_ot->ot_is_left = right_ot->ot_is_outer = 1;
 	else if (!sco->sco_has_jt && tree->_.join.type == J_INNER &&
 	    !ST_P (left_ot->ot_dt, PROC_TABLE) &&
 	    !ST_P (right_ot->ot_dt, PROC_TABLE))

@@ -59,6 +59,7 @@ typedef struct op_table_s
   ST *	ot_join_cond;
   ST *	ot_enclosing_where_cond; /* optional or other ot can add a condition to the top level where of the enclosing dt */
   int	ot_is_outer;
+  char  ot_is_left;
   oid_t	ot_u_id;
   oid_t	ot_g_id;
   dk_set_t		ot_table_refd_cols; /* if the ot is a table, which cols are refd. Use for knowing if index only is possible in costing */
