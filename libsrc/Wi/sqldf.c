@@ -1220,6 +1220,8 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
 #endif
   dfe->dfe_next = NULL;
   dfe->dfe_prev = NULL;
+  if (!DFE_IS_SUB(super))
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQI07", "Internal error in SQL compiler: sqlo_place_dfe_after in non container");
   L2_INSERT_AFTER (super->_.sub.first, super->_.sub.last, after_this, dfe, dfe_);
   if (DFE_TABLE == dfe->dfe_type)
     dfe->_.table.ot->ot_locus = loc;
@@ -7511,8 +7513,10 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
     }
   else
     {
+      if (!DFE_IS_SUB(super))
+        sqlc_new_error (so->so_sc->sc_cc, "37000", "SQI06", "Internal error in SQL compiler: dfe_body_copy in non container");
       if (!super->_.sub.first)
-        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI03", "Internal error in SQL compiler: sub.first = 0");
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI03", "Internal error in SQL compiler: dfe_body_copy first = 0");
 
       for (elt = super->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
 	{

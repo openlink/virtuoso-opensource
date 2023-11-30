@@ -180,6 +180,12 @@ typedef struct df_inx_op_s
 #define DFE_TEXT_PRED 101
 
 #define DFE_SHORTCUT(dfe) (DFE_TRUE == (dfe) || DFE_FALSE == (dfe))
+#define DFE_IS_SUB(d) (d && \
+    (DFE_HEAD == (d)->dfe_type || \
+     DFE_DT == (d)->dfe_type || \
+     DFE_PRED_BODY == (d)->dfe_type || \
+     DFE_VALUE_SUBQ == (d)->dfe_type || \
+     DFE_EXISTS == (d)->dfe_type))
 
 
 #define DFE_PLACED 1	/* placed in a scenario */
