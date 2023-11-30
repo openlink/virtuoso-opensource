@@ -1290,5 +1290,172 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ":  hash join with group by hash source on simple coalesce exp STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+drop table case1190 if exists;
+drop view case1190view if exists;
+CREATE TABLE case1190 ( v1 FLOAT UNIQUE ) ;
+CREATE VIEW case1190view AS SELECT * FROM case1190 WHERE v1 < -128 + 47355641.000000 / 32 * v1 + ( SELECT * FROM case1190 WHERE v1 = 71 AND ( 54571328.000000 [ -128 ] ) >= v1 AND v1 IS NULL ) + 66 + 29872388.000000 ORDER BY v1 DESC ;
+SELECT * FROM case1190view WHERE 71883293.000000 < CASE WHEN ( SELECT CASE WHEN v1 [ 76 ] THEN v1 ELSE ( v1 / CASE WHEN v1 = -1 THEN v1 + 61 END , 'x' ) END FROM case1190view ) IS NULL THEN v1 ELSE 68 END AND v1 = -1 AND 0 >= v1 ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  bad plan loop in dfe STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+CREATE TABLE case1191 ( v1 FLOAT ) if not exists;
+drop view case1191view if exists;
+CREATE VIEW case1191view AS SELECT * FROM case1191 WHERE v1 IN ( SELECT * FROM case1191 WHERE v1 IN ( 'x' ) ORDER BY v1 , v1 / 61 ) ORDER BY v1;
+UPDATE case1191 SET v1 = ( SELECT v1 FROM case1191view WHERE v1 / ( CASE WHEN v1 NOT IN ( 127 ) AND ( ( -1 , -1 ) , ( -1 , 30 ) ) THEN ( SELECT * FROM case1191view WHERE ( SELECT v1 , v1 FROM case1191 WHERE v1 = ( 15895325.000000 , 12364601.000000 ) / CASE 54 WHEN NULL THEN -128 END AND v1 = 36 ) ) ELSE v1 + -1 END ) ) + 16 + 67880893.000000 ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  bad plan loop in dfe (2) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+CREATE TABLE case1192 ( v1 INT , v2 NUMERIC NOT NULL CHECK ( v1 >= -32768 AND v1 <= 4 ) ) if not exists;
+SELECT v2 FROM case1192 WHERE v1 NOT IN ( 0 ) AND v1 IN ( CASE WHEN v1 = 37 THEN -128 ELSE ( SELECT * , 0 + 16 FROM case1192 WHERE 'x' IS NOT NULL GROUP BY NULL * -128 ) END ) ORDER BY v2 / 33 ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  bad plan loop in dfe (3) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1193 if exists;
+CREATE TABLE case1193 ( v1 BIGINT ) ; 
+INSERT INTO case1193 VALUES ( 88 ) ; 
+INSERT INTO case1193 ( v1 , v1 ) VALUES ( NULL , 31 ) ; 
+INSERT INTO case1193 ( v1 ) SELECT ( SELECT -128 ) FROM ( SELECT 86 + 98371242.000000 AS v8 , 8 AS v9 , 'x' AS v7 FROM case1193 AS v11 , case1193 AS v10 ) AS v3 , case1193 AS v6 , case1193 AS v5 , case1193 AS v4 , case1193 , case1193 AS v2 ; 
+UPDATE case1193 AS v15 SET v1 = ( SELECT ( CASE WHEN -1 THEN 14 ELSE CASE WHEN v1 IN ( SELECT v1 FROM case1193 WHERE v1 > 66 OR 75 OR v1 = ( SELECT -1 FROM case1193 , case1193 AS v14 , case1193 AS v13 WHERE v1 IN ( RANK ( v1 , v1 ) , 88 ) ) GROUP BY v1 ) THEN v1 ELSE NULL END END ) AS v12 ) ; 
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  not predicate on optimised predicate STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1194 if exists;
+CREATE TABLE case1194 ( v1 NUMERIC UNIQUE );
+INSERT INTO case1194 VALUES ( 127 ) ;
+UPDATE case1194 SET v1 = CASE WHEN 16 THEN 2147483647 ELSE 89599554.000000 * ( SELECT v1 FROM case1194 WHERE v1 > 19 + 95868930.000000 ) END + CASE WHEN ( 'x' , v1 + v1 ) > 27 + v1 THEN -128 ELSE v1 + 0 END ;
+SELECT DISTINCT NULL FROM case1194 UNION SELECT * FROM case1194 WHERE v1 < 0 + 88 AND -128 >= v1 AND NULL ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  numeric cast via subq/case STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1195 if exists;
+CREATE TABLE case1195 ( v1 INTEGER CHECK ( ( SELECT ( SELECT v1 + v1 AS b_plus_one ) ) ) ); 
+INSERT INTO case1195 SELECT TOP 4 1 FROM case1195 WHERE v1 = 1 GROUP BY CUBE ( v1 , v1 ) ; 
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": insert with fake cube with const in null slot STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1196 if exists;
+drop view case1196view if exists;
+CREATE TABLE case1196 ( v1 INTEGER NOT NULL PRIMARY KEY , v2 VARCHAR NOT NULL , v3 DECIMAL CHECK ( v1 > 65468526.000000 ) ) ; 
+CREATE VIEW case1196view AS SELECT * FROM case1196 WHERE v2 IN ( CAST ( 27 AS FLOAT ) , CAST ( 96 / 66872209.000000 - -128 / 70 AS FLOAT ) ) ORDER BY CASE WHEN v1 IS NULL THEN v3 ELSE 9 END + 5182666.000000 * v1 ; 
+UPDATE case1196view SET v3 = ( -1 , ( SELECT v2 FROM case1196 WHERE ( ( v1 [ 98 ] ) [ 82 ] ) * -2147483648 IN ( SELECT v1 , v3 FROM case1196view WHERE v2 IS NOT NULL OR 'x' IN ( 78431161.000000 , 88129736.000000 ) AND v1 = 'x' INTERSECT SELECT v3 , v1 FROM case1196view WHERE v2 > -128 ) ) ) - 66 , v2 = v3 ; 
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update with wrong plan crash handled STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1197 if exists;
+CREATE TABLE case1197 ( v1 INT );
+SELECT '{a: 1, b: [2, 3] }' AS negative_value FROM case1197 GROUP BY ROLLUP ( v1 , v1 ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select with fake rollup with const in null slot STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1198 if exists;
+CREATE TABLE case1198 ( v1 INT , v2 NUMERIC ) ;
+INSERT INTO case1198 VALUES ( 
+    ( SELECT v1 + ( 21073282.000000 , 71733063.000000 ) / 28 / -128 FROM case1198 ORDER BY 83232987.000000 + 81567665.000000 ASC ) , 
+    127 * ( CASE WHEN 64 THEN -128 ELSE ( ( 84936941.000000 , 60617039.000000 ) , ( 56120940.000000 , 86634377.000000 ) ) END ) / -128 ) ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": numeric cast from arith temp result needs cast STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table case1199 if exists;
+CREATE TABLE case1199 ( v2 INT , v1 VARCHAR(80) PRIMARY KEY ) if not exists;
+UPDATE case1199 SET v1 = 'abcf%' WHERE v1 IN ( SELECT 18018 / 6 FROM case1199 WHERE v2 = '%n' GROUP BY '%H:%M:%f' HAVING v2 < 64 ) ;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": num cast message crash STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+create table tleft2k (id int, k varchar, data varchar, primary key (id, k)) if not exists;
+create table tright2k (rid int, rk varchar, rseq int, rdata varchar, primary key(rid, rk, rseq)) if not exists;
+delete from tleft2k;
+delete from tright2k;
+insert into tleft2k (id,k,data) values (1,1, 'a');
+insert into tleft2k (id,k,data) values (2,2, 'b');
+insert into tleft2k (id,k,data) values (3,3, 'c');
+insert into tright2k (rid, rk, rseq, rdata) values (2,2, 1, '231');
+insert into tright2k (rid, rk, rseq, rdata) values (2,2, 2, '233');
+
+create procedure tojoby_check (in q varchar, in ex any)
+{
+  declare rs, m any;
+  declare i, j int;
+
+  exec(q, null, null, vector(), 0, m, rs);
+  for (i := 0; i < length (rs); i := i + 1)
+    {
+      declare elm any;
+      elm := rs[i];
+      for (j := 0; j < length(elm); j := j + 1)
+        {
+          dbg_obj_print (elm[j], ex[i][j]);
+          if (not equ (elm[j], ex[i][j]) and elm[j] is not null and ex[i][j] is not null)
+            signal ('OBOJX','Outer join w/ oby failed');
+          if ((elm[j] is null and ex[i][j] is not null) or (ex[i][j] is null and ex[i][j] is not null))
+            signal ('OBOJX','Outer join w/ oby failed');
+        }
+    }
+  return 'OK';
+};
+
+select id, rdata from tleft2k left outer join tright2k on (id = rid and k = rk) order by id;
+
+select tojoby_check ('select id, rdata from tleft2k left outer join tright2k on (id = rid and k = rk) order by id',
+    vector (vector (1, NULL), vector (2, '231'), vector (2, '233'), vector (3, NULL)));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  outer join with oby on pk STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select id, rdata from tleft2k left outer join tright2k on (id = rid and k = rk) order by id desc;
+select tojoby_check ('select id, rdata from tleft2k left outer join tright2k on (id = rid and k = rk) order by id desc',
+    vector (vector (3, NULL), vector (2, '231'), vector (2, '233'), vector (1, NULL)));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ":  outer join with oby on pk desc STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+create procedure dist_top_ttl_ins ()
+{
+  declare i int;
+  declare ses any;
+  ses := string_output ();
+  http ('@base <http://example.org/> .\n', ses);
+  for (i:=0;i<255;i:=i+1)
+    {
+      http (sprintf ('<#s-x%d> <#pred> %d .\n', i, rnd (127)), ses);
+    }
+  return string_output_string (ses);
+};
+
+sparql clear graph <urn:bind:test> ;
+ttlp (dist_top_ttl_ins (), 'http://example.org/', 'urn:bind:test');
+
+sparql
+PREFIX : <http://example.org/#>
+SELECT DISTINCT ?id
+WHERE {
+    {
+         SELECT DISTINCT ?id
+         FROM <urn:bind:test>
+         WHERE {
+                ?x <http://example.org/#pred> ?s.
+                BIND(replace (str(?s), '0', '-') AS ?id)
+         }
+         GROUP BY ?id
+         ORDER BY ?id
+    }
+}
+LIMIT 10 OFFSET 10;
+
+ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select top 10 distinct from (select distinct ..) produced: " $ROWCNT " rows\n";
+
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
