@@ -3584,7 +3584,7 @@ sqlg_const_cast (sql_comp_t * sc, state_slot_t ** ssl_ret, sql_type_t * target_s
     {
       caddr_t st = ERR_STATE (err), msg = ERR_MESSAGE (err);
       dk_free_box (err);
-      sqlc_new_error (sc->sc_cc, st, "VECDT", msg);
+      sqlc_new_error (sc->sc_cc, st, "VECDT", "%s", msg);
     }
   *ssl_ret = ssl_new_constant (sc->sc_cc, value);
   dk_free_tree (value);

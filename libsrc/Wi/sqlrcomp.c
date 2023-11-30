@@ -1815,7 +1815,7 @@ sqlc_resignal (sql_comp_t * sc, caddr_t err)
   snprintf (temp, sizeof (temp), "remote prepare: %.900s", ((char **) err)[2]);
   strncpy (state, ((char **) err)[1], sizeof (state));
   dk_free_tree (err);
-  sqlc_new_error (sc->sc_cc, state, "VD032", temp);
+  sqlc_new_error (sc->sc_cc, state, "VD032", "%s", temp);
 }
 
 

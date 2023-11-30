@@ -811,7 +811,7 @@ done:
 	      snprintf (temp, sizeof (temp), "row level security: %.900s", ((char **) err)[2]);
 	      strncpy (state, ((char **) err)[1], sizeof (state));
 	      dk_free_tree (err);
-	      sqlc_new_error (so->so_sc->sc_cc, state, "SQ191", temp);
+	      sqlc_new_error (so->so_sc->sc_cc, state, "SQ191", "%s", temp);
 	    }
 	  else
 	    sqlc_resignal_1 (so->so_sc->sc_cc, err);
