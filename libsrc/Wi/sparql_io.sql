@@ -2355,11 +2355,22 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
 {
   declare oopts any;
   oopts := null;
-  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'SPARQL'))
+
+  if (user_to_uid ('SPARQL') < 0)
     {
       DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
       DB.DBA.EXEC_STMT ('grant SPARQL_SELECT to "SPARQL"', 0);
     }
+
+  if (user_to_uid ('SPARQL_ADMIN') < 0)
+    {
+      -- Our "sparql admin" user which has access to all graphs and will be used for DAV/LDP
+      DB.DBA.USER_CREATE ('SPARQL_ADMIN', uuid(), vector ('DISABLED', 1));
+      DB.DBA.EXEC_STMT ('grant SPARQL_UPDATE to SPARQL_ADMIN', 0);
+      DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('SPARQL_ADMIN', 15, 0);
+      DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('SPARQL_ADMIN', 15, 1);
+    }
+
   if (registry_get ('__SPARQL_VHOST_RESET') >= '20120519')
     return;
 
