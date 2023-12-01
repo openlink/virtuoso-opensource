@@ -183,6 +183,8 @@ sqlo_ot_oby_seq (sqlo_t * so, op_table_t * top_ot)
 	/* there's order cols from same table non-contiguous in ordering */
 	return;
       }
+      if (col_ot->ot_is_left) /* sort col from left branch, hash would put right match at top? */
+        return;
       if (col_ot != prev_ot)
 	{
 	  prev_ot = col_ot;

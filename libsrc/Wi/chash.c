@@ -4679,8 +4679,8 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     }
   if (sp->sp_max_op != CMP_HASH_RANGE_ONLY)
     {
-      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : hs->hs_ha->ha_tree;
-      index_tree_t *tree = QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index);
+      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : (hs ? hs->hs_ha->ha_tree : NULL);
+      index_tree_t *tree = tree_ssl ? QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index) : NULL;
       chash_t *cha;
       if (!tree)
 	goto not_found;

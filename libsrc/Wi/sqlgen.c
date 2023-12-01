@@ -2809,6 +2809,9 @@ dfe_unit_gb_dependant (sqlo_t *so, df_elt_t * dfe,
 {
   int inx;
   df_elt_t *dfe_super;
+
+  if (DFE_SHORTCUT(dfe))
+    return;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
       dfe_list_gb_dependant (so, dfe, terminal, super, res, out, term_found);
@@ -3239,7 +3242,8 @@ always_null_agg_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon)
 	if (!sqlg_tree_has_aggregate (item))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
@@ -3266,7 +3270,8 @@ always_null_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon, ST ** subseq)
 	if (inx2 != BOX_ELEMENTS (subseq))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
@@ -5280,7 +5285,8 @@ qr_skip_node (sqlo_t * so, query_t * qr)
       if ((qn_input_fn) select_node_input_subq  == f || (qn_input_fn)select_node_input == f)
 	{
 	  sel = (select_node_t *) qn;
-	  break;
+          if (sel->sel_top_skip || (is_vec && sel->sel_top))
+            break;
 	}
       if (IS_TS (qn))
 	last_ts = (table_source_t *)qn;

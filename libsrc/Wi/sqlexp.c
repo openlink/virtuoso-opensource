@@ -1036,6 +1036,9 @@ cv_artm_set_type (instruction_t * ins)
 result_dtp_is_set:
 	  if (DV_NUMERIC == ins->_.artm.result->ssl_dtp)
 	    {
+              if (ins->_.artm.left->ssl_is_callret || ins->_.artm.left->ssl_vary ||
+                  ins->_.artm.right->ssl_is_callret || ins->_.artm.right->ssl_vary)
+                ins->_.artm.result->ssl_vary = 1; /* numeric ssl dc is boxes, can have box of int, thus cast on ins is needed */
 	      ins->_.artm.result->ssl_sqt.sqt_precision = NUMERIC_MAX_PRECISION;
 	      ins->_.artm.result->ssl_sqt.sqt_scale = NUMERIC_MAX_SCALE;
 	    }
@@ -1362,7 +1365,7 @@ cv_subq_ret (sql_comp_t * sc, instruction_t * ins)
       state_slot_t * out = sel->sel_out_slots[0];
       ins->_.subq.scalar_ret = sqlc_new_temp (sc, "scalar", out->ssl_sqt.sqt_dtp);
       ins->_.subq.scalar_ret->ssl_sqt = out->ssl_sqt;
-      ins->_.subq.scalar_ret->ssl_is_callret = SSL_REF != out->ssl_type ?
+      ins->_.subq.scalar_ret->ssl_vary = SSL_REF != out->ssl_type ?
           out->ssl_is_callret : ((state_slot_ref_t *)out)->sslr_ssl->ssl_is_callret;
 
       if (sqlg_is_vector)

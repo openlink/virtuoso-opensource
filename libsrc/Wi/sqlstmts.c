@@ -786,7 +786,7 @@ sqlc_make_policy_trig (comp_context_t *cc, dbe_table_t *tb, int op)
 	  snprintf (temp, sizeof (temp), "row level security: %.900s", ((char **) err)[2]);
 	  strncpy (state, ((char **) err)[1], sizeof (state));
 	  dk_free_tree (err);
-	  sqlc_new_error (cc, state, "SQ192", temp);
+	  sqlc_new_error (cc, state, "SQ192", "%s", temp);
 	}
       else
 	sqlc_resignal_1 (cc, err);

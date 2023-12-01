@@ -236,8 +236,11 @@ sqlo_df_size (int type)
 	  len += sizeof (df_elt_head.call);
 	  break;
       case DFE_FILTER:
-	  len += sizeof (df_elt_head.filter);
-	  break;
+          len += sizeof (df_elt_head.filter);
+          break;
+      case DFE_TABLE:
+          len += sizeof (df_elt_head.table);
+          break;
       default:
 	  len = sizeof (df_elt_t);
     }
@@ -1161,7 +1164,8 @@ void
 sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
 {
   /* if an exp is placed before a group by but is used after the group by then add it to the dependent of the gby */
-  df_elt_t * next;
+  df_elt_t * next, *next2;
+  int next_ctr = 0;
   so->so_mark_gb_dep = 0;
   if (!enable_gb_dep)
     return;
@@ -1171,8 +1175,12 @@ sqlo_mark_gb_dep (sqlo_t * so, df_elt_t * dfe)
       return;
     }
   
-  for (next = dfe->dfe_next; next; next = next->dfe_next)
+  for (next = dfe->dfe_next, next2 = dfe; next; next = next->dfe_next)
     {
+      if ((next_ctr++) % 2)
+        next2 = next2->dfe_next;
+      if (next2 == next)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI01", "Internal error in SQL compiler: loop in dfe_next");
       if (DFE_GROUP == next->dfe_type && !next->_.setp.is_being_placed)
 	t_set_pushnew (&next->_.setp.gb_dependent, (void*)dfe);
     }
@@ -1212,6 +1220,8 @@ sqlo_place_dfe_after (sqlo_t * so, locus_t * loc, df_elt_t * after_this, df_elt_
 #endif
   dfe->dfe_next = NULL;
   dfe->dfe_prev = NULL;
+  if (!DFE_IS_SUB(super))
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQI07", "Internal error in SQL compiler: sqlo_place_dfe_after in non container");
   L2_INSERT_AFTER (super->_.sub.first, super->_.sub.last, after_this, dfe, dfe_);
   if (DFE_TABLE == dfe->dfe_type)
     dfe->_.table.ot->ot_locus = loc;
@@ -1435,6 +1445,8 @@ dfe_inx_op_col_def_table (df_inx_op_t * dio, df_elt_t * col_dfe, df_elt_t * exce
   if (dio->dio_table
       && dfe_defines (dio->dio_table, col_dfe))
     return dio->dio_table;
+  if (dio->dio_terms && !IS_BOX_POINTER(dio->dio_terms))
+    return NULL;
   DO_SET  (df_inx_op_t *, term, &dio->dio_terms)
     {
       df_elt_t *def_dfe = dfe_inx_op_col_def_table (term, col_dfe, except_tb);
@@ -7501,6 +7513,11 @@ dfe_body_copy (sqlo_t * so, df_elt_t * super, df_elt_t * parent)
     }
   else
     {
+      if (!DFE_IS_SUB(super))
+        sqlc_new_error (so->so_sc->sc_cc, "37000", "SQI06", "Internal error in SQL compiler: dfe_body_copy in non container");
+      if (!super->_.sub.first)
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI03", "Internal error in SQL compiler: dfe_body_copy first = 0");
+
       for (elt = super->_.sub.first->dfe_next; elt; elt = elt->dfe_next)
 	{
 	  df_elt_t * copy_elt = sqlo_layout_copy_1 (copy_super->dfe_sqlo, elt, copy_super);
@@ -7543,6 +7560,8 @@ inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
   memcpy (copy, dio, sizeof (df_inx_op_t));
   if (dio->dio_table == org_tb_dfe)
     copy->dio_table = tb_dfe;
+  if (dio->dio_terms && !IS_BOX_POINTER(dio->dio_terms))
+    sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI05", "Internal error in SQL compiler: non inx op in inx copy");
   else if (dio->dio_table)
     {
       copy->dio_table = sqlo_layout_copy_1 (so, dio->dio_table, NULL);

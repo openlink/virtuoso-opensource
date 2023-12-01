@@ -1703,7 +1703,7 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 int
 ssl_needs_ins_cast (state_slot_t * ssl, dbe_column_t * col)
 {
-  if (ssl->ssl_is_callret)
+  if (ssl->ssl_is_callret || ssl->ssl_vary)
     return 1;
   if (DV_WIDE == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
     return 0;
@@ -3584,7 +3584,7 @@ sqlg_const_cast (sql_comp_t * sc, state_slot_t ** ssl_ret, sql_type_t * target_s
     {
       caddr_t st = ERR_STATE (err), msg = ERR_MESSAGE (err);
       dk_free_box (err);
-      sqlc_new_error (sc->sc_cc, st, "VECDT", msg);
+      sqlc_new_error (sc->sc_cc, st, "VECDT", "%s", msg);
     }
   *ssl_ret = ssl_new_constant (sc->sc_cc, value);
   dk_free_tree (value);
