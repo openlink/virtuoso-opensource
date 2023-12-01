@@ -5280,7 +5280,8 @@ qr_skip_node (sqlo_t * so, query_t * qr)
       if ((qn_input_fn) select_node_input_subq  == f || (qn_input_fn)select_node_input == f)
 	{
 	  sel = (select_node_t *) qn;
-	  break;
+          if (sel->sel_top_skip || (is_vec && sel->sel_top))
+            break;
 	}
       if (IS_TS (qn))
 	last_ts = (table_source_t *)qn;
