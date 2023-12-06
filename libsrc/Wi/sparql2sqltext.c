@@ -2325,7 +2325,7 @@ ssg_print_double_as_sql_atom (spar_sqlgen_t *ssg, double val, int mode, caddr_t 
   int buffill = 0;
   if (mode != SQL_ATOM_SPARQL_INTEROP)
     {
-      buffill = sprintf (tmpbuf, "0dblhex%016Lx /* %lg */", ((uint64 *)(&val))[0], val);
+      buffill = sprintf (tmpbuf, "0dblhex" INT64X_FMT " /* %lf */", ((uint64 *)(&val))[0], val);
     }
   else
     {
