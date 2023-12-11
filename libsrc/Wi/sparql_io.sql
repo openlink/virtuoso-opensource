@@ -3118,16 +3118,9 @@ execute_query:
   -- dbg_obj_princ ('dflt_graphs = ', dflt_graphs, ', named_graphs = ', named_graphs);
   --if (quiet_geo <> '')
   --  full_query := 'define sql:select-option "QUIETGEO"\n' || full_query;
-  declare req_hosts varchar;
-  declare req_hosts_split any;
-  declare hctr integer;
-  req_hosts := http_request_header (lines, 'Host', null, null);
-  req_hosts := replace (req_hosts, ', ', ',');
-  req_hosts_split := split_and_decode (req_hosts, 0, '\0\0,');
-  for (hctr := length (req_hosts_split) - 1; hctr >= 0; hctr := hctr - 1)
-    {
-      for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
-      where req_hosts_split [hctr] like SH_HOST) do
+  declare req_host varchar;
+  req_host := http_request_header (lines, 'Host', null, null);
+  for (select SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST where req_host like SH_HOST) do
         {
           if (length (dflt_graphs) = 0 and length (SH_GRAPH_URI))
             dflt_graphs := vector (SH_GRAPH_URI);
@@ -3135,7 +3128,6 @@ execute_query:
             full_query := concat (SH_DEFINES, '\n', full_query);
           goto host_found;
         }
-    }
 host_found:
 
   foreach (varchar dg in dflt_graphs) do
@@ -3709,26 +3701,18 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   graph_uri := trim(coalesce (get_keyword ('graph', params, null), get_keyword ('graph-uri', params, null), ''));
   if (isstring (get_keyword ('default', params)))
     {
-      declare req_hosts varchar;
-      declare req_hosts_split any;
-      declare hctr integer;
+      declare req_host varchar;
       if (graph_uri <> '')
         signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains both "graph" and "default" params');
-      req_hosts := http_request_header (lines, 'Host', null, null);
-      req_hosts := replace (req_hosts, ', ', ',');
-      req_hosts_split := split_and_decode (req_hosts, 0, '\0\0,');
-      for (hctr := length (req_hosts_split) - 1; hctr >= 0; hctr := hctr - 1)
+      req_host := http_request_header (lines, 'Host', null, null);
+      for (select SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST where req_host like SH_HOST) do
         {
-          for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
-          where req_hosts_split [hctr] like SH_HOST) do
+          if (length (SH_GRAPH_URI))
             {
-              if (length (SH_GRAPH_URI))
-                {
-                  graph_uri := SH_GRAPH_URI;
-                  goto good_host_found;
-                }
-              goto bad_host_found;
+              graph_uri := SH_GRAPH_URI;
+              goto good_host_found;
             }
+          goto bad_host_found;
         }
 bad_host_found:
       signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains "default" param but the endpoint is not configured to have default graph');
