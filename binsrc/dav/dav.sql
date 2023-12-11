@@ -3512,6 +3512,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
 
   fmt := accept;
   is_col := 0;
+  det := null;
   if (fmt = 'text/turtle')
     fmt := 'application/x-nice-turtle';
 
