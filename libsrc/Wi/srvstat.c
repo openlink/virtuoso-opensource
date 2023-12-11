@@ -1898,6 +1898,9 @@ stat_desc_t dbf_descs [] =
     {"ha_rehash_pct", (long *)&ha_rehash_pct, SD_INT32},
     {"c_use_aio", (long *)&c_use_aio, SD_INT32},
     {"callstack_on_exception", &callstack_on_exception, NULL},
+#ifndef NDEBUG
+    {"sql_warning_mode", (long *)&sql_warning_mode, SD_INT32},
+#endif
     {"public_debug", &public_debug, NULL},
     {"enable_vec", (long *)&enable_vec, SD_INT32},
     {"enable_qp", (long *)&enable_qp, SD_INT32},
