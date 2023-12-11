@@ -1456,6 +1456,27 @@ ECHO BOTH $IF $EQU $ROWCNT 10 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select top 10 distinct from (select distinct ..) produced: " $ROWCNT " rows\n";
 
+create table topksptb (g_uri varchar, g_defs varchar, g_host varchar primary key) if not exists; 
+insert soft topksptb values ('g:1', null, '8890');
+insert soft topksptb values ('g:2', null, '8891');
+
+create procedure topksp ()
+{
+  for select top 1 g_uri, g_defs from topksptb where '8891' like g_host do
+    {
+      return g_uri;
+    }
+  return null;
+};
+
+select topksp ();
+ECHO BOTH $IF $EQU $LAST[1] 'g:2' "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": cursor with top 1 return=" $LAST[1] "\n";
+select top 1 g_uri, g_defs from topksptb where '8891' like g_host;
+ECHO BOTH $IF $EQU $LAST[1] 'g:2' "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": select top 1 return=" $LAST[1] "\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

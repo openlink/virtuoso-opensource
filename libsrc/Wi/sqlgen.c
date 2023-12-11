@@ -5315,8 +5315,8 @@ qr_skip_node (sqlo_t * so, query_t * qr)
 	  sk->sk_top = sel->sel_top;
 	  sel->sel_top = NULL;
 	  sk->sk_set_no = sel->sel_set_no;
-	  if (last_ts && !sk->sk_top_skip && sk->sk_top && SSL_CONSTANT == sk->sk_top->ssl_type
-	      && 1 == unbox (sk->sk_top->ssl_constant))
+	  if (last_ts && !sk->sk_top_skip && sk->sk_top && SSL_CONSTANT == sk->sk_top->ssl_type && 1 == unbox (sk->sk_top->ssl_constant) 
+              && !(so->so_sc->sc_in_cursor_def && last_ts->src_gen.src_after_test))
 	    last_ts->ts_max_rows = 1;
 	}
       else
