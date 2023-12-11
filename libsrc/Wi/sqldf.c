@@ -995,7 +995,7 @@ sqlo_df (sqlo_t * so, ST * tree)
 	  {
 	    int arginx;
 	    _DO_BOX_FAST (arginx, tree->_.fn_ref.fn_arglist)
-	      sqlo_df (so, tree->_.fn_ref.fn_arg);
+              sqlo_df (so, tree->_.fn_ref.fn_arglist[arginx]);
 	    END_DO_BOX_FAST;
 	  }
 	so->so_is_top_and = saved_top_and;
