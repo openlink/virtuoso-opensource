@@ -3483,7 +3483,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   declare gr, as_define, as_limit, as_offset varchar;
   declare id_ integer;
   declare pref_mime varchar;
-  declare fmt, etag, qr varchar;
+  declare fmt, etag, qr, det varchar;
   declare n_page, n_count, n_last, n_per_page, is_col integer;
 
   -- macOS WebDAV request
