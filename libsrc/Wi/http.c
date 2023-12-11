@@ -10454,6 +10454,16 @@ bif_is_http_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   return box_num(1);
 }
 
+static caddr_t
+bif_is_http_error_handler (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  if (!qi->qi_client->cli_ws)
+    return box_num(0);
+  return box_num(qi->qi_client->cli_ws->ws_in_error_handler);
+}
+
+
 int
 ws_is_https (ws_connection_t * ws)
 {
@@ -12062,6 +12072,7 @@ http_init_part_one ()
   bif_define_ex ("http_body_read", bif_http_body_read, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("__http_stream_params", bif_http_stream_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("is_http_ctx", bif_is_http_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_http_error_handler", bif_is_http_error_handler, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("is_https_ctx", bif_is_https_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("http_is_flushed", bif_http_is_flushed, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("https_renegotiate", bif_https_renegotiate);

@@ -2053,7 +2053,7 @@ create function DAV_AUTHENTICATE_HTTP (
       return rc;
   }
 
-  if ((a_uid is null) and (not i_allow_anonymous or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:'))))
+  if (not is_http_error_handler() and (a_uid is null) and (not i_allow_anonymous or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:'))))
   {
     rc := WS.WS.GET_DAV_AUTH (a_lines, i_allow_anonymous, can_write_http, a_uname, a_pwd, a_uid, a_gid, a_perms);
     if (rc < 0)
