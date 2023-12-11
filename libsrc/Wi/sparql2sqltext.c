@@ -2312,20 +2312,13 @@ sparp_restr_bits_of_expn (sparp_t *sparp, SPART *tree)
   (((DV_STRING == DV_TYPE_OF (arg)) || (DV_UNAME == DV_TYPE_OF (arg))) && \
     (40 < box_length (arg)) ) )
 
-#ifdef WIN32
-#define INT64X_FMT "%016I64x"
-#else
-#define INT64X_FMT "%016llx"
-#endif
-
-
-int
+static int
 ssg_print_double_as_sql_atom (spar_sqlgen_t *ssg, double val, int mode, caddr_t tmpbuf)
 {
   int buffill = 0;
   if (mode != SQL_ATOM_SPARQL_INTEROP)
     {
-      buffill = sprintf (tmpbuf, "0dblhex" INT64X_FMT " /* %lf */", ((uint64 *)(&val))[0], val);
+      buffill = sprintf (tmpbuf, "0dblhex%016llx /* " DOUBLE_G_STAR_FMT " */", ((uint64 *)(&val))[0], DOUBLE_G_LEN, val);
     }
   else
     {
@@ -2340,6 +2333,33 @@ ssg_print_double_as_sql_atom (spar_sqlgen_t *ssg, double val, int mode, caddr_t 
               buffill += 2;
             }
         }
+    }
+  return buffill;
+}
+
+static int
+ssg_print_float_as_sql_atom (spar_sqlgen_t *ssg, double val, int mode, caddr_t tmpbuf)
+{
+  int buffill = 0;
+  if (mode != SQL_ATOM_SPARQL_INTEROP)
+    {
+      buffill = sprintf (tmpbuf, "0realhex%08x /* " SINGLE_G_STAR_FMT " */", ((uint32 *) (&val))[0], SINGLE_G_LEN, val);
+    }
+  else
+    {
+      if (!isfinite (val))
+	buffill = sprintf (tmpbuf, ((DBL_POS_INF == val) ? "cast ('INF' as float)" : ((DBL_NEG_INF == val) ? "cast ('-INF' as float)" : "cast ('NaN' as float)")));
+      else
+	{
+	  buffill = sprintf (tmpbuf, "cast (" SINGLE_G_STAR_FMT, SINGLE_G_LEN, val);
+	  if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
+	    {
+	      strcpy (tmpbuf + buffill, ".0");
+	      buffill += 2;
+	    }
+	  strcpy (tmpbuf + buffill, " as float)");
+	  buffill += 10;
+	}
     }
   return buffill;
 }
@@ -2431,37 +2451,9 @@ ssg_print_box_as_sql_atom (spar_sqlgen_t *ssg, ccaddr_t box, int mode)
       break;
     case DV_SINGLE_FLOAT:
       {
-        double boxdbl = (double)(unbox_float (box));
         if (1.0 > ((2 - 1.41484755040568800000e+16) + 1.41484755040568800000e+16))
           spar_error (ssg->ssg_sparp, "Platform-specific error: this build of Virtuoso does not support literals of type %s due to rounding errors in math functions", dv_type_title (dtp));
-        if (mode != SQL_ATOM_SPARQL_INTEROP)
-          {
-            float f = unbox_float (box);
-            buffill = sprintf (tmpbuf, "0realhex%08x /* %lg */", ((uint32 *)(&f))[0], boxdbl);
-          }
-        else
-          {
-            buffill = sprintf (tmpbuf, "cast (" DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
-            if ((NULL == strchr (tmpbuf+6, '.')) && (NULL == strchr (tmpbuf+6, 'E')) && (NULL == strchr (tmpbuf+6, 'e')))
-              {
-                if (isalpha(tmpbuf[6+1]))
-                  {
-                    double myZERO = 0.0;
-                    double myPOSINF_d = 1.0/myZERO;
-                    double myNEGINF_d = -1.0/myZERO;
-                    if (myPOSINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('Inf'");
-                    else if (myNEGINF_d == boxdbl) buffill = sprintf (tmpbuf, "cast ('-Inf'");
-                    else buffill = sprintf (tmpbuf, "cast ('NaN'");
-                  }
-                else
-                  {
-                    strcpy (tmpbuf+buffill, ".0e0");
-                    buffill += 2;
-                  }
-              }                   /* 01234567890 */
-            strcpy (tmpbuf+buffill, " as float)");
-            buffill += 10;
-          }
+        buffill = ssg_print_float_as_sql_atom (ssg, (double)(unbox_float (box)), mode, tmpbuf);
         break;
       }
     case DV_DOUBLE_FLOAT:
