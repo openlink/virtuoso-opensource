@@ -2472,6 +2472,8 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
   return 1;
 }
 
+#define CONTENT_ALLOWED(ws) (101 != (ws)->ws_status_code && 204 != (ws)->ws_status_code && 304 != (ws)->ws_status_code)
+
 void
 ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 {
@@ -2638,7 +2640,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (ws->ws_status_code != 101 && WS_NOT_HDR (ws, "Content-Type:"))
+      if (CONTENT_ALLOWED(ws) && WS_NOT_HDR (ws, "Content-Type:"))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2716,7 +2718,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 
       if (WS_NOT_HDR (ws, "Accept-Ranges"))
 	{
-	  if (ws->ws_status_code != 101)
+          if (CONTENT_ALLOWED(ws))
 	    SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 	}
 
@@ -2736,7 +2738,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (ws->ws_status_code != 101 && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
+      else if (CONTENT_ALLOWED(ws) && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -2745,7 +2747,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       SES_PRINT (ws->ws_session, "\r\n"); /* empty line */
 
       /* write body */
-      if (ws->ws_method != WM_HEAD)
+      if (ws->ws_method != WM_HEAD && CONTENT_ALLOWED(ws))
 	{
 	  if (cnt_enc == WS_CE_CHUNKED)
 	    {
