@@ -5432,6 +5432,8 @@ http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth,
   return res;
 }
 
+#define HTTP_URL_ESCAPED 0
+#define HTTP_URL_DECODED 1
 
 caddr_t
 http_path_to_array (char * path, int mode)
@@ -5451,9 +5453,9 @@ http_path_to_array (char * path, int mode)
       if (n_fill > sizeof (name) - 3)
 	break;
       if ((0 == ch || ' ' == ch || '\n' == ch || '\r' == ch || '\t' == ch
-	  || ch == '?') && mode == 0)
+	  || ch == '?') && HTTP_URL_ESCAPED == mode)
 	break;
-      if (0 == ch  && mode == 1)
+      if (0 == ch  && HTTP_URL_DECODED == mode)
 	break;
       if (ch == '/')
 	{
@@ -5463,7 +5465,7 @@ http_path_to_array (char * path, int mode)
 	      n_fill = 0;
 	    }
 	}
-      else if (ch == '%')
+      else if (ch == '%' && HTTP_URL_ESCAPED == mode)
 	{
 	  if (inx >= max || (inx+1) >= max)
 	    {
@@ -6171,7 +6173,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 	dk_free_tree (ws->ws_path_string);
       dk_free_tree ((caddr_t)(ws->ws_path));
       ws->ws_path_string = box_copy (new_path);
-      parr = (caddr_t *) http_path_to_array (new_path, 1);
+      parr = (caddr_t *) http_path_to_array (new_path, HTTP_URL_DECODED);
       ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
     }
 
@@ -6184,7 +6186,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       dk_free_tree (ws->ws_p_path_string);
       dk_free_tree ((caddr_t)(ws->ws_p_path));
       ws->ws_p_path_string = box_copy (new_phy_path);
-      parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
+      parr = (caddr_t *) http_path_to_array (new_phy_path, HTTP_URL_DECODED);
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
       ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
     }
@@ -9745,7 +9747,7 @@ get_http_map (ws_http_map_t ** ws_map, char * lpath, int dir, char * host, char 
   ws_http_map_t ** last_match = NULL;
   int inx, len, elm, rlen, n;
   caddr_t res = NULL;
-  caddr_t * paths = (caddr_t *) http_path_to_array (lpath, 0);
+  caddr_t * paths = (caddr_t *) http_path_to_array (lpath, HTTP_URL_ESCAPED);
   caddr_t path_str;
   if (!ws_map)
     return NULL;
@@ -9987,7 +9989,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
       ppath = get_http_map (&(ws->ws_map), lpath, dir, listen_host, listen_host);
     }
   ws->ws_p_path_string = ppath;
-  ws->ws_p_path = (caddr_t *) http_path_to_array (ppath, 1);
+  ws->ws_p_path = (caddr_t *) http_path_to_array (ppath, HTTP_URL_DECODED);
 #ifdef _SSL
   if (enable_https_vd_renegotiate && is_https && ws->ws_map && ws->ws_map->hm_ssl_verify_mode != verify_mode)
     {
