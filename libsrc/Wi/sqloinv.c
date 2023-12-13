@@ -702,7 +702,7 @@ sqlo_geo_f_solve (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * cond, dk_set_t * co
   df_elt_t * left, * right;
   if (tb_dfe->_.table.text_pred)
     return 0;
-  if (!contains)
+  if (!contains || BOX_ELEMENTS (contains) < 2)
     return 0;
   left = sqlo_df (so, contains[0]);
   right = sqlo_df (so, contains[1]);
