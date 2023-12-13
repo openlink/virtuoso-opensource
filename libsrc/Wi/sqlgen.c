@@ -4089,6 +4089,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
     {
       state_slot_t *ssl;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
+      if (NULL != dk_set_member (setp->setp_keys, ssl))
+        continue;
       NCONCF1 (setp->setp_keys, ssl);
       NCONCF1 (setp->setp_key_is_desc, spec->_.o_spec.order);
       if (is_gb)
