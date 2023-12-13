@@ -1951,7 +1951,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
   || DV_INT64 == dtp)
 
 #define IS_DATE_DTP(dtp) \
-  (DV_TIMESTAMP == (dtp) || DV_DATE == (dtp) || DV_DATETIME == (dtp))
+  (DV_DATE == (dtp) || DV_TIME == (dtp) || DV_DATETIME == (dtp) || DV_TIMESTAMP == (dtp))
 
 #ifndef dbg_printf
 # ifdef DEBUG

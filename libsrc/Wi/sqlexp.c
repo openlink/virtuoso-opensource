@@ -1003,7 +1003,7 @@ cv_artm_set_type (instruction_t * ins)
 	  switch (ins->ins_type)
             {
             case IN_ARTM_PLUS:
-              if ((DV_DATETIME == ins->_.artm.left->ssl_dtp) || (DV_DATETIME == ins->_.artm.right->ssl_dtp))
+              if (IS_DATE_DTP(ins->_.artm.left->ssl_dtp) || IS_DATE_DTP (ins->_.artm.right->ssl_dtp))
                 {
                   ins->_.artm.result->ssl_dtp = DV_DATETIME;
                   ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
@@ -1011,10 +1011,10 @@ cv_artm_set_type (instruction_t * ins)
                 }
               break;
             case IN_ARTM_MINUS:
-              if (DV_DATETIME == ins->_.artm.left->ssl_dtp)
+              if (IS_DATE_DTP (ins->_.artm.left->ssl_dtp))
                 {
                   ins->_.artm.result->ssl_sqt.sqt_non_null = 0;
-                  if (DV_DATETIME == ins->_.artm.right->ssl_dtp)
+                  if (IS_DATE_DTP (ins->_.artm.right->ssl_dtp))
                     {
                       ins->_.artm.result->ssl_dtp = DV_NUMERIC;
                       goto result_dtp_is_set;

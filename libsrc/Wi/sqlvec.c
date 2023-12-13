@@ -3874,10 +3874,6 @@ sqlg_ts_add_copy (sql_comp_t * sc, table_source_t * ts, state_slot_t ** ssls)
 
 int enable_ks_out_alias = 0;
 
-#define IS_DATE_DTP(dtp) \
-  (DV_DATETIME == (dtp) || DV_DATE == (dtp) || DV_TIME == (dtp) || DV_TIMESTAMP == (dtp))
-
-
 int
 dtp_aliasable (dtp_t dtp)
 {
