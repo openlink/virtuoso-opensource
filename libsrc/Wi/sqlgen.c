@@ -3491,6 +3491,8 @@ sqlg_parallel_ts_seq (sql_comp_t * sc, df_elt_t * dt_dfe, table_source_t * ts, f
 		    break;
 		}
 	    }
+          if (!ts)
+            return;
 	  continue;
 	}
       if (IS_TS (ts))
