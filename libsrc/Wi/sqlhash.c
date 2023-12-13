@@ -170,6 +170,8 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
     sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in distinct", SETP_DISTINCT_MAX_KEYS);
   DO_SET (state_slot_t *, ssl, &setp->setp_keys)
     {
+      if (!ssl)
+        sqlc_new_error (sc->sc_cc, "42000", "SQ600", "Statement not allowed.");
       if (!quietcast && IS_BLOB_DTP (ssl->ssl_sqt.sqt_dtp))
 	sqlc_new_error (sc->sc_cc, "42000", "SQ186",
 	    "Long data types not allowed for distinct, order, "

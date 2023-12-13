@@ -97,6 +97,8 @@ sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
       DO_BOX (ptrlong, pos, inx, dist_pos)
 	{
 	  state_slot_t * ssl = ssl_out[pos];
+          if (!ssl)
+            sqlc_new_error (sc->sc_cc, "42000", "SQ600", "Statement not allowed.");
 	  if (SSL_CONSTANT == ssl->ssl_type)
 	    {
 	      cnst = ssl;
@@ -110,6 +112,8 @@ sqlc_add_distinct_node (sql_comp_t * sc, data_source_t ** head,
     {
       DO_BOX (state_slot_t *, ssl, inx, ssl_out)
 	{
+          if (!ssl)
+            sqlc_new_error (sc->sc_cc, "42000", "SQ600", "Statement not allowed.");
 	  if (SSL_CONSTANT == ssl->ssl_type)
 	    {
 	      cnst = ssl;

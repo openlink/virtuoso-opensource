@@ -741,6 +741,8 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       int inx;
       all_cols_p = sqlo_oby_exp_cols (so, from_ot->ot_dt, group);
       sqlo_place_oby_specs (so, from_ot, group);
+      if (!texp->_.table_exp.group_by_full)
+        sqlc_error (so->so_sc->sc_cc, "37000", "Statement not allowed");
       _DO_BOX (inx, texp->_.table_exp.group_by_full)
 	{
 	  sqlo_place_oby_specs (so, from_ot, texp->_.table_exp.group_by_full[inx]);
