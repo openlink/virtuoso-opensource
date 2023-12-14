@@ -83,7 +83,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:AMD64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>wic.lib;threads.lib;dk1t.lib;ws2_32.lib;libcrypto.lib;libssl.lib;util.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wic.lib;threads.lib;dk1t.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;util.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)isqlo.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -129,7 +129,7 @@
     <Link>
       <AdditionalOptions>
       </AdditionalOptions>
-      <AdditionalDependencies>wic.lib;threads.lib;dk1t.lib;ws2_32.lib;libcrypto.lib;libssl.lib;util.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>wic.lib;threads.lib;dk1t.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;util.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)isqlo.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
