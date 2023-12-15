@@ -1478,5 +1478,100 @@ ECHO BOTH $IF $EQU $LAST[1] 'g:2' "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": select top 1 return=" $LAST[1] "\n";
 
+
+set U{caseno} case1204;
+drop table case1204;
+CREATE TABLE case1204 ( v1 DOUBLE PRECISION ) ;
+  INSERT INTO case1204 VALUES ( 4 ) ;
+  INSERT INTO case1204 VALUES ( 52 ) ;
+  INSERT INTO case1204 ( v1 ) SELECT ( SELECT v1 ) FROM ( SELECT 17 + 17399826.000000 AS v7 , 46312780.000000 AS v8 , 'x' AS v6 ) AS v3 , case1204 AS v2 , case1204 AS v5 , case1204 , case1204 AS v4 ;
+  SELECT v1 FROM case1204 AS v11 , case1204 AS v10 , case1204 AS v9 NATURAL JOIN case1204 WHERE v1 IN ( SELECT v1 FROM case1204 AS v13 , case1204 AS v12 , case1204 AS v14 , case1204 ) ORDER BY ( 67 , -128 ) DESC ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1205;
+drop table case1205 if exists;
+CREATE TABLE case1205 ( v1 FLOAT ) ;
+  INSERT INTO case1205 VALUES ( 30 ) ;
+  INSERT INTO case1205 VALUES ( -1 ) ;
+  SELECT v1 FROM case1205 WHERE EXISTS ( SELECT v1 FROM case1205 WHERE v1 IN ( SELECT v1 FROM case1205 WHERE v1 > 29 GROUP BY v1 , v1 ) ) ;
+--  INSERT INTO case1205 VALUES ( ( SELECT v1 FROM case1205 WHERE v1 BETWEEN 'x' AND 'x' OR EXISTS ( SELECT v1 FROM case1205 WHERE v1 IN ( SELECT v1 , v1 FROM case1205 WHERE v1 > 29 GROUP BY v1 , 34500520.000000 , v1 ) ) ) ) ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1206;
+set macro_substitution=off;
+drop TABLE case1206 ;
+CREATE TABLE case1206 ( v1 DATE PRIMARY KEY ) ;
+ INSERT INTO case1206 ( v1 , v1 ) VALUES ( 1237962480 , '$[*].datetime() ? (@ >= 10.03.2017 12:35 +1.datetime(dd.mm.yyyy HH24:MI TZH))' ) ;
+ UPDATE case1206 SET v1 = 2 WHERE 'lax $[0].a' = ( SELECT v1 - ( SELECT v1 - 0 ) ) OR v1 < 9223372036854775807 ;
+
+set macro_substitution=on;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1207;
+drop table case1207;
+CREATE TABLE case1207 ( v1 NUMERIC NOT NULL CHECK ( ( v1 , v2 ) - -1 + -1 + 32 + 13041968.000000 ) NOT NULL UNIQUE CHECK ( -1 ) , v2 FLOAT ) ;
+  INSERT INTO case1207 VALUES ( 45 , ( ( 37506630.000000 , 6956091.000000 ) ) ) ;
+  INSERT INTO case1207 VALUES ( -1 , 96 ) ;
+  INSERT INTO case1207 ( v1 ) SELECT v2 FROM case1207 ;
+  UPDATE case1207 SET v2 = 'x' WHERE CASE WHEN v1 - ( v1 + -1 ) > ( SELECT CASE WHEN 41 * - NULL + 46 + -1 + -128 + 96 + 0 THEN NULL ELSE 83 END FROM case1207 WHERE ( SELECT CASE WHEN 2147483647 THEN 51229361.000000 ELSE 0 END - v1 FROM case1207 WHERE ( CAST ( ( ( SELECT ALL CASE WHEN ( 13 , 'x' ) < ( 255 , 'x' ) THEN NULL ELSE 52 END * v2 FROM case1207 GROUP BY v1 , v2 , v2 , v1 , v2 , v2 ORDER BY v1 ) , 'x' , 'x' ) AS FLOAT ) ) / 80777295.000000 ) = ( 35 ) ) THEN NULL ELSE 46 / -128 END ;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1208;
+drop TABLE case1208;
+CREATE TABLE case1208 ( v1 REAL ) ;
+ UPDATE case1208 SET v1 = v1 + ( SELECT 2 AS zero_value DATE ) WHERE v1 IN ( SELECT 2 - v1 FROM case1208 ) ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1209;
+drop table case1209;
+CREATE TABLE case1209 ( v1 CHAR(1) NULL , v2 CHAR(1) NULL , v3 INT NULL ) ;
+ SELECT 2 FROM case1209 WHERE 2 OR ST_Contains () ;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1210;
+drop table case1210;
+CREATE TABLE case1210 ( x FLOAT UNIQUE CHECK ( ( CASE WHEN 1.000000 = 1 THEN 1 ELSE ( 1.000000 , 1.000000 ) / 1 / 1 END ) AND ( SELECT CASE WHEN x < x AND x IS NULL THEN 1 ELSE ( SELECT x FROM case1210 WHERE ( CASE WHEN x = x AND x = x AND x THEN 1.000000 ELSE x + x * 1 + 1 END ) IN ( SELECT DISTINCT 1 FROM case1210 GROUP BY NULL , 'x' , 'x' , 'x' ) ORDER BY x / 1 DESC ) - CASE WHEN ( 1 ) AND x NOT IN ( SELECT DISTINCT x / 1 , 1 FROM case1210 GROUP BY CASE WHEN x = 1 THEN 'x' ELSE x - x * 1.000000 + 1 END ) THEN x + 1 WHEN 1 THEN 1 ELSE 1.000000 END / 1 + 1 END ) < x + x + x ) PRIMARY KEY ) ;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1211;
+drop table case1211;
+CREATE TABLE case1211 ( v3 CHAR(1) NULL , v2 CHAR(1) NULL , v1 INT NULL ) ;
+ SELECT v3 ( 'arteriole' ) FROM case1211 WHERE v1 = '313233' OR v3 = 'xyzz ' ORDER BY count ( * ) , v2 ;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1212;
+drop TABLE case1212 ;
+drop VIEW case1212view;
+CREATE TABLE case1212 ( v1 VARCHAR ( 500 ) ) ;
+ CREATE VIEW case1212view AS SELECT TOP 5 ( CASE WHEN case1212 . v1 = 10 THEN 'High' ELSE 'Mary' END ) AS x , v1 FROM case1212 ORDER BY v1 DESC ;
+ DELETE FROM case1212view WHERE NOT ( ( 1 ) IN ( SELECT REPEAT ( NULL , 10 ) FROM case1212 AS AutoVacuum LEFT JOIN case1212 ON v1 GROUP BY v1 ) ) ;
+
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

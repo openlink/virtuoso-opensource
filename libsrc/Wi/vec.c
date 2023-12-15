@@ -1881,9 +1881,9 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
   QNCAST (query_instance_t, qi, inst);
   int set = qi->qi_set;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-  dtp_t dtp = DV_TYPE_OF (v);
+  dtp_t val_dtp = DV_TYPE_OF (v);
   DC_CHECK_LEN (dc, set);
-  if (DV_DB_NULL == dtp)
+  if (DV_DB_NULL == val_dtp)
     {
       dc_set_null (dc, set);
       return;
@@ -1892,7 +1892,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
     {
       DC_FILL_TO (dc, int64, set);
     }
-  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
+  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[val_dtp] != dc->dc_dtp)
     dc_heterogenous (dc);
   /* value from uninitalized variable */
   if (0 && NULL == v && !(DCT_BOXES & dc->dc_type) && DV_DATETIME == dtp_canonical[dc->dc_dtp])
@@ -1946,7 +1946,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 		dc_set_null (dc, set);
 		return;
 	      }
-	    memcpy_dt (dc->dc_values + DT_LENGTH * set, (v ? v : zero));
+	    memcpy_dt (dc->dc_values + DT_LENGTH * set, (IS_DATE_DTP(val_dtp) ? v : zero));
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
