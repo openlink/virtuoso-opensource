@@ -7032,7 +7032,7 @@ sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top)
     {
       if (so->so_best) /* log a error */
 	{
-	  log_error ("The memory pool size %d reached the limit %d bytes, using the last best score.",
+	  log_error ("The memory pool size %zd reached the limit %zd bytes, using the last best score.",
 	      (THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
 	  return;
 	}
@@ -7370,7 +7370,7 @@ sqlo_layout (sqlo_t * so, op_table_t * ot, int is_top, df_elt_t * super)
 	    lisp_throw (CATCH_SQLO_NO_MEM, 1);
 	  else
 	    sqlc_error (so->so_sc->sc_cc, "42000",
-			"The memory pool size %d reached the limit %d bytes, try to increase the MaxMemPoolSize ini setting.",
+			"The memory pool size %zd reached the limit %zd bytes, try to increase the MaxMemPoolSize ini setting.",
 			(THR_TMP_POOL)->mp_bytes, sqlo_max_mp_size);
 	}
     }
