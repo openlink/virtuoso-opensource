@@ -449,7 +449,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
       }
       else if (prop = ':displayname')
       {
-        http (sprintf ('<D:displayname>%V</D:displayname>\n', name));
+        http (sprintf ('<D:displayname>%V</D:displayname>\n', __box_flags_tweak (name,2)));
         found_sprop := 1;
       }
       else if (prop = ':getlastmodified')
@@ -1761,6 +1761,8 @@ create procedure WS.WS.DAV_LINK (in p varchar)
   def := registry_get ('URIQADefaultHost');
   h := sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host (def));
   s := string_output ();
+  if (isstring (p))
+    __box_flags_set (p, 2);
   http_dav_url (p, null, s);
   s := string_output_string (s);
   return h || s;
