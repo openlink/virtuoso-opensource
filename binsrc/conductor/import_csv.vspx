@@ -552,6 +552,14 @@
             ?>
             <tr>
               <td colspan="2">
+                    <v:check-box name="auto_commit" value="1" xhtml_id="cb_acm" initial-checked="1" />
+                    <label class="help_tooltip" 
+                        helptext="The row autocommit mode is useful for bulk operations that need no transactional semantic, where insert/update/delete statements commit after each row."
+                        for="cb_acm">Auto-commit mode</label>
+                </td>
+            </tr>
+            <tr>
+              <td colspan="2">
                 <br />
                 <v:button action="simple" name="back3" value="Back">
                   <v:on-post>
@@ -565,7 +573,7 @@
                 <v:button action="simple" value="Create Table &amp; Import Data" name="next3">
                   <v:on-post>
                     <![CDATA[
-                      declare ss, s, i, nrec, q, o, tb, tmp, err any;
+                      declare ss, s, i, nrec, q, o, tb, tmp, err, log_mode any;
                       declare n, dt any;
                       declare tb any;
 
@@ -615,7 +623,10 @@
                         self.vc_is_valid := 0;
                         return 0;
                       }
-                      tmp := csv_load (s, self.v_offs, null, self.tb, 1, vector ('csv-delimiter', self.v_delim, 'csv-quote', self.v_quot, 'encoding', self.v_enc, 'mode', self.v_pmode, 'log', 1));
+                      log_mode := 1;
+                      if (self.auto_commit.ufl_selected)
+                        log_mode := 3;
+                      tmp := csv_load (s, self.v_offs, null, self.tb, log_mode, vector ('csv-delimiter', self.v_delim, 'csv-quote', self.v_quot, 'encoding', self.v_enc, 'mode', self.v_pmode, 'log', 1));
                       if (isvector (tmp))
                       {
                         self.nrec := tmp[0];
