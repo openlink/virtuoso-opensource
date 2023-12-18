@@ -2747,7 +2747,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       SES_PRINT (ws->ws_session, "\r\n"); /* empty line */
 
       /* write body */
-      if (ws->ws_method != WM_HEAD && CONTENT_ALLOWED(ws))
+      if (ws->ws_method != WM_HEAD)
 	{
 	  if (cnt_enc == WS_CE_CHUNKED)
 	    {
@@ -2764,7 +2764,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    {
 	      strses_write_out_gz (ws->ws_strses, ws->ws_session, &gzctx);
 	    }
-	  else if (WS_NOT_HDR (ws, "Content-Length:"))
+         else if (WS_NOT_HDR (ws, "Content-Length:") && CONTENT_ALLOWED(ws))
 	    {
 	      strses_write_out (ws->ws_strses, ws->ws_session);
 	    }
