@@ -2610,7 +2610,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   accept_gz = ws_get_packed_hf (ws, "Accept-Encoding:", "");
   if (IS_CHUNKED_OUTPUT (ws))
     cnt_enc = WS_CE_CHUNKED;
-  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11 && ws->ws_status_code > 199)
+  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11 && ws->ws_status_code > 199 && CONTENT_ALLOWED(ws))
     {
       cnt_enc = WS_CE_GZIP;
       ws->ws_try_pipeline = 0; /* browsers based on webkit workaround */
