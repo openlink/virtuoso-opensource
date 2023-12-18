@@ -461,6 +461,11 @@
 
                       tmp := split_and_decode (self.path, 0, '\0\0/');
                       self.tname := SYS_ALFANUM_NAME (tmp[length(tmp) - 1]);
+                      declare exit handler for sqlstate '*' {
+                        self.vc_error_message := 'Can not detect table schema, please consider header row and import offset.';
+                        self.vc_is_valid := 0;
+                        return 0;
+                      };
                       self.head := y_csv_get_cols (ss, self.v_hrow, self.v_offs, vector ('csv-delimiter', self.v_delim, 'csv-quote', self.v_quot, 'encoding', self.v_enc, 'mode', self.v_pmode));
                       self.col_id := 'ID';
                       for (i := 0; i < length (self.head); i := i + 1)
