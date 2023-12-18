@@ -968,7 +968,6 @@ const char * http_log_format = WS_LOG_DEFAULT_FMT;
 
 #define TZ_TO_HHMM(x)  ((x / 60) * 100 + (x % 60))
 
-#ifndef WS_OLD_LOG
 #define WS_LOG_ERROR \
       mutex_enter (ws_http_log_mtx); \
       fflush (http_log); \
@@ -1157,80 +1156,6 @@ format_string_completed:
   mutex_leave (ws_http_log_mtx);
   return;
 }
-#else
-static void
-log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
-{
-  char buf[4096];
-  struct tm *tm;
-#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
-  struct tm tm1;
-#endif
-  time_t now;
-  int month, day, year;
-  int http_resp_code = 0;
-  caddr_t u_id = NULL;
-  caddr_t referer = NULL;
-  caddr_t user_agent = NULL;
-  char * new_log = NULL;
-
-  if (!http_log || !ws)
-    return;
-
-  if (code)
-    sscanf (code, "%*s %i", &http_resp_code);
-
-  referer = ws_get_packed_hf (ws, "Referer:", "");
-  user_agent = ws_get_packed_hf (ws, "User-Agent:", "");
-
-  buf[0] = 0;
-  time (&now);
-#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
-  tm = localtime_r (&now, &tm1);
-#else
-  tm = localtime (&now);
-#endif
-  month = tm->tm_mon + 1;
-  day = tm->tm_mday;
-  year = tm->tm_year + 1900;
-
-  u_id = ws_auth_get (ws);
-
-  snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05d] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
-      ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, TZ_TO_HHMM(dt_local_tz_for_logs),
-      (ws->ws_req_line
-#ifdef WM_ERROR
-       && ws->ws_method != WM_ERROR
-#endif
-       ? ws->ws_req_line : "GET unspecified"),
-      ws->ws_proto, http_resp_code, (OFF_T_PRINTF_DTP) len, referer ? referer : "", user_agent ? user_agent : "");
-
-  dk_free_box (u_id);
-  dk_free_box (referer);
-  dk_free_box (user_agent);
-
-  mutex_enter (ws_http_log_mtx);
-  new_log = http_log_file_check (tm);
-  if (new_log)
-    {
-      fflush (http_log);
-      fclose (http_log);
-      http_log = fopen (new_log, "a");
-      if (!http_log)
-	{
-	  log_error ("Can't open new HTTP log file (%s)", new_log);
-	  mutex_leave (ws_http_log_mtx);
-	  return;
-	}
-    }
-  fputs (buf, http_log);
-  fflush (http_log);
-  mutex_leave (ws_http_log_mtx);
-
-  return;
-}
-#endif
 
 
 caddr_t
