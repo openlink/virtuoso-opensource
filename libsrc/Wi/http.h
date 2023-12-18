@@ -89,6 +89,7 @@ typedef struct ws_http_map_s
 #endif
 
 #define HTTP_MAX_METHOD 21
+#define HTTP_MAX_REQUEST_LEN 10000
 
 typedef struct ws_connection_s
   {

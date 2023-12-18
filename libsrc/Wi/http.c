@@ -984,7 +984,7 @@ static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
 {
   char * new_log = NULL;
-  char tmp[4096];
+  char tmp[HTTP_MAX_REQUEST_LEN];
   int tmp_len = sizeof (tmp) - sizeof (ws->ws_proto) - 1;
   char format[100];
   char buf[DKSES_OUT_BUFFER_LENGTH];
@@ -2012,7 +2012,7 @@ static caddr_t *
 ws_header_line_to_array (caddr_t string)
 {
   int len;
-  char buf [10000];
+  char buf [HTTP_MAX_REQUEST_LEN];
   dk_set_t lines = NULL;
   caddr_t * headers = NULL;
   dk_session_t * ses = NULL;
@@ -4561,7 +4561,7 @@ http_set_client_address (ws_connection_t * ws)
 void
 ws_read_req (ws_connection_t * ws)
 {
-  char line [10000];
+  char line [HTTP_MAX_REQUEST_LEN];
   timeout_t timeout;
   acl_hit_t * hit = NULL;
   dk_session_t * ses = ws->ws_session;
