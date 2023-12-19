@@ -7031,13 +7031,16 @@ err_end:
 /* tiny CSV parser */
 #define CSV_DELIM 		','
 #define CSV_QUOTE		'\"'
-#define CSV_ESCAPE              '%'
+#define CSV_ESCAPE		'\0'	/*!< The default is no escape, according to RFC */
+#define CSV_NEWLINE1		'\r'
+#define CSV_NEWLINE2		'\n'
 
 #define CSV_ROW_NOT_STARTED 	0
 #define CSV_FIELD_NOT_STARTED	1
 #define CSV_FIELD_STARTED	2
 #define CSV_FIELD_MAY_END	3
-#define CSV_ESC_SEQUENCE_STARTED 4
+#define CSV_HEX_ESC_SEQUENCE_STARTED 4
+#define CSV_PLAIN_ESC_SEQUENCE_STARTED 5
 
 #define CSV_FIELD(set,ses) \
     do \
@@ -7104,15 +7107,33 @@ csv_field (dk_session_t * ses, int mode)
     }
   else
     {
-string_val:
+      /* we try here if this is date/time string */
+      caddr_t err_str = NULL;
+      dtp_t dt[DT_LENGTH];
+      odbc_string_to_any_dt (str, (char *) dt, &err_str);
+      if (err_str)
+	{
+	  /* not a datetime */
+	  dk_free_tree (err_str);
+	}
+      else if (box_length (str) > 10)
+	{
+	  /* look-like a datetime */
+	  ret = dk_alloc_box_zero (DT_LENGTH, DV_DATETIME);
+	  memcpy (ret, dt, DT_LENGTH);
+	  dk_free_box (str);
+	  goto ret_exit;
+	}
+    string_val:
       if (0 != str[0])
-      ret = str;
+	ret = str;
       else
 	{
 	  dk_free_box (str);
 	  ret = NEW_DB_NULL;
 	}
     }
+ret_exit:
   return ret;
 }
 
@@ -7120,11 +7141,11 @@ static unichar
 get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
 {
   unichar c = UNICHAR_EOD;
-  char buf [MAX_ENCODED_CHAR];
+  char buf[MAX_ENCODED_CHAR];
   int readed = 0;
   do
     {
-      const char * ptr = &(buf[0]);
+      const char *ptr = &(buf[0]);
       if ((readed + eh->eh_minsize) > MAX_ENCODED_CHAR)
 	return UNICHAR_BAD_ENCODING;
       readed += session_buffered_read (in, buf + readed, eh->eh_minsize);
@@ -7134,50 +7155,25 @@ get_uchar_from_session (dk_session_t * in, encoding_handler_t * eh)
   return c;
 }
 
-int csv_field_escapes = 1;
-
 caddr_t
-bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+get_csv_row_impl (caddr_t * qst, dk_session_t * in, encoding_handler_t *eh, caddr_t *err_ret, csv_parser_config_t *cpc)
 {
-  dk_session_t *in = bif_strses_arg (qst, args, 0, "get_csv_row");
   dk_set_t row = NULL;
   dk_session_t *fl;
   caddr_t res = NULL;
-  int quoted = 0, error = CSV_OK, mode = CSV_STRICT, signal_error = 0;
-  unsigned char state = CSV_ROW_NOT_STARTED, delim = CSV_DELIM, quote = CSV_QUOTE, esc = CSV_ESCAPE;
+  char delim = cpc->cpc_field_delim;
+  char n1 = cpc->cpc_newline1;
+  char n2 = cpc->cpc_newline2;
+  char quote = cpc->cpc_quote;
+  char plain_esc = cpc->cpc_plain_escape;
+  char hex_esc = cpc->cpc_hex_escape;
+  int trim_whitespaces = cpc->cpc_trim_whitespaces;
+  int quoted = 0, error = CSV_OK, mode = cpc->cpc_mode, signal_error = 0;
+  unsigned char state = CSV_ROW_NOT_STARTED;
   unichar c;
   unichar escaped[2];
   int escaped_idx = 0;
   char utf8char[MAX_UTF8_CHAR];
-  encoding_handler_t *eh = &eh__ISO8859_1;
-  if (BOX_ELEMENTS (args) > 1)
-    {
-      caddr_t ch = bif_string_or_null_arg (qst, args, 1, "get_csv_row");
-      delim = ch && ch[0] ? ch[0] : CSV_DELIM;
-    }
-  if (BOX_ELEMENTS (args) > 2)
-    {
-      caddr_t ch = bif_string_or_null_arg (qst, args, 2, "get_csv_row");
-      quote = ch && ch[0] ? ch[0] : CSV_QUOTE;
-    }
-  if (BOX_ELEMENTS (args) > 3)
-    {
-      caddr_t enc = bif_string_or_null_arg (qst, args, 3, "get_csv_row");
-      if (enc && enc[0])
-	eh = eh_get_handler (enc);
-      if (NULL == eh)
-	sqlr_new_error ("42000", "CSV01", "Invalid encoding name '%s' is specified", enc);
-    }
-  if (BOX_ELEMENTS (args) > 4)
-    {
-      int is_null_f = 0;
-      long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
-      signal_error = f & 0x04;
-      f &= 0x03;
-      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT && f != CSV_LAX_STR)
-	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
-      mode = f;
-    }
   escaped[0] = 0;
   escaped[1] = 0;
   fl = strses_allocate ();
@@ -7197,9 +7193,9 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  case CSV_ROW_NOT_STARTED:
 	  case CSV_FIELD_NOT_STARTED:
 	    {
-	      if (delim != c && (c == 0x20 || c == 0x09 || c == 0xfeff))	/* space or BOM at the start */
+	      if (delim != c && ((trim_whitespaces && (c == ' ' || c == '\t')) || c == 0xfeff))	/* space or BOM at the start */
 		continue;
-	      else if (c == 0x0d || c == 0x0a)
+	      else if ((c == n1) || (('\0' != n2) && (c == n2)))
 		{
 		  if (state == CSV_ROW_NOT_STARTED)	/* skip empty lines */
 		    continue;
@@ -7231,10 +7227,7 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	      if (c == quote)
 		{
 		  if (quoted)
-		    {
-		      CSV_CHAR (c, fl);
-		      state = CSV_FIELD_MAY_END;
-		    }
+		    state = CSV_FIELD_MAY_END;
 		  else
 		    {
 		      if (CSV_STRICT == mode)
@@ -7262,66 +7255,74 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      goto end;	/* row end */
 		    }
 		}
-		      else if (c == esc && csv_field_escapes)
-		        {
-                          state = CSV_ESC_SEQUENCE_STARTED;
-		          escaped_idx = 0;
-		        }
+	      else if (c == hex_esc)
+		{
+		  state = CSV_HEX_ESC_SEQUENCE_STARTED;
+		  escaped_idx = 0;
+		}
+	      else if (c == plain_esc)
+		{
+		  state = CSV_PLAIN_ESC_SEQUENCE_STARTED;
+		  escaped_idx = 0;
+		}
 	      else
 		{
 		  CSV_CHAR (c, fl);
 		}
 	    }
 	    break;
-	      case CSV_ESC_SEQUENCE_STARTED:
-	          {                             /*30                 9 A B C D E F40 41 42 43 44 45 46*/
-	            static char digit_weights[] = {0,1,2,3,4,5,6,7,8,9,0,0,0,0,0,0,0,10,11,12,13,14,15};
-	            if (c == esc)
-	              {
-                        CSV_CHAR (c, fl);
-                        escaped_idx = escaped[0] = escaped[1] = 0;
-                        state = CSV_FIELD_STARTED;
-	              }
-	            else if (c >= 0x30 && c <= 0x46)
-                      {
-                        escaped[escaped_idx++] = c;
-                        if (escaped_idx >= 2)
-                          {
-                            unichar ch = 16 * digit_weights[ escaped[0] - 0x30] + digit_weights[ escaped[1] - 0x30 ];
-                            CSV_CHAR (ch, fl);
-                            escaped_idx = escaped[0] = escaped[1] = 0;
-                            state = CSV_FIELD_STARTED;
-                          }
-                      }
-	            else
-                      {
-                        /* wrong digit in esc sequence */
-                        CSV_CHAR (esc, fl);
-                        CSV_CHAR (escaped[0], fl);
-                        CSV_CHAR (escaped[0], fl);
-                        escaped_idx = escaped[0] = escaped[1] = 0;
-                        state = CSV_FIELD_STARTED;
-                      }
-	          }
-	          break;
+	  case CSV_HEX_ESC_SEQUENCE_STARTED:
+	    {			/*30                 9 A B C D E F40 41 42 43 44 45 46 */
+	      static char digit_weights[] =
+		  { 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, '_', '_', '_', '_', '_', '_', '_', 10, 11, 12, 13, 14, 15 };
+	      int cweight = 0;
+	      if ((c >= 0x30 && c <= 0x46) && ('_' != (cweight = digit_weights[c - 0x30])))
+		{
+		  escaped[escaped_idx++] = c;
+		  if (escaped_idx >= 2)
+		    {
+		      unichar ch = 16 * digit_weights[escaped[0] - 0x30] + digit_weights[escaped[1] - 0x30];
+		      CSV_CHAR (ch, fl);
+		      escaped_idx = escaped[0] = escaped[1] = 0;
+		      state = CSV_FIELD_STARTED;
+		    }
+		}
+	      else if ((hex_esc == plain_esc) && (0 == escaped_idx))
+		{
+		  CSV_CHAR (c, fl);
+		  state = CSV_FIELD_STARTED;
+		}
+	      else
+		{
+		  /* wrong digit in esc sequence */
+		  CSV_CHAR (hex_esc, fl);
+		  CSV_CHAR (escaped[0], fl);
+		  CSV_CHAR (escaped[1], fl);
+		  escaped_idx = escaped[0] = escaped[1] = 0;
+		  state = CSV_FIELD_STARTED;
+		}
+	    }
+	    break;
+	  case CSV_PLAIN_ESC_SEQUENCE_STARTED:
+	    CSV_CHAR (c, fl);
+	    state = CSV_FIELD_STARTED;
+	    break;
 	  case CSV_FIELD_MAY_END:
 	    {
-	      if (c == quote)
+	      if (c == quote)	/* double quote */
 		{
-		  /* skip, double quote */
+		  CSV_CHAR (c, fl);
 		  state = CSV_FIELD_STARTED;
 		}
 	      else if (c == delim)
-		{
-		  fl->dks_out_fill--;
-		  CSV_FIELD (row, fl);
-		}
+		CSV_FIELD (row, fl);
 	      else if (c == 0x0d || c == 0x0a)
 		{
-		  fl->dks_out_fill--;
 		  CSV_FIELD (row, fl);
 		  goto end;	/* row end */
 		}
+	      else if (trim_whitespaces && (c == ' ' || c == '\t'))	/* space after last quote, ignore */
+		continue;
 	      else
 		{
 		  /* char after closing quote */
@@ -7330,6 +7331,7 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 		      error = CSV_ERR_ESC;
 		      break;
 		    }
+		  CSV_CHAR (quote, fl);
 		  CSV_CHAR (c, fl);
 		  quoted = 0;
 		}
@@ -7345,6 +7347,11 @@ bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   {
     if (CSV_ROW_NOT_STARTED == state)	/* when no one char can be read */
       error = CSV_ERR_END;
+    else if (CSV_FIELD_MAY_END == state)
+      {
+	/* end of file */
+	CSV_FIELD (row, fl);
+      }
   }
   END_READ_FAIL (in);
   if (state == CSV_FIELD_STARTED)	/* case when no cr/lf at the end of file */
@@ -7365,9 +7372,54 @@ end:
       if (signal_error)
 	*err_ret = srv_make_new_error ("37000", "CSV04", "Error parsing CSV row, error code: %d", error);
     }
-  dk_free_box ((caddr_t)fl);
+  dk_free_box ((caddr_t) fl);
   return res;
 }
+
+caddr_t
+bif_get_csv_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  dk_session_t *in = bif_strses_arg (qst, args, 0, "get_csv_row");
+  csv_parser_config_t cpc;
+  memzero (&cpc, sizeof (cpc));
+  cpc.cpc_field_delim = CSV_DELIM;
+  cpc.cpc_quote = CSV_QUOTE;
+  cpc.cpc_plain_escape = cpc.cpc_hex_escape = CSV_ESCAPE;
+  cpc.cpc_mode = CSV_STRICT;
+  cpc.cpc_newline1 = CSV_NEWLINE1;
+  cpc.cpc_newline2 = CSV_NEWLINE2;
+  encoding_handler_t *eh = &eh__ISO8859_1;
+  if (BOX_ELEMENTS (args) > 1)
+    {
+      caddr_t ch = bif_string_or_null_arg (qst, args, 1, "get_csv_row");
+      cpc.cpc_field_delim = ch && ch[0] ? ch[0] : CSV_DELIM;
+    }
+  if (BOX_ELEMENTS (args) > 2)
+    {
+      caddr_t ch = bif_string_or_null_arg (qst, args, 2, "get_csv_row");
+      cpc.cpc_quote = ch && ch[0] ? ch[0] : CSV_QUOTE;
+    }
+  if (BOX_ELEMENTS (args) > 3)
+    {
+      caddr_t enc = bif_string_or_null_arg (qst, args, 3, "get_csv_row");
+      if (enc && enc[0])
+	eh = eh_get_handler (enc);
+      if (NULL == eh)
+	sqlr_new_error ("42000", "CSV01", "Invalid encoding name '%s' is specified", enc);
+    }
+  if (BOX_ELEMENTS (args) > 4)
+    {
+      int is_null_f = 0;
+      long f = bif_long_or_null_arg (qst, args, 4, "get_csv_row", &is_null_f);
+      int signal_error = f & 0x04;
+      f &= 0x03;
+      if (!is_null_f && f != CSV_LAX && f != CSV_STRICT && f != CSV_LAX_STR)
+	sqlr_new_error ("22023", "CSV03", "CSV parsing mode flag must be strict:1 or relaxing:2");
+      cpc.cpc_mode = f | signal_error;
+    }
+  return get_csv_row_impl (qst, in, eh, err_ret, &cpc);
+}
+
 
 caddr_t
 bif_get_plaintext_row (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
