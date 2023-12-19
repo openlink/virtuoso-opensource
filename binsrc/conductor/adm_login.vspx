@@ -153,7 +153,7 @@
                     value=""
                     type="password"
                 xhtml_id="t_login_pwd"/>
-            <span style="vertical-align: bottom; margin-left: -20px; cursor: pointer;" id="cb_show_pass" onclick="show_password()">
+            <span style="vertical-align: text-bottom; margin-left: -22px; cursor: pointer;" id="cb_show_pass" onclick="show_password()">
                 <img src="images/icons/eye.svg" border="0" id="eye_img"/></span>
             <v:text name="password" value="" type="hidden" />
 	</td>
