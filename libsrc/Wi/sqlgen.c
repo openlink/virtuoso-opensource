@@ -5608,6 +5608,8 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
     default:
       SQL_GPF_T1 (so->so_sc->sc_cc, "only a dfe_dt is allowed at top for sqlg");
     }
+  if (!head)
+    SQL_GPF_T(so->so_sc->sc_cc);
   qr->qr_head_node = head;
   sqlg_place_dpipes (so, &qr->qr_head_node);
   sqlg_multistate_code (so->so_sc, &qr->qr_head_node, so->so_sc->sc_order == TS_ORDER_KEY);
