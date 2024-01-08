@@ -3908,6 +3908,8 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
   if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
     {
       dbe_key_t *text_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+      if (!text_key)
+        SQL_GPF_T1 (sc->sc_cc, "Table does not have text key");
       sqlo_place_exp (so, tb_dfe,
 	  sqlo_df (so,
 	    t_listst (3,
