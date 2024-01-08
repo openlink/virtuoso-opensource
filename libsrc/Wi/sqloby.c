@@ -817,9 +817,11 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       if (locus_to_loclocal)
 	{
 	  fref_dfe->dfe_locus = LOC_LOCAL;
-	  group_dfe->dfe_locus = LOC_LOCAL;
+          if (NULL != group_dfe)
+            group_dfe->dfe_locus = LOC_LOCAL;
 	}
-      t_set_push (&group_dfe->_.setp.fun_refs, fref);
+      if (NULL != group_dfe)
+        t_set_push (&group_dfe->_.setp.fun_refs, fref);
     }
   END_DO_SET();
   if (group_dfe)
