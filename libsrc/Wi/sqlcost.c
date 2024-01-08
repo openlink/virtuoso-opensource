@@ -4140,7 +4140,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
 	  left_col = in_list ? in_list[0]->_.col.col :
-	    (pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
+	    (!DFE_SHORTCUT(pred->_.bin.left) && pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
 	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
 	    {
 	      sqlo_pred_unit (pred, NULL, dfe, &p_cost, &p_arity);
