@@ -873,7 +873,7 @@ extern long sqlp_bin_op_serial;
 
 
 #define ST_P(s, tp) \
-  (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp)
+  (ARRAYP (s) && BOX_ELEMENTS (s) > 0 && (s)->type == tp && sqlp_tree_check_sz (tp, s))
 
 #define ST_COLUMN(s, tp) \
   (ARRAYP (s) && BOX_ELEMENTS (s) == 3 && (s)->type == COL_DOTTED && \
@@ -915,5 +915,6 @@ extern long sqlp_bin_op_serial;
 #define T_COLUMN 1
 #define T_DISTINCT_COLUMNS 2
 
+int sqlp_tree_check_sz (ptrlong type, sql_tree_t * tree);
 
 #endif
