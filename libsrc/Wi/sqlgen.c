@@ -4435,6 +4435,9 @@ st_compare (const void *_st1, const void *_st2)
   ST * st1 = (*((ST**) _st1))->_.o_spec.col;
   ST * st2 = (*((ST**) _st2))->_.o_spec.col;
 
+  if (!ST_COLUMN (st1, COL_DOTTED) || !ST_COLUMN (st2, COL_DOTTED))
+    return -1;
+
   if (!st1->_.col_ref.prefix)
     {
       if (!st2->_.col_ref.prefix)
