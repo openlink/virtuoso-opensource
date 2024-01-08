@@ -2782,17 +2782,19 @@ sqlo_place_dt_set (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
   int inx;
   if  (DFE_DT == dt_dfe->dfe_type)
     return (sqlo_place_dt_leaf (so, tb_dfe, dt_dfe, preds));
-  else
+  else if (DFE_QEXP == dt_dfe->dfe_type)
     {
       df_elt_t * copy = (df_elt_t *) t_box_copy ((caddr_t) dt_dfe);
       copy->_.qexp.terms = (df_elt_t **)  t_box_copy ((caddr_t) dt_dfe->_.qexp.terms);
       DO_BOX (df_elt_t *, term, inx, copy->_.qexp.terms)
 	{
-	  copy->_.qexp.terms[inx] = sqlo_place_dt_set (so, tb_dfe, term, preds);
+          df_elt_t * placed = sqlo_place_dt_set (so, tb_dfe, term, preds);
+	  copy->_.qexp.terms[inx] = placed ? placed : term;
 	}
       END_DO_BOX;
       return copy;
     }
+  return NULL;
 }
 
 
