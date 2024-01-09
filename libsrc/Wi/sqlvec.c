@@ -2322,7 +2322,8 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
       upd->upd_place = last_ts->ts_current_of;
 #endif
       REF_SSL (NULL, upd->upd_place);
-      sqlg_set_ts_plh (sc, last_ts);
+      if (last_ts)
+        sqlg_set_ts_plh (sc, last_ts);
       sqlg_vec_upd_col_pk (sc, upd);
     }
   else
