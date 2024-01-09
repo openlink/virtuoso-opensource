@@ -1571,8 +1571,10 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   int is_fill_dt = DFE_DT == tb_dfe->_.table.hash_filler->dfe_type;
   op_table_t * ot = tb_dfe->_.table.ot;
   setp_node_t * setp = ot->ot_hash_filler;
-  hash_area_t * ha = setp->setp_ha;
+  hash_area_t * ha = setp ? setp->setp_ha : NULL;
   SQL_NODE_INIT (hash_source_t, hs, hash_source_input, hash_source_free);
+  if (!ha)
+    SQL_GPF_T(so->so_sc->sc_cc);
   hs->hs_cardinality = tb_dfe->dfe_arity;
   hs->hs_filler = setp->setp_fref;
   hs->hs_part_min = hs->hs_filler->fnr_hash_part_min;
