@@ -1,6 +1,6 @@
 # Virtuoso Open-Source Edition: Building
 
-Copyright (C) 1998-2023 OpenLink Software <vos.admin@openlinksw.com>
+Copyright (C) 1998-2024 OpenLink Software <vos.admin@openlinksw.com>
 
 ## Table of Contents
 - [Introduction](#introduction)

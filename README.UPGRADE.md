@@ -1,6 +1,6 @@
 # Virtuoso Open Source Upgrade Notes
 
-*Copyright (C) 1998-2023 OpenLink Software <vos.admin@openlinksw.com>*
+*Copyright (C) 1998-2024 OpenLink Software <vos.admin@openlinksw.com>*
 
  * [Introduction](#introduction)
   * [Upgrading from VOS 7.2.X to VOS 7.2.7](#upgrading-from-vos-72x-to-vos-727)
