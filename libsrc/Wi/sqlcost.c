@@ -441,6 +441,8 @@ dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float 
       return 0;
     }
   *cl_colocated = dfe_cl_colocated (prev_tb, dfe);
+  if (!prev_tb->_.table.key)
+    return 0;
   c1 = dfe_lead_const (prev_tb);
   c2 = dfe_lead_const (dfe);
   n1 = prev_tb->_.table.key->key_n_significant;
