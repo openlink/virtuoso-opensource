@@ -4102,11 +4102,11 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	  df_elt_t *col_dfe = sqlo_df (so, spec->_.o_spec.col);
 	  if (ssl == col_dfe->dfe_ssl)
 	    {
-		      sqlc_copy_ssl_if_constant (sc, &ssl, &code, setp);
+		      sqlc_copy_ssl_if_constant_or_param (sc, &ssl, &code, setp);
 	      col_dfe->dfe_ssl = ssl;
 	    }
 	  else
-		    sqlc_copy_ssl_if_constant (sc, &ssl, &code, setp);
+		    sqlc_copy_ssl_if_constant_or_param (sc, &ssl, &code, setp);
 	  NCONCF1 (out_slots, ssl);
 	  NCONCF1 (out_cols, nth_part);
 	}
@@ -4222,7 +4222,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	  if (out)
 	    {
 	      ptrlong nth_key = dk_set_position (setp->setp_keys, (caddr_t) out);
-		      sqlc_copy_ssl_if_constant (sc, &ssl_out[inx], &code, setp);
+		      sqlc_copy_ssl_if_constant_or_param (sc, &ssl_out[inx], &code, setp);
 	      if (-1 == nth_key)
 		{
 		  if (!dk_set_member (out_slots, ssl_out[inx]))
@@ -4272,7 +4272,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
       if (out)
 	{
 	  ptrlong nth_key = dk_set_position (setp->setp_keys, (caddr_t) out);
-		  sqlc_copy_ssl_if_constant (sc, &dep_dfe->dfe_ssl, &code, setp);
+		  sqlc_copy_ssl_if_constant_or_param (sc, &dep_dfe->dfe_ssl, &code, setp);
 	  if (SSL_CONSTANT == out->ssl_type)
 	    continue;
 	  if (-1 == nth_key)
