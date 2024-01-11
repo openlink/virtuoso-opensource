@@ -5165,8 +5165,10 @@ next_pred:
 	      else
 		t_set_push (&preds, pred);
 	    }
-	  else if (pred->dfe_type != DFE_TEXT_PRED)
-	    { /*GK: place and push only the non-text dependent preds */
+	  else if (pred->dfe_type != DFE_TEXT_PRED &&
+              !(DFE_TABLE == tb_dfe->dfe_type && tb_dfe->_.table.ot->ot_is_outer && sqlo_pred_contradiction (so, pred, 1)))
+	    { /*GK: place and push only the non-text dependent preds,
+              also do not put contradiction on right side of outer */
 	      pred->dfe_is_placed = DFE_PLACED;
 	      t_set_push (&preds, pred);
 	    }
