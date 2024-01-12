@@ -1656,6 +1656,8 @@ insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/css','css')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/plain','txt')
 ;
+insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/markdown','md')
+;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/plain','asc')
 ;
 insert soft WS.WS.SYS_DAV_RES_TYPES (T_TYPE,T_EXT) values ('text/richtext','rtx')
