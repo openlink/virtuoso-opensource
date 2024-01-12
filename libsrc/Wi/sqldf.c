@@ -6127,6 +6127,8 @@ sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
   L2_ASSERT_CONNECTION(start_dfe->dfe_super->_.sub.first, start_dfe, dfe_)
   L2_ASSERT_CONNECTION(start_dfe, start_dfe->dfe_super->_.sub.last, dfe_)
 #ifndef L2_DEBUG
+  if (!start_dfe->dfe_prev)
+    SQL_GPF_T(so->so_sc->sc_cc);
   start_dfe->dfe_prev->dfe_next = NULL;
   start_dfe->dfe_super->_.sub.last = start_dfe->dfe_prev;
 /* Note '#ifdef L2_DEBUG' in sqlo_dfe_unplace */
