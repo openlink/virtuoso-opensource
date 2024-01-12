@@ -581,6 +581,12 @@
                       declare ss, s, i, nrec, q, o, tb, tmp, err, log_mode any;
                       declare n, dt any;
                       declare tb any;
+                      if (not length (self.head))
+                        {
+                          self.vc_is_valid := 0;
+                          self.vc_error_message := 'No data columns are detected, please consider fixing import options.';
+                          return 0;
+                        }
 
                       tb := SYS_ALFANUM_NAME (self.tb_name.ufl_value);
                       q := self.tb_qual.ufl_value;
