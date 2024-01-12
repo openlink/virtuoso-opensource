@@ -2782,17 +2782,19 @@ sqlo_place_dt_set (sqlo_t * so, df_elt_t * tb_dfe, df_elt_t * dt_dfe, dk_set_t p
   int inx;
   if  (DFE_DT == dt_dfe->dfe_type)
     return (sqlo_place_dt_leaf (so, tb_dfe, dt_dfe, preds));
-  else
+  else if (DFE_QEXP == dt_dfe->dfe_type)
     {
       df_elt_t * copy = (df_elt_t *) t_box_copy ((caddr_t) dt_dfe);
       copy->_.qexp.terms = (df_elt_t **)  t_box_copy ((caddr_t) dt_dfe->_.qexp.terms);
       DO_BOX (df_elt_t *, term, inx, copy->_.qexp.terms)
 	{
-	  copy->_.qexp.terms[inx] = sqlo_place_dt_set (so, tb_dfe, term, preds);
+          df_elt_t * placed = sqlo_place_dt_set (so, tb_dfe, term, preds);
+	  copy->_.qexp.terms[inx] = placed ? placed : term;
 	}
       END_DO_BOX;
       return copy;
     }
+  return NULL;
 }
 
 
@@ -3454,7 +3456,8 @@ sqlo_key_part_best (dbe_column_t * col, dk_set_t col_preds, int upper_only)
 	    best_score = 5;
 	  }
       }
-    else if (!sqlo_in_list (cp, NULL, NULL) && DFE_COLUMN == cp->_.bin.left->dfe_type && cp->_.bin.left->_.col.col == col)
+    else if (!sqlo_in_list (cp, NULL, NULL) && !DFE_SHORTCUT(cp->_.bin.left) && 
+        DFE_COLUMN == cp->_.bin.left->dfe_type && cp->_.bin.left->_.col.col == col)
       {
 	if (cp->dfe_is_placed < DFE_GEN
 	    && (!upper_only || dfe_is_upper (cp)))
@@ -3908,6 +3911,8 @@ sqlo_tb_place_contains_cols (sqlo_t *so, df_elt_t *tb_dfe, df_elt_t *pred)
   if (pred->_.text.type == 'c' || pred->_.text.type == 'x')
     {
       dbe_key_t *text_key = tb_text_key (tb_dfe->_.table.ot->ot_table);
+      if (!text_key)
+        SQL_GPF_T1 (sc->sc_cc, "Table does not have text key");
       sqlo_place_exp (so, tb_dfe,
 	  sqlo_df (so,
 	    t_listst (3,
@@ -5165,8 +5170,10 @@ next_pred:
 	      else
 		t_set_push (&preds, pred);
 	    }
-	  else if (pred->dfe_type != DFE_TEXT_PRED)
-	    { /*GK: place and push only the non-text dependent preds */
+	  else if (pred->dfe_type != DFE_TEXT_PRED &&
+              !(DFE_TABLE == tb_dfe->dfe_type && tb_dfe->_.table.ot->ot_is_outer && sqlo_pred_contradiction (so, pred, 1)))
+	    { /*GK: place and push only the non-text dependent preds,
+              also do not put contradiction on right side of outer */
 	      pred->dfe_is_placed = DFE_PLACED;
 	      t_set_push (&preds, pred);
 	    }
@@ -6127,6 +6134,8 @@ sqlo_dt_unplace (sqlo_t * so, df_elt_t * start_dfe)
   L2_ASSERT_CONNECTION(start_dfe->dfe_super->_.sub.first, start_dfe, dfe_)
   L2_ASSERT_CONNECTION(start_dfe, start_dfe->dfe_super->_.sub.last, dfe_)
 #ifndef L2_DEBUG
+  if (!start_dfe->dfe_prev)
+    SQL_GPF_T(so->so_sc->sc_cc);
   start_dfe->dfe_prev->dfe_next = NULL;
   start_dfe->dfe_super->_.sub.last = start_dfe->dfe_prev;
 /* Note '#ifdef L2_DEBUG' in sqlo_dfe_unplace */

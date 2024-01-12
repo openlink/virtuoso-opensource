@@ -130,7 +130,7 @@ sqlo_ot_effective_prefix (op_table_t * ot)
 {
   if (ot->ot_prefix)
     return (ot->ot_prefix);
-  return (ot->ot_table->tb_name);
+  return (ot->ot_table ? ot->ot_table->tb_name : NULL);
 }
 
 

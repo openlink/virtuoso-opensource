@@ -4278,7 +4278,7 @@ run_in_dav:
 #endif
       if (!sch_proc_def (isp_schema (NULL), p_name)
 	  || !ws->ws_map
-	  || !ws->ws_map->hm_vsp_uid)
+	  || (!deflt && !ws->ws_map->hm_vsp_uid))
 	{
 	  strcpy_ck (p_name, "WS.WS.DEFAULT");
 	  deflt = 1;

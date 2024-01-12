@@ -1462,8 +1462,11 @@ ordering_spec_commalist
 	;
 
 ordering_spec
-	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);  }
+	: scalar_exp opt_asc_desc {
+                    if (ARRAYP($1) && COL_DOTTED == $1->type && $1->_.col_ref.name == STAR)
+                      yyerror (scanner, "Star not allowed for ordering");
+                    $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);
+                }
 	|  mssql_xml_col opt_asc_desc
 		{ $$ = (ST*) t_list (4, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2, NULL); }
 	;
