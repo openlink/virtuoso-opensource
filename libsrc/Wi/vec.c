@@ -2054,6 +2054,8 @@ dc_set_long (data_col_t * dc, int set, boxint lv)
 {
   int save = dc->dc_n_values;
   DC_CHECK_LEN (dc, set);
+  if (dc->dc_nulls)
+    DC_CLR_NULL (dc, set);
   if (!(DCT_NUM_INLINE & dc->dc_type))
     {
       int is_boxes = DCT_BOXES & dc->dc_type;
