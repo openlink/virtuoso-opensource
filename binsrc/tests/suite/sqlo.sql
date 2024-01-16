@@ -1765,5 +1765,58 @@ ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+
+set U{caseno} case1235;
+DROP TABLE case1235t0;
+
+CREATE TABLE case1235t0(c0 INT, c1 INT, PRIMARY KEY(c0));
+INSERT INTO case1235t0 (c0, c1) VALUES (1, 1);
+INSERT INTO case1235t0 (c0) VALUES (-1);
+
+SELECT * FROM case1235t0; -- -1 NULL, 1 1
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " total rows=" $ROWCNT  " \n";
+
+SELECT * FROM case1235t0 WHERE SIGN(case1235t0.c1);
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " filter on sign() rows=" $ROWCNT  " \n";
+
+SELECT FLOOR(case1235t0.c1) FROM case1235t0; -- NULL, 1
+ECHO BOTH $IF $EQU $ROWCNT 2 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " ck floor() ret 1/null rows=" $ROWCNT  " \n";
+
+SELECT * FROM case1235t0 WHERE FLOOR(case1235t0.c1);
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " filter on int with nulls in set rows=" $ROWCNT  " \n";
+
+set U{caseno} case1235;
+DROP TABLE case1236t0;
+DROP TABLE case1236t1;
+
+CREATE TABLE case1236t0(c0 VARCHAR);
+CREATE TABLE case1236t1(c1 INTEGER);
+INSERT INTO case1236t1 (c1) VALUES (2);
+
+SELECT * FROM case1236t1 LEFT  JOIN case1236t0 ON 1; -- 2 NULL
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " oj on true rows=" $ROWCNT  " \n";
+
+SELECT * FROM case1236t1 LEFT  JOIN case1236t0 ON 1 WHERE case1236t0.c0; -- 2 NULL (unexpected)
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " oj on true with false filter rows=" $ROWCNT  " \n";
+
+SELECT * FROM case1236t1 LEFT  JOIN case1236t0 ON 1 WHERE case1236t0.c0 IS NULL; -- 2 NULL
+ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " oj on true with true filter rows=" $ROWCNT  " \n";
+
+
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
