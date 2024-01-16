@@ -5208,14 +5208,14 @@ next_pred:
 	sqlo_tb_check_invariant_preds (so, tb_dfe, contr_preds);
     }
 
-  if (ot->ot_join_preds && !ST_P (ot->ot_dt, PROC_TABLE))
+  if (!ST_P (ot->ot_dt, PROC_TABLE))
     {
       if (ot->ot_is_outer)
 	{
 	  nj_preds = preds;
 	  preds = ot->ot_join_preds;
 	}
-      else
+      else if (ot->ot_join_preds)
 	{
 	  /* for a qualified inner join the join preds and applicable where preds go into the same list. */
 	  preds = dk_set_conc (preds, ot->ot_join_preds);
