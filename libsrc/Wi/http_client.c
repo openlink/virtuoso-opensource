@@ -1221,6 +1221,11 @@ http_cli_print_patched_url (dk_session_t * ses, caddr_t url)
     }
 }
 
+#define HT_MAY_HAVE_BODY(ctx) (HC_METHOD_GET != (ctx)->hcctx_method && \
+                               HC_METHOD_HEAD != (ctx)->hcctx_method && \
+                               HC_METHOD_DELETE != (ctx)->hcctx_method && \
+                               HC_METHOD_OPTIONS != (ctx)->hcctx_method)
+
 HC_RET
 http_cli_send_req (http_cli_ctx * ctx)
 {
@@ -1230,6 +1235,7 @@ http_cli_send_req (http_cli_ctx * ctx)
 
   CATCH_WRITE_FAIL (ctx->hcctx_http_out)
     {
+      int64 request_len = strses_length (ctx->hcctx_req_body);
       SES_PRINT (ctx->hcctx_http_out, http_cli_get_method_string (ctx));
       SES_PRINT (ctx->hcctx_http_out, " ");
       http_cli_print_patched_url (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
@@ -1239,9 +1245,12 @@ http_cli_send_req (http_cli_ctx * ctx)
       http_cli_std_hdrs (ctx);
       strses_write_out (ctx->hcctx_pub_req_hdrs, ctx->hcctx_http_out);
       strses_write_out (ctx->hcctx_prv_req_hdrs, ctx->hcctx_http_out);
-      snprintf (req_tmp, sizeof (req_tmp),
-	       "Content-Length: " BOXINT_FMT "\r\n\r\n", strses_length (ctx->hcctx_req_body));
-      SES_PRINT (ctx->hcctx_http_out, req_tmp);
+      if (request_len > 0 || HT_MAY_HAVE_BODY(ctx))
+        {
+          snprintf (req_tmp, sizeof (req_tmp), "Content-Length: " BOXINT_FMT "\r\n", request_len);
+          SES_PRINT (ctx->hcctx_http_out, req_tmp);
+        }
+      SES_PRINT (ctx->hcctx_http_out, "\r\n");
       strses_write_out (ctx->hcctx_req_body, ctx->hcctx_http_out);
       session_flush_1 (ctx->hcctx_http_out);
     }
