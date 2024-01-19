@@ -85,7 +85,7 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
       if (not is_masked) -- client message must be masked
         signal ('22023', 'Request must be masked.');
       if (opcode <> 1 and opcode <> 8) -- not text or close
-        signal ('22023', 'Only 1 frame text supported.');
+        signal ('22023', sprintf ('A frame of type %d is not supported.', opcode));
 
       if (payload_len = 127) -- 64bit length
         {
