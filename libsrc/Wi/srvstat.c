@@ -1277,6 +1277,7 @@ get_total_sys_mem ()
 
 extern int process_is_swapping;
 extern long swap_guard_threshold;
+extern long last_majflt;
 extern double curr_cpu_pct;
 extern unsigned long curr_mem_rss;
 
@@ -1503,6 +1504,7 @@ stat_desc_t stat_descs [] =
     {"tc_cl_consensus_rollback", &tc_cl_consensus_rollback, NULL},
     {"tc_cl_consensus_commit", &tc_cl_consensus_commit, NULL},
     {"tc_cl_consensus_deferred", &tc_cl_consensus_deferred, NULL},
+    {"swap_guard_last_majflt", &last_majflt, NULL },
 
     {"tc_cl_branch_missed_rb", &tc_cl_branch_missed_rb, NULL},
     {"tc_cl_keep_alive_timeouts", &tc_cl_keep_alive_timeouts, NULL},
