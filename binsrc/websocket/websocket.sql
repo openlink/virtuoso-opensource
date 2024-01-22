@@ -58,11 +58,12 @@ create procedure WSOCK.DBA.WEBSOCKET_ECHO (in message varchar, in args any)
 create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd any)
 {
   declare data any;
-  declare service_hook, args, reponse any;
+  declare service_hook, args, response, payload any;
   if (isvector (cd) and length (cd) > 1)
     {
       service_hook := aref (cd, 0);
       args := aref (cd, 1);
+      payload := aref_set_0 (cd, 2);
     }
   else
     {
@@ -73,19 +74,22 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
   if (0 <> data)
     {
       declare mask, unmaskedPayload, tmp, reply, request any;
-      declare firstByte, secondByte, opcode, is_masked, payload_len, i integer;
+      declare firstByte, secondByte, opcode, is_masked, payload_len, i, fin integer;
       declare result varchar;
 
       firstByte  := data[0];
       secondByte := data[1];
       opcode := bit_and (firstByte, 15);
+      fin := bit_shift (firstByte, -7);
       is_masked :=  case when (bit_and (secondByte, 128) = 128) then 1 else 0 end;
       payload_len := bit_and (secondByte, 127);
-
       if (not is_masked) -- client message must be masked
         signal ('22023', 'Request must be masked.');
-      if (opcode <> 1 and opcode <> 8) -- not text or close
+      if (opcode <> 1 and opcode <> 8 and opcode <> 0) -- not text or close
         signal ('22023', sprintf ('A frame of type %d is not supported.', opcode));
+
+      if (opcode = 0 and payload is null)
+        signal ('22023', 'Continuation frame w/o preceeding message');
 
       if (payload_len = 127) -- 64bit length
         {
@@ -106,14 +110,24 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
         }
       if (opcode = 8)
         return;
+      payload := concat (payload, result);
+      if (fin = 1)
+        {
+          response := call (service_hook) (payload, args);
+          aset (cd, 2, null);
+        }
+      else
+        {
+          aset (cd, 2, payload);
+          response := null;
+        } 
       -- simply echo back
-      reponse := call (service_hook) (result, args);
-      if (reponse = 0)
+      if (response = 0)
         return;
-      if (reponse is not null)
+      if (response is not null)
         {
           -- write a reply (optional)
-          reply := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE (reponse);
+          reply := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE (response);
           ses_write(reply, ses);
         }
     }
@@ -251,7 +265,7 @@ create procedure WSOCK.DBA."websockets" () __SOAP_HTTP 'text/plain'
   if (upgrade = 'websocket' and sec_websocket_version = '13')
    {
      -- set callback for recv
-     http_on_message (null, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector (func, sid));
+     http_on_message (null, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector (func, sid, null));
      -- cache session and send http status
      http_keep_session (null, sid, 0);
 
