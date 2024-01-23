@@ -85,7 +85,7 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
       payload_len := bit_and (secondByte, 127);
       if (not is_masked) -- client message must be masked
         signal ('22023', 'Request must be masked.');
-      if (opcode <> 1 and opcode <> 8 and opcode <> 0) -- not text or close
+      if (opcode <> 1 and opcode <> 8 and opcode <> 0 and opcode <> 9) -- not text or close
         signal ('22023', sprintf ('A frame of type %d is not supported.', opcode));
 
       if (opcode = 0 and payload is null)
@@ -111,6 +111,16 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
       if (opcode = 8)
         return;
       payload := concat (payload, result);
+
+      if (opcode = 9)
+        {
+          reply := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE(payload);
+          aset (reply, 0, 138);
+          ses_write(reply, ses);
+          payload := null;
+          fin := 0; -- do not call service hook
+        }
+
       if (fin = 1)
         {
           response := call (service_hook) (payload, args);
