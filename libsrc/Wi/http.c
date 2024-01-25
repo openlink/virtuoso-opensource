@@ -5504,8 +5504,9 @@ void
 dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_charset, wcharset_t *src_charset, int dks_esc_mode)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  dtp_t dtp = DV_TYPE_OF (val);
+  dtp_t dtp;
 again:
+  dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
       ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
