@@ -2446,14 +2446,14 @@ sqlo_check_group_by_cols (sqlo_t *so, ST *tree, ST *** group, op_table_t *dt_ot,
 
 
 static void
-sqlo_oby_remove_scalar_exps (sqlo_t *so, ST *** oby)
+sqlo_oby_remove_scalar_exps (sqlo_t *so, ST *** oby, int gb_ua)
 { /* remove all scalar order by's (as they do not contribute nothing) */
   dk_set_t set = NULL;
   int have_const_obys = 0, inx;
 
   DO_BOX (ST *, spec, inx, (*oby))
     {
-      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (spec->_.o_spec.col))
+      if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (spec->_.o_spec.col) || (gb_ua && DV_TYPE_OF (spec->_.o_spec.col) != DV_DB_NULL))
 	{
 	  t_set_push (&set, spec);
 	}
@@ -2792,13 +2792,25 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
       if (texp->_.table_exp.order_by)
         {
           sqlo_oby_exp_cols (so, tree, texp->_.table_exp.order_by);
-          sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by);
+          sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by, 0);
         }
       if (texp->_.table_exp.group_by)
 	{
+          int has_ua = 0;
 	  sqlo_oby_exp_cols (so, tree, texp->_.table_exp.group_by);
           if (!is_not_one_gb) /* for cube/rollup should be done later */
-            sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.group_by);
+            {
+              DO_SET (ST *, fref, &so->so_this_dt->ot_fun_refs)
+                {
+                  if (AMMSC_USER == fref->_.fn_ref.fn_code)
+                    {
+                      has_ua = 1;
+                      break;
+                    }
+                }
+              END_DO_SET();
+              sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.group_by, has_ua);
+            }
 	}
       if (so->so_this_dt->ot_fun_refs || texp->_.table_exp.group_by)
 	{
@@ -2814,8 +2826,7 @@ sqlo_select_scope (sqlo_t * so, ST ** ptree)
 	  sqlo_check_group_by_cols (so, (ST *) texp->_.table_exp.order_by,
 	      &(texp->_.table_exp.group_by), ot, is_not_one_gb);
 	}
-      sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by);
-      sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.group_by);
+      sqlo_oby_remove_scalar_exps (so, &texp->_.table_exp.order_by, 0);
     }
   else
     sqlo_scope_array (so, (ST**) tree->_.select_stmt.selection);
