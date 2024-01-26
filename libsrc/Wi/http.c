@@ -1868,6 +1868,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       dk_free_tree ((box_t) ws->ws_redirect_from);
       ws->ws_redirect_from = NULL;
       ws->ws_in_error_handler = 0;
+      ws->ws_method_name[0] = 0;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
