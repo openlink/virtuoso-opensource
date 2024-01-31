@@ -30,7 +30,7 @@
     <![CDATA[
       declare _state, _msg varchar;
       exec('status (''rhck'')', _state, _msg);
-      status();
+      status('');
     ]]>
   </v:before-data-bind>
   <div id="monitor_tab">
