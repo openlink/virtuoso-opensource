@@ -2269,7 +2269,8 @@ memory_used ()
 #include <sys/resource.h>
 #endif
 
-int last_majflt = 0;
+long last_majflt = 0;
+long swap_guard_threshold = 300;
 int32 swap_guard_on = 0;
 int process_is_swapping = 0;
 size_t max_vsize = 0;
@@ -2281,19 +2282,21 @@ the_grim_swap_guard ()
   struct rusage ru;
   if (!swap_guard_on)
     return;
+  if (swap_guard_threshold < 300)
+    swap_guard_threshold = 300;
   if (wi_inst.wi_is_checkpoint_pending)
   return;
   getrusage (RUSAGE_SELF, &ru);
 #ifdef GPF_ON_SWAPPING
-  if (ru.ru_majflt - last_majflt > 300)
+  if (ru.ru_majflt - last_majflt > swap_guard_threshold)
     GPF_T1 ("started swapping");
 #endif
   if (swap_guard_on & 0x10)
     {
-      if ((ru.ru_majflt - last_majflt > 300) && !wi_inst.wi_is_checkpoint_pending)
+      if ((ru.ru_majflt - last_majflt > swap_guard_threshold) && !wi_inst.wi_is_checkpoint_pending)
         GPF_T1 ("The process started swapping and SwapGuard parameter has bit 0x10 set on, forcing immediate kill. ");
     }
-  if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > 300)
+  if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > swap_guard_threshold)
     {
       if (!process_is_swapping)
 	log_error ("The process started swapping, all pending transactions will be killed");

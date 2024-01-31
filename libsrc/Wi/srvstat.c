@@ -1276,6 +1276,7 @@ get_total_sys_mem ()
 }
 
 extern int process_is_swapping;
+extern long swap_guard_threshold;
 extern double curr_cpu_pct;
 extern unsigned long curr_mem_rss;
 
@@ -1998,6 +1999,7 @@ stat_desc_t dbf_descs [] =
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {"users_cache_sz", &users_cache_sz, SD_INT64},
     {"enable_cpt_rb_ck", &enable_cpt_rb_ck, SD_INT32},
+    {"swap_guard_threshold", (long *)&swap_guard_threshold, NULL},
     {NULL, NULL, NULL}
   };
 
