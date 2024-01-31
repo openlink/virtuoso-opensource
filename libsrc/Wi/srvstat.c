@@ -1362,11 +1362,25 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (gen_info)
     {
-      rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
+      int delta, days, hours, minutes;
+
+      /* uptime in minutes */
+      delta = (int) (time (NULL) - st_started_since) / 60;
+
+      minutes = delta % 60;
+      hours = (delta / 60) % 24;
+      days = (delta / 60) / 24;
+
+      rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d (up ",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
 	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
+
+      if (days) rep_printf ("%d day%s ", days, (days > 1) ? "s" : "");
+      rep_printf ("%02d:%02d)\n", hours, minutes);
     }
+
   rep_printf ("CPU: %.02f%% RSS: %ldMB VSZ: %ldMB PF: %ld\n", curr_cpu_pct, curr_mem_rss, curr_vm_size / 1024, curr_page_faults);
+
   if (!gen_info)
     return;
   if (lite_mode)
