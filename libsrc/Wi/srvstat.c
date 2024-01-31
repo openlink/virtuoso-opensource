@@ -1027,8 +1027,8 @@ cl_srv_status ()
 }
 
 
-void
-srv_lock_report (const char * mode, int caller_is_dba)
+static void
+srv_lock_report (query_instance_t * qi, const char * mode, int caller_is_dba)
 {
   int thr_ct = 0, lw_ct = 0, vdb_ct = 0, inx;
   IN_TXN;
@@ -1056,21 +1056,29 @@ srv_lock_report (const char * mode, int caller_is_dba)
       LEAVE_TXN;
       return;
     }
+  if (lt_has_locks (qi->qi_trx))
+    {
+      LEAVE_TXN;
+      rep_printf ("Lock details not allowed on when client has locks.\n");
+      return;
+    }
   rep_printf ("Pending:\n");
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
   {
-      mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
-    for (inx = 0; inx < IT_N_MAPS; inx++)
-      {
-          mutex_enter (&it->it_maps[inx].itm_mtx);
-          if (0 == setjmp_splice (&locks_done))
+      if (mutex_try_enter (it->it_lock_release_mtx))
+        { /* prevent read release as lock release is outside of TXN mtx */
+          for (inx = 0; inx < IT_N_MAPS; inx++)
             {
-              locks_printed = 0;
-              maphash (lock_status, &it->it_maps[inx].itm_locks);
+              mutex_enter (&it->it_maps[inx].itm_mtx);
+              if (0 == setjmp_splice (&locks_done))
+                {
+                  locks_printed = 0;
+                  maphash (lock_status, &it->it_maps[inx].itm_locks);
+                }
+              mutex_leave (&it->it_maps[inx].itm_mtx);
             }
-          mutex_leave (&it->it_maps[inx].itm_mtx);
-      }
-      mutex_leave (it->it_lock_release_mtx);
+          mutex_leave (it->it_lock_release_mtx);
+        }
   }
   END_DO_SET ();
   lt_wait_status ();
@@ -1395,7 +1403,7 @@ status_report (const char * mode, query_instance_t * qi)
       st_chkp_mapback_pages, atomic_cp_msecs / 1000);
   st_chkp_remap_pages = wi_inst.wi_master->dbs_cpt_remap->ht_count;
   wi_storage_report ();
-  srv_lock_report (mode, caller_is_dba);
+  srv_lock_report (qi, mode, caller_is_dba);
   if (strchr (mode, 'c'))
     {
       dk_set_t set = NULL;
