@@ -1282,6 +1282,7 @@ extern int64 max_proc_vm_size;
 extern int64 vm_size_wd_threshold;
 extern double curr_cpu_pct;
 extern unsigned long curr_mem_rss;
+extern unsigned long curr_page_faults;
 extern int64 curr_vm_size;
 
 extern int64 dk_n_allocs;
@@ -1365,7 +1366,7 @@ status_report (const char * mode, query_instance_t * qi)
 		  st_started_since_year, st_started_since_month, st_started_since_day,
 	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
     }
-  rep_printf ("CPU: %.02f%% RSS: %ldMB\n", curr_cpu_pct, curr_mem_rss);
+  rep_printf ("CPU: %.02f%% RSS: %ldMB VSZ: %ldMB PF: %ld\n", curr_cpu_pct, curr_mem_rss, curr_vm_size / 1024, curr_page_faults);
   if (!gen_info)
     return;
   if (lite_mode)
