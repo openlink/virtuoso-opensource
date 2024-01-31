@@ -792,7 +792,15 @@ outer_seq_end_vec_input (outer_seq_end_node_t * ose, caddr_t * inst, caddr_t * s
       {
 	int sinx = sslr_set_no (inst, ssl, set);
 	if (DCT_BOXES & shadow_dc->dc_type)
-	  ((caddr_t *) shadow_dc->dc_values)[set] = box_copy_tree (((caddr_t *) out_dc->dc_values)[sinx]);
+	  {
+	    if (sinx < out_dc->dc_n_values)
+	      ((caddr_t *) shadow_dc->dc_values)[set] = box_copy_tree (((caddr_t *) out_dc->dc_values)[sinx]);
+	    else
+	      {
+		((caddr_t *) shadow_dc->dc_values)[set] = NULL;
+		dc_set_null (shadow_dc, set);
+	      }
+	  }
 	else
 	  {
 	    memcpy_16 (shadow_dc->dc_values + len * set, out_dc->dc_values + len * sinx, len);
