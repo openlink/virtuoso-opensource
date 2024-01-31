@@ -5828,7 +5828,7 @@ bif_http_pending_req (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ((caddr_t) list_to_array (dk_set_nreverse (set)));
 }
 
-static void
+void
 http_kill_all ()
 {
   dk_set_t killed = NULL;

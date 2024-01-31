@@ -1278,8 +1278,11 @@ get_total_sys_mem ()
 extern int process_is_swapping;
 extern long swap_guard_threshold;
 extern long last_majflt;
+extern int64 max_proc_vm_size;
+extern int64 vm_size_wd_threshold;
 extern double curr_cpu_pct;
 extern unsigned long curr_mem_rss;
+extern int64 curr_vm_size;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
@@ -2001,7 +2004,9 @@ stat_desc_t dbf_descs [] =
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {"users_cache_sz", &users_cache_sz, SD_INT64},
     {"enable_cpt_rb_ck", &enable_cpt_rb_ck, SD_INT32},
-    {"swap_guard_threshold", (long *)&swap_guard_threshold, NULL},
+    {"swap_guard_threshold", (long *)&swap_guard_threshold,  SD_INT64},
+    {"max_proc_vm_size", (long *)&max_proc_vm_size,  SD_INT64},
+    {"vm_size_wd_threshold", (long *)&vm_size_wd_threshold,  SD_INT64},
     {NULL, NULL, NULL}
   };
 

@@ -44,6 +44,7 @@ int32 mon_enable = 1;
 int mon_max_cpu_pct;
 double curr_cpu_pct = 0.0;
 unsigned long curr_mem_rss = 0;
+int64 curr_vm_size = 0;
 
 extern timeout_t time_now;
 extern long disk_reads;
@@ -79,11 +80,14 @@ static int numProcessors;
 static HANDLE me;
 #endif
 
+int64 get_proc_vm_size ();
+
 void
 mon_init ()
 {
   if (!mon_enable)
     return;
+
   mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
 #ifdef WIN32
@@ -141,8 +145,11 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
 
       if (GetProcessMemoryInfo (hProcess, &pmc, sizeof(pmc)))
 	curr_mem_rss = pmc.WorkingSetSize / MEM_RSS_UNITS;
-  }
 #endif
+
+  /* get VM size */
+  curr_vm_size = get_proc_vm_size ();
+
   /* thread counts */
   next->mon_thr_run = thr_run;
   next->mon_thr = n_threads;
