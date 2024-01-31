@@ -1028,7 +1028,7 @@ cl_srv_status ()
 
 
 void
-srv_lock_report (const char * mode)
+srv_lock_report (const char * mode, int caller_is_dba)
 {
   int thr_ct = 0, lw_ct = 0, vdb_ct = 0, inx;
   IN_TXN;
@@ -1046,16 +1046,17 @@ srv_lock_report (const char * mode)
   thr_cli_waiting = lw_ct;
   thr_cli_vdb = vdb_ct;
   rep_printf (
-      "\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
-      "\n   Currently %d threads running %d threads waiting %d threads in vdb."
-      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks,
-      lock_waits, thr_ct, lw_ct, vdb_ct);
+      "\n"
+      "Lock Status: %ld deadlocks of which %ld 2r1w, %ld waits,\n"
+      "   Currently %d threads running %d threads waiting %d threads in vdb.\n",
+      lock_deadlocks, lock_2r1w_deadlocks, lock_waits, thr_ct, lw_ct, vdb_ct);
 
   if (!strchr (mode, 'l'))
     {
       LEAVE_TXN;
       return;
     }
+  rep_printf ("Pending:\n");
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
   {
       mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
@@ -1315,6 +1316,7 @@ status_report (const char * mode, query_instance_t * qi)
 {
   dk_set_t clients;
   int gen_info = 1, cl_mode = CLST_SUMMARY;
+  int caller_is_dba = sec_bif_caller_is_dba (qi);
   if (!stricmp (mode, "clsrv"))
     {
       cl_srv_status ();
@@ -1393,7 +1395,7 @@ status_report (const char * mode, query_instance_t * qi)
       st_chkp_mapback_pages, atomic_cp_msecs / 1000);
   st_chkp_remap_pages = wi_inst.wi_master->dbs_cpt_remap->ht_count;
   wi_storage_report ();
-  srv_lock_report (mode);
+  srv_lock_report (mode, caller_is_dba);
   if (strchr (mode, 'c'))
     {
       dk_set_t set = NULL;
@@ -1408,7 +1410,11 @@ status_report (const char * mode, query_instance_t * qi)
       END_DO_SET ();
       mutex_leave (thread_mtx);
       dk_set_free (clients);
-      if (!process_is_swapping)
+      if (!caller_is_dba)
+	{
+	  rep_printf ("\n\nRunning Statements can be shown to DBA only because the may contain sensitive data.");
+	}
+      else if (!process_is_swapping)
 	{
 	  PrpcSelfSignal ((self_signal_func) st_collect_ps_info, (caddr_t)&set);
 	  semaphore_enter (ps_sem);
