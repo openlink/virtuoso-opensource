@@ -2334,49 +2334,38 @@ http_add_cors_allow_headers (ws_connection_t * ws, char * buf, size_t buf_len)
     dk_free_tree (list_to_array (dk_set_nreverse (requested)));
 }
 
+static inline int
+ws_cors_match (dk_set_t * set, caddr_t origin)
+{
+  DO_SET (caddr_t, pattern, set)
+    {
+      if (DVC_MATCH == cmp_like (origin, pattern, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+        return 1;
+    }
+  END_DO_SET();
+  if (!stricmp (origin, "null"))
+    return 1;
+  return 0;
+}
+
 static int
 ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
-  char * ret_origin = NULL;
   int rc = 0;
   /* CORS enabled Vdir, and Origin present, go ahead */
   if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
-      caddr_t * orgs = ws_split_cors (origin), * place = NULL;
-      int inx;
       /* match the Origin first */
-      if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
-	{
-	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
-	    ret_origin = orgs[0];
-	  rc = 1;
-	}
-      else if (orgs != WS_CORS_STAR)
-	{
-	  DO_BOX (caddr_t, org, inx, orgs)
-	    {
-	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
-		{
-		  ret_origin = org;
-		  rc = 1;
-		  break;
-		}
-	    }
-	  END_DO_BOX;
-	}
-      /* client have permissions to proceed, so we say ac allow origin  */
-      if (rc)
-	{
-	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%sAccess-Control-Max-Age: %d\r\n",
-	      ret_origin ? ret_origin : "*",
-	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "",
-              http_ac_max_age); /* max age, for now a constant, should be a config param */
-        }
-      if (rc)
+      if (ws->ws_map->hm_cors == (dk_set_t) WS_CORS_STAR || ws_cors_match (&ws->ws_map->hm_cors, origin))
 	{
 	  char ach[2000] = { 0 };
+          /* client have permissions to proceed, so we say ac allow origin  */
+	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%sAccess-Control-Max-Age: %d\r\n",
+	      origin,
+	      WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:") ? "Access-Control-Allow-Credentials: true\r\n" : "",
+              http_ac_max_age); /* max age, for now a constant, should be a config param */
           /* preflight next, allow or disallow  headers  */
 	  if (WS_NOT_HDR (ws, "Access-Control-Expose-Headers:"))
 	    {
@@ -2387,9 +2376,8 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      http_add_cors_allow_headers (ws, ach, sizeof (ach));
 	    }
 	  strcat_size_ck (buf, ach, buf_len);
-	}
-      if (orgs != WS_CORS_STAR)
-	dk_free_tree ((caddr_t)orgs);
+          rc = 1;
+        }
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -8833,28 +8821,26 @@ http_map_fill_cors_allow_headers (caddr_t option_value)
   return ht;
 }
 
-static id_hash_t *
+static dk_set_t
 http_map_fill_cors_origins (caddr_t option_value)
 {
   caddr_t * orgs = ws_split_cors (option_value);
-  id_hash_t * ht = NULL;
+  dk_set_t set = NULL;
   if (orgs)
     {
       if (orgs != WS_CORS_STAR)
         {
           int inx;
-          ptrlong one = 1;
-          ht = id_str_hash_create (7);
           DO_BOX (caddr_t, org, inx, orgs)
             {
-              id_hash_set (ht, (caddr_t) & org, (caddr_t) & one);
+              dk_set_push (&set, org);
             }
           END_DO_BOX;
         }
       else
-        ht = (id_hash_t *) orgs;
+        set = (dk_set_t) orgs;
     }
-  return ht;
+  return set;
 }
 
 
