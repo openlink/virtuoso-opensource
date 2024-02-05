@@ -1272,6 +1272,8 @@ create procedure DB.DBA.json2obj (
 --
 -- Object 2 XML functions
 --
+
+--!AWK PUBLIC
 create procedure DB.DBA.obj2xml (
   in o any,
   in d integer := 10,
