@@ -899,8 +899,9 @@ DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null, in 
               if (gql_annotate)
                 http ('  gql:type gql:Object ;\n', ses);
 	    }
-	  else if (cols_arr[1][inx][0] = 4)
+	  else if (cols_arr[1][inx][0] = 4 and dtp in (__tag of varchar, __tag of nvarchar))
 	    {
+	      http (sprintf ('%s:%s a owl:DatatypeProperty ;\n', qual, col), ses);
 	      http (sprintf ('  rdfs:subPropertyOf virtrdf:label ;\n'), ses);
 	      http (sprintf ('  rdfs:range xsd:%s ;\n', xsd), ses);
               if (gql_annotate)
