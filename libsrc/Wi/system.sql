@@ -6192,20 +6192,18 @@ create procedure csv_vec_load (
 	goto end_loop;
       if (fill >= length (vecarr))
 	{
-	  declare stat, message varchar;
-
 	  stat := '00000';
-          exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
+          exec (sprintf ('%s (?, ?)', pname), stat, msg, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
 	  if (stat <> '00000')
 	    {
 	      if (log_error)
 		{
-		  http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+		  http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, msg), log_ses);
 		}
 	      else
 		{
 		  log_message (sprintf ('CSV import: error importing row: %d', inx));
-		  log_message (message);
+		  log_message (msg);
 		}
 	    }
 	  else
@@ -6220,20 +6218,18 @@ create procedure csv_vec_load (
 
   if (fill > 0)
     {
-      declare stat, message varchar;
-
       stat := '00000';
-      exec (sprintf ('%s (?, ?)', pname), stat, message, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
+      exec (sprintf ('%s (?, ?)', pname), stat, msg, vector (vecarr, fill), vector ('max_rows', 0, 'use_cache', 1));
       if (stat <> '00000')
 	{
 	  if (log_error)
 	    {
-	      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, message), log_ses);
+	      http (sprintf ('<error line="%d"><![CDATA[%s]]></error>', inx, msg), log_ses);
 	    }
 	  else
 	    {
 	      log_message (sprintf ('CSV import: error importing row: %d', inx));
-	      log_message (message);
+	      log_message (msg);
 	    }
 	}
       else
