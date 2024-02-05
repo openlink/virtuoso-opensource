@@ -1085,14 +1085,31 @@ create procedure DB.DBA.obj2json (
   in nsArray any := null,
   in attributePrefix varchar := null)
 {
-  declare N, M integer;
-  declare R any;
-  declare S, retValue any;
+  declare ses any;
+  ses := string_output ();
+  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, 0, d, nsArray, attributePrefix);
+  return string_output_string (ses);
+}
+;
 
-  if (d = 0)
+--!AWK PUBLIC
+create procedure DB.DBA.JSON_SERIALIZE (in o any, in indent int := 0)
+{
+  declare ses any;
+  ses := string_output ();
+  DB.DBA.JSON_SERIALIZE_INNER (ses, o, 0, indent, null, null, null);
+  return ses;
+}
+;
+
+create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth any, in indent int := 0,
+        in max_depth int := null, in ns_array any := null, in attr_prefix varchar := null)
+{
+  declare inx integer;
+
+  if (isnumeric (max_depth) and max_depth > 0 and depth >= max_depth)
     return '{"error":"Max depth limit exceeded"}';
 
-  retValue := '';
   if (__tag (o) = __tag of long varchar or __tag (o) = __tag of long nvarchar or __tag (o) = 126 or __tag (o) = 133)
     o := blob_to_string (o);
   else if (__tag (o) = __tag of stream)
@@ -1104,62 +1121,79 @@ create procedure DB.DBA.obj2json (
     }
   else if (__tag(o) = 127 or __tag(o) = 183)
     o := cast (o as varchar);
+  else if (__tag(o) = __tag of dictionary reference)
+    o := vector_concat (vector (composite(), 'structure'), dict_to_vector (o, 0));
+
+  depth := depth + 1;
+
   if (isnull (o))
   {
-    retValue := 'null';
+      http ('null', ses);
   }
   else if (isnumeric (o))
   {
-    retValue := cast (o as varchar);
+      http_value (o, null, ses);
   }
   else if (isstring (o) or __tag of uname = __tag (o))
   {
-    declare ses any;
-    ses := string_output ();
     http ('"', ses);
     http_escape (o, 14, ses, 1, 1);
     http ('"', ses);
-    retValue := string_output_string (ses);
   }
   else if (__tag(o) = __tag of datetime)
   {
-    retValue := concat ('"', date_iso8601(o), '"');
+      http (concat ('"', date_iso8601(o), '"'), ses);
   }
   else if (isvector (o) and length (o) = 2 and __tag (o[0]) = 255 and __tag (o[1]) = __tag of integer)
-  { -- boolean
-    if (o[1])
-      retValue := 'true';
-    else
-      retValue := 'false';
-  }
-  else if (isvector (o) and (length (o) > 1) and ((__tag (o[0]) = 255) or (o[0] is null and (o[1] = '<soap_box_structure>' or o[1] = 'structure'))))
-  {
-    retValue := '{';
-    for (N := 2; N < length (o); N := N + 2)
     {
-      S := o[N];
-      if (chr (S[0]) = attributePrefix)
-        S := subseq (S, length (attributePrefix));
-      if (not isnull (nsArray))
+      http (case when aref(o,1) then 'true' else 'false' end, ses);
+  }
+  else if (isvector (o) and (length (o) > 1) and
+      (((__tag (aref (o,0)) = 255) and isstring (aref(o,1))) or
+       (aref (o,0) is null and (aref(o,1) = '<soap_box_structure>' or aref(o,1) = 'structure'))))
+  {
+    http ('{', ses);
+    for (inx := 2; inx < length (o); inx := inx + 2)
+    {
+        declare elm varchar;
+        elm := aref (o, inx);
+        -- next code for attr_prefix & ns_array is used by ODS, it is kept only for backward compatibility
+        if (chr (aref (elm, 0)) = attr_prefix)
+          elm := subseq (elm, 1);
+        if (isvector (ns_array))
       {
-        for (M := 0; M < length (nsArray); M := M + 1)
+            foreach (varchar pref in ns_array) do
         {
-          if (S like nsArray[M]||':%')
-            S := subseq (S, length (nsArray[M])+1);
+                if (elm like concat (pref,':%'))
+                  elm := subseq (elm, length (pref) + 1);
         }
       }
-      retValue := retValue || '"' || S || '":' || obj2json (o[N+1], d-1, nsArray, attributePrefix);
-      if (N <> length(o)-2)
-        retValue := retValue || ',';
+        if (inx >  2)
+          http (',', ses);
+        if (indent)
+          {
+            http ('\n', ses);
+            http (repeat (' ', (depth * indent)), ses);
     }
-    retValue := retValue || '}';
+        http ('"', ses);
+        http_escape (elm, 14, ses, 1, 1);
+        http ('":', ses);
+        if (indent) http(' ', ses);
+        DB.DBA.JSON_SERIALIZE_INNER (ses, aref(o,inx + 1), depth, indent);
+      }
+    if (indent and inx > 2)
+      {
+        http ('\n', ses);
+        http (repeat (' ', ((depth - 1) * indent)), ses);
+      }
+    http ('}', ses);
   }
   else if (__tag(o) = 254 or __tag(o) = 206)
     {
       declare fields, nth any;
       fields := udt_get_info (o, 'attributes_info');
       nth := 0;
-      retValue := '{';
+      http ('{', ses);
       foreach (any field_info in fields) do
         {
           declare v, jv any;
@@ -1175,25 +1209,49 @@ create procedure DB.DBA.obj2json (
           if (v is not null or nullable)
             {
               if (nth)
-                retValue := retValue || ',';
-              retValue := retValue || '"' || field || '":' || obj2json (v, d-1, nsArray, attributePrefix);
+                http (',', ses);
+              if (indent)
+                {
+                  http ('\n', ses);
+                  http (repeat (' ', (depth * indent)), ses);
+                }
+              http ('"', ses);
+              http_escape (field, 14, ses, 1, 1);
+              http ('":', ses);
+              if (indent) http(' ', ses);
+              DB.DBA.JSON_SERIALIZE_INNER (ses, v, depth, indent);
               nth := nth + 1;
             }
         }
-      retValue := retValue || '}';
+      if (indent and nth)
+        {
+          http ('\n', ses);
+          http (repeat (' ', ((depth - 1) * indent)), ses);
+        }
+      http ('}', ses);
     }
   else if (isarray (o))
   {
-    retValue := '[';
-    for (N := 0; N < length(o); N := N + 1)
+      http ('[', ses);
+      for (inx := 0; inx < length(o); inx := inx + 1)
     {
-      retValue := retValue || obj2json (o[N], d-1, nsArray, attributePrefix);
-      if (N <> length(o)-1)
-        retValue := retValue || ',';
+          if (inx)
+            http (',', ses);
+          if (indent)
+            {
+              http ('\n', ses);
+              http (repeat (' ', (depth * indent)), ses);
     }
-    retValue := retValue || ']';
+          DB.DBA.JSON_SERIALIZE_INNER (ses, aref (o, inx), depth, indent);
   }
-  return retValue;
+      if (indent and inx)
+        {
+          http ('\n', ses);
+          http (repeat (' ', ((depth - 1) * indent)), ses);
+        }
+      http (']', ses);
+    }
+  return;
 }
 ;
 
