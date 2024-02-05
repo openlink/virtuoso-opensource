@@ -44,6 +44,8 @@ int32 mon_enable = 1;
 int mon_max_cpu_pct;
 double curr_cpu_pct = 0.0;
 unsigned long curr_mem_rss = 0;
+unsigned long curr_page_faults = 0;
+int64 curr_vm_size = 0;
 
 extern timeout_t time_now;
 extern long disk_reads;
@@ -79,11 +81,14 @@ static int numProcessors;
 static HANDLE me;
 #endif
 
+int64 get_proc_vm_size ();
+
 void
 mon_init ()
 {
   if (!mon_enable)
     return;
+
   mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
 #ifdef WIN32
@@ -116,6 +121,7 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
     return 1;
   next->mon_cpu_time = (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000) + (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
   curr_cpu_pct = next->mon_cpu_pct = (next->mon_cpu_time - prev->mon_cpu_time) / (double)(next->mon_time_now - prev->mon_time_now) * 100;
+  curr_page_faults = ru.ru_majflt;
   next->mon_pageflts = ru.ru_majflt - prev->mon_pageflts;
   curr_mem_rss = ru.ru_maxrss / MEM_RSS_UNITS;
 #elif defined (WIN32)
@@ -140,9 +146,17 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
     curr_cpu_pct = next->mon_cpu_pct = percent * 100;
 
       if (GetProcessMemoryInfo (hProcess, &pmc, sizeof(pmc)))
-	curr_mem_rss = pmc.WorkingSetSize / MEM_RSS_UNITS;
-  }
+	{
+	  curr_mem_rss = pmc.WorkingSetSize / MEM_RSS_UNITS;
+	  curr_page_faults = pmc.PageFaultCount;
+	  next->mon_pageflts = pmc.PageFaultCount - prev->mon_pageflts;
+	}
+    }
 #endif
+
+  /* get VM size */
+  curr_vm_size = get_proc_vm_size ();
+
   /* thread counts */
   next->mon_thr_run = thr_run;
   next->mon_thr = n_threads;

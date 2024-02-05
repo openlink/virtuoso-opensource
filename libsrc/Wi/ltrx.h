@@ -648,6 +648,7 @@ typedef void (* srv_background_task_t)(void *appdata);
 
 int srv_add_background_task (srv_background_task_t task, void *appdata);
 void the_grim_lock_reaper (void);
+void the_grim_mem_guard (void);
 
 int lt_set_snapshot (lock_trx_t * lt);
 

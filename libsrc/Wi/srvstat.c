@@ -1027,8 +1027,8 @@ cl_srv_status ()
 }
 
 
-void
-srv_lock_report (const char * mode)
+static void
+srv_lock_report (query_instance_t * qi, const char * mode, int caller_is_dba)
 {
   int thr_ct = 0, lw_ct = 0, vdb_ct = 0, inx;
   IN_TXN;
@@ -1046,30 +1046,39 @@ srv_lock_report (const char * mode)
   thr_cli_waiting = lw_ct;
   thr_cli_vdb = vdb_ct;
   rep_printf (
-      "\nLock Status: %ld deadlocks of which %ld 2r1w, %ld waits,"
-      "\n   Currently %d threads running %d threads waiting %d threads in vdb."
-      "\nPending:\n", lock_deadlocks, lock_2r1w_deadlocks,
-      lock_waits, thr_ct, lw_ct, vdb_ct);
+      "\n"
+      "Lock Status: %ld deadlocks of which %ld 2r1w, %ld waits,\n"
+      "   Currently %d threads running %d threads waiting %d threads in vdb.\n",
+      lock_deadlocks, lock_2r1w_deadlocks, lock_waits, thr_ct, lw_ct, vdb_ct);
 
   if (!strchr (mode, 'l'))
     {
       LEAVE_TXN;
       return;
     }
+  if (lt_has_locks (qi->qi_trx))
+    {
+      LEAVE_TXN;
+      rep_printf ("Lock details not allowed on when client has locks.\n");
+      return;
+    }
+  rep_printf ("Pending:\n");
   DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
   {
-      mutex_enter (it->it_lock_release_mtx); /* prevent read release as lock release is outside of TXN mtx */
-    for (inx = 0; inx < IT_N_MAPS; inx++)
-      {
-          mutex_enter (&it->it_maps[inx].itm_mtx);
-          if (0 == setjmp_splice (&locks_done))
+      if (mutex_try_enter (it->it_lock_release_mtx))
+        { /* prevent read release as lock release is outside of TXN mtx */
+          for (inx = 0; inx < IT_N_MAPS; inx++)
             {
-              locks_printed = 0;
-              maphash (lock_status, &it->it_maps[inx].itm_locks);
+              mutex_enter (&it->it_maps[inx].itm_mtx);
+              if (0 == setjmp_splice (&locks_done))
+                {
+                  locks_printed = 0;
+                  maphash (lock_status, &it->it_maps[inx].itm_locks);
+                }
+              mutex_leave (&it->it_maps[inx].itm_mtx);
             }
-          mutex_leave (&it->it_maps[inx].itm_mtx);
-      }
-      mutex_leave (it->it_lock_release_mtx);
+          mutex_leave (it->it_lock_release_mtx);
+        }
   }
   END_DO_SET ();
   lt_wait_status ();
@@ -1276,8 +1285,14 @@ get_total_sys_mem ()
 }
 
 extern int process_is_swapping;
+extern long swap_guard_threshold;
+extern long last_majflt;
+extern int64 max_proc_vm_size;
+extern int64 vm_size_wd_threshold;
 extern double curr_cpu_pct;
 extern unsigned long curr_mem_rss;
+extern unsigned long curr_page_faults;
+extern int64 curr_vm_size;
 
 extern int64 dk_n_allocs;
 extern int64 dk_n_free;
@@ -1309,6 +1324,7 @@ status_report (const char * mode, query_instance_t * qi)
 {
   dk_set_t clients;
   int gen_info = 1, cl_mode = CLST_SUMMARY;
+  int caller_is_dba = sec_bif_caller_is_dba (qi);
   if (!stricmp (mode, "clsrv"))
     {
       cl_srv_status ();
@@ -1356,11 +1372,25 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (gen_info)
     {
-      rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d\n",
+      int delta, days, hours, minutes;
+
+      /* uptime in minutes */
+      delta = (int) (time (NULL) - st_started_since) / 60;
+
+      minutes = delta % 60;
+      hours = (delta / 60) % 24;
+      days = (delta / 60) / 24;
+
+      rep_printf ("Started on: %04d-%02d-%02d %02d:%02d GMT%+d (up ",
 		  st_started_since_year, st_started_since_month, st_started_since_day,
 	  st_started_since_hour, st_started_since_minute, dt_local_tz_for_logs / 60);
+
+      if (days) rep_printf ("%d day%s ", days, (days > 1) ? "s" : "");
+      rep_printf ("%02d:%02d)\n", hours, minutes);
     }
-  rep_printf ("CPU: %.02f%% RSS: %ldMB\n", curr_cpu_pct, curr_mem_rss);
+
+  rep_printf ("CPU: %.02f%% RSS: %ldMB VSZ: %ldMB PF: %ld\n", curr_cpu_pct, curr_mem_rss, curr_vm_size / 1024, curr_page_faults);
+
   if (!gen_info)
     return;
   if (lite_mode)
@@ -1373,7 +1403,7 @@ status_report (const char * mode, query_instance_t * qi)
       st_chkp_mapback_pages, atomic_cp_msecs / 1000);
   st_chkp_remap_pages = wi_inst.wi_master->dbs_cpt_remap->ht_count;
   wi_storage_report ();
-  srv_lock_report (mode);
+  srv_lock_report (qi, mode, caller_is_dba);
   if (strchr (mode, 'c'))
     {
       dk_set_t set = NULL;
@@ -1388,7 +1418,11 @@ status_report (const char * mode, query_instance_t * qi)
       END_DO_SET ();
       mutex_leave (thread_mtx);
       dk_set_free (clients);
-      if (!process_is_swapping)
+      if (!caller_is_dba)
+	{
+	  rep_printf ("\n\nRunning Statements can be shown to DBA only because the may contain sensitive data.");
+	}
+      else if (!process_is_swapping)
 	{
 	  PrpcSelfSignal ((self_signal_func) st_collect_ps_info, (caddr_t)&set);
 	  semaphore_enter (ps_sem);
@@ -1502,6 +1536,7 @@ stat_desc_t stat_descs [] =
     {"tc_cl_consensus_rollback", &tc_cl_consensus_rollback, NULL},
     {"tc_cl_consensus_commit", &tc_cl_consensus_commit, NULL},
     {"tc_cl_consensus_deferred", &tc_cl_consensus_deferred, NULL},
+    {"swap_guard_last_majflt", &last_majflt, NULL },
 
     {"tc_cl_branch_missed_rb", &tc_cl_branch_missed_rb, NULL},
     {"tc_cl_keep_alive_timeouts", &tc_cl_keep_alive_timeouts, NULL},
@@ -1998,6 +2033,9 @@ stat_desc_t dbf_descs [] =
     {"http_connect_timeout", &http_connect_timeout, SD_INT32},
     {"users_cache_sz", &users_cache_sz, SD_INT64},
     {"enable_cpt_rb_ck", &enable_cpt_rb_ck, SD_INT32},
+    {"swap_guard_threshold", (long *)&swap_guard_threshold,  SD_INT64},
+    {"max_proc_vm_size", (long *)&max_proc_vm_size,  SD_INT64},
+    {"vm_size_wd_threshold", (long *)&vm_size_wd_threshold,  SD_INT64},
     {NULL, NULL, NULL}
   };
 

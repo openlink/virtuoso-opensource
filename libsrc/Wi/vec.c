@@ -3074,6 +3074,10 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
 		      DC_SET_NULL (dc_to, org_sets[set1]);
 		      dc_to->dc_any_null = 1;
 		    }
+                  else
+                    {
+                      DC_CLR_NULL (dc_to, org_sets[set1]);
+                    }
 		}
 	    }
 	  if (last_assigned >= dc_to->dc_n_values)

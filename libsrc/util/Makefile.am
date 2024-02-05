@@ -58,6 +58,7 @@ libutil_la_SOURCES = \
 	ltrim.c \
 	make_env.c \
 	md5.c \
+	memstat.c \
 	mpl.c \
 	ncfg.c \
 	ntapp.c \

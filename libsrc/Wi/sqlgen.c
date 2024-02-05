@@ -3344,6 +3344,18 @@ sqlg_may_parallelize (sql_comp_t * sc, data_source_t * qn)
 	  if (KI_TEMP == ts->ts_order_ks->ks_key->key_id)
 	    goto no;
 	}
+      if (IS_QN(ts, outer_seq_end_input))
+        {
+          outer_seq_end_node_t * ose = ts;
+          data_source_t * qn0 = qn;
+          for (qn0 = qn; qn0; qn0 = qn_next(qn0))
+            {
+              if (qn0 == ose->ose_sctr)
+                break;
+            }
+          if (!qn0)
+            goto no;
+        }
       if (IS_QN (ts, setp_node_input) && ((setp_node_t *)ts)->setp_distinct)
 	goto no;
     }

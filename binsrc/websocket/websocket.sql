@@ -49,6 +49,19 @@ create procedure WSOCK.DBA.WEBSOCKET_CLOSE_MESSAGE (in sid int, in code int, in 
 }
 ;
 
+create procedure WSOCK.DBA.SEND_PING (in sid bigint, in message varchar := null)
+{
+  declare ping varchar;
+  declare ses any;
+  message := subseq (message, 0, 125);
+  ping := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE(message);
+  aset (ping, 0, 137);
+  ses := http_recall_session (sid, 0);
+  ses_write (ping, ses);
+  http_keep_session (ses, sid);
+}
+;
+
 create procedure WSOCK.DBA.WEBSOCKET_ECHO (in message varchar, in args any)
 {
   return message;
@@ -85,7 +98,7 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
       payload_len := bit_and (secondByte, 127);
       if (not is_masked) -- client message must be masked
         signal ('22023', 'Request must be masked.');
-      if (opcode <> 1 and opcode <> 2 and opcode <> 8 and opcode <> 0 and opcode <> 9) -- supported: text, binary, close, ping, frame
+      if (opcode <> 1 and opcode <> 2 and opcode <> 8 and opcode <> 0 and opcode <> 9 and opcode <> 10) -- supported: text, binary, close, ping, pong, frame
         signal ('22023', sprintf ('A frame of type %d is not supported.', opcode));
 
       if (opcode = 0 and payload is null)
@@ -112,13 +125,19 @@ create procedure WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK (inout ses any, inout cd
         return;
       payload := concat (payload, result);
 
-      if (opcode = 9)
+      if (opcode = 9) -- ping, send pong
         {
           reply := WSOCK.DBA.WEBSOCKET_ENCODE_MESSAGE(payload);
           aset (reply, 0, 138);
           ses_write(reply, ses);
           payload := null;
           fin := 0; -- do not call service hook
+        }
+
+      if (opcode = 10) -- pong, do nothing
+        {
+          payload := null;
+          fin := 0;
         }
 
       if (fin = 1)

@@ -1516,6 +1516,7 @@ struct buffer_desc_s
   bp_ts_t		bd_delta_ts;
   char *                bd_set_wr_file;
   char *                bd_set_dirty_file;
+  short                 bd_set_dirty_line;
   thread_t *		bd_thr_el;
 #endif
 #ifdef PAGE_TRACE

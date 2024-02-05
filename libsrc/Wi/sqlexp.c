@@ -2887,7 +2887,7 @@ select_ref_generate (sql_comp_t * sc, ST * tree, dk_set_t * code,
 	    jmp_label_t setenv_end = sqlc_new_label (sc);
 
 	    state_slot_t *flag = ssl_new_inst_variable (sc->sc_cc, "user_aggr_notfirst", DV_SHORT_INT);
-	    state_slot_t *env = ssl_new_inst_variable (sc->sc_cc, "user_aggr_env", DV_UNKNOWN);
+	    state_slot_t *env = ssl_new_inst_variable (sc->sc_cc, "user_aggr_env", DV_ARRAY_OF_POINTER);
 	    state_slot_t *ret = ssl_new_inst_variable (sc->sc_cc, "user_aggr_ret", DV_UNKNOWN);
 	    caddr_t deflt_env;
 	    state_slot_t ** acc_args = (state_slot_t **) dk_alloc_box (sizeof (state_slot_t *) * (1 + BOX_ELEMENTS(tree->_.fn_ref.fn_arglist)), DV_ARRAY_OF_POINTER);

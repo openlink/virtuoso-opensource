@@ -7347,7 +7347,7 @@ get_csv_row_impl (caddr_t * qst, dk_session_t * in, encoding_handler_t *eh, cadd
   {
     if (CSV_ROW_NOT_STARTED == state)	/* when no one char can be read */
       error = CSV_ERR_END;
-    else if (CSV_FIELD_MAY_END == state)
+    else if (CSV_FIELD_MAY_END == state || CSV_FIELD_NOT_STARTED == state) /* not started means readed delimiter */
       {
 	/* end of file */
 	CSV_FIELD (row, fl);
