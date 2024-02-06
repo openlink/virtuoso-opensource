@@ -384,7 +384,8 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
           select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
               ?s rdf:type virtrdf:QuadMap .
               ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:qmgraph)` .
-              ?s virtrdf:qmTableName "" .
+              OPTIONAL { ?s virtrdf:qmTableName ?tb . }
+              FILTER (!BOUND(?tb))
               } ));
       if (qmid is null)
         return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));
