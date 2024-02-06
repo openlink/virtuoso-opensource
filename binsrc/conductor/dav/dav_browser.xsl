@@ -7609,7 +7609,7 @@
             <v:text name="dav_AZURE_key" xhtml_id="dav_AZURE_key" format="%s" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_onblur="javascript: WEBDAV.loadDriveBuckets(\'AZURE\', \'Container\', [\'account\', \'container\', \'key\']);">
               <v:before-data-bind>
                 <![CDATA[
-                  control.ufl_value := self.get_fieldProperty ('dav_AZURE_key', self.dav_path, 'AZURE', 'key', '');
+                  control.ufl_value := self.get_fieldProperty ('dav_AZURE_key', self.dav_path, 'virt:AZURE-key', '');
                 ]]>
               </v:before-data-bind>
             </v:text>
