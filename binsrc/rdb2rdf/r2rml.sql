@@ -646,7 +646,7 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
           declare col_desc any;
           col_desc := self.R2RML_GET_COL_DESC (triplesmap_iid, col);
           http (self.R2RML_REGISTER_USE_OF_TMAP (fld_idx, col_desc[0]), self.codegen_ses);
-          http (sprintf ('."%I"', col), self.codegen_ses);
+          http (sprintf ('."%I"', col_desc[2][0]), self.codegen_ses);
         }
     }
   else if (constfld is not null)
