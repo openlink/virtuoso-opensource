@@ -363,7 +363,7 @@ create method R2RML_GET_COL_DESC (in triplesmap_iid IRI_ID, in col_name varchar)
   all_metas := dict_get (self.triplesmap_metas_cache, triplesmap_iid, null);
   if (dict_get (self.triplesmap_metas_cache, triplesmap_iid, NULL) is null)
     signal ('R2RML', 'Undeclared data source <' || id_to_iri (triplesmap_iid) || '>');
-  res := get_keyword (col_name, all_metas[1], null);
+  res := get_keyword_ucase (col_name, all_metas[1], null);
   if (res is null)
     signal ('R2RML', 'Data source <' || id_to_iri (triplesmap_iid) || '> does not produce column "' || col_name || '"');
   res := vector (triplesmap_iid, all_metas[0], res);
