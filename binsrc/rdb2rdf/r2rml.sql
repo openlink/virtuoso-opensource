@@ -659,10 +659,8 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
 
 create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
 {
-  foreach (varchar dflttt in vector ('http://www.w3.org/ns/r2rml#IRI', 'http://www.w3.org/ns/r2rml#Literal')) do
-    {
       for (sparql define input:storage "" define output:valmode "LONG"
-        select ?triplesmap ?fldmap ?template ?termtype ?dt ?lang
+        select ?triplesmap ?fldmap ?template ?termtype ?col ?dt ?lang
         where { graph `iri(?:self.graph_iid)` {
                 ?triplesmap a rr:TriplesMap .
                   { ?triplesmap rr:subjectMap [ rr:graphMap ?fldmap ] }
@@ -678,13 +676,22 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
                 optional { ?fldmap rr:termType ?termtype . }
                 optional { ?fldmap rr:datatype ?dt . }
                 optional { ?fldmap rr:language ?lang . }
+                optional { ?fldmap rr:column ?col . }
               } }
         order by asc(str(?template)) asc(str(?dt)) asc(str(?lang)) asc(str(?triplesmap)) asc(str(?fldmap))
         ) do
         {
-          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), coalesce (__id2i ("termtype"), dflttt), "dt", __ro2sq ("lang"));
+          declare term_type varchar;
+          term_type := __id2i ("termtype");
+          if (term_type is null)
+            {
+              if ("col" is null and "dt" is null and "lang" is null)
+                term_type := 'http://www.w3.org/ns/r2rml#IRI';
+              else
+                term_type := 'http://www.w3.org/ns/r2rml#Literal';
+            }
+          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), term_type, "dt", __ro2sq ("lang"));
         }
-    }
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype
     where { graph `iri(?:self.graph_iid)` {
@@ -700,7 +707,8 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:termType ?termtype . }
           } } ) do
     {
-      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
+      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}',
+        coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
     }
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype ?dt ?lang
@@ -850,7 +858,17 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
         }
       else
           http (',\n                            ', self.codegen_ses);
-      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"), coalesce (__rdf_strsqlval("ott"), 'http://www.w3.org/ns/r2rml#Literal'), "odatatype", __rdf_strsqlval("olang"));
+      declare term_type varchar;
+      term_type := __rdf_strsqlval ("ott");
+      if (term_type is null)
+        {
+          if ("ocol" is null and "odatatype" is null and "olang" is null)
+            term_type := 'http://www.w3.org/ns/r2rml#IRI';
+          else
+            term_type := 'http://www.w3.org/ns/r2rml#Literal';
+        }
+      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"),
+        term_type, "odatatype", __rdf_strsqlval("olang"));
     }
 }
 ;
