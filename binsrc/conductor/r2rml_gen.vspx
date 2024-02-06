@@ -64,9 +64,10 @@
                 self.pgraph1 := sprintf ('urn:%s:%s', h[1], trim (replace (h[2], '/', ':'), ':'));
               }
             self.graph := trim (self.graph);
-            drop_stmt := sprintf ('SPARQL DROP QUAD MAP <%s> ;\n\nSPARQL\n', self.graph);
-            view_def := DB.DBA.R2RML_MAKE_QM_FROM_G (self.graph, self.tgraph1);
-            self.body_v := drop_stmt || view_def || '\n;';
+            drop_stmt := RDF_VIEW_DROP_STMT_BY_GRAPH(self.tgraph1);
+            if (length (drop_stmt) > 1) concat (drop_stmt, ';\n\n');
+            view_def := concat ('SPARQL\n', DB.DBA.R2RML_MAKE_QM_FROM_G (self.graph, self.tgraph1));
+            self.body_v := concat (drop_stmt, view_def , '\n;');
 
           ]]>
         </v:before-data-bind>
@@ -116,11 +117,12 @@
                       <v:on-post>
                         <![CDATA[
                           declare arr, inx, res, stat, msg, meta, data, source, tmp_res any;
+                          declare backup_name varchar;
 
                           stat := '00000';
                           arr := sql_split_text (self.cr_view.ufl_value);
-                          res := make_array (length (arr), 'any');
-
+                          res := make_array (length (arr) + 1, 'any');
+                          backup_name := DB.DBA.RDF_BACKUP_METADATA(0,sprintf ('urn:sys:backup:%ld',unix_timestamp()));
                           inx := 0;
                           foreach (varchar q in arr) do
                           {
@@ -132,6 +134,7 @@
                               res[inx] := vector (vector (stat, msg));
                               inx := inx + 1;
                           }
+                          res[inx] := vector (vector ('BACKUP', backup_name));
 
                           source := self.graph;
                           if (self.rdb_sync.ufl_selected)

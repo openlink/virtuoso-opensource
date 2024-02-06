@@ -82,12 +82,14 @@
 	      declare stat, msg varchar;
 	      declare res, arr, data, meta, gr, path, ret any;
 	      declare inx int;
+              declare backup_name varchar;
 
 	      path := concat('/DAV/temp/', self.sid, '.sql');
 	      DB.DBA.YACUTIA_DAV_DELETE (path, 1, 0);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
 	      DB.DBA.YACUTIA_DAV_RES_UPLOAD (path, Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v, '', '110110000NN', 'dav', 'administrators', now(), now(), null);
 
+              backup_name := DB.DBA.RDF_BACKUP_METADATA(0,sprintf ('urn:sys:backup:%ld',unix_timestamp()));
 	      arr := sql_split_text (Y_RDF_VIEW_DROP_STMT (self.base_url) || self.body_v);
 	      res := make_array (length (arr) + 1, 'any');
 
@@ -127,6 +129,7 @@
 	         from <%S> { ?s rdfs:subPropertyOf virtrdf:label }', gr), stat, msg, vector (), 0, meta, data);
 	         rdfs_rule_set ('virtrdf-label', 'virtrdf-label');
 	       }
+             res := vector_concat (res, vector (vector (vector ('BACKUP', backup_name))));
 	     exec ('checkpoint');  
 	     self.text_e := 1;
 	     self.exec_ret := res;
@@ -238,7 +241,7 @@
 	     }
 	    if (self.exec_it = 1)
 	      {
-	        self.exec_all (self.exec);
+              self.exec_all (self.exec_btn);
                 self.exec_it := 0;
 	      }
 	    ]]>
@@ -495,7 +498,7 @@
               </v:on-post>
       </v:button>
 
-      <v:button action="simple" name="exec" value="Execute">
+            <v:button action="simple" name="exec_btn" value="Execute">
               <v:on-post>
                 <![CDATA[
 	      self.exec_all (control);
