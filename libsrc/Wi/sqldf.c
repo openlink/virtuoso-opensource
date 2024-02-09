@@ -5087,7 +5087,7 @@ sqlo_place_table (sqlo_t * so, df_elt_t * tb_dfe)
 {
   op_table_t * ot = dfe_ot (tb_dfe);
   dk_set_t nj_preds = NULL;
-  dk_set_t preds = NULL, large_preds = NULL;
+  dk_set_t preds = NULL, large_preds = NULL, contr_preds;
   df_elt_t *text_pred = NULL;
   tb_dfe->dfe_is_placed = DFE_PLACED;
   if (DFE_TABLE == tb_dfe->dfe_type && tb_dfe->_.table.is_leaf)
@@ -5193,27 +5193,25 @@ next_pred:
       t_set_push (&preds, text_pred);
     }
   sqlo_place_dfe_after (so, tb_dfe->dfe_locus, so->so_gen_pt, tb_dfe);
+  contr_preds = preds;
+  if (ot->ot_join_preds && !ot->ot_is_outer)
     {
-      dk_set_t contr_preds = preds;
-      if (ot->ot_join_preds && !ot->ot_is_outer)
-	{
-	  contr_preds = t_NCONC (t_set_copy (contr_preds), t_set_copy (ot->ot_join_preds));
-	}
-      if (large_preds)
-	{
-	  contr_preds = t_NCONC (t_set_copy (contr_preds), t_set_copy (large_preds));
-	}
-      sqlo_tb_check_contradiction (so, tb_dfe, contr_preds);
-      if (!so->so_this_dt->ot_is_contradiction)
-	sqlo_tb_check_invariant_preds (so, tb_dfe, contr_preds);
+      contr_preds = t_NCONC (t_set_copy (contr_preds), t_set_copy (ot->ot_join_preds));
     }
+  if (large_preds)
+    {
+      contr_preds = t_NCONC (t_set_copy (contr_preds), t_set_copy (large_preds));
+    }
+  sqlo_tb_check_contradiction (so, tb_dfe, contr_preds);
+  if (!so->so_this_dt->ot_is_contradiction)
+    sqlo_tb_check_invariant_preds (so, tb_dfe, contr_preds);
 
   if (!ST_P (ot->ot_dt, PROC_TABLE))
     {
-      if (ot->ot_is_outer)
+      if (ot->ot_is_outer && (ot->ot_join_preds || !so->so_identity_joins)) /* quietcast option is special case see so flag */
 	{
 	  nj_preds = preds;
-	  preds = ot->ot_join_preds;
+          preds = ot->ot_join_preds;
 	}
       else if (ot->ot_join_preds)
 	{
@@ -5241,9 +5239,6 @@ next_pred:
 	{
 	  df_elt_t * dt_dfe;
 	  dt_dfe = so->so_this_dt->ot_work_dfe; /* the after join test is in the loc of the enclosing dt, not of the outer table */
-	  /*if (tb_dfe->_.sub.generated_dfe->dfe_type != DFE_DT)
-	    SQL_GPF_T1 (so->so_sc->sc_cc,
-		"an outer union must be wrapped into a dt in order to have an after join test");*/
 	  if (tb_dfe->_.sub.generated_dfe->dfe_type == DFE_DT)
 	    {
 	      tb_dfe->_.sub.generated_dfe->_.sub.after_join_test =
@@ -5262,15 +5257,6 @@ next_pred:
     {
       tb_dfe->_.table.all_preds = preds;
       so->so_gen_pt = tb_dfe;
-#if 0 /*GK: no need to */
-      DO_SET (op_virt_col_t *, vc, &ot->ot_virtual_cols)
-	{
-	  df_elt_t *vc_dfe = sqlo_df_virt_col (so, vc);
-	  if (vc->vc_is_out)
-	    sqlo_place_exp (so, tb_dfe->dfe_super, vc_dfe);
-	}
-      END_DO_SET ();
-#endif
       sqlo_tb_col_preds (so, tb_dfe, preds, nj_preds);
       if (nj_preds)
 	{
