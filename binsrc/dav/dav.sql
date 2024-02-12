@@ -7548,7 +7548,7 @@ create procedure DB.DBA.DAV_HREF_URL (
     else
     {
       http (delimiter, ss);
-      http_url (charset_recode (part, 'UTF-8', '_WIDE_'), null, ss);
+      http_uri (charset_recode (part, 'UTF-8', '_WIDE_'), null, ss);
       delimiter := '/';
     }
   }
