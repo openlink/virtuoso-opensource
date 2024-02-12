@@ -2361,17 +2361,17 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
   chash_page_t *chp = cha->cha_current;
   int part, n_slots = BOX_ELEMENTS (ha->ha_slots);
   SET_THR_TMP_POOL (cha->cha_pool);
-  if (!hi->hi_memcache)
-    {
-      hi->hi_memcache = t_id_hash_allocate (MIN (400000, cha->cha_distinct_count),
-	  sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
-      hi->hi_memcache_from_mp = 1;
-      id_hash_set_rehash_pct (hi->hi_memcache, 120);
-    }
-  if (!hi->hi_memcache_from_mp)
-    GPF_T1 ("writing mp boxes in non-mp memcache");
   QR_RESET_CTX
   {
+    if (!hi->hi_memcache)
+      {
+        hi->hi_memcache = t_id_hash_allocate (MIN (400000, cha->cha_distinct_count),
+            sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
+        hi->hi_memcache_from_mp = 1;
+        id_hash_set_rehash_pct (hi->hi_memcache, 120);
+      }
+    if (!hi->hi_memcache_from_mp)
+      GPF_T1 ("writing mp boxes in non-mp memcache");
   for (part = 0; part < MAX (cha->cha_n_partitions, 1); part++)
     {
       chash_t *cha_p = CHA_PARTITION (cha, part);
