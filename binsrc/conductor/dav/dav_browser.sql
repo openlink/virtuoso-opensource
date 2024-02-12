@@ -1038,21 +1038,14 @@ create procedure WEBDAV.DBA.path_escape (
   in path varchar,
   in delimiter varchar := '/')
 {
-  declare parts any;
-  declare retValue varchar;
-
+  declare ses any;
   if (DB.DBA.is_empty_or_null (path))
     return path;
-
-  retValue := '';
-  parts := split_and_decode (path, 0, '\0\0' || delimiter);
-  foreach (varchar part in parts) do
-  {
-    retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
-  }
-  retValue := subseq (retValue, 0, length(retValue)-1);
-
-  return retValue;
+  ses := string_output ();
+  if (isstring (path))
+    __box_flags_set (path, 2);
+  http_dav_url (path, null, ses);
+  return string_output_string (ses);
 }
 ;
 
