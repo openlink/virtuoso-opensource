@@ -1822,6 +1822,7 @@ create procedure WS.WS.PUT (
 
   _atomPub := 0;
   content_type := WS.WS.FINDPARAM (lines, 'Content-Type');
+  content_type := trim (content_type, '\r\n ');
   content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
   _method := http_request_get ('REQUEST_METHOD');
   rc_type := 'R';
@@ -7523,36 +7524,12 @@ create procedure DB.DBA.LDP_REFRESH (in path varchar, in enabled integer := 0)
 create procedure DB.DBA.DAV_HREF_URL (
   in href varchar)
 {
-  --href := replace (href, ' ', '%20');
-
-  -- return charset_recode (href, 'UTF-8', '_WIDE_');
-
-  -- declare ss any;
-  --
-  -- ss := string_output ();
-  -- http_dav_url (charset_recode (href, 'UTF-8', '_WIDE_'), null, ss);
-  --
-  -- return string_output_string (ss);
-  declare delimiter char;
-  declare ss, parts any;
-
-  ss := string_output ();
-  parts := split_and_decode (href, 0, '\0\0/');
-  delimiter := '';
-  foreach (any part in parts) do
-  {
-    if (part = '')
-    {
-      http ('/', ss);
-    }
-    else
-    {
-      http (delimiter, ss);
-      http_uri (charset_recode (part, 'UTF-8', '_WIDE_'), null, ss);
-      delimiter := '/';
-    }
-  }
-  return string_output_string (ss);
+  declare ses any;
+  ses := string_output ();
+  if (isstring (href))
+    __box_flags_set (href, 2);
+  http_dav_url (href, null, ses);
+  return string_output_string (ses);
 }
 ;
 
