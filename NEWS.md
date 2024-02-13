@@ -1,5 +1,120 @@
 # NEWS
 
+## February 13, 2024, v7.2.12:
+
+  * Virtuoso Engine
+    - Added JSON-LD parser mode for handling blank nodes
+    - Added serialization support for missing datatypes in obj2json
+    - Added statistics and setting to limit mem pool for chash
+    - Added support for dumping `XML` and `varbinary` data in JSON
+    - Added support for fetching `attributes` and `attributes_info` on user defined types
+    - Added `create user .. with password` and `identified by` syntax
+    - Added uptime, virtual memory size, and page faults to status() output
+    - Updated CSV functionality
+    - Fixed NaN behaviour in cmp_double same as ordering (fixes #1213)
+    - Fixed check constraint cannot use CONTAINS text predicate (fixes #1177)
+    - Fixed check for date/time/datetime/timestamp datatypes (fixes #1206)
+    - Fixed check for table def (fixes #1212)
+    - Fixed check if prev has a key (fixes #1216)
+    - Fixed check number of arguments to geo contains (fixes #1209)
+    - Fixed check values before copying invalid data (fixes #1208)
+    - Fixed get argument before place gets mangled when serializing ANY (fixes #1174)
+    - Fixed issue getting lock information for status()
+    - Fixed issue mixing numeric and int boxes in expression (fixes #1194, #1198)
+    - Fixed issue mixing vectored and non vectored ops (fixes #1184)
+    - Fixed issue on cube/rollup with constant in select list (fixes #1195, #1197)
+    - Fixed issue right outer join with constant false (fixes #1214)
+    - Fixed issue skipping sort node on outer as hash join may put right side at top
+    - Fixed issue when hash source is not available (fixes #1193)
+    - Fixed issue with TOP 1 on a cursor
+    - Fixed issue with TOP not working when DISTINCT is used (fixes #1158)
+    - Fixed issue with all const in group (fixes #1204)
+    - Fixed issue with bad index op ref in table dft (fixes #1190, #1191)
+    - Fixed issue with freetext index; missing check if term is mergable
+    - Fixed issue with function inside control expression
+    - Fixed issue with missing cast on return type (fixes #1172)
+    - Fixed issue with outer hash build (fixes #1185)
+    - Fixed issue with outer hash join with GROUP BY via hash source
+    - Fixed issue with printf style functions not using explicit format string (fixes #1199)
+    - Fixed issue with scalar subq (fixes #1183)
+    - Fixed issue with select (select ... union ...) or similar expressions
+    - Fixed issue with setting type before col assign function (fixes #1178)
+    - Fixed issue with sql fragment that has div operation
+    - Fixed issue with status for non dba user
+    - Fixed issue with user aggregates
+    - Fixed issue with with dfe true/false shortcuts (fixes #1196)
+    - Fixed issues in orderby/groupby (fixes #1210)
+    - Fixed issues with unix timestamp
+    - Fixed missing argument check to ORDER BY and GROUP BY (fixed #1182)
+    - Fixed missing check for freetext field (fixes #1220)
+    - Fixed obj2json and obj2xml should be public functions
+    - Fixed remove duplicate keys in oby/gby (fixes #1205)
+    - Fixed sprintf format for windows (fixes #1203)
+
+  * SPARQL
+    - Added support for GRAPH decorations in TriG (fixes #1169)
+    - Fixed issue in ontology generation
+    - Fixed issue with drop quad map graph
+    - Fixed issue with restriction on number of deleted triples (fixes #1164)
+    - Fixed issue with turtle/n-triples media type legacy and recent spec. compatibility (fixes #1187)
+    - Fixed issue with very long sparql queries
+    - Fixed issues with `Default Graph IRI` from table `SYS_SPARQL_HOSTS` (fixes #1086)
+    - Fixed `virtrdf:Geometry` should be replaced with wktLiteral (fixes #806)
+
+  * Web Server and DAV
+    - Added HTTP CORs pattern support
+    - Added support to avoid redundant check for 401 handlers
+    - Added support for Azure Storage Account as a DET mounting option
+    - Added support for Access-Control-Allow-Methods different than Allow, for AJAX CORs
+    - Added `security_realm` to access realm from VD
+    - Added support for ping/pong for websock
+    - Added support for binary frames in websocket
+    - Fixed FS directory browsing does not need SQL/VSP user account
+    - Fixed HTTP 101/204/304 responses MUST not return content
+    - Fixed LDP sparql queries delete/insert should search physical graph only
+    - Fixed check DET HTTP status code
+    - Fixed check for missing graph
+    - Fixed clear http method at session cleanup
+    - Fixed do not use gzip if no content is allowed
+    - Fixed http log records partial request over 4k
+    - Fixed issue checking `is_https` on websocket
+    - Fixed issue getting dtp in rdf box case
+    - Fixed issue when ODS is not installed
+    - Fixed issue when response is chunked/gzip by app
+    - Fixed issue with `DAV_LINK` double escape UTF-8
+    - Fixed issue with bad Accept header
+    - Fixed issue with double free
+    - Fixed issue with updating permissions on wiki
+    - Fixed issues with encoding of DAV URLs
+    - Fixed websocket error message indicating what frame type is
+    - Fixed websocket framing on text messages
+    - Fixed missing entry for .md text/markdown
+
+  * Faceted Browser
+    - Fixed grants must be added to `SPARQL_SELECT` role
+    - Removed `rdf_resolve_labels_s` case
+
+  * Conductor
+    - Added support for password show/hide in login dialog
+    - Added backup before rdf view creation
+    - Added auto-commit mode flag
+    - Fixed CSV import accessing outside of header array
+    - Fixed error message on page
+    - Fixed import w/o columns detected should not be syntax error
+    - Fixed issue refreshing status variables
+    - Fixed mismatch of a URL parameter and control
+
+  * R2RML
+    - Added quap map iri parameter
+    - Fixed rr:template by default is IRI unless column, dt or lang are given
+    - Fixed complete table name before quoting
+    - Fixed case to ucase for case insensitive lookup
+    - Fixed issue with column CaSeMoDe
+
+  * GraphQL
+    - Fixed issue when field type cannot be detected
+
+
 ## September 26, 2023, v7.2.11:
 
   * Virtuoso Engine
