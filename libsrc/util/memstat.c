@@ -23,9 +23,16 @@
  *
  */
 
-#include "libutil.h"
+
+#ifdef _MSC_VER
+typedef __int64 int64_t;
+#else
+#include <stdint.h>
+#endif
 
 #ifdef linux
+#include <stdio.h>
+#include <unistd.h>
 #include <sys/sysinfo.h>
 #endif
 #ifdef __APPLE__
@@ -41,10 +48,10 @@
 
 /* return VmSize in KBytes, for macOS uses footprint which represents memory usage of the process */
 
-int64
+int64_t
 get_proc_vm_size ()
 {
-  int64 proc_size = 0;
+  int64_t proc_size = 0;
 #if defined (linux)
   static long page_size;
   FILE *file = fopen("/proc/self/statm", "r"); /* only reliable way to get proper number as in ps/top etc. */
