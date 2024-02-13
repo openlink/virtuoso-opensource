@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -5574,7 +5574,7 @@ create procedure  y_csv_get_cols (inout ss any, in hr int, in offs int, in opts 
       for (inx := offs; inx < length (h); inx := inx + 1)
        {
 	 _row := h[inx];
-         for (j := 0; j < length (_row); j := j + 1)
+         for (j := 0; j < __min(length (_row), length (res)); j := j + 1)
 	   {
 	     if (res[j][1] is null and not (isstring (_row[j]) and _row[j] = '') and _row[j] is not null)
                res[j][1] := __tag (_row[j]);

@@ -24,7 +24,7 @@
   if (upgrade = 'websocket' and sec_websocket_version = '13')
    {
      -- set callback for recv
-     http_on_message (null, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector ('WSOCK.DBA.WEBSOCKET_ECHO', sid));
+     http_on_message (null, 'WSOCK.DBA.WEBSOCKET_ONMESSAGE_CALLBACK', vector ('WSOCK.DBA.WEBSOCKET_ECHO', sid, null));
      -- cache session and send http status
      http_keep_session (null, sid, 0);
 

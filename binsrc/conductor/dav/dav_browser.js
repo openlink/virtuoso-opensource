@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -381,7 +381,7 @@ WEBDAV.updateLabel = function(value)
       OAT.Dom.hide('tab_'+i);
   }
 
-  if (['', 'rdfSink', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP'].indexOf(value) === -1) {
+  if (['', 'rdfSink', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'FTP', 'LDP', 'AZURE'].indexOf(value) === -1) {
     OAT.Dom.hide('tr_dav_ldp');
   } else {
     OAT.Dom.show('tr_dav_ldp');
@@ -411,7 +411,7 @@ WEBDAV.updateLabel = function(value)
   if (!value)
     return;
 
-  hideLabel(4, 20);
+  hideLabel(4, 21);
   if (value == 'oMail')
     showLabel(4, 4);
   else if (value == 'PropFilter')
@@ -444,6 +444,8 @@ WEBDAV.updateLabel = function(value)
     showLabel(19, 19);
   else if (value == 'LDP')
     showLabel(20, 20);
+  else if (value == 'AZURE')
+    showLabel(21, 21);
 }
 
 
@@ -861,6 +863,7 @@ WEBDAV.updateRdfGraph = function ()
   updateRdfGraphInternal('RACKSPACE');
   updateRdfGraphInternal('FTP');
   updateRdfGraphInternal('LDP');
+  updateRdfGraphInternal('AZURE');
 
   $('dav_name_save').value = escape($v('dav_name'));
 }

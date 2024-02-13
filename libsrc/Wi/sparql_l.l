@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -546,6 +546,7 @@ SPAR_PARAMNAME		(([A-Z]+"::")?(({SPAR_SQLNAME}("."{SPAR_SQLNAME})?)|(":"{SPAR_SQ
 <SPARQL,SPARQL_AFTER_COUNT,SPARQL_AFTER_IDENTIFIED,SPARQL_AFTER_NOT,SPARQL_AFTER_WHERE>[ \t]+		{ }
 
 <SPARQL_SQL_FRAGMENT>"/\*"	{ BEGIN (SPARQL_SQL_COMMENT); yymore(); }
+<SPARQL_SQL_FRAGMENT>"/"	{ yymore(); }
 <SPARQL_SQL_FRAGMENT><<EOF>>	{ sparyyerror ("Unterminated SQL fragment after WHERE keyword"); }
 
 <SPARQL_SQL_COMMENT>"/\*"  { sparyyerror ("Nested C style comments not supported"); }

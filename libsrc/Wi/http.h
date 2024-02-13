@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -79,7 +79,7 @@ typedef struct ws_http_map_s
     caddr_t 	hm_htkey;
     caddr_t     hm_url_rewrite_rule;
     int		hm_url_rewrite_keep_lpath;
-    id_hash_t *	hm_cors;
+    dk_set_t 	hm_cors;
     id_hash_t * hm_cors_allow_headers;
     int 	hm_cors_restricted;
     caddr_t     hm_expiration_fn;
@@ -89,6 +89,7 @@ typedef struct ws_http_map_s
 #endif
 
 #define HTTP_MAX_METHOD 21
+#define HTTP_MAX_REQUEST_LEN 10000
 
 typedef struct ws_connection_s
   {

@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -11802,7 +11802,7 @@ bif_soap_init (void)
   bif_define ("soap_call_new", bif_soap_call_new);
   bif_define ("soap_receive", bif_soap_receive);
   bif_define ("soap_server", bif_soap_server);
-  bif_define ("soap_box_structure", bif_soap_box_structure);
+  bif_define_ex ("soap_box_structure", bif_soap_box_structure, BMD_ALIAS, "json_box_object", /* UNKNOWN, NOT BMD_RET_TYPE, &bt_any, */ BMD_DONE);
   bif_define ("soap_boolean", bif_soap_boolean);
   bif_define_ex ("soap_make_error", bif_soap_make_error, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("soap_sdl", bif_soap_sdl, BMD_RET_TYPE, &bt_varchar, BMD_DONE);

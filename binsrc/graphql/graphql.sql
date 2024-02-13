@@ -976,7 +976,7 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
               if (sdl_name is not null)
                 http (sprintf (' ?%s :%s "%s" . \n', parent_name, var_name, sdl_name), triples);
               else
-              http (sprintf (' ?%s :%s `bif:iri_split(?%s,0,0,1)` . \n', parent_name, var_name, var_name), triples);
+                http (sprintf (' ?%s :%s `bif:iri_split(coalesce(?%s,""),0,0,1)` . \n', parent_name, var_name, var_name), triples);
 
               http (sprintf (' { ?%s rdf:type ?%s . \n', parent_name, var_name), patterns);
             }

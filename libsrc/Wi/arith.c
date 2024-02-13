@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -382,6 +382,13 @@ cmp_double (double x1, double x2, double epsilon)
   double difference;
   double delta;
   int exponent;
+
+  if (isnan(x1) && isnan(x2))
+    return DVC_MATCH;
+  if (isnan(x2))
+    return DVC_LESS;
+  if (isnan(x1))
+    return DVC_GREATER;
 
   /*
    *  Get exponent(max(fabs(x1), fabs(x2))) and store it in exponent.

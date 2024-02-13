@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2023 OpenLink Software
+ -  Copyright (C) 1998-2024 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@
     <![CDATA[
       declare _state, _msg varchar;
       exec('status (''rhck'')', _state, _msg);
-      status();
+      status('');
     ]]>
   </v:before-data-bind>
   <div id="monitor_tab">
@@ -57,7 +57,11 @@
       </tr>
       <tr class="listing_row_even">
         <td class="listing_col_label">Server instance identifier for replication</td>
-        <td class="listing_col"><?V sys_stat('st_repl_serv_name') ?></td>
+       <?vsp if (sys_stat('st_has_vdb') = 1) { ?>
+          <td class="listing_col"><?V sys_stat('st_repl_serv_name') ?></td>
+       <?vsp } else { ?>
+         <td class="listing_col">N/A</td>
+       <?vsp } ?>
       </tr>
       <?vsp
         declare lown, lconnections varchar;

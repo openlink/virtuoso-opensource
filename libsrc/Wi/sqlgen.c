@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1571,8 +1571,10 @@ sqlg_hash_source (sqlo_t * so, df_elt_t * tb_dfe, dk_set_t * pre_code)
   int is_fill_dt = DFE_DT == tb_dfe->_.table.hash_filler->dfe_type;
   op_table_t * ot = tb_dfe->_.table.ot;
   setp_node_t * setp = ot->ot_hash_filler;
-  hash_area_t * ha = setp->setp_ha;
+  hash_area_t * ha = setp ? setp->setp_ha : NULL;
   SQL_NODE_INIT (hash_source_t, hs, hash_source_input, hash_source_free);
+  if (!ha)
+    SQL_GPF_T(so->so_sc->sc_cc);
   hs->hs_cardinality = tb_dfe->dfe_arity;
   hs->hs_filler = setp->setp_fref;
   hs->hs_part_min = hs->hs_filler->fnr_hash_part_min;
@@ -2809,6 +2811,9 @@ dfe_unit_gb_dependant (sqlo_t *so, df_elt_t * dfe,
 {
   int inx;
   df_elt_t *dfe_super;
+
+  if (DFE_SHORTCUT(dfe))
+    return;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
       dfe_list_gb_dependant (so, dfe, terminal, super, res, out, term_found);
@@ -3239,7 +3244,8 @@ always_null_agg_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon)
 	if (!sqlg_tree_has_aggregate (item))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
@@ -3266,7 +3272,8 @@ always_null_arr_gen (sql_comp_t* sc, dk_set_t code, ST ** etalon, ST ** subseq)
 	if (inx2 != BOX_ELEMENTS (subseq))
 	  continue;
         ssl = scalar_exp_generate (sc, item, &code);
-	dk_set_push (&ns, ssl);
+        if (SSL_CONSTANT != ssl->ssl_type)
+          dk_set_push (&ns, ssl);
       }
     END_DO_BOX;
     return ns;
@@ -3337,6 +3344,18 @@ sqlg_may_parallelize (sql_comp_t * sc, data_source_t * qn)
 	  if (KI_TEMP == ts->ts_order_ks->ks_key->key_id)
 	    goto no;
 	}
+      if (IS_QN(ts, outer_seq_end_input))
+        {
+          outer_seq_end_node_t * ose = ts;
+          data_source_t * qn0 = qn;
+          for (qn0 = qn; qn0; qn0 = qn_next(qn0))
+            {
+              if (qn0 == ose->ose_sctr)
+                break;
+            }
+          if (!qn0)
+            goto no;
+        }
       if (IS_QN (ts, setp_node_input) && ((setp_node_t *)ts)->setp_distinct)
 	goto no;
     }
@@ -3486,6 +3505,8 @@ sqlg_parallel_ts_seq (sql_comp_t * sc, df_elt_t * dt_dfe, table_source_t * ts, f
 		    break;
 		}
 	    }
+          if (!ts)
+            return;
 	  continue;
 	}
       if (IS_TS (ts))
@@ -4084,6 +4105,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
     {
       state_slot_t *ssl;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
+      if (NULL != dk_set_member (setp->setp_keys, ssl))
+        continue;
       NCONCF1 (setp->setp_keys, ssl);
       NCONCF1 (setp->setp_key_is_desc, spec->_.o_spec.order);
       if (is_gb)
@@ -4091,11 +4114,11 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	  df_elt_t *col_dfe = sqlo_df (so, spec->_.o_spec.col);
 	  if (ssl == col_dfe->dfe_ssl)
 	    {
-		      sqlc_copy_ssl_if_constant (sc, &ssl, &code, setp);
+		      sqlc_copy_ssl_if_constant_or_param (sc, &ssl, &code, setp);
 	      col_dfe->dfe_ssl = ssl;
 	    }
 	  else
-		    sqlc_copy_ssl_if_constant (sc, &ssl, &code, setp);
+		    sqlc_copy_ssl_if_constant_or_param (sc, &ssl, &code, setp);
 	  NCONCF1 (out_slots, ssl);
 	  NCONCF1 (out_cols, nth_part);
 	}
@@ -4211,7 +4234,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
 	  if (out)
 	    {
 	      ptrlong nth_key = dk_set_position (setp->setp_keys, (caddr_t) out);
-		      sqlc_copy_ssl_if_constant (sc, &ssl_out[inx], &code, setp);
+		      sqlc_copy_ssl_if_constant_or_param (sc, &ssl_out[inx], &code, setp);
 	      if (-1 == nth_key)
 		{
 		  if (!dk_set_member (out_slots, ssl_out[inx]))
@@ -4261,7 +4284,7 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
       if (out)
 	{
 	  ptrlong nth_key = dk_set_position (setp->setp_keys, (caddr_t) out);
-		  sqlc_copy_ssl_if_constant (sc, &dep_dfe->dfe_ssl, &code, setp);
+		  sqlc_copy_ssl_if_constant_or_param (sc, &dep_dfe->dfe_ssl, &code, setp);
 	  if (SSL_CONSTANT == out->ssl_type)
 	    continue;
 	  if (-1 == nth_key)
@@ -4423,6 +4446,9 @@ st_compare (const void *_st1, const void *_st2)
 {
   ST * st1 = (*((ST**) _st1))->_.o_spec.col;
   ST * st2 = (*((ST**) _st2))->_.o_spec.col;
+
+  if (!ST_COLUMN (st1, COL_DOTTED) || !ST_COLUMN (st2, COL_DOTTED))
+    return -1;
 
   if (!st1->_.col_ref.prefix)
     {
@@ -5280,7 +5306,8 @@ qr_skip_node (sqlo_t * so, query_t * qr)
       if ((qn_input_fn) select_node_input_subq  == f || (qn_input_fn)select_node_input == f)
 	{
 	  sel = (select_node_t *) qn;
-	  break;
+          if (sel->sel_top_skip || (is_vec && sel->sel_top))
+            break;
 	}
       if (IS_TS (qn))
 	last_ts = (table_source_t *)qn;
@@ -5309,8 +5336,8 @@ qr_skip_node (sqlo_t * so, query_t * qr)
 	  sk->sk_top = sel->sel_top;
 	  sel->sel_top = NULL;
 	  sk->sk_set_no = sel->sel_set_no;
-	  if (last_ts && !sk->sk_top_skip && sk->sk_top && SSL_CONSTANT == sk->sk_top->ssl_type
-	      && 1 == unbox (sk->sk_top->ssl_constant))
+	  if (last_ts && !sk->sk_top_skip && sk->sk_top && SSL_CONSTANT == sk->sk_top->ssl_type && 1 == unbox (sk->sk_top->ssl_constant) 
+              && !(so->so_sc->sc_in_cursor_def && last_ts->src_gen.src_after_test))
 	    last_ts->ts_max_rows = 1;
 	}
       else
@@ -5596,6 +5623,8 @@ sqlg_dt_query_1 (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** targ
     default:
       SQL_GPF_T1 (so->so_sc->sc_cc, "only a dfe_dt is allowed at top for sqlg");
     }
+  if (!head)
+    SQL_GPF_T(so->so_sc->sc_cc);
   qr->qr_head_node = head;
   sqlg_place_dpipes (so, &qr->qr_head_node);
   sqlg_multistate_code (so->so_sc, &qr->qr_head_node, so->so_sc->sc_order == TS_ORDER_KEY);

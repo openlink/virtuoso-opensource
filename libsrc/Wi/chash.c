@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -510,6 +510,8 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
   int elt_sz, inx, ninx;
   dtp_t chdtp = cha->cha_sqt[nth].sqt_dtp;
   char is_fill = HA_FILL == cha->cha_ha->ha_op;
+  if (!dc)
+    sqlr_new_error ("42000", "VEC..", "hash fill outer not supported");
   if (clear_nulls)
     {
       /* a group by or distinct has null flags for every col, a hash filler has one per row, so the first null skips the row */
@@ -1887,6 +1889,16 @@ cha_gb_dtp (dtp_t dtp, int is_key, gb_op_t * go)
     }
 }
 
+int64 chash_mempool_size_limit = ~0LL;
+
+void
+chash_error (mem_pool_t *mp, void *cbk_env)
+{
+  log_error ("Hash memory pool uses " BOXINT_FMT " over the limit " BOXINT_FMT, mp->mp_bytes, chash_mempool_size_limit);
+  sqlr_new_error ("42000", "CHAME", "Hash memory pool uses " BOXINT_FMT " over the limit " BOXINT_FMT, 
+      mp->mp_bytes, chash_mempool_size_limit);
+}
+
 index_tree_t *
 DBG_NAME(cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 card)
 {
@@ -1906,6 +1918,13 @@ DBG_NAME(cha_allocate) (DBG_PARAMS setp_node_t * setp, caddr_t * inst, int64 car
   memset (cha, 0, sizeof (chash_t));
   cha->cha_pool = hi->hi_pool;
   cha->cha_pool->mp_block_size = chash_block_size;
+  if (chash_mempool_size_limit != ~0LL)
+    {
+      mem_pool_t * mp = cha->cha_pool;
+      mp->mp_size_cap.limit = chash_mempool_size_limit;
+      mp->mp_size_cap.cbk = chash_error;
+      mp->mp_size_cap.cbk_env = (void *)inst;
+    }
   if (setp->setp_fref && setp->setp_fref->fnr_parallel_hash_fill)
     cha->cha_is_parallel = 1;
   cha->cha_n_keys = ha->ha_n_keys;
@@ -2018,12 +2037,16 @@ cha_clear (chash_t * cha, hash_index_t * hi)
 }
 
 
+int64 chash_mempool_size_max_used;
+
 void
 cha_free (chash_t * cha)
 {
   mutex_enter (&chash_rc_mtx);
   chash_space_avail += cha->cha_reserved;
   mutex_leave (&chash_rc_mtx);
+  if (chash_mempool_size_max_used < cha->cha_pool->mp_bytes)
+     chash_mempool_size_max_used = cha->cha_pool->mp_bytes;
   mp_free (cha->cha_pool);
 }
 
@@ -2258,6 +2281,8 @@ setp_chash_distinct (setp_node_t * setp, caddr_t * inst)
       if (!cha)
 	return 0;
     }
+  if (cha && cha->cha_n_keys != ha->ha_n_keys)
+    goto no;
   if (cha && cha->cha_oversized)
     goto no;
   if (ha->ha_n_keys >= CHASH_GB_MAX_KEYS)
@@ -2336,17 +2361,17 @@ chash_to_memcache (caddr_t * inst, index_tree_t * tree, hash_area_t * ha)
   chash_page_t *chp = cha->cha_current;
   int part, n_slots = BOX_ELEMENTS (ha->ha_slots);
   SET_THR_TMP_POOL (cha->cha_pool);
-  if (!hi->hi_memcache)
-    {
-      hi->hi_memcache = t_id_hash_allocate (MIN (400000, cha->cha_distinct_count),
-	  sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
-      hi->hi_memcache_from_mp = 1;
-      id_hash_set_rehash_pct (hi->hi_memcache, 120);
-    }
-  if (!hi->hi_memcache_from_mp)
-    GPF_T1 ("writing mp boxes in non-mp memcache");
   QR_RESET_CTX
   {
+    if (!hi->hi_memcache)
+      {
+        hi->hi_memcache = t_id_hash_allocate (MIN (400000, cha->cha_distinct_count),
+            sizeof (hi_memcache_key_t), sizeof (caddr_t *), hi_memcache_hash, hi_memcache_cmp);
+        hi->hi_memcache_from_mp = 1;
+        id_hash_set_rehash_pct (hi->hi_memcache, 120);
+      }
+    if (!hi->hi_memcache_from_mp)
+      GPF_T1 ("writing mp boxes in non-mp memcache");
   for (part = 0; part < MAX (cha->cha_n_partitions, 1); part++)
     {
       chash_t *cha_p = CHA_PARTITION (cha, part);
@@ -4654,8 +4679,8 @@ itc_hash_compare (it_cursor_t * itc, buffer_desc_t * buf, search_spec_t * sp)
     }
   if (sp->sp_max_op != CMP_HASH_RANGE_ONLY)
     {
-      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : hs->hs_ha->ha_tree;
-      index_tree_t *tree = QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index);
+      state_slot_t *tree_ssl = hrng->hrng_ht ? hrng->hrng_ht : (hs ? hs->hs_ha->ha_tree : NULL);
+      index_tree_t *tree = tree_ssl ? QST_BOX (index_tree_t *, inst, tree_ssl->ssl_index) : NULL;
       chash_t *cha;
       if (!tree)
 	goto not_found;

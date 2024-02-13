@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3273,6 +3273,8 @@ rdf_box_get_lang (query_instance_t * qi, unsigned short lang)
 }
 #endif
 
+int32 rdf_geo_use_wkt = 1;
+
 static void
 http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, ttl_iriref_t *dt_ret)
 {
@@ -3288,7 +3290,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
           return;
         if (RDF_BOX_GEO_TYPE == rb->rb_type)
           {
-            dt_ret->uri = uname_virtrdf_ns_uri_Geometry;
+            dt_ret->uri = rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry;
             return;
           }
         dt_ret->uri = rdf_type_twobyte_to_iri (rb->rb_type);
@@ -3305,7 +3307,7 @@ http_ttl_or_nt_prepare_obj (query_instance_t *qi, caddr_t obj, dtp_t obj_dtp, tt
         }
     case DV_SINGLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_float; return;
     case DV_DOUBLE_FLOAT: dt_ret->uri = uname_xmlschema_ns_uri_hash_double; return;
-    case DV_GEO: dt_ret->uri = uname_virtrdf_ns_uri_Geometry; return;
+    case DV_GEO: dt_ret->uri = rdf_geo_use_wkt ? uname_opengis_ont_gs_ns_uri_wktLiteral : uname_virtrdf_ns_uri_Geometry ; return;
     case DV_ARRAY_OF_DOUBLE:
       {
         if (IS_GENERIC_DURATION (obj))
@@ -7229,7 +7231,7 @@ rdf_box_init ()
   bif_define_ex ("sparql_ebv_int", bif_sparql_ebv_int, BMD_ALIAS, "sparql_ebv_int_of_sqlval", BMD_ALIAS, "sparql_ebv_int_of_obj", BMD_ALIAS, "__ro2ebv_int", /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec,*/ BMD_RET_TYPE, &bt_integer, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("sparql_ebv_pure", bif_sparql_ebv_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_vec,*/ BMD_RET_TYPE, &bt_any_box, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("sparql_ebv_int_pure", bif_sparql_ebv_int_pure, /*BMD_VECTOR_IMPL, bif_ro2ebv_int_vec,*/ BMD_RET_TYPE, &bt_integer, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_varchar, BMD_USES_INDEX, BMD_DONE);
+  bif_define_ex ("__rdf_strsqlval", bif_rdf_strsqlval, BMD_VECTOR_IMPL, bif_str_vec, BMD_RET_TYPE, &bt_any, BMD_USES_INDEX, BMD_DONE);
   bif_define_ex ("__rdf_long_to_ttl", bif_rdf_long_to_ttl, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_set_uses_index (bif_rdf_long_to_ttl);
   bif_define_ex ("__rq_iid_of_o", bif_rq_iid_of_o, BMD_RET_TYPE, &bt_any, BMD_DONE);

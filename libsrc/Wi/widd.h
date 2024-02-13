@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -101,6 +101,24 @@ extern dk_mutex_t * db_schema_mtx; /* global schema hash tables */
 	  ((op) == 'U' ? TB_RLS_U : \
 	   ((op) == 'D' ? TB_RLS_D : GPF_T1 ("invalid op")))))
 
+
+typedef struct csv_parser_config_s
+{
+  char		cpc_field_delim;
+  char		cpc_hex_escape;
+  char		cpc_plain_escape;
+  char		cpc_newline1;
+  char		cpc_newline2;
+  char		cpc_quote;
+  char		cpc_trim_whitespaces;
+  char		cpc_null_empty_string;
+  char		cpc_allow_multiline_string;
+  char		cpc_cast_error;
+  char		cpc_error_if_no_file;
+  int		cpc_skip_rows_at_first;
+  int		cpc_skip_rows_at_rest;
+  int		cpc_mode;
+} csv_parser_config_t;
 
 struct dbe_table_s
   {

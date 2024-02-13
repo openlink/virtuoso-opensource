@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3794,7 +3794,7 @@ box_cast_to_UTF8_xsd (caddr_t *qst, caddr_t data)
 make_double:
   if (!isfinite (boxdbl))
     return box_dv_short_string (isnan (boxdbl) ? "NaN" : ((boxdbl > 0.0) ? "INF" : "-INF"));
-  buffill = sprintf (tmpbuf, "%lg", boxdbl);
+  buffill = sprintf (tmpbuf, DOUBLE_G_STAR_FMT, DOUBLE_G_LEN, boxdbl);
   if ((NULL == strchr (tmpbuf, '.')) && (NULL == strchr (tmpbuf, 'E')) && (NULL == strchr (tmpbuf, 'e')))
     {
       strcpy (tmpbuf+buffill, ".0");

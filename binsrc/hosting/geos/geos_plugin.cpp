@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -451,16 +451,16 @@ bif_geos_convex_hull (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 static caddr_t
 bif_geos_envelope (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t res = bif_st_get_bounding_box_impl (qst, err_ret, args, 1, "GEOS envelope", GEO_ARG_ANY_NULLABLE);
-  if (NULL == res)
-    {
-      geo_t *empty_res = geo_alloc (GEO_BOX, 0, GEO_SRCODE_DEFAULT);
-      GEO_XYBOX_SET_EMPTY (empty_res->XYbox);
-      return (caddr_t)empty_res;
-    }
-  if (DV_GEO != DV_TYPE_OF (res))
+  int arg_err;
+  std::auto_ptr<geos::geom::Geometry> arg1 = bif_Geometry_auto_ptr_arg_nosignal (qst, args, 0, "GEOS envelope", GEO_ARG_ANY_NONNULL, &arg_err);
+  std::auto_ptr<geos::geom::Geometry> res;
+  if (arg_err)
     return NEW_DB_NULL;
-  return res;
+  try { res = std::auto_ptr<geos::geom::Geometry> (arg1.get()->getEnvelope()); }
+  CATCH_BIF_GEXXX((arg1.reset()), "GEOS envelope")
+  if (NULL == res.get())
+    return NEW_DB_NULL;
+  return (caddr_t)import_Geometry_as_geo (res.get());
 }
 
 static caddr_t
@@ -685,16 +685,16 @@ bif_geos_s_convex_hull (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 static caddr_t
 bif_geos_s_envelope (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  caddr_t res = bif_st_get_bounding_box_impl (qst, err_ret, args, 1, "GEOS silent envelope", GEO_ARG_ANY_NULLABLE | GEO_ARG_NONGEO_AS_IS);
-  if (NULL == res)
-    {
-      geo_t *empty_res = geo_alloc (GEO_BOX, 0, GEO_SRCODE_DEFAULT);
-      GEO_XYBOX_SET_EMPTY (empty_res->XYbox);
-      return (caddr_t)empty_res;
-    }
-  if (DV_GEO != DV_TYPE_OF (res))
+  int arg_err;
+  std::auto_ptr<geos::geom::Geometry> arg1 = bif_Geometry_auto_ptr_arg_nosignal (qst, args, 0, "GEOS silent envelope", GEO_ARG_ANY_NONNULL, &arg_err);
+  std::auto_ptr<geos::geom::Geometry> res;
+  if (arg_err)
     return NEW_DB_NULL;
-  return res;
+  try { res = std::auto_ptr<geos::geom::Geometry> (arg1.get()->getEnvelope()); }
+  CATCH_BIF_GEXXX((arg1.reset()), "GEOS silent envelope")
+  if (NULL == res.get())
+    return NEW_DB_NULL;
+  return (caddr_t)import_Geometry_as_geo (res.get());
 }
 
 static caddr_t

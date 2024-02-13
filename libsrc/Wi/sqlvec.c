@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1051,8 +1051,9 @@ cv_artm_typed (instruction_t * ins)
 	  ins->_.artm.func = ti_func_no (IN_ARTM_IDENTITY, dtp);
 	}
     }
-  else if (SSL_IS_VEC_REF (ins->_.artm.left) && SSL_IS_VEC_REF (ins->_.artm.right)
-      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
+  else if (SSL_IS_VEC_REF (ins->_.artm.left) && SSL_IS_VEC_REF (ins->_.artm.right) && SSL_IS_VEC_REF (ins->_.artm.result)
+      && ins->_.artm.left->ssl_dtp == ins->_.artm.right->ssl_dtp
+      && ins->_.artm.result->ssl_dtp == ins->_.artm.right->ssl_dtp)
     {
       switch (ins->_.artm.left->ssl_dtp)
 	{
@@ -1702,6 +1703,8 @@ sqlg_vec_setp (sql_comp_t * sc, setp_node_t * setp, dk_hash_t * res)
 int
 ssl_needs_ins_cast (state_slot_t * ssl, dbe_column_t * col)
 {
+  if (ssl->ssl_is_callret || ssl->ssl_vary)
+    return 1;
   if (DV_WIDE == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_WIDE == ssl->ssl_sqt.sqt_dtp))
     return 0;
   if (DV_STRING == col->col_sqt.sqt_dtp && (DV_ANY == ssl->ssl_dc_dtp && DV_STRING == ssl->ssl_sqt.sqt_dtp))
@@ -2319,7 +2322,8 @@ sqlg_vec_upd (sql_comp_t * sc, update_node_t * upd)
       upd->upd_place = last_ts->ts_current_of;
 #endif
       REF_SSL (NULL, upd->upd_place);
-      sqlg_set_ts_plh (sc, last_ts);
+      if (last_ts)
+        sqlg_set_ts_plh (sc, last_ts);
       sqlg_vec_upd_col_pk (sc, upd);
     }
   else
@@ -2702,9 +2706,24 @@ sqlg_ts_preresets (sql_comp_t * sc, table_source_t * ts)
   return res;
 }
 
+static int
+sqlg_setp_hf_ref_changed (setp_node_t * setp, state_slot_t * ssl)
+{
+  int inx;
+  if (!setp || !setp->setp_ha)
+    return 0;
+  DO_BOX (state_slot_t *, sl, inx, setp->setp_ha->ha_slots)
+    {
+      /* hash key is changed to shadow ref */
+      if (SSL_REF == sl->ssl_type && ((state_slot_ref_t *)sl)->sslr_ssl == ssl)
+        return 1;
+    }
+  END_DO_BOX;
+  return 0;
+}
 
 void
-sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
+sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs, setp_node_t * setp)
 {
   /* for a key of a hash source that is outer, use the cast ssl as nullable */
   dk_set_t iter;
@@ -2712,7 +2731,8 @@ sqlg_hs_realias_key_out (sql_comp_t * sc, hash_source_t * hs)
     {
       int nth = (ptrlong) iter->data;
       state_slot_t *key_out = (state_slot_t *) iter->next->data;
-      ssl_alias (key_out, hs->hs_ha->ha_slots[nth]);
+      if (!sqlg_setp_hf_ref_changed (setp, key_out)) /* don't do alias on shadow ref */
+        ssl_alias (key_out, hs->hs_ha->ha_slots[nth]);
     }
   hs->hs_out_aliases = NULL;
 }
@@ -2909,7 +2929,7 @@ ref_found:
     }
   sc->sc_vec_pred = save_pred;
   sc->sc_vec_current = save_cur;
-  sqlg_hs_realias_key_out (sc, hs);
+  sqlg_hs_realias_key_out (sc, hs, setp);
   if (!hs->hs_no_partition)
     hs->hs_no_partition = sqlg_hs_non_partitionable (sc, hs);
   DO_SET (fun_ref_node_t *, fref, &sc->sc_hash_fillers)
@@ -3565,7 +3585,7 @@ sqlg_const_cast (sql_comp_t * sc, state_slot_t ** ssl_ret, sql_type_t * target_s
     {
       caddr_t st = ERR_STATE (err), msg = ERR_MESSAGE (err);
       dk_free_box (err);
-      sqlc_new_error (sc->sc_cc, st, "VECDT", msg);
+      sqlc_new_error (sc->sc_cc, st, "VECDT", "%s", msg);
     }
   *ssl_ret = ssl_new_constant (sc->sc_cc, value);
   dk_free_tree (value);
@@ -3855,10 +3875,6 @@ sqlg_ts_add_copy (sql_comp_t * sc, table_source_t * ts, state_slot_t ** ssls)
 
 int enable_ks_out_alias = 0;
 
-#define IS_DATE_DTP(dtp) \
-  (DV_DATETIME == (dtp) || DV_DATE == (dtp) || DV_TIME == (dtp) || DV_TIMESTAMP == (dtp))
-
-
 int
 dtp_aliasable (dtp_t dtp)
 {
@@ -4044,12 +4060,12 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	else
 	  ks->ks_v_out_map[inx].om_cl = *key_find_cl (ks->ks_key, col_id);
 	ks->ks_v_out_map[inx].om_ssl = ssl;
+	  ssl_set_dc_type (ssl);
 	if (col)
 	  ks->ks_v_out_map[inx].om_ref = col_ref_func (ks->ks_key, col, ks->ks_v_out_map[inx].om_ssl);
 	ssl->ssl_type = SSL_VEC;
 	if (!ssl->ssl_box_index)
 	  ssl->ssl_box_index = cc_new_instance_slot (sc->sc_cc);
-	ssl_set_dc_type (ssl);
       }
     ASG_SSL (NULL, NULL, ssl);
     t_set_delete (&sc->sc_ssl_prereset_only, (void *) ssl);	/* in a proc view the row ctr is assigned first in precode and then in the ts, must be in the continue reset list, else will overflow */

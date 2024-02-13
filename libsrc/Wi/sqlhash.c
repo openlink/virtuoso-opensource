@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -170,6 +170,8 @@ setp_distinct_hash (sql_comp_t * sc, setp_node_t * setp, uint64 n_rows, int op)
     sqlc_new_error (sc->sc_cc, "42000", "SQ186", "Over %d keys in distinct", SETP_DISTINCT_MAX_KEYS);
   DO_SET (state_slot_t *, ssl, &setp->setp_keys)
     {
+      if (!ssl)
+        sqlc_new_error (sc->sc_cc, "42000", "SQ600", "Statement not allowed.");
       if (!quietcast && IS_BLOB_DTP (ssl->ssl_sqt.sqt_dtp))
 	sqlc_new_error (sc->sc_cc, "42000", "SQ186",
 	    "Long data types not allowed for distinct, order, "

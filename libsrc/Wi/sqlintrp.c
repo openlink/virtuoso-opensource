@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -166,6 +166,11 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 		}
 	      if (SSL_REF == actual_ssl->ssl_type)
 		row = sslr_set_no (qst, actual_ssl, row);
+              if (row >= dc->dc_n_values)
+                {
+                  err = srv_make_new_error ("42000", "VEC09", "In vectored code calling with unset input");
+                  goto err_end;
+                }
 	      address = (caddr_t)&((caddr_t*)dc->dc_values)[row];
 	    }
 	  else if ((!ins->_.call.ret || !IS_REAL_SSL (ins->_.call.ret) || !ins->_.call.ret->ssl_is_observer) &&
@@ -3234,6 +3239,7 @@ ins_vec_agg (instruction_t * ins, caddr_t * inst)
 	  itc_ha_feed_ret_t ihfr;
 	  if (DVC_MATCH == itc_ha_feed (&ihfr, ins->_.agg.distinct, inst, 0, NULL))
 	    continue;
+          arg = qst_get (inst, ins->_.agg.arg); /* take argument here as itc_ha_feed mangle the place if serialized any */
 	}
       op = ins->_.agg.op;
       qi->qi_set = set_no;

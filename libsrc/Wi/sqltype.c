@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4035,8 +4035,36 @@ bif_udt_get_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       if (udt->scl_super)
 	result = box_dv_short_string (udt->scl_super->scl_name);
     }
+  else if (!stricmp (info_name, "attributes"))
+    {
+      int inx;
+      dk_set_t set = NULL;
+      DO_BOX (sql_field_t *, fld, inx, udt->scl_member_map)
+        {
+          dk_set_push (&set, box_dv_short_string (fld->sfl_name));
+        }
+      END_DO_BOX;
+      result = list_to_array (dk_set_nreverse (set));
+    }
+  else if (!stricmp (info_name, "attributes_info"))
+    {
+      int inx;
+      dk_set_t set = NULL;
+      DO_BOX (sql_field_t *, fld, inx, udt->scl_member_map)
+        {
+          dk_set_push (&set, list (6,
+                box_dv_short_string (fld->sfl_name),
+                fld->sfl_sqt.sqt_dtp,
+                fld->sfl_sqt.sqt_class ? box_copy_tree(fld->sfl_sqt.sqt_class->scl_name) : NULL,
+                box_copy_tree (fld->sfl_sqt.sqt_tree),
+                box_copy_tree (fld->sfl_soap_type),
+                box_copy_tree (fld->sfl_soap_name)));
+        }
+      END_DO_BOX;
+      result = list_to_array (dk_set_nreverse (set));
+    }
   else
-    sqlr_new_error ("22023", "UD105", "Invalid info name. Valid infos are : children, parent");
+    sqlr_new_error ("22023", "UD105", "Invalid info name. Valid infos are : children, parent, attributes and attributes_info");
 
   return result ? result : NEW_DB_NULL;
 }

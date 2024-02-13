@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -642,5 +642,28 @@ select HTTP_CLIENT ('http://localhost:$U{HTTPPORT}/slow.vsp');
 ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": Request timedout in 3s : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+CREATE PROCEDURE DAV_TEST_ENCODE_PERCENT ()
+{
+  declare rc, content, h any;
+
+  content := 'aaa';
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT ('/DAV/a%20a.txt', content, 'text/plain', '110110110RR', extern=>0);
+  content := 'bbb';
+  DB.DBA.DAV_RES_UPLOAD_STRSES_INT ('/DAV/b b.txt', content, 'text/plain', '110110110RR', extern=>0);
+  commit work;
+  http_client_ext (concat ('http://localhost:',server_http_port(),'/DAV/a%2520a.txt'), 'dav', 'dav', http_method=>'PROPFIND', headers=>h);
+  if (aref (h, 0) not like 'HTTP/% 20%')
+    signal ('DAVXX', 'a%2520a.txt failed');
+  http_client_ext (concat ('http://localhost:',server_http_port(),'/DAV/b%20b.txt'), 'dav', 'dav', http_method=>'PROPFIND', headers=>h);
+  if (aref (h, 0) not like 'HTTP/% 20%')
+    signal ('DAVXX', 'b%20b.txt failed');
+  return 'OK';
+}
+;
+select DAV_TEST_ENCODE_PERCENT();
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": URL encoded percent sign in request : STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: HTTP server tests\n";

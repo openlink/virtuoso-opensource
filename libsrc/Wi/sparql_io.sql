@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2355,11 +2355,22 @@ create procedure WS.WS.SPARQL_VHOST_RESET ()
 {
   declare oopts any;
   oopts := null;
-  if (not exists (select 1 from "DB"."DBA"."SYS_USERS" where U_NAME = 'SPARQL'))
+
+  if (user_to_uid ('SPARQL') < 0)
     {
       DB.DBA.USER_CREATE ('SPARQL', uuid(), vector ('DISABLED', 1, 'LOGIN_QUALIFIER', 'SPARQL'));
       DB.DBA.EXEC_STMT ('grant SPARQL_SELECT to "SPARQL"', 0);
     }
+
+  if (user_to_uid ('SPARQL_ADMIN') < 0)
+    {
+      -- Our "sparql admin" user which has access to all graphs and will be used for DAV/LDP
+      DB.DBA.USER_CREATE ('SPARQL_ADMIN', uuid(), vector ('DISABLED', 1));
+      DB.DBA.EXEC_STMT ('grant SPARQL_UPDATE to SPARQL_ADMIN', 0);
+      DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('SPARQL_ADMIN', 15, 0);
+      DB.DBA.RDF_DEFAULT_USER_PERMS_SET ('SPARQL_ADMIN', 15, 1);
+    }
+
   if (registry_get ('__SPARQL_VHOST_RESET') >= '20120519')
     return;
 
@@ -3107,16 +3118,9 @@ execute_query:
   -- dbg_obj_princ ('dflt_graphs = ', dflt_graphs, ', named_graphs = ', named_graphs);
   --if (quiet_geo <> '')
   --  full_query := 'define sql:select-option "QUIETGEO"\n' || full_query;
-  declare req_hosts varchar;
-  declare req_hosts_split any;
-  declare hctr integer;
-  req_hosts := http_request_header (lines, 'Host', null, null);
-  req_hosts := replace (req_hosts, ', ', ',');
-  req_hosts_split := split_and_decode (req_hosts, 0, '\0\0,');
-  for (hctr := length (req_hosts_split) - 1; hctr >= 0; hctr := hctr - 1)
-    {
-      for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
-      where req_hosts_split [hctr] like SH_HOST) do
+  declare req_host varchar;
+  req_host := http_request_header (lines, 'Host', null, null);
+  for (select SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST where req_host like SH_HOST) do
         {
           if (length (dflt_graphs) = 0 and length (SH_GRAPH_URI))
             dflt_graphs := vector (SH_GRAPH_URI);
@@ -3124,7 +3128,6 @@ execute_query:
             full_query := concat (SH_DEFINES, '\n', full_query);
           goto host_found;
         }
-    }
 host_found:
 
   foreach (varchar dg in dflt_graphs) do
@@ -3684,7 +3687,7 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   declare graph_uri varchar;
   declare colonspace_pos integer;
   declare graph_uri_is_relative integer;
-  declare res_file, res_content_type varchar;
+  declare res_file, res_content_type, res_format varchar;
   declare n_quads_upload int;
   {
   whenever sqlstate '*' goto err; /* see below */
@@ -3698,26 +3701,18 @@ create procedure WS.WS."/!sparql-graph-crud/" (inout path varchar, inout params 
   graph_uri := trim(coalesce (get_keyword ('graph', params, null), get_keyword ('graph-uri', params, null), ''));
   if (isstring (get_keyword ('default', params)))
     {
-      declare req_hosts varchar;
-      declare req_hosts_split any;
-      declare hctr integer;
+      declare req_host varchar;
       if (graph_uri <> '')
         signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains both "graph" and "default" params');
-      req_hosts := http_request_header (lines, 'Host', null, null);
-      req_hosts := replace (req_hosts, ', ', ',');
-      req_hosts_split := split_and_decode (req_hosts, 0, '\0\0,');
-      for (hctr := length (req_hosts_split) - 1; hctr >= 0; hctr := hctr - 1)
+      req_host := http_request_header (lines, 'Host', null, null);
+      for (select SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST where req_host like SH_HOST) do
         {
-          for (select top 1 SH_GRAPH_URI, SH_DEFINES from DB.DBA.SYS_SPARQL_HOST
-          where req_hosts_split [hctr] like SH_HOST) do
+          if (length (SH_GRAPH_URI))
             {
-              if (length (SH_GRAPH_URI))
-                {
-                  graph_uri := SH_GRAPH_URI;
-                  goto good_host_found;
-                }
-              goto bad_host_found;
+              graph_uri := SH_GRAPH_URI;
+              goto good_host_found;
             }
+          goto bad_host_found;
         }
 bad_host_found:
       signal ('22023', 'The request to SPARQL 1.1 Graph Store endpoint contains "default" param but the endpoint is not configured to have default graph');
@@ -3734,13 +3729,14 @@ good_host_found:
         res_file := http_body_read();
       if (0 = length (res_file))
         res_file := http_body_read(1);
-      res_content_type := null;
+      res_format := res_content_type := null;
       if (get_keyword ('res-file', params) is null)
         res_content_type := http_request_header (lines, 'Content-Type', null, null);
       if (res_content_type is null or res_content_type = 'application/x-www-form-urlencoded' or res_content_type = 'multipart/form-data')
         res_content_type := DB.DBA.RDF_SPONGE_GUESS_CONTENT_TYPE (null, null, res_file);
       if (res_content_type = 'application/n-quads')
         n_quads_upload := 1;
+      http_sys_find_best_sparql_accept (res_content_type, 0, res_format);
     }
   if (graph_uri <> '' or n_quads_upload)
     goto graph_processing;
@@ -3798,7 +3794,7 @@ graph_processing:
       full_graph_uri := null;
       if (graph_uri_is_relative and not(n_quads_upload))
         {
-          if (res_content_type in ('text/rdf+n3', 'text/turtle'))
+          if (res_format in ('TTL', 'NT'))
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_TTL (res_file, graph_uri, 255);
           else if (res_content_type = 'application/rdf+xml')
             full_graph_uri := DB.DBA.SPARQL_CRUD_BASE_RDFXML (res_file, graph_uri);
@@ -3813,7 +3809,7 @@ graph_processing:
       graph_exists := 0;
       if (not n_quads_upload)
         graph_exists := (sparql define input:storage "" ask where { graph `iri(?:full_graph_uri)` { ?s ?p ?o }});
-      if (res_content_type in ('text/rdf+n3', 'text/turtle'))
+      if (res_format in ('TTL', 'NT'))
         {
           if (reqbegin like 'PUT%')
             {

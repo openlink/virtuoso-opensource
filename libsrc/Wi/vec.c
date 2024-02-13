@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1881,9 +1881,9 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
   QNCAST (query_instance_t, qi, inst);
   int set = qi->qi_set;
   data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
-  dtp_t dtp = DV_TYPE_OF (v);
+  dtp_t val_dtp = DV_TYPE_OF (v);
   DC_CHECK_LEN (dc, set);
-  if (DV_DB_NULL == dtp)
+  if (DV_DB_NULL == val_dtp)
     {
       dc_set_null (dc, set);
       return;
@@ -1892,7 +1892,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
     {
       DC_FILL_TO (dc, int64, set);
     }
-  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[dtp] != dc->dc_dtp)
+  if (DV_ANY == ssl->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp && !(DCT_BOXES & dc->dc_type) && dtp_canonical[val_dtp] != dc->dc_dtp)
     dc_heterogenous (dc);
   /* value from uninitalized variable */
   if (0 && NULL == v && !(DCT_BOXES & dc->dc_type) && DV_DATETIME == dtp_canonical[dc->dc_dtp])
@@ -1946,7 +1946,7 @@ qst_vec_set_copy (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 		dc_set_null (dc, set);
 		return;
 	      }
-	    memcpy_dt (dc->dc_values + DT_LENGTH * set, (v ? v : zero));
+	    memcpy_dt (dc->dc_values + DT_LENGTH * set, (IS_DATE_DTP(val_dtp) ? v : zero));
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)
@@ -2054,6 +2054,8 @@ dc_set_long (data_col_t * dc, int set, boxint lv)
 {
   int save = dc->dc_n_values;
   DC_CHECK_LEN (dc, set);
+  if (dc->dc_nulls)
+    DC_CLR_NULL (dc, set);
   if (!(DCT_NUM_INLINE & dc->dc_type))
     {
       int is_boxes = DCT_BOXES & dc->dc_type;
@@ -2991,7 +2993,7 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
 
   if (!set_mask && SSL_VEC == ssl_from->ssl_type)
     {
-      if (DV_ANY != dc_from->dc_dtp && !dc_to->dc_n_values)
+      if (DV_ANY != dc_from->dc_dtp && !dc_to->dc_n_values && !vec_box_dtps[dc_from->dc_dtp])
 	dc_convert_empty (dc_to, dv_ce_dtp[dc_from->dc_dtp]);
       if (dc_to->dc_dtp == dc_from->dc_dtp && dc_to->dc_type == dc_from->dc_type)
 	{
@@ -3011,7 +3013,7 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
     }
   if (SSL_REF == ssl_from->ssl_type)
     {
-      if (!set_mask && !dc_to->dc_n_values && DV_ANY != dc_from->dc_dtp)
+      if (!set_mask && !dc_to->dc_n_values && DV_ANY != dc_from->dc_dtp && !vec_box_dtps[dc_from->dc_dtp])
 	{
 	  dc_convert_empty (dc_to, dv_ce_dtp[dc_from->dc_dtp]);
 	}
@@ -3072,6 +3074,10 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
 		      DC_SET_NULL (dc_to, org_sets[set1]);
 		      dc_to->dc_any_null = 1;
 		    }
+                  else
+                    {
+                      DC_CLR_NULL (dc_to, org_sets[set1]);
+                    }
 		}
 	    }
 	  if (last_assigned >= dc_to->dc_n_values)

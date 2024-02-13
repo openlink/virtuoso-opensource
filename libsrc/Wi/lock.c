@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2216,84 +2216,57 @@ dk_mutex_t *time_mtx;
 
 time_msec_t checkpointed_last_time = 0;
 
-#ifdef linux
-#include <sys/sysinfo.h>
-#endif
-/*
-#ifdef __APPLE__
-#include <mach/task.h>
-#include <mach/mach_init.h>
-#endif
-*/
-#ifdef WIN32
-#include <windows.h>
-#include <psapi.h>
-#else
-#include <sys/resource.h>
-#endif
-
-size_t
-memory_used ()
-{
-#if defined (linux)
-    size_t size = 0;
-    FILE *file = fopen("/proc/self/statm", "r");
-    if (file)
-      {
-	unsigned long vm = 0;
-	fscanf (file, "%lu", &vm);
-	fclose (file);
-	size = (size_t) vm * getpagesize();
-      }
-    return size;
-/*
-#elif defined (__APPLE__)
-    size_t size = 0;
-    struct task_basic_info t_info;
-    mach_msg_type_number_t t_info_count = TASK_BASIC_INFO_COUNT;
-    task_info(current_task(), TASK_BASIC_INFO, (task_info_t)&t_info, &t_info_count);
-    size = t_info.virtual_size;
-    return size;
-*/
-#elif defined (WIN32)
-    PROCESS_MEMORY_COUNTERS count;
-    if (GetProcessMemoryInfo (GetCurrentProcess(), &count, sizeof (count)))
-      return count.PagefileUsage;
-    return 0;
-#else
-    return 0;
-#endif
-}
-
 #ifdef HAVE_GETRUSAGE
 #include <sys/resource.h>
 #endif
 
-int last_majflt = 0;
+long last_majflt = 0;
+long swap_guard_threshold = 300;
 int32 swap_guard_on = 0;
 int process_is_swapping = 0;
-size_t max_vsize = 0;
+
+int64  max_proc_vm_size = 0; /* vm mem cap in Kb */
+int64 vm_size_wd_threshold = 0; /* threshold to trigger www back on */
+int www_stopped_by_wd = 0; /* separate wd flag indicating www is stopped via vm wd */
+extern int64 curr_vm_size;
+
+extern int www_maintenance;
+void http_kill_all ();
 
 void
-the_grim_swap_guard ()
+the_grim_mem_guard ()
 {
+  if (max_proc_vm_size > 0 && max_proc_vm_size < curr_vm_size) 
+    {   /* don't check if already stopped, kill ws cli until enough free ram, see below */
+      if (!www_stopped_by_wd) /*do not repeat same message, but kill any ws cli if stil alive */
+        log_error ("The process Vm size %lld went above the limit %lld, stopping www", curr_vm_size, max_proc_vm_size);
+      www_stopped_by_wd = www_maintenance = 1;
+      http_kill_all ();
+    }
+  if (www_stopped_by_wd && max_proc_vm_size > (curr_vm_size + vm_size_wd_threshold))
+    {
+      www_stopped_by_wd = www_maintenance = 0;
+      log_info ("The Vm size %lld went below limit, enabled www", curr_vm_size);
+    }
 #ifdef HAVE_GETRUSAGE
   struct rusage ru;
   if (!swap_guard_on)
     return;
+  if (swap_guard_threshold < 300)
+    swap_guard_threshold = 300;
   if (wi_inst.wi_is_checkpoint_pending)
   return;
   getrusage (RUSAGE_SELF, &ru);
 #ifdef GPF_ON_SWAPPING
-  if (ru.ru_majflt - last_majflt > 300)
+  if (ru.ru_majflt - last_majflt > swap_guard_threshold)
     GPF_T1 ("started swapping");
 #endif
   if (swap_guard_on & 0x10)
     {
-      if ((ru.ru_majflt - last_majflt > 300) && !wi_inst.wi_is_checkpoint_pending)
+      if ((ru.ru_majflt - last_majflt > swap_guard_threshold) && !wi_inst.wi_is_checkpoint_pending)
         GPF_T1 ("The process started swapping and SwapGuard parameter has bit 0x10 set on, forcing immediate kill. ");
     }
-  if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > 300)
+  if (virtuoso_server_initialized && ru.ru_majflt - last_majflt > swap_guard_threshold)
     {
       if (!process_is_swapping)
 	log_error ("The process started swapping, all pending transactions will be killed");
@@ -2306,11 +2279,6 @@ the_grim_swap_guard ()
   last_majflt = ru.ru_majflt;
     }
 #endif
-  if (max_vsize > 0 && memory_used () > max_vsize)
-    {
-      log_error ("The process VM size went above the limit");
-      max_vsize = 0;
-    }
 }
 
 
@@ -2367,7 +2335,7 @@ the_grim_lock_reaper (void)
       /*printf ("lti = %d \n", now - prev_reaper_time);*/
     }
   prev_reaper_time = now;
-  the_grim_swap_guard ();
+  the_grim_mem_guard ();
  kill_next_txn:
   IN_TXN;
   DO_SET (lock_trx_t *, lt, &all_trxs)

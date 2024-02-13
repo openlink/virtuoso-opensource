@@ -8,7 +8,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1677,6 +1677,12 @@ LIMIT 4
 ECHO BOTH $IF $EQU $LAST[2] $LAST[3] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": gby/float \n";
+
+select count(*) from WS.WS.SYS_DAV_RES where contains(RES_CONTENT,
+        'Lite and (jdbc or odbc) and (installation and not "configur*" and (windows or macos))');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": not-mergeble NOT text pred STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 --
 -- End of test

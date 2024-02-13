@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1516,6 +1516,7 @@ struct buffer_desc_s
   bp_ts_t		bd_delta_ts;
   char *                bd_set_wr_file;
   char *                bd_set_dirty_file;
+  short                 bd_set_dirty_line;
   thread_t *		bd_thr_el;
 #endif
 #ifdef PAGE_TRACE
@@ -1951,7 +1952,7 @@ extern int64 bdf_is_avail_mask; /* all bits on except read aside flag which does
   || DV_INT64 == dtp)
 
 #define IS_DATE_DTP(dtp) \
-  (DV_TIMESTAMP == (dtp) || DV_DATE == (dtp) || DV_DATETIME == (dtp))
+  (DV_DATE == (dtp) || DV_TIME == (dtp) || DV_DATETIME == (dtp) || DV_TIMESTAMP == (dtp))
 
 #ifndef dbg_printf
 # ifdef DEBUG

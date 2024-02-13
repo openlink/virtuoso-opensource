@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -4762,6 +4762,8 @@ sparp_sql_function_name_is_unsafe (const char *buf)
 int
 sparp_bif_function_name_is_unsafe (const char *buf)
 {
+  if (buf && !strcasecmp (buf, "__rdf_long_from_batch_params"))
+    return 0;
   if (buf && !strncmp (buf, "__", 2)) /* no internal bifs allowed as SPARQL bif:xx() */
     return 1;
   return (ECM_MEM_NOT_FOUND != ecm_find_name (buf, spar_unsafe_bif_names, spar_unsafe_bif_names__count, sizeof (caddr_t)));

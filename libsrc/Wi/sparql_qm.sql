@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -384,7 +384,8 @@ create function DB.DBA.RDF_QM_DROP_MAPPING (in storage varchar, in mapname any) 
           select ?s from <http://www.openlinksw.com/schemas/virtrdf#> where {
               ?s rdf:type virtrdf:QuadMap .
               ?s virtrdf:qmGraphRange-rvrFixedValue `iri(?:qmgraph)` .
-              ?s virtrdf:qmTableName "" .
+              OPTIONAL { ?s virtrdf:qmTableName ?tb . }
+              FILTER (!BOUND(?tb))
               } ));
       if (qmid is null)
         return vector (vector ('00100', 'Quad map for graph <' || qmgraph || '> is not found'));

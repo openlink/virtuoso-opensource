@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -347,6 +347,16 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE_BOL>"["		{ TTLYYBEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LSQBRA; }
 <INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"[]"	{ TTLYYBEGIN(INITIAL);					return _LSQBRA_RSQBRA; }
 <INITIAL>"]"			{			ttlp_arg[0].ttlp_lexdepth--;	return _RSQBRA; }
+<INITIAL>[Gg][Rr][Aa][Pp][Hh]   {
+    int depth = ttlp_arg[0].ttlp_lexdepth;
+    if (!((0 == depth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG))) /* skip GRAPH decoration for TriG */
+      {
+        if ((TTLP_SNIFFER & ttlp_arg[0].ttlp_flags) && ((NULL == ttlp_arg[0].ttlp_base_uri) || ('\0' == ttlp_arg[0].ttlp_base_uri[0])))
+          TTLYYBEGIN (GARBAGE);
+        else
+          TTL_TOKBOX_Q(0,QNAME,"name without prefix");
+      }
+  }
 <INITIAL>"{"			{
     int depth = ttlp_arg[0].ttlp_lexdepth++;
     return (((0 == depth) && (ttlp_arg[0].ttlp_flags & TTLP_ALLOW_TRIG)) ? _LBRA_TOP_TRIG : _LBRA);

@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1038,21 +1038,14 @@ create procedure WEBDAV.DBA.path_escape (
   in path varchar,
   in delimiter varchar := '/')
 {
-  declare parts any;
-  declare retValue varchar;
-
+  declare ses any;
   if (DB.DBA.is_empty_or_null (path))
     return path;
-
-  retValue := '';
-  parts := split_and_decode (path, 0, '\0\0' || delimiter);
-  foreach (varchar part in parts) do
-  {
-    retValue := retValue || case when (part = '') then '/' else sprintf ('%U/', part) end;
-  }
-  retValue := subseq (retValue, 0, length(retValue)-1);
-
-  return retValue;
+  ses := string_output ();
+  if (isstring (path))
+    __box_flags_set (path, 2);
+  http_dav_url (path, null, ses);
+  return string_output_string (ses);
 }
 ;
 
@@ -2707,6 +2700,7 @@ create procedure WEBDAV.DBA.det_type_name (
     'Box',        'Box Net',
     'WebDAV',     'WebDAV',
     'RACKSPACE',  'Rackspace Cloud',
+    'AZURE',      'Azure Storage Account',
     'nntp',       'Discussion',
     'CardDAV',    'CardDAV',
     'Blog',       'Blog',
@@ -4854,7 +4848,7 @@ create procedure WEBDAV.DBA.aci_load (
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
   DB.DBA.DAV_AUTHENTICATE_SSL_ITEM (id, what, path);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'Share', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP', 'AZURE')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_GET (path, 'virt:aci_meta', auth_name=>auth_name, auth_pwd=>auth_pwd);
     if (WEBDAV.DBA.DAV_ERROR (retValue))
@@ -4992,7 +4986,7 @@ create procedure WEBDAV.DBA.aci_save (
 
   what := WEBDAV.DBA.path_type (path);
   id := DB.DBA.DAV_SEARCH_ID (path, what);
-  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP')))
+  if (isarray (id) and (cast (id[0] as varchar) not in ('DynaRes', 'IMAP', 'S3', 'GDrive', 'Dropbox', 'SkyDrive', 'Box', 'WebDAV', 'RACKSPACE', 'LDP', 'AZURE')))
   {
     retValue := WEBDAV.DBA.DAV_PROP_SET (path, 'virt:aci_meta', aci, auth_name=>auth_name, auth_pwd=>auth_pwd);
   }

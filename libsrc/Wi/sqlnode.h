@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -118,11 +118,12 @@ struct data_source_s
     bitf_t		ssl_is_callret:1; \
     bitf_t		ssl_not_freeable:1; \
     bitf_t		ssl_qr_global:1; /* value either aggregating or invariant across qr */ \
-  bitf_t	ssl_always_vec:1; \
-  bitf_t	ssl_vec_param:2; /* in vectored proc in/inout/out */ \
-  ssl_index_t	ssl_index; \
-  ssl_index_t		ssl_box_index; /*if vectored and needs box for single state ops, place in qst for this */ \
-  sql_type_t		ssl_sqt
+    bitf_t	        ssl_always_vec:1; \
+    bitf_t	        ssl_vec_param:2; /* in vectored proc in/inout/out */ \
+    bitf_t              ssl_vary:1;             /*!< true if ssl belong to gby/distinct as dc may change type, or need ins cast */ \
+    ssl_index_t	        ssl_index; \
+    ssl_index_t		ssl_box_index; /*if vectored and needs box for single state ops, place in qst for this */ \
+    sql_type_t		ssl_sqt
 
 
 struct state_slot_s

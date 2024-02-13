@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -648,6 +648,7 @@ typedef void (* srv_background_task_t)(void *appdata);
 
 int srv_add_background_task (srv_background_task_t task, void *appdata);
 void the_grim_lock_reaper (void);
+void the_grim_mem_guard (void);
 
 int lt_set_snapshot (lock_trx_t * lt);
 

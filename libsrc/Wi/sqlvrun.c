@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3896,7 +3896,8 @@ vec_fref_group_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 		int col_inx;
 		for (col_inx = 0; ha->ha_key_cols[col_inx].cl_col_id; col_inx++)
 		  {
-		    itc_qst_set_column (itc, buf, &ha->ha_key_cols[col_inx], inst, ha->ha_slots[col_inx]);
+                    if (SSL_CONSTANT != ha->ha_slots[col_inx]->ssl_type)
+                      itc_qst_set_column (itc, buf, &ha->ha_key_cols[col_inx], inst, ha->ha_slots[col_inx]);
 		  }
 		      QR_RESET_CTX
 			{

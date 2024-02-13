@@ -6,7 +6,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --  
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --  
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -268,7 +268,7 @@ create method R2RML_FILL_TRIPLESMAP_METAS_CACHE () returns integer for DB.DBA.R2
                  signal ('R2RML', 'Invalid tableName');
                };
                tree := sql_parse (sprintf ('%s ()', "tn"));
-               tbname := tree[1];
+               tbname := complete_table_name (tree[1], 1);
                qual := name_part (tbname, 0); owner := name_part (tbname, 1); tbname := name_part (tbname, 2);
                all_metas[0] := vector ('TABLE', qual, owner, tbname);
             }
@@ -363,7 +363,7 @@ create method R2RML_GET_COL_DESC (in triplesmap_iid IRI_ID, in col_name varchar)
   all_metas := dict_get (self.triplesmap_metas_cache, triplesmap_iid, null);
   if (dict_get (self.triplesmap_metas_cache, triplesmap_iid, NULL) is null)
     signal ('R2RML', 'Undeclared data source <' || id_to_iri (triplesmap_iid) || '>');
-  res := get_keyword (col_name, all_metas[1], null);
+  res := get_keyword_ucase (col_name, all_metas[1], null);
   if (res is null)
     signal ('R2RML', 'Data source <' || id_to_iri (triplesmap_iid) || '> does not produce column "' || col_name || '"');
   res := vector (triplesmap_iid, all_metas[0], res);
@@ -646,7 +646,7 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
           declare col_desc any;
           col_desc := self.R2RML_GET_COL_DESC (triplesmap_iid, col);
           http (self.R2RML_REGISTER_USE_OF_TMAP (fld_idx, col_desc[0]), self.codegen_ses);
-          http (sprintf ('."%I"', col), self.codegen_ses);
+          http (sprintf ('."%I"', col_desc[2][0]), self.codegen_ses);
         }
     }
   else if (constfld is not null)
@@ -659,10 +659,8 @@ create method R2RML_GEN_FLD (in fld_idx integer, in constfld any, in triplesmap_
 
 create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
 {
-  foreach (varchar dflttt in vector ('http://www.w3.org/ns/r2rml#IRI', 'http://www.w3.org/ns/r2rml#Literal')) do
-    {
       for (sparql define input:storage "" define output:valmode "LONG"
-        select ?triplesmap ?fldmap ?template ?termtype ?dt ?lang
+        select ?triplesmap ?fldmap ?template ?termtype ?col ?dt ?lang
         where { graph `iri(?:self.graph_iid)` {
                 ?triplesmap a rr:TriplesMap .
                   { ?triplesmap rr:subjectMap [ rr:graphMap ?fldmap ] }
@@ -678,13 +676,22 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
                 optional { ?fldmap rr:termType ?termtype . }
                 optional { ?fldmap rr:datatype ?dt . }
                 optional { ?fldmap rr:language ?lang . }
+                optional { ?fldmap rr:column ?col . }
               } }
         order by asc(str(?template)) asc(str(?dt)) asc(str(?lang)) asc(str(?triplesmap)) asc(str(?fldmap))
         ) do
         {
-          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), coalesce (__id2i ("termtype"), dflttt), "dt", __ro2sq ("lang"));
+          declare term_type varchar;
+          term_type := __id2i ("termtype");
+          if (term_type is null)
+            {
+              if ("col" is null and "dt" is null and "lang" is null)
+                term_type := 'http://www.w3.org/ns/r2rml#IRI';
+              else
+                term_type := 'http://www.w3.org/ns/r2rml#Literal';
+            }
+          self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", __ro2sq ("template"), term_type, "dt", __ro2sq ("lang"));
         }
-    }
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype
     where { graph `iri(?:self.graph_iid)` {
@@ -700,7 +707,8 @@ create method R2RML_MAKE_QM_IMPL_IOL_CLASSES () returns any for DB.DBA.R2RML_MAP
             optional { ?fldmap rr:termType ?termtype . }
           } } ) do
     {
-      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}', coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
+      self.R2RML_GEN_CREATE_IOL_CLASS_OR_REF (-1, 1, "triplesmap", '{' || DB.DBA.R2RML_UNQUOTE_NAME (__ro2sq ("col")) || '}',
+        coalesce (__id2i ("termtype"), 'http://www.w3.org/ns/r2rml#IRI'), null, null);
     }
   for (sparql define input:storage "" define output:valmode "LONG"
     select ?triplesmap ?fldmap ?col ?termtype ?dt ?lang
@@ -850,7 +858,17 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
         }
       else
           http (',\n                            ', self.codegen_ses);
-      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"), coalesce (__rdf_strsqlval("ott"), 'http://www.w3.org/ns/r2rml#Literal'), "odatatype", __rdf_strsqlval("olang"));
+      declare term_type varchar;
+      term_type := __rdf_strsqlval ("ott");
+      if (term_type is null)
+        {
+          if ("ocol" is null and "odatatype" is null and "olang" is null)
+            term_type := 'http://www.w3.org/ns/r2rml#IRI';
+          else
+            term_type := 'http://www.w3.org/ns/r2rml#Literal';
+        }
+      self.R2RML_GEN_FLD (3 /* for O */, "consto", tmap, DB.DBA.R2RML_UNQUOTE_NAME (__rdf_strsqlval("ocol")), __rdf_strsqlval("otmpl"),
+        term_type, "odatatype", __rdf_strsqlval("olang"));
     }
 }
 ;
@@ -1212,12 +1230,18 @@ create method R2RML_MAKE_QM (in storage_iid IRI_ID := null, in rdfview_iid IRI_I
 }
 ;
 
-create function R2RML_MAKE_QM_FROM_G (in g varchar, in tgt_graph varchar := null) returns varchar
+create function R2RML_MAKE_QM_FROM_G (in g varchar, in tgt_graph varchar := null, in qm_uri varchar := null) returns varchar
 {
   declare m R2RML_MAP;
+  declare qm_iid IRI_ID;
+  qm_iid := null;
   m := DB.DBA.R2RML_MAP (iri_to_id (g));
-  m.default_constg := iri_to_id (tgt_graph);
-  m.R2RML_MAKE_QM (null, null);
+  if (tgt_graph is not null)
+    m.default_constg := iri_to_id (tgt_graph);
+  if (qm_uri is null)
+    qm_uri := concat ('urn:qm:', bin2hex(xenc_digest(tgt_graph,'sha1')));
+  qm_iid := iri_to_id(qm_uri);
+  m.R2RML_MAKE_QM (null, qm_iid);
   return string_output_string (m.codegen_ses);
 }
 ;

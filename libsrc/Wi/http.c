@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -968,7 +968,6 @@ const char * http_log_format = WS_LOG_DEFAULT_FMT;
 
 #define TZ_TO_HHMM(x)  ((x / 60) * 100 + (x % 60))
 
-#ifndef WS_OLD_LOG
 #define WS_LOG_ERROR \
       mutex_enter (ws_http_log_mtx); \
       fflush (http_log); \
@@ -985,7 +984,7 @@ static void
 log_info_http (ws_connection_t * ws, const char * code, OFF_T clen)
 {
   char * new_log = NULL;
-  char tmp[4096];
+  char tmp[HTTP_MAX_REQUEST_LEN];
   int tmp_len = sizeof (tmp) - sizeof (ws->ws_proto) - 1;
   char format[100];
   char buf[DKSES_OUT_BUFFER_LENGTH];
@@ -1157,80 +1156,6 @@ format_string_completed:
   mutex_leave (ws_http_log_mtx);
   return;
 }
-#else
-static void
-log_info_http (ws_connection_t * ws, const char * code, OFF_T len)
-{
-  char buf[4096];
-  struct tm *tm;
-#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
-  struct tm tm1;
-#endif
-  time_t now;
-  int month, day, year;
-  int http_resp_code = 0;
-  caddr_t u_id = NULL;
-  caddr_t referer = NULL;
-  caddr_t user_agent = NULL;
-  char * new_log = NULL;
-
-  if (!http_log || !ws)
-    return;
-
-  if (code)
-    sscanf (code, "%*s %i", &http_resp_code);
-
-  referer = ws_get_packed_hf (ws, "Referer:", "");
-  user_agent = ws_get_packed_hf (ws, "User-Agent:", "");
-
-  buf[0] = 0;
-  time (&now);
-#if defined (HAVE_LOCALTIME_R) && !defined (WIN32)
-  tm = localtime_r (&now, &tm1);
-#else
-  tm = localtime (&now);
-#endif
-  month = tm->tm_mon + 1;
-  day = tm->tm_mday;
-  year = tm->tm_year + 1900;
-
-  u_id = ws_auth_get (ws);
-
-  snprintf (buf, sizeof (buf), "%s %s [%02d/%s/%04d:%02d:%02d:%02d %+05d] \"%.2000s%s\" %d " OFF_T_PRINTF_FMT " \"%.1000s\" \"%.500s\"\n",
-      ws->ws_client_ip, u_id, (tm->tm_mday), monthname [month - 1], year,
-      tm->tm_hour, tm->tm_min, tm->tm_sec, TZ_TO_HHMM(dt_local_tz_for_logs),
-      (ws->ws_req_line
-#ifdef WM_ERROR
-       && ws->ws_method != WM_ERROR
-#endif
-       ? ws->ws_req_line : "GET unspecified"),
-      ws->ws_proto, http_resp_code, (OFF_T_PRINTF_DTP) len, referer ? referer : "", user_agent ? user_agent : "");
-
-  dk_free_box (u_id);
-  dk_free_box (referer);
-  dk_free_box (user_agent);
-
-  mutex_enter (ws_http_log_mtx);
-  new_log = http_log_file_check (tm);
-  if (new_log)
-    {
-      fflush (http_log);
-      fclose (http_log);
-      http_log = fopen (new_log, "a");
-      if (!http_log)
-	{
-	  log_error ("Can't open new HTTP log file (%s)", new_log);
-	  mutex_leave (ws_http_log_mtx);
-	  return;
-	}
-    }
-  fputs (buf, http_log);
-  fflush (http_log);
-  mutex_leave (ws_http_log_mtx);
-
-  return;
-}
-#endif
 
 
 caddr_t
@@ -1943,6 +1868,7 @@ ws_clear (ws_connection_t * ws, int error_cleanup)
       dk_free_tree ((box_t) ws->ws_redirect_from);
       ws->ws_redirect_from = NULL;
       ws->ws_in_error_handler = 0;
+      ws->ws_method_name[0] = 0;
     }
   dk_free_tree ((box_t) ws->ws_stream_params);
   ws->ws_stream_params = NULL;
@@ -2087,7 +2013,7 @@ static caddr_t *
 ws_header_line_to_array (caddr_t string)
 {
   int len;
-  char buf [10000];
+  char buf [HTTP_MAX_REQUEST_LEN];
   dk_set_t lines = NULL;
   caddr_t * headers = NULL;
   dk_session_t * ses = NULL;
@@ -2115,6 +2041,8 @@ ws_get_mime_variant (char * mime, const char ** found)
 {
   static const char * compat[] = {"text/plain", "text/*", NULL, NULL}; /* for now text/plain only, can be added more */
   int inx;
+  if (!strchr(mime, '/'))
+    return "*";
   *found = NULL;
   for (inx = 0; NULL != compat[inx]; inx += 2)
     {
@@ -2173,6 +2101,8 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
   if (!mime)
     mime = "text/html";
   asked = ws_split_ac_header (accept);
+  if (!BOX_ELEMENTS(asked))
+    goto done;
   DO_BOX_FAST_STEP2 (caddr_t, p, caddr_t, q, inx, asked)
     {
       float qf = unbox_float (q);
@@ -2233,6 +2163,7 @@ ws_check_accept (ws_connection_t * ws, const char * mime, const char * code, int
       dk_free_tree ((caddr_t)headers);
       dk_free_box ((caddr_t)ses);
     }
+done:
   dk_free_tree (ctype);
   dk_free_tree (cenc);
   dk_free_tree ((caddr_t)asked);
@@ -2403,49 +2334,38 @@ http_add_cors_allow_headers (ws_connection_t * ws, char * buf, size_t buf_len)
     dk_free_tree (list_to_array (dk_set_nreverse (requested)));
 }
 
+static inline int
+ws_cors_match (dk_set_t * set, caddr_t origin)
+{
+  DO_SET (caddr_t, pattern, set)
+    {
+      if (DVC_MATCH == cmp_like (origin, pattern, NULL, 0, LIKE_ARG_CHAR, LIKE_ARG_CHAR))
+        return 1;
+    }
+  END_DO_SET();
+  if (!stricmp (origin, "null"))
+    return 1;
+  return 0;
+}
+
 static int
 ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 {
 #ifdef VIRTUAL_DIR
   caddr_t origin = ws_mime_header_field (ws->ws_lines, "Origin", NULL, 1);
-  char * ret_origin = NULL;
   int rc = 0;
   /* CORS enabled Vdir, and Origin present, go ahead */
   if (origin && ws->ws_map && ws->ws_map->hm_cors)
     {
-      caddr_t * orgs = ws_split_cors (origin), * place = NULL;
-      int inx;
       /* match the Origin first */
-      if (ws->ws_map->hm_cors == (id_hash_t *) WS_CORS_STAR)
-	{
-	  if (orgs != WS_CORS_STAR && BOX_ELEMENTS_0 (orgs) > 0)
-	    ret_origin = orgs[0];
-	  rc = 1;
-	}
-      else if (orgs != WS_CORS_STAR)
-	{
-	  DO_BOX (caddr_t, org, inx, orgs)
-	    {
-	      if (NULL != (place = (caddr_t *) id_hash_get_key (ws->ws_map->hm_cors, (caddr_t) & org)))
-		{
-		  ret_origin = org;
-		  rc = 1;
-		  break;
-		}
-	    }
-	  END_DO_BOX;
-	}
-      /* client have permissions to proceed, so we say ac allow origin  */
-      if (rc)
-	{
-	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%sAccess-Control-Max-Age: %d\r\n",
-	      ret_origin ? ret_origin : "*",
-	      (ret_origin && WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:")) ? "Access-Control-Allow-Credentials: true\r\n" : "",
-              http_ac_max_age); /* max age, for now a constant, should be a config param */
-        }
-      if (rc)
+      if (ws->ws_map->hm_cors == (dk_set_t) WS_CORS_STAR || ws_cors_match (&ws->ws_map->hm_cors, origin))
 	{
 	  char ach[2000] = { 0 };
+          /* client have permissions to proceed, so we say ac allow origin  */
+	  snprintf (buf, buf_len, "Access-Control-Allow-Origin: %s\r\n%sAccess-Control-Max-Age: %d\r\n",
+	      origin,
+	      WS_NOT_HDR (ws, "Access-Control-Allow-Credentials:") ? "Access-Control-Allow-Credentials: true\r\n" : "",
+              http_ac_max_age); /* max age, for now a constant, should be a config param */
           /* preflight next, allow or disallow  headers  */
 	  if (WS_NOT_HDR (ws, "Access-Control-Expose-Headers:"))
 	    {
@@ -2456,9 +2376,8 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 	      http_add_cors_allow_headers (ws, ach, sizeof (ach));
 	    }
 	  strcat_size_ck (buf, ach, buf_len);
-	}
-      if (orgs != WS_CORS_STAR)
-	dk_free_tree ((caddr_t)orgs);
+          rc = 1;
+        }
     }
   dk_free_tree (origin);
   if (0 == rc && ws->ws_map && ws->ws_map->hm_cors_restricted)
@@ -2466,6 +2385,8 @@ ws_cors_check (ws_connection_t * ws, char * buf, size_t buf_len)
 #endif
   return 1;
 }
+
+#define CONTENT_ALLOWED(ws) (101 != (ws)->ws_status_code && 204 != (ws)->ws_status_code && 304 != (ws)->ws_status_code)
 
 void
 ws_strses_reply (ws_connection_t * ws, const char * volatile code)
@@ -2603,7 +2524,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
   accept_gz = ws_get_packed_hf (ws, "Accept-Encoding:", "");
   if (IS_CHUNKED_OUTPUT (ws))
     cnt_enc = WS_CE_CHUNKED;
-  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11 && ws->ws_status_code > 199)
+  else if (enable_gzip && accept_gz && strstr (accept_gz, "gzip") && ws->ws_proto_no == 11 && ws->ws_status_code > 199 && CONTENT_ALLOWED(ws))
     {
       cnt_enc = WS_CE_GZIP;
       ws->ws_try_pipeline = 0; /* browsers based on webkit workaround */
@@ -2633,7 +2554,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	}
 /*      fprintf (stdout, "\nREPLY-----\n%s", tmp); */
       /* mime type */
-      if (ws->ws_status_code != 101 && WS_NOT_HDR (ws, "Content-Type:"))
+      if (CONTENT_ALLOWED(ws) && WS_NOT_HDR (ws, "Content-Type:"))
 	{
 #ifdef BIF_XML
 	  if (media_type)
@@ -2668,12 +2589,21 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
       if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400 &&
 	  (NULL == ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Allow:")))
 	{
-	  len = 0;
 	  strses_flush (ws->ws_strses);
 	  SES_PRINT (ws->ws_session, "Allow: ");
 	  http_options_print (ws, ws->ws_session);
 	  SES_PRINT (ws->ws_session, "\r\n");
 	}
+
+      if (ws->ws_method == WM_OPTIONS && ws->ws_status_code < 400 &&
+	  (NULL == ws->ws_header || NULL == nc_strstr ((unsigned char *) ws->ws_header, (unsigned char *) "Access-Control-Allow-Methods:")))
+	{
+	  strses_flush (ws->ws_strses);
+	  SES_PRINT (ws->ws_session, "Access-Control-Allow-Methods: ");
+	  http_options_print (ws, ws->ws_session);
+	  SES_PRINT (ws->ws_session, "\r\n");
+	}
+
 
       /* timestamp */
       if (WS_NOT_HDR (ws, "Date:"))
@@ -2702,7 +2632,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 
       if (WS_NOT_HDR (ws, "Accept-Ranges"))
 	{
-	  if (ws->ws_status_code != 101)
+          if (CONTENT_ALLOWED(ws))
 	    SES_PRINT (ws->ws_session, "Accept-Ranges: bytes\r\n");
 	}
 
@@ -2722,7 +2652,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	  snprintf (tmp, sizeof (tmp), "Transfer-Encoding: chunked\r\nContent-Encoding: gzip\r\n");
 	  SES_PRINT (ws->ws_session, tmp);
 	}
-      else if (ws->ws_status_code != 101 && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
+      else if (CONTENT_ALLOWED(ws) && WS_NOT_HDR(ws, "Content-Length:")) /* plain body */
 	{
 	  snprintf (tmp, sizeof (tmp), "Content-Length: %ld\r\n", len);
 	  SES_PRINT (ws->ws_session, tmp);
@@ -2748,7 +2678,7 @@ ws_strses_reply (ws_connection_t * ws, const char * volatile code)
 	    {
 	      strses_write_out_gz (ws->ws_strses, ws->ws_session, &gzctx);
 	    }
-	  else if (WS_NOT_HDR (ws, "Content-Length:"))
+         else if (WS_NOT_HDR (ws, "Content-Length:") && CONTENT_ALLOWED(ws))
 	    {
 	      strses_write_out (ws->ws_strses, ws->ws_session);
 	    }
@@ -4337,7 +4267,7 @@ run_in_dav:
 #endif
       if (!sch_proc_def (isp_schema (NULL), p_name)
 	  || !ws->ws_map
-	  || !ws->ws_map->hm_vsp_uid)
+	  || (!deflt && !ws->ws_map->hm_vsp_uid))
 	{
 	  strcpy_ck (p_name, "WS.WS.DEFAULT");
 	  deflt = 1;
@@ -4620,7 +4550,7 @@ http_set_client_address (ws_connection_t * ws)
 void
 ws_read_req (ws_connection_t * ws)
 {
-  char line [10000];
+  char line [HTTP_MAX_REQUEST_LEN];
   timeout_t timeout;
   acl_hit_t * hit = NULL;
   dk_session_t * ses = ws->ws_session;
@@ -5418,6 +5348,8 @@ http_session_no_catch_arg (caddr_t * qst, state_slot_t ** args, int nth,
   return res;
 }
 
+#define HTTP_URL_ESCAPED 0
+#define HTTP_URL_DECODED 1
 
 caddr_t
 http_path_to_array (char * path, int mode)
@@ -5437,9 +5369,9 @@ http_path_to_array (char * path, int mode)
       if (n_fill > sizeof (name) - 3)
 	break;
       if ((0 == ch || ' ' == ch || '\n' == ch || '\r' == ch || '\t' == ch
-	  || ch == '?') && mode == 0)
+	  || ch == '?') && HTTP_URL_ESCAPED == mode)
 	break;
-      if (0 == ch  && mode == 1)
+      if (0 == ch  && HTTP_URL_DECODED == mode)
 	break;
       if (ch == '/')
 	{
@@ -5449,7 +5381,7 @@ http_path_to_array (char * path, int mode)
 	      n_fill = 0;
 	    }
 	}
-      else if (ch == '%')
+      else if (ch == '%' && HTTP_URL_ESCAPED == mode)
 	{
 	  if (inx >= max || (inx+1) >= max)
 	    {
@@ -5560,8 +5492,9 @@ void
 dks_sqlval_esc_write (caddr_t *qst, dk_session_t *out, caddr_t val, wcharset_t *tgt_charset, wcharset_t *src_charset, int dks_esc_mode)
 {
   query_instance_t * qi = (query_instance_t *) qst;
-  dtp_t dtp = DV_TYPE_OF (val);
+  dtp_t dtp;
 again:
+  dtp = DV_TYPE_OF (val);
   if (DV_STRINGP (val))
     {
       ws_connection_t * ws = qi->qi_client && qi->qi_client->cli_ws ? qi->qi_client->cli_ws : NULL;
@@ -5690,7 +5623,7 @@ bif_http_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_dav_url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return (bif_http_value_1 (qst, err_ret, args, "http_dav_url", DKS_ESC_DAV));
+  return (bif_http_value_1 (qst, err_ret, args, "http_dav_url", DKS_ESC_URI_NRES));
 }
 
 caddr_t
@@ -5885,7 +5818,7 @@ bif_http_pending_req (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return ((caddr_t) list_to_array (dk_set_nreverse (set)));
 }
 
-static void
+void
 http_kill_all ()
 {
   dk_set_t killed = NULL;
@@ -6157,7 +6090,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 	dk_free_tree (ws->ws_path_string);
       dk_free_tree ((caddr_t)(ws->ws_path));
       ws->ws_path_string = box_copy (new_path);
-      parr = (caddr_t *) http_path_to_array (new_path, 1);
+      parr = (caddr_t *) http_path_to_array (new_path, HTTP_URL_DECODED);
       ws->ws_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
     }
 
@@ -6170,7 +6103,7 @@ bif_http_internal_redirect (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
       dk_free_tree (ws->ws_p_path_string);
       dk_free_tree ((caddr_t)(ws->ws_p_path));
       ws->ws_p_path_string = box_copy (new_phy_path);
-      parr = (caddr_t *) http_path_to_array (new_phy_path, 1);
+      parr = (caddr_t *) http_path_to_array (new_phy_path, HTTP_URL_DECODED);
       ws->ws_p_path = ((NULL != parr) ? parr : (caddr_t *) list(0));
       ws->ws_proxy_request = (ws->ws_p_path_string ? (0 == strnicmp (ws->ws_p_path_string, "http://", 7)) : 0);
     }
@@ -8888,28 +8821,26 @@ http_map_fill_cors_allow_headers (caddr_t option_value)
   return ht;
 }
 
-static id_hash_t *
+static dk_set_t
 http_map_fill_cors_origins (caddr_t option_value)
 {
   caddr_t * orgs = ws_split_cors (option_value);
-  id_hash_t * ht = NULL;
+  dk_set_t set = NULL;
   if (orgs)
     {
       if (orgs != WS_CORS_STAR)
         {
           int inx;
-          ptrlong one = 1;
-          ht = id_str_hash_create (7);
           DO_BOX (caddr_t, org, inx, orgs)
             {
-              id_hash_set (ht, (caddr_t) & org, (caddr_t) & one);
+              dk_set_push (&set, org);
             }
           END_DO_BOX;
         }
       else
-        ht = (id_hash_t *) orgs;
+        set = (dk_set_t) orgs;
     }
-  return ht;
+  return set;
 }
 
 
@@ -9731,7 +9662,7 @@ get_http_map (ws_http_map_t ** ws_map, char * lpath, int dir, char * host, char 
   ws_http_map_t ** last_match = NULL;
   int inx, len, elm, rlen, n;
   caddr_t res = NULL;
-  caddr_t * paths = (caddr_t *) http_path_to_array (lpath, 0);
+  caddr_t * paths = (caddr_t *) http_path_to_array (lpath, HTTP_URL_ESCAPED);
   caddr_t path_str;
   if (!ws_map)
     return NULL;
@@ -9973,7 +9904,7 @@ ws_set_phy_path (ws_connection_t * ws, int dir, char * vsp_path)
       ppath = get_http_map (&(ws->ws_map), lpath, dir, listen_host, listen_host);
     }
   ws->ws_p_path_string = ppath;
-  ws->ws_p_path = (caddr_t *) http_path_to_array (ppath, 1);
+  ws->ws_p_path = (caddr_t *) http_path_to_array (ppath, HTTP_URL_DECODED);
 #ifdef _SSL
   if (enable_https_vd_renegotiate && is_https && ws->ws_map && ws->ws_map->hm_ssl_verify_mode != verify_mode)
     {
@@ -10133,6 +10064,8 @@ bif_http_map_get (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
     res = box_num (map->hm_xml_template);
   else if (!strcmp (member, "security_level"))
     res = box_copy (map->hm_sec);
+  else if (!strcmp (member, "security_realm"))
+    res = box_copy (map->hm_realm);
   else if (!strcmp (member, "auth_opts"))
     res = box_copy_tree ((box_t) map->hm_auth_opts);
   else if (!strcmp (member, "soap_opts"))
@@ -10438,13 +10371,23 @@ bif_is_http_ctx (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
   return box_num(1);
 }
 
+static caddr_t
+bif_is_http_error_handler (caddr_t *qst, caddr_t * err_ret, state_slot_t **args)
+{
+  query_instance_t *qi = (query_instance_t *)qst;
+  if (!qi->qi_client->cli_ws)
+    return box_num(0);
+  return box_num(qi->qi_client->cli_ws->ws_in_error_handler);
+}
+
+
 int
 ws_is_https (ws_connection_t * ws)
 {
   int is_https = 0;
 
 #ifdef _SSL
-  if (ws)
+  if (ws && ws->ws_session)
     {
       SSL *ssl = (SSL *) tcpses_get_ssl (ws->ws_session->dks_session);
       is_https = (NULL != ssl);
@@ -11571,8 +11514,9 @@ ws_serve_client_connection (ws_connection_t * ws)
   if (err)
     goto err_end;
 
-  conn = (caddr_t *) dk_alloc_box (sizeof (caddr_t), DV_CONNECTION);
+  conn = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
   conn[0] = (caddr_t) ses;
+  conn[1] = (caddr_t) 1L;
 
   IN_TXN;
   if (!cli->cli_trx->lt_threads)
@@ -11814,7 +11758,7 @@ bif_http_recall_session (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     {
       ret = (caddr_t *) dk_alloc_box (2 * sizeof (caddr_t), DV_CONNECTION);
       ret[0] = (caddr_t) ses;
-      ret[1] = (caddr_t) 1;
+      ret[1] = (caddr_t) 0L;
     }
 
   if (NULL != ses && NULL != ws && ses == ws->ws_session)
@@ -12045,6 +11989,7 @@ http_init_part_one ()
   bif_define_ex ("http_body_read", bif_http_body_read, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("__http_stream_params", bif_http_stream_params, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("is_http_ctx", bif_is_http_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
+  bif_define_ex ("is_http_error_handler", bif_is_http_error_handler, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define_ex ("is_https_ctx", bif_is_https_ctx, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("http_is_flushed", bif_http_is_flushed, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define ("https_renegotiate", bif_https_renegotiate);

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2401,7 +2401,7 @@ sec_stmt_exec (query_instance_t * qi, ST * tree)
 	{
 	  case CREATE_USER_STMT:
 	      qi->qi_trx->lt_replicate = REPL_NO_LOG;
-	      sec_set_user (qi, tree->_.op.arg_1, tree->_.op.arg_1, 0);
+	      sec_set_user (qi, tree->_.op.arg_1, tree->_.op.arg_2, 0);
 	      snprintf (szBuffer, sizeof (szBuffer), "CREATE USER %s", tree->_.op.arg_1);
 	      break;
 	  case SET_GROUP_STMT:

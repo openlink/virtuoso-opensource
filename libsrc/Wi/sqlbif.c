@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -7372,7 +7372,7 @@ bif_atod (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   caddr_t str = bif_string_arg (qst, args, 0, "atod");
   double d = 0;
-  sscanf (str, "%lg", &d);
+  sscanf (str, "%lf", &d);
   return (box_double (d));
 }
 
@@ -10587,6 +10587,8 @@ do_datetime:
 	case DV_SHORT_INT:
 	  {
 	      time_t t = (time_t) unbox(data);
+              if (t < -213498720000L || t > 362387865600L) /* 4800 BC and no more than 22bits for jday at max in future */
+                sqlr_new_error ("22003", "SR351", "UNIX timestamp %lld can not be converted to datetime", t);
 	      res = dk_alloc_box (DT_LENGTH, DV_DATETIME);
 	      time_t_to_dt (t, 0L, res);
 	      DT_SET_TZ (res, 0);
@@ -17186,7 +17188,7 @@ sql_bif_init (void)
   bif_define_ex ("mod"			, bif_mod	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("fmod"                 , bif_fmod      , BMD_RET_TYPE, &bt_double      , BMD_MIN_ARGCOUNT, 2, BMD_MAX_ARGCOUNT, 2      , BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("abs", bif_abs, BMD_ALIAS, "rdf_abs_impl", BMD_RET_TYPE, &bt_any	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
-  bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
+  bif_define_ex ("sign"			, bif_sign	, BMD_RET_TYPE, &bt_integer	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("acos"			, bif_acos	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("asin"			, bif_asin	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);
   bif_define_ex ("atan"			, bif_atan	, BMD_RET_TYPE, &bt_double	, BMD_MIN_ARGCOUNT, 1, BMD_MAX_ARGCOUNT, 1	, BMD_IS_PURE, BMD_DONE);

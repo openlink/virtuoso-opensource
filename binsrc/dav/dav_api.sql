@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -2053,7 +2053,7 @@ create function DAV_AUTHENTICATE_HTTP (
       return rc;
   }
 
-  if ((a_uid is null) and (not i_allow_anonymous or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:'))))
+  if (not is_http_error_handler() and (a_uid is null) and (not i_allow_anonymous or ('' <> WS.WS.FINDPARAM (a_lines, 'Authorization:'))))
   {
     rc := WS.WS.GET_DAV_AUTH (a_lines, i_allow_anonymous, can_write_http, a_uname, a_pwd, a_uid, a_gid, a_perms);
     if (rc < 0)
@@ -2433,7 +2433,10 @@ create function DAV_CHECK_ACLS (
        )
     {
       graph := WS.WS.WAC_GRAPH (path);
-      grpGraph := SIOC.DBA.get_graph () || '/private/%';
+      if (__proc_exists ('SIOC.DBA.get_graph') is not null)
+        grpGraph := SIOC.DBA.get_graph () || '/private/%';
+      else
+        grpGraph := null;
       DB.DBA.DAV_CHECK_ACLS_INTERNAL (mode, netid, webid, webidGraph, graph, grpGraph, IRIs, reqMode, realMode, a_cert);
       if ((reqMode[0] <= realMode[0]) and (reqMode[1] <= realMode[1]) and (reqMode[2] <= realMode[2]))
       {
@@ -6123,7 +6126,7 @@ create procedure WS.WS.WAC_INSERT (
   giid := iri_to_id (graph);
   subj := iri_to_id (WS.WS.DAV_LINK (path));
   DB.DBA.TTLP (aciContent, graph, graph);
-  sparql insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
+  sparql define input:storage "" insert into graph ?:giid { ?s ?p ?:giid } where { graph ?:giid { ?s ?p ?:subj  }};
   if ((sparql define input:storage ""
     prefix foaf: <http://xmlns.com/foaf/0.1/>
     prefix acl: <http://www.w3.org/ns/auth/acl#>

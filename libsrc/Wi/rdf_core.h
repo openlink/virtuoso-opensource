@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -388,5 +388,6 @@ extern int rb_type__xsd_duration;
 extern int rb_type__xsd_yearMonthDuration;
 extern int rb_type__xsd_dayTimeDuration;
 #define RB_IS_DURATION(t) ((t) == rb_type__xsd_yearMonthDuration || (t) == rb_type__xsd_dayTimeDuration || (t) == rb_type__xsd_duration)
+extern int32 rdf_geo_use_wkt;
 
 #endif

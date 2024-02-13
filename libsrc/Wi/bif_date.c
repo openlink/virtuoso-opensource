@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1390,7 +1390,7 @@ bif_date_rfc1123 (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   char temp[100];
   caddr_t arg = bif_date_arg (qst, args, 0, "date_rfc1123");
-  caddr_t dt[DT_LENGTH];
+  dtp_t dt[DT_LENGTH];
   memcpy (&dt[0], arg, sizeof (dt));
   if (DT_TZL (dt))
     {

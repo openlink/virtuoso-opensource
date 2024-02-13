@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -183,6 +183,8 @@ sqlo_ot_oby_seq (sqlo_t * so, op_table_t * top_ot)
 	/* there's order cols from same table non-contiguous in ordering */
 	return;
       }
+      if (col_ot->ot_is_left) /* sort col from left branch, hash would put right match at top? */
+        return;
       if (col_ot != prev_ot)
 	{
 	  prev_ot = col_ot;
@@ -739,6 +741,8 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       int inx;
       all_cols_p = sqlo_oby_exp_cols (so, from_ot->ot_dt, group);
       sqlo_place_oby_specs (so, from_ot, group);
+      if (!texp->_.table_exp.group_by_full)
+        sqlc_error (so->so_sc->sc_cc, "37000", "Statement not allowed");
       _DO_BOX (inx, texp->_.table_exp.group_by_full)
 	{
 	  sqlo_place_oby_specs (so, from_ot, texp->_.table_exp.group_by_full[inx]);
@@ -813,9 +817,11 @@ sqlo_fun_ref_epilogue (sqlo_t * so, op_table_t * from_ot)
       if (locus_to_loclocal)
 	{
 	  fref_dfe->dfe_locus = LOC_LOCAL;
-	  group_dfe->dfe_locus = LOC_LOCAL;
+          if (NULL != group_dfe)
+            group_dfe->dfe_locus = LOC_LOCAL;
 	}
-      t_set_push (&group_dfe->_.setp.fun_refs, fref);
+      if (NULL != group_dfe)
+        t_set_push (&group_dfe->_.setp.fun_refs, fref);
     }
   END_DO_SET();
   if (group_dfe)

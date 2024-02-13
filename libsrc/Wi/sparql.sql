@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1662,6 +1662,8 @@ create function DB.DBA.RDF_DATATYPE_OF_OBJ (in shortobj any, in dflt varchar := 
   -- dbg_obj_princ ('DB.DBA.RDF_DATATYPE_OF_OBJ (', shortobj, ') found twobyte ', twobyte);
   if (257 = twobyte)
     return case (rdf_box_lang (shortobj)) when 257 then __uname (dflt) else null end;
+  if (256 = twobyte and sys_stat('rdf_geo_use_wkt'))
+    return UNAME'http://www.opengis.net/ont/geosparql#wktLiteral';
   whenever not found goto badtype;
   select __uname (RDT_QNAME) into res from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = twobyte;
   return res;
@@ -8674,6 +8676,7 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
 {
   declare ins_count, ins_grp_count integer;
   declare res_ses any;
+  res_ses := null;
   ins_count := 0;
   ins_grp_count := 0;
   if (__tag of vector = __tag (dflt_graph_iri))
@@ -8719,20 +8722,20 @@ create function DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT (in dflt_graph_iri any, i
             repl_text ('__rdf_repl', '__rdf_repl_flush_queue ()');
           if (compose_report and ins_grp_count < 1000)
             {
+              if (res_ses is null)
+                res_ses := string_output();
               if (group_ctr)
                 http ('\n', res_ses);
-              else
-                res_ses := string_output();
               http (sprintf ('Insert into <%s>, %d (or less) quads -- done', g, g_ins_count), res_ses);
             }
         }
     }
   if (compose_report)
     {
+      if (res_ses is not null)
+        return string_output_string (res_ses);
       if (ins_grp_count >= 1000)
         return sprintf ('Insert into %d (or more) graphs, total %d (or less) quads -- done', ins_grp_count, ins_count);
-      if (ins_count)
-        return string_output_string (res_ses);
       else if (dflt_graph_iri is null)
         return sprintf ('Insert of 0 quads -- nothing to do');
       else

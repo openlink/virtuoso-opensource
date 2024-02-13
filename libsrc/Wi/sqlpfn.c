@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -693,6 +693,112 @@ sqlp_box_upcase (const char *str)
   return s;
 }
 
+int
+sqlp_tree_check_sz (ptrlong type, sql_tree_t * tree)
+{
+  #define st_head ((sql_tree_t *)0)->_
+  size_t len = sizeof (ptrlong);
+  switch (type)
+    {
+      case SELECT_STMT:
+          len += sizeof (st_head.select_stmt);
+          break;
+
+      case SELECT_TOP:
+          len += sizeof (st_head.top);
+          break;
+
+      case ANY_PRED:
+      case ALL_PRED:
+      case SOME_PRED:
+      case ONE_PRED:
+      case EXISTS_PRED:
+      case IN_SUBQ_PRED:
+          len += sizeof (st_head.subq);
+          break;
+
+      case TABLE_EXP:
+          len += sizeof (st_head.table_exp);
+          break;
+
+      case TABLE_REF:
+      case DERIVED_TABLE:
+          len += sizeof (st_head.table_ref);
+          break;
+
+      case JOINED_TABLE:
+          len += sizeof (st_head.join);
+          break;
+
+      case COL_DOTTED:
+          len += sizeof (st_head.col_ref);
+          len -= (2 * sizeof (caddr_t)); /* most are name & prefix */
+          break;
+
+      case TABLE_DOTTED:
+          len += sizeof (st_head.table);
+          len -= sizeof (caddr_t); /* may not have opts */
+          break;
+
+      case CALL_STMT:
+          len += sizeof (st_head.call);
+          len -= (2 * sizeof (ptrlong)); /* most are stored procedures w/o return type, static methods has 4th member */
+          break;
+
+      case ORDER_BY: /* XXX: same as INSERT_VALUES, we take shorter atm */
+          len += sizeof (st_head.ins_vals /* o_spec */);
+          break;
+
+      case UNION_ST:
+      case UNION_ALL_ST:
+          len += sizeof (st_head.set_exp);
+          break;
+      case EXCEPT_ST:
+      case EXCEPT_ALL_ST:
+      case INTERSECT_ST:
+      case INTERSECT_ALL_ST:
+          len += sizeof (st_head.set_exp) - sizeof (ptrlong); /* best is for union */
+          break;
+
+      case BOP_AS:
+          len += sizeof (st_head.as_exp);
+          len -= sizeof (ptrlong); /* xml col is optional */
+          break;
+
+      case FUN_REF:
+          len += sizeof (st_head.fn_ref);
+          break;
+
+      case BOP_NOT:
+      case BOP_OR:
+      case BOP_AND:
+      case BOP_PLUS:
+      case BOP_MINUS:
+      case BOP_TIMES:
+      case BOP_DIV:
+      case BOP_EQ:
+      case BOP_NEQ:
+      case BOP_LT:
+      case BOP_LTE:
+      case BOP_GT:
+      case BOP_GTE:
+      case BOP_LIKE:
+      case BOP_NULL:
+      case BOP_SAME:
+      case BOP_NSAME:
+      case BOP_IN_ATOM:
+      case BOP_MOD:
+          len += sizeof (st_head.bin_exp);
+          len -= (2 * sizeof (caddr_t)); /* more & serial are optional */
+          break;
+
+      default:
+          break;
+    }
+  if (len > box_length(tree))
+    return 0;
+  return 1;
+}
 
 caddr_t
 t_sqlp_box_upcase (const char *str)
@@ -720,7 +826,6 @@ t_sqlp_box_id_quoted (const char *str, int end_ofs)
   s = t_sym_string (buf);
   return s;
 }
-
 
 #if 0
 caddr_t

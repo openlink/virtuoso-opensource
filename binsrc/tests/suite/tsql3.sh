@@ -8,7 +8,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #  
-#  Copyright (C) 1998-2023 OpenLink Software
+#  Copyright (C) 1998-2024 OpenLink Software
 #  
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -253,6 +253,13 @@ then
 fi
 
 
+
+RUN $ISQL $DSN PROMPT=OFF VERBOSE=OFF ERRORS=STDOUT < $VIRTUOSO_TEST/trdfapi.sql
+if test $STATUS -ne 0
+then
+    LOG "***ABORTED:rdfapi "
+    exit 1
+fi
 
 
 # suite for bug #1092 - commented out for now

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2600,7 +2600,7 @@ sst_merge_ands (search_stream_t * sst, int calc_score)
   DO_BOX (search_stream_t *, term, inx, sst->sst_terms)
     {
       if (term->sst_op == BOP_AND
-	  && term->sst_not)
+	  && term->sst_not && sst_term_is_mergable (term))
 	{
 	  nots += dk_set_length (term->sst_not);
 	  total += BOX_ELEMENTS (term->sst_terms);
@@ -3754,7 +3754,8 @@ txs_ext_fti_get (query_instance_t * qi, slice_id_t slice, caddr_t ext_fti, caddr
     call_uri, NULL /*uid*/, NULL /*pwd*/, NULL /*method*/, NULL /*http_hdr*/, NULL /*body*/,
     NULL /*cert*/, NULL /*pk_pass*/, 600000 /*time_out*/, 0 /*time_out_is_null*/, NULL /*proxy*/, NULL /*ca_certs*/, 0 /*insecure*/,
     0 /* ret_arg_index */,
-    3);
+    3,
+    NULL, NULL, 0);
 
 #ifdef EXT_FTI_LOG
   {

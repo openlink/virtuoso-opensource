@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1221,6 +1221,11 @@ http_cli_print_patched_url (dk_session_t * ses, caddr_t url)
     }
 }
 
+#define HT_MAY_HAVE_BODY(ctx) (HC_METHOD_GET != (ctx)->hcctx_method && \
+                               HC_METHOD_HEAD != (ctx)->hcctx_method && \
+                               HC_METHOD_DELETE != (ctx)->hcctx_method && \
+                               HC_METHOD_OPTIONS != (ctx)->hcctx_method)
+
 HC_RET
 http_cli_send_req (http_cli_ctx * ctx)
 {
@@ -1230,6 +1235,7 @@ http_cli_send_req (http_cli_ctx * ctx)
 
   CATCH_WRITE_FAIL (ctx->hcctx_http_out)
     {
+      int64 request_len = strses_length (ctx->hcctx_req_body);
       SES_PRINT (ctx->hcctx_http_out, http_cli_get_method_string (ctx));
       SES_PRINT (ctx->hcctx_http_out, " ");
       http_cli_print_patched_url (ctx->hcctx_http_out, http_cli_get_doc_str (ctx));
@@ -1239,9 +1245,12 @@ http_cli_send_req (http_cli_ctx * ctx)
       http_cli_std_hdrs (ctx);
       strses_write_out (ctx->hcctx_pub_req_hdrs, ctx->hcctx_http_out);
       strses_write_out (ctx->hcctx_prv_req_hdrs, ctx->hcctx_http_out);
-      snprintf (req_tmp, sizeof (req_tmp),
-	       "Content-Length: " BOXINT_FMT "\r\n\r\n", strses_length (ctx->hcctx_req_body));
-      SES_PRINT (ctx->hcctx_http_out, req_tmp);
+      if (request_len > 0 || HT_MAY_HAVE_BODY(ctx))
+        {
+          snprintf (req_tmp, sizeof (req_tmp), "Content-Length: " BOXINT_FMT "\r\n", request_len);
+          SES_PRINT (ctx->hcctx_http_out, req_tmp);
+        }
+      SES_PRINT (ctx->hcctx_http_out, "\r\n");
       strses_write_out (ctx->hcctx_req_body, ctx->hcctx_http_out);
       session_flush_1 (ctx->hcctx_http_out);
     }
@@ -1322,6 +1331,11 @@ http_cli_parse_resp_hdr (http_cli_ctx * ctx, char* hdr, int num_chars)
     {
       ctx->hcctx_keep_alive = 0;
       ctx->hcctx_close = 1;
+      return (HC_RET_OK);
+    }
+  if (!strnicmp ("Content-Type:", hdr, 13) && nc_strstr ((unsigned char *) hdr, (unsigned char *) "text/event-stream"))
+    {
+      ctx->hcctx_is_event_stream = 1;
       return (HC_RET_OK);
     }
   if (NULL != ctx->hcctx_proxy.hcp_proxy && !strnicmp ("Proxy-Connection:", hdr, 17)
@@ -1457,6 +1471,123 @@ http_cli_get_resp_headers (http_cli_ctx * ctx)
 }
 
 HC_RET
+http_cli_sse_evt_hook (http_cli_ctx * ctx, dk_session_t * ses, char * line, int readed)
+{
+  static query_t * qr = NULL;
+  query_instance_t * qi = (query_instance_t *)ctx->hcctx_qst;
+  query_t * proc;
+  caddr_t err = NULL, data, ret = NULL;
+  caddr_t p_name = ctx->hcctx_callback, *args = ctx->hcctx_callback_args;
+  client_connection_t * cli = qi->qi_client;
+  local_cursor_t * lc = NULL;
+
+  if (readed > 1)
+    {
+      session_buffered_write (ses, line, readed);
+      return (HC_RET_OK);
+    }
+
+  if (!qr)
+    qr = sql_compile_static ("call (?) (?, ?)", bootstrap_cli, &err, SQLC_DEFAULT);
+
+  if (err)
+    goto err_end;
+
+  if (!p_name || !(proc = (query_t *)sch_name_to_object (wi_inst.wi_schema, sc_to_proc, p_name, NULL, "dba", 0)))
+    {
+      err = srv_make_new_error ("37000", "HTHN0", "No such procedure `%s`", p_name);
+      goto err_end;
+    }
+
+  if (proc->qr_to_recompile)
+    proc = qr_recompile (proc, &err);
+
+  if (err)
+    goto err_end;
+  /* call evt handler */
+  data = strses_string(ses); /* check len, events should be small chunks but anyway must check */
+  err = qr_quick_exec (qr, cli, NULL, &lc, 3,
+      ":0", p_name, QRP_STR,
+      ":1", data, QRP_RAW,
+      ":2", box_copy_tree(args), QRP_RAW);
+  if (!err && lc && DV_ARRAY_OF_POINTER == DV_TYPE_OF (lc->lc_proc_ret) && BOX_ELEMENTS ((caddr_t *)lc->lc_proc_ret) > 1)
+    {
+      ret = ((caddr_t *)(lc->lc_proc_ret))[1];
+      if (ret && DV_STRINGP(ret))
+        session_buffered_write ((dk_session_t *)ctx->hcctx_resp_body, ret, box_length(ret) - 1);
+    }
+
+err_end:
+  if (lc)
+    lc_free (lc);
+  /* ck err */
+  strses_flush(ses);
+  if (err && (err != (caddr_t) SQL_NO_DATA_FOUND))
+    {
+      if (0 != strncmp (ERR_STATE (err), "VSPRT", 5))
+        {
+          ctx->hcctx_err = err;
+          return (HC_RET_ERR_ABORT);
+        }
+      else
+        {
+          dk_free_tree(err);
+          return (HC_RET_STOP);
+        }
+    }
+  return (HC_RET_OK);
+}
+
+HC_RET
+http_cli_read_sse_content (http_cli_ctx * ctx)
+{
+  char line [4096];
+  int icnk = 0, chunked = ctx->hcctx_is_chunked;
+  int readed = 0, rc = HC_RET_OK;
+  dk_session_t * ses = ctx->hcctx_http_out, * data = strses_allocate (), * res = strses_allocate ();
+
+  dk_free_tree (ctx->hcctx_resp_body);
+  ctx->hcctx_resp_body = (caddr_t)res;
+  CATCH_READ_FAIL (ses)
+    {
+      for (;;)
+	{
+          readed = dks_read_line (ses, line, sizeof (line));
+          if (chunked)
+            {
+              if (1 != sscanf (line,"%x", (unsigned *)(&icnk)))
+                break;
+              if (!icnk && readed) /*last chunk*/
+                {
+                  readed = dks_read_line (ses, line, sizeof (line));
+                  break;
+                }
+              while (icnk > 0)
+                {
+                  readed = MIN (icnk, sizeof (line));
+                  readed = dks_read_line (ses, line, sizeof (line));
+                  if (HC_RET_OK != (rc = http_cli_sse_evt_hook (ctx, data, line, readed)))
+                    goto err_ret;
+                  icnk -= readed;
+                }
+              readed = dks_read_line (ses, line, sizeof (line)); /* lb after chunk */
+            }
+          else
+            {
+              if (HC_RET_OK != (rc = http_cli_sse_evt_hook (ctx, data, line, readed)))
+                goto err_ret;
+            }
+	}
+    }
+  END_READ_FAIL (ses);
+err_ret:
+  if (HC_RET_STOP == rc) /* we don't want to read more, signalled from hook, just disconnect */
+    rc = HC_RET_OK;
+  strses_free (data);
+  return (rc);
+}
+
+HC_RET
 http_cli_read_resp_body (http_cli_ctx * ctx)
 {
   int ret;
@@ -1474,7 +1605,12 @@ http_cli_read_resp_body (http_cli_ctx * ctx)
 
   CATCH_READ_FAIL (ctx->hcctx_http_out)
     {
-      if (ctx->hcctx_is_chunked)
+      if (ctx->hcctx_is_event_stream && NULL != ctx->hcctx_callback)
+        {
+          if (HC_RET_OK != (ret = http_cli_read_sse_content (ctx)))
+            return ret;
+        }
+      else if (ctx->hcctx_is_chunked)
 	{
 	  dk_free_tree (ctx->hcctx_resp_body);
 	  ctx->hcctx_resp_body =
@@ -1977,6 +2113,52 @@ else \
     return (HC_RET_ERR_ABORT); \
   }
 
+static char * http_cookie_av[] = { "comment", "discard", "domain", "path", "max-age", "expires", "secure", "version", "httponly", "samesite", NULL };
+
+static
+void http_get_cookies (caddr_t cookie_str, int split_flag, dk_set_t * set, dk_set_t * reserved)
+{
+  char *tmp, *tok_s = NULL, *tok, *sep;
+  caddr_t in;
+  char ** cookie_av = http_cookie_av;
+
+  in = box_dv_short_string (cookie_str);
+  tok = strtok_r (in, ";", &tok_s);
+  while (tok)
+    {
+      while (*tok && isspace (*tok))
+	tok++;
+      if (tok_s)
+	tmp = tok_s - 2;
+      else if (tok && strlen (tok) > 1)
+	tmp = tok + strlen (tok) - 1;
+      else
+	tmp = NULL;
+      while (tmp && tmp >= tok && isspace (*tmp))
+	*(tmp--) = 0;
+      sep = strchr (tok, '=');
+      if (NULL != sep)
+        *sep++ = 0;
+      for (cookie_av = http_cookie_av; split_flag && NULL != cookie_av[0]; cookie_av++)
+        {
+          if (0 == stricmp (tok, cookie_av[0])) /* reserved names */
+            break;
+        }
+      if (!split_flag || NULL == cookie_av[0])
+        {
+          dk_set_push (set, box_dv_short_string (tok));
+          dk_set_push (set, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+        }
+      else if (reserved)
+        {
+          dk_set_push (reserved, box_dv_short_string (tok));
+          dk_set_push (reserved, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
+        }
+      tok = strtok_r (NULL, ";", &tok_s);
+    }
+  dk_free_box (in);
+}
+
 
 /* Pick the last of the strongest authentication schemes offered */
 
@@ -2094,7 +2276,8 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 {
   int ret;
   char *s = NULL, *last;
-  caddr_t url, loc, err = NULL;
+  caddr_t url, loc, err = NULL, cookie_header = NULL;
+  dk_set_t cookies = NULL;
   CATCH_ABORT (http_cli_read_resp_hdrs, ctx, ret);
   CATCH_ABORT (http_cli_read_resp_body, ctx, ret);
 
@@ -2106,7 +2289,7 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 
   DO_SET (caddr_t, hdr, &ctx->hcctx_resp_hdrs)
     {
-      if (!strnicmp ("Location:", hdr, 9))
+      if (!s && !strnicmp ("Location:", hdr, 9))
 	{
 	  last = hdr + box_length (hdr) - 2;
 	  s = hdr + 10;
@@ -2116,8 +2299,11 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
 	      last[0] = 0;
 	      last--;
 	    }
-	  break;
 	}
+      else if (ctx->hcctx_accept_cookies && !strnicmp ("Set-Cookie:", hdr, 11))
+        http_get_cookies (hdr + 11, 1, &cookies, NULL);
+      if (NULL != s && !ctx->hcctx_accept_cookies) /* no need to continue looking if location found */
+        break;
     }
   END_DO_SET ();
 
@@ -2137,6 +2323,24 @@ http_cli_std_handle_redir (http_cli_ctx * ctx, caddr_t parm, caddr_t ret_val, ca
     url = box_copy (ctx->hcctx_url);
   if (url != loc)
     dk_free_box (loc);
+  if (NULL != cookies)
+    {
+      cookies = dk_set_nreverse(cookies);
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, "Cookie:");
+      DO_KEYWORD_SET (k, caddr_t, v, &cookies)
+        {
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, " ");
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, k);
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, "=");
+          if (DV_STRINGP(v))
+            SES_PRINT (ctx->hcctx_pub_req_hdrs, v);
+          SES_PRINT (ctx->hcctx_pub_req_hdrs, ";");
+        }
+      END_DO_SET();
+      SES_PRINT (ctx->hcctx_pub_req_hdrs, "\r\n");
+      dk_free_tree (list_to_array(cookies));
+      cookies = NULL;
+    }
   RELEASE (ctx->hcctx_host);
   RELEASE (ctx->hcctx_uri);
   RELEASE (ctx->hcctx_url);
@@ -2348,6 +2552,7 @@ http_cli_req_init (http_cli_ctx * ctx)
       strses_flush (ctx->hcctx_prv_req_hdrs);
 
       ctx->hcctx_is_chunked = 0;
+      ctx->hcctx_is_event_stream = 0;
       ctx->hcctx_respcode = 0;
       ctx->hcctx_resp_content_length = 0;
       ctx->hcctx_resp_content_len_recd = 0;
@@ -2382,6 +2587,7 @@ http_cli_resp_reset (http_cli_ctx * ctx)
   strses_flush (ctx->hcctx_prv_req_hdrs);
 
   ctx->hcctx_is_chunked = 0;
+  ctx->hcctx_is_event_stream = 0;
   ctx->hcctx_respcode = 0;
   ctx->hcctx_resp_content_length = 0;
   ctx->hcctx_resp_content_len_recd = 0;
@@ -2512,6 +2718,8 @@ http_cli_init_std_redir (http_cli_ctx* ctx, int r)
    13. insecure option
    14. ret argument index in args ssls
    15. how many redirects to follow
+   16. SSE event PL callback name
+   17. ^^^ args
 In bif_http_client_impl, arguments qst, err_ret, args and me are traditional
 All arguments except the URL can be db NULLs in bif call, NULL pointers in _impl call.
 */
@@ -2521,7 +2729,8 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
-    int follow_redirects)
+    int follow_redirects,
+    caddr_t callback, caddr_t * callback_args, int accept_cookies)
 {
   http_cli_ctx * ctx;
   const char* ua_id = http_client_id_string;
@@ -2542,6 +2751,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     http_cli_init_std_auth (ctx, uid, pwd);
   if (follow_redirects)
     http_cli_init_std_redir (ctx, follow_redirects);
+  ctx->hcctx_accept_cookies = accept_cookies;
 
   if (method)
     {
@@ -2605,6 +2815,11 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     {
       http_cli_ctx_free (ctx);
       return ret;
+    }
+  if (callback)
+    {
+      ctx->hcctx_callback = callback;
+      ctx->hcctx_callback_args = callback_args;
     }
 
   IO_SECT(qst);
@@ -2688,9 +2903,9 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   caddr_t uid = NULL, pwd = NULL;
   caddr_t http_hdr = NULL, body = NULL, method = NULL;
   uint32 time_out = 0;
-  int time_out_is_null = 1, insecure = 0, follow_redirects = 0;
+  int time_out_is_null = 1, insecure = 0, follow_redirects = 0, accept_cookies = 0;
   caddr_t cert = NULL, pk_pass = NULL;
-  caddr_t proxy = NULL, ca_certs = NULL;
+  caddr_t proxy = NULL, ca_certs = NULL, cbk = NULL, *cbk_args = NULL;
 
   if (BOX_ELEMENTS (args) > 1)
     {
@@ -2742,7 +2957,17 @@ bif_http_client (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       int dummy = 0;
       follow_redirects = (int) bif_long_or_null_arg (qst, args, 13, me, &dummy);
     }
-  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, ca_certs, insecure, 8, follow_redirects);
+  if (BOX_ELEMENTS (args) > 14) /* callback */
+    {
+      cbk = bif_string_or_null_arg (qst, args, 14, me);
+      cbk_args = (caddr_t *)bif_strict_array_or_null_arg (qst, args, 15, me);
+    }
+  if (BOX_ELEMENTS (args) > 16) /* accept_cookies */
+    {
+      int dummy = 0;
+      accept_cookies = (int) bif_long_or_null_arg (qst, args, 16, me, &dummy);
+    }
+  return bif_http_client_impl (qst, err_ret, args, me, url, uid, pwd, method, http_hdr, body, cert, pk_pass, time_out, time_out_is_null, proxy, ca_certs, insecure, 8, follow_redirects, cbk, cbk_args, accept_cookies);
 }
 
 caddr_t
@@ -2976,53 +3201,7 @@ bif_http_get (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     }
   if (n_args > 7) /* time-out */
     to = (uint32) bif_long_or_null_arg (qst, args, 7, me, &to_is_null);
-  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects);
-}
-
-static char *http_cookie_av[] = { "comment", "discard", "domain", "path", "max-age", "expires", "secure", "version", NULL };
-
-static void
-http_get_cookies (caddr_t cookie_str, int split_flag, dk_set_t * set, dk_set_t * reserved)
-{
-  char *tmp, *tok_s = NULL, *tok, *sep;
-  caddr_t in;
-  char **cookie_av = http_cookie_av;
-
-  in = box_copy (cookie_str);
-  tok = strtok_r (in, ";", &tok_s);
-  while (tok)
-    {
-      while (*tok && isspace (*tok))
-	tok++;
-      if (tok_s)
-	tmp = tok_s - 2;
-      else if (tok && strlen (tok) > 1)
-	tmp = tok + strlen (tok) - 1;
-      else
-	tmp = NULL;
-      while (tmp && tmp >= tok && isspace (*tmp))
-	*(tmp--) = 0;
-      sep = strchr (tok, '=');
-      if (NULL != sep)
-	*sep++ = 0;
-      for (cookie_av = http_cookie_av; split_flag && NULL != cookie_av[0]; cookie_av++)
-	{
-	  if (0 == stricmp (tok, cookie_av[0]))	/* reserved names */
-	    break;
-	}
-      if (!split_flag || NULL == cookie_av[0])
-	{
-	  dk_set_push (set, box_dv_short_string (tok));
-	  dk_set_push (set, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
-	}
-      else if (reserved)
-	{
-	  dk_set_push (reserved, box_dv_short_string (tok));
-	  dk_set_push (reserved, sep ? box_dv_short_string (sep) : NEW_DB_NULL);
-	}
-      tok = strtok_r (NULL, ";", &tok_s);
-    }
-  dk_free_box (in);
+  return bif_http_client_impl (qst, err_ret, args, me, uri, NULL, NULL, method, header, body, NULL, NULL, to, to_is_null, proxy, NULL, 0, 1, follow_redirects, NULL, NULL, 0);
 }
 
 caddr_t

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -72,10 +72,11 @@
 
 /* Hook/event handler return values */
 
-#define HC_RET_RETRY      1 /* Retry connection */
+#define HC_RET_STOP       2     /* Stopped inside event hook */
+#define HC_RET_RETRY      1	/* Retry connection */
 #define HC_RET_OK         0
-#define HC_RET_ERR_CONT  -1 /* Continue hook function dispatch */
-#define HC_RET_ERR_ABORT -2 /* Abort hook function dispatch */
+#define HC_RET_ERR_CONT  -1	/* Continue hook function dispatch */
+#define HC_RET_ERR_ABORT -2	/* Abort hook function dispatch */
 
 /* Flags */
 
@@ -150,6 +151,7 @@ typedef struct http_cli_ctx_s
   int               hcctx_http_min;
   int               hcctx_respcode;
   int               hcctx_is_chunked;
+  int               hcctx_is_event_stream;
   int               hcctx_is_gzip;
   int               hcctx_keep_alive;
   int               hcctx_close;
@@ -204,7 +206,10 @@ typedef struct http_cli_ctx_s
   dk_set_t          hcctx_hooks [HTTP_CLI_NO_HOOKS]; /* hook dispatch queues */
   int               hcctx_hook_ret;
   caddr_t *	    hcctx_qst;
+  caddr_t           hcctx_callback;
+  caddr_t *         hcctx_callback_args;
   int 		    hcctx_redirects;
+  char              hcctx_accept_cookies;
 } http_cli_ctx;
 
 
@@ -283,5 +288,7 @@ bif_http_client_impl (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, co
     caddr_t url, caddr_t uid, caddr_t pwd, caddr_t method, caddr_t http_hdr, caddr_t body,
     caddr_t cert, caddr_t pk_pass, uint32 time_out, int time_out_is_null, caddr_t proxy, caddr_t ca_certs, int insecure,
     int ret_arg_index,
-    int follow_redirects);
+    int follow_redirects,
+    caddr_t callback, caddr_t * callback_args, int accept_cookies);
+
 #endif /* __HTTP_CLIENT_H__ */

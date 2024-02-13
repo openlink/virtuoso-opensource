@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -449,7 +449,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
       }
       else if (prop = ':displayname')
       {
-        http (sprintf ('<D:displayname>%V</D:displayname>\n', name));
+        http (sprintf ('<D:displayname>%V</D:displayname>\n', __box_flags_tweak (name,2)));
         found_sprop := 1;
       }
       else if (prop = ':getlastmodified')
@@ -732,7 +732,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
       foreach (any prop in props) do
       {
         prop1 := prop[0];
-        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
+        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'oWiki:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
           goto _skip2;
 
         WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop1, prop1, prop[1]);
@@ -1221,7 +1221,7 @@ create procedure WS.WS.PROPPATCH_INT (
   in gid integer,
   in mode varchar := 'proppatch')
 {
-  -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, ')');
+  -- dbg_obj_princ ('WS.WS.PROPPATCH_INT (', path, params, lines, id, st, auth_uid, auth_pwd, uid, gid, ')');
   declare _body any;
   declare rc, rc_all, xtree, xtd any;
   declare po, pn, pns, pv, prop_name, props, rc_prop any;
@@ -1761,6 +1761,8 @@ create procedure WS.WS.DAV_LINK (in p varchar)
   def := registry_get ('URIQADefaultHost');
   h := sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host (def));
   s := string_output ();
+  if (isstring (p))
+    __box_flags_set (p, 2);
   http_dav_url (p, null, s);
   s := string_output_string (s);
   return h || s;
@@ -1820,6 +1822,7 @@ create procedure WS.WS.PUT (
 
   _atomPub := 0;
   content_type := WS.WS.FINDPARAM (lines, 'Content-Type');
+  content_type := trim (content_type, '\r\n ');
   content_type_attr := http_request_header (lines, 'Content-Type', 'type', '');
   _method := http_request_get ('REQUEST_METHOD');
   rc_type := 'R';
@@ -2271,7 +2274,7 @@ create procedure WS.WS.PATCH (
 
     giid := iri_to_id (WS.WS.DAV_IRI (full_path));
     set_user_id ('dba');
-    exec ('sparql define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
+    exec ('sparql define input:storage "" define output:format "NICE_TTL" construct { ?s ?p ?o } where { graph ?? { ?s ?p ?o }}', null, null, vector (giid), 0, meta, data);
     if (not (isvector (data) and length (data) = 1 and isvector (data[0]) and length (data[0]) = 1 and __tag (data[0][0]) = __tag of stream))
       goto _skip;
 
@@ -3014,6 +3017,12 @@ again:
     if (DB.DBA.DAV_DET_IS_WEBDAV_BASED (DB.DBA.DAV_DET_NAME (_res_id)) and (_accept = 'text/html') and WS.WS.TTL_REDIRECT (_col, full_path, cont_type))
       return;
 
+      if (not isinteger (_res_id) and http_request_status_code_get() > 399)
+        {
+          http (content);
+          return;
+        }
+
     _sse_cont_type := cont_type;
     cont_type := case when not _sse_mime_encrypt then cont_type else 'message/rfc822' end;
 
@@ -3131,7 +3140,8 @@ again:
 
     if (client_etag <> server_etag)
     {
-      DB.DBA.DAV_SET_HTTP_STATUS (200);
+      if (isinteger (_res_id) or http_request_status_get() is null)
+        DB.DBA.DAV_SET_HTTP_STATUS (200);
       xpr := get_keyword ('XPATH', params, '/*');
       if (cont_type = 'xml/view')
       {
@@ -3476,7 +3486,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
   declare gr, as_define, as_limit, as_offset varchar;
   declare id_ integer;
   declare pref_mime varchar;
-  declare fmt, etag, qr varchar;
+  declare fmt, etag, qr, det varchar;
   declare n_page, n_count, n_last, n_per_page, is_col integer;
 
   -- macOS WebDAV request
@@ -3505,6 +3515,7 @@ create procedure WS.WS.GET_EXT_DAV_LDP (
 
   fmt := accept;
   is_col := 0;
+  det := null;
   if (fmt = 'text/turtle')
     fmt := 'application/x-nice-turtle';
 
@@ -7513,36 +7524,12 @@ create procedure DB.DBA.LDP_REFRESH (in path varchar, in enabled integer := 0)
 create procedure DB.DBA.DAV_HREF_URL (
   in href varchar)
 {
-  --href := replace (href, ' ', '%20');
-
-  -- return charset_recode (href, 'UTF-8', '_WIDE_');
-
-  -- declare ss any;
-  --
-  -- ss := string_output ();
-  -- http_dav_url (charset_recode (href, 'UTF-8', '_WIDE_'), null, ss);
-  --
-  -- return string_output_string (ss);
-  declare delimiter char;
-  declare ss, parts any;
-
-  ss := string_output ();
-  parts := split_and_decode (href, 0, '\0\0/');
-  delimiter := '';
-  foreach (any part in parts) do
-  {
-    if (part = '')
-    {
-      http ('/', ss);
-    }
-    else
-    {
-      http (delimiter, ss);
-      http_url (charset_recode (part, 'UTF-8', '_WIDE_'), null, ss);
-      delimiter := '/';
-    }
-  }
-  return string_output_string (ss);
+  declare ses any;
+  ses := string_output ();
+  if (isstring (href))
+    __box_flags_set (href, 2);
+  http_dav_url (href, null, ses);
+  return string_output_string (ses);
 }
 ;
 

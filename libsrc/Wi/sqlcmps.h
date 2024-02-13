@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -443,7 +443,7 @@ void ct_generate_col_test (sql_comp_t * sc, comp_table_t * ct, predicate_t * pre
 
 void sqlc_mark_pred_deps (sql_comp_t * sc,  predicate_t * pred, sql_tree_t * tree);
 void sql_node_append (data_source_t ** head, data_source_t * node);
-void sqlc_copy_ssl_if_constant (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp);
+void sqlc_copy_ssl_if_constant_or_param (sql_comp_t * sc, state_slot_t ** ssl_ret, dk_set_t * asg_code, setp_node_t * setp);
 
 data_source_t *sqlc_add_sort_nodes (sql_comp_t * sc, data_source_t * old_head);
 

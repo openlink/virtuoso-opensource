@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2023 OpenLink Software
+--  Copyright (C) 1998-2024 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -822,18 +822,6 @@ create procedure b3s_label (in _S any, in langs any, in lbl_order_pref_id int :=
   declare best_q, q float;
   declare lang, stat, msg varchar;
 
-  if (__proc_exists ('rdf_resolve_labels_s') is not null)
-    {
-      declare ret any;
-      ret := rdf_resolve_labels_s (adler32 (langs), vector (__i2id (_S)));
-      ret := coalesce (ret[0], '');
-      ret := __ro2sq (ret); 
-      if (__tag (ret) = 246)
-	ret := __rdf_strsqlval (ret);
-      if (isnumeric (ret)) 
-        return (cast (ret as varchar));
-      return ret;	
-    }
   stat := '00000';
   --exec (sprintf ('sparql define input:inference "facets" '||
   --'select ?o (lang(?o)) where { <%s> virtrdf:label ?o }', _S), stat, msg, vector (), 0, meta, data);

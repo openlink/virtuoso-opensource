@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -441,6 +441,8 @@ dfe_n_in_order (df_elt_t * dfe, df_elt_t * prev_tb, df_elt_t ** prev_ret, float 
       return 0;
     }
   *cl_colocated = dfe_cl_colocated (prev_tb, dfe);
+  if (!prev_tb->_.table.key)
+    return 0;
   c1 = dfe_lead_const (prev_tb);
   c2 = dfe_lead_const (dfe);
   n1 = prev_tb->_.table.key->key_n_significant;
@@ -4138,7 +4140,7 @@ dfe_table_cost_ic_1 (df_elt_t * dfe, index_choice_t * ic, int inx_only)
 	  if (DFE_TEXT_PRED == pred->dfe_type)
 	    continue;
 	  left_col = in_list ? in_list[0]->_.col.col :
-	    (pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
+	    (!DFE_SHORTCUT(pred->_.bin.left) && pred->_.bin.left->dfe_type == DFE_COLUMN ? pred->_.bin.left->_.col.col : NULL);
 	  if (DFE_BOP_PRED == pred->dfe_type && part == left_col && pred != lower && pred != upper)
 	    {
 	      sqlo_pred_unit (pred, NULL, dfe, &p_cost, &p_arity);

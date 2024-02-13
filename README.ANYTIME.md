@@ -1,5 +1,5 @@
 # Virtuoso Anytime Query Functionality
-<small>Copyright &copy; 2022-2023 OpenLink Software</small>
+<small>Copyright &copy; 2022-2024 OpenLink Software</small>
 
 - [Introduction](#introduction)
 - [Virtuoso Anytime Query extension for SPARQL](#virtuoso-anytime-query-extension-for-sparql)

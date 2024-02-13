@@ -1,4 +1,6 @@
 ECHO BOTH "STARTED: CORS tests\n";
+SET ARGV[0] 0;
+SET ARGV[1] 0;
 VHOST_REMOVE (lpath=>'/cors-a');
 VHOST_REMOVE (lpath=>'/cors-l');
 VHOST_REMOVE (lpath=>'/cors-s');
@@ -111,4 +113,72 @@ ECHO BOTH $LAST[1] ": " $LAST[2] "\n";
 tcors_allowed_try ('GET', '/cors-s', 'X-Denied', 0);
 ECHO BOTH $LAST[1] ": " $LAST[2] "\n";
 
-ECHO BOTH "COMPLETED CORS tests\n";
+
+VHOST_REMOVE(lpath=>'/cors_test_star');
+VHOST_REMOVE(lpath=>'/cors_test');
+VHOST_DEFINE(lpath=>'/cors_test_star', ppath=>'/', opts=>vector ('cors','*'));
+VHOST_DEFINE(lpath=>'/cors_test', ppath=>'/', opts=>vector ('cors','*localhost* https://example.org'));
+
+create procedure CORS_TEST(in p varchar, in x varchar)
+{
+  declare h, r any;
+  commit work;
+  HTTP_CLIENT_EXT (sprintf ('http://localhost:%s/%s', server_http_port(), p), http_method=>'OPTIONS', 
+     http_headers=>sprintf ('Origin: %s', x), headers=>h);
+  r := http_request_header (h, 'Access-Control-Allow-Origin', null, null);
+  if (r = x)
+    return 'OK';
+  signal ('CORSX', sprintf ('Cors check %s failed', x));
+};
+
+select CORS_TEST ('cors_test_star', 'http://localhost');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": known host against star STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test_star', 'http://unknown.domain');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": unknown host against star STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test_star', 'null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": null against star STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'http://localhost');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": known host against pattern STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'http://localhost:8890');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": known host against pattern(2) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'https://localhost:8443');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": known host against pattern(3) STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'http://unknown.domain');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": unknown host against pattern STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'https://example.org');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": known host against fullmatch STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'http://example.org');
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": uknown protocol against fullmatch STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+select CORS_TEST ('cors_test', 'null');
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": null against pattern STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+ECHO BOTH "COMPLETED WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED: CORS tests\n";

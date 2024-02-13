@@ -86,7 +86,7 @@
     </ResourceCompile>
     <Link>
       <AdditionalOptions>/MACHINE:x64 %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads_mt.lib;dk1t_mt.lib;util_mt.lib;odbc32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads_mt.lib;dk1t_mt.lib;util_mt.lib;odbc32.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;legacy_stdio_definitions.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtoledb.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
@@ -137,7 +137,7 @@
     <Link>
       <AdditionalOptions>
       </AdditionalOptions>
-      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads_mt.lib;dk1t_mt.lib;util_mt.lib;odbc32.lib;ws2_32.lib;libcrypto.lib;libssl.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>ole32.lib;oleaut32.lib;odbccp32.lib;rpcrt4.lib;gdi32.lib;comdlg32.lib;threads_mt.lib;dk1t_mt.lib;util_mt.lib;odbc32.lib;ws2_32.lib;libcrypto_static.lib;libssl_static.lib;crypt32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <OutputFile>$(OutDir)virtoledb.dll</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <AdditionalLibraryDirectories>$(ShortPlatform)/$(Configuration)/;../SDK/$(ShortPlatform)/sslsdk/lib%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>

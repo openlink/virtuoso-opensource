@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -648,6 +648,8 @@ sqlc_contains_args (ST * tree, int * contains_type)
 	    return NULL;
 	  if (contains_type)
 	    *contains_type = ct;
+          if (BOX_ELEMENTS_0(call->_.call.params) < 2 || !ST_COLUMN(call->_.call.params[0], COL_DOTTED))
+            return NULL; /*SQL_GPF_T1(sc->sc_cc, "First argument of contains must be a column");*/
 	  return (call->_.call.params);
 	}
     }

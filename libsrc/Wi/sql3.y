@@ -8,7 +8,7 @@
  *   This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *   project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *   This project is free software; you can redistribute it and/or modify it
  *   under the terms of the GNU General Public License as published by the
@@ -354,6 +354,7 @@ extern int scn3yylex (void *void_yylval, yyscan_t yyscanner);
 %type <tree> opt_remote_name
 %type <tree> set_pass
 %type <box> user
+%type <box> user_password_opt
 %type <box> grantee
 %type <list> grantee_commalist
 
@@ -1349,8 +1350,14 @@ set_pass
 			{ $$ = t_listst (3, SET_PASS_STMT, $3, $4); }
 	;
 
+user_password_opt
+        :  /* dummy */              { $$ = NULL; }
+        |  WITH PASSWORD identifier { $$ = $3; }
+        |  IDENTIFIED BY identifier { $$ = $3; }
+        ;
+
 create_user_statement
-	: CREATE USER user	{ $$ = t_listst (2, CREATE_USER_STMT, $3); }
+	: CREATE USER user user_password_opt	{ $$ = t_listst (3, CREATE_USER_STMT, $3, (NULL != $4 ? $4 : $3)); }
 	| CREATE ROLE_L user    { $$ = t_listst (2, CREATE_ROLE_STMT, $3); }
 	;
 
@@ -1455,8 +1462,11 @@ ordering_spec_commalist
 	;
 
 ordering_spec
-	: scalar_exp opt_asc_desc
-		{ $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);  }
+	: scalar_exp opt_asc_desc {
+                    if (ARRAYP($1) && COL_DOTTED == $1->type && $1->_.col_ref.name == STAR)
+                      yyerror (scanner, "Star not allowed for ordering");
+                    $$ = t_listst (4, ORDER_BY, (caddr_t) $1, (ptrlong) $2, NULL);
+                }
 	|  mssql_xml_col opt_asc_desc
 		{ $$ = (ST*) t_list (4, ORDER_BY, t_list (3, COL_DOTTED, NULL, sqlp_xml_col_name ($1)), (ptrlong) $2, NULL); }
 	;

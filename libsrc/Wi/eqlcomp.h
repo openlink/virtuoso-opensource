@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -99,8 +99,8 @@ extern void dbg_sqlc_new_error (const char *file, int line, comp_context_t * cc,
 #define sqlc_error(cc,st,str,...) dbg_sqlc_error (__FILE__, __LINE__, (cc), (st), (str), ##__VA_ARGS__)
 #define sqlc_new_error(cc,st,virt_code,str,...) dbg_sqlc_new_error (__FILE__, __LINE__, (cc), (st), (virt_code), (str), ##__VA_ARGS__)
 #else
-extern void sqlc_error (comp_context_t * cc, const char *st, const char *str,...);
-extern void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...);
+extern void sqlc_error (comp_context_t * cc, const char *st, const char *str,...)  __attribute__ ((format (printf, 3, 4)));
+extern void sqlc_new_error (comp_context_t * cc, const char *st, const char *virt_code, const char *str,...)  __attribute__ ((format (printf, 4, 5)));
 #endif
 void sqlc_resignal_1 (comp_context_t * cc, caddr_t err);
 

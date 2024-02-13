@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2023 OpenLink Software
+ *  Copyright (C) 1998-2024 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3631,8 +3631,16 @@ ddl_table_check_constraints_define_triggers (query_instance_t * qi, caddr_t tb_n
     {
       ST *st = NULL;
       ST *cmpd;
+      int dummy = 0;
       query_t *qr;
       local_cursor_t *lc = NULL;
+
+      if (ST_P (check_cond, BOP_NOT) && NULL != sqlc_contains_args (check_cond->_.bin_exp.left, &dummy))
+        {
+          if (qi)
+            QI_POISON_TRX (qi);
+          sqlr_new_error ("42000", "SR362", "Check constraint cannot use CONTAINS/XCONTAINS predicates");
+        }
 
 
       if (qi)
