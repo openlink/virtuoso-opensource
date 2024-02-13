@@ -104,7 +104,7 @@ dks_charclass_props_t dks_charclasses['R'+1-'>'] = {
 /* J 0x20    */	{0	,0	,0	,0	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,0	,0	,BSLAU8	,0	,0	,0	},
 /* K <       */	{0	,LT	,LTATTR	,LTATTR	,0	,0	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,LT	,LT	,BSLAU8	,0	,0	,BAD	},
 /* L >       */	{0	,GT	,GTATTR	,GTATTR	,COMMENT,CDATA	,PCT	,PCT	,PCT	,PCT	,0	,0	,BSLAU8	,0	,0	,GT	,GT	,BSLAU8	,0	,0	,BAD	},
-/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
+/* M %	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
 /* N /	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
 /* O *	     */	{0	,0	,0	,0	,0	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},
 /* P punct-! */	{0	,0	,0	,0	,0	,0	,PCT	,0	,PCT	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	,0	},

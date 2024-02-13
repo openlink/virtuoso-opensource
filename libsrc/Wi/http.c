@@ -5623,7 +5623,7 @@ bif_http_uri (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 caddr_t
 bif_http_dav_url (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
-  return (bif_http_value_1 (qst, err_ret, args, "http_dav_url", DKS_ESC_DAV));
+  return (bif_http_value_1 (qst, err_ret, args, "http_dav_url", DKS_ESC_URI_NRES));
 }
 
 caddr_t
