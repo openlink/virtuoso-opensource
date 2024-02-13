@@ -1,4 +1,754 @@
+2024-02-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated ChangeLog
+
+	Updated version to 7.2.12 engine 3239
+
+	Updated NEWS.md
+
+	Fixed portability issues
+
+	Updated version to 7.2.12-rc2
+
+2024-02-13  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed dav URI esc should follow escapeURI char percent encoding rules
+
+	Revert dks_esc_uri table for %H compat
+
+2024-02-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue catching error from chash_error
+
+	Fixed DAV URLs must encode following rules as for encodeURI
+
+	Fixed chars like ® are not encoded properly as URL
+
+	Fixed broken hrefs in dav folder listing
+
+2024-02-09  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue optimizing left outer joins on sparql queries
+
+	See also:
+	  Fixed issue with outerjoin when condition is always true or false
+	  (fixes #1236)
+
+2024-02-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.12-rc1
+
+	Set default value of ThreadCleanupInterval and ResourcesCleanupInterval to 1 for new installations
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed complete table name before quoting
+
+2024-02-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed wrong arguments to get_fieldProperty
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with drop quad map graph
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues in rdfview creation
+
+	* Added backup before rdf view creation
+	* Fixed mismatch of a URL parameter and control
+
+2024-02-06  VOS maintainer  <vos.admin@openlinksw.com>
+
+	Fixed rr:template by default is IRI unless column, dt or lang are given
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed column CaSeMoDe
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added quad map iri parameter
+
+	Do not use same name as r2rml physical graph as this confuses the
+	generation and maintenance
+
+2024-02-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed case to ucase for case insensitive lookup
+
+2024-02-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fixes' into develop/7
+
+2024-02-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added WSOCK.DBA.SEND_PING() and support to handle pong reply
+
+2024-02-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue in ontology generation
+
+	Ontology generaties wrong ttl chunk if column is selected as label
+
+2024-02-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed remove shadow variables from csv_vec_load()
+
+	Fixed issue importing CVS with missing EOL on last line
+
+	Fixed obj2xml() should be public
+
+2024-02-05  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with obj2json()
+
+	* Added option to indent the output
+	* Fixed serialization to use session instead of concat() on each piece
+
+2024-02-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added HTTP CORS pattern support
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with outer end in parallel
+
+	Fixed issue getting lock information for status()
+
+	Fixed issue with status for non dba user
+
+	Fixed compile with MTX_DEBUG
+
+	Added check for dc values ref
+
+2024-01-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added uptime to status()
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with user agg and constant in group by
+
+	when you have a user agg in sparql it may have reduced iri in gby,
+	do not remove the gby as ua will not go as vec
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue getting dtp in rdf box case
+
+	Fixed clear http method at session cleanup
+
+2024-01-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for VMsize and page faults in status() output
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added initial watchdog on VMsize (experimental)
+
+	Fixed issue sending Content-Length when not expected
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue casting string to numeric
+
+	single 'e' is not a number
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with left outer join with dummy function call (fixes #1239)
+
+	Fixed missing reset for NULL bit in dc_to mask (fixes #1238)
+
+	Fixed remove constants before expanding gby/oby with missing cols
+
+2024-01-31  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added sys_stat('swap_guard_last_majflt') to get last value
+
+2024-01-31  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added configurable swap guard treshold
+
+	Fixed sql fragment may have div operation (bug#19433)
+
+	Fixed issue refreshing status variables
+
+	Fixed grants must be added to SPARQL_SELECT role
+
+	Removed rdf_resolve_labels_s case
+
+	Fixed allow binary frames, same as text from server pov
+
+	Add support ping/pong for websock
+
+	Fixed websocket framing on text messages
+
+	Indicate what WS frame type is in error
+
+2024-01-16  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added test for recent fixes
+
+	Fixed issue with outerjoin when condition is always true or false (fixes #1236)
+
+	Fixed sign() returns integer
+
+	Fixed missing clear of NULL flags (fixes #1235)
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when field type cannot be detected
+
+2024-01-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing entry for .md text/markdown
+
+	Merge branch 'feature/fuzzer-fixes' into develop/7
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added tests for recent issues
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with unix timestamp to dt conversion (fixes #1233)
+
+	Unix timestap to dt can be converted only if date is later than 4800bc
+	and is no more tan 22bit number for year see dt struct
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for group by (fixes #1232)
+
+	Fixed issue with STAR in gby/oby (fixes #1231)
+
+	Fixed issue with non-column (fixes #1230)
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with trigger/proc params (fixes #1229)
+
+	params should be copied if in group by or order by
+
+2024-01-12  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check type member for specific st (fixes #1224)
+
+	Fixed missing check (fixes #1223)
+
+	Fixed check for opt. shortcuts in pred (fixes #1222)
+
+	Added tree sz check as st->type not always sufficient (fixes #1221)
+
+	Fixed missing check for freetext field (fixes #1220)
+
+	Fixed missing check for last ts (fixes #1219)
+
+	Fixed missing check (fixes #1218)
+
+	Fixed missing check (fixes #1217)
+
+	Fixed check if prev has a key (fixes #1216)
+
+	Fixed issue right outer join with constant false (fixes #1214)
+
+	Fixed NaN behaviour in cmp_double same as ordering (fixes #1213)
+
+	Fixed import w/o columns detected should not be syntax error
+
+	Fixed FS directory browsing does not need SQL/VSP user account
+
+2024-01-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed check for broken 2w link
+
+2024-01-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright to 2024
+
+2023-12-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed alignment of eye.svg inside password input field
+
+2023-12-19  VOS maintainer  <vos.admin@openlinksw.com>
+
+	Backported CSV load functions from v8
+
+	* Added support loading from DAV
+	* Added support for date string
+	* Added support for INSERT INTO/REPLACING
+	* Fixed issues with state engine
+
+2023-12-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed CSV import accessing outside of header array
+
+	Fixed http log records partial request over 4k
+
+2023-12-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed old WS_OLD_LOG code
+
+	Added auto-commit mode flag
+
+2023-12-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when response is chunked/gzip by app
+
+	When response is chunked/gzip by app we should send back zero chunk
+	anyway, otherwise clients do not agree
+
+2023-12-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not use gzip if no content is allowed
+
+	Fixed issue with DAV_LINK double escape UTF-8
+
+2023-12-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing icons
+
+	Fixed printf format for size_t arg
+
+2023-12-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for password show/hide in login dialog
+
+2023-12-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fuzzer-fixes' into develop/7
+
+2023-12-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added testsuite entries for recently fixed issues
+
+	Fixed check for table def (fixes #1212)
+
+2023-12-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues in orderby/groupby (fixes #1210)
+
+	Cannot have group by count(x), y without grouping on y or aggregate on
+	y same as in select list
+
+2023-12-15  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check number of arguments to geo contains (fixes #1209)
+
+	Fixed check values before copying invalid data (fixes #1208)
+
+	Fixed check for date/time/datetime/timestamp datatypes (fixes #1206)
+
+	Fixed remove duplicate keys in oby/gby (fixes #1205)
+
+2023-12-14  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with all const in group (fixes #1204)
+
+2023-12-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2023_09_28_fix_WinProjects' into develop/7
+
+2023-12-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing declare
+
+2023-12-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed HTTP 101/204/304 responses MUST not return content
+
+2023-12-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with double escaped 'path' decodes
+
+2023-12-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with TOP 1 on a cursor
+
+	Fixed issues with Default Graph IRI from table SYS_SPARQL_HOSTS (fixes #1086)
+
+	Added support to avoid redundant check for 401 handlers
+
+	Added support to enable run-time setting warnings on debug builds
+
+2023-12-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with windows specific printf format
+
+	Recent versions of the Windows compiler now support %llx format
+
+2023-12-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with ssg_print_double_as_sql_atom and added ssg_print_float_as_sql_atom
+
+2023-12-11  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with select (select ... union ...) or similar expressions
+
+	Fixed issue with user aggregates
+
+	Fixed issue with uninitialized var
+
+2023-12-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed sprintf format for windows (fixes #1203)
+
+2023-12-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fuzzer-fixes' into develop/7
+
+	Added missing SPARQL_ADMIN user for DAV/LDP
+
+2023-12-01  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added protection against accessing not compatible container
+
+	Added testsuite entries for recently fixed issues
+
+2023-12-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with printf style functions not using explicit format string (fixes #1199)
+
+2023-12-01  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with with dfe true/false shortcuts (fixes #1196)
+
+	Fixed issue on cube/rollup with constant in select list (fixes #1195, #1197)
+
+	Fixed issue mixing numeric and int boxes in expression (fixes #1194, #1198)
+
+	Fixed issue when hash source is not available (fixes #1193)
+
+	Fixed issue with bad index op ref in table dft (fixes #1190, #1191)
+
+	Fixed issue with TOP not working when DISTINCT is used (fixes #1158)
+
+2023-11-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue skipping sort node on outer as hash join may put right side at top
+
+	Merged from v8 size of dfe table & loop dfe check
+
+2023-11-27  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with turtle/n-triples media type legacy and recent spec. compatibility (fixes #1187)
+
+2023-11-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed moved check for RDF view sync table
+
+2023-11-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use DOUBLE_G_STAR_FMT instead of %lg for printing doubles
+
+2023-11-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with outer hash join with GROUP BY via hash source
+
+	Fixed error reporting on RDF_SYNC_TO_PHYSICAL
+
+2023-11-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added debug check for numeric size
+
+2023-11-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fuzzer-fixes' into develop/7
+
+2023-11-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added testsuite entries for recently fixed issues
+
+	Fixed issue with outer hash build (fixes #1185)
+
+2023-11-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue mixing vectored and non vectored ops (fixes #1184)
+
+	Only perform the dc ops when both left, right and result are vectors
+
+2023-11-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with scalar subq (fixes #1183)
+
+2023-11-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing argument check to ORDER BY and GROUP BY (fixed #1182)
+
+	Only expressions, columns and positions can be used as argument.
+
+2023-11-23  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed error message on page
+
+2023-11-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use DOUBLE_G_STAR_FMT instead of %lg for printing doubles
+
+	Note that %lg may refer to long double which on some machines is
+	bigger than a normal double to hold extra precision.
+
+2023-11-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use %lf for scanning doubles
+
+2023-11-22  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with bad Accept header
+
+2023-11-22  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed use `schema:description` as alt for `rdfs:comment` (fixes #1186)
+
+	Although mentioned in the NEWS file, the actual patch was not committed
+	at the time.
+
+2023-11-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added testsuite entries for recently fixed issues
+
+2023-11-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with chash (fixes #1179)
+
+	chash does not work on union where branche has const, use memhash instead
+
+2023-11-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed do not reset target to any if source is vec dtp
+
+	Fixed issue with setting type before col assign function (fixes #1178)
+
+	Fixed get argument before place gets mangled when serializing ANY (fixes #1174)
+
+	Fixed issue with function inside control expression
+
+2023-11-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with missing cast on return type (fixes #1172)
+
+	The return type from searched case as well as control expression
+	cannot be predicted as it can be any type, so we have to cast
+	explicitly to column type.
+
+2023-11-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check constraint cannot use CONTAINS text predicate (fixes #1177)
+
+	Fixed show numeric type ssl as N'u'meric
+
+2023-11-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when ODS is not installed
+
+	DO NOT call ODS explicitly in server code, this and other should be made
+	as interfaces!
+
+2023-11-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for Access-Control-Allow-Methods different than Allow, for AJAX CORS
+
+2023-11-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with very long sparql queries
+
+	If we have a very long query in the textarea, the url will be larger
+	than 14000 chars. Reportedly most modern browsers seem to have a problem
+	with this when submitting using a GET method on the form.
+
+	Although we have a registry setting called 'sparql-ui-max-url' that can be
+	set as a maximum length for switching to a POST method on the form,
+	this is off by default.
+
+	This patch makes sure that such large queries will be automatically be
+	submitted using the POST method.
+
+2023-11-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with wrong datatype
+
+2023-11-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing end tag after merge (fixes #1171)
+
+2023-11-09  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added support for GRAPH decorations in TriG (fixes #1169)
+
+2023-11-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with restriction on number of deleted triples (fixes #1164)
+
+	The call that was supposed to signal an error was called in the wrong
+	place.
+
+	When using a delete statemtent like this:
+
+	    DELETE WHERE { graph <mygraph-uri> { ?p ?q ?r } }
+
+	Virtuoso internally uses a construct to generate a dict of the triples
+	to be deleted.
+
+	Virtuoso uses settings like ResultSetMaxRows and MaxConstructTriples to
+	limit the amount of triples can be used by a single SPARQL call.
+
+	You can configure the maximum number of triples in a construct by editing
+	the virtuoso.ini:
+
+	      [SPARQL]
+	      MaxConstructTriples = 10000  ; if not set, use ResultSetMaxRows as fallback
+
+2023-10-30  Dimitar Dimitrov  <ddimitrov@openlinksw.com>
+
+	Fixed issue with updating  permissions on wiki
+
+	Added support for Azure Storage Account as DET mounting option
+
+2023-10-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/backport' into develop/7
+
+2023-10-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing box flags using strsqlval and IRI in hash
+
+2023-10-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added statistics for chash mempool
+
+	Usage: sys_stat('chash_mempool_size_max_used')
+
+2023-10-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added setting to limit mem pool for chash
+
+2023-10-23  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed check for missing graph
+
+	Fixed do not overlap status codes from DET
+
+	Fixed check DET HTTP status code
+
+	Fixed LDP sparql queries delete/insert should search physical graph only
+
+2023-10-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added security exception for __rdf_long_from_batch_params (fixes #1163)
+
+2023-10-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed enter the it lock mtx once; do not release in between maps
+
+2023-10-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed deprecated check
+
+2023-10-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with double free
+
+	We must drop session on opening function, the recall could be done in
+	between and must not kill it
+
+2023-10-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added accept_cookies parameter for HTTP_CLIENT/EXT to handle set-cookie on redirects
+
+	Added SSE callback stop functionality via VSPRT signal
+
+	Added SSE event hook in http client
+
+	Added support for printing user defined types using JSON format
+
+2023-10-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added UNAME to SQL values print function
+
+	Added support for dumping text of XML box
+
+	Added support for dumping varbinary data
+
+	Fixed obj2json should be public function
+
+	Fixed use canonical json output
+
+2023-10-19  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added serialization support for missing datatypes in obj2json
+
+	* blobs
+	* string sessions
+	* rdf boxes
+	* dv_c_string
+	* dv_u_name
+	* db_symbol
+
+2023-10-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with NULL fields
+
+	Unless explicitly nullable, NULL means not present, unlike
+	json_box_object() where members can be added only if needed
+
+2023-10-19  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed soap_box_structure needs to return UNKNOWN
+
+	Added support for fetching attributes and attributes_info on user defined types
+
+2023-10-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed missing handling of DV_C_STRING box used by bif:sys_stat
+
+	Added 'security_realm' to access realm from VD
+
+	Added new JSON-LD parser mode for handling blank nodes
+
+	Fixed issue getting Host from request headers in some contexts
+
+	Fixed issue checking is_https on websocket
+
+	Fixed issue with freetext index; missing check if term is mergable
+
+	Fixed geos envelope is not a bounding box, should be a polygon
+
+2023-10-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed virtrdf:Geometry should be replaced with wktLiteral (fixes #806)
+
+	Added a new flag rdf_geo_use_wkt to return wktLiteral as the default geometry type.
+
+2023-10-18  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added `create user .. with password` and `identified by` syntax
+
+2023-10-18  Ivan Mikhailov  <imikhailov@openlinksw.com>
+
+	Fixed uninitialized report session in DB.DBA.SPARQL_INSERT_QUAD_DICT_CONTENT()
+
+2023-10-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.12-dev to mark the start of a new development cycle
+
+2023-09-29  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Update Win projects for use static SSL libs
+
 2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.11' into develop/7
+
+	Tagged for release
+
+2023-09-26  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.11' into stable/7
+
+	Updated NEWS and Changelog
 
 	Updated version to 7.2.11 engine 3238
 
