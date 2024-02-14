@@ -212,3 +212,4 @@ EXPORTS
 	log_proc_overwrite		@691
 	rdtsc				@692
 	spar_unescape_strliteral	@693
+	sqlp_tree_check_sz		@694

@@ -138,6 +138,7 @@
     <ClCompile Include="..\libsrc\util\logmsg.c" />
     <ClCompile Include="..\libsrc\util\ltrim.c" />
     <ClCompile Include="..\libsrc\util\make_env.c" />
+    <ClCompile Include="..\libsrc\util\memstat.c" />
     <ClCompile Include="..\libsrc\util\mpl.c" />
     <ClCompile Include="..\libsrc\util\ncfg.c" />
     <ClCompile Include="..\libsrc\util\ntapp.c" />
