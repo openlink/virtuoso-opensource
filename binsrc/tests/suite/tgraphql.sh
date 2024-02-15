@@ -25,7 +25,7 @@
 #  
 
 TEST_NAME="GraphQL/SPARQL"
-LOGFILE=`basename -s .sh $0`.output
+LOGFILE=`basename $0 .sh`.output
 export LOGFILE
 export CASE_MODE=2
 . $VIRTUOSO_TEST/testlib.sh
