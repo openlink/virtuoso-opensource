@@ -54,7 +54,7 @@ installed on your system.
 | flex     | 2.5.33  | 2.6.4  | http://flex.sourceforge.net/          |
 | bison    | 2.3     | 3.5.1  | http://www.gnu.org/software/bison/    |
 | gperf    | 3.0.1   | 3.1    | http://www.gnu.org/software/gperf/    |
-| gawk     | 3.1.1   | 5.0.1  | http://www.gnu.org/software/gawk/     |
+| gawk     | 3.1.1   | 5.3.0  | http://www.gnu.org/software/gawk/     |
 | m4       | 1.4.1   | 1.4.18 | http://www.gnu.org/software/m4/       |
 | make     | 3.79.1  | 4.2.1  | http://www.gnu.org/software/make/     |
 | OpenSSL  | 0.9.8e  | 3.1.x  | http://www.openssl.org/               |
