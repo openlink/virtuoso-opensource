@@ -85,7 +85,7 @@ installed on your system.
 | gawk      | 3.1.1   | 5.3.0  | http://www.gnu.org/software/gawk/     |
 | m4        | 1.4.1   | 1.4.18 | http://www.gnu.org/software/m4/       |
 | make      | 3.79.1  | 4.2.1  | http://www.gnu.org/software/make/     |
-| OpenSSL   | 0.9.8e  | 3.1.x  | http://www.openssl.org/               |
+| OpenSSL   | 0.9.8e  | 3.2.x  | http://www.openssl.org/               |
 
 and any GNU packages required by these. The autogen.sh and configure
 scripts check for the presence and right version of some of the required
