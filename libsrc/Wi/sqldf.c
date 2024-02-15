@@ -7557,8 +7557,6 @@ inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
   memcpy (copy, dio, sizeof (df_inx_op_t));
   if (dio->dio_table == org_tb_dfe)
     copy->dio_table = tb_dfe;
-  if (dio->dio_terms && !IS_BOX_POINTER(dio->dio_terms))
-    sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI05", "Internal error in SQL compiler: non inx op in inx copy");
   else if (dio->dio_table)
     {
       copy->dio_table = sqlo_layout_copy_1 (so, dio->dio_table, NULL);
@@ -7566,6 +7564,8 @@ inx_op_copy (sqlo_t * so, df_inx_op_t * dio,
   else if (dio->dio_terms)
     {
       s_node_t *iter;
+      if (!IS_BOX_POINTER(dio->dio_terms))
+        sqlc_new_error (so->so_sc->sc_cc, "42000", "SQI05", "Internal error in SQL compiler: non inx op in inx copy");
       copy->dio_terms = t_set_copy (dio->dio_terms);
       DO_SET_WRITABLE (df_inx_op_t *, term, iter, &copy->dio_terms)
 	{
