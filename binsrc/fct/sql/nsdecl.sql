@@ -94,7 +94,7 @@ DB.DBA.XML_SET_NS_DECL ('radio', 'http://www.radiopop.co.uk/', 2);
 DB.DBA.XML_SET_NS_DECL ('rdf', 'http://www.w3.org/1999/02/22-rdf-syntax-ns#', 2);
 DB.DBA.XML_SET_NS_DECL ('rdfdf', 'http://www.openlinksw.com/virtrdf-data-formats#', 2);
 DB.DBA.XML_SET_NS_DECL ('rdfs', 'http://www.w3.org/2000/01/rdf-schema#', 2);
-DB.DBA.XML_SET_NS_DECL ('review', 'http:/purl.org/stuff/rev#', 2);
+DB.DBA.XML_SET_NS_DECL ('review', 'http://purl.org/stuff/rev#', 2);
 DB.DBA.XML_SET_NS_DECL ('rss', 'http://purl.org/rss/1.0/', 2);
 DB.DBA.XML_SET_NS_DECL ('sc', 'http://purl.org/science/owl/sciencecommons/', 2);
 DB.DBA.XML_SET_NS_DECL ('schema', 'http://schema.org/', 2);

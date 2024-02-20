@@ -44,13 +44,13 @@
   <base href="/fct/rdfdesc/" />
   <title>Settings</title>
 
-  <link rel="stylesheet" type="text/css" href="styles/default.css"  charset="utf-8" />
-  <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+  <link rel="stylesheet" type="text/css" href="/fct/css/default.css"  charset="utf-8" />
+  <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" charset="utf-8" />
   <script type="text/javascript" >
       var featureList=["tab"];
   </script>
   <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
-  <script type="text/javascript" src="s/description.js"></script>
+  <script type="text/javascript" src="/fct/js/description.js"></script>
 </head>
 <body>
   <div id="PG">

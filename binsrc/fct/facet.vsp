@@ -10,7 +10,7 @@
   declare main_ss varchar;
   declare  pageUrl, query_str varchar;
   main_ss := registry_get ('fct_main_ss');
-  if (not isstring (main_ss)) main_ss := 'styles/default.css';
+  if (not isstring (main_ss)) main_ss := '/fct/css/default.css';
 
   pageUrl := http_path();
   query_str := '';
@@ -41,7 +41,7 @@
     var featureList=["map", "combolist", "ajax", "tab", "json", "location"];
 </script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
-<script type="text/javascript" src="facet.js"></script>
+<script type="text/javascript" src="/fct/js/facet.js"></script>
 
 <?vsp
   declare sid, _S, ses_parms varchar;

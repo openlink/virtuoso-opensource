@@ -482,16 +482,16 @@ again:
     <?vsp
 	declare main_ss varchar;
         main_ss := registry_get ('fct_main_ss');
-        if (not isstring (main_ss)) main_ss := 'styles/default.css';
+	if (not isstring (main_ss)) main_ss := '/fct/css/default.css';
     ?>
     <link rel="stylesheet" type="text/css" href="<?=main_ss?>"  charset="utf-8" />
 
-    <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" charset="utf-8" />
     <script type="text/javascript" >
       var featureList=["tab","ajax"];
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
-    <script type="text/javascript" src="s/description.js"></script>
+    <script type="text/javascript" src="/fct/js/description.js"></script>
 
     <link rel="icon" href="/favicon.ico?v=1" sizes="any" />
     <link rel="icon" href="/favicon/favicon.svg?v=1" type="image/svg+xml" />

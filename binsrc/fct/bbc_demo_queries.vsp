@@ -5,7 +5,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" lang="en">
 <head>
 <title>BBC demo queries</title>
-<link rel="stylesheet" type="text/css" href="styles/default.css"/>
+<link rel="stylesheet" type="text/css" href="/fct/css/default.css"/>
 <script type="text/javascript" src="s/main.js"></script>
 <script type="text/javascript" src="oat/toolkit/loader.js"></script>
 <script type="text/javascript">

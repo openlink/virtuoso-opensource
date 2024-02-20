@@ -163,13 +163,13 @@
     <base href="/fct/rdfdesc/" />
     <title>Metadata about: <?vsp http (sprintf ('%s', label)); ?></title>
     <link rel="alternate" type="application/rdf+xml" href="<?=rdf_link?>" title="RDF" />
-    <link rel="stylesheet" type="text/css" href="styles/default.css" charset="utf-8" />
-    <link rel="stylesheet" type="text/css" href="styles/highlighter.css" charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/fct/css/default.css" charset="utf-8" />
+    <link rel="stylesheet" type="text/css" href="/fct/css/highlighter.css" charset="utf-8" />
     <script type="text/javascript" >
       var featureList=["tab"];
     </script>
     <script type="text/javascript" src="/fct/oat/toolkit/loader.js"></script>
-    <script type="text/javascript" src="s/description.js"></script>
+    <script type="text/javascript" src="/fct/js/description.js"></script>
 
     <meta name="robots" content="noindex,nofollow" />
 </head>
