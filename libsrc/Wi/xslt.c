@@ -5329,7 +5329,7 @@ xslt_init (void)
 
   bif_define ("dict_new", bif_dict_new);
   bif_define ("dict_duplicate", bif_dict_duplicate);
-  bif_define ("dict_put", bif_dict_put);
+  bif_define_ex ("dict_put", bif_dict_put,  BMD_RET_TYPE, &bt_integer, BMD_NO_CLUSTER, BMD_DONE);
   bif_define ("dict_get", bif_dict_get);
   bif_define_ex ("dict_contains_key", bif_dict_contains_key, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("dict_remove", bif_dict_remove);
