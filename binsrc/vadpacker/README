@@ -1,0 +1,88 @@
+OpenLink Virtuoso VADPacker
+===========================
+
+OpenLink's vadpacker is a small python tool which allows to create Virtuoso VAD packages from a sticker
+file template. This template can contain variables and resource tags which use file globbing.
+
+
+Variables
+---------
+
+The sticker file can contain any variable at any point in the file. Variables are marked with enclosing
+$ characters.
+
+Example:
+
+    <version package="$VERSION$">
+
+Values for these variables are specified on the command line as follows:
+
+    vadpacker.py --var="VERSION=1.0" ...
+
+The following variables are replaced with default values if nothing is specified on the commandline:
+
+- `PACKDATE`: Will be replaced with the current date and time formatted according to `%Y-%m-%d %H:%M`
+- `HOME`: Will be replaced with the current home directory (env variable `HOME` on *NIX systems)
+
+
+Resource Globbing
+-----------------
+
+Vadpacker supports powerful resource globbing to simplify the resource list in a sticker template.
+The most simple resource globbing looks as follows:
+
+    <resource source_uri="*.png" target_uri="wa/" />
+
+This will list all PNG images from the current folder and create resource entries for them. The trailing
+slash in the `target_uri` attribute will make vadpacker append the relative path. Thus, if the current folder
+would contain files `one.png` and `two.png` the resulting resource lines would look as follows (other attributes
+have been removed for readability:
+
+    <resource source_uri="one.png" target_uri="wa/one.png" />
+    <resource source_uri="two.png" target_uri="wa/two.png" />
+
+The same can be achieved by using the `$p$` variable which will be replaced with the relative path of the source
+file:
+
+    <resource source_uri="*.png" target_uri="wa/$p$" />
+
+In contrast to the `$p$` variable `$f$` will be expended to the filename only. This is useful when creating entries
+in which the target folder differs from the source folder. A typical example could look as follows:
+
+    <resource source_uri="oat/images/*.png" target_uri="images/oat/$f$" />
+
+Finally vadpacker supports *recursive globbing* which is enabled through the usage of the special pattern `**/`:
+
+    <resource source_uri="images/**/*.png" target_uri="images/$p$" />
+
+This will recursively find all PNG files and put them into the images folder using the relative path. It includes
+files in the `images` folder, meaning `**/` expands to any sub-folder and the empty string.
+
+_Tip:_ If the source files reside in a subfolder which should not be included in the target urls, then the *--prefix*
+option is the solution. Using it is comparable to changing into the directory and then executing vadpacker.
+
+
+Resource selection via Inline Scripts
+-------------------------------------
+
+A powerful but also potentially dangerous feature of the vadpacker is the selection of resources via arbitrary shell
+script execution. This is achieved by replacing the source_uri pattern with a shell command like in the following
+example:
+
+    <resource source_uri="`find . -name "*.png"|grep -v "notme.png"`" target_uri="images/" />
+
+This will find all .png files in the current folder excluding any file named *notme.png*.
+
+
+Default Resource Values
+-----------------------
+
+To make sticker templates even simpler to read and maintain vadpacker uses the following default for resource
+attributes:
+
+- `overwrite` = `yes`
+- `type` = `dav`
+- `source` = `data`
+- `dav_owner` = `dav`
+- `dav_grp` = `administrators`
+- `dav_perm` = if the file extension is one of `.vsp`, `.vspx`, or `.php` the default is `111101101NN`, otherwise `110100100NN`

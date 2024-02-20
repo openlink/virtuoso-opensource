@@ -1,0 +1,19 @@
+Apr 3, 2023, v1.6:
+  * Fixed make sure .sql files are not readable
+
+May 10, 2020, v1.5:
+  * Added support for Python 3
+  * Added support for logging module
+  
+Jan 02, 2018, v1.4:
+  * internal version 
+
+Oct 27, 2015, v1.3:
+  * First public release of vadpacker
+
+Feb 05, 2014, v1.2:
+  * Sort file lists, making vads comparable between different systems.
+
+Mar 18, 2013, v1.1:
+  * Improve --prefix option which allows to virtually change into a subfolder.
+  * Selection of source uris v

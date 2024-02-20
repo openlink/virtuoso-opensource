@@ -1,0 +1,178 @@
+2023-04-03  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v1.6' into develop
+	Tagged for release
+
+	Merge branch 'release/1.6'
+
+	Fixed copyright
+
+	Fixed make sure .sql files are not readable
+
+2022-04-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed copyright
+
+2020-05-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v1.5' into develop
+	Tagged version 1.5 for release
+
+	Merge branch 'release/1.5'
+
+	Regenerated ChangeLog
+
+	Updated version to 1.5
+
+	Updated NEWS and ChangeLog for release 1.5
+
+	Merge branch 'feature/python3' into develop
+
+	Fixed indentation
+
+	Fixed compatibility with python 3
+
+	Fixed use logging module
+
+	Fixed use xml.etree.ElementTree whenever possible
+
+2020-01-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright
+
+2019-01-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright to include 2018
+
+2018-01-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/1.4' into develop
+
+	Merge branch 'release/1.4'
+
+	Updated version to 1.4
+
+	Updated Copyright to include 2018
+
+2017-01-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated copyright to include 2017
+
+2016-02-25  Virtuoso Development Team  <virtdev@openlinksw.com>
+
+	Updated Copyright to 2016
+
+2016-01-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright to 2016
+
+2015-10-27  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/1.3' into develop
+
+	Merge branch 'release/1.3'
+
+	Updated version to 1.3
+
+	Added AUTHORS and NEWS
+
+	Updated copyright notice
+
+	Fixed parsing command line
+
+2014-02-05  Sebastian Trueg  <trueg@openlinksw.com>
+
+	Sort os.walk result.
+
+	Version bump to 1.2
+
+	Very small path building improvement: avoid "//" in paths.
+
+	Sort glob results for comparable file listings.
+
+2013-03-18  Sebastian Trueg  <trueg@kde.org>
+
+	New parameter --print-sticker.
+	Using the parameter will result in the sticker being printed to stdout
+	instead of the vad being packaged.
+
+	Version bump to 1.1.
+
+	Execute arbitrary shell commands to select source uris.
+
+	Changed the semantics of the --prefix option to something very useful.
+	It allows to virtually change into a directly before creating resource
+	tags via globbing.
+
+2013-02-26  Sebastian Trueg  <trueg@kde.org>
+
+	Added .gitignore file to ignore compiled pyc files.
+
+2013-02-22  Sebastian Trueg  <trueg@kde.org>
+
+	Print a warning if unused variables are provided on the command line.
+
+2013-02-20  Sebastian Trueg  <trueg@kde.org>
+
+	Added a short README file for the vadpacker explaining its features.
+
+	Finer-grained resource globbing control.
+	- Support for filename or relative path in target_uri via $f$ and $p$
+	- Avoid duplicates
+	- Sensible defaults for every resource attribute allowing even simpler
+	  sticker templates.
+
+	* Updated Copyright notice to include 2013 (pvk)
+
+	Removed yet another python 2.7 dependancy.
+
+2012-12-17  Sebastian Trueg  <trueg@kde.org>
+
+	Removed useless stderr output.
+
+	Use the deprecated optparse instead of argparse for bw compatibility.
+	We need to be able to run vadpacker on those very old systems like
+	CentOS.
+
+	Added zsh-style globbing to the resource list.
+
+	Fix running in the same dir as sticker file.
+
+2012-12-17  Sebastian Trueg  <trueg@kde.org>
+
+	Revert "Use the official version of python ElementTree."
+	This reverts commit e065a8e9375cac1ffb63031c5af7c76577a0a5be.
+
+	We need vadpacker to run on versions of Python older than 2.5.
+
+2012-12-10  Sebastian Trueg  <trueg@kde.org>
+
+	Added file name globbing to the sticker resource list.
+
+2012-11-08  Sebastian Trueg  <trueg@kde.org>
+
+	Automatic file tag creation from file list.
+	vadpacker now takes an optional list of files which will be appended
+	to the list of resources already in the sticker.
+	This allows to dynamically generate big parts of the resource list
+	via shell operations.
+	It uses fixed permissions (executable for vsp and php).
+
+	Use the official version of python ElementTree.
+	It has been available since Python 2.5.
+
+2012-11-02  Sebastian Trueg  <trueg@kde.org>
+
+	Added command line option --var to allow variable replacement in sticker.
+
+2012-08-20  Sebastian Trueg  <trueg@kde.org>
+
+	Use python 2 only.
+
+2012-07-05  Sebastian Trueg  <trueg@kde.org>
+
+	Do not include the compiled python files in the git tree.
+
+2012-06-21  Sebastian Trueg  <trueg@kde.org>
+
+	Build all ODS vads with vadpacker.

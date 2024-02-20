@@ -1,0 +1,3 @@
+The "elementtree" sub-folder is a copy of parts of the original
+ElementTree python package. The only reason for including it in
+the source is easier deployment.

@@ -3270,6 +3270,7 @@ AC_CONFIG_FILES([
 	binsrc/tutorial/web/Makefile
 	binsrc/tutorial/xml/Makefile
 	binsrc/vad/Makefile
+	binsrc/vadpacker/Makefile
 	binsrc/virtodbc/Makefile
 	binsrc/virtoledb/Makefile
 	binsrc/VirtuosoClient.Net/Makefile
