@@ -162,9 +162,9 @@ typedef struct xp_mdata_locals_s
   int		xmdatal_prop_count;	/*!< Count of predicates set above the current element, they're listed at the beginning of \c xmdatal_preds. Automatically inherited from parent */
   caddr_t *	xmdatal_props;		/*!< Buffer for predicates set above the current element. Automatically inherited from parent */
   caddr_t	xmdatal_datatype;	/*!< Datatype IRI. Automatically inherited from parent */
-  int		xmdatal_datatype_is_local;	/*!< Datatype can be removed from \c xpt_subj2type at closing this tag. NOT inherited from parent! */
   caddr_t	xmdatal_base;		/*!< Base to resolve relative links as set by <BASE> now in XSLT+RDFa and may be set by xml:base in other XML docs. Automatically inherited from parent */
   caddr_t	xmdatal_language;	/*!< Language label. Automatically inherited from parent */
+  caddr_t       xmdatal_itemtype_ns;    /*!< the enclosing itemtype NS URI to be used to resove itemprop NCNames */
   int		xmdatal_boring_opened_elts;	/*!< Number of opened but not yet closed elements inside MDATA_IN_STRLITERAL or MDATA_IN_UNUSED or "uninteresting" elements between \c xmdatal_xn and next nested \c xp_mdata_locals_t in chain */
 } xp_mdata_locals_t;
 
@@ -204,7 +204,6 @@ typedef struct xp_tmp_s
   caddr_t xpt_obj_res;		/*!< Readed, not expanded and not saved object resource OR composed and not saved bnode object */
   caddr_t xpt_obj_content;	/*!< Readed but not saved content of literal object */
 /* Microdata part: */
-  id_hash_t *xpt_subj2type;	/*!< Hashtable that maps subjects to type IRIs. itemscopes with itemtype are added here and removed at end of document (if itemscope has itemrefs) or at closing tag (otherwise) */
   id_hash_t *xpt_id2desc;	/*!< Hashtable that maps ids to \c mdata_id_desc_t (i.e., to validation data + accumulators of subjects that itemref-s to that ids) */
   id_hash_t *xpt_dangling_triples;	/*!< Hashtable with triples as keys, values are bitmasks about replacing ids to IRIs in the key triple: 1 = no replaces, 2 = replace S, 4 = replace O, 8 = replace both */
 } xp_tmp_t;
@@ -2784,6 +2783,12 @@ next_token:
           xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Bad URI token in the value of attribute \"%.20s\"", mdata_attribute_lognames[attr_id]);
         }
     }
+  if (MDATA_ATTR_ITEMPROP == attr_id && NULL == strpbrk(expanded_token, "#/:?") && NULL != xn->xn_xp->xp_mdata_locals->xmdatal_itemtype_ns)
+    {
+      caddr_t new_token = box_dv_short_strconcat (xn->xn_xp->xp_mdata_locals->xmdatal_itemtype_ns, expanded_token);
+      dk_free_box (expanded_token);
+      expanded_token = new_token;
+    }
 token_done:
   expanded_token_not_saved = 1;
   if (NULL != values_ret)
@@ -3034,6 +3039,7 @@ xp_push_mdata_locals (xparse_ctx_t *xp)
       inner->xmdatal_datatype = outer->xmdatal_datatype;
       inner->xmdatal_base = outer->xmdatal_base;
       inner->xmdatal_language = outer->xmdatal_language;
+      inner->xmdatal_itemtype_ns = outer->xmdatal_itemtype_ns;
     }
   inner->xmdatal_parent = outer;
   xp->xp_mdata_locals = inner;
@@ -3053,6 +3059,7 @@ xp_pop_mdata_locals (xparse_ctx_t *xp)
   XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_datatype);
   XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_base);
   XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_language);
+  XP_FREE_INNER_IF_NEQ_OUTER (xmdatal_itemtype_ns);
   inner->xmdatal_parent = xp->xp_mdata_free_list;
   xp->xp_mdata_free_list = inner;
   xp->xp_mdata_locals = outer;
@@ -3270,25 +3277,21 @@ xp_mdata_element (void *userdata, char * name, vxml_parser_attrdata_t *attrdata)
     }
   if (NULL != avalues[MDATA_ATTR_ITEMTYPE])
     {
-      caddr_t itemtype, itemid;
-      caddr_t *old_itemtype_ptr;
+      caddr_t itemtype;
+      caddr_t local = NULL, ns_pref = NULL;
       if (NULL == avalues[MDATA_ATTR_ITEMSCOPE])
         xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "Attribute itemtype without attribute itemscope");
       itemtype = xp_mdata_parse_attr_value (xp, xn, MDATA_ATTR_ITEMTYPE, avalues,
             MDATA_ATTRSYNTAX_URI, NULL, NULL );
-      itemid = inner->xmdatal_subj;
-      old_itemtype_ptr = (caddr_t *)id_hash_get (xpt->xpt_subj2type, (caddr_t)(&itemid));
-      if (NULL != old_itemtype_ptr)
+      if (itemtype)
         {
-          dk_free_tree (itemtype);
-          xmlparser_logprintf (xp->xp_parser, XCFG_FATAL, 100, "The subject '%.200s' has more than one itemtype definition", inner->xmdatal_subj);
+          iri_split_ttl_qname (itemtype, &ns_pref, &local, 0);
+          dk_free_box(local);
         }
-      else
-        {
-          mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, box_copy (itemtype), MDATA_ATTR_ITEMSCOPE);
-          itemid = box_copy (itemid);
-          id_hash_set (xpt->xpt_subj2type, (caddr_t)(&itemid), (caddr_t)(&itemtype));
-        }
+      mdata_feed_or_keep (xp, inner, uname_rdf_ns_uri_type, inner, itemtype, MDATA_ATTR_ITEMSCOPE);
+      if (NULL != outer->xmdatal_itemtype_ns && inner->xmdatal_itemtype_ns != outer->xmdatal_itemtype_ns)
+        dk_free_box (inner->xmdatal_itemtype_ns);
+      inner->xmdatal_itemtype_ns = ns_pref;
     }
   if ((NULL != avalues[MDATA_ATTR_ITEMPROP]) && !props_connect_local_id_to_local_itemscope)
     {
@@ -3564,7 +3567,6 @@ rdfxml_parse (query_instance_t * qi, caddr_t text, caddr_t *err_ret,
       context.xp_tmp = (xp_tmp_t *)dk_alloc_box_zero (sizeof (xp_tmp_t), DV_ARRAY_OF_POINTER);
       context.xp_tmp->xpt_id2desc = (id_hash_t *)box_dv_dict_hashtable (30);
       context.xp_tmp->xpt_dangling_triples = (id_hash_t *)box_dv_dict_hashtable (100);
-      context.xp_tmp->xpt_subj2type = (id_hash_t *)box_dv_dict_hashtable (30);
       VXmlSetElementHandler (parser, (VXmlStartElementHandler) xp_mdata_element, xp_mdata_element_end);
       VXmlSetIdHandler (parser, (VXmlIdHandler)xp_mdata_id);
       VXmlSetCharacterDataHandler (parser, (VXmlCharacterDataHandler) xp_mdata_character);
