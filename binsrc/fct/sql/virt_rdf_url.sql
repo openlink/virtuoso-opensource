@@ -86,6 +86,6 @@ dbpedia:placeOfDeath rdfs:subPropertyOf virtrdf:geo_cont .
 dbpedia:deathPlace rdfs:subPropertyOf virtrdf:geo_cont .
 schema:geo rdfs:subPropertyOf virtrdf:geo_cont .
 
-', '', 'virtrdf-url');
+', '', 'urn:fct:virtrdf:url');
 
-rdfs_rule_set ('virtrdf-url', 'virtrdf-url');
+rdfs_rule_set ('virtrdf-url', 'urn:fct:virtrdf:url');

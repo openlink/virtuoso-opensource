@@ -33,7 +33,41 @@ DB.DBA.XML_SET_NS_DECL ('category', 'http://dbpedia.org/resource/Category:', 2);
 DB.DBA.XML_SET_NS_DECL ('grs', 'http://www.georss.org/georss/', 2);
 
 
---delete from rdf_quad where g = iri_to_id ('b3sonto');
+create procedure fct_rdfs_rule_set_upgrade()
+{
+    if (registry_get ('__fct_rdfs_rule_set_upgrade', '0') = '1')
+        return;
+
+    --  Remove old rule sets
+    rdfs_rule_set ('b3sifp',        'b3sifp',        1);
+    rdfs_rule_set ('b3s',           'b3sonto',       1);
+    rdfs_rule_set ('facets',        'facets',        1);
+    rdfs_rule_set ('facets',        'virtrdf-label', 1);
+    rdfs_rule_set ('virtrdf-label', 'virtrdf-label', 1);
+    rdfs_rule_set ('virtrdf-url',   'virtrdf-url',   1);
+    commit work;
+
+    --  Add existing graph content to new urn based graphs
+    SPARQL ADD <b3sifp>        TO <urn:fct:b3sifp>;
+    SPARQL ADD <b3sonto>       TO <urn:fct:b3sonto>;
+    SPARQL ADD <facets>        TO <urn:fct:facets>;
+    SPARQL ADD <virtrdf-label> TO <urn:fct:virtrdf:label>;
+    SPARQL ADD <virtrdf-url>   TO <urn:fct:virtrdf:url>;
+    commit work;
+
+    -- Delete old graphs
+    SPARQL CLEAR GRAPH <b3sifp>;
+    SPARQL CLEAR GRAPH <b3sonto>;
+    SPARQL CLEAR GRAPH <facets>;
+    SPARQL CLEAR GRAPH <virtrdf-label>;
+    SPARQL CLEAR GRAPH <virtrdf-url>;
+    commit work;
+
+    registry_set ('__fct_rdfs_rule_set_upgrade', '1');
+};
+
+fct_rdfs_rule_set_upgrade();
+
 
 ttlp ('
 @prefix foaf: <http://xmlns.com/foaf/0.1/>
@@ -46,11 +80,11 @@ dc:title rdfs:subPropertyOf b3s:label .
 foaf:name rdfs:subPropertyOf b3s:label .
 foaf:nick rdfs:subPropertyOf b3s:label .
 <http://purl.uniprot.org/core/scientificName> rdfs:subPropertyOf b3s:label .
-', 'xx', 'b3sonto');
+', 'xx', 'urn:fct:b3sonto');
 
 
 
-rdfs_rule_set ('b3s', 'b3sonto');
+rdfs_rule_set ('b3s', 'urn:fct:b3sonto');
 
 
 ttlp ('
@@ -68,9 +102,9 @@ foaf:mbox rdfs:subPropertyOf lod:ifp_like .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasProductId> a owl:InverseFunctionalProperty .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasProductId> rdfs:subPropertyOf lod:ifp_like .
 
-', 'xx', 'b3sifp');
+', 'xx', 'urn:fct:b3sifp');
 
-rdfs_rule_set ('b3sifp', 'b3sifp');
+rdfs_rule_set ('b3sifp', 'urn:fct:b3sifp');
 
 SPARQL
 PREFIX skos: <http://www.w3.org/2004/02/skos/core#>
@@ -93,9 +127,9 @@ fct_load_oplweb ();
 rdfs_rule_set ('oplweb', 'http://www.openlinksw.com/schemas/oplweb#');
 
 DB.DBA.RDF_GRAPH_GROUP_CREATE (UNAME'http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 1);
-DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sonto');
-DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'b3sifp');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:fct:b3sifp');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:fct:b3sonto');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:fct:facets');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:fct:virtrdf:label');
+DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:fct:virtrdf:url');
 DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'urn:rules.skos');
-DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'virtrdf-label');
-DB.DBA.RDF_GRAPH_GROUP_INS('http://www.openlinksw.com/schemas/virtrdf#PrivateGraphs', 'facets');
-

@@ -511,10 +511,10 @@ schema:longitude rdfs:subPropertyOf geo:long .
 <http://www.openlinksw.com/schemas/googleplus#activity_title> rdfs:subPropertyOf virtrdf:label .
 <http://linkedopencommerce.com/schemas/icecat/v1/hasShortSummaryDescription> rdfs:subPropertyOf virtrdf:label .
 <http://yago-knowledge.org/resource/hasPreferredName> rdfs:subPropertyOf virtrdf:label .
-', 'xx', 'facets');
+', 'xx', 'urn:fct:facets');
 
-rdfs_rule_set ('facets', 'facets');
-rdfs_rule_set ('facets', 'virtrdf-label');
+rdfs_rule_set ('facets', 'urn:fct:facets');
+rdfs_rule_set ('facets', 'urn:fct:virtrdf:label');
 
 
 create procedure
