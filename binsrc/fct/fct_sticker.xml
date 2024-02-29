@@ -63,14 +63,7 @@
     else {
       DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_cl.sql', 0, 'report', 1);
     }
-    if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_SP'))
-      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank23.sql', 0, 'report', 1);
-    else if (exists (select 1 from DB.DBA.SYS_KEYS where upper (KEY_NAME) = 'RDF_QUAD_OPGS'))
-      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank.sql', 0, 'report', 1);
-    else {
-      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank_1.sql', 0, 'report', 1);
-        result ('00000', 'You should read http://host:port/fct/install.html for instructions');
-    }
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank23.sql', 0, 'report', 1);
     result ('00000', 'GUI is accesible via http://host:port/fct');
     result ('00000', 'Post-installation guide is available from http://host:port/fct/post_install.html');
     DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/grants.sql', 0, 'report', 1);
