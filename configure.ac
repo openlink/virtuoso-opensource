@@ -431,7 +431,7 @@ AC_PATH_PROG(FLEX, flex, flex)
 AC_PATH_PROG(GAWK, gawk, gawk)
 AC_PATH_PROG(GPERF, gperf, gperf)
 AC_PATH_PROG(PERL, perl, perl)
-AC_PATH_PROG(PYTHON, python, python)
+AM_PATH_PYTHON([2.7])
 AC_PATH_PROG(RUBY, ruby, ruby)
 #AC_DECL_YYTEXT
 
