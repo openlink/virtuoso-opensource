@@ -41,6 +41,7 @@
       <v:variable name="lhosto" persist="0" type="varchar" default="null" param-name="lhost"/>
       <v:variable name="lhost1" persist="0" type="varchar" default="null"/>
       <v:variable name="vhost1" persist="0" type="varchar" default="null"/>
+      <v:variable name="vhost_names" persist="0" type="varchar" default="null"/>
       <v:variable name="key1" persist="0" type="varchar" default="'none'"/>
       <v:variable name="extra_cert" persist="0" type="varchar" default="null"/>
       <v:variable name="ca_certs" persist="0" type="varchar" default="null"/>
@@ -112,7 +113,7 @@
           <!--div class="dialog_text"></div-->
           <table class='ctl_grp'>
             <tr>
-              <td>Host &amp; Domain Name</td>
+              <td><label>Host &amp; Domain Name</label></td>
 	      <td>
 		<v:text name="vhost_nam" value="--self.vhost1" xhtml_size="40" error-glyph="*">
                   <v:before-render>
@@ -125,7 +126,16 @@
               </td>
             </tr>
             <tr>
-              <td>Listening Interface</td>
+                <td><label class="help_tooltip" helptext="Server X.509 certificate alternative DNS names, used only when making new server certificate">Alternative host names*</label></td>
+	      <td>
+		<v:text name="vhost_alt" value="--self.vhost_names" xhtml_size="40" error-glyph="*">
+		  <v:validator test="regexp" regexp="^([\*\.0-9A-Za-z-]+[, ]*)+$" empty-allowed="1"
+		    message="You should provide a valid alternative host names list" />
+		</v:text>
+              </td>
+            </tr>
+            <tr>
+              <td><label>Listening Interface</label></td>
               <td id="if_opt">
 		  <![CDATA[
 		  <script type="text/javascript">
@@ -151,7 +161,7 @@
               </td>
             </tr>
             <tr>
-              <td>TCP Port</td>
+              <td><label>TCP Port</label></td>
               <td>
 		<v:text name="lhost_port" value="--self.port1" xhtml_size="5" error-glyph="*">
 		  <v:validator test="regexp" regexp="^[0-9]+$"
@@ -206,7 +216,7 @@
                               rollback work;
                               return;
 			    }
-                          kname := DB.DBA.HTTPS_MAKE_HOST_KEY (host);
+                          kname := DB.DBA.HTTPS_MAKE_HOST_KEY (host, self.vhost_alt.ufl_value);
 			  self.key_list.vc_data_bind (e);
 			  self.key_list.ufl_value := kname;
 			  self.key_list.vs_set_selected ();
