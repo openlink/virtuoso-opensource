@@ -3556,7 +3556,7 @@ bif_dict_duplicate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   id_hash_iterator_t *orig_hit = bif_dict_iterator_arg (qst, args, 0, "dict_duplicate", 0);
   id_hash_t *new_ht = (id_hash_t *)box_dict_hashtable_copy_hook ((caddr_t)(orig_hit->hit_hash));
   id_hash_iterator_t *new_hit = (id_hash_iterator_t *)box_dv_dict_iterator ((caddr_t)new_ht);
-#ifndef NDEBUG
+#ifdef DEBUG
   printf ("Dict duplicate: from %p to %p\n", orig_hit->hit_hash, new_ht);
 #endif
   return (caddr_t)new_hit;
