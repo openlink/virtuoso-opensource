@@ -1818,5 +1818,17 @@ ECHO BOTH ": " $U{caseno} " oj on true with true filter rows=" $ROWCNT  " \n";
 
 
 
+DROP TABLE case1241t0;
+DROP TABLE case1241t1;
+CREATE TABLE case1241t0(c0 INT);
+CREATE TABLE case1241t1(c1 INT);
+INSERT INTO case1241t1 (c1) VALUES (1);
+
+SELECT case1241t0.c0 FROM case1241t1 LEFT  JOIN case1241t0 ON 1 ORDER BY 1 DESC;
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH " case#1241 oj left on always ttrue and oby produces " $LAST[1] "\n";
+
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
