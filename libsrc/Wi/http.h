@@ -439,5 +439,6 @@ size_t http_threads_mem_report (void);
 extern dk_hash_t * ws_cli_sessions;
 extern dk_mutex_t * ws_cli_mtx;
 int ws_is_https (ws_connection_t * ws);
+extern int www_maintenance;
 
 #endif /* _HTTP_H */
