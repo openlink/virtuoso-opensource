@@ -364,7 +364,7 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
 <GARBAGE_BOL>"{"		{ TTLYYBEGIN(INITIAL);	ttlp_arg[0].ttlp_lexdepth++;	return _LBRA; }
 <INITIAL>"}"			{			ttlp_arg[0].ttlp_lexdepth--;	return _RBRA; }
 
-<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"<"([^\\>\001-\040])*">"	{
+<INITIAL,GARBAGE_BOL,GARBAGE,TWO_CRS>"<"([^\\<>\001-\040])*">"	{
     if (TTL_MAX_IRI_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     TTLYYBEGIN(INITIAL);
@@ -380,14 +380,14 @@ SPAR_NCNAME_X		(([A-Za-z0-9_./#%+?&=@*:\x7f-\xfe-]*[A-Za-z0-9_/#%+?&=@*:\x7f-\xf
     return Q_IRI_REF;
   }
 
-<INITIAL>"<"(([^\\>\001-\040])|{SPAR_ECHAR}|"\\>")*">"	{
+<INITIAL>"<"(([^\\<>\001-\040])|{SPAR_ECHAR}|"\\>")*">"	{
     if (TTL_MAX_IRI_LEN <= yyleng)
       TTLYYERROR_OR_RECOVER("The \"relative IRI\" (angle-bracketed) notation is too long");
     ttlyylval.box = ttlp_strliteral (ttlp_arg, yytext, TTLP_STRLITERAL_LTGT, '>');
     return Q_IRI_REF;
   }
 
-<INITIAL>"<"([^<>\001-\037]|"\t")*">"	{
+<INITIAL>"<"([^>\001-\037]|"\t")*">"	{
     if (!(ttlp_arg[0].ttlp_flags & TTLP_ACCEPT_DIRTY_NAMES))
       TTLYYERROR_OR_RECOVER ("Invalid characters in angle-bracketed name; this error can be suppressed by parser flags");
     if (TTL_MAX_IRI_LEN <= yyleng)

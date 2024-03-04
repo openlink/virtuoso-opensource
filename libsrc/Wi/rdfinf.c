@@ -2509,6 +2509,18 @@ qn_set_after_join_test (data_source_t * qn, code_vec_t tst)
     ((subq_source_t*)qn)->sqs_after_join_test = tst;
 }
 
+data_source_t *
+qn_skip_inits (data_source_t * qn)
+{
+  data_source_t * next;
+  while ((next = qn_next (qn)))
+    {
+      if (!IS_QN (qn, hash_fill_node_input))
+	break;
+      qn = next;
+    }
+  return qn;
+}
 
 outer_seq_end_node_t *
 sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
@@ -2556,7 +2568,7 @@ sqlg_cl_bracket_outer (sqlo_t * so, data_source_t * first)
   {
     data_source_t * qn;
     SQL_NODE_INIT (set_ctr_node_t, sctr, set_ctr_input, set_ctr_free);
-    qn_ins_before (sc, &first, qn_next (first), (data_source_t *) sctr);
+    qn_ins_before (sc, &first, qn_skip_inits (qn_next (first)), (data_source_t *) sctr);
     clb_init (sc->sc_cc, &sctr->clb, 1);
     sctr->sctr_role = SCTR_OJ;
     sctr->sctr_itcl = ssl_new_inst_variable (so->so_sc->sc_cc, "buf_row", DV_ARRAY_OF_POINTER);

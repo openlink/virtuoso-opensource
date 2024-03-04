@@ -1422,7 +1422,7 @@ status_report (const char * mode, query_instance_t * qi)
 	{
 	  rep_printf ("\n\nRunning Statements can be shown to DBA only because the may contain sensitive data.");
 	}
-      else if (!process_is_swapping)
+      else if (!process_is_swapping && !www_maintenance && !wi_inst.wi_is_checkpoint_pending)
 	{
 	  PrpcSelfSignal ((self_signal_func) st_collect_ps_info, (caddr_t)&set);
 	  semaphore_enter (ps_sem);
@@ -1442,7 +1442,7 @@ status_report (const char * mode, query_instance_t * qi)
 	}
       else
 	{
-	  rep_printf ("\n\nProcess is swapping cannot get client status report.");
+	  rep_printf ("\n\nProcess is in maintenance mode or swapping. Client status report unavailable.");
 	}
     }
   if (strchr (mode, 'k'))

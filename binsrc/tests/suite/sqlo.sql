@@ -1816,6 +1816,47 @@ ECHO BOTH $IF $EQU $ROWCNT 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " oj on true with true filter rows=" $ROWCNT  " \n";
 
+set U{caseno} case1238;
+DROP TABLE case1238t0;
+DROP TABLE case1238t1;
+
+CREATE TABLE case1238t0(c0 VARCHAR(500));
+CREATE TABLE case1238t1(c0 INT, c1 INT);
+INSERT INTO case1238t1 (c0) VALUES (1);
+INSERT INTO case1238t1 (c1) VALUES (2);
+INSERT INTO case1238t0 (c0) VALUES ('a');
+
+SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE (NOT NULL) UNION ALL SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE ((NULL) IS NULL) order by 1;
+ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH " $U{caseno} union on oj left with always true and null is rset last result " $last[1] "\n"; 
+
+
+set U{caseno} case1239;
+DROP TABLE case1239t0;
+DROP TABLE case1239t1;
+CREATE TABLE case1239t0(c0 INT, c1 VARCHAR(500), c2 INTEGER, PRIMARY KEY(c1));
+CREATE TABLE case1239t1(c0 INTEGER);
+--INSERT INTO case1239t0(c0, c1) VALUES ('x','');
+INSERT INTO case1239t0(c0, c1) VALUES ('\x65\xe1\x8a\xa7', '');
+
+SELECT * FROM case1239t1 LEFT  JOIN case1239t0 ON (CASE 1 WHEN 2 THEN A(case1239t0.c2) ELSE 3 END );
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH " $U{caseno} union on oj left with always true simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n"; 
+
+
+set U{caseno} case1241;
+DROP TABLE case1241t0;
+DROP TABLE case1241t1;
+CREATE TABLE case1241t0(c0 INT);
+CREATE TABLE case1241t1(c1 INT);
+INSERT INTO case1241t1 (c1) VALUES (1);
+
+SELECT case1241t0.c0 FROM case1241t1 LEFT  JOIN case1241t0 ON 1 ORDER BY 1 DESC;
+ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH " $U{caseno} oj left on always true and oby produces " $LAST[1] "\n";
 
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";

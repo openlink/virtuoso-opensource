@@ -3894,6 +3894,11 @@ sqlg_fref_qp (sql_comp_t * sc, fun_ref_node_t * fref, df_elt_t * dt_dfe)
     }
 }
 
+int
+qn_is_non_oj_sctr (data_source_t * qn)
+{
+  return IS_QN (qn, set_ctr_input) && !((set_ctr_node_t*)qn)->sctr_ose;
+}
 
 void
 sqlg_place_fref (sql_comp_t * sc, data_source_t ** head, fun_ref_node_t * fref, df_elt_t * dt_dfe)
@@ -3907,7 +3912,7 @@ sqlg_place_fref (sql_comp_t * sc, data_source_t ** head, fun_ref_node_t * fref, 
     }
   for (qn = *head; qn; (prev = qn, qn = qn_next (qn)))
     {
-      if (IS_QN (qn, hash_fill_node_input) || IS_QN (qn, set_ctr_input))
+      if (IS_QN (qn, hash_fill_node_input) || qn_is_non_oj_sctr (qn))
 	continue;
       if ((qn_input_fn)fun_ref_node_input == qn->src_input)
 	{

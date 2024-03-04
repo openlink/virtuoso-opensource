@@ -6279,10 +6279,17 @@ create procedure DB.DBA.LOCAL_CA_RENEW (in ca_key_name varchar := 'id_rsa', in d
 }
 ;
 
-create procedure DB.DBA.HTTPS_MAKE_HOST_KEY (in cname varchar)
+create procedure DB.DBA.HTTPS_MAKE_HOST_KEY (in cname varchar, in alt_names varchar := null)
 {
-  declare kname varchar;
+  declare kname, san varchar;
   declare serial int;
+  declare alt_hosts any;
+  alt_hosts := string_split (alt_names);
+  san := 'DNS:'||cname;
+  foreach (varchar cn in alt_hosts) do
+    {
+      san := concat (san, ', DNS:', cn);
+    }
   serial := deserialize (hex2bin('F700' || subseq (bin2hex (xenc_digest (uuid(), 'sha256')), 0, 14)));
   kname := 'https_key_' || replace (cname, '.', '_');
   xenc_key_RSA_create (kname, 2048);
@@ -6293,7 +6300,7 @@ create procedure DB.DBA.HTTPS_MAKE_HOST_KEY (in cname varchar)
         'extendedKeyUsage', 'serverAuth',
         'basicConstraints', 'critical,CA:FALSE',
         'authorityKeyIdentifier', 'keyid,issuer:always',
-        'subjectAltName', 'DNS:'||cname
+        'subjectAltName', san
         ));
   USER_KEY_STORE (user, kname, 'X.509', 2, '', cast (xenc_pkcs12_export (kname, cname || ' key', '') as varchar));
   return kname;
