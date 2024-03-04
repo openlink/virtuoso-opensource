@@ -418,7 +418,7 @@
                                 <label for="ie_name">Site Name</label>
                               </th>
                               <td>
-                                <v:text name="ie_name" xhtml_id="ie_name" value="" xhtml_style="width: 400px;" />
+                                <v:text name="ie_name" xhtml_id="ie_name" value="" xhtml_style="width: 400px;" xhtml_pattern="\\S+" />
                               </td>
                             </tr>
                             <tr>
