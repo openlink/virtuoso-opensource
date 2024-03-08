@@ -1500,7 +1500,7 @@ bif_sparql_rdb2rdf_impl (caddr_t * qst, caddr_t table_name, int opcode, caddr_t 
 }
 
 caddr_t
-bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname)
+bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int argcount = BOX_ELEMENTS (args);
   caddr_t table_name = bif_string_arg (qst, args, 0, "sparql_rdb2rdf_codegen");
@@ -1514,7 +1514,7 @@ bif_sparql_rdb2rdf_codegen (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
 }
 
 caddr_t
-bif_sparql_rdb2rdf_list_tables (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, const char *fname)
+bif_sparql_rdb2rdf_list_tables (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
   int opcode = bif_long_range_arg (qst, args, 0, "sparql_rdb2rdf_list_tables", RDB2RDF_CODEGEN_EXPLAIN, COUNTOF__RDB2RDF_CODEGEN);
   return bif_sparql_rdb2rdf_impl (qst, NULL, opcode, NULL, 0 /*fake*/, 1);
