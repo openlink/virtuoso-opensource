@@ -48,7 +48,7 @@
 #include "sqlwords.h"
 #else
 struct keyword { char *kwd; int token; };
-extern const struct keyword *lex_hash_kw (register const char *str, register unsigned int len);
+extern const struct keyword *lex_hash_kw (register const char *str, register size_t len);
 #endif
 #include "numeric.h"
 #include "sqlcmps.h"

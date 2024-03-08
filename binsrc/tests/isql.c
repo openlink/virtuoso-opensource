@@ -6308,6 +6308,10 @@ int is_cmd (TCHAR *text, TCHAR *cmd);
 #undef PLDBG
 #endif
 
+#ifdef UNICODE
+#undef PLDBG
+#endif
+
 #ifdef PLDBG
 void * pldbg_help (FILE * f);
 TCHAR * pldbg_read_resp (void * ses1);

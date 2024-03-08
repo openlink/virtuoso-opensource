@@ -498,7 +498,7 @@ char* get_encoded_name (vxml_parser_t* parser, unichar* beg, unichar* end,
 #endif /* DEBUG */
 
 struct xhtml_ent_s { const char *entity; int encoded_symbol; const char *descr;};
-extern const struct xhtml_ent_s * xhtml_ent_gperf (register const char *str, register unsigned int len);
+extern const struct xhtml_ent_s * xhtml_ent_gperf (register const char *str, register size_t len);
 
 unichar
 dtd_char_ref (vxml_parser_t* parser, char* str, size_t sz)

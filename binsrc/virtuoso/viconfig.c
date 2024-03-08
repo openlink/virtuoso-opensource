@@ -163,9 +163,9 @@ extern long vdb_use_global_pool; /* from sqlrrun.c */
 extern unsigned long vdb_oracle_catalog_fix; /* from odbccat.c */
 extern long vdb_attach_autocommit; /* from odbccat.c */
 extern int32 http_keep_alive_timeout;
-extern long http_max_keep_alives;
-extern long http_max_cached_proxy_connections;
-extern long http_proxy_connection_cache_timeout;
+extern int32 http_max_keep_alives;
+extern int32 http_max_cached_proxy_connections;
+extern int32 http_proxy_connection_cache_timeout;
 extern char * http_server_id_string;
 extern const char * http_client_id_string;
 extern char * http_access_control_allow_default_headers;

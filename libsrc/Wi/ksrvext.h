@@ -122,11 +122,12 @@ typedef void (*bif_type_func_t) (state_slot_t ** args, long *dtp, long *prec,
 
 typedef struct
   {
-    bif_type_func_t	bt_func;
-    long		bt_dtp;
-    long		bt_prec;
-    long		bt_scale;
-    const char *	bt_sql_dml_name;
+    bif_type_func_t     bt_func;
+    long                bt_dtp;
+    long                bt_prec;
+    long                bt_scale;
+    long                bt_non_null;
+    const char *        bt_sql_dml_name;
   } bif_type_t;
 
 VIRTVARCLASS bif_type_t bt_varchar;
