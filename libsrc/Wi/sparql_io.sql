@@ -1714,7 +1714,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
     {
       if (varctr > 0)
         http('\t', ses);
-      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, metas[0][varctr][0]);
+      http ('?', ses); http (metas[0][varctr][0], ses);
     }
   http ('\n', ses);
   for (resctr := 0; resctr < rescount; resctr := resctr + 1)
@@ -1726,7 +1726,7 @@ create procedure DB.DBA.SPARQL_RESULTS_TSV_WRITE (inout ses any, inout metas any
           if (varctr > 0)
             http('\t', ses);
           if (val is not null)
-            DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, val);
+            http_nt_object(val, ses, 1);
         }
       http('\n', ses);
     }

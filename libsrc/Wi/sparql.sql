@@ -4713,7 +4713,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
 {
   declare env any;
   declare tcount, tctr, status integer;
-  http ('"subject","predicate","object"\n', ses);
+  http ('?subject\t?predicate\t?object\n', ses);
   tcount := length (triples);
   -- dbg_obj_princ ('DB.DBA.RDF_TRIPLES_TO_TSV:'); for (tctr := 0; tctr < tcount; tctr := tctr + 1) -- dbg_obj_princ (triples[tctr]);
   { whenever sqlstate '*' goto p_done; rowvector_subj_sort (triples, 1, 1); p_done: ; }
@@ -4721,11 +4721,11 @@ create procedure DB.DBA.RDF_TRIPLES_TO_TSV (inout triples any, inout ses any)
   DB.DBA.RDF_TRIPLES_BATCH_COMPLETE (triples);
   for (tctr := 0; tctr < tcount; tctr := tctr + 1)
     {
-      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][0]);
+      http_nt_object(triples[tctr][0], ses);
       http ('\t', ses);
-      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][1]);
+      http_nt_object(triples[tctr][1], ses);
       http ('\t', ses);
-      DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (ses, triples[tctr][2]);
+      http_nt_object(triples[tctr][2], ses, 1);
       http ('\n', ses);
     }
 }
@@ -6567,7 +6567,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
         {
           if (col_ctr > 0)
             http('\t', _env);
-          DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, colnames[col_ctr]);
+          http('?', _env); http(colnames[col_ctr], _env);
         }
       http ('\n', _env);
     }
@@ -6578,7 +6578,7 @@ create procedure DB.DBA.RDF_FORMAT_RESULT_SET_AS_TSV_ACC (inout _env any, inout 
       if (col_ctr > 0)
         http('\t', _env);
       if (val is not null)
-        DB.DBA.SPARQL_RESULTS_CSV_WRITE_VALUE (_env, val);
+        http_nt_object(val, _env, 1);
     }
   http('\n', _env);
 }
