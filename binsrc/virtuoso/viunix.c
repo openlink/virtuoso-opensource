@@ -156,7 +156,7 @@ extern void (*db_exit_hook) (void);	/* called on shutdown */
 
 extern void (*cfg_replace_log)(char *str);
 extern void (*cfg_set_checkpoint_interval)(int32 f);
-extern void (*db_read_cfg)(caddr_t *it, char *mode);
+extern void (*db_read_cfg)(caddr_t *it, const char *mode);
 
 extern void (*process_exit_hook) (int state);
 
@@ -176,8 +176,8 @@ extern int in_crash_dump;
 int db_check_in_use (void);
 void new_cfg_replace_log (char *new_log);
 void new_cfg_set_checkpoint_interval (int32 f);
-void new_db_read_cfg (caddr_t *it, char *mode);
-void new_dbs_read_cfg (caddr_t *it, char *mode);
+void new_db_read_cfg (caddr_t *it, const char *mode);
+void new_dbs_read_cfg (caddr_t *it, const char *mode);
 dk_set_t new_cfg_read_storages (caddr_t **temp_storage);
 
 extern LOG *startup_log;

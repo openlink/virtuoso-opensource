@@ -264,7 +264,7 @@ login (HENV * henv, HDBC * hdbc, char *argv_, char *dbms, int dbms_sz,
 /* End of macro definitions */
 
 void
-new_order ()
+new_order (void)
 {
   long rc;
   int n;
@@ -337,7 +337,7 @@ err:
 
 
 void
-payment ()
+payment (void)
 {
   long rc;
   long w_id = local_w_id;
@@ -416,7 +416,7 @@ err:;
 
 
 void
-slevel ()
+slevel (void)
 {
   long rc;
   long w_id = local_w_id;
@@ -453,7 +453,7 @@ err:
 
 
 void
-ostat ()
+ostat (void)
 {
   long rc;
   long w_id = local_w_id;
@@ -534,7 +534,7 @@ checkerr (OCIError * errhp, sword status)
 }
 
 void
-logoff ()
+logoff (void)
 {
   if (errhp)
     (void) OCIServerDetach (srvhp, errhp, OCI_DEFAULT);
@@ -550,10 +550,10 @@ logoff ()
 /*
 * Load tables
 */
-void LoadItems ();
-void LoadWare ();
-void LoadCust ();
-void LoadOrd ();
+void LoadItems (void);
+void LoadWare (void);
+void LoadCust (void);
+void LoadOrd (void);
 void Stock (long w_id_from, long w_id_to);
 void District (long w_id);
 void Customer (long, long);
@@ -592,7 +592,7 @@ extern SDWORD sql_timelen_array[BATCH_SIZE];
 
 
 void
-LoadItems ()
+LoadItems (void)
 {
   long i;
   int fill = 0;
@@ -686,7 +686,7 @@ LoadItems ()
 
 
 void
-LoadWare ()
+LoadWare (void)
 {
   long w_id;
   text w_name[10];
@@ -756,7 +756,7 @@ LoadWare ()
 
 
 void
-LoadCust ()
+LoadCust (void)
 {
   long w_id;
   long d_id;
@@ -770,7 +770,7 @@ LoadCust ()
 
 
 void
-LoadOrd ()
+LoadOrd (void)
 {
   long w_id;
   long d_id;

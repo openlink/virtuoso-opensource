@@ -703,7 +703,7 @@ int enable_vecf = 1;
 
 
 void
-ce_intd_register (flags)
+ce_intd_register (dtp_t flags)
 {
   ce_op_register (CE_INT_DELTA | flags, CE_ALL_LTGT, 0, ce_intd_range_ltgt);
   ce_op_register (CE_INT_DELTA | flags, CE_ALL_LTGT, 1, ce_intd_sets_ltgt);

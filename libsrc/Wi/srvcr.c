@@ -2200,7 +2200,7 @@ pl_cursor_destroy (caddr_t box)
 }
 
 int
-pl_cursor_serialize (void *cursor, dk_session_t *ses)
+pl_cursor_serialize (const void *cursor, dk_session_t *ses)
 {
   session_buffered_write_char (DV_SHORT_STRING, ses);
   session_buffered_write_char ((char) 8, ses);

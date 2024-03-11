@@ -3848,7 +3848,7 @@ sqlg_ts_qp_copy (sql_comp_t * sc, table_source_t * ts)
 caddr_t
 box_concat (caddr_t b1, caddr_t b2)
 {
-  int l1 = b1 ? box_length (b1) : NULL, l2 = b2 ? box_length (b2) : 0;
+  int l1 = b1 ? box_length (b1) : 0, l2 = b2 ? box_length (b2) : 0;
   int l = l1 + l2;
   caddr_t b = dk_alloc_box (l, box_tag (b1));
   memcpy (b, b1, l1);

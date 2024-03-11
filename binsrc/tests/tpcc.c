@@ -94,7 +94,7 @@ MakeNumberString (int sz, int sz2, char *str)
 
 
 long
-random_c_id ()
+random_c_id (void)
 {
   return (NURand (1023, 1, 3000));
 }
@@ -126,7 +126,7 @@ HENV henv;
 
 
 void
-check_dd ()
+check_dd (void)
 {
 #if 0
   int rc;
@@ -194,7 +194,7 @@ gettimestamp_2 (char *ts)
 
 
 void
-create_db ()
+create_db (void)
 {
   int i;
 
@@ -273,7 +273,7 @@ Lastname (int num, char *name)
 
 
 void
-init_globals ()
+init_globals (void)
 {
   int i;
   for (i = 0; i < BATCH_SIZE; i++)
@@ -317,7 +317,7 @@ print_error (HSTMT e1, HSTMT e2, HSTMT e3)
 
 
 void
-usage ()
+usage (void)
 {
   printf ("Usage: tpcc datasource flag num\n");
   exit (1);

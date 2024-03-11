@@ -3723,8 +3723,8 @@ log_thread_initialize ()
     return;
   log_queue_mtx = mutex_allocate ();
   log_worker_thr = PrpcThreadAllocate ((init_func) log_worker_func, 100000, NULL)->dkt_process;
-  virtuoso_log->emitter = log_queue_add_msg;
-  stderr_log->emitter = log_queue_add_msg;
+  virtuoso_log->emitter = (log_emit_func) log_queue_add_msg;
+  stderr_log->emitter = (log_emit_func) log_queue_add_msg;
 }
 #endif
 

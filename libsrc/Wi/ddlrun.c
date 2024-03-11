@@ -3345,7 +3345,7 @@ ddl_drop_table (query_instance_t * qi, char *name, int target_is_view)
   else
     atomic = 0;
 
-  ddl_object_is_view = sch_view_def (wi_inst.wi_schema, name);
+  ddl_object_is_view = (NULL != sch_view_def (wi_inst.wi_schema, name));
 
   if (!ddl_object_is_view && target_is_view)
     sqlr_new_error ("42S02", "SQ025", "The target name is a table.");

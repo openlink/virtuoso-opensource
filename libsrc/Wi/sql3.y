@@ -2979,7 +2979,7 @@ tail_of_tag_of
 		  $$ = ((caddr_t *)$1)[0];
 		  if (!IS_BLOB_DTP($$))
 		    yyerror (scanner, "__TAG OF ... HANDLE is valid only for LONG datatypes");
-		  $$ = DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP($$);
+		  $$ = (caddr_t *)(ptrlong)DV_BLOB_HANDLE_DTP_FOR_BLOB_DTP($$);
 		}
 	| DICTIONARY_L REFERENCE_L { $$ = (caddr_t) DV_DICT_ITERATOR; }
 	| STREAM_L { $$ = (caddr_t) DV_STRING_SESSION; }

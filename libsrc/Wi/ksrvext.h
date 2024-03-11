@@ -267,8 +267,8 @@ extern int _thread_num_runnable;
 extern int _thread_num_wait;
 extern int _thread_num_dead;
 
-int log_info (char *format, ...);
-int log_debug (char *format, ...);
+int log_info (const char *format, ...);
+int log_debug (const char *format, ...);
 void thread_allow_schedule (void);
 void thread_exit (int n);
 int *thread_errno (void);
@@ -608,7 +608,7 @@ struct dk_session_s
 
 void session_buffered_write_char (int c, dk_session_t * ses);
 void print_long (long l, dk_session_t * session);
-typedef int    (*ses_write_func) (void * obj, dk_session_t * session);
+typedef int    (*ses_write_func) (const void * obj, dk_session_t * session);
 void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 
 #define SESSION_DK_SESSION(session) \
@@ -625,10 +625,10 @@ void PrpcSetWriter (dtp_t dtp, ses_write_func f);
 #define THR_ATTR(th,a)          thread_getattr(th, (void *)(long) a)
 
 void strses_flush (dk_session_t *ses);
-long strses_length (dk_session_t *ses);
+int64 strses_length (dk_session_t *ses);
 void strses_free (dk_session_t *ses);
 dk_session_t *strses_allocate (void);
-int session_buffered_write (dk_session_t * ses, char *buffer, size_t length);
+int session_buffered_write (dk_session_t * ses, const char *buffer, size_t length);
 void * thread_getattr (thread_t *self, void *key);
 thread_t * thread_current (void);
 void * thread_setattr (thread_t *self, void *key, void *value);

@@ -1153,8 +1153,8 @@ OFF_T dbs_extend_stripes (dbe_storage_t * dbs);
 
 /* auxfiles.c */
 dbe_storage_t *dbs_from_file (char * name, char * file, char type, volatile int * exists);
-void _dbs_read_cfg (dbe_storage_t * dbs, char *file);
-extern void (*dbs_read_cfg) (caddr_t * dbs, char *file);
+void _dbs_read_cfg (dbe_storage_t * dbs, const char *file);
+extern void (*dbs_read_cfg) (caddr_t * dbs, const char *file);
 dk_set_t _cfg_read_storages (caddr_t **temp_storage);
 extern dk_set_t (*dbs_read_storages) (caddr_t **temp_file);
 extern int freeing_unfreeable;
@@ -1286,7 +1286,7 @@ extern long bp_last_pages;
 extern int correct_parent_links;
 extern long file_extend;
 extern int32 c_checkpoint_sync;
-extern void (*db_read_cfg) (caddr_t * dbs, char *mode);
+extern void (*db_read_cfg) (caddr_t * dbs, const char *mode);
 extern dk_mutex_t *time_mtx;
 extern dk_mutex_t * old_roots_mtx;
 extern buffer_desc_t * old_root_images;
@@ -1364,8 +1364,8 @@ void
 srv_set_cfg(
     void (*replace_log)(char *str),
     void (*set_checkpoint_interval)(int32 f),
-    void (*read_cfg)(caddr_t * it, char *mode),
-    void (*s_read_cfg)(caddr_t * it, char *mode),
+    void (*read_cfg)(caddr_t * it, const char *mode),
+    void (*s_read_cfg)(caddr_t * it, const char *mode),
     dk_set_t (*read_storages)(caddr_t **temp_file)
     );
 

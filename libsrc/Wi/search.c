@@ -3381,7 +3381,7 @@ itc_col_stat_free (it_cursor_t * itc, int upd_col, float est)
       if (upd_col && (0 == stricmp (col->col_name, "P") || 0 == stricmp (col->col_name, "G")))
         {
           if (NULL != col->col_stat)
-            srv_add_background_task (col_stat_free, col->col_stat);
+            srv_add_background_task ((srv_background_task_t)col_stat_free, col->col_stat);
           col->col_stat = cs;
           is_int = 0;
         }

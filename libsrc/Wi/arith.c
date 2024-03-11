@@ -1963,8 +1963,8 @@ CMP_VEC (cmp_vec_dbl_lte, double, <=)
 
 
 vec_cmp_t int_cmp_ops[] = {NULL, cmp_vec_int_eq, cmp_vec_int_lt, cmp_vec_int_lte};
-vec_cmp_t sf_cmp_ops[] = {NULL, cmp_vec_sf_eq, cmp_vec_sf_lt, cmp_vec_sf_lte};
-vec_cmp_t dbl_cmp_ops[] = {NULL, cmp_vec_dbl_eq, cmp_vec_dbl_lt, cmp_vec_dbl_lte};
+vec_cmp_t sf_cmp_ops[] = {NULL, (vec_cmp_t)cmp_vec_sf_eq, (vec_cmp_t)cmp_vec_sf_lt, (vec_cmp_t)cmp_vec_sf_lte};
+vec_cmp_t dbl_cmp_ops[] = {NULL, (vec_cmp_t)cmp_vec_dbl_eq, (vec_cmp_t)cmp_vec_dbl_lt, (vec_cmp_t)cmp_vec_dbl_lte};
 
 
 

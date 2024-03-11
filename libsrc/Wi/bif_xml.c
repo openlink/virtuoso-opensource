@@ -4350,7 +4350,7 @@ bif_int_vectorbld_acc (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
       caddr_t arg = QST_GET (qst, args[arg_inx]);
       if (DV_DB_NULL == DV_TYPE_OF (arg))
 	continue;
-      dst[0] = unbox_iri_int64 (arg);
+      dst[0] = (void *)(ptrlong)unbox_iri_int64 (arg);
       dst++;
     }
   /* Now we know what's the precise value of new_filled_count */

@@ -4457,9 +4457,9 @@ rdf_core_init (void)
 {
   jso_init ();
   rdf_mapping_jso_init ();
-  jso__quad_map.jsocd_validation_cbk = jso__quad_map_jsocd_validation_cbk;
-  jso__qm_value.jsocd_validation_cbk = jso__qm_value_jsocd_validation_cbk;
-  jso__qm_format.jsocd_validation_cbk = jso__qm_format_jsocd_validation_cbk;
+  jso__quad_map.jsocd_validation_cbk = (jso_validation_cbk_t*)jso__quad_map_jsocd_validation_cbk;
+  jso__qm_value.jsocd_validation_cbk = (jso_validation_cbk_t*)jso__qm_value_jsocd_validation_cbk;
+  jso__qm_format.jsocd_validation_cbk = (jso_validation_cbk_t*)jso__qm_format_jsocd_validation_cbk;
   if (iri_seqs_used < 1)
     iri_seqs_used = 1;
   if (iri_seqs_used > N_IRI_SEQS)

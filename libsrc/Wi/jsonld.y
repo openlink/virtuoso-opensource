@@ -828,7 +828,7 @@ item	: CONTEXT {
                            else if (uname_at_vocab == itm->type && DV_STRINGP(lit))
                              {
                                JLD_SET_CURRENT(type, uname_at_id);
-                               JLD_SET_CURRENT(use_ns, 1);
+                               JLD_CURRENT(use_ns) = '\1';
                              }
                          }
                        jsonp_arg->curr_item.flags |= itm->flags;

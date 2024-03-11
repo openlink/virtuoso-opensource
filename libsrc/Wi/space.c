@@ -493,12 +493,12 @@ dp_info (dbe_storage_t * dbs, dp_addr_t dp)
 	}
       END_DO_HT;
     }
-  em = (extent_map_t *)gethash (EXT_ROUND (dp), dbs->dbs_dp_to_extent_map);
+  em = (extent_map_t *)gethash ((void*)(ptrlong)EXT_ROUND (dp), dbs->dbs_dp_to_extent_map);
   if (em)
     {
       int is_free  = dbs_is_free_page (dbs, dp);
       printf ("%s: ", is_free ? "free" : "allocated");
-      ext = (extent_t*)gethash (EXT_ROUND (dp), em->em_dp_to_ext);
+      ext = (extent_t*)gethash ((void*)(ptrlong)EXT_ROUND (dp), em->em_dp_to_ext);
       if (ext)
 	printf ("extent map %s %p, extent %p\n", em->em_name, em, ext);
       else

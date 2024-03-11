@@ -356,12 +356,12 @@ shapefileio_read_dbf_fld_mdata (shapefileio_ctx_t *ctx, int fldctr)
   df->df_dtp = arg_dtp;
   mdta = NEW_LIST (7);
   mdta[0] = box_dv_short_string (df->df_name);
-  mdta[1] = arg_dtp;
-  mdta[2] = arg_width;
-  mdta[3] = arg_prec;
-  mdta[4] = 1;
-  mdta[5] = 0;
-  mdta[6] = 0;
+  mdta[1] = (caddr_t)(ptrlong)arg_dtp;
+  mdta[2] = (caddr_t)(ptrlong)arg_width;
+  mdta[3] = (caddr_t)(ptrlong)arg_prec;
+  mdta[4] = (caddr_t)(ptrlong)1;
+  mdta[5] = (caddr_t)(ptrlong)0;
+  mdta[6] = (caddr_t)(ptrlong)0;
   ctx->shpio_dbf_cbk_mdata [fldctr] = mdta;
 }
 

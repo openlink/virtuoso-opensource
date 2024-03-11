@@ -115,7 +115,7 @@ char *new_order_text_SOAP = "soap_call (concat ('localhost:' , server_http_port(
 
 
 int
-other_w_id ()
+other_w_id (void)
     {
       int n, n_tries = 0;
       do
@@ -131,7 +131,7 @@ other_w_id ()
 
 
 int
-make_supply_w_id ()
+make_supply_w_id (void)
 {
   if (n_ware > 1 && RandomNumber (0, 99) == 10)
     return other_w_id ();
@@ -141,7 +141,7 @@ make_supply_w_id ()
 
 
 int
-rnd_district ()
+rnd_district (void)
 {
   return (10 - (RandomNumber (0, 9999) / 1000));
 }
@@ -182,7 +182,7 @@ char *ostat_text;
 extern int speed_limit;
 
 void
-do_10_pack ()
+do_10_pack (void)
 {
   int target_duration = 0;
   int n;
@@ -234,7 +234,7 @@ do_10_pack ()
 #define SAMPLE_CHECK 5000
 #define CHECK_POINT_INTERVAL 15000
 void
-reset_times ()
+reset_times (void)
 {
   ta_init (&new_order_ta, "NEW ORDER");
   ta_init (&payment_ta, "PAYMENT");
@@ -246,7 +246,7 @@ reset_times ()
 
 
 void
-print_times ()
+print_times (void)
 {
 #if !defined(GUI)
   ta_print_out (stdout, &new_order_ta);
@@ -391,7 +391,7 @@ run_test (int argc, char **argv)
 
 
 void
-transaction_per_period (int nPeriodSeconds, void (*tr1) ())
+transaction_per_period (int nPeriodSeconds, transaction_per_period_cbk_t *tr1)
 {
 
 
@@ -409,7 +409,7 @@ transaction_per_period (int nPeriodSeconds, void (*tr1) ())
 }
 
 void
-delivery ()
+delivery (void)
 {
 
   int n;
@@ -475,13 +475,13 @@ run_timed_test (int argc, char **argv)
       start = get_msec_count ();
       for (n = 0; n < 10; n++)
 	{
-	  transaction_per_period (TEN_PACK_TIME / 23, new_order);
-	  transaction_per_period (TEN_PACK_TIME / 23, payment);
+	  transaction_per_period (TEN_PACK_TIME / 23, (transaction_per_period_cbk_t*)new_order);
+	  transaction_per_period (TEN_PACK_TIME / 23, (transaction_per_period_cbk_t*)payment);
 	}
 
-      transaction_per_period (TEN_PACK_TIME / 23, delivery);
-      transaction_per_period (TEN_PACK_TIME / 23, slevel);
-      transaction_per_period (TEN_PACK_TIME / 23, ostat);
+      transaction_per_period (TEN_PACK_TIME / 23, (transaction_per_period_cbk_t*)delivery);
+      transaction_per_period (TEN_PACK_TIME / 23, (transaction_per_period_cbk_t*)slevel);
+      transaction_per_period (TEN_PACK_TIME / 23, (transaction_per_period_cbk_t*)ostat);
 
       duration = (get_msec_count () - start) / 1000;
       if (TEN_PACK_TIME - duration > 0)

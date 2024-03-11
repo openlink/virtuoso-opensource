@@ -1216,7 +1216,7 @@ caddr_t bif_commit (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 #define IO_SECT(qi) \
 { \
- int64 __ts = rdtsc (); \
+  uint64 __ts = rdtsc (); \
   query_instance_t * _qi2 = (query_instance_t *) qi; \
   vdb_enter (_qi2); \
   QR_RESET_CTX_T (_qi2->qi_thread)  \
