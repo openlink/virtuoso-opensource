@@ -25,17 +25,40 @@ if WITH_RDB2RDF_VAD
 nodist_vad_DATA = rdb2rdf_dav.vad
 endif
 
-noinst_SCRIPTS = make_vad.sh
+NEED_VERSION    = 07.20.3226
+STICKER		= rdb2rdf_sticker.xml
+VERBOSE         = #--verbose
+VERSION         = `cat vad_version`
+
+DAV_FLAGS       = $(VERBOSE) \
+                --prefix "$(srcdir)"    \
+                --var="BASE_PATH=/DAV/VAD" \
+                --var="ISDAV=1" \
+                --var="NEED_VERSION=$(NEED_VERSION)" \
+                --var="TYPE=dav" \
+                --var="VERSION=$(VERSION)"
+
+
+rdb2rdf_dav.vad: $(EXTRA_DIST) Makefile
+	$(PYTHON) $(top_srcdir)/binsrc/vadpacker/vadpacker.py \
+		-o $(builddir)/rdb2rdf_dav.vad \
+		$(DAV_FLAGS) \
+		$(srcdir)/$(STICKER)
+
+
+# ----------------------------------------------------------------------
+#
+#  Cleanup
+#
+# ----------------------------------------------------------------------
 CLEANFILES =  \
 	make_vad.output \
 	make_rdb2rdf_vad.output \
 	rdb2rdf_dav.vad
 
-rdb2rdf_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./make_vad.sh
-
 clean-local:
 	-rm -rf vad
+
 
 # ----------------------------------------------------------------------
 #
@@ -43,8 +66,8 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	make_vad.sh \
-	*.sql \
-	*.ttl \
-	*.xml \
-	vad_version
+	$(srcdir)/$(STICKER) \
+	$(srcdir)/*.sql \
+	$(srcdir)/*.ttl \
+	$(srcdir)/*.xml \
+	$(srcdir)/vad_version
