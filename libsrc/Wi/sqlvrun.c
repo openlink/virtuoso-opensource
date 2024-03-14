@@ -1035,7 +1035,9 @@ ks_vec_params (key_source_t * ks, it_cursor_t * itc, caddr_t * inst)
 	  DC_CHECK_LEN (target_dc, n_rows - 1);
 	  cf[n_cols] = ks->ks_dc_val_cast[inx];
 	  if (target_dc->dc_dtp == source_dc->dc_dtp &&
-              (!target_dc->dc_sqt.sqt_col_dtp || dtp_canonical[target_dc->dc_sqt.sqt_col_dtp] == dtp_canonical[source_dc->dc_dtp]))
+              (!target_dc->dc_sqt.sqt_col_dtp ||
+               source_dc->dc_any_null ||
+               dtp_canonical[target_dc->dc_sqt.sqt_col_dtp] == dtp_canonical[source_dc->dc_dtp]))
 	    cf[n_cols] = NULL;
 	  if (cf[n_cols] || source_dc->dc_any_null)
 	    cast_or_null = 1;
