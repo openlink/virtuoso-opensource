@@ -1678,6 +1678,38 @@ ECHO BOTH $IF $EQU $LAST[2] $LAST[3] "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": gby/float \n";
 
+drop table tstr;
+drop type tp1;
+create type tp1 as (x any) self as ref
+constructor method tp1(i int);
+create constructor method tp1 (in i int) for tp1 {
+  self.x := i;
+};
+create table tstr (id varchar primary key, dt varchar);
+insert soft tstr values ('1', 'xx');
+
+select dt from tstr where id = tp1(1).x;
+ECHO BOTH $IF $EQU $LAST[1] "xx" "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": any param cast to string col match \n";
+select dt from tstr where id = tp1(2).x;
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": any param cast to string col not match returned " $ROWCNT " rows\n";
+select dt from tstr where id = tp1(null).x;
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": any null param cast to string col not match returned " $ROWCNT " rows\n";
+
+create table utfflag (id bigint primary key, str0 varchar, str1 varchar, str2 varchar);
+insert into utfflag values (1, xenc_rand_bytes(16,1), null, null);
+update utfflag set str0 = xenc_rand_bytes(10,1), str1 = __box_flags_tweak (xenc_rand_bytes(16,1),2), str2 = __box_flags_tweak(xenc_rand_bytes(16,1),2) 
+    where id = 1;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": update with box_flags=2 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
 select count(*) from WS.WS.SYS_DAV_RES where contains(RES_CONTENT,
         'Lite and (jdbc or odbc) and (installation and not "configur*" and (windows or macos))');
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
