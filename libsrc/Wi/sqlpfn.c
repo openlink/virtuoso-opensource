@@ -2437,13 +2437,24 @@ sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
     }
   else
     {
-      ST * res =
-	t_listst (3, CALL_STMT, uname_one_of_these,
-		t_list_to_array (t_CONS (left, right)));
+      caddr_t * args = t_list_to_array (t_CONS (left, right));
+      int is_const_in = 1;
+      ST * res = t_listst (3, CALL_STMT, uname_one_of_these, args);
+      res = t_listst (5, BOP_LT, t_box_num (0), res, NULL, 0);
       if (is_not)
-	return (t_listst (3, BOP_EQ, t_box_num (0), res));
-      else
-	return (t_listst (3, BOP_LT, t_box_num (0), res));
+        res->type = BOP_EQ;
+      DO_BOX (caddr_t, exp, inx, args)
+        {
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (exp))
+            {
+              is_const_in = 0;
+              break;
+            }
+        }
+      END_DO_BOX;
+      if (is_const_in) /* avoid IN of constants to be eliminated in plan */
+        res->_.bin_exp.serial = t_box_num (sqlp_bin_op_serial++);
+      return res;
     }
 }
 
