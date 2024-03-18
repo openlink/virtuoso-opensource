@@ -1829,7 +1829,7 @@ INSERT INTO case1238t0 (c0) VALUES ('a');
 SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE (NOT NULL) UNION ALL SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE ((NULL) IS NULL) order by 1;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} union on oj left with always true and null is rset last result " $last[1] "\n"; 
+ECHO BOTH ": "$U{caseno}" union on oj left with always true and null is rset last result " $last[1] "\n"; 
 
 
 set U{caseno} case1239;
@@ -1843,7 +1843,7 @@ INSERT INTO case1239t0(c0, c1) VALUES ('\x65\xe1\x8a\xa7', '');
 SELECT * FROM case1239t1 LEFT  JOIN case1239t0 ON (CASE 1 WHEN 2 THEN A(case1239t0.c2) ELSE 3 END );
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} union on oj left with always true simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n"; 
+ECHO BOTH ": "$U{caseno}" union on oj left with always true simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n"; 
 
 
 set U{caseno} case1241;
@@ -1856,7 +1856,7 @@ INSERT INTO case1241t1 (c1) VALUES (1);
 SELECT case1241t0.c0 FROM case1241t1 LEFT  JOIN case1241t0 ON 1 ORDER BY 1 DESC;
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} oj left on always true and oby produces " $LAST[1] "\n";
+ECHO BOTH ": "$U{caseno}" oj left on always true and oby produces " $LAST[1] "\n";
 
 set U{caseno} case1249;
 DROP TABLE case1249t0;
@@ -1887,6 +1887,24 @@ SELECT * FROM case1250t0 LEFT  JOIN case1250t1 ON (NULL IN ('')) WHERE 1 UNION A
 ECHO BOTH $IF $EQU $LAST[2] NULL "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " t1.c0=" $LAST[2]  " \n";
+
+set U{caseno} case1251;
+DROP TABLE case1251t0;
+DROP TABLE case1251t1;
+
+CREATE TABLE case1251t0(c0 INT);
+CREATE TABLE case1251t1(c0 INT);
+INSERT INTO case1251t1 ( c0) VALUES (1);
+INSERT INTO case1251t0 ( c0) VALUES (2);
+
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)); -- empty table
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE ''; -- empty table
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE (NOT ''); -- empty table
+
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE '' UNION ALL SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE (NOT '');
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " rowcnt=" $ROWCNT  " \n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
