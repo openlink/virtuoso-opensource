@@ -20,6 +20,8 @@
 #
 
 from __future__ import print_function
+from __future__ import unicode_literals
+
 
 import hashlib
 import struct
@@ -30,6 +32,7 @@ import datetime
 import re
 import glob
 import subprocess
+import gzip
 
 
 #
@@ -39,6 +42,15 @@ try:
     import xml.etree.ElementTree as ET
 except ImportError:
     import elementtree.ElementTree as ET
+
+
+#
+#  Use StringIO for python 2.7
+#
+try:
+    from StringIO import StringIO	# python 2.7
+except ImportError:
+    pass
 
 
 #
@@ -164,7 +176,7 @@ def vadWriteRow(s, name, data):
     vadWriteString(s, data)
 
 
-def vadWriteFile(s, name, fname):
+def vadWriteFile(s, name, fname, use_gz):
     """
     Writes a file to a VAD file and
     updates the hash while at it. The file is
@@ -174,24 +186,42 @@ def vadWriteFile(s, name, fname):
     s -- The stream to write to
     name -- The name of the file in the VAD.
     fname -- The path of the local file.
+    use_gz -- Should the file be stored compressed
     ctx -- The hash object to update.
     """
     with open(fname, 'rb') as f:
-        # write the row name
+        # read contents of file
+        val = f.read()
+
+        # compress the file if requested
+        if use_gz == "yes":
+            if sys.version_info[0] == 3:
+	        # Python 3.x
+                val = gzip.compress (val, compresslevel=9)
+            else:
+	        # Python 2.7
+                buf = StringIO()
+                with gzip.GzipFile(fileobj=buf, mode='wb', compresslevel=9) as f:
+                    f.write(val)
+                val = buf.getvalue()
+            if verbose:
+                f_len = os.path.getsize(fname)
+                logging.info("compress: original size=%ld, compressed size=%ld compression=%.2f%%" %
+                        (f_len, len(val), 100.0 * ((f_len - len(val))/f_len)))
+
+        # write the file name
         vadWriteChar(s, b'\xb6')
         vadWriteString(s, name)
 
-        # write the row contents
+        # write the content marker
         vadWriteChar(s, b'\xdf')
 
         # write the file size
-        vadWriteLong(s, os.path.getsize(fname))
+        vadWriteLong(s, len(val))
+
         # write the file contents
-        val = f.read(4069)
-        while val:
-            s.write(val)
-            ctx.update(val)
-            val = f.read(4069)
+        s.write(val)
+        ctx.update(val)
 
 
 def getDefaultPerms(f):
@@ -249,10 +279,11 @@ def createSticker(stickerUrl, variables, files):
         resType = f.get("type") or 'dav'
         resSource = f.get("source") or 'data'
         targetUri = f.get("target_uri")
-        sourceUri = f.get("source_uri")
+        sourceUri = f.get("source_uri") or targetUri
         owner = f.get("dav_owner") or "dav"
         grp = f.get("dav_grp") or "administrators"
         perms = f.get("dav_perm")
+        use_gz = f.get ("gzip") or "no"
 
         # and add a new line for each globbed one
         for path in zshglob(prefix + sourceUri):
@@ -262,11 +293,13 @@ def createSticker(stickerUrl, variables, files):
             targetUri = targetUri.replace('$p$', strippedPath)
             if targetUri.endswith('/'):
                 targetUri += strippedPath
+            if use_gz == "yes":
+              targetUri += '.gz'
             if(targetUri in allResources):
                 targetUri = f.get("target_uri")
                 continue
             allResources.append(targetUri)
-            resources += '  <file overwrite="%s" type="%s" source="data" source_uri="%s" target_uri="%s" dav_owner="%s" dav_grp="%s" dav_perm="%s" makepath="yes"/>\n' % (overwrite, resType, path, targetUri, owner, grp, perms or getDefaultPerms(path))
+            resources += '  <file overwrite="%s" type="%s" source="data" source_uri="%s" target_uri="%s" dav_owner="%s" dav_grp="%s" dav_perm="%s" makepath="yes" %s/>\n' % (overwrite, resType, path, targetUri, owner, grp, perms or getDefaultPerms(path), 'gzip="yes"' if use_gz == 'yes' else '')
             targetUri = f.get("target_uri")
 
     # Create the XML blob of additional files to add
@@ -310,12 +343,13 @@ def createVad(basePath, sticker, s):
         resSource = f.get("source")
         targetUri = f.get("target_uri")
         sourceUri = f.get("source_uri")
+        use_gz  = f.get("gzip")
         if resSource == "dav":
             logging.error("Cannot handle DAV resources")
             exit(1)
         if verbose:
-            logging.error("Packing file %s as %s" % (sourceUri, targetUri))
-        vadWriteFile(s, targetUri, sourceUri)
+            logging.info("Packing file %s as %s" % (sourceUri, targetUri))
+        vadWriteFile(s, targetUri, sourceUri, use_gz)
 
     # Write the md5 hash
     vadWriteRow(s, 'MD5', ctx.hexdigest())
@@ -340,7 +374,7 @@ def main():
 
     # Command line args
     optparser = optparse.OptionParser(usage="vadpacker.py [-h] --output PATH [--verbose] [--prefix PREFIX] [--targetprefix PREFIX] [--var [VAR [VAR ...]]] sticker_template [files [files ...]]",
-                                      version="Virtuoso VAD Packer 1.6",
+                                      version="Virtuoso VAD Packer 1.8",
                                       description="Copyright (C) 2012-2024 OpenLink Software. Vadpacker can be used to build Virtuoso VAD packages by providing the tool with a sticker template file. Vadpacker supports variable replacement and wildcards for file resources.",
                                       epilog="The optional list of files at the end will be packed in addition to the files in the sticker. vadpacker will create additional resource entries with default permissions (dav, administrators, 111101101NN for vsp and php pages, 110100100NN for all other files) in the packed sticker using the relative paths of the given files.")
     optparser.add_option('--output', '-o', type="string", metavar='PATH', dest='output', help='The destination VAD file.')
@@ -369,7 +403,7 @@ def main():
         # Open the target file and write the VAD
         with open(options.output, "wb") as s:
             if verbose:
-                logging.info("Packing VAD file '%s'" % ())
+                logging.info("Packing VAD file '%s'" % (options.output))
             createVad(os.path.dirname(os.path.realpath(stickerUrl)), sticker, s)
 
 

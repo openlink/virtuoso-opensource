@@ -1,3 +1,41 @@
+2024-03-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 1.8
+
+	Fixed issue if source_uri is missing from sticker
+
+2023-10-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v1.7' into develop
+	Tagged for release
+
+	Merge branch 'release/1.7'
+
+	Updates NEWS and ChangeLog
+
+	Merge branch 'feature/gzip_content' into develop
+
+2023-10-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added support for adding files as compressed blobs into the vad
+	If the sticker contains a line like this:
+
+	  <file type="$TYPE$" source_uri="owl/*.owl" target_uri="owl/$f$" gzip="yes"/>
+
+	then all the owl files from that directory will be added as owl/file.gz
+	into the DAV tree. This saves a lot of space when their content is only
+	used to seed the quad store.
+
+2023-10-05  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issues with verbose logging
+
+2023-09-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed version to 1.6 in vadpacker.py
+
+	Fixed missing update for NEWS and Changelog
+
 2023-04-03  Patrick van Kleef  <pkleef@openlinksw.com>
 
 	Merge tag 'v1.6' into develop

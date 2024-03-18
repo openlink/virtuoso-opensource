@@ -1,3 +1,9 @@
+Mar 14, 2024, v1.8:
+  * Fixed issue if source_uri is missing from sticker
+
+Oct 5, 2023, v1.7:
+  * Added support for compressed blobs
+
 Apr 3, 2023, v1.6:
   * Fixed make sure .sql files are not readable
 
