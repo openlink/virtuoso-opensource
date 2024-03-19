@@ -2265,11 +2265,15 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 		  {
 		    sqlo_place_exp (so, elt_dfe, pred);
 		  }
-		else
+		else if ((DFE_BOP == pred->dfe_type) || (DFE_BOP_PRED == pred->dfe_type))
 		  {
 		    sqlo_place_exp (so, pred, pred->_.bin.left);
 		    sqlo_place_exp (so, pred, pred->_.bin.right);
 		  }
+                else if (DFE_TEXT_PRED == pred->dfe_type)
+                  sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ081", "Free-text or index-friendly spatial predicate can not appear in CASE WHEN conditional control operator, please rephrase the query");
+		else
+		  sqlo_place_exp (so, elt_dfe, pred);
 	      }
 	    else
 		sqlo_place_exp (so, elt_dfe, pred);
