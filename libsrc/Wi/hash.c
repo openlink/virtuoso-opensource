@@ -2170,6 +2170,8 @@ runX_begin: ;
 		  set = (SSL_REF == ssl->ssl_type) ? sslr_set_no (qst, ssl, qi->qi_set) : qi->qi_set;
 		  if (dc->dc_nulls && DC_IS_NULL (dc, set))
 		    goto next_mem_col;
+		  if (!IS_BOX_POINTER (*dep_ptr))
+		    *dep_ptr = box_double (*(double*)dep_ptr);
 		  **(double**)dep_ptr += ((double*)dc->dc_values)[set];
 		  goto next_mem_col;
 		}
