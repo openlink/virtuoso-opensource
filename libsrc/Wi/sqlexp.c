@@ -1356,7 +1356,7 @@ cv_subq_ret (sql_comp_t * sc, instruction_t * ins)
 {
   query_t * qr = ins->_.subq.query;
   select_node_t * sel = qr->qr_select_node;
-  if (!sel)
+  if (!sel || !qr->qr_select_node->sel_out_slots[0])
     return NULL;
   qr->qr_select_node->sel_vec_role = SEL_VEC_SCALAR;
   qr->qr_select_node->sel_out_slots[0]->ssl_sqt.sqt_non_null = 0;

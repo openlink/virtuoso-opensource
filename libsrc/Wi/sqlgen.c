@@ -4110,6 +4110,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
     {
       state_slot_t *ssl;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
+      if (is_grouping_sets && SSL_CONSTANT == ssl->ssl_type && !IS_NUM_DTP(DV_TYPE_OF(ssl->ssl_constant)))
+        sqlc_new_error (so->so_sc->sc_cc, "37001", "SQXXX", "Non-numeric constants are not allowed in CUBE/ROLLUP");
       if (NULL != dk_set_member (setp->setp_keys, ssl))
         continue;
       NCONCF1 (setp->setp_keys, ssl);
@@ -4705,6 +4707,8 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 	    ssl_out[inx] = NULL;
 	}
       END_DO_BOX;
+      if (!tree->_.select_stmt.table_exp)
+        sqlc_new_error (so->so_sc->sc_cc, "37001", "SQ142", "Group by expression can not be handled");
       gb_full = (ST **) tree->_.select_stmt.table_exp->_.table_exp.group_by_full;
       if (1 == BOX_ELEMENTS (gb_full))
 	gb_full = (ST **) t_list (1, group->_.setp.specs);

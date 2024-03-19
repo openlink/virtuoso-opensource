@@ -1007,6 +1007,8 @@ sqlo_df (sqlo_t * so, ST * tree)
 	    got->ot_is_group_dummy = 1;
             got->ot_fref_ot = ot;
 	    ot->ot_group_dfe = sqlo_new_dfe (so, DFE_GROUP, NULL);
+            if (!dt->_.select_stmt.table_exp)
+              sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ488", "Group by expression cannot be handled");
 	    ot->ot_group_dfe->_.setp.specs = dt->_.select_stmt.table_exp->_.table_exp.group_by;
 	    ot->ot_group_dfe->_.setp.top_cnt = sqlo_select_top_cnt (so, SEL_TOP (dt));
 	    ot->ot_group_dfe->_.setp.ot = got;
