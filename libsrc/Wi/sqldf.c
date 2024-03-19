@@ -2225,6 +2225,8 @@ sqlo_place_exp (sqlo_t * so, df_elt_t * super, df_elt_t * dfe)
 
 	dfe->dfe_locus = pref_loc;
 	placed = dfe_latest_by_ot (so, n_deps, deps, 1);
+        if (!placed)
+          sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ207", "Control expression cannot be handled.");
 	placed = dfe_skip_exp_dfes (placed, &dfe, 1);
         DO_BOX (op_table_t *, ot, inx, deps)
           {
