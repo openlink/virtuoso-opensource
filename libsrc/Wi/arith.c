@@ -981,6 +981,8 @@ retry_rdf_boxes: \
         int_case: \
           if (isdiv && 0 == *(boxint *) &dn2) \
             sqlr_new_error ("22012", "SR084", "Division by 0."); \
+          if (isdiv && *(boxint *) &dn1 <= INT64_MIN && -1 == *(boxint *) &dn2) \
+            sqlr_new_error ("22012", "SR084", "Int64 overflow."); \
           if (target) \
             return (qst_set_long (qst, target, \
                 (*(boxint *) &dn1 op * (boxint *) &dn2)), (caddr_t) 0); \
