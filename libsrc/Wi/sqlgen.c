@@ -2575,6 +2575,8 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	so->so_sc->sc_order = TS_ORDER_NONE;
 	qr  = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent assignment of NULL to constant ssl*/
 	ssl  = 	cv_subq_qr (sc, code, qr);
+        if (!ssl)
+          sqlc_new_error (sc->sc_cc, "42000", "SQ083", "Ambiguous subquery expression");
 	so->so_sc->sc_order = old_ord;
 	org_dfe  = sqlo_df (so, dfe->dfe_tree); /* the org one, not a layout copy is used to associate the ssl to the code */
 	org_dfe->dfe_ssl = ssl;
