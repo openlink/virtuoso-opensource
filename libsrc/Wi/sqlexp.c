@@ -667,6 +667,8 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
   df_elt_t *dfe = sc->sc_so ? sqlo_df (sc->sc_so, tree) : NULL;
 
   res->ssl_is_callret = 1;
+  if (sc->sc_grouping)
+    ssl_set_dc_type (res);
   for (inx = 0; inx < n_exps; inx++)
     {
       jmp_label_t ok = sqlc_new_label (sc);
