@@ -7507,6 +7507,8 @@ xte_replace_strings_with_unames (caddr_t **tree)
   int idx, len;
   caddr_t *head = XTE_HEAD (tree);
   caddr_t strg = head[0];
+  if (!DV_STRING_TYPE(strg))
+    sqlr_new_error ("22003", "SR621", "Element name should be a string");
   if (DV_UNAME != DV_TYPE_OF (strg))
     {
       caddr_t name = box_dv_uname_nchars (strg, box_length (strg) - 1);
