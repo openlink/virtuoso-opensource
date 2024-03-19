@@ -1994,7 +1994,7 @@ sqlp_contains_opts (ST * tree)
 	{
 	  if (inx < 2)
 	    continue;
-	  if (ST_COLUMN (arg, COL_DOTTED))
+	  if (ST_COLUMN (arg, COL_DOTTED) && STAR != arg->_.col_ref.name)
 	    {
 	      caddr_t name = arg->_.col_ref.name;
 	      if (0 == stricmp (name, "offband")
