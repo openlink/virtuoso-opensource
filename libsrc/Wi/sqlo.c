@@ -525,11 +525,14 @@ sqlo_union_scope (sqlo_t * so, ST ** ptree, ST * left)
     {
       int inx;
       op_table_t *ot;
+      int n_sel = BOX_ELEMENTS_0(left->_.select_stmt.selection);
       sqlc_top_select_dt (so->so_sc, tree);
       DO_BOX (ST *, as, inx, tree->_.select_stmt.selection)
 	{
 	  if (!ST_P (as, BOP_AS))
 	    SQL_GPF_T (so->so_sc->sc_cc);
+          if (inx >= n_sel)
+	    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ143", "Different number of columns");
 	  as->_.as_exp.name = ((ST*)left->_.select_stmt.selection[inx])->_.as_exp.name;
 	}
       END_DO_BOX;
