@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+    <caption>
+	<name package="conductor">
+	    <prop name="Title" value="Virtuoso Conductor"/>
+	    <prop name="Developer" value="OpenLink Software"/>
+	    <prop name="Copyright" value="(C) 1998-2024 OpenLink Software"/>
+	    <prop name="Download" value="http://virtuoso.openlinksw.com/"/>
+	</name>
+	<version package="$VERSION$">
+	    <prop name="Release Date" value="$PACKDATE$"/>
+	    <prop name="Build" value="Release, optimized"/>
+	</version>
+    </caption>
+    <dependencies/>
+    <procedures uninstallation="supported">
+	<sql purpose="pre-install"></sql>
+	<sql purpose="post-install"></sql>
+    </procedures>
+    <ddls>
+	<sql purpose="pre-install">
+	<![CDATA[
+	    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION$'))
+	    {
+		result ('ERROR', 'The conductor package requires server version $NEED_VERSION$ or greater');
+		signal ('FATAL', 'The conductor package requires server version $NEED_VERSION$ or greater');
+	    }
+	    if (coalesce ((select 1 from DB.DBA.SYS_COLS where "TABLE" = 'WS.WS.SYS_DAV_COL' and "COLUMN" = 'COL_FULL_PATH'), 0) = 0)
+	    {
+		result ('ERROR', 'Please update server version');
+		signal ('FATAL', 'Please update server version');
+	    }
+	    if ((__proc_exists ('DB.DBA.WebDAV_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.WebDAV_VERIFY') is null))
+	    {
+		result ('ERROR', 'Please install the last Briefcase VAD packages');
+		signal ('FATAL', 'Please install the last Briefcase VAD packages');
+	    }
+	    if ((__proc_exists ('DB.DBA.oMail_DAV_AUTHENTICATE') is not null) and (__proc_exists ('DB.DBA.oMail_CONFIGURE') is null))
+	    {
+		result ('ERROR', 'Please install the last WebMail VAD packages');
+		signal ('FATAL', 'Please install the last WebMail VAD packages');
+	    }
+	    if (equ (1, 0) and isinteger (file_stat (http_root ())))
+	    {
+		result ('ERROR', 'Please setup [HTTPServer] ServerRoot INI setting properly');
+		signal ('FATAL', 'Please setup [HTTPServer] ServerRoot INI setting properly');
+	    }
+	]]>
+	</sql>
+	<sql purpose="post-install">
+	<![CDATA[
+	    registry_set('__no_vspx_temp', '1');
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/sql/vdir_helper.sql', 1, 'report', $ISDAV$);
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/sql/yacutia.sql', 1, 'report', $ISDAV$);
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/sql/acme.sql', 1, 'report', $ISDAV$);
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/dav/dav_browser.sql', 1, 'report', $ISDAV$);
+	    "WEBDAV"."DBA"."xsl_upload"(1);
+	    vhost_remove (lpath=>'/conductor');
+	    vhost_remove (lpath=>'/vspx');
+	    vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');
+	    vhost_define (lpath=>'/conductor',ppath=>'$BASE_PATH$/conductor/', is_dav=>$ISDAV$, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');
+	    vhost_define (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor',ppath=>'$BASE_PATH$/conductor/', is_dav=>$ISDAV$, vsp_user=>'dba', is_brws=>0, def_page=>'main_tabs.vspx');
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/sql/xddl.sql', 1, 'report', $ISDAV$);
+	    "DB"."DBA"."VAD_LOAD_SQL_FILE"('$BASE_PATH$/conductor/sql/xddl_dav.sql', 1, 'report', $ISDAV$);
+	    if ($ISDAV$  = 1)
+	    {
+		for (select RES_FULL_PATH as X from WS.WS.SYS_DAV_RES where RES_FULL_PATH like '$BASE_PATH$/conductor/%.xsl') do
+		{
+		    DB.DBA.DAV_PROP_SET_INT (X, ':getlastmodified', now (), null, null, 0, auth_uid=>http_dav_uid ());
+		    xslt_stale ('virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:' || X);
+		}
+	    }
+	]]>
+	</sql>
+	<sql purpose="post-uninstall">
+	<![CDATA[
+	    vhost_remove (lpath=>'/conductor');
+	    vhost_remove (lpath=>'/vspx');
+	    vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/conductor');
+	    vhost_remove (lhost=>'*sslini*', vhost=>'*sslini*', lpath=>'/vspx');
+	]]>
+	</sql>
+    </ddls>
+    <resources>
+	<!-- Conductor -->
+	<file type="$TYPE$" source_uri="*.dtd" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="*.htm" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="*.html" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="*.vsp" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="*.vspx" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="*.xsl" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="inifile.xml" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="css/*.css" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/*.css" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/*.js" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/*.sql" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/*.vsp" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/*.xsl" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/image/*" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="dav/image/dav/*" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="help/*.xml" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="images/*" target_uri="conductor/" />
+	<!-- file type="$TYPE$" source_uri="images/buttons/*" target_uri="conductor/" -->
+	<!-- file type="$TYPE$" source_uri="images/dav_browser/*" target_uri="conductor/" -->
+	<file type="$TYPE$" source_uri="images/icons/*" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="images/pager/*" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="js/*.js" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="sql/*.sql" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="syntax/*" target_uri="conductor/" />
+	<file type="$TYPE$" source_uri="../vspx/vdir_helper.sql" target_uri="conductor/sql/$f$" />
+
+
+	<!-- OAT toolkit -->
+	<file type="$TYPE$" source_uri="../oat/toolkit/*.js" target_uri="conductor/toolkit/$f$" />
+	<file type="$TYPE$" source_uri="../oat/images/*" target_uri="conductor/toolkit/images/$f$" />
+	<file type="$TYPE$" source_uri="../oat/styles/*" target_uri="conductor/toolkit/styles/$f$" />
+
+	<!-- XDDL -->
+	<file type="$TYPE$" source_uri="../xddl/*.xsd" target_uri="conductor/$f$" />
+	<file type="$TYPE$" source_uri="../xddl/*.xsl" target_uri="conductor/$f$" />
+	<file type="$TYPE$" source_uri="../xddl/*.sql" target_uri="conductor/sql/$f$" />
+    </resources>
+    <registry>
+    </registry>
+</sticker>

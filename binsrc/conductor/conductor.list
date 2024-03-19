@@ -213,7 +213,6 @@ conductor/hosted_modules_show_sql.vsp
 conductor/hosted_modules.vspx
 conductor/hosted_page.vspx
 conductor/http_add_path.vspx
-conductor/http_svc_edit.vspx
 conductor/http_del_path.vspx
 conductor/http_edit_paths.vspx
 conductor/http_host_clone.vspx
@@ -221,6 +220,7 @@ conductor/http_host_edit.vspx
 conductor/http_listeners.vspx
 conductor/http_serv_mgmt.vspx
 conductor/http_serv_monitoring.vspx
+conductor/http_svc_edit.vspx
 conductor/http_tcn.vspx
 conductor/http_url_rewrite.vspx
 conductor/ie_browser.vspx
@@ -275,8 +275,8 @@ conductor/images/icons/del_16.png
 conductor/images/icons/disconnect_16.png
 conductor/images/icons/docs_16.png
 conductor/images/icons/edit_16.png
-conductor/images/icons/eye.svg
 conductor/images/icons/eye-slash.svg
+conductor/images/icons/eye.svg
 conductor/images/icons/fastf_16.png
 conductor/images/icons/filter_16.png
 conductor/images/icons/filter_32.png

@@ -1,12 +1,11 @@
 *.vspx-m
 *.vspx-sql
 *.vspx-m0
+*.vad
+oat
+xddl
 virtuoso.lic
 mkvad.output
-yacutia_dav.vad
-yacutia_filesystem.vad
-conductor_dav.vad
-conductor_filesystem.vad
 vad_dav.xml
 vad_fs.xml
 virtuoso.pxa

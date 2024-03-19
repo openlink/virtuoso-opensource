@@ -25,22 +25,46 @@ if WITH_CONDUCTOR_VAD
 nodist_vad_DATA = conductor_dav.vad
 endif
 
-noinst_SCRIPTS = mkvad.sh
+NEED_VERSION	= 07.20.3226
+STICKER		= conductor_sticker.xml
+VERBOSE		= #--verbose
+VERSION		= `cat vad_version`
+
+DAV_FLAGS	= $(VERBOSE) \
+		--prefix "$(srcdir)" 	\
+		--var="BASE_PATH=/DAV/VAD" \
+		--var="ISDAV=1" \
+		--var="NEED_VERSION=$(NEED_VERSION)" \
+		--var="TYPE=dav" \
+		--var="VERSION=$(VERSION)"
+
+conductor_dav.vad: $(EXTRA_DIST) Makefile
+	$(PYTHON) $(top_srcdir)/binsrc/vadpacker/vadpacker.py \
+		-o $(builddir)/conductor_dav.vad \
+		$(DAV_FLAGS) \
+		$(srcdir)/$(STICKER)
+
+
+# ----------------------------------------------------------------------
+#
+#  Cleanup
+#
+# ----------------------------------------------------------------------
 CLEANFILES =  \
-	mkvad.output \
-	yacutia_dav.vad \
-	yacutia_filesystem.vad \
 	conductor_dav.vad \
 	conductor_filesystem.vad \
+	mkvad.output \
+	mkvad.pxa \
+	mkvad.tdb \
 	vad_dav.xml \
 	vad_fs.xml \
-	virtuoso.pxa
-
-conductor_filesystem.vad conductor_dav.vad: $(EXTRA_DIST)
-	PATH="$(TOP)/binsrc/virtuoso:$(TOP)/binsrc/tests:.:$$PATH" PORT=$(PORT) HOME="$(TOP)" HOST=localhost $(SHELL) ./mkvad.sh
+	yacutia_dav.vad \
+	yacutia_filesystem.vad
 
 clean-local:
-	-rm -rf vad
+	-$(RM) -rf vad
+	-$(RM) sticker.out
+
 
 # ----------------------------------------------------------------------
 #
@@ -48,39 +72,39 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
-	css/*.css \
-	*.htm \
-	*.html \
-	js/*.js \
-	sql/*.sql \
-	*.vsp \
-	*.vspx \
-	*.xml \
-	*.xsl \
-	conductor.list \
-	dav/*.css \
-	dav/*.js \
-	dav/*.sql \
-	dav/*.vsp \
-	dav/*.xsl \
-	dav/image/*.gif \
-	dav/image/*.png \
-	dav/image/dav/*.gif \
-	dav/image/dav/*.png \
-	ent.dtd \
-	help/*.xml \
-	images/*.gif \
-	images/*.jpg \
-	images/*.png \
-	images/buttons/*.png \
-	images/dav_browser/*.png \
-	images/icons/*.gif \
-	images/icons/*.png \
-	images/pager/*.png \
-	INSTALL \
-	mkvad.ini \
-	mkvad.sh \
-	README \
-	syntax/*.css \
-	syntax/*.js \
-	vad_version
+	$(srcdir)/$(STICKER) \
+	$(srcdir)/*.dtd \
+	$(srcdir)/*.htm \
+	$(srcdir)/*.html \
+	$(srcdir)/*.vsp \
+	$(srcdir)/*.vspx \
+	$(srcdir)/*.xml \
+	$(srcdir)/*.xsl \
+	$(srcdir)/INSTALL \
+	$(srcdir)/README \
+	$(srcdir)/conductor.list \
+	$(srcdir)/css/*.css \
+	$(srcdir)/dav/*.css \
+	$(srcdir)/dav/*.js \
+	$(srcdir)/dav/*.sql \
+	$(srcdir)/dav/*.vsp \
+	$(srcdir)/dav/*.xsl \
+	$(srcdir)/dav/image/*.gif \
+	$(srcdir)/dav/image/*.png \
+	$(srcdir)/dav/image/dav/*.gif \
+	$(srcdir)/dav/image/dav/*.png \
+	$(srcdir)/help/*.xml \
+	$(srcdir)/images/*.gif \
+	$(srcdir)/images/*.jpg \
+	$(srcdir)/images/*.png \
+	$(srcdir)/images/buttons/*.png \
+	$(srcdir)/images/dav_browser/*.png \
+	$(srcdir)/images/icons/*.gif \
+	$(srcdir)/images/icons/*.png \
+	$(srcdir)/images/icons/*.svg \
+	$(srcdir)/images/pager/*.png \
+	$(srcdir)/js/*.js \
+	$(srcdir)/sql/*.sql \
+	$(srcdir)/syntax/*.css \
+	$(srcdir)/syntax/*.js \
+	$(srcdir)/vad_version
