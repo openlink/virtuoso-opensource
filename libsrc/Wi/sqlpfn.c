@@ -2443,9 +2443,9 @@ sqlp_in_exp (ST * left, dk_set_t  right, int is_not)
       res = t_listst (5, BOP_LT, t_box_num (0), res, NULL, 0);
       if (is_not)
         res->type = BOP_EQ;
-      DO_BOX (caddr_t, exp, inx, args)
+      DO_BOX (ST *, exp, inx, args)
         {
-          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (exp))
+          if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (exp) && !(BIN_EXP_P(exp) && IS_ARITM_BOP(exp->type)))
             {
               is_const_in = 0;
               break;
