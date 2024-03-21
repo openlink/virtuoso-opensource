@@ -22,7 +22,7 @@
  -  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
  -
 -->
-<v:login name="odrive_login" realm="wa" mode="url" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+<v:login name="odrive_login" realm="wa" mode="cookie" xmlns:v="http://www.openlinksw.com/vspx/" xmlns:xhtml="http://www.w3.org/1999/xhtml">
   <v:template name='inl' type='if-no-login'/>
   <v:after-data-bind>
     <![CDATA[
