@@ -6,7 +6,7 @@ _Copyright (C) 2018-2024 OpenLink Software_
 Release 7.2.6 marked the addition of GeoSPARQL function support to Virtuoso Open Source Edition,
 with additional enhancements in subsequent versions.
 
-Besides a number of enhancements to the core Virtuoso engine, OpenLink added three plugins that
+Along with a number of enhancements to the core Virtuoso engine, OpenLink added three plugins that
 extend Virtuoso's functionality:
 
 * `proj4`
@@ -16,19 +16,22 @@ extend Virtuoso's functionality:
 
 ## Requirements
 
-The `proj4` and `geos` plugins can only be built against very specific versions of third party 
-libraries, which may not be available on every OS distribution, so will probably need to be 
-built by you prior to building Virtuoso.
-```pre
-Package         Version         From
--------         -------         ---------------------------
-proj            4.9.3           https://proj4.org
-geo             3.5.1           https://www.osgeo.org/geos/
-```
-The new plugins are automatically added to the build process if the third party libraries and 
+Two of these plugins (`proj4` and `geos`) can only be built against very specific versions
+of third party libraries which may not be available on every OS distribution, so you may have
+to build these prior to building Virtuoso.  ***Note:** Unlike the build tools and other libraries
+required by the basic builds, where we require minimum versions, here we require **exactly** these
+versions.  Building with newer versions is not expected to succeed at this time.*
+
+| Package | Version | From                        |
+| ------- | ------- | --------------------------- |
+| proj    | 4.9.3   | https://proj4.org           |
+| geo     | 3.5.1   | https://www.osgeo.org/geos/ |
+
+The new plugins are automatically added to the build process if the third party libraries and
 header files are found when running the `configure` tool.
 
 The following new options have been added:
+
 ```pre
 $ ./configure --help
 ...
@@ -51,14 +54,14 @@ including Linux, macOS, and Windows.
 
 ### The `proj4` plugin
 
-The `proj4` plugin adds an interface between the Virtuoso engine and the 
-[__`PROJ`__ library](https://proj4.org) currently maintained by Frank Warmerdam et al.
+The `proj4` plugin adds an interface between the Virtuoso engine and the
+[__`PROJ`__ library](https://proj4.org), currently maintained by Frank Warmerdam et al.
 
-This plugin adds support for transforming geospatial coordinates from one coordinate 
+This plugin adds support for transforming geospatial coordinates from one coordinate
 reference system (CRS) to another, including both cartographic projections and geodetic
 transformations.
 
-The `proj4` plugin currently requires __`v4.9.3`__ of the library, which can be 
+The `proj4` plugin currently requires __`v4.9.3`__ of the library, source for which can be
 [downloaded here](https://download.osgeo.org/proj/proj-4.9.3.tar.gz).
 
 The `PROJ` library uses the following license:
@@ -99,8 +102,8 @@ DEALINGS IN THE SOFTWARE.
 
 ### The `geos` plugin
 
-The `geos` plugin adds an interface between the Virtuoso engine and the 
-[__`GEOS`__ library](https://www.osgeo.org/projects/geos/) currently 
+The `geos` plugin adds an interface between the Virtuoso engine and the
+[__`GEOS`__ library](https://www.osgeo.org/projects/geos/), currently
 maintained by the Open Source Geospatial Foundation.
 
 According to their website:
@@ -112,7 +115,7 @@ According to their website:
 
 This plugin adds support for GeoSPARQL functions to the Virtuoso engine.
 
-The `geos` plugin currently requires __`v3.5.1`__ of the library which can be 
+The `geos` plugin currently requires __`v3.5.1`__ of the library, source for which can be
 [downloaded here](http://download.osgeo.org/geos/geos-3.5.1.tar.bz2).
 
 The GEOS library is licensed under the terms of the [GNU Lesser General Public License
@@ -121,13 +124,13 @@ v2.1](https://www.gnu.org/licenses/old-licenses/lgpl-2.1.html).
 
 ### The `shapefileio` plugin
 
-The `shapefileio` plugin adds an interface between the Virtuoso engine and the 
-[__`Shapefile`__ C Library](https://shapelib.maptools.org) currently maintained by 
+The `shapefileio` plugin adds an interface between the Virtuoso engine and the
+[__`Shapefile`__ C Library](https://shapelib.maptools.org), currently maintained by
 Frank Warmerdam et al.
 
 This plugin adds support for reading ESRI Shapefiles.
 
-At this time, a version of this library is embedded in the Virtuoso codebase, so no external 
+At this time, a version of this library is embedded in the Virtuoso codebase, so no external
 packages are required.
 
 The `shapefile` library uses the following license:
@@ -184,8 +187,8 @@ modification of the affected modules.
 
 ## Changes to `virtuoso.ini`
 
-After building and installing the new plugins, you may need to add them to the __`Plugins`__ 
-section of any existing `virtuoso.ini` file. You need to make sure that each _`Load`_ line uses 
+After building and installing the new plugins, you may need to add them to the __`Plugins`__
+section of any existing `virtuoso.ini` file. You need to make sure that each _`Load`_ line uses
 a unique number, although numbering does not have to be sequential.
 ```pre
 [Plugins]
@@ -196,25 +199,25 @@ Load21 = plain, geos
 Load22 = plain, shapefileio
 ```
 
-The `proj4` plugin requires access to a number of data files from the `proj` project which are 
-normally installed in `/usr/share/proj`. For this, you need to change your `virtuoso.ini` file, 
-and add this directory to the existing __`DirsAllowed`__ setting, like this:
+The `proj4` plugin requires access to a number of data files from the `proj` project which are
+normally installed in `/usr/share/proj`. For this to work, you need to change your `virtuoso.ini` file,
+and add this (or your local) directory to the existing __`DirsAllowed`__ setting, like this:
 ```pre
 [Parameters]
-..
-..
+...
+...
 DirsAllowed                     = ., /opt/virtuoso-opensource/vad, /usr/share/proj
-..
-..
+...
+...
 ```
 
-After making these modifications to the `virtuoso.ini` file, you need to restart the virtuoso engine
-to make these additional functions available.
+After making these modifications to the `virtuoso.ini` file, you will need to restart the Virtuoso engine
+to enable these additional functions.
 
 
 ## Troubleshooting
 
-If the plugins are successfully built and installed, you should see the following lines in your
+If the plugins are successfully built and installed, you should see lines like these in your
 `virtuoso.log` file:
 ```pre
 12:08:51 { Loading plugin 8: Type `plain', file `proj4' in `/opt/virtuoso-opensource/hosting'
@@ -239,8 +242,8 @@ If you see the following lines near the bottom of your `virtuoso.log` file, then
 Can't open file '/usr/share/proj/epsg', error 2
 ```
 
-If the `proj` plugin is initialized successfully, you will see the following lines near the bottom 
-of your `virtuoso.ini` file:
+If the `proj` plugin is initialized successfully, lines like these will be written to
+your `virtuoso.log` file:
 ```pre
 12:10:08 PL LOG: Initial setup of DB.DBA.SYS_PROJ4_SRIDS data from files in "/usr/share/proj"
 12:10:08 PL LOG: DB.DBA.SYS_PROJ4_SRIDS now contains 8650 spatial reference systems
