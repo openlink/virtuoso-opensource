@@ -25,8 +25,8 @@
       }
     if (__proc_exists ('DB.DBA.SPONGER_DOCUMENT_EXPIRATION') is null)
       {
-         result ('ERROR', 'The Faceted Browser  package requires server version 07.20.3226, 08.01.3301 or greater');
-         signal ('FATAL', 'The Faceted Browser  package requires server version 07.20.3226, 08.01.3301 or greater');
+         result ('ERROR', 'The Faceted Browser package requires server version 07.20.3226, 08.01.3301 or greater');
+         signal ('FATAL', 'The Faceted Browser package requires server version 07.20.3226, 08.01.3301 or greater');
       }
   ]]></sql>
   <sql purpose="post-install">
@@ -40,33 +40,33 @@
     registry_set('_fct_url_', 'virt://WS.WS.SYS_DAV_RES.RES_FULL_PATH.RES_CONTENT:$BASE_PATH$/fct/');
     registry_set('_fct_path_', '$BASE_PATH$/fct/');
     registry_set('_fct_dav_', '$ISDAV$');
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/ns.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/virt_rdf_label.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/virt_rdf_url.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_ddl.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/b3s_cl_rexec.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/cl_prx.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_svc.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/description.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_agg.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_svc.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_view.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/nsdecl.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/search.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/sum.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/fct_endpoints.sql', 0, 'report', 1);
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/conductor/vad_fct_config.sql', 0, 'report', 1);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/ns.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/virt_rdf_label.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/virt_rdf_url.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_ddl.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/b3s_cl_rexec.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/cl_prx.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_svc.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/description.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_agg.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_svc.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/facet_view.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/nsdecl.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/search.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/sum.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/fct_endpoints.sql', 0, 'report', $ISDAV$);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/conductor/vad_fct_config.sql', 0, 'report', $ISDAV$);
     if (sys_stat ('cl_run_local_only') = 1)
-      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_single.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_single.sql', 0, 'report', $ISDAV$);
     else {
-      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_cl.sql', 0, 'report', 1);
+      DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/complete_cl.sql', 0, 'report', $ISDAV$);
     }
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank23.sql', 0, 'report', 1);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/srank23.sql', 0, 'report', $ISDAV$);
     result ('00000', 'GUI is accesible via http://host:port/fct');
     result ('00000', 'Post-installation guide is available from http://host:port/fct/post_install.html');
-    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/grants.sql', 0, 'report', 1);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/grants.sql', 0, 'report', $ISDAV$);
 
     -- Copy fct VAD's configuration page resources to Conductor UI's folder
     DB.DBA.fct_vad_configure ('fct', 'fct/conductor', 'vad_fct_config.vspx');
@@ -80,7 +80,7 @@
   <sql purpose='pre-uninstall'>
     <![CDATA[
     registry_remove ('fct_server_supports_invfp');
-    DB.DBA.VAD_LOAD_SQL_FILE('/DAV/VAD/fct/sql/fct_drop.sql', 1, 'report', 1);
+    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/fct/sql/fct_drop.sql', 1, 'report', $ISDAV$);
     ]]>
   </sql>
 </ddls>
@@ -94,16 +94,18 @@
     <file type="$TYPE$" source_uri="xslt/*.xsl" target_uri="fct/" />
     <file type="$TYPE$" source_uri="js/*.js" target_uri="fct/" />
     <file type="$TYPE$" source_uri="images/*" target_uri="fct/" />
-    <file type="$TYPE$" source_uri="oat/toolkit/*.js" target_uri="fct/" />
-    <file type="$TYPE$" source_uri="oat/styles/*" target_uri="fct/" />
-    <file type="$TYPE$" source_uri="oat/xslt/*" target_uri="fct/" />
-    <file type="$TYPE$" source_uri="oat/images/*" target_uri="fct/" />
-    <file type="$TYPE$" source_uri="oat/images/markers/*" target_uri="fct/" />
     <file type="$TYPE$" source_uri="rdfdesc/*.vsp" target_uri="fct/" />
     <file type="$TYPE$" source_uri="css/*.css" target_uri="fct/" />
     <file type="$TYPE$" source_uri="css/images/*.png" target_uri="fct/css/" />
     <file type="$TYPE$" source_uri="fonts/*" target_uri="fct/" />
     <file type="$TYPE$" source_uri="conductor/*" target_uri="fct/" />
+
+    <!-- OAT Toolkit -->
+    <file type="$TYPE$" source_uri="../oat/toolkit/*.js" target_uri="fct/oat/toolkit/$f$" />
+    <file type="$TYPE$" source_uri="../oat/styles/*" target_uri="fct/oat/styles/$f$" />
+    <file type="$TYPE$" source_uri="../oat/xslt/*" target_uri="fct/oat/xslt/$f$" />
+    <file type="$TYPE$" source_uri="../oat/images/*" target_uri="fct/oat/images/$f$" />
+    <file type="$TYPE$" source_uri="../oat/images/markers/*" target_uri="fct/oat/images/markers/$f$" />
 </resources>
 <registry>
 </registry>

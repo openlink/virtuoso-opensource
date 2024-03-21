@@ -27,11 +27,30 @@ if WITH_FCT_VAD
 nodist_vad_DATA = fct_dav.vad
 endif
 
-
-VERSION		= `cat vad_version`
 NEED_VERSION	= 07.20.3226
-FCT_STICKER	= fct_sticker.xml
+STICKER		= fct_sticker.xml
+VERBOSE		= #--verbose
+VERSION		= `cat vad_version`
 
+DAV_FLAGS       = $(VERBOSE) \
+                --prefix "$(srcdir)"    \
+                --var="BASE_PATH=/DAV/VAD" \
+                --var="ISDAV=1" \
+                --var="NEED_VERSION=$(NEED_VERSION)" \
+                --var="TYPE=dav" \
+                --var="VERSION=$(VERSION)"
+
+fct_dav.vad: $(EXTRA_DIST) Makefile
+	$(PYTHON) $(top_srcdir)/binsrc/vadpacker/vadpacker.py \
+		-o $(builddir)/fct_dav.vad \
+		$(DAV_FLAGS) \
+		$(srcdir)/$(STICKER)
+
+# ----------------------------------------------------------------------
+#
+#  Cleanup
+#
+# ----------------------------------------------------------------------
 CLEANFILES =  \
 	*.log \
 	*.vad \
@@ -45,21 +64,8 @@ CLEANFILES =  \
         vad_dav.xml \
         vad_fs.xml
 
-fct_dav.vad: oat $(EXTRA_DIST) Makefile
-	$(PYTHON) $(top_srcdir)/binsrc/vadpacker/vadpacker.py \
-		-o fct_dav.vad \
-		--var="VERSION=$(VERSION)" \
-		--var="BASE_PATH=/DAV/VAD" \
-		--var="TYPE=dav" \
-		--var="ISDAV=1" \
-		--var="NEED_VERSION=$(NEED_VERSION)" \
-		$(FCT_STICKER)
-
-oat:
-	ln -sf $(top_srcdir)/binsrc/oat .
-
 clean-local:
-	-rm -rf vad
+	-$(RM) -rf vad
 	-$(RM) -f oat
 
 # ----------------------------------------------------------------------
@@ -68,6 +74,7 @@ clean-local:
 #
 # ----------------------------------------------------------------------
 EXTRA_DIST = \
+	$(srcdir)/$(STICKER) \
 	$(srcdir)/*.html \
 	$(srcdir)/*.txt \
 	$(srcdir)/*.vsp \
