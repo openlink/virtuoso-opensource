@@ -71,6 +71,7 @@ import org.openrdf.model.ValueFactory;
 import org.openrdf.model.impl.ContextStatementImpl;
 import org.openrdf.model.impl.NamespaceImpl;
 import org.openrdf.model.impl.ValueFactoryImpl;
+import org.openrdf.model.vocabulary.XMLSchema;
 import org.openrdf.query.Dataset;
 import org.openrdf.query.BindingSet;
 import org.openrdf.query.BooleanQuery;
@@ -137,28 +138,28 @@ import virtuoso.jdbc4.VirtuosoTimestamp;
  * statements which have no associated context only.
  * <p>
  * Examples:
- * 
+ *
  * <pre>
  * // Ex 1: this method retrieves all statements that appear in either context1 or context2, or both.
  * RepositoryConnection.getStatements(null, null, null, true, context1, context2);
- * 
+ *
  * // Ex 2: this method retrieves all statements that appear in the repository (regardless of context).
  * RepositoryConnection.getStatements(null, null, null, true);
- * 
+ *
  * // Ex 3: this method retrieves all statements that have no associated context in the repository.
  * // Observe that this is not equivalent to the previous method call.
  * RepositoryConnection.getStatements(null, null, null, true, (Resource)null);
- * 
- * // Ex 4: this method adds a statement to the store. If the statement object itself has 
+ *
+ * // Ex 4: this method adds a statement to the store. If the statement object itself has
  * // a context (i.e. statement.getContext() != null) the statement is added to that context. Otherwise,
  * // it is added without any associated context.
  * RepositoryConnection.add(statement);
- * 
+ *
  * // Ex 5: this method adds a statement to context1 in the store. It completely ignores any
  * // context the statement itself has.
  * RepositoryConnection.add(statement, context1);
  * </pre>
- * 
+ *
  */
 public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private static Resource nilContext;
@@ -182,6 +183,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	private int prefetchSize = 100;
 	private boolean useReprepare = true;
 	private boolean insertBNodeAsVirtuosoIRI = false;
+	private boolean insertStringLiteralAsSimple = false;
 	private int queryTimeout;
 	private String ruleSet;
 	private String defGraph;
@@ -198,6 +200,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		this.prefetchSize = repository.prefetchSize;
 		this.BATCH_SIZE = repository.batchSize;
 		this.insertBNodeAsVirtuosoIRI = repository.insertBNodeAsVirtuosoIRI;
+		this.insertStringLiteralAsSimple = repository.insertStringLiteralAsSimple;
 		this.queryTimeout = repository.getQueryTimeout();
 		this.ruleSet = repository.ruleSet;
 		this.defGraph = repository.defGraph;
@@ -223,7 +226,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Set the parser configuration this connection should use for
 	 * RDFParser-based operations.
-	 * 
+	 *
 	 * @param config
 	 *        a Rio RDF Parser configuration.
 	 */
@@ -235,17 +238,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Returns the parser configuration this connection uses for Rio-based
 	 * operations.
-	 * 
+	 *
 	 * @return a Rio RDF parser configuration.
 	 */
 	public ParserConfig getParserConfig()
 	{
 		return parserConfig;
 	}
-	
+
 	/**
 	 * Gets a ValueFactory for this RepositoryConnection.
-	 * 
+	 *
 	 * @return A repository-specific ValueFactory.
 	 */
 	public ValueFactory getValueFactory() {
@@ -254,7 +257,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Checks whether this connection is open. A connection is open from the moment it is created until it is closed.
-	 * 
+	 *
 	 * @see #close()
 	 */
 	public boolean isOpen() throws RepositoryException {
@@ -269,7 +272,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Closes the connection, freeing resources. If the connection is not in
 	 * autoCommit mode, all non-committed operations will be lost.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the connection could not be closed.
 	 */
@@ -289,7 +292,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * In case the query contains relative URIs that need to be resolved against
 	 * an external base URI, one should use
 	 * {@link #prepareQuery(QueryLanguage, String, String)} instead.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -309,7 +312,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Prepares a query for evaluation on this repository (optional operation).
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -328,7 +331,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 *         repository.
 	 */
 	public Query prepareQuery(QueryLanguage language, String query, String baseURI) throws RepositoryException, MalformedQueryException {
-		
+
 		if (language != QueryLanguage.SPARQL)
 		  throw new UnsupportedQueryLanguageException(" : Only SPARQL queries are supported");
 
@@ -361,7 +364,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * contains relative URIs that need to be resolved against an external base
 	 * URI, one should use
 	 * {@link #prepareTupleQuery(QueryLanguage, String, String)} instead.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -379,7 +382,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Prepares a query that produces sets of value tuples.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -417,7 +420,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * relative URIs that need to be resolved against an external base URI, one
 	 * should use {@link #prepareGraphQuery(QueryLanguage, String, String)}
 	 * instead.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -435,7 +438,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Prepares queries that produce RDF graphs.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -473,7 +476,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * contains relative URIs that need to be resolved against an external base
 	 * URI, one should use
 	 * {@link #prepareBooleanQuery(QueryLanguage, String, String)} instead.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -491,7 +494,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Prepares <tt>true</tt>/<tt>false</tt> queries.
-	 * 
+	 *
 	 * @param ql
 	 *        The query language in which the query is formulated.
 	 * @param query
@@ -538,12 +541,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return u;
 	}
 
-	
+
 	/**
 	 * Gets all resources that are used as content identifiers. Care should be
 	 * taken that the returned {@link RepositoryResult} is closed to free any
 	 * resources that it keeps hold of.
-	 * 
+	 *
 	 * @return a RepositoryResult object containing Resources that are used as
 	 *         context identifiers.
 	 */
@@ -582,7 +585,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * Gets all statements with a specific subject, predicate and/or object from
 	 * the repository. The result is optionally restricted to the specified set
 	 * of named contexts.
-	 * 
+	 *
 	 * @param subj
 	 *        A Resource specifying the subject, or <tt>null</tt> for a
 	 *        wildcard.
@@ -611,7 +614,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Checks whether the repository contains statements with a specific subject,
 	 * predicate and/or object, optionally in the specified contexts.
-	 * 
+	 *
 	 * @param subj
 	 *        A Resource specifying the subject, or <tt>null</tt> for a
 	 *        wildcard.
@@ -643,7 +646,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Checks whether the repository contains the specified statement, optionally
 	 * in the specified contexts.
-	 * 
+	 *
 	 * @param st
 	 *        The statement to look for. Context information in the statement is
 	 *        ignored.
@@ -664,7 +667,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Exports all statements with a specific subject, predicate and/or object
 	 * from the repository, optionally from the specified contexts.
-	 * 
+	 *
 	 * @param subj
 	 *        The subject, or null if the subject doesn't matter.
 	 * @param pred
@@ -737,7 +740,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Exports all explicit statements in the specified contexts to the supplied
 	 * RDFHandler.
-	 * 
+	 *
 	 * @param contexts
 	 *        The context(s) to get the data from. Note that this parameter is a
 	 *        vararg and as such is optional. If no contexts are supplied the
@@ -754,7 +757,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Returns the number of (explicit) statements that are in the specified
 	 * contexts in this repository.
-	 * 
+	 *
 	 * @param contexts
 	 *        The context(s) to get the data from. Note that this parameter is a
 	 *        vararg and as such is optional. If no contexts are supplied the
@@ -794,7 +797,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Returns <tt>true</tt> if this repository does not contain any (explicit)
 	 * statements.
-	 * 
+	 *
 	 * @return <tt>true</tt> if this repository is empty, <tt>false</tt>
 	 *         otherwise.
 	 * @throws RepositoryException
@@ -827,7 +830,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * <p>
 	 * <b>NOTE:</b> If this connection is switched to auto-commit mode during a
 	 * transaction, the transaction is committed.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         In case the mode switch failed, for example because a currently
 	 *         active transaction failed to commit.
@@ -847,7 +850,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Checks whether the connection is in auto-commit mode.
-	 * 
+	 *
 	 * @see #setAutoCommit
 	 */
 	public boolean isAutoCommit() throws RepositoryException {
@@ -865,7 +868,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * Indicates if a transaction is currently active on the connection. A
 	 * transaction is active if {@link #begin()} has been called, and becomes
 	 * inactive after {@link #commit()} or {@link #rollback()} has been called.
-	 * 
+	 *
 	 * @since 2.7.0
 	 * @return <code>true</code> iff a transaction is active, <code>false</code>
 	 *         iff no transaction is active.
@@ -890,7 +893,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Begins a transaction requiring {@link #commit()} or {@link #rollback()} to
 	 * be called to end the transaction.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the connection could not start a transaction.
 	 * @see #isActive()
@@ -925,7 +928,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Commits all updates that have been performed as part of this connection
 	 * sofar.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the connection could not be committed.
 	 */
@@ -944,7 +947,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Rolls back all updates that have been performed as part of this connection
 	 * sofar.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the connection could not be rolled back.
 	 */
@@ -967,7 +970,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * connection. If the level is set to a value that is not supported by the
 	 * underlying repository, this method will still succeed but a subsequent
 	 * call to {@link #begin()} will result in an exception.
-	 * 
+	 *
 	 * @param level
 	 *        the transaction isolation level to set.
 	 * @throws IllegalStateException
@@ -997,7 +1000,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Retrieves the current {@link IsolationLevel transaction isolation level}
 	 * of the connection.
-	 * 
+	 *
 	 * @return the current transaction isolation level.
 	 * @since 2.8.0
 	 */
@@ -1010,7 +1013,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * Begins a new transaction with the supplied {@link IsolationLevel},
 	 * requiring {@link #commit()} or {@link #rollback()} to be called to end the
 	 * transaction.
-	 * 
+	 *
 	 * @param level
 	 *        The {@link IsolationLevel} at which this transaction will operate.
 	 *        If set to <code>null</code> the default isolation level of the
@@ -1044,7 +1047,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds RDF data from an InputStream to the repository, optionally to one or
 	 * more named contexts.
-	 * 
+	 *
 	 * @param in
 	 *        An InputStream from which RDF data can be read.
 	 * @param baseURI
@@ -1074,14 +1077,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	
+
 	/**
 	 * Adds RDF data from a Reader to the repository, optionally to one or more
 	 * named contexts. <b>Note: using a Reader to upload byte-based data means
 	 * that you have to be careful not to destroy the data's character encoding
 	 * by enforcing a default character encoding upon the bytes. If possible,
 	 * adding such data using an InputStream is to be preferred.</b>
-	 * 
+	 *
 	 * @param reader
 	 *        A Reader from which RDF data can be read.
 	 * @param baseURI
@@ -1117,9 +1120,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// set up a handler for parsing the data from reader
 
 			parser.setRDFHandler(new RDFHandlerBase() {
-				
+
 				int count = 0;
-				PreparedStatement ps = null; 
+				PreparedStatement ps = null;
 				java.sql.Statement st_cmd = null;
 			        Resource[] _contexts = checkDMLContext(contexts);
 
@@ -1128,7 +1131,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					    try {
 						st_cmd = createStatement(-1);
 			        		st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', dict_new(1000))");
-			        	    }	
+					    }
 					    catch (SQLException e) {
 						throw new RDFHandlerException("Problem with creation of BNode cache: ", e);
 					    }
@@ -1153,12 +1156,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					if (ps != null) {
 					        try {
 						    ps.close();
-						} catch (Exception e) {} 
+						} catch (Exception e) {}
 					}
 					if (st_cmd != null) {
 					        try {
 						    st_cmd.close();
-						} catch (Exception e) {} 
+						} catch (Exception e) {}
 					}
 					ps = null;
 					st_cmd = null;
@@ -1188,7 +1191,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 						hcontexts = _contexts;
 					}
 
-			        	ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        	ps = addToQuadStore_batch(ps, st.getSubject(),
 			        		st.getPredicate(), st.getObject(), hcontexts);
 			        	count += hcontexts.length;
 
@@ -1196,7 +1199,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				        	ps = flushDelayAdd_batch(ps, count);
 				        	count = 0;
 				        }
-				   }	
+				   }
 				   catch(Exception e) {
 				   	throw new RDFHandlerException(e);
 				   }
@@ -1212,7 +1215,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds the RDF data that can be found at the specified URL to the
 	 * repository, optionally to one or more named contexts.
-	 * 
+	 *
 	 * @param url
 	 *        The URL of the RDF data.
 	 * @param baseURI
@@ -1252,7 +1255,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds RDF data from the specified file to a specific contexts in the
 	 * repository.
-	 * 
+	 *
 	 * @param file
 	 *        A file containing RDF data.
 	 * @param baseURI
@@ -1295,7 +1298,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds a statement with the specified subject, predicate and object to this
 	 * repository, optionally to one or more named contexts.
-	 * 
+	 *
 	 * @param subject
 	 *        The statement's subject.
 	 * @param predicate
@@ -1324,7 +1327,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds the supplied statement to this repository, optionally to one or more
 	 * named contexts.
-	 * 
+	 *
 	 * @param st
 	 *        The statement to add.
 	 * @param contexts
@@ -1349,7 +1352,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds the supplied statements to this repository, optionally to one or more
 	 * named contexts.
-	 * 
+	 *
 	 * @param statements
 	 *        The statements that should be added.
 	 * @param contexts
@@ -1373,7 +1376,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 		int count = 0;
-		PreparedStatement ps = null; 
+		PreparedStatement ps = null;
 		java.sql.Statement st_cmd = null;
 
 		try {
@@ -1391,7 +1394,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					contexts = _contexts;
 				}
 
-			        ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        ps = addToQuadStore_batch(ps, st.getSubject(),
 			        	st.getPredicate(), st.getObject(), contexts);
 			        count += contexts.length;
 
@@ -1404,20 +1407,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps = flushDelayAdd_batch(ps, count);
 			if (st_cmd!=null)
 			    st_cmd.executeUpdate("connection_set ('RDF_INSERT_TRIPLE_C_BNODES', NULL)");
-		}	
+		}
 		catch(Exception e) {
 		   	throw new RepositoryException(e);
-		} 
+		}
 		finally {
 			if (ps != null) {
 			        try {
 				    ps.close();
-				} catch (Exception e) {} 
+				} catch (Exception e) {}
 			}
 			if (st_cmd != null) {
 			        try {
 				    st_cmd.close();
-				} catch (Exception e) {} 
+				} catch (Exception e) {}
 			}
 		}
 	}
@@ -1425,7 +1428,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Adds the supplied statements to this repository, optionally to one or more
 	 * named contexts.
-	 * 
+	 *
 	 * @param statementIter
 	 *        The statements to add. In case the iterator is a
 	 *        {@link CloseableIteration}, it will be closed before this method
@@ -1450,7 +1453,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		Resource[] _contexts = checkDMLContext(contexts); // otherwise, either use all contexts, or do not specify a context
 
 		int count = 0;
-		PreparedStatement ps = null; 
+		PreparedStatement ps = null;
 		java.sql.Statement st_cmd = null;
 
 		try {
@@ -1468,7 +1471,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					contexts = _contexts;
 				}
 
-			        ps = addToQuadStore_batch(ps, st.getSubject(), 
+			        ps = addToQuadStore_batch(ps, st.getSubject(),
 			        	st.getPredicate(), st.getObject(), contexts);
 			        count += contexts.length;
 
@@ -1490,12 +1493,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			if (ps != null) {
 			        try {
 				    ps.close();
-				} catch (Exception e) {} 
+				} catch (Exception e) {}
 			}
 			if (st_cmd != null) {
 			        try {
 				    st_cmd.close();
-				} catch (Exception e) {} 
+				} catch (Exception e) {}
 			}
 		}
 	}
@@ -1503,7 +1506,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Removes the statement(s) with the specified subject, predicate and object
 	 * from the repository, optionally restricted to the specified contexts.
-	 * 
+	 *
 	 * @param subject
 	 *        The statement's subject, or <tt>null</tt> for a wildcard.
 	 * @param predicate
@@ -1537,7 +1540,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Removes the supplied statement from the specified contexts in the
 	 * repository.
-	 * 
+	 *
 	 * @param st
 	 *        The statement to remove.
 	 * @param contexts
@@ -1560,7 +1563,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Removes the supplied statements from the specified contexts in this
 	 * repository.
-	 * 
+	 *
 	 * @param statements
 	 *        The statements that should be removed.
 	 * @param contexts
@@ -1632,7 +1635,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	 * Removes the supplied statements from a specific context in this
 	 * repository, ignoring any context information carried by the statements
 	 * themselves.
-	 * 
+	 *
 	 * @param statementIter
 	 *        The statements to remove. In case the iterator is a
 	 *        {@link CloseableIteration}, it will be closed before this method
@@ -1703,7 +1706,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Removes all statements from a specific contexts in the repository.
-	 * 
+	 *
 	 * @param contexts
 	 *        The context(s) to remove the data from. Note that this parameter is
 	 *        a vararg and as such is optional. If no contexts are supplied the
@@ -1730,7 +1733,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Gets all declared namespaces as a RepositoryResult of {@link Namespace}
 	 * objects. Each Namespace object consists of a prefix and a namespace name.
-	 * 
+	 *
 	 * @return A RepositoryResult containing Namespace objects. Care should be
 	 *         taken to close the RepositoryResult after use.
 	 * @throws RepositoryException
@@ -1765,7 +1768,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Gets the namespace that is associated with the specified prefix, if any.
-	 * 
+	 *
 	 * @param prefix
 	 *        A namespace prefix.
 	 * @return The namespace name that is associated with the specified prefix,
@@ -1798,7 +1801,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Sets the prefix for a namespace.
-	 * 
+	 *
 	 * @param prefix
 	 *        The new prefix.
 	 * @param name
@@ -1826,7 +1829,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	/**
 	 * Removes a namespace declaration by removing the association between a
 	 * prefix and a namespace name.
-	 * 
+	 *
 	 * @param prefix
 	 *        The namespace prefix of which the assocation with a namespace name
 	 *        is to be removed.
@@ -1850,7 +1853,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Removes all namespace declarations from the repository.
-	 * 
+	 *
 	 * @throws RepositoryException
 	 *         If the namespace declarations could not be removed.
 	 */
@@ -1869,9 +1872,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected TupleQueryResult executeSPARQLForTupleResult(String baseURI, String query, 
-		Dataset dataset, boolean includeInferred, BindingSet bindings, 
-		int maxQueryTime) throws QueryEvaluationException 
+	protected TupleQueryResult executeSPARQLForTupleResult(String baseURI, String query,
+		Dataset dataset, boolean includeInferred, BindingSet bindings,
+		int maxQueryTime) throws QueryEvaluationException
 	{
 
 		Vector<String> names = new Vector<String>();
@@ -1883,7 +1886,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			// begin at onset one
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
 				String col = rsmd.getColumnName(i);
-				if (names.indexOf(col) < 0) 
+				if (names.indexOf(col) < 0)
 					names.add(col); // no duplicates
 			}
 
@@ -1893,10 +1896,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
-	
-	protected GraphQueryResult executeSPARQLForGraphResult(String baseURI, String query, 
+
+	protected GraphQueryResult executeSPARQLForGraphResult(String baseURI, String query,
 		Dataset dataset, boolean includeInferred, BindingSet bindings,
-		int maxQueryTime) throws QueryEvaluationException 
+		int maxQueryTime) throws QueryEvaluationException
 	{
 
 		HashMap<String,Integer> names = new HashMap<String,Integer>();
@@ -1914,12 +1917,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		catch (Exception e) {
 			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
-		
+
 	}
 
-	protected boolean executeSPARQLForBooleanResult(String baseURI, String query, 
+	protected boolean executeSPARQLForBooleanResult(String baseURI, String query,
 		Dataset dataset, boolean includeInferred, BindingSet bindings,
-		int maxQueryTime) throws QueryEvaluationException 
+		int maxQueryTime) throws QueryEvaluationException
 	{
 		boolean result = false;
 		try {
@@ -1941,9 +1944,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected void executeSPARQLForHandler(String baseURI, TupleQueryResultHandler tqrh, 
-		String query, Dataset dataset, boolean includeInferred, 
-		BindingSet bindings, int maxQueryTime) throws QueryEvaluationException, TupleQueryResultHandlerException 
+	protected void executeSPARQLForHandler(String baseURI, TupleQueryResultHandler tqrh,
+		String query, Dataset dataset, boolean includeInferred,
+		BindingSet bindings, int maxQueryTime) throws QueryEvaluationException, TupleQueryResultHandlerException
 	{
 		LinkedList<String> names = new LinkedList<String>();
 		try {
@@ -1978,9 +1981,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	protected void executeSPARQLForHandler(String baseURI, RDFHandler tqrh, String query, 
+	protected void executeSPARQLForHandler(String baseURI, RDFHandler tqrh, String query,
 		Dataset dataset, boolean includeInferred, BindingSet bindings,
-		int maxQueryTime) throws QueryEvaluationException, RDFHandlerException 
+		int maxQueryTime) throws QueryEvaluationException, RDFHandlerException
 	{
 		try {
 		        PreparedStatement stmt = executeSPARQL(baseURI, query, dataset, includeInferred, bindings, maxQueryTime);
@@ -2014,13 +2017,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 			        if (col_s != -1)
 				  sval = (Resource) castValue(rs.getObject(col_s));
-				
+
 			        if (col_p != -1)
 				  pval = (URI) castValue(rs.getObject(col_p));
-				
+
 			        if (col_o != -1)
 				   oval = castValue(rs.getObject(col_o));
-				
+
 			        if (col_g != -1)
 				  gval = (Resource) castValue(rs.getObject(col_g));
 
@@ -2034,11 +2037,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new QueryEvaluationException(": SPARQL execute failed:["+query+"] \n Exception:"+e);
 		}
 	}
-	
 
-	private PreparedStatement executeSPARQL(String baseURI, String query, 
-		Dataset dataset, boolean includeInferred, BindingSet bindings, 
-		int maxQueryTime) throws RepositoryException, SQLException 
+
+	private PreparedStatement executeSPARQL(String baseURI, String query,
+		Dataset dataset, boolean includeInferred, BindingSet bindings,
+		int maxQueryTime) throws RepositoryException, SQLException
 	{
 		verifyIsOpen();
 		flushDelayAdd();
@@ -2050,7 +2053,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-        protected void executeSPARUL(String baseURI, String query, Dataset dataset, 
+        protected void executeSPARUL(String baseURI, String query, Dataset dataset,
         	boolean includeInferred, BindingSet bindings, int maxQueryTime) throws UpdateExecutionException
         {
 		try {
@@ -2066,7 +2069,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Execute SPARUL query on this repository.
-	 * 
+	 *
 	 * @param query
 	 *        The query string.
 	 * @return A rowUpdateCount.
@@ -2097,7 +2100,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Get Reposetory Connection.
-	 * 
+	 *
 	 * @return Repository Connection
 	 */
 	public Connection getQuadStoreConnection() {
@@ -2106,7 +2109,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	/**
 	 * Set Repository Connection.
-	 * 
+	 *
 	 * @param quadStoreConnection
 	 *        The Repository Connection.
 	 */
@@ -2136,7 +2139,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
           stmt.setFetchSize(prefetchSize);
           return stmt;
 	}
-	
+
 	private java.sql.PreparedStatement prepareStatement(String sql, int maxQueryTime) throws java.sql.SQLException
 	{
 	  java.sql.PreparedStatement stmt = quadStoreConnection.prepareStatement(sql);
@@ -2148,9 +2151,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
           stmt.setFetchSize(prefetchSize);
           return stmt;
 	}
-	
 
-	private void setQueryParams(PreparedStatement stmt, List<Value> params) throws RepositoryException 
+
+	private void setQueryParams(PreparedStatement stmt, List<Value> params) throws RepositoryException
 	{
 		int i = 0;
 		for (Value value : params) {
@@ -2165,8 +2168,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	
-	private String substBindings(String query, BindingSet bindings, List<Value> pstmtParams, boolean isSPARUL)  throws RepositoryException 
+
+	private String substBindings(String query, BindingSet bindings, List<Value> pstmtParams, boolean isSPARUL)  throws RepositoryException
 	{
 	        boolean use_setParams = insertBNodeAsVirtuosoIRI ? false : true;
 	        StringBuilder tok = new StringBuilder();
@@ -2177,7 +2180,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	  	char ch;
 	        boolean afterFROM = false;
 	  	int qlen = query.length();
-	
+
 	  	while( i < qlen) {
 	    		ch = query.charAt(i++);
 	    		if (ch == '\\') {
@@ -2218,7 +2221,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		                    Value val = bindings.getValue(varName);
 		                    if (val != null) {
 		                        if (use_setParams) {
-		                            if (inCurly>0) { 
+		                            if (inCurly>0) {
 		                                // in triple pattern
 		                                pstmtParams.add(val);
 		                                if (val instanceof Resource)
@@ -2250,7 +2253,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		                if (delim.indexOf(ch) < 0) {
 		                    tok.append(ch);
 		                } else {
-		                    if (tok.length()==4 
+		                    if (tok.length()==4
                 		        && (tok.charAt(0)=='F' || tok.charAt(0)=='f')
 		                        && tok.toString().equalsIgnoreCase("FROM")
 		                       )
@@ -2261,9 +2264,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	  	}
 		return buf.toString();
 	}
-	
 
-	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings, List<Value> pstmtParams, String baseURI)  throws RepositoryException 
+
+	private String fixQuery(boolean isSPARUL, String query, Dataset dataset, boolean includeInferred, BindingSet bindings, List<Value> pstmtParams, String baseURI)  throws RepositoryException
 	{
 	        boolean added_def_graph = false;
 	        Set <URI> list;
@@ -2288,10 +2291,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		   }
 
 		   URI g = dataset.getDefaultInsertGraph();
-		   if (g!=null) 
+		   if (g!=null)
 		       insertGraph = " <"+g.toString()+"> ";
 		}
-		
+
 		query = SubstGraphs(query, insertGraph, removeGraph);
 
 		StringBuffer ret = new StringBuffer("sparql\n ");
@@ -2336,7 +2339,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private String SubstGraphs(String query, String gInsert, String gDelete)  
+	private String SubstGraphs(String query, String gInsert, String gDelete)
 	{
 	   ArrayList<String> lst = new ArrayList<String>(16);
 	   StringBuilder buf = new StringBuilder();
@@ -2358,9 +2361,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	     else if (ch == '\\') {
 	       buf.append(ch);
 	       if (i < qlen)
-	         buf.append(query.charAt(i++)); 
+	         buf.append(query.charAt(i++));
 
-	     } 
+	     }
 	     else if (ch == '"' || ch == '\'') {
 	     	char end = ch;
 	     	buf.append(ch);
@@ -2370,7 +2373,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	          if (ch == end)
 	            break;
 	      	}
-	     
+
 	     } else {
 	       buf.append(ch);
 	     }
@@ -2432,7 +2435,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	         in_term--;
 	     }
 	     else if (t.equalsIgnoreCase("GRAPH")){
-	       if (in_term == 1) 
+	       if (in_term == 1)
 	         GRAPH_used = true;
 	     }
 	   }
@@ -2444,32 +2447,32 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
+	private synchronized void addToQuadStore(Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException
 	{
 		if (contexts.length == 0)
 			return;
 
 		try {
 		    boolean isAutoCommit = getQuadStoreConnection().getAutoCommit();
-		
+
 		    if (psInsert == null)
 			psInsert = prepareStatement(S_BATCH_INSERT);
 
 		    if (!insertBNodeAsVirtuosoIRI) {
 			if (psInsert_BNode == null)
 				psInsert_BNode = prepareStatement(S_TTLP_INSERT);
-			
+
 			Object bn_s = null;
 			Object bn_o = null;
 
-			if (subject instanceof BNode) 
+			if (subject instanceof BNode)
 				bn_s = "_:"+((BNode)subject).getID().replace(':','_').replace('-','z').replace('/','y');
 			if (object instanceof BNode) {
 				bn_o = "_:"+((BNode)object).getID().replace(':','_').replace('-','z').replace('/','y');
-			}	
+			}
 
 			if (bn_s!=null || bn_o!=null) {
-			    addToQuadStore_BNode( 
+			    addToQuadStore_BNode(
 			    	bn_s!=null?bn_s:subject,
 			    	predicate,
 			    	bn_o!=null?bn_o:object, contexts);
@@ -2497,8 +2500,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized void addToQuadStore_BNode(Object subject, URI predicate, 
-		Object object, Resource... contexts) throws RepositoryException 
+	private synchronized void addToQuadStore_BNode(Object subject, URI predicate,
+		Object object, Resource... contexts) throws RepositoryException
 	{
 		if (contexts.length == 0)
 			return;
@@ -2528,10 +2531,10 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			throw new RepositoryException(e);
 		}
 	}
-	
 
-	private synchronized void addToQuadStore_asURI(Resource subject, URI predicate, 
-		Value object, Resource... contexts) throws RepositoryException 
+
+	private synchronized void addToQuadStore_asURI(Resource subject, URI predicate,
+		Value object, Resource... contexts) throws RepositoryException
 	{
 		verifyIsOpen();
 
@@ -2547,7 +2550,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private void bindParams(PreparedStatement ps, 
+	private void bindParams(PreparedStatement ps,
 		Resource subject, URI predicate, Value object, Resource context) throws SQLException, RepositoryException
 	{
 	        int flags = 0;
@@ -2569,15 +2572,33 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  Literal lit = (Literal) object;
 		  ps.setString(3, lit.getLabel());
 
-		  if (lit.getLanguage() != null) 
+		  if (lit.getLanguage() != null)
 		  {
 		    ps.setString(4, lit.getLanguage());
 		    ps.setInt(5, 2);
 		  }
 		  else if (lit.getDatatype() != null)
 		  {
-		    ps.setString(4, lit.getDatatype().toString());
-		    ps.setInt(5, 3);
+				URI ltype = lit.getDatatype();
+
+				if (insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING)) {
+					ps.setNull(4, java.sql.Types.VARCHAR);
+					flags |= 1;
+				} else {
+					ps.setString(4, ltype.toString());
+
+					if (ltype.equals(XMLSchema.INTEGER))
+						flags |= 5;
+					else if (ltype.equals(XMLSchema.FLOAT))
+						flags |= 6;
+					else if (ltype.equals(XMLSchema.DOUBLE))
+						flags |= 7;
+					else if (ltype.equals(XMLSchema.DECIMAL))
+						flags |= 8;
+					else
+						flags |= 3;
+				}
+				ps.setInt(5, flags);
 		  }
 		  else
 		  {
@@ -2585,17 +2606,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		    ps.setInt(5, 1);
 		  }
 		}
-		else 
+		else
 		{
 		  throw new RepositoryException("Unknown value type: " + object.getClass());
 		}
-		  
+
 		ps.setString(6, context.toString());
 	}
 
 
-	private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps, 
-		Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException 
+	private synchronized PreparedStatement addToQuadStore_batch(PreparedStatement ps,
+		Resource subject, URI predicate, Value object, Resource... contexts) throws RepositoryException
 	{
 		verifyIsOpen();
 
@@ -2616,15 +2637,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 
-	private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps, 
-		int psCount) throws RepositoryException 
+	private synchronized PreparedStatement flushDelayAdd_batch(PreparedStatement ps,
+		int psCount) throws RepositoryException
 	{
 		try {
 			if (psCount > 0 && ps!=null) {
 				ps.executeBatch();
-				ps.clearBatch();	
-				if (useReprepare) { 
-				  try{ 
+				ps.clearBatch();
+				if (useReprepare) {
+				  try{
 				    ps.close();
 				  } catch(Exception e){}
 				  ps = null;
@@ -2637,15 +2658,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		return ps;
 	}
 
-	
-	private synchronized PreparedStatement dropDelayAdd_batch(PreparedStatement ps, 
-		int psCount) throws RepositoryException 
+
+	private synchronized PreparedStatement dropDelayAdd_batch(PreparedStatement ps,
+		int psCount) throws RepositoryException
 	{
 		try {
 			if (psCount > 0 && ps!=null) {
 				ps.clearBatch();
 				if (useReprepare) {
-				  try{ 
+				  try{
 				    ps.close();
 				  } catch(Exception e){}
 				  ps = null;
@@ -2658,7 +2679,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	private synchronized void flushDelayAdd() throws RepositoryException 
+	private synchronized void flushDelayAdd() throws RepositoryException
 	{
 		psInsert = flushDelayAdd_batch(psInsert, psInsertCount);
 		psInsertCount = 0;
@@ -2673,7 +2694,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		psInsertBNodeCount = 0;
 	}
 
-	private synchronized void dropDelayAdd() throws RepositoryException 
+	private synchronized void dropDelayAdd() throws RepositoryException
 	{
 		psInsert = dropDelayAdd_batch(psInsert, psInsertCount);
 		psInsertCount = 0;
@@ -2762,8 +2783,11 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		if (lit.getDatatype() != null) {
 			// Append the literal's datatype
-			sb.append("^^");
-			append(lit.getDatatype(), sb, inTriplePattern);
+			URI ltype = lit.getDatatype();
+			if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
+				sb.append("^^");
+				append(ltype, sb, inTriplePattern);
+			}
 		}
 		else if (lit.getLanguage() != null) {
 			// Append the literal's language
@@ -2772,7 +2796,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	private String BNode2String(BNode bNode) 
+	private String BNode2String(BNode bNode)
     	{
 		String bid = bNode.getID();
 		if (bid.startsWith("nodeID://"))
@@ -2837,14 +2861,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 
 
-	
+
 	private void clearQuadStore(Resource[] contexts) throws RepositoryException {
 
                 if (contexts!=null && contexts.length > 0)
 		  try {
 		        String [] graphs = new String[contexts.length];
 			PreparedStatement ps = prepareStatement(S_CLEAR_GRAPH);
-			for (int i = 0; i < contexts.length; i++) 
+			for (int i = 0; i < contexts.length; i++)
 			  graphs[i] = contexts[i].stringValue();
 
 			Array gArray = quadStoreConnection.createArrayOf ("VARCHAR", graphs);
@@ -2925,13 +2949,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
 
-	private void removeData(Map<String,StringBuilder> data) throws RepositoryException 
+	private void removeData(Map<String,StringBuilder> data) throws RepositoryException
 	{
 		java.sql.Statement stmt = null;
 		try {
 			stmt = createStatement(-1);
 			for(Map.Entry<String,StringBuilder> e : data.entrySet()) {
-		            
+
 		            StringBuilder sb = new StringBuilder(256);
 		            sb.append("sparql define output:format '_JAVA_' DELETE FROM <");
 		            sb.append(e.getKey());
@@ -2953,8 +2977,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	
-	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException 
+
+	private void removeContext(Resource subject, URI predicate, Value object, Resource context) throws RepositoryException
 	{
 		try {
 
@@ -3033,7 +3057,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		}
 	}
 
-	
+
 	// Used for Remove and Select
 	private void bindResource(PreparedStatement ps, int col, Resource n) throws SQLException {
 		if (n == null)
@@ -3044,14 +3068,14 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		  ps.setString(col, n.toString());
 	}
 
-	
+
 	private void bindURI(PreparedStatement ps, int col, URI n) throws SQLException {
 		if (n == null)
 			return;
 		ps.setString(col, n.toString());
 	}
 
-	
+
 	private void bindValue(PreparedStatement ps, int col, Value n) throws SQLException {
 		if (n == null)
 			return;
@@ -3071,17 +3095,24 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				ps.setInt(col, 5);
 				ps.setString(col+1, lit.getLabel());
 				ps.setString(col+2, lit.getLanguage());
-			} 
+			}
 			else if (lit.getDatatype() != null) {
-				ps.setInt(col, 4);
-				ps.setString(col+1, lit.getLabel());
-				ps.setString(col+2, lit.getDatatype().toString());
+				URI ltype = lit.getDatatype();
+				if (!(insertStringLiteralAsSimple && ltype.equals(XMLSchema.STRING))) {
+					ps.setInt(col, 4);
+					ps.setString(col+1, lit.getLabel());
+					ps.setString(col+2, ltype.toString());
+				} else {
+					ps.setInt(col, 3);
+					ps.setString(col+1, lit.getLabel());
+					ps.setNull(col+2, java.sql.Types.VARCHAR);
+				}
 		 	}
 		 	else {
 				ps.setInt(col, 3);
 				ps.setString(col+1, lit.getLabel());
 				ps.setNull(col+2, java.sql.Types.VARCHAR);
-		 	}	
+		 	}
 		}
 		else {
 			ps.setInt(col, 3);
@@ -3089,18 +3120,18 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			ps.setNull(col+2, java.sql.Types.VARCHAR);
 		}
 	}
-	
 
-	
+
+
 	private String stringForValue(Value n, boolean inTriplePattern)  throws RepositoryException {
 		StringBuilder sb = new StringBuilder(256);
 		append(n, sb, inTriplePattern);
 		return sb.toString();
 	}
 
-	
+
 	private Value castValue(Object val) throws RepositoryException {
-		if (val == null) 
+		if (val == null)
 			return null;
 		if (val instanceof ExtendedString) {
 			ExtendedString ves = (ExtendedString) val;
@@ -3111,9 +3142,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 					return getRepository().getValueFactory().createBNode(valueString);
 				}
 				try {
-					if (valueString.indexOf(':') < 0) 
+					if (valueString.indexOf(':') < 0)
 						return getRepository().getValueFactory().createURI(":" + valueString);
-					else 
+					else
 						return getRepository().getValueFactory().createURI(valueString);
 				}
 				catch (IllegalArgumentException iaex) {
@@ -3147,7 +3178,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 			else if (rb.getType() != null) {
 			        String rb_type = rb.getType();
                                 if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
-                                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean")) 
+                                  if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean"))
                                     return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
                                 }
 				return getRepository().getValueFactory().createLiteral(rb_val, this.getRepository().getValueFactory().createURI(rb_type));
@@ -3224,7 +3255,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 	private void verifyIsOpen() throws RepositoryException {
 		try {
-			if (this.getQuadStoreConnection().isClosed()) 
+			if (this.getQuadStoreConnection().isClosed())
 				throw new IllegalStateException("Connection has been closed");
 		}
 		catch (SQLException e) {
@@ -3251,7 +3282,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 	}
 **/
 
-        public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X> 
+        public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X>
         {
 		E	  v_row;
 		boolean	  v_finished = false;
@@ -3268,20 +3299,20 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         	  v_rs = rs;
         	  this.subject = subject;
         	  this.predicate = predicate;
-        	  this.object = object;	
+        	  this.object = object;
         	}
 
 
         	protected abstract X createException(Exception e);
 
-		public boolean hasNext() throws X 
+		public boolean hasNext() throws X
 		{
-       			if (!v_finished && !v_prefetched) 
+       			if (!v_finished && !v_prefetched)
        				moveForward();
 			return !v_finished;
 		}
 
-		public E next() throws X 
+		public E next() throws X
 		{
 		        if (!v_finished && !v_prefetched)
 			    moveForward();
@@ -3294,7 +3325,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 		        return v_row;
 		}
 
-		public void remove() throws X 
+		public void remove() throws X
 		{
 		  throw new UnsupportedOperationException();
 		}
@@ -3318,7 +3349,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 		protected void finalize() throws Throwable
 		{
-			if (!v_finished) 
+			if (!v_finished)
 				try {
 				    close();
 				} catch (Exception e) {}
@@ -3347,7 +3378,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
         public class CloseableIterationStmt extends CloseableIterationBase<Statement, RepositoryException> {
-                                           
+
                 int col_g = -1;
                 int col_s = -1;
                 int col_p = -1;
@@ -3378,7 +3409,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         		return new RepositoryException(e);
         	}
 
-		protected void extractRow() throws Exception 
+		protected void extractRow() throws Exception
 		{
 			Resource _graph = null;
 			Resource _subject = subject;
@@ -3396,7 +3427,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val, ccex);
 			}
 
-			if (_subject == null && col_s != -1) 
+			if (_subject == null && col_s != -1)
 			  try {
 				val = v_rs.getObject(col_s);
 				_subject = (Resource) castValue(val);
@@ -3405,7 +3436,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting Resource: " + val, ccex);
 			  }
 
-			if (_predicate == null && col_p != -1) 
+			if (_predicate == null && col_p != -1)
 			  try {
 				val = v_rs.getObject(col_p);
 				_predicate = (URI) castValue(val);
@@ -3414,17 +3445,17 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 				throw new RepositoryException("Unexpected resource type encountered. Was expecting URI: " + val, ccex);
 			  }
 
-			if (_object == null && col_o != -1) 
+			if (_object == null && col_o != -1)
 			  _object = castValue(v_rs.getObject(col_o));
 
 			v_row = new ContextStatementImpl(_subject,_predicate,_object,_graph);
 		}
 	}
 
-        
+
 
         public class CloseableIterationBindingSet extends CloseableIterationBase<BindingSet, QueryEvaluationException> {
-                                           
+
  		ResultSetMetaData rsmd;
 
         	public CloseableIterationBindingSet(java.sql.Statement stmt, ResultSet rs) throws QueryEvaluationException
@@ -3441,7 +3472,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         		return new QueryEvaluationException(e);
         	}
 
-		protected void extractRow() throws Exception 
+		protected void extractRow() throws Exception
 		{
 			v_row = new QueryBindingSet();
 			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
@@ -3457,7 +3488,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 
         public class CloseableIterationGraphResult extends CloseableIterationBase<Statement, QueryEvaluationException> {
-                                           
+
                 int col_g = -1;
                 int col_s = -1;
                 int col_p = -1;
@@ -3491,7 +3522,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         		return new QueryEvaluationException(e);
         	}
 
-		protected void extractRow() throws Exception 
+		protected void extractRow() throws Exception
 		{
 			Resource sval = null;
 			URI pval = null;
@@ -3500,13 +3531,13 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
 
 			if (col_s != -1)
 				sval = (Resource) castValue(v_rs.getObject(col_s));
-				
+
 			if (col_p != -1)
 				pval = (URI) castValue(v_rs.getObject(col_p));
-				
+
 			if (col_o != -1)
 				oval = castValue(v_rs.getObject(col_o));
-				
+
 			if (col_g != -1)
 				gval = (Resource) castValue(v_rs.getObject(col_g));
 
@@ -3574,4 +3605,3 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
         return sb.toString();
       }
 }
-
