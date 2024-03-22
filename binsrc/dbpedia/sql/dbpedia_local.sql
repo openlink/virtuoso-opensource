@@ -25,7 +25,7 @@ create procedure dbp_setup ()
 {
 --# if utf-8 iri's are used
   if (not isstring(registry_get ('dbp_decode_iri')))
-    registry_set ('dbp_decode_iri','off');
+    registry_set ('dbp_decode_iri','on');
 
 --# the resource domain e.g. http://(xx.)dbpedia.org/resource/...
   if (not isstring(registry_get('dbp_domain')))
