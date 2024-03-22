@@ -505,6 +505,42 @@ DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data5_rule_1', 1, '/data5/(.*)\\.(n3
 vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'fmt'), NULL, NULL, 2, null, '');
 
 
+-- Datatype
+DB.DBA.VHOST_REMOVE (lpath=>'/datatype');
+DB.DBA.VHOST_DEFINE (lpath=>'/datatype',
+	 ppath=>'/',
+	 is_dav=>0,
+	 def_page=>'',
+	 opts=>vector ('url_rewrite', 'dbpl_type_rule_list')
+);
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_type_rule_list', 1, vector ('dbpl_type_rule_1', 'dbpl_type_rule_2', 'dbpl_type_rule_3', 'dbpl_type_rule_4'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_type_rule_1', 1, '(/[^#]*)', vector ('par_1'), 1,
+registry_get('_dbpedia_path_')||'description.vsp?res=%U', vector ('par_1'), NULL, NULL, 0, 0, '');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_type_rule_2', 1, '/datatype/(.*)\x24', vector ('par_1'), 1,
+'/data6/%s.rdf', vector ('par_1'), NULL, 'application/rdf.xml', 2, 303, 'Content-Type: application/rdf+xml');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_type_rule_3', 1, '/datatype/(.*)\x24', vector ('par_1'), 1,
+'/data6/%s.n3', vector ('par_1'), NULL, 'text/rdf.n3', 1, 303, 'Content-Type: text/rdf+n3');
+
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_type_rule_4', 1, '/datatype/(.*)\x24', vector ('par_1'), 1,
+'/data6/%s.n3', vector ('par_1'), NULL, 'application/x-turtle', 2, 303, 'Content-Type: application/x-turtle');
+
+-- RDF for datatype
+DB.DBA.VHOST_REMOVE (lpath=>'/data6');
+DB.DBA.VHOST_DEFINE (lpath=>'/data6',
+	 ppath=>registry_get('_dbpedia_path_'),
+	 is_dav=>atoi (registry_get('_dbpedia_dav_')),
+	 vsp_user=>'dba',
+	 opts=>vector ('url_rewrite', 'dbpl_data6_rule_list', 'expiration_function', 'DB.DBA.DBP_CHECK_304', 'graph', registry_get ('dbp_graph'))
+);
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_data6_rule_list', 1, vector ('dbpl_data6_rule_1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_data6_rule_1', 1, '/data6/(.*)\\.(n3|rdf|ttl)', vector ('par_1', 'fmt'), 1,
+'/sparql?default-graph-uri=' || registry_get('dbp_graph_encoded') ||'&query='||dbp_gen_describe ('datatype')||'&format=%U',
+vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'fmt'), NULL, NULL, 2, null, '');
+
+
 create procedure dbpl_robots ()
 {
   if (not isstring (http_root () || '/robots.txt'))

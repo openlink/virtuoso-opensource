@@ -51,6 +51,7 @@ create procedure dbp_ldd_set_ns_decl ()
     dbp_domain || '/resource/', 				'dbpedia-'  || dbp_lang,
     dbp_domain || '/resource/' || dbp_category || ':',		'category-' || dbp_lang,
     dbp_domain || '/resource/' || dbp_template || ':', 		'template-' || dbp_lang,
+    dbp_domain || '/datatype/', 				'type-'     || dbp_lang,
 
     'http://dbpedia.org/datatype/',				'dbd',
     'http://dbpedia.org/ontology/',				'dbo',
