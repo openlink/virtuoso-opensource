@@ -86,6 +86,8 @@ create procedure dbp_ldd_set_ns_decl ()
     'http://www.w3.org/ns/prov#',				'prov',
     'http://xmlns.com/foaf/0.1/',				'foaf',
     'http://yago-knowledge.org/resource/',			'yago-res',
+    'http://purl.org/linguistics/gold/',                       'gold',
+    'http://open.vocab.org/terms/', 				'ov',
 
     'http://commons.wikimedia.org/wiki/',			'wiki-commons',
     'http://www.wikidata.org/entity/',				'wikidata',
