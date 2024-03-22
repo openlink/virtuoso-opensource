@@ -9338,8 +9338,8 @@ bif_position (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   const char *me = "position";
   caddr_t item = bif_arg (qst, args, 0, me);
   caddr_t arr = (caddr_t) bif_array_arg (qst, args, 1, me);
-  long int start = (long) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
-  long every_nth = (long) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 1);
+  int start = (int) ((n_args > 2) ? bif_long_arg (qst, args, 2, me) - 1 : 0);
+  int every_nth = (int) ((n_args > 3) ? bif_long_arg (qst, args, 3, me) : 1);
   dtp_t vectype = DV_TYPE_OF (arr);
   int boxlen = (is_string_type (vectype) ? box_length (arr) - 1 : box_length (arr));
   int len = (boxlen / get_itemsize_of_vector (vectype));
@@ -11753,7 +11753,7 @@ bif_name_part (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int len = (int) strlen (name);
   char temp[MAX_QUAL_NAME_LEN];
   const char *part1, *part2, *part3;
-  memcpy (temp, name, len + 1);
+  strncpy (temp, name, MIN((len + 1), (MAX_QUAL_NAME_LEN - 1)));
   xx = &temp[0];
   part1 = part_tok (&xx);
   part2 = part_tok (&xx);

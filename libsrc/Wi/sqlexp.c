@@ -667,6 +667,8 @@ sqlc_coalesce_exp (sql_comp_t * sc, ST * tree, dk_set_t * code)
   df_elt_t *dfe = sc->sc_so ? sqlo_df (sc->sc_so, tree) : NULL;
 
   res->ssl_is_callret = 1;
+  if (sc->sc_grouping)
+    ssl_set_dc_type (res);
   for (inx = 0; inx < n_exps; inx++)
     {
       jmp_label_t ok = sqlc_new_label (sc);
@@ -1356,7 +1358,7 @@ cv_subq_ret (sql_comp_t * sc, instruction_t * ins)
 {
   query_t * qr = ins->_.subq.query;
   select_node_t * sel = qr->qr_select_node;
-  if (!sel)
+  if (!sel || !qr->qr_select_node->sel_out_slots[0])
     return NULL;
   qr->qr_select_node->sel_vec_role = SEL_VEC_SCALAR;
   qr->qr_select_node->sel_out_slots[0]->ssl_sqt.sqt_non_null = 0;

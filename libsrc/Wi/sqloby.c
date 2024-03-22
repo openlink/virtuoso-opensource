@@ -56,7 +56,7 @@ sqlo_oby_exp_cols (sqlo_t * so, ST * dt, ST** oby)
       if (INTEGERP (spec->_.o_spec.col))
 	{
 	  ptrlong nth = unbox ((box_t) spec->_.o_spec.col) - 1;
-	  if ((uint32)nth >= (ptrlong) BOX_ELEMENTS (dt->_.select_stmt.selection))
+	  if ((uint32)nth >= (ptrlong) BOX_ELEMENTS (dt->_.select_stmt.selection) || nth < 0)
 	    sqlc_error (so->so_sc->sc_cc, "37000", "index of column in order by out of range");
 	  spec->_.o_spec.col = (ST*) t_box_copy_tree (dt->_.select_stmt.selection[nth]);
 	  while (ST_P (spec->_.o_spec.col, BOP_AS))
@@ -869,7 +869,8 @@ int
 sqlo_is_postprocess (sqlo_t *so, df_elt_t * dt_dfe, df_elt_t * last_tb_dfe)
 {
   op_table_t *ot = dfe_ot (dt_dfe);
-
+  if (!ot)
+    sqlc_new_error (so->so_sc->sc_cc, "37000", "SQ489", "Expression is not allowed");
   if (ot->ot_group_dfe)
     return 1;
   if (!ot->ot_oby_dfe)

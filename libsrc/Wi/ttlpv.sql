@@ -691,6 +691,7 @@ create procedure DB.DBA.ID_TO_IRI_VEC (in id iri_id)
         return id;
       if (__tag (id) = __tag of varchar and bit_and (__box_flags (id), 1))
         return id;
+      signal ('22023', 'Invalid type of argument');
     }
   if (is_plain_bnode_iri_id (id))
     return iri_id_to_blank_nodeid (id);

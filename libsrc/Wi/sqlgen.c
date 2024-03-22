@@ -70,7 +70,7 @@ sqlg_qn_dfe (data_source_t * qn)
 
 void sqlg_setp_append (sqlo_t * so, data_source_t ** head, setp_node_t * setp);
 
-void dfe_unit_col_loci (df_elt_t * dfe);
+void dfe_unit_col_loci (sqlo_t * so, df_elt_t * dfe);
 
 void sqlg_pred_1 (sqlo_t * so, df_elt_t ** body, dk_set_t * code, int succ, int fail, int unk);
 
@@ -2551,7 +2551,7 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	  char ord = sc->sc_order;
 	  query_t * qr;
 	  NEW_VARZ (subq_pred_t, subp);
-	  dfe_unit_col_loci (dfe);
+	  dfe_unit_col_loci (so, dfe);
 	  sc->sc_order = TS_ORDER_NONE;
 	  qr = subp->subp_query = sqlg_dt_query (so, dfe, NULL, NULL);
 	  sc->sc_order = ord;
@@ -2575,6 +2575,8 @@ sqlg_dfe_code (sqlo_t * so, df_elt_t * dfe, dk_set_t * code, int succ, int fail,
 	so->so_sc->sc_order = TS_ORDER_NONE;
 	qr  = sqlg_dt_query (so, dfe, NULL, (ST **) t_list (1, dfe->dfe_tree)); /* this is to prevent assignment of NULL to constant ssl*/
 	ssl  = 	cv_subq_qr (sc, code, qr);
+        if (!ssl)
+          sqlc_new_error (sc->sc_cc, "42000", "SQ083", "Ambiguous subquery expression");
 	so->so_sc->sc_order = old_ord;
 	org_dfe  = sqlo_df (so, dfe->dfe_tree); /* the org one, not a layout copy is used to associate the ssl to the code */
 	org_dfe->dfe_ssl = ssl;
@@ -2986,6 +2988,8 @@ void
 dfe_list_gb_dependant (sqlo_t *so, df_elt_t * dfe,
     df_elt_t *terminal, df_elt_t *super, dk_set_t *res, dk_set_t *out, int *term_found)
 {
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &dfe, 8000))
+    sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
       int inx;
@@ -4110,6 +4114,8 @@ sqlg_make_sort_nodes (sqlo_t * so, data_source_t ** head, ST ** order_by,
     {
       state_slot_t *ssl;
       ssl = scalar_exp_generate (sc, spec->_.o_spec.col, &code);
+      if (is_grouping_sets && SSL_CONSTANT == ssl->ssl_type && !IS_NUM_DTP(DV_TYPE_OF(ssl->ssl_constant)))
+        sqlc_new_error (so->so_sc->sc_cc, "37001", "SQXXX", "Non-numeric constants are not allowed in CUBE/ROLLUP");
       if (NULL != dk_set_member (setp->setp_keys, ssl))
         continue;
       NCONCF1 (setp->setp_keys, ssl);
@@ -4705,6 +4711,8 @@ sqlg_group_node (sqlo_t * so, data_source_t ** head, df_elt_t * group, df_elt_t 
 	    ssl_out[inx] = NULL;
 	}
       END_DO_BOX;
+      if (!tree->_.select_stmt.table_exp)
+        sqlc_new_error (so->so_sc->sc_cc, "37001", "SQ142", "Group by expression can not be handled");
       gb_full = (ST **) tree->_.select_stmt.table_exp->_.table_exp.group_by_full;
       if (1 == BOX_ELEMENTS (gb_full))
 	gb_full = (ST **) t_list (1, group->_.setp.specs);
@@ -5774,7 +5782,7 @@ sqlg_dt_subquery (sqlo_t * so, df_elt_t * dt_dfe, query_t * ext_query, ST ** tar
   return qr;
 }
 
-void dfe_list_col_loci (df_elt_t * dfe);
+void dfe_list_col_loci (sqlo_t * so, df_elt_t * dfe);
 
 
 void
@@ -5799,7 +5807,7 @@ dfe_filler_outputs (df_elt_t * tb_dfe)
 
 
 void
-dfe_unit_col_loci (df_elt_t * dfe)
+dfe_unit_col_loci (sqlo_t * so, df_elt_t * dfe)
 {
   df_elt_t * org_dfe = NULL;
   int inx;
@@ -5807,11 +5815,13 @@ dfe_unit_col_loci (df_elt_t * dfe)
   caddr_t tmp[7];
   caddr_t ref;
   ST * ref_box;
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &org_dfe, 8000))
+    sqlc_error (so->so_sc->sc_cc, "42000", "Stack Overflow");
   if (!IS_BOX_POINTER (dfe) || DFE_FALSE == dfe)
     return;
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
-      dfe_list_col_loci (dfe);
+      dfe_list_col_loci (so, dfe);
       return;
     }
   if (dfe->dfe_tree)
@@ -5839,21 +5849,21 @@ dfe_unit_col_loci (df_elt_t * dfe)
 	{
 	  if (IS_BOX_POINTER (dfe->dfe_locus))
 	    dfe_filler_outputs (dfe);
-	  dfe_unit_col_loci (dfe->_.table.hash_filler);
+	  dfe_unit_col_loci (so, dfe->_.table.hash_filler);
 	  dfe->dfe_locus = LOC_LOCAL; /* remote table hash joined has the ref bnode as local and the filler as remote */
 	}
       if (HR_FILL == dfe->_.table.hash_role)
 	t_set_push (&dfe->dfe_sqlo->so_hash_fillers, (void*) dfe);
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.join_test);
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.after_join_test);
-      dfe_list_col_loci ((df_elt_t *)dfe->_.table.vdb_join_test);
+      dfe_list_col_loci (so, (df_elt_t *)dfe->_.table.join_test);
+      dfe_list_col_loci (so, (df_elt_t *)dfe->_.table.after_join_test);
+      dfe_list_col_loci (so, (df_elt_t *)dfe->_.table.vdb_join_test);
       break;
     case DFE_EXISTS:
     case DFE_VALUE_SUBQ:
     case DFE_DT:
 	{
 	  if (dfe->_.sub.generated_dfe)
-	    dfe_unit_col_loci (dfe->_.sub.generated_dfe);
+	    dfe_unit_col_loci (so, dfe->_.sub.generated_dfe);
 	  else
 	    {
 	      op_table_t * ot = dfe->_.sub.ot;
@@ -5879,17 +5889,17 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		dfe->_.sub.ot->ot_dt = dfe->dfe_tree;
 	      if (dfe->_.sub.hash_filler_of)
 		t_set_push (&dfe->dfe_sqlo->so_hash_fillers, (void*) dfe);
-	      dfe_list_col_loci (dfe->_.sub.first);
-	      dfe_list_col_loci ((df_elt_t *) dfe->_.sub.after_join_test);
-	      dfe_list_col_loci ((df_elt_t *) dfe->_.sub.vdb_join_test);
+	      dfe_list_col_loci (so, dfe->_.sub.first);
+	      dfe_list_col_loci (so, (df_elt_t *) dfe->_.sub.after_join_test);
+	      dfe_list_col_loci (so, (df_elt_t *) dfe->_.sub.vdb_join_test);
 	      DO_SET (df_elt_t *, pred, &dfe->_.sub.dt_preds)
 		{
-		  dfe_unit_col_loci (pred);
+		  dfe_unit_col_loci (so, pred);
 		}
 	      END_DO_SET();
 	      DO_SET (df_elt_t *, pred, &dfe->_.sub.dt_imp_preds)
 		{
-		  dfe_unit_col_loci (pred);
+		  dfe_unit_col_loci (so, pred);
 		}
 	      END_DO_SET();
              if (org_dfe && dfe->dfe_type == DFE_VALUE_SUBQ)
@@ -5900,7 +5910,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
     case DFE_QEXP:
       DO_BOX (df_elt_t *, elt, inx, dfe->_.qexp.terms)
 	{
-	  dfe_unit_col_loci (elt);
+	  dfe_unit_col_loci (so, elt);
 	}
       END_DO_BOX;
       break;
@@ -5911,7 +5921,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
 	  DO_BOX (df_elt_t *, elt, inx, dfe->_.control.terms)
 	    {
 	      dfe->dfe_sqlo->so_df_private_elts = dfe->_.control.private_elts[inx];
-	      dfe_unit_col_loci (elt);
+	      dfe_unit_col_loci (so, elt);
 	      dfe->dfe_sqlo->so_df_private_elts = old_private_elts;
 	    }
  	  END_DO_BOX;
@@ -5924,7 +5934,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
 		      df_elt_t *pred;
 		      dfe->dfe_sqlo->so_df_private_elts = dfe->_.control.private_elts[inx];
 		      pred = sqlo_df (dfe->dfe_sqlo, elt);
-		      dfe_unit_col_loci (pred);
+		      dfe_unit_col_loci (so, pred);
 		      dfe->dfe_sqlo->so_df_private_elts = old_private_elts;
 		    }
 		}
@@ -5940,15 +5950,15 @@ dfe_unit_col_loci (df_elt_t * dfe)
 	  org_fref->dfe_locus = dfe->dfe_locus;
 	}
       END_DO_SET();
-      dfe_list_col_loci ((df_elt_t *)dfe->_.setp.after_test);
+      dfe_list_col_loci (so, (df_elt_t *)dfe->_.setp.after_test);
       break;
     case DFE_FILTER:
-      dfe_list_col_loci ((df_elt_t *)dfe->_.filter.body);
+      dfe_list_col_loci (so, (df_elt_t *)dfe->_.filter.body);
       break;
     case DFE_BOP:
     case DFE_BOP_PRED:
-      dfe_unit_col_loci (dfe->_.bin.left);
-      dfe_unit_col_loci (dfe->_.bin.right);
+      dfe_unit_col_loci (so, dfe->_.bin.left);
+      dfe_unit_col_loci (so, dfe->_.bin.right);
       break;
 
     default:
@@ -5958,7 +5968,7 @@ dfe_unit_col_loci (df_elt_t * dfe)
 
 
 void
-dfe_list_col_loci (df_elt_t * dfe)
+dfe_list_col_loci (sqlo_t * so, df_elt_t * dfe)
 {
   if (DV_ARRAY_OF_POINTER == DV_TYPE_OF (dfe))
     {
@@ -5966,7 +5976,7 @@ dfe_list_col_loci (df_elt_t * dfe)
       df_elt_t ** dfe_arr = (df_elt_t **) dfe;
       DO_BOX (df_elt_t *, elt, inx, dfe_arr)
 	{
-	  dfe_unit_col_loci (elt);
+	  dfe_unit_col_loci (so, elt);
 	}
       END_DO_BOX;
     }
@@ -5974,7 +5984,7 @@ dfe_list_col_loci (df_elt_t * dfe)
     {
       while (dfe)
 	{
-	  dfe_unit_col_loci (dfe);
+	  dfe_unit_col_loci (so, dfe);
 	  dfe = dfe->dfe_next;
 	}
     }
@@ -5993,7 +6003,7 @@ sqlg_top_1 (sqlo_t * so, df_elt_t * dfe, state_slot_t ***sel_out_ret)
   so->so_sc->sc_cc = &inner_cc;
   so->so_sc->sc_any_clb = 0;
   thr_set_tlsf (THREAD_CURRENT_THREAD, sqlc_tlsf);
-  dfe_unit_col_loci (dfe);
+  dfe_unit_col_loci (so, dfe);
   DO_SET (df_elt_t *, filler, &so->so_hash_fillers)
     {
       sqlo_place_hash_filler (so, dfe, filler);

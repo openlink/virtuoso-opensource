@@ -2027,7 +2027,14 @@ qst_vec_set (caddr_t * inst, state_slot_t * ssl, caddr_t v)
 	case DV_DATE:
 	case DV_TIME:
 	case DV_TIMESTAMP:
-	  memcpy_dt (dc->dc_values + DT_LENGTH * set, v);
+            if (IS_DATE_DTP(DV_TYPE_OF(v)))
+              {
+                memcpy_dt (dc->dc_values + DT_LENGTH * set, v);
+              }
+            else
+              {
+                memzero (dc->dc_values + DT_LENGTH * set, DT_LENGTH);
+              }
 	  if (dc->dc_nulls)
 	    DC_CLR_NULL (dc, set);
 	  if (set >= dc->dc_n_values)

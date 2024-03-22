@@ -1567,6 +1567,8 @@ sqlo_geo_count (df_elt_t * tb_dfe, df_elt_t * pred)
   int prec_literal = 0;
   double prec = 0;
   geo_t * geo = NULL;
+  if (BOX_ELEMENTS_0(args) < 1)
+    return 0;
   if (BOX_ELEMENTS (args) > 2)
     prec = sqlo_double_literal (args[2], &prec_literal);
   else

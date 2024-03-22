@@ -1829,7 +1829,7 @@ INSERT INTO case1238t0 (c0) VALUES ('a');
 SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE (NOT NULL) UNION ALL SELECT case1238t1.c0 FROM case1238t1 LEFT  JOIN case1238t0 ON case1238t1.c1 WHERE ((NULL) IS NULL) order by 1;
 ECHO BOTH $IF $EQU $LAST[1] 1 "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} union on oj left with always true and null is rset last result " $last[1] "\n"; 
+ECHO BOTH ": "$U{caseno}" union on oj left with always true and null is rset last result " $last[1] "\n"; 
 
 
 set U{caseno} case1239;
@@ -1843,7 +1843,7 @@ INSERT INTO case1239t0(c0, c1) VALUES ('\x65\xe1\x8a\xa7', '');
 SELECT * FROM case1239t1 LEFT  JOIN case1239t0 ON (CASE 1 WHEN 2 THEN A(case1239t0.c2) ELSE 3 END );
 ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} union on oj left with always true simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n"; 
+ECHO BOTH ": "$U{caseno}" union on oj left with always true simple case STATE=" $STATE " MESSAGE=" $MESSAGE "\n"; 
 
 
 set U{caseno} case1241;
@@ -1856,7 +1856,7 @@ INSERT INTO case1241t1 (c1) VALUES (1);
 SELECT case1241t0.c0 FROM case1241t1 LEFT  JOIN case1241t0 ON 1 ORDER BY 1 DESC;
 ECHO BOTH $IF $EQU $LAST[1] NULL "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH " $U{caseno} oj left on always true and oby produces " $LAST[1] "\n";
+ECHO BOTH ": "$U{caseno}" oj left on always true and oby produces " $LAST[1] "\n";
 
 set U{caseno} case1249;
 DROP TABLE case1249t0;
@@ -1887,6 +1887,156 @@ SELECT * FROM case1250t0 LEFT  JOIN case1250t1 ON (NULL IN ('')) WHERE 1 UNION A
 ECHO BOTH $IF $EQU $LAST[2] NULL "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": " $U{caseno} " t1.c0=" $LAST[2]  " \n";
+
+set U{caseno} case1251;
+DROP TABLE case1251t0;
+DROP TABLE case1251t1;
+
+CREATE TABLE case1251t0(c0 INT);
+CREATE TABLE case1251t1(c0 INT);
+INSERT INTO case1251t1 ( c0) VALUES (1);
+INSERT INTO case1251t0 ( c0) VALUES (2);
+
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)); -- empty table
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE ''; -- empty table
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE (NOT ''); -- empty table
+
+SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE '' UNION ALL SELECT * FROM case1251t1 INNER  JOIN case1251t0 ON (2 IN (1/3)) WHERE (NOT '');
+ECHO BOTH $IF $EQU $ROWCNT 0 "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " rowcnt=" $ROWCNT  " \n";
+
+set U{caseno} case1252;
+SELECT x FROM ( SELECT 3421 x ) x ORDER BY ( xmlagg ( json_parse ( '[[1]]' ) ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1253;
+SELECT table_name FROM columns ORDER BY ( SELECT ( ( d ( ' ' ) + -1.000000 + 1 ) - ( 0 , 0.000000 ) + ( SELECT d ( ' ' ) + -1.000000 + 1 ) ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+-- set U{caseno} case1254;
+-- SELECT identity_generation x FROM information_schema . columns ORDER BY ( LENGTH ( id_to_iri ( RAND ( -17.400000 ) ) ) - CASE WHEN ( SELECT CASE WHEN x THEN 's' END ) THEN 1492 END );
+-- ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+-- SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+-- ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1255;
+SELECT ( SELECT x FROM ( SELECT ( '127.0.0.1' ) x FROM ( SELECT x ) x GROUP BY CUBE ( NULL ) ) x WHERE x > '2010-01-01T00:00:00Z' ) x FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 1 END x ) x GROUP BY ( x );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1256;
+SELECT ( 1 , NULL ) FROM ( SELECT CAST ( '+0.0' AS DOUBLE PRECISION ) x ) x GROUP BY 1 ORDER BY MIN ( DISTINCT d ( '2003-01-01T01:02:03Z' ) + CASE WHEN 1 THEN CAST ( ( CASE 1492 WHEN 1 THEN 'x' END ) AS REAL ) END );
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1257;
+SELECT x FROM ( SELECT x FROM ( SELECT 0 x ) x UNION SELECT ( LOG ( 1073741824 ) / ( 1024 ) ) ) x GROUP BY CUBE ( 1 ) ORDER BY AVG ( x );
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1258;
+SELECT DISTINCT * FROM SYS_KEY_COLUMNS ORDER BY ( SELECT CASE WHEN x THEN ( ROUND ( 1 / 1048576 , ( SELECT ( - ( CASE WHEN x THEN CASE WHEN x THEN ( SELECT ( 'x' / 1.000000 ) , ( SELECT ( 'x' / 1.000000 ) , x ) ) END END ) ) ) ) ) END FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 1 END x ) x );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1259;
+SELECT TRIG_OWNER ( REPEAT ( 'FALSE' , 1024 ) , 9 );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1260;
+SELECT x FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 0.100000 END x ) x ORDER BY sum ( ( x , ( SELECT inet_aton ( '127.0.0.1' ) + POWER ( ) + ( SELECT ( inet_aton ( '127.0.0.1' ) ) ) x ) ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1261;
+SELECT x FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 1 END x ) x HAVING x OR ( x AND ( x = x OR CASE WHEN x THEN ( AVG ( result ( ) ) ) END ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1262;
+SELECT * FROM RDF_QUAD WHERE ST_Intersects ( ) AND p = iri_to_id ( );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1263;
+SELECT ( ROUND ( ) , ( SELECT ( 0 , 0.000000 ) ) - ( 0 , 0.000000 ) ) FROM columns;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1264;
+SELECT RAND ( ) FROM SYS_KEY_COLUMNS GROUP BY ( - 4294967295 );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1265;
+SELECT x FROM ( SELECT CAST ( '+0.0' AS DOUBLE PRECISION ) x ) x ORDER BY ( CASE WHEN ST_Intersects ( 10 ) THEN x END );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1266;
+SELECT x , log_enable ( ) x FROM ( SELECT ( 0 , x ) x FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 1 END x ) x ) x GROUP BY ( x , ( SELECT ( SELECT x ) x FROM ( SELECT CASE WHEN 'foo.boo[]' THEN 1 END x ) x GROUP BY ( x ) ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1267;
+SELECT CASE WHEN x THEN ( SELECT CASE WHEN x THEN CONCAT ( ) END x FROM ( SELECT x ) x UNION SELECT 4 x , 5 x ) END FROM ( SELECT 0 x ) x;
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1268;
+SELECT identity_generation FROM columns GROUP BY CUBE ( iri_to_id ( ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1269;
+SELECT CONTAINS ( x , x , * );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1270;
+SELECT x FROM ( SELECT ( log ( 0 ) ) x FROM ( SELECT 0 x ) x GROUP BY rollup ( x , 1 ) ) x ORDER BY ( FLOOR ( x ) / ( -100 / ( 60 ) ) ) , MIN ( 'MULTIPOINT((3 10))' );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1271;
+SELECT 3.140000 * RAND ( 1234 ) FROM RDF_QUAD GROUP BY CONNECTION_ID ( ) ORDER BY 1 , ( SELECT ( RAND ( 1234 ) ) );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1272;
+SELECT x FROM ( SELECT st_geomFromText ( st_asText ( NULL ) , ( -1 ) ) x ) x WHERE ( SELECT st_geomFromText ( st_asText ( NULL ) , ( -1 ) ) x );
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+set U{caseno} case1273;
+SELECT CASE WHEN CASE WHEN x THEN ( POSITION ( '(' , chr ( -44 ) , 3.140000 + ( CASE WHEN 'b' THEN 2147483647 END ) ) ) END THEN ROUND ( ) END FROM ( SELECT CASE WHEN 'def' THEN 'B' END x ) x;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": " $U{caseno} " STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
