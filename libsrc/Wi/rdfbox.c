@@ -4780,10 +4780,10 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
     default:
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-        if (DV_RDF == obj_dtp)
+        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
           session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-        if (DV_RDF == obj_dtp)
+        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
           session_buffered_write_char ('\"', ses);
         dk_free_box (tmp_utf8_box);
         if (NULL == type_uri)
@@ -5060,10 +5060,10 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
     default:
       {
         caddr_t tmp_utf8_box = box_cast_to_UTF8 ((caddr_t *)qi, obj_box_value);
-        if (DV_RDF == obj_dtp)
+        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
           session_buffered_write_char ('\"', ses);
         session_buffered_write (ses, tmp_utf8_box, box_length (tmp_utf8_box) - 1);
-        if (DV_RDF == obj_dtp)
+        if (DV_RDF == obj_dtp || DV_GEO == obj_dtp)
           session_buffered_write_char ('\"', ses);
         dk_free_box (tmp_utf8_box);
         if (NULL == type_uri)
