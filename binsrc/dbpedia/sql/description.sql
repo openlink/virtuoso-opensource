@@ -444,6 +444,7 @@ create procedure dbp_ldd_subject (in _S any, in _G varchar, in lines any := null
       if (length (data) and data[0][0] is not null and data[0][0] <> 0)
 	best_str := data[0][0];
     }
+  best_str := charset_recode (best_str, 'UTF-8', '_WIDE_');
   return best_str;
 }
 ;
