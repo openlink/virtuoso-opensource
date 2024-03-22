@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+    <caption>
+	<name package="dbpedia">
+	    <prop name="Title" value="DBpedia"/>
+	    <prop name="Developer" value="OpenLink Software"/>
+	    <prop name="Copyright" value="(C) 1998-2024 OpenLink Software"/>
+	    <prop name="Download" value="http://virtuoso.openlinksw.com/"/>
+	</name>
+	<version package="$VERSION$">
+	    <prop name="Release Date" value="$PACKDATE$"/>
+	    <prop name="Build" value="Release, optimized"/>
+	</version>
+    </caption>
+    <dependencies>
+    </dependencies>
+    <procedures uninstallation="supported">
+	<sql purpose="pre-install">
+	    <![CDATA[
+	    if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION$'))
+	    {
+		result ('ERROR', 'The DBpedia package requires server version $NEED_VERSION$ or greater');
+		signal ('FATAL', 'The DBpedia package requires server version $NEED_VERSION$ or greater');
+	    }
+	    ]]>
+	</sql>
+	<sql purpose="post-install">
+	    <![CDATA[
+	    ;
+	    ]]>
+	</sql>
+    </procedures>
+    <ddls>
+	<sql purpose="post-install">
+	    <![CDATA[
+	    set_qualifier ('DB');
+	    registry_set('_dbpedia_path_', '$BASE_PATH$/dbpedia/');
+	    registry_set('_dbpedia_dav_', '1');
+
+	    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/dbpedia/sql/dbpedia_local.sql', 0, 'report', $ISDAV$);
+	    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/dbpedia/sql/dbpedia_init.sql', 0, 'report', $ISDAV$);
+	    DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/dbpedia/sql/description.sql', 0, 'report', $ISDAV$);
+
+	    RDFS_RULE_SET ('http://dbpedia.org/resource/inference/rules/dbpedia#', 'http://dbpedia.org/resource/classes#');
+	    RDFS_RULE_SET ('http://dbpedia.org/resource/inference/rules/umbel#', 'http://dbpedia.org/resource/classes/umbel#');
+	    RDFS_RULE_SET ('http://dbpedia.org/resource/inference/rules/yago#', 'http://dbpedia.org/resource/classes/yago#');
+	    RDFS_RULE_SET ('http://dbpedia.org/resource/inference/rules/opencyc#', 'http://dbpedia.org/resource/classes/opencyc#');
+	    RDFS_RULE_SET ('http://dbpedia.org/schema/property_rules#', 'http://dbpedia.org/schema/property_rules#');
+	    RDFS_RULE_SET ('http://www.ontologyportal.org/inference/rules/SUMO#', 'http://www.ontologyportal.org/SUMO#');
+	    RDFS_RULE_SET ('http://www.ontologyportal.org/inference/rules/WordNet#', 'http://www.ontologyportal.org/WordNet#');
+	    ]]>
+	</sql>
+	<sql purpose='pre-uninstall'>
+	    <![CDATA[
+	    ;
+	    ]]>
+	</sql>
+    </ddls>
+    <resources>
+	<!-- Main -->
+	<file type="$TYPE$" source_uri="sql/*.sql" target_uri="dbpedia/" />
+	<file type="$TYPE$" source_uri="vsp/*.vsp" target_uri="dbpedia/$f$" />
+	<file type="$TYPE$" source_uri="css/*.css" target_uri="dbpedia/statics/" />
+	<file type="$TYPE$" source_uri="images/*" target_uri="dbpedia/statics/" />
+	<file type="$TYPE$" source_uri="fonts/*" target_uri="dbpedia/statics/" />
+	<file type="$TYPE$" source_uri="js/*.js" target_uri="dbpedia/statics/" />
+    </resources>
+    <registry>
+    </registry>
+</sticker>
