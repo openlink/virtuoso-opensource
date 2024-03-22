@@ -567,7 +567,7 @@ page_write_queue_add (buffer_desc_t * buf, it_cursor_t * itc)
   ITC_KEY_INC (itc, key_write_wait);
   TC (tc_write_wait);
   if (!buf->bd_being_read && buf->bd_is_write && !buf->bd_iq && buf->bd_buffer && DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS))
-    log_error ("Write wait on column page %d.  Waits should be on the index leaf page, except when col page is held for read by background write", buf->bd_page);
+    log_debug ("Write wait on column page %d.  Waits should be on the index leaf page, except when col page is held for read by background write", buf->bd_page);
   itc->itc_thread = THREAD_CURRENT_THREAD;
   while (*last)
     last = &((*last)->itc_next_waiting);
@@ -581,7 +581,8 @@ page_read_queue_add (buffer_desc_t * buf, it_cursor_t * itc)
   TC (tc_read_wait);
   ASSERT_IN_MTX (&IT_DP_MAP (buf->bd_tree, buf->bd_page)->itm_mtx);
   ITC_KEY_INC (itc, key_read_wait);
-  if (!buf->bd_being_read && buf->bd_buffer && DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS)) log_error ("Read wait on column page %d.  Waits should be on the index leaf page", buf->bd_page);
+  if (!buf->bd_being_read && buf->bd_buffer && DPF_COLUMN == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    log_debug ("Read wait on column page %d.  Waits should be on the index leaf page", buf->bd_page);
   itc->itc_thread = THREAD_CURRENT_THREAD;
   itc->itc_next_waiting = buf->bd_read_waiting;
   buf->bd_read_waiting = itc;
