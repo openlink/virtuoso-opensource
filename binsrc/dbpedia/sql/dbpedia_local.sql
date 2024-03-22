@@ -526,3 +526,58 @@ DB.DBA.VHOST_DEFINE ( lhost=>'*ini*', vhost=>'*ini*', lpath=>'/sparql', ppath=>'
     opts=>vector ('browse_sheet', '', 'noinherit', 'yes', 'cors', '*', 'cors_restricted', 0),
     is_default_host=>0);
 
+
+-- VoID VDs
+DB.DBA.VHOST_REMOVE (lpath=>'/void/data');
+DB.DBA.VHOST_DEFINE (lpath=>'/void/data', ppath=>registry_get('_dbpedia_path_'), is_dav=>atoi (registry_get('_dbpedia_dav_')),
+        vsp_user=>'dba', opts=>vector ('url_rewrite', 'dbpl_void_data_rule_list'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_void_data_rule_list', 1, vector ('dbpl_void_data_rule_1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_data_rule_1', 1, '/void/data/(.*)\\.(n3|rdf|ttl)', vector ('par_1', 'fmt'), 1,
+'/sparql?default-graph-uri=http%%3A%%2F%%2F'||replace(registry_get('dbp_graph'),'http://','')||'%%2Fvoid%%2F&query='||dbp_gen_describe('void')||'&format=%U',
+vector ('par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'par_1', 'fmt'), NULL, NULL, 2, null, '');
+
+-- HTML
+DB.DBA.VHOST_REMOVE (lpath=>'/void/page');
+DB.DBA.VHOST_DEFINE (lpath=>'/void/page', ppath=>registry_get('_dbpedia_path_'), is_dav=>atoi (registry_get('_dbpedia_dav_')),
+        opts=>vector ('url_rewrite', 'dbpl_void_page_rule_list'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_void_page_rule_list', 1, vector ('dbpl_void_page_rule_1'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_page_rule_1', 1, '/void/page/(.*)', vector ('par_1'), 1,
+registry_get('_dbpedia_path_')||'description.vsp?res=%%2Fvoid%%2F%U', vector ('par_1'), NULL, NULL, 0, 0, '');
+
+
+-- IRIs
+DB.DBA.VHOST_REMOVE (lpath=>'/void');
+DB.DBA.VHOST_DEFINE (lpath=>'/void', ppath=>'/', is_dav=>0, def_page=>'', opts=>vector ('url_rewrite', 'dbpl_void_rule_list'));
+
+DB.DBA.URLREWRITE_CREATE_RULELIST ( 'dbpl_void_rule_list', 1,
+    vector ('dbpl_void_rule_1', 'dbpl_void_rule_2', 'dbpl_void_rule_3', 'dbpl_void_rule_4'));
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_rule_1', 1, '/void/(.*)\x24', vector ('par_1'), 1,
+    '/void/page/%s', vector ('par_1'), NULL, NULL, 2, 303, NULL);
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_rule_2', 1, '/void/(.*)\x24', vector ('par_1'), 1,
+    '/void/data/%s.rdf', vector ('par_1'), NULL, 'application/rdf.xml', 2, 303, 'Content-Type: application/rdf+xml');
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_rule_3', 1, '/void/(.*)\x24', vector ('par_1'), 1,
+    '/void/data/%s.n3', vector ('par_1'), NULL, 'text/rdf.n3', 2, 303, 'Content-Type: text/rdf+n3');
+DB.DBA.URLREWRITE_CREATE_REGEX_RULE ( 'dbpl_void_rule_4', 1, '/void/(.*)\x24', vector ('par_1'), 1,
+    '/void/data/%s.n3', vector ('par_1'), NULL, 'application/x-turtle', 2, 303, 'Content-Type: application/x-turtle');
+
+
+TTLP (
+'
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+
+<http://dbpedia.org/ontology/deathPlace> owl:equivalentProperty <http://dbpedia.org/property/deathPlace> .
+<http://dbpedia.org/ontology/deathDate> owl:equivalentProperty <http://dbpedia.org/property/death> .
+<http://dbpedia.org/ontology/birthPlace> owl:equivalentProperty <http://dbpedia.org/property/birthPlace> .
+<http://dbpedia.org/ontology/birthDate> owl:equivalentProperty <http://dbpedia.org/property/birth> .
+<http://xmlns.com/foaf/0.1/givenName> owl:equivalentProperty <http://xmlns.com/foaf/0.1/givenname> .
+<http://purl.org/dc/terms/subject> owl:equivalentProperty <http://www.w3.org/2004/02/skos/core#subject> .
+<http://dbpedia.org/ontology/wikiPageID> owl:equivalentProperty <http://dbpedia.org/property/pageId> .
+<http://dbpedia.org/ontology/wikiPageRevisionID> owl:equivalentProperty <http://dbpedia.org/property/revisionId> .
+<http://dbpedia.org/ontology/wikiPageWikiLink> owl:equivalentProperty <http://dbpedia.org/property/wikilink> .
+<http://dbpedia.org/ontology/wikiPageExternalLink> owl:equivalentProperty <http://dbpedia.org/property/reference> .
+<http://dbpedia.org/ontology/wikiPageRedirects> owl:equivalentProperty <http://dbpedia.org/property/redirect> .
+<http://dbpedia.org/ontology/wikiPageDisambiguates> owl:equivalentProperty <http://dbpedia.org/property/disambiguates> .
+', '', 'http://dbpedia.org/schema/property_rules#');
+
