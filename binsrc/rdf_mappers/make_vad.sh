@@ -523,12 +523,12 @@ directory_clean
 directory_init
 version_init
 sticker_init 1
-sticker_init 0
+#sticker_init 0
 virtuoso_init
-vad_create $STICKER_FS $VAD_NAME_DEVEL
+#vad_create $STICKER_FS $VAD_NAME_DEVEL
 vad_create $STICKER_DAV $VAD_NAME_RELEASE
 virtuoso_shutdown
-chmod 644 $VAD_NAME_DEVEL
+#chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
 
 CHECK_LOG

@@ -28,7 +28,7 @@ LANG=C
 LC_ALL=POSIX
 export LANG LC_ALL
 
-MODE=$1
+MODE=${1:-1}
 LOGDIR=`pwd`
 VERSION="1.0.0"
 LOGFILE="${LOGDIR}/vad_make.log"

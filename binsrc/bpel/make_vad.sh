@@ -690,11 +690,11 @@ directory_init
 virtuoso_init
 version_init
 sticker_init 1
-sticker_init 0
-vad_create $STICKER_FS $VAD_NAME_DEVEL
+#sticker_init 0
+#vad_create $STICKER_FS $VAD_NAME_DEVEL
 vad_create $STICKER_DAV $VAD_NAME_RELEASE
 virtuoso_shutdown
-chmod 644 $VAD_NAME_DEVEL
+#chmod 644 $VAD_NAME_DEVEL
 chmod 644 $VAD_NAME_RELEASE
 directory_clean
 
