@@ -1058,18 +1058,9 @@ cfg_setup (void)
     sqlo_compiler_exceeds_run_factor = 0;
 
   if (cfg_getsize (pconfig, section, "MaxMemPoolSize", &size_t_helper) == -1)
-    sqlo_max_mp_size = 200000000;
+    sqlo_max_mp_size = 400000000;
   else
-    sqlo_max_mp_size = size_t_helper;
-#ifdef POINTER_64
-  if (sqlo_max_mp_size >= 0x40000000)
-    sqlo_max_mp_size = INT32_MAX;
-  else
-    sqlo_max_mp_size *= 2;
-#endif
-
-  if (sqlo_max_mp_size != 0 && sqlo_max_mp_size < 5000000)
-    sqlo_max_mp_size = 5000000;
+    sqlo_max_mp_size = size_t_helper > 0 ? MAX(size_t_helper, 400000000) : 0; /* unlimited or 400m min */
 
  if (cfg_getlong (pconfig, section, "MaxSparqlMemPoolSize", &c_mp_sparql_cap) == -1)
    c_mp_sparql_cap = -1;
