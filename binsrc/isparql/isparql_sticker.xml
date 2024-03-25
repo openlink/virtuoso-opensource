@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="ASCII"?>
+<!DOCTYPE sticker SYSTEM "vad_sticker.dtd">
+<sticker version="1.0.010505A" xml:lang="en-UK">
+    <caption>
+        <name package="iSPARQL">
+            <prop name="Title" value="iSPARQL"/>
+            <prop name="Developer" value="OpenLink Software"/>
+            <prop name="Copyright" value="(C) 1998-2024 OpenLink Software"/>
+            <prop name="Download" value="http://www.openlinksw.com/virtuoso"/>
+            <prop name="Download" value="http://www.openlinksw.co.uk/virtuoso"/>
+        </name>
+        <version package="$VERSION$">
+            <prop name="Release Date" value="$PACKDATE$" />
+            <prop name="Build" value="Release, optimized"/>
+        </version>
+    </caption>
+    <dependencies>
+    </dependencies>
+    <procedures uninstallation="supported">
+        <sql purpose="pre-install"></sql>
+        <sql purpose="post-install"></sql>
+    </procedures>
+    <ddls>
+        <sql purpose="pre-install">
+            <![CDATA[
+            if (lt (sys_stat ('st_dbms_ver'), '$NEED_VERSION$'))
+            {
+                result ('ERROR', 'The iSPARQL package requires server version $NEED_VERSION$ or greater');
+                signal ('FATAL', 'The iSPARQL package requires server version $NEED_VERSION$ or greater');
+            }
+            ]]>
+        </sql>
+        <sql purpose="post-install">
+            <![CDATA[
+            DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/iSPARQL/sql/setup.sql',1,'report', $ISDAV$);
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');
+            DB.DBA.VHOST_DEFINE (lpath=>'/isparql/', ppath=>'$BASE_PATH$/iSPARQL/', vsp_user=>'dba', is_dav=>$ISDAV$, def_page=>'index.html');
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/view/');
+            DB.DBA.VHOST_DEFINE (lpath=>'/isparql/view/', ppath=>'$BASE_PATH$/iSPARQL/', vsp_user=>'dba', is_dav=>$ISDAV$, is_brws=>0, def_page=>'execute.html');
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/defaults/');
+            DB.DBA.VHOST_DEFINE (lpath=>'/isparql/defaults/', ppath=>'$BASE_PATH$/iSPARQL/', vsp_user=>'dba', is_dav=>$ISDAV$, is_brws=>0, def_page=>'defaults.vsp');
+            ]]>
+        </sql>
+        <sql purpose="pre-uninstall">
+            <![CDATA[
+            DB.DBA.VAD_LOAD_SQL_FILE('$BASE_PATH$/iSPARQL/sql/drop.sql',1,'report',$ISDAV$);
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/');
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/view/');
+            DB.DBA.VHOST_REMOVE (lpath=>'/isparql/defaults/');
+            ]]>
+        </sql>
+    </ddls>
+    <resources>
+        <file type="$TYPE$" source_uri="*.html" target_uri="iSPARQL/" />
+        <file type="$TYPE$" source_uri="*.vsp" target_uri="iSPARQL/" />
+	<file type="$TYPE$" source_uri="images/*" target_uri="iSPARQL/" />
+	<file type="$TYPE$" source_uri="js/*.js" target_uri="iSPARQL/" />
+	<file type="$TYPE$" source_uri="sql/*.sql" target_uri="iSPARQL/" />
+	<file type="$TYPE$" source_uri="styles/*.css" target_uri="iSPARQL/" />
+	<file type="$TYPE$" source_uri="xslt/*.csl" target_uri="iSPARQL/" />
+
+	<!-- OAT Toolkit -->
+	<file type="$TYPE$" source_uri="../oat/images/*" target_uri="iSPARQL/toolkit/images/$f$" />
+	<file type="$TYPE$" source_uri="../oat/images/markers/*" target_uri="iSPARQL/toolkit/images/markers/$f$" />
+	<file type="$TYPE$" source_uri="../oat/styles/*.css" target_uri="iSPARQL/toolkit/styles/$f$" />
+	<file type="$TYPE$" source_uri="../oat/styles/*.htc" target_uri="iSPARQL/toolkit/styles/$f$" />
+	<file type="$TYPE$" source_uri="../oat/toolkit/*.js" target_uri="iSPARQL/toolkit/$f$" />
+	<file type="$TYPE$" source_uri="../oat/xslt/*" target_uri="iSPARQL/toolkit/xslt/$f$" />
+    </resources>
+    <registry>
+    </registry>
+</sticker>
