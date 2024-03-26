@@ -120,6 +120,7 @@
                     </a>
                   </span>
                   <br/>
+                  <?vsp if (not isnull (VAD_CHECK_VERSION ('VAL'))) { ?>
                   <label>
                     <v:check-box name="rdf_use" value="1" xhtml_id="rdf_use">
                       <v:before-data-bind>
@@ -180,6 +181,7 @@
                       </a>
                     </span>
                   </div>
+                  <?vsp } ?>
                   <br /><br />
                   <v:button action="simple" name="save1" value="Save Settings">
                     <v:on-post>
@@ -207,6 +209,8 @@
 
                         declare cartridge_acl_mode varchar;
                         cartridge_acl_mode := get_keyword ('choice_cartridge_acl_mode', control.vc_page.vc_event.ve_params);
+			if (VAD_CHECK_VERSION ('VAL') is null)
+			  cartridge_acl_mode := 'none';
                         self.cartridge_acl_mode := cartridge_acl_mode;
                         registry_set ('__sponger_cartridge_acl_mode__', cartridge_acl_mode);
 
