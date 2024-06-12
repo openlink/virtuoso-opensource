@@ -2,25 +2,25 @@
 
 ## June 10, 2024, v7.2.13:
   * Virtuoso Engine
-	- Added safe logical_* bif names
-	- Fixed issues with clang 15 and newer compilers
+	- Added safe `logical_*` bif names
+	- Fixed issues with `clang` 15 and newer compilers
 	- Fixed issues reported by link time optimizer (LTO)
 	- Fixed 'Read/Write wait on column page...' should be debug messages
 	- Fixed various missing BIF functions argument checks
 	- Fixed issue with cube/rollup 
-	- Fixed issue with bad date/time artithmetics
+	- Fixed issue with bad date/time arithmetics
 	- Fixed issue getting client status during swapping or www maintenance
 	- Fixed issue collecting freetext stats during checkpoint
 	- Fixed issue on rehash if `dict_put` is used in select list
-    - Fixed issue with MaxMemPoolSize
+	- Fixed issue with `MaxMemPoolSize`
 	- Fixed put MD5 context on connection global (fixes #1287)
-	- Fixed issue with hash in group by (fixes #1285)
+	- Fixed issue with hash in `group by` (fixes #1285)
 	- Fixed missing sz check (fixes #1283)
-	- Fixed length calculation in REPEAT (fixes #1282)
+	- Fixed length calculation in `REPEAT` (fixes #1282)
 	- Fixed offset overflow (fixes #1281)
 	- Fixed issue trying to normalize an invalid numeric (fixes #1279)
 	- Fixed unfolded bifs have to have serial to distinguish separate calls (fixes #1276)
-	- Fixed 64bit arith overflow (fixes #1270)
+	- Fixed 64-bit arith overflow (fixes #1270)
 	- Fixed missing check for star (fixes #1269)
 	- Fixed set dc type on grouping sets (Fixed #1268)
 	- Fixed check num cols in union branches when subq non-terminal is used (fixes #1267)
@@ -32,7 +32,7 @@
 	- Fixed memcopy buffer overflow (fixes #1259)
 	- Fixed missing stack overflow check (fixes #1258)
 	- Fixed alloc double dep on demand as as int (fixes #1257)
-	- Fixed vec input should be declared as boxed i.e. array (fixes #1254)
+	- Fixed vec input should be declared as boxed, i.e., array (fixes #1254)
 	- Fixed ambiguous subq return (fixes #1253)
 	- Fixed issue with non-string copy (fixes #1252)
 	- Fixed missing check for const in predicate (fixed #1251)
@@ -40,9 +40,9 @@
 	- Fixed issue on any ssl w/h nulls (fixes #1249)
 	- Fixed issue with bad index op ref in table dft (fixes #1245)
 	- Fixed small issues with `sql_to_c.awk` script (fixes #1244)
-	- Fixed issue with join and order by on null result (fixes #1241)
+	- Fixed issue with `join` and `order by` on null result (fixes #1241)
 	- Fixed issue freeing n-way nic arrays
-    - Fixed issue building Windows binaries
+	- Fixed issue building Windows binaries
 	- Fixed memory leak
 
   * SPARQL
@@ -68,7 +68,7 @@
     - Fixed missing check for optional table
     - Fixed issue when initialization of snapshot fails
     - Fixed issue with wrong vad file path during vad install
-    - Fixed save CORs via WS wizard duplicate cors options
+    - Fixed save CORS via WS wizard duplicate cors options
     - Fixed preserve qualifier when updating trigger
     - Fixed missing condition for sponger settings
     - Fixed constrain site-name field to non-space characters only
@@ -82,91 +82,91 @@
 
   * Virtuoso Engine
     - Added JSON-LD parser mode for handling blank nodes
-    - Added serialization support for missing datatypes in obj2json
+    - Added serialization support for missing datatypes in `obj2json`
     - Added statistics and setting to limit mem pool for chash
     - Added support for dumping `XML` and `varbinary` data in JSON
     - Added support for fetching `attributes` and `attributes_info` on user defined types
     - Added `create user .. with password` and `identified by` syntax
-    - Added uptime, virtual memory size, and page faults to status() output
+    - Added uptime, virtual memory size, and page faults to `status()` output
     - Updated CSV functionality
-    - Fixed NaN behaviour in cmp_double same as ordering (fixes #1213)
-    - Fixed check constraint cannot use CONTAINS text predicate (fixes #1177)
+    - Fixed NaN behaviour in `cmp_double` same as ordering (fixes #1213)
+    - Fixed check constraint cannot use `CONTAINS` text predicate (fixes #1177)
     - Fixed check for date/time/datetime/timestamp datatypes (fixes #1206)
     - Fixed check for table def (fixes #1212)
     - Fixed check if prev has a key (fixes #1216)
     - Fixed check number of arguments to geo contains (fixes #1209)
     - Fixed check values before copying invalid data (fixes #1208)
-    - Fixed get argument before place gets mangled when serializing ANY (fixes #1174)
-    - Fixed issue getting lock information for status()
+    - Fixed get argument before place gets mangled when serializing `ANY` (fixes #1174)
+    - Fixed issue getting lock information for `status()`
     - Fixed issue mixing numeric and int boxes in expression (fixes #1194, #1198)
     - Fixed issue mixing vectored and non vectored ops (fixes #1184)
-    - Fixed issue on cube/rollup with constant in select list (fixes #1195, #1197)
-    - Fixed issue right outer join with constant false (fixes #1214)
+    - Fixed issue on cube/rollup with constant in `select` list (fixes #1195, #1197)
+    - Fixed issue `right outer join` with constant false (fixes #1214)
     - Fixed issue skipping sort node on outer as hash join may put right side at top
     - Fixed issue when hash source is not available (fixes #1193)
-    - Fixed issue with TOP 1 on a cursor
-    - Fixed issue with TOP not working when DISTINCT is used (fixes #1158)
+    - Fixed issue with `TOP 1` on a cursor
+    - Fixed issue with `TOP` not working when `DISTINCT` is used (fixes #1158)
     - Fixed issue with all const in group (fixes #1204)
     - Fixed issue with bad index op ref in table dft (fixes #1190, #1191)
-    - Fixed issue with freetext index; missing check if term is mergable
+    - Fixed issue with freetext index; missing check if term is mergeable
     - Fixed issue with function inside control expression
     - Fixed issue with missing cast on return type (fixes #1172)
     - Fixed issue with outer hash build (fixes #1185)
-    - Fixed issue with outer hash join with GROUP BY via hash source
-    - Fixed issue with printf style functions not using explicit format string (fixes #1199)
+    - Fixed issue with outer hash join with `GROUP BY` via hash source
+    - Fixed issue with `printf` style functions not using explicit format string (fixes #1199)
     - Fixed issue with scalar subq (fixes #1183)
-    - Fixed issue with select (select ... union ...) or similar expressions
+    - Fixed issue with `select (select ... union ...)` or similar expressions
     - Fixed issue with setting type before col assign function (fixes #1178)
     - Fixed issue with sql fragment that has div operation
-    - Fixed issue with status for non dba user
+    - Fixed issue with status for non `dba` user
     - Fixed issue with user aggregates
     - Fixed issue with with dfe true/false shortcuts (fixes #1196)
-    - Fixed issues in orderby/groupby (fixes #1210)
+    - Fixed issues in `ORDER BY` and `GROUP BY` (fixes #1210)
     - Fixed issues with unix timestamp
-    - Fixed missing argument check to ORDER BY and GROUP BY (fixed #1182)
+    - Fixed missing argument check to `ORDER BY` and `GROUP BY` (fixed #1182)
     - Fixed missing check for freetext field (fixes #1220)
-    - Fixed obj2json and obj2xml should be public functions
+    - Fixed `obj2json` and `obj2xml` should be public functions
     - Fixed remove duplicate keys in oby/gby (fixes #1205)
-    - Fixed sprintf format for windows (fixes #1203)
+    - Fixed `sprintf` format for windows (fixes #1203)
 
   * SPARQL
-    - Added support for GRAPH decorations in TriG (fixes #1169)
+    - Added support for `GRAPH` decorations in TriG (fixes #1169)
     - Fixed issue in ontology generation
     - Fixed issue with drop quad map graph
     - Fixed issue with restriction on number of deleted triples (fixes #1164)
     - Fixed issue with turtle/n-triples media type legacy and recent spec. compatibility (fixes #1187)
-    - Fixed issue with very long sparql queries
+    - Fixed issue with very long SPARQL queries
     - Fixed issues with `Default Graph IRI` from table `SYS_SPARQL_HOSTS` (fixes #1086)
-    - Fixed `virtrdf:Geometry` should be replaced with wktLiteral (fixes #806)
+    - Fixed `virtrdf:Geometry` should be replaced with `wktLiteral` (fixes #806)
 
   * Web Server and DAV
-    - Added HTTP CORs pattern support
+    - Added HTTP CORS pattern support
     - Added support to avoid redundant check for 401 handlers
     - Added support for Azure Storage Account as a DET mounting option
-    - Added support for Access-Control-Allow-Methods different than Allow, for AJAX CORs
+    - Added support for Access-Control-Allow-Methods different than Allow, for AJAX CORS
     - Added `security_realm` to access realm from VD
     - Added support for ping/pong for websock
     - Added support for binary frames in websocket
     - Fixed FS directory browsing does not need SQL/VSP user account
     - Fixed HTTP 101/204/304 responses MUST not return content
-    - Fixed LDP sparql queries delete/insert should search physical graph only
+    - Fixed LDP SPARQL queries `delete`/`insert` should search physical graph only
     - Fixed check DET HTTP status code
     - Fixed check for missing graph
-    - Fixed clear http method at session cleanup
-    - Fixed do not use gzip if no content is allowed
-    - Fixed http log records partial request over 4k
+    - Fixed clear HTTP method at session cleanup
+    - Fixed do not use `gzip` if no content is allowed
+    - Fixed HTTP log records partial request over 4k
     - Fixed issue checking `is_https` on websocket
     - Fixed issue getting dtp in rdf box case
     - Fixed issue when ODS is not installed
-    - Fixed issue when response is chunked/gzip by app
+    - Fixed issue when response is chunked/gzipped by app
     - Fixed issue with `DAV_LINK` double escape UTF-8
-    - Fixed issue with bad Accept header
+    - Fixed issue with bad `Accept` header
     - Fixed issue with double free
     - Fixed issue with updating permissions on wiki
     - Fixed issues with encoding of DAV URLs
     - Fixed websocket error message indicating what frame type is
     - Fixed websocket framing on text messages
-    - Fixed missing entry for .md text/markdown
+    - Fixed missing entry for `.md` text/markdown
 
   * Faceted Browser
     - Fixed grants must be added to `SPARQL_SELECT` role
@@ -184,7 +184,7 @@
 
   * R2RML
     - Added quap map iri parameter
-    - Fixed rr:template by default is IRI unless column, dt or lang are given
+    - Fixed `rr:template` by default is IRI unless column, dt, or lang is given
     - Fixed complete table name before quoting
     - Fixed case to ucase for case insensitive lookup
     - Fixed issue with column CaSeMoDe
@@ -197,20 +197,20 @@
 
   * Virtuoso Engine
     - Added log info on manual enable/disable scheduler and checkpoint intervals
-    - Added sprintf format %[xx]s for registry settings
-    - Added CPU% and RSS usage to status() output
-    - Added BIF jsonld_ctx_to_dict
-    - Added input state in explain output where missing
-    - Fixed issue with SPARQL UUID() function (fixes #515)
-    - Fixed missing grant from SPARQL_UPDATE role (fixes #1152)
-    - Fixed issue with DROP TABLE/VIEW not checking target
+    - Added sprintf format `%[xx]s` for registry settings
+    - Added CPU% and RSS usage to `status()` output
+    - Added BIF `jsonld_ctx_to_dict`
+    - Added input state in `explain` output where missing
+    - Fixed issue with SPARQL `UUID()` function (fixes #515)
+    - Fixed missing grant from `SPARQL_UPDATE` role (fixes #1152)
+    - Fixed issue with `DROP TABLE/VIEW` not checking target
     - Fixed issue when copying constants in union
     - Fixed several issues in json parser
-    - Fixed issue with get_keyword with soap options vector
+    - Fixed issue with `get_keyword` with soap options vector
     - Fixed issue with chash on many threads
     - Fixed issue with lang matches
     - Fixed issue loading graphql plugin with musl C library
-    - Fixed do not replace trx log prefix with CHECKPOINT command
+    - Fixed do not replace trx log prefix with `CHECKPOINT` command
     - Fixed small typos in documentation and error messages
 
   * SPARQL
@@ -219,16 +219,16 @@
     - Fixed issue with heterogeneous data column leading to range assert
     - Fixed issue reusing boxes
     - Fixed RDF quad sanity check for 'O' column
-    - Fixed entities in /sparql UI for maximum X(HT)ML compatibility
+    - Fixed entities in `/sparql` UI for maximum X(HT)ML compatibility
 
   * Web Server and DAV
-    - Added option http_options_no_exec for http virtual path
-    - Added support for Content-Security-Policy header
-    - Added optional base url to http_xslt function as 3rd parameter
-    - Fixed issues mixing valid and invalid MIME types in Accept header
-    - Fixed issue writing log on delete/put/patch etc
+    - Added option `http_options_no_exec` for http virtual path
+    - Added support for `Content-Security-Policy` header
+    - Added optional base url to `http_xslt` function as 3rd parameter
+    - Fixed issues mixing valid and invalid MIME types in `Accept` header
+    - Fixed issue writing log on `delete`, `put`, `patch`, etc.
     - Fixed missing entry for JSON-LD in RDF DET
-    - Fixed issue with missing href in PROPPATCH response
+    - Fixed issue with missing href in `PROPPATCH` response
     - Fixed issue with base64 decode and trailing zeroes
     - Fixed issue with dead http session
 
@@ -242,52 +242,52 @@
 
   * Virtuoso Engine
     - Added checkpoint to end of online backup
-    - Added support for IF EXISTS and IF NOT EXISTS in ALTER TABLE
-    - Added support for DROP TYPE .... IF EXISTS
-    - Added support for bulkloading .jsonld and .jsonld.gz files
+    - Added support for `IF EXISTS` and `IF NOT EXISTS` in `ALTER TABLE`
+    - Added support for `DROP TYPE .... IF EXISTS`
+    - Added support for bulkloading `.jsonld` and `.jsonld.gz` files
     - Added new testsuite entries for recent fixes
     - Fixed missing escape of identifiers in log replay
     - Fixed issue if original dfe not there; see error in optimizer
     - Fixed issue with transaction mutex inside checkpoint
-    - Fixed obj2json output should be canonical
+    - Fixed `obj2json` output should be canonical
     - Fixed issue in short-circuit evaluation (fixes #777)
     - Fixed compare only up to cha key parts (fixes #1117)
     - Fixed missing arguments in table def (fixes #1118)
     - Fixed expand column list during parsing (fixes #1119)
     - Fixed missing check for max number of key parts (fixes #1120)
     - Fixed missing reuse check for dv bin (fixes #1121)
-    - Fixed 64bit arith exception (fixes #1122)
-    - Fixed 64bit arith overflow (fixes #1123)
-    - Fixed do not change col_dtp if already set before (fixes #1124)
+    - Fixed 64-bit arith exception (fixes #1122)
+    - Fixed 64-bit arith overflow (fixes #1123)
+    - Fixed do not change `col_dtp` if already set before (fixes #1124)
     - Fixed save/restore temp refs (fixes #1127)
-    - Fixed issue using case/when inside arg simple functions like min/max/count fixes #1128)
+    - Fixed issue using `case`/`when` inside arg simple functions like `min`/`max`/`count` fixes #1128)
     - Fixed handling of aliases in output (fixes #1129)
     - Fixed cannot add non-null column to existing data (fixes #1130)
     - Fixed check number of values vs cols when inserting into view (fixes #1134)
-    - Fixed missing check for table in positioned delete (fixes #1135)
+    - Fixed missing check for table in positioned `delete` (fixes #1135)
     - Fixed non-terminal in union branch is not supported (fixes #1136)
     - Fixed missing check if column exists (fixes #1137)
-    - Fixed missing check for non-terminals in WITH DATA (fixes #1138)
-    - Fixed wrap unions etc. if non-select for EXISTS ( subq ) (fixes #1139)
-    - Fixed first argument of CONTAINS() cannot be star (fixes #1140)
+    - Fixed missing check for non-terminals in `WITH DATA` (fixes #1138)
+    - Fixed wrap unions, etc., if non-select for `EXISTS` ( subq ) (fixes #1139)
+    - Fixed first argument of `CONTAINS()` cannot be star (`*`) (fixes #1140)
     - Fixed missing variable declaration (fixes #1148)
     - Fixed small memory leaks
 
   * SPARQL
     - Backported duration and interval fixes to v7 engine (fixes #1147)
     - Added N-QUADS support for SPARQL CRUD using REST (fixes #1142)
-    - Added option to limit number of triples in a SPARQL CONSTRUCT query
+    - Added option to limit number of triples in a SPARQL `CONSTRUCT` query
     - Fixed issue deleting strings with language tag (Fixes #1055)
-    - Fixed IRI patterns for SPARQL LOAD SERVICE (fixes #879)
+    - Fixed IRI patterns for SPARQL `LOAD SERVICE` (fixes #879)
     - Fixed issues with Turtle 1.1 parser (fixes #1059)
     - Fixed rdf_regex is set to work with UTF-8 by default (fixes #705)
-    - Fixed suppress errors on loading even for wktLiterals, just like dates/integer types etc.
+    - Fixed suppress errors on loading even for `wktLiterals`, just like `dates`, integer types, etc.
     - Fixed small SPARQL UI issues
 
   * Web Server and DAV
-    - Added function to return the current HTTP status code 20x/30x/40x etc. or NULL if not set
+    - Added function to return the current HTTP status code `20x`, `30x`, `40x`, etc., or `NULL` if not set
     - Fixed HTTPS accept timeout
-    - Fixed issue with client_protocol mode
+    - Fixed issue with `client_protocol` mode
     - Fixed issue with TCN
     - Fixed issues with SOAP endpoint
 
@@ -295,7 +295,7 @@
     - Added support for showing custom datatypes (fixes #963)
     - Fixed issues truncating lists using '>>more>>'
     - Fixed show language when available
-    - Fixed issue generating labels in urilbl_ac_init_db
+    - Fixed issue generating labels in `urilbl_ac_init_db`
     - Fixed file permissions in VAD packages
 
   * Conductor
@@ -315,7 +315,7 @@ posts, plus enhancements to the existing
 
   * Virtuoso Engine
     - Added new JSON-LD parser
-    - Added IRI validation bif: functions
+    - Added IRI validation `bif:` functions
     - Added `GIT SHA1` signature to status and log output
     - Added current value of backup prefix to status report
     - Added option for soft `CHECKPOINT`, i.e., only perform a `CHECKPOINT` when the server is in idle state
@@ -341,7 +341,7 @@ posts, plus enhancements to the existing
     - Fixed issue with explicit datatype of literal class; must cast value to a string
     - Fixed issue with label insert when using `with_delete`
     - Fixed issue with literals that have both `LANG` & `TYPE`
-    - Fixed issue with load get:accept pragma
+    - Fixed issue with load `get:accept` pragma
     - Fixed issue with permissions; users with `SPARQL_SELECT` role can now use REST interface
     - Fixed issue with serialization when `datatype` is missing, or `lang` is an empty string
     - Fixed issue with unnamed result from view
