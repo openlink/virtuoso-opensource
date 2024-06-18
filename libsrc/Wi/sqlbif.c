@@ -3392,8 +3392,8 @@ bif_trim (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #define DV_STRING_MAYBE_UTF8(a) (BF_UTF8 == box_flags(a) || BF_IRI == box_flags(a))
 
-/* Modified by AK 29-OCT-1997 to skip all NULL arguments (i.e.
-   the result being exactly like they were empty strings "") */
+/* Modified by AK 29-OCT-1997 to skip all NULL arguments (i.e.,
+   the result is exactly as if they were empty strings "") */
 caddr_t
 bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 {
@@ -3420,12 +3420,12 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	case DV_STRING:
 	case DV_UNAME:
 	  len += box_length (a) - 1;
-	  if (DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8 so we try */
+	  if (DV_STRING_MAYBE_UTF8 (a))	/* the IRIs may be UTF-8, so we try */
 	    {
 	      size_t wide_len = wide_char_length_of_utf8_string (a, box_length (a) - 1);
 	      if (wide_len >= 0)
 		wlen += wide_len;
-	      else		/* in case utf8 is not a proper sequence, then gigo, we set flag here and do not try converting below */
+	      else		/* if it is not a proper UTF-8 sequence, then GIGO, so we set flag here, and do not try converting below */
 		{
 		  if (NULL == cast_args)
 		    cast_args = dk_alloc_list_zero (n_args);
@@ -3480,7 +3480,7 @@ bif_concat (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	    default:
 	      {
 		char save = qi->qi_no_cast_error;
-		qi->qi_no_cast_error = 0;	/* concat may get vector as input, this is not a cast to be done w/o error here */
+		qi->qi_no_cast_error = 0;	/* concat may get vector as input; this cast cannot be done here without error */
 		QR_RESET_CTX
 		{
 		  if (haveWides)
