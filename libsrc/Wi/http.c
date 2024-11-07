@@ -8842,7 +8842,7 @@ http_map_fill_cors_allow_headers (caddr_t option_value)
         }
       if (NULL == ht)
         ht = id_strcase_hash_create (7);
-      if (h[0] != '!' || 0 == stricmp (h, "!ALL")) /* expilicitly added header, or all custom disabled */
+      if (h[0] != '!' || 0 == stricmp (h, "!ALL")) /* explicitly added header, or all custom disabled */
         id_hash_set (ht, (caddr_t) &h, (caddr_t) &one);
       else /* explicitly denied header */
         {
