@@ -2019,9 +2019,9 @@ stat_desc_t dbf_descs [] =
 
 
 /*
- * the following are ptrs of protected system wide params, once are set to a value greater than zero
- * cannot be changed until server is running, also if they written in DB cfg page,
- * cannot be changed even after server restart.
+ * the following are ptrs of protected system wide params: once they are set to a value greater than zero,
+ * they cannot be changed while server is running; also, if they are written in DB cfg page,
+ * they cannot be changed even after server restart.
  */
 static void *
 dbf_protected_params[] = {
