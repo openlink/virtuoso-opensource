@@ -1342,7 +1342,7 @@ cfg_setup (void)
       {
 	v32 = INT32_MAX;
 	if (cfg_getsize (pconfig, section, sd->sd_name, &v) != -1 ||
-	    cfg_getlong (pconfig, section, sd->sd_name, &v32) != -1)	/* this is for cases of negative flags or zero */
+	    cfg_getlong (pconfig, section, sd->sd_name, &v32) != -1)	/* this is for cases of zero or negative flags */
 	  {
 	    if (v32 != INT32_MAX)
 	      v = v32;
