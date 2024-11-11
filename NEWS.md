@@ -2,23 +2,23 @@
 
 ## November 11, 2024, v7.2.14
   * Virtuoso Engine
-    - Added new MaxTempDBPages setting to virtuoso.ini
+    - Added new `MaxTempDBPages` setting to `virtuoso.ini`
     - Fixed issue when out of disk space on temp db
-    - Fixed int32 overflow when `dbs_file_length` is unknown
+    - Fixed `int32` overflow when `dbs_file_length` is unknown
     - Fixed memory leak in X509 cert chain
-    - Fixed compiler errors from -Werror=incompatible-pointer-types (fixes #1312)
-    - Fixed compiler errors from -Werror=logical-not-parentheses
-    - Fixed compiler errors from -Werror=multistatement-macros
+    - Fixed compiler errors from `-Werror=incompatible-pointer-types` (fixes #1312)
+    - Fixed compiler errors from `-Werror=logical-not-parentheses`
+    - Fixed compiler errors from `-Werror=multistatement-macros`
     - Fixed issue with user defined types (UDT)
     - Fixed issue when there are no parts to split
-    - Fixed issue with GROUP BY/ORDER BY on LEFT OUTER JOIN
-    - Fixed issue calling concat(wide, utf8) (fixes #944)
-    - Fixed issue with lenght calculation in `rdf_encode_for_uri()`
+    - Fixed issue with `GROUP BY`/`ORDER BY` on `LEFT OUTER JOIN`
+    - Fixed issue calling `concat(wide, utf8)` (fixes #944)
+    - Fixed issue with length calculation in `rdf_encode_for_uri()`
 
   * SPARQL
-    - Added support for (a relatively small amount of) blank nodes in SPARQL INSERT DATA (fixes #126)
+    - Added support for (a relatively small amount of) blank nodes in SPARQL `INSERT DATA` (fixes #126)
     - Fixed missing `DB.DBA.SPARQL_BINDINGS_VIEW_C_0` for empty solution bindings
-    - Fixed arbitrary XML with CDATA having html tags has MIME re-placed with text/html
+    - Fixed arbitrary XML with CDATA having html tags has MIME replaced with text/html
     - Fixed issue when there are no more inits to skip
     - Fixed key estimate on single only
     - Fixed inc. estimate on transitive with unbound input
@@ -27,31 +27,31 @@
     - Added support to handle websocket 101 connection upgrade in `http_client`
     - Added flag to see if connection session is server or client
     - Added `WSOCK.DBA.WEBSOCKET_CONNECT()` for client operations
-    - Added PUT/DELETE HTTP methods
+    - Added `PUT`/`DELETE` HTTP methods
     - Added support for custom `%T` and `%D` HTTP log format
     - Added flag to encode if API used as websocket client
-    - Fixed issue with "Content-Encoding: gzip" (fixes #1308)
+    - Fixed issue with `"Content-Encoding: gzip"` (fixes #1308)
     - Fixed issue DAV escape; href should escape apos
     - Fixed order of checking SOAP options and parameters
-    - Fixed allow `soap_boolean` to accept null for nullable arguments
+    - Fixed allow `soap_boolean` to accept `null` for nullable arguments
     - Fixed check which options are handled by endpoint
-    - Fixed check defines on rest method for additional http methods allowed
+    - Fixed check defines on REST method for additional HTTP methods allowed
     - Fixed issue with JSON registered REST services
     - Fixed memory leak and error when service sets error status code
-    - Fixed missing SOAP procedure should return 404 'Not Found'
+    - Fixed missing SOAP procedure should return `404 'Not Found'`
     - Fixed missing encode flag
 
   * Faceted Browser
     - Added support for WKT rendition
     - Changed DOCTYPE from XHTML to HTML5
     - Removed `<base>` tag
-    - Removed deprecated charset on stylesheet links
+    - Removed deprecated `charset` on stylesheet links
     - Removed link to W3C XHTML validator
-    - Removed support for AddThis
+    - Removed support for `AddThis`
     - Moved javascript to the end of the page
     - Fixed recommendations from Lighthouse accessibility check
     - Fixed issue with page selector on mobile devices
-    - Fixed make iframe content resizable
+    - Fixed make `iframe` content resizable
 
   * Conductor
     - Fixed issue when filename starts with underscore
@@ -60,7 +60,7 @@
     - Fixed issue with SN DETs errors
 
   * R2RML
-    - Fixed issue with {col}
+    - Fixed issue with `{col}`
 
   * GraphQL
     - Fixed issue with generated names longer than 100 characters
