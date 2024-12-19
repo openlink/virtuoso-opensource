@@ -1,29 +1,32 @@
 # Virtuoso Anytime Query Functionality
-<small>Copyright &copy; 2022-2026 OpenLink Software</small>
 
-- [Introduction](#introduction)
-- [Virtuoso Anytime Query extension for SPARQL](#virtuoso-anytime-query-extension-for-sparql)
-    - [Server-side settings](#server-side-settings)
-    - [Client-side parameter](#client-side-parameter)
-    - [Virtuoso HTTP status codes and response headers](#virtuoso-http-status-codes-and-response-headers)
-        - [HTTP status code 200 OK](#http-status-code-200-ok)
-        - [HTTP status code 206 Partial](#http-status-code-206-partial)
-        - [HTTP status code 400 Bad Request](#http-status-code-400-bad-request)
-        - [HTTP status 500 Server Error](#http-status-500-server-error)
-        - [HTTP status code 504 Gateway Timeout](#http-status-code-504-gateway-timeout)
-- [Virtuoso Anytime Query Functionality & GraphQL Queries](#virtuoso-anytime-query-functionality--graphql-queries)
-- [Virtuoso Anytime Query Functionality for ODBC, JDBC, iSQL or Virtuoso PL Clients](#virtuoso-anytime-query-functionality-for-odbc-jdbc-isql-or-virtuoso-pl-clients)
-    - [Example using Virtuoso iSQL/PL](#example-using-virtuoso-isqlpl)
-    - [Example using SPARQL inside SQL (SPASQL) via iODBC](#example-using-sparql-inside-sql-spasql-via-iodbc)
-- [See Also](#see-also)
+*Copyright (C) 1998-2026 OpenLink Software <vos.admin@openlinksw.com>*
+
+* [Introduction](#introduction)
+* [Virtuoso Anytime Query extension for SPARQL](#virtuoso-anytime-query-extension-for-sparql)
+    * [Server-side settings](#server-side-settings)
+    * [Client-side parameter](#client-side-parameter)
+    * [Virtuoso HTTP status codes and response headers](#virtuoso-http-status-codes-and-response-headers)
+        * [HTTP status code 200 OK](#http-status-code-200-ok)
+        * [HTTP status code 206 Partial](#http-status-code-206-partial)
+        * [HTTP status code 400 Bad Request](#http-status-code-400-bad-request)
+        * [HTTP status 500 Server Error](#http-status-500-server-error)
+        * [HTTP status code 504 Gateway Timeout](#http-status-code-504-gateway-timeout)
+* [Virtuoso Anytime Query functionality & GraphQL queries](#virtuoso-anytime-query-functionality--graphql-queries)
+* [Virtuoso Anytime Query functionality for ODBC, JDBC, iSQL or Virtuoso PL clients](#virtuoso-anytime-query-functionality-for-odbc-jdbc-isql-or-virtuoso-pl-clients)
+    * [Example using Virtuoso iSQL/PL](#example-using-virtuoso-isqlpl)
+    * [Example using SPARQL inside SQL (SPASQL) via iODBC](#example-using-sparql-inside-sql-spasql-via-iodbc)
+* [See also](#see-also)
 
 # Introduction
-“`Anytime Query`” is a core feature of Virtuoso that enables it handle challenges inherent in providing a high-performance and accessible interface (public e.g., Web or private e.g., internal intranet) for ad-hoc querying at scale. This extension allows an SPARQL- and HTTP-protocol based application or service to issue queries irrespective of query complexity and/or solution size. Fundamentally, it handles query solution production pipelines that would typically result in no solutions due to exceeding configured DBMS query timeouts and/or solution size limits; in addition, this feature enables the use of LIMIT and OFFSET (typically combined with ORDER BY and/or GROUP BY) to create windows (also known as sliding windows or cursors) to iterate through a complete query solution without being adversely affected by insert or delete operations.
 
-# Virtuoso Anytime Query extension for SPARQL
+"`Anytime Query`" is a core feature of Virtuoso enabling it to handle challenges inherent in providing a high-performance and accessible interface (public e.g. Web or private e.g. internal intranet) for ad-hoc querying at scale. This extension allows an SPARQL- and HTTP-protocol based application or service to issue queries irrespective of query complexity and/or solution size. Fundamentally, it handles query solution production pipelines that would typically result in no solutions due to exceeding configured DBMS query timeouts and/or solution size limits; in addition, this feature enables the use of LIMIT and OFFSET (typically combined with ORDER BY and/or GROUP BY) to create windows (also known as sliding windows or cursors) to iterate through a complete query solution without being adversely affected by insert or delete operations.
 
-## Server-side settings
-An instance administrator (e.g., a DBA) can impose limits on a Virtuoso SPARQL endpoint, by via the following `virtuoso.ini` file entries:
+# Virtuoso Anytime Query Extension for SPARQL
+
+## Server-Side Settings
+
+An instance administrator (e.g. a DBA) can impose limits on a Virtuoso SPARQL endpoint via these `virtuoso.ini` file entries:
 
 ```ini
 [SPARQL]
@@ -33,17 +36,19 @@ ExecutionTimeout      = 30     ; Set client-side timeout to 30 seconds (default=
 HTTPAnytimeStatus     = 206    ; Preferred HTTP Status code, with the default being 206
 ```
 
-The `ExecutionTimeout` setting is used by the SPARQL endpoint in the `Execution Timeout` field (converted to milliseconds), which the user can override either via the form or a SPARQL URL parameter (i.e., &timeout).
+The `ExecutionTimeout` setting is used by the SPARQL endpoint in the `Execution Timeout` field (converted to milliseconds), and can be overridden either via the form or a SPARQL URL parameter (i.e. &timeout).
 
-**NOTE**: If none of these settings are added to the `virtuoso.ini`, there are no constraints set by Virtuoso. However the amount of memory, proxy timeout settings, etc., can still cause SPARQL queries to fail with various HTTP status codes.
+**NOTE**: If none of these settings are added to the `virtuoso.ini`, there are no constraints set by Virtuoso. However the amount of memory, proxy timeout settings etc. can still cause SPARQL queries to fail with various HTTP status codes.
 
-## Client-side parameter
-HTTP-based client applications such as [cURL](https://en.wikipedia.org/wiki/CURL), [Python](https://en.wikipedia.org/wiki/Python_(programming_language)), [Node.js](https://en.wikipedia.org/wiki/Node.js), [Javascript libraries](https://en.wikipedia.org/wiki/JavaScript), or the Virtuoso SPARQL endpoint itself, can use the `&timeout=30000` parameter of a SPARQL URL to control how long it wants to wait for a result (or query solution) to be produced. Virtuoso's query engine will sanitize the `timeout` parameter ensuring that its between 0 and `MaxQueryExecutionTime` (converted to milliseconds).
- 
-If a query executes to completion within the configured timeout (which can be unlimited) the HTTP status is set to 200 (OK) and the results will be returned in the requested format.
+## Client-Side Parameter
 
-The following table shows what HTTP status code Virtuoso will return, If either `&timeout` and/or `MaxQueryExecutionTime` are set:
-| Timeout | MaxQueryExecutionTime | Description                               | HTTP status on exceeding limit |
+HTTP-based client applications such as [cURL](https://en.wikipedia.org/wiki/CURL), [Python](https://en.wikipedia.org/wiki/Python_(programming_language)), [Node.js](https://en.wikipedia.org/wiki/Node.js), [JavaScript libraries](https://en.wikipedia.org/wiki/JavaScript) or the Virtuoso SPARQL endpoint itself, can use the `&timeout=30000` parameter of a SPARQL URL to specify how long to wait for a result (or query solution) to be produced. Virtuoso's query engine sanitizes the `timeout` parameter ensuring it is between 0 and `MaxQueryExecutionTime` (converted to milliseconds).
+
+If a query executes to completion within the configured timeout (which can be unlimited) the HTTP status code is set to 200 (OK) and the results are returned in the requested format.
+
+This table shows which HTTP status code Virtuoso returns if either `&timeout` and/or `MaxQueryExecutionTime` are set:
+
+| Timeout | MaxQueryExecutionTime | Description                               | HTTP status code on exceeding limit |
 | ------: | --------------------: | ----------------------------------------- | --: |
 | 0       | 0 seconds             | No limits imposed by the Virtuoso engine  | n/a             |
 | 0       | > 0 seconds           | Treat `Anytime Query` timeout as an error | 500 (Server Error)   |
@@ -51,16 +56,17 @@ The following table shows what HTTP status code Virtuoso will return, If either 
 | > 999   | > 0 seconds           | Mandatory `Anytime Query` timeout         | 206 (Partial Result) |
 
 
-## Virtuoso HTTP status codes and response headers
+## Virtuoso HTTP Status Codes and Response Headers
 
-The following HTTP status codes and response headers can be returned by the Virtuoso SPARQL endpoint.
+The Virtuoso SPARQL endpoint can return the following HTTP status codes and response headers.
 
 **Note**: Headers that start with an `X-` are custom headers that Virtuoso returns.
 
-### HTTP status code 200 (OK)
+### HTTP Status Code 200 (OK)
+
 This HTTP status code is returned if a valid query was executed within the allotted time.
 
-Virtuoso returns the following response headers:
+Virtuoso returns these response headers:
 <pre>
 Connection: keep-alive
 Content-disposition: filename=sparql_2022-10-06_12-00-00Z.html
@@ -74,30 +80,29 @@ Vary: Accept-Encoding
 <b>X-SPARQL-default-graph</b>: http://dbpedia.org
 </pre>
 
-The response payload is the full result-set (or query solution) returned in the requested format.
+The response body is the full result-set (or query solution) returned in the requested format.
 
 
-### HTTP status code 206 (Partial)
+### HTTP Status Code 206 (Partial)
+
 This HTTP status code is returned when the query solution production pipeline exceeded either the current `Anytime Query` timeout setting, or the current `ResultSetMaxRows` limit.
 
 Some internet specifications such as [RFC 2616: Hypertext Transfer Protocol](https://www.rfc-editor.org/rfc/rfc2616) and blogs like [HTTP Status: 206 Partial Content and range requests](https://benramsey.com/blog/2008/05/206-partial-content-and-range-requests) indicate that this status code can only be initiated on the client (request) side.
 
 However [RFC 9110: HTTP Semantics](https://www.rfc-editor.org/rfc/rfc9110#section-15.3.7) from June 2022 which supersedes the previous RFC states:
 
-> ... a server might want to send only a subset of the data requested for reasons of its own, 
-> such as temporary unavailability, cache efficiency, load balancing, etc. Since a 206 response is 
-> self-descriptive, the client can still understand a response that only partially satisfies its range request.
+> ... a server might want to send only a subset of the data requested for reasons of its own, such as temporary unavailability, cache efficiency, load balancing, etc. Since a 206 response is self-descriptive, the client can still understand a response that only partially satisfies its range request.
 
-Our testing confirms that all common browsers, javascript frameworks, NodeJS etc. all work fine with HTTP status code 206 in combination with the response headers as well as payload that Virtuoso returns. 
+Testing confirms that all common browsers, JavaScript frameworks, Node.js etc. work fine with HTTP status code 206 in combination with the response headers as well as body that Virtuoso returns.
 
-However since we anticipate users might wish to use HTTP status codes 200 or 500 inline with their preferred application's behavior, we've added an INI configuration option, configurable by an instance DBA, along the following lines:
+However, since users might wish to use HTTP status codes 200 or 500 in line with their preferred application's behavior, an INI configuration option configurable by an instance DBA has been added:
 
 ```
 [SPARQL]
 HTTPAnytimeStatus = 500     ; Default is 206
 ```
 
-Virtuoso returns the following response headers for a partial result:
+Virtuoso returns these response headers for a partial result:
 <pre>
 <b>Accept-Ranges</b>: none
 Connection: keep-alive
@@ -115,21 +120,22 @@ Strict-Transport-Security: max-age=15768000
 <b>X-SQL-State</b>: S1TAT
 </pre>
 
-The  `Accept-Ranges` header returns a value of `none` to make sure a client-side application does not attempt to automatically start requesting byte ranges based on the `Content-Length`. 
+The `Accept-Ranges` header returns a value of `none` to make sure a client-side application does not attempt to automatically start requesting byte ranges based on the `Content-Length`.
 
-The `X-SPARQL-Anytime` header returns both the current `timeout` value as well as the `MaxQueryExecutionTime` value both in milliseconds. It can be used by a client-side application to generate a form where the user can change the timeout and resend the request to the SPARQL endpoint using a new value for the `&timeout` parameter.
+The `X-SPARQL-Anytime` header returns both the current `timeout` value and the `MaxQueryExecutionTime` value both in milliseconds. It can be used by a client-side application to generate a form where the timeout value can be changed, resending the request to the SPARQL endpoint with a new value for the `&timeout` parameter.
 
-The `X-SPARQL-default-graph` header returns the SPARQL default graph. 
+The `X-SPARQL-default-graph` header returns the SPARQL default graph.
 
 The `X-Exec-DB-Activity`, `X-Exec-Milliseconds`, `X-SQL-Message` and `X-SQL-State` headers can be used by the DBA or by the OpenLink Support staff to examine some query statistics.
 
-The response payload is the partial result-set returned in the requested format, even if the `HTTPAnytimeStatus` has been changed from `206` to another http status code.
+The response body is the partial result-set returned in the requested format, even if the `HTTPAnytimeStatus` has been changed from `206` to another http status code.
 
 
-### HTTP status code 400 (Bad Request)
+### HTTP Status Code 400 (Bad Request)
+
 This status code can be returned when the query contains a syntax error.
 
-Virtuoso returns the following response headers:
+Virtuoso returns these response headers:
 <pre>
 Accept-Ranges: bytes
 Connection: keep-alive
@@ -139,7 +145,7 @@ Date: Thu, 06 Oct 2022 14:06:08 GMT
 Server: Virtuoso/08.03.3326 (Linux) x86_64-generic-linux-glibc212  VDB
 </pre>
 
-The result payload contains a description of the error which the client side application can log or put in a dialog box for the user, e.g.:
+The response body contains a description of the error which the client-side application can log or display in a dialog box, e.g.:
 
 ```
 Virtuoso 37000 Error SP030: SPARQL compiler, line 5: syntax error at 'string' before '('
@@ -153,10 +159,11 @@ select distinct ?Concept where {[] a ?Concept. filter (string(?Concept) like '%d
 ```
 
 
-### HTTP status 500 (Server Error)
-This status code is be returned when the query hits the `AnyTime Query` timeout, but the client-side specified it did not want to a partial result by setting the `&timeout=0`
+### HTTP Status 500 (Server Error)
 
-Virtuoso returns the following response headers:
+This status code is returned when the query hits the `Anytime Query` timeout, but the client specified it did not want a partial result by setting the SPARQL request URL parameter `&timeout=0`
+
+Virtuoso returns these response headers:
 <pre>
 Accept-Ranges: bytes
 Connection: keep-alive
@@ -166,29 +173,32 @@ Date: Thu, 06 Oct 2022 12:00:00 GMT
 Server: Virtuoso/08.03.3326 (Linux) x86_64-generic-linux-glibc212  VDB
 </pre>
 
-The result payload contains a description of the error which the client side application can log or put in a dialog box for the user:
+The response body contains a description of the error which the client-side application can log or display in a dialog box:
 
 ```
 Virtuoso S1TAT Error Query did not complete due to ANYTIME timeout.
 ```
 
-### HTTP status code 504 (Gateway Timeout)
-This status can be returned by [reverse proxies](https://en.wikipedia.org/wiki/Reverse_proxy) such as [Nginx](https://en.wikipedia.org/wiki/Nginx), [HAProxy](https://en.wikipedia.org/wiki/HAProxy) or [Traefik](https://en.wikipedia.org/wiki/User:Kcmastrpc/Traefik) when the query takes too long to produce results. This can happen when the timeout set by the proxy is smaller than the `AnyTime Query` timeout.
+### HTTP Status Code 504 (Gateway Timeout)
+
+This status code can be returned by [reverse proxies](https://en.wikipedia.org/wiki/Reverse_proxy) such as [Nginx](https://en.wikipedia.org/wiki/Nginx), [HAProxy](https://en.wikipedia.org/wiki/HAProxy) or [Traefik](https://en.wikipedia.org/wiki/User:Kcmastrpc/Traefik) when the query takes too long to produce results. This can happen when the timeout set by the proxy is smaller than the `Anytime Query` timeout.
 
 # Virtuoso Anytime Query Functionality & GraphQL Queries
 
-The Virtuoso GraphQL endpoint uses the same `MaxQueryExecutionTime`, `HTTPAnytimeStatus` and `ResultSetMaxRows` settings as the SPARQL endpoint. 
+The Virtuoso GraphQL endpoint uses the same `MaxQueryExecutionTime`, `HTTPAnytimeStatus` and `ResultSetMaxRows` settings as the SPARQL endpoint.
 
 It also uses similar HTTP response headers as the ones described for the SPARQL endpoint.
 
 
 # Virtuoso Anytime Query Functionality for ODBC, JDBC, iSQL or Virtuoso PL Clients
-Virtuoso also allows applications written in ODBC, JDBC, iSQL, Virtuoso stored procedures (PL) etc., to use the `Anytime Timeout` extension for both SQL and SPARQL queries.
 
-Since these types of connections are not anonymous like the SPARQL or GraphQL endpoint, there currently is no maximum timeout. 
+Virtuoso also allows applications written in ODBC, JDBC, iSQL, Virtuoso stored procedures (PL) etc. to use the `Anytime Timeout` extension for both SQL and SPARQL queries.
 
-## Example using Virtuoso iSQL/PL
-Running the following example on dbpedia.org using the Virtuoso isql tool:
+Since these types of connections are not anonymous like the SPARQL or GraphQL endpoint, there currently is no maximum timeout.
+
+## Example Using Virtuoso iSQL/PL
+
+Running this example on dbpedia.org using the Virtuoso isql tool:
 
 ```SQL
 $ isql 1111
@@ -198,7 +208,7 @@ Type HELP; for help and EXIT; to exit.
 
 SQL> set RESULT_TIMEOUT = 1000;     -- timeout in milliseconds
 
-SQL> SPARQL SELECT SAMPLE(?s) AS ?sample COUNT(*) AS ?count ?o 
+SQL> SPARQL SELECT SAMPLE(?s) AS ?sample COUNT(*) AS ?count ?o
 FROM <http://dbpedia.org>
 WHERE { ?s a ?o. }
 ORDER BY DESC 2 LIMIT 10;
@@ -213,10 +223,10 @@ http://dbpedia.org/resource/1969_in_baseball                    26261  http://ww
 http://dbpedia.org/resource/501(c)(3)                           10959  http://dbpedia.org/ontology/PersonFunction
 http://dbpedia.org/resource/2021_in_spaceflight                 9527   http://dbpedia.org/ontology/TimePeriod
 http://dbpedia.org/resource/1969_uprising_in_East_Pakistan      8940   http://dbpedia.org/ontology/Organisation
-http://dbpedia.org/resource/2020–21_Glasgow_Warriors_season     8727   http://dbpedia.org/ontology/Agent
-http://dbpedia.org/resource/2020–21_Glasgow_Warriors_season     8706   http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Agent
-http://dbpedia.org/resource/2020–21_Glasgow_Warriors_season     8706   http://www.wikidata.org/entity/Q24229398
-http://dbpedia.org/resource/2020–21_Glasgow_Warriors_season     8700   http://schema.org/Organization
+http://dbpedia.org/resource/2020-21_Glasgow_Warriors_season     8727   http://dbpedia.org/ontology/Agent
+http://dbpedia.org/resource/2020-21_Glasgow_Warriors_season     8706   http://www.ontologydesignpatterns.org/ont/dul/DUL.owl#Agent
+http://dbpedia.org/resource/2020-21_Glasgow_Warriors_season     8706   http://www.wikidata.org/entity/Q24229398
+http://dbpedia.org/resource/2020-21_Glasgow_Warriors_season     8700   http://schema.org/Organization
 
 *** Error S1TAT: VD [Virtuoso Server]RC...: Returning incomplete results, query interrupted by result timeout.  Activity:    561K rnd  561.3K seq      0 same seg   172.5K same pg   1.29K same par      0 disk      0 spec disk      0B /      0 m
 in lines 3-6 of Top-Level:
@@ -226,7 +236,7 @@ SPARQL SELECT SAMPLE(?s) AS ?sample COUNT(*) AS ?count ?o  FROM <http://dbpedia.
 SQL> set RESULT_TIMEOUT = 0;
 ```
 
-This will fetch a number and display a number of rows, until the timeout exceeds and the next fetch results in a SQL state `S1TAT`.
+This fetches and displays a number of rows until the timeout exceeds and the next fetch results in a SQL state `S1TAT`.
 
 ```
 *** Error S1TAT: VD [Virtuoso Server]RC...: Returning incomplete results, query interrupted by result timeout.  Activity:  616.6K rnd  584.1K seq      0 same seg   184.6K same pg  9.519K same par      0 disk      0 spec disk      0B /      0 m
@@ -234,9 +244,10 @@ at line 6 of Top-Level:
 SPARQL SELECT SAMPLE(?s) AS ?sample COUNT(*) AS ?count ?o  FROM <http://dbpedia.org> WHERE { ?s a ?o. } ORDER BY DESC 2
 ```
 
-This SQL state can be checked by simple application logic using a [WHENEVER statement](https://docs.openlinksw.com/virtuoso/wheneverstmt/) in Virtuoso PL.
+This SQL state can be checked with simple application logic using a [WHENEVER statement](https://docs.openlinksw.com/virtuoso/wheneverstmt/) in Virtuoso PL.
 
-## Example using SPARQL inside SQL (SPASQL) via iODBC
+## Example Using SPARQL Inside SQL (SPASQL) via iODBC
+
 Using the iODBC iodbctest tool to run the same test:
 
 ```SQL
@@ -272,7 +283,7 @@ Statement executed. 0 rows affected.
 ```
 
 
- If iODBC tracing is enabled, we can see the following in the iODBC trace log:
+If iODBC tracing is enabled, this appears in the iODBC trace log:
 
 ```text
 [000024.502533]
@@ -318,9 +329,10 @@ iodbctest       7FA9E8E3A700 EXIT  SQLGetDiagRec with return code 0 (SQL_SUCCESS
                 SQLSMALLINT     * 0x0
 ```
 
-This SQL state can be checked by simple application logic.
+This SQL state can be checked with simple application logic.
 
 # See Also
+
   * [Virtuoso documentation on Anytime Queries](https://docs.openlinksw.com/virtuoso/anytimequeries/)
   * [List of HTTP status codes](https://en.wikipedia.org/wiki/List_of_HTTP_status_codes)
   * [Blog: HTTP Status: 206 Partial Content and range requests](https://benramsey.com/blog/2008/05/206-partial-content-and-range-requests/)

@@ -39,13 +39,13 @@ dist_doc_DATA = \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README.md \
 	$(srcdir)/README.ANYTIME.md \
+	$(srcdir)/README.Building.md \
+	$(srcdir)/README.Docker.md \
 	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.GIT.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \
-	$(srcdir)/README.MACOSX.md \
-	$(srcdir)/README.OpenSSL.md \
 	$(srcdir)/README.php5.md \
 	$(srcdir)/README.sesame2.md \
 	$(srcdir)/README.sesame3.md \
@@ -113,13 +113,13 @@ EXTRA_DIST = \
 	$(srcdir)/NEWS.md \
 	$(srcdir)/README.md \
 	$(srcdir)/README.ANYTIME.md \
+	$(srcdir)/README.Building.md \
+	$(srcdir)/README.Docker.md \
 	$(srcdir)/README.GeoSPARQL.md \
 	$(srcdir)/README.GIT.md \
 	$(srcdir)/README.hibernate.md \
 	$(srcdir)/README.jena.md \
 	$(srcdir)/README.jsse.md \
-	$(srcdir)/README.MACOSX.md \
-	$(srcdir)/README.OpenSSL.md \
 	$(srcdir)/README.php5.md \
 	$(srcdir)/README.sesame2.md \
 	$(srcdir)/README.sesame3.md \

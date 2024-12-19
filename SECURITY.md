@@ -26,7 +26,7 @@ New features as well as bug-fixes are regularly committed to the
 [develop/7](https://github.com/openlink/virtuoso-opensource/tree/develop/7)
 branch on GitHub.
 
-At regular intervals we perform our due diligence and we close off this
+At regular intervals, we perform our due diligence and we close off this
 development cycle by merging the work to the
 [stable/7](https://github.com/openlink/virtuoso-opensource/tree/stable/7)
 branch.
