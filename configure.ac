@@ -3234,6 +3234,7 @@ AC_CONFIG_FILES([
 	binsrc/rdb2rdf/Makefile
 	binsrc/rdf4j/Makefile
 	binsrc/rdf4j_4/Makefile
+  binsrc/rdf4j_5/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile
