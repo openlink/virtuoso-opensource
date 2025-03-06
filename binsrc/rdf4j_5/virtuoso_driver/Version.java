@@ -23,7 +23,7 @@
 package virtuoso.rdf4j.driver;
 
 public class Version {
-    protected static final String DRV_VER = "4.0.2";
+    protected static final String DRV_VER = "5.1.0";
 
     // The major and minor version number
     protected static final String build_id = "1.17";

@@ -22,10 +22,9 @@
  */
 package virtuoso.rdf4j.driver;
 
+import org.eclipse.rdf4j.common.exception.RDF4JException;
 import org.eclipse.rdf4j.common.iteration.CloseableIteration;
 import org.eclipse.rdf4j.common.iteration.CloseableIteratorIteration;
-import org.eclipse.rdf4j.common.iteration.Iteration;
-import org.eclipse.rdf4j.common.iteration.Iterations;
 import org.eclipse.rdf4j.common.transaction.IsolationLevel;
 import org.eclipse.rdf4j.common.transaction.IsolationLevels;
 import org.eclipse.rdf4j.model.*;
@@ -580,7 +579,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public boolean hasStatement(Resource subj, IRI pred, Value obj, boolean includeInferred, Resource... contexts) throws RepositoryException {
         contexts = checkContext(contexts);
-        CloseableIteration<Statement, RepositoryException> it;
+        CloseableIteration<Statement> it;
         it = selectFromQuadStore(subj, pred, obj, includeInferred, true, contexts);
         try {
             return it.hasNext();
@@ -634,7 +633,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      */
     public void exportStatements(Resource subj, IRI pred, Value obj, boolean includeInferred, RDFHandler handler, Resource... contexts) throws RepositoryException, RDFHandlerException {
         contexts = checkContext(contexts);
-        CloseableIteration<Statement, RepositoryException> it;
+        CloseableIteration<Statement> it;
         handler.startRDF();
 
         // Export namespace information
@@ -1710,7 +1709,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      *         If the statements could not be added to the repository, for
      *         example because the repository is not writable.
      */
-    public synchronized  <E extends Exception> void add(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
+    public synchronized  void add(CloseableIteration<? extends Statement> statements, Resource... contexts) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
 
@@ -1765,7 +1764,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                     st_cmd.close();
                 } catch (Exception e) {}
             }
-            Iterations.closeCloseable(statements);
+            if (statements != null) {
+                statements.close();
+            }
         }
     }
 
@@ -1908,7 +1909,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      *         If the statements could not be removed from the repository, for
      *         example because the repository is not writable.
      */
-    public <E extends Exception> void remove(Iteration<? extends Statement, E> statements, Resource... contexts) throws RepositoryException, E {
+    public void remove(CloseableIteration<? extends Statement> statements, Resource... contexts) throws RepositoryException {
         verifyContextNotNull(contexts);
 
         verifyIsOpen();
@@ -1952,7 +1953,9 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
           throw new RepositoryException(e);
         }
         finally {
-            Iterations.closeCloseable(statements);
+            if (statements != null) {
+                statements.close();
+            }
             if (ps != null)
                 try {
                     ps.close();
@@ -3245,7 +3248,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     }
 
 
-    private CloseableIteration<Statement, RepositoryException> selectFromQuadStore(Resource subject, IRI predicate, Value object, boolean includeInferred, boolean hasOnly, Resource... contexts) throws RepositoryException {
+    private CloseableIteration<Statement> selectFromQuadStore(Resource subject, IRI predicate, Value object, boolean includeInferred, boolean hasOnly, Resource... contexts) throws RepositoryException {
         verifyIsOpen();
         flushDelayAdd();
 
@@ -3587,7 +3590,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      * Creates a RepositoryResult for the supplied element set.
      */
     protected <E> RepositoryResult<E> createRepositoryResult(Iterable<? extends E> elements) {
-        return new RepositoryResult<E>(new CloseableIteratorIteration<E, RepositoryException>(elements.iterator()));
+        return new RepositoryResult<E>(new CloseableIteratorIteration<E>(elements.iterator()));
     }
 
 
@@ -3620,7 +3623,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
      }
      **/
 
-    public abstract class CloseableIterationBase<E, X extends Exception> implements CloseableIteration<E, X>
+    public abstract class CloseableIterationBase<E, X extends RDF4JException> implements CloseableIteration<E>
     {
         E	  v_row;
         AtomicBoolean v_finished = new AtomicBoolean(false);
