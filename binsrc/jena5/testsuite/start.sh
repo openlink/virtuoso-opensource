@@ -23,14 +23,18 @@
 #  51 Franklin St, Fifth Floor, Boston, MA 02110-1301 USA
 #
 
-export TSUITE_CLASSPATH=".:../lib/junit-4.13.2.jar:../lib/jena-arq-4.3.1.jar:../lib/jena-iri-4.3.1.jar:../lib/jena-core-4.3.1.jar:../lib/jena-core-4.3.1-tests.jar:../lib/jena-base-4.3.1.jar:../../../libsrc/JDBCDriverType4/virtjdbc4.jar:../virt_jena4.jar:../lib/jena-shaded-guava-4.3.1.jar:../lib/commons-lang3-3.12.0.jar:../lib/commons-compress-1.21.jar:../lib/libthrift-0.15.0.jar:../lib/collection-0.7.jar:../lib/commons-cli-1.5.jar:../lib/commons-codec-1.15.jar:../lib/commons-csv-1.9.jar:../lib/commons-io-2.11.jar:../lib/jena-rdfconnection-4.3.1.jar:../lib/jena-tdb-4.3.1.jar:../lib/jsonld-java-0.13.3.jar:../lib/jackson-annotations-2.13.0.jar:../lib/jackson-core-2.13.0.jar:../lib/jackson-databind-2.13.0.jar:../lib/httpclient-4.5.13.jar:../lib/httpclient-cache-4.5.13.jar:../lib/httpcore-4.4.13.jar:../lib/jena-cmds-4.3.1.jar:../lib/jcl-over-slf4j-1.7.32.jar:../lib/log4j-api-2.17.0.jar:../lib/log4j-core-2.17.0.jar:../lib/log4j-slf4j-impl-2.17.0.jar:../lib/slf4j-api-1.7.32.jar"
+export CLASSPATH=.:../../../libsrc/JDBCDriverType4/virtjdbc4_2.jar:../virt_jena5.jar:../lib/jena-arq-5.3.0.jar:../lib/jena-iri-5.3.0.jar:../lib/jena-core-5.3.0.jar:../lib/jena-core-5.3.0-tests.jar:../lib/jena-base-5.3.0.jar:../lib/commons-lang3-3.17.0.jar:../lib/commons-compress-1.27.1.jar:../lib/libthrift-0.21.0.jar:../lib/collection-0.7.jar:../lib/commons-cli-1.9.0.jar:../lib/commons-codec-1.17.2.jar:../lib/commons-csv-1.13.0.jar:../lib/commons-io-2.18.0.jar:../lib/jena-rdfconnection-5.3.0.jar:../lib/jena-tdb1-5.3.0.jar:../lib/jena-tdb2-5.3.0.jar:../lib/gson-2.11.0.jar:../lib/caffeine-3.1.8.jar:../lib/commons-collections4-4.4.jar:../lib/error_prone_annotations-2.27.0.jar:../lib/jakarta.json-2.0.1.jar:../lib/jcl-over-slf4j-2.0.16.jar:../lib/jena-cmds-5.3.0.jar:../lib/jena-dboe-base-5.3.0.jar:../lib/jena-dboe-index-5.3.0.jar:../lib/jena-dboe-storage-5.3.0.jar:../lib/jena-dboe-trans-data-5.3.0.jar:../lib/jena-dboe-transaction-5.3.0.jar:../lib/jena-iri3986-5.3.0.jar:../lib/jena-ontapi-5.3.0.jar:../lib/jena-rdfpatch-5.3.0.jar:../lib/jena-shacl-5.3.0.jar:../lib/jena-shex-5.3.0.jar:../lib/log4j-api-2.24.3.jar:../lib/log4j-core-2.24.3.jar:../lib/log4j-slf4j2-impl-2.24.3.jar:../lib/protobuf-java-4.29.3.jar:../lib/RoaringBitmap-1.3.0.jar:../lib/slf4j-api-2.0.16.jar:../lib/titanium-json-ld-1.4.1.jar:../lib/junit-4.13.2.jar
 
+#
+#  Build the testsuite
+#
+$JAVAC VirtuosoTestGraph.java
 
 #
 #  Database should be running at this point
 #
 STATUS=0
-$JAVA -classpath "$TSUITE_CLASSPATH" -Durl="jdbc:virtuoso://localhost:$PORT" junit.textui.TestRunner VirtuosoTestGraph
+$JAVA -Durl="jdbc:virtuoso://localhost:$PORT" junit.textui.TestRunner VirtuosoTestGraph
 STATUS=$?
 
 if test $STATUS -ne 0

@@ -93,11 +93,8 @@ doc:
 #  Run testsuite if WITH_JDK was found
 #
 if WITH_JDK4_3
-run-tests: virt_jena4.jar
-	$(JAVAC) $(JDK_FLAGS) \
-		-classpath "$(JENA_CLASSPATH):./virt_jena4.jar" \
-		$(TESTSUITE_SRC)
-	cd testsuite && env JAVA="$(JAVA)" PORT="$(PORT)" $(SHELL) ./start.sh
+run-tests: virt_jena5.jar
+	cd testsuite && env JAVA="$(JAVA)" JAVAC="$(JAVAC)" PORT="$(PORT)" $(SHELL) ./start.sh
 else
 run-tests:
 	@echo "***WARNING: Disabled Jena test suite"
