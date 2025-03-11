@@ -3227,6 +3227,7 @@ AC_CONFIG_FILES([
 	binsrc/jena2/Makefile
 	binsrc/jena3/Makefile
 	binsrc/jena4/Makefile
+	binsrc/jena5/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile
