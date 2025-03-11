@@ -21,7 +21,7 @@
 
 
 if WITH_JDK4_3
-TARGETS		= lib virt_jena4.jar
+TARGETS		= lib virt_jena5.jar
 JDK		= @ac_jdk4_3_path@
 JDK_FLAGS	= -O -g
 
@@ -61,28 +61,27 @@ JENA_SRC= \
 TESTSUITE_SRC= \
 	testsuite/VirtuosoTestGraph.java
 
-JENA_CLASSPATH=.:lib/junit-4.13.2.jar:lib/jena-arq-4.3.1.jar:lib/jena-iri-4.3.1.jar:lib/jena-core-4.3.1.jar:lib/jena-base-4.3.1.jar:lib/jena-core-4.3.1-tests.jar:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4.jar:lib/jcl-over-slf4j-1.7.32.jar:lib/log4j-api-2.17.0.jar:lib/log4j-core-2.17.0.jar:lib/log4j-slf4j-impl-2.17.0.jar:lib/slf4j-api-1.7.32.jar:lib/jena-shaded-guava-4.3.1.jar:lib/commons-lang3-3.12.0.jar:lib/commons-compress-1.21.jar:lib/libthrift-0.15.0.jar:lib/collection-0.7.jar:lib/commons-cli-1.5.jar:lib/commons-codec-1.15.jar:lib/commons-csv-1.9.jar:lib/commons-io-2.11.jar:lib/jena-rdfconnection-4.3.1.jar:lib/jena-tdb-4.3.1.jar:lib/jsonld-java-0.13.3.jar:lib/jackson-annotations-2.13.0.jar:lib/jackson-core-2.13.0.jar:lib/jackson-databind-2.13.0.jar:lib/httpclient-4.5.13.jar:lib/httpclient-cache-4.5.13.jar:../lib/httpcore-4.4.13.jar:../lib/jena-cmds-4.3.1.jar
-
+JENA_CLASSPATH=.:$(top_srcdir)/libsrc/JDBCDriverType4/virtjdbc4_2.jar:virt_jena5.jar:lib/jena-arq-5.3.0.jar:lib/jena-iri-5.3.0.jar:lib/jena-core-5.3.0.jar:lib/jena-base-5.3.0.jar:lib/commons-lang3-3.17.0.jar:lib/commons-compress-1.27.1.jar:lib/libthrift-0.21.0.jar:lib/collection-0.7.jar:lib/commons-cli-1.9.0.jar:lib/commons-codec-1.17.2.jar:lib/commons-csv-1.13.0.jar:lib/commons-io-2.18.0.jar:lib/jena-rdfconnection-5.3.0.jar:lib/jena-tdb1-5.3.0.jar:lib/jena-tdb2-5.3.0.jar:lib/gson-2.11.0.jar:lib/caffeine-3.1.8.jar:lib/commons-collections4-4.4.jar:lib/error_prone_annotations-2.27.0.jar:lib/jakarta.json-2.0.1.jar:lib/jcl-over-slf4j-2.0.16.jar:lib/jena-cmds-5.3.0.jar:lib/jena-dboe-base-5.3.0.jar:lib/jena-dboe-index-5.3.0.jar:lib/jena-dboe-storage-5.3.0.jar:lib/jena-dboe-trans-data-5.3.0.jar:lib/jena-dboe-transaction-5.3.0.jar:lib/jena-iri3986-5.3.0.jar:lib/jena-ontapi-5.3.0.jar:lib/jena-rdfpatch-5.3.0.jar:lib/jena-shacl-5.3.0.jar:lib/jena-shex-5.3.0.jar:lib/log4j-api-2.24.3.jar:lib/log4j-core-2.24.3.jar:lib/log4j-slf4j2-impl-2.24.3.jar:lib/protobuf-java-4.29.3.jar:lib/RoaringBitmap-1.3.0.jar:lib/slf4j-api-2.0.16.jar:lib/titanium-json-ld-1.4.1.jar
 
 all-am: $(TARGETS)
 
 
 install-data-local:
-	-mkdir "$(DESTDIR)${libdir}/jena4"
-	-cp virt_jena4.jar "$(DESTDIR)${libdir}/jena4"
+	-mkdir "$(DESTDIR)${libdir}/jena5"
+	-cp virt_jena5.jar "$(DESTDIR)${libdir}/jena5"
 
 lib:
 	-mkdir lib
-	-touch -c virt_jena4.jar
+	-touch -c virt_jena5.jar
 	@echo "Please refer to ~/README.jena file for missing .jar files"
 
-virt_jena4.jar: $(JENA_SRC) manifest.main
+virt_jena5.jar: $(JENA_SRC) manifest.main
 	-rm -rf out.driver
 	-mkdir out.driver
 	$(JAVAC) $(JDK_FLAGS) -d out.driver \
 		-classpath "$(JENA_CLASSPATH)" \
 		$(JENA_SRC)
-	$(JAR) cvfm virt_jena4.jar manifest.main -C out.driver virtuoso
+	$(JAR) cvfm virt_jena5.jar manifest.main -C out.driver virtuoso
 
 .PHONY: doc
 doc:
@@ -107,7 +106,7 @@ endif
 
 .PHONY: version
 version:
-	$(JAVA) -jar ./virt_jena4.jar
+	$(JAVA) -jar ./virt_jena5.jar
 
 
 clean-local:
@@ -123,9 +122,8 @@ clean-local:
 EXTRA_DIST = \
 	virtuoso_driver/*.java \
 	manifest.main \
-	virt_jena4.jar \
+	virt_jena5.jar \
 	testsuite/*.java \
-	testsuite/*.class \
 	testsuite/start.bat \
 	testsuite/start.sh \
 	testsuite/testing/regression/README_LICENSE \
