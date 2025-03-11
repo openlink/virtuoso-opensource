@@ -24,7 +24,7 @@
 //package virtuoso.jena.driver;
 
 import org.apache.jena.query.*;
-import org.apache.jena.rdf.model.RDFNode;
+import org.apache.jena.rdf.model.*;
 
 import virtuoso.jena.driver.*;
 

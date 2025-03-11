@@ -113,7 +113,7 @@ public class VirtResSetIter extends NiceIterator<Triple> {
         else
             NodeO = VirtGraph.Object2Node(v_resultSet.getObject("o"));
 
-        v_row = new Triple(NodeS, NodeP, NodeO);
+        v_row = Triple.create(NodeS, NodeP, NodeO);
     }
 
     protected Triple getRow() {

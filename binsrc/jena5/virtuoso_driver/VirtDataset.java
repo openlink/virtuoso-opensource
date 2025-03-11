@@ -736,7 +736,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
             p = (p!=null? p: Node.ANY);
             o = (o!=null? o: Node.ANY);
 
-            Triple t = new Triple(s, p, o);
+            Triple t = Triple.create(s, p, o);
 
             if (Node.ANY.equals(g)) {
                 String exec_text = "DB.DBA.SPARQL_SELECT_KNOWN_GRAPHS()";
@@ -801,7 +801,7 @@ public class VirtDataset extends VirtGraph implements Dataset {
                 graphs.add(g);
             }
 
-            return new VirtResSetQIter(vd, graphs.iterator(), new Triple(s, p, o));
+            return new VirtResSetQIter(vd, graphs.iterator(), Triple.create(s, p, o));
         }
 
         /**
@@ -825,11 +825,11 @@ public class VirtDataset extends VirtGraph implements Dataset {
             if (isWildcard(g)) {
                 boolean save = vd.getReadFromAllGraphs();
                 vd.setReadFromAllGraphs(true);
-                boolean ret = vd.graphBaseContains(null, new Triple(s, p, o));
+                boolean ret = vd.graphBaseContains(null, Triple.create(s, p, o));
                 vd.setReadFromAllGraphs(save);
                 return ret;
             } else {
-                return vd.graphBaseContains(g.toString(), new Triple(s, p, o));
+                return vd.graphBaseContains(g.toString(), Triple.create(s, p, o));
             }
         }
 

@@ -698,10 +698,10 @@ public class VirtGraph extends GraphBase {
 
     static String BNode2String(Node n) {
         String ns = n.toString();
-        if (ns.startsWith("nodeID://"))
-            return ns;
+        if (ns.startsWith("_:nodeID://"))
+            return ns.substring(2);
         else
-            return "_:" + ns.replace(':', '_').replace('-', 'z').replace('/','y');
+            return ns;
     }
 
     static String BNode2String_add(Node n) {
@@ -714,8 +714,8 @@ public class VirtGraph extends GraphBase {
             return "<" + n + ">";
         } else if (n.isBlank()) {
             String ns = n.toString();
-            if (ns.startsWith("nodeID://"))
-                return "`iri('"+ns+"')`";
+            if (ns.startsWith("_:nodeID://"))
+                return "`iri('"+ns.substring(2)+"')`";
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
         } else if (n.isLiteral()) {
@@ -751,8 +751,8 @@ public class VirtGraph extends GraphBase {
             return "<" + n + ">";
         } else if (n.isBlank()) {
             String ns = n.toString();
-            if (ns.startsWith("nodeID://"))
-                return inTriplePattern ? "`iri('"+ns+"')`" : "iri('"+ns+"')";
+            if (ns.startsWith("_:nodeID://"))
+                return inTriplePattern ? "`iri('"+ns.substring(2)+"')`" : "iri('"+ns.substring(2)+"')";
             else
                 return insertBNodeAsVirtuosoIRI?("<" + BNode2String(n) + ">"):(BNode2String(n));
         } else if (n.isLiteral()) {
@@ -1847,8 +1847,8 @@ literal.
                                    String _graphName) throws SQLException {
         int flags = 0;
 
-        flags |= (subject.isBlank() && !subject.toString().startsWith("nodeID://")) ? 0x0100 : 0;
-        flags |= (object.isBlank() && !object.toString().startsWith("nodeID://")) ? 0x0200 : 0;
+        flags |= (subject.isBlank() && !subject.toString().startsWith("_:nodeID://")) ? 0x0100 : 0;
+        flags |= (object.isBlank() && !object.toString().startsWith("_:nodeID://")) ? 0x0200 : 0;
 
         ps.setString(1, subject.isBlank() ? BNode2String(subject) : subject.toString());
         ps.setString(2, predicate.toString());
@@ -2034,16 +2034,16 @@ literal.
 
             if (vs.getIriType() == ExtendedString.IRI && (vs.getStrType() & 0x01) == 0x01) {
                 if (vs.toString().indexOf("_:") == 0)
-                    return NodeFactory.createBlankNode(AnonId.create(vs.toString().substring(2)).getBlankNodeId()); // _:
+                    return NodeFactory.createBlankNode(vs.toString().substring(2)); // _:
                 else
                     return NodeFactory.createURI(vs.toString());
 
             } else if (vs.getIriType() == ExtendedString.BNODE) {
 //          return NodeFactory.createAnon(AnonId.create(vs.toString().substring(9))); // nodeID://b1234
-                return NodeFactory.createBlankNode(AnonId.create(vs.toString()).getBlankNodeId()); // nodeID://
+                return NodeFactory.createBlankNode(vs.toString()); // nodeID://
 
             } else {
-                return NodeFactory.createLiteral(vs.toString());
+                return NodeFactory.createLiteralString(vs.toString());
             }
 
         } else if (o instanceof RdfBox) {
@@ -2146,7 +2146,7 @@ literal.
 
         } else {
 
-            return NodeFactory.createLiteral(o.toString());
+            return NodeFactory.createLiteralString(o.toString());
         }
     }
 

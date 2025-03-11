@@ -24,6 +24,7 @@
 package virtuoso.jena.driver;
 
 import java.util.*;
+import java.util.function.Consumer;
 import java.sql.ResultSetMetaData;
 
 import org.apache.jena.atlas.json.JsonArray;
@@ -220,7 +221,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
                 Node s = VirtGraph.Object2Node(rs.getObject(1));
                 Node p = VirtGraph.Object2Node(rs.getObject(2));
                 Node o = VirtGraph.Object2Node(rs.getObject(3));
-                org.apache.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+                org.apache.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, Triple.create(s, p, o));
                 if (st != null)
                     model.add(st);
             }
@@ -274,7 +275,7 @@ public class VirtuosoQueryExecution implements QueryExecution {
                 Node p = VirtGraph.Object2Node(rs.getObject(2));
                 Node o = VirtGraph.Object2Node(rs.getObject(3));
 
-                org.apache.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, new Triple(s, p, o));
+                org.apache.jena.rdf.model.Statement st = ModelUtils.tripleToStatement(model, Triple.create(s, p, o));
                 if (st != null)
                     model.add(st);
             }
@@ -571,6 +572,16 @@ public class VirtuosoQueryExecution implements QueryExecution {
 
         public QuerySolution nextSolution() {
             return next();
+        }
+
+        public void forEachRemaining(Consumer<? super QuerySolution> action) {
+           if (v_finished)
+               return;
+
+           while(hasNext()) {
+               QuerySolution row = nextSolution();
+               action.accept(row);
+           }
         }
 
         public Binding nextBinding() {

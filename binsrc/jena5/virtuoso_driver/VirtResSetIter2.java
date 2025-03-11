@@ -101,7 +101,7 @@ public class VirtResSetIter2 implements Iterator<Triple> {
         NodeP = VirtGraph.Object2Node(v_resultSet.getObject(2));
         NodeO = VirtGraph.Object2Node(v_resultSet.getObject(3));
 
-        v_row = new Triple(NodeS, NodeP, NodeO);
+        v_row = Triple.create(NodeS, NodeP, NodeO);
     }
 
     protected Triple getRow() {

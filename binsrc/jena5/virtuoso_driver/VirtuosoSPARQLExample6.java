@@ -69,9 +69,9 @@ public class VirtuosoSPARQLExample6
 	System.out.println("begin Transaction.");
 	System.out.println("Add 3 triples to graph <Example6>.");
 
-	graph.add(new Triple(foo1, bar1, baz1));
-	graph.add(new Triple(foo2, bar2, baz2));
-	graph.add(new Triple(foo3, bar3, baz3));
+	graph.add(Triple.create(foo1, bar1, baz1));
+	graph.add(Triple.create(foo2, bar2, baz2));
+	graph.add(Triple.create(foo3, bar3, baz3));
 
 	graph.getTransactionHandler().commit();
 	System.out.println("commit Transaction.");
@@ -88,15 +88,15 @@ public class VirtuosoSPARQLExample6
 	System.out.println("graph.isEmpty() = " + graph.isEmpty());
 
 	System.out.println("Add 1 triples to graph <Example6>.");
-	graph.add(new Triple(foo1, bar1, baz1));
+	graph.add(Triple.create(foo1, bar1, baz1));
 
 	System.out.println("\nStart test Transaction Abort.");
 	graph.getTransactionHandler().begin();
 	System.out.println("begin Transaction.");
 	System.out.println("Add 2 triples to graph <Example6>.");
 
-	graph.add(new Triple(foo2, bar2, baz2));
-	graph.add(new Triple(foo3, bar3, baz3));
+	graph.add(Triple.create(foo2, bar2, baz2));
+	graph.add(Triple.create(foo3, bar3, baz3));
 
 	graph.getTransactionHandler().abort();
 	System.out.println("abort Transaction.");

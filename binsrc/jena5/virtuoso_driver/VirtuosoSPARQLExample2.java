@@ -52,13 +52,9 @@ public class VirtuosoSPARQLExample2 {
 		graph.read("http://www.w3.org/People/Berners-Lee/card#i", "RDF/XML");
 		System.out.println ("\t\t\t Done.");
 
-		System.out.print ("Begin read from 'http://demo.openlinksw.com/dataspace/person/demo#this'  ");
-		graph.read("http://demo.openlinksw.com/dataspace/person/demo#this", "RDF/XML");
+		System.out.print ("Begin read from 'http://kidehen.idehen.net/dataspace/person/kidehen#this'  ");
+		graph.read("http://kidehen.idehen.net/dataspace/person/kidehen#this", "RDF/XML");
 		System.out.println ("\t Done.");
-
-//		System.out.print ("Begin read from 'http://kidehen.idehen.net/dataspace/person/kidehen#this'  ");
-//		graph.read("http://kidehen.idehen.net/dataspace/person/kidehen#this", "RDF/XML");
-//		System.out.println ("\t Done.");
 
 
 /*			STEP 3			*/

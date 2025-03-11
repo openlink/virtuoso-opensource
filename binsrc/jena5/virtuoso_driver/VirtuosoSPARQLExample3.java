@@ -65,15 +65,15 @@ public class VirtuosoSPARQLExample3
 	System.out.println("graph.isEmpty() = " + graph.isEmpty());
 	System.out.println("Add 3 triples to graph <Example3>.");
 
-	graph.add(new Triple(foo1, bar1, baz1));
-	graph.add(new Triple(foo2, bar2, baz2));
-	graph.add(new Triple(foo3, bar3, baz3));
+	graph.add(Triple.create(foo1, bar1, baz1));
+	graph.add(Triple.create(foo2, bar2, baz2));
+	graph.add(Triple.create(foo3, bar3, baz3));
 
 	System.out.println("graph.isEmpty() = " + graph.isEmpty());
 	System.out.println("graph.getCount() = " + graph.getCount());
 
-	triples.add(new Triple(foo1, bar1, baz1));
-	triples.add(new Triple(foo2, bar2, baz2));
+	triples.add(Triple.create(foo1, bar1, baz1));
+	triples.add(Triple.create(foo2, bar2, baz2));
 
 	graph.isEmpty();
 

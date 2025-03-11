@@ -139,8 +139,8 @@ public class Test_BNode {
             {
                 log("Insert data with BNodes");
 
-                vg.add(new Triple(ns1, np, bn1));
-                vg.add(new Triple(bn2, np, no));
+                vg.add(Triple.create(ns1, np, bn1));
+                vg.add(Triple.create(bn2, np, no));
 
                 log("Inserted data:");
                 log("-----------------");
@@ -295,7 +295,7 @@ public class Test_BNode {
                 {
                     log("Insert data with BNode bn1 again (new BNode ID must be assigned)");
 
-                    vg.add(new Triple(ns1, np, bn1));
+                    vg.add(Triple.create(ns1, np, bn1));
 
                     log("Inserted data:");
                     log("-----------------");
