@@ -54,7 +54,7 @@ public class VirtuosoRepository implements Repository {
     public static final int CONCUR_PESSIMISTIC = 1;
     public static final int CONCUR_OPTIMISTIC = 2;
 
-    ValueFactory valueFactory = SimpleValueFactory.getInstance();
+    VirtuosoValueFactory valueFactory = VirtuosoValueFactory.getInstance();
     File dataDir;
 
     private VirtuosoConnectionPoolDataSource pds = new VirtuosoConnectionPoolDataSource();
@@ -574,7 +574,7 @@ public class VirtuosoRepository implements Repository {
      *
      * @return A repository-specific ValueFactory.
      */
-    public ValueFactory getValueFactory() {
+    public VirtuosoValueFactory getValueFactory() {
         return this.valueFactory;
     }
 

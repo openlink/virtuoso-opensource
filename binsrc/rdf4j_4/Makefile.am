@@ -51,6 +51,7 @@ RDF4J_SRC= \
 	virtuoso_driver/VirtuosoRepository.java \
 	virtuoso_driver/VirtuosoRepositorySchema.java \
 	virtuoso_driver/VirtuosoTupleQuery.java \
+	virtuoso_driver/VirtuosoValueFactory.java \
 	virtuoso_driver/VirtuosoUpdate.java
 
 RDF4J_XSL = \

@@ -122,7 +122,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private int prefetchSize = 100;
     private boolean useReprepare = true;
     private boolean insertBNodeAsVirtuosoIRI = false;
-    private ValueFactory valueFactory = null;
+    private VirtuosoValueFactory valueFactory = null;
     private boolean insertStringLiteralAsSimple = false;
     private int queryTimeout = 0;
     private String ruleSet;    
@@ -3537,7 +3537,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return valueFactory.createLiteral(((Long) val).longValue());
         }
         else if (val instanceof java.lang.Integer) {
-            return valueFactory.createLiteral(((Integer) val).intValue());
+            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#integer");
+            return valueFactory.createNumericLiteral((Number)val, type);
         }
         else if (val instanceof java.lang.Short) {
             return valueFactory.createLiteral(((Short) val).intValue());
@@ -3549,8 +3550,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return valueFactory.createLiteral(((Double) val).doubleValue());
         }
         else if (val instanceof java.math.BigDecimal) {
-            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#decimal");
-            return valueFactory.createLiteral(val.toString(), type);
+            return valueFactory.createLiteral((java.math.BigDecimal)val);
         }
         else if (val instanceof java.sql.Blob) {
             IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#hexBinary");
