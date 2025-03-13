@@ -125,7 +125,6 @@ EXTRA_DIST = \
 	manifest.main \
 	virt_jena4.jar \
 	testsuite/*.java \
-	testsuite/*.class \
 	testsuite/start.bat \
 	testsuite/start.sh \
 	testsuite/testing/regression/README_LICENSE \
