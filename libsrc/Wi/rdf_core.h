@@ -248,7 +248,7 @@ extern caddr_t rdf_load_turtle (
 typedef void* yyscan_t;
 #endif
 
-#define TTL_MAX_IRI_LEN 8000
+#define TTL_MAX_IRI_LEN 64000
 #define TTL_MAX_KEYWORD_LEN 100
 #define TTL_MAX_LANGNAME_LEN 64
 #define TTL_MAX_LITERAL_LEN 10000000
