@@ -3541,7 +3541,8 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return valueFactory.createNumericLiteral((Number)val, type);
         }
         else if (val instanceof java.lang.Short) {
-            return valueFactory.createLiteral(((Short) val).intValue());
+            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#integer");
+            return valueFactory.createNumericLiteral(((Short)val).intValue(), type);
         }
         else if (val instanceof java.lang.Float) {
             return valueFactory.createLiteral(((Float) val).floatValue());
