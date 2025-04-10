@@ -467,7 +467,7 @@ next_loop:
 }
 
 static void
-hosting_ruby_connect (void *x)
+hosting_ruby_connect (void *appdata)
 {
 }
 

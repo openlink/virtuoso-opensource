@@ -31,7 +31,7 @@
 #include "mts_client.h"
 
 static void
-msdtc_plugin_connect ()
+msdtc_plugin_connect (void *appdata)
 {
   ;
 }

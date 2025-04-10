@@ -49,7 +49,7 @@ vfc_log_debug (char *format, ...)
 }
 
 static void
-hosting_fcgi_connect (void *x)
+hosting_fcgi_connect (void *appdata)
 {
   vfc_log_debug ("hosting_fcgi_connect");
   vfc_server_init ();
