@@ -397,7 +397,7 @@ os_background (void)
 {
   if (!f_foreground)
     {
-      RETSIGTYPE (*usr1)();
+      RETSIGTYPE (*usr1)(int);
 
       if (f_wait && pipe (bg_pipe) == -1)
 	{

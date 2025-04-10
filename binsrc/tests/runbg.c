@@ -35,7 +35,7 @@ int f_shell;
 int
 main (int argc, char **argv, char **environ)
 {
-  RETSIGTYPE (*usr1)();
+  RETSIGTYPE (*usr1)(int);
   char tempfile[60];
   char line[1024];
   char **args;
