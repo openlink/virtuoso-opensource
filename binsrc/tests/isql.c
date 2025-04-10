@@ -7335,7 +7335,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
         }
       else if (!isqlt_tcsncmp(tmp_pt,_T("#endif"),6)) /* end of conditional expression. */
         {
-          ifdef_pop (tmp_pt);
+          ifdef_pop ();
         }
       else if (*tmp_pt == '!')
 	{ /* Spawn a command to shell and wait for it if doesn't end with & */

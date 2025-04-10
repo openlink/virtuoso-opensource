@@ -1274,7 +1274,7 @@ mt_flush_all (void)
     {
       if (dbs->dbs_slices)
 	continue;
-      dirty_after += dbs_dirty_count (dbs);
+      dirty_after += dbs_dirty_count ();
       tc_dirty_after_flush += dirty_after;
     }
   END_DO_SET();
