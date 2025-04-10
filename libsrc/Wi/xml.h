@@ -83,20 +83,6 @@ encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_i
 
 #define XML_CHAR_ESCAPE(c,s) xml_escapes [c] = s;
 
-#ifndef __cplusplus
-/* Types definition */
-#ifndef _boolean
-typedef enum
-  {
-    false, true
-  }
-_boolean;
-#endif
-#endif
-
-
-
-
 
 typedef struct close_tag_s {
   int		ct_level;
