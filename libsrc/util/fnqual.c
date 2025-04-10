@@ -34,8 +34,9 @@
 #define SLASH	'/'
 #endif
 
-extern char *getcwd ();
-
+#ifdef WIN32
+#include <direct.h>
+#endif
 
 /*
  *  Return a fully qualified filename, or NULL on error.
