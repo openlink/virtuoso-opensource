@@ -31,7 +31,7 @@
 
 
 void
-cli_bootstrap_cli ()
+cli_bootstrap_cli (void)
 {
   if (!bootstrap_cli)
     {
@@ -442,7 +442,7 @@ int sql_escaped_string_literal (char *target, char *text, int max);
 
 
 void
-registry_exec ()
+registry_exec (void)
 {
   id_hash_iterator_t it;
   caddr_t *name;

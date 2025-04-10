@@ -1016,7 +1016,7 @@ byte_bits_f (dtp_t b)
 
 
 void
-bm_init ()
+bm_init (void)
 {
   int inx;
   for (inx = 0; inx < 256; inx++)

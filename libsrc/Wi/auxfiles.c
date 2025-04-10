@@ -425,7 +425,7 @@ cfg_parse_disks (dbe_storage_t * dbs, char *err, int err_max, char * cfg_file)
 }
 
 static void
-cfg_parse_backup_dirs()
+cfg_parse_backup_dirs(void)
 {
   old_backup_dirs = dk_set_cons ((caddr_t) ".", NULL);
   old_backup_dirs->next = old_backup_dirs;

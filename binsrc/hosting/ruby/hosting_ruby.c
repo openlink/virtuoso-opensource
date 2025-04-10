@@ -34,7 +34,7 @@ vrb_thr_t *vrb_thr = NULL;
 vrb_queue_t *vrb_queue = NULL;
 
 void *
-vrb_mutex_allocate ()
+vrb_mutex_allocate (void)
 {
 #ifdef WIN32
   CRITICAL_SECTION *crit;
@@ -96,7 +96,7 @@ vrb_thread_create (void *thr2, RUBY_LPTHREAD_START_ROUTINE funcp, void *arg)
 }
 
 pvrb_semaphore_t
-vrb_semaphore_allocate ()
+vrb_semaphore_allocate (void)
 {
 #ifdef WIN32
   pvrb_semaphore_t sem = CreateSemaphore (NULL, 0, LONG_MAX, NULL);

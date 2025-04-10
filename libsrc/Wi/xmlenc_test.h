@@ -26,13 +26,13 @@
 void breakpoint(void);
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
-void trset_end ();
+void trset_end (void);
 
 #define rep_printf	trset_printf
 
-void xenc_test_begin();
-void xenc_test_end();
-int xenc_test_processing();
+void xenc_test_begin(void);
+void xenc_test_end(void);
+int xenc_test_processing(void);
 void xenc_assert_1(int term, char* file, long line);
 
 #define xenc_assert(term) xenc_assert_1(term, __FILE__, __LINE__)

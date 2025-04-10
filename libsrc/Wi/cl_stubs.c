@@ -280,7 +280,7 @@ cl_name_to_host (char *name)
 }
 
 void
-cluster_init ()
+cluster_init (void)
 {
   dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
 }

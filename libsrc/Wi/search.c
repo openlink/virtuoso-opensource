@@ -562,7 +562,7 @@ itc_free (it_cursor_t * it)
 
 
 placeholder_t *
-plh_allocate ()
+plh_allocate (void)
 {
   NEW_PLH(v);
   return v;

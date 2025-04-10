@@ -967,7 +967,7 @@ void col_ins_rd_init (row_delta_t * rd, dbe_key_t * key);
 
 
 row_lock_t *
-rl_col_allocate ()
+rl_col_allocate (void)
 {
   row_lock_t *rl = rl_allocate ();
   rl->rl_cols = (col_row_lock_t **) dk_alloc_box_zero (32 * sizeof (caddr_t), DV_BIN);
@@ -4592,7 +4592,7 @@ dk_session_t * dbg_log_ses;
 caddr_t bif_curdatetime (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 void
-col_dbg_log_new ()
+col_dbg_log_new (void)
 {
   int fd, rc;
   TIMESTAMP_STRUCT ts;

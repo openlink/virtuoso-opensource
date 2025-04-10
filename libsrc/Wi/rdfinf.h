@@ -227,7 +227,7 @@ rdf_inf_ctx_t * rdf_inf_ctx (char * name);
 
 rdf_sub_t * rit_next (ri_iterator_t * rit);
 ri_iterator_t * ri_iterator (rdf_sub_t * rs, int mode, int distinct);
-void sas_ensure ();
+void sas_ensure (void);
 id_hash_t * tn_hash_table_get (trans_node_t * tn);
 extern dk_mutex_t * tn_cache_mtx;
 

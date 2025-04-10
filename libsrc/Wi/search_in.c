@@ -556,7 +556,7 @@ sp_add_func (key_cmp_t f, cmp_desc_t c[])
 
 
 void
-search_inline_init ()
+search_inline_init (void)
 {
   static cmp_desc_t  intn_p[] = {{CMP_EQ, CMP_NONE, DV_LONG_INT, 1}, {NOMORE, 0, 0, 0}};
   static cmp_desc_t strn_p [] = {{CMP_EQ, CMP_NONE, DV_STRING, 1}, {NOMORE, 0, 0, 0}};
@@ -788,7 +788,7 @@ ksp_nth_cmp_func (key_spec_t * ksp, char nth)
 
 
 void
-search_inline_init ()
+search_inline_init (void)
 {
 }
 

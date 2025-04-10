@@ -2775,7 +2775,7 @@ db_not_in_use (void)
 
 /* needed to access the server port in hosting binaries */
 char *
-virtuoso_odbc_port ()
+virtuoso_odbc_port (void)
 {
   return c_serverport;
 }

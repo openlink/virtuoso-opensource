@@ -1065,7 +1065,7 @@ du_thread_t * parse_mtx_owner;
 int enable_parse_mtx = 0;
 
 void
-parse_enter ()
+parse_enter (void)
 {
   if (enable_parse_mtx)
     mutex_enter (parse_mtx);
@@ -1073,7 +1073,7 @@ parse_enter ()
 
 
 void
-parse_leave ()
+parse_leave (void)
 {
   if (enable_parse_mtx)
     mutex_leave (parse_mtx);

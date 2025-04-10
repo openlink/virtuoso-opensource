@@ -1245,7 +1245,7 @@ bif_iri_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-bif_regexp_init ()
+bif_regexp_init (void)
 {
   compiled_regexps = id_hash_allocate (NHASHITEMS, sizeof (regexp_key_t), sizeof (compiled_regexp_t *),
       regexp_key_hash, regexp_key_hashcmp );

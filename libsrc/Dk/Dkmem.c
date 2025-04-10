@@ -107,7 +107,7 @@ memmove_16 (void * t, const void * s, size_t len)
 
 
 uint64
-rdtsc()
+rdtsc(void)
 {
 #if defined(HAVE_GETHRTIME) || defined(SOLARIS)
   return (uint64) gethrtime ();

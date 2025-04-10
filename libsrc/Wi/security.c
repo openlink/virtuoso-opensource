@@ -703,7 +703,7 @@ static dk_mutex_t *failed_login_mtx;
 
 
 static void
-failed_login_init ()
+failed_login_init (void)
 {
   failed_login_mtx = mutex_allocate ();
   failed_login_hash = id_str_hash_create (101);

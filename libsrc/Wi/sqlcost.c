@@ -1614,7 +1614,7 @@ id_hash_t * text_counts;
 
 
 void
-sqlo_tc_init ()
+sqlo_tc_init (void)
 {
   text_count_mtx = mutex_allocate ();
   text_counts = id_hash_allocate (1001, sizeof (caddr_t), sizeof (tb_sample_t), strhash, strhashcmp);
@@ -1850,7 +1850,7 @@ sqlo_text_estimate (df_elt_t * tb_dfe, df_elt_t ** text_pred, float * text_sel_r
 
 
 void
-sqlo_timeout_text_count ()
+sqlo_timeout_text_count (void)
 {
   time_msec_t now = approx_msec_real_time ();
   int inx;

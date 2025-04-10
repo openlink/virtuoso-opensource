@@ -1869,7 +1869,7 @@ bif_jso_parse_digest (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 jso_class_descr_t jso_cd_array_of_any;
 jso_class_descr_t jso_cd_array_of_string;
 
-void jso_init ()
+void jso_init (void)
 {
   jso_consts = hash_table_allocate (61);
   jso_classes = hash_table_allocate (13);

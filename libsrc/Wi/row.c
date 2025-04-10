@@ -1479,7 +1479,7 @@ box_to_double_col (caddr_t data, dtp_t dtp, oid_t col_id, caddr_t * err_ret, dbe
 }
 
 
-void box2anyerr ()
+void box2anyerr (void)
 {}
 
 

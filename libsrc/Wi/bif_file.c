@@ -672,7 +672,7 @@ bif_server_root (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-set_ses_tmp_dir ()
+set_ses_tmp_dir (void)
 {
   static char abs_path[PATH_MAX + 1], *p_abs_path = abs_path;
   abs_path[0] = 0;
@@ -2796,7 +2796,7 @@ win32_system (char *cmd)
 }
 
 static void
-win32_system_init ()
+win32_system_init (void)
 {
   if (do_os_calls)
     {
@@ -5805,7 +5805,7 @@ get_mode_string (caddr_t user_str, int set)
 
 
 void
-set_ini_trace_option ()
+set_ini_trace_option (void)
 {
   char *tmp, *tok_s = NULL, *tok;
   tok_s = NULL;

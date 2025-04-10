@@ -2771,14 +2771,14 @@ sqlp_is_num_lit (caddr_t x)
 
 
 char *
-sqlp_default_cluster ()
+sqlp_default_cluster (void)
 {
   return "__ALL";
 }
 
 
 dk_set_t
-cl_all_host_group_list ()
+cl_all_host_group_list (void)
 {
   dk_hash_t *visited = NULL;
   dk_set_t res = NULL;
@@ -2840,7 +2840,7 @@ sqlp_index_default_opts(dk_set_t opts)
 }
 
 char *
-sqlp_inx_col_opt ()
+sqlp_inx_col_opt (void)
 {
     return "column";
 }

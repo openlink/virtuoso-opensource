@@ -4319,7 +4319,7 @@ sql_ensure_proc (char * name)
 
 
 void
-rdf_key_comp_init ()
+rdf_key_comp_init (void)
 {
   /* set the key comp options for the rdf keys */
   dbe_key_t * gspo = sch_find_key (NULL, "DB.DBA.RDF_QUAD", "RDF_QUAD");

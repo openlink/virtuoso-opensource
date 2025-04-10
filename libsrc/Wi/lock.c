@@ -2234,7 +2234,7 @@ extern int www_maintenance;
 void http_kill_all ();
 
 void
-the_grim_mem_guard ()
+the_grim_mem_guard (void)
 {
   if (max_proc_vm_size > 0 && max_proc_vm_size < curr_vm_size) 
     {   /* don't check if already stopped, kill ws cli until enough free ram, see below */
@@ -2289,7 +2289,7 @@ time_msec_t prev_reaper_time;
 char srv_approx_dt[DT_LENGTH];
 
 void
-clear_old_root_images ()
+clear_old_root_images (void)
 {
   time_msec_t now = approx_msec_real_time ();
   mutex_enter (old_roots_mtx);
@@ -2516,7 +2516,7 @@ lt_timestamp_box (lock_trx_t * lt)
 }
 
 void
-dbg_flush ()
+dbg_flush (void)
 {
   fflush (stdout);
   fflush (stderr);
@@ -2529,7 +2529,7 @@ int ltbing (int s)
 
 #ifdef MALLOC_DEBUG
 #undef lt_start
-lock_trx_t * lt_start ()
+lock_trx_t * lt_start (void)
 {
   return dbg_lt_start (__FILE__, __LINE__);
 }

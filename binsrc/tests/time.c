@@ -167,7 +167,7 @@ gettimeofday (struct timeval *tv, struct timezone *tz)
 #ifndef WIN32
 
 long
-get_msec_count ()
+get_msec_count (void)
 {
   struct timeval time;
   gettimeofday (&time, NULL);

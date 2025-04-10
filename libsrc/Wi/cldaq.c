@@ -1319,7 +1319,7 @@ bif_cl_detach_thread (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-dpipe_refresh_schema ()
+dpipe_refresh_schema (void)
 {
   DO_IDHASH (caddr_t, name, cu_func_t *, cf, name_to_cu_func)
   {
@@ -1395,7 +1395,7 @@ char *dp_no_err =
 
 
 void
-cl_read_dpipes ()
+cl_read_dpipes (void)
 {
   ddl_std_proc (dp_no_err, 0);
   ddl_ensure_table ("do_this_always",
@@ -1414,7 +1414,7 @@ bif_cl_current_slice (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-bif_daq_init ()
+bif_daq_init (void)
 {
   static int bif_daq_init_done = 0;
   if (bif_daq_init_done)

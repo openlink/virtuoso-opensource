@@ -66,9 +66,9 @@ typedef struct monitor_s {
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-void mon_init ();
+void mon_init (void);
 int mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_t* previous, monitor_t *next);
 void mon_update (int n_threads, int n_vdb_threads, int n_lw_threads);
-void mon_check ();
+void mon_check (void);
 
 #endif

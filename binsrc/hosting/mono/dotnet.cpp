@@ -970,12 +970,12 @@ caddr_t clr_add_comp_reference (caddr_t assembly)
 }
 
 
-static void set_cache_dirs_to_tmp ()
+static void set_cache_dirs_to_tmp (void)
 {
   acl_add_allowed_dir (pid_dir);
 }
 
-static int remove_cache_dirs ()
+static int remove_cache_dirs (void)
 {
   char *p1;
   SHFILEOPSTRUCT sfo;
@@ -1005,7 +1005,7 @@ static int remove_cache_dirs ()
   return 1;
 }
 
-void virt_com_exit ()
+void virt_com_exit (void)
 {
   spRuntimeHost->UnloadDomain((IUnknown *)spDefAppDomain);
   spRuntimeHost->Stop();
@@ -1020,7 +1020,7 @@ extern "C" {
   extern char *virtuoso_odbc_port();
 }
 
-int virt_com_init ()
+int virt_com_init (void)
 {
   HRESULT hr;
   wchar_t framework_ver[16];

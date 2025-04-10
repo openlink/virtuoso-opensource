@@ -49,7 +49,7 @@ typedef __int64 int64_t;
 /* return VmSize in KBytes, for macOS uses footprint which represents memory usage of the process */
 
 int64_t
-get_proc_vm_size ()
+get_proc_vm_size (void)
 {
   int64_t proc_size = 0;
 #if defined (linux)

@@ -1017,7 +1017,7 @@ ti_func_no (char op, dtp_t dtp)
 }
 
 void
-ti_func_init ()
+ti_func_init (void)
 {
   ti_define (IN_COMPARE, DV_LONG_INT, (void *) dc_cmp_int, (void *) dc_cmp_int_1);
   ti_define (IN_ARTM_PLUS, DV_LONG_INT, (void *) dc_add_int, (void *) dc_add_int_1);

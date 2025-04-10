@@ -153,7 +153,7 @@ static void bm_alloc (bufmem_t *buf, size_t len)
   buf->bm_memblock = wlex_alloc (buf->bm_length);
 }
 
-void wikilexdone ()
+void wikilexdone (void)
 {
   wlex_state_t * st = STATEPTR;
   if (st->wikiwordbuf.bm_memblock != NULL)

@@ -1283,7 +1283,7 @@ remove_old_orders (int nCount)
 }
 
 void
-scrap_log ()
+scrap_log (void)
 {
   OCIStmt *chk_stmt;
   INIT_STMT (chk_stmt, "alter system checkpoint");

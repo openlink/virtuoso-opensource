@@ -1016,7 +1016,7 @@ void dks_stop_burst_mode (dk_session_t * ses);
 extern long client_trace_flag;
 
 #ifdef PCTCP
-int init_pctcp ();
+int init_pctcp (void);
 #endif
 
 #ifdef UNIX

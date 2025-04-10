@@ -250,7 +250,7 @@ str_delta (db_buf_t str1, db_buf_t str2, int len1, int len2, row_size_t * prefix
 resource_t * pfh_rc;
 
 pf_hash_t *
-pfh_allocate ()
+pfh_allocate (void)
 {
   return (pf_hash_t *) dk_alloc (sizeof (pf_hash_t));
 }

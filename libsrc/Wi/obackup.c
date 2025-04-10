@@ -133,7 +133,7 @@ char* format_timestamp (uint32 * ts)
 }
 
 #if 0
-char* bp_curr_timestamp ()
+char* bp_curr_timestamp (void)
 {
   char * ts;
   IN_CPT_1;
@@ -143,7 +143,7 @@ char* bp_curr_timestamp ()
   return ts;
 }
 
-char* bp_curr_date ()
+char* bp_curr_date (void)
 {
   if (bp_ctx.db_bp_date)
     {
@@ -155,7 +155,7 @@ char* bp_curr_date ()
     return box_dv_short_string ("unknown");
 }
 
-char* bp_curr_prefix ()
+char* bp_curr_prefix (void)
 {
   char* prefix = 0;
   IN_CPT_1;
@@ -167,7 +167,7 @@ char* bp_curr_prefix ()
   return prefix;
 }
 
-caddr_t bp_curr_num ()
+caddr_t bp_curr_num (void)
 {
   uint32 num;
   IN_CPT_1;
@@ -177,7 +177,7 @@ caddr_t bp_curr_num ()
   return box_num (num);
 }
 
-caddr_t bp_curr_inx ()
+caddr_t bp_curr_inx (void)
 {
   uint32 num;
   IN_CPT_1;
@@ -187,14 +187,14 @@ caddr_t bp_curr_inx ()
   return box_num (num);
 }
 #else
-char* bp_curr_timestamp ()
+char* bp_curr_timestamp (void)
 {
   char * ts;
   ts = format_timestamp (&bp_ctx.db_bp_ts);
   return ts;
 }
 
-char* bp_curr_date ()
+char* bp_curr_date (void)
 {
   if (bp_ctx.db_bp_date)
     {
@@ -206,7 +206,7 @@ char* bp_curr_date ()
     return box_dv_short_string ("unknown");
 }
 
-char* bp_curr_prefix ()
+char* bp_curr_prefix (void)
 {
   char* prefix = 0;
   if (bp_ctx.db_bp_prfx[0])
@@ -216,14 +216,14 @@ char* bp_curr_prefix ()
   return prefix;
 }
 
-caddr_t bp_curr_num ()
+caddr_t bp_curr_num (void)
 {
   uint32 num;
   num = bp_ctx.db_bp_num;
   return box_num (num);
 }
 
-caddr_t bp_curr_inx ()
+caddr_t bp_curr_inx (void)
 {
   uint32 num;
   num = bp_ctx.db_bp_index;
@@ -1664,7 +1664,7 @@ read_backup_header (ol_backup_context_t* ctx, char ** header)
 }
 
 #ifdef DBG_BREAKPOINTS
-static int ol_breakpoint()
+static int ol_breakpoint(void)
 {
   return  0;
 }
@@ -1865,7 +1865,7 @@ bif_backup_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 extern int acl_initilized;
 extern void init_file_acl();
-static void backup_path_init ()
+static void backup_path_init (void)
 {
   dk_set_t b_dirs = 0;
 

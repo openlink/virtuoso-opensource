@@ -368,7 +368,7 @@ id_hash_t * tn_ifp_no_graph_ht;
 dk_mutex_t * tn_cache_mtx;
 
 void
-sas_ensure ()
+sas_ensure (void)
 {
   caddr_t err;
   if (!sas_1_qr)

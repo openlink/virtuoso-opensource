@@ -157,7 +157,7 @@ char *insert_text_ora =
 char *insert_text;
 
 void
-check_dd ()
+check_dd (void)
 {
   HSTMT ck_stmt;
   SQLAllocStmt (hdbc, &ck_stmt);

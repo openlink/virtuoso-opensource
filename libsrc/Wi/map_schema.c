@@ -113,7 +113,7 @@ mpschema_set_view_def (char *name, caddr_t tree)
 
 
 void
-remove_old_xmlview ()
+remove_old_xmlview (void)
 {
   if (xml_global->xs_old_views)
     {

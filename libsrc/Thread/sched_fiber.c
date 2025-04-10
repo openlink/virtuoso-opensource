@@ -267,7 +267,7 @@ thread_initial (unsigned long stack_size)
 
 
 thread_t *
-thread_allocate ()
+thread_allocate (void)
 {
   thread_t *thr;
   thr = (thread_t *) dk_alloc (sizeof (thread_t));
@@ -333,7 +333,7 @@ thread_create (
 
 
 thread_t *
-thread_attach ()
+thread_attach (void)
 {
   thread_t *thr = thread_allocate ();
 
@@ -698,7 +698,7 @@ mutex_leave (dk_mutex_t *mtx)
 
 
 void
-mutex_stat ()
+mutex_stat (void)
 {
 #ifdef MTX_METER
   DO_SET (dk_mutex_t *, mtx, &all_mtxs)

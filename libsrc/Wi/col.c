@@ -5083,7 +5083,7 @@ bif_ddl_table_col_update (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args
 }
 
 void
-col_init ()
+col_init (void)
 {
   bif_define ("cs_new", bif_cs_new);
   bif_define ("cs_compress", bif_cs_compress);

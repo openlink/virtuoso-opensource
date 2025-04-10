@@ -888,7 +888,7 @@ void mutex_leave (dk_mutex_t *self)
 
 
 void
-mutex_stat ()
+mutex_stat (void)
 {
   #ifdef MTX_METER
   DO_SET (dk_mutex_t *, mtx, &all_mtxs)

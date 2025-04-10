@@ -43,7 +43,7 @@ RETCODE rc;
 char state[10], message[1000];
 
 void
-odbc_error ()
+odbc_error (void)
 {
   SWORD len;
   SQLError (hstmt || hdbc ? SQL_NULL_HENV : henv, hstmt ? SQL_NULL_HDBC : hdbc, hstmt, (UCHAR *) state, NULL,

@@ -7197,7 +7197,7 @@ void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_
 
 
 void
-rdf_box_init ()
+rdf_box_init (void)
 {
   dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 1);
   box_tmp_copier[DV_RDF] = (box_tmp_copy_f) rb_tmp_copy;

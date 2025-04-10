@@ -295,7 +295,7 @@ sigh_report_and_forget (int sig)
 
 #ifndef SHARED_OBJECT
 static void
-sigh_set_notifiers ()
+sigh_set_notifiers (void)
 {
   int i;
   if (min_signal_handling)

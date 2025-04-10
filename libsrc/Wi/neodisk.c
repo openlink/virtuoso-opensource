@@ -123,7 +123,7 @@ lt_rb_check (lock_trx_t * lt)
 int32 enable_cpt_rb_ck = 0;
 
 void
-cpt_rb_ck ()
+cpt_rb_ck (void)
 {
   DO_SET (volatile lock_trx_t *, lt, &all_trxs)
     {
@@ -545,7 +545,7 @@ int cpt_trx_rc_n_ck = 0;
 
 
 void
-cpt_trx_rc_ck ()
+cpt_trx_rc_ck (void)
 {
   int inx;
   cpt_trx_rc_n_ck++;
@@ -884,7 +884,7 @@ cpt_lt_rollback (lock_trx_t * lt)
 }
 
 void
-cpt_uncommitted ()
+cpt_uncommitted (void)
 {
   cpt_init_trx_rc_fill = trx_rc->rc_fill;
   cpt_trx_rc_n_ck = 0;
@@ -1290,7 +1290,7 @@ em_unremap (index_tree_t * it, it_cursor_t * itc, extent_map_t * em, int * bufs_
 
 
 void
-cpt_place_buffers ()
+cpt_place_buffers (void)
 {
   /* unremapped pages have been read into the dbs_cpt_tree.  Now place these into their correct trees
    * Because finding the right tree is too hard, mark these simply as unallocated.  If these are left hanging the assert in it_cache_check will fail when the dp gets used for sth else */
@@ -1630,7 +1630,7 @@ dbs_cache_check (dbe_storage_t * dbs, int mode)
 
 
 void
-bp_flush_all ()
+bp_flush_all (void)
 {
   int inx;
   DO_BOX (buffer_pool_t *, bp, inx, wi_inst.wi_bps)

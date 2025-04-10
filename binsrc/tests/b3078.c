@@ -134,7 +134,7 @@ ODBC_Errors (char *where)
 
 
 int
-ODBC_PrintResult()
+ODBC_PrintResult(void)
 {
   char fetchBuffer[1000];
   short displayWidths[MAXCOLS];
@@ -331,7 +331,7 @@ endCursor:
 
 
 int
-ODBC_Execute()
+ODBC_Execute(void)
 {
 
   SQLCHAR *      Statement = "select * from BTEST where id > ?";

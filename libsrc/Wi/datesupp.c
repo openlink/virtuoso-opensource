@@ -902,7 +902,7 @@ snprintf_generic_duration (char *buf, size_t buf_size, ccaddr_t duration)
 int isdts_mode = 1;
 
 void
-dt_init ()
+dt_init (void)
 {
   time_t lt, gt;
   struct tm ltm;

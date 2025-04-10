@@ -888,7 +888,7 @@ db_dbg_account_check_page_in_hash (dp_addr_t start)
 }
 
 void
-db_dbg_account_init_hash ()
+db_dbg_account_init_hash (void)
 {
   if (!blob_pages_hash)
     {

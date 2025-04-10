@@ -45,7 +45,7 @@ resource_t * clib_rc;
 
 
 cll_in_box_t *
-clib_allocate ()
+clib_allocate (void)
 {
   B_NEW_VARZ (cll_in_box_t, clib);
   return clib;
@@ -80,7 +80,7 @@ clib_free (cll_in_box_t * clib)
 
 
 void
-clib_rc_init ()
+clib_rc_init (void)
 {
   clib_rc = resource_allocate (200, (rc_constr_t)clib_allocate, (rc_destr_t)clib_free, (rc_destr_t)clib_clear, 0);
 }
@@ -127,7 +127,7 @@ mctr_new_conn (cl_host_t * to)
 
 
 void
-mctr_init ()
+mctr_init (void)
 {
   mctr_ht = hash_table_allocate_64 (200);
   dk_mutex_init (&mctr_mtx, MUTEX_TYPE_SHORT);
@@ -269,7 +269,7 @@ cl_is_dup_cancel (id_hash_t ** ht, int to_host, int coord, int req_no)
 }
 
 void
-cl_clear_dup_cancel ()
+cl_clear_dup_cancel (void)
 {
 }
 

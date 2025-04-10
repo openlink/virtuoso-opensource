@@ -253,7 +253,7 @@ static void wlex_font(wlex_font_t newfont)
   PRINTTEXT(tags);
 }
 
-static void wlex_font_pop()
+static void wlex_font_pop(void)
 {
   char *tags;
   switch (STATE(wlex_font)[0])

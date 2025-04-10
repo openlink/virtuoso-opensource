@@ -1467,7 +1467,7 @@ future_wrapper (void *ignore)
 
 
 void
-PrpcFixedServerThread ()
+PrpcFixedServerThread (void)
 {
   dk_session_t *ses = IMMEDIATE_CLIENT;
   du_thread_t *self = THREAD_CURRENT_THREAD;
@@ -1926,7 +1926,7 @@ inprocess_request (TAKE_G dk_session_t * ses, caddr_t * request)
 
 
 dk_session_t *
-make_inprocess_session ()
+make_inprocess_session (void)
 {
   char buffer[100];
   dk_session_t *session = inpses_allocate ();
@@ -3437,7 +3437,7 @@ dks_housekeeping_session_count_change (int delta)
 
 
 long
-sf_signal_init ()
+sf_signal_init (void)
 {
   dk_session_t *sig_listen = IMMEDIATE_CLIENT;
   SESSION_SCH_DATA (sig_listen)->sio_default_read_ready_action = (io_action_func) dk_self_signalled;
@@ -3572,7 +3572,7 @@ PrpcIAm (char *name)
 
 #ifdef NOT					 /*PREEMPT, formerly */
 void
-timeout_round_loop ()
+timeout_round_loop (void)
 {
   while (1)
     {
@@ -3717,7 +3717,7 @@ log_queue_add_msg (LOG * log, int level, char *buf)
 
 
 void
-log_thread_initialize ()
+log_thread_initialize (void)
 {
   if (!virtuoso_log || !stderr_log || (log_file_line & 0x1) == 0)	/*if no logs then do not use a thread */
     return;
@@ -4645,7 +4645,7 @@ PrpcDisconnect (dk_session_t * session)
 
 
 void
-PrpcDisconnectAll ()
+PrpcDisconnectAll (void)
 {
   USE_GLOBAL
   int i;
@@ -4729,7 +4729,7 @@ fd_sets_intersect (fd_set * s1, fd_set * s2)
 
 
 void
-sun_rpc_loop ()
+sun_rpc_loop (void)
 {
   du_thread_t *this_thread = THREAD_CURRENT_THREAD;
   timeout_t to;
@@ -4744,7 +4744,7 @@ sun_rpc_loop ()
 
 
 void
-sun_rpc_ready ()
+sun_rpc_ready (void)
 {
   if (sun_rpc_thread)
     semaphore_leave (sun_rpc_thread->dkt_process->thr_sem);
@@ -4992,7 +4992,7 @@ dk_ssl_free (void *old)
 int ssl_server_set_certificate (SSL_CTX * ssl_ctx, char *cert_name, char *key_name, char *extra);
 
 static int
-ssl_server_key_setup ()
+ssl_server_key_setup (void)
 {
   if (!c_ssl_server_cert || !c_ssl_server_key)
     {
@@ -5061,7 +5061,7 @@ ssl_thread_id (void)
 }
 
 void
-ssl_thread_setup ()
+ssl_thread_setup (void)
 {
   int i;
   lock_cs = (dk_mutex_t **)dk_alloc (CRYPTO_num_locks() * sizeof (dk_mutex_t *));
@@ -5426,7 +5426,7 @@ OSSL_PROVIDER *ssl_deflt_provider;
 #endif
 
 static void
-ssl_server_init ()
+ssl_server_init (void)
 {
   const SSL_METHOD *ssl_server_method;
 
@@ -5927,7 +5927,7 @@ dk_alloc_reserve_malloc (size_t size, int gpf_if_not)
 
 #ifndef NO_THREAD
 void
-ssl_server_listen ()
+ssl_server_listen (void)
 {
 #ifdef _SSL
   dk_session_t *listening;

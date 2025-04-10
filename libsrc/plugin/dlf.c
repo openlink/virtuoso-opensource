@@ -94,7 +94,7 @@ dlsym (void *hdll, char *sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   extern char *strerror ();
 
@@ -431,7 +431,7 @@ dlclose (void *hobj)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   extern char *sys_errlist[];
 
@@ -575,7 +575,7 @@ dlsym (void * hdll, char * sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   static char lpMsgBuf[512];
   if (!FormatMessage (FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS, NULL, GetLastError (), MAKELANGID (LANG_NEUTRAL, SUBLANG_DEFAULT),	/* Default language */
@@ -756,7 +756,7 @@ dlsym (void *hdll, char *sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   struct dsc$descriptor desc;
   short outlen;
@@ -918,7 +918,7 @@ dlsym (void *hdll, char *sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   return NULL;
 }
@@ -1514,7 +1514,7 @@ dlsym (void *hdll, char *sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   return (msg_error) ? msg_error : "No error detected.";
 }
@@ -1610,7 +1610,7 @@ dlsym (void *hdll, char *sym)
 
 
 char *
-dlerror ()
+dlerror (void)
 {
   return (msg_error) ? msg_error : "No error detected.";
 }

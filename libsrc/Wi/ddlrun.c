@@ -1458,7 +1458,7 @@ dk_mutex_t * recomp_mtx;
 
 
 void
-ddl_init_objects ()
+ddl_init_objects (void)
 {
   if (!sch_name_to_table (wi_inst.wi_schema, "SYS_REPL_ACCOUNTS"))
     {
@@ -5374,7 +5374,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 
 
 void
-ddl_init_proc ()
+ddl_init_proc (void)
 {
   if (!sch_name_to_table (wi_inst.wi_schema, "SYS_PROCEDURES"))
     {

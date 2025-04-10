@@ -233,7 +233,7 @@ dc_box_cmp (data_col_t * dc, int r1, int r2, int r_prefetch)
 char vec_box_dtps[256];
 
 void
-vec_dtp_init ()
+vec_dtp_init (void)
 {
   int inx;
   vec_box_dtps[DV_NUMERIC] = 1;

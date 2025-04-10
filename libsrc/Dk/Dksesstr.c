@@ -468,7 +468,7 @@ strdev_free (device_t * dev)
 
 #ifdef never
 void
-not_applicable ()
+not_applicable (void)
 {
   printf ("Attempt to call a session function not available on string sessions");
 #ifndef DLL

@@ -68,7 +68,7 @@ error (SQLSMALLINT handle_type, SQLHANDLE handle)
 
 
 void
-create_proc ()
+create_proc (void)
 {
   HSTMT hstmt;
   SQLRETURN rc;
@@ -151,7 +151,7 @@ call_proc (int n_times)
 
 
 void
-test ()
+test (void)
 {
   HSTMT hstmt;
   SQLRETURN rc;

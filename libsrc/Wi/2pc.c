@@ -187,7 +187,7 @@ static queue_vtbl_t xa_tp_vtbl = {
 int d_trx_no = 0;
 
 tp_queue_t *
-tp_queue_init ()
+tp_queue_init (void)
 {
   NEW_VARZ (tp_queue_t, mq);
 
@@ -733,7 +733,7 @@ dtrx_dealloc (tp_dtrx_t * dtrx)
 }
 
 tp_dtrx_t *
-virt_trx_allocate ()
+virt_trx_allocate (void)
 {
   static tp_trx_vtbl_t vtbl = {
     tp_trx_enlist,
@@ -1017,7 +1017,7 @@ typedef union trx_uuid_u
 trx_uuid_t;
 
 caddr_t
-tp_get_server_uuid ()
+tp_get_server_uuid (void)
 {
 #if defined (UUID_BY_PORT)
 
@@ -1204,7 +1204,7 @@ virt_tp_recover (box_t recov_data)
 }
 
 static virt_tp_t *
-virt_tp_create ()
+virt_tp_create (void)
 {
   virt_tp_t *virt_tp = (virt_tp_t *) dk_alloc (sizeof (virt_tp_t));
   memset (virt_tp, 0, sizeof (virt_tp_t));
@@ -1283,7 +1283,7 @@ xidhashcmp (caddr_t x1, caddr_t x2)
 char *xa_persistent_file = "test.xa";
 
 static void
-global_xa_init ()
+global_xa_init (void)
 {
   global_xa_map = (virt_xa_map_t *) dk_alloc (sizeof (virt_xa_map_t));
   global_xa_map->xm_xids =
@@ -1661,7 +1661,7 @@ static caddr_t
 bif_txa_get_all_trx (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
 
 void
-tp_bif_init ()
+tp_bif_init (void)
 {
   /* compatibility */
   bif_define_ex ("tp_enlist", bif_2pc_enlist, BMD_RET_TYPE, &bt_integer, BMD_DONE);
@@ -1684,7 +1684,7 @@ tp_bif_init ()
 }
 
 void
-tp_main_queue_init ()
+tp_main_queue_init (void)
 {
   _2pc_dtp = virt_tp_create ();
 
@@ -1694,7 +1694,7 @@ tp_main_queue_init ()
 }
 
 tp_queue_t *
-tp_get_main_queue ()
+tp_get_main_queue (void)
 {
   return tp_main_queue;
 }
@@ -1899,7 +1899,7 @@ txa_open (char *file_name)
 }
 
 static int
-txa_write ()
+txa_write (void)
 {
   int fd;
   dk_free_tree ((box_t) txi.txi_info);
@@ -1966,7 +1966,7 @@ bif_txa_get_all_trx (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 static void
-_txa_test ()
+_txa_test (void)
 {
   int res = txa_open ("trx.xa");
   log_info ("txa_open result = %d", res);

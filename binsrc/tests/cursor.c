@@ -258,7 +258,7 @@ void close_sync_test (int autocommit, int batch, int read_n, char * text)
 char * inc_text = "create procedure inc (inout x integer) { x := x + 1; }";
 
 
-void in_out_test ()
+void in_out_test (void)
 {
 
   long io = 1, iol = 4;

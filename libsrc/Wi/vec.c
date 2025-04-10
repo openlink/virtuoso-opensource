@@ -2254,7 +2254,7 @@ cl_dcf_id (col_ref_t f)
 
 
 void
-cl_dc_funcs ()
+cl_dc_funcs (void)
 {
   cl_dc_func_id = hash_table_allocate (21);
   cl_id_dc_func = hash_table_allocate (21);

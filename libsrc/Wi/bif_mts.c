@@ -163,7 +163,7 @@ bif_mts_all_info(caddr_t* qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-export_mts_bif_init ()
+export_mts_bif_init (void)
 {
   mts_init ();
   if(!mts_connect (1))
