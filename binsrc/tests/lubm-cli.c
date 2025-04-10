@@ -407,7 +407,7 @@ get_AssociateProfessor (char * buf)
   return buf;
 }
 
-typedef char * (*rand_func) ();
+typedef char * (*rand_func) (char *);
 
 typedef struct qr_s {
    int n_pars;
