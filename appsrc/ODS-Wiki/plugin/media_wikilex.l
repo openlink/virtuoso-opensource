@@ -332,7 +332,7 @@ static void wlex_verbatim (int enable)
     {
       int intext = STATE(wlex_in_any_text);
       wlex_reset(~(WLEX_RESET_LIST | WLEX_RESET_TABLE));
-      if (intext);
+      if (intext)
         PRINT("<BR>");
       PRINT("<PRE>");
     }
