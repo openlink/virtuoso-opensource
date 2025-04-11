@@ -1385,7 +1385,7 @@ void cm_record_dfg_progress (int coord, int req_no, cl_thread_t * clt, char *fil
 #define dfg_progress(coord, req_no, clt)  cm_record_dfg_progress (coord, req_no, clt, __FILE__, __LINE__)
 
 #define cm_record_dispatch(cm, clt, f) cm_record_dispatch_1 (cm, clt, f, __FILE__, __LINE__)
-#define cm_record_dfg_deliv(cm, f) cm_record_dispatch_1 (cm, 0, 256 + (f), __FILE__, __LINE__);
+#define cm_record_dfg_deliv(cm, f) cm_record_dispatch_1 (cm, 0, 256 + (f), __FILE__, __LINE__)
 
 #define CM_D_TOP_START 1
 #define CM_D_TOP_QUEUE 2

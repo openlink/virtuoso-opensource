@@ -132,7 +132,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
    if (TAG_BAD == box_tag_aux(box)) \
      GPF_T1 ("Can't alter TAG_BAD by box_tag_modify"); \
    box_tag_modify_impl(box,new_tag); \
-   } while (0);
+   } while (0)
 #else
 #define box_tag_modify(box,new_tag) 	box_tag_modify_impl(box,new_tag)
 #endif
