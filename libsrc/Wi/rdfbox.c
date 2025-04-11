@@ -2021,7 +2021,7 @@ rdf_box_hash_strong_cmp (ccaddr_t b1, ccaddr_t b2)
     {
       if (rb2->rb_ro_id == rb1->rb_ro_id)
         return 1;
-        return 0;
+      return 0;
     }
   if ((!rb1->rb_is_complete && rb1->rb_ro_id) || (!rb2->rb_is_complete && rb2->rb_ro_id))
     return 0;

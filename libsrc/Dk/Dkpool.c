@@ -1622,7 +1622,7 @@ mp_check_not_in_pool (int64 __ptr)
   map = dk_pool_map[__ptr >> 32];
   if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 0x7))))
     GPF_T1 ("Freeing address in mem pool, do not confuse these with mallocd");
-    mutex_leave (&mp_mmap_mark_mtx);
+  mutex_leave (&mp_mmap_mark_mtx);
 }
 
 

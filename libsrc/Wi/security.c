@@ -1553,7 +1553,7 @@ sec_grant_single_role (user_t * user, user_t * gr, int make_err)
                 continue;
 	      if (grp == gr->usr_id)
 		  found = 1;
-		  break;
+	      break;
 		}
 	  END_DO_BOX;
 	  if (!found)

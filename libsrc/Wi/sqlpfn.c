@@ -2391,7 +2391,7 @@ generic_check:
 	  lit = (ST *)(t_full_box_copy_tree (ret_val));
 	  if (DV_TYPE_OF (ret_val) == DV_RDF)
 	    lit = t_listst (3, CALL_STMT, t_sqlp_box_id_upcase ("__rdflit"), t_list (1, lit));
-            dk_free_box (ret_val);
+          dk_free_box (ret_val);
           return lit;
 not_a_constant_pure: ;
         }

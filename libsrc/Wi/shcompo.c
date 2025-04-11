@@ -504,36 +504,36 @@ shcompo_init (void)
   if (shcompo_max_cache_sz < 100)
     shcompo_max_cache_sz = 100;
 
-    shcompo_vtable__qr.shcompo_type_title = "precompiled SQL query";
+  shcompo_vtable__qr.shcompo_type_title = "precompiled SQL query";
   shcompo_vtable__qr.shcompo_cache = id_hash_allocate (1024, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
   id_hash_set_rehash_pct (shcompo_vtable__qr.shcompo_cache, 200);
 
-    shcompo_vtable__qr.shcompo_cache_mutex = mutex_allocate ();
-    shcompo_vtable__qr.shcompo_spare_mutexes = NULL;
-    shcompo_vtable__qr.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__qr.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
-    shcompo_vtable__qr.shcompo_compile = shcompo_compile__qr;
-    shcompo_vtable__qr.shcompo_check_if_stale = shcompo_check_if_stale__qr;
-    shcompo_vtable__qr.shcompo_recompile = shcompo_recompile__qr;
-    shcompo_vtable__qr.shcompo_destroy_data = shcompo_destroy_data__qr;
+  shcompo_vtable__qr.shcompo_cache_mutex = mutex_allocate ();
+  shcompo_vtable__qr.shcompo_spare_mutexes = NULL;
+  shcompo_vtable__qr.shcompo_alloc = shcompo_alloc__default;
+  shcompo_vtable__qr.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
+  shcompo_vtable__qr.shcompo_compile = shcompo_compile__qr;
+  shcompo_vtable__qr.shcompo_check_if_stale = shcompo_check_if_stale__qr;
+  shcompo_vtable__qr.shcompo_recompile = shcompo_recompile__qr;
+  shcompo_vtable__qr.shcompo_destroy_data = shcompo_destroy_data__qr;
   shcompo_vtable__qr.shcompo_cache_size_limit = shcompo_max_cache_sz;
 
 #ifdef DEBUG
-    shcompo_vtable__test.shcompo_type_title = "test emulator of compilation";
+  shcompo_vtable__test.shcompo_type_title = "test emulator of compilation";
   shcompo_vtable__test.shcompo_cache = id_hash_allocate (100, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);
 
-    shcompo_vtable__test.shcompo_cache_mutex = mutex_allocate ();
-    shcompo_vtable__test.shcompo_spare_mutexes = NULL;
-    shcompo_vtable__test.shcompo_alloc = shcompo_alloc__default;
-    shcompo_vtable__test.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
-    shcompo_vtable__test.shcompo_compile = shcompo_compile__test;
-    shcompo_vtable__test.shcompo_check_if_stale = shcompo_check_if_stale__test;
-    shcompo_vtable__test.shcompo_recompile = shcompo_recompile__test;
-    shcompo_vtable__test.shcompo_destroy_data = shcompo_destroy_data__test;
-    shcompo_vtable__test.shcompo_cache_size_limit = 10;
-    bif_define ("exec_shcompo_test", bif_exec_shcompo_test);
+  shcompo_vtable__test.shcompo_cache_mutex = mutex_allocate ();
+  shcompo_vtable__test.shcompo_spare_mutexes = NULL;
+  shcompo_vtable__test.shcompo_alloc = shcompo_alloc__default;
+  shcompo_vtable__test.shcompo_alloc_copy = (shcompo_alloc_copy_t) shcompo_alloc__default;
+  shcompo_vtable__test.shcompo_compile = shcompo_compile__test;
+  shcompo_vtable__test.shcompo_check_if_stale = shcompo_check_if_stale__test;
+  shcompo_vtable__test.shcompo_recompile = shcompo_recompile__test;
+  shcompo_vtable__test.shcompo_destroy_data = shcompo_destroy_data__test;
+  shcompo_vtable__test.shcompo_cache_size_limit = 10;
+  bif_define ("exec_shcompo_test", bif_exec_shcompo_test);
 #endif
-    bif_define ("shcompo_clear", bif_shcompo_clear);
+  bif_define ("shcompo_clear", bif_shcompo_clear);
 }
 
 void

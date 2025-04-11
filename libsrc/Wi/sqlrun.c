@@ -2313,11 +2313,12 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	{
 	  if (qi->qi_client->cli_row_autocommit)
 	    qi->qi_non_txn_insert = 1;
-	    {
-	  key_vec_insert (ins, state, itc, ins->ins_keys[k]);
-	  itc_free_owned_params (itc);
-	  itc_col_free (itc);
-	}
+
+	  {
+	    key_vec_insert (ins, state, itc, ins->ins_keys[k]);
+	    itc_free_owned_params (itc);
+	    itc_col_free (itc);
+	  }
 	}
       qi->qi_non_txn_insert = non_txn_insert;
       qi->qi_set_mask = save_sets;

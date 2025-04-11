@@ -291,8 +291,8 @@ clrg_destroy (cl_req_group_t * clrg)
   mutex_enter (&clrg->clrg_mtx);
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
     {
-    if (clib->clib_alt_trx_no)
-      lt_alt_trx_no_free (clrg->clrg_lt, clib->clib_alt_trx_no);
+      if (clib->clib_alt_trx_no)
+        lt_alt_trx_no_free (clrg->clrg_lt, clib->clib_alt_trx_no);
       if (!clib->clib_req_no || clib->clib_fake_req_no)
 	continue; /* if no req no or a dfg sending clib, it is not really registered. If freed here, would remhash using a remote clib no and could collide dropping a local registration */
 #if 0

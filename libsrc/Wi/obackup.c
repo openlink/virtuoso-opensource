@@ -1162,7 +1162,7 @@ bp_sec_check_prefix (query_instance_t * qi, char *file_prefix)
   if (s)
     sqlr_new_error ("42000", FILE_FORM_ERR_CODE , "Semicolon in backup prefix is not allowed");
 
-    s = strchr (file_prefix, '.');
+  s = strchr (file_prefix, '.');
   while (s)
     {
       if (s[1] == '.')
