@@ -518,7 +518,7 @@ int  pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err);
 
 void pg_check_map (buffer_desc_t * buf);
 #else
-#define pg_check_map(buf)
+#define pg_check_map(buf)	((void)0)
 #endif
 int pg_room (db_buf_t page);
 
@@ -585,8 +585,8 @@ int buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf);
 #define buf_set_dirty_inside(b)  BUF_SET_IS_DIRTY(b,1)
 #endif
 
-#define cl_enlist_ck(it, buf)
-#define cl_set_slice(cli, clm, slice, err)
+#define cl_enlist_ck(it, buf)			((void)0)
+#define cl_set_slice(cli, clm, slice, err)	((void)0)
 
 void wi_new_dirty (buffer_desc_t * buf);
 

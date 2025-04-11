@@ -1710,7 +1710,7 @@ mp_mark_check (void)
 
 
 #else
-#define mp_mmap_mark(ptr, sz, f)
+#define mp_mmap_mark(ptr, sz, f)	((void)0)
 #endif
 
 void mm_cache_clear ();

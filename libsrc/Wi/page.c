@@ -935,7 +935,7 @@ buf_order_ck (buffer_desc_t * buf)
 
 
 #ifndef PAGE_CHECK
-#define buf_order_ck(b)
+#define buf_order_ck(b)		((void)0)
 #endif
 
 

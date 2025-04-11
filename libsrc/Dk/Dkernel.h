@@ -1002,7 +1002,7 @@ extern volatile int dk_alloc_reserve_mode;
 void dk_alloc_set_reserve_mode (int mode);
 #else
 #define DK_ALLOC_ON_RESERVE 		0
-#define dk_alloc_set_reserve_mode(M) 	do { ; } while (0)
+#define dk_alloc_set_reserve_mode(M) 	((void)0)
 #endif
 
 void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);

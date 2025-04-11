@@ -57,9 +57,9 @@ xml_syspath_t *xml_sys_path_list;
 #define SHOULD_BE_CHANGED
 
 #ifdef XMLSCHEMA_UNIT_DEBUG
-#define schema_printf(Z) printf Z
+#define schema_printf(Z) 	printf Z
 #else
-#define schema_printf(Z)
+#define schema_printf(Z)	((void)0)
 #endif
 
 #define XSPAT__CENTURY		"-?\\d{2}\\d*"

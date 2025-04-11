@@ -1435,10 +1435,10 @@ typedef struct _cm_trace_s
 
 
 #else
-#define cm_record_send(cm, to)
-#define cm_record_dispatch(cm, clt, r)
-#define cm_record_dfg_deliv(cm, f)
-#define dfg_progress(coord, req_no, clt)
+#define cm_record_send(cm, to)			((void)0)
+#define cm_record_dispatch(cm, clt, r)		((void)0)
+#define cm_record_dfg_deliv(cm, f)		((void)0)
+#define dfg_progress(coord, req_no, clt)	((void)0)
 #endif
 
 void cl_notify_wait (gen_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf);
@@ -1453,7 +1453,7 @@ extern int cl_trx_inited;
 #if 0
 #define ctrx_printf(x) printf x
 #else
-#define ctrx_printf(x)
+#define ctrx_printf(x)	((void)0)
 #endif
 void cl_clear_dead_w_id (void);
 
@@ -1659,9 +1659,9 @@ void ch_qf_closed (cl_host_t * ch, uint32 req_no, cl_message_t * cm);
 
 int cl_w_timeout_hook (dk_session_t * ses);
 #if 1
-#define io_printf(a)
+#define io_printf(a)		((void)0)
 #else
-#define io_printf(a) printf a
+#define io_printf(a) 		printf a
 #endif
 
 #define CL_ONLINE_CK \

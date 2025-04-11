@@ -89,8 +89,8 @@ extern void DBG_NAME(rc_resize) (DBG_PARAMS  resource_t * rc, int new_sz);
 #define _resource_adjust(rc)							dbg__resource_adjust(__FILE__,__LINE__,(rc))
 #define rc_resize(rc,new_sz)							dbg_rc_resize(__FILE__,__LINE__,(rc),(new_sz))
 #else
-#define resource_track_new(item)						do { } while (0)
-#define resource_track_delete(item)						do { } while (0)
+#define resource_track_new(item)						((void)0)
+#define resource_track_delete(item)						((void)0)
 #endif
 
 #endif

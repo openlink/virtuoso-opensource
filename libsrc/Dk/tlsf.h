@@ -74,10 +74,10 @@ extern void tlsf_base_free (void * c, size_t sz);
 #if !defined(WIN32) && defined(TLSF_USE_LOCKS)
 #include "target.h"
 #else
-#define TLSF_CREATE_LOCK(_unused_)   do{}while(0)
-#define TLSF_DESTROY_LOCK(_unused_)  do{}while(0) 
-#define TLSF_ACQUIRE_LOCK(_unused_)  do{}while(0)
-#define TLSF_RELEASE_LOCK(_unused_)  do{}while(0)
+#define TLSF_CREATE_LOCK(_unused_)   ((void)0)
+#define TLSF_DESTROY_LOCK(_unused_)  ((void)0)
+#define TLSF_ACQUIRE_LOCK(_unused_)  ((void)0)
+#define TLSF_RELEASE_LOCK(_unused_)  ((void)0)
 #endif
 
 #if TLSF_STATISTIC
@@ -91,8 +91,8 @@ extern void tlsf_base_free (void * c, size_t sz);
     tlsf->used_size -= ((int)b->size & BLOCK_SIZE) + BHDR_OVERHEAD;	\
 	} while(0)
 #else
-#define	TLSF_ADD_SIZE(tlsf, b)	     do{}while(0)
-#define	TLSF_REMOVE_SIZE(tlsf, b)    do{}while(0)
+#define	TLSF_ADD_SIZE(tlsf, b)	     ((void)0)
+#define	TLSF_REMOVE_SIZE(tlsf, b)    ((void)0)
 #endif
 
 #if USE_MMAP || USE_SBRK

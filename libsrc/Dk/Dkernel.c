@@ -155,8 +155,8 @@ dk_mutex_t *value_mtx;
 #define IN_VALUE	mutex_enter (value_mtx)
 #define LEAVE_VALUE	mutex_leave (value_mtx)
 #else
-#define IN_VALUE			 /* no value_mtx for single thread */
-#define LEAVE_VALUE
+#define IN_VALUE	((void)0)			 /* no value_mtx for single thread */
+#define LEAVE_VALUE	((void)0)
 #endif
 
 long connection_count;

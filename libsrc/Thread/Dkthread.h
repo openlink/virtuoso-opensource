@@ -139,8 +139,8 @@ typedef int32 TVAL;
   if (THREAD_CURRENT_THREAD == (mtx)->mtx_owner) GPF_T1 ("Not outside mutex.");
 
 #else
-# define ASSERT_IN_MTX(mtx)
-# define ASSERT_OUTSIDE_MTX(mtx)
+# define ASSERT_IN_MTX(mtx)		((void)0)
+# define ASSERT_OUTSIDE_MTX(mtx)	((void)0)
 #endif
 
 BEGIN_CPLUSPLUS
@@ -233,7 +233,7 @@ void mutex_leave_dbg (int ln, const char * file, dk_mutex_t *mtx);
 void mutex_option (dk_mutex_t * mtx, char * name, mtx_entry_check_t ck, void * cd);
 #else
 #define MUTEX_OPTION_NOP
-#define mutex_option(mtx,name,ck,cd) do { ; } while (0)
+#define mutex_option(mtx,name,ck,cd)	((void)0)
 #endif
 EXE_EXPORT (int, mutex_try_enter, (dk_mutex_t *mtx));
 void mutex_stat (int mode, int max);
