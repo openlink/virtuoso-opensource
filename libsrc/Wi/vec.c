@@ -1545,56 +1545,47 @@ sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, 
     }
 }
 
-#define RES_IF_NN(set)		\
-{ \
-  if (!dc->dc_any_null) { \
-    sets[fill++] = set; \
-  } else  \
-    { \
-      if (dc->dc_nulls) \
-	{ \
-	  if (!DC_IS_NULL (dc, set)) \
-	    sets[fill++] = set; \
-	} \
-      else  \
-      { \
-	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[set][0]) \
-	  sets[fill++] = set; \
-      } \
-    } \
-}
+#define RES_IF_NN(set)                                                  \
+  do {                                                                  \
+    if (!dc->dc_any_null) {                                             \
+        sets[fill++] = set;                                             \
+    } else {                                                            \
+        if (dc->dc_nulls) {                                             \
+          if (!DC_IS_NULL (dc, set))                                    \
+            sets[fill++] = set;                                         \
+        } else {                                                        \
+          if (DV_DB_NULL != ((db_buf_t *) dc->dc_values)[set][0])       \
+            sets[fill++] = set;                                         \
+        }                                                               \
+      }                                                                 \
+  } while (0)
 
-#define RES_IF_NN_G(nth_v)		\
-{ \
-  if (!dc->dc_any_null) { \
-    group_sets[fill] = n + nth_v - 1; \
-    sets[fill++] = s##nth_v; \
-  } else  \
-    { \
-      if (dc->dc_nulls) \
-	{ \
-	  if (!DC_IS_NULL (dc, s##nth_v)) { \
-	    group_sets[fill] = n + nth_v - 1; \
-	    sets[fill++] = s##nth_v; \
-	  } \
-	}					\
-      else if ((DCT_BOXES & dc->dc_type))	\
-	{ \
-      caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v]; \
-      if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) { \
-      group_sets[fill] = n + nth_v - 1; \
-      sets[fill++] = s##nth_v;		\
-	}				\
-	}				\
-      else \
-      { \
-	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) \
-	  group_sets[fill] = n + nth_v - 1; \
-	  sets[fill++] = s##nth_v; \
-      } \
-    } \
-}
 
+#define RES_IF_NN_G(nth_v)                                              \
+  do {                                                                  \
+    if (!dc->dc_any_null) {                                             \
+      group_sets[fill] = n + nth_v - 1;                                 \
+      sets[fill++] = s##nth_v;                                          \
+    } else {                                                            \
+      if (dc->dc_nulls) {                                               \
+        if (!DC_IS_NULL (dc, s##nth_v)) {                               \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      } else if ((DCT_BOXES & dc->dc_type)) {                           \
+        caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v];              \
+        if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) {   \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      } else {                                                          \
+        if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) {    \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      }                                                                 \
+    }                                                                   \
+  } while (0)
 
 int
 sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int *group_sets, int set, int n_sets)
