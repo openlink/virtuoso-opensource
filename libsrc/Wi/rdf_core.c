@@ -4107,7 +4107,7 @@ bif_rdf_obj_set_is_text_if_ft_rule_check (caddr_t * qst, caddr_t * err_ret, stat
       if ('1' == flag)
         goto need_ft; /* see below */
     }
-  if (rdf_obj_ft_rule_check_if_configured (qst, args, 1, "__rdf_obj_set_is_text_if_ft_rule_check"));
+  if (rdf_obj_ft_rule_check_if_configured (qst, args, 1, "__rdf_obj_set_is_text_if_ft_rule_check"))
     goto need_ft; /* see below */
   return box_num (0);
 need_ft:
