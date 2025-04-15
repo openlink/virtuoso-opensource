@@ -1636,7 +1636,7 @@ dbg_geo_to_text (caddr_t x)
 dk_mutex_t *geo_reg_mtx;
 
 void
-geo_init ()
+geo_init (void)
 {
   bif_define_ex ("geo_insert"		, bif_geo_insert						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);
   bif_define_ex ("geo_delete"		, bif_geo_delete						, BMD_USES_INDEX, BMD_NEED_ENLIST, BMD_DONE);

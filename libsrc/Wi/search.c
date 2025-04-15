@@ -562,7 +562,7 @@ itc_free (it_cursor_t * it)
 
 
 placeholder_t *
-plh_allocate ()
+plh_allocate (void)
 {
   NEW_PLH(v);
   return v;
@@ -771,13 +771,14 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
 
   if (dtp2 != DV_SHORT_STRING && dtp2 != DV_LONG_STRING && dtp2 != DV_WIDE && dtp2 != DV_LONG_WIDE )
     return DVC_LESS;
-    switch (dtp2)
+
+  switch (dtp2)
       {
       case DV_WIDE:
       case DV_LONG_WIDE:
       pt = LIKE_ARG_WCHAR;
       break;
-	  }
+  }
   switch (dtp1)
 	      {
     case DV_SHORT_STRING:

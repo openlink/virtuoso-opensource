@@ -189,7 +189,7 @@ dk_mmap_brk (size_t sz)
     } \
 } while (0)
 #else
-#define dk_alloc_box_check_length(bytes,tag) do { ; } while (0)
+#define dk_alloc_box_check_length(bytes,tag)	((void)0)
 #endif
 
 

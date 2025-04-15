@@ -74,10 +74,10 @@ extern void tlsf_base_free (void * c, size_t sz);
 #if !defined(WIN32) && defined(TLSF_USE_LOCKS)
 #include "target.h"
 #else
-#define TLSF_CREATE_LOCK(_unused_)   do{}while(0)
-#define TLSF_DESTROY_LOCK(_unused_)  do{}while(0) 
-#define TLSF_ACQUIRE_LOCK(_unused_)  do{}while(0)
-#define TLSF_RELEASE_LOCK(_unused_)  do{}while(0)
+#define TLSF_CREATE_LOCK(_unused_)   ((void)0)
+#define TLSF_DESTROY_LOCK(_unused_)  ((void)0)
+#define TLSF_ACQUIRE_LOCK(_unused_)  ((void)0)
+#define TLSF_RELEASE_LOCK(_unused_)  ((void)0)
 #endif
 
 #if TLSF_STATISTIC
@@ -91,8 +91,8 @@ extern void tlsf_base_free (void * c, size_t sz);
     tlsf->used_size -= ((int)b->size & BLOCK_SIZE) + BHDR_OVERHEAD;	\
 	} while(0)
 #else
-#define	TLSF_ADD_SIZE(tlsf, b)	     do{}while(0)
-#define	TLSF_REMOVE_SIZE(tlsf, b)    do{}while(0)
+#define	TLSF_ADD_SIZE(tlsf, b)	     ((void)0)
+#define	TLSF_REMOVE_SIZE(tlsf, b)    ((void)0)
 #endif
 
 #if USE_MMAP || USE_SBRK
@@ -260,7 +260,7 @@ extern tlsf_t * dk_all_tlsfs[MAX_TLSFS];
 void thr_set_tlsf (du_thread_t * thr, tlsf_t * tlsf);
 tlsf_t * tlsf_new (size_t size);
 void tlsf_destroy (tlsf_t * tlsf);
-tlsf_t * tlsf_get ();
+tlsf_t * tlsf_get (void);
 void tlsf_set_comment (tlsf_t * tlsf, char * name);
 
 #define BHDR(b)  ((bhdr_t*)(((char*)b) - BHDR_OVERHEAD))
@@ -284,7 +284,7 @@ typedef struct mdbg_stat_s
 } mdbg_stat_t;
 
 extern tlsf_t * mdbg_tlsf;
-void tlsf_mdbg_init ();
+void tlsf_mdbg_init (void);
 void tlsf_mdbg_alloc (tlsf_t * tlsf, const char * f, int l, bhdr_t * b);
 void tlsf_mdbg_free (tlsf_t * tlsf, bhdr_t * b);
 void tlsf_all_in_use (FILE * out, int mode, int nth);

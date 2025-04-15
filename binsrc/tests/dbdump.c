@@ -5256,7 +5256,7 @@ parse_url_query_string (char *query_string)	/* input */
 
 
 int
-driver_has_necessary_sql_functions ()
+driver_has_necessary_sql_functions (void)
 {
   UWORD TablesExists = TRUE, ColumnsExists = TRUE, FunctionExists = TRUE;
 

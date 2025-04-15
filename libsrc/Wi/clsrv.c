@@ -111,7 +111,7 @@ cll_cmp (const void *l1, const void *l2)
 }
 
 void
-cll_times ()
+cll_times (void)
 {
   cll_line_t l[1000];
   int inx, fill = 0;
@@ -148,7 +148,7 @@ bif_cll_times (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 #ifdef MTX_METER
 int
-cll_try_enter ()
+cll_try_enter (void)
 {
   if (mutex_try_enter (local_cll.cll_mtx))
     {
@@ -161,7 +161,7 @@ cll_try_enter ()
 
 
 dk_session_t *
-cl_strses_allocate ()
+cl_strses_allocate (void)
 {
   dk_session_t *ses;
   /* the head and 1st buffer of strses come from common, the extension will come from the user thread */
@@ -200,7 +200,7 @@ cl_id_to_host (int id)
 }
 
 caddr_t
-cl_buf_str_alloc ()
+cl_buf_str_alloc (void)
 {
   return dk_alloc (DKSES_OUT_BUFFER_LENGTH);
 }
@@ -213,7 +213,7 @@ cl_buf_str_free (caddr_t str)
 
 
 void
-cluster_init ()
+cluster_init (void)
 {
   local_cll.cll_mtx = mutex_allocate ();
   dk_mem_hooks (DV_CLOP, box_non_copiable, (box_destr_f) clo_destroy, 0);
@@ -224,7 +224,7 @@ cluster_init ()
 }
 
 char *
-cl_thr_stat ()
+cl_thr_stat (void)
 {
   return "";
 }
@@ -232,6 +232,6 @@ cl_thr_stat ()
 int32 cl_ac_interval = 100000;
 
 void
-cluster_after_online ()
+cluster_after_online (void)
 {
 }

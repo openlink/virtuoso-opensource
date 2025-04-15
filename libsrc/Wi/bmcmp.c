@@ -153,7 +153,7 @@ bif_bm_cmp_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_sl
 
 
 void
-bm_cmp_init ()
+bm_cmp_init (void)
 {
   bif_define_typed ("bm_cmp", bif_bm_cmp, &bt_double);
   bif_set_vectored (bif_bm_cmp, bif_bm_cmp_vec);

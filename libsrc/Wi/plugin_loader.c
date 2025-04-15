@@ -152,7 +152,7 @@ void attach_plugin_connect (const unit_version_t *plugin)
 }
 
 
-void plugin_loader_init()
+void plugin_loader_init(void)
 {
   if (-1 == plugin_add_type(PLAIN_PLUGIN_TYPE, plain_plugin_load, plain_plugin_connect))
     {

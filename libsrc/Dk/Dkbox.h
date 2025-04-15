@@ -132,7 +132,7 @@ extern long box_types_free[256];	/* implicit zero-fill assumed */
    if (TAG_BAD == box_tag_aux(box)) \
      GPF_T1 ("Can't alter TAG_BAD by box_tag_modify"); \
    box_tag_modify_impl(box,new_tag); \
-   } while (0);
+   } while (0)
 #else
 #define box_tag_modify(box,new_tag) 	box_tag_modify_impl(box,new_tag)
 #endif
@@ -789,7 +789,7 @@ typedef struct rdf_box_s
     if (RDF_BOX_ILL_LANG == (rb)->rb_lang) GPF_T1("Bad rb_lang"); \
   } while (0)
 #else
-#define rb_dt_lang_check(rb)
+#define rb_dt_lang_check(rb)		((void)0)
 #endif
 
 #define RDF_BOX(rb) ((rdf_box_t *)(rb))
@@ -837,8 +837,8 @@ EXE_EXPORT (box_t, dk_alloc_box_zero, (size_t bytes, dtp_t tag));
 void dk_alloc_box_assert (box_t box);
 void dk_alloc_box_assert_mp_or_plain (box_t box);
 #else
-#define dk_alloc_box_assert(box)		;
-#define dk_alloc_box_assert_mp_or_plain(box)	;
+#define dk_alloc_box_assert(box)		((void)0)
+#define dk_alloc_box_assert_mp_or_plain(box)	((void)0)
 #endif
 
 EXE_EXPORT (int, dk_free_box, (box_t box));
@@ -848,10 +848,10 @@ extern void dk_check_tree_heads (box_t box, int count_of_sample_children);
 extern void dk_check_domain_of_connectivity (box_t box);
 extern void dk_check_tree_mp_or_plain (box_t box, int max_fuel); /* fuel is a max total count of descendants to check */
 #else
-#define dk_check_tree(box)
-#define dk_check_tree_heads(box,n)
-#define dk_check_domain_of_connectivity(box)
-#define dk_check_tree_mp_or_plain(box,fuel)
+#define dk_check_tree(box)			((void)0)
+#define dk_check_tree_heads(box,n)		((void)0)
+#define dk_check_domain_of_connectivity(box)	((void)0)
+#define dk_check_tree_mp_or_plain(box,fuel)	((void)0)
 #endif
 EXE_EXPORT (int, dk_free_tree, (box_t box));
 EXE_EXPORT (int, dk_free_box_and_numbers, (box_t box));
@@ -889,8 +889,8 @@ void rdf_box_audit_impl (rdf_box_t * rb);
 #define rdf_box_audit(rb) 		rdf_box_audit_impl(rb)
 #define rdf_bigbox_audit(rbb) 		rdf_box_audit_impl(&(rbb->rbb_base))
 #else
-#define rdf_box_audit(rb)
-#define rdf_bigbox_audit(rbb)
+#define rdf_box_audit(rb)		((void)0)
+#define rdf_bigbox_audit(rbb)		((void)0)
 #endif
 
 EXE_EXPORT (box_t, box_copy, (cbox_t box));

@@ -2553,7 +2553,7 @@ int xenc_signature_wrapper_1 (dk_session_t * ses_in, long seslen, dk_session_t *
 #ifdef DEBUG
 /* tests */
 
-void xenc_alloc_cbc_box_test()
+void xenc_alloc_cbc_box_test(void)
 {
   caddr_t text1 = xenc_alloc_cbc_box (3, sizeof (char) * 8, DV_STRING);
   caddr_t text2 = xenc_alloc_cbc_box (8, sizeof (char) * 8, DV_STRING);
@@ -2601,7 +2601,7 @@ void xenc_aes_enctest_1 (const char * data)
   xenc_key_remove (k, 1);
 }
 
-void xenc_aes_enctest ()
+void xenc_aes_enctest (void)
 {
   xenc_aes_enctest_1 ("hello world!");
   xenc_aes_enctest_1 ("hello world!sdjkflksdfjlksjdflksjdlfkjsdlfjksldfk lsdfkjsdlfk");
@@ -2615,19 +2615,19 @@ long is_test_processing;
 
 
 
-void xenc_test_begin()
+void xenc_test_begin(void)
 {
   xenc_errs = 0;
   xenc_asserts = 0;
   is_test_processing = 1;
 }
 
-int xenc_test_processing ()
+int xenc_test_processing (void)
 {
   return is_test_processing;
 }
 
-void xenc_test_end()
+void xenc_test_end(void)
 {
   is_test_processing = 0;
 }
@@ -2666,7 +2666,7 @@ int dsig_test_canon_3 (dk_session_t * in, long len, dk_session_t * out){  return
 int dsig_test_canon_4 (dk_session_t * in, long len, dk_session_t * out){  return 0;}
 int dsig_test_canon_5 (dk_session_t * in, long len, dk_session_t * out){  return 0;}
 
-void xenc_test_a ()
+void xenc_test_a (void)
 {
   xenc_assert(dsig_digest_algo_create ("dsig#test1", dsig_test_digest_1));
   xenc_assert(dsig_digest_algo_create ("dsig#test2", dsig_test_digest_2));
@@ -2905,7 +2905,7 @@ dsig_tr_enveloped_signature_test (query_instance_t * qi)
 
 }
 
-void dsig_sha1_digest_test()
+void dsig_sha1_digest_test(void)
 {
   char msg[] = "What is Hot in the World of DivX(tm) Video This Week: Sherlock Holmes, In Other News, and Skin Mania Now Sent to Over 1.7 Million DivX Fans Worldwide!";
   dk_session_t * in = strses_allocate ();
@@ -2934,7 +2934,7 @@ void dsig_sha1_digest_test()
   dk_free_box (digest);
 }
 
-void dsig_dsa_sha1_sign_test()
+void dsig_dsa_sha1_sign_test(void)
 {
   char msg[] = "What is Hot in the World of DivX(tm) Video This Week: Sherlock Holmes, In Other News, and Skin Mania Now Sent to Over 1.7 Million DivX Fans Worldwide!";
   dk_session_t * in = strses_allocate ();
@@ -2957,7 +2957,7 @@ void dsig_dsa_sha1_sign_test()
 }
 
 int __xenc_key_rsa_init (char *name);
-void dsig_rsa_sha1_sign_test()
+void dsig_rsa_sha1_sign_test(void)
 {
   char msg[] = "What is Hot in the World of DivX(tm) Video This Week: Sherlock Holmes, In Other News, and Skin Mania Now Sent to Over 1.7 Million DivX Fans Worldwide!";
   dk_session_t * in = strses_allocate ();
@@ -3063,7 +3063,7 @@ dsig_key_algo_get (const char * xmln)
 }
 
 
-void algo_stores_init ()
+void algo_stores_init (void)
 {
   ptrlong idx;
 
@@ -3094,7 +3094,7 @@ void algo_stores_init ()
 #endif
 }
 
-void dsig_sec_init ()
+void dsig_sec_init (void)
 {
 #ifdef DEBUG
   log_info ("dsig_sec_init()");

@@ -153,7 +153,7 @@ static void bm_alloc (bufmem_t *buf, size_t len)
   buf->bm_memblock = wlex_alloc (buf->bm_length);
 }
 
-void wikilexdone ()
+void wikilexdone (void)
 {
   wlex_state_t * st = STATEPTR;
   if (st->wikiwordbuf.bm_memblock != NULL)
@@ -348,7 +348,7 @@ static void wlex_verbatim (int enable)
     {
       int intext = STATE(wlex_in_any_text);
       wlex_reset(~(WLEX_RESET_LIST | WLEX_RESET_TABLE));
-      if (intext);
+      if (intext)
         PRINT("<BR>");
       PRINT("<PRE>");
     }

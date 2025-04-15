@@ -84,7 +84,7 @@ static HANDLE me;
 int64 get_proc_vm_size ();
 
 void
-mon_init ()
+mon_init (void)
 {
   if (!mon_enable)
     return;
@@ -261,7 +261,7 @@ MON_CK(no_qmem, (c->mon_tc_no_mem_for_longer_batch > p->mon_tc_no_mem_for_longer
 #define DELTA(m) (c->m - p->m)
 
 void
-mon_check ()
+mon_check (void)
 {
   monitor_t *c, *p;
   int prev_inx, i = 0;

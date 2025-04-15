@@ -1003,7 +1003,7 @@ void ssg_free_internals (spar_sqlgen_t *ssg);
       ssg_puts_with_comment (" AS", cmt); \
       ssg_putchar (' '); \
       ssg_prin_id (ssg, (asname)); \
-    } } while (0);
+    } } while (0)
 
 #define ssg_putbuf(buf,bytes) session_buffered_write (ssg->ssg_out, (buf), (bytes))
 

@@ -954,7 +954,7 @@ bif_dc_batch_sz (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-bif_rld_init ()
+bif_rld_init (void)
 {
   bif_define_ex ("dc_batch_sz", bif_dc_batch_sz, BMD_RET_TYPE, &bt_integer, BMD_DONE);
   bif_define ("rl_dp_ids", bif_rl_dp_ids);

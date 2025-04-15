@@ -249,7 +249,7 @@ int n159;
 
 
 void
-b159ck ()
+b159ck (void)
 {
   int inx;
   n159++;

@@ -202,7 +202,7 @@ virt_graphql_postponed_action (char *mode)
 
 
 static void
-graphql_plugin_connect ()
+graphql_plugin_connect (void *appdata)
 {
   graphql_parse_mtx = mutex_allocate ();
   bif_define ("graphql_parse", bif_graphql_parse);

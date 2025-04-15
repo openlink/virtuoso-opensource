@@ -781,7 +781,7 @@ tsc_update (int ctype, int conc, char * text)
 
 
 void
-tsc_fwd ()
+tsc_fwd (void)
 {
   printf ("\n========== Forward read timing\n");
   tsc_fwd_ext_fetch (SQL_CURSOR_DYNAMIC, 1,
@@ -903,7 +903,7 @@ tsc_lock (int ctype)
 
 
 void
-t1_init ()
+t1_init (void)
 {
   SQLSetConnectOption (hdbc1, SQL_AUTOCOMMIT, 1);
   tw1.tw_hdbc = hdbc1;

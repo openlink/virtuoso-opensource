@@ -137,7 +137,7 @@ dbe_schema_free (dbe_schema_t * sc)
 
 
 void
-wi_free_schemas ()
+wi_free_schemas (void)
 {
 #if !defined (PURIFY) && !defined (VALGRIND)
   time_msec_t now = approx_msec_real_time ();
@@ -187,7 +187,7 @@ gpf_if_found (id_hash_t * ht, query_t * qr)
 
 
 void
-wi_free_old_qrs ()
+wi_free_old_qrs (void)
 {
   if (mutex_try_enter (recomp_mtx))
     {

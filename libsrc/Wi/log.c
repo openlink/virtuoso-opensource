@@ -905,7 +905,7 @@ size_t txn_after_image_limit = 50000000L;
 int enable_log_key_count = 0;
 dk_hash_t * ins_log_counts;
 void
-log_key_report ()
+log_key_report (void)
 {
   DO_HT (ptrlong, key_id, ptrlong, ctr, ins_log_counts)
     {
@@ -2083,7 +2083,7 @@ lre_request_count (lre_request_t *request)
 
 
 lr_executor_t*
-lre_alloc ()
+lre_alloc (void)
 {
   lr_executor_t* executor=(lr_executor_t*)dk_alloc(sizeof(lr_executor_t));
   LOG_REPL_OPTIONS (opts);
@@ -3360,7 +3360,7 @@ log_check_header (caddr_t * header)
 
 
 int
-log_report_time ()
+log_report_time (void)
 {
   static time_msec_t last_time = 0;
   time_msec_t now = get_msec_real_time ();

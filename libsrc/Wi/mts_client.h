@@ -36,6 +36,6 @@ EXE_IMPORT (caddr_t, mts_bin_encode, (void *bin_array,
 	unsigned long bin_array_len));
 EXE_IMPORT (int, mts_bin_decode, (const char *encoded_str, void **array,
 	unsigned long *len));
-void mts_client_init ();
+void mts_client_init (void);
 
 #endif /* _MTS_CLIENT_H */

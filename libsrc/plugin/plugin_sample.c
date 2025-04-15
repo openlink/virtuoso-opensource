@@ -36,7 +36,7 @@ bif_plugin_sample (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 
 
 static void
-plain_plugin_connect ()
+plain_plugin_connect (void *appdata)
 {
   bif_define ("PLAIN_PLUGIN_TEST", bif_plugin_sample);
 }

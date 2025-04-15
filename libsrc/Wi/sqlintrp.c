@@ -1338,7 +1338,7 @@ ins_open (instruction_t * ins, caddr_t * qst)
 
 #if defined(DEBUG) | defined(MTX_DEBUG)
 void
-bing ()
+bing (void)
 {
 }
 #endif
@@ -1615,7 +1615,7 @@ opt_set_pop (opt_set_t *set)
 
 #ifdef OPT_SET_DEBUG
 static int
-opt_set_test ()
+opt_set_test (void)
 {
   ptrlong inx;
   opt_set_t test_set;

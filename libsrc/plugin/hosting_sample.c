@@ -28,7 +28,8 @@
 
 /* compile as a shared object */
 static void
-hosting_sample_connect () {
+hosting_sample_connect (void *appdata)
+{
 };
 
 /* TODO: change the strings below */

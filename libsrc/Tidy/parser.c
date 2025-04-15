@@ -766,7 +766,7 @@ static void ParseTag( TidyDocImpl* doc, Node *node, GetTokenMode mode )
     if (node->type == StartEndTag)
         return;
 
-	lexer->parent = node; /* [i_a]2 added this - not sure why - CHECKME: */
+    lexer->parent = node; /* [i_a]2 added this - not sure why - CHECKME: */
 
     (*node->tag->parser)( doc, node, mode );
 }

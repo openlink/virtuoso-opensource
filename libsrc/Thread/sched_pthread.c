@@ -307,7 +307,7 @@ failed:
 
 
 static thread_t *
-thread_alloc ()
+thread_alloc (void)
 {
   thread_t *thr;
 
@@ -1173,7 +1173,7 @@ dk_mutex_init (dk_mutex_t * mtx, int type)
 
 
 dk_mutex_t *
-mutex_allocate ()
+mutex_allocate (void)
 {
   return mutex_allocate_typed (MUTEX_TYPE_SHORT);
 }

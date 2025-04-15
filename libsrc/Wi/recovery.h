@@ -126,13 +126,13 @@ extern dk_mutex_t *checkpoint_mtx;
 
 int lt_backup_flush (lock_trx_t * lt, int do_commit);
 
-void wi_open_dbs ();
+void wi_open_dbs (void);
 
 extern const char* recover_file_prefix; /* from obackup.c */
 void ddl_obackup_init (void);
-char* bp_curr_timestamp();
-char* bp_curr_prefix();
-char* bp_curr_date();
+char* bp_curr_timestamp(void);
+char* bp_curr_prefix(void);
+char* bp_curr_date(void);
 
 extern caddr_t * backup_patha;
 

@@ -313,7 +313,7 @@ void * rbuf_get (rbuf_t * rb);
 void * rbuf_first (rbuf_t * rb);
 void rbuf_delete (rbuf_t * rb, rbuf_elt_t * rbe, int * inx);
 void rbuf_destroy (rbuf_t * rb);
-rbuf_t * rbuf_allocate ();
+rbuf_t * rbuf_allocate (void);
 void rc_destr_rbuf (void *rbuf);
 int  rbuf_free_cb (rbuf_t * rb);
 void  rbuf_append (rbuf_t * dest, rbuf_t * src);

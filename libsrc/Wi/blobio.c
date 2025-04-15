@@ -607,7 +607,7 @@ static char the_pass[] = EMPTY_PASS;
 #define MD5_SIZE 16
 
 static void
-calculate_pass ()
+calculate_pass (void)
 {
   if (the_pass[0] == 'x')
     {

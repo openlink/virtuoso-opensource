@@ -64,7 +64,7 @@ char *dd_stmt_text =
 
 
 void
-check_dd ()
+check_dd (void)
 {
   HSTMT ck_stmt;
 
@@ -97,7 +97,7 @@ print_error (HSTMT e1, HSTMT e2, HSTMT e3)
 }
 
 void
-del_blobs ()
+del_blobs (void)
 {
   IF_ERR_EXIT (b_stmt,
       SQLExecDirect (b_stmt, (UCHAR *) "delete from BLOBS", SQL_NTS));
@@ -524,7 +524,7 @@ err1:
 
 
 void
-read_bound_blobs ()
+read_bound_blobs (void)
 {
   SQLLEN len1, len2, len3, len4, len_row_no, len_len_b1, len_len_b2, len_len_b3, len_len_b4;
   char temp[100];
@@ -629,7 +629,7 @@ is_init_SQL_statement (char **argv, int nth_arg)
 
 
 void
-tb_array ()
+tb_array (void)
 {
   int rc;
   long nth;

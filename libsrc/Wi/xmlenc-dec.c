@@ -217,7 +217,7 @@ static void __dbg_wsse_assert (char * file, long line)
 
 #define WSSE_ASSERT(check) if (!check) __dbg_wsse_assert (__FILE__, __LINE__)
 
-wsse_ctx_t * wsse_ctx_allocate ()
+wsse_ctx_t * wsse_ctx_allocate (void)
 {
   NEW_VARZ (wsse_ctx_t, ctx);
   ctx->wc_id_cache = id_hash_allocate (31, sizeof (caddr_t), sizeof (caddr_t*),
@@ -2028,7 +2028,7 @@ void xmlenc_check_ecm_array (void * array, ptrlong len, size_t elem_size)
     }
 }
 
-void xmlenc_check_ecm_arrays ()
+void xmlenc_check_ecm_arrays (void)
 {
   xmlenc_check_ecm_array ((void *) wsse_error_templs, wsse_error_templs_len, sizeof (struct wsse_error_templ_s));
   xmlenc_check_ecm_array ((void *) wsse_dsig_callbacks, wsse_dsig_callbacks_len, sizeof (wsse_callback_item_t));
@@ -2036,7 +2036,7 @@ void xmlenc_check_ecm_arrays ()
   xmlenc_check_ecm_array ((void*) wsse_callbacks, wsse_callbacks_len, sizeof (wsse_callback_item_t));
 }
 
-void xmlenc_test_wsse_error ()
+void xmlenc_test_wsse_error (void)
 {
   wsse_ctx_t * ctx = dk_alloc (sizeof (wsse_ctx_t));
   ctx->wc_is_try_block = 1;

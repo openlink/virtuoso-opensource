@@ -6051,7 +6051,7 @@ chash_fill_input (fun_ref_node_t * fref, caddr_t * inst, caddr_t * state)
 
 
 void
-chash_init ()
+chash_init (void)
 {
   int inx;
   if (PAGE_SZ != sizeof (chash_page_t))
@@ -6070,6 +6070,6 @@ chash_init ()
 
 
 void
-chash_cl_init ()
+chash_cl_init (void)
 {
 }

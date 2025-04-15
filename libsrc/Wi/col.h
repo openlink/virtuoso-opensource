@@ -641,7 +641,7 @@ void dc_append_rb (data_col_t * dc, caddr_t dat);
 extern ce_op_t * ce_op[512];
 void ce_op_register (dtp_t ce_type, int op, int is_sets, ce_op_t f);
 #define CE_OP_CODE(min, max) (min + (max << 8))
-void colin_init ();
+void colin_init (void);
 db_buf_t  ce_any_dict_array (db_buf_t ce, dtp_t flags);
 void ce_skip_bits_2 (db_buf_t bits, int skip, int * byte_ret, int * bit_ret);
 int  col_find_op (int op);
@@ -692,7 +692,7 @@ void itc_make_rl (it_cursor_t * itc);
 int  ceic_pl_more (ce_ins_ctx_t * ceic, page_lock_t * pl, it_cursor_t * itc, int is_rb);
 int itc_col_serializable (it_cursor_t * itc, buffer_desc_t ** buf_ret);
 void itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_rows, int may_delete);
-row_lock_t * rl_col_allocate ();
+row_lock_t * rl_col_allocate (void);
 db_buf_t  ceic_ins_any_value (ce_ins_ctx_t * ceic, int nth);
 db_buf_t itc_string_param (it_cursor_t * itc, int nth_key, int * len_ret, dtp_t * dtp_ret);
 int ce_bm_nth (db_buf_t bits, int val, int * counted_ret, int * n_ret);
@@ -722,7 +722,7 @@ db_buf_t ceic_updated_col (ce_ins_ctx_t * ceic, buffer_desc_t * buf, int row, db
 int64 itc_anify_param (it_cursor_t * itc, caddr_t box);
 void cs_free_allocd_parts (compress_state_t * cs);
 void cpt_col_uncommitted (dbe_storage_t * dbs);
-void cpt_col_restore_uncommitted ();
+void cpt_col_restore_uncommitted (void);
 int col_ac_set_dirty (it_cursor_t * itc, buffer_desc_t * buf, int first, int n_last);
 void itc_ensure_col_refs (it_cursor_t * itc);
 void itc_col_page_free (it_cursor_t * itc, buffer_desc_t * buf, int col);
@@ -809,6 +809,6 @@ extern int enable_cr_trace;
 #endif
 
 #define COL_DBG_LOG "virtuoso.debug.trx"
-void col_dbg_log_new ();
+void col_dbg_log_new (void);
 
 #endif

@@ -85,7 +85,7 @@ void mono_init_virt ();
     } \
   p1 [p3 - p1 - 1] = 0 \
 
-char *clr_version_string ()
+char *clr_version_string (void)
 {
   return CLR_VERSION;
 }

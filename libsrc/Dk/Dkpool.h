@@ -248,7 +248,7 @@ caddr_t *mp_list (mem_pool_t * mp, long n, ...);
    if (TAG_BAD == box_tag_aux(box)) \
      GPF_T1 ("Can't alter TAG_BAD by mp_box_tag_modify"); \
    mp_box_tag_modify_impl(box,new_tag); \
-   } while (0);
+   } while (0)
 #else
 #define mp_box_tag_modify(box,new_tag) mp_box_tag_modify_impl(box,new_tag)
 #endif

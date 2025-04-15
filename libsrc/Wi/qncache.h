@@ -56,7 +56,7 @@ extern qn_cache_t *qnc_root;
 extern dk_mutex_t qcr_ref_mtx;
 
 qc_result_t *qc_lookup (uint32 clslice, caddr_t qckey);
-void qc_init ();
+void qc_init (void);
 extern qn_cache_t *root_qc;
 
 #endif

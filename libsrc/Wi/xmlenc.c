@@ -5451,7 +5451,7 @@ caddr_t * signature_serialize_1 (dsig_signature_t * dsig, wsse_ser_ctx_t * sctx)
   return ret_tag;
 }
 
-dsig_signature_t * dsig_template_1 ()
+dsig_signature_t * dsig_template_1 (void)
 {
   NEW_VAR (dsig_signature_t, dsig);
   NEW_VAR (dsig_transform_t, tr);
@@ -5905,7 +5905,7 @@ void xenc_aes_enctest();
 void xenc_kt_test ();
 void dsig_rsa_sha1_sign_test();
 
-void xmlenc_base64_test()
+void xmlenc_base64_test(void)
 {
   char buf0[] = "The Importers are used by the proxy generator of ASP.NET, which is used by Visual Studio .NET and the wsdl.exe command-line tool. The Importers will pick up any known <<format extensions>> that exist in the WSDL file and will turn them into client side SOAP extension attributes in the proxy. The Importers will also inspect the WSDL file for the relevant WS-Security headers and will remove the automatically handled and created SoapHeaders on the client side from the generated proxy, because the client-side proxy will handle these headers internally.";
     char buf1[] = "The Importers are used by the proxy generator of ASP.NET";
@@ -5976,7 +5976,7 @@ void xmlenc_base64_test()
   return;
 }
 
-void xmlenc_des3_test()
+void xmlenc_des3_test(void)
 {
   xenc_try_block_t t;
   char inbuf[] = "The Importers are used by the proxy generator of ASP.NET, which is used by Visual Studio .NET and the wsdl.exe command-line tool. The Importers will pick up any known <<format extensions>> that exist in the WSDL file and will turn them into client side SOAP extension attributes in the proxy. The Importers will also inspect the WSDL file for the relevant WS-Security headers and will remove the automatically handled and created SoapHeaders on the client side from the generated proxy, because the client-side proxy will handle these headers internally.";
@@ -6110,7 +6110,7 @@ void xmlenc_des3_test()
   return;
 }
 
-void xmlenc_rsa_test()
+void xmlenc_rsa_test(void)
 {
   xenc_try_block_t t;
   char buf0[] = "The Importers are used by the proxy generator of ASP.NET, which is used by Visual Studio .NET and the wsdl.exe command-line tool. The Importers will pick up any known <<format extensions>> that exist in the WSDL file and will turn them into client side SOAP extension attributes in the proxy. The Importers will also inspect the WSDL file for the relevant WS-Security headers and will remove the automatically handled and created SoapHeaders on the client side from the generated proxy, because the client-side proxy will handle these headers internally.";
@@ -6200,7 +6200,7 @@ caddr_t bif_xenc_test (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 /* encrypts 3DES key by itself, and decrypt it. */
-void xenc_kt_test ()
+void xenc_kt_test (void)
 {
   xenc_key_t * key = xenc_key_create ("virtdev_test@localhost", XENC_TRIPLEDES_ALGO, XENC_TRIPLEDES_ALGO, 1);
   xenc_key_t * new_key = 0;
@@ -7950,7 +7950,7 @@ bif_xenc_x509_ca_certs_list (caddr_t * qst, caddr_t * err_ret, state_slot_t ** a
   return ret;
 }
 
-void bif_xmlenc_init ()
+void bif_xmlenc_init (void)
 {
 #ifdef DEBUG
   log_info ("xmlenc_init()");
@@ -8147,7 +8147,7 @@ caddr_t bif_xenc_key_exists (caddr_t * qst, caddr_t * err_r, state_slot_t ** arg
 }
 
 
-void bif_xmlenc_init ()
+void bif_xmlenc_init (void)
 {
   bif_define ("xenc_key_exists", bif_xenc_key_exists);
 }

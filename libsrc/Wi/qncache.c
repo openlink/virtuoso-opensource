@@ -106,7 +106,7 @@ qcr_free (qc_result_t * qcr)
 
 
 void
-qc_init ()
+qc_init (void)
 {
   qc_root = (qn_cache_t *) dk_alloc (sizeof (qn_cache_t));
   qc_root->qc_slices = hash_table_allocate (101);

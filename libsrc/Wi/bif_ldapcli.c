@@ -129,7 +129,7 @@
 dk_mutex_t *ldap_handle_mutex = NULL;
 static HMODULE ldap_module = NULL;
 static int
-ldap_load_ldap_dll ()
+ldap_load_ldap_dll (void)
 {
 
   ldap_module = LoadLibrary ("wldap32.dll");

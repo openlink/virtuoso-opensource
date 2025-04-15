@@ -220,7 +220,7 @@ aq_thread_func (aq_thread_t * aqt)
 
 
 aq_thread_t *
-aqt_allocate ()
+aqt_allocate (void)
 {
   if (aq_n_threads >= aq_max_threads)
     return NULL;
@@ -1157,7 +1157,7 @@ size_t dk_alloc_cache_total (void * cache);
 void thr_alloc_cache_clear (thread_t * thr);
 
 size_t 
-aq_thr_mem_cache_total ()
+aq_thr_mem_cache_total (void)
 {
   int i;
   size_t n = 0;
@@ -1175,7 +1175,7 @@ aq_thr_mem_cache_total ()
 }
 
 void 
-aq_thr_mem_cache_clear ()
+aq_thr_mem_cache_clear (void)
 {
   int i;
   resource_t * rc = aq_threads;
@@ -1191,7 +1191,7 @@ aq_thr_mem_cache_clear ()
 }
 
 void
-bif_aq_init ()
+bif_aq_init (void)
 {
   dk_mem_hooks (DV_ASYNC_QUEUE, (box_copy_f) aq_copy, (box_destr_f) aq_free, 1);
   PrpcSetWriter (DV_ASYNC_QUEUE, (ses_write_func) aq_serialize);

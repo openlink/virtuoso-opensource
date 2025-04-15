@@ -95,7 +95,7 @@ int tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeo
  * Globals used :    default controls
  */
 device_t *
-tcpdev_allocate ()
+tcpdev_allocate (void)
 {
   device_t *dev = (device_t *) malloc (sizeof (device_t));
   devfuns_t *devfuns = (devfuns_t *) malloc (sizeof (devfuns_t));
@@ -957,7 +957,7 @@ tcpses_disconnect (session_t * ses)
  */
 int last_w_errno;
 int
-tcpses_get_last_w_errno ()
+tcpses_get_last_w_errno (void)
 {
   return last_w_errno;
 }
@@ -1034,7 +1034,7 @@ tcpses_write (session_t * ses, char *buffer, int n_bytes)
  */
 int last_r_errno;
 int
-tcpses_get_last_r_errno ()
+tcpses_get_last_r_errno (void)
 {
   return last_r_errno;
 }
@@ -2052,7 +2052,7 @@ ses_control_all (session_t * ses)
 
 #ifdef PCTCP
 int
-init_pctcp ()
+init_pctcp (void)
 {
   WORD wVersionRequested;
   WSADATA wsaData;
@@ -2952,7 +2952,7 @@ unixdev_free (device_t * dev)
  * Globals used :    default controls
  */
 device_t *
-unixdev_allocate ()
+unixdev_allocate (void)
 {
   device_t *dev = (device_t *) malloc (sizeof (device_t));
   devfuns_t *devfuns = (devfuns_t *) malloc (sizeof (devfuns_t));

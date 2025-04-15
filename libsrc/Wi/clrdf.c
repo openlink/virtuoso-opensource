@@ -734,7 +734,7 @@ bif_dpipe_set_rdf_load (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 void
-cl_rdf_init ()
+cl_rdf_init (void)
 {
   bif_define ("dpipe_set_rdf_load", bif_dpipe_set_rdf_load);
   bif_define_ex ("dpipe_rdf_load_mode", bif_dpipe_rdf_load_mode, BMD_RET_TYPE, &bt_integer, BMD_DONE);

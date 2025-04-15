@@ -915,7 +915,7 @@ void dbg_add_dumpentry (htrecord_t rec_, void* file_)
 	   rec->mr_fname, rec->mr_linenum, (long)(rec->mr_totalsize));
 }
 
-void dbg_dump_mem()
+void dbg_dump_mem(void)
 {
   FILE* file = fopen ("xmemdump.txt","w+");
   if (file)

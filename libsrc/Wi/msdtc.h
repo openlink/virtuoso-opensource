@@ -38,13 +38,13 @@ typedef void* (*typeof__mts_bin_encode) (void *bin_array, unsigned long bin_arra
 
 typedef int (*typeof__mts_bin_decode) (const char *encoded_str, void **array,
     unsigned long *len);
-typedef void (*typeof__mts_client_init) ();
+typedef void (*typeof__mts_client_init) (void);
 
 
 typedef void (*typeof__mts_release_trx)(void * itran);
 typedef int (*typeof__mts_recover) (void * recovery_data);
-typedef void (*typeof__mts_bif_init) ();
-typedef void * (*typeof__mts_trx_allocate)();
+typedef void (*typeof__mts_bif_init) (void);
+typedef void * (*typeof__mts_trx_allocate)(void);
 
 
 

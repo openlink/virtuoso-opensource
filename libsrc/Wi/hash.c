@@ -3501,7 +3501,7 @@ lt_hi_transact (lock_trx_t * lt, int op)
 
 
 void
-hic_clear ()
+hic_clear (void)
 {
   index_tree_t ** p_it;
   caddr_t p_key;

@@ -2206,7 +2206,7 @@ geo_pj_yn_cbk_t * geo_get_default_pj_is_geocent_cbk (void) { return geo_default_
 #include "bmcmp.c"
 
 void
-bif_geo_init ()
+bif_geo_init (void)
 {
   bif_define ("earth_radius", bif_earth_radius);
   bif_define ("haversine_deg_km", bif_haversine_deg_km);

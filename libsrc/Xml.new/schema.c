@@ -57,9 +57,9 @@ xml_syspath_t *xml_sys_path_list;
 #define SHOULD_BE_CHANGED
 
 #ifdef XMLSCHEMA_UNIT_DEBUG
-#define schema_printf(Z) printf Z
+#define schema_printf(Z) 	printf Z
 #else
-#define schema_printf(Z)
+#define schema_printf(Z)	((void)0)
 #endif
 
 #define XSPAT__CENTURY		"-?\\d{2}\\d*"
@@ -2253,7 +2253,7 @@ xs_tag_mssql_rship (vxml_parser_t * parser, xs_tag_t * _this)
 /* End of tag handlers */
 
 void
-xml_schema_init ()
+xml_schema_init (void)
 {
   xml_sys_path_list = dk_alloc (sizeof (xml_syspath_t));
   memset (xml_sys_path_list, 0, sizeof (xml_syspath_t));

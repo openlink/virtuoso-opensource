@@ -38,9 +38,9 @@
 
 
 #if 0
-#define in_printf(a) printf a
+#define in_printf(a)		printf a
 #else
-#define in_printf(a)
+#define in_printf(a)		((void)0)
 #endif
 
 

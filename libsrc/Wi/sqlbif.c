@@ -15478,7 +15478,7 @@ bif_proc_params_num (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-fcache_init ()
+fcache_init (void)
 {
   fcache = hash_table_allocate (23);
   dk_hash_set_rehash (fcache, 3);
@@ -17831,7 +17831,7 @@ caddr_t bpel_get_var_by_dump (const char * my_name, const char * my_part,
 
 
 
-void bpel_init ()
+void bpel_init (void)
 {
   ddl_ensure_table ("do this always", bpel_run_check_proc);
 }

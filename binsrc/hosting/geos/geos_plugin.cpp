@@ -1384,7 +1384,7 @@ virt_geos_postponed_action (char *mode)
 
 extern "C"
 void
-virt_geos_plugin_connect (void *data)
+virt_geos_plugin_connect (void *appdata)
 {
   dk_set_push (get_srv_global_init_pre_log_actions_ptr(), (void *)virt_geos_pre_log_action);
   dk_set_push (get_srv_global_init_postponed_actions_ptr(), (void *)virt_geos_postponed_action);

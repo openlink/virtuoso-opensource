@@ -145,7 +145,7 @@ LUBM_Disconnect (void)
 
 
 int
-LUBM_PrintResult()
+LUBM_PrintResult(void)
 {
   char fetchBuffer[1000];
   short displayWidths[MAXCOLS];
@@ -407,7 +407,7 @@ get_AssociateProfessor (char * buf)
   return buf;
 }
 
-typedef char * (*rand_func) ();
+typedef char * (*rand_func) (char *);
 
 typedef struct qr_s {
    int n_pars;
@@ -658,7 +658,7 @@ LUBM_CheckIRI (char * iri)
 
 int disp_interval = 20 * 1000;
 
-void LUBM_DoOne ()
+void LUBM_DoOne (void)
 {
   int i;
   char buf [10000], tmp [10000], id[512];
@@ -765,7 +765,7 @@ void LUBM_DoOne ()
 }
 
 void
-LUBM_DoAll ()
+LUBM_DoAll (void)
 {
   int i, j;
 

@@ -897,7 +897,7 @@ srv_add_login (client_connection_t *cli)
 
 
 uint32
-srv_get_n_logons ()
+srv_get_n_logons (void)
 {
   uint32 res;
   mutex_enter (logins_mutex);
@@ -908,7 +908,7 @@ srv_get_n_logons ()
 
 
 dk_set_t
-srv_get_logons ()
+srv_get_logons (void)
 {
   dk_set_t res = NULL;
   client_connection_t *p_cli, *p_cli2;
@@ -3654,7 +3654,7 @@ extern int c_query_log;
 
 
 void
-sql_code_global_init ()
+sql_code_global_init (void)
 {
   if (0 && cluster_enable && cl_no_init)
     return;
@@ -3694,7 +3694,7 @@ sql_code_global_init ()
 
 
 void
-sql_code_arfw_global_init ()
+sql_code_arfw_global_init (void)
 {
   int was_col  = enable_col_by_default;
   enable_col_by_default = 0;
@@ -3899,7 +3899,7 @@ srv_global_init_clear_table (char *stmt)
 
 
 static void
-srv_global_init_drop ()
+srv_global_init_drop (void)
 {
   id_hash_iterator_t hit;
   char ** tn;

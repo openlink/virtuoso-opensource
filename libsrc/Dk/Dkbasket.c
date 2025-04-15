@@ -415,7 +415,7 @@ rbuf_destroy (rbuf_t * rb)
 rbuf_t test_rbuf;
 
 void
-rbuf_test ()
+rbuf_test (void)
 {
   rbuf_t rb;
   int inx, ctr; /* inx is not ptrlong despite use with rbuf_get() etc., because rbuf_delete() want to deal with int * */
@@ -505,7 +505,7 @@ rbuf_free_cb (rbuf_t * rb)
 }
 
 rbuf_t *
-rbuf_allocate ()
+rbuf_allocate (void)
 {
 #ifdef MALLOC_DEBUG
   rbuf_t *res;

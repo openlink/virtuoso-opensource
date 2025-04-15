@@ -68,7 +68,7 @@ static __inline__ bhdr_t *process_area(void *area, size_t size);
 static __inline__ void *get_new_area(tlsf_t * tlsf, size_t * size);
 
 #ifdef WIN32
-int getpagesize()
+int getpagesize(void)
 {
   SYSTEM_INFO si;
   GetSystemInfo(&si);
@@ -993,7 +993,7 @@ tlsf_destroy (tlsf_t * tlsf)
 }
 
 tlsf_t *
-tlsf_get ()
+tlsf_get (void)
 {
   int inx;
   return NULL;
@@ -1306,7 +1306,7 @@ mdbg_place_hash_cmp (caddr_t * p1, caddr_t *p2)
 
 
 void
-tlsf_mdbg_init ()
+tlsf_mdbg_init (void)
 {
   dk_mutex_init (&mdbg_place_mtx, MUTEX_TYPE_SHORT);
   mdbg_tlsf = tlsf_new (1000000);

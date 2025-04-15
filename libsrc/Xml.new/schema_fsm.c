@@ -3273,7 +3273,7 @@ int test_assert_1 (int res, char* file, long line)
 
 static
 void
-test_is_schema_location ()
+test_is_schema_location (void)
 {
   test_assert (is_schema_location ("xs", "xs:schemaLocation"));
   test_assert (is_schema_location (NULL , "schemaLocation"));
@@ -3285,7 +3285,7 @@ test_is_schema_location ()
   test_assert (!is_schema_location ("", "xs:schemaLocation"));
 }
 
-void schema_fsm_test()
+void schema_fsm_test(void)
 {
 /*  test_is_schema_location ();*/
 }

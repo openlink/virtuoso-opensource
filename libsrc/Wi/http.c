@@ -5864,7 +5864,7 @@ bif_http_pending_req (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-http_kill_all ()
+http_kill_all (void)
 {
   dk_set_t killed = NULL;
   ws_connection_t * ws;
@@ -10835,7 +10835,7 @@ bif_http_acl_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 static void
-http_acl_stats ()
+http_acl_stats (void)
 {
   static const char * szHttpAclName = "HTTP";
   caddr_t *alist, **plist;
@@ -11316,7 +11316,7 @@ bif_http_url_cache_remove (caddr_t * qst, caddr_t * err_ret, state_slot_t ** arg
 }
 
 static void
-http_init_acl_and_cache ()
+http_init_acl_and_cache (void)
 {
   /* INIT the general HTTP ACL */
   http_acls = id_str_hash_create (101);
@@ -11898,7 +11898,7 @@ bif_string_split (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 caddr_t *
-box_tpcip_get_interfaces ()
+box_tpcip_get_interfaces (void)
 {
   dk_set_t set = NULL;
 #ifdef SIOCGIFCONF
@@ -11976,7 +11976,7 @@ box_tpcip_get_interfaces ()
 }
 
 int
-http_init_part_one ()
+http_init_part_one (void)
 {
   XML_CHAR_ESCAPE ('<', "&lt;");
   XML_CHAR_ESCAPE ('>', "&gt;");
@@ -12196,7 +12196,7 @@ http_threads_allocate (int n_threads)
 }
 
 void
-ws_thr_cache_clear ()
+ws_thr_cache_clear (void)
 {
 #define WS_MIN_RC 1
   static void ** wst;
@@ -12239,7 +12239,7 @@ http_threads_mem_report (void)
 extern int cl_no_init;
 
 int
-http_init_part_two ()
+http_init_part_two (void)
 {
   dk_session_t *listening;
 #ifdef _SSL
@@ -12650,21 +12650,21 @@ is_internal_user (client_connection_t *cli)
 
 
 char *
-srv_http_port ()
+srv_http_port (void)
 {
    return http_port;
 }
 
 
 const char *
-srv_www_root ()
+srv_www_root (void)
 {
    return www_root;
 }
 
 
 caddr_t
-srv_dns_host_name ()
+srv_dns_host_name (void)
 {
    return dns_host_name;
 }

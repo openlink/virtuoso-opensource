@@ -273,7 +273,7 @@ err_ret:
 }
 
 static void
-hosting_python_connect (void *x)
+hosting_python_connect (void *appdata)
 {
   /*log_debug ("hosting_python_connect");*/
   bif_define ("python_exec", bif_python_exec);

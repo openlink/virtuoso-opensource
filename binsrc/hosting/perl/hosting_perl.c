@@ -155,7 +155,7 @@ stop_perl_interpreter (PerlInterpreter *interp)
 
 
 static void
-hosting_perl_connect (void *x)
+hosting_perl_connect (void *appdata)
 {
   log_debug ("hosting_perl_connect");
 }

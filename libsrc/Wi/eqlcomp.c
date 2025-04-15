@@ -2878,7 +2878,7 @@ eql_compile (const char *string, client_connection_t * cli)
 
 
 void
-ssl_constant_init ()
+ssl_constant_init (void)
 {
   int n;
   constant_ssl = id_hash_allocate (101, sizeof (caddr_t), sizeof (caddr_t), treehash, treehashcmp);

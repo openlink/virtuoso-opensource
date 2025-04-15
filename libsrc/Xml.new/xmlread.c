@@ -2126,7 +2126,7 @@ static int dtd_compile (vxml_parser_t *parser)
   xmlparser_logprintf ARGS; \
   if (DEAD_HTML == parser->cfg.input_is_html) \
     goto dest; \
-    return XML_TOK_INVALID;\
+   return XML_TOK_INVALID;\
 } while (0)
 
 #define RET_INVALID_SOFT(X) RET_INVALID_SOFT_IMPL (character_data, (parser, XCFG_ERROR, 100, (X)))
@@ -2134,7 +2134,7 @@ static int dtd_compile (vxml_parser_t *parser)
 #define RET_ERROR(X) do {\
   SET_DETECTOR; \
   xmlparser_logprintf (parser, XCFG_ERROR, 100, (X)); \
-    return XML_TOK_ERROR;\
+  return XML_TOK_ERROR;\
 } while (0)
 
 #define RET_ERROR_SOFT(X) do {\
@@ -2142,7 +2142,7 @@ static int dtd_compile (vxml_parser_t *parser)
   xmlparser_logprintf (parser, XCFG_ERROR, 100, (X)); \
   if (DEAD_HTML == parser->cfg.input_is_html) \
     goto character_data; \
-    return XML_TOK_ERROR;\
+  return XML_TOK_ERROR;\
 } while (0)
 
 #define RET_ERROR_CONT(X) \
