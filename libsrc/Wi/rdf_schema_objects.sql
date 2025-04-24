@@ -198,19 +198,30 @@ RDF_VIEW_DROP_STMT_BY_GRAPH (in gr varchar)
 create procedure
 RDF_VIEW_DROP_STMT (in qualifier varchar)
 {
-   declare drop_map any;
    declare gr varchar;
-
-   drop_map := '';
    gr := sprintf ('http://%s/%s#', virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
    return RDF_VIEW_DROP_STMT_BY_GRAPH (gr);
 }
 ;
 
 create procedure
+RDF_VIEW_DROP_QM_STMT(in qualifier varchar, in _tbls any, in gen_stat int := 0)
+{
+  declare drop_map, ns varchar;
+  drop_map := '';
+  ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
+  for (declare xx int, xx := 0; xx < length (_tbls) ; xx := xx + 1)
+    drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-%s ;\n', ns, qualifier, RDF_VIEW_TB (name_part (_tbls[xx], 2)));
+  if (gen_stat)
+    drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-VoidStatistics ;\n', ns, qualifier);
+  return drop_map;
+}
+;
+
+create procedure
 RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
 {
-   declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret, drop_map any;
+   declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret any;
    declare total_select, total_tb, total, qual, pkcols any;
    declare vname, mask varchar;
 
@@ -220,11 +231,6 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
    sparql_pref := 'SPARQL\n';
    uriqa_str := '^{URIQADefaultHost}^';
    sns := ns := sprintf ('prefix %s: <http://%s/schemas/%s/> \n', qualifier, virtuoso_ini_item_value ('URIQA','DefaultHost'), qualifier);
-
-   --for (declare xx any, xx := 0; xx < length (_tbls) ; xx := xx + 1)
-   --   drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-%s\n;\n', ns, qualifier, RDF_VIEW_TB (name_part (_tbls[xx], 2)));
-   --if (gen_stat)
-   --  drop_map := drop_map || sprintf ('SPARQL %s drop silent quad map %s:qm-VoidStatistics\n;\n', ns, qualifier);
 
    -- ## voID
    if (gen_stat)
@@ -667,7 +673,7 @@ RDF_VIEW_GET_PK_FK_REL (in pref varchar, in suffix varchar, in tbl varchar, in t
     {
       declare fk_rel  any;
       pk_text := RDF_VIEW_GET_PK_REL (pref, suffix, pkt, 1, pkcols);
-      fk_rel := RDF_VIEW_SP (6) || sprintf ('%s:%s_of %s as %s:%s_%s_of ;\n', pref, tbl_name_l, pk_text, pref, tbl_name_l, RDF_VIEW_TB (pkt));
+      fk_rel := RDF_VIEW_SP (6) || sprintf ('%s:%s_of %s as %s:%s_of_%s ;\n', pref, tbl_name_l, pk_text, pref, tbl_name_l, RDF_VIEW_TB (pkt));
       http (fk_rel, ret);
     }
   return string_output_string (ret);
@@ -675,7 +681,7 @@ RDF_VIEW_GET_PK_FK_REL (in pref varchar, in suffix varchar, in tbl varchar, in t
 ;
 
 create procedure
-RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv varchar, in sc int)
+RDF_VIEW_DV_TO_PRINTF_STR_TYPE (in _dv int, in sc int)
 {
   if (_dv = __tag of integer or _dv = __tag of smallint) return '%d';
   if (_dv = __tag of bigint) return '%ld';
@@ -1539,7 +1545,7 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
    for select "COLUMN", COL_DTP from TABLE_COLS where "TABLE" = tbl and "COLUMN" <> '_IDN' order by COL_ID do
      {
        col_name := "COLUMN";
-       if (not exists (select 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME = col_name))
+       if (not exists (select 1 from SYS_FOREIGN_KEYS where FK_TABLE = tbl and FKCOLUMN_NAME = col_name) and cols_arr[1][inx][0] <> 1)
          ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:column "%s" ]; ] ;\n',
            DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, lower (col_name)), col_name );
        inx := inx + 1;
@@ -1550,7 +1556,7 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
        for select FKCOLUMN_NAME from SYS_FOREIGN_KEYS where FK_TABLE = tbl and PK_TABLE = pkt order by KEY_SEQ do
          pk_text := pk_text || sprintf ('/%U/{%s}', FKCOLUMN_NAME, FKCOLUMN_NAME);
        ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://%s/%s/%s%s#this" ]; ] ;\n',
-         DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (pkt, 3)))),
+         DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat ('has_', lower (name_part (pkt, 3)))),
          uriqa_str, qual, lower (name_part (pkt, 3)), pk_text );
 	 }
    for select distinct FK_TABLE as fkt from SYS_FOREIGN_KEYS where PK_TABLE = tbl and position (FK_TABLE, _tbls)  do
@@ -1566,13 +1572,13 @@ DB.DBA.R2RML_CREATE_DATASET (in nth int, in qualifier varchar, in qual_ns varcha
        if (tbl <> fkt)
 	 {
            ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:parentTriplesMap <#TriplesMap%U>; %s ]; ] ;\n',
-             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_of_', lower (name_part (fkt, 3)))),
+             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_of')),
              name_part (fkt, 3), jc );
 	 }
        else
 	 {
            ret := ret || sprintf ('rr:predicateObjectMap [ rr:predicateMap [ rr:constant %s ] ; rr:objectMap [ rr:termType rr:IRI ; rr:template "http://%s/%s/%s%s#this" ]; ] ;\n',
-             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat (tbl_name_l, '_has_', lower (name_part (fkt, 3)))),
+             DB.DBA.R2RML_QUAL_NOTATION (qualifier, qual_ns, concat ('has_', lower (name_part (fkt, 3)))),
              uriqa_str, qual, lower (name_part (fkt, 3)), pk_text );
 	 }
      }
