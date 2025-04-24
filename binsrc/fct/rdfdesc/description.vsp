@@ -64,6 +64,7 @@
   declare safetolink integer;
   declare triples_found integer;
   declare jsses any;
+  declare referer varchar;
 
   set http_charset='utf-8';
   { 
@@ -72,6 +73,25 @@
     --  always treat narrow string boxes as UTF-8 encoded
     set http_in_charset='UTF-8';
   }
+
+  referer := http_request_header(lines, 'Referer', null, null);
+  host := http_host('localhost');
+  if (registry_get('__fct_protect', '1') = '1' and referer is null and host not like 'localhost%' and host <> '127.0.0.1')
+    {
+       declare hint varchar;
+       hint := get_keyword('h', params);
+       if (hint is null or http_request_get('REQUEST_METHOD') = 'GET')
+         {
+            http('<body style="display:flex;justify-content:center;align-items:center;height:100vh;">
+                <form method="POST" action="">
+                    <input type="hidden" name="h" value="1">
+                    <button type="submit" style="color:white; background-color: green; padding:10px 20px;border:none;border-radius:4px;font-size:16px;">Continue</button>
+                </form>
+              </body>
+            </html>');
+           return;
+         }
+    }
 
   if (registry_get ('fct_auto_sponge') = '1')
     auto_sponge_on_empty_graph := 1;
@@ -89,10 +109,6 @@
   -- XXX: disabled
   --declare continue handler for sqlstate 'S1TAT';
   --set result_timeout = atoi (registry_get ('fct_timeout_max'));
-
-  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
-  if (host is null)
-    host := http_request_header (http_request_header (), 'Host');
 
 again:
   n_per_page := 100;
