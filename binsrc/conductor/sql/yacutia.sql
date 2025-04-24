@@ -5487,16 +5487,6 @@ create procedure DB.DBA.BACKUP_MAKE_CL (in prefix varchar, in max_pages integer,
 }
 ;
 
-create procedure Y_RDF_VIEW_DROP_STMT (in q any)
-{
-  if (__proc_exists ('DB.DBA.RDF_VIEW_DROP_STMT') is not null)
-    return RDF_VIEW_DROP_STMT (q);
-  else
-    return '';
-
-}
-;
-
 create procedure Y_SQL_ESC_NAME (in fn varchar)
 {
   declare q, o, n, tmp any;
