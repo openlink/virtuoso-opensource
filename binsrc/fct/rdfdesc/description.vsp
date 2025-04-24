@@ -330,6 +330,12 @@ again:
 	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', page_resource_uri, ses_parms));
         return;
       }
+  } else if (get_keyword ('sponger:get', params) is not null) {
+     http_rewrite();
+     connection_set('__val_req_res_label__', null);
+     http('Unauthorized');
+     http_status_set(401);
+     return;
   }
   --set_user_id (http_map_get ('vsp_uid'));
 
