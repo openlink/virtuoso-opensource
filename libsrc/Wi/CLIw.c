@@ -1286,7 +1286,7 @@ SQLPrepareW (
 
     MAKE_INPUT_ESCAPED_NARROW_1 (SqlStr, stmt->stmt_connection);
 
-    rc = virtodbc__SQLPrepare (hstmt, szSqlStr, SQL_NTS);
+    rc = virtodbc__SQLPrepare (hstmt, szSqlStr, cbSqlStr);
 
     FREE_INPUT_NARROW (SqlStr);
   }
