@@ -253,7 +253,8 @@ GQL_PARSE_REQUEST (in str any, inout variables any, inout g_iid any, inout tree 
    }
 
   -- array of names of all known existing directives w/o pre-processing built-ins
-  known_directives := (SELECT VECTOR_AGG ("dname", "locs") FROM (SPARQL SELECT str(?dname) as ?dname GROUP_CONCAT(?loc, ",") as ?locs
+  known_directives := (SELECT VECTOR_AGG ("dname", "locs") FROM (SPARQL define input:storage ""
+  SELECT str(?dname) as ?dname GROUP_CONCAT(?loc, ",") as ?locs
     {
       GRAPH <urn:graphql:schema> { gql:Map gql:dataGraph ?g }
       GRAPH ?g { gqi:__schema gqi:directives [ gqi:name ?dname ; gqi:locations ?loc ] FILTER (str(?dname) not in ("skip", "include"))
@@ -702,7 +703,7 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                        ' { gql:Map gql:schemaObjects <%s> . <%s> gql:rdfClass ?class ; gql:type ?class_type . }}'),
                                 id_to_iri (g_iid), id_to_iri(gcls_iid), id_to_iri(gcls_iid)));
           -- XXX: we first look at topmost `query` classes if such declared
-          for select "class", "class_type" from (sparql select ?class ?class_type where
+          for select "class", "class_type" from (sparql define input:storage "" select ?class ?class_type where
                     { graph ?:g_iid { gql:Map gql:schemaObjects ?:gcls_iid .
                             ?:gcls_iid gql:rdfClass ?class ; gql:type ?class_type . }}) dt0 do
             {
@@ -719,7 +720,8 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                         ' [] a owl:ObjectProperty ; gql:field <%s> ; rdfs:range ?class ; gql:type ?class_type . }} '),
                                 id_to_iri (g_iid), id_to_iri(gcls_iid)));
 
-              for select "obj_prop", "class", "class_type" from (sparql select ?obj_prop ?class ?class_type where { graph ?:g_iid {
+              for select "obj_prop", "class", "class_type" from (sparql define input:storage ""
+                                select ?obj_prop ?class ?class_type where { graph ?:g_iid {
                     ?obj_prop a owl:ObjectProperty ; gql:field ?:gcls_iid ; rdfs:range ?class ; gql:type ?class_type . }}) dt1 do
                 {
                   if (cls is not null and cls <> "class")
@@ -820,7 +822,7 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                        '  ?prop1 rdfs:domain ?range ; gql:field <%s> . } }}'),
                       id_to_iri (g_iid), id_to_iri (cls), id_to_iri(arg_iid), id_to_iri(fld_iid), id_to_iri(arg_iid) ));
 
-                for select "prop0", "prop1", "tp0", "range0" from (sparql select ?prop0 ?prop1 ?tp0 ?range0
+                for select "prop0", "prop1", "tp0", "range0" from (sparql define input:storage "" select ?prop0 ?prop1 ?tp0 ?range0
                     where { graph ?:g_iid {
                         ?:cls rdfs:subClassOf* ?domain .
                         ?prop0 rdfs:domain ?domain ; gql:type ?tp0 ; rdfs:range ?range0 ; gql:field ?:arg_iid .
@@ -908,7 +910,7 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                   ' { ?range rdfs:subClassOf* ?domain . <%s> rdfs:range  ?range . ?prop0 rdfs:domain ?domain ; gql:field <%s> ; gql:type ?tp0 . }}'),
                                 id_to_iri (g_iid), id_to_iri(parent_prop), id_to_iri(fld_iid)));
 
-              for select "prop0", "tp0" from (sparql select ?prop0 ?tp0 where { graph ?:g_iid
+              for select "prop0", "tp0" from (sparql define input:storage "" select ?prop0 ?tp0 where { graph ?:g_iid
                    {
                      ?range rdfs:subClassOf* ?domain .
                      ?:parent_prop rdfs:range  ?range .
@@ -927,7 +929,7 @@ GQL_CONSTRUCT (in g_iid any, in tree any, in variables any, in parent any,
                        ' { <%s> rdfs:subClassOf* ?domain . ?prop0 rdfs:domain ?domain ; gql:field <%s> ; gql:type ?tp0 . }}'),
                                 id_to_iri (g_iid), id_to_iri(parent_cls), id_to_iri(fld_iid)));
 
-              for select "prop0", "tp0"  from (sparql select ?prop0 ?tp0 where { graph ?:g_iid
+              for select "prop0", "tp0"  from (sparql define input:storage "" select ?prop0 ?tp0 where { graph ?:g_iid
                         {
                           ?:parent_cls rdfs:subClassOf* ?domain .
                           ?prop0 rdfs:domain ?domain ;
@@ -1062,7 +1064,7 @@ create procedure GQL_FIELD_CAST (in g_iid iri_id_8, inout variables any,
   fld_iid := GQL_IID (fld_name);
   prop := null;
   pattern := null;
-  for select * from (sparql select ?prop0 ?range0 ?tp0 ?pattern0
+  for select * from (sparql define input:storage "" select ?prop0 ?range0 ?tp0 ?pattern0
             where { graph ?:g_iid {
                     ?prop0 rdfs:domain ?domain ;
                         rdfs:range ?range0 ;
@@ -1277,7 +1279,8 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
                                 id_to_iri (g_iid), id_to_iri(gcls_iid), id_to_iri(gcls_iid)));
 
           cls := null;
-          for select "class", "class_type", "iri_pattern", "data_graph0", "sparql_op0", "qry0" from (sparql select * where
+          for select "class", "class_type", "iri_pattern", "data_graph0", "sparql_op0", "qry0" from (sparql define input:storage ""
+          select * where
                     { graph ?:g_iid { gql:Map gql:schemaObjects ?gcls .
                             ?gcls gql:rdfClass ?class ; gql:type ?class_type ; gql:mutationType ?sparql_op0 .
                             optional { ?gcls gql:sparqlQuery ?qry0 }
@@ -1315,7 +1318,7 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
           vectorbld_init (triples_vec);
           fld_iid := GQL_IID (var_name_only);
           id_prop := id_field := null;
-          for select "prop0", "field0" from (sparql select ?prop0 ?field0
+          for select "prop0", "field0" from (sparql define input:storage "" select ?prop0 ?field0
                 where { graph ?:g_iid { ?prop0 rdfs:domain `iri(?:cls)` ; gql:type gql:ID ; gql:field ?field0 . }}) dt0 do
             {
               if (id_prop is not null)
@@ -1369,7 +1372,7 @@ GQL_UPDATE (in g_iid any, in tree any, in variables any, in parent any, inout tr
                     id_to_iri (g_iid), id_to_iri (cls), id_to_iri(arg_iid), id_to_iri (cls), id_to_iri(fld_iid), id_to_iri(arg_iid) ));
 
               for select "prop0", "prop1", "tp0", "rangeType0", "rangeType1"
-                  from (sparql select ?prop0 ?prop1 ?tp0 ?rangeType0 ?rangeType1
+                  from (sparql define input:storage "" select ?prop0 ?prop1 ?tp0 ?rangeType0 ?rangeType1
                   where { graph ?:g_iid {
                     ?prop0 rdfs:domain `iri(?:cls)` ; gql:type ?tp0 ; gql:field ?:arg_iid ; rdfs:range ?rangeType0 .
                   optional {  [] rdfs:domain `iri(?:cls)`  ; rdfs:range ?range ; gql:field ?:fld_iid .
@@ -1568,11 +1571,11 @@ GQL_TRANSFORM (in str varchar, in g_iid varchar,
   if (length (triples) < 1)
     signal ('GQLEX', 'The query not generates any statements');
 
-  inference_name := (sparql select ?inference_name where { graph ?:g_iid { gql:Map gql:inferenceName ?inference_name }});
+  inference_name := (sparql define input:storage "" select ?inference_name where { graph ?:g_iid { gql:Map gql:inferenceName ?inference_name }});
   if (inference_name is not null)
     http (sprintf ('define input:inference "%s" ', inference_name), qry);
 
-  data_graph := (sparql select ?data_graph where { graph ?:g_iid { gql:Map gql:dataGraph ?data_graph }});
+  data_graph := (sparql define input:storage "" select ?data_graph where { graph ?:g_iid { gql:Map gql:dataGraph ?data_graph }});
   if (data_graph is not null)
     http (sprintf ('define input:default-graph-uri "%s" \n', data_graph), qry);
   http (pragmas, qry);
@@ -2235,7 +2238,7 @@ create procedure GQL_CREATE_TYPE_SCHEMA (in g_iri varchar)
               }
                 else
                   {
-                if (not (sparql ask where { graph `iri(?:g_iri)` { gql:Map gql:schemaObjects ?cls . ?cls gql:rdfClass `iri(?:range_class)` . }})
+                if (not (sparql define input:storage "" ask where { graph `iri(?:g_iri)` { gql:Map gql:schemaObjects ?cls . ?cls gql:rdfClass `iri(?:range_class)` . }})
                    and range_ns_uri <> GQL_XSD_IRI(''))
                   {
                     sql_warning ('01V01', 'GQLW0', sprintf ('Ref. property %s to undefined class %s.', "prop", "rangeType"));
@@ -2466,7 +2469,7 @@ create procedure GQL_INTRO_ADD (in g_iri varchar, in tgt_iri varchar := 'urn:gra
   if (current_proc_name (1) is null)
     result_names (status);
   any_error := 0;
-  for select * from (sparql select ?typeName
+  for select * from (sparql define input:storage "" select ?typeName
         where { graph `iri(?:tgt_iri)` { gqi:__schema gqi:types ?type0 . ?type0 gqi:name ?typeName0 }
                 graph `iri(?:g_iri)`   { gqi:__schema gqi:types ?type . ?type gqi:name ?typeName }
                 filter (?typeName0 = ?typeName) }) dt do
@@ -2694,7 +2697,7 @@ create procedure GQL_READ_TYPES (in tree any, inout dict any, in schema_iri varc
 
   schema_iid := iri_to_id (schema_iri);
   types := dict_new (31);
-  for select "name", "kind" from (sparql select str(?name) as ?name  str(?kind) as ?kind
+  for select "name", "kind" from (sparql define input:storage "" select str(?name) as ?name  str(?kind) as ?kind
             { graph ?:schema_iid { gqi:__schema gqi:types [ gqi:name ?name ; gqi:kind ?kind ] }}) dt do
     {
       if (subseq ("name", 0, 2) <> '__')
