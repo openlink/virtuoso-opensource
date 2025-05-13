@@ -10591,11 +10591,13 @@ do_numeric:
     {
       numeric_t res = numeric_allocate ();
       char tmp[MAX_NAME_LEN], *cast_name;
+      int prec = BOX_ELEMENTS (dtp) > 1 ? (int) (unbox (((caddr_t *) dtp)[1])) : 10;
+      int scale = BOX_ELEMENTS (dtp) > 2 ? (int) (unbox (((caddr_t *) dtp)[2])) : 6;
       if (IS_STRING_DTP (arg_dtp))
         cast_name = data;
       else
         snprintf (tmp, MAX_NAME_LEN, "data of type %s", dv_type_title(arg_dtp)), cast_name = tmp;
-      err = numeric_from_x (res, data, (int) unbox (((caddr_t*)dtp)[1]), (int) unbox (((caddr_t*)dtp)[2]), cast_name, 0, NULL);
+      err = numeric_from_x (res, data, prec, scale, cast_name, 0, NULL);
       if (err)
 	{
 	  numeric_free (res);
