@@ -1240,7 +1240,7 @@ create function R2RML_MAKE_QM_FROM_G (in g varchar, in tgt_graph varchar := null
   declare qm_iid IRI_ID;
   qm_iid := null;
   m := DB.DBA.R2RML_MAP (iri_to_id (g));
-  if (tgt_graph is not null)
+  if (length(tgt_graph))
     m.default_constg := iri_to_id (tgt_graph);
   if (qm_uri is null)
     qm_uri := concat ('urn:qm:', bin2hex(xenc_digest(coalesce(tgt_graph,g),'sha1')));
