@@ -74,6 +74,9 @@
     set http_in_charset='UTF-8';
   }
 
+  -- all possible inputs for IRI to be desribed
+  gr := coalesce (get_keyword ('g', params), get_keyword ('url', params), get_keyword ('uri', params));
+
   referer := http_request_header(lines, 'Referer', null, null);
   host := http_host('localhost');
   if (registry_get('__fct_protect', '1') = '1' and referer is null and host not like 'localhost%' and host <> '127.0.0.1')
@@ -82,13 +85,7 @@
        hint := get_keyword('h', params);
        if (hint is null or http_request_get('REQUEST_METHOD') = 'GET')
          {
-            http('<body style="display:flex;justify-content:center;align-items:center;height:100vh;">
-                <form method="POST" action="">
-                    <input type="hidden" name="h" value="1">
-                    <button type="submit" style="color:white; background-color: green; padding:10px 20px;border:none;border-radius:4px;font-size:16px;">Continue</button>
-                </form>
-              </body>
-            </html>');
+           ?><?include confirmation.vsp ?><?vsp
            return;
          }
     }
@@ -161,13 +158,6 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-
-  -- all possible inputs for IRI to be described
-  gr := get_keyword ('g', params);
-  if (gr is null)
-    gr := get_keyword ('url', params);
-  if (gr is null)
-    gr := get_keyword ('uri', params);
 
   if (not length (gr))
     {
