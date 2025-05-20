@@ -1,4 +1,286 @@
+2025-05-20  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with empty tgt_graph
+
+	Fixed label to RDF Views
+
+	Fixed issue with DAV RDF docs redirect option settings
+
+	Fixed styling of bot prevention dialog
+
+2025-05-13  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with rdfviews and GraphQL
+
+	Make all queries for GraphQL mappings to look at physical store, the
+	views can break whole thing as they compile to enormous huge sql and
+	basically does nothing, we do not claim maps are done in views, if we
+	do we should use different approach not via sparql queries for sure
+
+2025-05-13  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with _cvt(vector(219), '1')
+
+2025-05-13  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with grants in web services
+
+	The web services should look at direct grants, the inherited should not
+	be a service calls, lookup everything accessible make service unusable
+	if grant a wide access role such as sparql_update etc.
+
+2025-04-28  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issue in SQLPrepare and SQLPrepareW
+
+	After conversion use cbSqlStr instead of SQL_NTS
+
+2025-04-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with RDFviews
+
+	  * Fixed bad predicates of '_has_' and '_of_'
+	  * Fixed drop quad map by selection, not by graph
+	  * 'skip' is not used in rml generator
+
+2025-04-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated FCT VAD version
+
+2025-04-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed if get:* and no permissions set, return 401 to redirect to login
+
+	Added option to prevent bots from crawling /describe
+
+2025-04-24  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2025-04-24  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with RDFview
+
+2025-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/gcc15-fixes' into develop/7
+
+2025-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed macros RES_IF_NN and RES_IF_NN_G
+
+	* Fixed potential bug due to missing curly brace in last if block
+	  of RES_IF_NN_G
+	* Fixed compiler warning on indentation
+	* Use do { ..... } while (0) in case we want to use macro inside
+	  and if or else
+
+2025-04-15  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed compiler warnings on misleading indentation (-Wmisleading-indentation)
+
+	Fixed compiler warnings for empty body (-Wempty-body)
+
+	Fixed removed semicolon at end of macro definition
+
+2025-04-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing cast
+
+	Fixed bad semicolon at end of if()
+
+	Fixed issue that stopped engine from performing graph scoped rules check
+
+2025-04-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Removed unused union
+
+	Removed old prototypes not required for Linux/macOS
+
+	Fixed missing parameter from function prototype
+
+	Removed unexpected parameter from function call
+
+	Fixed missing parameter in definition of signal handler
+
+	Fixed missing argument to _connect function in plugin
+
+2025-04-10  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Cleanup prototypes and declarations for functions without arguments
+
+	Instead of using:
+
+	   extern int func();
+	   int func () {}
+
+	use:
+
+	   extern int func (void);
+	   int func (void) {}
+
+2025-03-18  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/2025_03_17_fix_cast_short' into develop/7
+
+	Rebuild RDF4j v5 provider
+
+	Updated RDF4j version
+
+2025-03-17  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fix castValue() for Short values
+
+2025-03-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed maximum lenght of an long url to 64K
+
+	Some RDF datasets have extreme long URIs that exceed the Virtuoso internal
+	maximum size of 1900 bytes and thus need to be shortened to avoid errors
+	such as:
+
+	    SR133: Can not set NULL to not nullable column 'DB.DBA.RDF_QUAD.S'
+
+	The ShortenLongURIs parameter is a Virtuoso configuration setting which
+	shorten extremely long URIs in datasets when loading with the RDF Bulk
+	Loader. When enabled, Virtuoso will truncate the long url and appends
+	a checksum of the original url to ensure it is still unique.
+
+	Add the following setting to your virtuoso.ini file and restart your
+	Virtuoso instance to enable this feature:
+
+	    [SPARQL]
+	    ShortenLongURIs = 1
+
+2025-03-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/jena5' into develop/7
+
+2025-03-13  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed issue with Jena testsuite
+
+2025-03-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild Jena 5 provider
+
+	Updated version number of Jena 5 provider
+
+	Fixed issue building/running the testsuite on linux
+
+	Fixed target and CLASSPATH
+
+2025-03-13  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Updated provider to work with Jena 5.3.0
+
+2025-03-13  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Added initial support for jena5 provider
+
+2025-03-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild RDF4j v4 and v5 providers
+
+	Updated version of RDFj4 v4 and v5 providers
+
+2025-03-12  Sergey Malinin  <smalinin@openlinksw.com>
+
+	Fixed conversion of Integer values to xsd:integer (fixes #1346)
+
+	Fixed castValue() to handle "true"/"false" (fixes #1337)
+
+2025-03-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Rebuild driver
+
+	Updated driver version
+
+2025-03-06  Martin Ledvinka  <martin.ledvinka@fel.cvut.cz>
+
+	Updated VirtuosoRepositoryConnection to be compatible with RDF4j 5.1
+
+	Closes #1344, #1345
+
+2025-03-06  Martin Ledvinka  <martin.ledvinka@fel.cvut.cz>
+
+	Added version of RDF4J Virtuoso driver compatible with RDF4J 5.1.0.
+
+2025-01-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed when qlog is enable, print rset should save prot table globals
+
+2025-01-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with sparql insert <s> <p> 'o'
+
+	sqldf does not make a distinction between uname and pure string as it
+	might need to be, so we introduce new function for literals which
+	do not consider unames as IRIs unless box flags set
+
+2025-01-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed additional issue for sub properties in inference result
+
+	Fixed issue with filter not working on inference result
+
+	Fixed crash in optimiser when pred is optimised to always be true
+
+2025-01-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated FCT VAD version
+
+2025-01-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed if account does not have read/view permission return empty page as for 404
+
+	Added avif,webp,apng and jpeg media type variants
+
+2025-01-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2025-01-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with ACME account binding
+
+	Added support for ACME multi domain name orders
+
+	Added ZeroSSL options to ACME UI
+
+	Added ACME EAB support
+
+	Fixed issue with too many users in dropdown list
+
+	Fixed clear graph before RML import in Conductor
+
+2025-01-06  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed missing check for default LIMIT in SPARQL query (fixes #1336)
+
+2025-01-01  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Copyright
+
+2024-11-14  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed when inserting into RDF_DATATYPE or RDF_LANGUAGE, lock the row exclusive
+
+2024-11-12  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.15-dev to mark the start of a new development cycle
+
 2024-11-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.14' into develop/7
+
+	Tagged 7.2.14 for final release
+
+2024-11-11  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.14' into stable/7
+
+	Updated ChangeLog
 
 	Updated version to 7.2.14
 

@@ -1,5 +1,53 @@
 # NEWS
 
+## May 20, 2025, v7.2.15-rc1
+  * Virtuoso Engine
+    - Fixed compiler warnings on misleading indentation
+    - Fixed compiler warnings for empty body
+    - Fixed prototypes and declarations for functions without arguments
+    - Fixed issues reported by gcc 15 compiler
+    - Fixed issue in `SQLPrepare` and `SQLPrepareW`
+    - Fixed issue with `_cvt(vector(219), '1')`
+
+  * SPARQL
+    - Fixed issues with RDFviews
+    - Fixed maximum lenght of an long url to 64K
+    - Fixed issue that stopped engine from performing graph scoped rules check
+    - Fixed when qlog is enable, print rset should save prot table globals
+    - Fixed issue with `sparql insert <s> <p> 'o'`
+    - Fixed issue with sub properties in inference result
+    - Fixed issue with filter not working on inference result
+    - Fixed crash in optimiser when pred is optimised to always be true
+    - Fixed when inserting into `RDF_DATATYPE` or `RDF_LANGUAGE`; lock the row exclusive
+    - Fixed missing check for default `LIMIT` in SPARQL query
+
+  * Web Server and DAV
+    - Fixed issue with grants in web services
+
+  * Faceted Browser
+    - Added option to prevent bots from crawling /describe
+    - Fixed styling of bot prevention dialog
+    - Fixed if get:* and no permissions set, return 401 to redirect to login
+    - Fixed if account does not have read/view permission return empty page as for 404
+
+  * Conductor
+    - Added support for ACME multi domain name orders
+    - Added ZeroSSL options to ACME UI
+    - Added ACME EAB support
+    - Fixed label to RDF Views
+    - Fixed issue with DAV RDF docs redirect option settings
+    - Fixed issues with RDFview
+    - Fixed issue with too many users in dropdown list
+    - Fixed clear graph before RML import in Conductor
+
+  * R2RML
+    - Fixed issue with empty `tgt_graph`
+
+  * GraphQL
+    - Fixed issue with rdfviews and GraphQL
+    - Fixed missing argument to `_connect` function in plugin
+
+
 ## November 11, 2024, v7.2.14
   * Virtuoso Engine
     - Added new MaxTempDBPages setting to virtuoso.ini
