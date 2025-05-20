@@ -472,15 +472,15 @@ create procedure adm_menu_tree ()
         <node name="SPARQL ACL" url="sparql_acl.vspx" id="277" place="1" allowed="yacutia_acls"/>
       </node>'
      end,
-   '<node name="Views" url="db_rdf_objects.vspx" id="271" allowed="yacutia_rdf_schema_objects_page"/>
-   <node name="Views" url="db_rdf_class.vspx" id="272" place="1"/>
-   <node name="Views" url="db_rdf_owl.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_1.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_2.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_3.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
-   <node name="Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
+   '<node name="RDF Views" url="db_rdf_objects.vspx" id="271" allowed="yacutia_rdf_schema_objects_page"/>
+   <node name="RDF Views" url="db_rdf_class.vspx" id="272" place="1"/>
+   <node name="RDF Views" url="db_rdf_owl.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_1.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_2.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_3.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_tb.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_cols.vspx" id="273" place="1"/>
+   <node name="RDF Views" url="db_rdf_view_pk.vspx" id="273" place="1"/>',
    case when check_package('rdb2rdf') then
   '<node name="R2RML" url="r2rml_import.vspx" id="273" />
    <node name="R2RML" url="r2rml_validate.vspx" id="273" place="1"/>
