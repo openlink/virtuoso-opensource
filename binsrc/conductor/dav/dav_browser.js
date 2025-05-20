@@ -1817,10 +1817,22 @@ WEBDAV.nameByMimeTypeSelect = function (obj)
 
 WEBDAV.turtleRedirectAppChange = function (obj)
 {
-  if (obj.value == 'sponger')
-    $('dav_turtleRedirectParams').value = '&sponger:get=soft';
-  else if (obj.value == 'fct')
-    $('dav_turtleRedirectParams').value = '&sponger:get=soft';
-  else if (obj.value == 'osde')
-    $('dav_turtleRedirectParams').value = '&view=statements';
+  const datalist = document.getElementById('sponger_modes');
+  datalist.innerHTML = '';
+  if (obj.value === 'sponger' || obj.value === 'fct') {
+    const values = [
+      '&sponger:get=soft',
+      '&sponger:get=add',
+      '&sponger:get=replace'
+    ];
+    values.forEach(val => {
+      const option = document.createElement('option');
+      option.value = val;
+      datalist.appendChild(option);
+    });
+  } else if (obj.value === 'osde') {
+    const option = document.createElement('option');
+    option.value = '&view=statements';
+    datalist.appendChild(option);
+  }
 };
