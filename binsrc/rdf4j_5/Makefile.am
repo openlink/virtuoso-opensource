@@ -140,6 +140,7 @@ EXTRA_DIST = \
 	META-INF/services/org.eclipse.rdf4j.repository.config.RepositoryFactory \
 	virtuoso.ttl \
 	virtuoso_driver/*.java \
+	virtuoso_driver/*.rdf \
 	virtuoso_driver/data.nt \
 	manifest.main \
 	virt_rdf4j_5.jar
