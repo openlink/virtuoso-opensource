@@ -1,6 +1,6 @@
 # NEWS
 
-## May 20, 2025, v7.2.15-rc1
+## May 21, 2025, v7.2.15
   * Virtuoso Engine
     - Fixed compiler warnings on misleading indentation
     - Fixed compiler warnings for empty body
@@ -8,8 +8,10 @@
     - Fixed issues reported by gcc 15 compiler
     - Fixed issue in `SQLPrepare` and `SQLPrepareW`
     - Fixed issue with `_cvt(vector(219), '1')`
+    - Fixed check for OpenSSL 3.5.0
 
   * SPARQL
+    - Added support for RDF4j version 5.x
     - Fixed issues with RDFviews
     - Fixed maximum lenght of an long url to 64K
     - Fixed issue that stopped engine from performing graph scoped rules check
