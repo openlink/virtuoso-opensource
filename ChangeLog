@@ -1,3 +1,17 @@
+2025-05-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS.md
+
+	Added missing files from distribution
+
+	Fixed check for OpenSSL 3.5.x
+
+2025-05-20  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.15-rc1
+
+	Updated docs
+
 2025-05-20  Mitko Iliev  <imitko@openlinksw.com>
 
 	Fixed issue with empty tgt_graph
