@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -49,7 +49,7 @@ typedef __int64 int64_t;
 /* return VmSize in KBytes, for macOS uses footprint which represents memory usage of the process */
 
 int64_t
-get_proc_vm_size ()
+get_proc_vm_size (void)
 {
   int64_t proc_size = 0;
 #if defined (linux)

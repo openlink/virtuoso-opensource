@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -251,7 +251,7 @@ caddr_t udo_dbg_find_object_by_ref (query_instance_t *qi, caddr_t ref);
     (os) = os_owner->qi_object_space; \
     if (OBJECT_SPACE_NOT_SET == (os)) \
       (os) = os_owner->qi_object_space = udo_new_object_space (NULL); \
-    } while (0);
+    } while (0)
 
 #define OBJECT_SPACE_GET(os) OBJECT_SPACE_GET_FROM ((os), THREAD_CURRENT_THREAD)
 

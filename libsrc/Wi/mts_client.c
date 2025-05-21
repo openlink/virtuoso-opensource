@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -87,7 +87,7 @@ funcGetDtc get_dtc = 0;
 extern void *msdtc_plugin_gate;
 
 void
-mts_client_init ()
+mts_client_init (void)
 {
 #ifdef VIRTTP
   static int mts_client_inited = 0;
@@ -124,7 +124,7 @@ funcGetDtc get_dtc = DtcGetTransactionManagerC;
 funcGetDtc get_dtc = NULL;
 #endif
 void
-mts_client_init ()
+mts_client_init (void)
 {
   static int mts_client_inited = 0;
   if (mts_client_inited)
@@ -206,7 +206,7 @@ mts_get_remote_rmcookie (cli_connection_t * con, cookie_t ** rmcookie)
 }
 
 HRESULT
-mts_init_export_factory ()
+mts_init_export_factory (void)
 {
   HRESULT hr = 0;
   if (!export_factory && (NULL != get_dtc))

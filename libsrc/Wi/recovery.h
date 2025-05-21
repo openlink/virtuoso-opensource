@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -126,13 +126,13 @@ extern dk_mutex_t *checkpoint_mtx;
 
 int lt_backup_flush (lock_trx_t * lt, int do_commit);
 
-void wi_open_dbs ();
+void wi_open_dbs (void);
 
 extern const char* recover_file_prefix; /* from obackup.c */
 void ddl_obackup_init (void);
-char* bp_curr_timestamp();
-char* bp_curr_prefix();
-char* bp_curr_date();
+char* bp_curr_timestamp(void);
+char* bp_curr_prefix(void);
+char* bp_curr_date(void);
 
 extern caddr_t * backup_patha;
 

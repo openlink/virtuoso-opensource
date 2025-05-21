@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -231,9 +231,9 @@ void sqlp_dt_header (ST * exp);
 caddr_t sqlp_col_num (caddr_t);
 int sqlp_is_num_lit (caddr_t x);
 caddr_t sqlp_minus (caddr_t n);
-char * sqlp_default_cluster ();
-dk_set_t cl_all_host_group_list ();
+char * sqlp_default_cluster (void);
+dk_set_t cl_all_host_group_list (void);
 dk_set_t sqlp_index_default_opts(dk_set_t opts);
-char * sqlp_inx_col_opt ();
+char * sqlp_inx_col_opt (void);
 
 #endif /* _SQLPFN_H */

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -167,7 +167,7 @@ gettimeofday (struct timeval *tv, struct timezone *tz)
 #ifndef WIN32
 
 long
-get_msec_count ()
+get_msec_count (void)
 {
   struct timeval time;
   gettimeofday (&time, NULL);

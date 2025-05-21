@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -493,7 +493,7 @@ int dbs_byte_order_cmp (char byte_order);
 #ifdef DBG_BLOB_PAGES_ACCOUNT
 void db_dbg_account_add_page (dp_addr_t start);
 void db_dbg_account_check_page_in_hash (dp_addr_t start);
-void db_dbg_account_init_hash ();
+void db_dbg_account_init_hash (void);
 #endif
 extern int32 malloc_bufs;
 

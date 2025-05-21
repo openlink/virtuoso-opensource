@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1570,7 +1570,7 @@ itc_ensure_col_refs (it_cursor_t * itc)
 int enable_rq_check_all = 0;
 
 void
-rq_check_all ()
+rq_check_all (void)
 {
   dbe_table_t *tb = sch_name_to_table (wi_inst.wi_schema, "DB.DBA.RDF_QUAD");
   DO_SET (dbe_key_t *, key, &tb->tb_keys)
@@ -2056,7 +2056,7 @@ dc_for_col (mem_pool_t * mp, row_delta_t ** rds, dbe_key_t * key, int nth_part, 
 
 
 void
-cpt_col_restore_uncommitted ()
+cpt_col_restore_uncommitted (void)
 {
   dtp_t right_temp[2000];
   it_cursor_t *itc = mcp_itc;

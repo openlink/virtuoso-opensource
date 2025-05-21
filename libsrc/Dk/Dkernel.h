@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1002,7 +1002,7 @@ extern volatile int dk_alloc_reserve_mode;
 void dk_alloc_set_reserve_mode (int mode);
 #else
 #define DK_ALLOC_ON_RESERVE 		0
-#define dk_alloc_set_reserve_mode(M) 	do { ; } while (0)
+#define dk_alloc_set_reserve_mode(M) 	((void)0)
 #endif
 
 void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
@@ -1016,7 +1016,7 @@ void dks_stop_burst_mode (dk_session_t * ses);
 extern long client_trace_flag;
 
 #ifdef PCTCP
-int init_pctcp ();
+int init_pctcp (void);
 #endif
 
 #ifdef UNIX

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -124,7 +124,7 @@ virt_mono_throw_unhandled_exception (MonoObject *exc)
 
 static MonoDomain *virtuoso_domain;
 static MonoThread *
-get_mono_thread ()
+get_mono_thread (void)
 {
 #ifndef MONO_AGENT
   thread_t *thr = THREAD_CURRENT_THREAD;
@@ -956,7 +956,7 @@ mono_set_port (void)
 #endif
 
 void
-mono_init_virt ()
+mono_init_virt (void)
 {
   const char *error;
 #ifndef MONO_AGENT
@@ -1075,7 +1075,7 @@ main (int argc, char *argv[])
 }
 #else
 char *
-mono_outp_virt_init ()
+mono_outp_virt_init (void)
 {
   return " " _MONO_VERSION_;
 }

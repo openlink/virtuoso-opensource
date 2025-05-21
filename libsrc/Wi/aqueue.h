@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -104,7 +104,7 @@ async_queue_t *aq_allocate (client_connection_t * cli, int n_threads);
 #define AQ_TXN_BRANCH 8
 
 int aq_free (async_queue_t * aq);
-void aq_init ();
+void aq_init (void);
 typedef void (*aq_cleanup_t) (caddr_t);
 void aq_wait_all_in_qi (async_queue_t * aq, caddr_t * inst, caddr_t * err_ret, aq_cleanup_t clup);
 void aq_check_duplicate (async_queue_t * aq, caddr_t val);

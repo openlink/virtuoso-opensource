@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -81,7 +81,7 @@ void itc_free_owned_params (it_cursor_t * itc);
 #define NEW_PLH(v) \
   placeholder_t * v = (placeholder_t*) dk_alloc_box_zero (sizeof (placeholder_t), DV_ITC); \
   v->itc_type = ITC_PLACEHOLDER;
-placeholder_t * plh_allocate ();
+placeholder_t * plh_allocate (void);
 int dv_compare (db_buf_t dv1, db_buf_t dv2, collation_t *collation, unsigned short offset);
 int dv_compare_spec (db_buf_t db, search_spec_t * spec, it_cursor_t * it);
 dp_addr_t leaf_pointer (db_buf_t row, dbe_key_t * key);
@@ -404,7 +404,7 @@ void gen_qmsort (int * in, int * left,
 	    int n_in, sort_cmp_func_t cmp, void* cd, int key_bytes);
 
 void bp_flush (buffer_pool_t * bp, int wait);
-void mt_flush_all ();
+void mt_flush_all (void);
 int page_set_length (buffer_desc_t * buf);
 int bp_buf_enter (buffer_desc_t * buf, it_map_t ** itm_ret);
 buffer_desc_t * bp_get_buffer_1  (buffer_pool_t * bp, buffer_pool_t ** pool_for_action, int mode);
@@ -518,7 +518,7 @@ int  pg_row_check (buffer_desc_t * buf, int irow, int gpf_on_err);
 
 void pg_check_map (buffer_desc_t * buf);
 #else
-#define pg_check_map(buf)
+#define pg_check_map(buf)	((void)0)
 #endif
 int pg_room (db_buf_t page);
 
@@ -585,8 +585,8 @@ int buf_set_dirty_inside_1 (char *file, int line, buffer_desc_t * buf);
 #define buf_set_dirty_inside(b)  BUF_SET_IS_DIRTY(b,1)
 #endif
 
-#define cl_enlist_ck(it, buf)
-#define cl_set_slice(cli, clm, slice, err)
+#define cl_enlist_ck(it, buf)			((void)0)
+#define cl_set_slice(cli, clm, slice, err)	((void)0)
 
 void wi_new_dirty (buffer_desc_t * buf);
 
@@ -634,7 +634,7 @@ extern char srv_approx_dt[DT_LENGTH];
 int box_length_on_row (caddr_t val);
 void pfh_init (pf_hash_t * pfh, buffer_desc_t * buf);
 extern resource_t * pfh_rc;
-pf_hash_t * pfh_allocate ();
+pf_hash_t * pfh_allocate (void);
 void pfh_free (pf_hash_t * pfh);
 short pfh_var (pf_hash_t * pfh, dbe_col_loc_t * cl, db_buf_t str, int len, unsigned short * prefix_bytes, unsigned short * prefix_ref, dtp_t * extra, int mode);
 row_size_t  row_space_after (buffer_desc_t * buf, short irow);
@@ -938,7 +938,7 @@ long sf_log (caddr_t * replicate);
 
 /* mtwrite.c */
 
-int dbs_dirty_count ();
+int dbs_dirty_count (void);
 void buf_cancel_write (buffer_desc_t * buf);
 void buf_release_read_waits (buffer_desc_t * buf, int itc_state);
 void mt_write_start (int n_oldest);
@@ -1109,7 +1109,7 @@ caddr_t registry_remove (char *name);
 int dbs_write_registry (dbe_storage_t * dbs);
 void dbs_init_registry (dbe_storage_t * dbs);
 void db_replay_registry_sequences (void);
-void cli_bootstrap_cli ();
+void cli_bootstrap_cli (void);
 void db_log_registry (dk_session_t * log);
 void registry_update_sequences (void);
 caddr_t box_deserialize_string (caddr_t text, int opt_len, int64 offset);
@@ -1422,7 +1422,7 @@ void dbs_cpt_set_allocated (dbe_storage_t * dbs, dp_addr_t dp, int is_allocd);
 dp_addr_t em_free_count (extent_map_t * em, int type);
 void dbs_ec_enter (dbe_storage_t * dbs);
 void dbs_ec_leave (dbe_storage_t * dbs);
-void clear_old_root_images  ();
+void clear_old_root_images  (void);
 
 extern dk_mutex_t * extent_map_create_mtx;
 #define WAIT_IF(msec) if (msec) virtuoso_sleep ((msec) /1000, 1000 * ((msec) % 1000));
@@ -1441,7 +1441,7 @@ void  memzero (void* p, int len);
 void memcpy_16 (void * target, const void * source, size_t len);
 void memcpy_16_nt (void * t, const void * s, size_t len);
 void memmove_16 (void * t, const void * s, size_t len);
-unsigned  int64 rdtsc();
+unsigned  int64 rdtsc(void);
 
 extern int aq_max_threads;
 extern int in_log_replay;

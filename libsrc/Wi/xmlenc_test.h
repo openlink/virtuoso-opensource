@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -26,13 +26,13 @@
 void breakpoint(void);
 void trset_start (caddr_t * qst);
 void trset_printf (const char *str, ...);
-void trset_end ();
+void trset_end (void);
 
 #define rep_printf	trset_printf
 
-void xenc_test_begin();
-void xenc_test_end();
-int xenc_test_processing();
+void xenc_test_begin(void);
+void xenc_test_end(void);
+int xenc_test_processing(void);
 void xenc_assert_1(int term, char* file, long line);
 
 #define xenc_assert(term) xenc_assert_1(term, __FILE__, __LINE__)

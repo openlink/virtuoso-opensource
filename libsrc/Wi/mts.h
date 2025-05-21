@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -57,20 +57,20 @@ EXE_IMPORT1 (int, mts_trx_enlist_loc,
     (struct client_connection_s * connection, struct ITransaction * itrn));
 EXE_IMPORT1 (int, mts_trx_enlist, (lock_trx_t * lt, caddr_t tr_cookie,
 	unsigned long len));
-EXE_IMPORT1 (caddr_t, mts_get_rmcookie, ());
+EXE_IMPORT1 (caddr_t, mts_get_rmcookie, (void));
 
 EXE_IMPORT1 (int, mts_trx_commit, (lock_trx_t * lt, int is_commit));
 
-EXE_IMPORT1 (int, mts_init, ());
+EXE_IMPORT1 (int, mts_init, (void));
 EXE_IMPORT1 (int, mts_connect, (long reconnect));
 
-EXE_IMPORT1 (box_t, mts_server_status, ());
+EXE_IMPORT1 (box_t, mts_server_status, (void));
 EXE_IMPORT1 (box_t, mts_transaction_status, (lock_trx_t *));
 EXE_IMPORT (int, mts_recover, (box_t recov_data));
-EXE_IMPORT (void *, mts_trx_allocate, ());
-EXE_IMPORT (void, mts_bif_init, ());
+EXE_IMPORT (void *, mts_trx_allocate, (void));
+EXE_IMPORT (void, mts_bif_init, (void));
 
-int mts_check ();
+int mts_check (void);
 
 extern int vd_use_mts;
 

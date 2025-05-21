@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -66,9 +66,9 @@ typedef struct monitor_s {
 #include <sys/time.h>
 #include <sys/resource.h>
 #endif
-void mon_init ();
+void mon_init (void);
 int mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_t* previous, monitor_t *next);
 void mon_update (int n_threads, int n_vdb_threads, int n_lw_threads);
-void mon_check ();
+void mon_check (void);
 
 #endif

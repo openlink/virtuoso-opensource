@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -63,7 +63,7 @@ char *dd_stmt_text =
 
 
 void
-check_dd ()
+check_dd (void)
 {
   HSTMT ck_stmt;
 
@@ -99,7 +99,7 @@ print_error (HSTMT e1, HSTMT e2, HSTMT e3)
 HSTMT ins_stmt;
 
 void
-del_blobs ()
+del_blobs (void)
 {
   IF_ERR_EXIT (b_stmt,
       SQLExecDirect (b_stmt, (UCHAR *) "delete from BLOBS", SQL_NTS));
@@ -385,7 +385,7 @@ check_blob_col (HSTMT stmt, int n_col, long expect_bytes, int ctype)
 
 
 void
-read_bound_blobs ()
+read_bound_blobs (void)
 {
   SDWORD len1, len2, len3, len4;
   char temp[100];
@@ -478,7 +478,7 @@ is_init_SQL_statement (char **argv, int nth_arg)
 
 
 void
-tb_array ()
+tb_array (void)
 {
   int rc;
   long nth;

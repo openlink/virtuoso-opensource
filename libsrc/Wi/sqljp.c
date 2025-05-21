@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -215,12 +215,18 @@ int
 dfe_is_iri_id_test (df_elt_t * pred)
 {
   df_elt_t *rhs;
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    return 0;
   if (DFE_BOP != pred->dfe_type || BOP_NOT != pred->_.bin.op)
     return 0;
   pred = pred->_.bin.left;
+  if ((DFE_TRUE == pred) || (DFE_FALSE == pred))
+    return 0;
   if (DFE_BOP_PRED != pred->dfe_type || BOP_EQ != pred->_.bin.op || 0 != unbox ((ccaddr_t) pred->_.bin.left->dfe_tree))
     return 0;
   rhs = pred->_.bin.right;
+  if ((DFE_TRUE == rhs) || (DFE_FALSE == rhs))
+    return 0;
   if (st_is_iri_test (rhs->dfe_tree)
       || (DFE_BOP == rhs->dfe_type && rhs->_.bin.right && st_is_iri_test (rhs->_.bin.right->dfe_tree)))
   return 1;

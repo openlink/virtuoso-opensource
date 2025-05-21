@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2206,7 +2206,7 @@ geo_pj_yn_cbk_t * geo_get_default_pj_is_geocent_cbk (void) { return geo_default_
 #include "bmcmp.c"
 
 void
-bif_geo_init ()
+bif_geo_init (void)
 {
   bif_define ("earth_radius", bif_earth_radius);
   bif_define ("haversine_deg_km", bif_haversine_deg_km);

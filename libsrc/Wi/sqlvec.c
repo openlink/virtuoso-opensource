@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1017,7 +1017,7 @@ ti_func_no (char op, dtp_t dtp)
 }
 
 void
-ti_func_init ()
+ti_func_init (void)
 {
   ti_define (IN_COMPARE, DV_LONG_INT, (void *) dc_cmp_int, (void *) dc_cmp_int_1);
   ti_define (IN_ARTM_PLUS, DV_LONG_INT, (void *) dc_add_int, (void *) dc_add_int_1);

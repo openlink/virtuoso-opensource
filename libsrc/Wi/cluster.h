@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1050,7 +1050,7 @@ int itc_rd_cluster_blobs (it_cursor_t * itc, row_delta_t * rd, mem_pool_t * ins_
 /**add vec */
 void ts_ensure_fs_part (table_source_t * ts);
 void clrg_call_flush_if_due (cl_req_group_t * clrg, query_instance_t * qi, int anyway);
-void chash_cl_init ();
+void chash_cl_init (void);
 caddr_t daq_call_1 (cl_req_group_t * clrg, dbe_key_t * key, caddr_t fn, caddr_t * vec, int flags, int * first_seq_ret, caddr_t * host_nos);
 extern dk_mutex_t cl_chash_mtx;
 extern dk_hash_t cl_id_to_chash;
@@ -1070,11 +1070,11 @@ extern dk_mutex_t clrg_wait_mtx;
 
 
 void cl_cancel_waiting (int64 cancel_w_id, int host, int req_no);
-void clbing2 ();
+void clbing2 (void);
 extern dk_mutex_t *cl_reply_mtx;
 extern semaphore_t *cl_reply_sem;
 extern basket_t cl_reply_queue;
-void cl_reply_init ();
+void cl_reply_init (void);
 int cm_may_compress (cl_message_t * cm, cl_host_t * ch);
 void strses_compressed_write_out (dk_session_t * strses, dk_session_t * out);
 void cm_uncompress (cl_message_t * cm);
@@ -1104,7 +1104,7 @@ int clrel_flush (session_t * ses, char *buffer, int n_bytes);
 void clrel_mark_cm_start (dk_session_t * dks, cl_message_t * cm);
 extern resource_t *cl_buf_rc;
 msg_ctr_t *mctr_by_id (uint64 id);
-void mctr_init ();
+void mctr_init (void);
 
 cll_in_box_t *clrg_ensure_single_clib (cl_req_group_t * clrg);
 void cm_handle_rec_cancel (cl_thread_t * queue_clt, cl_queue_t * bsk, cl_message_t * cm, int in_cll, int line);
@@ -1120,10 +1120,10 @@ void cl_agg_trace_f (ptrlong req_no, int stage);
 #endif
 
 
-void cl_clear_dup_cancel ();
+void cl_clear_dup_cancel (void);
 cl_thread_t *cli_claq_clt (client_connection_t * cli);
 cl_slice_t *clm_id_to_slice (cluster_map_t * clm, slice_id_t slid);
-void cl_init_dae_key ();
+void cl_init_dae_key (void);
 void cl_dae_blobs (query_instance_t * qi, state_slot_t ** ssls);
 void cl_ses_set_options (session_t * ses);
 int clm_is_colocated (cluster_map_t * clm1, cluster_map_t * clm2);
@@ -1151,7 +1151,7 @@ int dfg_fetch_qr (uint64 qf_id, query_t ** qr_ret, cl_thread_t * clt);
 int dfg_fetch_qr_local (uint64 qf_id, query_t ** qr_ret, cl_thread_t * clt);
 void qf_assign_id (query_frag_t * qf);
 stage_node_t **stn_array (dk_set_t nodes, int n_stages);
-client_connection_t *cl_cli ();
+client_connection_t *cl_cli (void);
 void clib_add_local_error (cll_in_box_t * clib, caddr_t err);
 void basket_delete (basket_t * head, basket_t ** elt_ret);
 void da_add_enlist (db_activity_t * da, int host, int change);
@@ -1169,7 +1169,7 @@ int clo_frag_n_sets (cl_op_t * clo);
 void cl_fref_local_result (query_instance_t * qi, query_frag_t * qf, state_slot_t * slice_qis, int is_final);
 int dfg_is_slice_continuable (stage_node_t * stn, query_instance_t * slice_qi);
 int dfg_feed (stage_node_t * stn, caddr_t * inst, cl_queue_t * bsk);
-void dfg_after_feed ();
+void dfg_after_feed (void);
 void clib_dfg_coord_req (cll_in_box_t * clib);
 #define ASSERT_IN_CLL \
   ASSERT_IN_MTX (local_cll.cll_mtx);
@@ -1242,12 +1242,12 @@ void  cl_serialize_db_activity_t (dk_session_t * out, db_activity_t * s);
 void cl_deserialize_db_activity_t (dk_session_t * in, caddr_t * inst);
 
 void clib_parse (cll_in_box_t * clib);
-void cluster_init ();
-void cluster_schema ();
-void cluster_built_in_schema ();
-void cluster_listen ();
-void cluster_online ();
-void cluster_after_online ();
+void cluster_init (void);
+void cluster_schema (void);
+void cluster_built_in_schema (void);
+void cluster_listen (void);
+void cluster_online (void);
+void cluster_after_online (void);
 
 void cls_transact (cl_thread_t * clt, cl_message_t * cm);
 int64 read_boxint (dk_session_t * ses);
@@ -1259,7 +1259,7 @@ void cl_self_signal (void (*f)(void* _cd), void* cd);
 
 #ifdef MTX_METER
 #define TRY_CLL cll_try_enter ()
-int cll_try_enter ();
+int cll_try_enter (void);
 #define IN_CLL {mutex_enter (local_cll.cll_mtx); cll_entered = rdtsc ();}
 #define LEAVE_CLL { cll_counts[__LINE__ % 1000] ++; cll_lines[__LINE__ % 1000] += rdtsc () - cll_entered;  mutex_leave (local_cll.cll_mtx);}
 #else
@@ -1308,7 +1308,7 @@ void cl_send_db_activity (dk_session_t * ses);
 
 caddr_t cl_ddl (query_instance_t * qi, lock_trx_t * lt, caddr_t name, int type, caddr_t trig_table);
 caddr_t cl_start_atomic (query_instance_t * qi, caddr_t name, int type);
-void cl_local_atomic_over ();
+void cl_local_atomic_over (void);
 caddr_t cl_read_partition (query_instance_t * qi, caddr_t tb_name);
 caddr_t cl_read_cluster (query_instance_t * qi, caddr_t name, int create);
 void  clib_more (cll_in_box_t * clib);
@@ -1320,7 +1320,7 @@ cl_op_t * mp_clo_allocate (mem_pool_t * mp, char op);
 #define cl_printf(a)
 #endif
 void  clib_read_next (cll_in_box_t * clib, caddr_t * inst, dk_set_t out_slots);
-void clib_rc_init ();
+void clib_rc_init (void);
 
 #define CL_CONN_ERROR(error, ses, host, errno_save)				\
   { if (CH_REMOVED != host->ch_status) host->ch_status = CH_OFFLINE; \
@@ -1366,7 +1366,7 @@ int cl_is_ac_dml (query_instance_t * qi);
 
 #define QFID_HOST(i) ((int)(((unsigned int64) (i)) >> 32))
 
-void cl_trx_init ();
+void cl_trx_init (void);
 extern basket_t cl_trx_queue;
 extern semaphore_t * cl_trx_sem;
 extern dk_mutex_t * cl_trx_mtx;
@@ -1385,7 +1385,7 @@ void cm_record_dfg_progress (int coord, int req_no, cl_thread_t * clt, char *fil
 #define dfg_progress(coord, req_no, clt)  cm_record_dfg_progress (coord, req_no, clt, __FILE__, __LINE__)
 
 #define cm_record_dispatch(cm, clt, f) cm_record_dispatch_1 (cm, clt, f, __FILE__, __LINE__)
-#define cm_record_dfg_deliv(cm, f) cm_record_dispatch_1 (cm, 0, 256 + (f), __FILE__, __LINE__);
+#define cm_record_dfg_deliv(cm, f) cm_record_dispatch_1 (cm, 0, 256 + (f), __FILE__, __LINE__)
 
 #define CM_D_TOP_START 1
 #define CM_D_TOP_QUEUE 2
@@ -1435,10 +1435,10 @@ typedef struct _cm_trace_s
 
 
 #else
-#define cm_record_send(cm, to)
-#define cm_record_dispatch(cm, clt, r)
-#define cm_record_dfg_deliv(cm, f)
-#define dfg_progress(coord, req_no, clt)
+#define cm_record_send(cm, to)			((void)0)
+#define cm_record_dispatch(cm, clt, r)		((void)0)
+#define cm_record_dfg_deliv(cm, f)		((void)0)
+#define dfg_progress(coord, req_no, clt)	((void)0)
 #endif
 
 void cl_notify_wait (gen_lock_t * pl, it_cursor_t * itc, buffer_desc_t * buf);
@@ -1453,15 +1453,15 @@ extern int cl_trx_inited;
 #if 0
 #define ctrx_printf(x) printf x
 #else
-#define ctrx_printf(x)
+#define ctrx_printf(x)	((void)0)
 #endif
-void cl_clear_dead_w_id ();
+void cl_clear_dead_w_id (void);
 
 #define THR_DBG_CLRG_WAIT ((caddr_t) 1)
 
 void cl_notify_disconnect (int host);
 void clo_unlink_clib (cl_op_t * clo, cll_in_box_t * clib, int is_allocd);
-void bif_daq_init ();
+void bif_daq_init (void);
 void cls_call (cl_thread_t * clt, cl_op_t * clo);
 void clt_send_error (cl_thread_t * clt, caddr_t err);
 uint32 col_part_hash (col_partition_t * cp, caddr_t val, int is_already_cast, int * cast_ret, int32 * rem_ret);
@@ -1495,12 +1495,12 @@ void dpipe_drop (caddr_t name);
 #define CF_SINGLE_ACTION 128 /* one call gets the job done, can be colocated as an ordinary proc call */
 #define CF_VECTORED 256
 
-void dpipe_refresh_schema ();
-void cl_rdf_init ();
+void dpipe_refresh_schema (void);
+void cl_rdf_init (void);
 void clrg_check_trx_error (cl_req_group_t * clrg, caddr_t * err);
 
 #define SQLSTATE_IS_TXN(s) (0 == strncmp (s, "400", 3) || 0 == strncmp (s, "08", 2) || 0 == strncmp (s, "S1T0", 4))
-void cl_read_dpipes ();
+void cl_read_dpipes (void);
 caddr_t * cu_next (cucurbit_t * cu, query_instance_t * qi, int is_flush);
 void  dpipe_node_input (dpipe_node_t * dp, caddr_t * inst, caddr_t * state);
 void dpipe_node_local_input (dpipe_node_t * dp, caddr_t * inst, caddr_t * stat);
@@ -1511,7 +1511,7 @@ void cu_ssl_row (cucurbit_t * cu, caddr_t * qst, state_slot_t ** args, int first
 void cl_fref_result (fun_ref_node_t * fref, caddr_t * inst, cl_op_t ** clo_ret);
 int cl_partitioned_fref_start (dk_set_t nodes, caddr_t * inst);
 void ch_qf_closed (cl_host_t * ch, uint32 req_no, cl_message_t * cm);
-void cl_timeout_closed_qfs ();
+void cl_timeout_closed_qfs (void);
 void cm_free_pending_clo (cl_message_t * cm);
 #ifdef LT_TRACE_SZ
 #define cl_lt_drop_ref(lt, f) { LT_TRACE (lt); cl_lt_drop_ref_1 (lt, f); }
@@ -1563,12 +1563,12 @@ int cl_send_commit (int64 w_id, int to_host);
 void cl_schedule_admin (caddr_t text);
 void cl_disconnect_query (cl_host_t * ch);
 void cl_send_all_atomic (int flag);
-void cls_wait_query ();
+void cls_wait_query (void);
 void cls_seq_alloc (cl_thread_t * clt, cl_message_t * cm);
 void lt_io_start (lock_trx_t * lt);
 void lt_io_end (lock_trx_t * lt);
 
-void cl_request_wait_query ();
+void cl_request_wait_query (void);
 int qn_has_clb_save (data_source_t * qn);
 int itcl_fetch_to_set (itc_cluster_t * itcl, int nth);
 caddr_t bif_cl_set_switch (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args);
@@ -1620,7 +1620,7 @@ void lt_free_branches (lock_trx_t * lt);
 void cl_dfg_no_cancel_forward (dk_set_t nodes, caddr_t * inst);
 stage_node_t *qf_nth_stage (stage_node_t ** nodes, int nth);
 
-void cluster_bifs ();
+void cluster_bifs (void);
 
 #define CL_MARK_MSG(lt, bytes)			\
   {if (lt) {lt->lt_client->cli_activity.da_cl_messages++; lt->lt_client->cli_activity.da_cl_bytes += bytes;}}
@@ -1637,7 +1637,7 @@ dtp_t dtp = DV_TYPE_OF (par); \
 }
 
 int qi_anytime_send_check (caddr_t * inst);
-char *  cl_thr_stat ();
+char *  cl_thr_stat (void);
 
 int key_is_known_partition (dbe_key_t * key, caddr_t * qst, search_spec_t * ksp, search_spec_t * rsp, uint32 * hash_ret,
     it_cursor_t * itc, int32 * rem_ret);
@@ -1651,24 +1651,24 @@ int key_is_known_partition (dbe_key_t * key, caddr_t * qst, search_spec_t * ksp,
 
 int key_is_d_id_partition (dbe_key_t * key);
 void lt_set_w_id (lock_trx_t * lt, int64 w_id);
-caddr_t cl_read_map ();
-void cluster_after_online ();
+caddr_t cl_read_map (void);
+void cluster_after_online (void);
 void cl_qi_count_affected (query_instance_t * qi, cl_req_group_t * clrg);
 void ch_qf_closed (cl_host_t * ch, uint32 req_no, cl_message_t * cm);
 
 
 int cl_w_timeout_hook (dk_session_t * ses);
 #if 1
-#define io_printf(a)
+#define io_printf(a)		((void)0)
 #else
-#define io_printf(a) printf a
+#define io_printf(a) 		printf a
 #endif
 
 #define CL_ONLINE_CK \
   {if (CH_ONLINE !=cl_stage && CL_RUN_CLUSTER == cl_run_local_only) sqlr_new_error ("08C06", "CLNJO", "Cluster operations not allowed until confirmed online");}
 
-void cl_flt_init ();
-void cl_flt_init_2 ();
+void cl_flt_init (void);
+void cl_flt_init_2 (void);
 extern cluster_map_t * clm_all;
 dk_session_t * dks_file (char * name, int flags);
 void clib_row_boxes (cll_in_box_t * clib);
@@ -1702,7 +1702,7 @@ extern int enable_small_int_part;
 
 extern dk_mutex_t * clrg_ref_mtx;
 extern long dbf_cpt_rb;
-cll_in_box_t * clib_allocate ();
+cll_in_box_t * clib_allocate (void);
 id_hash_t * dict_ht (id_hash_iterator_t * dict);
 void dpipe_signature (caddr_t name, int n_args, ...);
 #define CU_CLI(cu) ((cu)->cu_clrg->clrg_lt ? (cu)->cu_clrg->clrg_lt->lt_client : NULL)

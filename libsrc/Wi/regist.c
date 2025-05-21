@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -31,7 +31,7 @@
 
 
 void
-cli_bootstrap_cli ()
+cli_bootstrap_cli (void)
 {
   if (!bootstrap_cli)
     {
@@ -442,7 +442,7 @@ int sql_escaped_string_literal (char *target, char *text, int max);
 
 
 void
-registry_exec ()
+registry_exec (void)
 {
   id_hash_iterator_t it;
   caddr_t *name;

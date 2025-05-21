@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -715,7 +715,7 @@ int ce_hash_range_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int 
 int ce_hash_sets_filter (col_pos_t * cpo, db_buf_t ce_first, int n_values, int n_bytes);
 
 void
-ce_hash_register ()
+ce_hash_register (void)
 {
   dtp_t cets[] = { CE_RL, CE_BITS, CE_VEC, CE_DICT, CE_RL_DELTA, CE_INT_DELTA};
   dtp_t dtps[] = {0, 16, 32, 48, 64, 80, 96};
@@ -732,7 +732,7 @@ ce_hash_register ()
 }
 
 void
-colin_init ()
+colin_init (void)
 {
   ce_op_register (CE_INT_DELTA | CET_ANY, CE_OP_CODE (CMP_NONE, CMP_LTE), 0, ce_intd_any_range_lte);
   ce_op_register (CE_DICT | CET_ANY, CE_DECODE, 0, ce_dict_any_range_decode);

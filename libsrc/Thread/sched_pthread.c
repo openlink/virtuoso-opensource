@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -307,7 +307,7 @@ failed:
 
 
 static thread_t *
-thread_alloc ()
+thread_alloc (void)
 {
   thread_t *thr;
 
@@ -1173,7 +1173,7 @@ dk_mutex_init (dk_mutex_t * mtx, int type)
 
 
 dk_mutex_t *
-mutex_allocate ()
+mutex_allocate (void)
 {
   return mutex_allocate_typed (MUTEX_TYPE_SHORT);
 }

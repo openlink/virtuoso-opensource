@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -130,7 +130,7 @@ hosting_php_check (unit_version_t *in, void *appdata)
 
 
 static void
-hosting_php_connect (void *x)
+hosting_php_connect (void *appdata)
 {
   bif_define ("php_str", bif_php_str);
 

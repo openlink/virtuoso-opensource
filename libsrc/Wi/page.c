@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -250,7 +250,7 @@ str_delta (db_buf_t str1, db_buf_t str2, int len1, int len2, row_size_t * prefix
 resource_t * pfh_rc;
 
 pf_hash_t *
-pfh_allocate ()
+pfh_allocate (void)
 {
   return (pf_hash_t *) dk_alloc (sizeof (pf_hash_t));
 }
@@ -935,7 +935,7 @@ buf_order_ck (buffer_desc_t * buf)
 
 
 #ifndef PAGE_CHECK
-#define buf_order_ck(b)
+#define buf_order_ck(b)		((void)0)
 #endif
 
 

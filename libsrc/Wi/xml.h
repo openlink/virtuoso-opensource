@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -82,20 +82,6 @@ encoding_handler_t *intl_find_user_charset (const char *encname, int xml_input_i
 #define MAX_XML_STRING_LENGTH 0x9FFFF0L	/* 10 M2b - 16 */	/* IvAn/TextXmlIndex/000814 */
 
 #define XML_CHAR_ESCAPE(c,s) xml_escapes [c] = s;
-
-#ifndef __cplusplus
-/* Types definition */
-#ifndef _boolean
-typedef enum
-  {
-    false, true
-  }
-_boolean;
-#endif
-#endif
-
-
-
 
 
 typedef struct close_tag_s {

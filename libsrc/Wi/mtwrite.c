@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1135,7 +1135,7 @@ sys_timer_t sti_flush_sched;
 
 
 int
-dbs_dirty_count ()
+dbs_dirty_count (void)
 {
   int binx, inx, n_dirty = 0;
   DO_BOX (buffer_pool_t *, bp, binx, wi_inst.wi_bps)
@@ -1244,7 +1244,7 @@ dbs_sched_low_dirty (dbe_storage_t * dbs, dp_addr_t min_dp, int * n_sched)
 
 
 void
-mt_flush_all ()
+mt_flush_all (void)
 {
   int total_sched = 0, dirty_after = 0;
   long init_flushed = tc_n_flush;
@@ -1274,7 +1274,7 @@ mt_flush_all ()
     {
       if (dbs->dbs_slices)
 	continue;
-      dirty_after += dbs_dirty_count (dbs);
+      dirty_after += dbs_dirty_count ();
       tc_dirty_after_flush += dirty_after;
     }
   END_DO_SET();
@@ -1328,7 +1328,7 @@ void bp_flush_thread_func (void * arg);
 
 
 void
-mt_write_init ()
+mt_write_init (void)
 {
   DO_SET (wi_db_t *, wd, &wi_inst.wi_dbs)
     {

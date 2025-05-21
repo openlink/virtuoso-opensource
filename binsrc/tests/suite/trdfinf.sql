@@ -2,7 +2,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2024 OpenLink Software
+--  Copyright (C) 1998-2025 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -375,4 +375,41 @@ select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_OP) where o in (10,20
 --select * from DB.DBA.RDF_QUAD table option (index RDF_QUAD_GS) where g in ( __i2id ( UNAME'g3' ) , __i2id ( UNAME'g2' ) , __i2id ( UNAME'g1' ));
 --echo both $if $equ $rowcnt 2 "PASSED" "***FAILED";
 --echo both ": 2 rows g in (g1, g2, g3) by GS\n";
+TTLP('
+@prefix ex: <http://example.org/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
 
+# Class definitions
+ex:Animal rdf:type rdfs:Class .
+ex:Mammal rdf:type rdfs:Class ;
+          rdfs:subClassOf ex:Animal .
+ex:Bird rdf:type rdfs:Class ;
+        rdfs:subClassOf ex:Animal .
+
+# Individuals of Mammals
+ex:Lion rdf:type ex:Mammal .
+ex:Tiger rdf:type ex:Mammal .
+ex:Elephant rdf:type ex:Mammal .
+
+# Individuals of Birds
+ex:Eagle rdf:type ex:Bird .
+ex:Sparrow rdf:type ex:Bird .
+ex:Penguin rdf:type ex:Bird .
+
+# Relationships between individuals
+ex:Lion ex:hasFriend ex:Tiger .
+ex:Eagle ex:preysOn ex:Sparrow .
+ex:Penguin ex:livesWith ex:PenguinGroup .
+
+# A group for Penguins
+ex:PenguinGroup rdf:type ex:Bird .
+', 'http://example.org/', 'urn:animal:data');
+rdfs_rule_set('animal','urn:animal:data');
+
+sparql define input:inference "animal" select ?s ?p ?o from <urn:animal:data> { ?s ?p ?o . filter (?o = <http://example.org/Animal>)};
+echo both $if $equ $rowcnt 9 "PASSED" "***FAILED";
+echo both ": 9 rows for ex:Animal by ?o=<Animal>\n";
+sparql define input:inference "animal" select ?s ?p ?o from <urn:animal:data> { ?s ?p ?o . filter (strends(str(?o), 'Animal') ) };
+echo both $if $equ $rowcnt 9 "PASSED" "***FAILED";
+echo both ": 9 rows for ex:Animal by post filer by strends(?o,Animal)\n";

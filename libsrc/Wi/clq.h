@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,10 +36,10 @@
 #define DO_CLQ(dtp, it, rbe, inx, clq) DO_RBUF (dtp, it, rbe, inx, clq)
 #define END_DO_CLQ END_DO_RBUF
 
-#define clq_next(q, rbe, inx)
-#define clq_delete(q, rbe, inx) rbuf_delete (q, rbe, &inx)
-#define clq_is_empty(q) (0 == (q)->rb_count)
-#define clq_first(q) rbuf_first(q)
+#define clq_next(q, rbe, inx)		((void)0)
+#define clq_delete(q, rbe, inx)		rbuf_delete (q, rbe, &inx)
+#define clq_is_empty(q)			(0 == (q)->rb_count)
+#define clq_first(q)			rbuf_first(q)
 
 #define CLQ_REQ_MTX(clq, mtx) RBUF_REQ_MTX (clq, mtx)
 

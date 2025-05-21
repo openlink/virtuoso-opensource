@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -295,7 +295,7 @@ sigh_report_and_forget (int sig)
 
 #ifndef SHARED_OBJECT
 static void
-sigh_set_notifiers ()
+sigh_set_notifiers (void)
 {
   int i;
   if (min_signal_handling)
@@ -397,7 +397,7 @@ os_background (void)
 {
   if (!f_foreground)
     {
-      RETSIGTYPE (*usr1)();
+      RETSIGTYPE (*usr1)(int);
 
       if (f_wait && pipe (bg_pipe) == -1)
 	{

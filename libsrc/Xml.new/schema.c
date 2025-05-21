@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -57,9 +57,9 @@ xml_syspath_t *xml_sys_path_list;
 #define SHOULD_BE_CHANGED
 
 #ifdef XMLSCHEMA_UNIT_DEBUG
-#define schema_printf(Z) printf Z
+#define schema_printf(Z) 	printf Z
 #else
-#define schema_printf(Z)
+#define schema_printf(Z)	((void)0)
 #endif
 
 #define XSPAT__CENTURY		"-?\\d{2}\\d*"
@@ -2253,7 +2253,7 @@ xs_tag_mssql_rship (vxml_parser_t * parser, xs_tag_t * _this)
 /* End of tag handlers */
 
 void
-xml_schema_init ()
+xml_schema_init (void)
 {
   xml_sys_path_list = dk_alloc (sizeof (xml_syspath_t));
   memset (xml_sys_path_list, 0, sizeof (xml_syspath_t));

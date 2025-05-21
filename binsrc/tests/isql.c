@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -708,10 +708,10 @@ int fully_connected = 0;
 TCHAR *form_action = _T("");
 TCHAR *get_list_of_datasources (int for_html, TCHAR *dest_buf, int dest_size);
 int output_html_file (TCHAR *templatename);
-void print_csv_banner ();
-void print_csv_rfc4180_banner ();
-int print_csv_row();
-int print_csv_rfc4180_row();
+void print_csv_banner (void );
+void print_csv_rfc4180_banner (void );
+int print_csv_row(void );
+int print_csv_rfc4180_row(void );
 void print_json_banner (void);
 void print_json_footer (void);
 int print_json_row(int row_nr);
@@ -828,7 +828,7 @@ void html_print_head_title (FILE * fp, TCHAR *title1, TCHAR *title2, TCHAR *titl
 int flag_head_already_printed = 0;
 
 int
-print_http_headers_if_not_already_printed ()
+print_http_headers_if_not_already_printed (void)
 {
 
   if ((0 == flag_head_already_printed) && web_mode)
@@ -886,7 +886,7 @@ TCHAR *html_escapes[256] =
 #define html_escapes_has_been_initialized() html_escapes['<']
 
 void
-html_init_escapes ()
+html_init_escapes (void)
 {
   HTML_ESCAPE ('\0', _T("&#0;"));	/* To catch strange NUL characters. */
   HTML_ESCAPE ('<', _T("&lt;"));
@@ -1463,7 +1463,7 @@ push_to_loadexpr_stack (TCHAR *loadexpr, FILE * load_stream)
    push_to_loadexpr_stack), and return the new stack pointer.
  */
 int
-drop_from_loadexpr_stack ()
+drop_from_loadexpr_stack (void)
 {
   TCHAR *loadexpr;
 
@@ -4881,7 +4881,7 @@ field_print (TCHAR *str, SQLULEN w, int rightp, int inx)
 
 
 void
-print_banner ()
+print_banner (void)
 {
   int inx;
   unsigned int len;
@@ -4936,7 +4936,7 @@ print_banner ()
 }
 
 void
-print_banner_vert ()
+print_banner_vert (void)
 {
   int inx;
   unsigned int len;
@@ -5281,7 +5281,7 @@ print_datetime_col (TCHAR *timebinstr, SQLULEN width, int rightp,
 /* Returns either SQL_SUCCESS or the last return code returned by
    print_blob_col (which calls SQLGetData in the loop.) */
 int
-print_row ()
+print_row (void)
 {
   TCHAR temp[30];
   int inx, i;
@@ -5352,7 +5352,7 @@ print_row ()
 }
 
 int
-print_row_vert ()
+print_row_vert (void)
 {
   TCHAR temp[30];
   int inx, i;
@@ -5437,7 +5437,7 @@ print_row_vert ()
 }
 
 void
-print_csv_banner ()
+print_csv_banner (void)
 {
   int inx;
   for (inx = 0; inx < n_out_cols; inx++)
@@ -5449,7 +5449,7 @@ print_csv_banner ()
 }
 
 void
-print_csv_rfc4180_banner ()
+print_csv_rfc4180_banner (void)
 {
   int inx;
   for (inx = 0; inx < n_out_cols; inx++)
@@ -5557,7 +5557,7 @@ print_datetime_col_json (TCHAR * data, SQLULEN width, SQLLEN collen, int type, i
 /* Returns either SQL_SUCCESS or the last return code returned by
    print_blob_col (which calls SQLGetData in the loop.) */
 int
-print_csv_row()
+print_csv_row(void)
 {
   int inx;
   int rc = SQL_SUCCESS;
@@ -5594,7 +5594,7 @@ print_csv_row()
 }
 
 int
-print_csv_rfc4180_row()
+print_csv_rfc4180_row(void)
 {
   int inx;
   int rc = SQL_SUCCESS;
@@ -7058,9 +7058,9 @@ ifdef_cond_t ifdef_cond[IFDEF_COND_MAX] = { { NULL, 0, 1, 0 } };
 unsigned ifdef_cond_current = 0;
 
 void ifdef_push (const TCHAR *expr, unsigned line);
-void ifdef_current_complement ();
-char ifdef_current_is_true ();
-void ifdef_pop();
+void ifdef_current_complement (void);
+char ifdef_current_is_true (void);
+void ifdef_pop(void);
 
 void ifdef_push (const TCHAR *expr, unsigned line)
 {
@@ -7083,7 +7083,7 @@ void ifdef_push (const TCHAR *expr, unsigned line)
     }
 }
 
-void ifdef_current_complement ()
+void ifdef_current_complement (void)
 {
   // don't redefine 0-th bottom element, should be always TRUE
   if (ifdef_cond_current)
@@ -7097,12 +7097,12 @@ void ifdef_current_complement ()
       isql_fprintf (error_stream, _T("ERROR: unexpected #else instruction. Ignored.\n"));
 }
 
-char ifdef_current_is_true ()
+char ifdef_current_is_true (void)
 {
   return (char)( ifdef_cond[ifdef_cond_current].ifc_effective_val ^ ifdef_cond[ifdef_cond_current].ifc_reversed );
 }
 
-void ifdef_pop()
+void ifdef_pop(void)
 {
   if (ifdef_cond_current)
     {
@@ -7335,7 +7335,7 @@ rep_loop (FILE * infp, TCHAR *new_prompt)
         }
       else if (!isqlt_tcsncmp(tmp_pt,_T("#endif"),6)) /* end of conditional expression. */
         {
-          ifdef_pop (tmp_pt);
+          ifdef_pop ();
         }
       else if (*tmp_pt == '!')
 	{ /* Spawn a command to shell and wait for it if doesn't end with & */

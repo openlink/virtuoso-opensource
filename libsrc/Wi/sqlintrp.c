@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1338,7 +1338,7 @@ ins_open (instruction_t * ins, caddr_t * qst)
 
 #if defined(DEBUG) | defined(MTX_DEBUG)
 void
-bing ()
+bing (void)
 {
 }
 #endif
@@ -1615,7 +1615,7 @@ opt_set_pop (opt_set_t *set)
 
 #ifdef OPT_SET_DEBUG
 static int
-opt_set_test ()
+opt_set_test (void)
 {
   ptrlong inx;
   opt_set_t test_set;

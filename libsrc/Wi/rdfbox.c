@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2021,7 +2021,7 @@ rdf_box_hash_strong_cmp (ccaddr_t b1, ccaddr_t b2)
     {
       if (rb2->rb_ro_id == rb1->rb_ro_id)
         return 1;
-        return 0;
+      return 0;
     }
   if ((!rb1->rb_is_complete && rb1->rb_ro_id) || (!rb2->rb_is_complete && rb2->rb_ro_id))
     return 0;
@@ -7197,7 +7197,7 @@ void bif_str_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_
 
 
 void
-rdf_box_init ()
+rdf_box_init (void)
 {
   dk_mem_hooks (DV_RDF, (box_copy_f) rb_copy, (box_destr_f)rb_free, 1);
   box_tmp_copier[DV_RDF] = (box_tmp_copy_f) rb_tmp_copy;

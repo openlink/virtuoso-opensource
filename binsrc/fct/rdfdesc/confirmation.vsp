@@ -1,0 +1,36 @@
+<head>
+    <link rel="stylesheet" type="text/css" href="/fct/css/confirmation.css"  charset="utf-8" />
+</head>
+<body>
+    <form method="POST" action="">
+    <input type="hidden" name="h" value="1">
+    <div id="dialog-overlay" class="dialog-overlay">
+        <div id="dialog-box" class="dialog-box">
+            <div class="dialog-content">
+                <h2 class="dialog-title">Open this link?</h2>
+                <p class="dialog-message">
+                    This will take you to<br>
+                    <?V fct_trunc_uri(gr) ?>
+                </p>
+                <div class="dialog-buttons">
+                    <button type="submit" id="continue-btn" class="button continue-button">Continue</button>
+                    <button id="cancel-btn" class="button cancel-button">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    </form>
+    <script>
+        const dialogOverlay = document.getElementById("dialog-overlay");
+        const dialogBox = document.getElementById("dialog-box");
+        const cancelBtn = document.getElementById("cancel-btn");
+        cancelBtn.addEventListener("click", function(e) {
+            e.preventDefault();
+            dialogOverlay.classList.add("fade-out");
+            dialogBox.classList.add("slide-down");
+            setTimeout(function() {
+                dialogOverlay.style.display = "none";
+            }, 300);
+        });
+    </script>
+</body>

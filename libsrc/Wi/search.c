@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -562,7 +562,7 @@ itc_free (it_cursor_t * it)
 
 
 placeholder_t *
-plh_allocate ()
+plh_allocate (void)
 {
   NEW_PLH(v);
   return v;
@@ -771,13 +771,14 @@ itc_like_compare (it_cursor_t * itc, buffer_desc_t * buf, caddr_t pattern, searc
 
   if (dtp2 != DV_SHORT_STRING && dtp2 != DV_LONG_STRING && dtp2 != DV_WIDE && dtp2 != DV_LONG_WIDE )
     return DVC_LESS;
-    switch (dtp2)
+
+  switch (dtp2)
       {
       case DV_WIDE:
       case DV_LONG_WIDE:
       pt = LIKE_ARG_WCHAR;
       break;
-	  }
+  }
   switch (dtp1)
 	      {
     case DV_SHORT_STRING:

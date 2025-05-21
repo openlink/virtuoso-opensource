@@ -5,7 +5,7 @@ AC_PREREQ(2.59)
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2024 OpenLink Software
+#  Copyright (C) 1998-2025 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -30,7 +30,7 @@ AC_PREREQ(2.59)
 
 m4_define(vos_major,	[7])
 m4_define(vos_minor,	[2])
-m4_define(vos_patch,	[14])
+m4_define(vos_patch,	[15])
 m4_define(vos_devel,	[])
 
 AC_INIT([Virtuoso Open Source Edition (Column Store)],
@@ -914,8 +914,8 @@ then
 	/* LibreSSL defines OPENSSL_VERSION_NUMBER 0x20000000L but uses a compatible API to OpenSSL v1.0.x */
 	#elif OPENSSL_VERSION_NUMBER < 0x1020000fL
 	/* OpenSSL versions 0.9.8e - 1.1.1 are supported */
-       #elif OPENSSL_VERSION_NUMBER < 0x30400000L
-       /* OpenSSL versions 3.0.x - 3.3.x are supported */
+       #elif OPENSSL_VERSION_NUMBER < 0x30600000L
+       /* OpenSSL versions 3.0.x - 3.5.x are supported */
 	#else
 	#error OpenSSL version too new
 	#endif
@@ -3227,6 +3227,7 @@ AC_CONFIG_FILES([
 	binsrc/jena2/Makefile
 	binsrc/jena3/Makefile
 	binsrc/jena4/Makefile
+	binsrc/jena5/Makefile
 	binsrc/maildrop/Makefile
 	binsrc/mono/Makefile
 	binsrc/oat/Makefile
@@ -3234,6 +3235,7 @@ AC_CONFIG_FILES([
 	binsrc/rdb2rdf/Makefile
 	binsrc/rdf4j/Makefile
 	binsrc/rdf4j_4/Makefile
+	binsrc/rdf4j_5/Makefile
 	binsrc/redland/Makefile
 	binsrc/samples/demo/Makefile
 	binsrc/samples/hslookup/Makefile

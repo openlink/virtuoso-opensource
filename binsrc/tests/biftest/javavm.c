@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -327,7 +327,7 @@ java_object_dv_alloc (JNIEnv * env, jobject obj)
 {
   caddr_t ret = dk_alloc_box (sizeof (extension_obj_t), DV_EXTENSION_OBJ);
 
-  PrpcSetWriter (DV_EXTENSION_OBJ, dv_extension_obj_serialize);
+  PrpcSetWriter (DV_EXTENSION_OBJ, (ses_write_func) dv_extension_obj_serialize);
 
   ((extension_obj_t *) ret)->exo_type = DVEXT_JAVA_OBJECT;
   ((extension_obj_t *) ret)->exo_object = (*env)->NewGlobalRef (env, obj);

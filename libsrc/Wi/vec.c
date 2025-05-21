@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1399,8 +1399,8 @@ sslr_qst_get (caddr_t * inst, state_slot_ref_t * sslr, int row_no)
     default:
       if (!(DCT_BOXES & val_dc->dc_type))
 	GPF_T1 ("dc of unsupported dtp for single value qst_get");
-	if (val_dc->dc_n_values <= (uint32) row_no)
-	  return NULL;
+      if (val_dc->dc_n_values <= (uint32) row_no)
+	return NULL;
       return ((caddr_t *) val_dc->dc_values)[row_no];
     }
   return 0;
@@ -1545,56 +1545,47 @@ sslr_n_consec_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int set, 
     }
 }
 
-#define RES_IF_NN(set)		\
-{ \
-  if (!dc->dc_any_null) { \
-    sets[fill++] = set; \
-  } else  \
-    { \
-      if (dc->dc_nulls) \
-	{ \
-	  if (!DC_IS_NULL (dc, set)) \
-	    sets[fill++] = set; \
-	} \
-      else  \
-      { \
-	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[set][0]) \
-	  sets[fill++] = set; \
-      } \
-    } \
-}
+#define RES_IF_NN(set)                                                  \
+  do {                                                                  \
+    if (!dc->dc_any_null) {                                             \
+        sets[fill++] = set;                                             \
+    } else {                                                            \
+        if (dc->dc_nulls) {                                             \
+          if (!DC_IS_NULL (dc, set))                                    \
+            sets[fill++] = set;                                         \
+        } else {                                                        \
+          if (DV_DB_NULL != ((db_buf_t *) dc->dc_values)[set][0])       \
+            sets[fill++] = set;                                         \
+        }                                                               \
+      }                                                                 \
+  } while (0)
 
-#define RES_IF_NN_G(nth_v)		\
-{ \
-  if (!dc->dc_any_null) { \
-    group_sets[fill] = n + nth_v - 1; \
-    sets[fill++] = s##nth_v; \
-  } else  \
-    { \
-      if (dc->dc_nulls) \
-	{ \
-	  if (!DC_IS_NULL (dc, s##nth_v)) { \
-	    group_sets[fill] = n + nth_v - 1; \
-	    sets[fill++] = s##nth_v; \
-	  } \
-	}					\
-      else if ((DCT_BOXES & dc->dc_type))	\
-	{ \
-      caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v]; \
-      if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) { \
-      group_sets[fill] = n + nth_v - 1; \
-      sets[fill++] = s##nth_v;		\
-	}				\
-	}				\
-      else \
-      { \
-	if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) \
-	  group_sets[fill] = n + nth_v - 1; \
-	  sets[fill++] = s##nth_v; \
-      } \
-    } \
-}
 
+#define RES_IF_NN_G(nth_v)                                              \
+  do {                                                                  \
+    if (!dc->dc_any_null) {                                             \
+      group_sets[fill] = n + nth_v - 1;                                 \
+      sets[fill++] = s##nth_v;                                          \
+    } else {                                                            \
+      if (dc->dc_nulls) {                                               \
+        if (!DC_IS_NULL (dc, s##nth_v)) {                               \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      } else if ((DCT_BOXES & dc->dc_type)) {                           \
+        caddr_t val = ((caddr_t*)dc->dc_values)[s##nth_v];              \
+        if (!(IS_BOX_POINTER (val) && DV_DB_NULL == box_tag (val))) {   \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      } else {                                                          \
+        if (DV_DB_NULL != ((db_buf_t*)dc->dc_values)[s##nth_v][0]) {    \
+          group_sets[fill] = n + nth_v - 1;                             \
+          sets[fill++] = s##nth_v;                                      \
+        }                                                               \
+      }                                                                 \
+    }                                                                   \
+  } while (0)
 
 int
 sslr_nn_ref (caddr_t * inst, state_slot_ref_t * sslr, int *sets, int *group_sets, int set, int n_sets)
@@ -2254,7 +2245,7 @@ cl_dcf_id (col_ref_t f)
 
 
 void
-cl_dc_funcs ()
+cl_dc_funcs (void)
 {
   cl_dc_func_id = hash_table_allocate (21);
   cl_id_dc_func = hash_table_allocate (21);

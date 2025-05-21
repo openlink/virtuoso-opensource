@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2024 OpenLink Software
+ -  Copyright (C) 1998-2025 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
         fast-render="1" xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
+  <vm:pagetitle>RDF Views Definitions</vm:pagetitle>
   <vm:pagewrapper>
   <vm:variables>
     <v:variable name="is_popup" persist="0" type="integer" default="0" />
@@ -43,7 +43,7 @@
       <v:variable persist="0" name="text_e" type="integer" default="0"/>
   </vm:variables>
 
-  <vm:header caption="Linked Data View definition"/>
+  <vm:header caption="RDF Views Definitions"/>
   <vm:pagebody>
   <script type="text/javascript"><![CDATA[
     function saveFile ()
@@ -97,6 +97,10 @@
 		  	name_part (tb, 0), name_part (tb, 1), name_part (tb, 2));
 		}
 	      self.body_v := self.body_v || '\n\n';
+              if (__proc_exists('DB.DBA.RDF_VIEW_DROP_QM_STMT'))
+	        self.body_v := self.body_v || RDF_VIEW_DROP_QM_STMT (_base_url, self.db_object_to_process, self.voidst);
+              else 
+                self.body_v := self.body_v || RDF_VIEW_DROP_STMT (_base_url);
 	      self.body_v := self.body_v || DB.DBA.RDF_VIEW_FROM_TBL (_base_url, self.db_object_to_process, self.voidst);
 	      self.body_v := self.body_v || '\n\n' || DB.DBA.RDF_VIEW_GEN_VD (_base_url);
 	      DB.DBA.YACUTIA_DAV_COL_CREATE('/DAV/temp/', '110110000NN', 'dav', 'administrators');
@@ -230,7 +234,7 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
 	    <td>
-	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition exported successfully.
+	      <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF Views Definitions exported successfully.
 	    </td>
           </tr>
         </v:template>

@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -284,7 +284,7 @@ vrb_virt_start_request (vrb_request_t * elt)
 }
 
 void
-vrb_virt_flush_request ()
+vrb_virt_flush_request (void)
 {
   vrb_io_data_t *data = vrb_get_req_data (vrb_request);
   vrb_io_data_t *err_data = vrb_get_req_data (vrb_err_request);
@@ -306,7 +306,7 @@ vrb_virt_flush_request ()
 }
 
 void
-vrb_init_virt_request ()
+vrb_init_virt_request (void)
 {
   vrb_io_data_t *data = NULL;
   vrb_io_data_t *err_data = NULL;
@@ -343,7 +343,7 @@ vrb_server_version (VALUE self)
 }
 
 void
-vrb_init_virt_code ()
+vrb_init_virt_code (void)
 {
   vrb_request = Qnil;
   vrb_err_request = Qnil;

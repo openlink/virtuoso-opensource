@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1245,7 +1245,7 @@ bif_iri_validate (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 }
 
 void
-bif_regexp_init ()
+bif_regexp_init (void)
 {
   compiled_regexps = id_hash_allocate (NHASHITEMS, sizeof (regexp_key_t), sizeof (compiled_regexp_t *),
       regexp_key_hash, regexp_key_hashcmp );

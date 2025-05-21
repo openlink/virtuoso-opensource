@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2529,17 +2529,17 @@ invalid_ns:
 }
 
 static int
-proc_is_granted (query_t * proc, oid_t group, oid_t user)
+proc_is_granted_as_servce_call (query_t * proc, oid_t group, oid_t user)
 {
   dk_hash_t *ht = proc->qr_proc_grants;
   if (ht)
     {
-      if (sec_user_is_in_hash (ht, group, -1) ||
-          sec_user_is_in_hash (ht, user, -1))
+      /* direct grants only, grants via user role grants are not supposed to use for exposing stored procedure as service call */
+      if (gethash ((void *) (ptrlong) user, ht))
 	return 1;
     }
   if (QR_IS_MODULE_PROC (proc))
-    return proc_is_granted (proc->qr_module, group, user);
+    return proc_is_granted_as_servce_call (proc->qr_module, group, user);
   return 0;
 }
 
@@ -2549,7 +2549,7 @@ proc_is_granted (query_t * proc, oid_t group, oid_t user)
 int sec_udt_check (sql_class_t * udt, oid_t group, oid_t user, int op);
 
 static dk_set_t
-get_granted_qrs (client_connection_t * cli, query_t * module, char * qpref, size_t qpref_len)
+get_granted_qrs (client_connection_t * cli, query_t * module, char * qpref, size_t qpref_len, int recomp)
 {
   dk_set_t set = NULL;
   user_t * user = cli->cli_user;
@@ -2573,10 +2573,10 @@ get_granted_qrs (client_connection_t * cli, query_t * module, char * qpref, size
 	continue;
 
       if ((!qpref || strnicmp (proc->qr_proc_name, qpref, qpref_len)) &&
-	  !proc_is_granted (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
+	  !proc_is_granted_as_servce_call (proc, cli->cli_user->usr_g_id, cli->cli_user->usr_id))
 	continue;
 
-      if (proc->qr_to_recompile)
+      if (proc->qr_to_recompile && recomp) /* recompile only if SOAP server is used or WSDL generation, no need for RESTfull call */
 	{
 	  proc = qr_recompile (proc, &err_sql);
 	  if (err_sql)
@@ -2633,13 +2633,13 @@ proc_find_in_grants (char * name, dk_set_t * qrs, char * soap_action)
 
   DO_SET (query_t *, proc, qrs)
     {
-      const char * action, *op_name;
-      action = SOAP_OPT (ACTION, proc, -1, NULL);
-      op_name = SOAP_OPT (OPERATION, proc, -1, NULL);
       sch_split_name ("", proc->qr_proc_name, q, o, n);
 
       if (soap_action && soap_action[0] != 0)
 	{
+          const char * action, *op_name; /* these are for SOAP protocol */
+          action = SOAP_OPT (ACTION, proc, -1, NULL);
+          op_name = SOAP_OPT (OPERATION, proc, -1, NULL);
 	  if ((op_name && !CASEMODESTRCMP (op_name, name)) || !CASEMODESTRCMP (n, name))
 	    {
 	      if (action && !strcmp (action, soap_action))
@@ -2658,7 +2658,7 @@ proc_find_in_grants (char * name, dk_set_t * qrs, char * soap_action)
 	}
       else
 	{
-	  if ((op_name && !CASEMODESTRCMP (op_name, name)) || !CASEMODESTRCMP (n, name))
+	  if (0 == CASEMODESTRCMP (n, name))
 	    {
 	      if (!found)
 		res = proc;
@@ -3618,7 +3618,7 @@ soap_server (int soap_version, caddr_t method_fld, dk_session_t *ses, caddr_t *x
 
       snprintf (qpref, sizeof (qpref), "%s.%s.", usr_qual, usr_own);
       qpref_len = (int) strlen (qpref);
-      qrs = get_granted_qrs (cli, NULL, qpref, qpref_len);
+      qrs = get_granted_qrs (cli, NULL, qpref, qpref_len, 1);
 
       if (ctx.soap_version > 1 &&
 	  (!encodingStyle ||
@@ -7249,7 +7249,7 @@ soap_wsdl_services (dk_session_t *out, query_t *module, caddr_t qual, const char
     snprintf (qpref, sizeof (qpref), "%s.%s.", qual, owner);
   pref_len = strlen (qpref);
 
-  proc_set = get_granted_qrs (cli, module, qpref, pref_len);
+  proc_set = get_granted_qrs (cli, module, qpref, pref_len, 1);
 
   element_form_default = SOAP_SCH_ELEM_QUAL (opts);
   if (element_form_default && !strcmp (element_form_default, "qualified"))
@@ -7984,7 +7984,7 @@ soap_wsdl20_services (dk_session_t *out, query_t *module, caddr_t qual, const ch
     snprintf (qpref, sizeof (qpref), "%s.%s.", qual, owner);
   pref_len = strlen (qpref);
 
-  proc_set = get_granted_qrs (cli, module, qpref, pref_len);
+  proc_set = get_granted_qrs (cli, module, qpref, pref_len, 1);
 
   element_form_default = SOAP_SCH_ELEM_QUAL (opts);
   if (element_form_default && !strcmp (element_form_default, "qualified"))
@@ -11465,7 +11465,7 @@ ws_soap_http (ws_connection_t * ws)
     sqlp_upcase (szFullProcName);
   if (!(qr = sch_proc_def (wi_inst.wi_schema, szFullProcName)))
     {
-      qrs = get_granted_qrs (cli, NULL, NULL, 0);
+      qrs = get_granted_qrs (cli, NULL, NULL, 0, 0);
       if (!(qr = proc_find_in_grants (szMethod, &qrs, NULL)))
 	{
           http_resp_code = 404;

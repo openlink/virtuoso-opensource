@@ -2,7 +2,7 @@
 #  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 #  project.
 #
-#  Copyright (C) 1998-2024 OpenLink Software
+#  Copyright (C) 1998-2025 OpenLink Software
 #
 #  This project is free software; you can redistribute it and/or modify it
 #  under the terms of the GNU General Public License as published by the
@@ -139,6 +139,7 @@ EXTRA_DIST = \
 	META-INF/services/org.eclipse.rdf4j.repository.config.RepositoryFactory \
 	virtuoso.ttl \
 	virtuoso_driver/*.java \
+	virtuoso_driver/*.rdf \
 	virtuoso_driver/data.nt \
 	manifest.main \
 	virt_rdf4j.jar

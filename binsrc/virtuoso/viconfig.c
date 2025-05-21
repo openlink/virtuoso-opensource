@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2775,7 +2775,7 @@ db_not_in_use (void)
 
 /* needed to access the server port in hosting binaries */
 char *
-virtuoso_odbc_port ()
+virtuoso_odbc_port (void)
 {
   return c_serverport;
 }

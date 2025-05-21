@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1065,7 +1065,7 @@ du_thread_t * parse_mtx_owner;
 int enable_parse_mtx = 0;
 
 void
-parse_enter ()
+parse_enter (void)
 {
   if (enable_parse_mtx)
     mutex_enter (parse_mtx);
@@ -1073,7 +1073,7 @@ parse_enter ()
 
 
 void
-parse_leave ()
+parse_leave (void)
 {
   if (enable_parse_mtx)
     mutex_leave (parse_mtx);

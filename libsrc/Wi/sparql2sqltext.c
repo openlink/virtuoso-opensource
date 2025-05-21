@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2830,7 +2830,7 @@ ssg_print_literal_as_long (spar_sqlgen_t *ssg, SPART *lit)
     (DV_BLOB_HANDLE == value_dtp) || (DV_UNAME == value_dtp) ||
     (DV_XML_ENTITY == value_dtp) )
     {
-      ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (");
+      ssg_puts (" DB.DBA.RDF_MAKE_LONG_OF_LITERAL (");
       ssg_print_literal_as_sqlval (ssg, NULL, (SPART *)value);
       ssg_putchar (')');
       return;

@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -122,7 +122,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
     private int prefetchSize = 100;
     private boolean useReprepare = true;
     private boolean insertBNodeAsVirtuosoIRI = false;
-    private ValueFactory valueFactory = null;
+    private VirtuosoValueFactory valueFactory = null;
     private boolean insertStringLiteralAsSimple = false;
     private int queryTimeout = 0;
     private String ruleSet;    
@@ -3517,7 +3517,15 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
                 String rb_type = rb.getType();
                 if (rb_val.length()==1 && (rb_val.charAt(0)=='1' || rb_val.charAt(0)=='0')) {
                     if (rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean"))
-                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?true:false); //  return getRepository().getValueFactory().createLiteral(rb_val.charAt(0)=='1'?"true":"false", this.getRepository().getValueFactory().createURI(rb_type));
+                        return valueFactory.createLiteral(rb_val.charAt(0)=='1'?true:false);
+                }
+                // check for true/false
+                else if (rb_val.length()==4 || rb_val.length()==5) {
+                    String v = rb_val.toLowerCase();
+                    if ((v.equals("true") || v.equals("false")) 
+                         && rb_type.equals("http://www.w3.org/2001/XMLSchema#boolean")) {
+                        return valueFactory.createLiteral(v.charAt(0)=='t'?true:false);
+                    }
                 }
                 return valueFactory.createLiteral(rb_val, valueFactory.createIRI(rb_type));
             }
@@ -3529,10 +3537,12 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return valueFactory.createLiteral(((Long) val).longValue());
         }
         else if (val instanceof java.lang.Integer) {
-            return valueFactory.createLiteral(((Integer) val).intValue());
+            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#integer");
+            return valueFactory.createNumericLiteral((Number)val, type);
         }
         else if (val instanceof java.lang.Short) {
-            return valueFactory.createLiteral(((Short) val).intValue());
+            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#integer");
+            return valueFactory.createNumericLiteral(((Short)val).intValue(), type);
         }
         else if (val instanceof java.lang.Float) {
             return valueFactory.createLiteral(((Float) val).floatValue());
@@ -3541,8 +3551,7 @@ public class VirtuosoRepositoryConnection implements RepositoryConnection {
             return valueFactory.createLiteral(((Double) val).doubleValue());
         }
         else if (val instanceof java.math.BigDecimal) {
-            IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#decimal");
-            return valueFactory.createLiteral(val.toString(), type);
+            return valueFactory.createLiteral((java.math.BigDecimal)val);
         }
         else if (val instanceof java.sql.Blob) {
             IRI type = valueFactory.createIRI("http://www.w3.org/2001/XMLSchema#hexBinary");

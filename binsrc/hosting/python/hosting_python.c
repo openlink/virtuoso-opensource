@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -273,7 +273,7 @@ err_ret:
 }
 
 static void
-hosting_python_connect (void *x)
+hosting_python_connect (void *appdata)
 {
   /*log_debug ("hosting_python_connect");*/
   bif_define ("python_exec", bif_python_exec);

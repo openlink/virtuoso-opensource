@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *  
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *  
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -34,7 +34,7 @@ vrb_thr_t *vrb_thr = NULL;
 vrb_queue_t *vrb_queue = NULL;
 
 void *
-vrb_mutex_allocate ()
+vrb_mutex_allocate (void)
 {
 #ifdef WIN32
   CRITICAL_SECTION *crit;
@@ -96,7 +96,7 @@ vrb_thread_create (void *thr2, RUBY_LPTHREAD_START_ROUTINE funcp, void *arg)
 }
 
 pvrb_semaphore_t
-vrb_semaphore_allocate ()
+vrb_semaphore_allocate (void)
 {
 #ifdef WIN32
   pvrb_semaphore_t sem = CreateSemaphore (NULL, 0, LONG_MAX, NULL);
@@ -467,7 +467,7 @@ next_loop:
 }
 
 static void
-hosting_ruby_connect (void *x)
+hosting_ruby_connect (void *appdata)
 {
 }
 

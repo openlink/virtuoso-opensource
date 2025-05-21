@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -80,14 +80,14 @@ int n_deadlocks;
 
 
 void
-error_exit ()
+error_exit (void)
 {
   exit (-1);
 }
 
 
 void
-rnd_wait ()
+rnd_wait (void)
 {
   long w = (rnd () & 0x7fffffff) % 1000000;
   struct timeval tv;
@@ -154,7 +154,7 @@ char *dsns[MAX_DSNS];
 int current_dsn = -1;
 
 char *
-any_dsn ()
+any_dsn (void)
 {
   int tries = 0;
   if (1 == n_dsns)
@@ -217,7 +217,7 @@ login (HENV * henv_, HDBC * hdbc_, char *argv_, char *dbms_, int dbms_sz, HSTMT 
 
 
 void
-reconnect ()
+reconnect (void)
 {
   payment_stmt = new_order_stmt = delivery_stmt = ostat_stmt = slevel_stmt = NULL;
   if (n_dsns < 2)
@@ -247,7 +247,7 @@ reconnect ()
 
 
 void
-check_reconnect ()
+check_reconnect (void)
 {
   static long prev_time;
   long now = get_msec_count ();
@@ -322,7 +322,7 @@ deadlock_rs:
 
 
 int
-new_order ()
+new_order (void)
 {
   char * op = "new order";
   RETCODE rc;
@@ -391,7 +391,7 @@ err:
 }
 
 void
-payment ()
+payment (void)
 {
   char * op = "payment";
   RETCODE rc;
@@ -494,7 +494,7 @@ err:;
 }
 
 void
-slevel ()
+slevel (void)
 {
   char * op = "slevel";
   RETCODE rc;
@@ -528,7 +528,7 @@ err:
 }
 
 void
-ostat ()
+ostat (void)
 {
   char * op = "ostat";
   RETCODE rc;
@@ -566,7 +566,7 @@ err:
 
 /* Only for OCI support */
 void
-logoff ()
+logoff (void)
 {
 
 }
@@ -617,7 +617,7 @@ extern SDWORD sql_timelen_array[BATCH_SIZE];
 
 
 void
-LoadItems ()
+LoadItems (void)
 {
   static HSTMT item_stmt = SQL_NULL_HSTMT;
   long i;
@@ -707,7 +707,7 @@ LoadItems ()
 
 
 void
-LoadWare ()
+LoadWare (void)
 {
   long w_id;
   char w_name[10];
@@ -766,7 +766,7 @@ LoadWare ()
 
 
 void
-LoadCust ()
+LoadCust (void)
 {
   long w_id;
   long d_id;
@@ -781,7 +781,7 @@ LoadCust ()
 
 
 void
-LoadOrd ()
+LoadOrd (void)
 {
   long w_id;
   /* float w_tax; */
@@ -1265,7 +1265,7 @@ Orders (long d_id, long w_id)
 }
 
 void
-scrap_log ()
+scrap_log (void)
 {
   if (strstr (dbms, "SQL Server"))
     {

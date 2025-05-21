@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -46,11 +46,11 @@ char script_name[2048] = "";
 char lines_0[2048] = "";
 char server_signature[2048] = "";
 char *php_ini_admin;
-char * srv_http_port ();
-const char * srv_www_root ();
-caddr_t srv_dns_host_name ();
-char * srv_st_dbms_name ();
-char * srv_st_dbms_ver ();
+char * srv_http_port (void);
+const char * srv_www_root (void);
+caddr_t srv_dns_host_name (void);
+char * srv_st_dbms_name (void);
+char * srv_st_dbms_ver (void);
 char *php_dll_version;
 char *php_ini_version;
 void srv_ip (char *ip_addr, size_t max_ip_addr, char *host);

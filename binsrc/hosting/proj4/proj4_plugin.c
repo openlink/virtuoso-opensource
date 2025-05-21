@@ -2,7 +2,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -453,7 +453,7 @@ virt_proj4_postponed_action (char *mode)
 }
 
 static void
-virt_proj4_plugin_connect ()
+virt_proj4_plugin_connect (void *appdata)
 {
   proj4_string_to_pj_htable = (id_hash_t *)box_dv_dict_hashtable (31);
   proj4_string_to_pj_htable->ht_rehash_threshold = 120;

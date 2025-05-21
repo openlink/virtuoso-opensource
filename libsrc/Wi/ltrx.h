@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -931,5 +931,5 @@ int lt_log_merge (lock_trx_t * lt, int in_txn);
 int ltbing (int s);
 #endif /* _LTRX_H */
 #ifdef DEBUG
-void ltbing2 ();
+void ltbing2 (void);
 #endif

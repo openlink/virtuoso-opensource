@@ -6,7 +6,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -3273,7 +3273,7 @@ int test_assert_1 (int res, char* file, long line)
 
 static
 void
-test_is_schema_location ()
+test_is_schema_location (void)
 {
   test_assert (is_schema_location ("xs", "xs:schemaLocation"));
   test_assert (is_schema_location (NULL , "schemaLocation"));
@@ -3285,7 +3285,7 @@ test_is_schema_location ()
   test_assert (!is_schema_location ("", "xs:schemaLocation"));
 }
 
-void schema_fsm_test()
+void schema_fsm_test(void)
 {
 /*  test_is_schema_location ();*/
 }

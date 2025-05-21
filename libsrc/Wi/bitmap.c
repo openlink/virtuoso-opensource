@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1016,7 +1016,7 @@ byte_bits_f (dtp_t b)
 
 
 void
-bm_init ()
+bm_init (void)
 {
   int inx;
   for (inx = 0; inx < 256; inx++)

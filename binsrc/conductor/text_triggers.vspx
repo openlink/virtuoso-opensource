@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2024 OpenLink Software
+ -  Copyright (C) 1998-2025 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -123,20 +123,9 @@
         }
       }
 
-      if (DB.DBA.is_empty_or_null (retValue))
+      if (DB.DBA.is_empty_or_null (retValue) and ttl_app = 'osde')
       {
-        if (ttl_app = 'sponger')
-        {
-          retValue := '&sponger:get=soft';
-        }
-        else if (ttl_app = 'fct')
-        {
-          retValue := '&sponger:get=soft';
-        }
-        else if (ttl_app = 'osde')
-        {
-          retValue := '&view=statements';
-        }
+        retValue := '&view=statements';
       }
 
       return retValue;
@@ -402,7 +391,12 @@
           RDF Data Browser Application options
         </th>
         <td colspan="2">
-          <input type="text" name="ttl_app_option" id="ttl_app_option" value="<?V self.ttl_app_option() ?>" size="50" />
+          <input type="text" list="sponger_modes" name="ttl_app_option" id="ttl_app_option" value="<?V self.ttl_app_option() ?>" size="50" />
+          <datalist id="sponger_modes">
+              <option value="&amp;sponger:get=soft"></option>
+              <option value="&amp;sponger:get=add"></option>
+              <option value="&amp;sponger:get=replace"></option>
+          </datalist>
         </td>
       </tr>
       <tr>
@@ -519,16 +513,26 @@
         </table>
     <script type="text/javascript">
       <![CDATA[
-        function turtleRedirectAppChange(obj)
-        {
-          if (obj.value == 'sponger')
-            $('ttl_app_option').value = '&sponger:get=soft';
-          else if (obj.value == 'fct')
-            $('ttl_app_option').value = '&sponger:get=soft';
-          else if (obj.value == 'osde')
-            $('ttl_app_option').value = '&view=statements';
-        }
-
+    function turtleRedirectAppChange(obj) {
+      const datalist = document.getElementById('sponger_modes');
+      datalist.innerHTML = '';
+      if (obj.value === 'sponger' || obj.value === 'fct') {
+        const values = [
+          '&sponger:get=soft',
+          '&sponger:get=add',
+          '&sponger:get=replace'
+        ];
+        values.forEach(val => {
+          const option = document.createElement('option');
+          option.value = val;
+          datalist.appendChild(option);
+        });
+      } else if (obj.value === 'osde') {
+        const option = document.createElement('option');
+        option.value = '&view=statements';
+        datalist.appendChild(option);
+      }
+    }
         OAT.MSG.attach(OAT, "PAGE_LOADED", function(){destinationChange($('ttl_enable'), {'checked': {'show': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}, 'unchecked': {'hide': ['ttl_enable_1', 'ttl_enable_2', 'ttl_enable_3']}})});
       ]]>
     </script>

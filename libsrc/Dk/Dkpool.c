@@ -9,7 +9,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -83,7 +83,7 @@ mp_unregister (mem_pool_t * mp)
 }
 
 int
-mp_map_count ()
+mp_map_count (void)
 {
   int ctr = 0;
   size_t sz = 0;
@@ -1622,7 +1622,7 @@ mp_check_not_in_pool (int64 __ptr)
   map = dk_pool_map[__ptr >> 32];
   if (map && map->bits[((uint32)__ptr) >> 15] & (1 << (((((uint32)__ptr) >> 12) & 0x7))))
     GPF_T1 ("Freeing address in mem pool, do not confuse these with mallocd");
-    mutex_leave (&mp_mmap_mark_mtx);
+  mutex_leave (&mp_mmap_mark_mtx);
 }
 
 
@@ -1704,13 +1704,13 @@ mp_list_marks (int first, int n_print)
 
 
 void
-mp_mark_check ()
+mp_mark_check (void)
 {
 }
 
 
 #else
-#define mp_mmap_mark(ptr, sz, f)
+#define mp_mmap_mark(ptr, sz, f)	((void)0)
 #endif
 
 void mm_cache_clear ();
@@ -2014,7 +2014,7 @@ mp_free_all_large (mem_pool_t * mp)
 }
 
 void
-mp_large_report ()
+mp_large_report (void)
 {
   time_msec_t now = approx_msec_real_time ();
   int inx;
@@ -2217,7 +2217,7 @@ mm_unmap_contiguous (ptr_and_size_t * maps, int n_maps)
 }
 
 void
-mm_cache_clear ()
+mm_cache_clear (void)
 {
   int inx;
   size_t maps_sz;

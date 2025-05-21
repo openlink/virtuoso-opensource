@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -43,7 +43,7 @@ RETCODE rc;
 char state[10], message[1000];
 
 void
-odbc_error ()
+odbc_error (void)
 {
   SWORD len;
   SQLError (hstmt || hdbc ? SQL_NULL_HENV : henv, hstmt ? SQL_NULL_HDBC : hdbc, hstmt, (UCHAR *) state, NULL,

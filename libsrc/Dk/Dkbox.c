@@ -18,7 +18,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -189,7 +189,7 @@ dk_mmap_brk (size_t sz)
     } \
 } while (0)
 #else
-#define dk_alloc_box_check_length(bytes,tag) do { ; } while (0)
+#define dk_alloc_box_check_length(bytes,tag)	((void)0)
 #endif
 
 

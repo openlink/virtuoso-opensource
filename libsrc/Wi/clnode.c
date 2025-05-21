@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -38,9 +38,9 @@
 
 
 #if 0
-#define in_printf(a) printf a
+#define in_printf(a)		printf a
 #else
-#define in_printf(a)
+#define in_printf(a)		((void)0)
 #endif
 
 

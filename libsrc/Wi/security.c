@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -703,7 +703,7 @@ static dk_mutex_t *failed_login_mtx;
 
 
 static void
-failed_login_init ()
+failed_login_init (void)
 {
   failed_login_mtx = mutex_allocate ();
   failed_login_hash = id_str_hash_create (101);
@@ -1553,7 +1553,7 @@ sec_grant_single_role (user_t * user, user_t * gr, int make_err)
                 continue;
 	      if (grp == gr->usr_id)
 		  found = 1;
-		  break;
+	      break;
 		}
 	  END_DO_BOX;
 	  if (!found)

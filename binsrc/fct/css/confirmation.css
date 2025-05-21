@@ -1,0 +1,131 @@
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+    background-color: #f5f5f5;
+}
+
+.dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    opacity: 0;
+    animation: fadeIn 0.3s ease-out forwards;
+    z-index: 1000;
+}
+
+.dialog-box {
+    background-color: #1e2532;
+    color: white;
+    border-radius: 8px;
+    width: 320px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    transform: translateY(20px);
+    opacity: 0;
+    animation: slideUp 0.3s ease-out 0.1s forwards;
+}
+
+.dialog-content {
+    padding: 20px;
+}
+
+.dialog-title {
+    font-size: 18px;
+    font-weight: 600;
+    text-align: center;
+    margin: 0 0 10px 0;
+}
+
+.dialog-message {
+    font-size: 14px;
+    text-align: center;
+    margin-bottom: 20px;
+    line-height: 1.4;
+}
+
+.dialog-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.button {
+    padding: 10px;
+    border: none;
+    border-radius: 4px;
+    font-size: 15px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+    width: 100%;
+}
+
+.continue-button {
+    background-color: #3a7de6;
+    color: white;
+}
+
+.continue-button:hover {
+    background-color: #2c6ed4;
+}
+
+.cancel-button {
+    background-color: transparent;
+    color: #cccccc;
+}
+
+.cancel-button:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+/* Exit animations */
+.fade-out {
+    animation: fadeOut 0.3s ease-out forwards;
+}
+
+.slide-down {
+    animation: slideDown 0.3s ease-out forwards;
+}
+
+/* Keyframes */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+@keyframes slideUp {
+    from { 
+        transform: translateY(20px);
+        opacity: 0;
+    }
+    to { 
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@keyframes slideDown {
+    from { 
+        transform: translateY(0);
+        opacity: 1;
+    }
+    to { 
+        transform: translateY(20px);
+        opacity: 0;
+    }
+}
+

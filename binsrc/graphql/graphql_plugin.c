@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -202,7 +202,7 @@ virt_graphql_postponed_action (char *mode)
 
 
 static void
-graphql_plugin_connect ()
+graphql_plugin_connect (void *appdata)
 {
   graphql_parse_mtx = mutex_allocate ();
   bif_define ("graphql_parse", bif_graphql_parse);

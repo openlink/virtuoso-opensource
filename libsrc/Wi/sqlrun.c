@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -2313,11 +2313,12 @@ insert_node_run (insert_node_t * ins, caddr_t * inst, caddr_t * state)
 	{
 	  if (qi->qi_client->cli_row_autocommit)
 	    qi->qi_non_txn_insert = 1;
-	    {
-	  key_vec_insert (ins, state, itc, ins->ins_keys[k]);
-	  itc_free_owned_params (itc);
-	  itc_col_free (itc);
-	}
+
+	  {
+	    key_vec_insert (ins, state, itc, ins->ins_keys[k]);
+	    itc_free_owned_params (itc);
+	    itc_col_free (itc);
+	  }
 	}
       qi->qi_non_txn_insert = non_txn_insert;
       qi->qi_set_mask = save_sets;
@@ -3076,7 +3077,7 @@ skip_node_input (skip_node_t * sk, caddr_t * inst, caddr_t * qst)
   qi->qi_set = 0;
   skip = sk->sk_top_skip ? unbox (QST_GET (qst, sk->sk_top_skip)) : 0;
   top = sk->sk_top ? unbox (QST_GET (qst, sk->sk_top)) : -1;
-  /* TBD: skip_only = (top == -1 && skip >= 0 ? 1 : 0); */
+  skip_only = (top == -1 && skip >= 0 ? 1 : 0);
   if (skip < 0)
     sqlr_new_error ("22023", "SR349", "SKIP parameter < 0");
   if (top < 0 && !skip_only)

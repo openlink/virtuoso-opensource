@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -591,7 +591,7 @@ dbs_mapped_back (dbe_storage_t * dbs)
 
 
 void
-wi_storage_report ()
+wi_storage_report (void)
 {
   DO_SET (wi_db_t *, wd, &wi_inst.wi_dbs)
     {
@@ -1004,7 +1004,7 @@ cl_lt_wait_status (void)
 
 
 void
-bif_exec_status ()
+bif_exec_status (void)
 {
   id_hash_iterator_t hit;
   int64 *k;
@@ -1024,7 +1024,7 @@ bif_exec_status ()
 
 
 void
-cl_srv_status ()
+cl_srv_status (void)
 {
 }
 
@@ -1113,7 +1113,7 @@ it_remap_count (index_tree_t * it)
 }
 
 void
-hic_status ()
+hic_status (void)
 {
   index_tree_t * it;
   mutex_enter (hash_index_cache.hic_mtx);
@@ -1240,7 +1240,7 @@ st_collect_ps_info (dk_set_t * arr)
   semaphore_leave (ps_sem);
 }
 
-char *product_version_string ()
+char *product_version_string (void)
 {
   static char buf[1000] = "\0";
   if ('\0' == buf[0])
@@ -1260,7 +1260,7 @@ char *product_version_string ()
 }
 
 int64
-get_total_sys_mem ()
+get_total_sys_mem (void)
 {
 #if defined (linux) || defined (SOLARIS)
   long pages = sysconf (_SC_PHYS_PAGES);
@@ -1308,7 +1308,7 @@ size_t dk_alloc_global_cache_total ();
 size_t aq_thr_mem_cache_total ();
 
 void
-mem_status_report ()
+mem_status_report (void)
 {
   char buf[1024];
   size_t wsc = http_threads_mem_report ();
@@ -2057,7 +2057,7 @@ dbf_protected_param (stat_desc_t * sd)
 
 
 caddr_t
-dbs_list ()
+dbs_list (void)
 {
   dk_set_t res = NULL;
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_master_wd->wd_storage)
@@ -3683,7 +3683,7 @@ dbg_page_structure_error (buffer_desc_t * buf, db_buf_t ptr)
 
 
 void
-print_registry()
+print_registry(void)
 {
   id_hash_iterator_t hit;
   char** name;
@@ -3743,13 +3743,13 @@ dbg_print_itcs (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 
 
 char *
-srv_st_dbms_name ()
+srv_st_dbms_name (void)
 {
    return st_dbms_name;
 }
 
 
-char * srv_st_dbms_ver ()
+char * srv_st_dbms_ver (void)
 {
    return st_dbms_ver;
 }

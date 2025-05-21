@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -36,7 +36,7 @@ bif_plugin_sample (caddr_t * qst, caddr_t * err, state_slot_t ** args)
 
 
 static void
-plain_plugin_connect ()
+plain_plugin_connect (void *appdata)
 {
   bif_define ("PLAIN_PLUGIN_TEST", bif_plugin_sample);
 }

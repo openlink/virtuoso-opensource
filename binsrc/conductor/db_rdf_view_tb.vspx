@@ -4,7 +4,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2024 OpenLink Software
+ -  Copyright (C) 1998-2025 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -27,7 +27,7 @@
         xmlns:v="http://www.openlinksw.com/vspx/"
         xmlns:vm="http://www.openlinksw.com/vspx/macro"
         doctype="-//W3C//DTD XHTML 1.0 Transitional//EN">
-  <vm:pagetitle>Linked Data View definition</vm:pagetitle>
+  <vm:pagetitle>RDF Views Definitions</vm:pagetitle>
   <vm:pagewrapper>
     <vm:menu>
     </vm:menu>
@@ -40,7 +40,7 @@
       <v:variable persist="0" name="pklist" type="any" default="''" param-name="pk"/>
     </vm:variables>
 
-    <vm:header caption="Linked Data View definition"/>
+    <vm:header caption="RDF Views Definitions"/>
     <vm:pagebody>
       <br style="clear: both;"/>
       <h2>Column Selection</h2>
@@ -128,7 +128,7 @@
         <v:template type="simple" name="sc_1" enabled="0">
           <tr>
             <td>
-              <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The Linked Data View definition is exported successfully.
+              <img class="dialog_icon" src="images/icons/about_32.png" alt="Info" title="Info"/> The RDF Views Definitions is exported successfully.
             </td>
           </tr>
         </v:template>

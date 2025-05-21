@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -361,7 +361,7 @@ it_not_in_any (du_thread_t * self, index_tree_t * except)
 
 #ifdef DBSE_TREES_DEBUG
 int
-dbg_it_print_trees ()
+dbg_it_print_trees (void)
 {
   DO_SET (dbe_storage_t *, dbs, &wi_inst.wi_storage)
     {
@@ -458,7 +458,7 @@ it_temp_tree_done (index_tree_t * it)
 
 
 void
-it_temp_tree_check ()
+it_temp_tree_check (void)
 {
   DO_SET (index_tree_t *, it, &temp_trees)
     {
@@ -801,7 +801,7 @@ static int bg_free_buffers = 0;
 static dk_mutex_t *bg_mutex = NULL;
 
 buffer_group_t *
-buffer_group_allocate ()
+buffer_group_allocate (void)
 {
   B_NEW_VARZ (buffer_group_t, bg);
   bg->bg_buffer0 = ALIGN_8K (bg->bg_space);
@@ -3146,7 +3146,7 @@ typedef struct digit_sort_s
 
 
 digit_sort_t *
-ds_allocate ()
+ds_allocate (void)
     {
   return (digit_sort_t *) dk_alloc_box (sizeof (digit_sort_t), DV_BIN);
     }
@@ -4423,7 +4423,7 @@ char * db_version_string = DBMS_SRV_VER_ONLY;
 volatile int db_exists = 0;
 
 void
-wi_storage_offsets ()
+wi_storage_offsets (void)
 {
   /* give each storage a sort offset so they get flushed in order */
   dp_addr_t total = 0;
@@ -4631,7 +4631,7 @@ _cfg_read_storages (caddr_t **temp_storage)
 
 
 void
-wi_open_dbs ()
+wi_open_dbs (void)
 {
   int sec_exists;
 /*  char line_buf[2000];	*/	/* Was 100 */
@@ -4855,7 +4855,7 @@ it_copy_cb (caddr_t x)
 #include <sched.h>
 
 void
-wi_init_process ()
+wi_init_process (void)
 {
   int rc;
   struct sched_param p;
@@ -5203,7 +5203,7 @@ resources_reaper (void)
 
 
 wi_db_t *
-wi_ctx_db ()
+wi_ctx_db (void)
 {
   return (wi_inst.wi_master_wd);
 }

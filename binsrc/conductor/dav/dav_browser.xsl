@@ -6,7 +6,7 @@
  -  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  -  project.
  -
- -  Copyright (C) 1998-2024 OpenLink Software
+ -  Copyright (C) 1998-2025 OpenLink Software
  -
  -  This project is free software; you can redistribute it and/or modify it
  -  under the terms of the GNU General Public License as published by the
@@ -870,16 +870,9 @@
                 }
               }
 
-              if (DB.DBA.is_empty_or_null (retValue))
+              if (DB.DBA.is_empty_or_null (retValue) and ttl_app = 'osde')
               {
-                if (ttl_app in ('sponger', 'fct'))
-                {
-                  retValue := '&sponger:get=soft';
-                }
-                else if (ttl_app = 'osde')
-                {
-                  retValue := '&view=statements';
-                }
+                retValue := '&view=statements';
               }
 
               return retValue;
@@ -3083,7 +3076,12 @@
                       <tr id="ttl_enable_2" style="display: none;">
                         <th>RDF Data Browser Application options</th>
                         <td>
-                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', self.turtleRedirectParams(self.dav_path))" xhtml_disabled="disabled" xhtml_class="field-short" />
+                          <v:text name="dav_turtleRedirectParams" xhtml_id="dav_turtleRedirectParams" value="--self.get_fieldProperty ('dav_turtleRedirectParams', self.dav_path, 'virt:turtleRedirectParams', self.turtleRedirectParams(self.dav_path))" xhtml_disabled="disabled" xhtml_class="field-short" xhtml_list="sponger_modes"/>
+                          <datalist id="sponger_modes">
+                              <option value="&amp;sponger:get=soft"></option>
+                              <option value="&amp;sponger:get=add"></option>
+                              <option value="&amp;sponger:get=replace"></option>
+                          </datalist>
                         </td>
                       </tr>
                     </v:template>

@@ -10,7 +10,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -425,7 +425,7 @@ cfg_parse_disks (dbe_storage_t * dbs, char *err, int err_max, char * cfg_file)
 }
 
 static void
-cfg_parse_backup_dirs()
+cfg_parse_backup_dirs(void)
 {
   old_backup_dirs = dk_set_cons ((caddr_t) ".", NULL);
   old_backup_dirs->next = old_backup_dirs;

@@ -9,7 +9,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2024 OpenLink Software
+--  Copyright (C) 1998-2025 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -64,6 +64,7 @@
   declare safetolink integer;
   declare triples_found integer;
   declare jsses any;
+  declare referer varchar;
 
   set http_charset='utf-8';
   { 
@@ -72,6 +73,22 @@
     --  always treat narrow string boxes as UTF-8 encoded
     set http_in_charset='UTF-8';
   }
+
+  -- all possible inputs for IRI to be desribed
+  gr := coalesce (get_keyword ('g', params), get_keyword ('url', params), get_keyword ('uri', params));
+
+  referer := http_request_header(lines, 'Referer', null, null);
+  host := http_host('localhost');
+  if (registry_get('__fct_protect', '1') = '1' and referer is null and host not like 'localhost%' and host <> '127.0.0.1')
+    {
+       declare hint varchar;
+       hint := get_keyword('h', params);
+       if (hint is null or http_request_get('REQUEST_METHOD') = 'GET')
+         {
+           ?><?include confirmation.vsp ?><?vsp
+           return;
+         }
+    }
 
   if (registry_get ('fct_auto_sponge') = '1')
     auto_sponge_on_empty_graph := 1;
@@ -89,10 +106,6 @@
   -- XXX: disabled
   --declare continue handler for sqlstate 'S1TAT';
   --set result_timeout = atoi (registry_get ('fct_timeout_max'));
-
-  host := http_request_header (http_request_header (), 'X-Forwarded-Host', null, null);
-  if (host is null)
-    host := http_request_header (http_request_header (), 'Host');
 
 again:
   n_per_page := 100;
@@ -145,13 +158,6 @@ again:
       all_langs := vector (lang_parm, 1.0);
       langs := lang_parm;
     }
-
-  -- all possible inputs for IRI to be described
-  gr := get_keyword ('g', params);
-  if (gr is null)
-    gr := get_keyword ('url', params);
-  if (gr is null)
-    gr := get_keyword ('uri', params);
 
   if (not length (gr))
     {
@@ -259,7 +265,7 @@ again:
   if (view_mode = 'none')
   {
     -- User doesn't have read permission
-    return;
+    http_status_set(403);
   }
 
   if (graph_perms_allow_sponge)
@@ -314,6 +320,12 @@ again:
 	http_header (sprintf ('Location: /describe/?url=%U%s\r\n', page_resource_uri, ses_parms));
         return;
       }
+  } else if (get_keyword ('sponger:get', params) is not null) {
+     http_rewrite();
+     connection_set('__val_req_res_label__', null);
+     http('Unauthorized');
+     http_status_set(401);
+     return;
   }
   --set_user_id (http_map_get ('vsp_uid'));
 
@@ -368,9 +380,13 @@ again:
   __box_flags_set (rdf_link, 2);
 
   -- 404 ck
-  qry_str := sprintf ('sparql ask %s where { { <%s> ?p1 ?o1 } union { ?s ?p2 <%s> } }', _F, _S, _S);
-  exec (qry_str, null, null, vector (), 0, meta, data);
-  triples_found := case when isvector(data) and aref(aref(data,0),0) then 1 else 0 end;
+  triples_found := 0;
+  if (view_mode <> 'none') 
+    {
+      qry_str := sprintf ('sparql ask %s where { { <%s> ?p1 ?o1 } union { ?s ?p2 <%s> } }', _F, _S, _S);
+      exec (qry_str, null, null, vector (), 0, meta, data);
+      triples_found := case when isvector(data) and aref(aref(data,0),0) then 1 else 0 end;
+    }
 
   declare __res_desc, qs, qv, best_variant, accept, protocol varchar;
   declare best_q, curr float;

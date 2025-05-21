@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -919,7 +919,7 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
   {
     if (!ik)
       continue;
-      itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
+    itc->itc_isolation = ISO_SERIALIZABLE == qi->qi_isolation ? ISO_SERIALIZABLE : ISO_REPEATABLE;
     itc_free_owned_params (itc);
       itc_col_free (itc);
       itc->itc_insert_key = ik->ik_key;
@@ -958,7 +958,8 @@ cl_local_deletes (delete_node_t * del, caddr_t * inst, caddr_t * part_inst)
       itc->itc_key_spec = ks.ks_spec = ik->ik_key->key_insert_spec;
       if (ks.ks_key->key_is_col)
 	itc->itc_v_out_map = NULL;
-	{
+
+      {
 	  itc_from_keep_params (itc, itc->itc_insert_key, qi->qi_client->cli_slice);
 	  itc_param_sort (&ks, itc, ik->ik_key->key_not_null);
 	  if (!itc->itc_n_sets)
@@ -1182,12 +1183,13 @@ update_node_vec_run (update_node_t * upd, caddr_t * inst, caddr_t * state)
       ins_key_t * ik = upd->upd_keys[k];
       if (!upd->upd_keys[k])
 	continue;
-	{
-	  key_vec_insert (ins, state, itc, upd->upd_keys[k]);
-	  qi->qi_n_affected = n_aff;
-	  itc_free_owned_params (itc);
-	  itc_col_free (itc);
-	}
+
+      {
+	key_vec_insert (ins, state, itc, upd->upd_keys[k]);
+	qi->qi_n_affected = n_aff;
+	itc_free_owned_params (itc);
+	itc_col_free (itc);
+      }
     }
   qi->qi_n_affected = n_aff;
   if (itc->itc_siblings)

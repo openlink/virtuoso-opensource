@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2024 OpenLink Software
+--  Copyright (C) 1998-2025 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -1796,6 +1796,26 @@ create function DB.DBA.RDF_MAKE_LONG_OF_SQLVAL (in v any) returns any
     return v;
   if (__tag of UNAME = t)
     return __i2id (v);
+  if (isstring (v) and bit_and (__box_flags (v), 1))
+    return __i2id (v);
+  if (__tag of nvarchar = t)
+    v := charset_recode (v, '_WIDE_', 'UTF-8');
+  else if (__tag of long varchar handle = t)
+    v := cast (v as varchar);
+  res := rdf_box (v, 257, 257, 0, 1);
+  return res;
+}
+;
+
+create function DB.DBA.RDF_MAKE_LONG_OF_LITERAL (in v any) returns any
+{
+  declare t int;
+  declare res any;
+  if (v is null)
+    return null;
+  t := __tag (v);
+  if (not (t in (__tag of long varchar handle, __tag of varchar, __tag of UNAME, __tag of nvarchar, __tag of XML)))
+    return v;
   if (isstring (v) and bit_and (__box_flags (v), 1))
     return __i2id (v);
   if (__tag of nvarchar = t)
@@ -14585,6 +14605,7 @@ create procedure DB.DBA.RDF_CREATE_SPARQL_ROLES ()
     'grant execute on DB.DBA.RDF_OBJ_OF_LONG to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_OBJ_OF_SQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_SQLVAL to SPARQL_SELECT',
+    'grant execute on DB.DBA.RDF_MAKE_LONG_OF_LITERAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_MAKE_LONG_OF_TYPEDSQLVAL_STRINGS to SPARQL_SELECT',
     'grant execute on DB.DBA.RDF_QNAME_OF_LONG_SAFE to SPARQL_SELECT', -- DEPRECATED

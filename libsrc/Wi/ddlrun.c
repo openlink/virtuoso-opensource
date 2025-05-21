@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -1458,7 +1458,7 @@ dk_mutex_t * recomp_mtx;
 
 
 void
-ddl_init_objects ()
+ddl_init_objects (void)
 {
   if (!sch_name_to_table (wi_inst.wi_schema, "SYS_REPL_ACCOUNTS"))
     {
@@ -5374,7 +5374,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 
 
 void
-ddl_init_proc ()
+ddl_init_proc (void)
 {
   if (!sch_name_to_table (wi_inst.wi_schema, "SYS_PROCEDURES"))
     {

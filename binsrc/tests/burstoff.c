@@ -3,7 +3,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -68,7 +68,7 @@ error (SQLSMALLINT handle_type, SQLHANDLE handle)
 
 
 void
-create_proc ()
+create_proc (void)
 {
   HSTMT hstmt;
   SQLRETURN rc;
@@ -151,7 +151,7 @@ call_proc (int n_times)
 
 
 void
-test ()
+test (void)
 {
   HSTMT hstmt;
   SQLRETURN rc;

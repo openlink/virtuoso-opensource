@@ -4,7 +4,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -493,7 +493,7 @@ Note that "0", "1", "2" and "F" are NOT encoded as 0x0, 0x1, 0x2 and 0xF. */
 /*! Sets bits of cell with index \c idx in bitmask \c mask, e.g., GEO_DE9IM_SETCELL(X, GEO_DE9IM_IE, 0x08) may change X from 0x4200610000006100 to 0x4200080000006100 */
 #define GEO_DE9IM_SETCELL(mask,idx,val) do { \
   (mask) = (((mask) & ~GEO_DE9IM_SHIFTED_CELL((idx),GEO_DE9IM_CELL_FILLER)) \
-    | GEO_DE9IM_SHIFTED_CELL((idx),(val)) ); } while (0);
+    | GEO_DE9IM_SHIFTED_CELL((idx),(val)) ); } while (0)
 #define GEO_DE9IM_8CELLS(ii,ib,ie,bi,bb,be,ei,eb) ( \
   GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_II,(ii)) | \
   GEO_DE9IM_SHIFTED_CELL(GEO_DE9IM_IB,(ib)) | \

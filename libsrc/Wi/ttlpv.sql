@@ -4,7 +4,7 @@
 --  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
 --  project.
 --
---  Copyright (C) 1998-2024 OpenLink Software
+--  Copyright (C) 1998-2025 OpenLink Software
 --
 --  This project is free software; you can redistribute it and/or modify it
 --  under the terms of the GNU General Public License as published by the
@@ -173,7 +173,7 @@ create procedure DB.DBA.RDF_RL_TYPE_ID (in iri varchar)
   if (2 = old_mode)
     log_enable (0, 1);
 
-  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri);
+  id := (select RDT_TWOBYTE from DB.DBA.RDF_DATATYPE where RDT_QNAME = iri for update);
   if (id is null)
     {
       declare t_iri_id any;
@@ -212,7 +212,7 @@ create procedure DB.DBA.RDF_RL_LANG_ID (in ln varchar)
  again:
   if (2 = old_mode)
     log_enable (0, 1);
-  id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln);
+  id := (select RL_TWOBYTE from DB.DBA.RDF_LANGUAGE where RL_ID = ln for update);
   if (id is null)
     {
       id:= sequence_next ('RDF_LANGUAGE_TWOBYTE', 1, 1);

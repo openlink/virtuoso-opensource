@@ -8,7 +8,7 @@
  *  This file is part of the OpenLink Software Virtuoso Open-Source (VOS)
  *  project.
  *
- *  Copyright (C) 1998-2024 OpenLink Software
+ *  Copyright (C) 1998-2025 OpenLink Software
  *
  *  This project is free software; you can redistribute it and/or modify it
  *  under the terms of the GNU General Public License as published by the
@@ -45,7 +45,7 @@ resource_t * clib_rc;
 
 
 cll_in_box_t *
-clib_allocate ()
+clib_allocate (void)
 {
   B_NEW_VARZ (cll_in_box_t, clib);
   return clib;
@@ -80,7 +80,7 @@ clib_free (cll_in_box_t * clib)
 
 
 void
-clib_rc_init ()
+clib_rc_init (void)
 {
   clib_rc = resource_allocate (200, (rc_constr_t)clib_allocate, (rc_destr_t)clib_free, (rc_destr_t)clib_clear, 0);
 }
@@ -127,7 +127,7 @@ mctr_new_conn (cl_host_t * to)
 
 
 void
-mctr_init ()
+mctr_init (void)
 {
   mctr_ht = hash_table_allocate_64 (200);
   dk_mutex_init (&mctr_mtx, MUTEX_TYPE_SHORT);
@@ -269,7 +269,7 @@ cl_is_dup_cancel (id_hash_t ** ht, int to_host, int coord, int req_no)
 }
 
 void
-cl_clear_dup_cancel ()
+cl_clear_dup_cancel (void)
 {
 }
 
@@ -291,8 +291,8 @@ clrg_destroy (cl_req_group_t * clrg)
   mutex_enter (&clrg->clrg_mtx);
   DO_SET (cll_in_box_t *, clib, &clrg->clrg_clibs)
     {
-    if (clib->clib_alt_trx_no)
-      lt_alt_trx_no_free (clrg->clrg_lt, clib->clib_alt_trx_no);
+      if (clib->clib_alt_trx_no)
+        lt_alt_trx_no_free (clrg->clrg_lt, clib->clib_alt_trx_no);
       if (!clib->clib_req_no || clib->clib_fake_req_no)
 	continue; /* if no req no or a dfg sending clib, it is not really registered. If freed here, would remhash using a remote clib no and could collide dropping a local registration */
 #if 0
