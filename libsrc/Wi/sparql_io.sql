@@ -2813,8 +2813,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   paramcount := length (params);
 
-  if ((0 = paramcount) or
-      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0) or
+  if ((http_meth <> 'POST' and ((0 = paramcount) or
+      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0))) or
       qtxt = 1)
     {
        declare redir, acc varchar;

@@ -3692,7 +3692,7 @@ create procedure WS.WS.POST (
       }
     WS.WS.PUT (path, params, lines);
   }
-  else if (_content_type = 'text/turtle' or _content_type = 'application/ld+json' or (length (slug) > 0))
+  else if ((_content_type = 'text/turtle' or _content_type = 'application/ld+json' or (length (slug) > 0)) and http_map_get('domain') <> '/sparql')
   {
     declare cid integer;
 
