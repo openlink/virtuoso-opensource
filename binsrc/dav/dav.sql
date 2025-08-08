@@ -6504,6 +6504,7 @@ create function WS.WS.DAV_DIR_LIST (
 {
   -- dbg_obj_princ ('WS.WS.DAV_DIR_LIST (', full_path, logical_root_path, col, auth_uname, auth_pwd, auth_uid, ')');
   declare _dir, _dir_item, _dir_entry, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
+  declare _dir_item_mimetype any;
   declare _host any;
   declare _name, xslt_file, xslt_folder, vspx_path varchar;
   declare _res_len, flen, mult, N integer;
@@ -6560,9 +6561,14 @@ create function WS.WS.DAV_DIR_LIST (
     for (_dir_ctr := 0; _dir_ctr < _dir_len; _dir_ctr := _dir_ctr + 1)
     {
       _dir_item := _dir [_dir_ctr];
+       _dir_item_mimetype := _dir_item[9];
       if (_dir_item[1] = 'C')
       {
         http (sprintf ('<outline text="WebDAV Directory %V" htmlUrl="%V" type="rss" xmlUrl="%V?a=rss" />', _dir_item[0], _host || _dir_item[0], _host || _dir_item[0]));
+      }
+      if (_dir_item_mimetype like '%rss%' or _dir_item_mimetype like '%atom%')
+      {
+        http (sprintf ('<outline text="Feed %V" htmlUrl="%V" xmlUrl="%V" />', _dir_item[0], _host || _dir_item[0], _host || _dir_item[0]));
       }
     }
 	  http ('</body>');
