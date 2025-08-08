@@ -6551,7 +6551,7 @@ create function WS.WS.DAV_DIR_LIST (
     http ('<?xml version="1.0" encoding="UTF-8" ?>');
     http ('<opml version="2.0">');
 	  http ('<head>');
-		http (sprintf ('<title>WebDAV Directory %s"</title>', cast (full_path as varchar)));
+		http (sprintf ('<title>WebDAV Directory %s</title>', cast (full_path as varchar)));
 		http (sprintf ('<dateCreated>%s</dateCreated>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[8], '', 1)));
 		http (sprintf ('<dateModified>%s</dateModified>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[3], '', 1)));
 		http (sprintf ('<ownerName>%s</ownerName>', coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _dir_entry[7]), 'nobody')));
