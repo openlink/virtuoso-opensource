@@ -6504,6 +6504,7 @@ create function WS.WS.DAV_DIR_LIST (
 {
   -- dbg_obj_princ ('WS.WS.DAV_DIR_LIST (', full_path, logical_root_path, col, auth_uname, auth_pwd, auth_uid, ')');
   declare _dir, _dir_item, _dir_entry, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
+  declare _host any;
   declare _name, xslt_file, xslt_folder, vspx_path varchar;
   declare _res_len, flen, mult, N integer;
   declare _dir_len, _dir_ctr integer;
@@ -6538,6 +6539,10 @@ create function WS.WS.DAV_DIR_LIST (
   if (isinteger (_dir))
     return _dir;
 
+  -- _host := sprintf ('%{WSBaseUrl}s');
+  _host := registry_get ('URIQADefaultHost');
+  _host := sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host (_host));
+
   _dir_len := length (_dir);
   if (action = 'opml')
   {
@@ -6557,12 +6562,12 @@ create function WS.WS.DAV_DIR_LIST (
       _dir_item := _dir [_dir_ctr];
       if (_dir_item[1] = 'C')
       {
-    		http (sprintf ('<outline text="WebDAV Directory %V" htmlUrl="%V" type="rss" xmlUrl="%V?a=rss" />', _dir_item[0], WS.WS.DAV_HOST () || _dir_item[0], WS.WS.DAV_HOST () || _dir_item[0]));
-  	  }
+        http (sprintf ('<outline text="WebDAV Directory %V" htmlUrl="%V" type="rss" xmlUrl="%V?a=rss" />', _dir_item[0], _host || _dir_item[0], _host || _dir_item[0]));
+      }
     }
 	  http ('</body>');
 	  http ('</opml>');
-	}
+  }
   else if (action = 'atomPub')
   {
     _dir_entry := DAV_DIR_SINGLE_INT (col, 'C', full_path, null, null, http_dav_uid ());
@@ -6571,7 +6576,7 @@ create function WS.WS.DAV_DIR_LIST (
     http (         '<service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom">');
     http (         '  <workspace>');
     http (         '    <atom:title>WebDAV AtomPub</atom:title>');
-    http (sprintf ('    <collection href="%V" >', WS.WS.DAV_HOST () || _dir_entry[0]));
+    http (sprintf ('    <collection href="%V" >', _host || _dir_entry[0]));
     http (sprintf ('      <atom:title>%V Entries</atom:title>', _dir_entry[0]));
     http (         '      <categories>');
     http (         '        <atom:category term="collection" />');
@@ -6585,7 +6590,7 @@ create function WS.WS.DAV_DIR_LIST (
   {
     _xml := string_output ();
     http ('<?xml version="1.0" encoding="UTF-8" ?>', _xml);
-    http (sprintf ('<PATH dir_host="%V" dir_name="%V" physical_dir_name="%V">', WS.WS.DAV_HOST (), cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
+    http (sprintf ('<PATH dir_host="%V" dir_name="%V" physical_dir_name="%V">', _host, cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
     http ('<DIRS>', _xml);
 
     http ('<SUBDIR modify="" name=".." />\n', _xml);
