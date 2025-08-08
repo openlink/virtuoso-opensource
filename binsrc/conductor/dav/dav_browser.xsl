@@ -2553,6 +2553,7 @@
                           <v:text name="dav_name_save" xhtml_id="dav_name_save" type="hidden" />
                           <v:text name="dav_name_save_mime" xhtml_id="dav_name_save_mime" type="hidden" />
                           <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                          <span>&amp;nbsp;<v:label xhtml_for="label_dav_id" value="--sprintf('Id: %s', DB.DBA.SYS_SQL_VAL_PRINT(DB.DBA.DAV_SEARCH_ID(self.dav_path, self.dav_type)))" enabled="--atoi(registry_get('conductor_dav_debug','0'))" /></span>
                         </td>
                       </tr>
                     </v:template>
