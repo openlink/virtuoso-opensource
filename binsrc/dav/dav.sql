@@ -6506,7 +6506,7 @@ create function WS.WS.DAV_DIR_LIST (
   declare _dir, _dir_item, _dir_entry, _xml, _modify, fsize, _html, _b_opt, _xml_sheet any;
   declare _dir_item_mimetype any;
   declare _host any;
-  declare _name, xslt_file, xslt_folder, vspx_path varchar;
+  declare _name, xslt_file, xslt_folder, vspx_path, item_title, feed_title varchar;
   declare _res_len, flen, mult, N integer;
   declare _dir_len, _dir_ctr integer;
   declare _user_name, _group_name varchar;
@@ -6543,32 +6543,43 @@ create function WS.WS.DAV_DIR_LIST (
   -- _host := sprintf ('%{WSBaseUrl}s');
   _host := registry_get ('URIQADefaultHost');
   _host := sprintf ('%s://%s', case when is_https_ctx () then 'https' else 'http' end, http_host (_host));
+  feed_title := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT(DAV_SEARCH_ID (full_path,'C'), 'C', 'title', 0));
 
   _dir_len := length (_dir);
   if (action = 'opml')
   {
+    if (feed_title is null)
+      feed_title := concat ('WebDAV Directory ', cast (full_path as varchar));
     _dir_entry := DAV_DIR_SINGLE_INT (col, 'C', full_path, null, null, http_dav_uid ());
   	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
     http ('<?xml version="1.0" encoding="UTF-8" ?>');
     http ('<opml version="2.0">');
 	  http ('<head>');
-		http (sprintf ('<title>WebDAV Directory %s</title>', cast (full_path as varchar)));
+    http (sprintf ('<title>%V</title>', feed_title));
 		http (sprintf ('<dateCreated>%s</dateCreated>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[8], '', 1)));
 		http (sprintf ('<dateModified>%s</dateModified>', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_entry[3], '', 1)));
-		http (sprintf ('<ownerName>%s</ownerName>', coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _dir_entry[7]), 'nobody')));
+    http (sprintf ('<ownerName>%s</ownerName>', coalesce (uid_to_user(coalesce (_dir_entry[7],-1)), 'nobody')));
     http ('</head>');
 	  http ('<body>');
+    http (sprintf ('<outline text="%V" htmlUrl="%H" type="rss" xmlUrl="%H?a=rss" />',
+        feed_title, _host || cast(full_path as varchar), _host || cast(full_path as varchar)));
     for (_dir_ctr := 0; _dir_ctr < _dir_len; _dir_ctr := _dir_ctr + 1)
     {
       _dir_item := _dir [_dir_ctr];
        _dir_item_mimetype := _dir_item[9];
       if (_dir_item[1] = 'C')
       {
-        http (sprintf ('<outline text="WebDAV Directory %V" htmlUrl="%V" type="rss" xmlUrl="%V?a=rss" />', _dir_item[0], _host || _dir_item[0], _host || _dir_item[0]));
+        item_title := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT(aref(_dir_item,4), 'C', 'title', 0));
+        if (item_title is null)
+          item_title := concat ('WebDAV Directory ', _dir_item[0]);
+        http (sprintf ('<outline text="%V" htmlUrl="%H" type="rss" xmlUrl="%H?a=rss" />', item_title, _host || _dir_item[0], _host || _dir_item[0]));
       }
       if (_dir_item_mimetype like '%rss%' or _dir_item_mimetype like '%atom%')
       {
-        http (sprintf ('<outline text="Feed %V" htmlUrl="%V" xmlUrl="%V" />', _dir_item[0], _host || _dir_item[0], _host || _dir_item[0]));
+        item_title := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT(aref(_dir_item,4), _dir_item[1], 'title', 0));
+        if (item_title is null)
+          item_title := concat ('Feed ', _dir_item[0]);
+        http (sprintf ('<outline text="%V" htmlUrl="%H" xmlUrl="%H" />', item_title, _host || _dir_item[0], _host || _dir_item[0]));
       }
     }
 	  http ('</body>');
@@ -6576,12 +6587,14 @@ create function WS.WS.DAV_DIR_LIST (
   }
   else if (action = 'atomPub')
   {
+    if (feed_title is null)
+      feed_title := concat ('WebDAV Directory ', cast (full_path as varchar));
     _dir_entry := DAV_DIR_SINGLE_INT (col, 'C', full_path, null, null, http_dav_uid ());
   	http_header ('Content-type: text/xml; charset="UTF-8"\r\n');
     http (         '<?xml version="1.0" encoding="UTF-8" ?>');
     http (         '<service xmlns="http://www.w3.org/2007/app" xmlns:atom="http://www.w3.org/2005/Atom">');
     http (         '  <workspace>');
-    http (         '    <atom:title>WebDAV AtomPub</atom:title>');
+    http (sprintf ('    <atom:title>%V</atom:title>', feed_title));
     http (sprintf ('    <collection href="%V" >', _host || _dir_entry[0]));
     http (sprintf ('      <atom:title>%V Entries</atom:title>', _dir_entry[0]));
     http (         '      <categories>');
@@ -6595,8 +6608,10 @@ create function WS.WS.DAV_DIR_LIST (
   else
   {
     _xml := string_output ();
+    if (feed_title is null)
+      feed_title := concat ('Directory Listing of ', full_path);
     http ('<?xml version="1.0" encoding="UTF-8" ?>', _xml);
-    http (sprintf ('<PATH dir_host="%V" dir_name="%V" physical_dir_name="%V">', _host, cast (logical_root_path as varchar), cast (full_path as varchar)), _xml);
+    http (sprintf ('<PATH dir_host="%V" dir_name="%H" physical_dir_name="%V" title="%V">', _host, cast (logical_root_path as varchar), cast (full_path as varchar), feed_title), _xml);
     http ('<DIRS>', _xml);
 
     http ('<SUBDIR modify="" name=".." />\n', _xml);
@@ -6609,25 +6624,26 @@ create function WS.WS.DAV_DIR_LIST (
       _dir_item := _dir [_dir_ctr];
       if (_dir_item[1] = 'C')
       {
+        item_title := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT(aref(_dir_item,4), 'C', 'title', 0));
         _name := rtrim (_dir_item[0], '/');
         _name := subseq (_name, strrchr (_name, '/') + 1);
         if (_user_id <> coalesce (_dir_item[7], -1))
         {
           _user_id := coalesce (_dir_item[7], -1);
-          _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
+	  _user_name := coalesce (uid_to_user(coalesce (_user_id,-1)), '');
         }
         if (_group_id <> coalesce (_dir_item[6], -1))
         {
           _group_id := coalesce (_dir_item[6], -1);
-          _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
+	  _group_name :=  coalesce (uid_to_user(coalesce (_group_id,-1)), '');
         }
   	    http (sprintf ('<SUBDIR modify="%s" owner="%s" group="%s" permissions="%s" name="', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9]), _xml );
-  	    http_value (_name, null, _xml );
+        http_escape (_name, 8, _xml, 1, 1);
   	    http ('"', _xml );
         if (feedAction)
           http (sprintf (' pubDate="%s"', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[8], '', 1)), _xml);
 
-  	    http (' />\n', _xml );
+	http (sprintf (' title="%V" />\n', coalesce (item_title, _name)), _xml );
   	  }
     }
     http ('</DIRS><FILES>', _xml);
@@ -6643,6 +6659,7 @@ create function WS.WS.DAV_DIR_LIST (
       _dir_item := _dir [_dir_ctr];
       if (_dir_item[1] = 'R')
       {
+        item_title := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT(aref(_dir_item,4), 'R', 'title', 0));
         _name := _dir_item[0];
         _name := subseq (_name, strrchr (_name, '/') + 1);
         if (lower (_name) = '.folder.xsl')
@@ -6659,20 +6676,20 @@ create function WS.WS.DAV_DIR_LIST (
         if (_user_id <> coalesce (_dir_item[7], -1))
         {
           _user_id := coalesce (_dir_item[7], -1);
-          _user_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _user_id), '');
+	  _user_name := coalesce (uid_to_user(coalesce (_user_id,-1)), '');
         }
         if (_group_id <> coalesce (_dir_item[6], -1))
         {
           _group_id := coalesce (_dir_item[6], -1);
-          _group_name := coalesce ((select U_NAME from DB.DBA.SYS_USERS where U_ID = _group_id), '');
+	  _group_name := coalesce (uid_to_user(coalesce (_group_id,-1)), '');
         }
         http (sprintf ('<FILE modify="%s" owner="%s" group="%s" permissions="%s" mimeType="%s" rs="%i" lenght="%d" hs="%d %s" name="', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[3], '', 0), _user_name, _group_name, DB.DBA.DAV_PERM_D2U (_dir_item[5]), _dir_item[9], _res_len, _dir_item[2], flen, aref (fsize, mult)), _xml);
-  	    http_value (_name, null, _xml );
+        http_escape (_name, 8, _xml, 1, 1);
   	    http ('"', _xml );
         if (feedAction)
           http (sprintf (' pubDate="%s"', DB.DBA.DAV_RESPONSE_FORMAT_DATE (_dir_item[8], '', 1)), _xml);
 
-  	    http (' />\n', _xml );
+	http (sprintf (' title="%V" />\n', coalesce (item_title, _name)), _xml );
   	  }
     }
     http ('</FILES></PATH>', _xml);

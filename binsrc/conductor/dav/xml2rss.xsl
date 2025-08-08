@@ -23,6 +23,7 @@
 <xsl:stylesheet
   xmlns:xsl="http://www.w3.org/1999/XSL/Transform"
   xmlns:ods="http://www.openlinksw.com/ods/"
+  xmlns:atom="http://www.w3.org/2005/Atom"
   version="1.0">
 
   <xsl:output indent="yes" encoding="UTF-8" />
@@ -30,10 +31,22 @@
   <xsl:template match="PATH">
     <xsl:variable name="host"><xsl:value-of select="@dir_host" /></xsl:variable>
     <xsl:variable name="path"><xsl:value-of select="@dir_name" /></xsl:variable>
-    <rss version="1.0">
+    <rss version="2.0">
       <channel>
-        <title>Directory Listing of <xsl:value-of select="$path" /></title>
+        <title>
+          <xsl:choose>
+            <xsl:when test="@title"><xsl:value-of select="@title"/></xsl:when>
+            <xsl:otherwise>Directory Listing of <xsl:value-of select="$path" /></xsl:otherwise>
+          </xsl:choose>
+        </title>
+        <description>
+          <xsl:choose>
+            <xsl:when test="@title"><xsl:value-of select="@title"/></xsl:when>
+            <xsl:otherwise>Directory Listing of <xsl:value-of select="$path" /></xsl:otherwise>
+          </xsl:choose>
+        </description>
         <link><xsl:value-of select="$host" /><xsl:value-of select="$path" /></link>
+        <atom:link rel="self" href="{$host}{$path}?a=rss" type="application/rss+xml"/>
         <xsl:apply-templates select="DIRS">
           <xsl:with-param name="f_host" select="$host" />
           <xsl:with-param name="f_path" select="$path" />
@@ -47,13 +60,14 @@
     </rss>
   </xsl:template>
 
-  <xsl:template match="SUBDIR">
+  <xsl:template match="SUBDIR[not(starts-with(@name, '.'))]">
     <xsl:param name="f_host" />
     <xsl:param name="f_path" />
     <xsl:if test="@name != '..'">
       <item>
-        <title><xsl:value-of select="@name" /></title>
+        <title><xsl:call-template name="item-title" /></title>
         <link><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" />/</link>
+        <guid><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" />/</guid>
         <pubDate><xsl:value-of select="@pubDate" /></pubDate>
         <ods:modified><xsl:value-of select="@modify" /></ods:modified>
         <category>collection</category>
@@ -61,16 +75,24 @@
     </xsl:if>
   </xsl:template>
 
-  <xsl:template match="FILE">
+  <xsl:template match="FILE[not(starts-with(@name, '.'))]">
     <xsl:param name="f_host" />
     <xsl:param name="f_path" />
     <item>
-      <title><xsl:value-of select="@name" /></title>
+      <title><xsl:call-template name="item-title" /></title>
       <link><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" /></link>
+      <guid><xsl:value-of select="$f_host" /><xsl:value-of select="$f_path" /><xsl:value-of select="@name" /></guid>
       <pubDate><xsl:value-of select="@pubDate" /></pubDate>
       <ods:modified><xsl:value-of select="@modify" /></ods:modified>
       <category>resource</category>
     </item>
+  </xsl:template>
+
+  <xsl:template name="item-title">
+    <xsl:choose>
+      <xsl:when test="@title"><xsl:value-of select="@title"/></xsl:when>
+      <xsl:otherwise><xsl:value-of select="@name"/></xsl:otherwise>
+    </xsl:choose>
   </xsl:template>
 
 </xsl:stylesheet>
