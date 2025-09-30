@@ -897,7 +897,9 @@ if (_subject <> '') {
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
 
         &nbsp; &nbsp; Content Formats: &nbsp; 
+	<?vsp if (VAD_CHECK_VERSION ('sparql_cxml') is not null) { ?>
 	<a href="<?=rdf_link?><?= sprintf ('&output=%U', 'text/cxml')?>"><img alt="[cxml]" src="/fct/images/cxml_doc.png" class="dicon"/></a>
+	<?vsp } ?>
 	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/csv')?>"><img alt="[csv]" src="/fct/images/csv_doc.png" class="dicon"/></a>
 	&nbsp; &nbsp; RDF &nbsp; 
 	<a href="<?=rdf_link?><?=sprintf ('&output=%U', 'text/plain') ?>"><img alt="[text]" src="/fct/images/ntriples_doc.png" class="dicon"/></a>

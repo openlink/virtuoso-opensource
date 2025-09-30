@@ -377,7 +377,9 @@
 	<?vsp } ?>
 	<a href="http://linkeddata.uriburner.com/ode/?uri=<?vsp http_url (page_resource_uri); ?>" title="Basic navigation and exploration" target="_blank">ODE</a>
         &nbsp; &nbsp; Raw Data in:
+        <?vsp if (VAD_CHECK_VERSION ('sparql_cxml') is not null) { ?>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/cxml')?>">CXML</a> |
+        <?vsp } ?>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/csv')?>">CSV</a> | RDF (
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/plain') ?>">N-Triples</a>
         <a href="<?=rdf_link || sprintf ('&output=%U', 'text/turtle') ?>">N3/Turtle</a>
