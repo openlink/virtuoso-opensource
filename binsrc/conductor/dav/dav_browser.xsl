@@ -789,7 +789,7 @@
               }
               else if (detClass = 'rdfSink')
               {
-                retValue := vector (0, 1, vector ('activity', 'graph', 'base', 'contentType'));
+                retValue := vector (0, 1, vector ('activity', 'graph', 'base', 'contentType', 'validator'));
               }
               else if (detClass = 'IMAP')
               {
@@ -965,6 +965,22 @@
                   '  </th> \n' ||
                   '  <td> \n' ||
                   '    <input type="text" name="dav_%s_base" id="dav_%s_base" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  det,
+                  det,
+                  det,
+                  S
+                ));
+
+                S := get_keyword ('validator', rdfParams, '');
+                http (sprintf (
+                  '<tr> \n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_validator">SHACL Validator</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_validator" id="dav_%s_validator" value="%V" disabled="disabled" class="field-text" /> \n' ||
                   '  </td> \n' ||
                   '</tr> \n',
                   det,

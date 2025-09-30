@@ -3121,7 +3121,9 @@ create procedure RDF_SINK_UPLOAD (
   in rdf_sponger varchar,
   in rdf_cartridges varchar,
   in rdf_metaCartridges varchar,
-  in rdf_private integer := 1)
+  in rdf_private integer default 1,
+  in target_rdf_sink_col_id int default -1,
+  in rdf_validate_callback varchar default null)
 {
   -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, res_type, ')');
   declare rdf_iri, rdf_graph2, rdf_base2 varchar;
@@ -3158,8 +3160,8 @@ create procedure RDF_SINK_UPLOAD (
           http_dav_url (fname, null, ss);
           fname := string_output_string (ss);
           item_graph := WS.WS.DAV_IRI (path || '/' || fname);
-          RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges, 0);
-          SPARQL insert in graph ?:rdf_graph2 { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
+          RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges, 0, target_rdf_sink_col_id, rdf_validate_callback);
+          SPARQL define input:storage "" insert in graph ?:rdf_graph2 { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
           SPARQL clear graph ?:item_graph;
         }
       file_delete (tmp_file, 1);
@@ -3254,7 +3256,21 @@ _grddl:;
   return 0;
 
 _exit:
-  SPARQL insert in graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
+  if (rdf_validate_callback is not null)
+    {
+      declare rdf_validation_graph varchar;
+      rdf_validation_graph := concat('urn:shacl:rdf_sink:', bin2hex(xenc_digest (rdf_graph, 'sha1')), '-validation-report');
+      call(rdf_validate_callback) (null, vector(rdf_graph2), null, rdf_validation_graph);
+      if ((SPARQL prefix sh: <http://www.w3.org/ns/shacl#> 
+      ASK { GRAPH `iri(?:rdf_validation_graph)` { virtrdf:ValidationReport sh:conforms false }}))
+        {
+          SPARQL clear graph ?:rdf_graph2;
+          DB.DBA.DAV_DET_ACTIVITY ('rdfSink', target_rdf_sink_col_id, 
+                concat('Data Import Validation Failed: report graph <',rdf_validation_graph,'>'));
+          return 0;
+        }
+    }
+  SPARQL define input:storage "" insert in graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
 
 _private:
   {
@@ -3368,6 +3384,7 @@ _again:;
 }
 ;
 
+-- /* RDF `sink` DET folder main entry point, called once to be queued anotger time from queue call!? */
 create procedure RDF_SINK_INSERT (
   in _queue_id integer := null,
   in _path varchar,
@@ -3381,6 +3398,7 @@ create procedure RDF_SINK_INSERT (
   -- dbg_obj_princ ('RDF_SINK_INSERT (', _queue_id, _path, ')');
   declare rdf_graph varchar;
   declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges, _res_content any;
+  declare rdf_validate_callback varchar;
   declare exit handler for sqlstate '*'
   {
     goto _bad_content;
@@ -3410,10 +3428,12 @@ create procedure RDF_SINK_INSERT (
   rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
   rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
   rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
+  rdf_validate_callback := __proc_exists(get_keyword ('validator', rdf_params, ''));
 
   -- upload into first (rdf_sink) graph
   DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Start: ' || _path);
-  if (DB.DBA.RDF_SINK_UPLOAD (_path, _res_content, _res_type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
+  if (DB.DBA.RDF_SINK_UPLOAD (_path, _res_content, _res_type, rdf_graph, rdf_base,
+        rdf_sponger, rdf_cartridges, rdf_metaCartridges, 1, _col_id, rdf_validate_callback))
   {
     DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import End: ' || _path);
     DB.DBA.RDF_SINK_REDIRECT (_col_id, rdf_graph, rdf_params, _res_owner, _res_group);
