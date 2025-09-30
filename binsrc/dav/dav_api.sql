@@ -8637,7 +8637,7 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount integer;
+  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount, max_threads integer;
   declare retValue, error any;
   declare aq, items, threadsArray any;
   declare exit handler for sqlstate '*'
@@ -8655,8 +8655,8 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   set isolation = 'committed';
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
-
-  threadsCount := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
+  max_threads := atoi(registry_get('DAV_QUEUE_MAX_THREADS','1000'));
+  threadsCount := __min(max_threads, atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2);
   if (threadsCount <= 0)
     threadsCount := 1;
 
