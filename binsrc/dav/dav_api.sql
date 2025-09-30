@@ -2743,6 +2743,7 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 )
 {
   declare id, rc, old_log_mode, new_log_mode any;
+  declare parent_folder_id int;
 
   if (0 = dav_call)
   {
@@ -2773,9 +2774,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
   log_enable (bit_or (old_log_mode, 4), 1);
 
-  if ((DAV_HIDE_ERROR (rc) is not null) and (type in ('text/turtle', 'application/ld+json')))
-    -- create LDP triple if needed
-    DB.DBA.LDP_CREATE (path);
+  if (DAV_HIDE_ERROR (rc) is not null)
+    {
+      parent_folder_id := DAV_SEARCH_ID (path, 'P');
+      if (type in ('text/turtle', 'application/ld+json')) -- create LDP triple if needed
+        DB.DBA.LDP_CREATE (path, parent_folder_id);
+  }
 
   return rc;
 }
@@ -3548,6 +3552,8 @@ create procedure DAV_DELETE (
 }
 ;
 
+-- /* delete internal api  */
+
 create procedure DAV_DELETE_INT (
   in path varchar,
   in silent integer := 0,
@@ -3601,6 +3607,8 @@ create procedure DAV_DELETE_INT (
   id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
+    declare parent_folder_id int;
+
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
     DB.DBA.LDP_DELETE (path, 1);
 
@@ -3610,6 +3618,7 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta, 1);
     }
+    parent_folder_id := DAV_SEARCH_ID (path, 'P');
   }
   else if (what = 'C')
   {
