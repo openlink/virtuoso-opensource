@@ -3280,6 +3280,23 @@
                           </table>
                         </td>
                       </tr>
+                </v:template>
+                <v:template type="simple" enabled="--case when self.dav_type = 'C' then 1 else 0 end">
+                <tr>
+                  <th>
+                    <vm:label for="prop_content_callback" value="Content Callback Function" />
+                  </th>
+                  <td>
+                      <v:text name="prop_content_callback" xhtml_id="prop_content_callback">
+                              <v:before-data-bind>
+                                <![CDATA[
+                     control.ufl_value := get_keyword ('prop_content_callback', self.vc_page.vc_event.ve_params, 
+                        WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'content-callback-function', '', self.account_name, self.account_password));
+                                ]]>
+                              </v:before-data-bind>
+                      </v:text>
+                  </td>
+                </tr>
                     </v:template>
                   </table>
                 </div>
@@ -4241,6 +4258,16 @@
                         }
                         commit work;
                         WEBDAV.DBA.ldp_recovery (dav_fullPath);
+                      }
+                      -- content-callback-function
+                      declare content_callback varchar;
+                      content_callback := get_keyword('prop_content_callback', params, '');
+                      tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'content-callback-function', 'None', self.account_name, self.account_password);
+                      if (content_callback <> tmp) {
+                        if (content_callback = '')
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'content-callback-function', self.account_name, self.account_password);
+                        else
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'content-callback-function', content_callback, self.account_name, self.account_password);
                       }
 
                     _exec_16:;

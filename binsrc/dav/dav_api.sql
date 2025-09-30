@@ -2744,7 +2744,21 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 {
   declare id, rc, old_log_mode, new_log_mode any;
   declare parent_folder_id int;
+  declare content_callback varchar;
 
+  parent_folder_id := DAV_SEARCH_ID (path, 'P');
+  content_callback := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT (parent_folder_id, 'C', 'content-callback-function', 0));
+  if (not isnull(content_callback) and not isnull(__proc_exists(content_callback)))
+    {
+      declare exit handler for sqlstate '*', not found {
+        log_message (sprintf ('Error in `%s`: %s %s', content_callback, __SQL_STATE, __SQL_MESSAGE));
+        goto no_fn;
+      };
+      rc := call(content_callback) (path, content, type);
+      if (isnull(DAV_HIDE_ERROR(rc)))
+        return rc;
+    }
+no_fn:
   if (0 = dav_call)
   {
     if ((type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (path))

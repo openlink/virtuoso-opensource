@@ -732,7 +732,7 @@ create procedure WS.WS.PROPFIND_RESPONSE_FORMAT (
       foreach (any prop in props) do
       {
         prop1 := prop[0];
-        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'oWiki:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%'))
+        if ((prop1 = 'LDP') or (prop1 like 'virt:%') or (prop1 like 'oWiki:%') or (prop1 like 'http://www.openlinksw.com/schemas/%') or (prop1 like 'http://local.virt/DAV-RDF%') or (prop1 = 'content-callback-function'))
           goto _skip2;
 
         WS.WS.PROPFIND_RESPONSE_FORMAT_CUSTOM (prop1, prop1, prop[1]);
@@ -1131,7 +1131,7 @@ create procedure WS.WS.CUSTOM_PROP (
   foreach (any prop in props) do
   {
     prop_name := prop[0];
-    if ((prop_name = 'LDP') or (prop_name like 'virt:%') or (prop_name like 'http://www.openlinksw.com/schemas/%') or (prop_name like 'http://local.virt/DAV-RDF%'))
+    if ((prop_name = 'LDP') or (prop_name like 'virt:%') or (prop_name like 'http://www.openlinksw.com/schemas/%') or (prop_name like 'http://local.virt/DAV-RDF%') or (prop_name = 'content-callback-function'))
       goto _skip;
 
     prop_value := prop[1];
