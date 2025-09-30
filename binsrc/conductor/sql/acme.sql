@@ -89,7 +89,9 @@ create procedure ACME.DBA.make_csr (in sid varchar, in dns varchar, in oid varch
   xenc_key_RSA_create (key_name, 2048);
   csr := xenc_x509_csr_generate (key_name, vector ('CN', dns), vector ('subjectAltName', san), 'sha256', 1);
   csr := encode_base64url (csr);
+  set triggers off;
   USER_KEY_STORE (user, key_name);
+  set triggers on;
   insert replacing ACME.DBA.ACME_ORDERS (AO_DNS, AO_SID, AO_OID, AO_STATE, AO_CSR, AO_KEY, AO_ACCT, AO_IDENTIFIERS, AO_TS)
       values (dns, sid, oid, 'pending', csr, key_name, kname, identifiers, unix_timestamp());
   commit work;
@@ -547,13 +549,17 @@ create procedure ACME.DBA.new_account (in sid varchar, in kname varchar, in emai
   jt := json_parse (json);
   if (get_keyword ('status', jt) <> 'valid')
     {
+      set triggers off;
       xenc_key_remove (kname);
+      set triggers on;
       signal ('42000', 'Account registration failed');
     }
   orders_url := get_keyword('orders', jt);
   insert into ACME.DBA.ACME_ACCOUNT (AA_KEY_NAME, AA_KID, AA_USER, AA_SRV, AA_EMAIL, AA_ORDERS, AA_TS) 
       values (kname, kid, user, url0, email, orders_url, unix_timestamp());
+  set triggers off;
   USER_KEY_STORE (user, kname);
+  set triggers on;
   update ACME.DBA.ACME_SESSION set AS_NONCE = nonce, AS_OP = 'newAccount' where AS_SID = sid;
   commit work;
   return kid;
@@ -591,11 +597,15 @@ create procedure ACME.DBA.deactivate_acct (in sid varchar, in kname varchar)
   jt := json_parse (json);
   if (get_keyword ('status', jt) <> 'deactivated')
     {
+      set triggers off;
       xenc_key_remove (kname);
+      set triggers on;
       signal ('42000', 'Account deactivation failed');
     }
   delete from ACME.DBA.ACME_ACCOUNT where AA_KEY_NAME = kname;
+  set triggers off;
   xenc_key_remove (kname);
+  set triggers on;
   update ACME.DBA.ACME_SESSION set AS_NONCE = nonce, AS_OP = 'deactivateAccount' where AS_SID = sid;
   commit work;
   return nonce;
@@ -667,20 +677,26 @@ create procedure ACME.DBA.make_cert (in dns varchar, in oid varchar, in kname va
       pem_key := xenc_pem_export (AO_KEY, 1);
       xenc_key_create_cert (kname, cert0, 'X.509', 1, pem_key, '');
       xenc_set_primary_key (kname);
+      set triggers off;
       USER_KEY_STORE (user, kname);
+      set triggers on;
       cchain := vector_concat (cchain, vector (kname));
       for (i := 1; i < length (certs); i := i + 1)
         {
           declare cert_name varchar;
           cert_name := sprintf ('%s_c%d', kname, i);
           xenc_key_create_cert (cert_name, certs[i], 'X.509', 1);
+          set triggers off;
           USER_KEY_STORE (user, cert_name, 'X.509', 1, '', certs[i]);
+          set triggers on;
           cchain := vector_concat (cchain, vector (cert_name));
         }
     }
   if (okey is null)
     signal ('22023', 'No such order');
+  set triggers off;
   xenc_key_remove (okey);
+  set triggers on;
   update ACME.DBA.ACME_ORDERS set AO_KEY = kname, AO_STATE = 'issued' where AO_OID = oid;
   commit work;
   return cchain;
