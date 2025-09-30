@@ -41,6 +41,7 @@
       <v:variable persist="temp" name="v_terminology" type="varchar" />
       <v:variable persist="temp" name="v_timeout_min" type="varchar" />
       <v:variable persist="temp" name="v_timeout_max" type="varchar" />
+      <v:variable persist="temp" name="v_max_facets" type="varchar" />
       <v:variable persist="temp" name="v_cctr" type="varchar" />
     </vm:variables>
     <vm:pagebody>
@@ -75,6 +76,8 @@
           if (self.v_timeout_min = 0)
             self.v_timeout_min := '8000';
 
+          self.v_max_facets := registry_get ('fct_max_facets','20');
+
           self.v_timeout_max := registry_get ('fct_timeout_max');
           if (self.v_timeout_max = 0)
             self.v_timeout_max := '20000';
@@ -98,6 +101,10 @@
           <br/>
           <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Maximum timeout (ms)</span>
           <v:text xhtml_id="timeoutMax" name="timeoutMax" value="--self.v_timeout_max" />
+          <br/>
+          <span class="fm_label" style="padding: 2px 5px 0 0; width:245px">Maximum facets</span>
+          <v:text xhtml_id="maxFacets" name="maxFacets" value="--self.v_max_facets" />
+
 
           <h2 style="color: #aeaeaa; font-weight: bold;">User Overridable Settings</h2>
           <p>
@@ -206,6 +213,7 @@
                 registry_set ('fct_default_terminology', self.terminology.ufl_value);
                 registry_set ('fct_timeout_min', self.timeoutMin.ufl_value);
                 registry_set ('fct_timeout_max', self.timeoutMax.ufl_value);
+                registry_set ('fct_max_facets', self.maxFacets.ufl_value);
                 registry_set ('fct_cctr', self.cctr.ufl_value);
               ]]>
             </v:on-post>
