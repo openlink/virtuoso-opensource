@@ -39,6 +39,21 @@
   declare user_permissions int;
   declare q_txt any;
   declare safetolink integer;
+  declare referer varchar;
+
+  -- prevent bots from crawling us
+  referer := http_request_header(lines, 'Referer', null, null);
+  host := http_host('localhost');
+  if (registry_get('__fct_protect', '1') = '1' and referer is null and host not like 'localhost%' and host <> '127.0.0.1')
+    {
+       declare hint varchar;
+       hint := get_keyword('h', params);
+       if (hint is null or http_request_get('REQUEST_METHOD') = 'GET')
+         {
+           ?><?include confirmation.vsp ?><?vsp
+           return;
+         }
+    }
 
   white_page := 1;
 
