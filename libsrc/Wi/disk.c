@@ -560,6 +560,10 @@ DBG_NAME (it_temp_allocate) (DBG_PARAMS dbe_storage_t * dbs)
     }
   else
     {
+#ifdef DEBUG
+      if (0 != tree->it_ref_count)
+        GPF_T1 ("Non-zero it_ref_count after resource_get()");
+#endif
       tree->it_ref_count = 1;
       tree->it_hi = NULL;
       tree->it_storage = dbs;

@@ -34,7 +34,7 @@
 #endif
 
 #ifdef PAGE_TRACE
-int page_trace_on = 1;
+int page_trace_on = 0;
 #endif
 
 

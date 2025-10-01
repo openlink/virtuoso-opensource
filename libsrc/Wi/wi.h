@@ -1509,7 +1509,6 @@ struct buffer_desc_s
   short 	        bd_enter_line;
   short 		bd_leave_line;
   short                 bd_set_wr_line;
-  short                 bd_set_dirty_line;
   short		        bd_delta_line;
   char 			bd_el_flag;	/* what operation was last: 1-enter, 2-leave */
   bp_ts_t	        bd_ck_ts;
