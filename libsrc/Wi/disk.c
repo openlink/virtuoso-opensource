@@ -672,8 +672,8 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
       it_map_t * itm = &it->it_maps[inx];
- again:
       ITC_IN_KNOWN_MAP (itc, inx);
+ again:
       dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
     {
