@@ -1629,9 +1629,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
     }
   else
     {
-      http ('"type": "literal", "datatype": "', ses);
-      http_escape (cast (__xsd_type (val) as varchar), 14, ses, 1, 1);
-      http ('", "value": "', ses);
+      http ('"type": "literal", "value": "', ses);
       http_escape (__rdf_strsqlval (val), 14, ses, 1, 1);
     }
   http ('" }', ses);
