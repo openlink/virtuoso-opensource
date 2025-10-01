@@ -871,7 +871,7 @@ ins_call_vec (instruction_t * ins, caddr_t * inst, code_vec_t code_vec, int firs
   {
     caddr_t * rets = NULL;
     int set;
-    db_buf_t set_mask = qi->qi_set_mask;
+    db_buf_t set_mask = CV_CALL_PROC_TABLE != ins->_.call.ret ? qi->qi_set_mask : NULL;
     if (CALLER_CLIENT == qi->qi_caller && !ins->_.call.ret && !qi->qi_query->qr_select_node)
       rets = dk_alloc_box_zero (sizeof (caddr_t) * n_sets, DV_ARRAY_OF_POINTER);
     SET_LOOP
