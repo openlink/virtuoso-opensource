@@ -6964,7 +6964,7 @@ retry_good_ignoring_front_varname:
         if (!(flags & SSG_RETVAL_FROM_JOIN_MEMBER))
           goto try_write_null; /* see below */
         memb_len = BOX_ELEMENTS_INT (gp->_.gp.members);
-	if (!(SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && (1 < BOX_ELEMENTS (eq->e_subvalue_idxs)))
+        if (!(SPART_VARR_NOT_NULL & eq->e_rvr.rvrRestrictions) && (1 < BOX_ELEMENTS_0 (eq->e_subvalue_idxs)))
 	  {			/* Special case for coalesce as a result of full outer join like two VALUES with UNBOUNDs for same variable in bug 16670 */
 	    int sub_is_first_coalesce_arg = 1;
 	    sub_flags = (SSG_RETVAL_FROM_GOOD_SELECTED |
