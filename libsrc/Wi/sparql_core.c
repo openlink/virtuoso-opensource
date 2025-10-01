@@ -4814,15 +4814,15 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
     }
   if (is_sql)
     {
-      if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
+      if (!sec_user_has_group (G_ID_DBA, uid)  && sparp_sql_function_name_is_unsafe (buf))
         goto restricted; /* see below */
       need_check_for_sparql11_agg = 1;
     }
   else if (is_bif)
     {
-      if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
+      if (!sec_user_has_group (G_ID_DBA, uid) && sparp_sql_function_name_is_unsafe (buf))
         goto restricted; /* see below */
-      if ((U_ID_DBA != uid) && sparp_bif_function_name_is_unsafe (buf))
+      if (!sec_user_has_group (G_ID_DBA, uid) && sparp_bif_function_name_is_unsafe (buf))
         goto restricted; /* see below */
       if (NULL != name_to_pl_name)
         {
@@ -4835,7 +4835,7 @@ spar_verify_funcall_security (sparp_t *sparp, int *is_agg_ret, const char **fnam
               strncpy (buf, full_sql_name_ptr[0]+7, sizeof(buf)-1);
               buf[sizeof(buf)-1] = '\0';
               strupr (buf);
-              if ((U_ID_DBA != uid) && sparp_sql_function_name_is_unsafe (buf))
+              if (!sec_user_has_group (G_ID_DBA, uid) && sparp_sql_function_name_is_unsafe (buf))
                 goto restricted; /* see below */
               strcpy (buf, "sql:");
               strncpy (buf+4, full_sql_name_ptr[0]+7, sizeof(buf)-5);
