@@ -1629,9 +1629,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
     }
   else
     {
-      http ('"type": "literal", "datatype": "', ses);
-      http_escape (cast (__xsd_type (val) as varchar), 14, ses, 1, 1);
-      http ('", "value": "', ses);
+      http ('"type": "literal", "value": "', ses);
       http_escape (__rdf_strsqlval (val), 14, ses, 1, 1);
     }
   http ('" }', ses);
@@ -3356,7 +3354,10 @@ again:
     {
       declare state2, msg2 varchar;
       state2 := '00000';
-      exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+      if (state <> 'S1T00') -- test for SPARQL-FED or parse etc, only if not a timeout
+        {
+          exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+        }
       if (state2 <> '00000')
         {
           declare unknown_service varchar;

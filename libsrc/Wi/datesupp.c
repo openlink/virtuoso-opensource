@@ -1384,6 +1384,11 @@ iso8601_or_odbc_string_to_dt_1 (const char *str, char *dt, int dtflags, int dt_t
           if ('-' == tail[-1])
             tzsign = 1;
         }
+      if ((DTFLAG_HH == fld_flag) && (tail == str) && ('T' == tail[0]) && (dtflags & DTFLAG_T_FORMAT_SETS_TZL) && (DT_TYPE_TIME == dt_type))
+        {
+          t_before_hh = 1;
+          tail += 1;
+        }
       for (group_end = tail; isdigit (group_end[0]); group_end++) /*no body*/;
       fldlen = group_end - tail;
       fld_maxlen = fld_max_lengths[fld_idx];

@@ -2743,7 +2743,22 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
 )
 {
   declare id, rc, old_log_mode, new_log_mode any;
+  declare parent_folder_id int;
+  declare content_callback varchar;
 
+  parent_folder_id := DAV_SEARCH_ID (path, 'P');
+  content_callback := DB.DBA.DAV_HIDE_ERROR(DB.DBA.DAV_PROP_GET_INT (parent_folder_id, 'C', 'content-callback-function', 0));
+  if (not isnull(content_callback) and not isnull(__proc_exists(content_callback)))
+    {
+      declare exit handler for sqlstate '*', not found {
+        log_message (sprintf ('Error in `%s`: %s %s', content_callback, __SQL_STATE, __SQL_MESSAGE));
+        goto no_fn;
+      };
+      rc := call(content_callback) (path, content, type);
+      if (isnull(DAV_HIDE_ERROR(rc)))
+        return rc;
+    }
+no_fn:
   if (0 = dav_call)
   {
     if ((type = 'text/turtle') and not DB.DBA.DAV_MAC_METAFILE (path))
@@ -2773,9 +2788,12 @@ create procedure DAV_RES_UPLOAD_STRSES_INT (
   rc := DAV_RES_UPLOAD_STRSES_INT_INNER (path, content, type, permissions, uid, gid, auth_uname, auth_pwd, extern, cr_time, mod_time, _rowguid, ouid, ogid, check_locks);
   log_enable (bit_or (old_log_mode, 4), 1);
 
-  if ((DAV_HIDE_ERROR (rc) is not null) and (type in ('text/turtle', 'application/ld+json')))
-    -- create LDP triple if needed
-    DB.DBA.LDP_CREATE (path);
+  if (DAV_HIDE_ERROR (rc) is not null)
+    {
+      parent_folder_id := DAV_SEARCH_ID (path, 'P');
+      if (type in ('text/turtle', 'application/ld+json')) -- create LDP triple if needed
+        DB.DBA.LDP_CREATE (path, parent_folder_id);
+  }
 
   return rc;
 }
@@ -3121,7 +3139,9 @@ create procedure RDF_SINK_UPLOAD (
   in rdf_sponger varchar,
   in rdf_cartridges varchar,
   in rdf_metaCartridges varchar,
-  in rdf_private integer := 1)
+  in rdf_private integer default 1,
+  in target_rdf_sink_col_id int default -1,
+  in rdf_validate_callback varchar default null)
 {
   -- dbg_obj_princ ('RDF_SINK_UPLOAD (', path, res_type, ')');
   declare rdf_iri, rdf_graph2, rdf_base2 varchar;
@@ -3158,8 +3178,8 @@ create procedure RDF_SINK_UPLOAD (
           http_dav_url (fname, null, ss);
           fname := string_output_string (ss);
           item_graph := WS.WS.DAV_IRI (path || '/' || fname);
-          RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges, 0);
-          SPARQL insert in graph ?:rdf_graph2 { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
+          RDF_SINK_UPLOAD (concat (path, '/', fname), content, DAV_GUESS_MIME_TYPE_BY_NAME (fname), rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges, 0, target_rdf_sink_col_id, rdf_validate_callback);
+          SPARQL define input:storage "" insert in graph ?:rdf_graph2 { ?s ?p ?o } where { graph `iri(?:item_graph)` { ?s ?p ?o } };
           SPARQL clear graph ?:item_graph;
         }
       file_delete (tmp_file, 1);
@@ -3254,7 +3274,21 @@ _grddl:;
   return 0;
 
 _exit:
-  SPARQL insert in graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
+  if (rdf_validate_callback is not null)
+    {
+      declare rdf_validation_graph varchar;
+      rdf_validation_graph := concat('urn:shacl:rdf_sink:', bin2hex(xenc_digest (rdf_graph, 'sha1')), '-validation-report');
+      call(rdf_validate_callback) (null, vector(rdf_graph2), null, rdf_validation_graph);
+      if ((SPARQL prefix sh: <http://www.w3.org/ns/shacl#> 
+      ASK { GRAPH `iri(?:rdf_validation_graph)` { virtrdf:ValidationReport sh:conforms false }}))
+        {
+          SPARQL clear graph ?:rdf_graph2;
+          DB.DBA.DAV_DET_ACTIVITY ('rdfSink', target_rdf_sink_col_id, 
+                concat('Data Import Validation Failed: report graph <',rdf_validation_graph,'>'));
+          return 0;
+        }
+    }
+  SPARQL define input:storage "" insert in graph ?:rdf_graph { ?s ?p ?o } where { graph `iri(?:rdf_graph2)` { ?s ?p ?o } };
 
 _private:
   {
@@ -3368,6 +3402,7 @@ _again:;
 }
 ;
 
+-- /* RDF `sink` DET folder main entry point, called once to be queued anotger time from queue call!? */
 create procedure RDF_SINK_INSERT (
   in _queue_id integer := null,
   in _path varchar,
@@ -3381,6 +3416,7 @@ create procedure RDF_SINK_INSERT (
   -- dbg_obj_princ ('RDF_SINK_INSERT (', _queue_id, _path, ')');
   declare rdf_graph varchar;
   declare rdf_params, rdf_sponger, rdf_base, rdf_cartridges, rdf_metaCartridges, _res_content any;
+  declare rdf_validate_callback varchar;
   declare exit handler for sqlstate '*'
   {
     goto _bad_content;
@@ -3410,10 +3446,12 @@ create procedure RDF_SINK_INSERT (
   rdf_sponger := get_keyword ('sponger', rdf_params, 'on');
   rdf_cartridges := get_keyword ('cartridges', rdf_params, '');
   rdf_metaCartridges := get_keyword ('metaCartridges', rdf_params, '');
+  rdf_validate_callback := __proc_exists(get_keyword ('validator', rdf_params, ''));
 
   -- upload into first (rdf_sink) graph
   DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import Start: ' || _path);
-  if (DB.DBA.RDF_SINK_UPLOAD (_path, _res_content, _res_type, rdf_graph, rdf_base, rdf_sponger, rdf_cartridges, rdf_metaCartridges))
+  if (DB.DBA.RDF_SINK_UPLOAD (_path, _res_content, _res_type, rdf_graph, rdf_base,
+        rdf_sponger, rdf_cartridges, rdf_metaCartridges, 1, _col_id, rdf_validate_callback))
   {
     DB.DBA.DAV_DET_ACTIVITY ('rdfSink', _col_id, 'Data Import End: ' || _path);
     DB.DBA.RDF_SINK_REDIRECT (_col_id, rdf_graph, rdf_params, _res_owner, _res_group);
@@ -3528,6 +3566,8 @@ create procedure DAV_DELETE (
 }
 ;
 
+-- /* delete internal api  */
+
 create procedure DAV_DELETE_INT (
   in path varchar,
   in silent integer := 0,
@@ -3581,6 +3621,8 @@ create procedure DAV_DELETE_INT (
   id_meta := DAV_SEARCH_ID (path_meta, 'R');
   if (what = 'R')
   {
+    declare parent_folder_id int;
+
     delete from WS.WS.SYS_DAV_RES where RES_ID = id;
     DB.DBA.LDP_DELETE (path, 1);
 
@@ -3590,6 +3632,7 @@ create procedure DAV_DELETE_INT (
       delete from WS.WS.SYS_DAV_RES where RES_ID = id_meta;
       DB.DBA.LDP_DELETE (path_meta, 1);
     }
+    parent_folder_id := DAV_SEARCH_ID (path, 'P');
   }
   else if (what = 'C')
   {
@@ -8594,7 +8637,7 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   in _delay integer := 0)
 {
   -- dbg_obj_princ ('DB.DBA.DAV_QUEUE_RUN ()');
-  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount integer;
+  declare N, delayNumber, maxDelayNumber, newThreads, freeThreads, itemsCount, threadsCount, max_threads integer;
   declare retValue, error any;
   declare aq, items, threadsArray any;
   declare exit handler for sqlstate '*'
@@ -8612,8 +8655,8 @@ create procedure DB.DBA.DAV_QUEUE_RUN (
   set isolation = 'committed';
   if (_notInit and DB.DBA.DAV_QUEUE_ACTIVE ())
     return;
-
-  threadsCount := atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2;
+  max_threads := atoi(registry_get('DAV_QUEUE_MAX_THREADS','1000'));
+  threadsCount := __min(max_threads, atoi (coalesce (virtuoso_ini_item_value ('Parameters', 'AsyncQueueMaxThreads'), '10')) / 2);
   if (threadsCount <= 0)
     threadsCount := 1;
 

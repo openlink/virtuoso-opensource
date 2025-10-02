@@ -560,6 +560,10 @@ DBG_NAME (it_temp_allocate) (DBG_PARAMS dbe_storage_t * dbs)
     }
   else
     {
+#ifdef DEBUG
+      if (0 != tree->it_ref_count)
+        GPF_T1 ("Non-zero it_ref_count after resource_get()");
+#endif
       tree->it_ref_count = 1;
       tree->it_hi = NULL;
       tree->it_storage = dbs;
@@ -668,8 +672,8 @@ DBG_NAME (it_temp_free) (DBG_PARAMS index_tree_t * it)
   for (inx = 0; inx < IT_N_MAPS; inx++)
     {
       it_map_t * itm = &it->it_maps[inx];
- again:
       ITC_IN_KNOWN_MAP (itc, inx);
+ again:
       dk_hash_iterator (&hit, &itm->itm_dp_to_buf);
   while (dk_hit_next (&hit, (void**) &dp, (void **) &buf))
     {

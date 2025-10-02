@@ -3815,7 +3815,7 @@ create procedure WEBDAV.DBA.rdfSink_CONFIGURE (
 
   oldParams := DB.DBA.DAV_DET_RDF_PARAMS_GET ('rdfSink', id);
   DB.DBA.DAV_DET_PARAM_SET ('rdfSink', null, id, 'C', 'activity', get_keyword ('activity', params, 'off'), 0);
-  retValue := DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph', 'contentType', 'graphSecurity', 'graphSecurityACL', 'graphSecurityACI'));
+  retValue := DB.DBA.DAV_DET_RDF_PARAMS_SET ('rdfSink', id, params, vector ('sponger', 'cartridges', 'metaCartridges', 'base', 'graph', 'contentType', 'graphSecurity', 'graphSecurityACL', 'graphSecurityACI', 'validator'));
   oldGraph := get_keyword ('graph', oldParams, '');
   if (oldGraph <> '')
   {

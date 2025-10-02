@@ -797,7 +797,44 @@ isp_rep_map_fn (void *key, void *value)
 }
 
 
+void
+rep_print_pl_page_id (page_lock_t *pl)
+{
+  rep_printf ("page #%ld", pl->pl_page);
+  if (NULL == pl->pl_it)
+    rep_printf (" (not an index tree?!)");
+  else if (NULL == pl->pl_it->it_key)
+    rep_printf (" (not a page of an index?!)");
+  else
+    {
+      dbe_key_t *plkey = pl->pl_it->it_key;
+      rep_printf (" of%s%s%s key %s", plkey->key_is_temp ? " temp" : "", plkey->key_is_primary ? " primary" : "",
+	  plkey->key_is_col ? " column" : "", plkey->key_name ? plkey->key_name : "(unnamed)");
+    }
+}
+
+
 #define PRINT_MAX_LOCKS 1000
+
+const char *
+name_of_iso (char isolation)
+{
+  switch (isolation)
+    {
+    case 0:
+      return "(no isolation level)";
+    case ISO_UNCOMMITTED:
+      return "uncommitted";
+    case ISO_COMMITTED:
+      return "committed";
+    case ISO_REPEATABLE:
+      return "repeatable";
+    case ISO_SERIALIZABLE:
+      return "serializable";
+    default:
+      return "(custom isolation)";
+    }
+}
 
 
 void
@@ -829,16 +866,17 @@ trx_status_report (lock_trx_t * lt)
 		if (waiting->itc_ltrx == lt)
 		  {
 		    wait = 1;
-		    rep_printf ("   %ld: W%s, ", pl->pl_page,
-			waiting->itc_lock_mode == PL_SHARED ? "S" : "E");
+		    rep_printf ("    %s cursor at ", name_of_iso (waiting->itc_isolation));
+		    rep_print_pl_page_id (pl);
+		    rep_printf (": W%s, ", waiting->itc_lock_mode == PL_SHARED ? "S" : "E");
 		    break;
 		  }
 		waiting = waiting->itc_next_on_lock;
 	      }
 	    if (!wait)
 	      {
-		rep_printf ("%ld: I%s, ", pl->pl_page,
-		    pl->pl_type == PL_SHARED ? "S" : "E");
+		rep_print_pl_page_id (pl);
+		rep_printf (": I%s, ", pl->pl_type == PL_SHARED ? "S" : "E");
 	      }
 	  }
 	  END_DO_HT;
@@ -848,8 +886,6 @@ trx_status_report (lock_trx_t * lt)
     }
     LEAVE_TXN;
 }
-
-
 
 
 void
@@ -912,16 +948,31 @@ lt_short_name (lock_trx_t * lt)
 
 
 void
-gen_lock_status (gen_lock_t * pl, char * indent, long id)
+gen_lock_status_tail (gen_lock_t *pl)
 {
+  char pltype;
   it_cursor_t *waiting = pl->pl_waiting;
   if (locks_printed++ > PRINT_MAX_LOCKS)
     {
       rep_printf ("More locks....\n");
       longjmp_splice (&locks_done, 1);
     }
-  rep_printf ("%s%ld: I%s%s ", indent, id, PL_TYPE (pl) == PL_EXCLUSIVE ? "E" : "S",
-	      PL_IS_PAGE (pl) ? "P": "R");
+  switch (PL_TYPE (pl))
+    {
+    case PL_EXCLUSIVE:
+      pltype = 'E';
+      break;
+    case PL_SHARED:
+      pltype = 'S';
+      break;
+    case PL_FREE:
+      pltype = 'f';
+      break;
+    default:
+      pltype = '?';
+      break;
+    }
+  rep_printf (": I%c%s ", pltype, PL_IS_PAGE (pl) ? "P" : "R");
   if (NULL == pl->pl_owner)
     {
       rep_printf ("NO OWNER ");
@@ -949,18 +1000,303 @@ gen_lock_status (gen_lock_t * pl, char * indent, long id)
 }
 
 
+int max_dump_str = 30;
+#define RMAX max_dump_str
+
 void
-lock_status (const void *key, void *value)
+rep_print_key_content (buffer_desc_t *buf, db_buf_t row, dbe_key_t *key)
 {
-  page_lock_t * pl = (page_lock_t*) value;
+  unsigned short offset;
+  db_buf_t xx, xx2;
+  unsigned short vl1, vl2;
+  int c;
+  key_ver_t kv = IE_KEY_VERSION (row);
+  row_ver_t rv = IE_ROW_VERSION (row);
+  int32 n32;
+  int64 n64;
+  dbe_col_loc_t *cl;
+  int inx = 0;
+  /* int len = row_length (row, key); */
+  if (KV_LEFT_DUMMY == kv)
+    {
+      rep_printf ("left dummy for page #%d", (int) LONG_REF (row + LD_LEAF));
+      return;
+    }
+  DO_SET (dbe_column_t *, col, &key->key_parts)
+  {
+    if ((!kv || key->key_is_col) && inx >= key->key_n_significant)
+      break;
+    if (inx)
+      rep_printf (", ");
+    rep_printf ("%s = ", col->col_name);
+    cl = key_find_cl (key, col->col_id);
+    if (cl->cl_null_mask[rv] && row[cl->cl_null_flag[rv]] & cl->cl_null_mask[rv])
+      {
+	rep_printf ("NULL");
+	goto next;
+      }
+    if (dtp_is_fixed (cl->cl_sqt.sqt_dtp))
+      {
+	ROW_FIXED_COL (buf, row, rv, (*cl), xx);
+      }
+    else
+      {
+	ROW_STR_COL (key, buf, row, cl, xx, vl1, xx2, vl2, offset);
+      }
+    switch (cl->cl_sqt.sqt_dtp)
+      {
+      case DV_SHORT_INT:
+	rep_printf ("%d", SHORT_REF (xx));
+	break;
+      case DV_IRI_ID:
+	{
+	  iri_id_t iid;
+	  ROW_INT_COL (buf, row, rv, (*cl), (iri_id_t) (uint32) LONG_REF, iid);
+
+	  if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	    rep_printf ("#ib" IIDBOXINT_FMT, (boxint) (iid - MIN_64BIT_BNODE_IRI_ID));
+	  else
+	    {
+	      caddr_t iri;
+	      rep_printf ("#i" IIDBOXINT_FMT, (boxint) (iid));
+	      iri = key_id_to_canonicalized_iri_if_cached (iid);
+	      if (NULL != iri)
+		{
+		  rep_printf ("=<%s>", iri);
+		  dk_free_box (iri);
+		}
+	    }
+	  /* not cloned for a while: col_comp_print (out, key, row, cl); */
+	  break;
+	}
+      case DV_LONG_INT:
+	ROW_INT_COL (buf, row, rv, (*cl), LONG_REF, n32);
+	rep_printf ("%d", n32);
+	/* not cloned for a while: col_comp_print (out, key, row, cl); */
+	break;
+      case DV_INT64:
+	ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, n64);
+	rep_printf ("" BOXINT_FMT, n64);
+	/* not cloned for a while: col_comp_print (out, key, row, cl); */
+	break;
+      case DV_IRI_ID_8:
+	{
+	  iri_id_t iid;
+	  ROW_INT_COL (buf, row, rv, (*cl), INT64_REF, iid);
+	  if (iid >= MIN_64BIT_BNODE_IRI_ID)
+	    rep_printf ("#ib" BOXINT_FMT, (boxint) (iid - MIN_64BIT_BNODE_IRI_ID));
+	  else
+	    rep_printf ("#i" BOXINT_FMT, (boxint) (iid));
+	  /* not cloned for a while: col_comp_print (out, key, row, cl); */
+	  break;
+	}
+      case DV_STRING:
+	rep_printf ("\"");
+	for (c = 0; c < MIN (RMAX, vl1); c++)
+	  rep_printf ("%c", xx[c] + (c == vl1 - 1 ? offset : 0));
+	if (vl1 > RMAX)
+	  rep_printf ("...");
+	for (c = 0; c < MIN (RMAX, vl2); c++)
+	  rep_printf ("%c", xx2[c]);
+	rep_printf ("\"");
+	if (vl2 > RMAX)
+	  rep_printf ("...");
+	/* not cloned for a while: col_comp_print (out, key, row, cl); */
+	break;
+      case DV_ANY:
+	rep_printf ("x");
+	for (c = 0; c < MIN (RMAX, vl1); c++)
+	  rep_printf ("%02x", (unsigned) ((unsigned char) (xx[c] + (c == vl1 - 1 ? offset : 0))));
+	if (c > RMAX)
+	  rep_printf ("...");
+	for (c = 0; c < MIN (RMAX, vl2); c++)
+	  rep_printf ("%02x", (unsigned) ((unsigned char) (xx2[c])));
+	if (c > RMAX)
+	  rep_printf ("...");
+	/* not cloned for a while: col_comp_print (out, key, row, cl); */
+	break;
+      case DV_TIMESTAMP:
+      case DV_DATETIME:
+      case DV_DATE:
+      case DV_TIME:
+	rep_printf ("dt 0x");
+	for (c = 0; c < 10; c++)
+	  rep_printf ("%02x", (unsigned) ((unsigned char) (xx[c])));
+	rep_printf ("");
+
+	break;
+      default:
+	rep_printf ("<xx>");
+	/* not cloned for a while: col_comp_print (out, key, row, cl); */
+	break;
+      case DV_BLOB:
+      case DV_BLOB_WIDE:
+      case DV_BLOB_BIN:
+	{
+	  dtp_t b_dtp = xx[0];
+	  if (IS_STRING_DTP (b_dtp))
+	    rep_printf ("<inline blob %d> ", (int) b_dtp);
+	  else
+	    rep_printf ("<blob dp=%d> ", LONG_REF_NA (xx + BL_DP));
+	}
+      case DV_SINGLE_FLOAT:
+	{
+	  float f;
+	  EXT_TO_FLOAT (&f, xx);
+	  rep_printf ("" SINGLE_E_STAR_FMT " ", SINGLE_E_PREC, f);
+	  break;
+	}
+      case DV_DOUBLE_FLOAT:
+	{
+	  double f;
+	  EXT_TO_DOUBLE (&f, xx);
+	  rep_printf ("%g", f);
+	  break;
+	}
+      }
+  next:
+    inx++;
+  }
+  END_DO_SET ();
+}
+
+
+void
+rep_printf_page_pos_in_buf (buffer_desc_t *buf, short searched_pos)
+{
+  int fl;
+  db_buf_t page;
+  key_id_t page_key_id;
+  dbe_key_t *page_key;
+  int pos_in_page;
+  db_buf_t row;
+  key_ver_t kv;
+  dbe_key_t *row_key;
+  if (DPF_BLOB == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    {
+      rep_printf ("offset %d in BLOB(!)", (int) searched_pos);
+      return;
+    }
+  if (DPF_BLOB_DIR == SHORT_REF (buf->bd_buffer + DP_FLAGS))
+    {
+      rep_printf ("offset %d in BLOBDIR(!)", (int) searched_pos);
+      return;
+    }
+  page = buf->bd_buffer;
+  page_key_id = LONG_REF (page + DP_KEY_ID);
+  rep_printf ("record %d", (int) searched_pos);
+  if (searched_pos < 0)
+    return;
+  if (!wi_inst.wi_schema)
+    return;
+  page_key = sch_id_to_key (wi_inst.wi_schema, page_key_id);
+  if (!page_key && buf->bd_tree)
+    page_key = buf->bd_tree->it_key;
+  if (!page_key || !buf->bd_content_map)
+    {
+      rep_printf (" on page with no content map");
+      return;
+    }
+  if (searched_pos >= buf->bd_content_map->pm_count)
+    {
+      rep_printf (" on page with %d records(!)", (int) (buf->bd_content_map->pm_count));
+      return;
+    }
+  pos_in_page = buf->bd_content_map->pm_entries[searched_pos];
+  row = page + pos_in_page;
+  kv = IE_KEY_VERSION (row);
+  row_key = NULL;
+  if (pos_in_page > PAGE_SZ)
+    {
+      rep_printf (" on broken page with a row beyond page end");
+      return;
+    }
+  if (!kv || KV_LEFT_DUMMY == kv)
+    row_key = page_key;
+  else
+    row_key = page_key->key_versions[kv];
+  if (KV_LEFT_DUMMY != kv && (!row_key || kv >= KEY_MAX_VERSIONS))
+    {
+      rep_printf (" on broken page with non-existent key kv %d", (int) kv);
+      return;
+    }
+  fl = 0x80 & IE_FLAGS (row);
+  if (fl)
+    rep_printf (" flags %x", fl);
+  rep_printf (" { ");
+  rep_print_key_content (buf, row, row_key);
+  rep_printf (" }");
+}
+
+
+void
+rep_print_page_pos (lock_trx_t *txn, long volatile dp, short pos, dk_mutex_t *it_map_mtx)
+{
+  buffer_desc_t buf_auto;
+  ALIGNED_PAGE_BUFFER (bd_buffer);
+  buffer_desc_t *buf = NULL;
+  it_cursor_t itc_auto, *itc = &itc_auto;
+  memset (&itc_auto, 0, sizeof (itc_auto));
+  ITC_INIT (itc, NULL, txn);
+  DO_SET (index_tree_t *, it, &wi_inst.wi_master->dbs_trees)
+  {
+    int leave_map_here = 0;
+    itc_from_it (itc, it);
+    ITC_IN_KNOWN_MAP_IF_NOT_THERE_ALREADY (itc, dp, it_map_mtx, leave_map_here);
+    buf = (buffer_desc_t *) gethash (DP_ADDR2VOID (dp), &IT_DP_MAP (it, dp)->itm_dp_to_buf);
+    if (leave_map_here)
+      ITC_LEAVE_MAP_NC_IF_NOT_THERE_ALREADY (itc, leave_map_here);
+    if (buf)
+      {
+	rep_printf_page_pos_in_buf (buf, pos);
+	return;
+      }
+  }
+  END_DO_SET ();
+  buf = &buf_auto;
+  memset (&buf_auto, 0, sizeof (buf_auto));
+  buf->bd_buffer = bd_buffer;
+  buf->bd_page = buf->bd_physical_page = dp;
+  buf->bd_storage = wi_inst.wi_master;
+  if (WI_ERROR == buf_disk_read (buf))
+    {
+      rep_printf ("(error reading page!)");
+    }
+  else
+    {
+      if (buf->bd_tree)
+	{
+	  itc_from_it (itc, buf->bd_tree);
+	}
+      rep_printf_page_pos_in_buf (buf, pos);
+    }
+  if (buf->bd_content_map)
+    pm_store (buf, (buf->bd_content_map->pm_size), (void *) buf->bd_content_map);
+}
+
+
+void
+lock_status (const void *key, void *value, void *env)
+{
+  page_lock_t *pl = (page_lock_t *) value;
+  dk_mutex_t *it_map_mtx = (dk_mutex_t *) env;
   if (pl->pl_page != (dp_addr_t) (ptrlong) key)
-    rep_printf ("*** it_locks %ld, pl_page %ld\n", key, pl->pl_page);
-  gen_lock_status ((gen_lock_t *) pl, "  ", pl->pl_page);
-  if (! PL_IS_PAGE (pl))
+    rep_printf ("*** it_locks %ld at ", key);
+  rep_print_pl_page_id (pl);
+  rep_printf ("\n");
+  rep_printf ("  ");
+  rep_print_pl_page_id (pl);
+  gen_lock_status_tail ((gen_lock_t *) pl);
+  if (!PL_IS_PAGE (pl))
     {
       DO_RLOCK (rl, pl)
 	{
-	  gen_lock_status ((gen_lock_t *) rl, "      ", rl->rl_pos);
+	  rep_printf ("    ");
+	  if (env == ((void *) ((ptrlong) - 1)))
+	    rep_printf ("record %d", (int) (rl->rl_pos));
+	  else
+	    rep_print_page_pos (pl->pl_owner, pl->pl_page, rl->rl_pos, it_map_mtx);
+	  gen_lock_status_tail ((gen_lock_t *) rl);
 	}
       END_DO_RLOCK;
     }
@@ -977,8 +1313,8 @@ lt_wait_status (void)
 	  char since[40];
 	  since[0] = 0;
 	  if (lt->lt_waits_for)
-	    snprintf (since, sizeof (since), "for %ld ms ", (long)(get_msec_real_time () - lt->lt_wait_since));
-	  rep_printf ("Trx %s s=%d %p: %s w. for: ", lt_short_name (lt), lt->lt_status, lt, since);
+	    snprintf (since, sizeof (since), "for %ld ms ", (long) (get_msec_real_time () - lt->lt_wait_since));
+	  rep_printf ("Trx %s s=%d %p: %s waits for: ", lt_short_name (lt), lt->lt_status, lt, since);
 	  DO_SET (lock_trx_t *, w, &lt->lt_waits_for)
 	    {
 	      rep_printf (" %s ", lt_short_name (w));
@@ -1073,10 +1409,11 @@ srv_lock_report (query_instance_t * qi, const char * mode, int caller_is_dba)
             {
               mutex_enter (&it->it_maps[inx].itm_mtx);
               if (0 == setjmp_splice (&locks_done))
-                {
-                  locks_printed = 0;
-                  maphash (lock_status, &it->it_maps[inx].itm_locks);
-                }
+		{
+		  locks_printed = 0;
+		  maphash3 (lock_status, &it->it_maps[inx].itm_locks,
+		      caller_is_dba ? (void *) (&it->it_maps[inx].itm_mtx) : ((void *) ((ptrlong) - 1)));
+		}
               mutex_leave (&it->it_maps[inx].itm_mtx);
             }
           mutex_leave (it->it_lock_release_mtx);
@@ -2015,7 +2352,8 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I64 (swap_guard_threshold, "swap_guard_threshold"),
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),
-{0}
+    SD_DEF_I32 (sqlc_hook_enable, "sqlc_hook_enable"),
+    {0}
 };
 /**INDENT-ON**/
 
@@ -3304,9 +3642,6 @@ col_comp_print (FILE * out, dbe_key_t * key, db_buf_t row, dbe_col_loc_t * cl)
     }
 }
 
-
-int max_dump_str = 30;
-#define RMAX max_dump_str
 
 void
 col_ref_print (FILE * out, db_buf_t xx, short vl1)
