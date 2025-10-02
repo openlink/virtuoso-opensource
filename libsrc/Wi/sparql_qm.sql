@@ -199,7 +199,7 @@ create procedure DB.DBA.RDF_QM_ASSERT_STORAGE_CONTAINS_MAPPING (in storage varch
 }
 ;
 
-create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in gc_flags integer := 0) returns integer
+create function DB.DBA.RDF_QM_GC_SUBTREE (in seed any, in gc_flags integer := 0) returns IRI_ID_8
 { -- gc_flags: 0x1 = quick gc only, 0x2 = override virtrdf:isGcResistantType
   declare graphiri varchar;
   declare seed_id, graphiri_id, subjs, objs any;
