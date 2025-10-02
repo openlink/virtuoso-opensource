@@ -6197,6 +6197,8 @@ bif_sparql_to_sql_text (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   str = bif_string_arg (qst, args, 0, "sparql_to_sql_text");
   if (1 < BOX_ELEMENTS (args))
     uname = bif_string_arg (qst, args, 1, "sparql_to_sql_text"); /* set before MP_START () for case of argument of wrong type causing signal w/o MP_DONE() */
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
