@@ -1299,6 +1299,13 @@ len = row_length (row, key)
   itc->itc_itm1 = NULL; \
 }
 
+#define ITC_LEAVE_MAP_NC_IF_NOT_THERE_ALREADY(itc,itm1_mtx_entered_here) \
+{ \
+  mtx_assert (itc->itc_itm1 && !itc->itc_itm2); \
+  if (itm1_mtx_entered_here) \
+    mutex_leave (&itc->itc_itm1->itm_mtx); \
+  itc->itc_itm1 = NULL; \
+}
 
 #define ASSERT_IN_MAP(it, dp) \
 {\
@@ -1349,9 +1356,6 @@ len = row_length (row, key)
 }\
 
 
-
-
-
 #define ITC_IN_KNOWN_MAP(itc, dp)\
 {\
   it_map_t * itm = IT_DP_MAP (itc->itc_tree, dp);\
@@ -1362,6 +1366,23 @@ len = row_length (row, key)
   itc->itc_itm1 = itm;\
 }
 
+#define ITC_IN_KNOWN_MAP_IF_NOT_THERE_ALREADY(itc, dp, it_map_mtx, itm1_mtx_entered_here)\
+{\
+  it_map_t * itm = IT_DP_MAP (itc->itc_tree, dp);\
+  mtx_assert (!itc->itc_itm2); \
+  mtx_assert (!itc->itc_itm1 || itc->itc_itm1 == itm);	\
+  if (!itc->itc_itm1) \
+    { \
+      if (&(itm->itm_mtx) != it_map_mtx) \
+        { \
+          mutex_enter (&itm->itm_mtx);\
+          itm1_mtx_entered_here = 1; \
+        } \
+      else \
+        itm1_mtx_entered_here = 0; \
+    } \
+  itc->itc_itm1 = itm; \
+}
 
 #define ITC_IN_OWN_MAP(itc) ITC_IN_KNOWN_MAP ((itc), (itc)->itc_page)
 
