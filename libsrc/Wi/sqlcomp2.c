@@ -1277,7 +1277,11 @@ sqlc_hook (client_connection_t * cli, caddr_t * real_tree_ret, caddr_t * err_ret
     }
   parse_leave ();
   if (proc->qr_to_recompile)
-    proc = qr_recompile (proc, NULL);
+    {
+      sqlc_hook_enable = 0;
+      proc = qr_recompile (proc, NULL);
+      sqlc_hook_enable = 1;
+    }
   p1 = (state_slot_t *) (proc->qr_parms ? proc->qr_parms->data : NULL);
   if (!p1 || !IS_SSL_REF_PARAMETER (p1->ssl_type))
     {

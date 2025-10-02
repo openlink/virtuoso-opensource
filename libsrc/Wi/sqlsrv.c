@@ -4056,6 +4056,7 @@ void
 srv_global_init (char *mode)
 {
 /* Sanity check for list, to detect errors like errors catched by AMD Opteron port */
+  int saved_sqlc_hook_enable;
 #ifdef DEBUG
   caddr_t *probe = list (7, NULL, 1, 2, 3L, 4L, box_dv_short_string("5"), box_dv_short_string("6"));
   if (probe[0] != NULL) GPF_T1("list probe 0");
@@ -4068,6 +4069,9 @@ srv_global_init (char *mode)
 #endif
 
   db_read_cfg (NULL, mode);
+  saved_sqlc_hook_enable = sqlc_hook_enable;
+  sqlc_hook_enable = 0;
+
   PrpcInitialize1 (lite_mode ? DK_ALLOC_RESERVE_DISABLED : DK_ALLOC_RESERVE_PREPARED);
   background_sem = semaphore_allocate (0);
 
@@ -4363,7 +4367,6 @@ srv_global_init (char *mode)
     }
 #endif
   dbev_startup ();
-  sqlc_hook_enable = 1;
   rdf_key_comp_init ();
   if (default_charset_name && !default_charset)
     log_error ("Default charset %.200s not defined. Reverting to ISO-8859-1", default_charset_name);
@@ -4427,6 +4430,7 @@ srv_global_init (char *mode)
   st_sys_ram = get_total_sys_mem ();
   sqlc_set_client (NULL);
   enable_col_by_default = c_col_by_default;
+  sqlc_hook_enable = saved_sqlc_hook_enable;
 }
 
 

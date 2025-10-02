@@ -2352,7 +2352,8 @@ stat_desc_t dbf_descs [] =
     SD_DEF_I64 (swap_guard_threshold, "swap_guard_threshold"),
     SD_DEF_I64 (max_proc_vm_size, "max_proc_vm_size"),
     SD_DEF_I64 (vm_size_wd_threshold, "vm_size_wd_threshold"),
-{0}
+    SD_DEF_I32 (sqlc_hook_enable, "sqlc_hook_enable"),
+    {0}
 };
 /**INDENT-ON**/
 
