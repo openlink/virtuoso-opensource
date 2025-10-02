@@ -3354,7 +3354,10 @@ again:
     {
       declare state2, msg2 varchar;
       state2 := '00000';
-      exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+      if (state <> 'S1T00') -- test for SPARQL-FED or parse etc, only if not a timeout
+        {
+          exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+        }
       if (state2 <> '00000')
         {
           declare unknown_service varchar;
