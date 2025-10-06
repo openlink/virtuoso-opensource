@@ -83,11 +83,20 @@ static HANDLE me;
 
 int64 get_proc_vm_size ();
 
+dk_hash_t *error_events_ht;
+rwlock_t *error_events_lock;
+
 void
 mon_init (void)
 {
   if (!mon_enable)
     return;
+
+  if (!error_events_ht)
+    {
+      error_events_lock = rwlock_allocate ();
+      error_events_ht = hash_table_allocate (31);
+    }
 
   mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
@@ -119,8 +128,10 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
   next->mon_time_elapsed = now - prev->mon_time_now;
   if (getrusage (RUSAGE_SELF, &ru) != 0)
     return 1;
-  next->mon_cpu_time = (ru.ru_utime.tv_sec * 1000 +  ru.ru_utime.tv_usec / 1000) + (ru.ru_stime.tv_sec * 1000 +  ru.ru_stime.tv_usec / 1000);
-  curr_cpu_pct = next->mon_cpu_pct = (next->mon_cpu_time - prev->mon_cpu_time) / (double)(next->mon_time_now - prev->mon_time_now) * 100;
+  next->mon_cpu_time =
+      (ru.ru_utime.tv_sec * 1000 + ru.ru_utime.tv_usec / 1000) + (ru.ru_stime.tv_sec * 1000 + ru.ru_stime.tv_usec / 1000);
+  curr_cpu_pct = next->mon_cpu_pct =
+      (next->mon_cpu_time - prev->mon_cpu_time) / (double) (next->mon_time_now - prev->mon_time_now) * 100;
   curr_page_faults = ru.ru_majflt;
   next->mon_pageflts = ru.ru_majflt - prev->mon_pageflts;
   curr_mem_rss = ru.ru_maxrss / MEM_RSS_UNITS;
@@ -281,8 +292,7 @@ mon_check (void)
     MON_LOG_WARNING (MON_LOG "High disk read (2)");
 
   /* locks */
-  CK (mon_locks_ck ())
-    MON_LOG_WARNING (MON_LOG "Many lock waits");
+  CK (mon_locks_ck ())MON_LOG_WARNING (MON_LOG "Many lock waits");
   CK ((DELTA (mon_lock_deadlocks) + DELTA (mon_tc_cl_deadlocks)) > (0.1 * DELTA (mon_lock_waits)))
     MON_LOG_WARNING (MON_LOG "Should read for update because lock escalation from shared to exclusive fails frequently (1)");
   CK (DELTA (mon_lock_2r1w_deadlocks) > (0.1 * DELTA (mon_lock_deadlocks)))
@@ -291,10 +301,10 @@ mon_check (void)
     MON_LOG_WARNING (MON_LOG "Locks are held for a long time");
 
   /* threads */
-  CK (mon_tws_ck ())
-    MON_LOG_WARNING (MON_LOG "No Web Server threads avalable, ServerThreads in [HTTP Server] may have to be increased");
-  CK (mon_thr_run_ck ())
-    MON_LOG_WARNING (MON_LOG "System is under high load. Adding cluster nodes or using more replicated copies may needed");
+  CK (mon_tws_ck ())MON_LOG_WARNING (MON_LOG
+      "No Web Server threads avalable, ServerThreads in [HTTP Server] may have to be increased");
+  CK (mon_thr_run_ck ())MON_LOG_WARNING (MON_LOG
+      "System is under high load. Adding cluster nodes or using more replicated copies may needed");
   CK (mon_thr_ck ())
     MON_LOG_WARNING (MON_LOG "CPU%% is low while there are large numbers of runnable threads");
   CK (mon_no_thr_idle_ck () || mon_no_thr_vdb_ck () || mon_no_thr_running_ck ())
@@ -307,4 +317,48 @@ mon_check (void)
     MON_LOG_WARNING (MON_LOG "Low hash join space, try to increase HashJoinSpace");
   CK (mon_no_qmem_ck ())
     MON_LOG_WARNING (MON_LOG "Low query memory limit, try to increase MaxQueryMem");
+}
+
+int
+mon_log_error_event (uint16 sid, uint64 eid, char *error, int max, int critical)
+{
+  error_event_t *ee;
+  int ok = 1;
+  static int logging_enabled = 1;
+  int id = ((((uint64) sid) << 48) | (0xffffffffffff & eid));
+
+  if (!error_events_ht || max < 1 || !logging_enabled)
+    return ok;
+
+  if (error_events_ht->ht_count > MAX_ERROR_EVENTS)
+    {
+      log_error ("Maximum number of error events reached, stopping error events tracking.");
+      logging_enabled = 0;
+      return ok;
+    }
+
+  rwlock_wrlock (error_events_lock);
+  if (NULL != (ee = (error_event_t *) gethash ((void *) (ptrlong) id, error_events_ht)))
+    {
+      ee->ee_count++;
+      if (ee->ee_count == max)
+	log_error (error);
+      if (ee->ee_count > max)
+	ok = 0;
+#if 0
+      if (ee->ee_count > max && critical)
+	process_is_swapping = 1;
+#endif
+    }
+  else
+    {
+      ee = dk_alloc (sizeof (error_event_t));
+      memset (ee, 0, sizeof (error_event_t));
+      ee->ee_count = 1;
+      ee->ee_sid = sid;
+      ee->ee_eid = eid;
+      sethash ((void *) (ptrlong) id, error_events_ht, (void *) ee);
+    }
+  rwlock_unlock (error_events_lock);
+  return ok;
 }

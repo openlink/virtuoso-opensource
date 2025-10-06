@@ -43,6 +43,7 @@
 #include "srvmultibyte.h"
 #include "xmlparser.h"
 #include "xmltree.h"
+#include "monitor.h"
 
 #ifdef HAVE_PWD_H
 #include <pwd.h>
@@ -1713,6 +1714,21 @@ bif_this_server (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   return NEW_DB_NULL;
 }
 
+caddr_t
+bif_log_error_event (caddr_t *qst, caddr_t *err_ret, state_slot_t **args)
+{
+  static char *me = "__log_error_event";
+  long sid = bif_long_range_arg (qst, args, 0, me, 0, 0xffff);
+  long eid = bif_long_arg (qst, args, 1, me);
+  caddr_t err = bif_string_arg (qst, args, 2, me);
+  long max = bif_long_arg (qst, args, 3, me);
+  long critical = bif_long_arg (qst, args, 4, me);
+  int rc = mon_log_error_event (sid, eid, err, max, critical);
+  if (rc)
+    log_error (err);
+  return box_num (rc);
+}
+
 void
 sqlbif2_init (void)
 {
@@ -1747,6 +1763,7 @@ sqlbif2_init (void)
   bif_define ("set_client_acl_restrictions", bif_set_client_acl_restrictions);
   /*bif_define ("repl_this_server", bif_this_server);*/
   /*sqls_bif_init ();*/
+  bif_define ("__log_error_event", bif_log_error_event);
   sqls_bif_init ();
   sqlo_inv_bif_int ();
 }
