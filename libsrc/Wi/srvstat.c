@@ -52,6 +52,7 @@
 #include "sqlo.h"
 #include "rdfinf.h"
 #include "rdf_core.h"
+#include "monitor.h"
 
 #ifndef WIN32
 # include <pwd.h>
@@ -1732,6 +1733,30 @@ status_report (const char * mode, query_instance_t * qi)
 
   if (!gen_info)
     return;
+
+  /* disk space */
+  if (mon_fs)
+    {
+      rep_printf ("\nDisk space:\n");
+      DO_HT (ptrlong, id, fs_monitor_t *, fs, mon_fs)
+      {
+	char tmp[10], tmp1[10];
+	rep_printf (
+#ifdef WIN32
+          "  %c  Id: 0x%016lx,  %s Total,  %s Avail,  %.02f%% Used\n",
+          id + '@',
+#else
+          "  %s  Id: 0x%016lx,  %s Total,  %s Avail,  %.02f%% Used\n",
+          fs->fm_fs,
+#endif
+          fs->fm_sid,
+          mon_get_size_units (tmp, sizeof (tmp), fs->fm_total),
+          mon_get_size_units (tmp1, sizeof (tmp1), fs->fm_free),
+          100.0 - fs->fm_free_pct);
+      }
+      END_DO_HT;
+    }
+
   if (lite_mode)
     rep_printf ("Lite Mode\n");
   process_status_report ();

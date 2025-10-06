@@ -61,6 +61,14 @@ typedef struct monitor_s {
   long mon_tc_slow_temp_lookup;
 } monitor_t;
 
+typedef struct fs_monitor_s {
+  unsigned long fm_sid;
+  caddr_t fm_fs;
+  uint64 fm_total;
+  uint64 fm_free;
+  double fm_free_pct;
+} fs_monitor_t;
+
 #define MAX_ERROR_EVENTS 1024*1024*10
 
 #define EES_DISK  1
@@ -88,6 +96,7 @@ void mon_init (void);
 int mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_t* previous, monitor_t *next);
 void mon_update (int n_threads, int n_vdb_threads, int n_lw_threads);
 void mon_check (void);
+char * mon_get_size_units (char * buf, int len, uint64 size);
 int mon_log_error_event (uint16 sid, uint64 eid, char *error, int max, int critical);
 
 #endif

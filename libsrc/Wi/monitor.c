@@ -27,6 +27,12 @@
 
 #ifdef WIN32
 #include <Psapi.h>
+#include <fileapi.h>
+#include <ctype.h>
+#include <direct.h>
+#else
+#include <sys/statvfs.h>
+#include <limits.h>
 #endif
 
 #if defined(__APPLE__) || defined(WIN32)
@@ -81,22 +87,215 @@ static int numProcessors;
 static HANDLE me;
 #endif
 
+dk_hash_t * mon_fs;
 int64 get_proc_vm_size ();
 
 dk_hash_t *error_events_ht;
 rwlock_t *error_events_lock;
 
+caddr_t
+mon_get_mount_point (caddr_t file_name, int log)
+{
+#ifndef WIN32
+  struct stat file_stat;
+  struct stat parent_stat;
+  char dir_name[PATH_MAX], parent_name[PATH_MAX], *slash;
+  caddr_t mount = NULL;
+
+  if (!file_name)
+    return NULL;
+
+  if (-1 != stat (file_name, &file_stat))
+    {
+      switch (file_stat.st_mode & S_IFMT)
+        {
+          case S_IFCHR:  /* ignore devices e.g. Null device */
+          case S_IFBLK:
+          case S_IFIFO:
+          case S_IFSOCK:
+              return NULL;
+          default:
+              break;
+        }
+    }
+
+  dir_name[0] = 0;
+  strncat_ck(dir_name, file_name, strlen (file_name));
+  do
+    {
+      parent_name[0] = 0;
+      strncat_ck (parent_name, dir_name, strlen (dir_name));
+      slash = strrchr (parent_name, '/');
+      *slash = 0;
+      if (0 == strlen (parent_name))
+        {
+          parent_name[0] = 0;
+          strncat_ck (parent_name, "/", 1);
+        }
+      if (-1 == stat (dir_name, &file_stat))
+        {
+          if (log)
+            log_error ("Can't get status for %s", dir_name);
+          goto fail;
+        }
+
+      if (!(file_stat.st_mode & S_IFDIR || file_stat.st_mode & S_IFREG))
+        {
+          if (log)
+            log_error ("Not a directory %s", parent_name);
+          goto fail;
+        }
+
+      if (-1 == stat(parent_name, &parent_stat))
+        {
+          if (log)
+            log_error ("Can't get status for %s", parent_name);
+          goto fail;
+        }
+      dk_free_box (mount);
+      mount = box_string (dir_name);
+      dir_name[0] = 0;
+      strncat_ck (dir_name, parent_name, strlen (parent_name));
+    }
+  while (strlen (dir_name) > 1 &&
+      (file_stat.st_dev == parent_stat.st_dev && ( file_stat.st_dev != parent_stat.st_dev || file_stat.st_ino != parent_stat.st_ino )));
+  return mount;
+fail:
+#endif
+  return NULL;
+}
+
+char *
+mon_get_size_units (char * buf, int len, uint64 size)
+{
+  double curr_sz = size;
+  char units[] = "bKMGT";
+  int inx;
+  for (inx = 0; inx < sizeof (units); inx ++)
+    {
+      if ((curr_sz / 1024) < 1)
+        {
+          if (inx < 3)
+            snprintf (buf, len, "%lld%c", (uint64)curr_sz, units[inx]);
+          else
+            snprintf (buf, len, "%.01f%c", curr_sz, units[inx]);
+          break;
+        }
+      curr_sz = curr_sz / 1024;
+    }
+  return buf;
+}
+
+/* returns total, available, used */
+uint64
+mon_get_disk_space (char * file, int flag, caddr_t * err)
+{
+  uint64 res = 0;
+#ifdef WIN32
+  struct _diskfree_t ds;
+  char drive = toupper (file[0]) - '@';
+  int64 bs;
+
+  if (0 != _getdiskfree (drive, &ds))
+    {
+      int eno = errno;
+      *err = srv_make_new_error ("42000", "FA112", "Can't stat file '%.1000s', error (%d) : %s", file, eno, strerror (eno));
+      return INT64_MAX;
+    }
+  bs = ds.sectors_per_cluster * ds.bytes_per_sector;
+  switch (flag)
+    {
+      case 1:
+          res = ds.total_clusters * bs;
+          break;
+      case 2:
+          res = ds.avail_clusters * bs;
+          break;
+      default:
+          res = 0;
+    }
+#else
+  struct statvfs vfs;
+
+  if (statvfs(file, &vfs) != 0)
+    {
+      int eno = errno;
+      *err = srv_make_new_error ("42000", "FA112", "Can't stat file '%.1000s', error (%d) : %s", file, eno, strerror (eno));
+      return INT64_MAX;
+    }
+  switch (flag)
+    {
+      case 1:
+          res = vfs.f_frsize * vfs.f_blocks;
+          break;
+      case 2:
+          res = vfs.f_frsize * vfs.f_bavail;
+          break;
+      default:
+          res = 0;
+    }
+#endif
+  return res;
+}
+
 void
 mon_init (void)
 {
+  id_hash_t * virt_sys_files = wi_inst.wi_files;
+  fs_monitor_t * fs;
+  caddr_t mount;
+
   if (!mon_enable)
     return;
+
+  if (!mon_fs)
+    mon_fs = hash_table_allocate (11);
 
   if (!error_events_ht)
     {
       error_events_lock = rwlock_allocate ();
       error_events_ht = hash_table_allocate (31);
     }
+
+#ifdef WIN32
+  DO_IDHASH (caddr_t, fpath, caddr_t, fname, virt_sys_files)
+    {
+      struct _diskfree_t ds;
+      char drive = toupper (fpath[0]) - '@';
+      int64 bs;
+      if (0 != _getdiskfree (drive, &ds))
+        continue;
+      if (NULL != gethash ((void *)(ptrlong)drive, mon_fs))
+        continue;
+      bs = ds.sectors_per_cluster * ds.bytes_per_sector;
+      fs = dk_alloc (sizeof (fs_monitor_t));
+      fs->fm_sid = drive;
+      fs->fm_total = ds.total_clusters * bs;
+      fs->fm_free = ds.avail_clusters * bs;
+      fs->fm_free_pct = (double) fs->fm_free * 100 / (double) fs->fm_total;
+      sethash ((void *)(ptrlong) fs->fm_sid, mon_fs, (void *)fs);
+    }
+  END_DO_IDHASH;
+#else
+  DO_IDHASH (caddr_t, fpath, caddr_t, fname, virt_sys_files)
+    {
+      struct statvfs vfs;
+      if (statvfs (fpath, &vfs) != 0)
+        continue;
+      if (NULL != gethash ((void *)(ptrlong)vfs.f_fsid, mon_fs))
+        continue;
+      if (NULL == (mount = mon_get_mount_point (fpath, 1)))
+        continue;
+      fs = dk_alloc (sizeof (fs_monitor_t));
+      fs->fm_fs = mount;
+      fs->fm_sid = vfs.f_fsid;
+      fs->fm_total = vfs.f_frsize * vfs.f_blocks;
+      fs->fm_free = vfs.f_frsize * vfs.f_bavail;
+      fs->fm_free_pct = (double) vfs.f_bavail * 100.0 / (double)(vfs.f_blocks - vfs.f_bfree + vfs.f_bavail);
+      sethash ((void *)(ptrlong) fs->fm_sid, mon_fs, (void *)fs);
+    }
+  END_DO_IDHASH;
+#endif
 
   mon_max_threads = enable_qp;
   mon_max_cpu_pct = 100 * mon_max_threads;
@@ -163,6 +362,34 @@ mon_get_next (int n_threads, int n_vdb_threads, int n_lw_threads, const monitor_
 	  next->mon_pageflts = pmc.PageFaultCount - prev->mon_pageflts;
 	}
     }
+#endif
+
+#ifdef WIN32
+  DO_HT (ptrlong, drive, fs_monitor_t *, fs, mon_fs)
+    {
+      struct _diskfree_t ds;
+      int64 bs;
+
+      if (0 != _getdiskfree (drive, &ds))
+        continue;
+      bs = ds.sectors_per_cluster * ds.bytes_per_sector;
+      fs->fm_total = ds.total_clusters * bs;
+      fs->fm_free = ds.avail_clusters * bs;
+      fs->fm_free_pct = (double) fs->fm_free * 100 / (double) fs->fm_total;
+    }
+  END_DO_HT;
+#else
+  DO_HT (ptrlong, id, fs_monitor_t *, fs, mon_fs)
+    {
+      struct statvfs vfs;
+
+      if (statvfs (fs->fm_fs, &vfs) != 0)
+        continue;
+      fs->fm_total = vfs.f_frsize * vfs.f_blocks;
+      fs->fm_free = vfs.f_frsize * vfs.f_bavail;
+      fs->fm_free_pct = (double) vfs.f_bavail * 100.0 / (double)(vfs.f_blocks - vfs.f_bfree + vfs.f_bavail);
+    }
+  END_DO_HT;
 #endif
 
   /* get VM size */

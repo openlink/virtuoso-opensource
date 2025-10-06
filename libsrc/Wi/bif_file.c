@@ -7505,6 +7505,17 @@ res_done: ;
   return res;
 }
 
+
+caddr_t
+bif_fs_space (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
+{
+  caddr_t fs = bif_string_arg (qst, args, 0, "fs_space");
+  uint64 size;
+  int flag = (int) bif_long_arg (qst, args, 1, "fs_space");
+  size = mon_get_disk_space (fs, flag, err_ret);
+  return box_num (size);
+}
+
 void
 bif_file_init (void)
 {
@@ -7585,6 +7596,7 @@ bif_file_init (void)
   bif_define_ex ("get_csv_row", bif_get_csv_row, BMD_RET_TYPE, &bt_any, BMD_DONE);
   bif_define_ex ("get_plaintext_row", bif_get_plaintext_row, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
   bif_define_ex ("getenv", bif_getenv, BMD_RET_TYPE, &bt_varchar, BMD_DONE);
+  bif_define_ex ("fs_space", bif_fs_space, BMD_RET_TYPE, &bt_integer, BMD_DONE);
 #ifdef HAVE_BIF_GPF
   bif_define ("__gpf", bif_gpf);
 #endif
