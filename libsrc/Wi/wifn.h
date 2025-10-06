@@ -1300,6 +1300,7 @@ extern time_msec_t last_flush_time;
 extern time_msec_t last_exec_time;	/* used to know when the system is idle */
 
 extern unsigned long int cfg_autocheckpoint;	/* Defined in disk.c */
+extern int32 c_soft_checkpoint;	/* Defined in disk.c */
 extern int32 c_checkpoint_interval;
 extern dk_mutex_t * checkpoint_mtx;
 extern int32 cl_run_local_only;

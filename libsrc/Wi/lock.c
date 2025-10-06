@@ -2398,20 +2398,28 @@ the_grim_lock_reaper (void)
       mt_write_start (auto_f_count % 10 ? OLD_DIRTY : ALL_DIRTY);
     }
 
-
   failed_login_purge ();
 
   if (cfg_autocheckpoint > 0)	/* Autocheckpointing wanted? */
     {
       if (0 != checkpointed_last_time)	/* Not the first time here? */
 	{
-	  if (main_thread_ready && (now - checkpointed_last_time) >= cfg_autocheckpoint)
+	  if (main_thread_ready &&
+              (now - checkpointed_last_time) >= cfg_autocheckpoint)
 	    {
-	      /* Okay do it. I.e. let the loop in main in chil.c to do it. */
-	      main_continuation_reason = MAIN_CONTINUE_ON_CHECKPOINT;
-	      checkpointed_last_time = now;
-	      main_thread_ready = 0;
-	      semaphore_leave (background_sem);
+              if (!c_soft_checkpoint || server_is_idle)
+		{
+		  /* Okay do it. I.e. let the loop in main in chil.c to do it. */
+		  main_continuation_reason = MAIN_CONTINUE_ON_CHECKPOINT;
+		  checkpointed_last_time = now;
+		  main_thread_ready = 0;
+		  semaphore_leave (background_sem);
+		}
+              else
+                {
+                  if (mon_log_error_event (EES_CPT, checkpointed_last_time, "The same error has been reported too many times, log of it stopped", 5, 0))
+                    log_info ("Checkpoint postponed until process is idle");
+                }
 	    }
 	}
       else

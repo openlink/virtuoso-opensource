@@ -243,6 +243,7 @@ int32 c_bad_dtp;
 int32 c_atomic_dive;
 #endif
 extern int32 c_checkpoint_interval;
+extern int32 c_soft_checkpoint;
 int32 c_scheduler_period;
 int32 c_oldest_flushable;
 int32 c_striping;
@@ -854,6 +855,9 @@ cfg_setup (void)
 
   if (cfg_getlong (pconfig, section, "CheckpointInterval", &c_checkpoint_interval) == -1)
     c_checkpoint_interval = 0;
+
+  if (cfg_getlong (pconfig, section, "SoftCheckpoint", &c_soft_checkpoint) == -1)
+    c_soft_checkpoint = 0;
 
   if (cfg_get_number_of_buffers (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
     c_number_of_buffers = 2000;
