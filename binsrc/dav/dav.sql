@@ -7021,6 +7021,9 @@ create procedure DAV_SET_HTTP_REQUEST_STATUS_DESCRIPTION (
   if (rc = -44)
     return 'HTTP/1.1 500 Internal server error';
 
+  if (rc = -46)
+    return 'HTTP/1.1 422 Unprocessable Content';
+
   return 'HTTP/1.1 405 Method Not Allowed';
 }
 ;

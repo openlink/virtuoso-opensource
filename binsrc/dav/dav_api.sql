@@ -62,8 +62,8 @@ create function DAV_PERROR (in x any)
   if (x >= 0)
     return NULL;
   if (x = -44) -- __SQL_ERROR
-    return sprintf ('(%d) %s', x, connection_get ('__sql_message'));
-  if (x < -44) -- When you add a new error, change the limit value here!
+    return sprintf ('(%d) %s', x, connection_get ('__SQL_MESSAGE'));
+  if (x < -45) -- When you add a new error, change the limit value here!
     return sprintf ('(%d) Unspecified error', x);
   errlist := vector (
     '(-01) The path (target of operation) is not valid',
@@ -108,7 +108,9 @@ create function DAV_PERROR (in x any)
     '(-40) The path (target of operation) does not match naming convention that is used by DET',
     '(-41) The size of DAV collection subtree is out of quota',
     '(-42) The resource is unavailable because resource owner is disabled',
-    '(-43) Access to a home DAV collection of a disabled account is blocked'
+    '(-43) Access to a home DAV collection of a disabled account is blocked',
+    '(-44) SQL Error',
+    '(-45) Unprocessable Content'
     ); -- When you add a new error, change the limit value above!
   return errlist [-(x+1)];
 }
