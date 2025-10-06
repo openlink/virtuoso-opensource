@@ -651,13 +651,15 @@ ts_add (TIMESTAMP_STRUCT * ts, boxint n, const char *unit)
 }
 
 int
-dt_compare (caddr_t dt1, caddr_t dt2, int cmp_is_safe)
+dt_compare (ccaddr_t dt1, ccaddr_t dt2, int cmp_is_safe)
 {
   int day1, day2;
   int minm1, maxm1, minm2, maxm2;
   DT_AUDIT_FIELDS (dt1);
   DT_AUDIT_FIELDS (dt2);
-  if (DT_TZL (dt1) == DT_TZL (dt2))
+  day1 = DT_DAY (dt1);
+  day2 = DT_DAY (dt2);
+  if (day1 >= 0 && day2 >= 0 && DT_TZL (dt1) == DT_TZL (dt2))
     {
       int cmp = memcmp (dt1, dt2, DT_COMPARE_LENGTH);
       if (cmp > 0)
@@ -666,8 +668,6 @@ dt_compare (caddr_t dt1, caddr_t dt2, int cmp_is_safe)
         return DVC_LESS;
       return DVC_MATCH;
     }
-  day1 = DT_DAY (dt1);
-  day2 = DT_DAY (dt2);
   if (day1 > day2+2)
     return DVC_GREATER;
   if (day1 < day2+2)
