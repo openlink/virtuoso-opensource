@@ -222,7 +222,7 @@ create procedure
 RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in cols any := null)
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret any;
-   declare total_select, total_tb, total, qual, pkcols any;
+   declare total_tb, total, qual, pkcols any;
    declare vname, mask, tb_name varchar;
    declare i int;
 
@@ -257,18 +257,26 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
 
    -- ## voID
    create_count_count := '';
-   total_select := '';
    total_tb := '';
    for (declare xx any, xx := 0; gen_stat and xx < length (_tbls) ; xx := xx + 1)
      {
        vname := _tbls[xx]||'Count';
-       total_select := total_select || sprintf ('(cnt%d*cnt%d)+', xx*2, (xx*2)+1);
-       total_tb := total_tb ||
-       	sprintf ('\n (select count(*) cnt%d from "%I"."%I"."%I") tb%d, \n (select count(*)+1 as cnt%d from DB.DBA.TABLE_COLS where "TABLE" = ''%S''  and "COLUMN" <> ''_IDN'') tb%d,',
-		xx*2, name_part (_tbls[xx], 0), name_part (_tbls[xx], 1), name_part (_tbls[xx], 2), xx*2, (xx*2)+1, _tbls[xx], (xx*2)+1);
+
+       if (xx > 0)
+          total_tb := concat(total_tb, '\n UNION ALL \n');
+
+       total_tb := concat(total_tb, sprintf(' SELECT
+        (SELECT COUNT(*) FROM "%I"."%I"."%I") AS row_count,
+        (SELECT COUNT(*) + 1
+           FROM DB.DBA.TABLE_COLS
+          WHERE "TABLE" = ''%S''
+            AND "COLUMN" <> ''_IDN'') AS col_count from DB.DBA.SYS_IDONLY_ONE ',
+        name_part (_tbls[xx], 0), name_part (_tbls[xx], 1), name_part (_tbls[xx], 2),  _tbls[xx]));
+
        if (not exists (select 1 from SYS_VIEWS where V_NAME = vname))
 	 {
-	   create_count_count := create_count_count || sprintf ('create view "%I"."%I"."%ICount" as select count (*) as cnt from "%I"."%I"."%I"; \n',
+	   create_count_count := create_count_count ||
+           sprintf ('create view "%I"."%I"."%ICount" as select count (*) as cnt from "%I"."%I"."%I"; \n',
 	      name_part (_tbls[xx], 0),
 	      name_part (_tbls[xx], 1),
 	      name_part (_tbls[xx], 2),
@@ -288,12 +296,10 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
        own := name_part (_tbls[0], 1);
        qual := name_part (_tbls[0], 0);
        vname := qual||'.'||own||'.'||qualifier||'__Total';
-       total_select := rtrim (total_select, '+') || ' AS cnt';
-       total_tb := rtrim (total_tb, ',');
        total := sprintf ('drop view "%I"."%I"."%I__Total"; \n', qual, own, qualifier);
-
-       total := total || sprintf ('create view "%I"."%I"."%I__Total" as select ' || total_select || ' from ' || total_tb || '\n',
-		  qual, own, qualifier);
+       total := concat(total,
+            sprintf ('CREATE VIEW "%I"."%I"."%I__Total" AS SELECT SUM(row_count * col_count) AS cnt FROM (\n', qual, own, qualifier),
+             total_tb, '\n) tdt\n');
        create_count_count := create_count_count || total || '; \n';
        create_count_count := create_count_count || sprintf ('grant select on "%I"."%I"."%I__Total" to SPARQL_SELECT; \n',
 		      qual, own, qualifier);
