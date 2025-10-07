@@ -6986,17 +6986,19 @@ sqlo_best_exceeded (sqlo_t * so, op_table_t * ot, float this_score)
 
 
 void sqlo_layout_1 (sqlo_t * so, op_table_t * ot, int is_top);
-int sqlo_layout_min_quota = 1500000;
+size_t sqlo_layout_min_quota = 1500000;
 
 void
 sqlo_layout_lim (sqlo_t * so, op_table_t * ot, int is_top)
 {
-  int max = so->so_max_memory;
-  int changed = 0, bytes = THR_TMP_POOL->mp_bytes;
-  int next_quota =  (max - bytes) / 3;
+  int changed = 0;
+  size_t max = so->so_max_memory;
+  size_t bytes = THR_TMP_POOL->mp_bytes;
+  ssize_t next_quota =  (max - bytes) / 3;
   if (next_quota > sqlo_layout_min_quota)
     {
-      so->so_max_memory = bytes + next_quota;
+      size_t new_max = bytes + next_quota;
+      so->so_max_memory = sqlo_max_mp_size ? MIN(sqlo_max_mp_size, new_max) : new_max;
       changed = 1;
     }
   sqlo_layout_1 (so, ot, is_top);
