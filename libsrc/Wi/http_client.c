@@ -1564,12 +1564,13 @@ http_cli_read_sse_content (http_cli_ctx * ctx)
                 }
               while (remaining_chunk_size > 0)
                 {
-                  char c;
+                  char c = '\0', c0;
                   int chars_read, to_read;
                   to_read = MIN (remaining_chunk_size, (sizeof (line) - 1));
                   chars_read = 0;
                   do
                     {
+                      c0 = c;
                       c = session_buffered_read_char(ses);
                       to_read--;
                       remaining_chunk_size--;
@@ -1584,6 +1585,9 @@ http_cli_read_sse_content (http_cli_ctx * ctx)
                       else
                         break;
                     }
+                  /* catch if SSE use cr/lf between events */
+                  if (2 == chars_read && 0x0d == c0 && 0x0a == c)
+                    chars_read--;
                   if (HC_RET_OK != (rc = http_cli_sse_evt_hook (ctx, data, line, chars_read)))
                     goto err_ret;
                 }
