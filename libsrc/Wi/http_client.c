@@ -1480,6 +1480,9 @@ http_cli_sse_evt_hook (http_cli_ctx * ctx, dk_session_t * ses, char * line, int 
   caddr_t p_name = ctx->hcctx_callback, *args = ctx->hcctx_callback_args;
   client_connection_t * cli = qi->qi_client;
   local_cursor_t * lc = NULL;
+  const char * sse_ret_hook_flag = "HTTP_SSE_RET_FLAG";
+  caddr_t flag_ret, flag_ret_val;
+  int rc = HC_RET_OK;
 
   if (readed > 1)
     {
@@ -1535,7 +1538,13 @@ err_end:
           return (HC_RET_STOP);
         }
     }
-  return (HC_RET_OK);
+  if (id_hash_get_and_remove (cli->cli_globals, (caddr_t) &sse_ret_hook_flag, (caddr_t)(&flag_ret), (caddr_t)(&flag_ret_val)))
+    {
+      rc = unbox (flag_ret_val) ? HC_RET_STOP : HC_RET_OK;
+      dk_free_box (flag_ret);
+      dk_free_box (flag_ret_val);
+    }
+  return rc;
 }
 
 HC_RET
