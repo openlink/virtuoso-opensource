@@ -1094,7 +1094,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	      err1[0] = 0;
               con_err = SSL_get_error(ctx->hcctx_ssl, ssl_err);
               if (SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err)
-                con_err = ws_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
+                con_err = ssl_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
               if (SSL_ERROR_NONE == con_err)
                 ssl_err = 1;
               else

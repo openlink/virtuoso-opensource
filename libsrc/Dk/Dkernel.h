@@ -1011,6 +1011,7 @@ void *dk_alloc_reserve_malloc (size_t size, int gpf_if_not);
 #define BURST_STOP_TIMEOUT 		1000		   /* 1 sec to switch off burst mode */
 extern time_msec_t time_now_msec;
 void dks_stop_burst_mode (dk_session_t * ses);
+int ssl_check_connect_timeout (session_t *ses, timeout_t * to, int want);
 #endif
 
 extern long client_trace_flag;

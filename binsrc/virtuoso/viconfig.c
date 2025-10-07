@@ -138,6 +138,8 @@ extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
 extern char *c_ssl_server_extra_certs;
+extern int32 c_ssl_read_timeout;
+extern int32 c_ssl_write_timeout;
 extern int32 ssl_server_verify;
 extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
@@ -848,6 +850,11 @@ cfg_setup (void)
   if (cfg_getstring (pconfig, section, "SSL_ECDH_CURVE", &ssl_server_ecdh_curve) == -1)
       ssl_server_ecdh_curve = NULL;
 #endif
+
+  if (cfg_getlong (pconfig, section, "WriteTimeout", &c_ssl_write_timeout) == -1)
+    c_ssl_write_timeout = 10;
+  if (cfg_getlong (pconfig, section, "ReadTimeout", &c_ssl_read_timeout) == -1)
+    c_ssl_read_timeout = 10;
 
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
     if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_server_threads) == -1)
