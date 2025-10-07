@@ -223,9 +223,15 @@ RDF_VIEW_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0, in 
 {
    declare create_count_count, create_class_stmt, create_view_stmt, sparql_pref, ns, sns, uriqa_str, ret any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare vname, mask varchar;
+   declare vname, mask, tb_name varchar;
+   declare i int;
 
    ret := make_array (2, 'any');
+   for (i := 0; i < length(_tbls); i := i + 1)
+      {
+        tb_name := aref_set_0 (_tbls, i);
+        aset (_tbls, i, complete_table_name(tb_name, 1));
+      }
    RDF_VIEW_TBL_PK_COLS (_tbls, pkcols);
    cols := RDF_VIEW_TBL_OPTS (_tbls, cols);
    sparql_pref := 'SPARQL\n';
@@ -834,10 +840,15 @@ create procedure
 DB.DBA.RDF_OWL_FROM_TBL (in qual varchar, in _tbls any, in cols any := null, in gql_annotate int := 1)
 {
   declare ses, cols_arr, pkcols any;
-  declare ns varchar;
-  declare inx, tb_no int;
+  declare ns, tb_name varchar;
+  declare inx, tb_no, i int;
   declare gql_ses any;
 
+  for (i := 0; i < length(_tbls); i := i + 1)
+     {
+       tb_name := aref_set_0 (_tbls, i);
+       aset (_tbls, i, complete_table_name(tb_name, 1));
+     }
   RDF_VIEW_TBL_PK_COLS (_tbls, pkcols);
   cols := RDF_VIEW_TBL_OPTS (_tbls, cols);
   ns := sprintf ('@prefix %s: <http://%s/schemas/%s/> .\n', qual, virtuoso_ini_item_value ('URIQA','DefaultHost'), qual);
@@ -1467,8 +1478,14 @@ DB.DBA.R2RML_FROM_TBL (in qualifier varchar, in _tbls any, in gen_stat int := 0,
 {
    declare create_view_stmt, ns, sns any;
    declare total_select, total_tb, total, qual, pkcols any;
-   declare vname, mask, graph, uriqa_str varchar;
+   declare vname, mask, graph, uriqa_str, tb_name varchar;
+   declare i int;
 
+   for (i := 0; i < length(_tbls); i := i + 1)
+      {
+        tb_name := aref_set_0 (_tbls, i);
+        aset (_tbls, i, complete_table_name(tb_name, 1));
+      }
    RDF_VIEW_TBL_PK_COLS (_tbls, pkcols);
    cols := RDF_VIEW_TBL_OPTS (_tbls, cols);
    if (qual_ns is null)
