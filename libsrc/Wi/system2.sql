@@ -1122,7 +1122,20 @@ create procedure DB.DBA.JSON_SERIALIZE_INNER (inout ses any, in o any, in depth 
   else if (__tag(o) = 127 or __tag(o) = 183)
     o := cast (o as varchar);
   else if (__tag(o) = __tag of dictionary reference)
-    o := vector_concat (vector (composite(), 'structure'), dict_to_vector (o, 0));
+    {
+      declare vec any;
+      vec := dict_to_vector (o, 0);
+      if (length (vec) > 0 and __tag(aref(aref(vec,0),0)) = __tag of varchar) -- if key is string, then we can map to struct
+        o := vector_concat (vector (composite(), 'structure'), vec);
+      else
+        o := vec;
+    }
+  else if (__tag(o) = __tag of nvarchar)
+    o := charset_recode (o, '_WIDE_', 'UTF-8');
+  else if (__tag(o) = __tag of XML)
+    o := serialize_to_UTF8_xml (o);
+  else if (__tag(o) = __tag of IRI_ID or __tag(o) = __tag of IRI_ID_8)
+    o := id_to_iri (o);
 
   depth := depth + 1;
 
