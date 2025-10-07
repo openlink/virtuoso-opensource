@@ -262,6 +262,7 @@ aqr_call_w_ctx (aq_request_t * aqr)
   int old_nt = cli->cli_non_txn_insert;
   int old_ntrig = cli->cli_no_triggers;
   int old_ac = cli->cli_row_autocommit;
+  user_t * old_usr = cli->cli_user;
   cl_aq_ctx_t *old_claq = cli->cli_claq;
   cl_slice_t *old_csl = cli->cli_csl;
   time_msec_t old_qfs = cli->cli_anytime_qf_started;
@@ -269,6 +270,7 @@ aqr_call_w_ctx (aq_request_t * aqr)
   cli->cli_no_triggers = aq->aq_no_triggers;
   cli->cli_row_autocommit = aq->aq_row_autocommit;
   cli->cli_non_txn_insert = aq->aq_non_txn_insert;
+  cli->cli_user = aq->aq_user;
   aqr->aqr_dbg_thread = THREAD_CURRENT_THREAD;
   if (0 && aq->aq_anytime_started && (aq->aq_anytime_started + aq->aq_anytime_timeout) < approx_msec_real_time ())
     aqr->aqr_error = srv_make_new_error (SQL_ANYTIME, "AQANY", "Aq request anytimed before starting execution");
@@ -280,6 +282,7 @@ aqr_call_w_ctx (aq_request_t * aqr)
   cli->cli_claq = old_claq;
   cli->cli_aqr = old_aqr;
   cli->cli_anytime_qf_started = old_qfs;
+  cli->cli_user = old_usr;
   if (old_csl)
     {
       caddr_t err = NULL;
@@ -951,7 +954,7 @@ aq_sql_func (caddr_t * av, caddr_t * err_ret)
     {
       user_t * usr = cli->cli_user;
       *err_ret = srv_make_new_error ("42000", "SR186:SECURITY", "No permission to execute %s in aq_request() with user ID %d, group ID %d",
-        full_name, (int)(usr ? usr->usr_id : 0), (int)(usr ? usr->usr_g_id : 0) );
+        full_name, (int)(usr ? usr->usr_id : -1), (int)(usr ? usr->usr_g_id : -1) );
       dk_free_tree ((caddr_t) params);
       return NULL;
     }
