@@ -524,8 +524,11 @@ item	: CONTEXT {
                     $$ = NULL;
                     if (!JF_IS(ID))
                       {
-                        JLD_IS_STRING (($3), type);
-                        type = jsonld_qname_resolve (jsonp_arg, $3, NULL);
+                       caddr_t type0 = $3;
+                       if (ARRAYP(type0) && BOX_ELEMENTS_0(type0) > 0)
+                         type0 = ((caddr_t *)type0)[0];
+                        JLD_IS_STRING (type0, type);
+                        type = jsonld_qname_resolve (jsonp_arg, type0, NULL);
                         JLD_SET_CURRENT(type,type);
                       }
                     else
