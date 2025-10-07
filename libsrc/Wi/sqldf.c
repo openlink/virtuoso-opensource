@@ -6994,11 +6994,14 @@ sqlo_layout_lim (sqlo_t * so, op_table_t * ot, int is_top)
   int changed = 0;
   size_t max = so->so_max_memory;
   size_t bytes = THR_TMP_POOL->mp_bytes;
-  ssize_t next_quota =  (max - bytes) / 3;
-  if (next_quota > sqlo_layout_min_quota)
+  ssize_t next_quota = ((ssize_t)max - (ssize_t)bytes) / 3;
+  /*
+   * here is a weird way it works, if max mp set, start with some part of it, put a lower limit to see if fits,
+   * next time increase up to max +25% this helps to do not try to fit in max at once,
+   */
+  if (next_quota > sqlo_layout_min_quota && (bytes + next_quota) < ((sqlo_max_mp_size / 3) * 4))
     {
-      size_t new_max = bytes + next_quota;
-      so->so_max_memory = sqlo_max_mp_size ? MIN(sqlo_max_mp_size, new_max) : new_max;
+      so->so_max_memory = bytes + next_quota;
       changed = 1;
     }
   sqlo_layout_1 (so, ot, is_top);
