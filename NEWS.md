@@ -1,5 +1,77 @@
 # NEWS
 
+## Oct 09, 2025, v7.2.16-rc1
+  * Virtuoso Engine
+    - Added disk space monitor
+    - Added event logger with rate limiting on frequently repeated errors
+    - Added more informative locking information to `status()` output
+    - Added support for TLS connection timeout for ODBC and HTTP
+    - Fixed issue with compiling on Windows
+    - Fixed some defaults in `virtuoso.ini`
+    - Fixed check for upper MP limit increment in optimizer
+    - Fixed error reporting on non-compatible database/setup
+    - Fixed issue comparing dates
+    - Fixed issue hanging in temp table
+    - Fixed issues with JSON serializer
+    - Fixed issues with `PAGE_DEBUG`
+    - Fixed issues with `sqlc_hook`
+    - Fixed issue when usernames are repeated
+    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed issue with JSON parsing unknown band with many types
+    - Fixed issue with max memory pool size greater than 4GB
+    - Fixed issue with `xsd:time` conversion
+    - Fixed to not re-enter mutex when resetting iterator
+
+  * SPARQL
+    - Added assert to check if the memory pool is busy
+    - Fixed RDF Views total count statistics
+    - Fixed issue trying to call CXML PL when the VAD package is not installed
+    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed so numbers and dates preserve datatypes in JSON output
+    - Fixed issue with table name qualifiers in case mode 2
+    - Fixed issue when performing a `same-as` query without specifying a graph
+    - Fixed to prevent call to parse if timeout is already reached
+    - Fixed to preserve datatypes for numbers and dates in JSON output
+    - Fixed handling when cast is unknown; do not point to datatype in JSON output
+    - Fixed to check for DBA group instead of DBA user
+    - Fixed issue with queries without indexes
+    - Fixed to replace typed-literal with literal in JSON output
+    - Fixed issue trying to perform LDP on `/sparql` endpoints
+
+  * Web Server and DAV
+    - Added a global to stop SSE client from receiving more data
+    - Added missing HTTP status codes
+    - Added support for DAV content callback function
+    - Added RDF sink folder validation option
+    - Added handling of the DAV property as RSS/Atom feed title
+    - Added missing `<guid>` to directories/collections
+    - Added `DAV_QUEUE_MAX_THREADS` registry to set upper limit
+    - Added feed-type files in OPML output
+    - Fixed issues with broken SSE implementations
+    - Fixed issues running DAV RSS/Atom/OPML feeds behind a proxy
+    - Fixed RSS feed version
+    - Fixed feed titles
+    - Fixed exclusion of hidden files and folders
+    - Fixed issues with Atom and OPML publication
+    - Fixed issue resolving user names
+    - Fixed encoding issues
+    - Fixed issue with encoding `&nbsp;`
+    - Fixed issues with LDP
+    - Fixed print DAV IDs in debug mode
+
+  * Faceted Browser
+    - Added option to prevent bots from crawling `/fct/rdfdesc/usage.vsp`
+    - Added config UI setting to change the maximum amount of facets (default 20)
+    - Improved performance when using `same-as` for a label
+    - Changed `output:valmode` from "AUTO" to "LONG"
+    - Fixed issue with CXML link at the bottom of the page
+    - Fixed issue with zero triples on secondary storage
+
+  * Conductor
+    - Fixed issue storing ACME-related keys
+    - Fixed issue with the size of the select list for user names
+    - Fixed save and restore of connection variables on VAD installation
+
 ## May 21, 2025, v7.2.15
   * Virtuoso Engine
     - Fixed compiler warnings on misleading indentation
