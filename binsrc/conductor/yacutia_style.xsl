@@ -410,7 +410,7 @@
       ]]>
     </v:before-render>
   </v:button>
-  &nbsp;
+  &amp;nbsp;
   <v:button name="{@data-set}_prev" action="simple" style="url" value="" xhtml_alt="Previous" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[
@@ -418,7 +418,7 @@
       ]]>
     </v:before-render>
   </v:button>
-  &nbsp;
+  &amp;nbsp;
   <v:button name="{@data-set}_next" action="simple" style="url" value="" xhtml_alt="Next" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[
@@ -426,7 +426,7 @@
       ]]>
     </v:before-render>
   </v:button>
-  &nbsp;
+  &amp;nbsp;
   <v:button name="{@data-set}_last" action="simple" style="url" value="" xhtml_alt="Last" xhtml_class="navi-button">
     <v:before-render>
       <![CDATA[

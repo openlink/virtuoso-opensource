@@ -3834,6 +3834,8 @@ ws_http_error_header (int code)
     {
       case 100: ret = "Continue"; break;
       case 101: ret = "Switching Protocols"; break;
+      case 102: ret = "Processing"; break;
+      case 103: ret = "Early Hints"; break;
       case 200: ret = "OK"; break;
       case 201: ret = "Created"; break;
       case 202: ret = "Accepted"; break;
@@ -3849,6 +3851,7 @@ ws_http_error_header (int code)
       case 305: ret = "Use Proxy"; break;
       case 306: ret = "(Unused)"; break;
       case 307: ret = "Temporary Redirect"; break;
+      case 308: ret = "Permanent Redirect"; break;
       case 400: ret = "Bad Request"; break;
       case 401: ret = "Unauthorized"; break;
       case 402: ret = "Payment Required"; break;
@@ -3867,6 +3870,12 @@ ws_http_error_header (int code)
       case 415: ret = "Unsupported Media Type"; break;
       case 416: ret = "Requested Range Not Satisfiable"; break;
       case 417: ret = "Expectation Failed"; break;
+      case 421: ret = "Misdirected Request"; break;
+      case 422: ret = "Unprocessable Content"; break;
+      case 423: ret = "Locked"; break;
+      case 424: ret = "Failed Dependency"; break;
+      case 425: ret = "Too Early"; break;
+      case 426: ret = "Upgrade Required"; break;
       case 428: ret = "Precondition Required"; break;
       case 429: ret = "Too Many Requests"; break;
       case 431: ret = "Request Header Fields Too Large"; break;

@@ -323,7 +323,7 @@ iri_ensure (caddr_t * qst, caddr_t name, int flag, caddr_t * err_ret)
 char * sas_1_text = "select S from DB.DBA.RDF_QUAD where G = ? and O = ? and P = ? option (quietcast)";
 char * sas_2_text = "select O from DB.DBA.RDF_QUAD where G = ? and S = ? and P = ? option (quietcast)";
 char * sas_tn_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () and G in (:1) and isiri_id (O) union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () and G in (:1) option (quietcast, array)";
-char * sas_tn_no_graph_text = "select O from DB.DBA.RDF_QUAD where S = :0 and P = rdf_sas_iri () union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () option (quietcast, array)";
+char * sas_tn_no_graph_text = "select O from DB.DBA.RDF_QUAD where S = :0 and isiri_id (O) and P = rdf_sas_iri () union all select S from DB.DBA.RDF_QUAD where O = :0 and P = rdf_sas_iri () option (quietcast, array)";
 char * tn_ifp_text =
   " select S from DB.DBA.RDF_QUAD table option (index RDF_QUAD_POGS)"
   " where P in (rdf_inf_ifp_list (:1)) and O = :0 and not isiri_id (:0) and G in (:2) and not rdf_inf_ifp_is_excluded (:1, P, :0) "

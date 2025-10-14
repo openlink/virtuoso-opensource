@@ -1136,14 +1136,14 @@ create procedure DB.DBA.RDF_LOAD_JSON_LD (in strg varchar, in base varchar, in g
   declare ro_id_dict, app_env, g_iid, old_log_mode any;
   if (1 <> sys_stat ('cl_run_local_only'))
     {
-      -- error
+      signal ('37000', 'DB.DBA.RDF_LOAD_JSON_LD() can not be used on clustered Database');
       return;
     }
   if (is_atomic ())
     signal ('22023', 'DB.DBA.TTLP_V(), the vectorized Turtle loader, can not be used while server is in the atomic mode; consider using plain non-vectorised loader DB.DBA.TTLP()');
   if (0 = sys_stat ('rdf_rpid64_mode'))
     {
-      -- error
+      signal ('37000', 'DB.DBA.RDF_LOAD_JSON_LD() can not be used on Database with incompatible 32bit RDF_IRI prefix IDs');
       return;
     }
   old_log_mode := null;

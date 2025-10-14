@@ -146,7 +146,7 @@ cu_rl_local_exec (cucurbit_t * cu)
       {
 	user_t *usr = cli->cli_user;
 	sqlr_new_error ("42000", "SR186:SECURITY", "No permission to execute dpipe %s with user ID %d, group ID %d",
-	    clo->_.call.func, (int) (usr ? usr->usr_id : 0), (int) (usr ? usr->usr_g_id : 0));
+	    clo->_.call.func, (int) (usr ? usr->usr_id : -1), (int) (usr ? usr->usr_g_id : -1));
       }
     memcpy (save_pars, clo->_.call.params, box_length ((caddr_t) clo->_.call.params));
     qi->qi_client->cli_non_txn_insert = qi->qi_non_txn_insert;

@@ -115,6 +115,7 @@ unsigned long int cfg_thread_threshold = 10;
 /* If zero, do not do it. */
 /* Specified in minutes. Note that 1440 minutes = 24 hours. */
 unsigned long int cfg_autocheckpoint = 0;
+int32 c_soft_checkpoint = 0;
 int32 c_checkpoint_interval = 0;
 int32 cl_run_local_only = CL_RUN_LOCAL;
 int wi_blob_page_dir_threshold;

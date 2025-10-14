@@ -305,7 +305,7 @@ box_tree_check_1 (caddr_t tree, int print)
     }
   for (inx = 0; inx < tree_fill; inx++)
     {
-      if (tree_map[inx] == tree)
+      if (tree_map[inx] == tree && DV_UNAME != DV_TYPE_OF(tree))
 	{
 	  if (print)
 	    GPF_T1 ("Tree has a cycle");

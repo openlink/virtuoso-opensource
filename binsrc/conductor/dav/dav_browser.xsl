@@ -789,7 +789,7 @@
               }
               else if (detClass = 'rdfSink')
               {
-                retValue := vector (0, 1, vector ('activity', 'graph', 'base', 'contentType'));
+                retValue := vector (0, 1, vector ('activity', 'graph', 'base', 'contentType', 'validator'));
               }
               else if (detClass = 'IMAP')
               {
@@ -965,6 +965,22 @@
                   '  </th> \n' ||
                   '  <td> \n' ||
                   '    <input type="text" name="dav_%s_base" id="dav_%s_base" value="%V" disabled="disabled" class="field-text" /> \n' ||
+                  '  </td> \n' ||
+                  '</tr> \n',
+                  det,
+                  det,
+                  det,
+                  S
+                ));
+
+                S := get_keyword ('validator', rdfParams, '');
+                http (sprintf (
+                  '<tr> \n' ||
+                  '  <th> \n' ||
+                  '    <label for="dav_%s_validator">SHACL Validator</label> \n' ||
+                  '  </th> \n' ||
+                  '  <td> \n' ||
+                  '    <input type="text" name="dav_%s_validator" id="dav_%s_validator" value="%V" disabled="disabled" class="field-text" /> \n' ||
                   '  </td> \n' ||
                   '</tr> \n',
                   det,
@@ -2553,6 +2569,7 @@
                           <v:text name="dav_name_save" xhtml_id="dav_name_save" type="hidden" />
                           <v:text name="dav_name_save_mime" xhtml_id="dav_name_save_mime" type="hidden" />
                           <v:text name="dav_name_rdf" xhtml_id="dav_name_rdf" value="--get_keyword ('dav_name', self.vc_page.vc_event.ve_params, WEBDAV.DBA.host_url() || WS.WS.FIXPATH(WEBDAV.DBA.real_path(self.dir_path)))" format="%s" fmt-function="WEBDAV.DBA.utf2wide" xhtml_disabled="disabled" xhtml_class="field-text" xhtml_style="display: none;" />
+                          <span>&amp;nbsp;<v:label xhtml_for="label_dav_id" value="--sprintf('Id: %s', DB.DBA.SYS_SQL_VAL_PRINT(DB.DBA.DAV_SEARCH_ID(self.dav_path, self.dav_type)))" enabled="--atoi(registry_get('conductor_dav_debug','0'))" /></span>
                         </td>
                       </tr>
                     </v:template>
@@ -3263,6 +3280,23 @@
                           </table>
                         </td>
                       </tr>
+                </v:template>
+                <v:template type="simple" enabled="--case when self.dav_type = 'C' then 1 else 0 end">
+                <tr>
+                  <th>
+                    <vm:label for="prop_content_callback" value="Content Callback Function" />
+                  </th>
+                  <td>
+                      <v:text name="prop_content_callback" xhtml_id="prop_content_callback">
+                              <v:before-data-bind>
+                                <![CDATA[
+                     control.ufl_value := get_keyword ('prop_content_callback', self.vc_page.vc_event.ve_params, 
+                        WEBDAV.DBA.DAV_PROP_GET (self.dav_path, 'content-callback-function', '', self.account_name, self.account_password));
+                                ]]>
+                              </v:before-data-bind>
+                      </v:text>
+                  </td>
+                </tr>
                     </v:template>
                   </table>
                 </div>
@@ -4224,6 +4258,16 @@
                         }
                         commit work;
                         WEBDAV.DBA.ldp_recovery (dav_fullPath);
+                      }
+                      -- content-callback-function
+                      declare content_callback varchar;
+                      content_callback := get_keyword('prop_content_callback', params, '');
+                      tmp := WEBDAV.DBA.DAV_PROP_GET (dav_fullPath, 'content-callback-function', 'None', self.account_name, self.account_password);
+                      if (content_callback <> tmp) {
+                        if (content_callback = '')
+                          WEBDAV.DBA.DAV_PROP_REMOVE (dav_fullPath, 'content-callback-function', self.account_name, self.account_password);
+                        else
+                          WEBDAV.DBA.DAV_PROP_SET (dav_fullPath, 'content-callback-function', content_callback, self.account_name, self.account_password);
                       }
 
                     _exec_16:;

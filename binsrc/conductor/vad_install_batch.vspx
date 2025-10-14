@@ -140,7 +140,7 @@
                         res := '';
                         for (declare i, l int, i := 0, l := length (self.packs_arr); i < l; i := i + 1)
                         {
-                          declare state, message, meta, result, pack_path, path_type any;
+                          declare state, message, meta, result, pack_path, path_type, conn_vars any;
                           declare pfull, pver, pdate, isdav any;
 
                           pfull := self.packs_arr[i][2];
@@ -157,7 +157,10 @@
                           res := res || 'Installing: ' || pfull || ' ' || pver || ' (' || pack_path || ')\r\n';
                           if (get_user() <> 'dba')
                             signal ('42000', 'VAD Installation must be done as DBA');
+                          conn_vars := connection_vars();
+                          connection_vars_set(null);
                           exec ('DB.DBA.VAD_INSTALL(?, ?, ?)', state, message, vector (pack_path, path_type, 1), 0, meta, result);
+                          connection_vars_set(conn_vars);
                           if (pack_path like '/DAV/temp/%')
                             DB.DBA.DAV_DELETE_INT (pack_path, 0, null, null, 0);
 

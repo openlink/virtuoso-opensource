@@ -491,7 +491,7 @@ struct sqlo_s
   df_elt_t *	so_context_dt;
   time_msec_t	so_last_sample_time; /* used for stopping compilation if longer is elapsed since last sample than the best plan's time */
   int32		so_max_layouts;
-  int32		so_max_memory;
+  size_t	so_max_memory;
   int		so_nth_select_col; /* the position in select list for which an exp is being generated.  Used for adding dependent cols to oby when adding cols to dts  when doing ref from enclosing dt */
   char		so_identity_joins;
   char		so_cache_subqs;

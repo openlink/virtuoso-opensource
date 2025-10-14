@@ -1554,7 +1554,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       typ := rdf_box_type (val);
       if (not isstring (dat))
         {
-          http ('"type": "typed-literal", "datatype": "', ses);
+          http ('"type": "literal", "datatype": "', ses);
           if (257 <> typ)
             res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
           else
@@ -1565,7 +1565,7 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
         }
       else if (257 <> typ)
         {
-          http ('"type": "typed-literal", "datatype": "', ses);
+          http ('"type": "literal", "datatype": "', ses);
           res := coalesce ((select RDT_QNAME from DB.DBA.RDF_DATATYPE where RDT_TWOBYTE = typ));
           http_escape (res, 14, ses, 1, 1);
           http ('", "value": "', ses);
@@ -1627,11 +1627,16 @@ create procedure DB.DBA.SPARQL_RESULTS_JSON_WRITE_BINDING (inout ses any, in col
       http ('"type": "literal", "value": "', ses);
       http_escape (serialize_to_UTF8_xml (val), 14, ses, 1, 1);
     }
-  else
+  else if (isnumeric(val) or __tag (val) in (__tag of date, __tag of time, __tag of datetime))
     {
-      http ('"type": "typed-literal", "datatype": "', ses);
+      http ('"type": "literal", "datatype": "', ses);
       http_escape (cast (__xsd_type (val) as varchar), 14, ses, 1, 1);
       http ('", "value": "', ses);
+      http_escape (__rdf_strsqlval (val), 14, ses, 1, 1);
+    }
+  else
+    {
+      http ('"type": "literal", "value": "', ses);
       http_escape (__rdf_strsqlval (val), 14, ses, 1, 1);
     }
   http ('" }', ses);
@@ -2108,9 +2113,19 @@ create function DB.DBA.SPARQL_RESULTS_WRITE (inout ses any, inout metas any, ino
       else if (ret_format = 'JSON;ODATA')
         DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (triples, ses);
       else if (ret_format = 'CXML')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 0, status);
+       {
+         if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null)
+            DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 1, status);
+         else
+           http_status_set (406);
+       }
       else if (ret_format = 'CXML;QRCODE')
-        DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 1, status);
+       {
+         if (__proc_exists ('DB.DBA.RDF_TRIPLES_TO_CXML') is not null)
+            DB.DBA.RDF_TRIPLES_TO_CXML (triples, ses, accept, bit_and (flags, 1), 1, status);
+         else
+           http_status_set (406);
+       }
       else if (ret_format = 'CSV')
         DB.DBA.RDF_TRIPLES_TO_CSV (triples, ses);
       else if (ret_format = 'TSV')
@@ -2813,8 +2828,8 @@ create procedure WS.WS."/!sparql/" (inout path varchar, inout params any, inout 
 
   paramcount := length (params);
 
-  if ((0 = paramcount) or
-      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0) or
+  if ((http_meth <> 'POST' and ((0 = paramcount) or
+      (((2 = paramcount) and ('Content' = params[0])) and soap_ver = 0))) or
       qtxt = 1)
     {
        declare redir, acc varchar;
@@ -3356,7 +3371,10 @@ again:
     {
       declare state2, msg2 varchar;
       state2 := '00000';
-      exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+      if (state <> 'S1T00') -- test for SPARQL-FED or parse etc, only if not a timeout
+        {
+          exec ('isnull (sparql_to_sql_text (''{ define sql:big-data-const 0 '' || ? || ''\\n}''))', state2, msg2, vector (full_query));
+        }
       if (state2 <> '00000')
         {
           declare unknown_service varchar;

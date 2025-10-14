@@ -1,4 +1,238 @@
+2025-10-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS and ChangeLog
+
+	Updated version to 7.2.16 engine 3242
+
+	Fixed issues with SPARQL section in default virtuoso.ini
+
+2025-10-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.16-rc1
+
+2025-10-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed check for upper MP limit increment in optimiser
+
+2025-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed RDF Views total count statistics
+
+	Fixed virtuoso should never exceed the max mp if set
+
+	Fixed issue with max mempool size = 4G
+
+	Fixed issue with JSON parsing unknown bnade with many types
+
+2025-10-07  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue trying to call CXML PL when vad package is not installed
+
+2025-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue where virtuoso reports by mistake ID:0 (dba) has no permissions
+
+	Fixed so numbers and dates preserve datatypes in JSON output
+
+	Fixed error reporting on non-compatible db/setup
+
+	Fixed issue with table name qualifiers in case mode 2
+
+	Fixed issue when same-as query without G
+
+	Fixed issues with JSON serializer
+
+	Added a global to stop SSE client from receiving more data
+
+2025-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with broken SSE implementations
+
+	Some SSE implementations may send cr/lf for events delimiter
+
+2025-10-07  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue comparing dates
+
+	Added support for TLS connection timeout
+
+	Added missing HTTP status codes
+
+2025-10-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added soft checkpoint option to delay checkpoint until db is idle
+
+	    [Parameters]
+	    SoftCheckpoint = 1		; Default = 0
+
+2025-10-06  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added disk space monitor
+
+	Added event logger with rate limiting on frequently repeated errors
+
+	Fixed issue compiling uintN_t on windows
+
+2025-10-02  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'feature/fixes' into develop/7
+
+2025-10-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with xsd:time conversion
+
+	  cast (THH:mm:SS as time)
+
+2025-10-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed prevent call to parse if timeout is already reached
+
+	Added assert to check if memorypool is busy
+
+	Fixed preserve datatypes for numbers and dates in JSON output
+
+	Fixed return type of RDF_QM_GC_SUBTREE()
+
+2025-10-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with sqlc_hook
+
+	* Disable this old feature by default
+	* Keep disabled when underlying PL fails to compile
+
+	To turn it back on, add the following to your virtuoso.ini file:
+
+	    [FLAGS]
+	    sqlc_hook_enabled       = 1
+
+2025-10-02  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue when unames are repeated
+
+	Added more informative locking info to status() output
+
+2025-10-01  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed if cast is unknown, do not point to datatype in JSON output
+
+	Fixed issue hanging in temp table
+
+	Fixed to not re-enter mutex when resetting iterator
+
+	Fixed issues with PAGE_DEBUG
+
+	Fixed to check for DBA group instead of DBA user
+
+	Fixed issue with query without idxs
+
+2025-09-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Added DAV_QUEUE_MAX_THREADS registry to set upper limit
+
+2025-09-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated FCT vad version
+
+2025-09-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed replace output:valmode "AUTO" with "LONG"
+
+2025-09-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed issue with CXML link at the bottom of the page
+
+2025-09-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue with zero triples on secondary storage
+
+	Added option to prevent bots fromm crawling /fct/rdfdesc/usage.vsp
+
+	Fixed performance using same-as for a label
+
+	Added config UI setting to change the max amount of facets (default 20)
+
+2025-09-30  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2025-09-30  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue storing ACME-related keys
+
+	Fixed issue encoding &nbps
+
+	Fixed issue with size of select list on user names
+
+	Added support for DAV content callback function
+
+	Fixed issue with LDP
+
+	Added RDF sink folder validation option
+
+	Fixed save and restore conn vars on vad install
+
+2025-08-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated Conductor VAD version
+
+2025-08-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed print DAV IDs in debug mode
+
+2025-08-08  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issues with DAV folder RSS feeds
+
+	  * Added handle title DAV property as RSS/Atom feed title
+	  * Added missing <guid> to directories/collections
+	  * Fixed RSS feed version
+	  * Fixed feed titles
+	  * Fixed excluding hidden files and folders
+	  * Fixed issue with ATOM and OPML pub
+	  * Fixed issue resolving user names
+	  * Fixed encoding issues
+
+2025-08-08  Tim Haynes  <thaynes@openlinksw.com>
+
+	Added feed-type files in OPML output
+
+2025-08-08  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Fixed bad character in title
+
+	Fixed issues running DAV rss/aton/opml feeds behind proxy
+
+2025-07-03  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed replace typed-literal with literal in JSON output
+
+	Closes #1360
+
+2025-06-10  Ted Thibodeau Jr  <tthibodeau@openlinksw.com>
+
+	Fixed language and markup in NEWS.md
+
+	closes #1355
+
+2025-06-10  Mitko Iliev  <imitko@openlinksw.com>
+
+	Fixed issue trying to perform LDP on /sparql endpoints
+
+	Fixes #1357
+
 2025-05-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge tag 'v7.2.15' into develop/7
+
+	Tagged 7.2.15 for release
+
+2025-05-21  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Merge branch 'release/7.2.15' into stable/7
+
+	Updated version to 7.2.15 engine 3241
+
+	Updated ChangeLog
 
 	Updated NEWS.md
 

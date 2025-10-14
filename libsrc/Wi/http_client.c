@@ -1094,7 +1094,7 @@ http_cli_connect (http_cli_ctx * ctx)
 	      err1[0] = 0;
               con_err = SSL_get_error(ctx->hcctx_ssl, ssl_err);
               if (SSL_ERROR_WANT_READ == con_err || SSL_ERROR_WANT_WRITE == con_err)
-                con_err = ws_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
+                con_err = ssl_check_connect_timeout (ctx->hcctx_http_out->dks_session, &to, con_err);
               if (SSL_ERROR_NONE == con_err)
                 ssl_err = 1;
               else
@@ -1480,6 +1480,9 @@ http_cli_sse_evt_hook (http_cli_ctx * ctx, dk_session_t * ses, char * line, int 
   caddr_t p_name = ctx->hcctx_callback, *args = ctx->hcctx_callback_args;
   client_connection_t * cli = qi->qi_client;
   local_cursor_t * lc = NULL;
+  const char * sse_ret_hook_flag = "HTTP_SSE_RET_FLAG";
+  caddr_t flag_ret, flag_ret_val;
+  int rc = HC_RET_OK;
 
   if (readed > 1)
     {
@@ -1535,7 +1538,13 @@ err_end:
           return (HC_RET_STOP);
         }
     }
-  return (HC_RET_OK);
+  if (id_hash_get_and_remove (cli->cli_globals, (caddr_t) &sse_ret_hook_flag, (caddr_t)(&flag_ret), (caddr_t)(&flag_ret_val)))
+    {
+      rc = unbox (flag_ret_val) ? HC_RET_STOP : HC_RET_OK;
+      dk_free_box (flag_ret);
+      dk_free_box (flag_ret_val);
+    }
+  return rc;
 }
 
 HC_RET
@@ -1564,12 +1573,13 @@ http_cli_read_sse_content (http_cli_ctx * ctx)
                 }
               while (remaining_chunk_size > 0)
                 {
-                  char c;
+                  char c = '\0', c0;
                   int chars_read, to_read;
                   to_read = MIN (remaining_chunk_size, (sizeof (line) - 1));
                   chars_read = 0;
                   do
                     {
+                      c0 = c;
                       c = session_buffered_read_char(ses);
                       to_read--;
                       remaining_chunk_size--;
@@ -1584,6 +1594,9 @@ http_cli_read_sse_content (http_cli_ctx * ctx)
                       else
                         break;
                     }
+                  /* catch if SSE use cr/lf between events */
+                  if (2 == chars_read && 0x0d == c0 && 0x0a == c)
+                    chars_read--;
                   if (HC_RET_OK != (rc = http_cli_sse_evt_hook (ctx, data, line, chars_read)))
                     goto err_ret;
                 }

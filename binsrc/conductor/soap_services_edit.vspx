@@ -619,7 +619,7 @@
                                             <v:data-list
                                               xhtml_id="dl_soapuser"
                                               name="dl_soapuser"
-                                              sql="select ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union select U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE=0 and U_SQL_ENABLE = 1 order by UNAME"
+                                  sql="select top 1 ' __none' as UNAME, 'none' as UFNAME from DB.DBA.SYS_USERS union all select top 1000 U_NAME, U_NAME from DB.DBA.SYS_USERS where U_IS_ROLE=0 and U_SQL_ENABLE = 1 order by UNAME"
                                          key-column="UNAME" value-column="UFNAME"
                                          defvalue="--case when self.soapuser='' then ' __none' else self.soapuser end"
                                               xhtml_onchange="javascript:doPost(\'frm_edit_path\', \'reload1\');"

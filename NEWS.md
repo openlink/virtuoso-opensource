@@ -1,11 +1,83 @@
 # NEWS
 
+## Oct 14, 2025, v7.2.16
+  * Virtuoso Engine
+    - Added disk space monitor
+    - Added event logger with rate limiting on frequently repeated errors
+    - Added more informative locking information to `status()` output
+    - Added support for TLS connection timeout for ODBC and HTTP
+    - Fixed issue with compiling on Windows
+    - Fixed some defaults in `virtuoso.ini`
+    - Fixed check for upper MP limit increment in optimizer
+    - Fixed error reporting on non-compatible database/setup
+    - Fixed issue comparing dates
+    - Fixed issue hanging in temp table
+    - Fixed issues with JSON serializer
+    - Fixed issues with `PAGE_DEBUG`
+    - Fixed issues with `sqlc_hook`
+    - Fixed issue when usernames are repeated
+    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed issue with JSON parsing unknown band with many types
+    - Fixed issue with max memory pool size greater than 4GB
+    - Fixed issue with `xsd:time` conversion
+    - Fixed to not re-enter mutex when resetting iterator
+
+  * SPARQL
+    - Added assert to check if the memory pool is busy
+    - Fixed RDF Views total count statistics
+    - Fixed issue trying to call CXML PL when the VAD package is not installed
+    - Fixed issue where Virtuoso mistakenly reports that ID:0 (dba) has no permissions
+    - Fixed so numbers and dates preserve datatypes in JSON output
+    - Fixed issue with table name qualifiers in case mode 2
+    - Fixed issue when performing a `same-as` query without specifying a graph
+    - Fixed to prevent call to parse if timeout is already reached
+    - Fixed to preserve datatypes for numbers and dates in JSON output
+    - Fixed handling when cast is unknown; do not point to datatype in JSON output
+    - Fixed to check for DBA group instead of DBA user
+    - Fixed issue with queries without indexes
+    - Fixed to replace typed-literal with literal in JSON output
+    - Fixed issue trying to perform LDP on `/sparql` endpoints
+
+  * Web Server and DAV
+    - Added a global to stop SSE client from receiving more data
+    - Added missing HTTP status codes
+    - Added support for DAV content callback function
+    - Added RDF sink folder validation option
+    - Added handling of the DAV property as RSS/Atom feed title
+    - Added missing `<guid>` to directories/collections
+    - Added `DAV_QUEUE_MAX_THREADS` registry to set upper limit
+    - Added feed-type files in OPML output
+    - Fixed issues with broken SSE implementations
+    - Fixed issues running DAV RSS/Atom/OPML feeds behind a proxy
+    - Fixed RSS feed version
+    - Fixed feed titles
+    - Fixed exclusion of hidden files and folders
+    - Fixed issues with Atom and OPML publication
+    - Fixed issue resolving user names
+    - Fixed encoding issues
+    - Fixed issue with encoding `&nbsp;`
+    - Fixed issues with LDP
+    - Fixed print DAV IDs in debug mode
+
+  * Faceted Browser
+    - Added option to prevent bots from crawling `/fct/rdfdesc/usage.vsp`
+    - Added config UI setting to change the maximum amount of facets (default 20)
+    - Improved performance when using `same-as` for a label
+    - Changed `output:valmode` from "AUTO" to "LONG"
+    - Fixed issue with CXML link at the bottom of the page
+    - Fixed issue with zero triples on secondary storage
+
+  * Conductor
+    - Fixed issue storing ACME-related keys
+    - Fixed issue with the size of the select list for user names
+    - Fixed save and restore of connection variables on VAD installation
+
 ## May 21, 2025, v7.2.15
   * Virtuoso Engine
     - Fixed compiler warnings on misleading indentation
     - Fixed compiler warnings for empty body
     - Fixed prototypes and declarations for functions without arguments
-    - Fixed issues reported by gcc 15 compiler
+    - Fixed issues reported by GCC 15 compiler
     - Fixed issue in `SQLPrepare` and `SQLPrepareW`
     - Fixed issue with `_cvt(vector(219), '1')`
     - Fixed check for OpenSSL 3.5.0
@@ -13,24 +85,24 @@
   * SPARQL
     - Added support for RDF4j version 5.x
     - Fixed issues with RDFviews
-    - Fixed maximum lenght of an long url to 64K
-    - Fixed issue that stopped engine from performing graph scoped rules check
-    - Fixed when qlog is enable, print rset should save prot table globals
+    - Fixed maximum length of a long url to 64K
+    - Fixed issue that stopped engine from performing graph-scoped rules check
+    - Fixed when qlog is enabled, print rset should save prot table globals
     - Fixed issue with `sparql insert <s> <p> 'o'`
     - Fixed issue with sub properties in inference result
     - Fixed issue with filter not working on inference result
     - Fixed crash in optimiser when pred is optimised to always be true
-    - Fixed when inserting into `RDF_DATATYPE` or `RDF_LANGUAGE`; lock the row exclusive
+    - Fixed when inserting into `RDF_DATATYPE` or `RDF_LANGUAGE`, lock the row exclusive
     - Fixed missing check for default `LIMIT` in SPARQL query
 
   * Web Server and DAV
     - Fixed issue with grants in web services
 
   * Faceted Browser
-    - Added option to prevent bots from crawling /describe
+    - Added option to prevent bots from crawling `/describe`
     - Fixed styling of bot prevention dialog
-    - Fixed if get:* and no permissions set, return 401 to redirect to login
-    - Fixed if account does not have read/view permission return empty page as for 404
+    - Fixed if `get:*` and no permissions set, return 401 to redirect to login
+    - Fixed if account does not have read/view permission, return empty page as for 404
 
   * Conductor
     - Added support for ACME multi domain name orders
@@ -52,23 +124,23 @@
 
 ## November 11, 2024, v7.2.14
   * Virtuoso Engine
-    - Added new MaxTempDBPages setting to virtuoso.ini
+    - Added new `MaxTempDBPages` setting to `virtuoso.ini`
     - Fixed issue when out of disk space on temp db
-    - Fixed int32 overflow when `dbs_file_length` is unknown
+    - Fixed `int32` overflow when `dbs_file_length` is unknown
     - Fixed memory leak in X509 cert chain
-    - Fixed compiler errors from -Werror=incompatible-pointer-types (fixes #1312)
-    - Fixed compiler errors from -Werror=logical-not-parentheses
-    - Fixed compiler errors from -Werror=multistatement-macros
+    - Fixed compiler errors from `-Werror=incompatible-pointer-types` (fixes #1312)
+    - Fixed compiler errors from `-Werror=logical-not-parentheses`
+    - Fixed compiler errors from `-Werror=multistatement-macros`
     - Fixed issue with user defined types (UDT)
     - Fixed issue when there are no parts to split
-    - Fixed issue with GROUP BY/ORDER BY on LEFT OUTER JOIN
-    - Fixed issue calling concat(wide, utf8) (fixes #944)
-    - Fixed issue with lenght calculation in `rdf_encode_for_uri()`
+    - Fixed issue with `GROUP BY`/`ORDER BY` on `LEFT OUTER JOIN`
+    - Fixed issue calling `concat(wide, utf8)` (fixes #944)
+    - Fixed issue with length calculation in `rdf_encode_for_uri()`
 
   * SPARQL
-    - Added support for (a relatively small amount of) blank nodes in SPARQL INSERT DATA (fixes #126)
+    - Added support for (a relatively small number of) blank nodes in SPARQL `INSERT DATA` (fixes #126)
     - Fixed missing `DB.DBA.SPARQL_BINDINGS_VIEW_C_0` for empty solution bindings
-    - Fixed arbitrary XML with CDATA having html tags has MIME re-placed with text/html
+    - Fixed arbitrary XML with CDATA having html tags has MIME re-placed with `text/html`
     - Fixed issue when there are no more inits to skip
     - Fixed key estimate on single only
     - Fixed inc. estimate on transitive with unbound input
@@ -77,10 +149,10 @@
     - Added support to handle websocket 101 connection upgrade in `http_client`
     - Added flag to see if connection session is server or client
     - Added `WSOCK.DBA.WEBSOCKET_CONNECT()` for client operations
-    - Added PUT/DELETE HTTP methods
+    - Added `PUT` and `DELETE` HTTP methods
     - Added support for custom `%T` and `%D` HTTP log format
     - Added flag to encode if API used as websocket client
-    - Fixed issue with "Content-Encoding: gzip" (fixes #1308)
+    - Fixed issue with `"Content-Encoding: gzip"` (fixes #1308)
     - Fixed issue DAV escape; href should escape apos
     - Fixed order of checking SOAP options and parameters
     - Fixed allow `soap_boolean` to accept null for nullable arguments
@@ -92,16 +164,16 @@
     - Fixed missing encode flag
 
   * Faceted Browser
-    - Added support for WKT rendition
-    - Changed DOCTYPE from XHTML to HTML5
+    - Added support for `WKT` rendition
+    - Changed `DOCTYPE` from `XHTML` to `HTML5`
     - Removed `<base>` tag
     - Removed deprecated charset on stylesheet links
     - Removed link to W3C XHTML validator
-    - Removed support for AddThis
+    - Removed support for `AddThis`
     - Moved javascript to the end of the page
     - Fixed recommendations from Lighthouse accessibility check
     - Fixed issue with page selector on mobile devices
-    - Fixed make iframe content resizable
+    - Fixed make `iframe` content resizable
 
   * Conductor
     - Fixed issue when filename starts with underscore
@@ -110,7 +182,7 @@
     - Fixed issue with SN DETs errors
 
   * R2RML
-    - Fixed issue with {col}
+    - Fixed issue with `{col}`
 
   * GraphQL
     - Fixed issue with generated names longer than 100 characters

@@ -5971,21 +5971,23 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses 
 	  else
 	    {
 	      -- data
-	      declare tmp any;
 	      http (sprintf ('      "%s": ', pred), ses);
-	      if (__tag of rdf_box = __tag (obj))
-		{
-		  tmp := __rdf_strsqlval (obj);
-		  if (__tag of varchar = __tag (tmp))
-		    tmp := charset_recode (tmp, 'UTF-8', '_WIDE_');
-		}
-	      else
-		{
-		  tmp := obj;
-		}
-	      http ('"', ses);
-	      http_value (tmp, 0, ses);
-	      http ('"', ses);
+              if (__tag (obj) = __tag of rdf_box)
+                {
+                  __rdf_box_make_complete (obj);
+                  obj := rdf_box_data (obj);
+                }
+              if (isfinitenumeric (obj))
+                __rdf_long_to_ttl (obj, ses);
+              else
+                {
+                  http ('"', ses);
+                  if (__tag of datetime <> __tag (obj))
+                    http_escape (obj, 14, ses, 1, 1);
+                  else
+                    __rdf_long_to_ttl (obj, ses);
+                  http ('"', ses);
+                }
 	    }
 	  if (i < l - 1)
   	    http (', \n', ses);

@@ -138,6 +138,8 @@ extern char *c_ssl_server_port;
 extern char *c_ssl_server_cert;
 extern char *c_ssl_server_key;
 extern char *c_ssl_server_extra_certs;
+extern int32 c_ssl_read_timeout;
+extern int32 c_ssl_write_timeout;
 extern int32 ssl_server_verify;
 extern int32 ssl_server_verify_depth;
 extern char *ssl_server_verify_file;
@@ -243,6 +245,7 @@ int32 c_bad_dtp;
 int32 c_atomic_dive;
 #endif
 extern int32 c_checkpoint_interval;
+extern int32 c_soft_checkpoint;
 int32 c_scheduler_period;
 int32 c_oldest_flushable;
 int32 c_striping;
@@ -848,12 +851,20 @@ cfg_setup (void)
       ssl_server_ecdh_curve = NULL;
 #endif
 
+  if (cfg_getlong (pconfig, section, "WriteTimeout", &c_ssl_write_timeout) == -1)
+    c_ssl_write_timeout = 10;
+  if (cfg_getlong (pconfig, section, "ReadTimeout", &c_ssl_read_timeout) == -1)
+    c_ssl_read_timeout = 10;
+
   if (cfg_getlong (pconfig, section, "ServerThreads", &c_server_threads) == -1)
     if (cfg_getlong (pconfig, section, "MaxClientConnections", &c_server_threads) == -1)
       c_server_threads = 10;
 
   if (cfg_getlong (pconfig, section, "CheckpointInterval", &c_checkpoint_interval) == -1)
     c_checkpoint_interval = 0;
+
+  if (cfg_getlong (pconfig, section, "SoftCheckpoint", &c_soft_checkpoint) == -1)
+    c_soft_checkpoint = 0;
 
   if (cfg_get_number_of_buffers (pconfig, section, "NumberOfBuffers", &c_number_of_buffers) == -1)
     c_number_of_buffers = 2000;

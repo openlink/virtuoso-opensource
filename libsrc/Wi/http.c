@@ -4768,23 +4768,6 @@ ws_set_timeouts (ws_connection_t * ws)
   session_set_control (client->dks_session, SC_BLOCKING, (char *)((void*)&block), sizeof (int));
 }
 
-int
-ws_check_connect_timeout (session_t *ses, timeout_t * to, int want)
-{
-  session_t *wses[] = {0}, *rses[] = {0};
-  int rc;
-
-  if (SSL_ERROR_WANT_WRITE == want)
-    wses[0] = ses;
-  else if (SSL_ERROR_WANT_READ == want)
-    rses[0] = ses;
-  else
-    return SSL_ERROR_SSL;
-  rc = session_select (1, rses, wses, to);
-  return (rc <= 0 ? SSL_ERROR_SSL : SSL_ERROR_NONE);
-}
-
-
 void
 ws_serve_connection (ws_connection_t * ws)
 {
@@ -4826,7 +4809,7 @@ ws_serve_connection (ws_connection_t * ws)
 	      break;
 	    case SSL_ERROR_WANT_READ:
 	    case SSL_ERROR_WANT_WRITE:
-	      if (SSL_ERROR_NONE == ws_check_connect_timeout (ses->dks_session, &to, connect_state))
+	      if (SSL_ERROR_NONE == ssl_check_connect_timeout (ses->dks_session, &to, connect_state))
 		{
 		  status = 1;
 		  break;
