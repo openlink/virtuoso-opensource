@@ -1,6 +1,6 @@
 # NEWS
 
-## Oct 09, 2025, v7.2.16-rc1
+## Oct 14, 2025, v7.2.16
   * Virtuoso Engine
     - Added disk space monitor
     - Added event logger with rate limiting on frequently repeated errors
