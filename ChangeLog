@@ -1,3 +1,15 @@
+2025-10-14  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated NEWS and ChangeLog
+
+	Updated version to 7.2.16 engine 3242
+
+	Fixed issues with SPARQL section in default virtuoso.ini
+
+2025-10-09  Patrick van Kleef  <pkleef@openlinksw.com>
+
+	Updated version to 7.2.16-rc1
+
 2025-10-08  Patrick van Kleef  <pkleef@openlinksw.com>
 
 	Fixed check for upper MP limit increment in optimiser
