@@ -969,7 +969,6 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 		var_row += l;
 	    }
 	}
-      rd1->rd_non_comp_len += var_key + var_row;
       if (var_key + rd.rd_non_comp_len - key->key_row_var_start[0] + key->key_key_var_start[0] > MAX_RULING_PART_BYTES)
 	{
 	  SET_THR_TMP_POOL (NULL);
@@ -978,14 +977,15 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	      key->key_name, (var_key + rd.rd_non_comp_len - key->key_row_var_start[0] + key->key_key_var_start[0]),
 	      MAX_RULING_PART_BYTES);
 	}
-      if (!key->key_is_col && rd1->rd_non_comp_len > MAX_ROW_BYTES)
+      if (!key->key_is_col && (rd1->rd_non_comp_len + var_key + var_row) > MAX_ROW_BYTES)
 	{
 	  SET_THR_TMP_POOL (NULL);
 	  mp_free (ins_mp);
 	  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
 	  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
-	  sqlr_new_error ("42000", "COL11", "Row too long len=%d max=%d", rd1->rd_non_comp_len, (int) MAX_ROW_BYTES);
+	  sqlr_new_error ("42000", "COL11", "Row too long len=%d max=%d", (rd1->rd_non_comp_len + var_key + var_row), (int) MAX_ROW_BYTES);
 	}
+      rd1->rd_non_comp_len += var_key + var_row;
       if (!key->key_is_col)
       rd_inline (qi, rd1, &err, BLOB_IN_INSERT);
       if (err)
