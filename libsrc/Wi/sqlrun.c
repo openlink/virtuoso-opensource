@@ -1550,7 +1550,7 @@ ks_start_search (key_source_t * ks, caddr_t * inst, caddr_t * state,
 	    }
 	}
       else if (ks->ks_key->key_is_col)
-	sqlr_new_error ("42000", "COL..",  "Column wise index needs vectored exec enabled");
+	sqlr_new_error ("42000", "COL04",  "Column wise index needs vectored exec enabled");
       is_nulls = ks_make_spec_list (itc, ks->ks_spec.ksp_spec_array, state);
       is_nulls |= ks_make_spec_list (itc, ks->ks_row_spec, state);
       if (!itc->itc_hash_row_spec)

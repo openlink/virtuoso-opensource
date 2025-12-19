@@ -3946,7 +3946,7 @@ upd_col_rd (update_node_t * upd, caddr_t * inst, it_cursor_t * itc, buffer_desc_
 		    rc = itc_set_blob_col (itc, blob_temp, val, old_bl, BLOB_IN_UPDATE, &cl->cl_sqt);
 		    if (LTE_OK != rc)
 		      {
-			upd_col_error (itc, buf, mp, "42000", ".....", "Error making blob in column store update");
+			upd_col_error (itc, buf, mp, "42000", "COL14", "Error making blob in column store update");
 		      }
 		    rd->rd_values[cinx] = mp_box_n_chars (mp, (caddr_t) blob_temp, DV_BLOB_LEN);
 		  }
@@ -3961,7 +3961,7 @@ upd_col_rd (update_node_t * upd, caddr_t * inst, it_cursor_t * itc, buffer_desc_
 		if (IS_BOX_POINTER (val) && box_col_len (val) > COL_MAX_STR_LEN)
 		  {
 		    dbe_column_t *col = sch_id_to_column (wi_inst.wi_schema, col_id);
-		    upd_col_error (itc, buf, mp, "22026", "COL..", "Non blob column %s too long, index %s %d bytes",
+		    upd_col_error (itc, buf, mp, "22026", "COL02", "Non blob column %s too long, index %s %d bytes",
 			col ? col->col_name : "no name", key->key_name, box_col_len (val));
 		  }
 	      }
@@ -4684,7 +4684,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
   itc->itc_search_mode = SM_INSERT;
   itc->itc_lock_mode = PL_EXCLUSIVE;
   if (ins && ins->ins_seq_col)
-    sqlr_new_error ("42000", "COL..", "A column-wise index does not support the fetch option of insert");
+    sqlr_new_error ("42000", "COL03", "A column-wise index does not support the fetch option of insert");
 
   itc_col_free (itc);
   for (;;)
@@ -4784,7 +4784,7 @@ itc_col_vec_insert (it_cursor_t * itc, insert_node_t * ins)
 	{
 	  itc_col_leave (itc, 0);
 	  page_leave_outside_map (buf);
-	  sqlr_new_error ("XXXXX", "COL..", "Insert stopped because out of seg data here or elsewhere host %d key %s slice %d",
+	  sqlr_new_error ("4200", "COL13", "Insert stopped because out of seg data here or elsewhere host %d key %s slice %d",
 	      local_cll.cll_this_host, itc->itc_insert_key->key_name, itc->itc_tree->it_slice);
 	}
       if (itc->itc_range_fill)

@@ -160,7 +160,7 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 	      data_col_t * dc = QST_BOX (data_col_t *, qst, actual_ssl->ssl_index);
 	      if (!(DCT_BOXES & dc->dc_type))
 		{
-		  err = srv_make_new_error ("42000", "VEC..", "In vectored code calling non-vectored inout parameter mode is supported only if caller variable is a boxed vector, e.g. type any array (caller variable \"%.100s\", calling parameter \"%.100s\")",
+		  err = srv_make_new_error ("42000", "VEC09", "In vectored code calling non-vectored inout parameter mode is supported only if caller variable is a boxed vector, e.g. type any array (caller variable \"%.100s\", calling parameter \"%.100s\")",
 		      actual_ssl->ssl_name, param_ssl->ssl_name );
 		  goto err_end;
 		}
@@ -168,7 +168,7 @@ ins_call_kwds (caddr_t * qst, query_t * proc, instruction_t * ins, caddr_t * par
 		row = sslr_set_no (qst, actual_ssl, row);
               if (row >= dc->dc_n_values)
                 {
-                  err = srv_make_new_error ("42000", "VEC09", "In vectored code calling with unset input");
+                  err = srv_make_new_error ("42000", "VEC35", "In vectored code calling with unset input");
                   goto err_end;
                 }
 	      address = (caddr_t)&((caddr_t*)dc->dc_values)[row];
@@ -1967,11 +1967,11 @@ ins_for_vect (caddr_t * inst, instruction_t * ins)
       caddr_t * arr = (caddr_t*)qst_get (inst, arg);
       data_col_t * dc = QST_BOX (data_col_t *, inst, ins->_.for_vect.in_vars [inx]->ssl_index);
       if (DV_ARRAY_OF_POINTER != DV_TYPE_OF (arr))
-	sqlr_new_error ("42000", "VEC..",  "Argument of for_vectored is not an array");
+        sqlr_new_error ("42000", "VEC10", "Argument of for_vectored is not an array");
       if (-1 == len)
 	len = BOX_ELEMENTS (arr);
       else if (len != BOX_ELEMENTS (arr))
-	sqlr_new_error ("42000", "VEC..", "Input arrays  in for_vectored not of equal length");
+        sqlr_new_error ("42000", "VEC11", "Input arrays  in for_vectored not of equal length");
       dc_reset (dc);
       if (len > dc_max_batch_sz)
         sqlr_new_error ("42000", "FRVEC", "Input array FOR VECTORED over max vector length %d > %d", len, dc_max_batch_sz);
@@ -3608,7 +3608,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 	  break;
 
 	case INS_HANDLER_END:
-	  sqlr_new_error ("42000", "VEC..", "Error handler not allowed in vectored code");
+	  sqlr_new_error ("42000", "VEC12", "Error handler not allowed in vectored code");
 	  break;
 	case INS_AREF:
 	case INS_SET_AREF:
@@ -3672,7 +3672,7 @@ code_vec_run_v (code_vec_t code_vec, caddr_t * qst, int offset, int run_until, i
 #endif
 	case INS_FOR_VECT:
 	  if (NO_VEC != ins->_.for_vect.modify)
-	    sqlr_new_error ("42000", "VEC..", "for_vectored not allowed inside vectored code");
+	    sqlr_new_error ("42000", "VEC13", "for_vectored not allowed inside vectored code");
 	  ins_not_vect (qst, ins);
 	  ins = INSTR_ADD_BOFS (ins, ALIGN_INSTR (sizeof (ins->_.for_vect)));
 	  break;

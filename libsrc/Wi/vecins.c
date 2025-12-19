@@ -260,7 +260,7 @@ itc_ins_fetch (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins, int 
   if (!dc || !(DCT_NUM_INLINE & dc->dc_type))
     {
       itc_page_leave (itc, buf);
-      sqlr_new_error ("42000", "COL..", "insert fetch column must be typed int or iri id");
+      sqlr_new_error ("42000", "COL08", "insert fetch column must be typed int or iri id");
     }
   if (DVC_MATCH == res)
     {
@@ -294,7 +294,7 @@ itc_ins_fetch (it_cursor_t * itc, buffer_desc_t * buf, insert_node_t * ins, int 
   if (!dc || !(DCT_NUM_INLINE & dc->dc_type))
     {
       itc_page_leave (itc, buf);
-      sqlr_new_error ("42000", "COL..", "insert fetch column must be typed int or iri id");
+      sqlr_new_error ("42000", "COL09", "insert fetch column must be typed int or iri id");
     }
   dc_save = dc->dc_n_values;
   dc->dc_n_values = itc->itc_param_order[itc->itc_set];
@@ -628,7 +628,7 @@ rd_vec_blob (it_cursor_t * itc, row_delta_t * rd, dbe_column_t * col, int icol, 
       if (LTE_OK != rc)
 	{
 	  mp_free (ins_mp);
-	  sqlr_new_error ("42000", ".....", "Error making blob in vectored insert");
+	  sqlr_new_error ("42000", "COL15", "Error making blob in vectored insert");
 	}
     }
 }
@@ -960,7 +960,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 		  mp_free (ins_mp);
 		  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
 		  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
-		  sqlr_new_error ("22026", "COL..", "Non blob column %s too long, key %s, %d bytes",
+		  sqlr_new_error ("22026", "COL10", "Non blob column %s too long, key %s, %d bytes",
 		      col->col_name, key->key_name, l);
 		}
 	      if (icol < key->key_n_significant)
@@ -984,7 +984,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 	  mp_free (ins_mp);
 	  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
 	  itc->itc_ltrx->lt_error = LTE_SQL_ERROR;
-	  sqlr_new_error ("42000", "COL..", "Row too long len=%d max=%d", rd1->rd_non_comp_len, (int) MAX_ROW_BYTES);
+	  sqlr_new_error ("42000", "COL11", "Row too long len=%d max=%d", rd1->rd_non_comp_len, (int) MAX_ROW_BYTES);
 	}
       if (!key->key_is_col)
       rd_inline (qi, rd1, &err, BLOB_IN_INSERT);
@@ -1009,8 +1009,7 @@ key_vec_insert (insert_node_t * ins, caddr_t * qst, it_cursor_t * itc, ins_key_t
 		  mp_free (ins_mp);
 		  itc->itc_ltrx->lt_status = LT_BLOWN_OFF;
 		  itc->itc_ltrx->lt_error = LTE_UNIQ;
-		  sqlr_new_error ("23000", "COL..", "Non unique insert, detected in sorting insert batchj on key %s",
-		      itc->itc_insert_key->key_name);
+		  sqlr_new_error ("23000", "COL12", "Non unique insert, detected in sorting insert batch on key %s", itc->itc_insert_key->key_name);
 		}
 	    }
 	  else

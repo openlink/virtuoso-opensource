@@ -71,7 +71,7 @@ bif_dc_arg (caddr_t * qst, state_slot_t ** args, int nth, char *name)
     sqlr_new_error ("22003", "SR030", "Too few (only %d) arguments for %s.", (int) (BOX_ELEMENTS (args)), name);
   ssl = args[nth];
   if (SSL_VEC != ssl->ssl_type)
-    sqlr_new_error ("42000", "VEC..", "%s vectored applied to non vector arg", name);
+    sqlr_new_error ("42000", "VEC21", "%s vectored applied to non vector arg", name);
   return ((data_col_t **) qst)[ssl->ssl_index];
 }
 
@@ -1049,7 +1049,7 @@ ks_vec_params (key_source_t * ks, it_cursor_t * itc, caddr_t * inst)
 	    itc->itc_multistate_row_specs = 1;
 	  n_cols++;
 	  if (n_cols >= MAX_PARAMS)
-	    sqlr_new_error ("37000", "VEC..", "Too many searchh parameters");
+	    sqlr_new_error ("37000", "VEC22", "Too many search parameters");
 	}
     }
   if (!n_cols)
@@ -3108,7 +3108,7 @@ ts_split_range (table_source_t * ts, caddr_t * inst, it_cursor_t * itc, int n_pa
   if (n_branches >= enable_qp)
     return itc_reset (itc);
   if (-1 == n_branches)
-    sqlr_new_error ("42000", "VEC..", "The root branch has terminated, so no point in branching more branch qis");
+    sqlr_new_error ("42000", "VEC23", "The root branch has terminated, so no point in branching more branch qis");
   if (itc->itc_n_sets > 1)
     return ts_split_sets (ts, inst, itc, n_parts);
   memset (&tsp, 0, sizeof (tsp));
@@ -3417,10 +3417,10 @@ vec_fref_single_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * in
     {
       select_node_t *sel = fref->src_gen.src_query->qr_select_node;
       if (!sel)
-	sqlr_new_error ("42000", "VEC..", "Internal error, aggregation subq is supposed to start with sctr");
+	sqlr_new_error ("42000", "VEC24", "Internal error, aggregation subq is supposed to start with sctr");
       set_nos = QST_BOX (data_col_t *, inst, sel->sel_set_no->ssl_index);
       if (!set_nos)
-	sqlr_new_error ("42000", "VEC..", "Internal error, aggregation subq does not have a set no in select");
+	sqlr_new_error ("42000", "VEC24", "Internal error, aggregation subq does not have a set no in select");
     }
   else
     set_nos = QST_BOX (data_col_t *, inst, sctr->sctr_set_no->ssl_index);
@@ -3436,7 +3436,7 @@ vec_fref_single_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * in
       {
 	  int agg_set, no_old;
 	  if (set_nos && set >= set_nos->dc_n_values)
-	    sqlr_new_error ("42000", "VEC..",  "Internal error, please report query to the support");
+	    sqlr_new_error ("42000", "VEC27", "Internal error, please report query to the support");
 	  agg_set = set_nos ? ((int64*)set_nos->dc_values)[set] : set;
 	qi->qi_set = agg_set;
 	((query_instance_t *) branch)->qi_set = agg_set;
@@ -3509,7 +3509,7 @@ fref_agg_set_no (fun_ref_node_t * fref)
     {
       return read_node->ts_order_ks->ks_set_no;
     }
-  sqlr_new_error ("42000", "VEC..", "cube ks set no not yet done ");
+  sqlr_new_error ("42000", "VEC28", "cube ks set no not yet done ");
   return NULL;
 }
 
@@ -3600,7 +3600,7 @@ vec_top_merge (setp_node_t * setp, fun_ref_node_t * fref, caddr_t * inst, caddr_
     return;
   fill = unbox (qst_get (branch, setp->setp_row_ctr));
       if (BOX_ELEMENTS (setp->setp_keys_box) + BOX_ELEMENTS (setp->setp_dependent_box) > n_ssl)
-	sqlr_new_error ("42000", "VEC..", "Too many order by or group by columns in parallel query branch merge");
+       sqlr_new_error ("42000", "VEC29", "Too many order by or group by columns in parallel query branch merge");
       vec_merge_setp (&setp, NULL, &tmp_setp, NULL, &tmp_ssl[0]);
   for (nth = 0; nth < fill; nth++)
     {
@@ -3889,7 +3889,7 @@ vec_fref_group_result (fun_ref_node_t * fref, table_source_t * ts, caddr_t * ins
 	      if (fref->src_gen.src_prev || fref->fnr_is_cl_local_fake)
 	    {
 	      if (BOX_ELEMENTS (ha->ha_slots) > sizeof (tmp_ssl) / sizeof (state_slot_t))
-		sqlr_new_error ("42000", "VEC..", "Too many order by or group by columns in parallel query branch merge");
+		sqlr_new_error ("42000", "VEC30", "Too many order by or group by columns in parallel query branch merge");
 	      vec_merge_setp (&setp, &ha, &tmp_setp, &tmp_ha, &tmp_ssl[0]);
 	    }
 	  ITC_FAIL (itc)

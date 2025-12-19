@@ -2598,7 +2598,7 @@ bif_aset_1_2_zap (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   if (tgt_inx >= BOX_ELEMENTS (tgt) || src_inx_1 >= BOX_ELEMENTS (src)
       || DV_ARRAY_OF_POINTER != DV_TYPE_OF (src[src_inx_1])
       || src_inx_2 >= BOX_ELEMENTS (src[src_inx_1]))
-    sqlr_new_error ("42000", "VEC..",  "Bad arguments to aset_1_2_zap ");
+    sqlr_new_error ("42000", "VEC07",  "Bad arguments to aset_1_2_zap ");
   if (tgt[tgt_inx])
     dk_free_tree (tgt[tgt_inx]);
   tgt[tgt_inx] = src[src_inx_1][src_inx_2];
@@ -6777,7 +6777,7 @@ bif_isnotnull_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state
     return;
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (BOX_ELEMENTS (args) < 1)
-    sqlr_new_error ("42001", "VEC..", "Not enough arguments for is_no_null");
+    sqlr_new_error ("42001", "VEC08", "Not enough arguments for is_no_null");
   DC_CHECK_LEN (dc, qi->qi_n_sets - 1);
   arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);
   if (!arg->dc_any_null || ssl->ssl_sqt.sqt_non_null)

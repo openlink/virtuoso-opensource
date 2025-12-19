@@ -41,7 +41,7 @@ bif_id2i_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slot
   QNCAST (query_instance_t, qi, qst);
   query_t *id2i = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.ID_TO_IRI_VEC");
   if (!id2i)
-    sqlr_new_error ("42001", "VEC..", "id to iri vectored is not defined");
+    sqlr_new_error ("42001", "VEC31", "id to iri vectored is not defined");
   if (id2i->qr_to_recompile)
     id2i = qr_recompile (id2i, NULL);
   err = qr_subq_exec_vec (qi->qi_client, id2i, qi, NULL, 0, args, ret, NULL, NULL);
@@ -58,7 +58,7 @@ bif_id2i_vec_ns (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_s
   QNCAST (query_instance_t, qi, qst);
   query_t * id2i = sch_proc_exact_def (wi_inst.wi_schema, "DB.DBA.ID_TO_IRI_VEC_NS");
   if (!id2i)
-    sqlr_new_error ("42001", "VEC..", "id to iri vectored is not defined");
+    sqlr_new_error ("42001", "VEC32", "id to iri vectored is not defined");
   if (id2i->qr_to_recompile)
     id2i = qr_recompile (id2i, NULL);
   err = qr_subq_exec_vec (qi->qi_client, id2i, qi, NULL, 0, args, ret, NULL, NULL);
@@ -350,7 +350,7 @@ bif_ro2lo_vec (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args, state_slo
     return;
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (BOX_ELEMENTS (args) < 1)
-    sqlr_new_error ("42001", "VEC..", "Not enough arguments for __ro2lo");
+    sqlr_new_error ("42001", "VECXX", "Not enough arguments for __ro2lo");
   arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);
   if (DV_IRI_ID == arg->dc_dtp)
     {
@@ -666,7 +666,7 @@ from DB.DBA.RDF_OBJ where RO_ID = rdf_box_ro_id (?)", qi->qi_client, &err, SQLC_
     return;
   dc = QST_BOX (data_col_t *, qst, ret->ssl_index);
   if (BOX_ELEMENTS (args) < 1) 
-    sqlr_new_error ("42001", "VEC..", "Not enough arguments for __ro2ebv");
+    sqlr_new_error ("42001", "VEC34", "Not enough arguments for __ro2ebv");
   arg = QST_BOX (data_col_t *, qst, ssl->ssl_index);  
 
   if (DV_ANY == ret->ssl_sqt.sqt_dtp && DV_ANY != dc->dc_dtp)

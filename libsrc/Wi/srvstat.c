@@ -4519,7 +4519,7 @@ bif_col_info (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
     return box_num (coi->coi_cei[ce_type].cei_values);
   if (!strcmp (name, "ce_bytes"))
     return box_num (coi->coi_cei[ce_type].cei_bytes);
-  sqlr_new_error ("42000", "COL..", "Bad attribute %s for __col_info", name);
+  sqlr_new_error ("42000", "COL07", "Bad attribute %s for __col_info", name);
   return NULL;
 }
 
@@ -4982,7 +4982,7 @@ bif_key_seg_check (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
 	  return NULL;
 	}
     }
-  sqlr_new_error ("XXXXX", "COLCK", "too many keys being in key seg check");
+  sqlr_new_error ("42000", "COLCK", "too many keys being in key seg check");
   return NULL;
 }
 

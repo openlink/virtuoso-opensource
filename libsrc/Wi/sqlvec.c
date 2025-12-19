@@ -177,9 +177,6 @@ sqlg_dc_cast_func (sql_comp_t * sc, state_slot_t * target, state_slot_t * source
     return vc_anynn_generic;
 
   return vc_generic;
-  sqlc_new_error (sc->sc_cc, "22032", "VEC..", "No cast from %s to %s", dv_type_title (source->ssl_sqt.sqt_dtp),
-      dv_type_title (target->ssl_sqt.sqt_dtp));
-  return NULL;
 }
 
 
@@ -4048,7 +4045,7 @@ sqlg_vec_ts (sql_comp_t * sc, table_source_t * ts)
 	else if (CI_ROW == col_id)
 	  {
 	    if (ks->ks_key->key_is_col)
-	      sqlc_new_error (sc->sc_cc, "37000", "COL..", "Can't select _row from a column-wise key");
+		sqlc_new_error (sc->sc_cc, "37000", "COL05", "Can't select _ROW from a column-wise key");
 	    ks->ks_v_out_map[inx].om_ref = dc_itc_append_row;
 	    ssl->ssl_dtp = DV_ARRAY_OF_POINTER;
 	  }
