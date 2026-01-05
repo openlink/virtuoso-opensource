@@ -2705,6 +2705,8 @@ ddl_drop_col (query_instance_t * qi, char *table, caddr_t col, int if_exists)
   sql_error_if_remote_table (tb = qi_name_to_table (qi, table));
   if (!dc_qr)
     dc_qr = sql_compile_static ("DB.DBA.ddl_drop_col (?, ?)", qi->qi_client, &err, SQLC_DEFAULT);
+  if (!tb)
+    sqlr_new_error ("42S02", "SQ208", "Bad table in drop column.");
   col_ref = tb_name_to_column (tb, col);
   if (!col_ref && if_exists)
     return;
