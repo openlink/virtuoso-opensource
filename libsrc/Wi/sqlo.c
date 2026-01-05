@@ -1484,7 +1484,7 @@ sqlo_replace_as_exps (ST **tree, sql_scope_t *sco)
     {
       DO_SET (ST **, as_exp, &sco->sco_named_vars)
 	{
-	  if (!CASEMODESTRCMP (as_exp[0]->_.col_ref.name, (*tree)->_.col_ref.name))
+	  if (STAR != (*tree)->_.col_ref.name && !CASEMODESTRCMP (as_exp[0]->_.col_ref.name, (*tree)->_.col_ref.name))
 	    {
 	      *tree = (ST *) t_box_copy_tree ((caddr_t) as_exp[1]);
 	      return;
