@@ -4381,21 +4381,21 @@ srv_global_init (char *mode)
       query_t *qr;
       char e_text [200];
 
-      snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dba', '%.20s', '%.20s')", f_old_dba_pass, f_new_dba_pass);
+      snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dba', ?, ?)");
       qr = sql_compile (e_text, bootstrap_cli, &err, SQLC_DEFAULT);
       if (!err)
 	{
-	  err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 0);
+	  err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 2, ":0", f_old_dba_pass, QRP_STR, ":1", f_new_dba_pass, QRP_STR);
 	  qr_free (qr);
 	}
       log_info ("The DBA password is changed.");
       if (f_new_dav_pass)
 	{
-	  snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dav', 'dav', '%.20s')", f_new_dav_pass);
+	  snprintf (e_text, sizeof (e_text), "USER_CHANGE_PASSWORD ('dav', 'dav', ?)");
 	  qr = sql_compile (e_text , bootstrap_cli, &err, SQLC_DEFAULT);
 	  if (!err)
 	    {
-	      err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 0);
+	      err = qr_quick_exec (qr, bootstrap_cli, NULL, NULL, 1, ":0", f_new_dav_pass, QRP_STR);
 	      qr_free (qr);
 	    }
 	  log_info ("The DAV password is changed.");
