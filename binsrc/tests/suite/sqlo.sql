@@ -2109,5 +2109,76 @@ ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
 ECHO BOTH ": member observer any type STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
 
+drop table v0;
+CREATE TABLE v0 ( v1 INT PRIMARY KEY , v2 long TEXT ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 0 , 'x' ) ;
+ INSERT INTO v0 ( v1 , v2 ) VALUES ( 56 , ( SELECT 16 FROM v0 e LEFT JOIN v0 USING ( v2 , v2 , v1 , v1 , v1 , v2 , v2 , v2 , v2 , v1 , v1 , v2 , v1 , v1 , v1 , v2 , v1 , v1 , v2 , v2 , v1 ) ) ) ;
+ SELECT * FROM v0 WHERE v2 = ( SELECT BIT_XOR ( v2 ) FROM v0 AS v5 , v0 AS v3 NATURAL JOIN v0 AS v4 NATURAL JOIN v0 USING ( v2 ) NATURAL JOIN v0 ts2 ) ;
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1372 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 REAL UNIQUE PRIMARY KEY , v2 NUMERIC NOT NULL CHECK ( v1 = -128 ) ) ;
+INSERT INTO v0 VALUES ( -128 , 49 ) ;
+drop table v5;
+CREATE TABLE v5 ( v6 INT , v7 INT NOT NULL CHECK ( v7 IN ( SELECT v2 FROM v0 WHERE v2 = 0 ) ) ) ;
+INSERT INTO v5 VALUES ( 0 , 8 ) ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1373 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 NUMERIC UNIQUE PRIMARY KEY CHECK ( v1 / 70249102.000000 < 98 AND v1 <= 8 ) ) ;
+ INSERT INTO v0 VALUES ( 43938596.000000 ) , ( 87654080.000000 ) , ( 83504924.000000 ) , ( 39788480.000000 ) , ( 85377868.000000 ) , ( NULL ) ;
+ SELECT v0 . v1 , ( v0 . v1 ) AS v2 GROUP BY 16 , -32768 ;
+drop table v3;
+ CREATE TABLE v3 ( v4 FLOAT ) ;
+ INSERT INTO v0 VALUES ( 99634861.000000 ) , ( 70609933.000000 ) , ( 79634166.000000 ) , ( 37598120.000000 ) ;
+ INSERT INTO v0 VALUES ( 30 ) ;
+ INSERT INTO v0 VALUES ( -1 ) ;
+ SELECT v1 , v1 , LEAD ( ) OVER ( PARTITION BY v1 ORDER BY v1 ) AS v5 FROM v0 USING ( v1 ) FROM x WHERE v1 >= 77134685.000000 ;
+drop table v6;
+ CREATE TABLE v6 ( v7 INTEGER ) ;
+ INSERT INTO v3 VALUES ( 55 ) , ( 127 ) , ( -128 ) ;
+ SELECT v3 . v4 , AVG ( v0 . v1 ) AS v8 FROM v0 JOIN v3 ON v4 = v0 . v1 ;
+ SELECT v4 , SUM ( * ) FROM v3 GROUP BY STDDEV_POP ( v4 ) ;
+ SELECT VARIANCE ( VAR_SAMP ( v4 ) ) , STDDEV ( STD ( v4 ) ) FROM v3 ON v7 x = v6 . v7 ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1374 STATE=" $state " MESSAGE=" $message "\n" ;
+SELECT v3 . v4 , AVG ( v0 . v1 ) AS v8 FROM v3 join v0 table option (index primary key)  ON v4 = v0 . v1 option (order,hash);
+echo both $if $equ $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1374 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 INT , v2 VARCHAR ( 13 ) ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 38 , 'x' ) ;
+ INSERT INTO v0 ( v2 , v1 ) VALUES ( 20 , 'x' ) ;
+ INSERT INTO v0 ( v1 , v1 ) VALUES ( 61 , 'x' ) ;
+UPDATE v0 SET v1 = COUNT ( v2 ) WHERE v1 IS NOT NULL ;
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+echo both ": case 1375 STATE=" $state " MESSAGE=" $message "\n" ;
+
+drop table v0;
+CREATE TABLE v0 ( v1 INT , v2 VARCHAR ) ;
+ INSERT INTO v0 VALUES ( 127 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 69 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 0 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 63 , 'x' ) ;
+ INSERT INTO v0 VALUES ( -1 , 'x' ) ;
+ INSERT INTO v0 VALUES ( 72 , 'x' ) ;
+ INSERT INTO v0 VALUES ( -2147483648 , 'x' ) ;
+ SELECT v2 , CASE WHEN MAX ( 57 * -1 + ( SELECT v2 FROM v0 AS v13 WHERE v2 = 'x' OR v1 = ( CASE WHEN v2 > 82 THEN 'x' ELSE 'x' END ) OR v2 = 'x' GROUP BY v2 ) + 30 ) = 'x' THEN 'x' ELSE 'x' END AS v12 FROM v0 ;
+
+
+echo both $if $neq $state OK "PASSED" "***FAILED";
+set argv[$lif] $+ $argv[$lif] 1;
+echo both ": case 1376 STATE=" $state " MESSAGE=" $message "\n" ;
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 
