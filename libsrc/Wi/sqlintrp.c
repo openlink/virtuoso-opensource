@@ -3004,7 +3004,7 @@ subq_comp_func (caddr_t * qst, void * _subp)
     case SOME_PRED:
     case ALL_PRED:
       {
-	GPF_T1 ("all sub preds are supposed to be existences");
+        sqlr_new_error("42000", "SR701", "all sub preds are supposed to exist");
 #if 0
 	caddr_t left = qst_get (qst, subp->subp_left);
 	caddr_t err;
