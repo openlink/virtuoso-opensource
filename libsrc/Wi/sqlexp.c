@@ -969,7 +969,7 @@ cv_asg_broader_type (instruction_t *ins)
     res->ssl_sqt.sqt_col_dtp = 0; /* will influence dc dtp, not a column, not set */
   if (IS_NUM_DTP (res->ssl_dtp) && IS_NUM_DTP (l->ssl_dtp))
     {
-      if (DV_DOUBLE_FLOAT == l->ssl_dtp)
+      if (DV_DOUBLE_FLOAT == l->ssl_dtp && DV_NUMERIC != res->ssl_sqt.sqt_col_dtp)
 	res->ssl_dtp = DV_DOUBLE_FLOAT;
       else
 	res->ssl_dtp = MAX (res->ssl_dtp, l->ssl_dtp);
