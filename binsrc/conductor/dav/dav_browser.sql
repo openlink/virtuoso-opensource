@@ -1946,7 +1946,9 @@ create procedure WEBDAV.DBA.dav_lpath (
   if (path not like path_mounted || '%')
     return path;
 
-  path_domain := http_map_get ('domain') || '/';
+  path_domain := http_map_get ('domain');
+  if (path_domain <> '/')
+    path_domain := concat(path_domain, '/');
 
   return path_domain || subseq (path, length (path_mounted));
 }
