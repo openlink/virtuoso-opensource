@@ -564,6 +564,8 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
     {
       temp = (int64 *) & temp_space[nth * ARTM_VEC_LEN * DT_LENGTH];
       sslr_n_consec_ref (inst, (state_slot_ref_t *) ssl, sets, first_set, last_set - first_set);
+      if (!dc->dc_n_values && (last_set - first_set))
+        sqlr_new_error ("42000", "VEC26", "hash fill not supported for exp subq inside aggregate");
       switch (elt_sz)
 	{
 	case 4:
