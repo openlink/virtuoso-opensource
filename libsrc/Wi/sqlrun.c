@@ -1148,6 +1148,47 @@ ks_search_param_wide (it_cursor_t * itc, search_spec_t * sp, caddr_t data, dtp_t
     } \
 }
 
+void
+ks_col_cast_error (it_cursor_t * itc, search_spec_t * sp)
+{
+  dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_col_dtp;
+  char* cl_name = __get_column_name (sp->sp_cl.cl_col_id,
+      itc->itc_insert_key ? itc->itc_insert_key : itc->itc_row_key);
+  sqlr_new_error ("22023", "SR347",
+      "%s cannot be used in the WHERE, HAVING, or ON clause, "
+      "except with the IS NULL predicate for column '%s'", 
+       IS_UDT_DTP (target_dtp) ?  "User defined type columns" : "The long varchar, long varbinary and long nvarchar data types",
+       cl_name);
+}
+
+void
+ks_col_cast_check(it_cursor_t * itc, search_spec_t * sp)
+{
+  dtp_t target_dtp = sp->sp_cl.cl_sqt.sqt_col_dtp;
+
+  if (IS_UDT_DTP (target_dtp))
+    ks_col_cast_error (itc, sp);
+
+  DTP_NORMALIZE (target_dtp);
+
+  if (CMP_LIKE == sp->sp_min_op)
+    {
+      switch (target_dtp)
+	{
+	  case DV_BLOB: target_dtp = DV_STRING; break;
+	  case DV_BLOB_WIDE: target_dtp = DV_LONG_WIDE; break;
+	}
+    }
+
+  if (DV_ANY == target_dtp)
+    return;
+
+  if (DV_BLOB == target_dtp || DV_BLOB_BIN == target_dtp || DV_BLOB_WIDE == target_dtp || DV_BLOB_XPER == target_dtp)
+    ks_col_cast_error (itc, sp);
+
+  return;
+}
+
 int
 ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 {
@@ -1170,12 +1211,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
 
   if (IS_UDT_DTP (target_dtp))
     {
-      char* cl_name = __get_column_name (sp->sp_cl.cl_col_id,
-	  itc->itc_insert_key ? itc->itc_insert_key : itc->itc_row_key);
-      sqlr_new_error ("22023", "SR446",
-	  "User defined type columns cannot be used in the WHERE, HAVING, or ON clause "
-	  "except for the IS NULL predicate "
-	  "for column '%s'", cl_name);
+      ks_col_cast_error (itc, sp);
     }
   else if (dtp == target_dtp)
     {
@@ -1215,12 +1251,7 @@ ks_search_param_cast (it_cursor_t * itc, search_spec_t * sp, caddr_t data)
     case DV_BLOB: case DV_BLOB_BIN: case DV_BLOB_WIDE: case DV_BLOB_XPER:
       if (dtp != DV_DB_NULL)
 	{
-	  char* cl_name = __get_column_name (sp->sp_cl.cl_col_id,
-	      itc->itc_insert_key ? itc->itc_insert_key : itc->itc_row_key);
-	    sqlr_new_error ("22023", "SR347",
-		"The long varchar, long varbinary and long nvarchar "
-		"data types cannot be used in the WHERE, HAVING, or ON clause, "
-		"except with the IS NULL predicate for column '%s'", cl_name);
+          ks_col_cast_error (itc, sp);
 	}
       break;
 	  /* compare different number types.  If col more precise than arg, cast to col here, otherwise the cast is in itc_col_check.
@@ -1362,6 +1393,7 @@ ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * state)
 	  if (SSL_VEC == ks_spec->sp_min_ssl->ssl_type)
 	    {
 	      data_col_t * dc = QST_BOX (data_col_t *, state, ks_spec->sp_min_ssl->ssl_index);
+              ks_col_cast_check (it, ks_spec);
 	      itc_vec_box (it, ks_spec->sp_cl.cl_sqt.sqt_col_dtp, ks_spec->sp_min, dc);
 	      ITC_P_VEC (it, ks_spec->sp_min) = dc;
 	    }
@@ -1379,6 +1411,7 @@ ks_make_spec_list (it_cursor_t * it, search_spec_t * ks_spec, caddr_t * state)
 	  if (SSL_VEC == ks_spec->sp_max_ssl->ssl_type)
 	    {
 	      data_col_t * dc = QST_BOX (data_col_t *, state, ks_spec->sp_max_ssl->ssl_index);
+              ks_col_cast_check (it, ks_spec);
 	      itc_vec_box (it, ks_spec->sp_cl.cl_sqt.sqt_col_dtp, ks_spec->sp_max, dc);
 	      ITC_P_VEC (it, ks_spec->sp_max) = dc;
 	    }
