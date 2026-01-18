@@ -1994,7 +1994,7 @@ dsig_signature_t * dsig_template_ (query_instance_t * qi, caddr_t signature_xml_
       xenc_make_error (errbuf, 1024, ctx->wc_tb.xtb_err_code, ctx->wc_tb.xtb_err_buffer);
       wsse_ctx_free (ctx);
 
-      xenc_report_error (t, 500 + strlen (errbuf), DSIG_TEMPL_ERR, errbuf);
+      sqlr_new_error ("42000", "XENC3T", "%s", errbuf);
     }
   XENC_TRY_END(&ctx->wc_tb);
 
