@@ -4751,6 +4751,8 @@ search_spec_t *sp, it_cursor_t * itc, int * v_fill)
   int res = 0;
   dbe_column_t * left_col;
   left_col = (dbe_column_t *) dk_set_nth (key->key_parts, nth);
+  if (!left_col)
+    return KS_CAST_UNDEF;
   sp->sp_cl = *key_find_cl (key, left_col->col_id);
   sp->sp_col = left_col;
   sp->sp_collation = sp->sp_col->col_sqt.sqt_collation;
