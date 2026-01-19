@@ -1031,7 +1031,7 @@ dfe_unplace_fill_join (df_elt_t * fill_dt, df_elt_t * tb_dfe, dk_set_t org_preds
 void
 dfe_cc_key (df_elt_t * dfe, char *str, int *fill, int space)
 {
-  if (!dfe)
+  if (!dfe || DFE_FALSE == dfe)
     return;
   switch (dfe->dfe_type)
     {

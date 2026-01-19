@@ -2180,5 +2180,68 @@ echo both $if $neq $state OK "PASSED" "***FAILED";
 set argv[$lif] $+ $argv[$lif] 1;
 echo both ": case 1376 STATE=" $state " MESSAGE=" $message "\n" ;
 
+drop table v0;
+
+CREATE TABLE v0 ( v1 INT NOT NULL UNIQUE CHECK ( v1 = 1 ) , v2 VARCHAR UNIQUE , v3 INT UNIQUE NOT NULL NOT NULL NOT NULL ) ;
+SELECT ( ( SELECT LAG ( v3 ) FROM v0 t1 LEFT JOIN v0 s USING ( v1 , v3 , v3 , v1 , v3 , v1 , v2 , v1 , v3 , v1 , v2 , v2 ) NATURAL JOIN v0 WHERE v3 IS NOT NULL ) , 'x' ) AS v14 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case1378 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+
+drop table v0;
+CREATE TABLE v0 ( v1 TIMESTAMP PRIMARY KEY CHECK ( v1 ) ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( 'x' ) ;
+ INSERT INTO v0 VALUES ( NULL ) ;
+ SELECT ( v1 ) FROM v0 ;
+ SELECT ( PERCENT_RANK ( v1 , 'x' ) ) FROM v0 ;
+ SELECT ( STD ( v1 , 'x' ) ) FROM v0 ;
+ UPDATE v0 SET v1 = ( SELECT 26 FROM v0 ORDER BY DENSE_RANK ( v1 ) ) ;
+ SELECT DISTINCT RANK ( v1 ) AS v2 FROM v0 WHERE v1 IS NOT NULL ;
+ SELECT DISTINCT NTH_VALUE ( v1 ) AS v3 , NTH_VALUE ( AVG ( v1 ) ) AS v4 FROM v0 ;
+ SELECT STDDEV_SAMP ( * ) AS v6 , COUNT ( v1 ) AS v5 FROM v0 GROUP BY VAR_SAMP ( v1 ) ;
+ SELECT CASE WHEN VAR_POP ( v1 ) = 34 THEN 'x' ELSE 'x' END AS v8 FROM ( SELECT v1 FROM v0 AS v10 NATURAL JOIN v0 AS v9 NATURAL JOIN v0 AS v11 NATURAL JOIN v0 WHERE v1 = -32768 AND v1 <= v1 ) AS v7 ;
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": case 1379 STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table DB.DBA.TB1_CASE1381;
+
+CREATE TABLE DB.DBA.TB1_CASE1381 (id INT, name VARCHAR(100), age INT, city VARCHAR(100));
+CREATE INDEX STR1_CASE1381_IDX ON DB.DBA.TB1_case1381 (name);
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (1, 'Alice', 30, 'New York');
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (2, 'Bob', 25, 'Los Angeles');
+INSERT INTO DB.DBA.TB1_CASE1381 (id, name, age, city) VALUES (3, 'Charlie', 35, 'Chicago');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Bob', 25);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Charlie', 35);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'NotExist');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', NULL);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York', 'Unknown');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'New York', 'Unknown');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 1234);
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 123, 'Bob');
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', 'Alice', 'Multi', (SELECT MAX(age) FROM DB.DBA.TB1_case1381));
+SELECT key_estimate('DB.DBA.TB1_CASE1381', 'STR1_CASE1381_IDX', (SELECT name FROM DB.DBA.TB1_case1381 WHERE id = 1));
+ECHO BOTH $IF $EQU $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": key_estimate, various arg combinations STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
+drop table DigitalSignatures;
+
+CREATE TABLE DigitalSignatures (id INT PRIMARY KEY, body VARCHAR, key_name VARCHAR);
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (1, '<SampleXML></SampleXML>', 'key1');
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (2, '<SampleXML></SampleXML>', 'key2');
+INSERT INTO DigitalSignatures (id, body, key_name) VALUES (3, '<SampleXML></SampleXML>', NULL);
+SELECT dsig_template_ext(xtree_doc(body), '<?xml version="1.0" encoding="UTF-8"?><Signature xmlns="http://www.w3.org/2000/09/xmldsig#" ><SignedInfo><CanonicalizationMethod Algorithm="http://www.w3.org/2001/10/xml-exc-c14n#" /><SignatureMethod Algorithm="%s" /></SignedInfo><SignatureValue></SignatureValue><KeyInfo><KeyName>%s</KeyName></KeyInfo></Signature>', vector('wsse', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd', 'wsu', 'http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd'), 'http://schemas.xmlsoap.org/soap/envelope/', 'Body', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'Action', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'From', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'To', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'MessageID', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'ReplyTo', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'FaultTo', 'http://schemas.xmlsoap.org/ws/2004/03/addressing', 'RelatesTo') FROM DigitalSignatures WHERE id = 1;
+
+ECHO BOTH $IF $NEQ $STATE OK "PASSED" "***FAILED";
+SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
+ECHO BOTH ": dsig_template_ext with bad algo `%s` STATE=" $STATE " MESSAGE=" $MESSAGE "\n";
+
 ECHO BOTH "COMPLETED: SQL Optimizer tests (sqlo.sql) WITH " $ARGV[0] " FAILED, " $ARGV[1] " PASSED\n\n";
 

@@ -1478,6 +1478,8 @@ df_elt_t *
 dfe_hash_fill_defines_ot (df_elt_t * dt_dfe, op_table_t * ot)
 {
   /* is the ot in the join in the hash filler */
+  if (!ot->ot_new_prefix)
+    return NULL;
   DO_SET (df_elt_t *, from, &dt_dfe->_.sub.ot->ot_from_dfes)
     {
       if (0 == strcmp (from->_.table.ot->ot_prefix, ot->ot_new_prefix))
