@@ -179,6 +179,8 @@ sqlc_col_to_view_scope (sql_comp_t * sc, ST ** tree_place, ST * view_exp,
   char *name = ST_COLUMN (tree, COL_DOTTED) ? tree->_.col_ref.name : (caddr_t) tree;
   ST **sel = (ST **) view_exp->_.select_stmt.selection;
   ST *repl = NULL;
+  if (ST_COLUMN (tree, COL_DOTTED) && STAR == tree->_.col_ref.name)
+    sqlc_new_error (sc->sc_cc, "37000", ".....", " A * is not allowed in view update");
   DO_BOX (ST *, as_exp, inx, sel)
   {
     if (0 == CASEMODESTRCMP (name, as_exp->_.as_exp.name))
