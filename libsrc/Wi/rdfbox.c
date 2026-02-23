@@ -4699,14 +4699,14 @@ http_talis_json_write_ref_obj (dk_session_t *ses, caddr_t obj_iri, int obj_is_bn
   if (obj_is_bnode)              /* 0           1            2           3  */
     {                            /* 01.23456.7890.123456.789.012345.6789.01 */
       session_buffered_write (ses, "{ \"type\" : \"bnode\", \"value\" : \"", 31);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
                                  /* .0123 */
       session_buffered_write (ses, "\" }", 3);
     }
   else                           /* 0           1            2            */
     {                            /* 01.23456.7890.1234.567.890123.4567.89 */
       session_buffered_write (ses, "{ \"type\" : \"uri\", \"value\" : \"", 29);
-      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
                                  /* .0123 */
       session_buffered_write (ses, "\" }", 3);
     }
@@ -4763,12 +4763,12 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
       }
     case DV_STRING:
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       break;
     case DV_WIDE:
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       break;
     case DV_XML_ENTITY:
@@ -4804,7 +4804,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
           if (NULL != lang_id) /* just in case if lang cannot be found, may be signal an error ? */
             {                            /* 012.34567.8901.23 */
               session_buffered_write (ses, " , \"lang\" : \"", 13);
-                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+                dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
               session_buffered_write_char ('\"', ses);
 	      dk_free_box (lang_id);
             }
@@ -4816,7 +4816,7 @@ http_talis_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, cadd
         sqlr_new_error ("22023", "SR625", "Unsupported datatype %d in TALIS-style JSON serialization of an RDF object", obj_dtp);
                                  /* 012.345678901.2345.67 */
       session_buffered_write (ses, " , \"datatype\" : \"", 17);
-      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       dk_free_box (type_uri);
     }
@@ -4872,7 +4872,7 @@ bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
                                  /* .0123456 */
       session_buffered_write (ses, "\" : { ", 6);
       env->tje_prev_subj = subj_iri_is_new ? subj_iri : box_copy (subj_iri); subj_iri_is_new = 0;
@@ -4885,7 +4885,7 @@ bif_http_talis_json_triple (caddr_t * qst, caddr_t * err_ret, state_slot_t ** ar
           dk_free_tree (env->tje_prev_pred);	env->tje_prev_pred = NULL;
         }
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
                                  /* .0123456 */
       session_buffered_write (ses, "\" : [ ", 6);
       env->tje_prev_pred = pred_iri_is_new ? pred_iri : box_copy (pred_iri); pred_iri_is_new = 0;
@@ -4998,12 +4998,12 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
         {
         case DV_STRING:
           session_buffered_write_char ('\"', ses);
-          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
           session_buffered_write_char ('\"', ses);
           return;
         case DV_WIDE:
           session_buffered_write_char ('\"', ses);
-          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
+          dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSON_DQ);
           session_buffered_write_char ('\"', ses);
           return;
         case DV_LONG_INT:
@@ -5043,12 +5043,12 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
       }
     case DV_STRING:
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       break;
     case DV_WIDE:
       session_buffered_write_char ('\"', ses);
-      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, obj_box_value, box_length (obj_box_value) - sizeof (wchar_t), CHARSET_UTF8, CHARSET_WIDE, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       break;
     case DV_XML_ENTITY:
@@ -5085,7 +5085,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
                                          /* 0          1           */
             {                            /* 012.3456789012.3456.78 */
               session_buffered_write (ses, " , \"@language\" : \"", 18);
-	      dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+	      dks_esc_write (ses, lang_id, box_length (lang_id) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
               session_buffered_write_char ('\"', ses);
 	      dk_free_box (lang_id);
             }
@@ -5098,7 +5098,7 @@ http_ld_json_write_literal_obj (dk_session_t *ses, query_instance_t *qi, caddr_t
                                  /* 0           1      */
                                  /* 012.345678.9012.34 */
       session_buffered_write (ses, " , \"@type\" : \"", 14);
-      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, type_uri, box_length (type_uri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       session_buffered_write_char ('\"', ses);
       dk_free_box (type_uri);
     }
@@ -5221,7 +5221,7 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
         }
                                      /* 01.2345.678.90 */
       session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
-      dks_esc_write (e2->ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (e2->ses, subj_iri, box_length (subj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
                                      /* .01.23 */
       session_buffered_write (e2->ses, "\",\n", 3);
       TAB_WS_INDENT (e2->ses, e2->nesting_level + 2);
@@ -5249,9 +5249,9 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
       if (pred_is_type)
         session_buffered_write (e2->ses, "@type", 5);
       else if (pred_iri_or_id != p_shorthand)
-        dks_esc_write (e2->ses, p_shorthand, box_length (p_shorthand) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+        dks_esc_write (e2->ses, p_shorthand, box_length (p_shorthand) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       else
-        dks_esc_write (e2->ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+        dks_esc_write (e2->ses, pred_iri, box_length (pred_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       if (e2->obj_is_single)
         {
                                          /* .0123 */
@@ -5309,13 +5309,13 @@ bif_http_ld_json_triple_impl (ld_json_env_t *env, ld_json_env2_t *e2, caddr_t su
       else if (pred_is_type || (pred_iri_or_id != p_shorthand)) /* Fix for 17108: values of @type should be printed without { "@id" : ... } enclosing */
         {
           session_buffered_write_char ('\"', e2->ses);
-          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
           session_buffered_write_char ('\"', e2->ses);
         }
       else
         {                                /* 01 2345 678 90*/
           session_buffered_write (e2->ses, "{ \"@id\": \"", 10);
-          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+          dks_esc_write (e2->ses, obj_iri, box_length (obj_iri) - 1, CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
           session_buffered_write (e2->ses, "\"}", 2);
         }
     }

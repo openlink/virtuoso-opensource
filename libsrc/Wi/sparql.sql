@@ -5746,7 +5746,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           subj_iri := id_to_iri (subj);
           if (starts_with (subj_iri, 'nodeID://'))
             subj_iri := '_:' || subseq (subj_iri, 9);
-          http ('\n    { "id" : "', ses); http_escape (subj_iri, 14, ses, 1, 1); http ('",\n      "properties" : {', ses);
+          http ('\n    { "id" : "', ses); http_escape (subj_iri, 21, ses, 1, 1); http ('",\n      "properties" : {', ses);
           prev_subj := subj;
           prev_pred := null;
         }
@@ -5755,7 +5755,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           dict_zap (objs_of_sp, 2);
           if (prev_pred is not null)
             http (' ] ,', ses);
-          http ('\n        "', ses); http_escape (case when isstring (pred) then pred else id_to_iri (pred) end, 14, ses, 1, 1); http ('" : [ ', ses);
+          http ('\n        "', ses); http_escape (case when isstring (pred) then pred else id_to_iri (pred) end, 21, ses, 1, 1); http ('" : [ ', ses);
           prev_pred := pred;
           obj_needs_comma := 0;
         }
@@ -5774,7 +5774,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
           obj_iri := id_to_iri (obj);
           if (starts_with (obj_iri, 'nodeID://'))
             obj_iri := '_:' || subseq (obj_iri, 9);
-          http ('{ "id" : "', ses); http_escape (obj_iri, 14, ses, 1, 1); http ('" }', ses);
+          http ('{ "id" : "', ses); http_escape (obj_iri, 21, ses, 1, 1); http ('" }', ses);
         }
       else
         {
@@ -5837,16 +5837,16 @@ create procedure DB.DBA.RDF_TRIPLES_TO_JSON_MICRODATA (inout triples any, inout 
               declare tmpses any;
               tmpses := string_output();
               http_value (sqlval, 0, tmpses);
-              http ('"', ses); http_escape (string_output_string (tmpses), 14, ses, 1, 1); http ('"', ses);
+              http ('"', ses); http_escape (string_output_string (tmpses), 21, ses, 1, 1); http ('"', ses);
             }
           else if (__tag of varchar = __tag (sqlval))
             {
-              http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
+              http ('"', ses); http_escape (sqlval, 21, ses, 1, 1); http ('"', ses);
             }
           else
             {
               sqlval := __rdf_strsqlval (obj);
-              http ('"', ses); http_escape (sqlval, 14, ses, 1, 1); http ('"', ses);
+              http ('"', ses); http_escape (sqlval, 21, ses, 1, 1); http ('"', ses);
             }
         }
 skip_obj: ;
@@ -5983,7 +5983,7 @@ create procedure DB.DBA.RDF_TRIPLES_TO_ODATA_JSON (inout triples any, inout ses 
                 {
                   http ('"', ses);
                   if (__tag of datetime <> __tag (obj))
-                    http_escape (obj, 14, ses, 1, 1);
+                    http_escape (obj, 21, ses, 1, 1);
                   else
                     __rdf_long_to_ttl (obj, ses);
                   http ('"', ses);

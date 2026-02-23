@@ -11415,7 +11415,7 @@ ws_rest_handle_error (dk_session_t * ses, char * media_type, caddr_t * err_ret, 
       *http_resp_code = (code && '3' == code[0]) ? 400 : 500;
       snprintf (tmp, sizeof (tmp), "{\"error\":\"%s\",\"code\":\"%s\",\"message\":\"", state, code);
       session_buffered_write (ses, tmp, strlen (tmp));
-      dks_esc_write (ses, message, strlen (message), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSWRITE_DQ);
+      dks_esc_write (ses, message, strlen (message), CHARSET_UTF8, CHARSET_UTF8, DKS_ESC_JSON_DQ);
       session_buffered_write (ses, "\"}", 2);
       err_ret[0] = srv_make_new_error ("VSPRT", "SP003", "%s", message);
       dk_free_tree (err);
