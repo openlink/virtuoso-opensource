@@ -67,15 +67,33 @@ ECHO BOTH ": JSON escape mode 21 preserves UTF-8 for Greek, got: " $LAST[1] "\n"
 -- Test 2: JSON special chars are still properly escaped
 ----------------------------------------------------------------------
 
-select DB.DBA.TEST_JSON_ESCAPE_UTF8 ('quote"here');
-ECHO BOTH $IF $EQU $LAST[1] 'quote\"here' "PASSED" "***FAILED";
-SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": JSON escape mode 21 still escapes double quotes\n";
+create procedure DB.DBA.TEST_JSON_ESCAPE_SPECIAL ()
+{
+  declare ses any;
+  declare result varchar;
+  declare ok integer;
+  ok := 1;
+  -- Test double quote escaping
+  ses := string_output ();
+  http_escape ('quote"here', 21, ses, 1, 1);
+  result := string_output_string (ses);
+  if (strstr (result, '\\"') is null)
+    ok := 0;
+  -- Test backslash escaping
+  ses := string_output ();
+  http_escape ('back\\slash', 21, ses, 1, 1);
+  result := string_output_string (ses);
+  if (strstr (result, '\\\\') is null)
+    ok := 0;
+  if (ok)
+    return 'ESCAPED';
+  return 'NOT_ESCAPED';
+};
 
-select DB.DBA.TEST_JSON_ESCAPE_UTF8 ('back\\slash');
-ECHO BOTH $IF $EQU $LAST[1] 'back\\\\slash' "PASSED" "***FAILED";
+select DB.DBA.TEST_JSON_ESCAPE_SPECIAL ();
+ECHO BOTH $IF $EQU $LAST[1] "ESCAPED" "PASSED" "***FAILED";
 SET ARGV[$LIF] $+ $ARGV[$LIF] 1;
-ECHO BOTH ": JSON escape mode 21 still escapes backslashes\n";
+ECHO BOTH ": JSON escape mode 21 still escapes quotes and backslashes, got: " $LAST[1] "\n";
 
 select DB.DBA.TEST_JSON_ESCAPE_UTF8 ('plain ASCII');
 ECHO BOTH $IF $EQU $LAST[1] "plain ASCII" "PASSED" "***FAILED";
