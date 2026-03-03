@@ -506,10 +506,12 @@ gb_values (chash_t * cha, uint64 * hash_no, caddr_t * inst, state_slot_t * ssl, 
   int64 *temp = NULL;
   int sets[ARTM_VEC_LEN];
   int64 *arr = NULL;
-  data_col_t *dc = QST_BOX (data_col_t *, inst, ssl->ssl_index);
+  data_col_t *dc = ssl->ssl_index ? QST_BOX (data_col_t*, inst, ssl->ssl_index) : NULL;
   int elt_sz, inx, ninx;
   dtp_t chdtp = cha->cha_sqt[nth].sqt_dtp;
   char is_fill = HA_FILL == cha->cha_ha->ha_op;
+  if (0 == ssl->ssl_index)
+    sqlr_new_error ("42000", "VEC26", "Bad expression, constant in hash fill");
   if (!dc)
     sqlr_new_error ("42000", "VEC..", "hash fill outer not supported");
   if (clear_nulls)
