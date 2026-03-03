@@ -3039,6 +3039,9 @@ qn_vec_slots (sql_comp_t * sc, data_source_t * qn, dk_hash_t * res, dk_hash_t * 
   int inx, src_resets_done;
   sc->sc_ssl_prereset_only = NULL;
 
+  if (THR_IS_STACK_OVERFLOW (THREAD_CURRENT_THREAD, &non_cl_local, 1000))
+     sqlc_error (sc->sc_cc, "42000", "Stack Overflow");
+
   if (sc->sc_cc->cc_super_cc->cc_instance_fill >= STATE_SLOT_LIMIT)
     SQL_GPF_T1 (sc->sc_cc, "Query too large, variables in state over the limit");
 
