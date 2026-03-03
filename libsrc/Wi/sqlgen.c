@@ -4512,7 +4512,7 @@ make_grouping_bitmap_set (ST ** sel_cols, ST * col, ST **etalon, ptrlong * bitma
       DO_BOX (ST *, st, inx, sorted_etalon)
         {
 	  ST * c = st->_.o_spec.col;
-	  if ( (c->_.col_ref.prefix && !col->_.col_ref.prefix) ||
+          if ( !ST_COLUMN(c, COL_DOTTED) || !ST_COLUMN(col, COL_DOTTED) || (c->_.col_ref.prefix && !col->_.col_ref.prefix) ||
 	    (!c->_.col_ref.prefix && col->_.col_ref.prefix) || strcmp (c->_.col_ref.prefix, col->_.col_ref.prefix))
 	    continue;
 	  if (!strcmp (c->_.col_ref.name, col->_.col_ref.name))
