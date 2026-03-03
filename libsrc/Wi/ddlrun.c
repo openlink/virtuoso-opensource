@@ -5285,8 +5285,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 	new_qr->qr_proc_owner = owner_user->usr_id;*/
       if (QR_IS_MODULE_PROC (qr))
         {
-          if (new_qr != qr)
-            qr_free (new_qr);
+          /* do not free here it is new module qr, new_qr will be seen in next loop */
 	  new_qr = NULL;
         }
     }
@@ -5312,8 +5311,7 @@ qr_recompile (query_t * qr, caddr_t * err_ret)
 		    }
 		  if (old_mod_qr == qr)
                     {
-                      if (new_qr != qr)
-                        qr_free (new_qr);
+                      /* this is one we are re-compiling, take the qr corresponding to it */
 		      new_qr = new_mod_qr;
                     }
 		}
