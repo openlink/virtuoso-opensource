@@ -3048,6 +3048,8 @@ vec_ssl_assign (caddr_t * inst, state_slot_t * ssl_to, state_slot_t * ssl_from)
 		}
 	      if (n_sets_1)
 		last_assigned = org_sets[n_sets_1 - 1];
+              if (n_sets_1 > 0 && 0 == dc_from->dc_n_values) /* can't do against empty, most likely aggregate on empty set, so no assign here */
+                continue;
 	      switch (sz)
 		{
 		case 8:
