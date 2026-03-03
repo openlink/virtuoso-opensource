@@ -490,7 +490,7 @@ itc_insert_lock (it_cursor_t * itc, buffer_desc_t * buf, int *res_ret, int may_w
       row_lock_t *rl = pl_row_lock_at (itc->itc_pl, itc->itc_map_pos);
       if (!rl)
 	return NO_WAIT;
-      if (RL_IS_FOLLOW (rl) && !LT_SEES_EFFECT(itc->itc_ltrx, rl->pl_owner))
+      if (RL_IS_FOLLOW (rl) && !rl->pl_is_owner_list && !LT_SEES_EFFECT(itc->itc_ltrx, rl->pl_owner))
 	{
 	  TC (tc_insert_follow_wait);
 	  if (!may_wait)
