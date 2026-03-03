@@ -11919,6 +11919,7 @@ caddr_t *
 box_tpcip_get_interfaces (void)
 {
   dk_set_t set = NULL;
+  char * to_free = NULL;
 #ifdef SIOCGIFCONF
 #define MAX_IFS 32
   struct ifreq *ifrp;
@@ -11936,37 +11937,53 @@ box_tpcip_get_interfaces (void)
       eno = errno;
       tcpses_error_message (eno, message, sizeof (message));
       log_error ("Failed create socket to obtain network interfaces : %s", message);
+      goto err;
     }
 
 #ifdef SIOCGIFCONF
   memset (buf, 0, sizeof(buf));
   ifc.ifc_len = sizeof( buf );
   ifc.ifc_buf = (caddr_t)buf;
-
   if (ioctl(sockfd, SIOCGIFCONF, (caddr_t)&ifc) < 0)
     {
       eno = errno;
       tcpses_error_message (eno, message, sizeof (message));
       log_error ("Failed to get network interfaces : %s", message);
+      goto err;
+    }
+  if (ifc.ifc_len > sizeof (buf))
+    {
+      to_free = dk_alloc_zero(ifc.ifc_len);
+      ifc.ifc_buf = to_free;
+
+      if (ioctl(sockfd, SIOCGIFCONF, (caddr_t)&ifc) < 0)
+        {
+          eno = errno;
+          tcpses_error_message (eno, message, sizeof (message));
+          log_error ("Failed to get network interfaces : %s", message);
+          goto err;
+        }
     }
 
   ifrp = ifc.ifc_req;
   for (len = ifc.ifc_len; len > 0; /* len -= sizeof (struct ifreq) calculated below */)
     {
-      if (ifrp->ifr_addr.sa_family == AF_INET)
-	{
-	  memcpy (&addr, &(ifrp->ifr_addr), sizeof (struct sockaddr_in));
-	  snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
-	  dk_set_push (&set, box_string (message));
-	}
-      /* The FreeBSD returns variable length */
+      int entry_size;
 #if defined (__FreeBSD__) || defined (__APPLE__)
-      ifrp = (struct ifreq *)((char *)&(ifrp->ifr_addr) + ifrp->ifr_addr.sa_len);
-      len -= ifrp->ifr_addr.sa_len;
+      entry_size = sizeof(ifrp->ifr_name) +
+          (ifrp->ifr_addr.sa_len > sizeof(struct sockaddr) ?
+           ifrp->ifr_addr.sa_len : sizeof(struct sockaddr));
 #else
-      ifrp++;
-      len -= sizeof (struct ifreq);
+      entry_size = sizeof(struct ifreq);
 #endif
+      if (ifrp->ifr_addr.sa_family == AF_INET)
+        {
+          memcpy (&addr, &(ifrp->ifr_addr), sizeof (struct sockaddr_in));
+          snprintf (message, sizeof (message), "%s", inet_ntoa(addr.sin_addr));
+          dk_set_push (&set, box_string (message));
+        }
+      ifrp = (struct ifreq *)((char *)ifrp + entry_size);
+      len -= entry_size;
     }
 #elif defined (SIO_GET_INTERFACE_LIST)
     {
@@ -11989,6 +12006,8 @@ box_tpcip_get_interfaces (void)
 	}
     }
 #endif
+err:
+  dk_free(to_free, -1);
   closesocket(sockfd);
   return (caddr_t *) list_to_array (dk_set_nreverse (set));
 }
