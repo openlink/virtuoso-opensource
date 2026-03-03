@@ -718,7 +718,7 @@ cha_any (chash_t * cha, db_buf_t dv)
 db_buf_t
 cha_dt (chash_t * cha, db_buf_t dt)
 {
-  dtp_t hd[2];
+  dtp_t hd[DT_LENGTH]; /* should have dt_cmp len + 2, cha_any makes copy */
   db_buf_t place;
   hd[0] = DV_SHORT_STRING_SERIAL;
   hd[1] = DT_LENGTH - 2;
