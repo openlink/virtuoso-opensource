@@ -91,6 +91,7 @@ lin_int (lin_int_t * li, float x)
 	if (x <= li->li_x[pt + 1])
 	  break;
     }
+  pt = MIN((n - 2), pt);
   k =  (li->li_y[pt + 1] - li->li_y[pt]) / (li->li_x[pt + 1] - li->li_x[pt]);
   return li->li_y[pt] + k * (x - li->li_x[pt]);
 }
