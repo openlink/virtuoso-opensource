@@ -523,7 +523,7 @@ itc_col_lock (it_cursor_t * itc, buffer_desc_t * buf, int n_used, int may_delete
       if (ISO_SERIALIZABLE == itc->itc_isolation)
 	{
 	  /* serializable locks the row before the range unless this is a non-first page or there is a matchh on unique key */
-	  if (lower && !(itc->itc_ks->ks_ts->ts_is_unique && lower != last))
+	  if (lower && !(IS_TS(itc->itc_ks->ks_ts) && itc->itc_ks->ks_ts->ts_is_unique && lower != last))
 	    {
 	      lower--;
 	      n_done--;
