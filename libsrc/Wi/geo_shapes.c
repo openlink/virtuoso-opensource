@@ -1404,7 +1404,7 @@ ewkt_find_metas_by_geotype (int geotype)
       int metas_count = (sizeof (ewkt_keyword_metas) / sizeof (ewkt_keyword_metas[0]));
       ewkt_kwd_metas_t *ptr;
       ewkt_geotype_metas = hash_table_allocate (metas_count);
-      for (ptr = ewkt_keyword_metas + metas_count; ptr > ewkt_keyword_metas; ptr--)
+      for (ptr = ewkt_keyword_metas + metas_count - 1; ptr >= ewkt_keyword_metas; ptr--)
 	{
 	  ewkt_kwd_metas_t *old;
 	  if (EWKT_KWD_GEO_TYPE != ptr->kwd_type)
