@@ -28,9 +28,6 @@
 #ifndef _DKSESTCP_H
 #define _DKSESTCP_H
 
-#ifdef SUNRPC
-# include <rpc/rpc.h>
-#endif
 
 #ifdef UNIX
 # include <sys/socket.h>

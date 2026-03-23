@@ -44,15 +44,7 @@ device_allocate (int devclass)
       return tcpdev_allocate ();
 #endif
 
-#ifdef COM_UDPIP
-    case SESCLASS_UDPIP:
-      return udpdev_allocate ();
-#endif
 
-#ifdef COM_NMPIPE
-    case SESCLASS_NMPIPE:
-      return nmpdev_allocate ();
-#endif /* COM_NMPIPE */
 
 #ifdef COM_UNIXSOCK
     case SESCLASS_UNIX:

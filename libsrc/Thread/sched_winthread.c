@@ -67,9 +67,6 @@ sched_init (void)
   _thread_num_runnable = -1;	/* not counted */
   _thread_num_total = 1;
 
-#ifdef EXPIRIMENTAL
-  io_init ();
-#endif
 #ifdef MTX_METER
   all_mtxs_mtx = mutex_allocate ();
 #endif
@@ -502,110 +499,6 @@ thread_get_priority (thread_t *self)
 }
 
 
-#ifdef EXPIRIMENTAL
-/*
- *  Wait for an event to happen.
- *
- *  If holds != NULL, the caller holds the mutex, which will be released
- *  before going to sleep. The thread calling thread_signal_cond *must* hold
- *  the same mutex.
- *
- *  The holds mutex is reacquired after wakeup.
- */
-int
-thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout)
-{
-  thread_t *thr = current_thread;
-  HANDLE mtx;
-  DWORD to;
-
-  thr->thr_status = WAITEVENT;
-  thr->thr_event = event;
-
-  mtx = holds ? mtxt : _q_lock;
-
-  Q_LOCK ();
-  thread_queue_to (&_waitq, thr);
-  _thread_num_wait++;
-
-  if (holds)
-    Q_UNLOCK ();
-
-  to = timeout == TV_INFINITE ? INFINITE : timeout;
-
-#ifdef WIN95COMPAT
-  WaitForSingleObject (thr->thr_cv, to);
-#else
-  SignalObjectAndWait (mtx, thr->thr_cv, to, FALSE);
-#endif
-
-  mutex_enter (mtx);
-
-  if (holds)
-    Q_LOCK ();
-
-  thread_queue_remove (&_waitq, thr);
-  _thread_num_wait--;
-  Q_UNLOCK ();
-
-  thr->thr_status = RUNNING;
-  return thr->thr_event == NULL ? 0 : -1;
-}
-
-
-int
-thread_signal_cond (void *event)
-{
-  thread_t *thr;
-  thread_t *next;
-  int count;
-
-  count = 0;
-  Q_LOCK ();
-  for (thr = (thread_t *) _waitq.thq_head.thr_next;
-      thr != (thread_t *) &_waitq.thq_head;
-      thr = next)
-    {
-      next = (thread_t *) thr->thr_hdr.thr_next;
-      if (thr->thr_event == event)
-	{
-	  thr->thr_event = NULL;
-	  PulseEvent (thr->thr_cv);
-	  count++;
-	}
-    }
-  Q_UNLOCK ();
-
-  return count;
-}
-
-
-int
-thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout)
-{
-  struct timeval *ptv, tv;
-
-  if (timeout == TV_INFINITE)
-    ptv = NULL;
-  else
-    {
-      tv.tv_sec = timeout / 1000;
-      tv.tv_usec = (timeout % 1000) * 1000;
-      ptv = &tv;
-    }
-
-#error TODO - handle event
-
-  return select (n, rfds, wfds, NULL, ptv);
-}
-
-
-void
-thread_sleep (TVAL timeout)
-{
-  Sleep (timeout);
-}
-#endif
 
 
 /******************************************************************************

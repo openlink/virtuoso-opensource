@@ -1100,7 +1100,6 @@ long write_block_usec;
 int
 tcpses_is_read_ready (session_t * ses, timeout_t * to)
 {
-#ifndef FOR_GTK_TESTS
   int rc;
   struct timeval to_2;
   fd_set fds;
@@ -1120,10 +1119,8 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 
   FD_ZERO (&fds);
   FD_SET (fd, &fds);
-#endif
   SESSTAT_CLR (ses, SST_TIMED_OUT);
 
-#ifndef FOR_GTK_TESTS
 
   if (to &&
       to->to_sec == dks_fibers_blocking_read_default_to.to_sec &&
@@ -1143,7 +1140,6 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
     }
   if (to)
     read_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
-#endif
   return SER_SUCC;
 }
 
@@ -1151,7 +1147,6 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
 int
 tcpses_is_write_ready (session_t * ses, timeout_t * to)
 {
-#ifndef FOR_GTK_TESTS
   int rc;
   struct timeval to_2;
   fd_set fds;
@@ -1171,10 +1166,8 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
 
   FD_ZERO (&fds);
   FD_SET (fd, &fds);
-#endif
   SESSTAT_W_CLR (ses, SST_TIMED_OUT);
 
-#ifndef FOR_GTK_TESTS
   rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
   if (!rc)
     {
@@ -1182,7 +1175,6 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
     }
   if (to)
     write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
-#endif
   return SER_SUCC;
 }
 
@@ -1237,128 +1229,6 @@ fileses_write (session_t * ses, char *buffer, int n_bytes)
   ses->ses_bytes_written = n_out;
   return (n_out);
 }
-
-
-#ifdef SUNRPC
-
-#ifdef __cplusplus
-extern "C" int _rpc_dtablesize ();
-extern "C" fd_set svc_fdset;
-#else
-extern int _rpc_dtablesize ();
-extern fd_set svc_fdset;
-#endif
-
-int sun_rpcs_pending = 0;
-
-typedef void (*srpc_cb_t) ();
-
-srpc_cb_t srpc_callback;
-
-
-void
-tcpses_set_sun_rpc_callback (srpc_cb_t f)
-{
-  srpc_callback = f;
-}
-
-
-void
-svc_run_3 (timeout_t * to)
-{
-#ifdef FD_SETSIZE
-  fd_set readfds;
-#else
-  int readfds;
-#endif /* def FD_SETSIZE */
-  struct timeval tv;
-
-#ifndef AIX
-  extern int errno;
-#endif
-
-#ifdef FD_SETSIZE
-  readfds = svc_fdset;
-#else
-  readfds = svc_fds;
-#endif /* def FD_SETSIZE */
-
-  if (to != NULL)
-    {
-      tv.tv_sec = to->to_sec;
-      tv.tv_usec = to->to_usec;
-    }
-
-  switch (select (_rpc_dtablesize (), &readfds, 0, 0, to == NULL ? NULL : &tv))
-    {
-    case -1:
-      if (errno == SYS_EINTR)
-	{
-	  return;
-	}
-      perror ("svc_run: - select failed");
-      return;
-
-    case 0:
-      return;
-
-    default:
-      svc_getreqset (&readfds);
-    }
-}
-
-
-int
-tcpses_add_sun_rpc_sockets (fd_set * reads)
-{
-  int n;
-  int max_set = 0;
-  int max = _rpc_dtablesize ();
-  if (sun_rpcs_pending)
-    return 0;
-  for (n = 2; n < max; n++)
-    {
-      if (FD_ISSET (n, &svc_fdset))
-	{
-	  FD_SET (n, reads);
-	  max_set = n;
-	};
-    };
-  return max_set;
-}
-
-
-fd_set srpc_fd_set;
-
-
-void
-tcpses_process_sun_rpc_sockets (fd_set * all_fds)
-{
-  int n, any_sun;
-  int max = _rpc_dtablesize ();
-  FD_ZERO (&srpc_fd_set);
-  any_sun = 0;
-  for (n = 2; n < max; n++)
-    {
-      if (FD_ISSET (n, all_fds) && FD_ISSET (n, &svc_fdset))
-	{
-	  FD_SET (n, &srpc_fd_set);
-	  any_sun = 1;
-	};
-      if (any_sun)
-	{
-	  srpc_callback ();
-	}
-    };
-}
-
-
-#else
-
-#define tcpses_process_sun_rpc_sockets (q)
-#define tcpses_add_sun_rpc_sockets (q)
-
-#endif
 
 
 /*##**********************************************************************
@@ -1444,10 +1314,6 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 
   dbg_printf_2 (("Calling select..."));
 
-#ifdef SUNRPC
-  s = tcpses_add_sun_rpc_sockets (&read_set);
-  s_max = MAX (s_max, s);
-#endif
   rc = select (s_max + 1, &read_set, &write_set, &excep_set, timeout == NULL ? NULL : &to);
 
   dbg_printf_2 (("select() : rc=%d.", rc));
@@ -1477,9 +1343,6 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
       /* rc equals number of criteria met,
          here we update all the session status values.
        */
-#ifdef SUNRPC
-      tcpses_process_sun_rpc_sockets (&read_set);
-#endif
       dbg_printf_2 (("Updating sessions."));
       for (i = 0; i < ses_count; i++)
 	{

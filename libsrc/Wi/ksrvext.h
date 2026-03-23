@@ -276,9 +276,6 @@ void thread_freeze (void);
 int thread_wait_cond (void *event, dk_mutex_t *holds, TVAL timeout);
 int thread_signal_cond (void *event);
 
-int thread_select (int n, fd_set *rfds, fd_set *wfds, void *event, TVAL timeout);
-void thread_sleep (TVAL msec);
-
 struct sockaddr;
 
 int thread_nb_fd (int fd);
@@ -368,15 +365,8 @@ struct thread_s
     /* thread specific errno */
     int			thr_err;
 
-    /* if WAITING, thr_timer can interrupt */
-    void *		thr_event;
-    timer_t *		thr_timer;
-
-    /* used in thread_select */
+    /* thread specific retcode */
     int			thr_retcode;
-    int			thr_nfds;
-    fd_set		thr_rfds;
-    fd_set		thr_wfds;
 
     /* restart context for a "dead" or new thread */
     jmp_buf		thr_init_context;
