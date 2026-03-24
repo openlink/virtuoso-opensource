@@ -273,7 +273,6 @@ tcpses_set_address (session_t * ses, char *addrinfo1)
   struct hostent_data hted;
 # endif
 #endif
-  init_tcpip ();
   strncpy (addrinfo, addrinfo1, sizeof (addrinfo));
   addrinfo[sizeof (addrinfo) - 1] = 0;
 
@@ -484,7 +483,6 @@ tcpses_listen (session_t * ses)
   int rc;
   saddrin_t *p_addr;
   dbg_printf_1 (("tcpses_listen."));
-  init_tcpip ();
   TCP_CHK (ses);
 
   SESSTAT_CLR (ses, SST_OK);
@@ -534,7 +532,7 @@ tcpses_listen (session_t * ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("listen()");
 
-#ifdef PCTCP
+#ifdef WIN32
       if (errno != WSAEINPROGRESS)
 #endif
 	return (SER_SYSCALL);
@@ -803,7 +801,6 @@ tcpses_connect (session_t * ses)
   int rc;
 
   dbg_printf_1 (("tcpses_connect."));
-  init_tcpip ();
   TCP_CHK (ses);
 
   /* First, init status fields so that if something fails we
@@ -894,13 +891,11 @@ tcpses_disconnect (session_t * ses)
   SESSTAT_CLR (ses, SST_OK);
 
   /* Close the connected socket */
-#ifdef PCTCP
+#if 0 /* defined(WIN32) */
   {
-/*
     struct linger l = {1, 0};
     rc = setsockopt (ses->ses_device->dev_connection->con_s,
         SOL_SOCKET, SO_LINGER, (void *)&l, sizeof (struct linger));
-*/
     rc = shutdown (ses->ses_device->dev_connection->con_s, 2);
   }
 #endif
@@ -979,9 +974,6 @@ tcpses_write (session_t * ses, char *buffer, int n_bytes)
   SESSTAT_W_CLR (ses, SST_BLOCK_ON_WRITE);
 
   n_out = send (ses->ses_device->dev_connection->con_s, buffer, n_bytes, flags);
-#if defined (PCTCP) & !defined (WIN32)
-  Yield ();
-#endif
   dbg_printf_2 (("send() : n_out=%d.", n_out));
   ses->ses_w_errno = 0;
   if (n_out <= 0)
@@ -1702,7 +1694,7 @@ test_readblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_readblock. rc=%d, eno=%d", retcode, eno));
 
-#if defined (PCTCP)
+#if defined (WIN32)
   if (retcode == -1 && (eno == WSAEWOULDBLOCK))
 #elif defined (EWOULDBLOCK)
   if (retcode == -1 && (eno == EAGAIN || eno == EWOULDBLOCK))
@@ -1753,7 +1745,7 @@ test_writeblock (session_t * ses, int retcode, int eno)
 {
   dbg_printf_3 (("test_writeblock. rc=%d, eno=%d", retcode, eno));
 
-#if defined (PCTCP)
+#if defined (WIN32)
   if (retcode == -1 && (eno == WSAEWOULDBLOCK))
 #elif defined (EWOULDBLOCK)
   if (retcode == -1 && (eno == EAGAIN || eno == EWOULDBLOCK))
@@ -1913,7 +1905,7 @@ ses_control_all (session_t * ses)
 }
 
 
-#ifdef PCTCP
+#ifdef WIN32
 int
 init_pctcp (void)
 {
@@ -2036,13 +2028,13 @@ tcpses_addr_info (session_t * ses, char *buf, size_t max_buf, int deflt, int fro
 void
 tcpses_error_message (int saved_errno, char *msgbuf, int size)
 {
-#ifndef PCTCP
+#ifndef WIN32
   int msg_len;
 #endif
 
   if (!msgbuf || size < 1)
     return;
-#ifdef PCTCP
+#ifdef WIN32
   switch (saved_errno)
     {
     case WSAEACCES:
@@ -2459,7 +2451,7 @@ unixses_listen (session_t * ses)
       test_eintr (ses, rc, errno);
       dbg_perror ("listen()");
 
-#ifdef PCTCP
+#ifdef WIN32
       if (errno != WSAEINPROGRESS)
 #endif
 	return (SER_SYSCALL);

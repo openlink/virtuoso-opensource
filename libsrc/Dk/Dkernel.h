@@ -1013,7 +1013,7 @@ int ssl_check_connect_timeout (session_t *ses, timeout_t * to, int want);
 
 extern long client_trace_flag;
 
-#ifdef PCTCP
+#ifdef WIN32
 int init_pctcp (void);
 #endif
 

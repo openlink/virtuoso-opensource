@@ -64,7 +64,6 @@ extern void ldbg_longjmp (jmp_buf env, int value);
 #endif
 
 #ifdef WIN32
-# define PCTCP
 # define DOSFS
 #else
 # define UNIX 1

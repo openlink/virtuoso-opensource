@@ -40,15 +40,7 @@
 #ifdef OS2
 #include <process.h>
 #endif
-/*
-#ifdef PCTCP
-#ifdef WIN32
-#include <winsock2.h>
-#else
-#include <winsock.h>
-#endif
-#endif
-*/
+
 #ifdef SRV_DEBUG
 #define PRINT_DEBUG
 #define LEVEL_VAR srv_debug_level
@@ -3173,7 +3165,7 @@ PrpcListen (char *addr, int sesclass)
 
       if (!SESSTAT_ISSET (listening_session->dks_session, SST_LISTENING))
 	{
-#ifdef PCTCP
+#ifdef WIN32
 	  int eno = WSAGetLastError ();
 	  char message[255];
 	  tcpses_error_message (eno, message, sizeof (message));
@@ -3650,7 +3642,7 @@ PrpcInitialize1 (int mem_mode)
   thread_mtx = mutex_allocate ();
   mutex_option (thread_mtx, "THREAD_MTX", NULL, NULL);
 
-#ifdef PCTCP
+#ifdef WIN32
   init_pctcp ();
 #endif
 

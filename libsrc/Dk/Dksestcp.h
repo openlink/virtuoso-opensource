@@ -54,20 +54,14 @@
 #include <sys/un.h>
 #endif
 
-#if defined (PCTCP)
-/*# include <winsock2.h>*/
-/*# include <mstcpip.h>*/
+#if defined (WIN32)
+# include <winsock2.h>
+# include <mstcpip.h>
 # include <windows.h>
 extern int last_errno;
-/*static int pctcp_started=0; */
-# define init_tcpip()
-/* if (!pctcp_started) {pctcp_started=1;init_pctcp();};
-  Init called from level 2.  */
 # ifndef EMSGSIZE
 # define EMSGSIZE WSAEMSGSIZE
 # endif
-#else /* PCTCP */
-# define init_tcpip()
 #endif
 
 
@@ -81,7 +75,7 @@ extern int last_errno;
 # define SYS_EWBLK   EWOULDBLOCK
 # define SYS_EINTR   EINTR
 
-#elif defined (PCTCP)
+#elif defined (WIN32)
 # define SYS_EWBLK   WSAEWOULDBLOCK
 # define SYS_EINTR   WSAEINTR
 
