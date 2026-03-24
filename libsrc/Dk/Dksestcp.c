@@ -675,27 +675,19 @@ tcpses_print_client_ip (session_t * ses, char *buf, int buf_len)
  *  Estabish a connection to an ip:port with timeout
  */
 static int
-connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
+connect_nonblock (int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
 {
   int flags = 0, error = 0, ret = 0;
-  fd_set rset, wset;
   socklen_t len = sizeof (error);
-  struct timeval ts;
 
   dbg_printf_1 (("conn_nonblock sa=%s:%u timeout=%d", inet_ntoa (sa->sin_addr), ntohs (sa->sin_port), timeout));
-
-  /*
-   * Initialize
-   */
-  FD_ZERO (&rset);
-  FD_SET (sock, &rset);
-  wset = rset;
 
   /*
    *  Save original flags and set nonblock mode
    */
   if ((flags = fcntl (sock, F_GETFL, 0)) < 0)
     return -1;
+
   if (fcntl (sock, F_SETFL, flags | O_NONBLOCK) < 0)
     return -1;
 
@@ -711,8 +703,51 @@ connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
   /*
    *  Wait for connection to complete
    */
+#ifdef HAVE_POLL
+
   do
     {
+      struct pollfd fds;
+      int timeout_ms = -1;
+
+      fds.fd = sock;
+      fds.events = POLLIN | POLLOUT;
+      fds.revents = 0;
+
+      if (timeout)
+	timeout_ms = timeout * 1000;	/* timeout in msec */
+
+      ret = poll (&fds, 1, timeout_ms);
+
+      switch (ret)
+	{
+	case 0:
+	  errno = ETIMEDOUT;
+	  return -1;
+
+	case -1:
+	  if (errno == EINTR)
+	    continue;
+	  return -1;
+
+	default:
+	  if (fds.revents & (POLLIN | POLLOUT))
+	    break;
+	}
+    }
+  while (ret == -1);
+
+#else /* SELECT */
+
+  do
+    {
+      fd_set rset, wset;
+      struct timeval ts;
+
+      FD_ZERO (&rset);
+      FD_SET (sock, &rset);
+      wset = rset;
+
       ts.tv_sec = timeout;
       ts.tv_usec = 0;
 
@@ -735,6 +770,7 @@ connect_nonblock(int sock, saddrin_t *sa, socklen_t sa_len, int timeout)
 	}
     }
   while (ret == -1);
+#endif
 
   /*
    *  If the socket was signalled, check if the operation returned an error
