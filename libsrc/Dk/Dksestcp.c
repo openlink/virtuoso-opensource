@@ -1118,37 +1118,27 @@ tcpses_read (session_t * ses, char *buffer, int n_bytes)
   return (n_in);
 }
 
-long read_block_usec;
-long write_block_usec;
+int64 read_block_usec;
+int64 write_block_usec;
+
 
 int
 tcpses_is_read_ready (session_t * ses, timeout_t * to)
 {
   int rc;
-  struct timeval to_2;
-  fd_set fds;
   int fd = ses->ses_device->dev_connection->con_s;
-  if (to)
-    {
-      memset (&to_2, 0, sizeof (to_2));
-      to_2.tv_sec = to->to_sec;
-      to_2.tv_usec = to->to_usec;
-    }
+  time_usec_t start_time_usec;
 
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
 
-  if (fd < 0)					 /* the sequential read will throw exception */
+  if (fd < 0)			/* the sequential read will throw exception */
     return SER_SUCC;
 
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
   SESSTAT_CLR (ses, SST_TIMED_OUT);
 
-
-  if (to &&
-      to->to_sec == dks_fibers_blocking_read_default_to.to_sec &&
-      to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
+  if (to && to->to_sec == dks_fibers_blocking_read_default_to.to_sec
+	 && to->to_usec == dks_fibers_blocking_read_default_to.to_usec)
     return SER_SUCC;
 
   if (ses->ses_reads)
@@ -1156,14 +1146,52 @@ tcpses_is_read_ready (session_t * ses, timeout_t * to)
   else
     ses->ses_reads = 1;
 
-  rc = select (fd + 1, &fds, NULL, NULL, to ? &to_2 : NULL);
+  if (to)
+    start_time_usec = get_usec_real_time ();
+
+#ifdef HAVE_POLL
+  {
+    struct pollfd fds;
+    int timeout_ms = -1;
+
+    fds.fd = fd;
+    fds.events = POLLIN;
+    fds.revents = 0;
+
+    if (to)
+      timeout_ms = (to->to_sec * 1000UL) + (to->to_usec / 1000UL);
+
+    rc = poll (&fds, 1, timeout_ms);
+  }
+#else
+  {
+    fd_set fds;
+    struct timeval to_2;
+
+    FD_ZERO (&fds);
+    FD_SET (fd, &fds);
+
+    if (to)
+      {
+	to_2.tv_sec = to->to_sec;
+	to_2.tv_usec = to->to_usec;
+      }
+
+    rc = select (fd + 1, &fds, NULL, NULL, to ? &to_2 : NULL);
+  }
+#endif
+
+  if (to)
+    read_block_usec += get_usec_real_time () - start_time_usec;
+
   ses->ses_reads = 0;
+
   if (!rc)
     {
       SESSTAT_SET (ses, SST_TIMED_OUT);
     }
-  if (to)
-    read_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
+
+
   return SER_SUCC;
 }
 
@@ -1172,15 +1200,8 @@ int
 tcpses_is_write_ready (session_t * ses, timeout_t * to)
 {
   int rc;
-  struct timeval to_2;
-  fd_set fds;
   int fd = ses->ses_device->dev_connection->con_s;
-  if (to)
-    {
-      memset (&to_2, 0, sizeof (to_2));
-      to_2.tv_sec = to->to_sec;
-      to_2.tv_usec = to->to_usec;
-    }
+  time_usec_t start_time_usec;
 
   if (ses->ses_device->dev_connection->con_is_file)
     return 1;
@@ -1188,17 +1209,53 @@ tcpses_is_write_ready (session_t * ses, timeout_t * to)
   if (fd < 0)					 /* the sequential read will throw exception */
     return SER_SUCC;
 
-  FD_ZERO (&fds);
-  FD_SET (fd, &fds);
   SESSTAT_W_CLR (ses, SST_TIMED_OUT);
 
-  rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
+  if (to)
+    start_time_usec = get_usec_real_time ();
+
+#ifdef HAVE_POLL
+  {
+    struct pollfd fds;
+    int timeout_ms = -1;
+
+    fds.fd = fd;
+    fds.events = POLLOUT;
+    fds.revents = 0;
+
+    if (to)
+      {
+        timeout_ms = (to->to_sec * 1000UL) + (to->to_usec / 1000UL);
+      }
+
+    rc = poll (&fds, 1, timeout_ms);
+  }
+#else
+  {
+    fd_set fds;
+    struct timeval to_2;
+
+    FD_ZERO (&fds);
+    FD_SET (fd, &fds);
+
+    if (to)
+      {
+	to_2.tv_sec = to->to_sec;
+	to_2.tv_usec = to->to_usec;
+      }
+
+    rc = select (fd + 1, NULL, &fds, NULL, to ? &to_2 : NULL);
+  }
+#endif
+
+  if (to)
+    write_block_usec += get_usec_real_time () - start_time_usec;
+
   if (!rc)
     {
       SESSTAT_W_SET (ses, SST_TIMED_OUT);
     }
-  if (to)
-    write_block_usec += (to->to_sec - to_2.tv_sec) * 1000000 + (to->to_usec - to_2.tv_usec);
+
   return SER_SUCC;
 }
 
