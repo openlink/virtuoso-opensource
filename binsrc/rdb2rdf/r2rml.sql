@@ -866,7 +866,8 @@ create method R2RML_MAKE_QM_IMPL_PLAIN_PO (in tmap IRI_ID, in pofld IRI_ID, in p
       term_type := __rdf_strsqlval ("ott");
       if (term_type is null)
         {
-          if ("ocol" is null and "odatatype" is null and "olang" is null)
+          if ("ocol" is null and "odatatype" is null and "olang" is null and (isiri_id ("consto") or
+                ((isstring ("consto") or isuname("consto")) and bit_and (__box_flags ("consto"), 1)) ))
             term_type := 'http://www.w3.org/ns/r2rml#IRI';
           else
             term_type := 'http://www.w3.org/ns/r2rml#Literal';
