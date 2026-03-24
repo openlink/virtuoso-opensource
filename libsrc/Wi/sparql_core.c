@@ -6043,6 +6043,8 @@ bif_sparql_explain (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   int rewrite_all = (0 != ((2 > BOX_ELEMENTS (args)) ? 1 : bif_long_arg (qst, args, 1, "sparql_explain")));
   dk_session_t *res;
   SPARP_SAVED_MP_SIZE_CAP;
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   SPARP_TWEAK_MP_SIZE_CAP(THR_TMP_POOL,&sparqre);
   memset (&sparqre, 0, sizeof (spar_query_env_t));
@@ -6124,6 +6126,8 @@ bif_sparql_detalize (caddr_t * qst, caddr_t * err_ret, state_slot_t ** args)
   str = bif_string_arg (qst, args, 0, "sparql_detalize");
   sd_flags = ((2 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 1, "sparql_detalize") : SSG_SD_VOS_CURRENT);
   sd_no = ((3 <= BOX_ELEMENTS (args)) ? bif_long_arg (qst, args, 2, "sparql_detalize") : 0);
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   sparqre.sparqre_param_ctr = &param_ctr;
@@ -6373,6 +6377,8 @@ bif_sparql_quad_maps_for_quad_impl (caddr_t * qst, caddr_t * err_ret, state_slot
     case 1: sqlvals[SPART_TRIPLE_GRAPH_IDX]	= bif_arg (qst, args, 0, fname);
     case 0: ; /* no break */
     }
+  if (THR_TMP_POOL != NULL)
+    sqlr_new_error ("42000", "MPNOT", "The memory pool is busy");
   MP_START ();
   memset (&sparqre, 0, sizeof (spar_query_env_t));
   memset (&spare, 0, sizeof (sparp_env_t));
