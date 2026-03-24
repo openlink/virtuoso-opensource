@@ -113,6 +113,9 @@ int time_slice = 100;
 
 int last_session;
 dk_session_t *served_sessions[MAX_SESSIONS];
+#ifdef HAVE_POLL
+static struct pollfd served_sessions_fds[MAX_SESSIONS];
+#endif
 service_t *services;
 
 resource_t *free_threads;
@@ -264,9 +267,11 @@ add_to_served_sessions (dk_session_t * ses)
   select_set_changed = 1;
   if (SESSION_SCH_DATA (ses)->sio_is_served != -1)
     return (0);
+#ifndef HAVE_POLL
 #ifndef WIN32
   if (tcpses_get_fd (ses->dks_session) >= FD_SETSIZE)
     return -1;
+#endif
 #endif
   for (n = 0; n < MAX_SESSIONS; n++)
     {
@@ -519,19 +524,23 @@ again:
 static int
 check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_t select_fun, int protocol)
 {
-  struct timeval to_2;
   int buffered_left;
   int s, n, rc;
-  int s_max;
   int unread_data;
+#ifdef HAVE_POLL
+  int timeout_ms = (timeout_org->to_sec * 1000UL) + (timeout_org->to_usec / 1000UL);
+#else
   fd_set reads;
   fd_set writes;
+  struct timeval to_2;
+  int s_max = 0;
 
   memset (&to_2, 0, sizeof (to_2));
   to_2.tv_sec = timeout_org->to_sec;
   to_2.tv_usec = timeout_org->to_usec;
   FD_ZERO (&reads);
   FD_ZERO (&writes);
+#endif
 
   if (!is_recursive)
     scheduling_in_progress = 1;
@@ -542,11 +551,36 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
     }
 
   unread_data = 0;
-  s_max = 0;
 
   for (n = 0; n < last_session; n++)
     {
       dk_session_t *ses = served_sessions[n];
+#ifdef HAVE_POLL
+      served_sessions_fds[n].fd = -1;
+      if (ses && is_protocol (ses->dks_session, protocol))
+	{
+	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
+	      SESSION_SCH_DATA (ses)->sio_default_read_ready_action)
+	    {
+	      if (bytes_in_read_buffer (ses))
+		{
+		  timeout_ms = 0;
+		  unread_data = 1;
+		}
+	      s = DKS_SOCK (ses);
+              served_sessions_fds[n].fd = s;
+	      served_sessions_fds[n].events |= POLLIN;
+	      served_sessions_fds[n].revents = 0;
+	    }
+	  if (SESSION_SCH_DATA (ses)->sio_random_write_ready_action)
+	    {
+	      s = DKS_SOCK (ses);
+              served_sessions_fds[n].fd = s;
+	      served_sessions_fds[n].events |= POLLOUT;
+	      served_sessions_fds[n].revents = 0;
+	    }
+	}
+#else
       if (ses && is_protocol (ses->dks_session, protocol))
 	{
 	  if (SESSION_SCH_DATA (ses)->sio_random_read_ready_action ||
@@ -569,14 +603,14 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 	      s_max = MAX (s, s_max);
 	    }
 	}
+#endif
     }
 
-
-#ifdef SOLARIS
-  thr_yield ();
-#endif
-
+#ifdef HAVE_POLL
+  rc = poll (served_sessions_fds, n, timeout_ms);
+#else
   rc = select (s_max + 1, &reads, &writes, NULL, &to_2);
+#endif
 
   if (rc < 0)
     {
@@ -592,7 +626,13 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
       for (n = 0; n < last_session; n++)
 	{
 	  dk_session_t *ses = served_sessions[n];
-	  if (ses && FD_ISSET (DKS_SOCK (ses), &writes))
+	  if (ses &&
+#ifdef HAVE_POLL
+	      (served_sessions_fds[n].revents & POLLOUT)
+#else
+	      FD_ISSET (DKS_SOCK (ses), &writes)
+#endif
+	      )
 	    {
 	      SESSTAT_CLR (ses->dks_session, SST_BLOCK_ON_WRITE);
 	      SESSION_SCH_DATA (ses)->sio_random_write_ready_action (ses);
@@ -611,7 +651,13 @@ check_inputs_low (TAKE_G timeout_t * timeout_org, int is_recursive, select_func_
 	  dk_session_t *ses = served_sessions[n];
 	  if (!ses)
 	    continue;
-	  if (FD_ISSET (DKS_SOCK (ses), &reads) || bytes_in_read_buffer (ses))
+	  if (
+#ifdef HAVE_POLL
+		(served_sessions_fds[n].revents & POLLIN)
+#else
+		FD_ISSET (DKS_SOCK (ses), &reads)
+#endif
+		|| bytes_in_read_buffer (ses))
 	    {
 #ifndef NO_THREAD
 	      if (!prpc_disable_burst_mode)
