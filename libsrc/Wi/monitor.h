@@ -37,8 +37,8 @@ typedef struct monitor_s {
   int mon_thr_run;
   int mon_thr;
   int mon_lw_thr;
-  long mon_read_block_usec;
-  long mon_write_block_usec;
+  int64 mon_read_block_usec;
+  int64 mon_write_block_usec;
   long mon_read_cum_time;
   double mon_read_pct;
   long mon_tc_no_thread_kill_idle;

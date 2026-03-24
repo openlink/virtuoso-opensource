@@ -174,8 +174,8 @@ long dbf_user_1, dbf_user_2;
 extern int dbs_stop_cp;
 
 
-extern long read_block_usec;
-extern long write_block_usec;
+extern int64 read_block_usec;
+extern int64 write_block_usec;
 extern long tc_initial_while_closing;
 extern long tc_initial_while_closing_died ;
 extern long tc_client_dropped_connection ;
@@ -1876,8 +1876,8 @@ stat_desc_t stat_descs [] =
     SD_DEF_L   (tc_atomic_wait_2pc, "tc_atomic_wait_2pc"),
     SD_DEF_L   (tc_cl_alt_interface, "tc_cl_alt_interface"),
     SD_DEF_L   (tc_anytime_early_flush, "tc_anytime_early_flush"),
-    SD_DEF_L   (read_block_usec, "read_block_usec"),
-    SD_DEF_L   (write_block_usec, "write_block_usec"),
+    SD_DEF_I64 (read_block_usec, "read_block_usec"),
+    SD_DEF_I64 (write_block_usec, "write_block_usec"),
     SD_DEF_L   (tc_qp_thread, "tc_qp_thread"),
     SD_DEF_L   (strses_file_reads, "strses_file_reads"),
     SD_DEF_L   (strses_file_writes, "strses_file_writes"),
