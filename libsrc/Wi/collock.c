@@ -1503,6 +1503,8 @@ void
 pl_remove_empty_rls (page_lock_t * pl)
 {
   int inx;
+  index_tree_t * it = pl->pl_it;
+  mutex_enter (it->it_lock_release_mtx);
   for (inx = 0; inx < N_RLOCK_SETS; inx++)
     {
       row_lock_t **prev = &pl->pl_rows[inx];
@@ -1521,6 +1523,7 @@ pl_remove_empty_rls (page_lock_t * pl)
 	  rl = next;
 	}
     }
+  mutex_leave (it->it_lock_release_mtx);
 }
 
 
