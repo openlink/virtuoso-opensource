@@ -1408,14 +1408,16 @@ srv_lock_report (query_instance_t * qi, const char * mode, int caller_is_dba)
         { /* prevent read release as lock release is outside of TXN mtx */
           for (inx = 0; inx < IT_N_MAPS; inx++)
             {
-              mutex_enter (&it->it_maps[inx].itm_mtx);
-              if (0 == setjmp_splice (&locks_done))
+              if (mutex_try_enter (&it->it_maps[inx].itm_mtx))
 		{
-		  locks_printed = 0;
-		  maphash3 (lock_status, &it->it_maps[inx].itm_locks,
-		      caller_is_dba ? (void *) (&it->it_maps[inx].itm_mtx) : ((void *) ((ptrlong) - 1)));
+                  if (0 == setjmp_splice (&locks_done))
+                    {
+                      locks_printed = 0;
+                      maphash3 (lock_status, &it->it_maps[inx].itm_locks,
+                          caller_is_dba ? (void *)(&it->it_maps[inx].itm_mtx) : ((void*)((ptrlong)-1)));
+                    }
+                  mutex_leave (&it->it_maps[inx].itm_mtx);
 		}
-              mutex_leave (&it->it_maps[inx].itm_mtx);
             }
           mutex_leave (it->it_lock_release_mtx);
         }
