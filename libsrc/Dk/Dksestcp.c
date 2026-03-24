@@ -41,7 +41,11 @@ static int tcpses_connect (session_t * ses);
 static int tcpses_disconnect (session_t * ses);
 int tcpses_write (session_t * ses, char *buffer, int n_bytes);
 static int tcpses_set_control (session_t * ses, int fld, char *p_value, int sz);
+#ifdef HAVE_POLL
+static int fill_pollfd (int count, session_t ** sestable, short flags, struct pollfd *fds);
+#else
 static int fill_fdset (int count, session_t ** sestable, fd_set * p_fdset);
+#endif
 static int test_eintr (session_t * ses, int retcode, int eno);
 static int test_readblock (session_t * ses, int retcode, int eno);
 static int test_writeblock (session_t * ses, int retcode, int eno);
@@ -1339,27 +1343,55 @@ fileses_write (session_t * ses, char *buffer, int n_bytes)
 int
 tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t * timeout)
 {
+  int rc;
+  int i, n;
+#ifdef HAVE_POLL
+  int timeout_ms = timeout ? (timeout->to_sec * 1000UL) + (timeout->to_usec / 1000UL) : -1;
+  struct pollfd fds_one = { 0 };
+
+  struct pollfd *fds = NULL;
+  int s = 0;
+
+  if (ses_count <= 1)
+    {
+      fds = &fds_one;
+    }
+  else
+    {
+      fds = (struct pollfd *) calloc (ses_count, sizeof (struct pollfd));
+      if (!fds)
+	return SER_NOREC;
+    }
+#else
   fd_set read_set;
   fd_set write_set;
   fd_set excep_set;
   struct timeval to;
-  int i, n;
   int s = 0, s_max = 0;
-  int rc;
-
-  dbg_printf_1 (("tcpses_select, ses_count = %d.", ses_count));
 
   if (timeout != NULL)
     {
       to.tv_sec = timeout->to_sec;
       to.tv_usec = timeout->to_usec;
     }
+#endif
+
+  dbg_printf_1 (("tcpses_select, ses_count = %d.", ses_count));
 
   /* Copy socket descriptors of all sessions to corresponding
      fd_set structures.
      Keep max descriptor in s_max.
    */
 
+#ifdef HAVE_POLL
+  rc = fill_pollfd (ses_count, reads, POLLIN,  fds);
+  if (rc < 0)
+    goto done;
+
+  rc = fill_pollfd (ses_count, writes, POLLOUT,  fds);
+  if (rc < 0)
+    goto done;
+#else
   s_max = fill_fdset (ses_count, reads, &read_set);
   if (s_max < 0)
     {
@@ -1381,6 +1413,7 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
     }
 
   s_max = MAX (s, s_max);
+#endif
 
   /* setting here all status fields to SST_BLOCK_ON_READ or
      SST_BLOCK_ON_WRITE */
@@ -1393,11 +1426,16 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 	SESSTAT_CLR (reads[n], SST_CONNECT_PENDING);
     };
 
+#ifdef HAVE_POLL
+  dbg_printf_2 (("Calling poll..."));
+  rc = poll (fds, ses_count, timeout_ms);
+  dbg_printf_2 (("poll() : rc=%d.", rc));
+#else
   dbg_printf_2 (("Calling select..."));
-
   rc = select (s_max + 1, &read_set, &write_set, &excep_set, timeout == NULL ? NULL : &to);
-
   dbg_printf_2 (("select() : rc=%d.", rc));
+#endif
+
   switch (rc)
     {
     case -1:
@@ -1408,17 +1446,18 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 	  dbg_printf_2 (("Select ended by EINTR."));
 	  set_array_status (ses_count, reads, SST_INTERRUPTED);
 	  set_array_status (ses_count, writes, SST_INTERRUPTED);
-	  return (SER_INTR);
+	  rc = SER_INTR;
+	  goto done;
 	}
       else
 	{
 	  dbg_printf_2 (("Select ended with error."));
-	  return (rc);
+	  goto done;
 	}
 
     case 0:
       /* timeout */
-      return (rc);
+      goto done;
 
     default:
       /* rc equals number of criteria met,
@@ -1430,10 +1469,14 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 	  if (reads[i] != NULL)
 	    {
 	      dbg_printf_2 (("i=%d", i));
+
+#ifdef HAVE_POLL
+	      if (fds[i].revents & POLLIN)
+#else
 	      s = reads[i]->ses_device->dev_connection->con_s;
 	      dbg_printf_2 (("reads[i] : FD_ISSET=%d", FD_ISSET (s, &read_set)));
-
 	      if (FD_ISSET (s, &read_set) || FD_ISSET (s, &excep_set))
+#endif
 		{
 		  if (SESSTAT_ISSET (reads[i], SST_LISTENING))
 		    {
@@ -1448,9 +1491,13 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 
 	  if (writes[i] != NULL)
 	    {
+#ifdef HAVE_POLL
+	      if (fds[i].revents & POLLOUT)
+#else
 	      s = writes[i]->ses_device->dev_connection->con_s;
 	      dbg_printf_2 (("writes[i]: FD_ISSET=%d", FD_ISSET (s, &write_set)));
 	      if (FD_ISSET (s, &write_set))
+#endif
 		{
 		  SESSTAT_CLR (writes[i], SST_BLOCK_ON_WRITE);
 		}
@@ -1460,9 +1507,15 @@ tcpses_select (int ses_count, session_t ** reads, session_t ** writes, timeout_t
 		}
 	    }
 	}
-
-      return (rc);
     }
+
+done:
+#ifdef HAVE_POLL
+  if (ses_count > 1)
+    free (fds);
+#endif
+
+  return rc;
 }
 
 
@@ -1653,6 +1706,60 @@ tcpses_set_control (session_t * ses, int fieldtoset, char *p_value, int size)
 }
 
 
+#if defined(HAVE_POLL)
+/*##**********************************************************************
+ *
+ *              fill_pollfd
+ *
+ * Adds socket descriptors of present elements in sestable to pollfd
+ * structure referenced by fds.
+ *
+ * Input params :
+ *
+ *      sestable     - array containing session structures
+ *      sescount     - max number of elements in sestable array
+ *      fds          - pointer to pollfd structure
+ *
+ * Output params: -
+ *
+ * Return value :  = 0 : the number of sockets added
+ *                 < 0 : SER_ILLSESP, if an illegal session pointer found
+ *
+ * Limitations  : -
+ *
+ * Globals used : -
+ */
+static int
+fill_pollfd (int count, session_t ** sestable, short flags, struct pollfd *fds)
+{
+  int i;
+  int n_added = 0;
+  int s;
+
+  dbg_printf_3 (("fill_pollfd"));
+
+  for (i = 0; (i < count); i++)
+    {
+      if (sestable[i] == NULL)
+	continue;
+
+      TCP_CHK (sestable[i]);
+
+      s = sestable[i]->ses_device->dev_connection->con_s;
+
+      if ((flags & POLLOUT) && fds[i].fd != s)
+	      fprintf(stderr, "fd=%d s=%d\n", fds[i].fd, s);
+
+      fds[i].fd = s;
+      fds[i].events |= flags;
+      fds[i].revents = 0;
+
+      n_added++;
+    }
+
+  return n_added;
+}
+#else
 /*##**********************************************************************
  *
  *              fill_fdset
@@ -1705,6 +1812,7 @@ fill_fdset (int sescount, session_t ** sestable, fd_set * p_fdset)
   dbg_printf_4 (("n_added=%d, s_max=%d", n_added, s_max));
   return (s_max);
 }
+#endif
 
 
 /*##**********************************************************************
