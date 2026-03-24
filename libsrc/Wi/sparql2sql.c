@@ -2410,6 +2410,8 @@ sparp_restr_of_select_eq_from_connected_subvalues (sparp_t *sparp, sparp_equiv_t
         case SPAR_BLANK_NODE_LABEL: case SPAR_VARIABLE:
           {
             sparp_equiv_t *eq_sub = sparp_equiv_get (sparp, gp->_.gp.subquery->_.req_top.pattern, sub_expn, 0);
+            if (!eq_sub)
+              break;
             sparp_equiv_tighten (sparp, eq, &(eq_sub->e_rvr), ~(SPART_VARR_GLOBAL | SPART_VARR_EXTERNAL));
             break;
           }
