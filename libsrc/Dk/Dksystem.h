@@ -106,6 +106,10 @@ void free ();
 # include <sys/select.h>
 #endif
 
+#ifdef HAVE_POLL_H
+#include <poll.h>
+#endif
+
 #if defined (WINDOWS) || defined (WIN32) || defined (OS2)
 # include <io.h>
 # include <process.h>
@@ -217,6 +221,12 @@ char *strtok_r ();
 
 #ifdef WIN32
 #define strcasecmp _stricmp
+#define strcasecmp     _stricmp
+#define poll(a,b,c)    WSAPoll(a,b,c)
+#endif
+
+#if 0                          /* set to 1 to disable poll and use select */
+#undef HAVE_POLL
 #endif
 
 #endif

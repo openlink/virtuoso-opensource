@@ -38,6 +38,9 @@
 # ifdef HAVE_SYS_SELECT_H
 #  include <sys/select.h>
 # endif
+# ifdef HAVE_POLL_H
+#  include <poll.h>
+# endif
 # ifdef HAVE_SYS_SOCKIO_H
 #  include <sys/sockio.h>
 # endif
